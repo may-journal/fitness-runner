@@ -2,6 +2,9 @@
 
 ## Changes
 
+### 2026.02.15.1400
+- GitHub Actions CI: dynamic fitness jobs from registry, composite setup action.
+
 ### 2026.02.15.1300
 - README: add Mermaid code-flow diagram (modern colors), move to bottom.
 
