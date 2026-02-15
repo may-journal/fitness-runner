@@ -1,12 +1,13 @@
 # changelog
 
-Validates that the repo root has a `CHANGELOG.md` with at least one **dated section**: a heading `##` or `###` followed by `yyyy-mm-dd` (e.g. `### 2026-02-15` or `### 2026-02-15@10AM`).
+Validates that the repo root has a `CHANGELOG.md` and that **every** `###` heading is a dated section with hour: `### yyyy-mm-dd@time` (e.g. `### 2026-02-15@11am`).
 
 ## Behavior
 
-- **Pass:** `CHANGELOG.md` exists and contains at least one line matching `## yyyy-mm-dd` or `### yyyy-mm-dd`.
+- **Pass:** `CHANGELOG.md` exists and every `###` line matches `### yyyy-mm-dd@time`.
 - **Fail:** File missing → `missing root CHANGELOG.md`.
-- **Fail:** File exists but no dated section → `CHANGELOG.md must have at least one dated section (## or ### yyyy-mm-dd)`.
+- **Fail:** No `###` heading → must have at least one `### yyyy-mm-dd@time` section.
+- **Fail:** Any `###` heading not in that format → `every ### heading must be ### yyyy-mm-dd@time (invalid: "...")`.
 
 ## Contributing
 

@@ -2,6 +2,74 @@
 
 A fitness runner for rules to ensure CI/CD and GenAI are empowered with guardrails of code quality and architectural decision.
 
+## Code flow and check process
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {
+  'primaryColor':'#6366f1',
+  'primaryTextColor':'#fff',
+  'primaryBorderColor':'#4f46e5',
+  'secondaryColor':'#06b6d4',
+  'secondaryTextColor':'#fff',
+  'secondaryBorderColor':'#0891b2',
+  'tertiaryColor':'#10b981',
+  'tertiaryTextColor':'#fff',
+  'tertiaryBorderColor':'#059669',
+  'lineColor':'#64748b',
+  'background':'#f8fafc',
+  'mainBkg':'#e0e7ff',
+  'clusterBkg':'#f1f5f9',
+  'clusterBorder':'#94a3b8',
+  'titleColor':'#334155',
+  'edgeLabelBackground':'#f8fafc',
+  'nodeTextColor':'#1e293b',
+  'fontFamily':'system-ui, sans-serif'
+}}}%%
+flowchart TD
+  subgraph CLI["CLI entry"]
+    A["npx fitness (argv)"]
+    A --> B["run(argv)"]
+  end
+
+  B --> C{"--validate-commit-msg=?"}
+  C -->|yes| D["Single check: semantic-commit"]
+  D --> Dctx["Context: proposedCommitMessage"]
+  C -->|no| E["getStagedContext: --staged?"]
+  E --> F["resolveChecks(root)"]
+
+  subgraph Resolve["Resolve checks"]
+    F --> G{".fitnessrc.ts / .fitnessrc.js exists?"}
+    G -->|yes| H["config.checks → ordered Check[]"]
+    G -->|no| I["Full registry (all checks)"]
+    H --> J["Optional: --check=name → filter to one"]
+    I --> J
+  end
+
+  J --> K["runChecks(checks, root, context)"]
+
+  subgraph Execute["Execute checks"]
+    K --> L["For each check in order"]
+    L --> M["runOneCheck: check.run(root, context)"]
+    M --> N{"result.ok?"}
+    N -->|yes| O["Log meta, continue"]
+    N -->|no| P["displayErrors, set failed"]
+    O --> L
+    P --> L
+  end
+
+  Dctx --> K
+  Execute --> Q["process.exit(failed ? 1 : 0)"]
+
+  classDef cli fill:#6366f1,stroke:#4f46e5,color:#fff
+  classDef resolve fill:#06b6d4,stroke:#0891b2,color:#fff
+  classDef execute fill:#10b981,stroke:#059669,color:#fff
+  classDef decision fill:#f1f5f9,stroke:#64748b,color:#334155
+  class A,B cli
+  class D,Dctx,E,F,G,H,I,J resolve
+  class K,L,M,N,O,P,Q execute
+  class C decision
+```
+
 ## Install
 
 ```bash
