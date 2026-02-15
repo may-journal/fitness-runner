@@ -3,7 +3,7 @@ import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { registry } from '../checks/index.js';
-import type { Check, RunContext } from '../types/index.js';
+import type { Check, RunContext } from '../types/index.types.js';
 import { loadConfig } from '../config/load.js';
 
 /** Returns staged file paths from git for context (always attempted). */

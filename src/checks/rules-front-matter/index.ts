@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import type { Check } from '../../types/index.js';
+import type { Check } from '../../types/index.types.js';
 import { findMd } from '../findMd.js';
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;

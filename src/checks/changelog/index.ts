@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Check } from '../../types/index.js';
+import type { Check } from '../../types/index.types.js';
 
 const ROOT_CHANGELOG = 'CHANGELOG.md';
 const ERROR_MISSING = 'missing root CHANGELOG.md';

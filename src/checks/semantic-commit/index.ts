@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import type { Check } from '../../types/index.js';
+import type { Check } from '../../types/index.types.js';
 
 const SEMANTIC_TYPES = [
   'feat',

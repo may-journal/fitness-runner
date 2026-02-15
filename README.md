@@ -33,11 +33,14 @@ Commit-msg hook: pass the message file as a positional so semantic-commit valida
 
 ## Checks
 
-| Name  | Description |
-|-------|-------------|
-| changelog | Validates repo root has `CHANGELOG.md` with at least one dated section (`##` or `###` followed by `yyyy-mm-dd`). |
-| node-version | Validates current Node version satisfies `.nvmrc` at repo root (e.g. run `nvm use` if not). |
-| semantic-commit | Validates HEAD commit message follows Conventional Commits: `type(scope): description` (or `Merge ...`). Allowed types: feat, fix, docs, style, refactor, test, chore. |
+See [src/checks/README.md](src/checks/README.md) for the list and how checks work. Each check has its own README:
+
+- [changelog](src/checks/changelog/README.md)
+- [changelog-updated](src/checks/changelog-updated/README.md)
+- [cspell](src/checks/cspell/README.md)
+- [node-version](src/checks/node-version/README.md)
+- [rules-front-matter](src/checks/rules-front-matter/)
+- [semantic-commit](src/checks/semantic-commit/README.md)
 
 ## Config
 

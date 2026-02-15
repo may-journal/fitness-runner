@@ -6,5 +6,6 @@ export default {
     'markdown-front-matter',
     'node-version',
     'semantic-commit',
+    'vitest-coverage-exclude',
   ],
 };

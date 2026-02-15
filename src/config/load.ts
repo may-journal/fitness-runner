@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
-import type { FitnessConfig } from '../types/index.js';
+import type { FitnessConfig } from '../types/index.types.js';
 
 const require = createRequire(import.meta.url);
 
@@ -17,18 +17,17 @@ function hasValidDefault(raw: object): boolean {
 /** Resolves default export or the module itself. */
 function getRawExport(mod: unknown): unknown {
   if (mod == null || typeof mod !== 'object') return null;
-  if ('default' in (mod as object) && (mod as { default?: unknown }).default !== undefined) {
-    return (mod as { default: unknown }).default;
-  }
-  return mod;
+  const def = (mod as { default?: unknown }).default;
+  const useDefault = 'default' in (mod as object) && def !== undefined;
+  return useDefault ? def : mod;
 }
 
 /** Normalizes required/exported config from a loaded module. */
 function parseConfigModule(mod: unknown): FitnessConfig | null {
   const raw = getRawExport(mod);
   if (raw == null || typeof raw !== 'object') return null;
-  if (!hasValidDefault(raw as object)) return null;
-  return raw as FitnessConfig;
+  const valid = hasValidDefault(raw as object);
+  return valid ? (raw as FitnessConfig) : null;
 }
 
 /** Loads one config file by name; returns null if missing or invalid. */

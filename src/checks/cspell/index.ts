@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import type { Check } from '../../types/index.js';
+import type { Check } from '../../types/index.types.js';
 
 const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
 const FILES_CHECKED_RE = /Files checked:\s*(\d+)/;

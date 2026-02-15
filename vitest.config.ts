@@ -8,11 +8,12 @@ export default defineConfig({
       reporter: ['text',
         'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.d.ts',
-        'src/types/**',
-        'src/config/load.ts',
-        'src/**/*.test.ts',
-        'src/**/*.spec.ts'],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+        '**/*.types.ts',
+      ],
       thresholds: {
         statements: 100,
         branches: 100,

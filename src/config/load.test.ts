@@ -28,6 +28,12 @@ describe('loadConfig', () => {
     expect(loadConfig(dir)).toBe(null);
   });
 
+  it('returns null when .fitnessrc.js exports null (getRawExport receives null)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
+    writeFileSync(join(dir, '.fitnessrc.js'), 'module.exports = null;');
+    expect(loadConfig(dir)).toBe(null);
+  });
+
   it('returns null when .fitnessrc.ts is invalid', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
     writeFileSync(join(dir, '.fitnessrc.ts'), 'syntax error {{{');
@@ -54,5 +60,26 @@ describe('loadConfig', () => {
     const config = loadConfig(dir);
     expect(config).not.toBe(null);
     expect(config?.checks).toEqual(['changelog']);
+  });
+
+  it('returns null when default export is undefined', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
+    writeFileSync(join(dir, '.fitnessrc.ts'), 'export default undefined;');
+    expect(loadConfig(dir)).toBe(null);
+  });
+
+  it('returns null when default export is object with default null', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
+    writeFileSync(join(dir, '.fitnessrc.ts'), 'export default { default: null };');
+    expect(loadConfig(dir)).toBe(null);
+  });
+
+  it('parseConfigModule returns null when raw.default is null (branch line 29)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
+    writeFileSync(
+      join(dir, '.fitnessrc.js'),
+      'module.exports = { default: { default: null } };',
+    );
+    expect(loadConfig(dir)).toBe(null);
   });
 });

@@ -4,7 +4,8 @@ import { cspellCheck } from './cspell/index.js';
 import { nodeVersionCheck } from './node-version/index.js';
 import { rulesFrontMatterCheck } from './rules-front-matter/index.js';
 import { semanticCheck } from './semantic-commit/index.js';
-import type { Check } from '../types/index.js';
+import { vitestCoverageExcludeCheck } from './vitest-coverage-exclude/index.js';
+import type { Check } from '../types/index.types.js';
 
 export const registry: Check[] = [
   changelogCheck,
@@ -13,4 +14,5 @@ export const registry: Check[] = [
   nodeVersionCheck,
   rulesFrontMatterCheck,
   semanticCheck,
+  vitestCoverageExcludeCheck,
 ];

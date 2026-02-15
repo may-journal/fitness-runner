@@ -78,9 +78,8 @@ describe('fitness run', () => {
 
   it('runs single check when --check=semantic-commit', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(api): add endpoint\n\nBody');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : '');
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -89,9 +88,8 @@ describe('fitness run', () => {
 
   it('runs single check when check name is positional (e.g. npx fitness semantic-commit)', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(api): add endpoint\n\nBody');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : '');
     await run([
       'node',
       'fitness',
@@ -216,9 +214,8 @@ describe('fitness run', () => {
 
   it('runs with staged context (git diff mocked)', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'chore(deps): bump\n\n');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'chore(deps): bump\n\n' : '');
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -227,11 +224,9 @@ describe('fitness run', () => {
 
   it('handles git diff failure (catch)', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => {
-        throw new Error('not a git repo');
-      })
-      .mockImplementationOnce(() => 'feat(x): y\n\n');
+    vi.mocked(execSync).mockImplementation(() => {
+      throw new Error('not a git repo');
+    });
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -240,9 +235,8 @@ describe('fitness run', () => {
 
   it('handles non-empty staged output', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => 'a.md\nb.md')
-      .mockImplementationOnce(() => 'feat(runner): add tests\n\n');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(runner): add tests\n\n' : 'a.md\nb.md');
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -252,9 +246,8 @@ describe('fitness run', () => {
   it('outputs check timing with filesChecked meta', async () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(pkg): init\n\n');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : '');
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -265,9 +258,8 @@ describe('fitness run', () => {
   it('logs errors and exits 1 when check fails', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'Bad commit');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'Bad commit' : '');
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -278,9 +270,8 @@ describe('fitness run', () => {
 
   it('exits 1 when check fails', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'Initial commit\n\n');
+    vi.mocked(execSync).mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'Initial commit\n\n' : '');
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
@@ -327,7 +318,7 @@ describe('fitness run', () => {
 
   it('--check=semantic-commit with positional path: exits 0 when file unreadable or empty (treats as empty)', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => '');
+    vi.mocked(execSync).mockImplementation(() => '');
     await run(['node',
       'fitness',
       '--check=semantic-commit',
@@ -338,7 +329,6 @@ describe('fitness run', () => {
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(join(dir, 'empty.txt'), '');
-    vi.mocked(execSync).mockImplementationOnce(() => '');
     await run(['node',
       'fitness',
       '--check=semantic-commit',

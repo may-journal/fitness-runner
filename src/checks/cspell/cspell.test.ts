@@ -53,6 +53,20 @@ describe('cspellCheck', () => {
     expect(result.errors.some((e) => e.includes('xyzzyspoon') || e.includes('staged.md'))).toBe(true);
   });
 
+  it('with stagedFiles mock return path when cmd does not match', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
+    writeFileSync(join(dir, 'cspell.json'), '{"version":"0.2","words":[]}');
+    writeFileSync(join(dir, 'other.md'), 'valid text');
+    const result = await cspellCheck.run(dir, {
+      stagedFiles: ['other.md'],
+      _execSync: (cmd) => {
+        if (cmd.includes('staged.md')) throw new Error();
+        return '';
+      },
+    });
+    expect(result.ok).toBe(true);
+  });
+
   it('passes when stagedFiles listed but none exist (nothing to check)', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
     writeFileSync(join(dir, 'cspell.json'), '{"version":"0.2","words":[]}');

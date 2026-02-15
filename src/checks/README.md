@@ -10,6 +10,7 @@ Each check is a **self-contained sub-project** in its own folder:
 - **[changelog-updated](./changelog-updated/)** – When staged context is present, changelog must mention words from staged diff
 - **[node-version](./node-version/)** – Node version satisfies `.nvmrc`
 - **[semantic-commit](./semantic-commit/)** – HEAD commit follows Conventional Commits
+- **[vitest-coverage-exclude](./vitest-coverage-exclude/)** – Vitest coverage `exclude` must not list any `.ts` file or pattern
 
 Each folder contains the check implementation (`index.ts`), tests (`*.test.ts`), and a **README** describing behavior and how to contribute. The runner registry in `index.ts` imports these and runs them in order (or per `.fitnessrc`).
 

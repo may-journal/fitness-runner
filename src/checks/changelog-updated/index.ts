@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import type { Check } from '../../types/index.js';
+import type { Check } from '../../types/index.types.js';
 
 const ROOT_CHANGELOG = 'CHANGELOG.md';
 const MIN_OVERLAP = 3;

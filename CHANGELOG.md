@@ -7,6 +7,10 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.15.1800
+- Vitest-coverage-exclude check: only allow **/*.d.ts and **/*.types.ts in coverage exclude; Vitest excludes tests by default. Type-only files use *.types.ts naming.
+- Rename type files to *.types.ts; fix load.ts and coverage-exclude branches for 100% coverage.
+
 ### 2026.02.15.1700
 - CI: single fitness job runs npm run fitness; remove discover job and matrix.
 - Pre-commit: source nvm (NVM_DIR, nvm.sh) in husky hook so nvm use runs when PATH has no nvm.
