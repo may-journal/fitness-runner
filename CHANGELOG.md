@@ -2,13 +2,9 @@
 
 ## Changes
 
-### 2026.02.15.1400
-- GitHub Actions CI: dynamic fitness jobs from registry, composite setup action.
-
-### 2026.02.15.1300
-- README: add Mermaid code-flow diagram (modern colors), move to bottom.
-
 ### 2026.02.15.1200
+- GitHub Actions CI: dynamic fitness jobs from registry, composite setup action.
+- README: add Mermaid code-flow diagram (modern colors), move to bottom.
 - cspell check (optional: only runs when cspell.json present); cspell in runner dependencies.
 - cspell in deps only; remove spell from ci and package.json script; README and cspell README updates.
 
