@@ -1,13 +1,21 @@
 import { readFileSync, statSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import type { Check } from '../../types/index.js';
 import { findMd } from '../findMd.js';
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
 const ARRAY_RE = /(?:fitnessFunctions|relatedConfigurations):\s*\[([^\]]*)\]/g;
 
-/** Parses paths from fitnessFunctions and relatedConfigurations in front matter. */
-function getFrontMatterPaths(content: string): string[] {
+/** True if content has front matter with at least one of fitnessFunctions or relatedConfigurations. */
+function hasRequiredFrontMatter(content: string): boolean {
+  const fm = content.match(FRONTMATTER_RE);
+  if (!fm) return false;
+  const inner = fm[1];
+  return inner.includes('fitnessFunctions') || inner.includes('relatedConfigurations');
+}
+
+/** Parses paths from fitnessFunctions and relatedConfigurations in front matter. Exported for tests. */
+export function getFrontMatterPaths(content: string): string[] {
   const fm = content.match(FRONTMATTER_RE);
   if (!fm) return [];
   const paths: string[] = [];
@@ -24,10 +32,10 @@ function isExternalOrAnchor(path: string): boolean {
   return path.startsWith('http') || path.startsWith('#') || path.startsWith('mailto:');
 }
 
-/** Returns error message if path invalid, null if valid. */
-function validatePath(file: string, path: string, root: string): string | null {
+/** Returns error message if path invalid, null if valid. Path is resolved relative to the md file's directory. */
+function validatePath(file: string, path: string, root: string, mdFileDir: string): string | null {
   if (isExternalOrAnchor(path)) return null;
-  const target = resolve(root, path);
+  const target = resolve(mdFileDir, path);
   if (!target.startsWith(root)) return `${file}: front matter path escapes repo: ${path}`;
   try {
     statSync(target);
@@ -37,11 +45,15 @@ function validatePath(file: string, path: string, root: string): string | null {
   }
 }
 
-/** Validates a rule file's front matter paths; returns error messages. */
-function validateFile(file: string, content: string, root: string): string[] {
+/** Validates a rule file has required front matter and paths; returns error messages. Paths are relative to the md file. */
+function validateFile(file: string, content: string, root: string, mdFileDir: string): string[] {
   const errors: string[] = [];
+  if (!hasRequiredFrontMatter(content)) {
+    errors.push(`${file}: missing front matter with fitnessFunctions or relatedConfigurations`);
+    return errors;
+  }
   for (const path of getFrontMatterPaths(content)) {
-    const err = validatePath(file, path, root);
+    const err = validatePath(file, path, root, mdFileDir);
     if (err) errors.push(err);
   }
   return errors;
@@ -49,14 +61,15 @@ function validateFile(file: string, content: string, root: string): string[] {
 
 /** Validates front matter: fitnessFunctions and relatedConfigurations paths must exist. */
 export const rulesFrontMatterCheck: Check = {
-  name: '30.03',
+  name: 'markdown-front-matter',
   async run(root = process.cwd()) {
     const errors: string[] = [];
     let filesChecked = 0;
     for (const file of findMd(root)) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
-      errors.push(...validateFile(file, content, root));
+      const mdFileDir = join(root, dirname(file));
+      errors.push(...validateFile(file, content, root, mdFileDir));
     }
     return { ok: errors.length === 0, errors, meta: { filesChecked } };
   },

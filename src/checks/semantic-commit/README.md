@@ -1,3 +1,7 @@
+---
+relatedConfigurations: ["../../../package.json"]
+---
+
 # semantic-commit
 
 Validates that the repository’s **HEAD commit** message follows [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description`, or a merge commit (`Merge ...`).

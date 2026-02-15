@@ -1,6 +1,14 @@
+---
+# Changed package version should correlate with this file
+relatedConfigurations: ["package.json"]
+---
+
 # Changelog
 
 ## Changes
+
+### 2026.02.15.1600
+- Markdown-front-matter: require fitnessFunctions or relatedConfigurations in every .md; paths resolved relative to md file; findMd skips node_modules, dist, coverage, .git, .husky; export getFrontMatterPaths for tests (100% coverage). README/CHANGELOG front matter fixes (---, flow-style).
 
 ### 2026.02.15.1500
 - Node-version check: compare .nvmrc to current Node only; remove nvm subshell logic. CI script runs nvm use when available.

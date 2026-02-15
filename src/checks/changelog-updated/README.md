@@ -1,3 +1,7 @@
+---
+relatedConfigurations: ["../../../package.json"]
+---
+
 # changelog-updated
 
 When the runner provides staged file context, validates that the **added lines** in `CHANGELOG.md` (in the staged diff) share at least three words with the rest of the staged diff.

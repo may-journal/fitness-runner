@@ -1,3 +1,7 @@
+---
+relatedConfigurations: ["../../package.json"]
+---
+
 # Checks
 
 Each check is a **self-contained sub-project** in its own folder:

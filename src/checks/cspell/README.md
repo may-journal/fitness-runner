@@ -1,3 +1,7 @@
+---
+relatedConfigurations: ["../../../package.json"]
+---
+
 # cspell
 
 Runs [cspell](https://cspell.org) for spell-checking. The runner lists cspell as a dependency so it’s available when you use this check. **Optional:** the check only runs when you have a `cspell.json` at repo root; if missing, the check passes without running.

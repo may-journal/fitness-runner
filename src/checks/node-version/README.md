@@ -1,3 +1,7 @@
+---
+relatedConfigurations: ["../../../package.json"]
+---
+
 # node-version
 
 Validates that the current Node version satisfies the repo’s `.nvmrc` (compare only; run `nvm use` yourself if needed).

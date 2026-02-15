@@ -1,3 +1,7 @@
+---
+relatedConfigurations: ["../../../package.json"]
+---
+
 # changelog
 
 Validates that the repo root has a `CHANGELOG.md` and that **every** `###` heading is a dated section matching the package version style: `### yyyy.mm.dd.HHMM` (e.g. `### 2026.02.15.1100`).

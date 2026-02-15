@@ -29,7 +29,7 @@ describe('fitness run', () => {
     const { join } = await import('node:path');
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: []\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
@@ -110,7 +110,7 @@ describe('fitness run', () => {
       checkPath,
       'export default { name: "path-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
     );
-    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: []\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
@@ -137,7 +137,7 @@ describe('fitness run', () => {
       join(dir, 'check.js'),
       'export const myCheck = { name: "named-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
     );
-    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: []\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
