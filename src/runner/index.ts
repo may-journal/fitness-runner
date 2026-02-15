@@ -1,5 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.js';
 import { loadConfig } from '../config/load.js';
@@ -14,11 +16,11 @@ function getStagedContext(): RunContext | undefined {
   }
 }
 
-/** When running semantic-commit, first positional is the message file path (commit-msg hook). */
-function getCommitMsgContext(argv: string[], checkName: string | undefined): RunContext | undefined {
+/** When running semantic-commit, positional(s) may include the message file path (commit-msg hook). */
+function getCommitMsgContext(argv: string[], checkName: string | undefined, specFromPositional: boolean): RunContext | undefined {
   if (checkName !== 'semantic-commit') return undefined;
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const path = positionals[0];
+  const path = specFromPositional && positionals.length >= 2 ? positionals[1] : positionals[0];
   if (!path) return undefined;
   try {
     const content = readFileSync(path, 'utf8');
@@ -40,47 +42,72 @@ function resolveChecks(root: string): Check[] {
   return [...registry];
 }
 
-/** Returns value of --check=<name> from argv if present. */
-function getCheckNameFromArg(argv: string[]): string | undefined {
+/** Returns value of --check=<name-or-path> from argv if present. */
+function getCheckSpecFromArg(argv: string[]): string | undefined {
   return argv.find((a) => a.startsWith('--check='))?.slice(8);
 }
 
-/** Returns single positional as check name if it matches a registry check. */
-function getPositionalCheckName(argv: string[]): string | undefined {
+/** Returns single positional as check name or path. */
+function getPositionalSpec(argv: string[]): string | undefined {
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const name = positionals.length === 1 ? positionals[0] : undefined;
-  return name && registry.some((r) => r.name === name) ? name : undefined;
+  return positionals.length === 1 ? positionals[0] : undefined;
 }
 
-/** Resolves check name from --check= or single positional that matches a registry check. */
-function resolveCheckName(argv: string[]): string | undefined {
-  return getCheckNameFromArg(argv) ?? getPositionalCheckName(argv);
+/** Resolves check spec (name or path) from --check= or single positional. */
+function resolveCheckSpec(argv: string[]): string | undefined {
+  return getCheckSpecFromArg(argv) ?? getPositionalSpec(argv);
 }
 
-/** Returns checks to run for a given check name (or all from config when name is undefined). */
-function resolveChecksByName(checkName: string | undefined, root: string): Check[] {
-  if (!checkName) return resolveChecks(root);
-  const one = registry.find((r) => r.name === checkName);
+/** True if spec looks like a file path (for loading a check module). */
+function isPathSpec(spec: string): boolean {
+  return /[/\\]/.test(spec) || /\.(?:js|mjs|cjs|ts)$/i.test(spec);
+}
+
+/** Loads a Check from a module path (default or first Check-like export). */
+async function loadCheckFromPath(root: string, spec: string): Promise<Check | null> {
+  const abs = resolve(root, spec);
+  if (!existsSync(abs)) return null;
+  try {
+    const url = pathToFileURL(abs).href;
+    const mod = await import(url) as { default?: Check; [k: string]: unknown };
+    if (mod.default && typeof (mod.default as Check).run === 'function' && (mod.default as Check).name != null) return mod.default as Check;
+    for (const v of Object.values(mod)) if (v && typeof (v as Check).run === 'function' && (v as Check).name != null) return v as Check;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+/** Returns checks to run for a given spec (name or path), or all from config when spec is undefined. */
+async function resolveChecksBySpec(spec: string | undefined, root: string): Promise<Check[]> {
+  if (!spec) return resolveChecks(root);
+  if (isPathSpec(spec)) {
+    const check = await loadCheckFromPath(root, spec);
+    return check ? [check] : [];
+  }
+  const one = registry.find((r) => r.name === spec);
   return one ? [one] : [];
 }
 
-/** Returns checks to run, optional check name, and optional context from argv. */
-function getChecks(argv: string[], root: string): {
+/** Returns checks to run, spec for error display, and optional context from argv. */
+async function getChecks(argv: string[], root: string): Promise<{
   checks: Check[];
-  checkName: string | undefined;
+  spec: string | undefined;
   context: RunContext | undefined;
-} {
-  const checkName = resolveCheckName(argv);
-  const checks = resolveChecksByName(checkName, root);
+}> {
+  const spec = resolveCheckSpec(argv);
+  const checks = await resolveChecksBySpec(spec, root);
+  const checkName = checks.length === 1 ? checks[0].name : undefined;
+  const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
-  const commitMsg = getCommitMsgContext(argv, checkName);
+  const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
   const context = (staged ?? commitMsg) ? { ...(staged ?? {}), ...(commitMsg ?? {}) } : undefined;
-  return { checks, checkName, context };
+  return { checks, spec, context };
 }
 
-/** Logs unknown check and exits 1. */
-function exitUnknown(checkName: string | undefined): never {
-  console.error(`Unknown check: ${checkName ?? '(none)'}`);
+/** Logs unknown check/path and exits 1. */
+function exitUnknown(spec: string | undefined): never {
+  console.error(`Unknown check: ${spec ?? '(none)'}`);
   process.exit(1);
   throw new Error('exit');
 }
@@ -132,8 +159,8 @@ async function runChecks(
 /** Runs fitness checks; exits with 1 on failure. */
 export async function run(argv: string[] = process.argv): Promise<void> {
   const root = process.cwd();
-  const { checks, checkName, context } = getChecks(argv, root);
-  if (!checks.length) exitUnknown(checkName);
+  const { checks, spec, context } = await getChecks(argv, root);
+  if (!checks.length) exitUnknown(spec);
   const failed = await runChecks(checks, root, context);
   process.exit(failed ? 1 : 0);
 }

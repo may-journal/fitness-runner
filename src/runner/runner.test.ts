@@ -100,6 +100,45 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('runs check from path when --check=./path/to/check.js', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-check-'));
+    const checkPath = join(dir, 'check.js');
+    writeFileSync(
+      checkPath,
+      'export default { name: "path-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
+    );
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(join(dir, '.nvmrc'), '18');
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementation(() => '');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run(['node', 'fitness', '--check=./check.js']);
+    process.chdir(origCwd);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/path-check: .+/));
+    expect(process.exit).toHaveBeenCalledWith(0);
+    logSpy.mockRestore();
+  });
+
+  it('exits 1 for unknown path (file not found or invalid module)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { mkdtempSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    await expect(run(['node', 'fitness', '--check=./nonexistent.js'])).rejects.toThrow('exit');
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith('Unknown check: ./nonexistent.js');
+    errSpy.mockRestore();
+  });
+
   it('runs with staged context (git diff mocked)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync)

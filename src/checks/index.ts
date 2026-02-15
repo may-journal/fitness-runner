@@ -2,6 +2,7 @@ import { changelogCheck } from './changelog/index.js';
 import { changelogUpdatedCheck } from './changelog-updated/index.js';
 import { cspellCheck } from './cspell/index.js';
 import { nodeVersionCheck } from './node-version/index.js';
+import { rulesFrontMatterCheck } from './rules-front-matter/index.js';
 import { semanticCheck } from './semantic-commit/index.js';
 import type { Check } from '../types/index.js';
 
@@ -10,5 +11,6 @@ export const registry: Check[] = [
   changelogUpdatedCheck,
   cspellCheck,
   nodeVersionCheck,
+  rulesFrontMatterCheck,
   semanticCheck,
 ];

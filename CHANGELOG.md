@@ -2,6 +2,10 @@
 
 ## Changes
 
+### 2026.02.15.1300
+- Rules front-matter check (30.03): validate fitnessFunctions and relatedConfigurations paths in all markdown; shared findMd helper.
+- Runner: accept check by name or path (--check=./path/to/check.js or positional); load Check from module default or named export.
+
 ### 2026.02.15.0100
 - Runner: single CLI flag --check= only; commit-msg path positional; staged context always; full runner test coverage.
 
