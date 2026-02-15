@@ -6,6 +6,7 @@ import type { Check } from '../../types/index.js';
 const ROOT_CHANGELOG = 'CHANGELOG.md';
 const MIN_OVERLAP = 3;
 const MIN_WORD_LEN = 3;
+const SUGGEST_WORDS = 10;
 
 function extractWords(text: string): Set<string> {
   const words = new Set<string>();
@@ -14,6 +15,16 @@ function extractWords(text: string): Set<string> {
     if (w.length >= MIN_WORD_LEN) words.add(w);
   }
   return words;
+}
+
+/** Returns up to n random words from the set (for suggestion in errors). */
+function sampleWords(words: Set<string>, n: number): string[] {
+  const arr = [...words];
+  for (let i = arr.length - 1; i > 0 && n > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr.slice(0, n);
 }
 
 /** Returns map of file path (repo-relative) -> added line content. */
@@ -66,10 +77,12 @@ export const changelogUpdatedCheck: Check = {
     if (overlap.length >= MIN_OVERLAP) {
       return { ok: true, errors: [], meta: { filesChecked: 1 } };
     }
+    const suggested = sampleWords(restWords, SUGGEST_WORDS);
     return {
       ok: false,
       errors: [
         `CHANGELOG.md additions should mention at least ${MIN_OVERLAP} words from your staged changes (found ${overlap.length}: ${overlap.slice(0, 5).join(', ')})`,
+        `e.g. use words like: ${suggested.join(', ')}`,
       ],
       meta: { filesChecked: 1 },
     };

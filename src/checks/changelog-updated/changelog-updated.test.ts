@@ -64,6 +64,8 @@ describe('changelogUpdatedCheck', () => {
     expect(result.ok).toBe(false);
     expect(result.errors?.[0]).toMatch(/at least 3 words/);
     expect(result.errors?.[0]).toMatch(/found \d+/);
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors?.[1]).toMatch(/e\.g\. use words like:/);
   });
 
   it('fails when CHANGELOG.md not staged (no additions in diff)', async () => {

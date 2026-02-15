@@ -1,6 +1,6 @@
 {
   "name": "@fitness/runner",
-  "version": "2026.02.15.1100",
+  "version": "0.1.0-2026.02.15.1100",
   "description": "Fitness runner for rules: CI/CD and GenAI guardrails",
   "type": "module",
   "engines": {
