@@ -3,13 +3,15 @@
 ## Changes
 
 ### 2026.02.15.1500
+- Node-version check: compare .nvmrc to current Node only; remove nvm subshell logic. CI script runs nvm use when available.
+- Node-version check: run nvm use in a subshell when available and use that version for validation; fallback to process.version.
 - CI: default strategy matrix fromJson(needs.discover.outputs.checks) to '[]' when checks output is empty.
 
 ### 2026.02.15.1400
 - Runner: 100% coverage; path-load tests (named export, no Check, import throws); two positionals (check then msg path) for semantic-commit; getPositionalSpec and getCommitMsgContext fix for single vs two positionals.
 
 ### 2026.02.15.1300
-- Rules front-matter check (30.03): validate fitnessFunctions and relatedConfigurations paths in all markdown; shared findMd helper.
+- Rules front-matter check: validate fitnessFunctions and relatedConfigurations paths in all markdown; shared findMd helper.
 - Runner: accept check by name or path (--check=./path/to/check.js or positional); load Check from module default or named export.
 
 ### 2026.02.15.0100

@@ -27,7 +27,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "ci": "npm run fitness && npm run lint && npm test",
+    "ci": "(nvm use 2>/dev/null || true) && npm run fitness && npm run lint && npm test",
     "fitness": "npm run build && node dist/index.js",
     "lint": "eslint .",
     "precommit": "npm run fitness",

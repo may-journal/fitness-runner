@@ -1,6 +1,6 @@
 # node-version
 
-Validates that the current Node version satisfies the repo’s `.nvmrc` (e.g. after `nvm use` or using the correct engine).
+Validates that the current Node version satisfies the repo’s `.nvmrc` (compare only; run `nvm use` yourself if needed).
 
 ## Behavior
 
