@@ -2,8 +2,10 @@
 
 ## Changes
 
-### 2026.02.15.1200
+### 2026.02.15.0100
 - Runner: single CLI flag --check= only; commit-msg path positional; staged context always; full runner test coverage.
+
+### 2026.02.15.1200
 - GitHub Actions CI: dynamic fitness jobs from registry, composite setup action.
 - README: add Mermaid code-flow diagram (modern colors), move to bottom.
 - cspell check (optional: only runs when cspell.json present); cspell in runner dependencies.
