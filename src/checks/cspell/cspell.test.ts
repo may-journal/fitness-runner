@@ -36,10 +36,21 @@ describe('cspellCheck', () => {
   it('with stagedFiles runs only on staged paths', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
     writeFileSync(join(dir, 'cspell.json'), '{"version":"0.2","words":[]}');
-    writeFileSync(join(dir, 'package.json'), '{"devDependencies":{"cspell":"^8.0.0"}}');
-    writeFileSync(join(dir, 'staged.md'), 'teh');
-    const result = await cspellCheck.run(dir, { stagedFiles: ['staged.md'] });
+    writeFileSync(join(dir, 'staged.md'), 'x');
+    const result = await cspellCheck.run(dir, {
+      stagedFiles: ['staged.md'],
+      _execSync: (cmd) => {
+        if (cmd.includes('staged.md')) {
+          const err = new Error() as Error & { status: number; stdout: string };
+          err.status = 1;
+          err.stdout = `${join(dir, 'staged.md')}:1:1 - Unknown word: xyzzyspoon`;
+          throw err;
+        }
+        return '';
+      },
+    });
     expect(result.ok).toBe(false);
+    expect(result.errors.some((e) => e.includes('xyzzyspoon') || e.includes('staged.md'))).toBe(true);
   });
 
   it('passes when stagedFiles listed but none exist (nothing to check)', async () => {
