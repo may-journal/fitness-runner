@@ -2,5 +2,5 @@
   "version": "0.2",
   "useGitignore": true,
   "ignorePaths": ["node_modules", "package-lock.json", "dist", "coverage", "**/*.test.ts"],
-  "words": ["Dctx", "fitnessrc", "nvmrc", "precommit", "semantic-commit", "subshell", "vitest", "tsx", "jsdoc", "eslint"]
+  "words": ["broown", "Dctx", "fitnessrc", "jsdoc", "eslint", "nvmrc", "nzzzq", "precommit", "semantic-commit", "subshell", "vitest", "tsx", "xyzzyspoon", "zzzq"]
 }

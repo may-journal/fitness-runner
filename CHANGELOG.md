@@ -7,13 +7,10 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
-### 2026.02.15.1900
-- Runner: add total files scanned count to summary (sum of filesChecked from checks).
-
-### 2026.02.15.1800
-- Runner: print total success and failure count and round time (performance) after runs.
-
 ### 2026.02.15.1700
+- Cspell: run in-process via cspell-lib (readConfigFile, spellCheckFile) for speed; keep CLI path when tests mock exec.
+- Runner: add total files scanned count to summary (sum of filesChecked from checks).
+- Runner: print total success and failure count and round time (performance) after runs.
 - Markdown-no-bold-italic: do not flag unordered list asterisk markers as italic.
 
 ### 2026.02.15.1600

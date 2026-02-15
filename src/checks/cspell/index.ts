@@ -1,6 +1,8 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { readConfigFile, spellCheckFile } from 'cspell-lib';
+import { findMd } from '../findMd.js';
 import type { Check } from '../../types/index.types.js';
 
 const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
@@ -105,6 +107,72 @@ function getCspellRunResult(
   return runCspellGlob(root, '**/*.md', execSyncFn);
 }
 
+/** 1-based line and column from document text and character offset. */
+function offsetToLineCol(text: string, offset: number): { line: number; col: number } {
+  let line = 1;
+  let col = 1;
+  for (let i = 0; i < offset && i < text.length; i++) {
+    if (text[i] === '\n') {
+      line++;
+      col = 1;
+    } else col++;
+  }
+  return { line, col };
+}
+
+/** Format one cspell-lib issue as "file:line:col - message: word". */
+function formatLibIssue(
+  filePath: string,
+  issue: { line?: { offset?: number }; message?: string },
+  text: string,
+): string {
+  const off = typeof issue.line?.offset === 'number' ? issue.line.offset : 0;
+  const { line, col } = offsetToLineCol(text, off);
+  const msg = issue.message ?? 'Unknown word';
+  const word = (issue as { text?: string }).text;
+  return `${filePath}:${line}:${col} - ${msg}${word ? `: ${word}` : ''}`;
+}
+
+/** Spell-check one file with cspell-lib; returns error lines for that file. */
+async function checkOneFileWithLib(
+  filePath: string,
+  opts: { noConfigSearch: true },
+  config: Awaited<ReturnType<typeof readConfigFile>>,
+): Promise<{ errors: string[] }> {
+  try {
+    const result = await spellCheckFile(filePath, opts, config);
+    const doc = result.document as { text?: string };
+    const text = doc.text ?? '';
+    const errors = result.issues.map((issue) => formatLibIssue(filePath, issue, text));
+    return { errors };
+  } catch {
+    return { errors: [`${filePath}: cspell reported issues (run: npx cspell <files>)`] };
+  }
+}
+
+/** Spell-check in-process via cspell-lib (faster than CLI); returns errors and filesChecked. */
+async function runCspellWithLib(
+  root: string,
+  configPath: string,
+  paths: string[],
+): Promise<{ ok: boolean; errors: string[]; filesChecked: number }> {
+  if (paths.length === 0) return { ok: true, errors: [], filesChecked: 0 };
+  const config = await readConfigFile(configPath, root);
+  const opts = { noConfigSearch: true as const };
+  const allErrors: string[] = [];
+  for (const filePath of paths) {
+    const { errors } = await checkOneFileWithLib(filePath, opts, config);
+    allErrors.push(...errors);
+  }
+  return { ok: allErrors.length === 0, errors: allErrors, filesChecked: paths.length };
+}
+
+/** Paths to check: staged (existing) or all .md under root. */
+function getPathsToCheck(root: string, staged: string[]): string[] {
+  if (staged.length > 0) return staged.filter((p) => existsSync(join(root, p))).map((p) => join(root, p));
+  return findMd(root).map((p) => join(root, p));
+}
+
 /** Spell-check via cspell; when context has stagedFiles runs on those paths only, else on markdown glob. */
 export const cspellCheck: Check = {
   name: 'cspell',
@@ -112,7 +180,13 @@ export const cspellCheck: Check = {
     const configPath = join(root, 'cspell.json');
     if (!existsSync(configPath)) return { ok: true, errors: [], meta: { filesChecked: 0 } };
     const { execSyncFn, staged } = getContextExecAndStaged(context);
-    const { output, exitCode } = getCspellRunResult(root, staged, execSyncFn);
-    return buildCspellResult(output, exitCode);
+    const useCli = !!context?._execSync;
+    if (useCli) {
+      const { output, exitCode } = getCspellRunResult(root, staged, execSyncFn);
+      return buildCspellResult(output, exitCode);
+    }
+    const paths = getPathsToCheck(root, staged);
+    const lib = await runCspellWithLib(root, configPath, paths);
+    return { ok: lib.ok, errors: lib.errors, meta: { filesChecked: lib.filesChecked } };
   },
 };
