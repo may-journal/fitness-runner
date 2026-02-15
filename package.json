@@ -19,17 +19,17 @@
     }
   },
   "dependencies": {
-    "jiti": "^2.6.1"
+    "jiti": "^2.6.1",
+    "cspell": "^8.15.0"
   },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsc",
-    "ci": "npm run fitness && npm run spell && npm run lint && npm test",
+    "ci": "npm run fitness && npm run lint && npm test",
     "fitness": "npm run build && node dist/index.js",
     "lint": "eslint .",
-    "spell": "cspell \"**/*.md\"",
     "precommit": "npm run fitness -- --staged",
     "prepare": "husky",
     "test": "vitest run --coverage",
@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.8.0",
-    "cspell": "^8.15.0",
     "@types/node": "^25",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",

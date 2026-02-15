@@ -126,9 +126,8 @@ Each check lives in **`src/checks/<name>/`** with its implementation, tests, and
 npm install
 npm run build
 npm run fitness
-npm run spell
 npm run lint
 npm test
 ```
 
-Spell check uses [cspell](https://cspell.org/) and `cspell.json`; add project words to the `words` array.
+Spell check runs via the fitness **cspell** check when `cspell.json` exists; add project words to its `words` array.

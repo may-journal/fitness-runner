@@ -2,6 +2,10 @@
 
 ## Changes
 
+### 2026.02.15.1200
+- cspell check (optional: only runs when cspell.json present); cspell in runner dependencies.
+- cspell in deps only; remove spell from ci and package.json script; README and cspell README updates.
+
 ### 2026.02.15.1100
 
 - Commit-msg hook for semantic-commit; merge semantic-commit into single file; cursor rules point to check READMEs.
