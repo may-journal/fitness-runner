@@ -2,6 +2,9 @@
 
 ## Changes
 
+### 2026.02.15.1500
+- CI: default strategy matrix fromJson(needs.discover.outputs.checks) to '[]' when checks output is empty.
+
 ### 2026.02.15.1400
 - Runner: 100% coverage; path-load tests (named export, no Check, import throws); two positionals (check then msg path) for semantic-commit; getPositionalSpec and getCommitMsgContext fix for single vs two positionals.
 

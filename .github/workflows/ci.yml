@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        check: ${{ fromJson(needs.discover.outputs.checks) }}
+        check: ${{ fromJson(needs.discover.outputs.checks || '[]') }}
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
