@@ -3,7 +3,7 @@
 Each check is a **self-contained sub-project** in its own folder:
 
 - **[changelog](./changelog/)** – Root `CHANGELOG.md` with dated sections
-- **[changelog-updated](./changelog-updated/)** – With `--staged`, changelog must mention words from staged diff
+- **[changelog-updated](./changelog-updated/)** – When staged context is present, changelog must mention words from staged diff
 - **[node-version](./node-version/)** – Node version satisfies `.nvmrc`
 - **[semantic-commit](./semantic-commit/)** – HEAD commit follows Conventional Commits
 

@@ -30,7 +30,7 @@
     "ci": "npm run fitness && npm run lint && npm test",
     "fitness": "npm run build && node dist/index.js",
     "lint": "eslint .",
-    "precommit": "npm run fitness -- --staged",
+    "precommit": "npm run fitness",
     "prepare": "husky",
     "test": "vitest run --coverage",
     "prepublishOnly": "npm run build"

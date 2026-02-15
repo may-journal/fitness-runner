@@ -1,10 +1,10 @@
 # changelog-updated
 
-When run with `--staged`, validates that the **added lines** in `CHANGELOG.md` (in the staged diff) share at least three words with the rest of the staged diff—so you actually updated the changelog for this commit.
+When the runner provides staged file context, validates that the **added lines** in `CHANGELOG.md` (in the staged diff) share at least three words with the rest of the staged diff.
 
 ## Behavior
 
-- **Pass (no staged context):** No `--staged` or empty staged list → skip (ok).
+- **Pass (no staged context):** Empty staged list → skip (ok).
 - **Pass:** Only `CHANGELOG.md` is staged (no other files to compare) → ok.
 - **Pass:** Changelog additions share ≥ 3 words with the rest of the staged diff.
 - **Fail:** `CHANGELOG.md` missing on disk → prompt to add it and mention changes.

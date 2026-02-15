@@ -4,22 +4,22 @@ import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.js';
 import { loadConfig } from '../config/load.js';
 
-/** Returns staged file paths from git, or undefined if --staged not used. */
-function getStagedContext(argv: string[]): RunContext | undefined {
-  if (!argv.includes('--staged')) return undefined;
+/** Returns staged file paths from git for context (always attempted). */
+function getStagedContext(): RunContext | undefined {
   try {
     const out = execSync('git diff --cached --name-only', { encoding: 'utf8' });
     return { stagedFiles: out.trim() ? out.trim().split('\n') : [] };
   } catch {
-    return { stagedFiles: [] };
+    return undefined;
   }
 }
 
-/** Returns context for commit-msg hook when --validate-commit-msg=<path> is present. */
-function getCommitMsgContext(argv: string[]): RunContext | undefined {
-  const arg = argv.find((a) => a.startsWith('--validate-commit-msg='));
-  if (!arg) return undefined;
-  const path = arg.slice('--validate-commit-msg='.length);
+/** When running semantic-commit, first positional is the message file path (commit-msg hook). */
+function getCommitMsgContext(argv: string[], checkName: string | undefined): RunContext | undefined {
+  if (checkName !== 'semantic-commit') return undefined;
+  const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
+  const path = positionals[0];
+  if (!path) return undefined;
   try {
     const content = readFileSync(path, 'utf8');
     const subject = content.split('\n')[0] || '';
@@ -70,15 +70,12 @@ function getChecks(argv: string[], root: string): {
   checkName: string | undefined;
   context: RunContext | undefined;
 } {
-  const commitMsgContext = getCommitMsgContext(argv);
-  if (commitMsgContext !== undefined) {
-    const semanticCheck = registry.find((c) => c.name === 'semantic-commit');
-    if (!semanticCheck) exitUnknown('semantic-commit');
-    return { checks: [semanticCheck], checkName: 'semantic-commit', context: commitMsgContext };
-  }
   const checkName = resolveCheckName(argv);
   const checks = resolveChecksByName(checkName, root);
-  return { checks, checkName, context: getStagedContext(argv) };
+  const staged = getStagedContext();
+  const commitMsg = getCommitMsgContext(argv, checkName);
+  const context = (staged ?? commitMsg) ? { ...(staged ?? {}), ...(commitMsg ?? {}) } : undefined;
+  return { checks, checkName, context };
 }
 
 /** Logs unknown check and exits 1. */

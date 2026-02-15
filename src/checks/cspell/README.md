@@ -5,8 +5,8 @@ Runs [cspell](https://cspell.org) for spell-checking. The runner lists cspell as
 ## Behavior
 
 - **Pass:** No unknown words in checked files.
-- **With `--staged`:** Only staged files are checked.
-- **Without `--staged`:** Runs cspell on `**/*.md`.
+- **When context has staged files:** Only those paths are checked.
+- **Otherwise:** Runs cspell on `**/*.md`.
 - **Skip:** No `cspell.json` at repo root → pass with 0 files checked (check is effectively off).
 
 Errors are reported as one line per issue: `path:line:col - Unknown word (word)`.

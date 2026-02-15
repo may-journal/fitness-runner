@@ -16,21 +16,15 @@ npm install @fitness/runner
 npx fitness
 ```
 
-Run a single check by name (either form; use `--` before flags if npx swallows them):
+Run a single check by name (positional or flag; use `--` before flags if npx swallows them):
 
 ```bash
 npx fitness semantic-commit
 # or
 npx fitness --check=semantic-commit
-# if flags are not passed through:
-npx fitness -- --check=semantic-commit
 ```
 
-Run only on staged files (e.g. in a pre-commit hook):
-
-```bash
-npx fitness --staged
-```
+Commit-msg hook: pass the message file as a positional so semantic-commit validates the proposed message: `fitness --check=semantic-commit "$1"`.
 
 ## Checks
 
@@ -62,11 +56,8 @@ Each check lives in **`src/checks/<name>/`** with its implementation, tests, and
 npm install
 npm run build
 npm run fitness
-npm run lint
 npm test
 ```
-
-Spell check runs via the fitness **cspell** check when `cspell.json` exists; add project words to its `words` array.
 
 ## Code flow and check process
 
@@ -97,21 +88,17 @@ flowchart TD
     A --> B["run(argv)"]
   end
 
-  B --> C{"--validate-commit-msg=?"}
-  C -->|yes| D["Single check: semantic-commit"]
-  D --> Dctx["Context: proposedCommitMessage"]
-  C -->|no| E["getStagedContext: --staged?"]
-  E --> F["resolveChecks(root)"]
-
-  subgraph Resolve["Resolve checks"]
-    F --> G{".fitnessrc.ts / .fitnessrc.js exists?"}
-    G -->|yes| H["config.checks → ordered Check[]"]
-    G -->|no| I["Full registry (all checks)"]
-    H --> J["Optional: --check=name → filter to one"]
-    I --> J
-  end
-
+  B --> F["resolveCheckName(argv)"]
+  F --> G{".fitnessrc.ts / .fitnessrc.js exists?"}
+  G -->|yes| H["config.checks → ordered Check[]"]
+  G -->|no| I["Full registry (all checks)"]
+  H --> J["--check=name or positional → one or all"]
+  I --> J
   J --> K["runChecks(checks, root, context)"]
+  B --> E["getStagedContext()"]
+  B --> Dctx["getCommitMsgContext if --check=semantic-commit + positional path"]
+  E --> K
+  Dctx --> K
 
   subgraph Execute["Execute checks"]
     K --> L["For each check in order"]
@@ -123,7 +110,6 @@ flowchart TD
     P --> L
   end
 
-  Dctx --> K
   Execute --> Q["process.exit(failed ? 1 : 0)"]
 
   classDef cli fill:#6366f1,stroke:#4f46e5,color:#fff
@@ -131,7 +117,7 @@ flowchart TD
   classDef execute fill:#10b981,stroke:#059669,color:#fff
   classDef decision fill:#f1f5f9,stroke:#64748b,color:#334155
   class A,B cli
-  class D,Dctx,E,F,G,H,I,J resolve
+  class Dctx,E,F,G,H,I,J resolve
   class K,L,M,N,O,P,Q execute
-  class C decision
+  class G decision
 ```
