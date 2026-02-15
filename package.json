@@ -19,8 +19,9 @@
     }
   },
   "dependencies": {
-    "jiti": "^2.6.1",
-    "cspell": "^8.15.0"
+    "conventional-commit-types": "^3.0.0",
+    "cspell": "^8.15.0",
+    "jiti": "^2.6.1"
   },
   "files": [
     "dist"

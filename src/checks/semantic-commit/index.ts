@@ -1,16 +1,8 @@
 import { execSync } from 'node:child_process';
+import conventionalCommitTypes from 'conventional-commit-types' with { type: 'json' };
 import type { Check } from '../../types/index.types.js';
 
-const SEMANTIC_TYPES = [
-  'feat',
-  'fix',
-  'fixes',
-  'docs',
-  'style',
-  'refactor',
-  'test',
-  'chore',
-];
+const SEMANTIC_TYPES = Object.keys(conventionalCommitTypes.types) as string[];
 const SEMANTIC_RE = new RegExp(`^(${SEMANTIC_TYPES.join('|')})\\([^)]+\\): .+`);
 
 /** Returns true if subject follows type(scope): description (or Merge commit). */

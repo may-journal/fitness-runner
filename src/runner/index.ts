@@ -106,9 +106,13 @@ async function resolveChecksBySpec(spec: string | undefined, root: string): Prom
   return one ? [one] : [];
 }
 
-/** Merges staged and commit-msg context into one. */
-function mergeContext(staged: RunContext | undefined, commitMsg: RunContext | undefined): RunContext | undefined {
-  return (staged ?? commitMsg) ? { ...(staged ?? {}), ...(commitMsg ?? {}) } : undefined;
+/** Builds context with registeredCheckNames and optional staged/commit-msg data. */
+function buildContext(staged: RunContext | undefined, commitMsg: RunContext | undefined): RunContext {
+  return {
+    registeredCheckNames: registry.map((c) => c.name),
+    ...(staged ?? {}),
+    ...(commitMsg ?? {}),
+  };
 }
 
 /** Returns checks to run, spec for error display, and optional context from argv. */
@@ -123,7 +127,7 @@ async function getChecks(argv: string[], root: string): Promise<{
   const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
   const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
-  return { checks, spec, context: mergeContext(staged, commitMsg) };
+  return { checks, spec, context: buildContext(staged, commitMsg) };
 }
 
 /** Logs unknown check/path and exits 1. */

@@ -1,6 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
-import type { Check } from '../../types/index.types.js';
+import type { Check, RunContext } from '../../types/index.types.js';
 import { findMd } from '../findMd.js';
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
@@ -33,8 +33,15 @@ function isExternalOrAnchor(path: string): boolean {
 }
 
 /** Returns error message if path invalid, null if valid. Path is resolved relative to the md file's directory. */
-function validatePath(file: string, path: string, root: string, mdFileDir: string): string | null {
+function validatePath(
+  file: string,
+  path: string,
+  root: string,
+  mdFileDir: string,
+  registeredCheckNames: string[],
+): string | null {
   if (isExternalOrAnchor(path)) return null;
+  if (registeredCheckNames.includes(path)) return null;
   const target = resolve(mdFileDir, path);
   if (!target.startsWith(root)) return `${file}: front matter path escapes repo: ${path}`;
   try {
@@ -46,30 +53,37 @@ function validatePath(file: string, path: string, root: string, mdFileDir: strin
 }
 
 /** Validates a rule file has required front matter and paths; returns error messages. Paths are relative to the md file. */
-function validateFile(file: string, content: string, root: string, mdFileDir: string): string[] {
+function validateFile(
+  file: string,
+  content: string,
+  root: string,
+  mdFileDir: string,
+  registeredCheckNames: string[],
+): string[] {
   const errors: string[] = [];
   if (!hasRequiredFrontMatter(content)) {
     errors.push(`${file}: missing front matter with fitnessFunctions or relatedConfigurations`);
     return errors;
   }
   for (const path of getFrontMatterPaths(content)) {
-    const err = validatePath(file, path, root, mdFileDir);
+    const err = validatePath(file, path, root, mdFileDir, registeredCheckNames);
     if (err) errors.push(err);
   }
   return errors;
 }
 
-/** Validates front matter: fitnessFunctions and relatedConfigurations paths must exist. */
+/** Validates front matter: fitnessFunctions and relatedConfigurations paths must exist; entries may be registered check names. */
 export const rulesFrontMatterCheck: Check = {
   name: 'markdown-front-matter',
-  async run(root = process.cwd()) {
+  async run(root = process.cwd(), context?: RunContext) {
+    const registeredCheckNames = context?.registeredCheckNames ?? [];
     const errors: string[] = [];
     let filesChecked = 0;
     for (const file of findMd(root)) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       const mdFileDir = join(root, dirname(file));
-      errors.push(...validateFile(file, content, root, mdFileDir));
+      errors.push(...validateFile(file, content, root, mdFileDir, registeredCheckNames));
     }
     return { ok: errors.length === 0, errors, meta: { filesChecked } };
   },

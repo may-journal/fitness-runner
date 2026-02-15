@@ -101,6 +101,20 @@ describe('rulesFrontMatterCheck', () => {
     expect(result.errors).toHaveLength(0);
   });
 
+  it('passes when fitnessFunctions or relatedConfigurations references a registered check name', async () => {
+    writeRule('src/checks/cspell/README.md', '---\nfitnessFunctions: ["cspell"]\nrelatedConfigurations: ["../../../cspell.json"]\n---\n# cspell');
+    writeRule('cspell.json', '{}');
+    const result = await rulesFrontMatterCheck.run(dir, {
+      registeredCheckNames: [
+        'cspell',
+        'markdown-no-bold-italic',
+        'changelog',
+      ],
+    });
+    expect(result.ok).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it('fails when front matter path is missing', async () => {
     writeRule('50-59Rules/01-foo.md', '---\nfitnessFunctions: ["./missing.js"]\n---\n# Rule');
     const result = await rulesFrontMatterCheck.run(dir);

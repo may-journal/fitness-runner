@@ -8,7 +8,7 @@ Validates that the repository’s **HEAD commit** message follows [Conventional 
 
 ## Allowed types
 
-`feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`.
+From [conventional-commit-types](https://github.com/commitizen/conventional-commit-types).
 
 Scope is required (e.g. `feat(api): add endpoint`). Merge commits are always accepted.
 

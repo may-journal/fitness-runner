@@ -15,7 +15,7 @@ npm install @fitness/runner
 
 ## Usage
 
-**CLI** (from repo root):
+CLI (from repo root):
 
 ```bash
 npx fitness
@@ -44,7 +44,7 @@ See [src/checks/README.md](src/checks/README.md) for the list and how checks wor
 
 ## Config
 
-Optional **`.fitnessrc.ts`** or **`.fitnessrc.js`** at repo root:
+Optional `.fitnessrc.ts` or `.fitnessrc.js` at repo root:
 
 ```ts
 export default {
@@ -56,7 +56,7 @@ If present, only listed checks run; if omitted, all checks run. Use `.fitnessrc.
 
 ## Checks as sub-projects
 
-Each check lives in **`src/checks/<name>/`** with its implementation, tests, and a README. They are designed to be code-split and a main contribution surface—see [src/checks/README.md](src/checks/README.md) and each check’s folder for behavior and how to add or extend checks.
+Each check lives in `src/checks/<name>/` with its implementation, tests, and a README. They are designed to be code-split and a main contribution surface—see [src/checks/README.md](src/checks/README.md) and each check’s folder for behavior and how to add or extend checks.
 
 ## Development
 
