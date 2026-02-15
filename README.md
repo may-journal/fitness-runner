@@ -32,11 +32,20 @@ npx fitness --staged
 
 | Name  | Description |
 |-------|-------------|
+| changelog | Validates repo root has `CHANGELOG.md` with at least one dated section (`##` or `###` followed by `yyyy-mm-dd`). |
 | semantic-commit | Validates HEAD commit message follows Conventional Commits: `type(scope): description` (or `Merge ...`). Allowed types: feat, fix, docs, style, refactor, test, chore. |
 
 ## Config
 
-Global config (`.fitnessrc.ts`) and per-file front matter are planned; for now the runner uses safe defaults and the single check (semantic-commit) requires no config.
+Optional **`.fitnessrc.ts`** or **`.fitnessrc.js`** at repo root:
+
+```ts
+export default {
+  checks: ['changelog', 'semantic-commit'], // run these checks, in order
+};
+```
+
+If present, only listed checks run; if omitted, all checks run. Use `.fitnessrc.js` with `module.exports = { checks: [...] }` for plain Node.
 
 ## Development
 

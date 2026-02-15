@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process';
 import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.js';
+import { loadConfig } from '../config/load.js';
 
 /** Returns staged file paths from git, or undefined if --staged not used. */
 function getStagedContext(argv: string[]): RunContext | undefined {
@@ -13,14 +14,25 @@ function getStagedContext(argv: string[]): RunContext | undefined {
   }
 }
 
+/** Resolves checks from config (if present) or full registry, in order. */
+function resolveChecks(root: string): Check[] {
+  const config = loadConfig(root);
+  if (config?.checks?.length) {
+    const byName = new Map(registry.map((c) => [c.name, c]));
+    return config.checks.map((name) => byName.get(name)).filter((c): c is Check => c != null);
+  }
+  return [...registry];
+}
+
 /** Returns checks to run, optional check name, and optional context from argv. */
-function getChecks(argv: string[]): {
+function getChecks(argv: string[], root: string): {
   checks: Check[];
   checkName: string | undefined;
   context: RunContext | undefined;
 } {
   const checkName = argv.find((a) => a.startsWith('--check='))?.slice(8);
-  const checks = checkName ? registry.filter((c) => c.name === checkName) : registry;
+  const base = resolveChecks(root);
+  const checks = checkName ? base.filter((c) => c.name === checkName) : base;
   return { checks, checkName, context: getStagedContext(argv) };
 }
 
@@ -76,9 +88,9 @@ async function runChecks(
 
 /** Runs fitness checks; exits with 1 on failure. */
 export async function run(argv: string[] = process.argv): Promise<void> {
-  const { checks, checkName, context } = getChecks(argv);
-  if (!checks.length) exitUnknown(checkName);
   const root = process.cwd();
+  const { checks, checkName, context } = getChecks(argv, root);
+  if (!checks.length) exitUnknown(checkName);
   const failed = await runChecks(checks, root, context);
   process.exit(failed ? 1 : 0);
 }

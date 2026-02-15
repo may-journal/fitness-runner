@@ -18,6 +18,9 @@
       "default": "./dist/index.js"
     }
   },
+  "dependencies": {
+    "jiti": "^2.6.1"
+  },
   "files": [
     "dist"
   ],

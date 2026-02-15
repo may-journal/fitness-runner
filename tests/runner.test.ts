@@ -25,10 +25,17 @@ describe('fitness run', () => {
   });
 
   it('exits 0 when all checks pass', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- init\n');
+    const origCwd = process.cwd();
+    process.chdir(dir);
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => 'feat(pkg): init');
-    await run(['node',
-'fitness']);
+    await run(['node', 'fitness']);
+    process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
