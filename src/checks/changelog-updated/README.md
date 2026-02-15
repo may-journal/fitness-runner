@@ -4,18 +4,18 @@ relatedConfigurations: ["../../../package.json"]
 
 # changelog-updated
 
-When the runner provides staged file context, validates that the **added lines** in `CHANGELOG.md` (in the staged diff) share at least three words with the rest of the staged diff.
+When the runner provides staged file context, validates that the added lines in `CHANGELOG.md` (in the staged diff) share at least three words with the rest of the staged diff.
 
 ## Behavior
 
-- **Pass (no staged context):** Empty staged list → skip (ok).
-- **Pass:** Only `CHANGELOG.md` is staged (no other files to compare) → ok.
-- **Pass:** Changelog additions share ≥ 3 words with the rest of the staged diff.
-- **Fail:** `CHANGELOG.md` missing on disk → prompt to add it and mention changes.
-- **Fail:** `CHANGELOG.md` not in the staged diff (no additions) → "Stage CHANGELOG.md and add an entry...".
-- **Fail:** Changelog additions share fewer than three words with rest of diff → error with count, then a second line with up to 10 random words from the staged diff (e.g. use words like: …) to help fix the entry.
+- Pass (no staged context): Empty staged list → skip (ok).
+- Pass: Only `CHANGELOG.md` is staged (no other files to compare) → ok.
+- Pass: Changelog additions share ≥ 3 words with the rest of the staged diff.
+- Fail: `CHANGELOG.md` missing on disk → prompt to add it and mention changes.
+- Fail: `CHANGELOG.md` not in the staged diff (no additions) → "Stage CHANGELOG.md and add an entry...".
+- Fail: Changelog additions share fewer than three words with rest of diff → error with count, then a second line with up to 10 random words from the staged diff (e.g. use words like: …) to help fix the entry.
 
-Only the **modified (added) parts** of `CHANGELOG.md` in the diff are considered, not the whole file. Words are lowercased and length ≥ 3.
+Only the modified (added) parts of `CHANGELOG.md` in the diff are considered, not the whole file. Words are lowercased and length ≥ 3.
 
 ## Contributing
 

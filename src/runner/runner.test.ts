@@ -44,6 +44,28 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('runs only checks listed in .fitnessrc.ts when present', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    writeFileSync(join(dir, '.fitnessrc.ts'), 'export default { checks: ["changelog", "semantic-commit"] };');
+    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: []\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(join(dir, '.nvmrc'), '18');
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync)
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n');
+    await run([
+      'node',
+      'fitness',
+    ]);
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
   it('logs check timing without filesChecked when meta omits it', async () => {
     vi.resetModules();
     vi.doMock('../checks/index.js', () => ({

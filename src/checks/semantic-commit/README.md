@@ -4,7 +4,7 @@ relatedConfigurations: ["../../../package.json"]
 
 # semantic-commit
 
-Validates that the repository’s **HEAD commit** message follows [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description`, or a merge commit (`Merge ...`).
+Validates that the repository’s HEAD commit message follows [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): description`, or a merge commit (`Merge ...`).
 
 ## Allowed types
 
@@ -14,11 +14,11 @@ Scope is required (e.g. `feat(api): add endpoint`). Merge commits are always acc
 
 ## Behavior
 
-- **Pass:** `git log -1 --pretty=%B` subject matches `type(scope): description` or `Merge ...`.
-- **Fail:** Subject doesn’t match → error with suggested format and allowed types.
-- **Pass (no repo / git error):** Treated as pass so the check doesn’t block in non-git contexts.
+- Pass: `git log -1 --pretty=%B` subject matches `type(scope): description` or `Merge ...`.
+- Fail: Subject doesn’t match → error with suggested format and allowed types.
+- Pass (no repo / git error): Treated as pass so the check doesn’t block in non-git contexts.
 
-From a Git **commit-msg** hook, run `fitness --check=semantic-commit "$1"` so the check validates the *proposed* message in that file instead of HEAD.
+From a Git commit-msg hook, run `fitness --check=semantic-commit "$1"` so the check validates the proposed message in that file instead of HEAD.
 
 ## Contributing
 
