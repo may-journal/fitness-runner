@@ -10,7 +10,6 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.d.ts',
 'src/types/**',
-'src/check-node-version.ts',
 'src/config/load.ts',
 'src/**/*.test.ts',
 'src/**/*.spec.ts'],

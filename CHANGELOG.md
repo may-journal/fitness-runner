@@ -6,6 +6,7 @@
 
 - Commit-msg hook for semantic-commit; merge semantic-commit into single file; cursor rules point to check READMEs.
 - Changelog check: require ### yyyy-mm-dd@time; every ### heading must match.
+- Remove duplicate check-node-version script and check-node; ci runs npm run fitness only.
 
 
 ### 2026-02-15@10am
