@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.15.1900
+- Runner: add total files scanned count to summary (sum of filesChecked from checks).
+
 ### 2026.02.15.1800
 - Runner: print total success and failure count and round time (performance) after runs.
 

@@ -151,21 +151,19 @@ function displayErrors(checkName: string, errors: string[]): void {
   }
 }
 
-/** Runs a single check; returns true if failed. */
+/** Runs a single check; returns failed flag and filesChecked count. */
 async function runOneCheck(
   check: Check,
   root: string,
   context?: RunContext,
-): Promise<boolean> {
+): Promise<{ failed: boolean; filesChecked: number }> {
   const start = performance.now();
   const result = await check.run(root, context);
   const ms = Math.round(performance.now() - start);
+  const filesChecked = result.meta?.filesChecked ?? 0;
   console.log(`${check.name}: ${formatMeta(result, ms)}`);
-  if (!result.ok) {
-    displayErrors(check.name, result.errors);
-    return true;
-  }
-  return false;
+  if (!result.ok) displayErrors(check.name, result.errors);
+  return { failed: !result.ok, filesChecked };
 }
 
 /** Runs all checks; returns true if any failed. */
@@ -177,12 +175,15 @@ async function runChecks(
   const start = performance.now();
   let successCount = 0;
   let failureCount = 0;
+  let totalFiles = 0;
   for (const check of checks) {
-    if (await runOneCheck(check, root, context)) failureCount++;
+    const { failed, filesChecked } = await runOneCheck(check, root, context);
+    if (failed) failureCount++;
     else successCount++;
+    totalFiles += filesChecked;
   }
   const ms = Math.round(performance.now() - start);
-  console.log(`Total: ${successCount} succeeded, ${failureCount} failed in ${ms}ms`);
+  console.log(`Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${ms}ms`);
   return failureCount > 0;
 }
 
