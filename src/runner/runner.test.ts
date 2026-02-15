@@ -40,10 +40,30 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('logs check timing without filesChecked when meta omits it', async () => {
+    vi.resetModules();
+    vi.doMock('../checks/index.js', () => ({
+      registry: [{ name: 'meta-less', run: async () => ({ ok: true, errors: [], meta: {} }) }],
+    }));
+    const { run: runWithMetaLess } = await import('../index.js');
+    const { mkdtempSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await runWithMetaLess(['node', 'fitness', '--check=meta-less']);
+    process.chdir(origCwd);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/meta-less: \d+ms/));
+    logSpy.mockRestore();
+  });
+
   it('exits 1 for unknown check', async () => {
-    vi.spyOn(console, 'error').mockImplementation(() => {});
-    await run(['node', 'fitness', '--check=unknown']);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(run(['node', 'fitness', '--check=unknown'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
+    errSpy.mockRestore();
   });
 
   it('runs single check when --check=semantic-commit', async () => {
@@ -107,6 +127,42 @@ describe('fitness run', () => {
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(1);
   });
+
+  it('--validate-commit-msg: exits 0 for semantic message', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
+    const msgPath = join(dir, 'msg.txt');
+    writeFileSync(msgPath, 'feat(checks): add commit-msg hook\n\nBody');
+    await run(['node', 'fitness', `--validate-commit-msg=${msgPath}`]);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('--validate-commit-msg: exits 0 when message file unreadable or empty (treats as empty)', async () => {
+    await run(['node', 'fitness', '--validate-commit-msg=/nonexistent/msg.txt']);
+    expect(process.exit).toHaveBeenCalledWith(0);
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    writeFileSync(join(dir, 'empty.txt'), '');
+    await run(['node', 'fitness', `--validate-commit-msg=${join(dir, 'empty.txt')}`]);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('--validate-commit-msg: exits 1 for non-semantic message', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
+    const msgPath = join(dir, 'msg.txt');
+    writeFileSync(msgPath, 'oops I forgot');
+    await run(['node', 'fitness', `--validate-commit-msg=${msgPath}`]);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    errSpy.mockRestore();
+  });
 });
 
 describe('exitUnknown', () => {
@@ -126,9 +182,27 @@ describe('exitUnknown', () => {
     vi.doMock('../checks/index.js', () => ({ registry: [] }));
     const { run: runWithEmptyRegistry } = await import('../index.js');
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await runWithEmptyRegistry(['node', 'fitness']);
+    await expect(runWithEmptyRegistry(['node', 'fitness'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith('Unknown check: (none)');
     errSpy.mockRestore();
+  });
+
+  it('exits 1 with (semantic-commit) when --validate-commit-msg but registry has no semantic-commit', async () => {
+    vi.resetModules();
+    vi.doMock('../checks/index.js', () => ({ registry: [{ name: 'other', run: async () => ({ ok: true, errors: [], meta: {} }) }] }));
+    const { run: runWithNoSemantic } = await import('../index.js');
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
+    writeFileSync(join(dir, 'msg.txt'), 'feat(x): y');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.stubGlobal('process', Object.assign(process, { exit: vi.fn() }));
+    await expect(runWithNoSemantic(['node', 'fitness', `--validate-commit-msg=${join(dir, 'msg.txt')}`])).rejects.toThrow('exit');
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith('Unknown check: semantic-commit');
+    errSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 });

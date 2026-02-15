@@ -15,4 +15,4 @@ Only the **modified (added) parts** of `CHANGELOG.md` in the diff are considered
 
 ## Contributing
 
-Extend this check here (e.g. configurable minimum overlap, or restrict to the latest changelog section) and keep the README and tests in sync.
+This README is the canonical description for this check; `.cursor/rules/changelog-updated.mdc` points Cursor here. Extend this check here (e.g. configurable minimum overlap, or restrict to the latest changelog section) and keep the README and tests in sync.

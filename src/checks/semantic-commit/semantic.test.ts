@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isSemanticSubject, SEMANTIC_TYPES } from './semantic.js';
+import { isSemanticSubject, SEMANTIC_TYPES } from './index.js';
 
 describe('isSemanticSubject', () => {
   it('accepts type(scope): description', () => {

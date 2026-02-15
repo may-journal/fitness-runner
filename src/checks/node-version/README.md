@@ -12,4 +12,4 @@ Accepts plain or `v`-prefixed versions in `.nvmrc` (e.g. `24` or `v24`).
 
 ## Contributing
 
-This check is a self-contained sub-project. To support other version files or engines, extend the check and tests here and update the README.
+This README is the canonical description for this check; `.cursor/rules/node-version.mdc` points Cursor here. This check is a self-contained sub-project. To support other version files or engines, extend the check and tests here and update the README.

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.js';
@@ -11,6 +12,20 @@ function getStagedContext(argv: string[]): RunContext | undefined {
     return { stagedFiles: out.trim() ? out.trim().split('\n') : [] };
   } catch {
     return { stagedFiles: [] };
+  }
+}
+
+/** Returns context for commit-msg hook when --validate-commit-msg=<path> is present. */
+function getCommitMsgContext(argv: string[]): RunContext | undefined {
+  const arg = argv.find((a) => a.startsWith('--validate-commit-msg='));
+  if (!arg) return undefined;
+  const path = arg.slice('--validate-commit-msg='.length);
+  try {
+    const content = readFileSync(path, 'utf8');
+    const subject = content.split('\n')[0] || '';
+    return { proposedCommitMessage: subject };
+  } catch {
+    return { proposedCommitMessage: '' };
   }
 }
 
@@ -30,6 +45,12 @@ function getChecks(argv: string[], root: string): {
   checkName: string | undefined;
   context: RunContext | undefined;
 } {
+  const commitMsgContext = getCommitMsgContext(argv);
+  if (commitMsgContext !== undefined) {
+    const semanticCheck = registry.find((c) => c.name === 'semantic-commit');
+    if (!semanticCheck) exitUnknown('semantic-commit');
+    return { checks: [semanticCheck], checkName: 'semantic-commit', context: commitMsgContext };
+  }
   const checkName = argv.find((a) => a.startsWith('--check='))?.slice(8);
   const base = resolveChecks(root);
   const checks = checkName ? base.filter((c) => c.name === checkName) : base;
@@ -40,6 +61,7 @@ function getChecks(argv: string[], root: string): {
 function exitUnknown(checkName: string | undefined): never {
   console.error(`Unknown check: ${checkName ?? '(none)'}`);
   process.exit(1);
+  throw new Error('exit');
 }
 
 /** Formats check result meta for logging. */

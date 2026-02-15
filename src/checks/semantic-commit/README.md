@@ -14,6 +14,8 @@ Scope is required (e.g. `feat(api): add endpoint`). Merge commits are always acc
 - **Fail:** Subject doesn’t match → error with suggested format and allowed types.
 - **Pass (no repo / git error):** Treated as pass so the check doesn’t block in non-git contexts.
 
+When run with **`--validate-commit-msg=<path>`** (e.g. from a Git **commit-msg** hook), the check validates the *proposed* message in that file instead of HEAD. Use this so the message you're about to commit is validated before the commit is created; pre-commit alone only sees the *previous* commit.
+
 ## Contributing
 
-This check is a self-contained sub-project. `semantic.ts` holds the parsing logic; the check in `index.ts` reads HEAD and reports. To add types or relax rules, extend `semantic.ts` and the tests here and keep the README in sync.
+This README is the canonical description for this check; `.cursor/rules/semantic-commit.mdc` points Cursor here. This check is a self-contained sub-project. To add types or relax rules, extend the check and tests here and keep the README in sync.

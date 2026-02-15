@@ -1,0 +1,7 @@
+---
+description: Changelog check – root CHANGELOG.md with dated sections
+globs: CHANGELOG.md, src/checks/changelog/**
+alwaysApply: false
+---
+
+Read `src/checks/changelog/README.md` for behavior and conventions.

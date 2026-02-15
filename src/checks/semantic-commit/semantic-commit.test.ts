@@ -52,4 +52,13 @@ describe('semanticCheck', () => {
     const result = await semanticCheck.run(dir);
     expect(result.ok).toBe(true);
   });
+
+  it('validates proposedCommitMessage from context (commit-msg hook)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
+    const pass = await semanticCheck.run(dir, { proposedCommitMessage: 'feat(api): add endpoint' });
+    expect(pass.ok).toBe(true);
+    const fail = await semanticCheck.run(dir, { proposedCommitMessage: 'wip stuff' });
+    expect(fail.ok).toBe(false);
+    expect(fail.errors?.[0]).toContain('Commit message:');
+  });
 });

@@ -10,4 +10,4 @@ Validates that the repo root has a `CHANGELOG.md` with at least one **dated sect
 
 ## Contributing
 
-This check is a self-contained sub-project. To add options (e.g. custom filename, required format), extend the check and its tests here and keep the README in sync.
+This README is the canonical description for this check; `.cursor/rules/changelog.mdc` points Cursor here. This check is a self-contained sub-project. To add options (e.g. custom filename, required format), extend the check and its tests here and keep the README in sync.
