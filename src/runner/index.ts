@@ -40,6 +40,30 @@ function resolveChecks(root: string): Check[] {
   return [...registry];
 }
 
+/** Returns value of --check=<name> from argv if present. */
+function getCheckNameFromArg(argv: string[]): string | undefined {
+  return argv.find((a) => a.startsWith('--check='))?.slice(8);
+}
+
+/** Returns single positional as check name if it matches a registry check. */
+function getPositionalCheckName(argv: string[]): string | undefined {
+  const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
+  const name = positionals.length === 1 ? positionals[0] : undefined;
+  return name && registry.some((r) => r.name === name) ? name : undefined;
+}
+
+/** Resolves check name from --check= or single positional that matches a registry check. */
+function resolveCheckName(argv: string[]): string | undefined {
+  return getCheckNameFromArg(argv) ?? getPositionalCheckName(argv);
+}
+
+/** Returns checks to run for a given check name (or all from config when name is undefined). */
+function resolveChecksByName(checkName: string | undefined, root: string): Check[] {
+  if (!checkName) return resolveChecks(root);
+  const one = registry.find((r) => r.name === checkName);
+  return one ? [one] : [];
+}
+
 /** Returns checks to run, optional check name, and optional context from argv. */
 function getChecks(argv: string[], root: string): {
   checks: Check[];
@@ -52,9 +76,8 @@ function getChecks(argv: string[], root: string): {
     if (!semanticCheck) exitUnknown('semantic-commit');
     return { checks: [semanticCheck], checkName: 'semantic-commit', context: commitMsgContext };
   }
-  const checkName = argv.find((a) => a.startsWith('--check='))?.slice(8);
-  const base = resolveChecks(root);
-  const checks = checkName ? base.filter((c) => c.name === checkName) : base;
+  const checkName = resolveCheckName(argv);
+  const checks = resolveChecksByName(checkName, root);
   return { checks, checkName, context: getStagedContext(argv) };
 }
 

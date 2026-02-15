@@ -16,10 +16,14 @@ npm install @fitness/runner
 npx fitness
 ```
 
-Run a single check by name:
+Run a single check by name (either form; use `--` before flags if npx swallows them):
 
 ```bash
+npx fitness semantic-commit
+# or
 npx fitness --check=semantic-commit
+# if flags are not passed through:
+npx fitness -- --check=semantic-commit
 ```
 
 Run only on staged files (e.g. in a pre-commit hook):

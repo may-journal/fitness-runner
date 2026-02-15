@@ -80,6 +80,17 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('runs single check when check name is positional (e.g. npx fitness semantic-commit)', async () => {
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementationOnce(() => 'feat(api): add endpoint\n\nBody');
+    await run([
+      'node',
+      'fitness',
+      'semantic-commit',
+    ]);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
   it('runs with --staged', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync)

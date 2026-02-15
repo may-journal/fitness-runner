@@ -129,7 +129,7 @@ function getChangelogOverlapInput(root: string): ChangelogOverlapInput {
   return { changelogWords, restWords };
 }
 
-/** When --staged: ensures added lines in CHANGELOG.md share MIN_OVERLAP words with rest of staged diff. */
+/** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */
 export const changelogUpdatedCheck: Check = {
   name: 'changelog-updated',
   async run(root = process.cwd(), context) {

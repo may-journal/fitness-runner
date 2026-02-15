@@ -105,7 +105,7 @@ function getCspellRunResult(
   return runCspellGlob(root, '**/*.md', execSyncFn);
 }
 
-/** Spell-check via cspell; with --staged runs on staged files only, else on markdown glob. */
+/** Spell-check via cspell; when context has stagedFiles runs on those paths only, else on markdown glob. */
 export const cspellCheck: Check = {
   name: 'cspell',
   async run(root = process.cwd(), context) {
