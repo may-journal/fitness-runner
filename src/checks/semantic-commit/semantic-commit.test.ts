@@ -37,7 +37,7 @@ describe('semanticCheck', () => {
 
   it('passes for merge commits', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => "Merge branch 'feature' into main");
+    vi.mocked(execSync).mockImplementationOnce(() => 'Merge branch \'feature\' into main');
     const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
     const result = await semanticCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -60,5 +60,13 @@ describe('semanticCheck', () => {
     const fail = await semanticCheck.run(dir, { proposedCommitMessage: 'wip stuff' });
     expect(fail.ok).toBe(false);
     expect(fail.errors?.[0]).toContain('Commit message:');
+  });
+
+  it('passes when git log returns no first line (empty array branch)', async () => {
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementationOnce(() => ({ split: () => [] }) as unknown as string);
+    const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
+    const result = await semanticCheck.run(dir);
+    expect(result.ok).toBe(true);
   });
 });

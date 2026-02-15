@@ -41,7 +41,8 @@ describe('changelogUpdatedCheck', () => {
       '+++ b/src/foo.ts\n+ Added new runner feature for validation.\n+ Export runner from index.\n+++ b/CHANGELOG.md\n+ - Added new runner feature; validation export.\n',
     );
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- item');
-    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/foo.ts', 'CHANGELOG.md'] });
+    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/foo.ts',
+      'CHANGELOG.md'] });
     expect(result.ok).toBe(true);
     expect(result.meta?.filesChecked).toBe(1);
   });
@@ -60,7 +61,8 @@ describe('changelogUpdatedCheck', () => {
       '+++ b/src/baz.ts\n+ New feature runner validation export helper.\n+++ b/CHANGELOG.md\n+ - Minor fix.\n',
     );
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- Minor fix.');
-    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/baz.ts', 'CHANGELOG.md'] });
+    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/baz.ts',
+      'CHANGELOG.md'] });
     expect(result.ok).toBe(false);
     expect(result.errors?.[0]).toMatch(/at least 3 words/);
     expect(result.errors?.[0]).toMatch(/found \d+/);

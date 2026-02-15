@@ -33,7 +33,8 @@ function getCommitMsgContext(argv: string[]): RunContext | undefined {
 function resolveChecks(root: string): Check[] {
   const config = loadConfig(root);
   if (config?.checks?.length) {
-    const byName = new Map(registry.map((c) => [c.name, c]));
+    const byName = new Map(registry.map((c) => [c.name,
+      c]));
     return config.checks.map((name) => byName.get(name)).filter((c): c is Check => c != null);
   }
   return [...registry];

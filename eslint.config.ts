@@ -10,13 +10,19 @@ const languageOptions: Linter.Config['languageOptions'] = {
 };
 
 export default [
-  { ignores: ['dist/**',
-'coverage/**',
-'node_modules/**'] },
   {
-    files: ['src/**/*.ts',
-'tests/**/*.ts',
-'*.ts'],
+    ignores: [
+      'dist/**',
+      'coverage/**',
+      'node_modules/**',
+    ],
+  },
+  {
+    files: [
+      'src/**/*.ts',
+      'tests/**/*.ts',
+      '*.ts',
+    ],
     languageOptions,
     plugins: {
       '@typescript-eslint': tseslint,
@@ -24,11 +30,28 @@ export default [
       jsdoc,
     },
     rules: {
+      '@stylistic/indent': ['error',
+        2],
+      '@stylistic/quotes': ['error',
+        'single'],
+      '@stylistic/semi': ['error',
+        'always'],
+      '@stylistic/comma-dangle': ['error',
+        'always-multiline'],
+      '@stylistic/comma-style': ['error',
+        'last'],
       '@stylistic/array-element-newline': ['error',
-{ minItems: 2 }],
+        { minItems: 2 }],
+      '@stylistic/object-curly-spacing': ['error',
+        'always'],
+      '@stylistic/brace-style': ['error',
+        '1tbs'],
+      '@stylistic/no-trailing-spaces': 'error',
+      '@stylistic/no-multiple-empty-lines': ['error',
+        { max: 1, maxEOF: 0 }],
       'jsdoc/require-jsdoc': 'error',
       complexity: ['error',
-{ max: 5 }],
+        { max: 5 }],
     },
   },
 ];

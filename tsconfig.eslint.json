@@ -1,5 +1,6 @@
 {
   "extends": "./tsconfig.json",
-  "include": ["src/**/*.ts", "*.ts"],
+  "include": ["src/**/*.ts", "*.ts", ".fitnessrc.ts"],
+  "exclude": ["node_modules", "dist"],
   "compilerOptions": { "noEmit": true, "rootDir": "." }
 }

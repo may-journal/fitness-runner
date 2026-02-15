@@ -24,7 +24,8 @@ export function runCspell(
     return { output: out, exitCode: 0 };
   } catch (e: unknown) {
     const err = e as { stdout?: string; stderr?: string; status?: number };
-    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
+    const out = [err.stdout,
+      err.stderr].filter(Boolean).join('\n');
     return { output: out, exitCode: typeof err.status === 'number' ? err.status : 1 };
   }
 }
@@ -35,6 +36,7 @@ function parseIssues(output: string): string[] {
   return lines.filter((line) => CSPELL_ISSUE_RE.test(line));
 }
 
+/** Extract "Files checked: N" from cspell output. */
 function parseFilesChecked(output: string): number | undefined {
   const m = output.match(FILES_CHECKED_RE);
   return m ? parseInt(m[1], 10) : undefined;
@@ -54,9 +56,53 @@ function runCspellGlob(
     return { output: out, exitCode: 0 };
   } catch (e: unknown) {
     const err = e as { stdout?: string; stderr?: string; status?: number };
-    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
+    const out = [err.stdout,
+      err.stderr].filter(Boolean).join('\n');
     return { output: out, exitCode: typeof err.status === 'number' ? err.status : 1 };
   }
+}
+
+/** Run cspell on staged paths; returns empty output if no valid paths. */
+function runCspellStaged(
+  root: string,
+  stagedFiles: string[],
+  execSyncFn: ExecSyncFn,
+): { output: string; exitCode: number } {
+  const paths = stagedFiles.filter((p) => existsSync(join(root, p)));
+  if (paths.length === 0) return { output: '', exitCode: 0 };
+  return runCspell(root, paths.map((p) => join(root, p)), execSyncFn);
+}
+
+/** Builds check result from cspell output and exit code. */
+function buildCspellResult(
+  output: string,
+  exitCode: number,
+): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
+  const issues = parseIssues(output);
+  const filesChecked = parseFilesChecked(output) ?? 0;
+  const ok = exitCode === 0 && issues.length === 0;
+  const errors =
+    issues.length > 0 ? issues : !ok ? ['cspell reported issues (run: npx cspell <files>)'] : [];
+  return { ok, errors, meta: { filesChecked } };
+}
+
+/** Resolves exec function and staged list from context. */
+function getContextExecAndStaged(context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined): {
+  execSyncFn: ExecSyncFn;
+  staged: string[];
+} {
+  const ctx = context ?? {};
+  return { execSyncFn: ctx._execSync ?? execSync, staged: ctx.stagedFiles ?? [] };
+}
+
+/** Runs cspell for context (staged paths or glob); returns output and exit code. */
+function getCspellRunResult(
+  root: string,
+  staged: string[],
+  execSyncFn: ExecSyncFn,
+): { output: string; exitCode: number } {
+  if (staged.length > 0) return runCspellStaged(root, staged, execSyncFn);
+  return runCspellGlob(root, '**/*.md', execSyncFn);
 }
 
 /** Spell-check via cspell; with --staged runs on staged files only, else on markdown glob. */
@@ -64,33 +110,9 @@ export const cspellCheck: Check = {
   name: 'cspell',
   async run(root = process.cwd(), context) {
     const configPath = join(root, 'cspell.json');
-    if (!existsSync(configPath)) {
-      return { ok: true, errors: [], meta: { filesChecked: 0 } };
-    }
-    const execSyncFn = context?._execSync ?? execSync;
-    let output: string;
-    let exitCode: number;
-    if (context?.stagedFiles?.length) {
-      const paths = context.stagedFiles.filter((p) => existsSync(join(root, p)));
-      if (paths.length === 0) {
-        return { ok: true, errors: [], meta: { filesChecked: 0 } };
-      }
-      const absPaths = paths.map((p) => join(root, p));
-      const result = runCspell(root, absPaths, execSyncFn);
-      ({ output, exitCode } = result);
-    } else {
-      const result = runCspellGlob(root, '**/*.md', execSyncFn);
-      ({ output, exitCode } = result);
-    }
-    const issues = parseIssues(output);
-    const filesChecked = parseFilesChecked(output);
-    const ok = exitCode === 0 && issues.length === 0;
-    const errors =
-      issues.length > 0 ? issues : !ok ? ['cspell reported issues (run: npx cspell <files>)'] : [];
-    return {
-      ok,
-      errors,
-      meta: { filesChecked: filesChecked ?? 0 },
-    };
+    if (!existsSync(configPath)) return { ok: true, errors: [], meta: { filesChecked: 0 } };
+    const { execSyncFn, staged } = getContextExecAndStaged(context);
+    const { output, exitCode } = getCspellRunResult(root, staged, execSyncFn);
+    return buildCspellResult(output, exitCode);
   },
 };

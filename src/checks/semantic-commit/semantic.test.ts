@@ -9,7 +9,7 @@ describe('isSemanticSubject', () => {
   });
 
   it('accepts Merge commits', () => {
-    expect(isSemanticSubject("Merge branch 'x' into main")).toBe(true);
+    expect(isSemanticSubject('Merge branch \'x\' into main')).toBe(true);
   });
 
   it('rejects invalid format', () => {

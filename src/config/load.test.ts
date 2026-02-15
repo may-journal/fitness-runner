@@ -18,7 +18,8 @@ describe('loadConfig', () => {
     );
     const config = loadConfig(dir);
     expect(config).not.toBe(null);
-    expect(config?.checks).toEqual(['changelog', 'semantic-commit']);
+    expect(config?.checks).toEqual(['changelog',
+      'semantic-commit']);
   });
 
   it('returns null when default export is null', () => {
