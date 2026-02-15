@@ -11,6 +11,7 @@ describe('rulesFrontMatterCheck', () => {
     dir = mkdtempSync(join(tmpdir(), 'rules-fm-'));
   });
 
+  /** Writes a file at relPath under dir, creating parent dirs. */
   function writeRule(relPath: string, content: string): void {
     const full = join(dir, relPath);
     mkdirSync(join(full, '..'), { recursive: true });

@@ -16,11 +16,18 @@ function getStagedContext(): RunContext | undefined {
   }
 }
 
+/** Resolves commit-msg file path from positionals (second when spec was positional, first when from --check=). */
+function getCommitMsgPath(positionals: string[], specFromPositional: boolean): string | undefined {
+  if (specFromPositional && positionals.length >= 2) return positionals[1];
+  if (!specFromPositional && positionals.length >= 1) return positionals[0];
+  return undefined;
+}
+
 /** When running semantic-commit, positional(s) may include the message file path (commit-msg hook). */
 function getCommitMsgContext(argv: string[], checkName: string | undefined, specFromPositional: boolean): RunContext | undefined {
   if (checkName !== 'semantic-commit') return undefined;
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const path = specFromPositional && positionals.length >= 2 ? positionals[1] : positionals[0];
+  const path = getCommitMsgPath(positionals, specFromPositional);
   if (!path) return undefined;
   try {
     const content = readFileSync(path, 'utf8');
@@ -47,10 +54,10 @@ function getCheckSpecFromArg(argv: string[]): string | undefined {
   return argv.find((a) => a.startsWith('--check='))?.slice(8);
 }
 
-/** Returns single positional as check name or path. */
+/** Returns first positional as check name or path (so second positional can be commit-msg path). */
 function getPositionalSpec(argv: string[]): string | undefined {
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  return positionals.length === 1 ? positionals[0] : undefined;
+  return positionals.length >= 1 ? positionals[0] : undefined;
 }
 
 /** Resolves check spec (name or path) from --check= or single positional. */
@@ -63,16 +70,26 @@ function isPathSpec(spec: string): boolean {
   return /[/\\]/.test(spec) || /\.(?:js|mjs|cjs|ts)$/i.test(spec);
 }
 
+/** True if value looks like a Check. */
+function isCheckLike(v: unknown): v is Check {
+  return !!v && typeof (v as Check).run === 'function' && (v as Check).name != null;
+}
+
+/** Returns default or first Check-like export from module. */
+function getCheckFromModule(mod: { default?: unknown; [k: string]: unknown }): Check | null {
+  if (isCheckLike(mod.default)) return mod.default;
+  for (const v of Object.values(mod)) if (isCheckLike(v)) return v;
+  return null;
+}
+
 /** Loads a Check from a module path (default or first Check-like export). */
 async function loadCheckFromPath(root: string, spec: string): Promise<Check | null> {
   const abs = resolve(root, spec);
   if (!existsSync(abs)) return null;
   try {
     const url = pathToFileURL(abs).href;
-    const mod = await import(url) as { default?: Check; [k: string]: unknown };
-    if (mod.default && typeof (mod.default as Check).run === 'function' && (mod.default as Check).name != null) return mod.default as Check;
-    for (const v of Object.values(mod)) if (v && typeof (v as Check).run === 'function' && (v as Check).name != null) return v as Check;
-    return null;
+    const mod = await import(url) as { default?: unknown; [k: string]: unknown };
+    return getCheckFromModule(mod);
   } catch {
     return null;
   }
@@ -89,6 +106,11 @@ async function resolveChecksBySpec(spec: string | undefined, root: string): Prom
   return one ? [one] : [];
 }
 
+/** Merges staged and commit-msg context into one. */
+function mergeContext(staged: RunContext | undefined, commitMsg: RunContext | undefined): RunContext | undefined {
+  return (staged ?? commitMsg) ? { ...(staged ?? {}), ...(commitMsg ?? {}) } : undefined;
+}
+
 /** Returns checks to run, spec for error display, and optional context from argv. */
 async function getChecks(argv: string[], root: string): Promise<{
   checks: Check[];
@@ -101,8 +123,7 @@ async function getChecks(argv: string[], root: string): Promise<{
   const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
   const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
-  const context = (staged ?? commitMsg) ? { ...(staged ?? {}), ...(commitMsg ?? {}) } : undefined;
-  return { checks, spec, context };
+  return { checks, spec, context: mergeContext(staged, commitMsg) };
 }
 
 /** Logs unknown check/path and exits 1. */

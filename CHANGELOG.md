@@ -2,6 +2,9 @@
 
 ## Changes
 
+### 2026.02.15.1400
+- Runner: 100% coverage; path-load tests (named export, no Check, import throws); two positionals (check then msg path) for semantic-commit; getPositionalSpec and getCommitMsgContext fix for single vs two positionals.
+
 ### 2026.02.15.1300
 - Rules front-matter check (30.03): validate fitnessFunctions and relatedConfigurations paths in all markdown; shared findMd helper.
 - Runner: accept check by name or path (--check=./path/to/check.js or positional); load Check from module default or named export.

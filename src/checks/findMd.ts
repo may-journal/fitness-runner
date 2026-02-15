@@ -4,6 +4,7 @@ import { join } from 'node:path';
 /** Returns relative paths of all .md files under root (recursive). */
 export function findMd(root: string): string[] {
   const out: string[] = [];
+  /** Recursively collects .md paths into out. */
   function walk(dir: string, relDir: string): void {
     for (const name of readdirSync(dir)) {
       const abs = join(dir, name);
