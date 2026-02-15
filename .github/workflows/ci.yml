@@ -16,9 +16,8 @@ jobs:
       - name: List checks
         id: list
         run: |
-          echo "checks<<EOF" >> $GITHUB_OUTPUT
-          node --input-type=module -e "const {registry}=await import('./dist/checks/index.js');process.stdout.write(JSON.stringify(registry.map(c=>c.name)))" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          checks=$(node --input-type=module -e "const {registry}=await import('./dist/checks/index.js');process.stdout.write(JSON.stringify(registry.map(c=>c.name)))")
+          echo "checks=$checks" >> $GITHUB_OUTPUT
       - uses: actions/upload-artifact@v4
         with:
           name: dist

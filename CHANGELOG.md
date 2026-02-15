@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.15.1700
+- CI: list checks as single-line GITHUB_OUTPUT to avoid EOF delimiter error; valid JSON for fitness job matrix.
+
 ### 2026.02.15.1600
 - Markdown-front-matter: require fitnessFunctions or relatedConfigurations in every .md; paths resolved relative to md file; findMd skips node_modules, dist, coverage, .git, .husky; export getFrontMatterPaths for tests (100% coverage). README/CHANGELOG front matter fixes (---, flow-style).
 
