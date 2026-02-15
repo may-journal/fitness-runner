@@ -174,11 +174,16 @@ async function runChecks(
   root: string,
   context?: RunContext,
 ): Promise<boolean> {
-  let failed = false;
+  const start = performance.now();
+  let successCount = 0;
+  let failureCount = 0;
   for (const check of checks) {
-    if (await runOneCheck(check, root, context)) failed = true;
+    if (await runOneCheck(check, root, context)) failureCount++;
+    else successCount++;
   }
-  return failed;
+  const ms = Math.round(performance.now() - start);
+  console.log(`Total: ${successCount} succeeded, ${failureCount} failed in ${ms}ms`);
+  return failureCount > 0;
 }
 
 /** Runs fitness checks; exits with 1 on failure. */

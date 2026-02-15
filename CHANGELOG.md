@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.15.1800
+- Runner: print total success and failure count and round time (performance) after runs.
+
 ### 2026.02.15.1700
 - Markdown-no-bold-italic: do not flag unordered list asterisk markers as italic.
 
