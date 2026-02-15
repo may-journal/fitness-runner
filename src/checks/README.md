@@ -1,0 +1,19 @@
+# Checks
+
+Each check is a **self-contained sub-project** in its own folder:
+
+- **[changelog](./changelog/)** – Root `CHANGELOG.md` with dated sections
+- **[changelog-updated](./changelog-updated/)** – With `--staged`, changelog must mention words from staged diff
+- **[node-version](./node-version/)** – Node version satisfies `.nvmrc`
+- **[semantic-commit](./semantic-commit/)** – HEAD commit follows Conventional Commits
+
+Each folder contains the check implementation (`index.ts`), tests (`*.test.ts`), and a **README** describing behavior and how to contribute. The runner registry in `index.ts` imports these and runs them in order (or per `.fitnessrc`).
+
+## Adding a check
+
+1. Create a new folder under `src/checks/<name>/`.
+2. Export a `Check` from `index.ts` (see existing checks for the shape).
+3. Add a README and tests next to the implementation.
+4. Register the check in `src/checks/index.ts` and in `.fitnessrc.ts` if you use config.
+
+Checks are a major contribution point: they are code-split by folder and easy to add or maintain independently.

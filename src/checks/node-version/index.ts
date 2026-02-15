@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { Check } from '../types/index.js';
+import type { Check } from '../../types/index.js';
 
 const NVMRC = '.nvmrc';
 const ERROR_MISSING = 'missing .nvmrc';

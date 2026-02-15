@@ -11,7 +11,9 @@ export default defineConfig({
       exclude: ['src/**/*.d.ts',
 'src/types/**',
 'src/check-node-version.ts',
-'src/config/load.ts'],
+'src/config/load.ts',
+'src/**/*.test.ts',
+'src/**/*.spec.ts'],
       thresholds: {
         statements: 100,
         branches: 100,

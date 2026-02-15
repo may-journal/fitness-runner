@@ -48,6 +48,10 @@ export default {
 
 If present, only listed checks run; if omitted, all checks run. Use `.fitnessrc.js` with `module.exports = { checks: [...] }` for plain Node.
 
+## Checks as sub-projects
+
+Each check lives in **`src/checks/<name>/`** with its implementation, tests, and a README. They are designed to be code-split and a main contribution surface—see [src/checks/README.md](src/checks/README.md) and each check’s folder for behavior and how to add or extend checks.
+
 ## Development
 
 ```bash

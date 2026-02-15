@@ -1,3 +1,3 @@
 export default {
-  checks: ['changelog', 'node-version', 'semantic-commit'],
+  checks: ['changelog', 'changelog-updated', 'node-version', 'semantic-commit'],
 };

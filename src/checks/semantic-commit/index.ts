@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import type { Check } from '../types/index.js';
+import type { Check } from '../../types/index.js';
 import { isSemanticSubject, SEMANTIC_TYPES } from './semantic.js';
 
 /** Validates HEAD commit follows Conventional Commits (type(scope): description). */

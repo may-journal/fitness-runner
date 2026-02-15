@@ -1,8 +1,8 @@
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { describe, it, expect, vi } from 'vitest';
-import { nodeVersionCheck } from '../../src/checks/node-version.js';
+import { describe, it, expect } from 'vitest';
+import { nodeVersionCheck } from './index.js';
 
 describe('nodeVersionCheck', () => {
   it('passes when current Node meets .nvmrc', async () => {

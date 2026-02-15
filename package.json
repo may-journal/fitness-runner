@@ -28,7 +28,7 @@
     "build": "tsc",
     "check-node": "tsx src/check-node-version.ts",
     "ci": "npm run check-node && npm run fitness && npm run spell && npm run lint && npm test",
-    "fitness": "node dist/index.js",
+    "fitness": "npm run build && node dist/index.js",
     "lint": "eslint .",
     "spell": "cspell \"**/*.md\"",
     "precommit": "npm run fitness -- --staged",

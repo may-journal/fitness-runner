@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it, expect } from 'vitest';
-import { loadConfig } from '../../src/config/load.js';
+import { loadConfig } from './load.js';
 
 describe('loadConfig', () => {
   it('returns null when no config file exists', () => {

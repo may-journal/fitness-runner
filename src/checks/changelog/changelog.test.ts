@@ -2,7 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it, expect } from 'vitest';
-import { changelogCheck } from '../../src/checks/changelog.js';
+import { changelogCheck } from './index.js';
 
 describe('changelogCheck', () => {
   it('passes when CHANGELOG.md has at least one yyyy-mm-dd section', async () => {
