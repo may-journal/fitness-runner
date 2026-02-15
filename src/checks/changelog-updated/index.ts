@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import type { Check } from '../../types/index.js';
@@ -16,14 +16,23 @@ function extractWords(text: string): Set<string> {
   return words;
 }
 
-function getStagedDiffWords(root: string): Set<string> {
+/** Returns map of file path (repo-relative) -> added line content. */
+function getStagedDiffByFile(root: string): Map<string, string> {
   const out = execSync('git diff --cached', { encoding: 'utf8', cwd: root });
-  const lines = out.split('\n').filter((l) => l.startsWith('+') && !l.startsWith('+++'));
-  const text = lines.map((l) => l.slice(1)).join(' ');
-  return extractWords(text);
+  const byFile = new Map<string, string>();
+  let current = '';
+  for (const line of out.split('\n')) {
+    if (line.startsWith('+++ ')) {
+      current = line.slice(4).trim().replace(/^b\//, '');
+    } else if (line.startsWith('+') && !line.startsWith('++') && current) {
+      const prev = byFile.get(current) ?? '';
+      byFile.set(current, prev ? prev + ' ' + line.slice(1) : line.slice(1));
+    }
+  }
+  return byFile;
 }
 
-/** When --staged: ensures CHANGELOG.md contains at least MIN_OVERLAP words also present in staged diff. */
+/** When --staged: ensures added lines in CHANGELOG.md share MIN_OVERLAP words with rest of staged diff. */
 export const changelogUpdatedCheck: Check = {
   name: 'changelog-updated',
   async run(root = process.cwd(), context) {
@@ -37,18 +46,30 @@ export const changelogUpdatedCheck: Check = {
         meta: { filesChecked: 1 },
       };
     }
-    const diffWords = getStagedDiffWords(root);
-    if (diffWords.size === 0) return { ok: true, errors: [], meta: { filesChecked: 1 } };
-    const changelogContent = readFileSync(path, 'utf8');
-    const changelogWords = extractWords(changelogContent);
-    const overlap = [...diffWords].filter((w) => changelogWords.has(w));
+    const byFile = getStagedDiffByFile(root);
+    const changelogAdded = byFile.get(ROOT_CHANGELOG) ?? '';
+    const changelogWords = extractWords(changelogAdded);
+    if (changelogWords.size === 0) {
+      return {
+        ok: false,
+        errors: ['Stage CHANGELOG.md and add an entry that mentions your staged changes'],
+        meta: { filesChecked: 1 },
+      };
+    }
+    const restLines: string[] = [];
+    for (const [file, content] of byFile) {
+      if (file !== ROOT_CHANGELOG) restLines.push(content);
+    }
+    const restWords = extractWords(restLines.join(' '));
+    if (restWords.size === 0) return { ok: true, errors: [], meta: { filesChecked: 1 } };
+    const overlap = [...changelogWords].filter((w) => restWords.has(w));
     if (overlap.length >= MIN_OVERLAP) {
       return { ok: true, errors: [], meta: { filesChecked: 1 } };
     }
     return {
       ok: false,
       errors: [
-        `CHANGELOG.md should mention at least ${MIN_OVERLAP} words from your staged changes (found ${overlap.length}: ${overlap.slice(0, 5).join(', ')})`,
+        `CHANGELOG.md additions should mention at least ${MIN_OVERLAP} words from your staged changes (found ${overlap.length}: ${overlap.slice(0, 5).join(', ')})`,
       ],
       meta: { filesChecked: 1 },
     };

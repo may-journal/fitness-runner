@@ -26,25 +26,22 @@ describe('changelogUpdatedCheck', () => {
     });
   });
 
-  it('passes when staged diff has no significant words', async () => {
+  it('passes when only CHANGELOG.md has staged additions (no other files to compare)', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockReturnValueOnce('+++ a\n+ x\n+ y\n');
+    vi.mocked(execSync).mockReturnValueOnce('+++ b/CHANGELOG.md\n+ - item\n');
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- item');
-    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['foo.ts'] });
+    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['CHANGELOG.md'] });
     expect(result.ok).toBe(true);
     expect(result.meta?.filesChecked).toBe(1);
   });
 
-  it('passes when changelog contains at least three words from staged diff', async () => {
+  it('passes when changelog additions share at least three words with rest of staged diff', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockReturnValueOnce(
-      '+++ src/foo.ts\n+ Added new runner feature for validation.\n+ Export runner from index.\n',
+      '+++ b/src/foo.ts\n+ Added new runner feature for validation.\n+ Export runner from index.\n+++ b/CHANGELOG.md\n+ - Added new runner feature; validation export.\n',
     );
-    writeFileSync(
-      join(dir, 'CHANGELOG.md'),
-      '# Changelog\n\n### 2026-02-15\n\n- Added new runner feature; validation export.',
-    );
-    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/foo.ts'] });
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- item');
+    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/foo.ts', 'CHANGELOG.md'] });
     expect(result.ok).toBe(true);
     expect(result.meta?.filesChecked).toBe(1);
   });
@@ -57,15 +54,24 @@ describe('changelogUpdatedCheck', () => {
     expect(result.errors?.[0]).toContain('CHANGELOG.md missing');
   });
 
-  it('fails when fewer than three overlapping words', async () => {
+  it('fails when changelog additions share fewer than three words with rest of diff', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockReturnValueOnce(
-      '+++ src/baz.ts\n+ New feature runner validation export helper.\n',
+      '+++ b/src/baz.ts\n+ New feature runner validation export helper.\n+++ b/CHANGELOG.md\n+ - Minor fix.\n',
     );
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- Minor fix.');
-    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/baz.ts'] });
+    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/baz.ts', 'CHANGELOG.md'] });
     expect(result.ok).toBe(false);
     expect(result.errors?.[0]).toMatch(/at least 3 words/);
     expect(result.errors?.[0]).toMatch(/found \d+/);
+  });
+
+  it('fails when CHANGELOG.md not staged (no additions in diff)', async () => {
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockReturnValueOnce('+++ b/src/bar.ts\n+ New feature code here.\n');
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- item');
+    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/bar.ts'] });
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]).toContain('Stage CHANGELOG.md');
   });
 });

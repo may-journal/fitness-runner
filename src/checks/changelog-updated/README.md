@@ -1,16 +1,17 @@
 # changelog-updated
 
-When run with `--staged`, validates that `CHANGELOG.md` contains at least three distinct words that also appear in the staged diff (so the changelog was updated to reflect the commit).
+When run with `--staged`, validates that the **added lines** in `CHANGELOG.md` (in the staged diff) share at least three words with the rest of the staged diff—so you actually updated the changelog for this commit.
 
 ## Behavior
 
 - **Pass (no staged context):** No `--staged` or empty staged list → skip (ok).
-- **Pass:** Staged diff has no significant words → ok (e.g. only binary or punctuation).
-- **Pass:** At least three words from the staged diff appear in `CHANGELOG.md`.
-- **Fail:** `CHANGELOG.md` missing with staged changes → prompt to add it and mention changes.
-- **Fail:** Fewer than three overlapping words → error with count and examples.
+- **Pass:** Only `CHANGELOG.md` is staged (no other files to compare) → ok.
+- **Pass:** Changelog additions share ≥ 3 words with the rest of the staged diff.
+- **Fail:** `CHANGELOG.md` missing on disk → prompt to add it and mention changes.
+- **Fail:** `CHANGELOG.md` not in the staged diff (no additions) → "Stage CHANGELOG.md and add an entry...".
+- **Fail:** Changelog additions share fewer than three words with rest of diff → error with count and examples.
 
-Words are lowercased and length ≥ 3.
+Only the **modified (added) parts** of `CHANGELOG.md` in the diff are considered, not the whole file. Words are lowercased and length ≥ 3.
 
 ## Contributing
 
