@@ -4,14 +4,14 @@ import type { Check } from '../../types/index.js';
 
 const ROOT_CHANGELOG = 'CHANGELOG.md';
 const ERROR_MISSING = 'missing root CHANGELOG.md';
-const DATED_SECTION_RE = /^###\s+\d{4}-\d{2}-\d{2}@\S+/;
+const DATED_SECTION_RE = /^###\s+\d{4}\.\d{2}\.\d{2}\.\d{4}/;
 
 /** Returns lines that are ### headings (level-3 only). */
 function getH3Lines(content: string): string[] {
   return content.split('\n').filter((line) => /^###\s/.test(line));
 }
 
-/** Validates repo root has CHANGELOG.md; every ### heading must be ### yyyy-mm-dd@time. */
+/** Validates repo root has CHANGELOG.md; every ### heading must be ### yyyy.mm.dd.HHMM. */
 export const changelogCheck: Check = {
   name: 'changelog',
   async run(root = process.cwd()) {
@@ -22,13 +22,13 @@ export const changelogCheck: Check = {
     const content = readFileSync(path, 'utf8');
     const h3s = getH3Lines(content);
     if (h3s.length === 0) {
-      return { ok: false, errors: ['CHANGELOG.md must have at least one ### yyyy-mm-dd@time section'], meta: { filesChecked: 1 } };
+      return { ok: false, errors: ['CHANGELOG.md must have at least one ### yyyy.mm.dd.HHMM section'], meta: { filesChecked: 1 } };
     }
     const invalid = h3s.filter((line) => !DATED_SECTION_RE.test(line));
     if (invalid.length > 0) {
       return {
         ok: false,
-        errors: invalid.map((line) => `every ### heading must be ### yyyy-mm-dd@time (invalid: "${line.trim()}")`),
+        errors: invalid.map((line) => `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "${line.trim()}")`),
         meta: { filesChecked: 1 },
       };
     }
