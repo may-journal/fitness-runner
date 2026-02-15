@@ -8,6 +8,7 @@ relatedConfigurations: ["package.json"]
 ## Changes
 
 ### 2026.02.15.1700
+- CI: single fitness job runs npm run fitness; remove discover job and matrix.
 - Pre-commit: source nvm (NVM_DIR, nvm.sh) in husky hook so nvm use runs when PATH has no nvm.
 - CI: list checks as single-line GITHUB_OUTPUT (printf, tr -d newline) to avoid EOF delimiter; valid JSON for fitness job matrix.
 
