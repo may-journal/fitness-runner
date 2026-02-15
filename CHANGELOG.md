@@ -7,12 +7,13 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
-### 2026.02.15.2000
+### 2026.02.15.1700
+- Markdown-no-bold-italic: do not flag unordered list asterisk markers as italic.
+
+### 2026.02.15.1600
 - Docs: remove bold/italic from check READMEs to satisfy markdown-no-bold-italic.
 - Remove .fitnessrc.ts.
 - Runner test: cover resolveChecks when .fitnessrc.ts provides custom checks (restore 100% coverage).
-
-### 2026.02.15.1600
 - Rules-front-matter: allow fitnessFunctions and relatedConfigurations to reference any registered check name (not just paths).
 - Vitest-coverage-exclude check: only allow `**/*.d.ts` and `**/*.types.ts` in coverage exclude; Vitest excludes tests by default. Type-only files use `*.types.ts` naming.
 - Rename type files to `*.types.ts`; fix load.ts and coverage-exclude branches for 100% coverage.

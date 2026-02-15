@@ -13,8 +13,8 @@ function stripCodeForEmphasisCheck(content: string): string {
 const BOLD_ASTERISK_RE = /\*\*[^*]*\*\*/g;
 /** Matches __bold__ (underscore). */
 const BOLD_UNDERSCORE_RE = /__[^_]*__/g;
-/** Matches *italic* (single asterisk, not part of **). */
-const ITALIC_ASTERISK_RE = /(?<!\*)\*[^*]+\*(?!\*)/g;
+/** Matches *italic* (single asterisk, not part of **); excludes list markers by not spanning newlines. */
+const ITALIC_ASTERISK_RE = /(?<!\*)\*[^*\n]+\*(?!\*)/g;
 /** Matches _italic_ (single underscore, not part of __). */
 const ITALIC_UNDERSCORE_RE = /(?<!_)_[^_]+_(?!_)/g;
 

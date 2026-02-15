@@ -22,6 +22,14 @@ describe('markdownNoBoldItalicCheck', () => {
     expect(result.meta?.filesChecked).toBe(1);
   });
 
+  it('passes for unordered list items (asterisk list markers)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
+    writeFileSync(join(dir, 'list.md'), '* item one\n* item two\n* item three');
+    const result = await markdownNoBoldItalicCheck.run(dir);
+    expect(result.ok).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
   it('ignores emphasis inside inline code and fenced code blocks', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
     writeFileSync(
@@ -110,5 +118,10 @@ describe('findDisallowedEmphasis', () => {
   it('detects _italic_', () => {
     const hits = findDisallowedEmphasis('_italic_ word');
     expect(hits.some((h) => h.kind === '_italic_' && h.match === '_italic_')).toBe(true);
+  });
+
+  it('does not flag unordered list items (asterisk list markers)', () => {
+    const hits = findDisallowedEmphasis('* item one\n* item two\n* item three');
+    expect(hits.filter((h) => h.kind === '*italic*')).toHaveLength(0);
   });
 });
