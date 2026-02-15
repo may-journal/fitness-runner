@@ -1,0 +1,6 @@
+{
+  "version": "0.2",
+  "useGitignore": true,
+  "ignorePaths": ["node_modules", "package-lock.json", "dist", "coverage"],
+  "words": ["fitnessrc", "precommit", "semantic-commit", "vitest", "tsx", "jsdoc", "eslint"]
+}

@@ -30,6 +30,7 @@ describe('fitness run', () => {
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- init\n');
+    writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
     const { execSync } = await import('node:child_process');

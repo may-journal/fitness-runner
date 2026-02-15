@@ -33,6 +33,7 @@ npx fitness --staged
 | Name  | Description |
 |-------|-------------|
 | changelog | Validates repo root has `CHANGELOG.md` with at least one dated section (`##` or `###` followed by `yyyy-mm-dd`). |
+| node-version | Validates current Node version satisfies `.nvmrc` at repo root (e.g. run `nvm use` if not). |
 | semantic-commit | Validates HEAD commit message follows Conventional Commits: `type(scope): description` (or `Merge ...`). Allowed types: feat, fix, docs, style, refactor, test, chore. |
 
 ## Config
@@ -41,7 +42,7 @@ Optional **`.fitnessrc.ts`** or **`.fitnessrc.js`** at repo root:
 
 ```ts
 export default {
-  checks: ['changelog', 'semantic-commit'], // run these checks, in order
+  checks: ['changelog', 'node-version', 'semantic-commit'], // run these checks, in order
 };
 ```
 
@@ -53,5 +54,9 @@ If present, only listed checks run; if omitted, all checks run. Use `.fitnessrc.
 npm install
 npm run build
 npm run fitness
+npm run spell
+npm run lint
 npm test
 ```
+
+Spell check uses [cspell](https://cspell.org/) and `cspell.json`; add project words to the `words` array.
