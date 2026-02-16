@@ -28,7 +28,7 @@ describe('fitness run', () => {
     const { join } = await import('node:path');
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
     writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
@@ -50,7 +50,7 @@ describe('fitness run', () => {
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(join(dir, '.fitnessrc.ts'), 'export default { checks: ["changelog", "semantic-commit"] };');
-    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
     writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
@@ -149,7 +149,7 @@ describe('fitness run', () => {
       checkPath,
       'export default { name: "path-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
     );
-    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
     writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
@@ -177,7 +177,7 @@ describe('fitness run', () => {
       join(dir, 'check.js'),
       'export const myCheck = { name: "named-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
     );
-    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
     writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();

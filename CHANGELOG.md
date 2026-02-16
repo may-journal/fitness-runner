@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.16.1646
+
+- Changelog check: require package.json version suffix and package-lock.json version to match CHANGELOG first ### heading (yyyy.mm.dd.HHMM).
+
 ### 2026.02.16.1634
 
 - Changelog-updated check: require new section heading to use current date and time (yyyy.mm.dd.HHMM) so GenAI cannot guess the time.
