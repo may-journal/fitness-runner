@@ -12,6 +12,7 @@ Each check is a self-contained sub-project in its own folder:
 - [cspell](./cspell/) – Runs cspell for spell-checking (skips if no `cspell.json`)
 - [eslint](./eslint/) – Runs ESLint; staged files or full repo
 - [markdown-no-bold-italic](./markdown-no-bold-italic/) – No bold/italic emphasis in `.md` files unless required
+- [prettier](./prettier/) – Runs Prettier --check; skips when no config; staged files or full repo
 - [node-version](./node-version/) – Node version satisfies `.nvmrc`
 - [rules-front-matter](./rules-front-matter/) – Markdown front matter `fitnessFunctions`/`relatedConfigurations` paths must exist
 - [semantic-commit](./semantic-commit/) – HEAD commit follows Conventional Commits

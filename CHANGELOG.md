@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.16.1800
+
+- Prettier check: runs prettier --check; skips when no config; staged files or full repo; exports prettierCheck.
+
 ### 2026.02.16.1730
 
 - Prettier: add Prettier with eslint-config-prettier; .prettierrc.json and .prettierignore; format/format:check scripts; CI format job; export prettier.config for consumers.

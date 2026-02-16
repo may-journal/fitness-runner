@@ -4,6 +4,7 @@ import { cspellCheck } from './cspell/index.js';
 import { eslintCheck } from './eslint/index.js';
 import { markdownNoBoldItalicCheck } from './markdown-no-bold-italic/index.js';
 import { nodeVersionCheck } from './node-version/index.js';
+import { prettierCheck } from './prettier/index.js';
 import { readRepoFirstCheck } from './read-repo-first/index.js';
 import { rulesFrontMatterCheck } from './rules-front-matter/index.js';
 import { semanticCheck } from './semantic-commit/index.js';
@@ -17,6 +18,7 @@ export const registry: Check[] = [
   cspellCheck,
   eslintCheck,
   markdownNoBoldItalicCheck,
+  prettierCheck,
   nodeVersionCheck,
   rulesFrontMatterCheck,
   semanticCheck,

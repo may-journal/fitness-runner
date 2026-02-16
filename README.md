@@ -41,6 +41,7 @@ See [src/checks/README.md](src/checks/README.md) for the list and how checks wor
 - [cspell](src/checks/cspell/README.md)
 - [eslint](src/checks/eslint/README.md)
 - [markdown-no-bold-italic](src/checks/markdown-no-bold-italic/README.md)
+- [prettier](src/checks/prettier/README.md)
 - [node-version](src/checks/node-version/README.md)
 - [rules-front-matter](src/checks/rules-front-matter/README.md)
 - [semantic-commit](src/checks/semantic-commit/README.md)
