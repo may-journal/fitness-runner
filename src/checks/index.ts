@@ -1,6 +1,7 @@
 import { changelogCheck } from './changelog/index.js';
 import { changelogUpdatedCheck } from './changelog-updated/index.js';
 import { cspellCheck } from './cspell/index.js';
+import { eslintCheck } from './eslint/index.js';
 import { markdownNoBoldItalicCheck } from './markdown-no-bold-italic/index.js';
 import { nodeVersionCheck } from './node-version/index.js';
 import { rulesFrontMatterCheck } from './rules-front-matter/index.js';
@@ -12,6 +13,7 @@ export const registry: Check[] = [
   changelogCheck,
   changelogUpdatedCheck,
   cspellCheck,
+  eslintCheck,
   markdownNoBoldItalicCheck,
   nodeVersionCheck,
   rulesFrontMatterCheck,
