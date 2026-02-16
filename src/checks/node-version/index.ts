@@ -18,18 +18,18 @@ export const nodeVersionCheck: Check = {
   async run(root = process.cwd()) {
     const path = join(root, NVMRC);
     if (!existsSync(path)) {
-      return { ok: false, errors: [ERROR_MISSING], meta: { filesChecked: 1 } };
+      return { errors: [ERROR_MISSING], meta: { filesChecked: 1 }, ok: false };
     }
     const raw = readFileSync(path, 'utf8').trim();
     const requiredMajor = versionMajor(raw);
     const currentMajor = versionMajor(process.version);
     if (currentMajor >= requiredMajor) {
-      return { ok: true, errors: [], meta: { filesChecked: 1 } };
+      return { errors: [], meta: { filesChecked: 1 }, ok: true };
     }
     return {
-      ok: false,
       errors: [ERROR_VERSION(process.version, requiredMajor)],
       meta: { filesChecked: 1 },
+      ok: false,
     };
   },
 };

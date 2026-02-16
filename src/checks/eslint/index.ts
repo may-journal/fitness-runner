@@ -38,11 +38,11 @@ export function runEslint(
       ...EXEC_OPTS,
       cwd: root,
     });
-    return { output: out, exitCode: 0 };
+    return { exitCode: 0, output: out };
   } catch (e: unknown) {
     const err = e as { stdout?: string; stderr?: string; status?: number };
     const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
-    return { output: out, exitCode: typeof err.status === 'number' ? err.status : 1 };
+    return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
   }
 }
 
@@ -71,7 +71,7 @@ function parseJsonResults(output: string): { errors: string[]; filesChecked: num
   }
 }
 
-const LINTABLE_EXT = /\.tsx?$/;
+const LINTABLE_EXT = /\.(cjs|js|mjs|tsx?)$/;
 const IGNORED_BY_ESLINT = /\.(test|spec)\.(ts|tsx)$/;
 
 /** Paths to lint: staged (existing, lintable, not ignored) under root, or "." when none. */
@@ -94,7 +94,7 @@ function resolveInputs(
   context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
 ): { paths: string[]; execFn: ExecSyncFn } {
   const staged = context?.stagedFiles ?? [];
-  return { paths: getPathsToLint(root, staged), execFn: context?._execSync ?? execSync };
+  return { execFn: context?._execSync ?? execSync, paths: getPathsToLint(root, staged) };
 }
 
 /** Build CheckResult from exit code, parsed errors, and filesChecked. */
@@ -105,7 +105,7 @@ function buildResult(
 ): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
   const ok = exitCode === 0 && errors.length === 0;
   const fallback = !ok && errors.length === 0 ? [ESLINT_FALLBACK_MESSAGE] : [];
-  return { ok, errors: errors.length > 0 ? errors : fallback, meta: { filesChecked } };
+  return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };
 }
 
 /** ESLint check: runs eslint, reports errors from JSON formatter. */

@@ -57,6 +57,6 @@ export const markdownNoBoldItalicCheck: Check = {
       const content = readFileSync(join(root, file), 'utf8');
       errors.push(...validateFile(file, content));
     }
-    return { ok: errors.length === 0, errors, meta: { filesChecked } };
+    return { errors, meta: { filesChecked }, ok: errors.length === 0 };
   },
 };

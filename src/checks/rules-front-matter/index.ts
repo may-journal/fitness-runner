@@ -107,6 +107,6 @@ export const rulesFrontMatterCheck: Check = {
       const mdFileDir = join(root, dirname(file));
       errors.push(...validateFile(file, content, root, mdFileDir, registeredCheckNames));
     }
-    return { ok: errors.length === 0, errors, meta: { filesChecked } };
+    return { errors, meta: { filesChecked }, ok: errors.length === 0 };
   },
 };

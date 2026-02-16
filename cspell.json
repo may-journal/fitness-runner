@@ -1,6 +1,4 @@
 {
-  "version": "0.2",
-  "useGitignore": true,
   "ignorePaths": [
     "node_modules",
     "dist",
@@ -10,6 +8,8 @@
     ".gitignore",
     "tsconfig.json"
   ],
+  "useGitignore": true,
+  "version": "0.2",
   "words": [
     "broown",
     "jasonvanderslice",

@@ -25,8 +25,8 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
   const lines: string[] = [question];
   if (enabledCheckNames.length > 0) {
     const table = new Table({
-      head: [chalk.bold.white('Check'), chalk.bold.white('Src')],
       colWidths: [28, 42],
+      head: [chalk.bold.white('Check'), chalk.bold.white('Src')],
     });
     for (const name of enabledCheckNames) {
       const folder = CHECK_TO_FOLDER[name] ?? name;
@@ -39,7 +39,7 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
   lines.push('');
   lines.push(chalk.yellow(NOTE_NO_VERIFY.trim()));
   const content = lines.join('\n');
-  return boxen(content, { padding: 1, borderColor: 'cyan', margin: 1 }) + '\n';
+  return boxen(content, { borderColor: 'cyan', margin: 1, padding: 1 }) + '\n';
 }
 
 export const READ_REPO_FIRST_NAME = 'read-repo-first';
@@ -50,6 +50,6 @@ export const readRepoFirstCheck: Check = {
     const enabled = context?.enabledCheckNames ?? [];
     const feedback = buildContextFeedback(enabled);
     process.stdout.write(feedback);
-    return { ok: true, errors: [], meta: { filesChecked: 0 } };
+    return { errors: [], meta: { filesChecked: 0 }, ok: true };
   },
 };

@@ -6,14 +6,29 @@ const eslintConfigPrettier = require('eslint-config-prettier/flat');
 const cspellConfig = require('./cspell.json');
 
 const rules = {
-  'jsdoc/require-jsdoc': 'error',
   complexity: ['error', { max: 5 }],
+  'jsdoc/require-jsdoc': 'error',
+  'sort-keys': ['error', 'asc', { caseSensitive: true, natural: true }],
 };
 
 const ignores = cspellConfig.ignorePaths;
 
 module.exports = [
   { ignores },
+  {
+    files: ['**/*.cjs', '**/*.js', '**/*.mjs'],
+    languageOptions: {
+      globals: {
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        module: 'readonly',
+        require: 'readonly',
+      },
+      parser: tsParser,
+      parserOptions: { ecmaVersion: 'latest', sourceType: 'script' },
+    },
+    rules: { 'sort-keys': ['error', 'asc', { caseSensitive: true, natural: true }] },
+  },
   {
     files: ['**/*.ts'],
     languageOptions: {

@@ -35,6 +35,7 @@
     "cspell": "^8.15.0",
     "cspell-lib": "^8.15.0",
     "jiti": "^2.6.1",
+    "prettier-plugin-sort-json": "^4.2.0",
     "wrap-ansi": "^9.0.2"
   },
   "files": [

@@ -7,28 +7,15 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.02.16.1800
-
-- Prettier check: runs prettier --check; skips when no config; staged files or full repo; exports prettierCheck.
-
-### 2026.02.16.1730
-
-- Prettier: add Prettier with eslint-config-prettier; .prettierrc.json and .prettierignore; format/format:check scripts; CI format job; export prettier.config for consumers.
-
-### 2026.02.16.1720
-
-- README: sync main and checks README with registry; add rules-front-matter README.
-
-### 2026.02.16.1710
-
-- ESLint check README: add fitnessFunctions; relate to eslint.config.cjs.
-
-### 2026.02.16.1700
-
-- Runner: table feedback with colspan row per failed check; errors contextual to row; dynamic width via getColumns from read-repo-first; README flow diagram update.
-
 ### 2026.02.16.1600
 
+- ESLint: add sort-keys rule (natural ascending) for all object keys in .ts, .cjs, .js, .mjs; extend ESLint check to .cjs/.js/.mjs; reorder object literals across codebase.
+- Prettier: add prettier-plugin-sort-json with jsonRecursiveSort for alphabetical ordering of object keys and nested objects in arrays (JSON files).
+- Prettier check: runs prettier --check; skips when no config; staged files or full repo; exports prettierCheck.
+- Prettier: add Prettier with eslint-config-prettier; .prettierrc.json and .prettierignore; format/format:check scripts; CI format job; export prettier.config for consumers.
+- README: sync main and checks README with registry; add rules-front-matter README.
+- ESLint check README: add fitnessFunctions; relate to eslint.config.cjs.
+- Runner: table feedback with colspan row per failed check; errors contextual to row; dynamic width via getColumns from read-repo-first; README flow diagram update.
 - Rules-front-matter: reject empty fitnessFunctions and relatedConfigurations arrays; require at least one entry per array.
 
 ### 2026.02.16.1500

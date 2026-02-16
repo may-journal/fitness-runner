@@ -124,8 +124,8 @@ function buildContext(
   enabledChecks: Check[]
 ): RunContext {
   return {
-    registeredCheckNames: registry.map((c) => c.name),
     enabledCheckNames: enabledChecks.map((c) => c.name),
+    registeredCheckNames: registry.map((c) => c.name),
     ...(staged ?? {}),
     ...(commitMsg ?? {}),
   };
@@ -146,7 +146,7 @@ async function getChecks(
   const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
   const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
-  return { checks, spec, context: buildContext(staged, commitMsg, checks) };
+  return { checks, context: buildContext(staged, commitMsg, checks), spec };
 }
 
 /** Logs unknown check/path and exits 1. */
@@ -186,13 +186,13 @@ function pushResultRow(table: InstanceType<typeof Table>, r: ResultRow): void {
 function buildTable(rows: ResultRow[]): string {
   const timeCol = Math.max(10, getColumns() - 51);
   const table = new Table({
+    colWidths: [28, 10, 8, timeCol],
     head: [
       chalk.bold.white('Check'),
       chalk.bold.white('Status'),
       chalk.bold.white('Files'),
       chalk.bold.white('Time'),
     ],
-    colWidths: [28, 10, 8, timeCol],
     wordWrap: true,
   });
   for (const r of rows) pushResultRow(table, r);
@@ -209,7 +209,7 @@ async function runOneCheck(
   const result = await check.run(root, context);
   const ms = Math.round(performance.now() - start);
   const filesChecked = result.meta?.filesChecked ?? -1;
-  return { name: check.name, ok: result.ok, filesChecked, ms, errors: result.errors };
+  return { errors: result.errors, filesChecked, ms, name: check.name, ok: result.ok };
 }
 
 /** Builds total summary line. */
@@ -229,15 +229,15 @@ async function collectResults(
   context: RunContext | undefined
 ): Promise<{ results: ResultRow[]; counts: { success: number; failure: number; files: number } }> {
   const results: ResultRow[] = [];
-  const counts = { success: 0, failure: 0, files: 0 };
+  const counts = { failure: 0, files: 0, success: 0 };
   for (const check of checks) {
     const { name, ok, filesChecked, ms, errors } = await runOneCheck(check, root, context);
-    results.push({ name, ok, filesChecked, ms, errors });
+    results.push({ errors, filesChecked, ms, name, ok });
     if (ok) counts.success++;
     else counts.failure++;
     counts.files += filesChecked >= 0 ? filesChecked : 0;
   }
-  return { results, counts };
+  return { counts, results };
 }
 
 /** Runs all checks; returns true if any failed. */

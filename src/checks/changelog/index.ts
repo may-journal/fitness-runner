@@ -17,27 +17,27 @@ export const changelogCheck: Check = {
   async run(root = process.cwd()) {
     const path = join(root, ROOT_CHANGELOG);
     if (!existsSync(path)) {
-      return { ok: false, errors: [ERROR_MISSING], meta: { filesChecked: 1 } };
+      return { errors: [ERROR_MISSING], meta: { filesChecked: 1 }, ok: false };
     }
     const content = readFileSync(path, 'utf8');
     const h3s = getH3Lines(content);
     if (h3s.length === 0) {
       return {
-        ok: false,
         errors: ['CHANGELOG.md must have at least one ### yyyy.mm.dd.HHMM section'],
         meta: { filesChecked: 1 },
+        ok: false,
       };
     }
     const invalid = h3s.filter((line) => !DATED_SECTION_RE.test(line));
     if (invalid.length > 0) {
       return {
-        ok: false,
         errors: invalid.map(
           (line) => `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "${line.trim()}")`
         ),
         meta: { filesChecked: 1 },
+        ok: false,
       };
     }
-    return { ok: true, errors: [], meta: { filesChecked: 1 } };
+    return { errors: [], meta: { filesChecked: 1 }, ok: true };
   },
 };

@@ -38,11 +38,11 @@ export function runPrettierCheck(
   const args = paths.length > 0 ? paths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(' ') : '.';
   try {
     const out = execSyncFn(`${PRETTIER_CLI} --check ${args} 2>&1`, { ...EXEC_OPTS, cwd: root });
-    return { output: out, exitCode: 0 };
+    return { exitCode: 0, output: out };
   } catch (e: unknown) {
     const err = e as { stdout?: string; stderr?: string; status?: number };
     const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
-    return { output: out, exitCode: typeof err.status === 'number' ? err.status : 1 };
+    return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
   }
 }
 
@@ -67,7 +67,7 @@ function resolveInputs(
   context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
 ): { paths: string[]; execFn: ExecSyncFn } {
   const staged = context?.stagedFiles ?? [];
-  return { paths: getPathsToCheck(root, staged), execFn: context?._execSync ?? execSync };
+  return { execFn: context?._execSync ?? execSync, paths: getPathsToCheck(root, staged) };
 }
 
 /** Compute filesChecked from errors and paths. */
@@ -84,14 +84,14 @@ function buildResult(
 ): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
   const ok = exitCode === 0 && errors.length === 0;
   const fallback = !ok && errors.length === 0 ? [PRETTIER_FALLBACK_MESSAGE] : [];
-  return { ok, errors: errors.length > 0 ? errors : fallback, meta: { filesChecked } };
+  return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };
 }
 
 /** Prettier check: runs prettier --check; skips when no config. */
 export const prettierCheck: Check = {
   name: 'prettier',
   async run(root = process.cwd(), context) {
-    if (!hasPrettierConfig(root)) return { ok: true, errors: [], meta: { filesChecked: 0 } };
+    if (!hasPrettierConfig(root)) return { errors: [], meta: { filesChecked: 0 }, ok: true };
     const { paths, execFn } = resolveInputs(root, context);
     const { output, exitCode } = runPrettierCheck(root, paths, execFn);
     const errors = parsePrettierOutput(output);

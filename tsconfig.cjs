@@ -2,18 +2,18 @@ const { ignorePaths } = require('./cspell.json');
 
 module.exports = {
   compilerOptions: {
-    target: 'ES2022',
+    declaration: true,
+    declarationMap: true,
     module: 'NodeNext',
     moduleResolution: 'NodeNext',
-    strict: true,
-    skipLibCheck: true,
     noEmit: false,
     outDir: './dist',
     rootDir: './src',
-    declaration: true,
-    declarationMap: true,
+    skipLibCheck: true,
     sourceMap: true,
+    strict: true,
+    target: 'ES2022',
   },
-  include: ['**/*.ts'],
   exclude: [...ignorePaths],
+  include: ['**/*.ts'],
 };

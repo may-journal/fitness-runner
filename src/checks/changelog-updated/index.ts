@@ -55,7 +55,7 @@ type ExecSyncFn = (
 
 /** Returns map of file path (repo-relative) -> added line content. */
 function getStagedDiffByFile(root: string, execFn: ExecSyncFn = execSync): Map<string, string> {
-  const out = execFn('git diff --cached', { encoding: 'utf8', cwd: root, maxBuffer: 1024 * 1024 });
+  const out = execFn('git diff --cached', { cwd: root, encoding: 'utf8', maxBuffer: 1024 * 1024 });
   const byFile = new Map<string, string>();
   let current = '';
   for (const line of out.split('\n')) {
@@ -81,13 +81,13 @@ function checkOverlapAndReport(
   restWords: Set<string>
 ): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
   const overlap = [...changelogWords].filter((w) => restWords.has(w));
-  if (overlap.length >= MIN_OVERLAP) return { ok: true, errors: [], meta: { filesChecked: 1 } };
+  if (overlap.length >= MIN_OVERLAP) return { errors: [], meta: { filesChecked: 1 }, ok: true };
   const suggested = sampleWords(restWords, SUGGEST_WORDS);
   const errors = [
     `CHANGELOG.md additions should mention at least ${MIN_OVERLAP} words from your staged changes (found ${overlap.length}: ${overlap.slice(0, 5).join(', ')})`,
     `e.g. use words like: ${suggested.join(', ')}`,
   ];
-  return { ok: false, errors, meta: { filesChecked: 1 } };
+  return { errors, meta: { filesChecked: 1 }, ok: false };
 }
 
 /** Returns early result if no staged files or CHANGELOG missing; null to continue. */
@@ -99,13 +99,13 @@ function ensureChangelogExists(
   | { ok: false; errors: string[]; meta: { filesChecked: number } }
   | null {
   const staged = context?.stagedFiles;
-  if (!staged?.length) return { ok: true, errors: [], meta: { filesChecked: 0 } };
+  if (!staged?.length) return { errors: [], meta: { filesChecked: 0 }, ok: true };
   const path = join(root, ROOT_CHANGELOG);
   if (!existsSync(path)) {
     return {
-      ok: false,
       errors: ['CHANGELOG.md missing; add it and mention your staged changes'],
       meta: { filesChecked: 1 },
+      ok: false,
     };
   }
   return null;
@@ -126,14 +126,14 @@ function getChangelogOverlapInput(
   if (changelogWords.size === 0) {
     return {
       err: {
-        ok: false,
         errors: ['Stage CHANGELOG.md and add an entry that mentions your staged changes'],
         meta: { filesChecked: 1 },
+        ok: false,
       },
     };
   }
   const restWords = getRestWordsFromDiff(byFile);
-  if (restWords.size === 0) return { err: { ok: true, errors: [], meta: { filesChecked: 1 } } };
+  if (restWords.size === 0) return { err: { errors: [], meta: { filesChecked: 1 }, ok: true } };
   return { changelogWords, restWords };
 }
 

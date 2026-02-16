@@ -55,7 +55,7 @@ Consumers can extend these configs via package exports:
 - `@fitness/runner/vitest.config` – Vitest
 - `@fitness/runner/tsconfig` – TypeScript
 - `@fitness/runner/cspell` – cspell.json
-- `@fitness/runner/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100)
+- `@fitness/runner/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
 
 Example: add `"prettier": "@fitness/runner/prettier.config"` to your package.json to use the shared Prettier config.
 
