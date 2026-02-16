@@ -5,7 +5,7 @@ relatedConfigurations: ["package.json"]
 
 # @fitness/runner
 
-A fitness runner for rules to ensure CI/CD and GenAI are empowered with guardrails of code quality and architectural decision.
+Node fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
 
 ## Install
 

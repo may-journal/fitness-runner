@@ -8,6 +8,7 @@ relatedConfigurations: ["package.json"]
 ## Changes
 
 ### 2026.02.15.1700
+- Docs: clarify README tagline (fitness runner, checks, workflows).
 - Cspell: run in-process via cspell-lib (readConfigFile, spellCheckFile) for speed; keep CLI path when tests mock exec.
 - Runner: add total files scanned count to summary (sum of filesChecked from checks).
 - Runner: print total success and failure count and round time (performance) after runs.
