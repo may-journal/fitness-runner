@@ -1,7 +1,7 @@
 {
   "name": "@fitness/runner",
-  "version": "0.1.0-2026.02.15.1100",
-  "description": "Fitness runner for rules: CI/CD and GenAI guardrails",
+  "version": "0.1.0-2026.02.16.1100",
+  "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "type": "module",
   "engines": {
     "node": ">=24"
@@ -28,10 +28,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
-    "ci": "(nvm use 2>/dev/null || true) && npm run fitness && npm run lint && npm test",
+    "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
+    "ci": "(nvm use 2>/dev/null || true) && npm run fitness && npm test",
     "fitness": "npm run build && node dist/index.js",
-    "lint": "eslint .",
+    "lint": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && eslint .",
     "precommit": "npm run fitness",
     "prepare": "husky",
     "test": "vitest run --coverage",
@@ -47,6 +47,7 @@
     "eslint-plugin-jsdoc": "^62.5.4",
     "husky": "^9.0.0",
     "jiti": "^2.6.1",
+    "tsconfig.js": "^3.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.6",
     "vitest": "^2.0"

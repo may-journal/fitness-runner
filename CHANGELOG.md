@@ -7,8 +7,11 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
-### 2026.02.16.1100
-- Tsconfig: add shared base config (underscore-prefixed), tsconfig.build.json for build only; tsconfig.json includes all .ts, no emit. Remove tsconfig.eslint.json.
+### 2026.02.16.1300
+- Tsconfig: single root tsconfig.cjs for build and lint; remove build/; use tsconfig.js to convert .cjs to JSON.
+- Changelog-updated: ExecSyncFn maxBuffer type; add execSync fallback coverage test.
+- ESLint: replace eslint.config.ts with eslint.config.cjs for ESM package compatibility.
+- Tsconfig: remove shared base config; inline compiler options in tsconfig.cjs.
 - ESLint: remove stylistic plugin and rules; keep jsdoc/require-jsdoc and complexity max 5. Single block, project tsconfig.json.
 - Gitignore: ignore compiled root config outputs (eslint and vitest .js, .map, .d.ts).
 

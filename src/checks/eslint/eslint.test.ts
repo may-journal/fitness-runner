@@ -2,8 +2,14 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
-import { describe, it, expect, vi } from 'vitest';
-import { eslintCheck, ESLINT_CLI, ESLINT_FALLBACK_MESSAGE, formatMessage, runEslint } from './index.js';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+import {
+  eslintCheck,
+  ESLINT_CLI,
+  ESLINT_FALLBACK_MESSAGE,
+  formatMessage,
+  runEslint,
+} from './index';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const mod = await importOriginal<typeof import('node:child_process')>();
@@ -11,8 +17,12 @@ vi.mock('node:child_process', async (importOriginal) => {
 });
 
 describe('eslintCheck', () => {
+  beforeEach(() => {
+    vi.mocked(execSync).mockReset();
+  });
+
   it('passes when ESLint reports no issues', async () => {
-    vi.mocked(execSync).mockImplementation(() => '[]');
+    vi.mocked(execSync).mockReturnValue('[]');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     const result = await eslintCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -42,12 +52,13 @@ describe('eslintCheck', () => {
   });
 
   it('uses staged paths when context has stagedFiles', async () => {
-    vi.mocked(execSync).mockImplementation(() => '[]');
+    vi.mocked(execSync).mockReturnValue('[]');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     writeFileSync(join(dir, 'bar.ts'), 'x');
     const result = await eslintCheck.run(dir, { stagedFiles: ['bar.ts'] });
     expect(result.ok).toBe(true);
-    const lastCall = vi.mocked(execSync).mock.calls[vi.mocked(execSync).mock.calls.length - 1][0];
+    const calls = vi.mocked(execSync).mock.calls;
+    const lastCall = calls[calls.length - 1][0];
     expect(lastCall).toContain(ESLINT_CLI);
     expect(lastCall).toContain('bar.ts');
   });
@@ -101,7 +112,7 @@ describe('eslintCheck', () => {
   });
 
   it('parseJsonResults returns empty when output is valid JSON but not array', async () => {
-    vi.mocked(execSync).mockImplementation(() => '{}');
+    vi.mocked(execSync).mockReturnValue('{}');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     const result = await eslintCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -110,22 +121,24 @@ describe('eslintCheck', () => {
   });
 
   it('runEslint with empty paths uses "." as args', () => {
-    vi.mocked(execSync).mockImplementation(() => '[]');
+    vi.mocked(execSync).mockReturnValue('[]');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    runEslint(dir, []);
-    const call = vi.mocked(execSync).mock.calls[vi.mocked(execSync).mock.calls.length - 1][0];
+    runEslint(dir, [], execSync);
+    const calls = vi.mocked(execSync).mock.calls;
+    const call = calls[calls.length - 1][0];
     expect(call).toContain(ESLINT_CLI);
     expect(call).toMatch(/\beslint\s+\.\s+--format/);
   });
 
   it('escapes quotes in path when building eslint args', async () => {
-    vi.mocked(execSync).mockImplementation(() => '[]');
+    vi.mocked(execSync).mockReturnValue('[]');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     const pathWithQuote = 'src/bar "quoted".ts';
     mkdirSync(join(dir, 'src'), { recursive: true });
     writeFileSync(join(dir, pathWithQuote), 'x');
     await eslintCheck.run(dir, { stagedFiles: [pathWithQuote] });
-    const lastCall = vi.mocked(execSync).mock.calls[vi.mocked(execSync).mock.calls.length - 1][0];
+    const calls = vi.mocked(execSync).mock.calls;
+    const lastCall = calls[calls.length - 1][0];
     expect(lastCall).toContain(ESLINT_CLI);
     expect(lastCall).toContain('\\"');
   });

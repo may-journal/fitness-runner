@@ -50,9 +50,11 @@ function appendDiffLine(byFile: Map<string, string>, file: string, text: string)
   byFile.set(file, prev ? prev + ' ' + text : text);
 }
 
+type ExecSyncFn = (cmd: string, opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }) => string;
+
 /** Returns map of file path (repo-relative) -> added line content. */
-function getStagedDiffByFile(root: string): Map<string, string> {
-  const out = execSync('git diff --cached', { encoding: 'utf8', cwd: root });
+function getStagedDiffByFile(root: string, execFn: ExecSyncFn = execSync): Map<string, string> {
+  const out = execFn('git diff --cached', { encoding: 'utf8', cwd: root, maxBuffer: 1024 * 1024 });
   const byFile = new Map<string, string>();
   let current = '';
   for (const line of out.split('\n')) {
@@ -112,8 +114,8 @@ type ChangelogOverlapInput =
   | { changelogWords: Set<string>; restWords: Set<string> };
 
 /** Builds changelog/rest word sets or early result for overlap check. */
-function getChangelogOverlapInput(root: string): ChangelogOverlapInput {
-  const byFile = getStagedDiffByFile(root);
+function getChangelogOverlapInput(root: string, execFn: ExecSyncFn = execSync): ChangelogOverlapInput {
+  const byFile = getStagedDiffByFile(root, execFn);
   const changelogWords = extractWords(byFile.get(ROOT_CHANGELOG) ?? '');
   if (changelogWords.size === 0) {
     return {
@@ -129,14 +131,23 @@ function getChangelogOverlapInput(root: string): ChangelogOverlapInput {
   return { changelogWords, restWords };
 }
 
+/** Runs overlap check; returns early result or overlap report. */
+function runChangelogUpdated(
+  root: string,
+  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined,
+): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
+  const early = ensureChangelogExists(root, context);
+  if (early != null) return early;
+  const execFn = context?._execSync ?? execSync;
+  const next = getChangelogOverlapInput(root, execFn);
+  if ('err' in next) return next.err;
+  return checkOverlapAndReport(next.changelogWords, next.restWords);
+}
+
 /** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */
 export const changelogUpdatedCheck: Check = {
   name: 'changelog-updated',
   async run(root = process.cwd(), context) {
-    const early = ensureChangelogExists(root, context);
-    if (early != null) return early;
-    const next = getChangelogOverlapInput(root);
-    if ('err' in next) return next.err;
-    return checkOverlapAndReport(next.changelogWords, next.restWords);
+    return runChangelogUpdated(root, context);
   },
 };

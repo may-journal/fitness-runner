@@ -1,1 +1,48 @@
-{"version":"0.2","useGitignore":true,"ignorePaths":["node_modules","package-lock.json","dist","coverage","**/*.test.ts",".gitignore"],"words":["broown","Dctx","dotenv","eslintcache","fitnessrc","jscoverage","jspm","jsdoc","eslint","lintable","LINTABLE","nvmrc","Nuxt","nuxt","nzzzq","pids","precommit","semantic-commit","Sveltekit","stylelintcache","subshell","unstub","vite","Vite","vitepress","vitest","tsx","vuepress","wscript","xyzzyspoon","zzzq"]}
+{
+  "version": "0.2",
+  "useGitignore": true,
+  "ignorePaths": 
+  [
+    "node_modules",
+    "dist",
+    "coverage",
+    "package-lock.json",
+    "**/*.test.ts",
+    ".gitignore",
+    "tsconfig.json"
+  ],
+  "words":[
+    "broown",
+    "jasonvanderslice",
+    "Dctx",
+    "dotenv",
+    "eslintcache",
+    "fitnessrc",
+    "jscoverage",
+    "jspm",
+    "jsdoc",
+    "eslint",
+    "lintable",
+    "LINTABLE",
+    "nvmrc",
+    "Nuxt",
+    "nuxt",
+    "nzzzq",
+    "pids",
+    "precommit",
+    "semantic-commit",
+    "Sveltekit",
+    "stylelintcache",
+    "subshell",
+    "unstub",
+    "vite",
+    "Vite",
+    "vitepress",
+    "vitest",
+    "tsx",
+    "vuepress",
+    "wscript",
+    "xyzzyspoon",
+    "zzzq"
+  ]
+}

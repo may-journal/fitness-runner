@@ -5,9 +5,13 @@ export default defineConfig({
     globals: true,
     coverage: {
       provider: 'v8',
-      reporter: ['text',
-        'lcov'],
-      include: ['src/**/*.ts'],
+      reporter: [
+        'text',
+        'lcov'
+      ],
+      include: [
+        'src/**/*.ts'
+      ],
       exclude: [
         '**/*.d.ts',
         '**/*.test.ts',

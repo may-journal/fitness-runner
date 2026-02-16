@@ -63,17 +63,29 @@ function parseJsonResults(output: string): { errors: string[]; filesChecked: num
 }
 
 const LINTABLE_EXT = /\.tsx?$/;
+const IGNORED_BY_ESLINT = /\.(test|spec)\.(ts|tsx)$/;
 
-/** Paths to lint: staged (existing, lintable) under root, or "." when none. */
+/** Paths to lint: staged (existing, lintable, not ignored) under root, or "." when none. */
 function getPaths(root: string, staged: string[]): string[] {
   if (staged.length === 0) return [];
-  return staged.filter((p) => LINTABLE_EXT.test(p) && existsSync(join(root, p)));
+  return staged.filter(
+    (p) => LINTABLE_EXT.test(p) && !IGNORED_BY_ESLINT.test(p) && existsSync(join(root, p)),
+  );
 }
 
 /** Paths to pass to ESLint: staged existing paths or ['.']. */
 function getPathsToLint(root: string, staged: string[]): string[] {
   const paths = getPaths(root, staged);
   return paths.length > 0 ? paths : ['.'];
+}
+
+/** Resolve paths and exec fn from root and context. */
+function resolveInputs(
+  root: string,
+  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined,
+): { paths: string[]; execFn: ExecSyncFn } {
+  const staged = context?.stagedFiles ?? [];
+  return { paths: getPathsToLint(root, staged), execFn: context?._execSync ?? execSync };
 }
 
 /** Build CheckResult from exit code, parsed errors, and filesChecked. */
@@ -91,9 +103,8 @@ function buildResult(
 export const eslintCheck: Check = {
   name: 'eslint',
   async run(root = process.cwd(), context) {
-    const staged = context?.stagedFiles ?? [];
-    const paths = getPathsToLint(root, staged);
-    const { output, exitCode } = runEslint(root, paths);
+    const { paths, execFn } = resolveInputs(root, context);
+    const { output, exitCode } = runEslint(root, paths, execFn);
     const { errors, filesChecked } = parseJsonResults(output);
     return buildResult(exitCode, errors, filesChecked);
   },
