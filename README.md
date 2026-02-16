@@ -35,12 +35,16 @@ Commit-msg hook: pass the message file as a positional so semantic-commit valida
 
 See [src/checks/README.md](src/checks/README.md) for the list and how checks work. Each check has its own README:
 
+- [read-repo-first](src/checks/read-repo-first/README.md)
 - [changelog](src/checks/changelog/README.md)
 - [changelog-updated](src/checks/changelog-updated/README.md)
 - [cspell](src/checks/cspell/README.md)
+- [eslint](src/checks/eslint/README.md)
+- [markdown-no-bold-italic](src/checks/markdown-no-bold-italic/README.md)
 - [node-version](src/checks/node-version/README.md)
-- [rules-front-matter](src/checks/rules-front-matter/)
+- [rules-front-matter](src/checks/rules-front-matter/README.md)
 - [semantic-commit](src/checks/semantic-commit/README.md)
+- [vitest-coverage-exclude](src/checks/vitest-coverage-exclude/README.md)
 
 ## Config
 

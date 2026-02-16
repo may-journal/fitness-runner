@@ -6,9 +6,14 @@ relatedConfigurations: ["../../package.json"]
 
 Each check is a self-contained sub-project in its own folder:
 
+- [read-repo-first](./read-repo-first/) – CLI reminder to familiarize with repo decisions and enabled checks
 - [changelog](./changelog/) – Root `CHANGELOG.md` with dated sections
 - [changelog-updated](./changelog-updated/) – When staged context is present, changelog must mention words from staged diff
+- [cspell](./cspell/) – Runs cspell for spell-checking (skips if no `cspell.json`)
+- [eslint](./eslint/) – Runs ESLint; staged files or full repo
+- [markdown-no-bold-italic](./markdown-no-bold-italic/) – No bold/italic emphasis in `.md` files unless required
 - [node-version](./node-version/) – Node version satisfies `.nvmrc`
+- [rules-front-matter](./rules-front-matter/) – Markdown front matter `fitnessFunctions`/`relatedConfigurations` paths must exist
 - [semantic-commit](./semantic-commit/) – HEAD commit follows Conventional Commits
 - [vitest-coverage-exclude](./vitest-coverage-exclude/) – Vitest coverage `exclude` must not list any `.ts` file or pattern
 
