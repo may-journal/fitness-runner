@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import type { Check } from '../../types/index.types.js';
@@ -24,9 +24,24 @@ type ExecSyncFn = (
   opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }
 ) => string;
 
-/** Returns true if root has a Prettier config file. */
+/** Returns true if package.json has a "prettier" field (string or object). */
+function hasPrettierInPackageJson(root: string): boolean {
+  const pkgPath = join(root, 'package.json');
+  if (!existsSync(pkgPath)) return false;
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { prettier?: unknown };
+    return pkg.prettier != null;
+  } catch {
+    return false;
+  }
+}
+
+/** Returns true if root has a Prettier config file or package.json "prettier" field. */
 export function hasPrettierConfig(root: string): boolean {
-  return PRETTIER_CONFIG_NAMES.some((name) => existsSync(join(root, name)));
+  return (
+    PRETTIER_CONFIG_NAMES.some((name) => existsSync(join(root, name))) ||
+    hasPrettierInPackageJson(root)
+  );
 }
 
 /** Run Prettier --check; returns stdout+stderr and exit code. */

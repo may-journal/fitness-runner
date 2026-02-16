@@ -87,6 +87,22 @@ describe('prettierCheck', () => {
     expect(hasPrettierConfig(dir)).toBe(true);
   });
 
+  it('hasPrettierConfig returns true when package.json has "prettier" field', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
+    writeFileSync(join(dir, 'package.json'), '{"prettier":"@fitness/runner/prettier.config"}');
+    expect(hasPrettierConfig(dir)).toBe(true);
+    vi.mocked(execSync).mockReturnValue('All matched files use Prettier code style!');
+    const result = await prettierCheck.run(dir);
+    expect(result.ok).toBe(true);
+    expect(execSync).toHaveBeenCalled();
+  });
+
+  it('hasPrettierConfig returns false when package.json is invalid JSON', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
+    writeFileSync(join(dir, 'package.json'), 'not valid json');
+    expect(hasPrettierConfig(dir)).toBe(false);
+  });
+
   it('runPrettierCheck with paths passes them to CLI', () => {
     const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
     vi.mocked(execSync).mockReturnValue('');

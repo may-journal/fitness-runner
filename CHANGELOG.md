@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.16.1700
+
+- Prettier check: detect config via package.json "prettier" field so consumers using `"prettier": "@fitness/runner/prettier.config"` are checked.
+
 ### 2026.02.16.1600
 
 - ESLint: add sort-keys rule (natural ascending) for all object keys in .ts, .cjs, .js, .mjs; extend ESLint check to .cjs/.js/.mjs; reorder object literals across codebase.
