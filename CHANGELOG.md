@@ -9,6 +9,7 @@ relatedConfigurations: ['package.json']
 
 ### 2026.02.16.1700
 
+- Package: move eslint, prettier, vitest, and related config plugins from devDependencies to dependencies so consumers can use exported configs; keep @types/node, tsconfig.js, tsx, typescript as devDependencies.
 - Prettier check: detect config via package.json "prettier" field so consumers using `"prettier": "@fitness/runner/prettier.config"` are checked.
 
 ### 2026.02.16.1600
