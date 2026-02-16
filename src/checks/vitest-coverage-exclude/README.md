@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ["../../../vitest.config.ts", "../../../package.json"]
+relatedConfigurations: ["vitest-coverage-exclude"]
 ---
 
 # vitest-coverage-exclude

@@ -8,6 +8,7 @@ relatedConfigurations: ["package.json"]
 ## Changes
 
 ### 2026.02.16.1300
+- Vitest-coverage-exclude: update README to use relative paths; properly associated with the name of the check.
 - Tsconfig: single root tsconfig.cjs for build and lint; remove build/; use tsconfig.js to convert .cjs to JSON.
 - Changelog-updated: ExecSyncFn maxBuffer type; add execSync fallback coverage test.
 - ESLint: replace eslint.config.ts with eslint.config.cjs for ESM package compatibility.

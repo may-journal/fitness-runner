@@ -9,7 +9,7 @@ module.exports = {
     skipLibCheck: true,
     noEmit: false,
     outDir: './dist',
-    rootDir: './',
+    rootDir: './src',
     declaration: true,
     declarationMap: true,
     sourceMap: true

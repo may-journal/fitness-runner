@@ -1,17 +1,12 @@
-import { defineConfig } from 'vitest/config';
+const { defineConfig } = require('vitest/config');
 
-export default defineConfig({
+module.exports = defineConfig({
   test: {
     globals: true,
     coverage: {
       provider: 'v8',
-      reporter: [
-        'text',
-        'lcov'
-      ],
-      include: [
-        'src/**/*.ts'
-      ],
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.ts'],
       exclude: [
         '**/*.d.ts',
         '**/*.test.ts',
