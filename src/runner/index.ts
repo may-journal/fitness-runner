@@ -163,12 +163,12 @@ function displayErrors(checkName: string, errors: string[]): void {
   }
 }
 
-/** Runs a single check; returns failed flag and filesChecked count. */
+/** Runs a single check; returns failed flag, filesChecked count, and elapsed ms. */
 async function runOneCheck(
   check: Check,
   root: string,
   context?: RunContext,
-): Promise<{ failed: boolean; filesChecked: number }> {
+): Promise<{ failed: boolean; filesChecked: number; ms: number }> {
   const start = performance.now();
   const result = await check.run(root, context);
   const ms = Math.round(performance.now() - start);
@@ -176,7 +176,12 @@ async function runOneCheck(
   const line = `${check.name}: ${formatMeta(result, ms)}`;
   console.log(result.ok ? chalk.green(line) : chalk.red(line));
   if (!result.ok) displayErrors(check.name, result.errors);
-  return { failed: !result.ok, filesChecked };
+  return { failed: !result.ok, filesChecked, ms };
+}
+
+/** Builds total summary line. */
+function buildTotalLine(successCount: number, failureCount: number, totalFiles: number, totalMs: number): string {
+  return `Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${totalMs}ms`;
 }
 
 /** Runs all checks; returns true if any failed. */
@@ -186,19 +191,17 @@ async function runChecks(
   context?: RunContext,
 ): Promise<boolean> {
   const start = performance.now();
-  let successCount = 0;
-  let failureCount = 0;
-  let totalFiles = 0;
+  const counts = { success: 0, failure: 0, files: 0 };
   for (const check of checks) {
     const { failed, filesChecked } = await runOneCheck(check, root, context);
-    if (failed) failureCount++;
-    else successCount++;
-    totalFiles += filesChecked;
+    if (failed) counts.failure++;
+    else counts.success++;
+    counts.files += filesChecked;
   }
-  const ms = Math.round(performance.now() - start);
-  const totalLine = `Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${ms}ms`;
-  console.log(failureCount > 0 ? chalk.bold.red(totalLine) : chalk.bold.green(totalLine));
-  return failureCount > 0;
+  const totalMs = Math.round(performance.now() - start);
+  const totalLine = buildTotalLine(counts.success, counts.failure, counts.files, totalMs);
+  console.log(counts.failure > 0 ? chalk.bold.red(totalLine) : chalk.bold.green(totalLine));
+  return counts.failure > 0;
 }
 
 /** Runs fitness checks; exits with 1 on failure. */

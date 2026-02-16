@@ -1,0 +1,10 @@
+---
+description: Never use --no-verify or env vars to skip logic
+alwaysApply: true
+---
+
+# No Workarounds
+
+**Never use `--no-verify`** with git commands. Fix the underlying problem instead of bypassing hooks.
+
+**Never set environment variables** to skip checks or logic. Do not suggest or use patterns like `SKIP_*`, `DISABLE_*`, `CI=true` to bypass validation—fix the cause instead.

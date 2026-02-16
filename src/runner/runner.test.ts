@@ -30,8 +30,6 @@ describe('fitness run', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: []\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
     writeFileSync(join(dir, '.nvmrc'), '18');
-    const origEnv = process.env.FITNESS_READ_REPO_CONFIRMED;
-    process.env.FITNESS_READ_REPO_CONFIRMED = '1';
     const origCwd = process.cwd();
     process.chdir(dir);
     const { execSync } = await import('node:child_process');
@@ -42,7 +40,6 @@ describe('fitness run', () => {
     await run(['node',
       'fitness']);
     process.chdir(origCwd);
-    process.env.FITNESS_READ_REPO_CONFIRMED = origEnv;
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 

@@ -9,7 +9,4 @@ export type RunContext = {
   enabledCheckNames?: string[];
   /** Test-only: override for child_process.execSync (cspell check). */
   _execSync?: (command: string, options: { encoding: 'utf8'; cwd: string; maxBuffer: number }) => string;
-  /** Test-only: override read-repo-first prompt answer (Y or N), or provide question fn for TTY path. */
-  _readAnswer?: string;
-  _readlineQuestion?: (prompt: string) => Promise<string>;
 };
