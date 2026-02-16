@@ -1,6 +1,7 @@
+import { join } from 'node:path';
 import chalk from 'chalk';
 import boxen from 'boxen';
-import wrapAnsi from 'wrap-ansi';
+import Table from 'cli-table3';
 import type { Check } from '../../types/index.types.js';
 
 const NOTE_NO_VERIFY = ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
@@ -11,6 +12,9 @@ export function getColumns(): number {
   return typeof c === 'number' && c > 0 ? c : 80;
 }
 
+/** Check name → folder path when they differ (e.g. markdown-front-matter lives in rules-front-matter). */
+const CHECK_TO_FOLDER: Record<string, string> = { 'markdown-front-matter': 'rules-front-matter' };
+
 /** Builds feedback text for CLI display (Agent/User context). */
 export function buildContextFeedback(enabledCheckNames: string[]): string {
   const question = chalk.bold(
@@ -19,9 +23,17 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
   );
   const lines: string[] = [question];
   if (enabledCheckNames.length > 0) {
-    const list = wrapAnsi('Enabled checks: ' + enabledCheckNames.join(', '), Math.max(getColumns() - 6, 40));
+    const table = new Table({
+      head: [chalk.bold.white('Check'), chalk.bold.white('Src')],
+      colWidths: [28, 42],
+    });
+    for (const name of enabledCheckNames) {
+      const folder = CHECK_TO_FOLDER[name] ?? name;
+      const rel = join('src', 'checks', folder, 'README.md');
+      table.push([name, rel]);
+    }
     lines.push('');
-    lines.push(chalk.cyan(list));
+    lines.push(table.toString());
   }
   lines.push('');
   lines.push(chalk.yellow(NOTE_NO_VERIFY.trim()));
@@ -33,7 +45,7 @@ export const READ_REPO_FIRST_NAME = 'read-repo-first';
 
 export const readRepoFirstCheck: Check = {
   name: READ_REPO_FIRST_NAME,
-  async run(_root = process.cwd(), context) {
+  async run(root = process.cwd(), context) {
     const enabled = context?.enabledCheckNames ?? [];
     const feedback = buildContextFeedback(enabled);
     process.stdout.write(feedback);

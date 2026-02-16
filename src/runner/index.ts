@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import chalk from 'chalk';
+import Table from 'cli-table3';
 import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.types.js';
 import { loadConfig } from '../config/load.js';
@@ -148,11 +149,20 @@ function exitUnknown(spec: string | undefined): never {
   throw new Error('exit');
 }
 
-/** Formats check result meta for logging. */
-function formatMeta(result: { meta?: { filesChecked?: number } }, ms: number): string {
-  return result.meta?.filesChecked != null
-    ? `checked ${result.meta.filesChecked} files in ${ms}ms`
-    : `${ms}ms`;
+/** Builds table from check results for display. */
+function buildTable(
+  rows: Array<{ name: string; ok: boolean; filesChecked: number; ms: number }>,
+): string {
+  const table = new Table({
+    head: [chalk.bold.white('Check'), chalk.bold.white('Status'), chalk.bold.white('Files'), chalk.bold.white('Time')],
+    colWidths: [28, 10, 8, 10],
+  });
+  for (const r of rows) {
+    const status = r.ok ? chalk.green('passed') : chalk.red('failed');
+    const files = r.filesChecked >= 0 ? String(r.filesChecked) : '-';
+    table.push([r.name, status, files, `${r.ms}ms`]);
+  }
+  return table.toString();
 }
 
 /** Formats and logs check errors with check name prefix and intro for agent/human. */
@@ -163,20 +173,17 @@ function displayErrors(checkName: string, errors: string[]): void {
   }
 }
 
-/** Runs a single check; returns failed flag, filesChecked count, and elapsed ms. */
+/** Runs a single check; returns result data for table and errors. */
 async function runOneCheck(
   check: Check,
   root: string,
   context?: RunContext,
-): Promise<{ failed: boolean; filesChecked: number; ms: number }> {
+): Promise<{ name: string; ok: boolean; filesChecked: number; ms: number; errors: string[] }> {
   const start = performance.now();
   const result = await check.run(root, context);
   const ms = Math.round(performance.now() - start);
-  const filesChecked = result.meta?.filesChecked ?? 0;
-  const line = `${check.name}: ${formatMeta(result, ms)}`;
-  console.log(result.ok ? chalk.green(line) : chalk.red(line));
-  if (!result.ok) displayErrors(check.name, result.errors);
-  return { failed: !result.ok, filesChecked, ms };
+  const filesChecked = result.meta?.filesChecked ?? -1;
+  return { name: check.name, ok: result.ok, filesChecked, ms, errors: result.errors };
 }
 
 /** Builds total summary line. */
@@ -191,13 +198,16 @@ async function runChecks(
   context?: RunContext,
 ): Promise<boolean> {
   const start = performance.now();
+  const results: Array<{ name: string; ok: boolean; filesChecked: number; ms: number }> = [];
   const counts = { success: 0, failure: 0, files: 0 };
   for (const check of checks) {
-    const { failed, filesChecked } = await runOneCheck(check, root, context);
-    if (failed) counts.failure++;
-    else counts.success++;
-    counts.files += filesChecked;
+    const { name, ok, filesChecked, ms, errors } = await runOneCheck(check, root, context);
+    results.push({ name, ok, filesChecked, ms });
+    if (ok) counts.success++;
+    else { counts.failure++; displayErrors(name, errors); }
+    counts.files += filesChecked >= 0 ? filesChecked : 0;
   }
+  console.log(buildTable(results));
   const totalMs = Math.round(performance.now() - start);
   const totalLine = buildTotalLine(counts.success, counts.failure, counts.files, totalMs);
   console.log(counts.failure > 0 ? chalk.bold.red(totalLine) : chalk.bold.green(totalLine));

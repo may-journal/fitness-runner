@@ -84,7 +84,7 @@ describe('fitness run', () => {
       'fitness',
       '--check=meta-less']);
     process.chdir(origCwd);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/meta-less: \d+ms/));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/meta-less/));
     logSpy.mockRestore();
   });
 
@@ -142,7 +142,7 @@ describe('fitness run', () => {
       '--check=./check.js',
     ]);
     process.chdir(origCwd);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/path-check: .+/));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/path-check/));
     expect(process.exit).toHaveBeenCalledWith(0);
     logSpy.mockRestore();
   });
@@ -169,7 +169,7 @@ describe('fitness run', () => {
       '--check=./check.js',
     ]);
     process.chdir(origCwd);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/named-check: .+/));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/named-check/));
     expect(process.exit).toHaveBeenCalledWith(0);
     logSpy.mockRestore();
   });
@@ -272,7 +272,7 @@ describe('fitness run', () => {
     await run(['node',
       'fitness',
       '--check=semantic-commit']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/semantic-commit: checked 1 files in \d+ms/));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/semantic-commit.*1.*\d+ms/));
     logSpy.mockRestore();
   });
 

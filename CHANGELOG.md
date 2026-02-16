@@ -7,6 +7,10 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1800
+- Runner: format check results as table (cli-table3) with Check, Status, Files, Time columns; bold white headers.
+- Read-repo-first: table of enabled checks with Src column (plain paths for IDE link detection); add cli-table3.
+
 ### 2026.02.16.1700
 - Read-repo-first: remove TTY requirement; display feedback to CLI for Agent/User context; always pass. Remove `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` from CI.
 

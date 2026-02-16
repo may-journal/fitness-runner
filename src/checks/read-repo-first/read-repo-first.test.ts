@@ -47,15 +47,15 @@ describe('buildContextFeedback', () => {
     expect(feedback).not.toContain('Y | N:');
   });
 
-  it('omits list when empty', () => {
+  it('omits table when empty', () => {
     const feedback = buildContextFeedback([]);
     expect(feedback).not.toMatch(/Enabled checks:/);
   });
 
-  it('includes box and styling', () => {
+  it('includes table with src links', () => {
     const feedback = buildContextFeedback(['changelog']);
-    expect(feedback).toContain('─');
     expect(feedback).toContain('changelog');
+    expect(feedback).toContain('src/checks/changelog/README.md');
   });
 
   it('uses fallback width when stdout.columns missing or zero', () => {

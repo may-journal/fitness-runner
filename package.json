@@ -29,6 +29,7 @@
   "dependencies": {
     "boxen": "^8.0.1",
     "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
     "conventional-commit-types": "^3.0.0",
     "cspell": "^8.15.0",
     "cspell-lib": "^8.15.0",
