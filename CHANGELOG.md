@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.0958
+- Plans: add read-repo-first check design doc (plans/read-repo-first-check.md).
+
 ### 2026.02.15.1700
 - Docs: clarify README tagline (fitness runner, checks, workflows).
 - Cspell: run in-process via cspell-lib (readConfigFile, spellCheckFile) for speed; keep CLI path when tests mock exec.
