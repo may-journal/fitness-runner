@@ -1,13 +1,7 @@
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-const SKIP_DIRS = new Set([
-  'node_modules',
-  'dist',
-  'coverage',
-  '.git',
-  '.husky',
-]);
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'coverage', '.git', '.husky']);
 
 /** Process one dir entry: recurse or push .md path. */
 function processEntry(
@@ -15,7 +9,7 @@ function processEntry(
   dir: string,
   relDir: string,
   out: string[],
-  walk: (d: string, r: string) => void,
+  walk: (d: string, r: string) => void
 ): void {
   const abs = join(dir, name);
   const rel = relDir ? `${relDir}/${name}` : name;

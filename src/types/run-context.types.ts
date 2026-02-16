@@ -8,5 +8,8 @@ export type RunContext = {
   /** Names of checks enabled for this run (from config or full registry). */
   enabledCheckNames?: string[];
   /** Test-only: override for child_process.execSync (cspell check). */
-  _execSync?: (command: string, options: { encoding: 'utf8'; cwd: string; maxBuffer: number }) => string;
+  _execSync?: (
+    command: string,
+    options: { encoding: 'utf8'; cwd: string; maxBuffer: number }
+  ) => string;
 };

@@ -1,8 +1,9 @@
-"use strict";
-const jsdoc = require("eslint-plugin-jsdoc");
-const tseslint = require("@typescript-eslint/eslint-plugin");
-const tsParser = require("@typescript-eslint/parser");
-const cspellConfig = require("./cspell.json");
+'use strict';
+const jsdoc = require('eslint-plugin-jsdoc');
+const tseslint = require('@typescript-eslint/eslint-plugin');
+const tsParser = require('@typescript-eslint/parser');
+const eslintConfigPrettier = require('eslint-config-prettier/flat');
+const cspellConfig = require('./cspell.json');
 
 const rules = {
   'jsdoc/require-jsdoc': 'error',
@@ -25,4 +26,5 @@ module.exports = [
     },
     rules,
   },
+  eslintConfigPrettier,
 ];

@@ -7,12 +7,7 @@ module.exports = defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: [
-        '**/*.d.ts',
-        '**/*.test.ts',
-        '**/*.spec.ts',
-        '**/*.types.ts',
-      ],
+      exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', '**/*.types.ts'],
       thresholds: {
         statements: 100,
         branches: 100,

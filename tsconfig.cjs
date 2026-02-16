@@ -12,10 +12,8 @@ module.exports = {
     rootDir: './src',
     declaration: true,
     declarationMap: true,
-    sourceMap: true
+    sourceMap: true,
   },
-  include: [
-    '**/*.ts',
-  ],
-  exclude: [...ignorePaths]
+  include: ['**/*.ts'],
+  exclude: [...ignorePaths],
 };

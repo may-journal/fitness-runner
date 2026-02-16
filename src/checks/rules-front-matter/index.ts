@@ -36,7 +36,8 @@ function isExternalOrAnchor(path: string): boolean {
 /** Returns errors for empty fitnessFunctions or relatedConfigurations arrays in front matter inner. */
 function getEmptyArrayErrors(file: string, fmInner: string): string[] {
   const errors: string[] = [];
-  for (const m of fmInner.matchAll(EMPTY_ARRAY_RE)) errors.push(`${file}: ${m[1]} must not be an empty array`);
+  for (const m of fmInner.matchAll(EMPTY_ARRAY_RE))
+    errors.push(`${file}: ${m[1]} must not be an empty array`);
   return errors;
 }
 
@@ -46,7 +47,7 @@ function validatePath(
   path: string,
   root: string,
   mdFileDir: string,
-  registeredCheckNames: string[],
+  registeredCheckNames: string[]
 ): string | null {
   if (isExternalOrAnchor(path)) return null;
   if (registeredCheckNames.includes(path)) return null;
@@ -66,7 +67,7 @@ function getPathErrors(
   content: string,
   root: string,
   mdFileDir: string,
-  registeredCheckNames: string[],
+  registeredCheckNames: string[]
 ): string[] {
   const errors: string[] = [];
   for (const path of getFrontMatterPaths(content)) {
@@ -82,7 +83,7 @@ function validateFile(
   content: string,
   root: string,
   mdFileDir: string,
-  registeredCheckNames: string[],
+  registeredCheckNames: string[]
 ): string[] {
   const fm = content.match(FRONTMATTER_RE);
   if (!fm || !hasRequiredFrontMatter(content)) {

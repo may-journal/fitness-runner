@@ -15,7 +15,7 @@ type ExecSyncFn = (cmd: string, opts: typeof EXEC_OPTS) => string;
 export function runCspell(
   root: string,
   paths: string[],
-  execSyncFn: ExecSyncFn = execSync,
+  execSyncFn: ExecSyncFn = execSync
 ): { output: string; exitCode: number } {
   if (paths.length === 0) {
     return { output: '', exitCode: 0 };
@@ -26,8 +26,7 @@ export function runCspell(
     return { output: out, exitCode: 0 };
   } catch (e: unknown) {
     const err = e as { stdout?: string; stderr?: string; status?: number };
-    const out = [err.stdout,
-      err.stderr].filter(Boolean).join('\n');
+    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
     return { output: out, exitCode: typeof err.status === 'number' ? err.status : 1 };
   }
 }
@@ -48,7 +47,7 @@ function parseFilesChecked(output: string): number | undefined {
 function runCspellGlob(
   root: string,
   glob: string,
-  execSyncFn: ExecSyncFn = execSync,
+  execSyncFn: ExecSyncFn = execSync
 ): { output: string; exitCode: number } {
   try {
     const out = execSyncFn(`npx cspell --no-progress "${glob.replace(/"/g, '\\"')}" 2>&1`, {
@@ -58,8 +57,7 @@ function runCspellGlob(
     return { output: out, exitCode: 0 };
   } catch (e: unknown) {
     const err = e as { stdout?: string; stderr?: string; status?: number };
-    const out = [err.stdout,
-      err.stderr].filter(Boolean).join('\n');
+    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
     return { output: out, exitCode: typeof err.status === 'number' ? err.status : 1 };
   }
 }
@@ -68,17 +66,21 @@ function runCspellGlob(
 function runCspellStaged(
   root: string,
   stagedFiles: string[],
-  execSyncFn: ExecSyncFn,
+  execSyncFn: ExecSyncFn
 ): { output: string; exitCode: number } {
   const paths = stagedFiles.filter((p) => existsSync(join(root, p)));
   if (paths.length === 0) return { output: '', exitCode: 0 };
-  return runCspell(root, paths.map((p) => join(root, p)), execSyncFn);
+  return runCspell(
+    root,
+    paths.map((p) => join(root, p)),
+    execSyncFn
+  );
 }
 
 /** Builds check result from cspell output and exit code. */
 function buildCspellResult(
   output: string,
-  exitCode: number,
+  exitCode: number
 ): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
   const issues = parseIssues(output);
   const filesChecked = parseFilesChecked(output) ?? 0;
@@ -89,7 +91,9 @@ function buildCspellResult(
 }
 
 /** Resolves exec function and staged list from context. */
-function getContextExecAndStaged(context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined): {
+function getContextExecAndStaged(
+  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
+): {
   execSyncFn: ExecSyncFn;
   staged: string[];
 } {
@@ -101,7 +105,7 @@ function getContextExecAndStaged(context: { stagedFiles?: string[]; _execSync?: 
 function getCspellRunResult(
   root: string,
   staged: string[],
-  execSyncFn: ExecSyncFn,
+  execSyncFn: ExecSyncFn
 ): { output: string; exitCode: number } {
   if (staged.length > 0) return runCspellStaged(root, staged, execSyncFn);
   return runCspellGlob(root, '**/*.md', execSyncFn);
@@ -124,7 +128,7 @@ function offsetToLineCol(text: string, offset: number): { line: number; col: num
 function formatLibIssue(
   filePath: string,
   issue: { line?: { offset?: number }; message?: string },
-  text: string,
+  text: string
 ): string {
   const off = typeof issue.line?.offset === 'number' ? issue.line.offset : 0;
   const { line, col } = offsetToLineCol(text, off);
@@ -137,7 +141,7 @@ function formatLibIssue(
 async function checkOneFileWithLib(
   filePath: string,
   opts: { noConfigSearch: true },
-  config: Awaited<ReturnType<typeof readConfigFile>>,
+  config: Awaited<ReturnType<typeof readConfigFile>>
 ): Promise<{ errors: string[] }> {
   try {
     const result = await spellCheckFile(filePath, opts, config);
@@ -154,7 +158,7 @@ async function checkOneFileWithLib(
 async function runCspellWithLib(
   root: string,
   configPath: string,
-  paths: string[],
+  paths: string[]
 ): Promise<{ ok: boolean; errors: string[]; filesChecked: number }> {
   if (paths.length === 0) return { ok: true, errors: [], filesChecked: 0 };
   const config = await readConfigFile(configPath, root);
@@ -169,7 +173,8 @@ async function runCspellWithLib(
 
 /** Paths to check: staged (existing) or all .md under root. */
 function getPathsToCheck(root: string, staged: string[]): string[] {
-  if (staged.length > 0) return staged.filter((p) => existsSync(join(root, p))).map((p) => join(root, p));
+  if (staged.length > 0)
+    return staged.filter((p) => existsSync(join(root, p))).map((p) => join(root, p));
   return findMd(root).map((p) => join(root, p));
 }
 

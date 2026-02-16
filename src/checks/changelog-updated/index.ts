@@ -23,9 +23,7 @@ function sampleWords(words: Set<string>, n: number): string[] {
   const arr = [...words];
   for (let i = arr.length - 1; i > 0 && n > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
-    [arr[i],
-      arr[j]] = [arr[j],
-      arr[i]];
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr.slice(0, n);
 }
@@ -33,7 +31,7 @@ function sampleWords(words: Set<string>, n: number): string[] {
 /** Parses one git diff line; returns updated current file and optional added line. */
 function processDiffLine(
   line: string,
-  current: string,
+  current: string
 ): { current: string; file?: string; text?: string } {
   if (line.startsWith('+++ ')) return { current: line.slice(4).trim().replace(/^b\//, '') };
   if (line.startsWith('+') && !line.startsWith('++') && current) {
@@ -50,7 +48,10 @@ function appendDiffLine(byFile: Map<string, string>, file: string, text: string)
   byFile.set(file, prev ? prev + ' ' + text : text);
 }
 
-type ExecSyncFn = (cmd: string, opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }) => string;
+type ExecSyncFn = (
+  cmd: string,
+  opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }
+) => string;
 
 /** Returns map of file path (repo-relative) -> added line content. */
 function getStagedDiffByFile(root: string, execFn: ExecSyncFn = execSync): Map<string, string> {
@@ -68,8 +69,7 @@ function getStagedDiffByFile(root: string, execFn: ExecSyncFn = execSync): Map<s
 /** Words from staged diff excluding CHANGELOG.md. */
 function getRestWordsFromDiff(byFile: Map<string, string>): Set<string> {
   const restLines: string[] = [];
-  for (const [file,
-    content] of byFile) {
+  for (const [file, content] of byFile) {
     if (file !== ROOT_CHANGELOG) restLines.push(content);
   }
   return extractWords(restLines.join(' '));
@@ -78,7 +78,7 @@ function getRestWordsFromDiff(byFile: Map<string, string>): Set<string> {
 /** Checks overlap count and returns pass or error result with suggestion. */
 function checkOverlapAndReport(
   changelogWords: Set<string>,
-  restWords: Set<string>,
+  restWords: Set<string>
 ): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
   const overlap = [...changelogWords].filter((w) => restWords.has(w));
   if (overlap.length >= MIN_OVERLAP) return { ok: true, errors: [], meta: { filesChecked: 1 } };
@@ -93,8 +93,11 @@ function checkOverlapAndReport(
 /** Returns early result if no staged files or CHANGELOG missing; null to continue. */
 function ensureChangelogExists(
   root: string,
-  context: { stagedFiles?: string[] } | undefined,
-): { ok: true; errors: []; meta: { filesChecked: number } } | { ok: false; errors: string[]; meta: { filesChecked: number } } | null {
+  context: { stagedFiles?: string[] } | undefined
+):
+  | { ok: true; errors: []; meta: { filesChecked: number } }
+  | { ok: false; errors: string[]; meta: { filesChecked: number } }
+  | null {
   const staged = context?.stagedFiles;
   if (!staged?.length) return { ok: true, errors: [], meta: { filesChecked: 0 } };
   const path = join(root, ROOT_CHANGELOG);
@@ -114,7 +117,10 @@ type ChangelogOverlapInput =
   | { changelogWords: Set<string>; restWords: Set<string> };
 
 /** Builds changelog/rest word sets or early result for overlap check. */
-function getChangelogOverlapInput(root: string, execFn: ExecSyncFn = execSync): ChangelogOverlapInput {
+function getChangelogOverlapInput(
+  root: string,
+  execFn: ExecSyncFn = execSync
+): ChangelogOverlapInput {
   const byFile = getStagedDiffByFile(root, execFn);
   const changelogWords = extractWords(byFile.get(ROOT_CHANGELOG) ?? '');
   if (changelogWords.size === 0) {
@@ -134,7 +140,7 @@ function getChangelogOverlapInput(root: string, execFn: ExecSyncFn = execSync): 
 /** Runs overlap check; returns early result or overlap report. */
 function runChangelogUpdated(
   root: string,
-  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined,
+  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
 ): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
   const early = ensureChangelogExists(root, context);
   if (early != null) return early;

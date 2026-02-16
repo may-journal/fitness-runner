@@ -14,7 +14,10 @@ export function isSemanticSubject(subject: string): boolean {
 export { SEMANTIC_TYPES };
 
 /** Resolves commit subject from context or git log. */
-function getCommitSubject(root: string, context: { proposedCommitMessage?: string } | undefined): string {
+function getCommitSubject(
+  root: string,
+  context: { proposedCommitMessage?: string } | undefined
+): string {
   if (context?.proposedCommitMessage) return context.proposedCommitMessage;
   try {
     const msg = execSync('git log -1 --pretty=%B', { encoding: 'utf8', cwd: root });

@@ -19,32 +19,17 @@ const ITALIC_ASTERISK_RE = /(?<!\*)\*[^*\n]+\*(?!\*)/g;
 const ITALIC_UNDERSCORE_RE = /(?<!_)_[^_]+_(?!_)/g;
 
 const EMPHASIS_RULES: [RegExp, string][] = [
-  [
-    BOLD_ASTERISK_RE,
-    '**bold**',
-  ],
-  [
-    BOLD_UNDERSCORE_RE,
-    '__bold__',
-  ],
-  [
-    ITALIC_ASTERISK_RE,
-    '*italic*',
-  ],
-  [
-    ITALIC_UNDERSCORE_RE,
-    '_italic_',
-  ],
+  [BOLD_ASTERISK_RE, '**bold**'],
+  [BOLD_UNDERSCORE_RE, '__bold__'],
+  [ITALIC_ASTERISK_RE, '*italic*'],
+  [ITALIC_UNDERSCORE_RE, '_italic_'],
 ];
 
 /** Returns all disallowed markdown emphasis matches in content (bold/italic); ignores content inside code. */
 export function findDisallowedEmphasis(content: string): { kind: string; match: string }[] {
   const stripped = stripCodeForEmphasisCheck(content);
   const out: { kind: string; match: string }[] = [];
-  for (const [
-    re,
-    kind,
-  ] of EMPHASIS_RULES) {
+  for (const [re, kind] of EMPHASIS_RULES) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(stripped)) !== null) out.push({ kind, match: m[0] });
@@ -55,7 +40,10 @@ export function findDisallowedEmphasis(content: string): { kind: string; match: 
 /** Validates one markdown file; returns error messages for disallowed bold/italic. */
 function validateFile(relPath: string, content: string): string[] {
   const hits = findDisallowedEmphasis(content);
-  return hits.map(({ kind, match }) => `${relPath}: disallowed ${kind} (use only when explicitly required): ${JSON.stringify(match)}`);
+  return hits.map(
+    ({ kind, match }) =>
+      `${relPath}: disallowed ${kind} (use only when explicitly required): ${JSON.stringify(match)}`
+  );
 }
 
 /** Ensures markdown files do not use **bold**, __bold__, *italic*, or _italic_ per AI-generated markdown convention. */

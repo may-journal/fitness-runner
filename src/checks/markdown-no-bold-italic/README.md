@@ -1,6 +1,7 @@
 ---
-fitnessFunctions: ["markdown-no-bold-italic"]
+fitnessFunctions: ['markdown-no-bold-italic']
 ---
+
 # markdown-no-bold-italic
 
 ## Behavior

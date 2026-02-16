@@ -24,7 +24,8 @@
     "./vitest.config": "./vitest.config.cjs",
     "./tsconfig": "./tsconfig.json",
     "./tsconfig.cjs": "./tsconfig.cjs",
-    "./cspell": "./cspell.json"
+    "./cspell": "./cspell.json",
+    "./prettier.config": "./prettier.config.cjs"
   },
   "dependencies": {
     "boxen": "^8.0.1",
@@ -43,18 +44,22 @@
     "vitest.config.cjs",
     "tsconfig.json",
     "tsconfig.cjs",
-    "cspell.json"
+    "cspell.json",
+    "prettier.config.cjs"
   ],
   "scripts": {
     "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
     "ci": "(nvm use 2>/dev/null || true) && npm run fitness && npm test",
     "fitness": "npm run build && node dist/index.js",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
     "lint": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && eslint .",
     "precommit": "npm run fitness",
     "prepare": "husky",
     "test": "vitest run --coverage",
     "prepublishOnly": "npm run build"
   },
+  "prettier": "./prettier.config.cjs",
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.8.0",
     "@types/node": "^25",
@@ -62,9 +67,11 @@
     "@typescript-eslint/parser": "^8.55.0",
     "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.0.0",
+    "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsdoc": "^62.5.4",
     "husky": "^9.0.0",
     "jiti": "^2.6.1",
+    "prettier": "3.8.1",
     "tsconfig.js": "^3.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.6",

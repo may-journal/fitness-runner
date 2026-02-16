@@ -45,8 +45,7 @@ function loadOneConfig(root: string, name: string): FitnessConfig | null {
 
 /** Loads .fitnessrc.ts or .fitnessrc.js from root; returns null if missing or invalid. */
 export function loadConfig(root: string): FitnessConfig | null {
-  for (const name of ['.fitnessrc.ts',
-    '.fitnessrc.js']) {
+  for (const name of ['.fitnessrc.ts', '.fitnessrc.js']) {
     const config = loadOneConfig(root, name);
     if (config != null) return config;
   }

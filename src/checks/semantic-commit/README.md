@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ["../../../package.json"]
+relatedConfigurations: ['../../../package.json']
 ---
 
 # semantic-commit

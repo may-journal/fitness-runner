@@ -1,5 +1,5 @@
 ---
-fitnessFunctions: ["read-repo-first"]
+fitnessFunctions: ['read-repo-first']
 ---
 
 # read-repo-first

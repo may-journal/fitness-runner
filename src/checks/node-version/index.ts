@@ -26,6 +26,10 @@ export const nodeVersionCheck: Check = {
     if (currentMajor >= requiredMajor) {
       return { ok: true, errors: [], meta: { filesChecked: 1 } };
     }
-    return { ok: false, errors: [ERROR_VERSION(process.version, requiredMajor)], meta: { filesChecked: 1 } };
+    return {
+      ok: false,
+      errors: [ERROR_VERSION(process.version, requiredMajor)],
+      meta: { filesChecked: 1 },
+    };
   },
 };

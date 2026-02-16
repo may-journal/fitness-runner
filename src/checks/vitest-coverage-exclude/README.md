@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ["vitest-coverage-exclude"]
+relatedConfigurations: ['vitest-coverage-exclude']
 ---
 
 # vitest-coverage-exclude
@@ -13,4 +13,4 @@ Reads `vitest.config.ts`, `vitest.config.js`, or `package.json` `vitest` key.
 
 ## Changelog for this file
 
-* 2026-02-15: Initial rule
+- 2026-02-15: Initial rule

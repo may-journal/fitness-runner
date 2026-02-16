@@ -32,7 +32,10 @@ function isDisallowedTsPattern(pattern: string): boolean {
   return true;
 }
 
-type VitestConfig = { test?: { coverage?: { exclude?: string[] } }; coverage?: { exclude?: string[] } };
+type VitestConfig = {
+  test?: { coverage?: { exclude?: string[] } };
+  coverage?: { exclude?: string[] };
+};
 
 /** True if x is a non-null object. */
 function isObject(x: unknown): x is object {
@@ -111,7 +114,9 @@ export const vitestCoverageExcludeCheck: Check = {
     const bad = exclude.filter((p) => typeof p === 'string' && isDisallowedTsPattern(p));
     if (bad.length === 0) return { ok: true, errors: [], meta: { filesChecked: 1 } };
     const allowed = ALLOWED_COVERAGE_EXCLUDE_PATTERNS.join(', ');
-    const errors = bad.map((p) => `Vitest coverage exclude only allows ${allowed}; disallowed: ${JSON.stringify(p)}`);
+    const errors = bad.map(
+      (p) => `Vitest coverage exclude only allows ${allowed}; disallowed: ${JSON.stringify(p)}`
+    );
     return { ok: false, errors, meta: { filesChecked: 1 } };
   },
 };

@@ -1,8 +1,7 @@
 {
   "version": "0.2",
   "useGitignore": true,
-  "ignorePaths": 
-  [
+  "ignorePaths": [
     "node_modules",
     "dist",
     "coverage",
@@ -11,7 +10,7 @@
     ".gitignore",
     "tsconfig.json"
   ],
-  "words":[
+  "words": [
     "broown",
     "jasonvanderslice",
     "Dctx",

@@ -1,6 +1,6 @@
 ---
-fitnessFunctions: ["markdown-front-matter"]
-relatedConfigurations: ["../../../package.json"]
+fitnessFunctions: ['markdown-front-matter']
+relatedConfigurations: ['../../../package.json']
 ---
 
 # rules-front-matter (markdown-front-matter)

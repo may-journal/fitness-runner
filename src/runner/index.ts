@@ -32,7 +32,11 @@ function getCommitMsgPath(positionals: string[], specFromPositional: boolean): s
 }
 
 /** When running semantic-commit, positional(s) may include the message file path (commit-msg hook). */
-function getCommitMsgContext(argv: string[], checkName: string | undefined, specFromPositional: boolean): RunContext | undefined {
+function getCommitMsgContext(
+  argv: string[],
+  checkName: string | undefined,
+  specFromPositional: boolean
+): RunContext | undefined {
   if (checkName !== 'semantic-commit') return undefined;
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
   const path = getCommitMsgPath(positionals, specFromPositional);
@@ -50,8 +54,7 @@ function getCommitMsgContext(argv: string[], checkName: string | undefined, spec
 function resolveChecks(root: string): Check[] {
   const config = loadConfig(root);
   if (config?.checks?.length) {
-    const byName = new Map(registry.map((c) => [c.name,
-      c]));
+    const byName = new Map(registry.map((c) => [c.name, c]));
     return config.checks.map((name) => byName.get(name)).filter((c): c is Check => c != null);
   }
   return [...registry];
@@ -96,7 +99,7 @@ async function loadCheckFromPath(root: string, spec: string): Promise<Check | nu
   if (!existsSync(abs)) return null;
   try {
     const url = pathToFileURL(abs).href;
-    const mod = await import(url) as { default?: unknown; [k: string]: unknown };
+    const mod = (await import(url)) as { default?: unknown; [k: string]: unknown };
     return getCheckFromModule(mod);
   } catch {
     return null;
@@ -118,7 +121,7 @@ async function resolveChecksBySpec(spec: string | undefined, root: string): Prom
 function buildContext(
   staged: RunContext | undefined,
   commitMsg: RunContext | undefined,
-  enabledChecks: Check[],
+  enabledChecks: Check[]
 ): RunContext {
   return {
     registeredCheckNames: registry.map((c) => c.name),
@@ -129,7 +132,10 @@ function buildContext(
 }
 
 /** Returns checks to run, spec for error display, and optional context from argv. */
-async function getChecks(argv: string[], root: string): Promise<{
+async function getChecks(
+  argv: string[],
+  root: string
+): Promise<{
   checks: Check[];
   spec: string | undefined;
   context: RunContext | undefined;
@@ -180,7 +186,12 @@ function pushResultRow(table: InstanceType<typeof Table>, r: ResultRow): void {
 function buildTable(rows: ResultRow[]): string {
   const timeCol = Math.max(10, getColumns() - 51);
   const table = new Table({
-    head: [chalk.bold.white('Check'), chalk.bold.white('Status'), chalk.bold.white('Files'), chalk.bold.white('Time')],
+    head: [
+      chalk.bold.white('Check'),
+      chalk.bold.white('Status'),
+      chalk.bold.white('Files'),
+      chalk.bold.white('Time'),
+    ],
     colWidths: [28, 10, 8, timeCol],
     wordWrap: true,
   });
@@ -192,7 +203,7 @@ function buildTable(rows: ResultRow[]): string {
 async function runOneCheck(
   check: Check,
   root: string,
-  context?: RunContext,
+  context?: RunContext
 ): Promise<{ name: string; ok: boolean; filesChecked: number; ms: number; errors: string[] }> {
   const start = performance.now();
   const result = await check.run(root, context);
@@ -202,7 +213,12 @@ async function runOneCheck(
 }
 
 /** Builds total summary line. */
-function buildTotalLine(successCount: number, failureCount: number, totalFiles: number, totalMs: number): string {
+function buildTotalLine(
+  successCount: number,
+  failureCount: number,
+  totalFiles: number,
+  totalMs: number
+): string {
   return `Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${totalMs}ms`;
 }
 
@@ -210,7 +226,7 @@ function buildTotalLine(successCount: number, failureCount: number, totalFiles: 
 async function collectResults(
   checks: Check[],
   root: string,
-  context: RunContext | undefined,
+  context: RunContext | undefined
 ): Promise<{ results: ResultRow[]; counts: { success: number; failure: number; files: number } }> {
   const results: ResultRow[] = [];
   const counts = { success: 0, failure: 0, files: 0 };
@@ -225,11 +241,7 @@ async function collectResults(
 }
 
 /** Runs all checks; returns true if any failed. */
-async function runChecks(
-  checks: Check[],
-  root: string,
-  context?: RunContext,
-): Promise<boolean> {
+async function runChecks(checks: Check[], root: string, context?: RunContext): Promise<boolean> {
   const start = performance.now();
   const { results, counts } = await collectResults(checks, root, context);
   const out = counts.failure > 0 ? console.error : console.log;

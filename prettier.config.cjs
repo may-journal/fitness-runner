@@ -1,0 +1,10 @@
+'use strict';
+
+// Exported config for consumers: "prettier": "@fitness/runner/prettier.config"
+module.exports = {
+  semi: true,
+  singleQuote: true,
+  tabWidth: 2,
+  trailingComma: 'es5',
+  printWidth: 100,
+};

@@ -1,6 +1,6 @@
 ---
-fitnessFunctions: ["cspell"]
-relatedConfigurations: ["../../../cspell.json"]
+fitnessFunctions: ['cspell']
+relatedConfigurations: ['../../../cspell.json']
 ---
 
 # cspell

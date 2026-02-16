@@ -1,25 +1,34 @@
 ---
 # Changed package version should correlate with this file
-relatedConfigurations: ["package.json"]
+relatedConfigurations: ['package.json']
 ---
 
 # Changelog
 
 ## Changes
 
+### 2026.02.16.1730
+
+- Prettier: add Prettier with eslint-config-prettier; .prettierrc.json and .prettierignore; format/format:check scripts; CI format job; export prettier.config for consumers.
+
 ### 2026.02.16.1720
+
 - README: sync main and checks README with registry; add rules-front-matter README.
 
 ### 2026.02.16.1710
+
 - ESLint check README: add fitnessFunctions; relate to eslint.config.cjs.
 
 ### 2026.02.16.1700
+
 - Runner: table feedback with colspan row per failed check; errors contextual to row; dynamic width via getColumns from read-repo-first; README flow diagram update.
 
 ### 2026.02.16.1600
+
 - Rules-front-matter: reject empty fitnessFunctions and relatedConfigurations arrays; require at least one entry per array.
 
 ### 2026.02.16.1500
+
 - Runner: format check results as table (cli-table3) with Check, Status, Files, Time columns; bold white headers.
 - Read-repo-first: table of enabled checks with Src column (plain paths for IDE link detection); add cli-table3.
 - Read-repo-first: remove TTY requirement; display feedback to CLI for Agent/User context; always pass. Remove `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` from CI.
@@ -30,9 +39,11 @@ relatedConfigurations: ["package.json"]
 - Package and gitignore: updates for consolidated rules.
 
 ### 2026.02.16.1400
+
 - Package: add exports for eslint.config, vitest.config, tsconfig, tsconfig.cjs, and cspell for reuse by downstream projects.
 
 ### 2026.02.16.1300
+
 - Vitest-coverage-exclude: update README to use relative paths; properly associated with the name of the check.
 - Tsconfig: single root tsconfig.cjs for build and lint; remove build/; use tsconfig.js to convert .cjs to JSON.
 - Changelog-updated: ExecSyncFn maxBuffer type; add execSync fallback coverage test.
@@ -42,16 +53,20 @@ relatedConfigurations: ["package.json"]
 - Gitignore: ignore compiled root config outputs (eslint and vitest .js, .map, .d.ts).
 
 ### 2026.02.16.1025
+
 - ESLint check: run eslint (staged or .), parse JSON, report errors; hoist feedback and CLI consts; 100% coverage.
 - ESLint check: only pass .ts/.tsx staged paths (avoid no-config for .md); tests use .ts (bar, pathWithQuote, quoted).
 
 ### 2026.02.16.1005
+
 - Runner: add feedback dressing (Please fix these items), hoist messages to shared consts; static import in runner tests.
 
 ### 2026.02.16.0958
+
 - Plans: add read-repo-first check design doc (plans/read-repo-first-check.md).
 
 ### 2026.02.15.1700
+
 - Docs: clarify README tagline (fitness runner, checks, workflows).
 - Cspell: run in-process via cspell-lib (readConfigFile, spellCheckFile) for speed; keep CLI path when tests mock exec.
 - Runner: add total files scanned count to summary (sum of filesChecked from checks).
@@ -59,6 +74,7 @@ relatedConfigurations: ["package.json"]
 - Markdown-no-bold-italic: do not flag unordered list asterisk markers as italic.
 
 ### 2026.02.15.1600
+
 - Docs: remove bold/italic from check READMEs to satisfy markdown-no-bold-italic.
 - Remove .fitnessrc.ts.
 - Runner test: cover resolveChecks when .fitnessrc.ts provides custom checks (restore 100% coverage).
@@ -71,21 +87,26 @@ relatedConfigurations: ["package.json"]
 - Markdown-front-matter: require fitnessFunctions or relatedConfigurations in every .md; paths resolved relative to md file; findMd skips node_modules, dist, coverage, .git, .husky; export getFrontMatterPaths for tests (100% coverage). README/CHANGELOG front matter fixes (---, flow-style).
 
 ### 2026.02.15.1500
+
 - Node-version check: compare .nvmrc to current Node only; remove nvm subshell logic. CI script runs nvm use when available.
 - Node-version check: run nvm use in a subshell when available and use that version for validation; fallback to process.version.
 - CI: default strategy matrix fromJson(needs.discover.outputs.checks) to '[]' when checks output is empty.
 
 ### 2026.02.15.1400
+
 - Runner: 100% coverage; path-load tests (named export, no Check, import throws); two positionals (check then msg path) for semantic-commit; getPositionalSpec and getCommitMsgContext fix for single vs two positionals.
 
 ### 2026.02.15.1300
+
 - Rules front-matter check: validate fitnessFunctions and relatedConfigurations paths in all markdown; shared findMd helper.
 - Runner: accept check by name or path (--check=./path/to/check.js or positional); load Check from module default or named export.
 
 ### 2026.02.15.0100
+
 - Runner: single CLI flag --check= only; commit-msg path positional; staged context always; full runner test coverage.
 
 ### 2026.02.15.1200
+
 - GitHub Actions CI: dynamic fitness jobs from registry, composite setup action.
 - README: add Mermaid code-flow diagram (modern colors), move to bottom.
 - cspell check (optional: only runs when cspell.json present); cspell in runner dependencies.
@@ -98,7 +119,6 @@ relatedConfigurations: ["package.json"]
 - Remove duplicate check-node-version script and check-node; ci runs npm run fitness only.
 - Changelog-updated check: suggest up to 10 random words from staged diff when overlap is too low.
 - Changelog section format: yyyy.mm.dd.HHMM to match package version.
-
 
 ### 2026.02.15.1000
 

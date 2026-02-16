@@ -1,6 +1,6 @@
 ---
 # Top-level project config
-relatedConfigurations: ["package.json"]
+relatedConfigurations: ['package.json']
 ---
 
 # @fitness/runner
@@ -46,6 +46,18 @@ See [src/checks/README.md](src/checks/README.md) for the list and how checks wor
 - [semantic-commit](src/checks/semantic-commit/README.md)
 - [vitest-coverage-exclude](src/checks/vitest-coverage-exclude/README.md)
 
+## Exported configs
+
+Consumers can extend these configs via package exports:
+
+- `@fitness/runner/eslint.config` – ESLint flat config
+- `@fitness/runner/vitest.config` – Vitest
+- `@fitness/runner/tsconfig` – TypeScript
+- `@fitness/runner/cspell` – cspell.json
+- `@fitness/runner/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100)
+
+Example: add `"prettier": "@fitness/runner/prettier.config"` to your package.json to use the shared Prettier config.
+
 ## Config
 
 Optional `.fitnessrc.ts` or `.fitnessrc.js` at repo root:
@@ -68,6 +80,8 @@ Each check lives in `src/checks/<name>/` with its implementation, tests, and a R
 npm install
 npm run build
 npm run fitness
+npm run format
+npm run lint
 npm test
 ```
 

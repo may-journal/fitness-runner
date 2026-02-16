@@ -4,7 +4,8 @@ import boxen from 'boxen';
 import Table from 'cli-table3';
 import type { Check } from '../../types/index.types.js';
 
-const NOTE_NO_VERIFY = ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
+const NOTE_NO_VERIFY =
+  ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
 
 /** Exported for tests. */
 export function getColumns(): number {
@@ -19,7 +20,7 @@ const CHECK_TO_FOLDER: Record<string, string> = { 'markdown-front-matter': 'rule
 export function buildContextFeedback(enabledCheckNames: string[]): string {
   const question = chalk.bold(
     'Did you familiarize yourself with the decisions logged in the repo,\n' +
-    'specifically all "Fitness Checks" that are enabled via fitness-runner?',
+      'specifically all "Fitness Checks" that are enabled via fitness-runner?'
   );
   const lines: string[] = [question];
   if (enabledCheckNames.length > 0) {
