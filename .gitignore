@@ -140,3 +140,13 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Compiled root configs (sources are *.config.ts)
+eslint.config.js
+eslint.config.js.map
+eslint.config.d.ts
+eslint.config.d.ts.map
+vitest.config.js
+vitest.config.js.map
+vitest.config.d.ts
+vitest.config.d.ts.map

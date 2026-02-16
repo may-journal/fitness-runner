@@ -7,6 +7,11 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1100
+- Tsconfig: add shared base config (underscore-prefixed), tsconfig.build.json for build only; tsconfig.json includes all .ts, no emit. Remove tsconfig.eslint.json.
+- ESLint: remove stylistic plugin and rules; keep jsdoc/require-jsdoc and complexity max 5. Single block, project tsconfig.json.
+- Gitignore: ignore compiled root config outputs (eslint and vitest .js, .map, .d.ts).
+
 ### 2026.02.16.1025
 - ESLint check: run eslint (staged or .), parse JSON, report errors; hoist feedback and CLI consts; 100% coverage.
 - ESLint check: only pass .ts/.tsx staged paths (avoid no-config for .md); tests use .ts (bar, pathWithQuote, quoted).

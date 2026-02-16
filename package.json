@@ -28,7 +28,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -p tsconfig.build.json",
     "ci": "(nvm use 2>/dev/null || true) && npm run fitness && npm run lint && npm test",
     "fitness": "npm run build && node dist/index.js",
     "lint": "eslint .",
