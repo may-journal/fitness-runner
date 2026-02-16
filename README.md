@@ -113,7 +113,7 @@ flowchart TD
     L --> M["runOneCheck: check.run(root, context)"]
     M --> N{"result.ok?"}
     N -->|yes| O["Log meta, continue"]
-    N -->|no| P["displayErrors, set failed"]
+    N -->|no| P["Set failed, collect errors for table"]
     O --> L
     P --> L
   end

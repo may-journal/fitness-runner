@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1700
+- Runner: table feedback with colspan row per failed check; errors contextual to row; dynamic width via getColumns from read-repo-first; README flow diagram update.
+
 ### 2026.02.16.1600
 - Rules-front-matter: reject empty fitnessFunctions and relatedConfigurations arrays; require at least one entry per array.
 

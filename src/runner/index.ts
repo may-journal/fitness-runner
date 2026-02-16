@@ -5,6 +5,7 @@ import { pathToFileURL } from 'node:url';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { registry } from '../checks/index.js';
+import { getColumns } from '../checks/read-repo-first/index.js';
 import type { Check, RunContext } from '../types/index.types.js';
 import { loadConfig } from '../config/load.js';
 
@@ -149,28 +150,42 @@ function exitUnknown(spec: string | undefined): never {
   throw new Error('exit');
 }
 
-/** Builds table from check results for display. */
-function buildTable(
-  rows: Array<{ name: string; ok: boolean; filesChecked: number; ms: number }>,
-): string {
-  const table = new Table({
-    head: [chalk.bold.white('Check'), chalk.bold.white('Status'), chalk.bold.white('Files'), chalk.bold.white('Time')],
-    colWidths: [28, 10, 8, 10],
-  });
-  for (const r of rows) {
-    const status = r.ok ? chalk.green('passed') : chalk.red('failed');
-    const files = r.filesChecked >= 0 ? String(r.filesChecked) : '-';
-    table.push([r.name, status, files, `${r.ms}ms`]);
-  }
-  return table.toString();
+type ResultRow = { name: string; ok: boolean; filesChecked: number; ms: number; errors?: string[] };
+
+/** Formats error block for colspan row. */
+function formatErrorsBlock(checkName: string, errors: string[]): string {
+  const header = chalk.red(`[${checkName}] ${PLEASE_FIX_ITEMS}`);
+  const bullets = errors.map((e) => chalk.red(ERROR_BULLET + e)).join('\n');
+  return header + '\n' + bullets;
 }
 
-/** Formats and logs check errors with check name prefix and intro for agent/human. */
-function displayErrors(checkName: string, errors: string[]): void {
-  console.error(chalk.red(`[${checkName}] ${PLEASE_FIX_ITEMS}`));
-  for (const err of errors) {
-    console.error(chalk.red(ERROR_BULLET + err));
-  }
+/** Returns green "passed" or red "failed" string. */
+function formatStatus(ok: boolean): string {
+  return ok ? chalk.green('passed') : chalk.red('failed');
+}
+
+/** Pushes colspan row with formatted errors to table. */
+function pushErrorRow(table: InstanceType<typeof Table>, name: string, errors: string[]): void {
+  table.push([{ colSpan: 4, content: formatErrorsBlock(name, errors), wordWrap: true }]);
+}
+
+/** Pushes one check row and optional error colspan row to table. */
+function pushResultRow(table: InstanceType<typeof Table>, r: ResultRow): void {
+  const files = r.filesChecked >= 0 ? String(r.filesChecked) : '-';
+  table.push([r.name, formatStatus(r.ok), files, `${r.ms}ms`]);
+  if (!r.ok && r.errors?.length) pushErrorRow(table, r.name, r.errors);
+}
+
+/** Builds table: check rows plus full-width colspan row per failed check with errors. */
+function buildTable(rows: ResultRow[]): string {
+  const timeCol = Math.max(10, getColumns() - 51);
+  const table = new Table({
+    head: [chalk.bold.white('Check'), chalk.bold.white('Status'), chalk.bold.white('Files'), chalk.bold.white('Time')],
+    colWidths: [28, 10, 8, timeCol],
+    wordWrap: true,
+  });
+  for (const r of rows) pushResultRow(table, r);
+  return table.toString();
 }
 
 /** Runs a single check; returns result data for table and errors. */
@@ -191,6 +206,24 @@ function buildTotalLine(successCount: number, failureCount: number, totalFiles: 
   return `Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${totalMs}ms`;
 }
 
+/** Runs each check and aggregates results plus counts. */
+async function collectResults(
+  checks: Check[],
+  root: string,
+  context: RunContext | undefined,
+): Promise<{ results: ResultRow[]; counts: { success: number; failure: number; files: number } }> {
+  const results: ResultRow[] = [];
+  const counts = { success: 0, failure: 0, files: 0 };
+  for (const check of checks) {
+    const { name, ok, filesChecked, ms, errors } = await runOneCheck(check, root, context);
+    results.push({ name, ok, filesChecked, ms, errors });
+    if (ok) counts.success++;
+    else counts.failure++;
+    counts.files += filesChecked >= 0 ? filesChecked : 0;
+  }
+  return { results, counts };
+}
+
 /** Runs all checks; returns true if any failed. */
 async function runChecks(
   checks: Check[],
@@ -198,19 +231,12 @@ async function runChecks(
   context?: RunContext,
 ): Promise<boolean> {
   const start = performance.now();
-  const results: Array<{ name: string; ok: boolean; filesChecked: number; ms: number }> = [];
-  const counts = { success: 0, failure: 0, files: 0 };
-  for (const check of checks) {
-    const { name, ok, filesChecked, ms, errors } = await runOneCheck(check, root, context);
-    results.push({ name, ok, filesChecked, ms });
-    if (ok) counts.success++;
-    else { counts.failure++; displayErrors(name, errors); }
-    counts.files += filesChecked >= 0 ? filesChecked : 0;
-  }
-  console.log(buildTable(results));
+  const { results, counts } = await collectResults(checks, root, context);
+  const out = counts.failure > 0 ? console.error : console.log;
+  out(buildTable(results));
   const totalMs = Math.round(performance.now() - start);
   const totalLine = buildTotalLine(counts.success, counts.failure, counts.files, totalMs);
-  console.log(counts.failure > 0 ? chalk.bold.red(totalLine) : chalk.bold.green(totalLine));
+  out(counts.failure > 0 ? chalk.bold.red(totalLine) : chalk.bold.green(totalLine));
   return counts.failure > 0;
 }
 
