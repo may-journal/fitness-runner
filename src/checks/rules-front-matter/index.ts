@@ -5,9 +5,10 @@ import { findMd } from '../findMd.js';
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
 const ARRAY_RE = /(?:fitnessFunctions|relatedConfigurations):\s*\[([^\]]*)\]/g;
+const EMPTY_ARRAY_RE = /(fitnessFunctions|relatedConfigurations):\s*\[\s*\]/g;
 
-/** True if content has front matter with at least one of fitnessFunctions or relatedConfigurations. */
-function hasRequiredFrontMatter(content: string): boolean {
+/** True if content has front matter with at least one of fitnessFunctions or relatedConfigurations. Exported for tests. */
+export function hasRequiredFrontMatter(content: string): boolean {
   const fm = content.match(FRONTMATTER_RE);
   if (!fm) return false;
   const inner = fm[1];
@@ -32,6 +33,13 @@ function isExternalOrAnchor(path: string): boolean {
   return path.startsWith('http') || path.startsWith('#') || path.startsWith('mailto:');
 }
 
+/** Returns errors for empty fitnessFunctions or relatedConfigurations arrays in front matter inner. */
+function getEmptyArrayErrors(file: string, fmInner: string): string[] {
+  const errors: string[] = [];
+  for (const m of fmInner.matchAll(EMPTY_ARRAY_RE)) errors.push(`${file}: ${m[1]} must not be an empty array`);
+  return errors;
+}
+
 /** Returns error message if path invalid, null if valid. Path is resolved relative to the md file's directory. */
 function validatePath(
   file: string,
@@ -52,6 +60,22 @@ function validatePath(
   }
 }
 
+/** Validates paths in front matter and returns error messages. */
+function getPathErrors(
+  file: string,
+  content: string,
+  root: string,
+  mdFileDir: string,
+  registeredCheckNames: string[],
+): string[] {
+  const errors: string[] = [];
+  for (const path of getFrontMatterPaths(content)) {
+    const err = validatePath(file, path, root, mdFileDir, registeredCheckNames);
+    if (err) errors.push(err);
+  }
+  return errors;
+}
+
 /** Validates a rule file has required front matter and paths; returns error messages. Paths are relative to the md file. */
 function validateFile(
   file: string,
@@ -60,16 +84,13 @@ function validateFile(
   mdFileDir: string,
   registeredCheckNames: string[],
 ): string[] {
-  const errors: string[] = [];
-  if (!hasRequiredFrontMatter(content)) {
-    errors.push(`${file}: missing front matter with fitnessFunctions or relatedConfigurations`);
-    return errors;
+  const fm = content.match(FRONTMATTER_RE);
+  if (!fm || !hasRequiredFrontMatter(content)) {
+    return [`${file}: missing front matter with fitnessFunctions or relatedConfigurations`];
   }
-  for (const path of getFrontMatterPaths(content)) {
-    const err = validatePath(file, path, root, mdFileDir, registeredCheckNames);
-    if (err) errors.push(err);
-  }
-  return errors;
+  const emptyErrors = getEmptyArrayErrors(file, fm[1]);
+  if (emptyErrors.length > 0) return emptyErrors;
+  return getPathErrors(file, content, root, mdFileDir, registeredCheckNames);
 }
 
 /** Validates front matter: fitnessFunctions and relatedConfigurations paths must exist; entries may be registered check names. */

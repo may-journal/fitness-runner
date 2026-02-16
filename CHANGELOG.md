@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1600
+- Rules-front-matter: reject empty fitnessFunctions and relatedConfigurations arrays; require at least one entry per array.
+
 ### 2026.02.16.1500
 - Runner: format check results as table (cli-table3) with Check, Status, Files, Time columns; bold white headers.
 - Read-repo-first: table of enabled checks with Src column (plain paths for IDE link detection); add cli-table3.
