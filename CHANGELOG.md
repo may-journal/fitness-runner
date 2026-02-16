@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1710
+- ESLint check README: add fitnessFunctions; relate to eslint.config.cjs.
+
 ### 2026.02.16.1700
 - Runner: table feedback with colspan row per failed check; errors contextual to row; dynamic width via getColumns from read-repo-first; README flow diagram update.
 

@@ -1,5 +1,6 @@
 ---
-relatedConfigurations: ["../../../package.json"]
+fitnessFunctions: ["eslint"]
+relatedConfigurations: ["../../../eslint.config.cjs"]
 ---
 
 # eslint
