@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1005
+- Runner: add feedback dressing (Please fix these items), hoist messages to shared consts; static import in runner tests.
+
 ### 2026.02.16.0958
 - Plans: add read-repo-first check design doc (plans/read-repo-first-check.md).
 

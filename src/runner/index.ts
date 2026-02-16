@@ -6,6 +6,11 @@ import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.types.js';
 import { loadConfig } from '../config/load.js';
 
+export const UNKNOWN_CHECK_PREFIX = 'Unknown check: ';
+export const UNKNOWN_CHECK_SPEC_NONE = '(none)';
+export const PLEASE_FIX_ITEMS = 'Please fix these items:';
+export const ERROR_BULLET = '  ✖ ';
+
 /** Returns staged file paths from git for context (always attempted). */
 function getStagedContext(): RunContext | undefined {
   try {
@@ -132,7 +137,7 @@ async function getChecks(argv: string[], root: string): Promise<{
 
 /** Logs unknown check/path and exits 1. */
 function exitUnknown(spec: string | undefined): never {
-  console.error(`Unknown check: ${spec ?? '(none)'}`);
+  console.error(UNKNOWN_CHECK_PREFIX + (spec ?? UNKNOWN_CHECK_SPEC_NONE));
   process.exit(1);
   throw new Error('exit');
 }
@@ -144,10 +149,11 @@ function formatMeta(result: { meta?: { filesChecked?: number } }, ms: number): s
     : `${ms}ms`;
 }
 
-/** Formats and logs check errors with check name prefix. */
+/** Formats and logs check errors with check name prefix and intro for agent/human. */
 function displayErrors(checkName: string, errors: string[]): void {
+  console.error(`[${checkName}] ${PLEASE_FIX_ITEMS}`);
   for (const err of errors) {
-    console.error(`✖ [${checkName}] ${err}`);
+    console.error(ERROR_BULLET + err);
   }
 }
 
