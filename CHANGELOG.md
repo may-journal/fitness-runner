@@ -7,6 +7,9 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1400
+- Package: add exports for eslint.config, vitest.config, tsconfig, tsconfig.cjs, and cspell for reuse by downstream projects.
+
 ### 2026.02.16.1300
 - Vitest-coverage-exclude: update README to use relative paths; properly associated with the name of the check.
 - Tsconfig: single root tsconfig.cjs for build and lint; remove build/; use tsconfig.js to convert .cjs to JSON.

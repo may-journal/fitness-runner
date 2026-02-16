@@ -16,7 +16,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    }
+    },
+    "./eslint.config": "./eslint.config.cjs",
+    "./vitest.config": "./vitest.config.cjs",
+    "./tsconfig.cjs": "./tsconfig.cjs",
+    "./cspell": "./cspell.json"
   },
   "dependencies": {
     "conventional-commit-types": "^3.0.0",
@@ -25,7 +29,12 @@
     "jiti": "^2.6.1"
   },
   "files": [
-    "dist"
+    "dist",
+    "eslint.config.cjs",
+    "vitest.config.cjs",
+    "tsconfig.json",
+    "tsconfig.cjs",
+    "cspell.json"
   ],
   "scripts": {
     "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
