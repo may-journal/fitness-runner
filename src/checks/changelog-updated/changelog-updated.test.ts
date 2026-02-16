@@ -6,6 +6,7 @@ import { beforeEach, describe, it, expect, vi } from 'vitest';
 import {
   changelogUpdatedCheck,
   MSG_CHANGELOG_MISSING,
+  MSG_CHANGELOG_TIME,
   MSG_OVERLAP_HEAD,
   MSG_OVERLAP_TAIL,
   MSG_STAGE_CHANGELOG,
@@ -101,5 +102,33 @@ describe('changelogUpdatedCheck', () => {
     });
     expect(result.ok).toBe(false);
     expect(result.errors?.[0]).toBe(MSG_STAGE_CHANGELOG);
+  });
+
+  it('passes when new section heading uses current date and time', async () => {
+    const fixed = '2026.02.16.1430';
+    const mockExec = () =>
+      `+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n+ ### ${fixed}\n+ - New runner feature.\n`;
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15\n\n- item');
+    const result = await changelogUpdatedCheck.run(dir, {
+      stagedFiles: ['src/foo.ts', 'CHANGELOG.md'],
+      _execSync: mockExec,
+      _now: () => new Date(2026, 1, 16, 14, 30),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.meta?.filesChecked).toBe(1);
+  });
+
+  it('fails when new section heading does not match current time', async () => {
+    const mockExec = () =>
+      '+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n+ ### 2026.02.16.1900\n+ - New runner feature.\n';
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15\n\n- item');
+    const result = await changelogUpdatedCheck.run(dir, {
+      stagedFiles: ['src/foo.ts', 'CHANGELOG.md'],
+      _execSync: mockExec,
+      _now: () => new Date(2026, 1, 16, 14, 30),
+    });
+    expect(result.ok).toBe(false);
+    expect(result.errors?.[0]).toContain(MSG_CHANGELOG_TIME);
+    expect(result.errors?.[0]).toContain('expected ### 2026.02.16.1430');
   });
 });

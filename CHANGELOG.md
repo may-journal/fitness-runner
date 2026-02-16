@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.16.1634
+
+- Changelog-updated check: require new section heading to use current date and time (yyyy.mm.dd.HHMM) so GenAI cannot guess the time.
+
 ### 2026.02.16.1900
 
 - Changelog-updated check: export human-facing message consts `(MSG_*)`; reuse in implementation and tests.

@@ -8,12 +8,16 @@ const MIN_OVERLAP = 3;
 const MIN_WORD_LEN = 3;
 const SUGGEST_WORDS = 10;
 
+const HEADING_RE = /### (\d{4}\.\d{2}\.\d{2}\.\d{4})/g;
+
 export const MSG_CHANGELOG_MISSING = 'CHANGELOG.md missing; add it and mention your staged changes';
 export const MSG_STAGE_CHANGELOG =
   'Stage CHANGELOG.md and add an entry that mentions your staged changes';
 export const MSG_OVERLAP_HEAD = 'CHANGELOG.md additions should mention at least ';
 export const MSG_OVERLAP_TAIL = ' words from your staged changes (found ';
 export const MSG_SUGGEST_PREFIX = 'e.g. use words like: ';
+export const MSG_CHANGELOG_TIME =
+  'CHANGELOG.md new section heading must use current date and time (yyyy.mm.dd.HHMM), not a guessed time';
 
 /** Extract words of at least MIN_WORD_LEN from text (lowercased, alphanumeric). */
 function extractWords(text: string): Set<string> {
@@ -82,6 +86,38 @@ function getRestWordsFromDiff(byFile: Map<string, string>): Set<string> {
   return extractWords(restLines.join(' '));
 }
 
+/** Format date as yyyy.mm.dd.HHMM for changelog heading. */
+function getExpectedChangelogTimestamp(now: Date): string {
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  const h = String(now.getHours()).padStart(2, '0');
+  const min = String(now.getMinutes()).padStart(2, '0');
+  return `${y}.${m}.${d}.${h}${min}`;
+}
+
+/** Extract all ### yyyy.mm.dd.HHMM timestamps from added changelog content. */
+function extractHeadingTimestamps(addedContent: string): string[] {
+  const out: string[] = [];
+  let m: RegExpExecArray | null;
+  HEADING_RE.lastIndex = 0;
+  while ((m = HEADING_RE.exec(addedContent)) !== null) out.push(m[1]);
+  return out;
+}
+
+/** Require every new changelog heading timestamp to match current date and time. */
+function checkChangelogTime(
+  addedContent: string,
+  now: Date
+): { errors: string[]; ok: false } | { ok: true } {
+  const timestamps = extractHeadingTimestamps(addedContent);
+  if (timestamps.length === 0) return { ok: true };
+  const expected = getExpectedChangelogTimestamp(now);
+  const bad = timestamps.filter((t) => t !== expected);
+  if (bad.length === 0) return { ok: true };
+  return { errors: [MSG_CHANGELOG_TIME + ` (expected ### ${expected})`], ok: false };
+}
+
 /** Checks overlap count and returns pass or error result with suggestion. */
 function checkOverlapAndReport(
   changelogWords: Set<string>,
@@ -127,7 +163,7 @@ function ensureChangelogExists(
 type ChangelogEarlyResult = { ok: boolean; errors: string[]; meta: { filesChecked: number } };
 type ChangelogOverlapInput =
   | { err: ChangelogEarlyResult }
-  | { changelogWords: Set<string>; restWords: Set<string> };
+  | { changelogAddedContent: string; changelogWords: Set<string>; restWords: Set<string> };
 
 /** Builds changelog/rest word sets or early result for overlap check. */
 function getChangelogOverlapInput(
@@ -135,7 +171,8 @@ function getChangelogOverlapInput(
   execFn: ExecSyncFn = execSync
 ): ChangelogOverlapInput {
   const byFile = getStagedDiffByFile(root, execFn);
-  const changelogWords = extractWords(byFile.get(ROOT_CHANGELOG) ?? '');
+  const changelogAddedContent = byFile.get(ROOT_CHANGELOG) ?? '';
+  const changelogWords = extractWords(changelogAddedContent);
   if (changelogWords.size === 0) {
     return {
       err: {
@@ -147,20 +184,30 @@ function getChangelogOverlapInput(
   }
   const restWords = getRestWordsFromDiff(byFile);
   if (restWords.size === 0) return { err: { errors: [], meta: { filesChecked: 1 }, ok: true } };
-  return { changelogWords, restWords };
+  return { changelogAddedContent, changelogWords, restWords };
 }
 
-/** Runs overlap check; returns early result or overlap report. */
+/** Runs time check then overlap; returns report or time error. */
+function runTimeAndOverlap(
+  next: { changelogAddedContent: string; changelogWords: Set<string>; restWords: Set<string> },
+  context: { _now?: () => Date } | undefined
+): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
+  const now = (context?._now ?? (() => new Date()))();
+  const timeResult = checkChangelogTime(next.changelogAddedContent, now);
+  if (!timeResult.ok) return { ...timeResult, meta: { filesChecked: 1 } };
+  return checkOverlapAndReport(next.changelogWords, next.restWords);
+}
+
+/** Runs time then overlap check; returns early result or report. */
 function runChangelogUpdated(
   root: string,
-  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
+  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn; _now?: () => Date } | undefined
 ): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
   const early = ensureChangelogExists(root, context);
   if (early != null) return early;
-  const execFn = context?._execSync ?? execSync;
-  const next = getChangelogOverlapInput(root, execFn);
+  const next = getChangelogOverlapInput(root, context?._execSync ?? execSync);
   if ('err' in next) return next.err;
-  return checkOverlapAndReport(next.changelogWords, next.restWords);
+  return runTimeAndOverlap(next, context);
 }
 
 /** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */
