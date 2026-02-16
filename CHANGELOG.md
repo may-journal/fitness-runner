@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.16.1900
+
+- Changelog-updated check: export human-facing message consts `(MSG_*)`; reuse in implementation and tests.
+
 ### 2026.02.16.1800
 
 - Runner: add passthroughArgs to RunContext when running a single check; args after check name forwarded to checks (e.g. `npx fitness prettier --write`).

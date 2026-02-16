@@ -3,7 +3,14 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
-import { changelogUpdatedCheck } from './index.js';
+import {
+  changelogUpdatedCheck,
+  MSG_CHANGELOG_MISSING,
+  MSG_OVERLAP_HEAD,
+  MSG_OVERLAP_TAIL,
+  MSG_STAGE_CHANGELOG,
+  MSG_SUGGEST_PREFIX,
+} from './index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const mod = await importOriginal<typeof import('node:child_process')>();
@@ -66,7 +73,7 @@ describe('changelogUpdatedCheck', () => {
       _execSync: mockExec,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors?.[0]).toContain('CHANGELOG.md missing');
+    expect(result.errors?.[0]).toBe(MSG_CHANGELOG_MISSING);
   });
 
   it('fails when changelog additions share fewer than three words with rest of diff', async () => {
@@ -78,10 +85,11 @@ describe('changelogUpdatedCheck', () => {
       _execSync: mockExec,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors?.[0]).toMatch(/at least 3 words/);
+    expect(result.errors?.[0]).toContain(MSG_OVERLAP_HEAD);
+    expect(result.errors?.[0]).toContain(MSG_OVERLAP_TAIL);
     expect(result.errors?.[0]).toMatch(/found \d+/);
     expect(result.errors).toHaveLength(2);
-    expect(result.errors?.[1]).toMatch(/e\.g\. use words like:/);
+    expect(result.errors?.[1]).toContain(MSG_SUGGEST_PREFIX);
   });
 
   it('fails when CHANGELOG.md not staged (no additions in diff)', async () => {
@@ -92,6 +100,6 @@ describe('changelogUpdatedCheck', () => {
       _execSync: mockExec,
     });
     expect(result.ok).toBe(false);
-    expect(result.errors?.[0]).toContain('Stage CHANGELOG.md');
+    expect(result.errors?.[0]).toBe(MSG_STAGE_CHANGELOG);
   });
 });

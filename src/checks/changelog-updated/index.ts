@@ -8,6 +8,13 @@ const MIN_OVERLAP = 3;
 const MIN_WORD_LEN = 3;
 const SUGGEST_WORDS = 10;
 
+export const MSG_CHANGELOG_MISSING = 'CHANGELOG.md missing; add it and mention your staged changes';
+export const MSG_STAGE_CHANGELOG =
+  'Stage CHANGELOG.md and add an entry that mentions your staged changes';
+export const MSG_OVERLAP_HEAD = 'CHANGELOG.md additions should mention at least ';
+export const MSG_OVERLAP_TAIL = ' words from your staged changes (found ';
+export const MSG_SUGGEST_PREFIX = 'e.g. use words like: ';
+
 /** Extract words of at least MIN_WORD_LEN from text (lowercased, alphanumeric). */
 function extractWords(text: string): Set<string> {
   const words = new Set<string>();
@@ -84,8 +91,14 @@ function checkOverlapAndReport(
   if (overlap.length >= MIN_OVERLAP) return { errors: [], meta: { filesChecked: 1 }, ok: true };
   const suggested = sampleWords(restWords, SUGGEST_WORDS);
   const errors = [
-    `CHANGELOG.md additions should mention at least ${MIN_OVERLAP} words from your staged changes (found ${overlap.length}: ${overlap.slice(0, 5).join(', ')})`,
-    `e.g. use words like: ${suggested.join(', ')}`,
+    MSG_OVERLAP_HEAD +
+      MIN_OVERLAP +
+      MSG_OVERLAP_TAIL +
+      overlap.length +
+      ': ' +
+      overlap.slice(0, 5).join(', ') +
+      ')',
+    MSG_SUGGEST_PREFIX + suggested.join(', '),
   ];
   return { errors, meta: { filesChecked: 1 }, ok: false };
 }
@@ -103,7 +116,7 @@ function ensureChangelogExists(
   const path = join(root, ROOT_CHANGELOG);
   if (!existsSync(path)) {
     return {
-      errors: ['CHANGELOG.md missing; add it and mention your staged changes'],
+      errors: [MSG_CHANGELOG_MISSING],
       meta: { filesChecked: 1 },
       ok: false,
     };
@@ -126,7 +139,7 @@ function getChangelogOverlapInput(
   if (changelogWords.size === 0) {
     return {
       err: {
-        errors: ['Stage CHANGELOG.md and add an entry that mentions your staged changes'],
+        errors: [MSG_STAGE_CHANGELOG],
         meta: { filesChecked: 1 },
         ok: false,
       },
