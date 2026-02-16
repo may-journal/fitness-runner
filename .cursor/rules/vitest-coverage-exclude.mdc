@@ -1,7 +1,0 @@
----
-description: Vitest coverage exclude must not list any .ts file or pattern
-globs: vitest.config.*, src/checks/vitest-coverage-exclude/**
-alwaysApply: false
----
-
-Read `src/checks/vitest-coverage-exclude/README.md` for behavior and conventions.

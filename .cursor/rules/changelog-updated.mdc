@@ -1,7 +1,0 @@
----
-description: Changelog-updated check – staged CHANGELOG additions must mention staged changes
-globs: CHANGELOG.md, src/checks/changelog-updated/**
-alwaysApply: false
----
-
-Read `src/checks/changelog-updated/README.md` for behavior and conventions.

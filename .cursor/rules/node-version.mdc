@@ -1,7 +1,0 @@
----
-description: Node version check – current Node must satisfy .nvmrc
-globs: .nvmrc, src/checks/node-version/**
-alwaysApply: false
----
-
-Read `src/checks/node-version/README.md` for behavior and conventions.

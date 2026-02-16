@@ -7,6 +7,11 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1500
+- Cursor rules: consolidate into fitness-checks.mdc; remove changelog, changelog-updated, node-version, semantic-commit, vitest-coverage-exclude rules.
+- ESLint: add eslint.config.d.ts for ESM package compatibility.
+- Package and gitignore: updates for consolidated rules.
+
 ### 2026.02.16.1400
 - Package: add exports for eslint.config, vitest.config, tsconfig, tsconfig.cjs, and cspell for reuse by downstream projects.
 

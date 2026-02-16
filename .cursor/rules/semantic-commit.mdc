@@ -1,7 +1,0 @@
----
-description: Semantic-commit check – HEAD commit must follow Conventional Commits
-globs: src/checks/semantic-commit/**
-alwaysApply: false
----
-
-Read `src/checks/semantic-commit/README.md` for behavior and conventions.
