@@ -7,18 +7,12 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
-### 2026.02.16.1800
+### 2026.02.16.1500
 - Runner: format check results as table (cli-table3) with Check, Status, Files, Time columns; bold white headers.
 - Read-repo-first: table of enabled checks with Src column (plain paths for IDE link detection); add cli-table3.
-
-### 2026.02.16.1700
 - Read-repo-first: remove TTY requirement; display feedback to CLI for Agent/User context; always pass. Remove `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` from CI.
-
-### 2026.02.16.1600
 - Read-repo-first check: prompts Y/N to confirm familiarity with Fitness Checks; lists enabled checks; chalk/boxen/wrap-ansi formatting; runs first in registry.
 - Runner: chalk formatting for check results (green/red), errors, total line; `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` bypass for CI.
-
-### 2026.02.16.1500
 - Cursor rules: consolidate into fitness-checks.mdc; remove changelog, changelog-updated, node-version, semantic-commit, vitest-coverage-exclude rules.
 - ESLint: add eslint.config.d.ts for ESM package compatibility.
 - Package and gitignore: updates for consolidated rules.
