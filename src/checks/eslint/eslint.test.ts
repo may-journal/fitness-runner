@@ -44,12 +44,12 @@ describe('eslintCheck', () => {
   it('uses staged paths when context has stagedFiles', async () => {
     vi.mocked(execSync).mockImplementation(() => '[]');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    writeFileSync(join(dir, 'bar.js'), 'x');
-    const result = await eslintCheck.run(dir, { stagedFiles: ['bar.js'] });
+    writeFileSync(join(dir, 'bar.ts'), 'x');
+    const result = await eslintCheck.run(dir, { stagedFiles: ['bar.ts'] });
     expect(result.ok).toBe(true);
     const lastCall = vi.mocked(execSync).mock.calls[vi.mocked(execSync).mock.calls.length - 1][0];
     expect(lastCall).toContain(ESLINT_CLI);
-    expect(lastCall).toContain('bar.js');
+    expect(lastCall).toContain('bar.ts');
   });
 
   it('returns fallback error when exit non-zero and output is not valid JSON', async () => {
@@ -121,7 +121,7 @@ describe('eslintCheck', () => {
   it('escapes quotes in path when building eslint args', async () => {
     vi.mocked(execSync).mockImplementation(() => '[]');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const pathWithQuote = 'src/bar "quoted".js';
+    const pathWithQuote = 'src/bar "quoted".ts';
     mkdirSync(join(dir, 'src'), { recursive: true });
     writeFileSync(join(dir, pathWithQuote), 'x');
     await eslintCheck.run(dir, { stagedFiles: [pathWithQuote] });

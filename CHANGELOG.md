@@ -9,6 +9,7 @@ relatedConfigurations: ["package.json"]
 
 ### 2026.02.16.1025
 - ESLint check: run eslint (staged or .), parse JSON, report errors; hoist feedback and CLI consts; 100% coverage.
+- ESLint check: only pass .ts/.tsx staged paths (avoid no-config for .md); tests use .ts (bar, pathWithQuote, quoted).
 
 ### 2026.02.16.1005
 - Runner: add feedback dressing (Please fix these items), hoist messages to shared consts; static import in runner tests.
