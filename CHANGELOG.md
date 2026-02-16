@@ -7,6 +7,10 @@ relatedConfigurations: ["package.json"]
 
 ## Changes
 
+### 2026.02.16.1600
+- Read-repo-first check: prompts Y/N to confirm familiarity with Fitness Checks; lists enabled checks; chalk/boxen/wrap-ansi formatting; runs first in registry.
+- Runner: chalk formatting for check results (green/red), errors, total line; `FITNESS_READ_REPO_CONFIRMED` bypass for CI.
+
 ### 2026.02.16.1500
 - Cursor rules: consolidate into fitness-checks.mdc; remove changelog, changelog-updated, node-version, semantic-commit, vitest-coverage-exclude rules.
 - ESLint: add eslint.config.d.ts for ESM package compatibility.

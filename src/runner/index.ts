@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import chalk from 'chalk';
 import { registry } from '../checks/index.js';
 import type { Check, RunContext } from '../types/index.types.js';
 import { loadConfig } from '../config/load.js';
@@ -111,10 +112,15 @@ async function resolveChecksBySpec(spec: string | undefined, root: string): Prom
   return one ? [one] : [];
 }
 
-/** Builds context with registeredCheckNames and optional staged/commit-msg data. */
-function buildContext(staged: RunContext | undefined, commitMsg: RunContext | undefined): RunContext {
+/** Builds context with registeredCheckNames, enabledCheckNames, and optional staged/commit-msg data. */
+function buildContext(
+  staged: RunContext | undefined,
+  commitMsg: RunContext | undefined,
+  enabledChecks: Check[],
+): RunContext {
   return {
     registeredCheckNames: registry.map((c) => c.name),
+    enabledCheckNames: enabledChecks.map((c) => c.name),
     ...(staged ?? {}),
     ...(commitMsg ?? {}),
   };
@@ -132,12 +138,12 @@ async function getChecks(argv: string[], root: string): Promise<{
   const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
   const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
-  return { checks, spec, context: buildContext(staged, commitMsg) };
+  return { checks, spec, context: buildContext(staged, commitMsg, checks) };
 }
 
 /** Logs unknown check/path and exits 1. */
 function exitUnknown(spec: string | undefined): never {
-  console.error(UNKNOWN_CHECK_PREFIX + (spec ?? UNKNOWN_CHECK_SPEC_NONE));
+  console.error(chalk.red(UNKNOWN_CHECK_PREFIX + (spec ?? UNKNOWN_CHECK_SPEC_NONE)));
   process.exit(1);
   throw new Error('exit');
 }
@@ -151,9 +157,9 @@ function formatMeta(result: { meta?: { filesChecked?: number } }, ms: number): s
 
 /** Formats and logs check errors with check name prefix and intro for agent/human. */
 function displayErrors(checkName: string, errors: string[]): void {
-  console.error(`[${checkName}] ${PLEASE_FIX_ITEMS}`);
+  console.error(chalk.red(`[${checkName}] ${PLEASE_FIX_ITEMS}`));
   for (const err of errors) {
-    console.error(ERROR_BULLET + err);
+    console.error(chalk.red(ERROR_BULLET + err));
   }
 }
 
@@ -167,7 +173,8 @@ async function runOneCheck(
   const result = await check.run(root, context);
   const ms = Math.round(performance.now() - start);
   const filesChecked = result.meta?.filesChecked ?? 0;
-  console.log(`${check.name}: ${formatMeta(result, ms)}`);
+  const line = `${check.name}: ${formatMeta(result, ms)}`;
+  console.log(result.ok ? chalk.green(line) : chalk.red(line));
   if (!result.ok) displayErrors(check.name, result.errors);
   return { failed: !result.ok, filesChecked };
 }
@@ -189,7 +196,8 @@ async function runChecks(
     totalFiles += filesChecked;
   }
   const ms = Math.round(performance.now() - start);
-  console.log(`Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${ms}ms`);
+  const totalLine = `Total: ${successCount} succeeded, ${failureCount} failed, ${totalFiles} files in ${ms}ms`;
+  console.log(failureCount > 0 ? chalk.bold.red(totalLine) : chalk.bold.green(totalLine));
   return failureCount > 0;
 }
 
