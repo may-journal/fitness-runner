@@ -8,7 +8,7 @@ import {
   PRETTIER_CLI,
   PRETTIER_FALLBACK_MESSAGE,
   hasPrettierConfig,
-  runPrettierCheck,
+  runPrettier,
   parsePrettierOutput,
 } from './index';
 
@@ -103,24 +103,33 @@ describe('prettierCheck', () => {
     expect(hasPrettierConfig(dir)).toBe(false);
   });
 
-  it('runPrettierCheck with paths passes them to CLI', () => {
+  it('runPrettier with paths passes them to CLI', () => {
     const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
     vi.mocked(execSync).mockReturnValue('');
-    runPrettierCheck(dir, ['a.ts', 'b.json'], execSync);
+    runPrettier(dir, ['a.ts', 'b.json'], execSync);
     const call = vi.mocked(execSync).mock.calls[0][0];
     expect(call).toContain('--check');
     expect(call).toContain('a.ts');
     expect(call).toContain('b.json');
   });
 
-  it('runPrettierCheck with empty paths uses "."', () => {
+  it('runPrettier with empty paths uses "."', () => {
     const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
     vi.mocked(execSync).mockReturnValue('');
-    runPrettierCheck(dir, [], execSync);
+    runPrettier(dir, [], execSync);
     expect(vi.mocked(execSync).mock.calls[0][0]).toMatch(/prettier\s+--check\s+\./);
   });
 
-  it('runPrettierCheck uses exitCode 1 when err.status is not a number', async () => {
+  it('runPrettier with passthroughArgs forwards them to CLI without --check', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
+    vi.mocked(execSync).mockReturnValue('');
+    runPrettier(dir, [], execSync, ['--write', '.']);
+    const call = vi.mocked(execSync).mock.calls[0][0];
+    expect(call).toContain('--write');
+    expect(call).not.toContain('--check');
+  });
+
+  it('runPrettier uses exitCode 1 when err.status is not a number', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
     writeFileSync(join(dir, '.prettierrc.json'), '{}');
     vi.mocked(execSync).mockImplementation(() => {

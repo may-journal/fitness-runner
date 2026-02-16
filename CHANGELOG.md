@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.16.1800
+
+- Runner: add passthroughArgs to RunContext when running a single check; args after check name forwarded to checks (e.g. `npx fitness prettier --write`).
+- Prettier check: use passthroughArgs; run Prettier with forwarded args instead of --check when present.
+
 ### 2026.02.16.1700
 
 - Package: move eslint, prettier, vitest, and related config plugins from devDependencies to dependencies so consumers can use exported configs; keep @types/node, tsconfig.js, tsx, typescript as devDependencies.

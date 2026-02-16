@@ -121,6 +121,24 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('passes through args to single check (e.g. npx fitness prettier --write)', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-passthrough-'));
+    writeFileSync(join(dir, 'package.json'), '{"prettier": {}}');
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockReturnValue('');
+    await run(['node', 'fitness', 'prettier', '--write', '.']);
+    process.chdir(origCwd);
+    const prettierCall = vi.mocked(execSync).mock.calls.find((c) => c[0].includes('prettier'));
+    expect(prettierCall?.[0]).toContain('--write');
+    expect(prettierCall?.[0]).not.toContain('--check');
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
   it('runs check from path when --check=./path/to/check.js', async () => {
     const { mkdtempSync, writeFileSync } = await import('node:fs');
     const { join } = await import('node:path');

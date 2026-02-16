@@ -3,6 +3,8 @@ export type RunContext = {
   stagedFiles?: string[];
   /** When set, semantic-commit validates this instead of HEAD (used by commit-msg hook). */
   proposedCommitMessage?: string;
+  /** Args after the check name when running a single check (e.g. npx fitness prettier --write). */
+  passthroughArgs?: string[];
   /** Names of all registered checks; used by rules-front-matter to allow check names in front matter. */
   registeredCheckNames?: string[];
   /** Names of checks enabled for this run (from config or full registry). */

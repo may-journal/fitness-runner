@@ -31,6 +31,21 @@ function getCommitMsgPath(positionals: string[], specFromPositional: boolean): s
   return undefined;
 }
 
+/** Returns args after the check spec when running a single check (excludes commit-msg path for semantic-commit). */
+function getPassthroughArgs(
+  argv: string[],
+  checkName: string | undefined,
+  specFromPositional: boolean
+): string[] {
+  const raw = specFromPositional
+    ? argv.slice(3)
+    : argv.slice(2).filter((a) => !a.startsWith('--check='));
+  if (checkName !== 'semantic-commit') return raw;
+  const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
+  const commitPath = getCommitMsgPath(positionals, specFromPositional);
+  return commitPath ? raw.filter((a) => a !== commitPath) : raw;
+}
+
 /** When running semantic-commit, positional(s) may include the message file path (commit-msg hook). */
 function getCommitMsgContext(
   argv: string[],
@@ -117,17 +132,19 @@ async function resolveChecksBySpec(spec: string | undefined, root: string): Prom
   return one ? [one] : [];
 }
 
-/** Builds context with registeredCheckNames, enabledCheckNames, and optional staged/commit-msg data. */
+/** Builds context with registeredCheckNames, enabledCheckNames, and optional staged/commit-msg/passthrough data. */
 function buildContext(
   staged: RunContext | undefined,
   commitMsg: RunContext | undefined,
-  enabledChecks: Check[]
+  enabledChecks: Check[],
+  passthroughArgs: string[]
 ): RunContext {
   return {
     enabledCheckNames: enabledChecks.map((c) => c.name),
     registeredCheckNames: registry.map((c) => c.name),
     ...(staged ?? {}),
     ...(commitMsg ?? {}),
+    ...(passthroughArgs.length > 0 ? { passthroughArgs } : {}),
   };
 }
 
@@ -146,7 +163,9 @@ async function getChecks(
   const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
   const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
-  return { checks, context: buildContext(staged, commitMsg, checks), spec };
+  const passthrough =
+    checks.length === 1 ? getPassthroughArgs(argv, checkName, specFromPositional) : [];
+  return { checks, context: buildContext(staged, commitMsg, checks, passthrough), spec };
 }
 
 /** Logs unknown check/path and exits 1. */

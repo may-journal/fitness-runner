@@ -7,6 +7,8 @@ relatedConfigurations: ['../../../prettier.config.cjs']
 
 Runs [Prettier](https://prettier.io) `--check` to ensure files are formatted. Uses the project's Prettier config (e.g. `.prettierrc.json`, `prettier.config.cjs`, or `package.json` `"prettier"` field).
 
+Run `npx fitness prettier` from your app root to check formatting. Pass through args to Prettier: `npx fitness prettier --write .` or `npx fitness prettier --write src/`. The runner layer extracts args after the check name and passes them in context; the check runs in `process.cwd()` (the app using @fitness/runner).
+
 ## Behavior
 
 - Skip: No Prettier config file or `package.json` `"prettier"` field in repo root.

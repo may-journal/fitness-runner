@@ -24,6 +24,9 @@ npx fitness
 Run a single check by name (positional or flag; use `--` before flags if npx swallows them):
 
 ```bash
+npx fitness prettier
+npx fitness prettier --write .
+# or
 npx fitness semantic-commit
 # or
 npx fitness --check=semantic-commit

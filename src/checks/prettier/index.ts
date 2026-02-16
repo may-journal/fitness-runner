@@ -44,20 +44,46 @@ export function hasPrettierConfig(root: string): boolean {
   );
 }
 
-/** Run Prettier --check; returns stdout+stderr and exit code. */
-export function runPrettierCheck(
+/** Quote a single arg for shell. */
+function quoteArg(p: string): string {
+  return `"${p.replace(/"/g, '\\"')}"`;
+}
+
+/** Build args string from passthrough or paths. */
+function buildPrettierArgs(passthroughArgs: string[] | undefined, paths: string[]): string {
+  if ((passthroughArgs?.length ?? 0) > 0) return passthroughArgs!.map(quoteArg).join(' ');
+  return paths.length > 0 ? paths.map(quoteArg).join(' ') : '.';
+}
+
+/** Extract output and exitCode from exec error. */
+function parseExecError(e: unknown): { output: string; exitCode: number } {
+  const err = e as { stdout?: string; stderr?: string; status?: number };
+  const output = [err.stdout, err.stderr].filter(Boolean).join('\n');
+  const exitCode = typeof err.status === 'number' ? err.status : 1;
+  return { exitCode, output };
+}
+
+/** Build Prettier CLI command. */
+function buildPrettierCmd(args: string, usePassthrough: boolean): string {
+  const mode = usePassthrough ? '' : ' --check';
+  return `${PRETTIER_CLI}${mode} ${args} 2>&1`;
+}
+
+/** Run Prettier with given args (or --check + paths by default); returns stdout+stderr and exit code. */
+export function runPrettier(
   root: string,
   paths: string[],
-  execSyncFn: ExecSyncFn = execSync
+  execSyncFn: ExecSyncFn = execSync,
+  passthroughArgs?: string[]
 ): { output: string; exitCode: number } {
-  const args = paths.length > 0 ? paths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(' ') : '.';
+  const usePassthrough = (passthroughArgs?.length ?? 0) > 0;
+  const args = buildPrettierArgs(passthroughArgs, paths);
+  const cmd = buildPrettierCmd(args, usePassthrough);
   try {
-    const out = execSyncFn(`${PRETTIER_CLI} --check ${args} 2>&1`, { ...EXEC_OPTS, cwd: root });
-    return { exitCode: 0, output: out };
+    const output = execSyncFn(cmd, { ...EXEC_OPTS, cwd: root });
+    return { exitCode: 0, output };
   } catch (e: unknown) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
-    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
-    return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
+    return parseExecError(e);
   }
 }
 
@@ -76,13 +102,27 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
   return staged.filter((p) => existsSync(join(root, p)));
 }
 
-/** Resolve paths and exec fn from root and context. */
+type PrettierContext = {
+  stagedFiles?: string[];
+  passthroughArgs?: string[];
+  _execSync?: ExecSyncFn;
+};
+
+/** Resolve staged from context. */
+function getStaged(context: PrettierContext | undefined): string[] {
+  return context?.stagedFiles ?? [];
+}
+
+/** Resolve paths, exec fn, and passthrough from root and context. */
 function resolveInputs(
   root: string,
-  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
-): { paths: string[]; execFn: ExecSyncFn } {
-  const staged = context?.stagedFiles ?? [];
-  return { execFn: context?._execSync ?? execSync, paths: getPathsToCheck(root, staged) };
+  context: PrettierContext | undefined
+): { paths: string[]; execFn: ExecSyncFn; passthroughArgs?: string[] } {
+  const staged = getStaged(context);
+  const paths = getPathsToCheck(root, staged);
+  const execFn = (context && context._execSync) ?? execSync;
+  const passthroughArgs = context?.passthroughArgs;
+  return { execFn, passthroughArgs, paths };
 }
 
 /** Compute filesChecked from errors and paths. */
@@ -102,13 +142,13 @@ function buildResult(
   return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };
 }
 
-/** Prettier check: runs prettier --check; skips when no config. */
+/** Prettier check: runs prettier --check (or passthrough args); skips when no config. */
 export const prettierCheck: Check = {
   name: 'prettier',
   async run(root = process.cwd(), context) {
     if (!hasPrettierConfig(root)) return { errors: [], meta: { filesChecked: 0 }, ok: true };
-    const { paths, execFn } = resolveInputs(root, context);
-    const { output, exitCode } = runPrettierCheck(root, paths, execFn);
+    const { paths, execFn, passthroughArgs } = resolveInputs(root, context);
+    const { output, exitCode } = runPrettier(root, paths, execFn, passthroughArgs);
     const errors = parsePrettierOutput(output);
     return buildResult(exitCode, errors, getFilesChecked(errors, paths));
   },
