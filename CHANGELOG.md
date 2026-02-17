@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.17.0151
+
+- CI: add automatic version tagging workflow that runs on push to main branch, extracts version from package.json, validates it, checks if tag exists, and creates/pushes git tag (format: v{version}).
+
 ### 2026.02.16.1646
 
 - Changelog check: require package.json version suffix and package-lock.json version to match CHANGELOG first ### heading (yyyy.mm.dd.HHMM).
