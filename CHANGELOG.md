@@ -10,6 +10,7 @@ relatedConfigurations: ['package.json']
 ### 2026.02.17.0151
 
 - CI: add automatic version tagging workflow that runs on push to main branch, extracts version from package.json, validates it, checks if tag exists, and creates/pushes git tag (format: v{version}).
+- CI: add explicit permissions block (contents: write) to tag-version workflow for security best practices.
 
 ### 2026.02.16.1646
 

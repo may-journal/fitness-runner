@@ -9,6 +9,8 @@ jobs:
     runs-on: ubuntu-latest
     # Only run on push events (not pull requests)
     if: github.event_name == 'push'
+    permissions:
+      contents: write # Required to create and push tags
 
     steps:
       - name: Checkout code
