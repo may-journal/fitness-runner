@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.19.1531
+
+- Research: add `research/eslint.md` exploring ESLint project organization, how the same patterns could apply to fitness-runner, and whether ESLint could serve as the engine for fitness checks.
+
 ### 2026.02.16.1646
 
 - Changelog check: require package.json version suffix and package-lock.json version to match CHANGELOG first ### heading (yyyy.mm.dd.HHMM).
