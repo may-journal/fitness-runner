@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1247
+
+- Runner: abstract check deps; move getColumns to src/utils/terminal so runner has no check-specific imports; read-repo-first no longer exports getColumns; getColumns tests moved to utils/terminal.test.ts.
+
 ### 2026.02.22.1241
 
 - README: align Mermaid code-flow diagram with runner (resolveCheckSpec, spec-defined branch, resolveChecksBySpec, buildContext).

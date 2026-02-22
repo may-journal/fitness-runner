@@ -7,12 +7,6 @@ import type { Check } from '../../types/index.types.js';
 const NOTE_NO_VERIFY =
   ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
 
-/** Exported for tests. */
-export function getColumns(): number {
-  const c = process.stdout.columns;
-  return typeof c === 'number' && c > 0 ? c : 80;
-}
-
 /** Check name → folder path when they differ (e.g. markdown-front-matter lives in rules-front-matter). */
 const CHECK_TO_FOLDER: Record<string, string> = { 'markdown-front-matter': 'rules-front-matter' };
 

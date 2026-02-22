@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { registry } from '../checks/index.js';
-import { getColumns } from '../checks/read-repo-first/index.js';
+import { getColumns } from '../utils/terminal.js';
 import type { Check, RunContext } from '../types/index.types.js';
 import { loadConfig } from '../config/load.js';
 
