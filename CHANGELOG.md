@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1359
+
+- Docs: make Mermaid flowchart edge labels readable (linkStyle color for yes/no arrows).
+
 ### 2026.02.22.1332
 
 - Runner: check-registered contextInline; no check-name logic. Check type gains optional contextInline (argName, contextKey); semantic-commit registers --message → proposedCommitMessage; commit-msg hook uses --message="$(cat \"$1\")". Export ContextInline; update README and flow diagram.

@@ -108,6 +108,8 @@ npm test
   'clusterBkg':'#f1f5f9',
   'clusterBorder':'#94a3b8',
   'titleColor':'#334155',
+  'textColor':'#1e293b',
+  'labelColor':'#1e293b',
   'edgeLabelBackground':'#f8fafc',
   'nodeTextColor':'#1e293b',
   'fontFamily':'system-ui, sans-serif'
@@ -128,13 +130,13 @@ flowchart TD
   J --> M["checks"]
   K --> M
   L --> M
-  B --> E["getStagedContext()"]
-  B --> Dctx["getInlineContextFragment(argsAfterSpec, check.contextInline)"]
+  B --> E["getStagedContext()<br/><small>git diff --cached → stagedFiles</small>"]
   E --> N["buildContext(staged, inlineFragment, checks, passthrough)"]
+  M --> Dctx["When single check: inlineFragment + passthrough from check.contextInline"]
   Dctx --> N
   M --> N
-  M --> O["runChecks(checks, root, context)"]
-  N --> O
+  N --> O["runChecks(checks, root, context)"]
+  M --> O
 
   subgraph Execute["Execute checks"]
     O --> P["For each check in order"]
@@ -148,6 +150,7 @@ flowchart TD
 
   Execute --> U["process.exit(failed ? 1 : 0)"]
 
+  linkStyle 3,5,6,7,21,22 stroke:#64748b,color:#1e293b
   classDef cli fill:#6366f1,stroke:#4f46e5,color:#fff
   classDef resolve fill:#06b6d4,stroke:#0891b2,color:#fff
   classDef execute fill:#10b981,stroke:#059669,color:#fff
