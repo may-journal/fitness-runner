@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1241
+
+- README: align Mermaid code-flow diagram with runner (resolveCheckSpec, spec-defined branch, resolveChecksBySpec, buildContext).
+
 ### 2026.02.16.1646
 
 - Changelog check: require package.json version suffix and package-lock.json version to match CHANGELOG first ### heading (yyyy.mm.dd.HHMM).

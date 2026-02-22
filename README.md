@@ -118,36 +118,42 @@ flowchart TD
     A --> B["run(argv)"]
   end
 
-  B --> F["resolveCheckName(argv)"]
-  F --> G{".fitnessrc.ts / .fitnessrc.js exists?"}
-  G -->|yes| H["config.checks → ordered Check[]"]
-  G -->|no| I["Full registry (all checks)"]
-  H --> J["--check=name or positional → one or all"]
-  I --> J
-  J --> K["runChecks(checks, root, context)"]
+  B --> F["resolveCheckSpec(argv)"]
+  F --> G{"spec defined?"}
+  G -->|no| H["resolveChecks(root)"]
+  H --> I{".fitnessrc.ts / .fitnessrc.js exists?"}
+  I -->|yes| J["config.checks → ordered Check[]"]
+  I -->|no| K["Full registry (all checks)"]
+  G -->|yes| L["resolveChecksBySpec(spec, root) → one check by name or path"]
+  J --> M["checks"]
+  K --> M
+  L --> M
   B --> E["getStagedContext()"]
   B --> Dctx["getCommitMsgContext if --check=semantic-commit + positional path"]
-  E --> K
-  Dctx --> K
+  E --> N["buildContext(staged, commitMsg, checks, passthrough)"]
+  Dctx --> N
+  M --> N
+  M --> O["runChecks(checks, root, context)"]
+  N --> O
 
   subgraph Execute["Execute checks"]
-    K --> L["For each check in order"]
-    L --> M["runOneCheck: check.run(root, context)"]
-    M --> N{"result.ok?"}
-    N -->|yes| O["Log meta, continue"]
-    N -->|no| P["Set failed, collect errors for table"]
-    O --> L
-    P --> L
+    O --> P["For each check in order"]
+    P --> Q["runOneCheck: check.run(root, context)"]
+    Q --> R{"result.ok?"}
+    R -->|yes| S["Log meta, continue"]
+    R -->|no| T["Set failed, collect errors for table"]
+    S --> P
+    T --> P
   end
 
-  Execute --> Q["process.exit(failed ? 1 : 0)"]
+  Execute --> U["process.exit(failed ? 1 : 0)"]
 
   classDef cli fill:#6366f1,stroke:#4f46e5,color:#fff
   classDef resolve fill:#06b6d4,stroke:#0891b2,color:#fff
   classDef execute fill:#10b981,stroke:#059669,color:#fff
   classDef decision fill:#f1f5f9,stroke:#64748b,color:#334155
   class A,B cli
-  class Dctx,E,F,G,H,I,J resolve
-  class K,L,M,N,O,P,Q execute
-  class G decision
+  class Dctx,E,F,G,H,I,J,K,L,M,N resolve
+  class O,P,Q,R,S,T,U execute
+  class G,I decision
 ```
