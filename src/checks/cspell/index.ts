@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
 import { findMd } from '../findMd.js';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
@@ -180,7 +181,7 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
 
 /** Spell-check via cspell; when context has stagedFiles runs on those paths only, else on markdown glob. */
 export const cspellCheck: Check = {
-  name: 'cspell',
+  name: CheckName.Cspell,
   async run(root = process.cwd(), context) {
     const configPath = join(root, 'cspell.json');
     if (!existsSync(configPath)) return { errors: [], meta: { filesChecked: 0 }, ok: true };

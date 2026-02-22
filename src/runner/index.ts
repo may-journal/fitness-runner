@@ -7,6 +7,7 @@ import Table from 'cli-table3';
 import { registry } from '../checks/index.js';
 import { getColumns } from '../utils/terminal.js';
 import type { Check, RunContext } from '../types/index.types.js';
+import type { CheckName } from '../types/check-name.js';
 import { loadConfig } from '../config/load.js';
 
 export const UNKNOWN_CHECK_PREFIX = 'Unknown check: ';
@@ -74,7 +75,9 @@ function resolveChecks(root: string): Check[] {
   const config = loadConfig(root);
   if (config?.checks?.length) {
     const byName = new Map(registry.map((c) => [c.name, c]));
-    return config.checks.map((name) => byName.get(name)).filter((c): c is Check => c != null);
+    return config.checks
+      .map((name) => byName.get(name as CheckName))
+      .filter((c): c is Check => c != null);
   }
   return [...registry];
 }

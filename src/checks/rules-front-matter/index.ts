@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check, RunContext } from '../../types/index.types.js';
 import { findMd } from '../findMd.js';
 
@@ -96,7 +97,7 @@ function validateFile(
 
 /** Validates front matter: fitnessFunctions and relatedConfigurations paths must exist; entries may be registered check names. */
 export const rulesFrontMatterCheck: Check = {
-  name: 'markdown-front-matter',
+  name: CheckName.MarkdownFrontMatter,
   async run(root = process.cwd(), context?: RunContext) {
     const registeredCheckNames = context?.registeredCheckNames ?? [];
     const errors: string[] = [];

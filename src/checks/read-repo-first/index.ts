@@ -2,13 +2,16 @@ import { join } from 'node:path';
 import chalk from 'chalk';
 import boxen from 'boxen';
 import Table from 'cli-table3';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const NOTE_NO_VERIFY =
   ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
 
 /** Check name → folder path when they differ (e.g. markdown-front-matter lives in rules-front-matter). */
-const CHECK_TO_FOLDER: Record<string, string> = { 'markdown-front-matter': 'rules-front-matter' };
+const CHECK_TO_FOLDER: Record<string, string> = {
+  [CheckName.MarkdownFrontMatter]: 'rules-front-matter',
+};
 
 /** Builds feedback text for CLI display (Agent/User context). */
 export function buildContextFeedback(enabledCheckNames: string[]): string {
@@ -36,10 +39,8 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
   return boxen(content, { borderColor: 'cyan', margin: 1, padding: 1 }) + '\n';
 }
 
-export const READ_REPO_FIRST_NAME = 'read-repo-first';
-
 export const readRepoFirstCheck: Check = {
-  name: READ_REPO_FIRST_NAME,
+  name: CheckName.ReadRepoFirst,
   async run(root = process.cwd(), context) {
     const enabled = context?.enabledCheckNames ?? [];
     const feedback = buildContextFeedback(enabled);

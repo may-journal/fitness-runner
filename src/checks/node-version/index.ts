@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const NVMRC = '.nvmrc';
@@ -14,7 +15,7 @@ function versionMajor(version: string): number {
 
 /** Validates current Node version satisfies .nvmrc at repo root. */
 export const nodeVersionCheck: Check = {
-  name: 'node-version',
+  name: CheckName.NodeVersion,
   async run(root = process.cwd()) {
     const path = join(root, NVMRC);
     if (!existsSync(path)) {

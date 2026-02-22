@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 export const ESLINT_CLI = 'npx eslint';
@@ -110,7 +111,7 @@ function buildResult(
 
 /** ESLint check: runs eslint, reports errors from JSON formatter. */
 export const eslintCheck: Check = {
-  name: 'eslint',
+  name: CheckName.Eslint,
   async run(root = process.cwd(), context) {
     const { paths, execFn } = resolveInputs(root, context);
     const { output, exitCode } = runEslint(root, paths, execFn);

@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const require = createRequire(import.meta.url);
@@ -106,7 +107,7 @@ function getCoverageExclude(config: VitestConfig | null): string[] {
 
 /** Ensures Vitest coverage exclude only uses conventional patterns (e.g. *.d.ts, *.types.ts); Vitest excludes tests by default. */
 export const vitestCoverageExcludeCheck: Check = {
-  name: 'vitest-coverage-exclude',
+  name: CheckName.VitestCoverageExclude,
   async run(root = process.cwd()) {
     const config = loadVitestConfig(root);
     const exclude = getCoverageExclude(config);

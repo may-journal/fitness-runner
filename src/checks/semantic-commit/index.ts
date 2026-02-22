@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import conventionalCommitTypes from 'conventional-commit-types' with { type: 'json' };
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const SEMANTIC_TYPES = Object.keys(conventionalCommitTypes.types) as string[];
@@ -30,7 +31,7 @@ function getCommitSubject(
 /** Validates HEAD or proposed commit message follows Conventional Commits (type(scope): description). */
 export const semanticCheck: Check = {
   contextInline: { argName: '--message', contextKey: 'proposedCommitMessage' },
-  name: 'semantic-commit',
+  name: CheckName.SemanticCommit,
   async run(root = process.cwd(), context) {
     const subject = getCommitSubject(root, context);
     if (!subject) return { errors: [], meta: { filesChecked: 1 }, ok: true };

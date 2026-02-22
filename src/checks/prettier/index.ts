@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 export const PRETTIER_CLI = 'npx prettier';
@@ -144,7 +145,7 @@ function buildResult(
 
 /** Prettier check: runs prettier --check (or passthrough args); skips when no config. */
 export const prettierCheck: Check = {
-  name: 'prettier',
+  name: CheckName.Prettier,
   async run(root = process.cwd(), context) {
     if (!hasPrettierConfig(root)) return { errors: [], meta: { filesChecked: 0 }, ok: true };
     const { paths, execFn, passthroughArgs } = resolveInputs(root, context);

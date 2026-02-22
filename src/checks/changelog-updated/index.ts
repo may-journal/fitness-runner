@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const ROOT_CHANGELOG = 'CHANGELOG.md';
@@ -212,7 +213,7 @@ function runChangelogUpdated(
 
 /** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */
 export const changelogUpdatedCheck: Check = {
-  name: 'changelog-updated',
+  name: CheckName.ChangelogUpdated,
   async run(root = process.cwd(), context) {
     return runChangelogUpdated(root, context);
   },

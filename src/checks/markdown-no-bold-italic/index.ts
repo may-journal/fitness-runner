@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 import { findMd } from '../findMd.js';
 
@@ -48,7 +49,7 @@ function validateFile(relPath: string, content: string): string[] {
 
 /** Ensures markdown files do not use **bold**, __bold__, *italic*, or _italic_ per AI-generated markdown convention. */
 export const markdownNoBoldItalicCheck: Check = {
-  name: 'markdown-no-bold-italic',
+  name: CheckName.MarkdownNoBoldItalic,
   async run(root = process.cwd()) {
     const errors: string[] = [];
     let filesChecked = 0;

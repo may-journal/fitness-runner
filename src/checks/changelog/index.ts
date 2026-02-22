@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
 const ROOT_CHANGELOG = 'CHANGELOG.md';
@@ -79,7 +80,7 @@ function getVersionErrors(root: string, changelogTs: string): string[] {
 
 /** Validates repo root has CHANGELOG.md; every ### heading must be ### yyyy.mm.dd.HHMM; package.json and package-lock version must match first heading. */
 export const changelogCheck: Check = {
-  name: 'changelog',
+  name: CheckName.Changelog,
   async run(root = process.cwd()) {
     const changelogPath = join(root, ROOT_CHANGELOG);
     if (!existsSync(changelogPath)) {
