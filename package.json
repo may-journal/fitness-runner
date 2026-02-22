@@ -1,37 +1,10 @@
 {
-  "name": "@fitness/runner",
-  "version": "0.1.0-2026.02.22.1620",
-  "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
-  "type": "module",
-  "engines": {
-    "node": ">=24"
-  },
   "bin": {
     "fitness": "dist/index.js"
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
-    "./eslint.config": {
-      "types": "./eslint.config.d.ts",
-      "default": "./eslint.config.cjs"
-    },
-    "./vitest.config": "./vitest.config.cjs",
-    "./tsconfig": "./tsconfig.json",
-    "./tsconfig.cjs": "./tsconfig.cjs",
-    "./cspell": "./cspell.json",
-    "./prettier.config": {
-      "types": "./prettier.config.d.ts",
-      "default": "./prettier.config.cjs"
-    }
-  },
   "dependencies": {
     "@stylistic/eslint-plugin": "^5.6.1",
+    "@types/node": "^25",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",
     "@vitest/coverage-v8": "^4.0.18",
@@ -45,16 +18,38 @@
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsdoc": "^62.5.4",
     "eslint-plugin-typescript-sort-keys": "^3.3.0",
+    "husky": "^9.0.0",
     "jiti": "^2.6.1",
     "prettier": "3.8.1",
     "prettier-plugin-sort-json": "^4.2.0",
+    "tsconfig.js": "^3.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6",
     "vitest": "^4.0.18",
     "wrap-ansi": "^9.0.2"
   },
-  "overrides": {
-    "eslint-plugin-typescript-sort-keys": {
-      "eslint": "$eslint"
-    }
+  "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
+  "engines": {
+    "node": ">=24"
+  },
+  "exports": {
+    ".": {
+      "default": "./dist/index.js",
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./cspell": "./cspell.json",
+    "./eslint.config": {
+      "default": "./eslint.config.cjs",
+      "types": "./eslint.config.d.ts"
+    },
+    "./prettier.config": {
+      "default": "./prettier.config.cjs",
+      "types": "./prettier.config.d.ts"
+    },
+    "./tsconfig": "./tsconfig.json",
+    "./tsconfig.cjs": "./tsconfig.cjs",
+    "./vitest.config": "./vitest.config.cjs"
   },
   "files": [
     "dist",
@@ -67,6 +62,14 @@
     "prettier.config.cjs",
     "prettier.config.d.ts"
   ],
+  "main": "dist/index.js",
+  "name": "@fitness/runner",
+  "overrides": {
+    "eslint-plugin-typescript-sort-keys": {
+      "eslint": "$eslint"
+    }
+  },
+  "prettier": "./prettier.config.cjs",
   "scripts": {
     "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
     "ci": "(nvm use 2>/dev/null || true) && npm run fitness",
@@ -76,15 +79,10 @@
     "lint": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && eslint .",
     "precommit": "npm run fitness",
     "prepare": "husky",
-    "test": "vitest run --coverage",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "test": "vitest run --coverage"
   },
-  "prettier": "./prettier.config.cjs",
-  "devDependencies": {
-    "@types/node": "^25",
-    "husky": "^9.0.0",
-    "tsconfig.js": "^3.0.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.6"
-  }
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "version": "0.1.0-2026.02.22.1620"
 }
