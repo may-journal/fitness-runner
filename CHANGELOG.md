@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1431
+
+- Utils: replace findMd with findFilesByExtension(root, extension). getSkipDirs uses skipTheseDirectories from .fitnessrc if present, else cspell.json ignorePaths (dir names only); no default list. Add FitnessConfig.skipTheseDirectories; add .git, .husky to cspell.json.
+
 ### 2026.02.22.1408
 
 - Checks: add CheckName enum; all checks use enum for name (no static strings). Export CheckName from types; runner casts config check names to CheckName for registry lookup.

@@ -48,6 +48,7 @@ describe('rulesFrontMatterCheck', () => {
   });
 
   it('ignores markdown under node_modules, dist, coverage, .git, .husky', async () => {
+    writeRule('cspell.json', '{"ignorePaths":["node_modules","dist","coverage",".git",".husky"]}');
     writeRule('README.md', '---\nfitnessFunctions: ["./package.json"]\n---\n# Root');
     writeRule('package.json', '{}');
     writeRule('node_modules/pkg/readme.md', '---\nfitnessFunctions: ["./nope"]\n---');

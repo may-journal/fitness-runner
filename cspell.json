@@ -3,6 +3,8 @@
     "node_modules",
     "dist",
     "coverage",
+    ".git",
+    ".husky",
     "package-lock.json",
     "**/*.test.ts",
     ".gitignore",

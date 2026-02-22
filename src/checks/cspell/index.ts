@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
-import { findMd } from '../findMd.js';
+import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -176,7 +176,7 @@ async function runCspellWithLib(
 function getPathsToCheck(root: string, staged: string[]): string[] {
   if (staged.length > 0)
     return staged.filter((p) => existsSync(join(root, p))).map((p) => join(root, p));
-  return findMd(root).map((p) => join(root, p));
+  return findFilesByExtension(root, '.md').map((p) => join(root, p));
 }
 
 /** Spell-check via cspell; when context has stagedFiles runs on those paths only, else on markdown glob. */

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
-import { findMd } from '../findMd.js';
+import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
 
 /** Remove fenced code blocks (```...```) and inline code (`...`) so emphasis inside code is not flagged. */
 function stripCodeForEmphasisCheck(content: string): string {
@@ -53,7 +53,7 @@ export const markdownNoBoldItalicCheck: Check = {
   async run(root = process.cwd()) {
     const errors: string[] = [];
     let filesChecked = 0;
-    for (const file of findMd(root)) {
+    for (const file of findFilesByExtension(root, '.md')) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       errors.push(...validateFile(file, content));

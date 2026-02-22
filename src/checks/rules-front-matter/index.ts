@@ -2,7 +2,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { CheckName } from '../../types/index.types.js';
 import type { Check, RunContext } from '../../types/index.types.js';
-import { findMd } from '../findMd.js';
+import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
 const ARRAY_RE = /(?:fitnessFunctions|relatedConfigurations):\s*\[([^\]]*)\]/g;
@@ -102,7 +102,7 @@ export const rulesFrontMatterCheck: Check = {
     const registeredCheckNames = context?.registeredCheckNames ?? [];
     const errors: string[] = [];
     let filesChecked = 0;
-    for (const file of findMd(root)) {
+    for (const file of findFilesByExtension(root, '.md')) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       const mdFileDir = join(root, dirname(file));
