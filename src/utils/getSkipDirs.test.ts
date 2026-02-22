@@ -27,7 +27,10 @@ describe('getSkipDirs', () => {
 
   it('falls back to cspell.json ignorePaths when no skipTheseDirectories', () => {
     const dir = mkdtempSync(join(tmpdir(), 'skip-dirs-'));
-    writeFileSync(join(dir, 'cspell.json'), '{"ignorePaths":["node_modules","dist","**/*.test.ts"]}');
+    writeFileSync(
+      join(dir, 'cspell.json'),
+      '{"ignorePaths":["node_modules","dist","**/*.test.ts"]}'
+    );
     const set = getSkipDirs(dir);
     expect(set).toEqual(new Set(['node_modules', 'dist']));
   });

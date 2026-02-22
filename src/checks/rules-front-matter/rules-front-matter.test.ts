@@ -2,11 +2,7 @@ import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { beforeEach, describe, it, expect } from 'vitest';
-import {
-  getFrontMatterPaths,
-  hasRequiredFrontMatter,
-  rulesFrontMatterCheck,
-} from './index.js';
+import { getFrontMatterPaths, hasRequiredFrontMatter, rulesFrontMatterCheck } from './index.js';
 
 describe('getFrontMatterPaths', () => {
   it('returns [] when content has no front matter', () => {
@@ -15,9 +11,9 @@ describe('getFrontMatterPaths', () => {
   });
 
   it('skips empty arrays and returns paths from non-empty arrays', () => {
-    expect(getFrontMatterPaths('---\nfitnessFunctions: []\nrelatedConfigurations: ["./x"]\n---')).toEqual([
-      './x',
-    ]);
+    expect(
+      getFrontMatterPaths('---\nfitnessFunctions: []\nrelatedConfigurations: ["./x"]\n---')
+    ).toEqual(['./x']);
   });
 });
 
@@ -62,14 +58,18 @@ describe('rulesFrontMatterCheck', () => {
     writeRule('doc.md', '# Doc\n\nBody');
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors).toContain('doc.md: missing front matter with fitnessFunctions or relatedConfigurations');
+    expect(result.errors).toContain(
+      'doc.md: missing front matter with fitnessFunctions or relatedConfigurations'
+    );
   });
 
   it('fails when front matter has neither fitnessFunctions nor relatedConfigurations', async () => {
     writeRule('doc.md', '---\ntitle: Foo\n---\n# Doc');
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors).toContain('doc.md: missing front matter with fitnessFunctions or relatedConfigurations');
+    expect(result.errors).toContain(
+      'doc.md: missing front matter with fitnessFunctions or relatedConfigurations'
+    );
   });
 
   it('passes when file has required front matter with at least one path', async () => {
@@ -82,11 +82,18 @@ describe('rulesFrontMatterCheck', () => {
   });
 
   it('fails when fitnessFunctions or relatedConfigurations is empty array', async () => {
-    writeRule('50-59Rules/01-foo.md', '---\nfitnessFunctions: []\nrelatedConfigurations: []\n---\n# Rule');
+    writeRule(
+      '50-59Rules/01-foo.md',
+      '---\nfitnessFunctions: []\nrelatedConfigurations: []\n---\n# Rule'
+    );
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors).toContain('50-59Rules/01-foo.md: fitnessFunctions must not be an empty array');
-    expect(result.errors).toContain('50-59Rules/01-foo.md: relatedConfigurations must not be an empty array');
+    expect(result.errors).toContain(
+      '50-59Rules/01-foo.md: fitnessFunctions must not be an empty array'
+    );
+    expect(result.errors).toContain(
+      '50-59Rules/01-foo.md: relatedConfigurations must not be an empty array'
+    );
   });
 
   it('passes when only relatedConfigurations present with at least one path', async () => {
@@ -106,7 +113,10 @@ describe('rulesFrontMatterCheck', () => {
   });
 
   it('passes when relatedConfigurations path exists (relative to md file)', async () => {
-    writeRule('50-59Rules/01-foo.md', '---\nrelatedConfigurations: ["config/bar.json"]\n---\n# Rule');
+    writeRule(
+      '50-59Rules/01-foo.md',
+      '---\nrelatedConfigurations: ["config/bar.json"]\n---\n# Rule'
+    );
     writeRule('50-59Rules/config/bar.json', '{}');
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -116,7 +126,7 @@ describe('rulesFrontMatterCheck', () => {
   it('skips http, #, and mailto paths', async () => {
     writeRule(
       '50-59Rules/01-foo.md',
-      '---\nfitnessFunctions: ["https://x.com", "#anchor", "mailto:a@b.com"]\n---\n# Rule',
+      '---\nfitnessFunctions: ["https://x.com", "#anchor", "mailto:a@b.com"]\n---\n# Rule'
     );
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -124,14 +134,13 @@ describe('rulesFrontMatterCheck', () => {
   });
 
   it('passes when fitnessFunctions or relatedConfigurations references a registered check name', async () => {
-    writeRule('src/checks/cspell/README.md', '---\nfitnessFunctions: ["cspell"]\nrelatedConfigurations: ["../../../cspell.json"]\n---\n# cspell');
+    writeRule(
+      'src/checks/cspell/README.md',
+      '---\nfitnessFunctions: ["cspell"]\nrelatedConfigurations: ["../../../cspell.json"]\n---\n# cspell'
+    );
     writeRule('cspell.json', '{}');
     const result = await rulesFrontMatterCheck.run(dir, {
-      registeredCheckNames: [
-        'cspell',
-        'markdown-no-bold-italic',
-        'changelog',
-      ],
+      registeredCheckNames: ['cspell', 'markdown-no-bold-italic', 'changelog'],
     });
     expect(result.ok).toBe(true);
     expect(result.errors).toHaveLength(0);
@@ -141,11 +150,16 @@ describe('rulesFrontMatterCheck', () => {
     writeRule('50-59Rules/01-foo.md', '---\nfitnessFunctions: ["./missing.js"]\n---\n# Rule');
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors).toContain('50-59Rules/01-foo.md: front matter path missing: ./missing.js');
+    expect(result.errors).toContain(
+      '50-59Rules/01-foo.md: front matter path missing: ./missing.js'
+    );
   });
 
   it('fails when path escapes repo', async () => {
-    writeRule('50-59Rules/01-foo.md', '---\nfitnessFunctions: ["../../../etc/passwd"]\n---\n# Rule');
+    writeRule(
+      '50-59Rules/01-foo.md',
+      '---\nfitnessFunctions: ["../../../etc/passwd"]\n---\n# Rule'
+    );
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.includes('escapes repo'))).toBe(true);
@@ -155,12 +169,17 @@ describe('rulesFrontMatterCheck', () => {
     writeRule('other/readme.md', '---\nfitnessFunctions: ["./nope"]\n---\n');
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors.some((e) => e.includes('other/readme.md') && e.includes('./nope'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('other/readme.md') && e.includes('./nope'))).toBe(
+      true
+    );
     expect(result.meta?.filesChecked).toBe(1);
   });
 
   it('resolves paths relative to md file (e.g. ../../ from subdir)', async () => {
-    writeRule('src/checks/README.md', '---\nrelatedConfigurations: ["../../package.json"]\n---\n# Checks');
+    writeRule(
+      'src/checks/README.md',
+      '---\nrelatedConfigurations: ["../../package.json"]\n---\n# Checks'
+    );
     writeRule('package.json', '{}');
     const result = await rulesFrontMatterCheck.run(dir);
     expect(result.ok).toBe(true);

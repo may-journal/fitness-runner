@@ -47,7 +47,9 @@ describe('eslintCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     const result = await eslintCheck.run(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors.some((e) => e.includes('no-var') && e.includes('Unexpected var'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('no-var') && e.includes('Unexpected var'))).toBe(
+      true
+    );
     expect(result.meta?.filesChecked).toBe(1);
   });
 
@@ -84,13 +86,13 @@ describe('eslintCheck', () => {
   });
 
   it('formatMessage includes ruleId when present', () => {
-    expect(formatMessage('/f.ts', { line: 1, column: 2, message: 'x', ruleId: 'no-var' }))
-      .toBe('/f.ts:1:2 - x (no-var)');
+    expect(formatMessage('/f.ts', { line: 1, column: 2, message: 'x', ruleId: 'no-var' })).toBe(
+      '/f.ts:1:2 - x (no-var)'
+    );
   });
 
   it('formatMessage uses 0 for missing line/column and empty string for missing ruleId', () => {
-    expect(formatMessage('/f.ts', { message: 'y', ruleId: null }))
-      .toBe('/f.ts:0:0 - y');
+    expect(formatMessage('/f.ts', { message: 'y', ruleId: null })).toBe('/f.ts:0:0 - y');
   });
 
   it('formats message without ruleId when ruleId is null', async () => {

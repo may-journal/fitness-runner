@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1454
+
+- semantic-commit: fail when no message to validate (empty or git unavailable). commit-msg hook: pass message content via --message="$(cat "$1")". Export `MSG_EMPTY`.
+
 ### 2026.02.22.1431
 
 - Utils: replace findMd with findFilesByExtension(root, extension). getSkipDirs uses skipTheseDirectories from .fitnessrc if present, else cspell.json ignorePaths (dir names only); no default list. Add FitnessConfig.skipTheseDirectories; add .git, .husky to cspell.json.

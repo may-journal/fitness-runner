@@ -22,7 +22,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: [] } } };',
+      'module.exports = { test: { coverage: { exclude: [] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -32,7 +32,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["node_modules", "dist"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["node_modules", "dist"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -42,7 +42,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      `module.exports = { test: { coverage: { exclude: ${JSON.stringify([...ALLOWED_COVERAGE_EXCLUDE_PATTERNS])} } } };`,
+      `module.exports = { test: { coverage: { exclude: ${JSON.stringify([...ALLOWED_COVERAGE_EXCLUDE_PATTERNS])} } } };`
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -52,7 +52,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["src/**/*.types.ts"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["src/**/*.types.ts"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -62,7 +62,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["src/**/*.test.ts"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["src/**/*.test.ts"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -72,7 +72,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["src/config/load.ts"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["src/config/load.ts"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(false);
@@ -83,7 +83,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["src/types/**"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["src/types/**"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(false);
@@ -94,7 +94,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'package.json'),
-      JSON.stringify({ vitest: { test: { coverage: { exclude: ['**/*.types.ts'] } } } }),
+      JSON.stringify({ vitest: { test: { coverage: { exclude: ['**/*.types.ts'] } } } })
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -104,7 +104,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'const c = { test: { coverage: { exclude: ["**/*.types.ts"] } } }; module.exports = c; module.exports.default = null;',
+      'const c = { test: { coverage: { exclude: ["**/*.types.ts"] } } }; module.exports = c; module.exports.default = null;'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -114,7 +114,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'package.json'),
-      JSON.stringify({ vitest: { coverage: { exclude: 'not-array' } } }),
+      JSON.stringify({ vitest: { coverage: { exclude: 'not-array' } } })
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -131,7 +131,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.mjs'),
-      'const c = { test: { coverage: { exclude: ["**/*.types.ts"] } } }; export { c as default };',
+      'const c = { test: { coverage: { exclude: ["**/*.types.ts"] } } }; export { c as default };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -171,7 +171,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["**/*.spec.ts"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["**/*.spec.ts"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -181,7 +181,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(false);
@@ -193,7 +193,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["**/*.types.ts", 1, null] } } };',
+      'module.exports = { test: { coverage: { exclude: ["**/*.types.ts", 1, null] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -224,7 +224,7 @@ describe('vitestCoverageExcludeCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
     writeFileSync(
       join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { exclude: ["src/foo.ts", "src/types/**"] } } };',
+      'module.exports = { test: { coverage: { exclude: ["src/foo.ts", "src/types/**"] } } };'
     );
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(false);

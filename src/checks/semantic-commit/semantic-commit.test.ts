@@ -2,7 +2,7 @@ import { mkdtempSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it, expect, vi } from 'vitest';
-import { semanticCheck } from './index.js';
+import { MSG_EMPTY, semanticCheck } from './index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const mod = await importOriginal<typeof import('node:child_process')>();
@@ -37,20 +37,21 @@ describe('semanticCheck', () => {
 
   it('passes for merge commits', async () => {
     const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => 'Merge branch \'feature\' into main');
+    vi.mocked(execSync).mockImplementationOnce(() => "Merge branch 'feature' into main");
     const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
     const result = await semanticCheck.run(dir);
     expect(result.ok).toBe(true);
   });
 
-  it('passes when git fails (no repo)', async () => {
+  it('fails when git fails (no repo / nothing to check)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
     const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
     const result = await semanticCheck.run(dir);
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(MSG_EMPTY);
   });
 
   it('validates proposedCommitMessage from context (commit-msg hook)', async () => {
@@ -62,11 +63,19 @@ describe('semanticCheck', () => {
     expect(fail.errors?.[0]).toContain('Commit message:');
   });
 
-  it('passes when git log returns no first line (empty array branch)', async () => {
+  it('fails when git log returns no first line (nothing to check)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => ({ split: () => [] }) as unknown as string);
     const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
     const result = await semanticCheck.run(dir);
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(MSG_EMPTY);
+  });
+
+  it('fails when proposedCommitMessage is empty', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
+    const result = await semanticCheck.run(dir, { proposedCommitMessage: '' });
+    expect(result.ok).toBe(false);
+    expect(result.errors).toContain(MSG_EMPTY);
   });
 });

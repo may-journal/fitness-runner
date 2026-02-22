@@ -14,12 +14,11 @@ describe('loadConfig', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
     writeFileSync(
       join(dir, '.fitnessrc.ts'),
-      'export default { checks: ["changelog", "semantic-commit"] };',
+      'export default { checks: ["changelog", "semantic-commit"] };'
     );
     const config = loadConfig(dir);
     expect(config).not.toBe(null);
-    expect(config?.checks).toEqual(['changelog',
-      'semantic-commit']);
+    expect(config?.checks).toEqual(['changelog', 'semantic-commit']);
   });
 
   it('returns null when default export is null', () => {
@@ -42,10 +41,7 @@ describe('loadConfig', () => {
 
   it('returns config when .fitnessrc.js exists (no .ts)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
-    writeFileSync(
-      join(dir, '.fitnessrc.js'),
-      'module.exports = { checks: ["changelog"] };',
-    );
+    writeFileSync(join(dir, '.fitnessrc.js'), 'module.exports = { checks: ["changelog"] };');
     const config = loadConfig(dir);
     expect(config).not.toBe(null);
     expect(config?.checks).toEqual(['changelog']);
@@ -53,10 +49,7 @@ describe('loadConfig', () => {
 
   it('returns module when default export is missing (namespace object)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
-    writeFileSync(
-      join(dir, '.fitnessrc.ts'),
-      'export const checks = ["changelog"];',
-    );
+    writeFileSync(join(dir, '.fitnessrc.ts'), 'export const checks = ["changelog"];');
     const config = loadConfig(dir);
     expect(config).not.toBe(null);
     expect(config?.checks).toEqual(['changelog']);
@@ -76,10 +69,7 @@ describe('loadConfig', () => {
 
   it('parseConfigModule returns null when raw.default is null (branch line 29)', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-config-'));
-    writeFileSync(
-      join(dir, '.fitnessrc.js'),
-      'module.exports = { default: { default: null } };',
-    );
+    writeFileSync(join(dir, '.fitnessrc.js'), 'module.exports = { default: { default: null } };');
     expect(loadConfig(dir)).toBe(null);
   });
 });

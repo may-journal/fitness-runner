@@ -1,5 +1,11 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { run, UNKNOWN_CHECK_PREFIX, UNKNOWN_CHECK_SPEC_NONE, PLEASE_FIX_ITEMS, ERROR_BULLET } from '../index.js';
+import {
+  run,
+  UNKNOWN_CHECK_PREFIX,
+  UNKNOWN_CHECK_SPEC_NONE,
+  PLEASE_FIX_ITEMS,
+  ERROR_BULLET,
+} from '../index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const mod = await importOriginal<typeof import('node:child_process')>();
@@ -14,7 +20,7 @@ describe('fitness run', () => {
       'process',
       Object.assign(process, {
         exit: vi.fn(),
-      }),
+      })
     );
   });
 
@@ -29,7 +35,10 @@ describe('fitness run', () => {
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(
+      join(dir, 'CHANGELOG.md'),
+      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
+    );
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
@@ -38,8 +47,7 @@ describe('fitness run', () => {
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => 'feat(pkg): init\n\n');
-    await run(['node',
-      'fitness']);
+    await run(['node', 'fitness']);
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
@@ -49,9 +57,15 @@ describe('fitness run', () => {
     const { join } = await import('node:path');
     const { tmpdir } = await import('node:os');
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, '.fitnessrc.ts'), 'export default { checks: ["changelog", "semantic-commit"] };');
+    writeFileSync(
+      join(dir, '.fitnessrc.ts'),
+      'export default { checks: ["changelog", "semantic-commit"] };'
+    );
     writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(
+      join(dir, 'CHANGELOG.md'),
+      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
+    );
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
@@ -59,10 +73,7 @@ describe('fitness run', () => {
     vi.mocked(execSync)
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => 'feat(pkg): init\n\n');
-    await run([
-      'node',
-      'fitness',
-    ]);
+    await run(['node', 'fitness']);
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
@@ -82,9 +93,7 @@ describe('fitness run', () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => '');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await runWithMetaLess(['node',
-      'fitness',
-      '--check=meta-less']);
+    await runWithMetaLess(['node', 'fitness', '--check=meta-less']);
     process.chdir(origCwd);
     expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/meta-less/));
     logSpy.mockRestore();
@@ -92,9 +101,7 @@ describe('fitness run', () => {
 
   it('exits 1 for unknown check', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(run(['node',
-      'fitness',
-      '--check=unknown'])).rejects.toThrow('exit');
+    await expect(run(['node', 'fitness', '--check=unknown'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
     errSpy.mockRestore();
   });
@@ -102,22 +109,18 @@ describe('fitness run', () => {
   it('runs single check when --check=semantic-commit', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
+      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : ''
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
   it('runs single check when check name is positional (e.g. npx fitness semantic-commit)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : '');
-    await run([
-      'node',
-      'fitness',
-      'semantic-commit',
-    ]);
+      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : ''
+    );
+    await run(['node', 'fitness', 'semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
@@ -147,21 +150,20 @@ describe('fitness run', () => {
     const checkPath = join(dir, 'check.js');
     writeFileSync(
       checkPath,
-      'export default { name: "path-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
+      'export default { name: "path-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };'
     );
     writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(
+      join(dir, 'CHANGELOG.md'),
+      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
+    );
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation(() => '');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await run([
-      'node',
-      'fitness',
-      '--check=./check.js',
-    ]);
+    await run(['node', 'fitness', '--check=./check.js']);
     process.chdir(origCwd);
     expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/path-check/));
     expect(process.exit).toHaveBeenCalledWith(0);
@@ -175,21 +177,20 @@ describe('fitness run', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-path-named-'));
     writeFileSync(
       join(dir, 'check.js'),
-      'export const myCheck = { name: "named-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };',
+      'export const myCheck = { name: "named-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };'
     );
     writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(join(dir, 'CHANGELOG.md'), '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n');
+    writeFileSync(
+      join(dir, 'CHANGELOG.md'),
+      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
+    );
     writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation(() => '');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await run([
-      'node',
-      'fitness',
-      '--check=./check.js',
-    ]);
+    await run(['node', 'fitness', '--check=./check.js']);
     process.chdir(origCwd);
     expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/named-check/));
     expect(process.exit).toHaveBeenCalledWith(0);
@@ -205,14 +206,12 @@ describe('fitness run', () => {
     const origCwd = process.cwd();
     process.chdir(dir);
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(run([
-      'node',
-      'fitness',
-      '--check=./check.js',
-    ])).rejects.toThrow('exit');
+    await expect(run(['node', 'fitness', '--check=./check.js'])).rejects.toThrow('exit');
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(UNKNOWN_CHECK_PREFIX + './check.js'));
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(UNKNOWN_CHECK_PREFIX + './check.js')
+    );
     errSpy.mockRestore();
   });
 
@@ -225,14 +224,12 @@ describe('fitness run', () => {
     const origCwd = process.cwd();
     process.chdir(dir);
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(run([
-      'node',
-      'fitness',
-      '--check=./check.js',
-    ])).rejects.toThrow('exit');
+    await expect(run(['node', 'fitness', '--check=./check.js'])).rejects.toThrow('exit');
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(UNKNOWN_CHECK_PREFIX + './check.js'));
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(UNKNOWN_CHECK_PREFIX + './check.js')
+    );
     errSpy.mockRestore();
   });
 
@@ -244,24 +241,21 @@ describe('fitness run', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     const origCwd = process.cwd();
     process.chdir(dir);
-    await expect(run([
-      'node',
-      'fitness',
-      '--check=./nonexistent.js',
-    ])).rejects.toThrow('exit');
+    await expect(run(['node', 'fitness', '--check=./nonexistent.js'])).rejects.toThrow('exit');
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(UNKNOWN_CHECK_PREFIX + './nonexistent.js'));
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(UNKNOWN_CHECK_PREFIX + './nonexistent.js')
+    );
     errSpy.mockRestore();
   });
 
   it('runs with staged context (git diff mocked)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'chore(deps): bump\n\n' : '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
+      cmd.includes('--pretty') ? 'chore(deps): bump\n\n' : ''
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
@@ -270,19 +264,16 @@ describe('fitness run', () => {
     vi.mocked(execSync).mockImplementation(() => {
       throw new Error('not a git repo');
     });
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
-    expect(process.exit).toHaveBeenCalledWith(0);
+    await run(['node', 'fitness', '--check=semantic-commit']);
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
   it('handles non-empty staged output', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(runner): add tests\n\n' : 'a.md\nb.md');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
+      cmd.includes('--pretty') ? 'feat(runner): add tests\n\n' : 'a.md\nb.md'
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
@@ -290,10 +281,9 @@ describe('fitness run', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
+      cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
     expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/semantic-commit.*1.*\d+ms/));
     logSpy.mockRestore();
   });
@@ -302,11 +292,12 @@ describe('fitness run', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'Bad commit' : '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(`[semantic-commit] ${PLEASE_FIX_ITEMS}`));
+      cmd.includes('--pretty') ? 'Bad commit' : ''
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(`[semantic-commit] ${PLEASE_FIX_ITEMS}`)
+    );
     expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(ERROR_BULLET));
     expect(process.exit).toHaveBeenCalledWith(1);
     errSpy.mockRestore();
@@ -315,10 +306,9 @@ describe('fitness run', () => {
   it('exits 1 when check fails', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'Initial commit\n\n' : '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
+      cmd.includes('--pretty') ? 'Initial commit\n\n' : ''
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
@@ -327,10 +317,12 @@ describe('fitness run', () => {
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
-    await run(['node',
+    await run([
+      'node',
       'fitness',
       '--check=semantic-commit',
-      '--message=feat(checks): add commit-msg hook']);
+      '--message=feat(checks): add commit-msg hook',
+    ]);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
@@ -339,45 +331,28 @@ describe('fitness run', () => {
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
-    await run([
-      'node',
-      'fitness',
-      'semantic-commit',
-      '--message=feat(scope): two positionals',
-    ]);
+    await run(['node', 'fitness', 'semantic-commit', '--message=feat(scope): two positionals']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('--check=semantic-commit with --message= empty or missing: treats as empty (pass)', async () => {
+  it('--check=semantic-commit with --message= empty or missing: fails (nothing to check)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation(() => '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit',
-      '--message=']);
-    expect(process.exit).toHaveBeenCalledWith(0);
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit']);
-    expect(process.exit).toHaveBeenCalledWith(0);
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit',
-      '--message']);
-    expect(process.exit).toHaveBeenCalledWith(0);
+    await run(['node', 'fitness', '--check=semantic-commit', '--message=']);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    await run(['node', 'fitness', '--check=semantic-commit']);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    await run(['node', 'fitness', '--check=semantic-commit', '--message']);
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it('--check=semantic-commit with --message followed by flag: treats value as empty, strips only --message', async () => {
+  it('--check=semantic-commit with --message followed by flag: empty message fails', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit',
-      '--message',
-      '--write']);
-    expect(process.exit).toHaveBeenCalledWith(0);
+    await run(['node', 'fitness', '--check=semantic-commit', '--message', '--write']);
+    expect(process.exit).toHaveBeenCalledWith(1);
   });
 
   it('--check=semantic-commit with other arg then --message=: injects message', async () => {
@@ -385,11 +360,13 @@ describe('fitness run', () => {
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
-    await run(['node',
+    await run([
+      'node',
       'fitness',
       '--check=semantic-commit',
       '--other',
-      '--message=feat(scope): with other arg']);
+      '--message=feat(scope): with other arg',
+    ]);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
@@ -397,10 +374,7 @@ describe('fitness run', () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => '');
-    await run(['node',
-      'fitness',
-      '--check=semantic-commit',
-      '--message=oops I forgot']);
+    await run(['node', 'fitness', '--check=semantic-commit', '--message=oops I forgot']);
     expect(process.exit).toHaveBeenCalledWith(1);
     errSpy.mockRestore();
   });
@@ -423,24 +397,29 @@ describe('exitUnknown', () => {
     vi.doMock('../checks/index.js', () => ({ registry: [] }));
     const { run: runWithEmptyRegistry } = await import('../index.js');
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(runWithEmptyRegistry(['node',
-      'fitness'])).rejects.toThrow('exit');
+    await expect(runWithEmptyRegistry(['node', 'fitness'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(UNKNOWN_CHECK_PREFIX + UNKNOWN_CHECK_SPEC_NONE));
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(UNKNOWN_CHECK_PREFIX + UNKNOWN_CHECK_SPEC_NONE)
+    );
     errSpy.mockRestore();
   });
 
   it('exits 1 with (semantic-commit) when --check=semantic-commit but registry has no semantic-commit', async () => {
     vi.resetModules();
-    vi.doMock('../checks/index.js', () => ({ registry: [{ name: 'other', run: async () => ({ ok: true, errors: [], meta: {} }) }] }));
+    vi.doMock('../checks/index.js', () => ({
+      registry: [{ name: 'other', run: async () => ({ ok: true, errors: [], meta: {} }) }],
+    }));
     const { run: runWithNoSemantic } = await import('../index.js');
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.stubGlobal('process', Object.assign(process, { exit: vi.fn() }));
-    await expect(runWithNoSemantic(['node',
-      'fitness',
-      '--check=semantic-commit'])).rejects.toThrow('exit');
+    await expect(runWithNoSemantic(['node', 'fitness', '--check=semantic-commit'])).rejects.toThrow(
+      'exit'
+    );
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(UNKNOWN_CHECK_PREFIX + 'semantic-commit'));
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(UNKNOWN_CHECK_PREFIX + 'semantic-commit')
+    );
     errSpy.mockRestore();
     vi.unstubAllGlobals();
   });

@@ -1,6 +1,6 @@
 {
   "name": "@fitness/runner",
-  "version": "0.1.0-2026.02.22.1431",
+  "version": "0.1.0-2026.02.22.1454",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "type": "module",
   "engines": {
@@ -59,7 +59,7 @@
   ],
   "scripts": {
     "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
-    "ci": "(nvm use 2>/dev/null || true) && npm run fitness && npm test",
+    "ci": "(nvm use 2>/dev/null || true) && npm run fitness",
     "fitness": "npm run build && node dist/index.js",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

@@ -54,7 +54,7 @@ describe('changelogCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'changelog-'));
     writeFileSync(
       join(dir, 'CHANGELOG.md'),
-      '# Changelog\n\n### 2026.02.15.1100\n\n- a\n\n### 2026.02.14.2100\n\n- b',
+      '# Changelog\n\n### 2026.02.15.1100\n\n- a\n\n### 2026.02.14.2100\n\n- b'
     );
     const result = await changelogCheck.run(dir);
     expect(result.ok).toBe(true);
@@ -64,7 +64,7 @@ describe('changelogCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'changelog-'));
     writeFileSync(
       join(dir, 'CHANGELOG.md'),
-      '# Changelog\n\n### 2026.02.15.1100\n\n- a\n\n### 2026.02.15\n\n- b',
+      '# Changelog\n\n### 2026.02.15.1100\n\n- a\n\n### 2026.02.15\n\n- b'
     );
     const result = await changelogCheck.run(dir);
     expect(result.ok).toBe(false);
@@ -85,7 +85,10 @@ describe('changelogCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'changelog-'));
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15.1100\n\n- item');
     writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(join(dir, 'package-lock.json'), '{"version":"0.1.0-2026.02.15.1100","packages":{"":{}}}');
+    writeFileSync(
+      join(dir, 'package-lock.json'),
+      '{"version":"0.1.0-2026.02.15.1100","packages":{"":{}}}'
+    );
     const result = await changelogCheck.run(dir);
     expect(result.ok).toBe(true);
   });
@@ -128,7 +131,10 @@ describe('changelogCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'changelog-'));
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15.1100\n\n- item');
     writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(join(dir, 'package-lock.json'), '{"version":"0.1.0-2026.02.15.1200","packages":{"":{}}}');
+    writeFileSync(
+      join(dir, 'package-lock.json'),
+      '{"version":"0.1.0-2026.02.15.1200","packages":{"":{}}}'
+    );
     const result = await changelogCheck.run(dir);
     expect(result.ok).toBe(false);
     expect(result.errors).toContain(MSG_VERSION_LOCK);

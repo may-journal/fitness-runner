@@ -97,10 +97,15 @@ export function parsePrettierOutput(output: string): string[] {
     .map((line) => line.slice(7).trim());
 }
 
-/** Paths to check: staged (existing) under root, or ["."] when none. */
+/** Paths to skip when passing staged files to Prettier (no parser or ignore-file). */
+const PRETTIER_SKIP_STAGED = new Set(['.prettierignore', '.husky/commit-msg']);
+
+/** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list and .husky. */
 function getPathsToCheck(root: string, staged: string[]): string[] {
   if (staged.length === 0) return ['.'];
-  return staged.filter((p) => existsSync(join(root, p)));
+  return staged.filter(
+    (p) => existsSync(join(root, p)) && !PRETTIER_SKIP_STAGED.has(p) && !p.startsWith('.husky/')
+  );
 }
 
 type PrettierContext = {

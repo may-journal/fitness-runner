@@ -27,7 +27,10 @@ describe('changelogUpdatedCheck', () => {
 
   it('passes when no staged context', async () => {
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- item');
-    expect(await changelogUpdatedCheck.run(dir)).toMatchObject({ ok: true, meta: { filesChecked: 0 } });
+    expect(await changelogUpdatedCheck.run(dir)).toMatchObject({
+      ok: true,
+      meta: { filesChecked: 0 },
+    });
     expect(await changelogUpdatedCheck.run(dir, { stagedFiles: [] })).toMatchObject({
       ok: true,
       meta: { filesChecked: 0 },
@@ -59,10 +62,12 @@ describe('changelogUpdatedCheck', () => {
 
   it('uses execSync when _execSync not in context', async () => {
     vi.mocked(execSync).mockReturnValue(
-      '+++ b/src/foo.ts\n+ Added new runner feature.\n+++ b/CHANGELOG.md\n+ - Added new runner feature.\n',
+      '+++ b/src/foo.ts\n+ Added new runner feature.\n+++ b/CHANGELOG.md\n+ - Added new runner feature.\n'
     );
     writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026-02-15\n\n- item');
-    const result = await changelogUpdatedCheck.run(dir, { stagedFiles: ['src/foo.ts', 'CHANGELOG.md'] });
+    const result = await changelogUpdatedCheck.run(dir, {
+      stagedFiles: ['src/foo.ts', 'CHANGELOG.md'],
+    });
     expect(result.ok).toBe(true);
     expect(vi.mocked(execSync).mock.calls[0][0]).toBe('git diff --cached');
   });

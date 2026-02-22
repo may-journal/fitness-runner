@@ -116,7 +116,9 @@ describe('cspellCheck', () => {
       },
     });
     expect(result.ok).toBe(false);
-    expect(result.errors.some((e) => e.includes('xyzzyspoon') || e.includes('staged.md'))).toBe(true);
+    expect(result.errors.some((e) => e.includes('xyzzyspoon') || e.includes('staged.md'))).toBe(
+      true
+    );
   });
 
   it('with stagedFiles mock return path when cmd does not match', async () => {

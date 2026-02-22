@@ -34,7 +34,7 @@ describe('markdownNoBoldItalicCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
     writeFileSync(
       join(dir, 'doc.md'),
-      'Text with `**code**` and ```\n**block**\n``` and _real_ emphasis.',
+      'Text with `**code**` and ```\n**block**\n``` and _real_ emphasis.'
     );
     const result = await markdownNoBoldItalicCheck.run(dir);
     expect(result.ok).toBe(false);
@@ -84,7 +84,10 @@ describe('markdownNoBoldItalicCheck', () => {
 
   it('skips node_modules and other excluded dirs', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
-    writeFileSync(join(dir, 'cspell.json'), '{"ignorePaths":["node_modules","dist","coverage",".git",".husky"]}');
+    writeFileSync(
+      join(dir, 'cspell.json'),
+      '{"ignorePaths":["node_modules","dist","coverage",".git",".husky"]}'
+    );
     writeFileSync(join(dir, 'ok.md'), 'Plain.');
     const nodeMod = join(dir, 'node_modules');
     mkdirSync(nodeMod, { recursive: true });

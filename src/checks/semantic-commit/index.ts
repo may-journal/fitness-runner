@@ -14,12 +14,14 @@ export function isSemanticSubject(subject: string): boolean {
 
 export { SEMANTIC_TYPES };
 
+export const MSG_EMPTY = 'No commit message to validate; use type(scope): description';
+
 /** Resolves commit subject from context or git log. */
 function getCommitSubject(
   root: string,
   context: { proposedCommitMessage?: string } | undefined
 ): string {
-  if (context?.proposedCommitMessage) return context.proposedCommitMessage;
+  if (context?.proposedCommitMessage !== undefined) return context.proposedCommitMessage;
   try {
     const msg = execSync('git log -1 --pretty=%B', { cwd: root, encoding: 'utf8' });
     return msg.split('\n')[0] ?? '';
@@ -34,7 +36,7 @@ export const semanticCheck: Check = {
   name: CheckName.SemanticCommit,
   async run(root = process.cwd(), context) {
     const subject = getCommitSubject(root, context);
-    if (!subject) return { errors: [], meta: { filesChecked: 1 }, ok: true };
+    if (!subject.trim()) return { errors: [MSG_EMPTY], meta: { filesChecked: 1 }, ok: false };
     if (isSemanticSubject(subject)) return { errors: [], meta: { filesChecked: 1 }, ok: true };
     return {
       errors: [
