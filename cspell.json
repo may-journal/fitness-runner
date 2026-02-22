@@ -13,9 +13,6 @@
   "useGitignore": true,
   "version": "0.2",
   "words": [
-    "broown",
-    "jasonvanderslice",
-    "Dctx",
     "dotenv",
     "eslintcache",
     "fitnessrc",
@@ -26,24 +23,11 @@
     "lintable",
     "LINTABLE",
     "nvmrc",
-    "Nuxt",
-    "nuxt",
-    "nzzzq",
     "pids",
     "precommit",
     "semantic-commit",
-    "Sveltekit",
-    "stylelintcache",
     "subshell",
-    "unstub",
-    "vite",
-    "Vite",
-    "vitepress",
     "vitest",
-    "tsx",
-    "vuepress",
-    "wscript",
-    "xyzzyspoon",
-    "zzzq"
+    "tsx"
   ]
 }

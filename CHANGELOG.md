@@ -9,6 +9,7 @@ relatedConfigurations: ['package.json']
 
 ### 2026.02.22.1620
 
+- Plans: add plan-checks-abstractions.md (repeating patterns in checks/\*, abstraction options). README: flowchart node renamed to PassthroughArgs. cspell.json: trim words list.
 - Dependencies: flatten into dependencies only (no dev/optional). Prettier: package.json override to use json parser so sort-json runs recursively (exports paths and condition keys); remove prettier-plugin-packagejson; add comments in prettier.config.cjs.
 - Runner: enUS enum for all user-facing copy (runner/enUS.ts); run logic in run.ts, index.ts barrel only. Add interpolate() util for {{key}} templates; total line uses enUS.TotalLine. Export enUS from runner and package. ESLint: eslint-plugin-typescript-sort-keys (string-enum + interface), @typescript-eslint aligned to ^8.55; overrides for plugin eslint peer.
 

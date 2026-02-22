@@ -132,8 +132,8 @@ flowchart TD
   L --> M
   B --> E["getStagedContext()<br/><small>git diff --cached → stagedFiles</small>"]
   E --> N["buildContext(staged, inlineFragment, checks, passthrough)"]
-  M --> Dctx["When single check: inlineFragment + passthrough from check.contextInline"]
-  Dctx --> N
+  M --> PassthroughArgs["When single check: inlineFragment + passthrough from check.contextInline"]
+  PassthroughArgs --> N
   M --> N
   N --> O["runChecks(checks, root, context)"]
   M --> O
@@ -156,7 +156,7 @@ flowchart TD
   classDef execute fill:#10b981,stroke:#059669,color:#fff
   classDef decision fill:#f1f5f9,stroke:#64748b,color:#334155
   class A,B cli
-  class Dctx,E,F,G,H,I,J,K,L,M,N resolve
+  class PassthroughArgs,E,F,G,H,I,J,K,L,M,N resolve
   class O,P,Q,R,S,T,U execute
   class G,I decision
 ```
