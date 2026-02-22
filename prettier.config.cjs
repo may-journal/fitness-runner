@@ -1,7 +1,7 @@
 'use strict';
 
-// Exported config for consumers: "prettier": "@fitness/runner/prettier.config"
-module.exports = {
+/** @type {import('prettier').Config} */
+const config = {
   jsonRecursiveSort: true,
   plugins: ['prettier-plugin-sort-json'],
   printWidth: 100,
@@ -10,3 +10,5 @@ module.exports = {
   tabWidth: 2,
   trailingComma: 'es5',
 };
+
+module.exports = config;

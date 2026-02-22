@@ -1,6 +1,6 @@
 {
   "name": "@fitness/runner",
-  "version": "0.1.0-2026.02.22.1454",
+  "version": "0.1.0-2026.02.22.1511",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "type": "module",
   "engines": {
@@ -25,7 +25,10 @@
     "./tsconfig": "./tsconfig.json",
     "./tsconfig.cjs": "./tsconfig.cjs",
     "./cspell": "./cspell.json",
-    "./prettier.config": "./prettier.config.cjs"
+    "./prettier.config": {
+      "types": "./prettier.config.d.ts",
+      "default": "./prettier.config.cjs"
+    }
   },
   "dependencies": {
     "@stylistic/eslint-plugin": "^5.8.0",
@@ -55,7 +58,8 @@
     "tsconfig.json",
     "tsconfig.cjs",
     "cspell.json",
-    "prettier.config.cjs"
+    "prettier.config.cjs",
+    "prettier.config.d.ts"
   ],
   "scripts": {
     "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",

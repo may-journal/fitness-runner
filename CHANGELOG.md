@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1511
+
+- Prettier: single config (prettier.config.cjs), remove .prettierrc.json; add .prettierignore and prettier.config.d.ts with package.json types export; Prettier check recognizes .ts/.mts/.cts config names; .gitignore generated Prettier files; drop unsupported ignore option from config.
+
 ### 2026.02.22.1454
 
 - semantic-commit: fail when no message to validate (empty or git unavailable). commit-msg hook: pass message content via --message="$(cat "$1")". Export `MSG_EMPTY`.

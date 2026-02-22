@@ -14,9 +14,15 @@ const PRETTIER_CONFIG_NAMES = [
   '.prettierrc.yaml',
   '.prettierrc.js',
   '.prettierrc.cjs',
+  '.prettierrc.mts',
+  '.prettierrc.cts',
+  '.prettierrc.ts',
   'prettier.config.js',
   'prettier.config.cjs',
   'prettier.config.mjs',
+  'prettier.config.mts',
+  'prettier.config.cts',
+  'prettier.config.ts',
 ];
 
 const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
@@ -98,7 +104,7 @@ export function parsePrettierOutput(output: string): string[] {
 }
 
 /** Paths to skip when passing staged files to Prettier (no parser or ignore-file). */
-const PRETTIER_SKIP_STAGED = new Set(['.prettierignore', '.husky/commit-msg']);
+const PRETTIER_SKIP_STAGED = new Set(['.gitignore', '.prettierignore', '.husky/commit-msg']);
 
 /** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list and .husky. */
 function getPathsToCheck(root: string, staged: string[]): string[] {

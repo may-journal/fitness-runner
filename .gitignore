@@ -148,9 +148,12 @@ src/**/*.js.map
 tsconfig.json
 build/tsconfig.json
 
-# Compiled root configs (sources are *.config.ts)
+# Compiled root configs (sources are *.config.ts / *.config.cjs)
 eslint.config.js
 eslint.config.js.map
+prettier.config.js
+prettier.config.js.map
+prettier.config.d.ts.map
 vitest.config.js
 vitest.config.js.map
 vitest.config.d.ts
