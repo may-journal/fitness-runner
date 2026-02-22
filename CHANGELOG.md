@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1332
+
+- Runner: check-registered contextInline; no check-name logic. Check type gains optional contextInline (argName, contextKey); semantic-commit registers --message → proposedCommitMessage; commit-msg hook uses --message="$(cat \"$1\")". Export ContextInline; update README and flow diagram.
+
 ### 2026.02.22.1322
 
 - Plan: abstract runner check-name logic via check-registered context (contextInline/contextPath on Check type; no .fitnessrc change).

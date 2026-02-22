@@ -18,7 +18,7 @@ Scope is required (e.g. `feat(api): add endpoint`). Merge commits are always acc
 - Fail: Subject doesn’t match → error with suggested format and allowed types.
 - Pass (no repo / git error): Treated as pass so the check doesn’t block in non-git contexts.
 
-From a Git commit-msg hook, run `fitness --check=semantic-commit "$1"` so the check validates the proposed message in that file instead of HEAD.
+This check registers `contextInline: { argName: '--message', contextKey: 'proposedCommitMessage' }`. From a Git commit-msg hook, pass the message string: `fitness --check=semantic-commit --message="$(cat "$1")"` so the check validates the proposed message instead of HEAD.
 
 ## Contributing
 

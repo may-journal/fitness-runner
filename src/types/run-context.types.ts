@@ -1,7 +1,7 @@
 /** Optional context the runner passes to checks (e.g. staged file list, proposed commit message). */
 export type RunContext = {
   stagedFiles?: string[];
-  /** When set, semantic-commit validates this instead of HEAD (used by commit-msg hook). */
+  /** When set, checks (e.g. semantic-commit) can validate this instead of HEAD; runner may set via contextInline. */
   proposedCommitMessage?: string;
   /** Args after the check name when running a single check (e.g. npx fitness prettier --write). */
   passthroughArgs?: string[];

@@ -32,7 +32,7 @@ npx fitness semantic-commit
 npx fitness --check=semantic-commit
 ```
 
-Commit-msg hook: pass the message file as a positional so semantic-commit validates the proposed message: `fitness --check=semantic-commit "$1"`.
+Checks can register `contextInline` so the runner injects a named arg value into context and strips it from passthrough. For the commit-msg hook with semantic-commit, pass the message string: `fitness --check=semantic-commit --message="$(cat "$1")"`. See each check’s README for its arg name.
 
 ## Checks
 
@@ -129,8 +129,8 @@ flowchart TD
   K --> M
   L --> M
   B --> E["getStagedContext()"]
-  B --> Dctx["getCommitMsgContext if --check=semantic-commit + positional path"]
-  E --> N["buildContext(staged, commitMsg, checks, passthrough)"]
+  B --> Dctx["getInlineContextFragment(argsAfterSpec, check.contextInline)"]
+  E --> N["buildContext(staged, inlineFragment, checks, passthrough)"]
   Dctx --> N
   M --> N
   M --> O["runChecks(checks, root, context)"]

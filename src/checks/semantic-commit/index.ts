@@ -29,6 +29,7 @@ function getCommitSubject(
 
 /** Validates HEAD or proposed commit message follows Conventional Commits (type(scope): description). */
 export const semanticCheck: Check = {
+  contextInline: { argName: '--message', contextKey: 'proposedCommitMessage' },
   name: 'semantic-commit',
   async run(root = process.cwd(), context) {
     const subject = getCommitSubject(root, context);

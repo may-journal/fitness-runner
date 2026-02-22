@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -24,48 +24,49 @@ function getStagedContext(): RunContext | undefined {
   }
 }
 
-/** Resolves context file path from positionals (second when check name is first arg, first when from --check=). */
-function getContextFilePath(
-  positionals: string[],
-  checkNameIsFirstArg: boolean
-): string | undefined {
-  if (checkNameIsFirstArg && positionals.length >= 2) return positionals[1];
-  if (!checkNameIsFirstArg && positionals.length >= 1) return positionals[0];
-  return undefined;
-}
-
-/** Returns args after the check spec when running a single check (excludes commit-msg path for semantic-commit). */
-function getPassthroughArgs(
-  argv: string[],
-  checkName: string | undefined,
-  checkNameIsFirstArg: boolean
-): string[] {
-  const raw = checkNameIsFirstArg
-    ? argv.slice(3)
-    : argv.slice(2).filter((a) => !a.startsWith('--check='));
-  if (checkName !== 'semantic-commit') return raw;
-  const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const commitPath = getContextFilePath(positionals, checkNameIsFirstArg);
-  return commitPath ? raw.filter((a) => a !== commitPath) : raw;
-}
-
-/** When running semantic-commit, positional(s) may include the message file path (commit-msg hook). */
-function getCommitMsgContext(
-  argv: string[],
-  checkName: string | undefined,
-  checkNameIsFirstArg: boolean
-): RunContext | undefined {
-  if (checkName !== 'semantic-commit') return undefined;
-  const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const path = getContextFilePath(positionals, checkNameIsFirstArg);
-  if (!path) return undefined;
-  try {
-    const content = readFileSync(path, 'utf8');
-    const subject = content.split('\n')[0] || '';
-    return { proposedCommitMessage: subject };
-  } catch {
-    return { proposedCommitMessage: '' };
+/** Parses args for a contextInline arg (--arg=value or --arg value); returns value and indices to strip. */
+function getContextInlineFromArgs(
+  args: string[],
+  argName: string
+): { stripIndices: number[]; value: string } | null {
+  const eq = argName + '=';
+  for (let i = 0; i < args.length; i++) {
+    const hit = tryExactArg(args, argName, i) ?? tryEqualsArg(args, eq, i);
+    if (hit) return hit;
   }
+  return null;
+}
+
+/** Handles --arg value form. */
+function tryExactArg(
+  args: string[],
+  argName: string,
+  i: number
+): { stripIndices: number[]; value: string } | null {
+  if (args[i] !== argName) return null;
+  const next = args[i + 1] ?? '';
+  const value = next.startsWith('-') ? '' : next;
+  const stripIndices = value === next ? [i, i + 1] : [i];
+  return { stripIndices, value };
+}
+
+/** Handles --arg=value form. */
+function tryEqualsArg(
+  args: string[],
+  eq: string,
+  i: number
+): { stripIndices: number[]; value: string } | null {
+  if (!args[i].startsWith(eq)) return null;
+  return { stripIndices: [i], value: args[i].slice(eq.length) };
+}
+
+/** Returns args after the check spec when running a single check; strips contextInline arg when registered. */
+function getPassthroughArgs(argsAfterSpec: string[], check: Check): string[] {
+  const inline = check.contextInline;
+  if (!inline) return argsAfterSpec;
+  const parsed = getContextInlineFromArgs(argsAfterSpec, inline.argName);
+  if (!parsed) return argsAfterSpec;
+  return argsAfterSpec.filter((_, i) => !parsed.stripIndices.includes(i));
 }
 
 /** Resolves checks from config (if present) or full registry, in order. */
@@ -83,7 +84,7 @@ function getCheckSpecFromArg(argv: string[]): string | undefined {
   return argv.find((a) => a.startsWith('--check='))?.slice(8);
 }
 
-/** Returns first positional as check name or path (so second positional can be commit-msg path). */
+/** Returns first positional as check name or path. */
 function getPositionalSpec(argv: string[]): string | undefined {
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
   return positionals.length >= 1 ? positionals[0] : undefined;
@@ -135,10 +136,19 @@ async function resolveChecksBySpec(spec: string | undefined, root: string): Prom
   return one ? [one] : [];
 }
 
-/** Builds context with registeredCheckNames, enabledCheckNames, and optional staged/commit-msg/passthrough data. */
+/** Builds context fragment from check.contextInline and args after spec; null if none. */
+function getInlineContextFragment(argsAfterSpec: string[], check: Check): RunContext | undefined {
+  const inline = check.contextInline;
+  if (!inline) return undefined;
+  const parsed = getContextInlineFromArgs(argsAfterSpec, inline.argName);
+  if (!parsed) return undefined;
+  return { [inline.contextKey]: parsed.value } as RunContext;
+}
+
+/** Builds context with registeredCheckNames, enabledCheckNames, and optional staged/inline/passthrough data. */
 function buildContext(
   staged: RunContext | undefined,
-  commitMsg: RunContext | undefined,
+  inlineFragment: RunContext | undefined,
   enabledChecks: Check[],
   passthroughArgs: string[]
 ): RunContext {
@@ -146,9 +156,17 @@ function buildContext(
     enabledCheckNames: enabledChecks.map((c) => c.name),
     registeredCheckNames: registry.map((c) => c.name),
     ...(staged ?? {}),
-    ...(commitMsg ?? {}),
+    ...(inlineFragment ?? {}),
     ...(passthroughArgs.length > 0 ? { passthroughArgs } : {}),
   };
+}
+
+/** Returns args after the check spec (for single-check run). */
+function getArgsAfterSpec(argv: string[], spec: string | undefined): string[] {
+  const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
+  return specFromPositional
+    ? argv.slice(3)
+    : argv.slice(2).filter((a) => !a.startsWith('--check='));
 }
 
 /** Returns checks to run, spec for error display, and optional context from argv. */
@@ -162,13 +180,12 @@ async function getChecks(
 }> {
   const spec = resolveCheckSpec(argv);
   const checks = await resolveChecksBySpec(spec, root);
-  const checkName = checks.length === 1 ? checks[0].name : undefined;
-  const checkNameIsFirstArg = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
-  const commitMsg = getCommitMsgContext(argv, checkName, checkNameIsFirstArg);
-  const passthrough =
-    checks.length === 1 ? getPassthroughArgs(argv, checkName, checkNameIsFirstArg) : [];
-  return { checks, context: buildContext(staged, commitMsg, checks, passthrough), spec };
+  const argsAfterSpec = checks.length === 1 ? getArgsAfterSpec(argv, spec) : [];
+  const inlineFragment =
+    checks.length === 1 ? getInlineContextFragment(argsAfterSpec, checks[0]) : undefined;
+  const passthrough = checks.length === 1 ? getPassthroughArgs(argsAfterSpec, checks[0]) : [];
+  return { checks, context: buildContext(staged, inlineFragment, checks, passthrough), spec };
 }
 
 /** Logs unknown check/path and exits 1. */

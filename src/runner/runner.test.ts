@@ -322,13 +322,7 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it('--check=semantic-commit with positional path: exits 0 for semantic message', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
-    const msgPath = join(dir, 'msg.txt');
-    writeFileSync(msgPath, 'feat(checks): add commit-msg hook\n\nBody');
+  it('--check=semantic-commit with --message=: exits 0 for semantic message', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
@@ -336,17 +330,11 @@ describe('fitness run', () => {
     await run(['node',
       'fitness',
       '--check=semantic-commit',
-      msgPath]);
+      '--message=feat(checks): add commit-msg hook']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('semantic-commit with two positionals (check then msg path): uses second as message file', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
-    const msgPath = join(dir, 'msg.txt');
-    writeFileSync(msgPath, 'feat(scope): two positionals\n\nBody');
+  it('semantic-commit with --message= after check name: injects message into context', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => {
       throw new Error('not a git repo');
@@ -355,45 +343,64 @@ describe('fitness run', () => {
       'node',
       'fitness',
       'semantic-commit',
-      msgPath,
+      '--message=feat(scope): two positionals',
     ]);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('--check=semantic-commit with positional path: exits 0 when file unreadable or empty (treats as empty)', async () => {
+  it('--check=semantic-commit with --message= empty or missing: treats as empty (pass)', async () => {
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementation(() => '');
     await run(['node',
       'fitness',
       '--check=semantic-commit',
-      '/nonexistent/msg.txt']);
+      '--message=']);
     expect(process.exit).toHaveBeenCalledWith(0);
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, 'empty.txt'), '');
+    await run(['node',
+      'fitness',
+      '--check=semantic-commit']);
+    expect(process.exit).toHaveBeenCalledWith(0);
     await run(['node',
       'fitness',
       '--check=semantic-commit',
-      join(dir, 'empty.txt')]);
+      '--message']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('--check=semantic-commit with positional path: exits 1 for non-semantic message', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
+  it('--check=semantic-commit with --message followed by flag: treats value as empty, strips only --message', async () => {
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementationOnce(() => {
+      throw new Error('not a git repo');
+    });
+    await run(['node',
+      'fitness',
+      '--check=semantic-commit',
+      '--message',
+      '--write']);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('--check=semantic-commit with other arg then --message=: injects message', async () => {
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementationOnce(() => {
+      throw new Error('not a git repo');
+    });
+    await run(['node',
+      'fitness',
+      '--check=semantic-commit',
+      '--other',
+      '--message=feat(scope): with other arg']);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('--check=semantic-commit with --message= non-semantic: exits 1', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
-    const msgPath = join(dir, 'msg.txt');
-    writeFileSync(msgPath, 'oops I forgot');
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync).mockImplementationOnce(() => '');
     await run(['node',
       'fitness',
       '--check=semantic-commit',
-      msgPath]);
+      '--message=oops I forgot']);
     expect(process.exit).toHaveBeenCalledWith(1);
     errSpy.mockRestore();
   });
@@ -427,19 +434,11 @@ describe('exitUnknown', () => {
     vi.resetModules();
     vi.doMock('../checks/index.js', () => ({ registry: [{ name: 'other', run: async () => ({ ok: true, errors: [], meta: {} }) }] }));
     const { run: runWithNoSemantic } = await import('../index.js');
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-commit-msg-'));
-    writeFileSync(join(dir, 'msg.txt'), 'feat(x): y');
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => '');
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     vi.stubGlobal('process', Object.assign(process, { exit: vi.fn() }));
     await expect(runWithNoSemantic(['node',
       'fitness',
-      '--check=semantic-commit',
-      join(dir, 'msg.txt')])).rejects.toThrow('exit');
+      '--check=semantic-commit'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(UNKNOWN_CHECK_PREFIX + 'semantic-commit'));
     errSpy.mockRestore();
