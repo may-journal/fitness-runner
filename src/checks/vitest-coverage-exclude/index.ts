@@ -34,8 +34,8 @@ function isDisallowedTsPattern(pattern: string): boolean {
 }
 
 type VitestConfig = {
-  test?: { coverage?: { exclude?: string[] } };
   coverage?: { exclude?: string[] };
+  test?: { coverage?: { exclude?: string[] } };
 };
 
 /** True if x is a non-null object. */

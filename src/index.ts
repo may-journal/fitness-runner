@@ -1,13 +1,7 @@
 #!/usr/bin/env node
-import {
-  run,
-  UNKNOWN_CHECK_PREFIX,
-  UNKNOWN_CHECK_SPEC_NONE,
-  PLEASE_FIX_ITEMS,
-  ERROR_BULLET,
-} from './runner/index.js';
+import { run, enUS } from './runner/index.js';
 
-export { run, UNKNOWN_CHECK_PREFIX, UNKNOWN_CHECK_SPEC_NONE, PLEASE_FIX_ITEMS, ERROR_BULLET };
+export { run, enUS };
 
 /* v8 ignore start */
 if (!process.env.VITEST) run();

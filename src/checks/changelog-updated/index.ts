@@ -62,7 +62,7 @@ function appendDiffLine(byFile: Map<string, string>, file: string, text: string)
 
 type ExecSyncFn = (
   cmd: string,
-  opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }
+  opts: { cwd: string; encoding: 'utf8'; maxBuffer: number }
 ) => string;
 
 /** Returns map of file path (repo-relative) -> added line content. */
@@ -123,7 +123,7 @@ function checkChangelogTime(
 function checkOverlapAndReport(
   changelogWords: Set<string>,
   restWords: Set<string>
-): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
+): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
   const overlap = [...changelogWords].filter((w) => restWords.has(w));
   if (overlap.length >= MIN_OVERLAP) return { errors: [], meta: { filesChecked: 1 }, ok: true };
   const suggested = sampleWords(restWords, SUGGEST_WORDS);
@@ -145,8 +145,8 @@ function ensureChangelogExists(
   root: string,
   context: { stagedFiles?: string[] } | undefined
 ):
-  | { ok: true; errors: []; meta: { filesChecked: number } }
-  | { ok: false; errors: string[]; meta: { filesChecked: number } }
+  | { errors: []; meta: { filesChecked: number }; ok: true }
+  | { errors: string[]; meta: { filesChecked: number }; ok: false }
   | null {
   const staged = context?.stagedFiles;
   if (!staged?.length) return { errors: [], meta: { filesChecked: 0 }, ok: true };
@@ -161,7 +161,7 @@ function ensureChangelogExists(
   return null;
 }
 
-type ChangelogEarlyResult = { ok: boolean; errors: string[]; meta: { filesChecked: number } };
+type ChangelogEarlyResult = { errors: string[]; meta: { filesChecked: number }; ok: boolean };
 type ChangelogOverlapInput =
   | { err: ChangelogEarlyResult }
   | { changelogAddedContent: string; changelogWords: Set<string>; restWords: Set<string> };
@@ -202,7 +202,7 @@ function runTimeAndOverlap(
 /** Runs time then overlap check; returns early result or report. */
 function runChangelogUpdated(
   root: string,
-  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn; _now?: () => Date } | undefined
+  context: { _execSync?: ExecSyncFn; _now?: () => Date; stagedFiles?: string[] } | undefined
 ): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
   const early = ensureChangelogExists(root, context);
   if (early != null) return early;

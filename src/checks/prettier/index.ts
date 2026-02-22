@@ -28,7 +28,7 @@ const PRETTIER_CONFIG_NAMES = [
 const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
 type ExecSyncFn = (
   cmd: string,
-  opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }
+  opts: { cwd: string; encoding: 'utf8'; maxBuffer: number }
 ) => string;
 
 /** Returns true if package.json has a "prettier" field (string or object). */
@@ -63,8 +63,8 @@ function buildPrettierArgs(passthroughArgs: string[] | undefined, paths: string[
 }
 
 /** Extract output and exitCode from exec error. */
-function parseExecError(e: unknown): { output: string; exitCode: number } {
-  const err = e as { stdout?: string; stderr?: string; status?: number };
+function parseExecError(e: unknown): { exitCode: number; output: string } {
+  const err = e as { status?: number; stderr?: string; stdout?: string };
   const output = [err.stdout, err.stderr].filter(Boolean).join('\n');
   const exitCode = typeof err.status === 'number' ? err.status : 1;
   return { exitCode, output };
@@ -82,7 +82,7 @@ export function runPrettier(
   paths: string[],
   execSyncFn: ExecSyncFn = execSync,
   passthroughArgs?: string[]
-): { output: string; exitCode: number } {
+): { exitCode: number; output: string } {
   const usePassthrough = (passthroughArgs?.length ?? 0) > 0;
   const args = buildPrettierArgs(passthroughArgs, paths);
   const cmd = buildPrettierCmd(args, usePassthrough);
@@ -115,9 +115,9 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
 }
 
 type PrettierContext = {
-  stagedFiles?: string[];
-  passthroughArgs?: string[];
   _execSync?: ExecSyncFn;
+  passthroughArgs?: string[];
+  stagedFiles?: string[];
 };
 
 /** Resolve staged from context. */
@@ -129,7 +129,7 @@ function getStaged(context: PrettierContext | undefined): string[] {
 function resolveInputs(
   root: string,
   context: PrettierContext | undefined
-): { paths: string[]; execFn: ExecSyncFn; passthroughArgs?: string[] } {
+): { execFn: ExecSyncFn; passthroughArgs?: string[]; paths: string[] } {
   const staged = getStaged(context);
   const paths = getPathsToCheck(root, staged);
   const execFn = (context && context._execSync) ?? execSync;
@@ -148,7 +148,7 @@ function buildResult(
   exitCode: number,
   errors: string[],
   filesChecked: number
-): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
+): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
   const ok = exitCode === 0 && errors.length === 0;
   const fallback = !ok && errors.length === 0 ? [PRETTIER_FALLBACK_MESSAGE] : [];
   return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };

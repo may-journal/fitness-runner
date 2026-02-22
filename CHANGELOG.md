@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1620
+
+- Runner: enUS enum for all user-facing copy (runner/enUS.ts); run logic in run.ts, index.ts barrel only. Add interpolate() util for {{key}} templates; total line uses enUS.TotalLine. Export enUS from runner and package. ESLint: eslint-plugin-typescript-sort-keys (string-enum + interface), @typescript-eslint aligned to ^8.55; overrides for plugin eslint peer.
+
 ### 2026.02.22.1511
 
 - Prettier: single config (prettier.config.cjs), remove .prettierrc.json; add .prettierignore and prettier.config.d.ts with package.json types export; Prettier check recognizes .ts/.mts/.cts config names; .gitignore generated Prettier files; drop unsupported ignore option from config.

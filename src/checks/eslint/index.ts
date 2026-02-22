@@ -11,19 +11,19 @@ export const ESLINT_FALLBACK_MESSAGE = `ESLint reported issues. Run: ${ESLINT_CL
 const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
 type ExecSyncFn = (
   cmd: string,
-  opts: { encoding: 'utf8'; cwd: string; maxBuffer: number }
+  opts: { cwd: string; encoding: 'utf8'; maxBuffer: number }
 ) => string;
 
 interface ESLintJsonResult {
+  errorCount: number;
   filePath: string;
   messages: Array<{
-    line: number;
     column: number;
+    line: number;
     message: string;
     ruleId: string | null;
     severity: number;
   }>;
-  errorCount: number;
   warningCount: number;
 }
 
@@ -32,7 +32,7 @@ export function runEslint(
   root: string,
   paths: string[],
   execSyncFn: ExecSyncFn = execSync
-): { output: string; exitCode: number } {
+): { exitCode: number; output: string } {
   const args = paths.length > 0 ? paths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(' ') : '.';
   try {
     const out = execSyncFn(`${ESLINT_CLI} ${args}${ESLINT_CLI_FORMAT}`, {
@@ -41,7 +41,7 @@ export function runEslint(
     });
     return { exitCode: 0, output: out };
   } catch (e: unknown) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
+    const err = e as { status?: number; stderr?: string; stdout?: string };
     const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
     return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
   }
@@ -50,7 +50,7 @@ export function runEslint(
 /** Format one ESLint message as file:line:col - message (rule). */
 export function formatMessage(
   filePath: string,
-  msg: { line?: number; column?: number; message: string; ruleId: string | null }
+  msg: { column?: number; line?: number; message: string; ruleId: string | null }
 ): string {
   const line = msg.line ?? 0;
   const col = msg.column ?? 0;
@@ -92,8 +92,8 @@ function getPathsToLint(root: string, staged: string[]): string[] {
 /** Resolve paths and exec fn from root and context. */
 function resolveInputs(
   root: string,
-  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
-): { paths: string[]; execFn: ExecSyncFn } {
+  context: { _execSync?: ExecSyncFn; stagedFiles?: string[] } | undefined
+): { execFn: ExecSyncFn; paths: string[] } {
   const staged = context?.stagedFiles ?? [];
   return { execFn: context?._execSync ?? execSync, paths: getPathsToLint(root, staged) };
 }
@@ -103,7 +103,7 @@ function buildResult(
   exitCode: number,
   errors: string[],
   filesChecked: number
-): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
+): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
   const ok = exitCode === 0 && errors.length === 0;
   const fallback = !ok && errors.length === 0 ? [ESLINT_FALLBACK_MESSAGE] : [];
   return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };

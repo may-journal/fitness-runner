@@ -7,8 +7,8 @@ export type ContextInline = { argName: string; contextKey: keyof RunContext };
 
 /** A fitness check with name and run function. Root defaults to process.cwd() when omitted. */
 export type Check = {
-  name: CheckName;
-  run: (root?: string, context?: RunContext) => Promise<CheckResult>;
   /** Optional: inject a named argv arg value into context and strip from passthrough. */
   contextInline?: ContextInline;
+  name: CheckName;
+  run: (root?: string, context?: RunContext) => Promise<CheckResult>;
 };

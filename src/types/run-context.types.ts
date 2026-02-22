@@ -1,17 +1,17 @@
 /** Optional context the runner passes to checks (e.g. staged file list, proposed commit message). */
 export type RunContext = {
-  stagedFiles?: string[];
-  /** When set, checks (e.g. semantic-commit) can validate this instead of HEAD; runner may set via contextInline. */
-  proposedCommitMessage?: string;
-  /** Args after the check name when running a single check (e.g. npx fitness prettier --write). */
-  passthroughArgs?: string[];
-  /** Names of all registered checks; used by rules-front-matter to allow check names in front matter. */
-  registeredCheckNames?: string[];
-  /** Names of checks enabled for this run (from config or full registry). */
-  enabledCheckNames?: string[];
   /** Test-only: override for child_process.execSync (cspell check). */
   _execSync?: (
     command: string,
-    options: { encoding: 'utf8'; cwd: string; maxBuffer: number }
+    options: { cwd: string; encoding: 'utf8'; maxBuffer: number }
   ) => string;
+  /** Names of checks enabled for this run (from config or full registry). */
+  enabledCheckNames?: string[];
+  /** Args after the check name when running a single check (e.g. npx fitness prettier --write). */
+  passthroughArgs?: string[];
+  /** When set, checks (e.g. semantic-commit) can validate this instead of HEAD; runner may set via contextInline. */
+  proposedCommitMessage?: string;
+  /** Names of all registered checks; used by rules-front-matter to allow check names in front matter. */
+  registeredCheckNames?: string[];
+  stagedFiles?: string[];
 };

@@ -26,7 +26,7 @@ export function runCspell(
     const out = execSyncFn(`npx cspell --no-progress ${list} 2>&1`, { ...EXEC_OPTS, cwd: root });
     return { exitCode: 0, output: out };
   } catch (e: unknown) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
+    const err = e as { status?: number; stderr?: string; stdout?: string };
     const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
     return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
   }
@@ -57,7 +57,7 @@ function runCspellGlob(
     });
     return { exitCode: 0, output: out };
   } catch (e: unknown) {
-    const err = e as { stdout?: string; stderr?: string; status?: number };
+    const err = e as { status?: number; stderr?: string; stdout?: string };
     const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
     return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
   }
@@ -82,7 +82,7 @@ function runCspellStaged(
 function buildCspellResult(
   output: string,
   exitCode: number
-): { ok: boolean; errors: string[]; meta: { filesChecked: number } } {
+): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
   const issues = parseIssues(output);
   const filesChecked = parseFilesChecked(output) ?? 0;
   const ok = exitCode === 0 && issues.length === 0;
@@ -93,7 +93,7 @@ function buildCspellResult(
 
 /** Resolves exec function and staged list from context. */
 function getContextExecAndStaged(
-  context: { stagedFiles?: string[]; _execSync?: ExecSyncFn } | undefined
+  context: { _execSync?: ExecSyncFn; stagedFiles?: string[] } | undefined
 ): {
   execSyncFn: ExecSyncFn;
   staged: string[];
@@ -107,7 +107,7 @@ function getCspellRunResult(
   root: string,
   staged: string[],
   execSyncFn: ExecSyncFn
-): { output: string; exitCode: number } {
+): { exitCode: number; output: string } {
   if (staged.length > 0) return runCspellStaged(root, staged, execSyncFn);
   return runCspellGlob(root, '**/*.md', execSyncFn);
 }

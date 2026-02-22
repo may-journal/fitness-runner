@@ -1,11 +1,5 @@
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import {
-  run,
-  UNKNOWN_CHECK_PREFIX,
-  UNKNOWN_CHECK_SPEC_NONE,
-  PLEASE_FIX_ITEMS,
-  ERROR_BULLET,
-} from '../index.js';
+import { run, enUS } from '../index.js';
 
 vi.mock('node:child_process', async (importOriginal) => {
   const mod = await importOriginal<typeof import('node:child_process')>();
@@ -210,7 +204,7 @@ describe('fitness run', () => {
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(UNKNOWN_CHECK_PREFIX + './check.js')
+      expect.stringContaining(enUS.UnknownCheckPrefix + './check.js')
     );
     errSpy.mockRestore();
   });
@@ -228,7 +222,7 @@ describe('fitness run', () => {
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(UNKNOWN_CHECK_PREFIX + './check.js')
+      expect.stringContaining(enUS.UnknownCheckPrefix + './check.js')
     );
     errSpy.mockRestore();
   });
@@ -245,7 +239,7 @@ describe('fitness run', () => {
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(UNKNOWN_CHECK_PREFIX + './nonexistent.js')
+      expect.stringContaining(enUS.UnknownCheckPrefix + './nonexistent.js')
     );
     errSpy.mockRestore();
   });
@@ -296,9 +290,9 @@ describe('fitness run', () => {
     );
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(`[semantic-commit] ${PLEASE_FIX_ITEMS}`)
+      expect.stringContaining(`[semantic-commit] ${enUS.PleaseFix}`)
     );
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(ERROR_BULLET));
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining(enUS.ErrorBullet));
     expect(process.exit).toHaveBeenCalledWith(1);
     errSpy.mockRestore();
   });
@@ -400,7 +394,7 @@ describe('exitUnknown', () => {
     await expect(runWithEmptyRegistry(['node', 'fitness'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(UNKNOWN_CHECK_PREFIX + UNKNOWN_CHECK_SPEC_NONE)
+      expect.stringContaining(enUS.UnknownCheckPrefix + enUS.UnknownCheckSpecNone)
     );
     errSpy.mockRestore();
   });
@@ -418,7 +412,7 @@ describe('exitUnknown', () => {
     );
     expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(UNKNOWN_CHECK_PREFIX + 'semantic-commit')
+      expect.stringContaining(enUS.UnknownCheckPrefix + 'semantic-commit')
     );
     errSpy.mockRestore();
     vi.unstubAllGlobals();
