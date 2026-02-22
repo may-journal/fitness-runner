@@ -24,10 +24,13 @@ function getStagedContext(): RunContext | undefined {
   }
 }
 
-/** Resolves commit-msg file path from positionals (second when spec was positional, first when from --check=). */
-function getCommitMsgPath(positionals: string[], specFromPositional: boolean): string | undefined {
-  if (specFromPositional && positionals.length >= 2) return positionals[1];
-  if (!specFromPositional && positionals.length >= 1) return positionals[0];
+/** Resolves context file path from positionals (second when check name is first arg, first when from --check=). */
+function getContextFilePath(
+  positionals: string[],
+  checkNameIsFirstArg: boolean
+): string | undefined {
+  if (checkNameIsFirstArg && positionals.length >= 2) return positionals[1];
+  if (!checkNameIsFirstArg && positionals.length >= 1) return positionals[0];
   return undefined;
 }
 
@@ -35,14 +38,14 @@ function getCommitMsgPath(positionals: string[], specFromPositional: boolean): s
 function getPassthroughArgs(
   argv: string[],
   checkName: string | undefined,
-  specFromPositional: boolean
+  checkNameIsFirstArg: boolean
 ): string[] {
-  const raw = specFromPositional
+  const raw = checkNameIsFirstArg
     ? argv.slice(3)
     : argv.slice(2).filter((a) => !a.startsWith('--check='));
   if (checkName !== 'semantic-commit') return raw;
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const commitPath = getCommitMsgPath(positionals, specFromPositional);
+  const commitPath = getContextFilePath(positionals, checkNameIsFirstArg);
   return commitPath ? raw.filter((a) => a !== commitPath) : raw;
 }
 
@@ -50,11 +53,11 @@ function getPassthroughArgs(
 function getCommitMsgContext(
   argv: string[],
   checkName: string | undefined,
-  specFromPositional: boolean
+  checkNameIsFirstArg: boolean
 ): RunContext | undefined {
   if (checkName !== 'semantic-commit') return undefined;
   const positionals = argv.slice(2).filter((a) => !a.startsWith('-'));
-  const path = getCommitMsgPath(positionals, specFromPositional);
+  const path = getContextFilePath(positionals, checkNameIsFirstArg);
   if (!path) return undefined;
   try {
     const content = readFileSync(path, 'utf8');
@@ -160,11 +163,11 @@ async function getChecks(
   const spec = resolveCheckSpec(argv);
   const checks = await resolveChecksBySpec(spec, root);
   const checkName = checks.length === 1 ? checks[0].name : undefined;
-  const specFromPositional = spec !== undefined && getPositionalSpec(argv) === spec;
+  const checkNameIsFirstArg = spec !== undefined && getPositionalSpec(argv) === spec;
   const staged = getStagedContext();
-  const commitMsg = getCommitMsgContext(argv, checkName, specFromPositional);
+  const commitMsg = getCommitMsgContext(argv, checkName, checkNameIsFirstArg);
   const passthrough =
-    checks.length === 1 ? getPassthroughArgs(argv, checkName, specFromPositional) : [];
+    checks.length === 1 ? getPassthroughArgs(argv, checkName, checkNameIsFirstArg) : [];
   return { checks, context: buildContext(staged, commitMsg, checks, passthrough), spec };
 }
 

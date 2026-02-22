@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.22.1259
+
+- Runner: rename specFromPositional to checkNameIsFirstArg and getCommitMsgPath to getContextFilePath for clarity; add plans/plan-runner-no-check-names.md with front matter and no bold/italic for checks.
+
 ### 2026.02.22.1247
 
 - Runner: abstract check deps; move getColumns to src/utils/terminal so runner has no check-specific imports; read-repo-first no longer exports getColumns; getColumns tests moved to utils/terminal.test.ts.
