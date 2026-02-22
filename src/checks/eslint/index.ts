@@ -1,6 +1,9 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
+import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
+import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -9,10 +12,6 @@ export const ESLINT_CLI_FORMAT = ' --format json 2>&1';
 export const ESLINT_FALLBACK_MESSAGE = `ESLint reported issues. Run: ${ESLINT_CLI} .`;
 
 const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
-type ExecSyncFn = (
-  cmd: string,
-  opts: { cwd: string; encoding: 'utf8'; maxBuffer: number }
-) => string;
 
 interface ESLintJsonResult {
   errorCount: number;
@@ -92,21 +91,17 @@ function getPathsToLint(root: string, staged: string[]): string[] {
 /** Resolve paths and exec fn from root and context. */
 function resolveInputs(
   root: string,
-  context: { _execSync?: ExecSyncFn; stagedFiles?: string[] } | undefined
+  context: Parameters<Check['run']>[1]
 ): { execFn: ExecSyncFn; paths: string[] } {
-  const staged = context?.stagedFiles ?? [];
-  return { execFn: context?._execSync ?? execSync, paths: getPathsToLint(root, staged) };
+  const staged = getStagedFiles(context);
+  return { execFn: getExecSync(context), paths: getPathsToLint(root, staged) };
 }
 
 /** Build CheckResult from exit code, parsed errors, and filesChecked. */
-function buildResult(
-  exitCode: number,
-  errors: string[],
-  filesChecked: number
-): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
+function buildResult(exitCode: number, errors: string[], filesChecked: number) {
   const ok = exitCode === 0 && errors.length === 0;
   const fallback = !ok && errors.length === 0 ? [ESLINT_FALLBACK_MESSAGE] : [];
-  return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };
+  return checkResult(ok, errors.length > 0 ? errors : fallback, filesChecked);
 }
 
 /** ESLint check: runs eslint, reports errors from JSON formatter. */

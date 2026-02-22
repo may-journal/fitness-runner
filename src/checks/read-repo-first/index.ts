@@ -2,6 +2,7 @@ import { join } from 'node:path';
 import chalk from 'chalk';
 import boxen from 'boxen';
 import Table from 'cli-table3';
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -45,6 +46,6 @@ export const readRepoFirstCheck: Check = {
     const enabled = context?.enabledCheckNames ?? [];
     const feedback = buildContextFeedback(enabled);
     process.stdout.write(feedback);
-    return { errors: [], meta: { filesChecked: 0 }, ok: true };
+    return checkResult(true, [], 0);
   },
 };

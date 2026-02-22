@@ -5,6 +5,8 @@ export type RunContext = {
     command: string,
     options: { cwd: string; encoding: 'utf8'; maxBuffer: number }
   ) => string;
+  /** Test-only: override for current time (changelog-updated check). */
+  _now?: () => Date;
   /** Names of checks enabled for this run (from config or full registry). */
   enabledCheckNames?: string[];
   /** Args after the check name when running a single check (e.g. npx fitness prettier --write). */

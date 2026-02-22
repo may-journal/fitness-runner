@@ -2,7 +2,10 @@ import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
+import { checkResult } from '../../utils/checkResult.js';
 import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
+import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
+import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -10,7 +13,6 @@ const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
 const FILES_CHECKED_RE = /Files checked:\s*(\d+)/;
 
 const EXEC_OPTS = { cwd: '', encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
-type ExecSyncFn = (cmd: string, opts: typeof EXEC_OPTS) => string;
 
 /** Run cspell; output is stdout + stderr (2>&1) so we can parse issues and filesChecked. */
 export function runCspell(
@@ -79,27 +81,13 @@ function runCspellStaged(
 }
 
 /** Builds check result from cspell output and exit code. */
-function buildCspellResult(
-  output: string,
-  exitCode: number
-): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
+function buildCspellResult(output: string, exitCode: number) {
   const issues = parseIssues(output);
   const filesChecked = parseFilesChecked(output) ?? 0;
   const ok = exitCode === 0 && issues.length === 0;
   const errors =
     issues.length > 0 ? issues : !ok ? ['cspell reported issues (run: npx cspell <files>)'] : [];
-  return { errors, meta: { filesChecked }, ok };
-}
-
-/** Resolves exec function and staged list from context. */
-function getContextExecAndStaged(
-  context: { _execSync?: ExecSyncFn; stagedFiles?: string[] } | undefined
-): {
-  execSyncFn: ExecSyncFn;
-  staged: string[];
-} {
-  const ctx = context ?? {};
-  return { execSyncFn: ctx._execSync ?? execSync, staged: ctx.stagedFiles ?? [] };
+  return checkResult(ok, errors, filesChecked);
 }
 
 /** Runs cspell for context (staged paths or glob); returns output and exit code. */
@@ -184,8 +172,9 @@ export const cspellCheck: Check = {
   name: CheckName.Cspell,
   async run(root = process.cwd(), context) {
     const configPath = join(root, 'cspell.json');
-    if (!existsSync(configPath)) return { errors: [], meta: { filesChecked: 0 }, ok: true };
-    const { execSyncFn, staged } = getContextExecAndStaged(context);
+    if (!existsSync(configPath)) return checkResult(true, [], 0);
+    const staged = getStagedFiles(context);
+    const execSyncFn = getExecSync(context);
     const useCli = !!context?._execSync;
     if (useCli) {
       const { output, exitCode } = getCspellRunResult(root, staged, execSyncFn);
@@ -193,6 +182,6 @@ export const cspellCheck: Check = {
     }
     const paths = getPathsToCheck(root, staged);
     const lib = await runCspellWithLib(root, configPath, paths);
-    return { errors: lib.errors, meta: { filesChecked: lib.filesChecked }, ok: lib.ok };
+    return checkResult(lib.ok, lib.errors, lib.filesChecked);
   },
 };

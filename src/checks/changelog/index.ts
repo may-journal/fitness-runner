@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -83,20 +84,14 @@ export const changelogCheck: Check = {
   name: CheckName.Changelog,
   async run(root = process.cwd()) {
     const changelogPath = join(root, ROOT_CHANGELOG);
-    if (!existsSync(changelogPath)) {
-      return { errors: [ERROR_MISSING], meta: { filesChecked: 1 }, ok: false };
-    }
+    if (!existsSync(changelogPath)) return checkResult(false, [ERROR_MISSING], 1);
     const content = readFileSync(changelogPath, 'utf8');
     const formatErrors = getChangelogFormatErrors(content);
-    if (formatErrors.length > 0) {
-      return { errors: formatErrors, meta: { filesChecked: 1 }, ok: false };
-    }
+    if (formatErrors.length > 0) return checkResult(false, formatErrors, 1);
     const h3s = getH3Lines(content);
     const firstMatch = h3s.map((line) => line.match(DATED_SECTION_RE)).find((m) => m)!;
     const versionErrors = getVersionErrors(root, firstMatch[1]);
-    if (versionErrors.length > 0) {
-      return { errors: versionErrors, meta: { filesChecked: 1 }, ok: false };
-    }
-    return { errors: [], meta: { filesChecked: 1 }, ok: true };
+    if (versionErrors.length > 0) return checkResult(false, versionErrors, 1);
+    return checkResult(true, [], 1);
   },
 };

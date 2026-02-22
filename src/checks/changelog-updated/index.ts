@@ -1,6 +1,9 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
+import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
+import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -60,11 +63,6 @@ function appendDiffLine(byFile: Map<string, string>, file: string, text: string)
   byFile.set(file, prev ? prev + ' ' + text : text);
 }
 
-type ExecSyncFn = (
-  cmd: string,
-  opts: { cwd: string; encoding: 'utf8'; maxBuffer: number }
-) => string;
-
 /** Returns map of file path (repo-relative) -> added line content. */
 function getStagedDiffByFile(root: string, execFn: ExecSyncFn = execSync): Map<string, string> {
   const out = execFn('git diff --cached', { cwd: root, encoding: 'utf8', maxBuffer: 1024 * 1024 });
@@ -120,12 +118,9 @@ function checkChangelogTime(
 }
 
 /** Checks overlap count and returns pass or error result with suggestion. */
-function checkOverlapAndReport(
-  changelogWords: Set<string>,
-  restWords: Set<string>
-): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
+function checkOverlapAndReport(changelogWords: Set<string>, restWords: Set<string>) {
   const overlap = [...changelogWords].filter((w) => restWords.has(w));
-  if (overlap.length >= MIN_OVERLAP) return { errors: [], meta: { filesChecked: 1 }, ok: true };
+  if (overlap.length >= MIN_OVERLAP) return checkResult(true, [], 1);
   const suggested = sampleWords(restWords, SUGGEST_WORDS);
   const errors = [
     MSG_OVERLAP_HEAD +
@@ -137,33 +132,23 @@ function checkOverlapAndReport(
       ')',
     MSG_SUGGEST_PREFIX + suggested.join(', '),
   ];
-  return { errors, meta: { filesChecked: 1 }, ok: false };
+  return checkResult(false, errors, 1);
 }
 
 /** Returns early result if no staged files or CHANGELOG missing; null to continue. */
 function ensureChangelogExists(
   root: string,
-  context: { stagedFiles?: string[] } | undefined
-):
-  | { errors: []; meta: { filesChecked: number }; ok: true }
-  | { errors: string[]; meta: { filesChecked: number }; ok: false }
-  | null {
-  const staged = context?.stagedFiles;
-  if (!staged?.length) return { errors: [], meta: { filesChecked: 0 }, ok: true };
+  context: Parameters<Check['run']>[1]
+): ReturnType<typeof checkResult> | null {
+  const staged = getStagedFiles(context);
+  if (!staged?.length) return checkResult(true, [], 0);
   const path = join(root, ROOT_CHANGELOG);
-  if (!existsSync(path)) {
-    return {
-      errors: [MSG_CHANGELOG_MISSING],
-      meta: { filesChecked: 1 },
-      ok: false,
-    };
-  }
+  if (!existsSync(path)) return checkResult(false, [MSG_CHANGELOG_MISSING], 1);
   return null;
 }
 
-type ChangelogEarlyResult = { errors: string[]; meta: { filesChecked: number }; ok: boolean };
 type ChangelogOverlapInput =
-  | { err: ChangelogEarlyResult }
+  | { err: ReturnType<typeof checkResult> }
   | { changelogAddedContent: string; changelogWords: Set<string>; restWords: Set<string> };
 
 /** Builds changelog/rest word sets or early result for overlap check. */
@@ -174,17 +159,9 @@ function getChangelogOverlapInput(
   const byFile = getStagedDiffByFile(root, execFn);
   const changelogAddedContent = byFile.get(ROOT_CHANGELOG) ?? '';
   const changelogWords = extractWords(changelogAddedContent);
-  if (changelogWords.size === 0) {
-    return {
-      err: {
-        errors: [MSG_STAGE_CHANGELOG],
-        meta: { filesChecked: 1 },
-        ok: false,
-      },
-    };
-  }
+  if (changelogWords.size === 0) return { err: checkResult(false, [MSG_STAGE_CHANGELOG], 1) };
   const restWords = getRestWordsFromDiff(byFile);
-  if (restWords.size === 0) return { err: { errors: [], meta: { filesChecked: 1 }, ok: true } };
+  if (restWords.size === 0) return { err: checkResult(true, [], 1) };
   return { changelogAddedContent, changelogWords, restWords };
 }
 
@@ -192,21 +169,21 @@ function getChangelogOverlapInput(
 function runTimeAndOverlap(
   next: { changelogAddedContent: string; changelogWords: Set<string>; restWords: Set<string> },
   context: { _now?: () => Date } | undefined
-): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
+): ReturnType<typeof checkResult> {
   const now = (context?._now ?? (() => new Date()))();
   const timeResult = checkChangelogTime(next.changelogAddedContent, now);
-  if (!timeResult.ok) return { ...timeResult, meta: { filesChecked: 1 } };
+  if (!timeResult.ok) return checkResult(false, timeResult.errors, 1);
   return checkOverlapAndReport(next.changelogWords, next.restWords);
 }
 
 /** Runs time then overlap check; returns early result or report. */
 function runChangelogUpdated(
   root: string,
-  context: { _execSync?: ExecSyncFn; _now?: () => Date; stagedFiles?: string[] } | undefined
-): ChangelogEarlyResult | ReturnType<typeof checkOverlapAndReport> {
+  context: Parameters<Check['run']>[1]
+): ReturnType<typeof checkResult> {
   const early = ensureChangelogExists(root, context);
   if (early != null) return early;
-  const next = getChangelogOverlapInput(root, context?._execSync ?? execSync);
+  const next = getChangelogOverlapInput(root, getExecSync(context));
   if ('err' in next) return next.err;
   return runTimeAndOverlap(next, context);
 }

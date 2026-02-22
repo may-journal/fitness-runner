@@ -1,5 +1,6 @@
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check, RunContext } from '../../types/index.types.js';
 import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
@@ -108,6 +109,6 @@ export const rulesFrontMatterCheck: Check = {
       const mdFileDir = join(root, dirname(file));
       errors.push(...validateFile(file, content, root, mdFileDir, registeredCheckNames));
     }
-    return { errors, meta: { filesChecked }, ok: errors.length === 0 };
+    return checkResult(errors.length === 0, errors, filesChecked);
   },
 };

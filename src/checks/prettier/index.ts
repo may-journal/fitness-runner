@@ -1,8 +1,11 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
+import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
+import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
-import type { Check } from '../../types/index.types.js';
+import type { Check, RunContext } from '../../types/index.types.js';
 
 export const PRETTIER_CLI = 'npx prettier';
 export const PRETTIER_FALLBACK_MESSAGE = `Prettier reported issues. Run: ${PRETTIER_CLI} . --write`;
@@ -26,10 +29,6 @@ const PRETTIER_CONFIG_NAMES = [
 ];
 
 const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
-type ExecSyncFn = (
-  cmd: string,
-  opts: { cwd: string; encoding: 'utf8'; maxBuffer: number }
-) => string;
 
 /** Returns true if package.json has a "prettier" field (string or object). */
 function hasPrettierInPackageJson(root: string): boolean {
@@ -114,27 +113,18 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
   );
 }
 
-type PrettierContext = {
-  _execSync?: ExecSyncFn;
-  passthroughArgs?: string[];
-  stagedFiles?: string[];
-};
-
-/** Resolve staged from context. */
-function getStaged(context: PrettierContext | undefined): string[] {
-  return context?.stagedFiles ?? [];
-}
-
 /** Resolve paths, exec fn, and passthrough from root and context. */
 function resolveInputs(
   root: string,
-  context: PrettierContext | undefined
+  context: RunContext | undefined
 ): { execFn: ExecSyncFn; passthroughArgs?: string[]; paths: string[] } {
-  const staged = getStaged(context);
+  const staged = getStagedFiles(context);
   const paths = getPathsToCheck(root, staged);
-  const execFn = (context && context._execSync) ?? execSync;
-  const passthroughArgs = context?.passthroughArgs;
-  return { execFn, passthroughArgs, paths };
+  return {
+    execFn: getExecSync(context),
+    passthroughArgs: context?.passthroughArgs,
+    paths,
+  };
 }
 
 /** Compute filesChecked from errors and paths. */
@@ -144,21 +134,17 @@ function getFilesChecked(errors: string[], paths: string[]): number {
 }
 
 /** Build CheckResult from exit code, parsed errors, and filesChecked. */
-function buildResult(
-  exitCode: number,
-  errors: string[],
-  filesChecked: number
-): { errors: string[]; meta: { filesChecked: number }; ok: boolean } {
+function buildResult(exitCode: number, errors: string[], filesChecked: number) {
   const ok = exitCode === 0 && errors.length === 0;
   const fallback = !ok && errors.length === 0 ? [PRETTIER_FALLBACK_MESSAGE] : [];
-  return { errors: errors.length > 0 ? errors : fallback, meta: { filesChecked }, ok };
+  return checkResult(ok, errors.length > 0 ? errors : fallback, filesChecked);
 }
 
 /** Prettier check: runs prettier --check (or passthrough args); skips when no config. */
 export const prettierCheck: Check = {
   name: CheckName.Prettier,
   async run(root = process.cwd(), context) {
-    if (!hasPrettierConfig(root)) return { errors: [], meta: { filesChecked: 0 }, ok: true };
+    if (!hasPrettierConfig(root)) return checkResult(true, [], 0);
     const { paths, execFn, passthroughArgs } = resolveInputs(root, context);
     const { output, exitCode } = runPrettier(root, paths, execFn, passthroughArgs);
     const errors = parsePrettierOutput(output);

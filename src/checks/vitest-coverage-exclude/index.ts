@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -111,13 +112,13 @@ export const vitestCoverageExcludeCheck: Check = {
   async run(root = process.cwd()) {
     const config = loadVitestConfig(root);
     const exclude = getCoverageExclude(config);
-    if (exclude.length === 0) return { errors: [], meta: { filesChecked: 1 }, ok: true };
+    if (exclude.length === 0) return checkResult(true, [], 1);
     const bad = exclude.filter((p) => typeof p === 'string' && isDisallowedTsPattern(p));
-    if (bad.length === 0) return { errors: [], meta: { filesChecked: 1 }, ok: true };
+    if (bad.length === 0) return checkResult(true, [], 1);
     const allowed = ALLOWED_COVERAGE_EXCLUDE_PATTERNS.join(', ');
     const errors = bad.map(
       (p) => `Vitest coverage exclude only allows ${allowed}; disallowed: ${JSON.stringify(p)}`
     );
-    return { errors, meta: { filesChecked: 1 }, ok: false };
+    return checkResult(false, errors, 1);
   },
 };

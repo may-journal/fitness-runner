@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
@@ -58,6 +59,6 @@ export const markdownNoBoldItalicCheck: Check = {
       const content = readFileSync(join(root, file), 'utf8');
       errors.push(...validateFile(file, content));
     }
-    return { errors, meta: { filesChecked }, ok: errors.length === 0 };
+    return checkResult(errors.length === 0, errors, filesChecked);
   },
 };

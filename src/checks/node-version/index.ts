@@ -1,5 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -18,19 +19,11 @@ export const nodeVersionCheck: Check = {
   name: CheckName.NodeVersion,
   async run(root = process.cwd()) {
     const path = join(root, NVMRC);
-    if (!existsSync(path)) {
-      return { errors: [ERROR_MISSING], meta: { filesChecked: 1 }, ok: false };
-    }
+    if (!existsSync(path)) return checkResult(false, [ERROR_MISSING], 1);
     const raw = readFileSync(path, 'utf8').trim();
     const requiredMajor = versionMajor(raw);
     const currentMajor = versionMajor(process.version);
-    if (currentMajor >= requiredMajor) {
-      return { errors: [], meta: { filesChecked: 1 }, ok: true };
-    }
-    return {
-      errors: [ERROR_VERSION(process.version, requiredMajor)],
-      meta: { filesChecked: 1 },
-      ok: false,
-    };
+    if (currentMajor >= requiredMajor) return checkResult(true, [], 1);
+    return checkResult(false, [ERROR_VERSION(process.version, requiredMajor)], 1);
   },
 };

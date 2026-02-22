@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process';
 import conventionalCommitTypes from 'conventional-commit-types' with { type: 'json' };
+import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -36,14 +37,14 @@ export const semanticCheck: Check = {
   name: CheckName.SemanticCommit,
   async run(root = process.cwd(), context) {
     const subject = getCommitSubject(root, context);
-    if (!subject.trim()) return { errors: [MSG_EMPTY], meta: { filesChecked: 1 }, ok: false };
-    if (isSemanticSubject(subject)) return { errors: [], meta: { filesChecked: 1 }, ok: true };
-    return {
-      errors: [
+    if (!subject.trim()) return checkResult(false, [MSG_EMPTY], 1);
+    if (isSemanticSubject(subject)) return checkResult(true, [], 1);
+    return checkResult(
+      false,
+      [
         `Commit message: "${subject}" — use type(scope): description (types: ${SEMANTIC_TYPES.join(', ')})`,
       ],
-      meta: { filesChecked: 1 },
-      ok: false,
-    };
+      1
+    );
   },
 };
