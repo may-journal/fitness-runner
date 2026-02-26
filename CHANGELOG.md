@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.02.26.1510
+
+- Docs: add AGENTS.md with Cursor Cloud specific instructions for development environment setup, caveats, and relatedConfigurations front matter.
+
 ### 2026.02.22.1620
 
 - Checks: add checkResult(ok, errors?, filesChecked?) and runContext (getStagedFiles, getExecSync); migrate all checks to use them. RunContext gains `_now` for tests.
