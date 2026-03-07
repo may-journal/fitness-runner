@@ -1,6 +1,9 @@
 export enum enUS {
   ErrorBullet = '  ✖ ',
   PleaseFix = 'Please fix these items:',
+  ResolvingChecks = 'Resolving checks...',
+  RunningCheck = '  → {{name}}',
+  RunningChecks = 'Running checks:',
   StatusFailed = 'failed',
   StatusPassed = 'passed',
   TableCheck = 'Check',
