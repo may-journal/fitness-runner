@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.03.07.1431
+
+- Runner: dedupe config.checks by name so each check runs once when .fitnessrc lists the same check multiple times.
+
 ### 2026.03.07.1406
 
 - ESLint: add max-lines rule (200, skipBlankLines/skipComments). Runner: split run.ts into run-resolve.ts (getChecks, config/spec resolution), run-execute.ts (runOneCheck, worker/in-process), run-output.ts (buildTable, buildTotalLine); run.ts keeps orchestration only.

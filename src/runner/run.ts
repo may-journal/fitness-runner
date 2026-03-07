@@ -45,16 +45,32 @@ async function runChecks(checks: Check[], root: string, context?: RunContext): P
   return counts.failure > 0;
 }
 
+const RUN_GUARD_KEY = '__fitness_run_active';
+
+/** Runs fitness checks; returns true if any failed. */
+async function runImpl(
+  argv: string[],
+  root: string,
+  testOverrides?: Partial<RunContext>
+): Promise<boolean> {
+  process.stderr.write(enUS.ResolvingChecks + '\n');
+  const { checks, spec, context } = await getChecks(argv, root);
+  if (!checks.length) exitUnknown(spec);
+  const mergedContext = testOverrides ? { ...context, ...testOverrides } : context;
+  return runChecks(checks, root, mergedContext);
+}
+
 /** Runs fitness checks; exits with 1 on failure. */
 export async function run(
   argv: string[] = process.argv,
   testOverrides?: Partial<RunContext>
 ): Promise<void> {
-  const root = process.cwd();
-  process.stderr.write(enUS.ResolvingChecks + '\n');
-  const { checks, spec, context } = await getChecks(argv, root);
-  if (!checks.length) exitUnknown(spec);
-  const mergedContext = testOverrides ? { ...context, ...testOverrides } : context;
-  const failed = await runChecks(checks, root, mergedContext);
-  process.exit(failed ? 1 : 0);
+  if ((globalThis as unknown as { [RUN_GUARD_KEY]?: boolean })[RUN_GUARD_KEY]) return;
+  (globalThis as unknown as { [RUN_GUARD_KEY]: boolean })[RUN_GUARD_KEY] = true;
+  try {
+    const failed = await runImpl(argv, process.cwd(), testOverrides);
+    process.exit(failed ? 1 : 0);
+  } finally {
+    (globalThis as unknown as { [RUN_GUARD_KEY]: boolean })[RUN_GUARD_KEY] = false;
+  }
 }

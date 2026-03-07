@@ -32,11 +32,14 @@ function getPassthroughArgs(argsAfterSpec: string[], check: Check): string[] {
   return argsAfterSpec.filter((_, i) => !parsed.stripIndices.includes(i));
 }
 
-/** Resolves checks from config.checks list when present; else null. */
+/** Resolves checks from config.checks list when present; dedupes by name so each check runs once. */
 function checksFromConfigList(config: ReturnType<typeof loadConfig>): Check[] | null {
   if (!config?.checks?.length) return null;
   const byName = new Map(registry.map((c) => [c.name, c]));
-  return config.checks.map((name) => byName.get(name)).filter((c): c is Check => c != null);
+  const seen = new Set<string>();
+  return config.checks
+    .map((name) => byName.get(name))
+    .filter((c): c is Check => c != null && (seen.has(c.name) ? false : (seen.add(c.name), true)));
 }
 
 /** Resolves checks from registry, optionally excluding disabledChecks. */

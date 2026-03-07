@@ -93,6 +93,17 @@ describe('run', () => {
     vi.unstubAllGlobals();
   });
 
+  it('returns without running when re-entry guard is set', async () => {
+    const g = globalThis as unknown as { __fitness_run_active?: boolean };
+    g.__fitness_run_active = true;
+    try {
+      await run(['node', 'fitness']);
+      expect(process.exit).not.toHaveBeenCalled();
+    } finally {
+      delete g.__fitness_run_active;
+    }
+  });
+
   it('exits 0 when all checks pass', async () => {
     const dir = tempDir();
     runDir(dir);
@@ -121,6 +132,36 @@ describe('run', () => {
     await run(['node', 'fitness']);
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('runs each check once when config.checks has duplicate names', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts':
+        'export default { checks: ["changelog", "changelog", "semantic-commit", "changelog"] };',
+    });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n');
+    const stderrChunks: string[] = [];
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+      stderrChunks.push(String(chunk));
+      return true;
+    });
+    try {
+      await run(['node', 'fitness']);
+      process.chdir(origCwd);
+      const stderr = stderrChunks.join('');
+      const changelogRuns = (stderr.match(/→ changelog/g) ?? []).length;
+      const semanticRuns = (stderr.match(/→ semantic-commit/g) ?? []).length;
+      expect(changelogRuns).toBe(1);
+      expect(semanticRuns).toBe(1);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    } finally {
+      stderrSpy.mockRestore();
+    }
   });
 
   it('runs only known checks when config.checks includes unknown names', async () => {
