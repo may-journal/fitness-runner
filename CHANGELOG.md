@@ -9,6 +9,7 @@ relatedConfigurations: ['package.json']
 
 ### 2026.03.07.1007
 
+- Runner: add 5s per-check timeout; timed-out checks fail with "Check timed out after 5s" and runner continues.
 - Runner: add progress messages to stderr (Resolving checks…, Running checks:, and → name before each check) so users can see where the run is or where it hangs.
 - Utils: fix isMainModule when run via npx (resolve argv[1] and import.meta.url to real paths so symlinked .bin/fitness is detected as main). Add symlink test; add JSDoc and reduce complexity for lint.
 - Checks: add vitest-coverage-full (runs vitest run --coverage; requires 100% thresholds in consumer and fitness-runner package). Vitest-coverage-exclude: allow barrel index.ts exclude pattern. Add vitest.config.mjs (ESM). Cspell: add runCspell (CLI runner), enUS dict, runCspell.test, word unstub; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.

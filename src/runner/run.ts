@@ -238,17 +238,43 @@ function buildTable(rows: ResultRow[]): string {
   return table.toString();
 }
 
-/** Runs a single check; returns result data for table and errors. */
+const CHECK_TIMEOUT_MS = 5000;
+
+/** Rejects after ms; used with Promise.race to enforce per-check timeout. */
+function timeoutAfter(ms: number): Promise<never> {
+  return new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
+}
+
+/** Returns user-facing error message for a thrown value (timeout vs other). */
+function formatCheckRunError(err: unknown): string {
+  if (err instanceof Error && err.message === 'timeout') {
+    return interpolate(enUS.CheckTimeout, { seconds: CHECK_TIMEOUT_MS / 1000 });
+  }
+  return err instanceof Error ? err.message : String(err);
+}
+
+/** Runs a single check; returns result data for table and errors. Times out after CHECK_TIMEOUT_MS. */
 async function runOneCheck(
   check: Check,
   root: string,
   context?: RunContext
 ): Promise<{ errors: string[]; filesChecked: number; ms: number; name: string; ok: boolean }> {
   const start = performance.now();
-  const result = await check.run(root, context);
-  const ms = Math.round(performance.now() - start);
-  const filesChecked = result.meta?.filesChecked ?? -1;
-  return { errors: result.errors, filesChecked, ms, name: check.name, ok: result.ok };
+  try {
+    const result = await Promise.race([check.run(root, context), timeoutAfter(CHECK_TIMEOUT_MS)]);
+    const ms = Math.round(performance.now() - start);
+    const filesChecked = result.meta?.filesChecked ?? -1;
+    return { errors: result.errors, filesChecked, ms, name: check.name, ok: result.ok };
+  } catch (err) {
+    const ms = Math.round(performance.now() - start);
+    return {
+      errors: [formatCheckRunError(err)],
+      filesChecked: -1,
+      ms,
+      name: check.name,
+      ok: false,
+    };
+  }
 }
 
 /** Builds total summary line. */

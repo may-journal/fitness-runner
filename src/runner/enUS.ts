@@ -1,4 +1,5 @@
 export enum enUS {
+  CheckTimeout = 'Check timed out after {{seconds}}s',
   ErrorBullet = '  ✖ ',
   PleaseFix = 'Please fix these items:',
   ResolvingChecks = 'Resolving checks...',

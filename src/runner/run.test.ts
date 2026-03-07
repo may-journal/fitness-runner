@@ -232,6 +232,69 @@ describe('fitness run', () => {
     errSpy.mockRestore();
   });
 
+  it('exits 1 and reports error when check run() throws', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    writeFileSync(
+      join(dir, 'check.js'),
+      'export default { name: "throwing", run: () => { throw new Error("check error"); } };'
+    );
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementation(() => '');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run(['node', 'fitness', '--check=./check.js']);
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('check error'));
+    errSpy.mockRestore();
+  });
+
+  it('exits 1 and reports string when check run() throws non-Error', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    writeFileSync(
+      join(dir, 'check.js'),
+      'export default { name: "throw-string", run: async () => { throw "oops"; } };'
+    );
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementation(() => '');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run(['node', 'fitness', '--check=./check.js']);
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('oops'));
+    errSpy.mockRestore();
+  });
+
+  it('exits 1 with timeout message when check exceeds 5s', async () => {
+    const { mkdtempSync, writeFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { tmpdir } = await import('node:os');
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+    writeFileSync(
+      join(dir, 'check.js'),
+      'export default { name: "hang", run: () => new Promise(() => {}) };'
+    );
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const { execSync } = await import('node:child_process');
+    vi.mocked(execSync).mockImplementation(() => '');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run(['node', 'fitness', '--check=./check.js']);
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Check timed out after 5s'));
+    errSpy.mockRestore();
+  }, 7000);
+
   it('exits 1 for unknown path (file not found or invalid module)', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { mkdtempSync } = await import('node:fs');
