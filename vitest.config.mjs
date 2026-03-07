@@ -1,6 +1,6 @@
-const { defineConfig } = require('vitest/config');
+import { defineConfig } from 'vitest/config';
 
-module.exports = defineConfig({
+export default defineConfig({
   esbuild: { target: 'ES2022' },
   test: {
     coverage: {

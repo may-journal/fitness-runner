@@ -9,7 +9,7 @@ relatedConfigurations: ['package.json']
 
 ### 2026.03.07.1007
 
-- Cspell: add runCspell (CLI runner), enUS dict, runCspell.test; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.
+- Checks: add vitest-coverage-full (runs vitest run --coverage; requires 100% thresholds in consumer and fitness-runner package). Vitest-coverage-exclude: allow barrel index.ts exclude pattern. Add vitest.config.mjs (ESM). Cspell: add runCspell (CLI runner), enUS dict, runCspell.test, word unstub; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.
 
 ### 2026.02.22.1620
 

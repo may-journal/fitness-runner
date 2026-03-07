@@ -22,6 +22,7 @@ vi.mock('cspell-lib', async (importOriginal) => {
   };
 });
 
+import { spellCheckFile } from 'cspell-lib';
 import { enUS, cspellCheck, runCspell } from './index.js';
 import { CheckName } from '../../types/index.types.js';
 
@@ -127,6 +128,45 @@ describe('cspell top-level exports', () => {
       expect(result.ok).toBe(false);
       expect(result.errors).toHaveLength(2);
       expect(result.meta?.filesChecked).toBe(2);
+    });
+
+    it('run() lib path formats issue with offset in line (offsetToLineCol col branch)', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
+      writeFileSync(join(dir, 'cspell.json'), '{}');
+      writeFileSync(join(dir, 'f.md'), 'xy');
+      vi.mocked(spellCheckFile).mockResolvedValueOnce({
+        document: { text: 'xy' },
+        issues: [{ line: { offset: 1 }, message: 'Unknown word', text: 'x' }],
+      });
+      const result = await cspellCheck.run(dir);
+      expect(result.ok).toBe(false);
+      expect(result.errors[0]).toMatch(/f\.md:1:2.*Unknown word/);
+    });
+
+    it('run() lib path formats issue after newline (offsetToLineCol newline branch)', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
+      writeFileSync(join(dir, 'cspell.json'), '{}');
+      writeFileSync(join(dir, 'g.md'), 'a\nb');
+      vi.mocked(spellCheckFile).mockResolvedValueOnce({
+        document: { text: 'a\nb' },
+        issues: [{ line: { offset: 2 }, message: 'Unknown word', text: 'b' }],
+      });
+      const result = await cspellCheck.run(dir);
+      expect(result.ok).toBe(false);
+      expect(result.errors[0]).toMatch(/g\.md:2:1.*Unknown word/);
+    });
+
+    it('run() lib path handles result.document without text', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
+      writeFileSync(join(dir, 'cspell.json'), '{}');
+      writeFileSync(join(dir, 'h.md'), 'x');
+      vi.mocked(spellCheckFile).mockResolvedValueOnce({
+        document: {},
+        issues: [{ line: { offset: 0 }, message: 'bad' }],
+      });
+      const result = await cspellCheck.run(dir);
+      expect(result.ok).toBe(false);
+      expect(result.errors[0]).toMatch(/h\.md:1:1.*bad/);
     });
   });
 

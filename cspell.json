@@ -14,6 +14,7 @@
   "version": "0.2",
   "words": [
     "dotenv",
+    "unstub",
     "eslintcache",
     "fitnessrc",
     "jscoverage",

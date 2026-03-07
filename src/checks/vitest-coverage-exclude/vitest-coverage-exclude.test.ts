@@ -164,6 +164,7 @@ describe('vitestCoverageExcludeCheck', () => {
     expect(ALLOWED_SUFFIXES.test('bar.types.ts')).toBe(true);
     expect(ALLOWED_SUFFIXES.test('baz.test.ts')).toBe(true);
     expect(ALLOWED_SUFFIXES.test('baz.spec.ts')).toBe(true);
+    expect(ALLOWED_SUFFIXES.test('index.ts')).toBe(true);
     expect(ALLOWED_SUFFIXES.test('baz.ts')).toBe(false);
   });
 

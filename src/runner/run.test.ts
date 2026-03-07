@@ -34,13 +34,18 @@ describe('fitness run', () => {
       '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
     );
     writeFileSync(join(dir, '.nvmrc'), '18');
+    writeFileSync(
+      join(dir, 'vitest.config.js'),
+      'module.exports = { test: { coverage: { thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 } } } };'
+    );
     const origCwd = process.cwd();
     process.chdir(dir);
     const { execSync } = await import('node:child_process');
     vi.mocked(execSync)
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(pkg): init\n\n');
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n')
+      .mockImplementation(() => '');
     await run(['node', 'fitness']);
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);

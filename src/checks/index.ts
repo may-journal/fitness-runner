@@ -9,6 +9,7 @@ import { readRepoFirstCheck } from './read-repo-first/index.js';
 import { rulesFrontMatterCheck } from './rules-front-matter/index.js';
 import { semanticCheck } from './semantic-commit/index.js';
 import { vitestCoverageExcludeCheck } from './vitest-coverage-exclude/index.js';
+import { vitestCoverageFullCheck } from './vitest-coverage-full/index.js';
 import type { Check } from '../types/index.types.js';
 
 export const registry: Check[] = [
@@ -23,4 +24,5 @@ export const registry: Check[] = [
   rulesFrontMatterCheck,
   semanticCheck,
   vitestCoverageExcludeCheck,
+  vitestCoverageFullCheck,
 ];

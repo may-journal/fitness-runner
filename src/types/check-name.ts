@@ -11,4 +11,5 @@ export enum CheckName {
   ReadRepoFirst = 'read-repo-first',
   SemanticCommit = 'semantic-commit',
   VitestCoverageExclude = 'vitest-coverage-exclude',
+  VitestCoverageFull = 'vitest-coverage-full',
 }
