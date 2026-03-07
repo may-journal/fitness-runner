@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import boxen from 'boxen';
 import Table from 'cli-table3';
 import { checkResult } from '../../utils/checkResult.js';
+import { getColumns } from '../../utils/terminal.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
@@ -22,9 +23,13 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
   );
   const lines: string[] = [question];
   if (enabledCheckNames.length > 0) {
+    const firstCol = 28;
+    const maxTotal = Math.max(70, getColumns() - 8);
+    const secondCol = Math.max(20, maxTotal - firstCol - 6);
     const table = new Table({
-      colWidths: [28, 42],
+      colWidths: [firstCol, secondCol],
       head: [chalk.bold.white('Check'), chalk.bold.white('Src')],
+      wordWrap: true,
     });
     for (const name of enabledCheckNames) {
       const folder = CHECK_TO_FOLDER[name] ?? name;
@@ -48,4 +53,5 @@ export const readRepoFirstCheck: Check = {
     process.stdout.write(feedback);
     return checkResult(true, [], 0);
   },
+  runInProcess: true,
 };

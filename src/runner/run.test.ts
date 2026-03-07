@@ -1,21 +1,91 @@
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { run, enUS } from '../index.js';
 
+const { execSyncMock } = vi.hoisted(() => ({ execSyncMock: vi.fn() }));
+const workerMockRef = vi.hoisted(() => ({
+  behavior: 'success' as 'success' | 'successNoMeta' | 'errorMessage' | 'errorEvent' | 'timeout',
+}));
+const realExistsSync = vi.hoisted(() => ({
+  fn: (() => true) as unknown as (p: string) => boolean,
+}));
 vi.mock('node:child_process', async (importOriginal) => {
   const mod = await importOriginal<typeof import('node:child_process')>();
-  return { ...mod, execSync: vi.fn(mod.execSync) };
+  return { ...mod, execSync: execSyncMock };
+});
+vi.mock('node:fs', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs')>();
+  realExistsSync.fn = fs.existsSync;
+  return { ...fs, existsSync: vi.fn((path: string) => realExistsSync.fn(path)) };
 });
 
-describe('fitness run', () => {
+vi.mock('node:worker_threads', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('node:worker_threads')>();
+  function MockWorker(_path: string, _opts: { workerData?: { checkName: string; root: string } }) {
+    const handlers: Record<string, (arg: unknown) => void> = {};
+    const instance = {
+      on: vi.fn((ev: string, cb: (arg: unknown) => void) => {
+        handlers[ev] = cb;
+      }),
+      terminate: vi.fn(),
+    };
+    const successPayload = {
+      result: { ok: true, errors: [] as string[], meta: { filesChecked: 0 } },
+      ms: 0,
+    };
+    const successNoMetaPayload = {
+      result: { ok: true, errors: [] as string[] },
+      ms: 0,
+    };
+    setImmediate(() => {
+      if (workerMockRef.behavior === 'timeout') return;
+      if (workerMockRef.behavior === 'errorEvent' && handlers['error'])
+        handlers['error'](new Error('worker error'));
+      else if (handlers['message']) {
+        const payload =
+          workerMockRef.behavior === 'errorMessage'
+            ? { error: 'worker failed', ms: 0 }
+            : workerMockRef.behavior === 'successNoMeta'
+              ? successNoMetaPayload
+              : successPayload;
+        handlers['message'](payload);
+        if (workerMockRef.behavior === 'success') {
+          setImmediate(() => handlers['message']?.(payload));
+          setImmediate(() => handlers['error']?.(new Error('late')));
+        }
+      }
+    });
+    return instance;
+  }
+  return { ...mod, Worker: MockWorker };
+});
+
+function tempDir(): string {
+  return mkdtempSync(join(tmpdir(), 'fitness-run-'));
+}
+
+function runDir(dir: string, overrides: Record<string, string> = {}): void {
+  const base: Record<string, string> = {
+    'package.json': '{"version":"0.1.0-2026.02.15.1100"}',
+    'CHANGELOG.md':
+      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n',
+    '.nvmrc': '18',
+    'vitest.config.js':
+      'module.exports = { test: { coverage: { thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 } } } };',
+    ...overrides,
+  };
+  for (const [file, content] of Object.entries(base)) writeFileSync(join(dir, file), content);
+}
+
+describe('run', () => {
   const exit = process.exit;
 
   beforeEach(() => {
-    vi.stubGlobal(
-      'process',
-      Object.assign(process, {
-        exit: vi.fn(),
-      })
-    );
+    execSyncMock.mockReset();
+    workerMockRef.behavior = 'success';
+    vi.stubGlobal('process', Object.assign(process, { exit: vi.fn() }));
   });
 
   afterEach(() => {
@@ -24,24 +94,11 @@ describe('fitness run', () => {
   });
 
   it('exits 0 when all checks pass', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(
-      join(dir, 'CHANGELOG.md'),
-      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
-    );
-    writeFileSync(join(dir, '.nvmrc'), '18');
-    writeFileSync(
-      join(dir, 'vitest.config.js'),
-      'module.exports = { test: { coverage: { thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 } } } };'
-    );
+    const dir = tempDir();
+    runDir(dir);
     const origCwd = process.cwd();
     process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
+    execSyncMock
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => 'feat(pkg): init\n\n')
@@ -51,25 +108,14 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('runs only checks listed in .fitnessrc.ts when present', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(
-      join(dir, '.fitnessrc.ts'),
-      'export default { checks: ["changelog", "semantic-commit"] };'
-    );
-    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(
-      join(dir, 'CHANGELOG.md'),
-      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
-    );
-    writeFileSync(join(dir, '.nvmrc'), '18');
+  it('runs only checks from .fitnessrc.ts when present', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts': 'export default { checks: ["changelog", "semantic-commit"] };',
+    });
     const origCwd = process.cwd();
     process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync)
+    execSyncMock
       .mockImplementationOnce(() => '')
       .mockImplementationOnce(() => 'feat(pkg): init\n\n');
     await run(['node', 'fitness']);
@@ -77,283 +123,217 @@ describe('fitness run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('logs check timing without filesChecked when meta omits it', async () => {
-    vi.resetModules();
-    vi.doMock('../checks/index.js', () => ({
-      registry: [{ name: 'meta-less', run: async () => ({ ok: true, errors: [], meta: {} }) }],
-    }));
-    const { run: runWithMetaLess } = await import('../index.js');
-    const { mkdtempSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+  it('runs only known checks when config.checks includes unknown names', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts': 'export default { checks: ["changelog", "nonexistent-check"] };',
+    });
     const origCwd = process.cwd();
     process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => '');
+    execSyncMock
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await runWithMetaLess(['node', 'fitness', '--check=meta-less']);
+    await run(['node', 'fitness']);
     process.chdir(origCwd);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/meta-less/));
+    const out = logSpy.mock.calls.map((c) => c[0]).join('\n');
+    expect(out).toMatch(/changelog/);
+    expect(out).not.toMatch(/nonexistent-check/);
+    logSpy.mockRestore();
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('excludes disabledChecks from registry when no checks list', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts': 'export default { disabledChecks: ["cspell"] };',
+    });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n')
+      .mockImplementation(() => '');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run(['node', 'fitness']);
+    process.chdir(origCwd);
+    const output = logSpy.mock.calls.map((c) => c[0]).join('\n');
+    expect(output).not.toMatch(/cspell/);
+    expect(process.exit).toHaveBeenCalledWith(0);
     logSpy.mockRestore();
   });
 
-  it('exits 1 for unknown check', async () => {
+  it('exits 1 for unknown check name', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(run(['node', 'fitness', '--check=unknown'])).rejects.toThrow('exit');
     expect(process.exit).toHaveBeenCalledWith(1);
     errSpy.mockRestore();
   });
 
-  it('runs single check when --check=semantic-commit', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
+  it('exits 1 with (none) when no --check and registry empty', async () => {
+    vi.resetModules();
+    vi.doMock('../checks/index.js', () => ({ registry: [] }));
+    const { run: runEmpty } = await import('../index.js');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(runEmpty(['node', 'fitness'])).rejects.toThrow('exit');
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(enUS.UnknownCheckPrefix + enUS.UnknownCheckSpecNone)
+    );
+    errSpy.mockRestore();
+  });
+
+  it('exits 1 with spec when --check=name but name not in registry', async () => {
+    vi.resetModules();
+    vi.doMock('../checks/index.js', () => ({
+      registry: [{ name: 'other', run: async () => ({ ok: true, errors: [], meta: {} }) }],
+    }));
+    const { run: runNoSemantic } = await import('../index.js');
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(runNoSemantic(['node', 'fitness', '--check=semantic-commit'])).rejects.toThrow(
+      'exit'
+    );
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(enUS.UnknownCheckPrefix + 'semantic-commit')
+    );
+    errSpy.mockRestore();
+  });
+
+  it('runs single registry check by name and by positional', async () => {
+    execSyncMock.mockImplementation((cmd: string) =>
       cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : ''
     );
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
-  });
-
-  it('runs single check when check name is positional (e.g. npx fitness semantic-commit)', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(api): add endpoint\n\nBody' : ''
-    );
     await run(['node', 'fitness', 'semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('passes through args to single check (e.g. npx fitness prettier --write)', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-passthrough-'));
+  it('passes through args to single check', async () => {
+    const dir = tempDir();
     writeFileSync(join(dir, 'package.json'), '{"prettier": {}}');
     const origCwd = process.cwd();
     process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockReturnValue('');
+    execSyncMock.mockReturnValue('');
     await run(['node', 'fitness', 'prettier', '--write', '.']);
     process.chdir(origCwd);
-    const prettierCall = vi.mocked(execSync).mock.calls.find((c) => c[0].includes('prettier'));
-    expect(prettierCall?.[0]).toContain('--write');
-    expect(prettierCall?.[0]).not.toContain('--check');
+    const call = execSyncMock.mock.calls.find((c) => String(c[0]).includes('prettier'));
+    expect(call?.[0]).toContain('--write');
+    expect(call?.[0]).not.toContain('--check');
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('runs check from path when --check=./path/to/check.js', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-check-'));
-    const checkPath = join(dir, 'check.js');
+  it('runs check from path (default and named export)', async () => {
+    const dir = tempDir();
+    runDir(dir);
     writeFileSync(
-      checkPath,
+      join(dir, 'check-default.js'),
       'export default { name: "path-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };'
     );
-    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
     writeFileSync(
-      join(dir, 'CHANGELOG.md'),
-      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
-    );
-    writeFileSync(join(dir, '.nvmrc'), '18');
-    const origCwd = process.cwd();
-    process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => '');
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await run(['node', 'fitness', '--check=./check.js']);
-    process.chdir(origCwd);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/path-check/));
-    expect(process.exit).toHaveBeenCalledWith(0);
-    logSpy.mockRestore();
-  });
-
-  it('runs check from path when module exports named Check only (no default)', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-named-'));
-    writeFileSync(
-      join(dir, 'check.js'),
+      join(dir, 'check-named.js'),
       'export const myCheck = { name: "named-check", run: async () => ({ ok: true, errors: [], meta: { filesChecked: 0 } }) };'
     );
-    writeFileSync(join(dir, 'package.json'), '{"version":"0.1.0-2026.02.15.1100"}');
-    writeFileSync(
-      join(dir, 'CHANGELOG.md'),
-      '---\nfitnessFunctions: ["./package.json"]\n---\n# Changelog\n\n### 2026.02.15.1100\n\n- init\n'
-    );
-    writeFileSync(join(dir, '.nvmrc'), '18');
     const origCwd = process.cwd();
     process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => '');
+    execSyncMock.mockImplementation(() => '');
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await run(['node', 'fitness', '--check=./check.js']);
-    process.chdir(origCwd);
+    await run(['node', 'fitness', '--check=./check-default.js']);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/path-check/));
+    await run(['node', 'fitness', '--check=./check-named.js']);
     expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/named-check/));
-    expect(process.exit).toHaveBeenCalledWith(0);
+    process.chdir(origCwd);
     logSpy.mockRestore();
+    expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('exits 1 when path points to module with no Check export', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, 'check.js'), 'export const x = 1;');
+  it('exits 1 when path has no Check export or throws on import', async () => {
+    const dir = tempDir();
+    writeFileSync(join(dir, 'no-check.js'), 'export const x = 1;');
+    writeFileSync(join(dir, 'throws.js'), 'throw new Error("load error");');
     const origCwd = process.cwd();
     process.chdir(dir);
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(run(['node', 'fitness', '--check=./check.js'])).rejects.toThrow('exit');
-    process.chdir(origCwd);
-    expect(process.exit).toHaveBeenCalledWith(1);
+    await expect(run(['node', 'fitness', '--check=./no-check.js'])).rejects.toThrow('exit');
     expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(enUS.UnknownCheckPrefix + './check.js')
+      expect.stringContaining(enUS.UnknownCheckPrefix + './no-check.js')
     );
+    await expect(run(['node', 'fitness', '--check=./throws.js'])).rejects.toThrow('exit');
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(enUS.UnknownCheckPrefix + './throws.js')
+    );
+    process.chdir(origCwd);
     errSpy.mockRestore();
   });
 
-  it('exits 1 when path points to module that throws on import', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
-    writeFileSync(join(dir, 'check.js'), 'throw new Error("load error");');
-    const origCwd = process.cwd();
-    process.chdir(dir);
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(run(['node', 'fitness', '--check=./check.js'])).rejects.toThrow('exit');
-    process.chdir(origCwd);
-    expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(enUS.UnknownCheckPrefix + './check.js')
-    );
-    errSpy.mockRestore();
-  });
-
-  it('exits 1 and reports error when check run() throws', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+  it('exits 1 when path check run() throws or times out', async () => {
+    const dir = tempDir();
     writeFileSync(
-      join(dir, 'check.js'),
+      join(dir, 'throw-error.js'),
       'export default { name: "throwing", run: () => { throw new Error("check error"); } };'
     );
-    const origCwd = process.cwd();
-    process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => '');
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await run(['node', 'fitness', '--check=./check.js']);
-    process.chdir(origCwd);
-    expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('check error'));
-    errSpy.mockRestore();
-  });
-
-  it('exits 1 and reports string when check run() throws non-Error', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(
-      join(dir, 'check.js'),
+      join(dir, 'throw-string.js'),
       'export default { name: "throw-string", run: async () => { throw "oops"; } };'
     );
-    const origCwd = process.cwd();
-    process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => '');
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await run(['node', 'fitness', '--check=./check.js']);
-    process.chdir(origCwd);
-    expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('oops'));
-    errSpy.mockRestore();
-  });
-
-  it('exits 1 with timeout message when check exceeds 5s', async () => {
-    const { mkdtempSync, writeFileSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
     writeFileSync(
-      join(dir, 'check.js'),
+      join(dir, 'hang.js'),
       'export default { name: "hang", run: () => new Promise(() => {}) };'
     );
     const origCwd = process.cwd();
     process.chdir(dir);
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => '');
+    execSyncMock.mockImplementation(() => '');
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await run(['node', 'fitness', '--check=./check.js']);
+    await run(['node', 'fitness', '--check=./throw-error.js']);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('check error'));
+    await run(['node', 'fitness', '--check=./throw-string.js']);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('oops'));
+    await run(['node', 'fitness', '--check=./hang.js'], { _checkTimeoutMsForTesting: 10 });
+    expect(errSpy).toHaveBeenCalledWith(expect.stringMatching(/Check timed out after .+s/));
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('Check timed out after 5s'));
     errSpy.mockRestore();
-  }, 7000);
+  });
 
-  it('exits 1 for unknown path (file not found or invalid module)', async () => {
-    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { mkdtempSync } = await import('node:fs');
-    const { join } = await import('node:path');
-    const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'fitness-'));
+  it('exits 1 for nonexistent path', async () => {
+    const dir = tempDir();
     const origCwd = process.cwd();
     process.chdir(dir);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(run(['node', 'fitness', '--check=./nonexistent.js'])).rejects.toThrow('exit');
     process.chdir(origCwd);
-    expect(process.exit).toHaveBeenCalledWith(1);
     expect(errSpy).toHaveBeenCalledWith(
       expect.stringContaining(enUS.UnknownCheckPrefix + './nonexistent.js')
     );
     errSpy.mockRestore();
   });
 
-  it('runs with staged context (git diff mocked)', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
+  it('uses staged context when git diff succeeds; continues when git fails', async () => {
+    execSyncMock.mockImplementation((cmd: string) =>
       cmd.includes('--pretty') ? 'chore(deps): bump\n\n' : ''
     );
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
-  });
-
-  it('handles git diff failure (catch)', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => {
+    execSyncMock.mockImplementation(() => {
       throw new Error('not a git repo');
     });
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it('handles non-empty staged output', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(runner): add tests\n\n' : 'a.md\nb.md'
+  it('builds context with empty staged list when git diff returns empty', async () => {
+    execSyncMock.mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
     );
-    await run(['node', 'fitness', '--check=semantic-commit']);
+    await run(['node', 'fitness', '--check=semantic-commit', '--message=feat(pkg): init']);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('outputs check timing with filesChecked meta', async () => {
-    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
-    );
-    await run(['node', 'fitness', '--check=semantic-commit']);
-    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/semantic-commit.*1.*\d+ms/));
-    logSpy.mockRestore();
-  });
-
-  it('logs errors and exits 1 when check fails', async () => {
+  it('exits 1 and logs errors when check fails', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
+    execSyncMock.mockImplementation((cmd: string) =>
       cmd.includes('--pretty') ? 'Bad commit' : ''
     );
     await run(['node', 'fitness', '--check=semantic-commit']);
@@ -365,18 +345,21 @@ describe('fitness run', () => {
     errSpy.mockRestore();
   });
 
-  it('exits 1 when check fails', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation((cmd: string) =>
-      cmd.includes('--pretty') ? 'Initial commit\n\n' : ''
+  it('parses --message=value (tryEqualsArg) and injects into context', async () => {
+    const dir = tempDir();
+    writeFileSync(join(dir, 'package.json'), '{}');
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(scope): add\n\n' : ''
     );
-    await run(['node', 'fitness', '--check=semantic-commit']);
-    expect(process.exit).toHaveBeenCalledWith(1);
+    await run(['node', 'fitness', '--check=semantic-commit', '--message=feat(scope): add']);
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('--check=semantic-commit with --message=: exits 0 for semantic message', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => {
+  it('injects --message= and --message (space) into context for semantic-commit', async () => {
+    execSyncMock.mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
     await run([
@@ -386,103 +369,219 @@ describe('fitness run', () => {
       '--message=feat(checks): add commit-msg hook',
     ]);
     expect(process.exit).toHaveBeenCalledWith(0);
-  });
-
-  it('semantic-commit with --message= after check name: injects message into context', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => {
+    execSyncMock.mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
     await run(['node', 'fitness', 'semantic-commit', '--message=feat(scope): two positionals']);
     expect(process.exit).toHaveBeenCalledWith(0);
+    execSyncMock.mockImplementationOnce(() => {
+      throw new Error('not a git repo');
+    });
+    await run(['node', 'fitness', '--check=semantic-commit', '--message', 'feat(x): space form']);
+    expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('--check=semantic-commit with --message= empty or missing: fails (nothing to check)', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementation(() => '');
+  it('fails when --message= empty or missing for semantic-commit', async () => {
+    execSyncMock.mockImplementation(() => '');
     await run(['node', 'fitness', '--check=semantic-commit', '--message=']);
     expect(process.exit).toHaveBeenCalledWith(1);
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(1);
-    await run(['node', 'fitness', '--check=semantic-commit', '--message']);
-    expect(process.exit).toHaveBeenCalledWith(1);
-  });
-
-  it('--check=semantic-commit with --message followed by flag: empty message fails', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => {
+    execSyncMock.mockImplementationOnce(() => {
       throw new Error('not a git repo');
     });
     await run(['node', 'fitness', '--check=semantic-commit', '--message', '--write']);
     expect(process.exit).toHaveBeenCalledWith(1);
   });
 
-  it('--check=semantic-commit with other arg then --message=: injects message', async () => {
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => {
+  it('strips both --message and missing value when positional check and --message has no value', async () => {
+    execSyncMock.mockImplementation(() => {
       throw new Error('not a git repo');
     });
-    await run([
-      'node',
-      'fitness',
-      '--check=semantic-commit',
-      '--other',
-      '--message=feat(scope): with other arg',
-    ]);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run(['node', 'fitness', 'semantic-commit', '--message']);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    errSpy.mockRestore();
+  });
+
+  it('logs timing with filesChecked and when meta omits it', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    execSyncMock.mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
+    expect(logSpy).toHaveBeenCalledWith(expect.stringMatching(/semantic-commit.*\d+ms/));
+    logSpy.mockRestore();
+    vi.resetModules();
+    vi.doMock('../checks/index.js', () => ({
+      registry: [{ name: 'meta-less', run: async () => ({ ok: true, errors: [], meta: {} }) }],
+    }));
+    const { run: runMetaLess } = await import('../index.js');
+    const dir = tempDir();
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    const logSpy2 = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await runMetaLess(['node', 'fitness', '--check=meta-less']);
+    process.chdir(origCwd);
+    expect(logSpy2).toHaveBeenCalledWith(expect.stringMatching(/meta-less/));
+    logSpy2.mockRestore();
+  });
+
+  it('runs read-repo-first in-process without timeout race when VITEST unset', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    const origVitest = process.env.VITEST;
+    delete process.env.VITEST;
+    await run(['node', 'fitness', '--check=read-repo-first']);
+    process.env.VITEST = origVitest;
+    process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
-  it('--check=semantic-commit with --message= non-semantic: exits 1', async () => {
+  it('runs registry check via worker when VITEST unset', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockImplementation(
+      (path: string) =>
+        (typeof path === 'string' && path.includes('run-one-check-worker')) ||
+        realExistsSync.fn(path)
+    );
+    try {
+      const origVitest = process.env.VITEST;
+      delete process.env.VITEST;
+      await run(['node', 'fitness', '--check=changelog']);
+      process.env.VITEST = origVitest;
+      expect(process.exit).toHaveBeenCalledWith(0);
+    } finally {
+      vi.mocked(fs.existsSync).mockRestore();
+    }
+    process.chdir(origCwd);
+  });
+
+  it('uses dist worker path when run-one-check-worker.js not next to run (existsSync false)', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockImplementation((path: string) =>
+      path.includes('run-one-check-worker') ? false : realExistsSync.fn(path)
+    );
+    try {
+      const origVitest = process.env.VITEST;
+      delete process.env.VITEST;
+      await run(['node', 'fitness', '--check=changelog']);
+      process.env.VITEST = origVitest;
+      expect(process.exit).toHaveBeenCalledWith(0);
+    } finally {
+      vi.mocked(fs.existsSync).mockRestore();
+    }
+    process.chdir(origCwd);
+  });
+
+  it('strips node_modules from staged paths in context', async () => {
+    execSyncMock.mockImplementation((cmd: string) =>
+      cmd.includes('--pretty') ? 'feat(x): add\n\n' : 'src/a.ts\nnode_modules/pkg/index.js\nb.ts'
+    );
+    await run(['node', 'fitness', '--check=semantic-commit']);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('runs full registry when .fitnessrc has no checks and empty disabledChecks', async () => {
+    const dir = tempDir();
+    runDir(dir, { '.fitnessrc.ts': 'export default { disabledChecks: [] };' });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n')
+      .mockImplementation(() => '');
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run(['node', 'fitness']);
+    process.chdir(origCwd);
+    const out = logSpy.mock.calls.map((c) => c[0]).join('\n');
+    expect(out).toMatch(/changelog/);
+    expect(out).toMatch(/semantic-commit/);
+    logSpy.mockRestore();
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('handles worker success when result has no meta (filesChecked -1)', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    workerMockRef.behavior = 'successNoMeta';
+    const origVitest = process.env.VITEST;
+    delete process.env.VITEST;
+    await run(['node', 'fitness', '--check=changelog']);
+    process.env.VITEST = origVitest;
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('exits 1 when worker posts error message', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    workerMockRef.behavior = 'errorMessage';
+    const origVitest = process.env.VITEST;
+    delete process.env.VITEST;
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    const { execSync } = await import('node:child_process');
-    vi.mocked(execSync).mockImplementationOnce(() => '');
-    await run(['node', 'fitness', '--check=semantic-commit', '--message=oops I forgot']);
+    await run(['node', 'fitness', '--check=changelog']);
+    process.env.VITEST = origVitest;
+    process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('worker failed'));
     errSpy.mockRestore();
   });
-});
 
-describe('exitUnknown', () => {
-  const exit = process.exit;
-
-  beforeEach(() => {
-    vi.stubGlobal('process', Object.assign(process, { exit: vi.fn() }));
-  });
-
-  afterEach(() => {
-    process.exit = exit;
-    vi.unstubAllGlobals();
-  });
-
-  it('exits 1 with (none) when no checks and no --check', async () => {
-    vi.resetModules();
-    vi.doMock('../checks/index.js', () => ({ registry: [] }));
-    const { run: runWithEmptyRegistry } = await import('../index.js');
+  it('exits 1 when worker emits error', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    workerMockRef.behavior = 'errorEvent';
+    const origVitest = process.env.VITEST;
+    delete process.env.VITEST;
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    await expect(runWithEmptyRegistry(['node', 'fitness'])).rejects.toThrow('exit');
+    await run(['node', 'fitness', '--check=changelog']);
+    process.env.VITEST = origVitest;
+    process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(enUS.UnknownCheckPrefix + enUS.UnknownCheckSpecNone)
-    );
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('worker error'));
     errSpy.mockRestore();
   });
 
-  it('exits 1 with (semantic-commit) when --check=semantic-commit but registry has no semantic-commit', async () => {
-    vi.resetModules();
-    vi.doMock('../checks/index.js', () => ({
-      registry: [{ name: 'other', run: async () => ({ ok: true, errors: [], meta: {} }) }],
-    }));
-    const { run: runWithNoSemantic } = await import('../index.js');
+  it('exits 1 when worker times out', async () => {
+    const dir = tempDir();
+    runDir(dir);
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation(() => '');
+    workerMockRef.behavior = 'timeout';
+    const origVitest = process.env.VITEST;
+    delete process.env.VITEST;
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    vi.stubGlobal('process', Object.assign(process, { exit: vi.fn() }));
-    await expect(runWithNoSemantic(['node', 'fitness', '--check=semantic-commit'])).rejects.toThrow(
-      'exit'
-    );
+    await run(['node', 'fitness', '--check=changelog'], { _checkTimeoutMsForTesting: 10 });
+    process.env.VITEST = origVitest;
+    process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(1);
-    expect(errSpy).toHaveBeenCalledWith(
-      expect.stringContaining(enUS.UnknownCheckPrefix + 'semantic-commit')
-    );
+    expect(errSpy).toHaveBeenCalledWith(expect.stringMatching(/Check timed out after .+s/));
     errSpy.mockRestore();
-    vi.unstubAllGlobals();
   });
 });

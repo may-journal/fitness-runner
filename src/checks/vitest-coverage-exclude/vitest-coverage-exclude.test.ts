@@ -153,10 +153,11 @@ describe('vitestCoverageExcludeCheck', () => {
   });
 
   it('VITEST_CONFIG_NAMES includes expected config file names', () => {
-    expect(VITEST_CONFIG_NAMES).toContain('vitest.config.ts');
+    expect(VITEST_CONFIG_NAMES).toContain('vitest.config.cjs');
     expect(VITEST_CONFIG_NAMES).toContain('vitest.config.js');
-    expect(VITEST_CONFIG_NAMES).toContain('vitest.config.mts');
     expect(VITEST_CONFIG_NAMES).toContain('vitest.config.mjs');
+    expect(VITEST_CONFIG_NAMES).toContain('vitest.config.mts');
+    expect(VITEST_CONFIG_NAMES).toContain('vitest.config.ts');
   });
 
   it('ALLOWED_SUFFIXES matches conventional endings', () => {

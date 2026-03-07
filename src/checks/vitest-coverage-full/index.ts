@@ -45,6 +45,9 @@ function tryLoadConfigFile(root: string, name: string): VitestConfigWithThreshol
   const path = join(root, name);
   if (!existsSync(path)) return null;
   try {
+    if (name.endsWith('.cjs') || name.endsWith('.js')) {
+      return configFromMod(require(path));
+    }
     const jiti = require('jiti')(root, { esmResolve: true });
     return configFromMod(jiti(path));
   } catch {
@@ -66,13 +69,43 @@ function tryLoadPackageJsonVitest(root: string): VitestConfigWithThresholds | nu
   }
 }
 
-/** Load Vitest config from root (vitest.config.* or package.json). */
+/** True if content has branches/functions/lines/statements all set to REQUIRED_THRESHOLD via regex. */
+function contentHasAllThresholds(content: string): boolean {
+  const has = (key: string) => new RegExp(`${key}:\\s*${REQUIRED_THRESHOLD}\\b`).test(content);
+  return has('branches') && has('functions') && has('lines') && has('statements');
+}
+
+/** Fallback: read config file and detect thresholds at 100 via regex (avoids execute when loader fails). */
+function tryParseThresholdsFromFile(root: string): VitestConfigWithThresholds | null {
+  const fullThresholds = {
+    test: {
+      coverage: { thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 } },
+    },
+  };
+  for (const name of VITEST_CONFIG_NAMES) {
+    const path = join(root, name);
+    if (!existsSync(path)) continue;
+    try {
+      const content = readFileSync(path, 'utf8');
+      if (contentHasAllThresholds(content)) return fullThresholds;
+    } catch {
+      // ignore
+    }
+  }
+  return null;
+}
+
+/** Load Vitest config from root; tries fast paths (regex, package.json) before jiti. */
 function loadVitestConfig(root: string): VitestConfigWithThresholds | null {
+  const parsed = tryParseThresholdsFromFile(root);
+  if (parsed != null) return parsed;
+  const pkg = tryLoadPackageJsonVitest(root);
+  if (pkg != null) return pkg;
   for (const name of VITEST_CONFIG_NAMES) {
     const config = tryLoadConfigFile(root, name);
     if (config != null) return config;
   }
-  return tryLoadPackageJsonVitest(root);
+  return null;
 }
 
 /** Returns test.coverage or coverage from config. */
@@ -148,4 +181,5 @@ export const vitestCoverageFullCheck: Check = {
     const { exitCode, output } = runVitestCoverage(root, getExecSync(context));
     return exitCode === 0 ? checkResult(true, [], 1) : coverageFailureResult(output);
   },
+  runInProcess: true,
 };

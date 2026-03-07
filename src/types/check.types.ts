@@ -11,4 +11,6 @@ export type Check = {
   contextInline?: ContextInline;
   name: CheckName;
   run: (root?: string, context?: RunContext) => Promise<CheckResult>;
+  /** When true, run in main thread; otherwise run in worker (when not in tests). */
+  runInProcess?: boolean;
 };

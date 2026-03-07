@@ -9,6 +9,9 @@ relatedConfigurations: ['package.json']
 
 ### 2026.03.07.1007
 
+- Runner: always ignore `node_modules`—getSkipDirs returns runner skip dirs (`node_modules`, dist, coverage, .git, .husky) merged with config; staged files from git are filtered to exclude paths under `node_modules`.
+- Runner: run registry checks in a worker thread so 5s timeout is enforced via worker.terminate() when checks block (e.g. execSync); read-repo-first, vitest-coverage-full, and path-based checks stay in-process. Add run-one-check-worker.ts; tests use in-process (VITEST).
+- Vitest-coverage-exclude: add vitest.config.cjs to `VITEST_CONFIG_NAMES`.
 - Runner: add 5s per-check timeout; timed-out checks fail with "Check timed out after 5s" and runner continues.
 - Runner: add progress messages to stderr (Resolving checks…, Running checks:, and → name before each check) so users can see where the run is or where it hangs.
 - Utils: fix isMainModule when run via npx (resolve argv[1] and import.meta.url to real paths so symlinked .bin/fitness is detected as main). Add symlink test; add JSDoc and reduce complexity for lint.
@@ -151,7 +154,7 @@ relatedConfigurations: ['package.json']
 - CI: single fitness job runs npm run fitness; remove discover job and matrix.
 - Pre-commit: source nvm (`NVM_DIR`, nvm.sh) in husky hook so nvm use runs when PATH has no nvm.
 - CI: list checks as single-line `GITHUB_OUTPUT` (printf, tr -d newline) to avoid EOF delimiter; valid JSON for fitness job matrix.
-- Markdown-front-matter: require fitnessFunctions or relatedConfigurations in every .md; paths resolved relative to md file; findMd skips node_modules, dist, coverage, .git, .husky; export getFrontMatterPaths for tests (100% coverage). README/CHANGELOG front matter fixes (---, flow-style).
+- Markdown-front-matter: require fitnessFunctions or relatedConfigurations in every .md; paths resolved relative to md file; findMd skips `node_modules`, dist, coverage, .git, .husky; export getFrontMatterPaths for tests (100% coverage). README/CHANGELOG front matter fixes (---, flow-style).
 
 ### 2026.02.15.1500
 

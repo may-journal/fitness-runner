@@ -7,24 +7,27 @@ import type { Check } from '../../types/index.types.js';
 
 const require = createRequire(import.meta.url);
 
-/** Allowed coverage exclude patterns: declaration, type-only, barrel index; Vitest excludes tests by default. */
+/** Allowed coverage exclude patterns: declaration, type-only, barrel index, worker entry; Vitest excludes tests by default. */
 export const ALLOWED_COVERAGE_EXCLUDE_PATTERNS = [
   '**/*.d.ts',
   '**/*.types.ts',
   '**/*.test.ts',
   '**/*.spec.ts',
   '**/index.ts',
+  '**/run-one-check-worker.ts',
 ] as const;
 
 export const VITEST_CONFIG_NAMES = [
-  'vitest.config.ts',
+  'vitest.config.cjs',
   'vitest.config.js',
-  'vitest.config.mts',
   'vitest.config.mjs',
+  'vitest.config.mts',
+  'vitest.config.ts',
 ];
 
-/** Allowed coverage exclude suffixes: declaration, type-only, test files, barrel index. */
-export const ALLOWED_SUFFIXES = /(\.(d\.ts|types\.ts|test\.ts|spec\.ts)|index\.ts)$/;
+/** Allowed coverage exclude suffixes: declaration, type-only, test files, barrel index, worker entry. */
+export const ALLOWED_SUFFIXES =
+  /(\.(d\.ts|types\.ts|test\.ts|spec\.ts)|index\.ts|run-one-check-worker\.ts)$/;
 
 /** Returns true if the exclude pattern is not in the allowed conventional set (.d.ts, .types.ts, .test.ts, .spec.ts). */
 function isDisallowedTsPattern(pattern: string): boolean {

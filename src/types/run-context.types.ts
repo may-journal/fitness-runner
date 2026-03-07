@@ -1,5 +1,7 @@
 /** Optional context the runner passes to checks (e.g. staged file list, proposed commit message). */
 export type RunContext = {
+  /** Test-only: override check timeout ms so timeout tests don't wait 5s. */
+  _checkTimeoutMsForTesting?: number;
   /** Test-only: override for child_process.execSync (cspell check). */
   _execSync?: (
     command: string,

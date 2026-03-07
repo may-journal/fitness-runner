@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from '../config/load.js';
 
+/** Runner always skips these dir names when walking; merged with config/cspell. */
+export const RUNNER_SKIP_DIRS = ['node_modules', 'dist', 'coverage', '.git', '.husky'];
+
 /** Dir names from cspell.json ignorePaths (entries with no / or *). */
 function getSkipDirsFromCspell(root: string): Set<string> {
   try {
@@ -15,12 +18,20 @@ function getSkipDirsFromCspell(root: string): Set<string> {
   }
 }
 
-/** Dir names to skip when walking: from fitness config skipTheseDirectories, else cspell.json ignorePaths. */
+/** Skip dirs for file walking only; avoids loadConfig/jiti so the walk never blocks. */
+export function getSkipDirsForWalk(root: string): Set<string> {
+  return new Set([...RUNNER_SKIP_DIRS, ...getSkipDirsFromCspell(root)]);
+}
+
+/** Dir names to skip when walking: runner defaults (node_modules, etc.) plus fitness config skipTheseDirectories or cspell.json ignorePaths. */
 export function getSkipDirs(root: string): Set<string> {
-  const config = loadConfig(root);
-  if (config?.skipTheseDirectories && Array.isArray(config.skipTheseDirectories)) {
-    const valid = config.skipTheseDirectories.filter((p) => typeof p === 'string');
-    return new Set(valid);
-  }
-  return getSkipDirsFromCspell(root);
+  const fromConfig = (() => {
+    const config = loadConfig(root);
+    if (config?.skipTheseDirectories && Array.isArray(config.skipTheseDirectories)) {
+      const valid = config.skipTheseDirectories.filter((p) => typeof p === 'string');
+      return new Set(valid);
+    }
+    return getSkipDirsFromCspell(root);
+  })();
+  return new Set([...RUNNER_SKIP_DIRS, ...fromConfig]);
 }

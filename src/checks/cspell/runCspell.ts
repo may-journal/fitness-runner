@@ -140,11 +140,11 @@ async function checkOneFileWithLib(
 }
 
 /** Absolute paths to check: staged existing paths under root, or .md files when no staged. */
-function getPathsToCheck(root: string, staged: string[]): string[] {
+async function getPathsToCheck(root: string, staged: string[]): Promise<string[]> {
   const rel =
     staged.length > 0
       ? staged.filter((p) => existsSync(join(root, p)))
-      : findFilesByExtension(root, '.md');
+      : await findFilesByExtension(root, '.md');
   return rel.map((p) => join(root, p));
 }
 
@@ -160,7 +160,7 @@ function runViaExec(
 
 /** Runs cspell via cspell-lib and returns CheckResult. */
 async function runViaLib(root: string, staged: string[]): Promise<ReturnType<typeof checkResult>> {
-  const paths = getPathsToCheck(root, staged);
+  const paths = await getPathsToCheck(root, staged);
   if (paths.length === 0) return checkResult(true, [], 0);
   const configPath = join(root, 'cspell.json');
   const config = await readConfigFile(configPath, root);

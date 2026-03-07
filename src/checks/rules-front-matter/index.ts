@@ -103,7 +103,7 @@ export const rulesFrontMatterCheck: Check = {
     const registeredCheckNames = context?.registeredCheckNames ?? [];
     const errors: string[] = [];
     let filesChecked = 0;
-    for (const file of findFilesByExtension(root, '.md')) {
+    for (const file of await findFilesByExtension(root, '.md')) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       const mdFileDir = join(root, dirname(file));
@@ -111,4 +111,5 @@ export const rulesFrontMatterCheck: Check = {
     }
     return checkResult(errors.length === 0, errors, filesChecked);
   },
+  runInProcess: true,
 };

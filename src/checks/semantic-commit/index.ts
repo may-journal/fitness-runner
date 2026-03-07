@@ -1,6 +1,11 @@
 import { execSync } from 'node:child_process';
-import conventionalCommitTypes from 'conventional-commit-types' with { type: 'json' };
+import { createRequire } from 'node:module';
 import { checkResult } from '../../utils/checkResult.js';
+
+const require = createRequire(import.meta.url);
+const conventionalCommitTypes = require('conventional-commit-types') as {
+  types: Record<string, { description?: string }>;
+};
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 

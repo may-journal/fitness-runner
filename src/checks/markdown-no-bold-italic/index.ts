@@ -54,11 +54,12 @@ export const markdownNoBoldItalicCheck: Check = {
   async run(root = process.cwd()) {
     const errors: string[] = [];
     let filesChecked = 0;
-    for (const file of findFilesByExtension(root, '.md')) {
+    for (const file of await findFilesByExtension(root, '.md')) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       errors.push(...validateFile(file, content));
     }
     return checkResult(errors.length === 0, errors, filesChecked);
   },
+  runInProcess: true,
 };

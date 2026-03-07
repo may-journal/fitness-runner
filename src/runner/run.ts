@@ -1,61 +1,33 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join, dirname, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { Worker } from 'node:worker_threads';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { registry } from '../checks/index.js';
+import { CheckName } from '../types/check-name.js';
 import { getColumns } from '../utils/terminal.js';
 import type { Check, RunContext } from '../types/index.types.js';
-import type { CheckName } from '../types/check-name.js';
 import { loadConfig } from '../config/load.js';
+import { getContextInlineFromArgs } from '../utils/contextInlineFromArgs.js';
 import { interpolate } from '../utils/interpolate.js';
 import { enUS } from './enUS.js';
 
-/** Returns staged file paths from git for context (always attempted). */
+/** Staged paths under node_modules are never passed to checks. */
+function stripNodeModulesFromStaged(paths: string[]): string[] {
+  return paths.filter((p) => !p.includes('node_modules'));
+}
+
+/** Returns staged file paths from git for context (always attempted); excludes node_modules. */
 function getStagedContext(): RunContext | undefined {
   try {
     const out = execSync('git diff --cached --name-only', { encoding: 'utf8' });
-    return { stagedFiles: out.trim() ? out.trim().split('\n') : [] };
+    const raw = out.trim() ? out.trim().split('\n') : [];
+    return { stagedFiles: stripNodeModulesFromStaged(raw) };
   } catch {
     return undefined;
   }
-}
-
-/** Parses args for a contextInline arg (--arg=value or --arg value); returns value and indices to strip. */
-function getContextInlineFromArgs(
-  args: string[],
-  argName: string
-): { stripIndices: number[]; value: string } | null {
-  const eq = argName + '=';
-  for (let i = 0; i < args.length; i++) {
-    const hit = tryExactArg(args, argName, i) ?? tryEqualsArg(args, eq, i);
-    if (hit) return hit;
-  }
-  return null;
-}
-
-/** Handles --arg value form. */
-function tryExactArg(
-  args: string[],
-  argName: string,
-  i: number
-): { stripIndices: number[]; value: string } | null {
-  if (args[i] !== argName) return null;
-  const next = args[i + 1] ?? '';
-  const value = next.startsWith('-') ? '' : next;
-  const stripIndices = value === next ? [i, i + 1] : [i];
-  return { stripIndices, value };
-}
-
-/** Handles --arg=value form. */
-function tryEqualsArg(
-  args: string[],
-  eq: string,
-  i: number
-): { stripIndices: number[]; value: string } | null {
-  if (!args[i].startsWith(eq)) return null;
-  return { stripIndices: [i], value: args[i].slice(eq.length) };
 }
 
 /** Returns args after the check spec when running a single check; strips contextInline arg when registered. */
@@ -67,16 +39,25 @@ function getPassthroughArgs(argsAfterSpec: string[], check: Check): string[] {
   return argsAfterSpec.filter((_, i) => !parsed.stripIndices.includes(i));
 }
 
+/** Resolves checks from config.checks list when present; else null. */
+function checksFromConfigList(config: ReturnType<typeof loadConfig>): Check[] | null {
+  if (!config?.checks?.length) return null;
+  const byName = new Map(registry.map((c) => [c.name, c]));
+  return config.checks.map((name) => byName.get(name)).filter((c): c is Check => c != null);
+}
+
+/** Resolves checks from registry, optionally excluding disabledChecks. */
+function registryMinusDisabled(config: ReturnType<typeof loadConfig>): Check[] {
+  const disabled = new Set(config?.disabledChecks ?? []);
+  return disabled.size ? registry.filter((c) => !disabled.has(c.name)) : [...registry];
+}
+
 /** Resolves checks from config (if present) or full registry, in order. */
 function resolveChecks(root: string): Check[] {
   const config = loadConfig(root);
-  if (config?.checks?.length) {
-    const byName = new Map(registry.map((c) => [c.name, c]));
-    return config.checks
-      .map((name) => byName.get(name as CheckName))
-      .filter((c): c is Check => c != null);
-  }
-  return [...registry];
+  const fromList = checksFromConfigList(config);
+  if (fromList != null) return fromList;
+  return registryMinusDisabled(config);
 }
 
 /** Returns value of --check=<name-or-path> from argv if present. */
@@ -240,41 +221,139 @@ function buildTable(rows: ResultRow[]): string {
 
 const CHECK_TIMEOUT_MS = 5000;
 
-/** Rejects after ms; used with Promise.race to enforce per-check timeout. */
+/** Resolves check timeout ms; tests may pass _checkTimeoutMsForTesting for fast timeout tests. */
+function getCheckTimeoutMs(context?: RunContext): number {
+  return context?._checkTimeoutMsForTesting ?? CHECK_TIMEOUT_MS;
+}
+
+/** Rejects after ms; used for in-process path-based checks that may hang async. */
 function timeoutAfter(ms: number): Promise<never> {
   return new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), ms));
 }
 
-/** Returns user-facing error message for a thrown value (timeout vs other). */
-function formatCheckRunError(err: unknown): string {
+type WorkerReply =
+  | { ms: number; result: { errors: string[]; meta?: { filesChecked?: number }; ok: boolean } }
+  | { error: string; ms: number };
+
+/** Row shape returned by runOneCheck / worker. */
+type ResultRowLike = {
+  errors: string[];
+  filesChecked: number;
+  ms: number;
+  name: string;
+  ok: boolean;
+};
+
+/** Formats thrown value for in-process check (timeout vs other). */
+function formatInProcessError(err: unknown, timeoutMs: number = CHECK_TIMEOUT_MS): string {
   if (err instanceof Error && err.message === 'timeout') {
-    return interpolate(enUS.CheckTimeout, { seconds: CHECK_TIMEOUT_MS / 1000 });
+    return interpolate(enUS.CheckTimeout, { seconds: timeoutMs / 1000 });
   }
   return err instanceof Error ? err.message : String(err);
 }
 
-/** Runs a single check; returns result data for table and errors. Times out after CHECK_TIMEOUT_MS. */
-async function runOneCheck(
+/** Runs check in main thread (read-repo-first, vitest-coverage-full, path-based, or when VITEST). */
+async function runOneCheckInProcess(
   check: Check,
   root: string,
   context?: RunContext
-): Promise<{ errors: string[]; filesChecked: number; ms: number; name: string; ok: boolean }> {
+): Promise<ResultRowLike> {
   const start = performance.now();
+  const timeoutMs = getCheckTimeoutMs(context);
+  const runPromise =
+    check.name === CheckName.ReadRepoFirst
+      ? check.run(root, context)
+      : Promise.race([
+          Promise.resolve().then(() => check.run(root, context)),
+          timeoutAfter(timeoutMs),
+        ]);
   try {
-    const result = await Promise.race([check.run(root, context), timeoutAfter(CHECK_TIMEOUT_MS)]);
+    const result = await runPromise;
     const ms = Math.round(performance.now() - start);
     const filesChecked = result.meta?.filesChecked ?? -1;
     return { errors: result.errors, filesChecked, ms, name: check.name, ok: result.ok };
-  } catch (err) {
+  } catch (err: unknown) {
     const ms = Math.round(performance.now() - start);
     return {
-      errors: [formatCheckRunError(err)],
+      errors: [formatInProcessError(err, timeoutMs)],
       filesChecked: -1,
       ms,
       name: check.name,
       ok: false,
     };
   }
+}
+
+/** Runs check in worker thread; main thread terminates worker after CHECK_TIMEOUT_MS. */
+function runOneCheckInWorker(
+  check: Check,
+  root: string,
+  context?: RunContext
+): Promise<ResultRowLike> {
+  const workerDir = dirname(fileURLToPath(import.meta.url));
+  const workerNextToRun = resolve(workerDir, 'run-one-check-worker.js');
+  const workerPath = existsSync(workerNextToRun)
+    ? workerNextToRun
+    : resolve(process.cwd(), 'dist/runner/run-one-check-worker.js');
+  const worker = new Worker(workerPath, {
+    type: 'module',
+    workerData: { checkName: check.name, context, root },
+  } as import('node:worker_threads').WorkerOptions);
+  const timeoutMs = getCheckTimeoutMs(context);
+  return new Promise((resolve) => {
+    let settled = false;
+    const timeoutMsg = interpolate(enUS.CheckTimeout, { seconds: timeoutMs / 1000 });
+    const timeoutId = setTimeout(() => {
+      /* v8 ignore start - defensive; timeout is cleared on message/error so settled is never true here */
+      if (settled) return;
+      /* v8 ignore stop */
+      settled = true;
+      worker.terminate();
+      resolve({
+        errors: [timeoutMsg],
+        filesChecked: -1,
+        ms: timeoutMs,
+        name: check.name,
+        ok: false,
+      });
+    }, timeoutMs);
+    worker.on('message', (msg: WorkerReply) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      if ('error' in msg) {
+        resolve({ errors: [msg.error], filesChecked: -1, ms: msg.ms, name: check.name, ok: false });
+      } else {
+        const filesChecked = msg.result.meta?.filesChecked ?? -1;
+        resolve({
+          errors: msg.result.errors,
+          filesChecked,
+          ms: msg.ms,
+          name: check.name,
+          ok: msg.result.ok,
+        });
+      }
+    });
+    worker.on('error', (err: Error) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutId);
+      resolve({ errors: [err.message], filesChecked: -1, ms: 0, name: check.name, ok: false });
+    });
+  });
+}
+
+/** Runs a single check; registry checks use worker + 5s terminate; checks with runInProcess, path-loaded, and tests run in-process. */
+async function runOneCheck(
+  check: Check,
+  root: string,
+  context?: RunContext
+): Promise<ResultRowLike> {
+  const runInProcess =
+    check.runInProcess === true || !registry.includes(check) || process.env.VITEST === 'true';
+  return runInProcess
+    ? runOneCheckInProcess(check, root, context)
+    : runOneCheckInWorker(check, root, context);
 }
 
 /** Builds total summary line. */
@@ -325,11 +404,15 @@ async function runChecks(checks: Check[], root: string, context?: RunContext): P
 }
 
 /** Runs fitness checks; exits with 1 on failure. */
-export async function run(argv: string[] = process.argv): Promise<void> {
+export async function run(
+  argv: string[] = process.argv,
+  testOverrides?: Partial<RunContext>
+): Promise<void> {
   const root = process.cwd();
   process.stderr.write(enUS.ResolvingChecks + '\n');
   const { checks, spec, context } = await getChecks(argv, root);
   if (!checks.length) exitUnknown(spec);
-  const failed = await runChecks(checks, root, context);
+  const mergedContext = testOverrides ? { ...context, ...testOverrides } : context;
+  const failed = await runChecks(checks, root, mergedContext);
   process.exit(failed ? 1 : 0);
 }

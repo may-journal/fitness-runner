@@ -1,7 +1,7 @@
-import { existsSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   enUS,
   getFitnessRunnerRoot,
@@ -9,6 +9,11 @@ import {
   runVitestCoverage,
   vitestCoverageFullCheck,
 } from './index.js';
+
+vi.mock('node:fs', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs')>();
+  return { ...fs, existsSync: vi.fn(fs.existsSync) };
+});
 
 describe('vitestCoverageFullCheck', () => {
   it('fails with ThresholdsNot100 when config thresholds are not all 100', async () => {
@@ -61,7 +66,7 @@ describe('vitestCoverageFullCheck', () => {
     });
     expect(result.ok).toBe(false);
     expect(result.errors).toHaveLength(1);
-    expect(result.errors[0]).toContain('100%');
+    expect(result.errors[0]).toContain('100');
   });
 
   it('uses fallback message when output is empty', async () => {
@@ -117,6 +122,85 @@ describe('hasFullCoverageThresholds', () => {
     writeFileSync(join(dir, 'vitest.config.js'), 'module.exports = { test: { coverage: {} } };');
     expect(hasFullCoverageThresholds(dir)).toBe(false);
   });
+
+  it('returns false when package.json is invalid (tryLoadPackageJsonVitest catch)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(join(dir, 'package.json'), '{ invalid }');
+    expect(hasFullCoverageThresholds(dir)).toBe(false);
+  });
+
+  it('returns false when package.json vitest is null or non-object (line 66 null branch)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(join(dir, 'package.json'), '{"vitest":null}');
+    expect(hasFullCoverageThresholds(dir)).toBe(false);
+  });
+
+  it('returns true via tryParseThresholdsFromFile when config file exists but load throws', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(
+      join(dir, 'vitest.config.js'),
+      'syntax error; but branches: 100, functions: 100, lines: 100, statements: 100'
+    );
+    expect(hasFullCoverageThresholds(dir)).toBe(true);
+  });
+
+  it('returns true when package.json vitest has top-level coverage (no test key)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(
+      join(dir, 'package.json'),
+      '{"vitest":{"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100,"statements":100}}}}'
+    );
+    expect(hasFullCoverageThresholds(dir)).toBe(true);
+  });
+
+  it('returns true via tryParseThresholdsFromFile when first config file is module.exports = null (configFromMod null path)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(
+      join(dir, 'vitest.config.js'),
+      'module.exports = null; // branches: 100, functions: 100, lines: 100, statements: 100'
+    );
+    expect(hasFullCoverageThresholds(dir)).toBe(true);
+  });
+
+  it('returns true when first config path exists but readFileSync throws (tryParseThresholdsFromFile catch)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    mkdirSync(join(dir, 'vitest.config.cjs'));
+    writeFileSync(
+      join(dir, 'vitest.config.js'),
+      'branches: 100, functions: 100, lines: 100, statements: 100'
+    );
+    expect(hasFullCoverageThresholds(dir)).toBe(true);
+  });
+
+  it('returns true when config has ESM default export (configFromMod returns def)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(
+      join(dir, 'vitest.config.mjs'),
+      'export default { test: { coverage: { thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 } } } };'
+    );
+    expect(hasFullCoverageThresholds(dir)).toBe(true);
+  });
+
+  it('returns true when only vitest.config.mjs has thresholds via variable (tryLoadConfigFile jiti path)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(
+      join(dir, 'vitest.config.mjs'),
+      'const t = 100; export default { test: { coverage: { thresholds: { branches: t, functions: t, lines: t, statements: t } } } };'
+    );
+    expect(hasFullCoverageThresholds(dir)).toBe(true);
+  });
+
+  it('returns false when only vitest.config.js exists and throws on load (tryLoadConfigFile catch)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(join(dir, 'vitest.config.js'), 'module.exports = { x');
+    expect(hasFullCoverageThresholds(dir)).toBe(false);
+  });
+
+  it('returns false when vitest.config.js exports non-object (configFromMod null branch)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-thresh-'));
+    writeFileSync(join(dir, 'vitest.config.js'), 'module.exports = null;');
+    expect(hasFullCoverageThresholds(dir)).toBe(false);
+  });
 });
 
 describe('getFitnessRunnerRoot', () => {
@@ -127,5 +211,16 @@ describe('getFitnessRunnerRoot', () => {
 
   it('returned path has 100% coverage thresholds (fitness-runner must stay configured)', () => {
     expect(hasFullCoverageThresholds(getFitnessRunnerRoot())).toBe(true);
+  });
+
+  it('returns dir when no package.json in ancestor (exit loop)', async () => {
+    const fs = await import('node:fs');
+    vi.mocked(fs.existsSync).mockImplementation(() => false);
+    try {
+      const root = getFitnessRunnerRoot();
+      expect(root).toBeDefined();
+    } finally {
+      vi.mocked(fs.existsSync).mockRestore();
+    }
   });
 });

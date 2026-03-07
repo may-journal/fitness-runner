@@ -4,7 +4,7 @@ export default defineConfig({
   esbuild: { target: 'ES2022' },
   test: {
     coverage: {
-      exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', '**/*.types.ts', '**/index.ts'],
+      exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', '**/*.types.ts'],
       include: ['src/**/*.ts'],
       provider: 'v8',
       reporter: ['text', 'lcov'],
