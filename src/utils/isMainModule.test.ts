@@ -1,3 +1,7 @@
+import { mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { isMainModule } from './isMainModule.js';
 
@@ -46,5 +50,21 @@ describe('isMainModule', () => {
     const moduleUrl = 'file:///path/to/index.js';
     process.argv = ['node', '/path'];
     expect(isMainModule(moduleUrl)).toBe(false);
+  });
+
+  it('returns true when argv[1] is symlink to module (e.g. npx fitness → .bin/fitness)', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'isMainModule-'));
+    const target = join(dir, 'index.js');
+    const link = join(dir, 'fitness');
+    writeFileSync(target, '');
+    try {
+      symlinkSync(target, link);
+    } catch {
+      it.skip();
+      return;
+    }
+    process.argv = ['node', link];
+    const moduleUrl = pathToFileURL(target).href;
+    expect(isMainModule(moduleUrl)).toBe(true);
   });
 });
