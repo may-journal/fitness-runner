@@ -9,6 +9,7 @@ const cspellConfig = require('./cspell.json');
 const rules = {
   complexity: ['error', { max: 5 }],
   'jsdoc/require-jsdoc': 'error',
+  'max-lines': ['error', { max: 200, skipBlankLines: true, skipComments: true }],
   'sort-keys': ['error', 'asc', { caseSensitive: true, natural: true }],
   'typescript-sort-keys/interface': ['error', 'asc', { caseSensitive: true, natural: true }],
   'typescript-sort-keys/string-enum': ['error', 'asc', { caseSensitive: true, natural: true }],
