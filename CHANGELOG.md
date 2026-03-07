@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.03.07.1007
+
+- Cspell: add runCspell (CLI runner), enUS dict, runCspell.test; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.
+
 ### 2026.02.22.1620
 
 - Checks: add checkResult(ok, errors?, filesChecked?) and runContext (getStagedFiles, getExecSync); migrate all checks to use them. RunContext gains `_now` for tests.

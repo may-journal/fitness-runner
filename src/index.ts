@@ -1,8 +1,7 @@
 #!/usr/bin/env node
+import { isMainModule } from './utils/isMainModule.js';
 import { run, enUS } from './runner/index.js';
 
 export { run, enUS };
 
-/* v8 ignore start */
-if (!process.env.VITEST) run();
-/* v8 ignore stop */
+if (isMainModule(import.meta.url)) run();

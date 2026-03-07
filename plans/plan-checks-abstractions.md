@@ -99,17 +99,26 @@ Abstraction: Add an optional `folder?: string` (or `displayFolder`) to the Check
 
 ## Summary table
 
-| Pattern                     | Checks involved                                        | Suggested abstraction                                  |
-| --------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
-| Result shape                | All                                                    | `checkResult(ok, errors?, filesChecked?)`              |
-| Context resolution          | cspell, eslint, prettier, changelog-updated            | `getStagedFiles`, `getExecSync`, resolved context type |
-| CLI exec/parse/buildResult  | eslint, prettier, cspell                               | `runCliCheck` or `execWithOpts` + `buildCliResult`     |
-| Staged vs default paths     | cspell, eslint, prettier                               | `getPathsToCheck(root, staged, options)`               |
-| File-by-file .md validation | markdown-no-bold-italic, rules-front-matter            | `runFileByFileCheck(root, '.md', validateFile)`        |
-| Config missing              | cspell, prettier, node-version                         | Convention + optional `whenConfigMissing`              |
-| Read JSON                   | changelog, vitest-coverage-exclude, prettier           | `readJsonFile(root, path)`                             |
-| Single-resource result      | node-version, semantic-commit, vitest-coverage-exclude | Convention or `singleResourceResult`                   |
-| Test inject exec/time       | changelog-updated, cspell                              | Document only                                          |
-| Check → folder for display  | read-repo-first                                        | Optional `Check.folder`                                |
+| Completed                                       | Pattern                     | Checks involved                                        | Suggested abstraction                                  |
+| ----------------------------------------------- | --------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| [2026.02.22.1620](../CHANGELOG.md#202602221620) | Result shape                | All                                                    | `checkResult(ok, errors?, filesChecked?)`              |
+| [2026.02.22.1620](../CHANGELOG.md#202602221620) | Context resolution          | cspell, eslint, prettier, changelog-updated            | `getStagedFiles`, `getExecSync`, resolved context type |
+|                                                 | CLI exec/parse/buildResult  | eslint, prettier, cspell                               | `runCliCheck` or `execWithOpts` + `buildCliResult`     |
+|                                                 | Staged vs default paths     | cspell, eslint, prettier                               | `getPathsToCheck(root, staged, options)`               |
+|                                                 | File-by-file .md validation | markdown-no-bold-italic, rules-front-matter            | `runFileByFileCheck(root, '.md', validateFile)`        |
+|                                                 | Config missing              | cspell, prettier, node-version                         | Convention + optional `whenConfigMissing`              |
+|                                                 | Read JSON                   | changelog, vitest-coverage-exclude, prettier           | `readJsonFile(root, path)`                             |
+|                                                 | Single-resource result      | node-version, semantic-commit, vitest-coverage-exclude | Convention or `singleResourceResult`                   |
+|                                                 | Test inject exec/time       | changelog-updated, cspell                              | Document only                                          |
+|                                                 | Check → folder for display  | read-repo-first                                        | Optional `Check.folder`                                |
 
 Implementing these in order of impact (result helper and context resolution first, then CLI/path helpers, then file-by-file and JSON) would reduce duplication while keeping each check’s behavior and testability intact.
+
+## Example: next pattern (CLI exec/parse/buildResult)
+
+Shared util (e.g. `src/utils/cliCheck.ts`) could look like:
+
+- `execWithOpts(root, command, execSyncFn)` — runs command with fixed `{ cwd: root, encoding: 'utf8', maxBuffer }`, returns `{ exitCode, output }` (on throw: parse status/stdout/stderr into exitCode and output).
+- `buildCliResult(exitCode, errors, filesChecked, fallbackMessage?)` — returns `checkResult(ok, errors.length ? errors : (fallbackMessage ? [fallbackMessage] : []), filesChecked)` so each CLI check doesn't repeat the same fallback logic.
+
+Then the eslint check would: resolve paths and exec via existing context helpers, call `execWithOpts(root, \`npx eslint ...\`, execFn)`, parse output with its existing `parseJsonResults`, and return `buildCliResult(exitCode, errors, filesChecked, ESLINT_FALLBACK_MESSAGE)`. Prettier and cspell (CLI path) would do the same with their own command builder and output parser.
