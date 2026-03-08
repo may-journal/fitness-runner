@@ -30,6 +30,18 @@ describe('markdownNoBoldItalicCheck', () => {
     expect(result.errors).toHaveLength(0);
   });
 
+  it('ignores underscores inside markdown link URL or link text', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
+    writeFileSync(
+      join(dir, 'links.md'),
+      'See [here](_dev/path/to_resource_). And _real_ emphasis.'
+    );
+    const result = await markdownNoBoldItalicCheck.run(dir);
+    expect(result.ok).toBe(false);
+    expect(result.errors.some((e) => e.includes('_dev'))).toBe(false);
+    expect(result.errors.some((e) => e.includes('_real_'))).toBe(true);
+  });
+
   it('ignores emphasis inside inline code and fenced code blocks', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
     writeFileSync(
@@ -127,5 +139,10 @@ describe('findDisallowedEmphasis', () => {
   it('does not flag unordered list items (asterisk list markers)', () => {
     const hits = findDisallowedEmphasis('* item one\n* item two\n* item three');
     expect(hits.filter((h) => h.kind === '*italic*')).toHaveLength(0);
+  });
+
+  it('does not flag underscores inside link blocks [text](url)', () => {
+    const hits = findDisallowedEmphasis('Link [_dev/path/to_resource_](path).');
+    expect(hits.some((h) => h.match.includes('_dev'))).toBe(false);
   });
 });

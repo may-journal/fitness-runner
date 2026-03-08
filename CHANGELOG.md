@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.03.07.1922
+
+- Markdown-no-bold-italic: ignore emphasis inside link blocks [text](url) so underscores in URLs or link text are not falsely flagged.
+
 ### 2026.03.07.1431
 
 - Runner: dedupe config.checks by name so each check runs once when .fitnessrc lists the same check multiple times.

@@ -11,6 +11,11 @@ function stripCodeForEmphasisCheck(content: string): string {
   return s.replace(/`[^`]*`/g, ' ');
 }
 
+/** Remove markdown links [text](url) so underscores in URLs or link text are not flagged as italic. */
+function stripLinkBlocks(content: string): string {
+  return content.replace(/\[[^\]]*\]\([^)]*\)/g, ' ');
+}
+
 /** Matches **bold** (asterisk). */
 const BOLD_ASTERISK_RE = /\*\*[^*]*\*\*/g;
 /** Matches __bold__ (underscore). */
@@ -27,9 +32,10 @@ const EMPHASIS_RULES: [RegExp, string][] = [
   [ITALIC_UNDERSCORE_RE, '_italic_'],
 ];
 
-/** Returns all disallowed markdown emphasis matches in content (bold/italic); ignores content inside code. */
+/** Returns all disallowed markdown emphasis matches in content (bold/italic); ignores content inside code and links. */
 export function findDisallowedEmphasis(content: string): { kind: string; match: string }[] {
-  const stripped = stripCodeForEmphasisCheck(content);
+  let stripped = stripCodeForEmphasisCheck(content);
+  stripped = stripLinkBlocks(stripped);
   const out: { kind: string; match: string }[] = [];
   for (const [re, kind] of EMPHASIS_RULES) {
     re.lastIndex = 0;
