@@ -9,6 +9,8 @@ export type ContextInline = { argName: string; contextKey: keyof RunContext };
 export type Check = {
   /** Optional: inject a named argv arg value into context and strip from passthrough. */
   contextInline?: ContextInline;
+  /** Optional: folder under src/checks when it differs from name (convention: folder = name). */
+  folder?: string;
   name: CheckName;
   run: (root?: string, context?: RunContext) => Promise<CheckResult>;
   /** When true, run in main thread; otherwise run in worker (when not in tests). */

@@ -10,13 +10,11 @@ import type { Check } from '../../types/index.types.js';
 const NOTE_NO_VERIFY =
   ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
 
-/** Check name → folder path when they differ (e.g. markdown-front-matter lives in rules-front-matter). */
-const CHECK_TO_FOLDER: Record<string, string> = {
-  [CheckName.MarkdownFrontMatter]: 'rules-front-matter',
-};
-
-/** Builds feedback text for CLI display (Agent/User context). */
-export function buildContextFeedback(enabledCheckNames: string[]): string {
+/** Builds feedback text for CLI display (Agent/User context). checkFolderByName overrides folder when name differs. */
+export function buildContextFeedback(
+  enabledCheckNames: string[],
+  checkFolderByName: Record<string, string> = {}
+): string {
   const question = chalk.bold(
     'Did you familiarize yourself with the decisions logged in the repo,\n' +
       'specifically all "Fitness Checks" that are enabled via fitness-runner?'
@@ -32,7 +30,7 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
       wordWrap: true,
     });
     for (const name of enabledCheckNames) {
-      const folder = CHECK_TO_FOLDER[name] ?? name;
+      const folder = checkFolderByName[name] ?? name;
       const rel = join('src', 'checks', folder, 'README.md');
       table.push([name, rel]);
     }
@@ -45,12 +43,15 @@ export function buildContextFeedback(enabledCheckNames: string[]): string {
   return boxen(content, { borderColor: 'cyan', margin: 1, padding: 1 }) + '\n';
 }
 
+/** Builds read-repo-first feedback string from run context. */
+function getFeedbackFromContext(context: Parameters<Check['run']>[1]): string {
+  return buildContextFeedback(context?.enabledCheckNames ?? [], context?.checkFolderByName ?? {});
+}
+
 export const readRepoFirstCheck: Check = {
   name: CheckName.ReadRepoFirst,
-  async run(root = process.cwd(), context) {
-    const enabled = context?.enabledCheckNames ?? [];
-    const feedback = buildContextFeedback(enabled);
-    process.stdout.write(feedback);
+  async run(_root = process.cwd(), context) {
+    process.stdout.write(getFeedbackFromContext(context));
     return checkResult(true, [], 0);
   },
   runInProcess: true,

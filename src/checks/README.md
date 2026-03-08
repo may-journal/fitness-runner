@@ -22,9 +22,12 @@ Each folder contains the check implementation (`index.ts`), tests (`*.test.ts`),
 
 ## Adding a check
 
-1. Create a new folder under `src/checks/<name>/`.
-2. Export a `Check` from `index.ts` (see existing checks for the shape).
+1. Create a new folder under `src/checks/<folder>/`. Convention: folder name equals the check name (e.g. `src/checks/my-check/` for name `my-check`).
+2. Export a `Check` from `index.ts` with `name`, `run`, and optional `folder` (set `folder` only when the folder name differs from the check name, e.g. `rules-front-matter` for `markdown-front-matter`).
 3. Add a README and tests next to the implementation.
-4. Register the check in `src/checks/index.ts` and in `.fitnessrc.ts` if you use config.
+4. Add the check name to the `CheckName` enum in `src/types/check-name.ts`.
+5. Import the check and add it to the `registry` array in `src/checks/index.ts`.
+
+The test in `src/checks/registry.test.ts` ensures the enum and registry stay in sync (every registry entry has an enum value and vice versa).
 
 Checks are a major contribution point: they are code-split by folder and easy to add or maintain independently.

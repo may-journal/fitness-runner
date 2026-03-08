@@ -98,6 +98,7 @@ function validateFile(
 
 /** Validates front matter: fitnessFunctions and relatedConfigurations paths must exist; entries may be registered check names. */
 export const rulesFrontMatterCheck: Check = {
+  folder: 'rules-front-matter',
   name: CheckName.MarkdownFrontMatter,
   async run(root = process.cwd(), context?: RunContext) {
     const registeredCheckNames = context?.registeredCheckNames ?? [];

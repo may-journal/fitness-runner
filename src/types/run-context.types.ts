@@ -11,6 +11,8 @@ export type RunContext = {
   _fitnessRunnerRootForTesting?: string;
   /** Test-only: override for current time (changelog-updated check). */
   _now?: () => Date;
+  /** Check name to folder under src/checks when they differ (runner sets from registry; serializable for worker). */
+  checkFolderByName?: Record<string, string>;
   /** Names of checks enabled for this run (from config or full registry). */
   enabledCheckNames?: string[];
   /** Args after the check name when running a single check (e.g. npx fitness prettier --write). */

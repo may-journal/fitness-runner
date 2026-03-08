@@ -58,6 +58,12 @@ describe('buildContextFeedback', () => {
     expect(feedback).toContain('src/checks/changelog/README.md');
   });
 
+  it('uses checkFolderByName when provided (name differs from folder)', () => {
+    const checkFolderByName = { 'markdown-front-matter': 'rules-front-matter' };
+    const feedback = buildContextFeedback(['markdown-front-matter'], checkFolderByName);
+    expect(feedback).toContain('src/checks/rules-front-matter');
+  });
+
   it('uses fallback width when stdout.columns missing or zero', () => {
     const orig = process.stdout.columns;
     for (const val of [undefined, 0]) {

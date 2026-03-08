@@ -122,7 +122,16 @@ function getInlineContextFragment(argsAfterSpec: string[], check: Check): RunCon
   return { [inline.contextKey]: parsed.value } as RunContext;
 }
 
-/** Builds context with registeredCheckNames, enabledCheckNames, and optional staged/inline/passthrough data. */
+/** Map of check name to folder under src/checks (only entries where folder differs from name). */
+function getCheckFolderByName(): Record<string, string> {
+  const map: Record<string, string> = {};
+  for (const c of registry) {
+    if (c.folder != null && c.folder !== c.name) map[c.name] = c.folder;
+  }
+  return map;
+}
+
+/** Builds context with registeredCheckNames, enabledCheckNames, checkFolderByName, and optional staged/inline/passthrough data. */
 function buildContext(
   staged: RunContext | undefined,
   inlineFragment: RunContext | undefined,
@@ -130,6 +139,7 @@ function buildContext(
   passthroughArgs: string[]
 ): RunContext {
   return {
+    checkFolderByName: getCheckFolderByName(),
     enabledCheckNames: enabledChecks.map((c) => c.name),
     registeredCheckNames: registry.map((c) => c.name),
     ...(staged ?? {}),
