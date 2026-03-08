@@ -8,3 +8,15 @@ export function checkResult(ok: boolean, errors?: string[], filesChecked?: numbe
     ok,
   };
 }
+
+/** Build CheckResult for exec-based checks: ok when exitCode 0 and no errors; fallback message when non-zero but no parsed errors. */
+export function buildExecCheckResult(
+  exitCode: number,
+  errors: string[],
+  filesChecked: number,
+  fallbackMessage: string
+): CheckResult {
+  const ok = exitCode === 0 && errors.length === 0;
+  const fallback = !ok && errors.length === 0 ? [fallbackMessage] : [];
+  return checkResult(ok, errors.length > 0 ? errors : fallback, filesChecked);
+}

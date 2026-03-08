@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { checkResult } from '../../utils/checkResult.js';
+import { execSyncResult } from '../../utils/execSyncResult.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -65,7 +66,7 @@ function appendDiffLine(byFile: Map<string, string>, file: string, text: string)
 
 /** Returns map of file path (repo-relative) -> added line content. */
 function getStagedDiffByFile(root: string, execFn: ExecSyncFn = execSync): Map<string, string> {
-  const out = execFn('git diff --cached', { cwd: root, encoding: 'utf8', maxBuffer: 1024 * 1024 });
+  const { output: out } = execSyncResult(root, 'git diff --cached', execFn);
   const byFile = new Map<string, string>();
   let current = '';
   for (const line of out.split('\n')) {

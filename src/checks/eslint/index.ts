@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import { checkResult } from '../../utils/checkResult.js';
+import { buildExecCheckResult } from '../../utils/checkResult.js';
+import { execSyncResult } from '../../utils/execSyncResult.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -10,8 +11,6 @@ import type { Check } from '../../types/index.types.js';
 export const ESLINT_CLI = 'npx eslint';
 export const ESLINT_CLI_FORMAT = ' --format json 2>&1';
 export const ESLINT_FALLBACK_MESSAGE = `ESLint reported issues. Run: ${ESLINT_CLI} .`;
-
-const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
 
 interface ESLintJsonResult {
   errorCount: number;
@@ -33,17 +32,7 @@ export function runEslint(
   execSyncFn: ExecSyncFn = execSync
 ): { exitCode: number; output: string } {
   const args = paths.length > 0 ? paths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(' ') : '.';
-  try {
-    const out = execSyncFn(`${ESLINT_CLI} ${args}${ESLINT_CLI_FORMAT}`, {
-      ...EXEC_OPTS,
-      cwd: root,
-    });
-    return { exitCode: 0, output: out };
-  } catch (e: unknown) {
-    const err = e as { status?: number; stderr?: string; stdout?: string };
-    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
-    return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
-  }
+  return execSyncResult(root, `${ESLINT_CLI} ${args}${ESLINT_CLI_FORMAT}`, execSyncFn);
 }
 
 /** Format one ESLint message as file:line:col - message (rule). */
@@ -97,13 +86,6 @@ function resolveInputs(
   return { execFn: getExecSync(context), paths: getPathsToLint(root, staged) };
 }
 
-/** Build CheckResult from exit code, parsed errors, and filesChecked. */
-function buildResult(exitCode: number, errors: string[], filesChecked: number) {
-  const ok = exitCode === 0 && errors.length === 0;
-  const fallback = !ok && errors.length === 0 ? [ESLINT_FALLBACK_MESSAGE] : [];
-  return checkResult(ok, errors.length > 0 ? errors : fallback, filesChecked);
-}
-
 /** ESLint check: runs eslint, reports errors from JSON formatter. */
 export const eslintCheck: Check = {
   name: CheckName.Eslint,
@@ -111,6 +93,6 @@ export const eslintCheck: Check = {
     const { paths, execFn } = resolveInputs(root, context);
     const { output, exitCode } = runEslint(root, paths, execFn);
     const { errors, filesChecked } = parseJsonResults(output);
-    return buildResult(exitCode, errors, filesChecked);
+    return buildExecCheckResult(exitCode, errors, filesChecked, ESLINT_FALLBACK_MESSAGE);
   },
 };

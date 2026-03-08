@@ -2,7 +2,8 @@ import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
-import { checkResult } from '../../utils/checkResult.js';
+import { buildExecCheckResult, checkResult } from '../../utils/checkResult.js';
+import { execSyncResult } from '../../utils/execSyncResult.js';
 import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
@@ -13,24 +14,13 @@ import { enUS } from './enUS.js';
 const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
 const FILES_CHECKED_RE = /Files checked:\s*(\d+)/;
 
-const EXEC_OPTS = { cwd: '', encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
-
 /** Runs npx cspell with cmdPart; returns exit code and combined stdout+stderr. */
 function execCspell(
   root: string,
   cmdPart: string,
   execSyncFn: ExecSyncFn
 ): { exitCode: number; output: string } {
-  try {
-    const out = execSyncFn(`npx cspell --no-progress ${cmdPart} 2>&1`, { ...EXEC_OPTS, cwd: root });
-    return { exitCode: 0, output: out };
-  } catch (e: unknown) {
-    const err = e as { status?: number; stderr?: string; stdout?: string };
-    return {
-      exitCode: typeof err.status === 'number' ? err.status : 1,
-      output: [err.stdout, err.stderr].filter(Boolean).join('\n'),
-    };
-  }
+  return execSyncResult(root, `npx cspell --no-progress ${cmdPart} 2>&1`, execSyncFn);
 }
 
 /** Run cspell; output is stdout + stderr (2>&1) so we can parse issues and filesChecked. */
@@ -81,9 +71,12 @@ function runCspellStaged(
 /** Builds CheckResult from exec output, parsed issues, and files-checked count. */
 function buildCspellResult(output: string, exitCode: number) {
   const issues = parseIssues(output);
-  const ok = exitCode === 0 && issues.length === 0;
-  const errors = issues.length ? issues : ok ? [] : [enUS.FallbackRunHint];
-  return checkResult(ok, errors, parseFilesChecked(output) ?? 0);
+  return buildExecCheckResult(
+    exitCode,
+    issues,
+    parseFilesChecked(output) ?? 0,
+    enUS.FallbackRunHint
+  );
 }
 
 /** Runs cspell via CLI: staged files if any, else all .md files. */

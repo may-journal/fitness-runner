@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import { checkResult } from '../../utils/checkResult.js';
+import { buildExecCheckResult, checkResult } from '../../utils/checkResult.js';
+import { execSyncResult } from '../../utils/execSyncResult.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -27,8 +28,6 @@ const PRETTIER_CONFIG_NAMES = [
   'prettier.config.cts',
   'prettier.config.ts',
 ];
-
-const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
 
 /** Returns true if package.json has a "prettier" field (string or object). */
 function hasPrettierInPackageJson(root: string): boolean {
@@ -61,14 +60,6 @@ function buildPrettierArgs(passthroughArgs: string[] | undefined, paths: string[
   return paths.length > 0 ? paths.map(quoteArg).join(' ') : '.';
 }
 
-/** Extract output and exitCode from exec error. */
-function parseExecError(e: unknown): { exitCode: number; output: string } {
-  const err = e as { status?: number; stderr?: string; stdout?: string };
-  const output = [err.stdout, err.stderr].filter(Boolean).join('\n');
-  const exitCode = typeof err.status === 'number' ? err.status : 1;
-  return { exitCode, output };
-}
-
 /** Build Prettier CLI command. */
 function buildPrettierCmd(args: string, usePassthrough: boolean): string {
   const mode = usePassthrough ? '' : ' --check';
@@ -85,12 +76,7 @@ export function runPrettier(
   const usePassthrough = (passthroughArgs?.length ?? 0) > 0;
   const args = buildPrettierArgs(passthroughArgs, paths);
   const cmd = buildPrettierCmd(args, usePassthrough);
-  try {
-    const output = execSyncFn(cmd, { ...EXEC_OPTS, cwd: root });
-    return { exitCode: 0, output };
-  } catch (e: unknown) {
-    return parseExecError(e);
-  }
+  return execSyncResult(root, cmd, execSyncFn);
 }
 
 /** Parse Prettier output for [warn] file paths. */
@@ -133,13 +119,6 @@ function getFilesChecked(errors: string[], paths: string[]): number {
   return paths.length === 1 && paths[0] === '.' ? 0 : paths.length;
 }
 
-/** Build CheckResult from exit code, parsed errors, and filesChecked. */
-function buildResult(exitCode: number, errors: string[], filesChecked: number) {
-  const ok = exitCode === 0 && errors.length === 0;
-  const fallback = !ok && errors.length === 0 ? [PRETTIER_FALLBACK_MESSAGE] : [];
-  return checkResult(ok, errors.length > 0 ? errors : fallback, filesChecked);
-}
-
 /** Prettier check: runs prettier --check (or passthrough args); skips when no config. */
 export const prettierCheck: Check = {
   name: CheckName.Prettier,
@@ -148,6 +127,11 @@ export const prettierCheck: Check = {
     const { paths, execFn, passthroughArgs } = resolveInputs(root, context);
     const { output, exitCode } = runPrettier(root, paths, execFn, passthroughArgs);
     const errors = parsePrettierOutput(output);
-    return buildResult(exitCode, errors, getFilesChecked(errors, paths));
+    return buildExecCheckResult(
+      exitCode,
+      errors,
+      getFilesChecked(errors, paths),
+      PRETTIER_FALLBACK_MESSAGE
+    );
   },
 };

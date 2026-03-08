@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkResult } from '../../utils/checkResult.js';
+import { execSyncResult } from '../../utils/execSyncResult.js';
 import { getExecSync } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -13,7 +14,6 @@ import { VITEST_CONFIG_NAMES } from '../vitest-coverage-exclude/index.js';
 
 const require = createRequire(import.meta.url);
 const VITEST_COVERAGE_CMD = 'npx vitest run --coverage';
-const EXEC_OPTS = { encoding: 'utf8' as const, maxBuffer: 1024 * 1024 };
 const REQUIRED_THRESHOLD = 100;
 
 type VitestConfigWithThresholds = {
@@ -141,14 +141,7 @@ export function runVitestCoverage(
   root: string,
   execSyncFn: ExecSyncFn = execSync
 ): { exitCode: number; output: string } {
-  try {
-    const out = execSyncFn(VITEST_COVERAGE_CMD, { ...EXEC_OPTS, cwd: root });
-    return { exitCode: 0, output: out };
-  } catch (e: unknown) {
-    const err = e as { status?: number; stderr?: string; stdout?: string };
-    const out = [err.stdout, err.stderr].filter(Boolean).join('\n');
-    return { exitCode: typeof err.status === 'number' ? err.status : 1, output: out };
-  }
+  return execSyncResult(root, VITEST_COVERAGE_CMD, execSyncFn);
 }
 
 export { enUS } from './enUS.js';
