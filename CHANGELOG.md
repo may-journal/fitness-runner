@@ -9,6 +9,7 @@ relatedConfigurations: ['package.json']
 
 ### 2026.03.07.1922
 
+- Prettier: use prettier-plugin-packagejson for conventional package.json field order; add package-lock.json to .prettierignore so Prettier does not touch it.
 - Refactor: single source of truth for check registration. Add optional `Check.folder` and `RunContext.checkFolderByName` (serializable for worker); runner builds map from registry. Remove `CHECK_TO_FOLDER` from read-repo-first; rules-front-matter sets `folder: 'rules-front-matter'`. Add registry.test.ts to assert `CheckName` enum and registry stay in sync; document add-a-check steps in src/checks/README.md.
 - Refactor: shared quoteForShell in src/utils/shellQuote.ts; use in eslint, prettier, cspell. Shared Vitest config loader in src/checks/vitest-config (`VITEST_CONFIG_NAMES`, loadVitestConfig, getCoverageExcludeFromConfig, getThresholdsFromConfig); vitest-coverage-exclude and vitest-coverage-full use it.
 - Refactor: shared exec helper and buildExecCheckResult for CLI checks. Add execSyncResult() and EXEC_OPTS in src/utils/execSyncResult.ts; add buildExecCheckResult() in checkResult.ts. Use in eslint, prettier, cspell, vitest-coverage-full, changelog-updated.

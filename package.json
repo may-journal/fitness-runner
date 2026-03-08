@@ -1,55 +1,45 @@
 {
-  "bin": {
-    "fitness": "dist/index.js"
-  },
-  "dependencies": {
-    "@stylistic/eslint-plugin": "^5.6.1",
-    "@types/node": "^25",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
-    "@vitest/coverage-v8": "^4.0.18",
-    "boxen": "^8.0.1",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "conventional-commit-types": "^3.0.0",
-    "cspell": "^8.15.0",
-    "cspell-lib": "^8.15.0",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^62.5.4",
-    "eslint-plugin-typescript-sort-keys": "^3.3.0",
-    "husky": "^9.0.0",
-    "jiti": "^2.6.1",
-    "prettier": "3.8.1",
-    "prettier-plugin-sort-json": "^4.2.0",
-    "tsconfig.js": "^3.0.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.6",
-    "vitest": "^4.0.18",
-    "wrap-ansi": "^9.0.2"
-  },
+  "name": "@fitness/runner",
+  "version": "0.1.0-2026.03.07.1922",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
-  "engines": {
-    "node": ">=24"
+  "keywords": [
+    "cli",
+    "lint",
+    "checks",
+    "quality",
+    "ci",
+    "pre-commit",
+    "fitness"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/may-journal/fitness-runner.git"
   },
+  "license": "MIT",
+  "type": "module",
   "exports": {
     ".": {
-      "default": "./dist/index.js",
       "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./cspell": "./cspell.json",
     "./eslint.config": {
-      "default": "./eslint.config.cjs",
-      "types": "./eslint.config.d.ts"
+      "types": "./eslint.config.d.ts",
+      "default": "./eslint.config.cjs"
     },
     "./prettier.config": {
-      "default": "./prettier.config.cjs",
-      "types": "./prettier.config.d.ts"
+      "types": "./prettier.config.d.ts",
+      "default": "./prettier.config.cjs"
     },
     "./tsconfig": "./tsconfig.json",
     "./tsconfig.cjs": "./tsconfig.cjs",
     "./vitest.config": "./vitest.config.cjs"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "fitness": "dist/index.js"
   },
   "files": [
     "dist",
@@ -62,14 +52,6 @@
     "prettier.config.cjs",
     "prettier.config.d.ts"
   ],
-  "main": "dist/index.js",
-  "name": "@fitness/runner",
-  "overrides": {
-    "eslint-plugin-typescript-sort-keys": {
-      "eslint": "$eslint"
-    }
-  },
-  "prettier": "./prettier.config.cjs",
   "scripts": {
     "build": "tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
     "ci": "(nvm use 2>/dev/null || true) && npm run fitness",
@@ -82,7 +64,45 @@
     "prepublishOnly": "npm run build",
     "test": "vitest run --coverage"
   },
-  "type": "module",
-  "types": "dist/index.d.ts",
-  "version": "0.1.0-2026.03.07.1922"
+  "prettier": "./prettier.config.cjs",
+  "overrides": {
+    "eslint-plugin-typescript-sort-keys": {
+      "eslint": "$eslint"
+    }
+  },
+  "dependencies": {
+    "@stylistic/eslint-plugin": "^5.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "conventional-commit-types": "^3.0.0",
+    "cspell": "^8.15.0",
+    "cspell-lib": "^8.15.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsdoc": "^62.5.4",
+    "eslint-plugin-typescript-sort-keys": "^3.3.0",
+    "jiti": "^2.6.1",
+    "prettier": "3.8.1",
+    "prettier-plugin-packagejson": "^3.0.2",
+    "prettier-plugin-sort-json": "^4.2.0",
+    "wrap-ansi": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "@vitest/coverage-v8": "^4.0.18",
+    "husky": "^9.0.0",
+    "tsconfig.js": "^3.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "restricted"
+  }
 }
