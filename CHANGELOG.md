@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.03.08.1107
+### 2026.03.08.1306
 
+- ESLint check: show file:line:col errors by extracting JSON array when stderr is mixed in; on parse failure append truncated ESLint output to fallback; add tryParseJsonArray to keep complexity under limit.
 - Scope package to @mayjournal/fitness; add LICENSE (MIT), GitHub Actions publish workflow (on CI success), publish:ci script, .npmrc for NPM_TOKEN; add plan-deps-vs-devdeps-check.md.
 
 ### 2026.03.07.1922

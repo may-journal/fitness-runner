@@ -9,6 +9,7 @@ import {
   ESLINT_FALLBACK_MESSAGE,
   formatMessage,
   runEslint,
+  tryParseJsonArray,
 } from './index';
 
 vi.mock('node:child_process', async (importOriginal) => {
@@ -65,6 +66,50 @@ describe('eslintCheck', () => {
     expect(lastCall).toContain('bar.ts');
   });
 
+  it('parses JSON array when output has leading stderr (extracts file/line errors)', async () => {
+    const json = JSON.stringify([
+      {
+        filePath: '/repo/src/foo.ts',
+        messages: [
+          { line: 10, column: 5, message: 'Unexpected var.', ruleId: 'no-var', severity: 2 },
+        ],
+        errorCount: 1,
+        warningCount: 0,
+      },
+    ]);
+    vi.mocked(execSync).mockImplementation(() => {
+      throw Object.assign(new Error(), {
+        stdout: `Warning: Some config message\n${json}`,
+        status: 1,
+      });
+    });
+    const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
+    const result = await eslintCheck.run(dir);
+    expect(result.ok).toBe(false);
+    expect(result.errors[0]).toBe('/repo/src/foo.ts:10:5 - Unexpected var. (no-var)');
+    expect(result.meta?.filesChecked).toBe(1);
+  });
+
+  it('returns fallback when output has ] before [ (no valid array span)', async () => {
+    vi.mocked(execSync).mockImplementation(() => {
+      throw Object.assign(new Error(), { stdout: 'a]b[c', status: 1 });
+    });
+    const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
+    const result = await eslintCheck.run(dir);
+    expect(result.ok).toBe(false);
+    expect(result.errors[0]).toBe(ESLINT_FALLBACK_MESSAGE);
+  });
+
+  it('returns fallback when output has brackets but invalid JSON between them', async () => {
+    vi.mocked(execSync).mockImplementation(() => {
+      throw Object.assign(new Error(), { stdout: 'x[} ]y', status: 1 });
+    });
+    const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
+    const result = await eslintCheck.run(dir);
+    expect(result.ok).toBe(false);
+    expect(result.errors[0]).toBe(ESLINT_FALLBACK_MESSAGE);
+  });
+
   it('returns fallback error when exit non-zero and output is not valid JSON', async () => {
     vi.mocked(execSync).mockImplementation(() => {
       throw Object.assign(new Error(), { stdout: 'No ESLint config found', status: 2 });
@@ -93,6 +138,10 @@ describe('eslintCheck', () => {
 
   it('formatMessage uses 0 for missing line/column and empty string for missing ruleId', () => {
     expect(formatMessage('/f.ts', { message: 'y', ruleId: null })).toBe('/f.ts:0:0 - y');
+  });
+
+  it('tryParseJsonArray returns null for valid JSON that is not an array', () => {
+    expect(tryParseJsonArray('{}')).toBeNull();
   });
 
   it('formats message without ruleId when ruleId is null', async () => {
