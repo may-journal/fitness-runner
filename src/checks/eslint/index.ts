@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { buildExecCheckResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
+import { quoteForShell } from '../../utils/shellQuote.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -31,7 +32,7 @@ export function runEslint(
   paths: string[],
   execSyncFn: ExecSyncFn = execSync
 ): { exitCode: number; output: string } {
-  const args = paths.length > 0 ? paths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(' ') : '.';
+  const args = paths.length > 0 ? paths.map(quoteForShell).join(' ') : '.';
   return execSyncResult(root, `${ESLINT_CLI} ${args}${ESLINT_CLI_FORMAT}`, execSyncFn);
 }
 

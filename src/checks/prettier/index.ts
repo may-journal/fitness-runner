@@ -3,6 +3,7 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { buildExecCheckResult, checkResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
+import { quoteForShell } from '../../utils/shellQuote.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -49,15 +50,10 @@ export function hasPrettierConfig(root: string): boolean {
   );
 }
 
-/** Quote a single arg for shell. */
-function quoteArg(p: string): string {
-  return `"${p.replace(/"/g, '\\"')}"`;
-}
-
 /** Build args string from passthrough or paths. */
 function buildPrettierArgs(passthroughArgs: string[] | undefined, paths: string[]): string {
-  if ((passthroughArgs?.length ?? 0) > 0) return passthroughArgs!.map(quoteArg).join(' ');
-  return paths.length > 0 ? paths.map(quoteArg).join(' ') : '.';
+  if ((passthroughArgs?.length ?? 0) > 0) return passthroughArgs!.map(quoteForShell).join(' ');
+  return paths.length > 0 ? paths.map(quoteForShell).join(' ') : '.';
 }
 
 /** Build Prettier CLI command. */

@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkResult } from '../../utils/checkResult.js';
@@ -10,64 +9,15 @@ import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 import { enUS } from './enUS.js';
-import { VITEST_CONFIG_NAMES } from '../vitest-coverage-exclude/index.js';
+import {
+  loadVitestConfig,
+  getThresholdsFromConfig,
+  type VitestConfigRaw,
+  VITEST_CONFIG_NAMES,
+} from '../vitest-config/index.js';
 
-const require = createRequire(import.meta.url);
 const VITEST_COVERAGE_CMD = 'npx vitest run --coverage';
 const REQUIRED_THRESHOLD = 100;
-
-type VitestConfigWithThresholds = {
-  coverage?: {
-    thresholds?: { branches?: number; functions?: number; lines?: number; statements?: number };
-  };
-  test?: {
-    coverage?: {
-      thresholds?: { branches?: number; functions?: number; lines?: number; statements?: number };
-    };
-  };
-};
-
-/** True if x is a non-null object. */
-function isObject(x: unknown): x is object {
-  return typeof x === 'object' && x != null;
-}
-
-/** Extract config from loaded module (default export or module). */
-function configFromMod(mod: unknown): VitestConfigWithThresholds | null {
-  if (!isObject(mod)) return null;
-  const def = (mod as { default?: unknown }).default;
-  if (isObject(def)) return def as VitestConfigWithThresholds;
-  return mod as VitestConfigWithThresholds;
-}
-
-/** Try to load a single vitest.config.* file. */
-function tryLoadConfigFile(root: string, name: string): VitestConfigWithThresholds | null {
-  const path = join(root, name);
-  if (!existsSync(path)) return null;
-  try {
-    if (name.endsWith('.cjs') || name.endsWith('.js')) {
-      return configFromMod(require(path));
-    }
-    const jiti = require('jiti')(root, { esmResolve: true });
-    return configFromMod(jiti(path));
-  } catch {
-    return null;
-  }
-}
-
-/** Try to load vitest config from package.json vitest key. */
-function tryLoadPackageJsonVitest(root: string): VitestConfigWithThresholds | null {
-  const pkgPath = join(root, 'package.json');
-  if (!existsSync(pkgPath)) return null;
-  try {
-    const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as {
-      vitest?: VitestConfigWithThresholds;
-    };
-    return pkg.vitest != null && typeof pkg.vitest === 'object' ? pkg.vitest : null;
-  } catch {
-    return null;
-  }
-}
 
 /** True if content has branches/functions/lines/statements all set to REQUIRED_THRESHOLD via regex. */
 function contentHasAllThresholds(content: string): boolean {
@@ -76,8 +26,8 @@ function contentHasAllThresholds(content: string): boolean {
 }
 
 /** Fallback: read config file and detect thresholds at 100 via regex (avoids execute when loader fails). */
-function tryParseThresholdsFromFile(root: string): VitestConfigWithThresholds | null {
-  const fullThresholds = {
+function tryParseThresholdsFromFile(root: string): VitestConfigRaw | null {
+  const fullThresholds: VitestConfigRaw = {
     test: {
       coverage: { thresholds: { branches: 100, functions: 100, lines: 100, statements: 100 } },
     },
@@ -95,33 +45,15 @@ function tryParseThresholdsFromFile(root: string): VitestConfigWithThresholds | 
   return null;
 }
 
-/** Load Vitest config from root; tries fast paths (regex, package.json) before jiti. */
-function loadVitestConfig(root: string): VitestConfigWithThresholds | null {
-  const parsed = tryParseThresholdsFromFile(root);
-  if (parsed != null) return parsed;
-  const pkg = tryLoadPackageJsonVitest(root);
-  if (pkg != null) return pkg;
-  for (const name of VITEST_CONFIG_NAMES) {
-    const config = tryLoadConfigFile(root, name);
-    if (config != null) return config;
-  }
-  return null;
-}
-
-/** Returns test.coverage or coverage from config. */
-function getCoverageBlock(config: VitestConfigWithThresholds | null) {
-  if (!config) return undefined;
-  return config.test?.coverage ?? config.coverage;
-}
-
-/** Get coverage thresholds from config. */
-function getThresholds(config: VitestConfigWithThresholds | null) {
-  return getCoverageBlock(config)?.thresholds;
+/** Load Vitest config from root; tries regex fast path then shared loader. */
+function loadVitestConfigWithThresholds(root: string): VitestConfigRaw | null {
+  return tryParseThresholdsFromFile(root) ?? loadVitestConfig(root);
 }
 
 /** Returns true if Vitest config has coverage thresholds all set to 100. */
 export function hasFullCoverageThresholds(root: string): boolean {
-  const t = getThresholds(loadVitestConfig(root));
+  const config = loadVitestConfigWithThresholds(root);
+  const t = getThresholdsFromConfig(config);
   const vals = [t?.branches, t?.functions, t?.lines, t?.statements];
   return vals.every((v) => v === REQUIRED_THRESHOLD);
 }

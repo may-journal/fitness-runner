@@ -9,6 +9,7 @@ relatedConfigurations: ['package.json']
 
 ### 2026.03.07.1922
 
+- Refactor: shared quoteForShell in src/utils/shellQuote.ts; use in eslint, prettier, cspell. Shared Vitest config loader in src/checks/vitest-config (`VITEST_CONFIG_NAMES`, loadVitestConfig, getCoverageExcludeFromConfig, getThresholdsFromConfig); vitest-coverage-exclude and vitest-coverage-full use it.
 - Refactor: shared exec helper and buildExecCheckResult for CLI checks. Add execSyncResult() and EXEC_OPTS in src/utils/execSyncResult.ts; add buildExecCheckResult() in checkResult.ts. Use in eslint, prettier, cspell, vitest-coverage-full, changelog-updated.
 - Markdown-no-bold-italic: ignore emphasis inside link blocks [text](url) so underscores in URLs or link text are not falsely flagged.
 

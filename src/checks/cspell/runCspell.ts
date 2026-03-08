@@ -5,6 +5,7 @@ import { readConfigFile, spellCheckFile } from 'cspell-lib';
 import { buildExecCheckResult, checkResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
 import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
+import { quoteForShell } from '../../utils/shellQuote.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -30,7 +31,7 @@ export function runCspell(
   execSyncFn: ExecSyncFn = execSync
 ): { exitCode: number; output: string } {
   if (paths.length === 0) return { exitCode: 0, output: '' };
-  const list = paths.map((p) => `"${p.replace(/"/g, '\\"')}"`).join(' ');
+  const list = paths.map(quoteForShell).join(' ');
   return execCspell(root, list, execSyncFn);
 }
 
@@ -55,7 +56,7 @@ function runCspellGlob(
   glob: string,
   execSyncFn: ExecSyncFn
 ): { exitCode: number; output: string } {
-  return execCspell(root, `"${glob.replace(/"/g, '\\"')}"`, execSyncFn);
+  return execCspell(root, quoteForShell(glob), execSyncFn);
 }
 
 /** Runs cspell on staged files that exist under root. */
