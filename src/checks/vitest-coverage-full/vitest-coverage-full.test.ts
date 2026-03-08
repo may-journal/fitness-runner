@@ -27,7 +27,7 @@ describe('vitestCoverageFullCheck', () => {
     expect(result.errors[0]).toBe(enUS.ThresholdsNot100);
   });
 
-  it('fails with FitnessRunnerThresholdsNot100 when fitness-runner root has thresholds not 100', async () => {
+  it('fails with FitnessRunnerThresholdsNot100 when @mayjournal/fitness root has thresholds not 100', async () => {
     const consumerDir = mkdtempSync(join(tmpdir(), 'vitest-consumer-'));
     writeFileSync(
       join(consumerDir, 'vitest.config.js'),
@@ -209,7 +209,7 @@ describe('getFitnessRunnerRoot', () => {
     expect(existsSync(join(root, 'package.json'))).toBe(true);
   });
 
-  it('returned path has 100% coverage thresholds (fitness-runner must stay configured)', () => {
+  it('returned path has 100% coverage thresholds (@mayjournal/fitness must stay configured)', () => {
     expect(hasFullCoverageThresholds(getFitnessRunnerRoot())).toBe(true);
   });
 

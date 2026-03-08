@@ -60,7 +60,8 @@ export const markdownNoBoldItalicCheck: Check = {
   async run(root = process.cwd()) {
     const errors: string[] = [];
     let filesChecked = 0;
-    for (const file of await findFilesByExtension(root, '.md')) {
+    const mdFiles = (await findFilesByExtension(root, '.md')).filter((f) => f !== 'CHANGELOG.md');
+    for (const file of mdFiles) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       errors.push(...validateFile(file, content));

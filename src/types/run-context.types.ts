@@ -7,7 +7,7 @@ export type RunContext = {
     command: string,
     options: { cwd: string; encoding: 'utf8'; maxBuffer: number }
   ) => string;
-  /** Test-only: override for fitness-runner package root (vitest-coverage-full check). */
+  /** Test-only: override for @mayjournal/fitness package root (vitest-coverage-full check). */
   _fitnessRunnerRootForTesting?: string;
   /** Test-only: override for current time (changelog-updated check). */
   _now?: () => Date;

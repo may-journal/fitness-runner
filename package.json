@@ -1,6 +1,6 @@
 {
-  "name": "@fitness/runner",
-  "version": "0.1.0-2026.03.07.1922",
+  "name": "@mayjournal/fitness",
+  "version": "0.1.0-2026.03.08.1107",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -13,7 +13,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/may-journal/fitness-runner.git"
+    "url": "git+https://github.com/may-journal/fitness-runner.git"
   },
   "license": "MIT",
   "type": "module",
@@ -62,6 +62,7 @@
     "precommit": "npm run fitness",
     "prepare": "husky",
     "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
     "test": "vitest run --coverage"
   },
   "prettier": "./prettier.config.cjs",
@@ -103,6 +104,7 @@
     "node": ">=24"
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "restricted",
+    "tag": "next"
   }
 }

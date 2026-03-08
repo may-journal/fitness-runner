@@ -22,15 +22,21 @@ export { SEMANTIC_TYPES };
 
 export const MSG_EMPTY = 'No commit message to validate; use type(scope): description';
 
+/** Returns the first line of a string (subject line for commit message). */
+function firstLine(s: string): string {
+  return s.split('\n')[0] ?? '';
+}
+
 /** Resolves commit subject from context or git log. */
 function getCommitSubject(
   root: string,
   context: { proposedCommitMessage?: string } | undefined
 ): string {
-  if (context?.proposedCommitMessage !== undefined) return context.proposedCommitMessage;
+  const proposed = context?.proposedCommitMessage;
+  if (proposed !== undefined) return firstLine(proposed);
   try {
     const msg = execSync('git log -1 --pretty=%B', { cwd: root, encoding: 'utf8' });
-    return msg.split('\n')[0] ?? '';
+    return firstLine(msg);
   } catch {
     return '';
   }

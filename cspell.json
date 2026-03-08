@@ -13,7 +13,10 @@
   "useGitignore": true,
   "version": "0.2",
   "words": [
+    "devdeps",
     "dotenv",
+    "mayjournal",
+    "npmjs",
     "unstub",
     "eslintcache",
     "fitnessrc",
@@ -27,6 +30,7 @@
     "pids",
     "precommit",
     "semantic-commit",
+    "subpaths",
     "subshell",
     "vitest",
     "tsx"

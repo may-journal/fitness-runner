@@ -78,4 +78,12 @@ describe('semanticCheck', () => {
     expect(result.ok).toBe(false);
     expect(result.errors).toContain(MSG_EMPTY);
   });
+
+  it('validates only first line of proposedCommitMessage (e.g. commit-msg with trailer)', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'semantic-'));
+    const result = await semanticCheck.run(dir, {
+      proposedCommitMessage: 'chore(scope): description\n\nMade-with: Cursor',
+    });
+    expect(result.ok).toBe(true);
+  });
 });

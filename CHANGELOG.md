@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.03.08.1107
+
+- Scope package to @mayjournal/fitness; add LICENSE (MIT), GitHub Actions publish workflow (on CI success), publish:ci script, .npmrc for NPM_TOKEN; add plan-deps-vs-devdeps-check.md.
+
 ### 2026.03.07.1922
 
 - Prettier: use prettier-plugin-packagejson for conventional package.json field order; add package-lock.json to .prettierignore so Prettier does not touch it.
@@ -31,7 +35,7 @@ relatedConfigurations: ['package.json']
 - Runner: add 5s per-check timeout; timed-out checks fail with "Check timed out after 5s" and runner continues.
 - Runner: add progress messages to stderr (Resolving checks…, Running checks:, and → name before each check) so users can see where the run is or where it hangs.
 - Utils: fix isMainModule when run via npx (resolve argv[1] and import.meta.url to real paths so symlinked .bin/fitness is detected as main). Add symlink test; add JSDoc and reduce complexity for lint.
-- Checks: add vitest-coverage-full (runs vitest run --coverage; requires 100% thresholds in consumer and fitness-runner package). Vitest-coverage-exclude: allow barrel index.ts exclude pattern. Add vitest.config.mjs (ESM). Cspell: add runCspell (CLI runner), enUS dict, runCspell.test, word unstub; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.
+- Checks: add vitest-coverage-full (runs vitest run --coverage; requires 100% thresholds in consumer and @mayjournal/fitness package). Vitest-coverage-exclude: allow barrel index.ts exclude pattern. Add vitest.config.mjs (ESM). Cspell: add runCspell (CLI runner), enUS dict, runCspell.test, word unstub; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.
 
 ### 2026.02.22.1620
 
@@ -100,7 +104,7 @@ relatedConfigurations: ['package.json']
 ### 2026.02.16.1700
 
 - Package: move eslint, prettier, vitest, and related config plugins from devDependencies to dependencies so consumers can use exported configs; keep @types/node, tsconfig.js, tsx, typescript as devDependencies.
-- Prettier check: detect config via package.json "prettier" field so consumers using `"prettier": "@fitness/runner/prettier.config"` are checked.
+- Prettier check: detect config via package.json "prettier" field so consumers using `"prettier": "@mayjournal/fitness/prettier.config"` are checked.
 
 ### 2026.02.16.1600
 

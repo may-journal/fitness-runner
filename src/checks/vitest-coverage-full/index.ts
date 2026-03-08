@@ -58,7 +58,7 @@ export function hasFullCoverageThresholds(root: string): boolean {
   return vals.every((v) => v === REQUIRED_THRESHOLD);
 }
 
-/** Resolves the fitness-runner package root (directory containing package.json for this package). */
+/** Resolves the @mayjournal/fitness package root (directory containing package.json for this package). */
 export function getFitnessRunnerRoot(): string {
   let dir = dirname(fileURLToPath(import.meta.url));
   while (dir !== dirname(dir)) {
@@ -78,7 +78,7 @@ export function runVitestCoverage(
 
 export { enUS } from './enUS.js';
 
-/** Returns a failed CheckResult if root or fitness-runner thresholds are not 100; else null. */
+/** Returns a failed CheckResult if root or @mayjournal/fitness thresholds are not 100; else null. */
 function thresholdCheckResult(
   root: string,
   context: Parameters<Check['run']>[1]
@@ -97,7 +97,7 @@ function coverageFailureResult(output: string): ReturnType<typeof checkResult> {
   return checkResult(false, [msg], 1);
 }
 
-/** Ensures both consumer and fitness-runner have 100% thresholds and vitest run --coverage passes in root. */
+/** Ensures both consumer and @mayjournal/fitness have 100% thresholds and vitest run --coverage passes in root. */
 export const vitestCoverageFullCheck: Check = {
   name: CheckName.VitestCoverageFull,
   async run(root = process.cwd(), context) {

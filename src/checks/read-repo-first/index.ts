@@ -17,7 +17,7 @@ export function buildContextFeedback(
 ): string {
   const question = chalk.bold(
     'Did you familiarize yourself with the decisions logged in the repo,\n' +
-      'specifically all "Fitness Checks" that are enabled via fitness-runner?'
+      'specifically all "Fitness Checks" that are enabled via @mayjournal/fitness?'
   );
   const lines: string[] = [question];
   if (enabledCheckNames.length > 0) {

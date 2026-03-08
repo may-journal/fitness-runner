@@ -4,7 +4,7 @@ fitnessFunctions: ['read-repo-first']
 
 # read-repo-first
 
-Displays feedback to the CLI reminding agents/users to familiarize themselves with decisions logged in the repo and all Fitness Checks enabled via fitness-runner.
+Displays feedback to the CLI reminding agents/users to familiarize themselves with decisions logged in the repo and all Fitness Checks enabled via @mayjournal/fitness.
 
 ## Behavior
 

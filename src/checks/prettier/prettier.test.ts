@@ -92,7 +92,7 @@ describe('prettierCheck', () => {
 
   it('hasPrettierConfig returns true when package.json has "prettier" field', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
-    writeFileSync(join(dir, 'package.json'), '{"prettier":"@fitness/runner/prettier.config"}');
+    writeFileSync(join(dir, 'package.json'), '{"prettier":"@mayjournal/fitness/prettier.config"}');
     expect(hasPrettierConfig(dir)).toBe(true);
     vi.mocked(execSync).mockReturnValue('All matched files use Prettier code style!');
     const result = await prettierCheck.run(dir);

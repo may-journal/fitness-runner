@@ -3,14 +3,14 @@
 relatedConfigurations: ['package.json']
 ---
 
-# @fitness/runner
+# @mayjournal/fitness
 
 Node fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
 
 ## Install
 
 ```bash
-npm install @fitness/runner
+npm install @mayjournal/fitness
 ```
 
 ## Usage
@@ -54,13 +54,13 @@ See [src/checks/README.md](src/checks/README.md) for the list and how checks wor
 
 Consumers can extend these configs via package exports:
 
-- `@fitness/runner/eslint.config` – ESLint flat config
-- `@fitness/runner/vitest.config` – Vitest
-- `@fitness/runner/tsconfig` – TypeScript
-- `@fitness/runner/cspell` – cspell.json
-- `@fitness/runner/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
+- `@mayjournal/fitness/eslint.config` – ESLint flat config
+- `@mayjournal/fitness/vitest.config` – Vitest
+- `@mayjournal/fitness/tsconfig` – TypeScript
+- `@mayjournal/fitness/cspell` – cspell.json
+- `@mayjournal/fitness/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
 
-Example: add `"prettier": "@fitness/runner/prettier.config"` to your package.json to use the shared Prettier config.
+Example: add `"prettier": "@mayjournal/fitness/prettier.config"` to your package.json to use the shared Prettier config.
 
 ## Config
 
@@ -87,6 +87,67 @@ npm run fitness
 npm run format
 npm run lint
 npm test
+```
+
+## How it works
+
+At a high level, the runner decides which checks to run and in what order, builds shared context (e.g. staged files, config), then runs each check. Checks are independent modules that receive `(root, context)` and return pass/fail and optional errors.
+
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': {
+  'primaryColor':'#6366f1',
+  'primaryTextColor':'#fff',
+  'primaryBorderColor':'#4f46e5',
+  'secondaryColor':'#06b6d4',
+  'secondaryTextColor':'#fff',
+  'secondaryBorderColor':'#0891b2',
+  'tertiaryColor':'#10b981',
+  'tertiaryTextColor':'#fff',
+  'tertiaryBorderColor':'#059669',
+  'lineColor':'#64748b',
+  'background':'#f8fafc',
+  'mainBkg':'#e0e7ff',
+  'clusterBkg':'#f1f5f9',
+  'clusterBorder':'#94a3b8',
+  'titleColor':'#334155',
+  'textColor':'#1e293b',
+  'labelColor':'#1e293b',
+  'edgeLabelBackground':'#f8fafc',
+  'nodeTextColor':'#1e293b',
+  'fontFamily':'system-ui, sans-serif'
+}}}%%
+flowchart LR
+  subgraph Runner["Runner"]
+    R1["CLI / config"]
+    R2["Resolve checks"]
+    R3["Build context"]
+    R4["Run loop"]
+    R1 --> R2 --> R3 --> R4
+  end
+
+  subgraph Checks["Checks"]
+    C["Registry: each check.run(root, context)"]
+  end
+
+  R4 -->|"invoke"| C
+  C -->|"pass/fail + errors"| R4
+  R4 --> Out["Table + exit code"]
+
+  subgraph Legend["Legend"]
+    L_cli["Entry point"]
+    L_resolve["Resolve & context"]
+    L_execute["Execution"]
+  end
+
+  classDef cli fill:#6366f1,stroke:#4f46e5,color:#fff
+  classDef resolve fill:#06b6d4,stroke:#0891b2,color:#fff
+  classDef execute fill:#10b981,stroke:#059669,color:#fff
+  class R1 cli
+  class R2,R3 resolve
+  class R4,C,Out execute
+  class L_cli cli
+  class L_resolve resolve
+  class L_execute execute
 ```
 
 ## Code flow and check process
@@ -118,37 +179,46 @@ flowchart TD
   subgraph CLI["CLI entry"]
     A["npx fitness (argv)"]
     A --> B["run(argv)"]
+    B --> GetChecks["getChecks(argv, root)"]
   end
 
-  B --> F["resolveCheckSpec(argv)"]
+  GetChecks --> F["resolveCheckSpec(argv)"]
   F --> G{"spec defined?"}
   G -->|no| H["resolveChecks(root)"]
-  H --> I{".fitnessrc.ts / .fitnessrc.js exists?"}
-  I -->|yes| J["config.checks → ordered Check[]"]
-  I -->|no| K["Full registry (all checks)"]
-  G -->|yes| L["resolveChecksBySpec(spec, root) → one check by name or path"]
+  H --> I{"loadConfig: .fitnessrc.ts / .fitnessrc.js?"}
+  I -->|yes, config.checks| J["checksFromConfigList → ordered Check[]"]
+  I -->|no or no list| K["registryMinusDisabled(config)"]
+  G -->|yes| L["resolveChecksBySpec: registry by name or loadCheckFromPath"]
   J --> M["checks"]
   K --> M
   L --> M
-  B --> E["getStagedContext()<br/><small>git diff --cached → stagedFiles</small>"]
-  E --> N["buildContext(staged, inlineFragment, checks, passthrough)"]
-  M --> PassthroughArgs["When single check: inlineFragment + passthrough from check.contextInline"]
-  PassthroughArgs --> N
+  GetChecks --> E["getStagedContext()<br/><small>git diff --cached → stagedFiles</small>"]
+  M --> PassthroughArgs["Single check: getInlineContextFragment + getPassthroughArgs"]
+  PassthroughArgs --> N["buildContext(staged, inlineFragment, checks, passthroughArgs)"]
+  E --> N
   M --> N
   N --> O["runChecks(checks, root, context)"]
   M --> O
 
   subgraph Execute["Execute checks"]
-    O --> P["For each check in order"]
-    P --> Q["runOneCheck: check.run(root, context)"]
+    O --> P["collectResults: for each check in order"]
+    P --> Q["runOneCheck (worker or in-process)<br/>check.run(root, context)"]
     Q --> R{"result.ok?"}
-    R -->|yes| S["Log meta, continue"]
-    R -->|no| T["Set failed, collect errors for table"]
+    R -->|yes| S["Push result, continue"]
+    R -->|no| T["Push result, count failure"]
     S --> P
     T --> P
   end
 
-  Execute --> U["process.exit(failed ? 1 : 0)"]
+  Execute --> V["buildTable(results), buildTotalLine(counts)"]
+  V --> U["process.exit(failed ? 1 : 0)"]
+
+  subgraph Legend["Legend"]
+    L_cli["Entry point"]
+    L_resolve["Resolve & context"]
+    L_execute["Execution"]
+    L_decision{"Branch?"}
+  end
 
   linkStyle 3,5,6,7,21,22 stroke:#64748b,color:#1e293b
   classDef cli fill:#6366f1,stroke:#4f46e5,color:#fff
@@ -156,7 +226,11 @@ flowchart TD
   classDef execute fill:#10b981,stroke:#059669,color:#fff
   classDef decision fill:#f1f5f9,stroke:#64748b,color:#334155
   class A,B cli
-  class PassthroughArgs,E,F,G,H,I,J,K,L,M,N resolve
-  class O,P,Q,R,S,T,U execute
+  class GetChecks,PassthroughArgs,E,F,G,H,I,J,K,L,M,N resolve
+  class O,P,Q,R,S,T,V,U execute
   class G,I decision
+  class L_cli cli
+  class L_resolve resolve
+  class L_execute execute
+  class L_decision decision
 ```
