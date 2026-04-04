@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.04.04.1748
+
+- Export `./vitest.config` as `vitest.config.mjs` and add `vitest.config.d.ts` for TypeScript consumers.
+- Resolve Prettier plugin paths with `createRequire` so consumers loading `@mayjournal/fitness/prettier.config` resolve plugins from this package.
+
 ### 2026.04.04.1712
 
 - ESLint check: run via Node API with this package's eslint.config.cjs and parent project cwd so consumers need not install ESLint; add getFitnessRunnerRoot util; eslint runInProcess; RunContext \_eslintRunForTesting for tests; runner and vitest-coverage-full use shared root helper.

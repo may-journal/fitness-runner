@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.04.04.1712",
+  "version": "0.1.0-2026.04.04.1748",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -34,7 +34,10 @@
     },
     "./tsconfig": "./tsconfig.json",
     "./tsconfig.cjs": "./tsconfig.cjs",
-    "./vitest.config": "./vitest.config.cjs"
+    "./vitest.config": {
+      "types": "./vitest.config.d.ts",
+      "default": "./vitest.config.mjs"
+    }
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -45,7 +48,8 @@
     "dist",
     "eslint.config.cjs",
     "eslint.config.d.ts",
-    "vitest.config.cjs",
+    "vitest.config.d.ts",
+    "vitest.config.mjs",
     "tsconfig.json",
     "tsconfig.cjs",
     "cspell.json",
