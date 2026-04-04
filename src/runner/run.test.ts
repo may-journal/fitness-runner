@@ -109,12 +109,11 @@ describe('run', () => {
     runDir(dir);
     const origCwd = process.cwd();
     process.chdir(dir);
-    execSyncMock
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(pkg): init\n\n')
-      .mockImplementation(() => '');
-    await run(['node', 'fitness']);
+    execSyncMock.mockImplementation((cmd: string) =>
+      typeof cmd === 'string' && cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
+    );
+    const eslintMock = async () => ({ errors: [], exitCode: 0, filesChecked: 0 });
+    await run(['node', 'fitness'], { _eslintRunForTesting: eslintMock });
     process.chdir(origCwd);
     expect(process.exit).toHaveBeenCalledWith(0);
   });
@@ -191,13 +190,12 @@ describe('run', () => {
     });
     const origCwd = process.cwd();
     process.chdir(dir);
-    execSyncMock
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(pkg): init\n\n')
-      .mockImplementation(() => '');
+    execSyncMock.mockImplementation((cmd: string) =>
+      typeof cmd === 'string' && cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
+    );
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await run(['node', 'fitness']);
+    const eslintMock = async () => ({ errors: [], exitCode: 0, filesChecked: 0 });
+    await run(['node', 'fitness'], { _eslintRunForTesting: eslintMock });
     process.chdir(origCwd);
     const output = logSpy.mock.calls.map((c) => c[0]).join('\n');
     expect(output).not.toMatch(/cspell/);
@@ -542,13 +540,12 @@ describe('run', () => {
     runDir(dir, { '.fitnessrc.ts': 'export default { disabledChecks: [] };' });
     const origCwd = process.cwd();
     process.chdir(dir);
-    execSyncMock
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => '')
-      .mockImplementationOnce(() => 'feat(pkg): init\n\n')
-      .mockImplementation(() => '');
+    execSyncMock.mockImplementation((cmd: string) =>
+      typeof cmd === 'string' && cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
+    );
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await run(['node', 'fitness']);
+    const eslintMock = async () => ({ errors: [], exitCode: 0, filesChecked: 0 });
+    await run(['node', 'fitness'], { _eslintRunForTesting: eslintMock });
     process.chdir(origCwd);
     const out = logSpy.mock.calls.map((c) => c[0]).join('\n');
     expect(out).toMatch(/changelog/);

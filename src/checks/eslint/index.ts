@@ -1,39 +1,53 @@
+import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
-import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { buildExecCheckResult } from '../../utils/checkResult.js';
-import { execSyncResult } from '../../utils/execSyncResult.js';
-import { quoteForShell } from '../../utils/shellQuote.js';
-import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
-import type { ExecSyncFn } from '../../utils/runContext.js';
+import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
+import { getStagedFiles } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
 
+const require = createRequire(import.meta.url);
+
 export const ESLINT_CLI = 'npx eslint';
-export const ESLINT_CLI_FORMAT = ' --format json 2>&1';
 export const ESLINT_FALLBACK_MESSAGE = `ESLint reported issues. Run: ${ESLINT_CLI} .`;
 
 interface ESLintJsonResult {
   errorCount: number;
   filePath: string;
   messages: Array<{
-    column: number;
-    line: number;
+    column?: number;
+    line?: number;
     message: string;
     ruleId: string | null;
-    severity: number;
+    severity?: number;
   }>;
   warningCount: number;
 }
 
-/** Run ESLint; returns stdout and exit code. */
-export function runEslint(
+/** Run ESLint via Node API using this package's config; cwd is root (parent project). */
+export async function runEslintViaAPI(
   root: string,
   paths: string[],
-  execSyncFn: ExecSyncFn = execSync
-): { exitCode: number; output: string } {
-  const args = paths.length > 0 ? paths.map(quoteForShell).join(' ') : '.';
-  return execSyncResult(root, `${ESLINT_CLI} ${args}${ESLINT_CLI_FORMAT}`, execSyncFn);
+  fitnessRunnerRoot?: string
+): Promise<{ errors: string[]; exitCode: number; filesChecked: number }> {
+  const frRoot = fitnessRunnerRoot ?? getFitnessRunnerRoot();
+  const configPath = join(frRoot, 'eslint.config.cjs');
+  const { ESLint } = require('eslint') as {
+    ESLint: new (opts: Record<string, unknown>) => {
+      lintFiles: (p: string[]) => Promise<ESLintJsonResult[]>;
+    };
+  };
+  const eslint = new ESLint({
+    cwd: root,
+    errorOnUnmatchedPattern: false,
+    overrideConfigFile: configPath,
+  });
+  const patterns = paths.length > 0 ? paths : ['.'];
+  const results = await eslint.lintFiles(patterns);
+  const errors = results.flatMap((r) => r.messages.map((msg) => formatMessage(r.filePath, msg)));
+  const exitCode = results.some((r) => r.errorCount > 0) ? 1 : 0;
+  return { errors, exitCode, filesChecked: results.length };
 }
 
 /** Format one ESLint message as file:line:col - message (rule). */
@@ -57,31 +71,6 @@ export function tryParseJsonArray(str: string): ESLintJsonResult[] | null {
   }
 }
 
-/** Try to parse a JSON array from output; tolerates leading/trailing text (e.g. stderr). */
-function extractJsonArray(output: string): ESLintJsonResult[] | null {
-  const start = output.indexOf('[');
-  if (start === -1) return null;
-  const end = output.lastIndexOf(']');
-  if (end < start) return null;
-  return tryParseJsonArray(output.slice(start, end + 1));
-}
-
-/** Parse ESLint JSON output into error lines (file:line:col - message (rule)). */
-function parseJsonResults(output: string): { errors: string[]; filesChecked: number } {
-  let data: ESLintJsonResult[] | null = null;
-  try {
-    const parsed = JSON.parse(output) as unknown;
-    data = Array.isArray(parsed) ? parsed : null;
-  } catch {
-    data = extractJsonArray(output);
-  }
-  if (!data) return { errors: [], filesChecked: 0 };
-  const errors = data.flatMap((file) =>
-    file.messages.map((msg) => formatMessage(file.filePath, msg))
-  );
-  return { errors, filesChecked: data.length };
-}
-
 const LINTABLE_EXT = /\.(cjs|js|mjs|tsx?)$/;
 const IGNORED_BY_ESLINT = /\.(test|spec)\.(ts|tsx)$/;
 
@@ -99,32 +88,48 @@ function getPathsToLint(root: string, staged: string[]): string[] {
   return paths.length > 0 ? paths : ['.'];
 }
 
-/** Resolve paths and exec fn from root and context. */
-function resolveInputs(
-  root: string,
-  context: Parameters<Check['run']>[1]
-): { execFn: ExecSyncFn; paths: string[] } {
+/** Resolve paths to lint from root and context. */
+function resolvePaths(root: string, context: Parameters<Check['run']>[1]): string[] {
   const staged = getStagedFiles(context);
-  return { execFn: getExecSync(context), paths: getPathsToLint(root, staged) };
+  return getPathsToLint(root, staged);
 }
 
-const FALLBACK_OUTPUT_MAX_LINES = 15;
+/** Build failed result from thrown value (Error or other). */
+function eslintRunCatchResult(err: unknown): {
+  errors: string[];
+  exitCode: number;
+  filesChecked: number;
+} {
+  const snippet = err instanceof Error ? err.message : String(err);
+  return {
+    errors: [ESLINT_FALLBACK_MESSAGE, `Output: ${snippet}`],
+    exitCode: 1,
+    filesChecked: 0,
+  };
+}
 
-/** ESLint check: runs eslint, reports errors from JSON formatter. */
+/** Runs test-injected or default ESLint; on throw returns fallback result. */
+async function runEslintWithFallback(
+  root: string,
+  paths: string[],
+  context: Parameters<Check['run']>[1]
+): Promise<{ errors: string[]; exitCode: number; filesChecked: number }> {
+  const fitnessRunnerRoot = context?._fitnessRunnerRootForTesting;
+  const run = context?._eslintRunForTesting ?? runEslintViaAPI;
+  try {
+    return await run(root, paths, fitnessRunnerRoot);
+  } catch (err) {
+    return eslintRunCatchResult(err);
+  }
+}
+
+/** ESLint check: runs this package's ESLint config against root (parent project) via Node API. */
 export const eslintCheck: Check = {
   name: CheckName.Eslint,
   async run(root = process.cwd(), context) {
-    const { paths, execFn } = resolveInputs(root, context);
-    const { output, exitCode } = runEslint(root, paths, execFn);
-    const { errors, filesChecked } = parseJsonResults(output);
-    const useFallback = errors.length === 0 && exitCode !== 0 && output.trim().length > 0;
-    const fallbackErrors = useFallback
-      ? (() => {
-          const lines = output.trim().split(/\r?\n/).slice(0, FALLBACK_OUTPUT_MAX_LINES);
-          const snippet = lines.length > 1 ? `Output:\n${lines.join('\n')}` : `Output: ${lines[0]}`;
-          return [ESLINT_FALLBACK_MESSAGE, snippet];
-        })()
-      : errors;
-    return buildExecCheckResult(exitCode, fallbackErrors, filesChecked, ESLINT_FALLBACK_MESSAGE);
+    const paths = resolvePaths(root, context);
+    const { errors, exitCode, filesChecked } = await runEslintWithFallback(root, paths, context);
+    return buildExecCheckResult(exitCode, errors, filesChecked, ESLINT_FALLBACK_MESSAGE);
   },
+  runInProcess: true,
 };

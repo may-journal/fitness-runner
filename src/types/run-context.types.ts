@@ -2,6 +2,12 @@
 export type RunContext = {
   /** Test-only: override check timeout ms so timeout tests don't wait 5s. */
   _checkTimeoutMsForTesting?: number;
+  /** Test-only: override for ESLint run (eslint check). */
+  _eslintRunForTesting?: (
+    root: string,
+    paths: string[],
+    fitnessRunnerRoot?: string
+  ) => Promise<{ errors: string[]; exitCode: number; filesChecked: number }>;
   /** Test-only: override for child_process.execSync (cspell check). */
   _execSync?: (
     command: string,

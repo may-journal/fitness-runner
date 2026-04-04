@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.03.08.1306
+### 2026.04.04.1712
 
+- ESLint check: run via Node API with this package's eslint.config.cjs and parent project cwd so consumers need not install ESLint; add getFitnessRunnerRoot util; eslint runInProcess; RunContext \_eslintRunForTesting for tests; runner and vitest-coverage-full use shared root helper.
 - ESLint check: show file:line:col errors by extracting JSON array when stderr is mixed in; on parse failure append truncated ESLint output to fallback; add tryParseJsonArray to keep complexity under limit.
 - Scope package to @mayjournal/fitness; add LICENSE (MIT), GitHub Actions publish workflow (on CI success), publish:ci script, .npmrc for NPM_TOKEN; add plan-deps-vs-devdeps-check.md.
 

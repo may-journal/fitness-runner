@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { checkResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
+import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
 import { getExecSync } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -56,16 +56,6 @@ export function hasFullCoverageThresholds(root: string): boolean {
   const t = getThresholdsFromConfig(config);
   const vals = [t?.branches, t?.functions, t?.lines, t?.statements];
   return vals.every((v) => v === REQUIRED_THRESHOLD);
-}
-
-/** Resolves the @mayjournal/fitness package root (directory containing package.json for this package). */
-export function getFitnessRunnerRoot(): string {
-  let dir = dirname(fileURLToPath(import.meta.url));
-  while (dir !== dirname(dir)) {
-    if (existsSync(join(dir, 'package.json'))) return dir;
-    dir = dirname(dir);
-  }
-  return dir;
 }
 
 /** Run vitest with coverage; returns exit code and combined stdout/stderr. */

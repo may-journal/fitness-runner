@@ -1,52 +1,50 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { execSync } from 'node:child_process';
 import { beforeEach, describe, it, expect, vi } from 'vitest';
 import {
   eslintCheck,
-  ESLINT_CLI,
   ESLINT_FALLBACK_MESSAGE,
   formatMessage,
-  runEslint,
+  runEslintViaAPI,
   tryParseJsonArray,
 } from './index';
 
-vi.mock('node:child_process', async (importOriginal) => {
-  const mod = await importOriginal<typeof import('node:child_process')>();
-  return { ...mod, execSync: vi.fn(mod.execSync) };
-});
-
 describe('eslintCheck', () => {
+  const mockRun = vi.fn<
+    (
+      root: string,
+      paths: string[],
+      frRoot?: string
+    ) => Promise<{
+      errors: string[];
+      exitCode: number;
+      filesChecked: number;
+    }>
+  >();
+
   beforeEach(() => {
-    vi.mocked(execSync).mockReset();
+    mockRun.mockReset();
   });
 
   it('passes when ESLint reports no issues', async () => {
-    vi.mocked(execSync).mockReturnValue('[]');
+    mockRun.mockResolvedValue({ errors: [], exitCode: 0, filesChecked: 0 });
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
+    const result = await eslintCheck.run(dir, { _eslintRunForTesting: mockRun });
     expect(result.ok).toBe(true);
     expect(result.errors).toHaveLength(0);
     expect(result.meta?.filesChecked).toBe(0);
+    expect(mockRun).toHaveBeenCalledWith(dir, ['.'], undefined);
   });
 
   it('fails and returns error lines when ESLint reports issues', async () => {
-    const json = JSON.stringify([
-      {
-        filePath: '/repo/src/foo.ts',
-        messages: [
-          { line: 1, column: 1, message: 'Unexpected var.', ruleId: 'no-var', severity: 2 },
-        ],
-        errorCount: 1,
-        warningCount: 0,
-      },
-    ]);
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), { stdout: json, status: 1 });
+    mockRun.mockResolvedValue({
+      errors: ['/repo/src/foo.ts:1:1 - Unexpected var. (no-var)'],
+      exitCode: 1,
+      filesChecked: 1,
     });
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
+    const result = await eslintCheck.run(dir, { _eslintRunForTesting: mockRun });
     expect(result.ok).toBe(false);
     expect(result.errors.some((e) => e.includes('no-var') && e.includes('Unexpected var'))).toBe(
       true
@@ -55,79 +53,39 @@ describe('eslintCheck', () => {
   });
 
   it('uses staged paths when context has stagedFiles', async () => {
-    vi.mocked(execSync).mockReturnValue('[]');
+    mockRun.mockResolvedValue({ errors: [], exitCode: 0, filesChecked: 0 });
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     writeFileSync(join(dir, 'bar.ts'), 'x');
-    const result = await eslintCheck.run(dir, { stagedFiles: ['bar.ts'] });
-    expect(result.ok).toBe(true);
-    const calls = vi.mocked(execSync).mock.calls;
-    const lastCall = calls[calls.length - 1][0];
-    expect(lastCall).toContain(ESLINT_CLI);
-    expect(lastCall).toContain('bar.ts');
+    await eslintCheck.run(dir, { stagedFiles: ['bar.ts'], _eslintRunForTesting: mockRun });
+    expect(mockRun).toHaveBeenCalledWith(dir, ['bar.ts'], undefined);
   });
 
-  it('parses JSON array when output has leading stderr (extracts file/line errors)', async () => {
-    const json = JSON.stringify([
-      {
-        filePath: '/repo/src/foo.ts',
-        messages: [
-          { line: 10, column: 5, message: 'Unexpected var.', ruleId: 'no-var', severity: 2 },
-        ],
-        errorCount: 1,
-        warningCount: 0,
-      },
-    ]);
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), {
-        stdout: `Warning: Some config message\n${json}`,
-        status: 1,
-      });
-    });
+  it('uses fitness runner root from context for testing', async () => {
+    mockRun.mockResolvedValue({ errors: [], exitCode: 0, filesChecked: 0 });
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
-    expect(result.ok).toBe(false);
-    expect(result.errors[0]).toBe('/repo/src/foo.ts:10:5 - Unexpected var. (no-var)');
-    expect(result.meta?.filesChecked).toBe(1);
+    const fakeRoot = mkdtempSync(join(tmpdir(), 'fitness-root-'));
+    await eslintCheck.run(dir, {
+      _fitnessRunnerRootForTesting: fakeRoot,
+      _eslintRunForTesting: mockRun,
+    });
+    expect(mockRun).toHaveBeenCalledWith(dir, ['.'], fakeRoot);
   });
 
-  it('returns fallback when output has ] before [ (no valid array span)', async () => {
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), { stdout: 'a]b[c', status: 1 });
-    });
+  it('returns fallback when run throws', async () => {
+    mockRun.mockRejectedValue(new Error('Config not found'));
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
+    const result = await eslintCheck.run(dir, { _eslintRunForTesting: mockRun });
     expect(result.ok).toBe(false);
     expect(result.errors[0]).toBe(ESLINT_FALLBACK_MESSAGE);
+    expect(result.errors[1]).toContain('Config not found');
   });
 
-  it('returns fallback when output has brackets but invalid JSON between them', async () => {
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), { stdout: 'x[} ]y', status: 1 });
-    });
+  it('returns fallback when run throws a non-Error value', async () => {
+    mockRun.mockRejectedValue('string failure');
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
+    const result = await eslintCheck.run(dir, { _eslintRunForTesting: mockRun });
     expect(result.ok).toBe(false);
-    expect(result.errors[0]).toBe(ESLINT_FALLBACK_MESSAGE);
-  });
-
-  it('returns fallback error when exit non-zero and output is not valid JSON', async () => {
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), { stdout: 'No ESLint config found', status: 2 });
-    });
-    const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
-    expect(result.ok).toBe(false);
-    expect(result.errors[0]).toBe(ESLINT_FALLBACK_MESSAGE);
-  });
-
-  it('runEslint catch uses status 1 when err.status is not a number', async () => {
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), { stdout: 'x', stderr: 'y' });
-    });
-    const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
-    expect(result.ok).toBe(false);
-    expect(result.errors[0]).toBe(ESLINT_FALLBACK_MESSAGE);
+    expect(result.errors[1]).toContain('string failure');
   });
 
   it('formatMessage includes ruleId when present', () => {
@@ -144,53 +102,61 @@ describe('eslintCheck', () => {
     expect(tryParseJsonArray('{}')).toBeNull();
   });
 
+  it('tryParseJsonArray returns null when input is not valid JSON', () => {
+    expect(tryParseJsonArray('not json')).toBeNull();
+  });
+
+  it('tryParseJsonArray returns array for valid JSON array', () => {
+    const data = tryParseJsonArray(
+      '[{"errorCount":0,"filePath":"/a.ts","messages":[],"warningCount":0}]'
+    );
+    expect(Array.isArray(data)).toBe(true);
+    expect(data).toHaveLength(1);
+  });
+
   it('formats message without ruleId when ruleId is null', async () => {
-    const json = JSON.stringify([
-      {
-        filePath: '/repo/a.ts',
-        messages: [{ line: 2, column: 3, message: 'Some error', ruleId: null, severity: 2 }],
-        errorCount: 1,
-        warningCount: 0,
-      },
-    ]);
-    vi.mocked(execSync).mockImplementation(() => {
-      throw Object.assign(new Error(), { stdout: json, status: 1 });
+    mockRun.mockResolvedValue({
+      errors: ['/repo/a.ts:2:3 - Some error'],
+      exitCode: 1,
+      filesChecked: 1,
     });
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    const result = await eslintCheck.run(dir);
+    const result = await eslintCheck.run(dir, { _eslintRunForTesting: mockRun });
     expect(result.ok).toBe(false);
     expect(result.errors[0]).toBe('/repo/a.ts:2:3 - Some error');
   });
 
-  it('parseJsonResults returns empty when output is valid JSON but not array', async () => {
-    vi.mocked(execSync).mockReturnValue('{}');
+  it('runEslintViaAPI with empty paths lints "."', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
+    const result = await runEslintViaAPI(dir, []);
+    expect(result.exitCode).toBe(0);
+    expect(result.filesChecked).toBeGreaterThanOrEqual(0);
+  });
+
+  it('check uses runEslintViaAPI when _eslintRunForTesting is absent', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     const result = await eslintCheck.run(dir);
     expect(result.ok).toBe(true);
-    expect(result.errors).toHaveLength(0);
-    expect(result.meta?.filesChecked).toBe(0);
   });
 
-  it('runEslint with empty paths uses "." as args', () => {
-    vi.mocked(execSync).mockReturnValue('[]');
+  it('runEslintViaAPI maps ESLint messages through formatMessage', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
-    runEslint(dir, [], execSync);
-    const calls = vi.mocked(execSync).mock.calls;
-    const call = calls[calls.length - 1][0];
-    expect(call).toContain(ESLINT_CLI);
-    expect(call).toMatch(/\beslint\s+\.\s+--format/);
+    writeFileSync(join(dir, 'bad.js'), 'const o = { z: 1, a: 2 };\n');
+    const result = await runEslintViaAPI(dir, ['bad.js']);
+    expect(result.exitCode).toBe(1);
+    expect(result.errors.some((e) => e.includes('bad.js') && e.includes('sort-keys'))).toBe(true);
   });
 
-  it('escapes quotes in path when building eslint args', async () => {
-    vi.mocked(execSync).mockReturnValue('[]');
+  it('passes staged path with quotes to runner', async () => {
+    mockRun.mockResolvedValue({ errors: [], exitCode: 0, filesChecked: 0 });
     const dir = mkdtempSync(join(tmpdir(), 'eslint-'));
     const pathWithQuote = 'src/bar "quoted".ts';
     mkdirSync(join(dir, 'src'), { recursive: true });
     writeFileSync(join(dir, pathWithQuote), 'x');
-    await eslintCheck.run(dir, { stagedFiles: [pathWithQuote] });
-    const calls = vi.mocked(execSync).mock.calls;
-    const lastCall = calls[calls.length - 1][0];
-    expect(lastCall).toContain(ESLINT_CLI);
-    expect(lastCall).toContain('\\"');
+    await eslintCheck.run(dir, {
+      stagedFiles: [pathWithQuote],
+      _eslintRunForTesting: mockRun,
+    });
+    expect(mockRun).toHaveBeenCalledWith(dir, [pathWithQuote], undefined);
   });
 });
