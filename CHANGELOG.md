@@ -7,9 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1435
+### 2026.05.20.1446
 
 - CI: commit hand-authored check and bundle `tsconfig.json` files (un-ignore in `.gitignore`) and build `@mayjournal/fitness-shared` before other workspaces so runner `tsc` resolves shared types.
+- ESLint: include check package and bundle `tsconfig.json` paths in `parserOptions.project` so type-aware lint finds monorepo check sources.
 - Cspell: skip staged `.gitignore`, `package-lock.json`, and `tsconfig.json` so explicit staged paths honor `ignorePaths`.
 - Restore `disabledChecks` on `.fitnessrc`: optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`; types on `@mayjournal/fitness-shared`, filter in runner `load-check.ts`; tests in `load-check.test.ts` and `run.test.ts`.
 - Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.

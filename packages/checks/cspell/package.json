@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-cspell",
-  "version": "0.1.0-2026.05.20.1435",
+  "version": "0.1.0-2026.05.20.1446",
   "description": "Fitness check: cspell",
   "license": "MIT",
   "type": "module",
@@ -19,10 +19,10 @@
     "cspell.json"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "fitness-shared build",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
-    "test": "bash ../../../scripts/nvm-use.sh && npm run build && vitest run --config vitest.config.mjs --coverage"
+    "test": "bash ../../../scripts/nvm-use.sh && npm run build && fitness-shared test --coverage --coverage-exclude src/index.ts"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {

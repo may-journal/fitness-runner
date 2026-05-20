@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-vitest-coverage-full",
-  "version": "0.1.0-2026.05.20.1435",
+  "version": "0.1.0-2026.05.20.1446",
   "description": "Fitness check: vitest-coverage-full",
   "license": "MIT",
   "type": "module",
@@ -18,14 +18,14 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "fitness-shared build",
     "ci": "bash ../../../scripts/nvm-use.sh && npm run format:check && npm run lint && npm run test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "lint": "cd ../../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && eslint -c packages/shared/config/eslint.config.cjs packages/checks/vitest-coverage-full",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
-    "test": "npm run build && vitest run --config vitest.config.mjs --coverage"
+    "test": "npm run build && fitness-shared test --coverage"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {

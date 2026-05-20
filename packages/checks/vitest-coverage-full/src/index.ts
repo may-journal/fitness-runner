@@ -52,7 +52,11 @@ function loadVitestConfigWithThresholds(
   root: string,
   fallbackRoot?: string
 ): VitestConfigRaw | null {
-  return tryParseThresholdsFromFile(root) ?? loadVitestConfig(root, fallbackRoot);
+  return (
+    tryParseThresholdsFromFile(root) ??
+    loadVitestConfig(root, fallbackRoot) ??
+    (fallbackRoot != null ? tryParseThresholdsFromFile(fallbackRoot) : null)
+  );
 }
 
 /** Returns true if Vitest config has coverage thresholds all set to 100. */

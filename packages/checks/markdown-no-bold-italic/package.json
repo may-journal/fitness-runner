@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-markdown-no-bold-italic",
-  "version": "0.1.0-2026.05.20.1435",
+  "version": "0.1.0-2026.05.20.1446",
   "description": "Fitness check: markdown-no-bold-italic",
   "license": "MIT",
   "type": "module",
@@ -18,13 +18,13 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "fitness-shared build",
     "ci": "bash ../../../scripts/nvm-use.sh && npm run format:check && npm run test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
-    "test": "npm run build && vitest run --config vitest.config.mjs"
+    "test": "npm run build && fitness-shared test"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {

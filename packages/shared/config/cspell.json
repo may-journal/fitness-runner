@@ -14,9 +14,9 @@
   "useGitignore": true,
   "version": "0.2",
   "words": [
+    "mayjournal",
     "devdeps",
     "dotenv",
-    "mayjournal",
     "npmjs",
     "unstub",
     "eslintcache",

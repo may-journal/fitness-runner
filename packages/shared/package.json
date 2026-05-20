@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.05.20.1435",
+  "version": "0.1.0-2026.05.20.1446",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "license": "MIT",
   "type": "module",
@@ -22,6 +22,8 @@
     "./tsconfig": "./config/tsconfig.json",
     "./tsconfig.cjs": "./config/tsconfig.cjs",
     "./tsconfig.lint.cjs": "./config/tsconfig.lint.cjs",
+    "./tsconfig.check": "./config/tsconfig.check.json",
+    "./vitest.check.config": "./config/vitest.check.config.mjs",
     "./vitest.config": {
       "types": "./types/vitest.config.d.ts",
       "default": "./config/vitest.config.mjs"
@@ -29,7 +31,11 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "fitness-shared": "./bin/fitness-shared.js"
+  },
   "files": [
+    "bin",
     "dist",
     "config",
     "types"

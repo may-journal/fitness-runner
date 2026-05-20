@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-eslint",
-  "version": "0.1.0-2026.05.20.1435",
+  "version": "0.1.0-2026.05.20.1446",
   "description": "Fitness check: eslint",
   "license": "MIT",
   "type": "module",
@@ -17,10 +17,10 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "fitness-shared build",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
-    "test": "npm run build && vitest run --config vitest.config.mjs"
+    "test": "npm run build && fitness-shared test"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "overrides": {
