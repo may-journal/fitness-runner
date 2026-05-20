@@ -234,7 +234,7 @@ export default {
 - 7a CI — expand `.github/workflows/ci.yml`: `build -ws`, `test -ws` (or key packages), `fitness`; not runner-only ✅
 - 7b Publish — expand `publish.yml` and root `publish:ci` to npm publish all packages (runner, shared, bundle, 12 checks); lockstep versions; `publishConfig` on each package ✅
 - 7c Docs — update `.cursor/rules/fitness-checks.mdc` (`packages/checks/*` not `src/checks`); trim stale plan refs; CHANGELOG for monorepo split; consumer migration in README ✅
-- 7d Release — commit, PR, register npm packages for trusted publishing (manual note)
+- 7d Release — PR https://github.com/may-journal/fitness-runner/pull/12; register npm packages for trusted publishing (manual note) ✅
 
 ## Risks
 
