@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.05.20.1726
+
+- Fix `bin/fitness.js` using install path as cwd: drop `cwd` override so the runner inherits the consumer project root and loads `.fitnessrc` / `disabledChecks` correctly via `npx fitness`.
+- Monorepo: run `node packages/runner/bin/fitness.js` from repo root so local `npm run fitness` keeps monorepo root as cwd.
+
 ### 2026.05.20.1716
 
 - Publish audit: track `packages/shared/types/vitest.config.d.ts` (fix publint in CI); drop broken attw from PR workflow; strip ANSI from publint output in comments.
