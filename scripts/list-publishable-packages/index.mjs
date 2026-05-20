@@ -1,24 +1,19 @@
 #!/usr/bin/env node
 /** Lists @mayjournal workspace packages that are published to npm (non-private). */
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
+/** Monorepo workspaces published to npm (not individual check packages). */
+const PUBLISHABLE_DIRS = ['packages/shared', 'packages/checks-bundle', 'packages/runner'];
+
 /** @returns {{ dir: string, name: string }[]} */
 export function listPublishablePackages() {
   const entries = [];
-  const checkDirs = [
-    'packages/runner',
-    'packages/shared',
-    'packages/checks-bundle',
-    ...readdirSync(join(root, 'packages/checks'), { withFileTypes: true })
-      .filter((d) => d.isDirectory())
-      .map((d) => `packages/checks/${d.name}`),
-  ];
 
-  for (const dir of checkDirs) {
+  for (const dir of PUBLISHABLE_DIRS) {
     const pkgPath = join(root, dir, 'package.json');
     if (!existsSync(pkgPath)) continue;
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
@@ -29,9 +24,8 @@ export function listPublishablePackages() {
 
   const sortKey = (name) => {
     if (name === '@mayjournal/fitness-shared') return '0';
-    if (name === '@mayjournal/fitness-checks') return '2';
-    if (name === '@mayjournal/fitness') return '3';
-    if (name.startsWith('@mayjournal/fitness-check-')) return `1-${name}`;
+    if (name === '@mayjournal/fitness-checks') return '1';
+    if (name === '@mayjournal/fitness') return '2';
     return `9-${name}`;
   };
 

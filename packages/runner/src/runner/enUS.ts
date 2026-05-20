@@ -3,7 +3,7 @@ export enum enUS {
   CheckTimeout = 'Check timed out after {{seconds}}s',
   ErrorBullet = '  ✖ ',
   InvalidCheckExport = 'Invalid check export from {{pkg}}: expected default.name === "{{name}}"',
-  NoChecksConfigured = 'No checks configured. Install @mayjournal/fitness-checks or add .fitnessrc with checks and install matching @mayjournal/fitness-check-* packages.',
+  NoChecksConfigured = 'No checks configured. Install @mayjournal/fitness-checks or add .fitnessrc with a checks list.',
   PleaseFix = 'Please fix these items:',
   ResolvingChecks = 'Resolving checks...',
   RunningCheck = '  → {{name}}',

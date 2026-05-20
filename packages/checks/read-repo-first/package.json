@@ -1,6 +1,7 @@
 {
   "name": "@mayjournal/fitness-check-read-repo-first",
-  "version": "0.1.0-2026.05.20.1738",
+  "version": "0.1.0-2026.05.20.1849",
+  "private": true,
   "description": "Fitness check: read-repo-first",
   "repository": {
     "type": "git",
@@ -24,8 +25,6 @@
   "scripts": {
     "build": "fitness-shared build",
     "knip": "knip --no-exit-code",
-    "prepublishOnly": "npm run build",
-    "publish:ci": "npm publish",
     "test": "npm run build && fitness-shared test"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
@@ -46,10 +45,6 @@
   },
   "engines": {
     "node": ">=24"
-  },
-  "publishConfig": {
-    "access": "restricted",
-    "tag": "next"
   },
   "knip": {
     "entry": [

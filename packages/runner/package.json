@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.05.20.1738",
+  "version": "0.1.0-2026.05.20.1849",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -66,7 +66,7 @@
     "node": ">=24"
   },
   "publishConfig": {
-    "access": "restricted",
+    "access": "public",
     "tag": "next"
   },
   "knip": {
