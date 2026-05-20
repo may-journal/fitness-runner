@@ -1,4 +1,5 @@
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -21,7 +22,11 @@ describe('load-check', () => {
 
   it('findInstallRoot walks up from a nested directory', () => {
     const nested = join(REPO_ROOT, 'packages', 'runner', 'src', 'checks');
-    expect(findInstallRoot(nested)).toBe(join(REPO_ROOT, 'packages', 'runner'));
+    const installRoot = findInstallRoot(nested);
+    expect(nested.startsWith(installRoot)).toBe(true);
+    createRequire(join(installRoot, 'package.json')).resolve(
+      '@mayjournal/fitness-checks/defaultChecks'
+    );
   });
 
   it('findInstallRoot returns startRoot when no install is found', () => {

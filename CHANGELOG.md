@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1707
+### 2026.05.20.1710
 
+- CI: fix `findInstallRoot` test for hoisted vs workspace `node_modules`; write publish-audit JSON via `node scripts/audit-publish/index.mjs` so PR comments parse.
 - Cspell: single config at `@mayjournal/fitness-shared/cspell`; remove duplicate `packages/checks/cspell/cspell.json`.
 - Perf (issue #13): add `audit:publish`, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and plan; fix `exports` types-first on publishable packages.
 - Deps: remove redundant runner jiti, duplicate prettier plugins, and misplaced `@mayjournal/fitness` production deps on checks.
