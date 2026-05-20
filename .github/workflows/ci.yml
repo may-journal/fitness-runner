@@ -13,7 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: npm run build -ws --if-present
-      - run: npm run test -w @mayjournal/fitness -w @mayjournal/fitness-shared
+      - run: npm run test -ws --if-present
 
   fitness:
     runs-on: ubuntu-latest

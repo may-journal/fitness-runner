@@ -1,13 +1,21 @@
-import { defineConfig, mergeConfig } from 'vitest/config';
-import base from '@mayjournal/fitness-shared/vitest.config';
+import { defineConfig } from 'vitest/config';
 
-export default mergeConfig(
-  base,
-  defineConfig({
-    test: {
-      coverage: {
-        include: ['src/**/*.ts'],
+export default defineConfig({
+  esbuild: { target: 'ES2022' },
+  test: {
+    coverage: {
+      exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', '**/*.types.ts'],
+      include: ['src/**/*.ts'],
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      thresholds: {
+        branches: 100,
+        functions: 100,
+        lines: 100,
+        statements: 100,
       },
     },
-  })
-);
+    globals: true,
+    include: ['src/**/*.test.ts'],
+  },
+});

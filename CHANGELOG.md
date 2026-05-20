@@ -7,7 +7,7 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1415
+### 2026.05.20.1428
 
 - Restore `disabledChecks` on `.fitnessrc`: optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`; types on `@mayjournal/fitness-shared`, filter in runner `load-check.ts`; tests in `load-check.test.ts` and `run.test.ts`.
 - Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.
@@ -15,6 +15,8 @@ relatedConfigurations: ['package.json']
 - Add Architecture.md for monorepo layout; update README and complete plan steps 1–6 (shared configs, per-check vitest, remove legacy src/).
 - Scaffold npm workspaces: private root package.json, packages/runner, packages/shared, packages/checks-bundle, and packages/checks/\* stubs; bump versions under packages/ in ensure-changelog-timestamp.cjs; ignore **/coverage/** in cspell.
 - Move check tool dependencies from packages/runner into each packages/checks/\* package so published check packages declare only what they need; trim runner deps and refresh package-lock.json.
+- CI: run `npm run test -ws --if-present` so every workspace with a test script runs in GitHub Actions.
+- Check packages: scope Vitest to `src/**/*.test.ts`, point `@mayjournal/fitness` aliases at runner `dist/types`, and give vitest-coverage-full an explicit coverage config.
 - Changelog-updated: expect new section heading to match root package.json version suffix so pre-commit timestamp bumps pass after long CI runs.
 - Checks fall back to @mayjournal/fitness configs when consumers lack local cspell, prettier, vitest, or tsconfig; add resolveFitnessConfigPath, resolveLintTsconfig (temp tsconfig for ESLint in parent cwd), and tsconfig.lint.cjs export; document consumer setup in README.
 - Switch publish workflow to npm trusted publishing (OIDC); use NODE_AUTH_TOKEN in .npmrc instead of NPM_TOKEN secret.

@@ -8,8 +8,11 @@ export default defineConfig({
   esbuild: { target: 'ES2022' },
   resolve: {
     alias: {
-      '@mayjournal/fitness': join(packageRoot, '../../runner/dist/src/types/index.types.js'),
+      '@mayjournal/fitness': join(packageRoot, '../../runner/dist/types/index.types.js'),
     },
   },
-  test: { globals: true },
+  test: {
+    globals: true,
+    include: ['src/**/*.test.ts'],
+  },
 });
