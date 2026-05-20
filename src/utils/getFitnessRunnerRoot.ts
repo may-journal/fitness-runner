@@ -1,13 +1,7 @@
-import { existsSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Resolves the @mayjournal/fitness package root (directory containing package.json). */
+/** Resolves the bundled fitness config directory (@mayjournal/fitness-shared/config). */
 export function getFitnessRunnerRoot(): string {
-  let dir = dirname(fileURLToPath(import.meta.url));
-  while (dir !== dirname(dir)) {
-    if (existsSync(join(dir, 'package.json'))) return dir;
-    dir = dirname(dir);
-  }
-  return dir;
+  return dirname(fileURLToPath(import.meta.resolve('@mayjournal/fitness-shared/cspell')));
 }

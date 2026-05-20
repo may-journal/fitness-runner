@@ -1,6 +1,6 @@
 ---
 fitnessFunctions: ['eslint']
-relatedConfigurations: ['../../../eslint.config.cjs']
+relatedConfigurations: ['../../../../packages/shared/config/eslint.config.cjs']
 ---
 
 # eslint

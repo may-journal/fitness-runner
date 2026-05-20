@@ -16,7 +16,7 @@
     "packages/checks/*"
   ],
   "scripts": {
-    "build": "npm run build -w @mayjournal/fitness",
+    "build": "npm run build -ws --if-present",
     "ci": "npm run ci -w @mayjournal/fitness",
     "fitness": "npm run fitness -w @mayjournal/fitness",
     "format": "prettier . --write",
@@ -27,8 +27,9 @@
     "publish:ci": "npm publish -w @mayjournal/fitness",
     "test": "npm run test -w @mayjournal/fitness"
   },
-  "prettier": "./prettier.config.cjs",
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {
+    "@mayjournal/fitness-shared": "*",
     "husky": "^9.0.0",
     "prettier": "3.8.1",
     "prettier-plugin-packagejson": "^3.0.2",

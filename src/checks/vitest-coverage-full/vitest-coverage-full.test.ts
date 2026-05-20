@@ -114,7 +114,7 @@ describe('runVitestCoverage', () => {
 
 describe('hasFullCoverageThresholds', () => {
   it('returns true when config has branches, functions, lines, statements all 100', () => {
-    expect(hasFullCoverageThresholds(process.cwd())).toBe(true);
+    expect(hasFullCoverageThresholds(getFitnessRunnerRoot())).toBe(true);
   });
 
   it('returns false when any threshold is not 100', () => {
@@ -213,23 +213,12 @@ describe('hasFullCoverageThresholds', () => {
 });
 
 describe('getFitnessRunnerRoot', () => {
-  it('returns a directory that contains package.json', () => {
+  it('returns the shared config directory containing cspell.json', () => {
     const root = getFitnessRunnerRoot();
-    expect(existsSync(join(root, 'package.json'))).toBe(true);
+    expect(existsSync(join(root, 'cspell.json'))).toBe(true);
   });
 
   it('returned path has 100% coverage thresholds (@mayjournal/fitness must stay configured)', () => {
     expect(hasFullCoverageThresholds(getFitnessRunnerRoot())).toBe(true);
-  });
-
-  it('returns dir when no package.json in ancestor (exit loop)', async () => {
-    const fs = await import('node:fs');
-    vi.mocked(fs.existsSync).mockImplementation(() => false);
-    try {
-      const root = getFitnessRunnerRoot();
-      expect(root).toBeDefined();
-    } finally {
-      vi.mocked(fs.existsSync).mockRestore();
-    }
   });
 });

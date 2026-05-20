@@ -1,6 +1,6 @@
 ---
 fitnessFunctions: ['prettier']
-relatedConfigurations: ['../../../prettier.config.cjs']
+relatedConfigurations: ['../../../../packages/shared/config/prettier.config.cjs']
 ---
 
 # prettier
