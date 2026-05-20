@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { buildExecCheckResult } from '../../utils/checkResult.js';
 import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
+import { resolveLintTsconfig } from '../../utils/resolveLintTsconfig.js';
 import { getStagedFiles } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
@@ -38,9 +39,21 @@ export async function runEslintViaAPI(
       lintFiles: (p: string[]) => Promise<ESLintJsonResult[]>;
     };
   };
+  const tsconfigPath = resolveLintTsconfig(root, frRoot);
   const eslint = new ESLint({
     cwd: root,
     errorOnUnmatchedPattern: false,
+    overrideConfig: [
+      {
+        files: ['**/*.ts'],
+        languageOptions: {
+          parserOptions: {
+            project: tsconfigPath,
+            tsconfigRootDir: root,
+          },
+        },
+      },
+    ],
     overrideConfigFile: configPath,
   });
   const patterns = paths.length > 0 ? paths : ['.'];

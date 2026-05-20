@@ -5,7 +5,7 @@ relatedConfigurations: ['../../../eslint.config.cjs']
 
 # eslint
 
-Runs [ESLint](https://eslint.org) via this package's Node API and config. The parent project does not need ESLint installed; linting runs in the parent's working directory using this package's `eslint.config.cjs`.
+Runs [ESLint](https://eslint.org) via this package's Node API and config. The parent project does not need ESLint, a local `eslint.config`, or a `tsconfig.json` installed; linting runs in the parent's working directory using this package's `eslint.config.cjs`. Type-aware rules use a temp tsconfig built from this package's compiler defaults scoped to the parent’s sources.
 
 ## Behavior
 

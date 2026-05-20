@@ -22,13 +22,15 @@ describe('prettierCheck', () => {
     vi.mocked(execSync).mockReset();
   });
 
-  it('skips when no Prettier config', async () => {
+  it('uses package Prettier config when consumer has none', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
+    vi.mocked(execSync).mockReturnValue('All matched files use Prettier code style!');
     const result = await prettierCheck.run(dir);
     expect(result.ok).toBe(true);
-    expect(result.errors).toHaveLength(0);
-    expect(result.meta?.filesChecked).toBe(0);
-    expect(execSync).not.toHaveBeenCalled();
+    expect(execSync).toHaveBeenCalled();
+    const call = String(vi.mocked(execSync).mock.calls[0][0]);
+    expect(call).toContain('--config');
+    expect(call).toContain('prettier.config.cjs');
   });
 
   it('passes when Prettier reports no issues', async () => {

@@ -5,6 +5,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
 import {
   enUS,
+  buildVitestCoverageCmd,
   hasFullCoverageThresholds,
   runVitestCoverage,
   vitestCoverageFullCheck,
@@ -44,6 +45,14 @@ describe('vitestCoverageFullCheck', () => {
     });
     expect(result.ok).toBe(false);
     expect(result.errors[0]).toBe(enUS.FitnessRunnerThresholdsNot100);
+  });
+
+  it('buildVitestCoverageCmd adds --config when consumer has no vitest config', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-cmd-'));
+    const frRoot = getFitnessRunnerRoot();
+    const cmd = buildVitestCoverageCmd(dir, frRoot);
+    expect(cmd).toContain('--config');
+    expect(cmd).toContain('vitest.config.mjs');
   });
 
   it('passes when vitest run --coverage exits 0', async () => {

@@ -6,9 +6,11 @@ import {
   ALLOWED_COVERAGE_EXCLUDE_PATTERNS,
   ALLOWED_SUFFIXES,
   configFromMod,
+  getCoverageExclude,
   VITEST_CONFIG_NAMES,
   vitestCoverageExcludeCheck,
 } from './index.js';
+import { loadVitestConfig, getCoverageExcludeFromConfig } from '../vitest-config/index.js';
 
 describe('vitestCoverageExcludeCheck', () => {
   it('passes when no Vitest config exists', async () => {
@@ -231,5 +233,41 @@ describe('vitestCoverageExcludeCheck', () => {
     const result = await vitestCoverageExcludeCheck.run(dir);
     expect(result.ok).toBe(false);
     expect(result.errors).toHaveLength(2);
+  });
+
+  it('getCoverageExclude returns [] for null config or non-array exclude', () => {
+    expect(getCoverageExclude(null)).toEqual([]);
+    expect(
+      getCoverageExclude({ test: { coverage: { exclude: 'not-array' as unknown as string[] } } })
+    ).toEqual([]);
+  });
+
+  it('passes when vitest config has no coverage exclude', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
+    writeFileSync(join(dir, 'vitest.config.mjs'), 'export default { test: {} };');
+    const result = await vitestCoverageExcludeCheck.run(dir);
+    expect(result.ok).toBe(true);
+  });
+
+  it('loadVitestConfig falls back to package.json vitest on fallbackRoot', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
+    const fallback = mkdtempSync(join(tmpdir(), 'vitest-fallback-'));
+    writeFileSync(
+      join(fallback, 'package.json'),
+      '{"vitest":{"test":{"coverage":{"exclude":["**/*.d.ts"]}}}}'
+    );
+    const config = loadVitestConfig(dir, fallback);
+    expect(getCoverageExcludeFromConfig(config)).toEqual(['**/*.d.ts']);
+  });
+
+  it('loadVitestConfig falls back to vitest.config.mjs on fallbackRoot', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'vitest-exclude-'));
+    const fallback = mkdtempSync(join(tmpdir(), 'vitest-fallback-'));
+    writeFileSync(
+      join(fallback, 'vitest.config.mjs'),
+      'export default { test: { coverage: { exclude: ["**/*.d.ts"] } } };'
+    );
+    const config = loadVitestConfig(dir, fallback);
+    expect(getCoverageExcludeFromConfig(config)).toEqual(['**/*.d.ts']);
   });
 });

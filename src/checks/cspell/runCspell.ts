@@ -5,6 +5,8 @@ import { readConfigFile, spellCheckFile } from 'cspell-lib';
 import { buildExecCheckResult, checkResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
 import { findFilesByExtension } from '../../utils/findFilesByExtension.js';
+import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
+import { resolveFitnessConfigPath } from '../../utils/resolveFitnessConfigPath.js';
 import { quoteForShell } from '../../utils/shellQuote.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
@@ -153,10 +155,13 @@ function runViaExec(
 }
 
 /** Runs cspell via cspell-lib and returns CheckResult. */
-async function runViaLib(root: string, staged: string[]): Promise<ReturnType<typeof checkResult>> {
+async function runViaLib(
+  root: string,
+  staged: string[],
+  configPath: string
+): Promise<ReturnType<typeof checkResult>> {
   const paths = await getPathsToCheck(root, staged);
   if (paths.length === 0) return checkResult(true, [], 0);
-  const configPath = join(root, 'cspell.json');
   const config = await readConfigFile(configPath, root);
   const opts = { noConfigSearch: true as const };
   const allErrors: string[] = [];
@@ -166,15 +171,14 @@ async function runViaLib(root: string, staged: string[]): Promise<ReturnType<typ
   return checkResult(allErrors.length === 0, allErrors, paths.length);
 }
 
-/** Cspell check: uses CLI when context provides execSync, else cspell-lib. */
+/** Cspell check: uses CLI when context provides execSync, else cspell-lib; falls back to package cspell.json. */
 export const cspellCheck: Check = {
   name: CheckName.Cspell,
   async run(root = process.cwd(), context) {
-    const configPath = join(root, 'cspell.json');
-    if (!existsSync(configPath)) return checkResult(true, [], 0);
+    const configPath = resolveFitnessConfigPath(root, 'cspell.json', getFitnessRunnerRoot());
     const staged = getStagedFiles(context);
     const execSyncFn = getExecSync(context);
     if (context?._execSync) return runViaExec(root, staged, execSyncFn);
-    return runViaLib(root, staged);
+    return runViaLib(root, staged, configPath);
   },
 };

@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1058
+### 2026.05.20.1120
 
+- Checks fall back to @mayjournal/fitness configs when consumers lack local cspell, prettier, vitest, or tsconfig; add resolveFitnessConfigPath, resolveLintTsconfig (temp tsconfig for ESLint in parent cwd), and tsconfig.lint.cjs export; document consumer setup in README.
 - Switch publish workflow to npm trusted publishing (OIDC); use NODE_AUTH_TOKEN in .npmrc instead of NPM_TOKEN secret.
 
 ### 2026.04.04.1748

@@ -3,6 +3,8 @@ import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { buildExecCheckResult, checkResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
+import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
+import { resolveFitnessConfigPath } from '../../utils/resolveFitnessConfigPath.js';
 import { quoteForShell } from '../../utils/shellQuote.js';
 import { getExecSync, getStagedFiles } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
@@ -57,9 +59,16 @@ function buildPrettierArgs(passthroughArgs: string[] | undefined, paths: string[
 }
 
 /** Build Prettier CLI command. */
-function buildPrettierCmd(args: string, usePassthrough: boolean): string {
+function buildPrettierCmd(args: string, usePassthrough: boolean, configPath?: string): string {
   const mode = usePassthrough ? '' : ' --check';
-  return `${PRETTIER_CLI}${mode} ${args} 2>&1`;
+  const config = configPath ? ` --config ${quoteForShell(configPath)}` : '';
+  return `${PRETTIER_CLI}${config}${mode} ${args} 2>&1`;
+}
+
+/** Resolve Prettier config: consumer config when present, else this package's prettier.config.cjs. */
+function resolvePrettierConfigPath(root: string): string {
+  if (hasPrettierConfig(root)) return '';
+  return resolveFitnessConfigPath(root, 'prettier.config.cjs', getFitnessRunnerRoot());
 }
 
 /** Run Prettier with given args (or --check + paths by default); returns stdout+stderr and exit code. */
@@ -67,11 +76,12 @@ export function runPrettier(
   root: string,
   paths: string[],
   execSyncFn: ExecSyncFn = execSync,
-  passthroughArgs?: string[]
+  passthroughArgs?: string[],
+  configPath?: string
 ): { exitCode: number; output: string } {
   const usePassthrough = (passthroughArgs?.length ?? 0) > 0;
   const args = buildPrettierArgs(passthroughArgs, paths);
-  const cmd = buildPrettierCmd(args, usePassthrough);
+  const cmd = buildPrettierCmd(args, usePassthrough, configPath);
   return execSyncResult(root, cmd, execSyncFn);
 }
 
@@ -126,13 +136,13 @@ function getFilesChecked(errors: string[], paths: string[]): number {
   return paths.length === 1 && paths[0] === '.' ? 0 : paths.length;
 }
 
-/** Prettier check: runs prettier --check (or passthrough args); skips when no config. */
+/** Prettier check: runs prettier --check (or passthrough args) using this package config when consumer has none. */
 export const prettierCheck: Check = {
   name: CheckName.Prettier,
   async run(root = process.cwd(), context) {
-    if (!hasPrettierConfig(root)) return checkResult(true, [], 0);
+    const configPath = resolvePrettierConfigPath(root);
     const { paths, execFn, passthroughArgs } = resolveInputs(root, context);
-    const { output, exitCode } = runPrettier(root, paths, execFn, passthroughArgs);
+    const { output, exitCode } = runPrettier(root, paths, execFn, passthroughArgs, configPath);
     const errors = parsePrettierOutput(output);
     return buildExecCheckResult(
       exitCode,

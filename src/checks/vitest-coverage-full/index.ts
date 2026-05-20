@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { checkResult } from '../../utils/checkResult.js';
 import { execSyncResult } from '../../utils/execSyncResult.js';
 import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
+import { quoteForShell } from '../../utils/shellQuote.js';
+import { resolveFitnessConfigPath } from '../../utils/resolveFitnessConfigPath.js';
 import { getExecSync } from '../../utils/runContext.js';
 import type { ExecSyncFn } from '../../utils/runContext.js';
 import { CheckName } from '../../types/index.types.js';
@@ -17,6 +19,7 @@ import {
 } from '../vitest-config/index.js';
 
 const VITEST_COVERAGE_CMD = 'npx vitest run --coverage';
+const FITNESS_VITEST_CONFIG = 'vitest.config.mjs';
 const REQUIRED_THRESHOLD = 100;
 
 /** True if content has branches/functions/lines/statements all set to REQUIRED_THRESHOLD via regex. */
@@ -45,25 +48,38 @@ function tryParseThresholdsFromFile(root: string): VitestConfigRaw | null {
   return null;
 }
 
-/** Load Vitest config from root; tries regex fast path then shared loader. */
-function loadVitestConfigWithThresholds(root: string): VitestConfigRaw | null {
-  return tryParseThresholdsFromFile(root) ?? loadVitestConfig(root);
+/** Load Vitest config from root; tries regex fast path then shared loader with package fallback. */
+function loadVitestConfigWithThresholds(
+  root: string,
+  fallbackRoot?: string
+): VitestConfigRaw | null {
+  return tryParseThresholdsFromFile(root) ?? loadVitestConfig(root, fallbackRoot);
 }
 
 /** Returns true if Vitest config has coverage thresholds all set to 100. */
-export function hasFullCoverageThresholds(root: string): boolean {
-  const config = loadVitestConfigWithThresholds(root);
+export function hasFullCoverageThresholds(root: string, fallbackRoot?: string): boolean {
+  const config = loadVitestConfigWithThresholds(root, fallbackRoot);
   const t = getThresholdsFromConfig(config);
   const vals = [t?.branches, t?.functions, t?.lines, t?.statements];
   return vals.every((v) => v === REQUIRED_THRESHOLD);
 }
 
+/** Vitest CLI with --config when the consumer has no local vitest.config.*. */
+export function buildVitestCoverageCmd(root: string, fitnessRunnerRoot?: string): string {
+  const frRoot = fitnessRunnerRoot ?? getFitnessRunnerRoot();
+  const hasLocal = VITEST_CONFIG_NAMES.some((name) => existsSync(join(root, name)));
+  if (hasLocal) return VITEST_COVERAGE_CMD;
+  const configPath = resolveFitnessConfigPath(root, FITNESS_VITEST_CONFIG, frRoot);
+  return `${VITEST_COVERAGE_CMD} --config ${quoteForShell(configPath)}`;
+}
+
 /** Run vitest with coverage; returns exit code and combined stdout/stderr. */
 export function runVitestCoverage(
   root: string,
-  execSyncFn: ExecSyncFn = execSync
+  execSyncFn: ExecSyncFn = execSync,
+  fitnessRunnerRoot?: string
 ): { exitCode: number; output: string } {
-  return execSyncResult(root, VITEST_COVERAGE_CMD, execSyncFn);
+  return execSyncResult(root, buildVitestCoverageCmd(root, fitnessRunnerRoot), execSyncFn);
 }
 
 export { enUS } from './enUS.js';
@@ -73,8 +89,9 @@ function thresholdCheckResult(
   root: string,
   context: Parameters<Check['run']>[1]
 ): ReturnType<typeof checkResult> | null {
-  if (!hasFullCoverageThresholds(root)) return checkResult(false, [enUS.ThresholdsNot100], 1);
   const frRoot = context?._fitnessRunnerRootForTesting ?? getFitnessRunnerRoot();
+  if (!hasFullCoverageThresholds(root, frRoot))
+    return checkResult(false, [enUS.ThresholdsNot100], 1);
   if (!hasFullCoverageThresholds(frRoot))
     return checkResult(false, [enUS.FitnessRunnerThresholdsNot100], 1);
   return null;
@@ -87,14 +104,23 @@ function coverageFailureResult(output: string): ReturnType<typeof checkResult> {
   return checkResult(false, [msg], 1);
 }
 
+/** Run vitest coverage in root after threshold checks pass. */
+async function runCoveragePhase(
+  root: string,
+  context: Parameters<Check['run']>[1]
+): Promise<ReturnType<typeof checkResult>> {
+  const frRoot = context?._fitnessRunnerRootForTesting ?? getFitnessRunnerRoot();
+  const { exitCode, output } = runVitestCoverage(root, getExecSync(context), frRoot);
+  return exitCode === 0 ? checkResult(true, [], 1) : coverageFailureResult(output);
+}
+
 /** Ensures both consumer and @mayjournal/fitness have 100% thresholds and vitest run --coverage passes in root. */
 export const vitestCoverageFullCheck: Check = {
   name: CheckName.VitestCoverageFull,
   async run(root = process.cwd(), context) {
     const thresholdFail = thresholdCheckResult(root, context);
     if (thresholdFail) return thresholdFail;
-    const { exitCode, output } = runVitestCoverage(root, getExecSync(context));
-    return exitCode === 0 ? checkResult(true, [], 1) : coverageFailureResult(output);
+    return runCoveragePhase(root, context);
   },
   runInProcess: true,
 };

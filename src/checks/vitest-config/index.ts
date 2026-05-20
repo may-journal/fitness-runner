@@ -68,13 +68,21 @@ export function tryLoadPackageJsonVitest(root: string): VitestConfigRaw | null {
   }
 }
 
-/** Load Vitest config from root (vitest.config.* then package.json vitest). */
-export function loadVitestConfig(root: string): VitestConfigRaw | null {
+/** Load Vitest config from a single directory (config files then package.json vitest key). */
+export function loadVitestConfigFromRoot(root: string): VitestConfigRaw | null {
   for (const name of VITEST_CONFIG_NAMES) {
     const config = tryLoadConfigFile(root, name);
     if (config != null) return config;
   }
   return tryLoadPackageJsonVitest(root);
+}
+
+/** Load Vitest config from root; falls back to fallbackRoot (e.g. @mayjournal/fitness package). */
+export function loadVitestConfig(root: string, fallbackRoot?: string): VitestConfigRaw | null {
+  const local = loadVitestConfigFromRoot(root);
+  if (local != null) return local;
+  if (fallbackRoot == null) return null;
+  return loadVitestConfigFromRoot(fallbackRoot);
 }
 
 /** Get coverage block from config (test.coverage ?? coverage). */

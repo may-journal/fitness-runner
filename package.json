@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.05.20.1058",
+  "version": "0.1.0-2026.05.20.1120",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -50,6 +50,7 @@
     "eslint.config.d.ts",
     "vitest.config.d.ts",
     "vitest.config.mjs",
+    "tsconfig.lint.cjs",
     "tsconfig.json",
     "tsconfig.cjs",
     "cspell.json",

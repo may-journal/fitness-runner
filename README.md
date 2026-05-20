@@ -49,18 +49,35 @@ See [src/checks/README.md](src/checks/README.md) for the list and how checks wor
 - [rules-front-matter](src/checks/rules-front-matter/README.md)
 - [semantic-commit](src/checks/semantic-commit/README.md)
 - [vitest-coverage-exclude](src/checks/vitest-coverage-exclude/README.md)
+- [vitest-coverage-full](src/checks/vitest-coverage-full/README.md)
 
-## Exported configs
+## Consumer projects
 
-Consumers can extend these configs via package exports:
+Install the package, add a script, and run from your repo root. Checks use this package’s configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`.
+
+```json
+{
+  "scripts": {
+    "fitness": "fitness"
+  }
+}
+```
+
+```bash
+npm run fitness
+```
+
+If your project already has its own config for a tool, that local file wins; otherwise fitness falls back to the matching export from `@mayjournal/fitness`.
+
+## Exported configs (optional)
+
+These exports are what fitness uses internally and are also available if you wire tools directly (outside `npm run fitness`):
 
 - `@mayjournal/fitness/eslint.config` – ESLint flat config
 - `@mayjournal/fitness/vitest.config` – Vitest
-- `@mayjournal/fitness/tsconfig` – TypeScript
+- `@mayjournal/fitness/tsconfig` – TypeScript (this repo’s build config)
 - `@mayjournal/fitness/cspell` – cspell.json
 - `@mayjournal/fitness/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
-
-Example: add `"prettier": "@mayjournal/fitness/prettier.config"` to your package.json to use the shared Prettier config.
 
 ## Config
 

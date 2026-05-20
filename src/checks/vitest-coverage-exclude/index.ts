@@ -1,6 +1,7 @@
 import { checkResult } from '../../utils/checkResult.js';
 import { CheckName } from '../../types/index.types.js';
 import type { Check } from '../../types/index.types.js';
+import { getFitnessRunnerRoot } from '../../utils/getFitnessRunnerRoot.js';
 import {
   getCoverageExcludeFromConfig,
   loadVitestConfig,
@@ -33,7 +34,7 @@ function isDisallowedTsPattern(pattern: string): boolean {
 }
 
 /** Get coverage exclude array from Vitest config (test.coverage.exclude or coverage.exclude). */
-function getCoverageExclude(config: ReturnType<typeof loadVitestConfig>): string[] {
+export function getCoverageExclude(config: ReturnType<typeof loadVitestConfig>): string[] {
   if (config == null) return [];
   const exclude = getCoverageExcludeFromConfig(config);
   if (!Array.isArray(exclude)) return [];
@@ -44,7 +45,7 @@ function getCoverageExclude(config: ReturnType<typeof loadVitestConfig>): string
 export const vitestCoverageExcludeCheck: Check = {
   name: CheckName.VitestCoverageExclude,
   async run(root = process.cwd()) {
-    const config = loadVitestConfig(root);
+    const config = loadVitestConfig(root, getFitnessRunnerRoot());
     const exclude = getCoverageExclude(config);
     if (exclude.length === 0) return checkResult(true, [], 1);
     const bad = exclude.filter((p) => typeof p === 'string' && isDisallowedTsPattern(p));
