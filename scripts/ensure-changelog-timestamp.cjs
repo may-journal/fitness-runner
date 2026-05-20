@@ -1,6 +1,6 @@
 'use strict';
 const { execSync } = require('node:child_process');
-const { readFileSync, writeFileSync } = require('node:fs');
+const { readFileSync, readdirSync, statSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 
 const root = join(__dirname, '..');
@@ -22,11 +22,36 @@ let content = readFileSync(changelogPath, 'utf8');
 content = content.replace(/^(### )\d{4}\.\d{2}\.\d{2}\.\d{4}/m, `$1${ts}`);
 writeFileSync(changelogPath, content);
 
-const pkgPath = join(root, 'package.json');
-const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-pkg.version = pkg.version.replace(/-?\d{4}\.\d{2}\.\d{2}\.\d{4}$/, `-${ts}`);
-writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+function collectPackageJsonPaths(dir, paths = []) {
+  for (const entry of readdirSync(dir)) {
+    const fullPath = join(dir, entry);
+    const stat = statSync(fullPath);
+    if (stat.isDirectory()) {
+      collectPackageJsonPaths(fullPath, paths);
+      continue;
+    }
+    if (entry === 'package.json') paths.push(fullPath);
+  }
+  return paths;
+}
+
+const packageJsonPaths = [
+  join(root, 'package.json'),
+  ...collectPackageJsonPaths(join(root, 'packages')),
+];
+const bumpedPaths = [];
+for (const pkgPath of packageJsonPaths) {
+  const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
+  if (!pkg.version) continue;
+  pkg.version = pkg.version.replace(/-?\d{4}\.\d{2}\.\d{2}\.\d{4}$/, `-${ts}`);
+  writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + '\n');
+  bumpedPaths.push(pkgPath);
+}
 
 execSync('npm install', { cwd: root, stdio: 'inherit' });
-execSync('npx prettier CHANGELOG.md package.json --write', { cwd: root, stdio: 'inherit' });
-execSync('git add CHANGELOG.md package.json package-lock.json', { cwd: root, stdio: 'inherit' });
+const prettierTargets = ['CHANGELOG.md', ...bumpedPaths].join(' ');
+execSync(`npx prettier ${prettierTargets} --write`, { cwd: root, stdio: 'inherit' });
+execSync(
+  `git add CHANGELOG.md package-lock.json ${bumpedPaths.map((p) => p.replace(`${root}/`, '')).join(' ')}`,
+  { cwd: root, stdio: 'inherit' }
+);

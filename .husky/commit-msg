@@ -1,1 +1,2 @@
+bash scripts/nvm-use.sh
 npm run fitness -- --check=semantic-commit --message="$(cat "$1")"

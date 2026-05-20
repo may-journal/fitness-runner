@@ -7,8 +7,37 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1120
+### 2026.05.20.1520
 
+- Build: use `fitness-shared build` in `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks`; remove inline `node --eval` tsconfig generation from package scripts.
+
+### 2026.05.20.1516
+
+- Shared bin: resolve monorepo root inside `fitness-shared` build, lint, and test; remove `cd` from package scripts.
+- Lint: generate ephemeral runner `tsconfig.json` at lint time so ESLint `projectService` maps runner sources on clean checkouts.
+
+### 2026.05.20.1509
+
+- ESLint: centralize rules in `eslint.base.cjs`; CLI and fitness eslint check import `createEslintConfig` with their own TypeScript parser options so `projectService` and `project` no longer conflict.
+- Shared bin: add `fitness-shared lint` for monorepo ESLint; wire workspace lint scripts through it; run lint in pre-commit alongside fitness.
+- Check packages: add minimal lint-only `tsconfig.json` (extends shared check config) for ESLint `projectService` discovery; remove monorepo check enumeration from shared config.
+
+### 2026.05.20.1453
+
+- Shared config: centralize TypeScript `compilerOptions` in `tsconfig.compiler.cjs`; generate `tsconfig.check.json` and `tsconfig.checks.json` from CJS sources so ESLint and build share one source of truth.
+- CI: commit hand-authored check and bundle `tsconfig.json` files (un-ignore in `.gitignore`) and build `@mayjournal/fitness-shared` before other workspaces so runner `tsc` resolves shared types.
+- ESLint: include check package and bundle `tsconfig.json` paths in `parserOptions.project` so type-aware lint finds monorepo check sources.
+- Cspell: skip staged `.gitignore`, `package-lock.json`, and `tsconfig.json` so explicit staged paths honor `ignorePaths`.
+- Restore `disabledChecks` on `.fitnessrc`: optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`; types on `@mayjournal/fitness-shared`, filter in runner `load-check.ts`; tests in `load-check.test.ts` and `run.test.ts`.
+- Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.
+- Mark plan step 7d release with PR #12 in plans/plan-split-runner-check-packages.md.
+- Move runner and checks from root src/ into packages/runner and twelve packages/checks/\* workspaces with dynamic check loading and @mayjournal/fitness-checks-bundle defaults.
+- Add Architecture.md for monorepo layout; update README and complete plan steps 1–6 (shared configs, per-check vitest, remove legacy src/).
+- Scaffold npm workspaces: private root package.json, packages/runner, packages/shared, packages/checks-bundle, and packages/checks/\* stubs; bump versions under packages/ in ensure-changelog-timestamp.cjs; ignore **/coverage/** in cspell.
+- Move check tool dependencies from packages/runner into each packages/checks/\* package so published check packages declare only what they need; trim runner deps and refresh package-lock.json.
+- CI: run `npm run test -ws --if-present` so every workspace with a test script runs in GitHub Actions.
+- Check packages: scope Vitest to `src/**/*.test.ts`, point `@mayjournal/fitness` aliases at runner `dist/types`, and give vitest-coverage-full an explicit coverage config.
+- Changelog-updated: expect new section heading to match root package.json version suffix so pre-commit timestamp bumps pass after long CI runs.
 - Checks fall back to @mayjournal/fitness configs when consumers lack local cspell, prettier, vitest, or tsconfig; add resolveFitnessConfigPath, resolveLintTsconfig (temp tsconfig for ESLint in parent cwd), and tsconfig.lint.cjs export; document consumer setup in README.
 - Switch publish workflow to npm trusted publishing (OIDC); use NODE_AUTH_TOKEN in .npmrc instead of NPM_TOKEN secret.
 

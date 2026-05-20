@@ -1,0 +1,49 @@
+{
+  "name": "@mayjournal/fitness-check-read-repo-first",
+  "version": "0.1.0-2026.05.20.1520",
+  "description": "Fitness check: read-repo-first",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "fitness-shared build",
+    "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
+    "test": "npm run build && fitness-shared test"
+  },
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
+  "dependencies": {
+    "@mayjournal/fitness-shared": "*",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5"
+  },
+  "devDependencies": {
+    "@mayjournal/fitness": "*",
+    "@types/node": "^25",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "@mayjournal/fitness": "*"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "tag": "next"
+  }
+}

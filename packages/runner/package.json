@@ -1,0 +1,72 @@
+{
+  "name": "@mayjournal/fitness",
+  "version": "0.1.0-2026.05.20.1520",
+  "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
+  "keywords": [
+    "cli",
+    "lint",
+    "checks",
+    "quality",
+    "ci",
+    "pre-commit",
+    "fitness"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/may-journal/fitness-runner.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/types/index.types.js",
+      "types": "./dist/types/index.types.d.ts",
+      "default": "./dist/types/index.types.js"
+    },
+    "./runner": {
+      "import": "./dist/runner/index.js",
+      "types": "./dist/runner/index.d.ts",
+      "default": "./dist/runner/index.js"
+    }
+  },
+  "main": "dist/types/index.types.js",
+  "types": "dist/types/index.types.d.ts",
+  "bin": {
+    "fitness": "bin/fitness.js"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "scripts": {
+    "build": "npm run build -w @mayjournal/fitness-shared && fitness-shared build",
+    "ci": "bash ../../scripts/nvm-use.sh && npm run fitness",
+    "fitness": "npm run build && node bin/fitness.js",
+    "lint": "fitness-shared lint .",
+    "precommit": "npm run fitness",
+    "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
+    "test": "fitness-shared test --coverage"
+  },
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
+  "dependencies": {
+    "@mayjournal/fitness-shared": "*",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "jiti": "^2.6.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsconfig.js": "^3.0.0",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "tag": "next"
+  }
+}

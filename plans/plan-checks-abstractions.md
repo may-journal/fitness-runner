@@ -4,7 +4,7 @@ relatedConfigurations: ['../package.json']
 
 # Plan: Repeating patterns in checks and abstraction options
 
-This doc reviews `src/checks/*` for recurring patterns and suggests shared abstractions to reduce duplication and keep behavior consistent.
+This doc reviews `packages/checks/*` for recurring patterns and suggests shared abstractions to reduce duplication and keep behavior consistent.
 
 ## Result shape
 

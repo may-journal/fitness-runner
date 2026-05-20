@@ -1,0 +1,78 @@
+{
+  "name": "@mayjournal/fitness-shared",
+  "version": "0.1.0-2026.05.20.1520",
+  "description": "Shared utilities and configs for @mayjournal/fitness check packages",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cspell": "./config/cspell.json",
+    "./eslint.base": "./config/eslint.base.cjs",
+    "./eslint.config": {
+      "types": "./types/eslint.config.d.ts",
+      "default": "./config/eslint.config.cjs"
+    },
+    "./prettier.config": {
+      "types": "./types/prettier.config.d.ts",
+      "default": "./config/prettier.config.cjs"
+    },
+    "./tsconfig": "./config/tsconfig.json",
+    "./tsconfig.cjs": "./config/tsconfig.cjs",
+    "./tsconfig.lint.cjs": "./config/tsconfig.lint.cjs",
+    "./tsconfig.check": "./config/tsconfig.check.json",
+    "./vitest.check.config": "./config/vitest.check.config.mjs",
+    "./vitest.config": {
+      "types": "./types/vitest.config.d.ts",
+      "default": "./config/vitest.config.mjs"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "fitness-shared": "./bin/fitness-shared.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "config",
+    "types"
+  ],
+  "scripts": {
+    "build": "fitness-shared build",
+    "ci": "bash ../../scripts/nvm-use.sh && npm run format:check && npm run lint && npm run test",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check",
+    "lint": "fitness-shared lint",
+    "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
+    "test": "npm run build && vitest run"
+  },
+  "prettier": "./config/prettier.config.cjs",
+  "dependencies": {
+    "jiti": "^2.6.1"
+  },
+  "devDependencies": {
+    "@mayjournal/fitness": "*",
+    "@types/node": "^25",
+    "prettier": "3.8.1",
+    "prettier-plugin-packagejson": "^3.0.2",
+    "prettier-plugin-sort-json": "^4.2.0",
+    "tsconfig.js": "^3.0.0",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "@mayjournal/fitness": "*"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "tag": "next"
+  }
+}
