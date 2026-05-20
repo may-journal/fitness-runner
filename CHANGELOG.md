@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1520
+### 2026.05.20.1537
 
+- Release: add JS provision scripts (per-folder READMEs), Provision npm packages workflow, and publish-time checks to seed new `@mayjournal` workspaces and configure trusted publishing.
 - Build: use `fitness-shared build` in `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks`; remove inline `node --eval` tsconfig generation from package scripts.
 
 ### 2026.05.20.1516

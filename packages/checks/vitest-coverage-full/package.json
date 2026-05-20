@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-vitest-coverage-full",
-  "version": "0.1.0-2026.05.20.1520",
+  "version": "0.1.0-2026.05.20.1537",
   "description": "Fitness check: vitest-coverage-full",
   "license": "MIT",
   "type": "module",
@@ -19,7 +19,7 @@
   ],
   "scripts": {
     "build": "fitness-shared build",
-    "ci": "bash ../../../scripts/nvm-use.sh && npm run format:check && npm run lint && npm run test",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run format:check && npm run lint && npm run test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "lint": "fitness-shared lint",

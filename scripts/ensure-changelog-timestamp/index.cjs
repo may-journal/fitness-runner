@@ -3,7 +3,7 @@ const { execSync } = require('node:child_process');
 const { readFileSync, readdirSync, statSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const root = join(__dirname, '..');
+const root = join(__dirname, '../..');
 const staged = execSync('git diff --cached --name-only', { cwd: root, encoding: 'utf8' })
   .trim()
   .split('\n');
@@ -53,5 +53,5 @@ const prettierTargets = ['CHANGELOG.md', ...bumpedPaths].join(' ');
 execSync(`npx prettier ${prettierTargets} --write`, { cwd: root, stdio: 'inherit' });
 execSync(
   `git add CHANGELOG.md package-lock.json ${bumpedPaths.map((p) => p.replace(`${root}/`, '')).join(' ')}`,
-  { cwd: root, stdio: 'inherit' }
+  { cwd: root, stdio: 'inherit' },
 );
