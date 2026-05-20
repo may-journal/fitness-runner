@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.05.20.1058
+
+- Switch publish workflow to npm trusted publishing (OIDC); use NODE_AUTH_TOKEN in .npmrc instead of NPM_TOKEN secret.
+
 ### 2026.04.04.1748
 
 - Export `./vitest.config` as `vitest.config.mjs` and add `vitest.config.d.ts` for TypeScript consumers.
