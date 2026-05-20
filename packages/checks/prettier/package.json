@@ -1,7 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-prettier",
-  "version": "0.1.0-2026.05.20.1359",
-  "private": true,
+  "version": "0.1.0-2026.05.20.1415",
   "description": "Fitness check: prettier",
   "license": "MIT",
   "type": "module",
@@ -21,6 +20,7 @@
     "build": "tsc",
     "ci": "bash ../../../scripts/nvm-use.sh && npm run test",
     "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
     "test": "npm run build && vitest run --config vitest.config.mjs"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",

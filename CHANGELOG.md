@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1359
+### 2026.05.20.1415
 
+- Restore `disabledChecks` on `.fitnessrc`: optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`; types on `@mayjournal/fitness-shared`, filter in runner `load-check.ts`; tests in `load-check.test.ts` and `run.test.ts`.
 - Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.
 - Move runner and checks from root src/ into packages/runner and twelve packages/checks/\* workspaces with dynamic check loading and @mayjournal/fitness-checks-bundle defaults.
 - Add Architecture.md for monorepo layout; update README and complete plan steps 1–6 (shared configs, per-check vitest, remove legacy src/).

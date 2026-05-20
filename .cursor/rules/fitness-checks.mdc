@@ -1,7 +1,7 @@
 ---
 description: Read all fitness checks and craft solutions with them in mind
-globs: src/**, CHANGELOG.md, vitest.config.*, .nvmrc, .fitnessrc*, package.json
+globs: packages/**, CHANGELOG.md, vitest.config.*, .nvmrc, .fitnessrc*, package.json
 alwaysApply: false
 ---
 
-Read all checks from `src/checks/`—each subfolder is a check that will be run. Review each check’s README for its behavior and conventions. Craft solutions with these checks in mind.
+Read all checks from `packages/checks/`—each subfolder is a check package that will be run. Review each check’s README for its behavior and conventions. Craft solutions with these checks in mind.

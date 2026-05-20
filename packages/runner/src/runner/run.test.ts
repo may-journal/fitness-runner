@@ -130,6 +130,34 @@ describe('run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('excludes checks listed in disabledChecks from .fitnessrc checks list', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts':
+        'export default { checks: ["changelog", "semantic-commit"], disabledChecks: ["semantic-commit"] };',
+    });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock
+      .mockImplementationOnce(() => '')
+      .mockImplementationOnce(() => 'feat(pkg): init\n\n');
+    const stderrChunks: string[] = [];
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+      stderrChunks.push(String(chunk));
+      return true;
+    });
+    try {
+      await run(['node', 'fitness']);
+      process.chdir(origCwd);
+      const stderr = stderrChunks.join('');
+      expect(stderr).toMatch(/→ changelog/);
+      expect(stderr).not.toMatch(/→ semantic-commit/);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+  });
+
   it('runs only checks from .fitnessrc.ts when present', async () => {
     const dir = tempDir();
     runDir(dir, {
@@ -576,6 +604,42 @@ describe('run', () => {
     );
     await run(['node', 'fitness', '--check=semantic-commit']);
     expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('excludes checks listed in disabledChecks from bundle defaultChecks', async () => {
+    const dir = tempDir();
+    runDir(dir, { '.fitnessrc.ts': 'export default { disabledChecks: ["cspell"] };' });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementation((cmd: string) =>
+      typeof cmd === 'string' && cmd.includes('--pretty') ? 'feat(pkg): init\n\n' : ''
+    );
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const eslintMock = async () => ({ errors: [], exitCode: 0, filesChecked: 0 });
+    await run(['node', 'fitness'], { _eslintRunForTesting: eslintMock });
+    process.chdir(origCwd);
+    const out = logSpy.mock.calls.map((c) => c[0]).join('\n');
+    expect(out).toMatch(/changelog/);
+    expect(out).not.toMatch(/cspell/);
+    logSpy.mockRestore();
+    expect(process.exit).toHaveBeenCalledWith(0);
+  });
+
+  it('exits 1 with (none) when disabledChecks removes all configured checks', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts': 'export default { checks: ["changelog"], disabledChecks: ["changelog"] };',
+    });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(run(['node', 'fitness'])).rejects.toThrow('exit');
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining(enUS.UnknownCheckPrefix + enUS.UnknownCheckSpecNone)
+    );
+    process.chdir(origCwd);
+    errSpy.mockRestore();
   });
 
   it('runs bundle defaultChecks when .fitnessrc has no checks list', async () => {

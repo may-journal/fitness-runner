@@ -8,7 +8,7 @@ High-level outline for a check that validates `package.json` dependency placemen
 
 ## Scope
 
-- Check name and location (e.g. `deps-vs-devdeps` under `src/checks/`).
+- Check name and location (e.g. `deps-vs-devdeps` under `packages/checks/`).
 - Input: repo root; read `package.json` and scan `src/` (or configured source dir).
 
 ## Classification (inference only)

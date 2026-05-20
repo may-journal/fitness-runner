@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-checks",
-  "version": "0.1.0-2026.05.20.1359",
+  "version": "0.1.0-2026.05.20.1415",
   "description": "Default check bundle for @mayjournal/fitness",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,8 @@
   ],
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {

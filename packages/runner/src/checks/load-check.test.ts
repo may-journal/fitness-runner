@@ -85,6 +85,47 @@ describe('load-check', () => {
     await expect(resolveCheckNames(dir)).resolves.toEqual(['eslint', 'prettier']);
   });
 
+  it('resolveCheckNames applies disabledChecks to explicit checks list', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-disabled-explicit-'));
+    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(
+      join(dir, '.fitnessrc.ts'),
+      'export default { checks: ["eslint", "prettier"], disabledChecks: ["prettier"] };'
+    );
+    await expect(resolveCheckNames(dir)).resolves.toEqual(['eslint']);
+  });
+
+  it('resolveCheckNames applies disabledChecks to bundle defaultChecks', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-disabled-bundle-'));
+    const bundleDir = join(dir, 'node_modules', '@mayjournal', 'fitness-checks');
+    mkdirSync(bundleDir, { recursive: true });
+    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(
+      join(bundleDir, 'package.json'),
+      JSON.stringify({
+        name: '@mayjournal/fitness-checks',
+        type: 'module',
+        exports: { './defaultChecks': './defaultChecks.js' },
+      })
+    );
+    writeFileSync(
+      join(bundleDir, 'defaultChecks.js'),
+      'export const defaultChecks = ["changelog", "eslint", "prettier"];'
+    );
+    writeFileSync(join(dir, '.fitnessrc.ts'), 'export default { disabledChecks: ["eslint"] };');
+    await expect(resolveCheckNames(dir)).resolves.toEqual(['changelog', 'prettier']);
+  });
+
+  it('resolveCheckNames returns empty list when all checks are disabled', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-disabled-all-'));
+    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(
+      join(dir, '.fitnessrc.ts'),
+      'export default { checks: ["changelog"], disabledChecks: ["changelog"] };'
+    );
+    await expect(resolveCheckNames(dir)).resolves.toEqual([]);
+  });
+
   it('loadCheck loads a real check package', async () => {
     const check = await loadCheck('changelog', REPO_ROOT);
     expect(check.name).toBe('changelog');

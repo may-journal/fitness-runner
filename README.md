@@ -38,24 +38,17 @@ See [Architecture.md](./Architecture.md) for monorepo layout and runtime flow.
 
 ## Checks
 
-Each check is an npm package under `packages/checks/<name>/` with its own README:
-
-- [read-repo-first](packages/checks/read-repo-first/README.md)
-- [changelog](packages/checks/changelog/README.md)
-- [changelog-updated](packages/checks/changelog-updated/README.md)
-- [cspell](packages/checks/cspell/README.md)
-- [eslint](packages/checks/eslint/README.md)
-- [markdown-no-bold-italic](packages/checks/markdown-no-bold-italic/README.md)
-- [prettier](packages/checks/prettier/README.md)
-- [node-version](packages/checks/node-version/README.md)
-- [markdown-front-matter](packages/checks/markdown-front-matter/README.md)
-- [semantic-commit](packages/checks/semantic-commit/README.md)
-- [vitest-coverage-exclude](packages/checks/vitest-coverage-exclude/README.md)
-- [vitest-coverage-full](packages/checks/vitest-coverage-full/README.md)
+Each check is an npm package under `packages/checks/<name>/` (`@mayjournal/fitness-check-<name>`) with its own README. Default run order when `.fitnessrc` omits `checks` is `defaultChecks` from `@mayjournal/fitness-checks` (see [packages/checks-bundle/src/index.ts](./packages/checks-bundle/src/index.ts) and [Architecture.md](./Architecture.md)).
 
 ## Consumer projects
 
-Install `@mayjournal/fitness` and `@mayjournal/fitness-checks` (bundle of all checks), add a script, and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. See [Architecture.md](./Architecture.md) for à la carte setup.
+Install the runner plus either the checks bundle or individual check packages.
+
+Bundle (recommended): install `@mayjournal/fitness` and `@mayjournal/fitness-checks`. With no `.fitnessrc`, the runner uses bundle `defaultChecks`. Optional `.fitnessrc` can set `checks` to override the list or `disabledChecks` to exclude names from the bundle default.
+
+À la carte: install `@mayjournal/fitness` and only the `@mayjournal/fitness-check-*` packages you need; set `checks` in `.fitnessrc` to that subset (each listed name must be installed).
+
+Add a script and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. Setup matrix and examples: [Architecture.md](./Architecture.md#consumer-setup).
 
 ```json
 {

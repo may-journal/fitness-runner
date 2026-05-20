@@ -60,6 +60,13 @@ function dedupeCheckNames(names: readonly string[]): string[] {
   return names.filter((name) => !seen.has(name) && (seen.add(name), true));
 }
 
+/** Removes names listed in `disabledChecks` while preserving order. */
+function applyDisabledChecks(names: string[], disabled?: readonly string[]): string[] {
+  if (!disabled?.length) return names;
+  const disabledSet = new Set(disabled);
+  return names.filter((name) => !disabledSet.has(name));
+}
+
 /** Reads default check names from the installed checks bundle. */
 async function readBundleDefaultCheckNames(root: string): Promise<string[]> {
   const resolved = createRequireForRoot(root).resolve(BUNDLE_DEFAULT_CHECKS);
@@ -72,15 +79,24 @@ async function readBundleDefaultCheckNames(root: string): Promise<string[]> {
   return [...list];
 }
 
-/** Resolves ordered check names: `.fitnessrc` `checks`, else bundle `defaultChecks`. */
-export async function resolveCheckNames(root: string): Promise<string[]> {
-  const config = loadConfig(root);
+/** Resolves base check names from `.fitnessrc` `checks` or bundle `defaultChecks`. */
+async function resolveBaseCheckNames(
+  root: string,
+  config: ReturnType<typeof loadConfig>
+): Promise<string[]> {
   if (config?.checks?.length) return dedupeCheckNames(config.checks);
   try {
     return await readBundleDefaultCheckNames(root);
   } catch {
     throw new Error(enUS.NoChecksConfigured);
   }
+}
+
+/** Resolves ordered check names: `.fitnessrc` `checks`, else bundle `defaultChecks`, minus `disabledChecks`. */
+export async function resolveCheckNames(root: string): Promise<string[]> {
+  const config = loadConfig(root);
+  const names = await resolveBaseCheckNames(root, config);
+  return applyDisabledChecks(names, config?.disabledChecks);
 }
 
 /** Validates a loaded module default export is a Check with the expected name. */

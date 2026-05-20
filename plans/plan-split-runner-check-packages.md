@@ -11,13 +11,13 @@ Split this repo into an npm workspaces monorepo:
 - `@mayjournal/fitness-shared` — helpers used by checks (not installed by consumers directly)
 - `@mayjournal/fitness-checks` — optional bundle; installs all checks and exports the default run list
 
-Status: steps 1–6 complete on branch `feat/split-runner-check-packages`. Next: 6b restore `disabledChecks` in runner/shared, then step 7 (repo setup, CI, publish, docs).
+Status: steps 1–6 and 6b complete on branch `feat/split-runner-check-packages`. Next: step 7 (repo setup, CI, publish, docs).
 
 ## Runtime (simplified)
 
 One resolution function. No registry. No silent skips.
 
-`disabledChecks`: Supported in the target design below (and documented in Architecture.md/README). Step 6 (dynamic loader) shipped without it — types and resolver omit the filter. Step 6b restores behavior to match docs.
+`disabledChecks`: Filter in `resolveCheckNames` after base list resolution (`.fitnessrc` `checks` or bundle `defaultChecks`).
 
 ```mermaid
 flowchart TD
@@ -71,12 +71,12 @@ Drop registry-derived context. Build from loaded checks only:
 
 ### Consumer flows
 
-| Setup                                                | Config needed              | What runs                             |
-| ---------------------------------------------------- | -------------------------- | ------------------------------------- |
-| `@mayjournal/fitness` + `@mayjournal/fitness-checks` | None                       | Bundle’s `defaultChecks`              |
-| Above + `.fitnessrc`                                 | Optional `checks` override | Your `checks` list                    |
-| Above + `.fitnessrc`                                 | `disabledChecks` only      | Bundle list minus excluded (after 6b) |
-| `@mayjournal/fitness` + à la carte check packages    | Required `.fitnessrc`      | Listed checks only                    |
+| Setup                                                | Config needed              | What runs                  |
+| ---------------------------------------------------- | -------------------------- | -------------------------- |
+| `@mayjournal/fitness` + `@mayjournal/fitness-checks` | None                       | Bundle’s `defaultChecks`   |
+| Above + `.fitnessrc`                                 | Optional `checks` override | Your `checks` list         |
+| Above + `.fitnessrc`                                 | `disabledChecks` only      | Bundle list minus excluded |
+| `@mayjournal/fitness` + à la carte check packages    | Required `.fitnessrc`      | Listed checks only         |
 
 Simplest path: install runner + bundle → `npm run fitness`. Zero config.
 
@@ -223,20 +223,17 @@ export default {
 5. Bundle: dependencies + `defaultChecks` export ✅
 6. Runner: `resolveCheckNames` + dynamic loader + simplified context (no static registry; runner has no check deps) ✅
 
-### Next (immediate)
+6b. Restore `disabledChecks` ✅
 
-6b. Restore `disabledChecks` — re-implement in runner (removed during dynamic loader migration; docs still describe it but code/types do not):
+- `disabledChecks?: string[]` on `FitnessConfig` in `@mayjournal/fitness-shared` (runner types re-export)
+- Filter in `resolveCheckNames` after base list from `.fitnessrc` `checks` or bundle `defaultChecks`
+- Tests in `packages/runner` (`load-check.test.ts`, `run.test.ts`)
 
-- Add `disabledChecks?: string[]` back to `FitnessConfig` in `@mayjournal/fitness-shared`
-- Filter resolved list (from `.fitnessrc` `checks` OR bundle `defaultChecks`) in `resolveCheckNames` / `load-check.ts`
-- Tests in `packages/runner`
-- Update Architecture.md / README to match behavior (align wording with implementation)
+### Next: Step 7 — This repo setup, CI, publish, docs
 
-### Step 7: This repo setup, CI, publish, docs
-
-- 7a CI — expand `.github/workflows/ci.yml`: `build -ws`, `test -ws` (or key packages), `fitness`; not runner-only
-- 7b Publish — expand `publish.yml` and root `publish:ci` to npm publish all packages (runner, shared, bundle, 12 checks); lockstep versions; `publishConfig` on each package
-- 7c Docs — update `.cursor/rules/fitness-checks.mdc` (`packages/checks/*` not `src/checks`); trim stale plan refs; CHANGELOG for monorepo split; consumer migration in README
+- 7a CI — expand `.github/workflows/ci.yml`: `build -ws`, `test -ws` (or key packages), `fitness`; not runner-only ✅
+- 7b Publish — expand `publish.yml` and root `publish:ci` to npm publish all packages (runner, shared, bundle, 12 checks); lockstep versions; `publishConfig` on each package ✅
+- 7c Docs — update `.cursor/rules/fitness-checks.mdc` (`packages/checks/*` not `src/checks`); trim stale plan refs; CHANGELOG for monorepo split; consumer migration in README ✅
 - 7d Release — commit, PR, register npm packages for trusted publishing (manual note)
 
 ## Risks

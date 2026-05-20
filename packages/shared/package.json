@@ -1,7 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.05.20.1359",
-  "private": true,
+  "version": "0.1.0-2026.05.20.1415",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "license": "MIT",
   "type": "module",
@@ -42,6 +41,7 @@
     "format:check": "prettier . --check",
     "lint": "cd ../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && eslint -c packages/shared/config/eslint.config.cjs packages/shared",
     "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
     "test": "npm run build && vitest run"
   },
   "prettier": "./config/prettier.config.cjs",

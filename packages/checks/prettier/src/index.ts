@@ -114,6 +114,7 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
     (p) =>
       existsSync(join(root, p)) &&
       !PRETTIER_SKIP_STAGED.has(p) &&
+      !p.endsWith('.mdc') &&
       !p.startsWith('.husky/') &&
       !p.startsWith('scripts/')
   );
