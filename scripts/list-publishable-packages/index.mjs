@@ -36,7 +36,7 @@ export function listPublishablePackages() {
   };
 
   entries.sort(
-    (a, b) => sortKey(a.name).localeCompare(sortKey(b.name)) || a.name.localeCompare(b.name),
+    (a, b) => sortKey(a.name).localeCompare(sortKey(b.name)) || a.name.localeCompare(b.name)
   );
   return entries;
 }

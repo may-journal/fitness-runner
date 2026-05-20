@@ -15,10 +15,10 @@ When a contributor adds a new check under `packages/checks/`, this script picks 
 
 ## Auth
 
-| Environment | Auth |
-|-------------|------|
-| CI | Repo secret `NPM_PROVISION_TOKEN` (granular write token for `@mayjournal`) via `NODE_AUTH_TOKEN` |
-| Local | `npm login` (2FA for trust); repo `.npmrc` is temporarily moved aside so `~/.npmrc` applies |
+| Environment | Auth                                                                                             |
+| ----------- | ------------------------------------------------------------------------------------------------ |
+| CI          | Repo secret `NPM_PROVISION_TOKEN` (granular write token for `@mayjournal`) via `NODE_AUTH_TOKEN` |
+| Local       | `npm login` (2FA for trust); repo `.npmrc` is temporarily moved aside so `~/.npmrc` applies      |
 
 Routine publishes use OIDC in the Publish workflow, not this token.
 
@@ -34,11 +34,11 @@ DRY_RUN=1 npm run provision:npm      # print actions without running
 
 ## Environment
 
-| Variable | Default | Purpose |
-|----------|---------|---------|
-| `NPM_TRUST_REPO` | `may-journal/fitness-runner` | GitHub repo for trusted publisher |
-| `NPM_TRUST_WORKFLOW` | `publish.yml` | Workflow filename on npm |
-| `DRY_RUN` | (unset) | Skip mutating commands |
-| `NODE_AUTH_TOKEN` | (unset) | npm token (CI secret) |
+| Variable             | Default                      | Purpose                           |
+| -------------------- | ---------------------------- | --------------------------------- |
+| `NPM_TRUST_REPO`     | `may-journal/fitness-runner` | GitHub repo for trusted publisher |
+| `NPM_TRUST_WORKFLOW` | `publish.yml`                | Workflow filename on npm          |
+| `DRY_RUN`            | (unset)                      | Skip mutating commands            |
+| `NODE_AUTH_TOKEN`    | (unset)                      | npm token (CI secret)             |
 
 Requires npm 11.10+ for `npm trust` (CI installs 11.14).

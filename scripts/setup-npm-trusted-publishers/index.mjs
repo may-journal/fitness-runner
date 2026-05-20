@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const provision = join(
   dirname(fileURLToPath(import.meta.url)),
-  '../provision-npm-packages/index.mjs',
+  '../provision-npm-packages/index.mjs'
 );
 const result = spawnSync(process.execPath, [provision, ...process.argv.slice(2)], {
   stdio: 'inherit',

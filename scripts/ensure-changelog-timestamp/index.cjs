@@ -53,5 +53,5 @@ const prettierTargets = ['CHANGELOG.md', ...bumpedPaths].join(' ');
 execSync(`npx prettier ${prettierTargets} --write`, { cwd: root, stdio: 'inherit' });
 execSync(
   `git add CHANGELOG.md package-lock.json ${bumpedPaths.map((p) => p.replace(`${root}/`, '')).join(' ')}`,
-  { cwd: root, stdio: 'inherit' },
+  { cwd: root, stdio: 'inherit' }
 );

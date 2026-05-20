@@ -59,7 +59,11 @@ function npmVersionOk() {
 
 /** @param {string[]} args */
 function npmCmd(args, options = {}) {
-  const bin = process.env.NPM_CLI ? [process.env.NPM_CLI] : npmVersionOk() ? ['npm'] : ['npx', '--yes', `npm@${minNpm}`];
+  const bin = process.env.NPM_CLI
+    ? [process.env.NPM_CLI]
+    : npmVersionOk()
+      ? ['npm']
+      : ['npx', '--yes', `npm@${minNpm}`];
   const result = spawnSync(bin[0], [...bin.slice(1), ...args], {
     cwd: options.cwd ?? root,
     encoding: 'utf8',
@@ -134,10 +138,9 @@ function configureTrust(name) {
     console.log('  [dry-run] would npm trust github');
     return true;
   }
-  const result = npmCmd(
-    ['trust', 'github', name, '--file', workflow, '--repo', repo, '--yes'],
-    { stdio: 'inherit' },
-  );
+  const result = npmCmd(['trust', 'github', name, '--file', workflow, '--repo', repo, '--yes'], {
+    stdio: 'inherit',
+  });
   return result.status === 0;
 }
 
