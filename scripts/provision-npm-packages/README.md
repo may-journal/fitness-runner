@@ -6,12 +6,14 @@ relatedConfigurations: ['../../package.json']
 
 Seeds new `@mayjournal/*` packages on the npm registry and configures GitHub Actions trusted publishing for `.github/workflows/publish.yml`.
 
+Trusted publishing is optional locally via `npm run provision:npm -- trust` (interactive npm 2FA). CI does not run this script.
+
 When a contributor adds a new check under `packages/checks/`, this script picks it up automatically via [list-publishable-packages](../list-publishable-packages/README.md).
 
 ## When it runs
 
-- GitHub Actions: [provision-npm-packages.yml](../../.github/workflows/provision-npm-packages.yml) on `main` when package manifests change; also at the start of [publish.yml](../../.github/workflows/publish.yml).
-- Locally: `npm run provision:npm`
+- Locally only (optional): `npm run provision:npm`
+- CI [publish.yml](../../.github/workflows/publish.yml) only runs `npm publish -ws` via OIDC. New packages and trusted publishing are configured on npmjs.com by a maintainer.
 
 ## Auth
 
@@ -41,4 +43,12 @@ DRY_RUN=1 npm run provision:npm      # print actions without running
 | `DRY_RUN`            | (unset)                      | Skip mutating commands            |
 | `NODE_AUTH_TOKEN`    | (unset)                      | npm token (CI secret)             |
 
-Requires npm 11.10+ for `npm trust` (CI installs 11.14).
+Requires npm 11.14+ (npx installs automatically). The registry trust API requires a `permissions` array since 2026-05-20; this script sends `createPackage` because `npm trust github` still omits it and returns HTTP 400.
+
+When running `trust` locally, each package first runs `npm trust github` (npm’s own CLI + browser/passkey). If that fails (often HTTP 400 without `permissions`), the script retries via the registry API with `createPackage`.
+
+Complete browser sign-in when prompted and wait until npm confirms before returning to the terminal. Enable skip 2FA for 5 minutes on npmjs.com on the first package to bulk-configure the rest.
+
+If the repo `.npmrc` was moved aside, restore it when finished: `mv .npmrc.setup-trust.bak .npmrc` (if that file exists and `.npmrc` is missing).
+
+Website fallback (always works with passkey): package on npmjs.com → Settings → Trusted publishing → GitHub Actions → workflow `publish.yml`, repository `may-journal/fitness-runner`, allow npm publish.

@@ -8,6 +8,8 @@
     ".husky",
     "package-lock.json",
     "**/*.test.ts",
+    "**/*.test.mjs",
+    "**/cspell.json",
     ".gitignore",
     "tsconfig.json"
   ],
@@ -34,6 +36,8 @@
     "subpaths",
     "subshell",
     "vitest",
-    "tsx"
+    "tsx",
+    "EOTP",
+    "otplease"
   ]
 }

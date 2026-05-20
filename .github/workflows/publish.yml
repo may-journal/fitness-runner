@@ -23,12 +23,4 @@ jobs:
       - name: Use npm 11 for OIDC publish
         run: npm install -g npm@11.14.1
       - run: npm ci
-      - name: Provision new npm packages (registry + trusted publishers)
-        run: node scripts/provision-npm-packages/index.mjs
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROVISION_TOKEN }}
-      - name: Verify all packages are ready for OIDC publish
-        run: node scripts/provision-npm-packages/index.mjs check
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_PROVISION_TOKEN }}
       - run: npm run publish:ci

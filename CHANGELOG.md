@@ -7,8 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1544
+### 2026.05.20.1627
 
+- CI: remove Provision npm packages workflow; Publish runs OIDC `npm publish -ws` only.
+- Scripts: add `test:scripts` and colocated node:test coverage; keep optional local provision helpers.
+- Packages: add `repository` to publishable `@mayjournal/*` package.json files for npm trusted publishing.
 - Style: format provision and related scripts with Prettier for CI.
 - Release: add JS provision scripts (per-folder READMEs), Provision npm packages workflow, and publish-time checks to seed new `@mayjournal` workspaces and configure trusted publishing.
 - Build: use `fitness-shared build` in `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks`; remove inline `node --eval` tsconfig generation from package scripts.

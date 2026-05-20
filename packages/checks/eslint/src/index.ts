@@ -81,7 +81,7 @@ export function tryParseJsonArray(str: string): ESLintJsonResult[] | null {
 }
 
 const LINTABLE_EXT = /\.(cjs|js|mjs|tsx?)$/;
-const IGNORED_BY_ESLINT = /\.(test|spec)\.(ts|tsx)$/;
+const IGNORED_BY_ESLINT = /\.(test|spec)\.(cjs|js|mjs|ts|tsx)$/;
 
 /** Paths to lint: staged (existing, lintable, not ignored) under root, or "." when none. */
 function getPaths(root: string, staged: string[]): string[] {

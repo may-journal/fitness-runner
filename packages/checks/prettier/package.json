@@ -1,7 +1,11 @@
 {
   "name": "@mayjournal/fitness-check-prettier",
-  "version": "0.1.0-2026.05.20.1544",
+  "version": "0.1.0-2026.05.20.1627",
   "description": "Fitness check: prettier",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/may-journal/fitness-runner.git"
+  },
   "license": "MIT",
   "type": "module",
   "exports": {

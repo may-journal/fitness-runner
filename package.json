@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1544",
+  "version": "0.1.0-2026.05.20.1627",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -27,7 +27,8 @@
     "provision:npm": "node scripts/provision-npm-packages/index.mjs",
     "publish:ci": "npm publish -ws --access restricted",
     "setup:npm-trust": "node scripts/setup-npm-trusted-publishers/index.mjs",
-    "test": "npm run test -w @mayjournal/fitness"
+    "test": "npm run test -w @mayjournal/fitness",
+    "test:scripts": "node --test scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {

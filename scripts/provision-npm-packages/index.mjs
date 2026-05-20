@@ -3,26 +3,28 @@
  * Discover @mayjournal publishable workspaces; seed missing packages on npm;
  * configure trusted publishing for publish.yml.
  */
-import { spawnSync } from 'node:child_process';
+import { spawnSync as realSpawnSync } from 'node:child_process';
 import { existsSync, renameSync } from 'node:fs';
+import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listPublishablePackages } from '../list-publishable-packages/index.mjs';
+import { configureTrustWithPermissions } from './trust-github-api.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const repo = process.env.NPM_TRUST_REPO ?? 'may-journal/fitness-runner';
 const workflow = process.env.NPM_TRUST_WORKFLOW ?? 'publish.yml';
-const minNpm = '11.10.0';
+const minNpm = '11.14.1';
 const dryRun = Boolean(process.env.DRY_RUN);
 const npmrcBackup = join(root, '.npmrc.setup-trust.bak');
 
-/** @type {'all' | 'seed' | 'trust' | 'check'} */
-const mode = parseMode(process.argv[2]);
+/** @type {{ spawnSync?: typeof realSpawnSync, configureTrustWithPermissions?: typeof configureTrustWithPermissions }} */
+export const testHooks = {};
 
 let failed = false;
 let npmrcMoved = false;
 
-function parseMode(arg) {
+export function parseMode(arg) {
   const normalized = (arg ?? 'all').replace(/^--/, '');
   if (['all', 'seed', 'trust', 'check'].includes(normalized)) return normalized;
   console.error('Usage: npm run provision:npm [-- check|seed|trust]');
@@ -36,6 +38,11 @@ function restoreNpmrc() {
   }
 }
 
+/** npmrc paths for trust API after repo .npmrc was moved aside. */
+export function getTrustAuthNpmrcPaths() {
+  return npmrcMoved ? [join(homedir(), '.npmrc')] : undefined;
+}
+
 function prepareLocalAuth() {
   const hasToken = Boolean(process.env.NODE_AUTH_TOKEN);
   const npmrcPath = join(root, '.npmrc');
@@ -47,6 +54,7 @@ function prepareLocalAuth() {
 }
 
 function npmVersionOk() {
+  const spawnSync = testHooks.spawnSync ?? realSpawnSync;
   const result = spawnSync('npm', ['--version'], { encoding: 'utf8' });
   const v = (result.stdout ?? '0').trim().split('.').map(Number);
   const m = minNpm.split('.').map(Number);
@@ -64,6 +72,7 @@ function npmCmd(args, options = {}) {
     : npmVersionOk()
       ? ['npm']
       : ['npx', '--yes', `npm@${minNpm}`];
+  const spawnSync = testHooks.spawnSync ?? realSpawnSync;
   const result = spawnSync(bin[0], [...bin.slice(1), ...args], {
     cwd: options.cwd ?? root,
     encoding: 'utf8',
@@ -128,20 +137,66 @@ function seedPackage(pkg) {
 }
 
 /** @param {string} name */
-function configureTrust(name) {
+export async function configureTrust(name) {
   if (trustConfigured(name)) {
     console.log(`  trust: ${name} already configured`);
     return true;
   }
   console.log(`  trust: ${name} → GitHub ${repo} / ${workflow}`);
-  if (dryRun) {
-    console.log('  [dry-run] would npm trust github');
+  if (Boolean(process.env.DRY_RUN)) {
+    console.log('  [dry-run] would configure trusted publisher (createPackage)');
     return true;
   }
-  const result = npmCmd(['trust', 'github', name, '--file', workflow, '--repo', repo, '--yes'], {
-    stdio: 'inherit',
-  });
-  return result.status === 0;
+  if (process.env.NODE_AUTH_TOKEN) {
+    console.error(
+      '  SKIP: trusted publishing cannot be set with NPM_PROVISION_TOKEN (needs interactive 2FA).'
+    );
+    console.error('  Run locally: npm run provision:npm -- trust');
+    return false;
+  }
+  if (!testHooks.configureTrustWithPermissions) {
+    console.log('  trying: npm trust github (browser 2FA — same as npm login)');
+    const trustArgs = ['trust', 'github', name, '--file', workflow, '--repo', repo, '--yes'];
+    const cli = npmCmd(trustArgs, { stdio: 'inherit' });
+    if (cli.status === 0) {
+      console.log(`  trust: ${name} configured via npm CLI`);
+      return true;
+    }
+    console.log(
+      '  npm trust github did not succeed; trying registry API with createPackage permission…'
+    );
+  }
+
+  try {
+    const configureApi = testHooks.configureTrustWithPermissions ?? configureTrustWithPermissions;
+    await configureApi({
+      npmrcPaths: getTrustAuthNpmrcPaths(),
+      packageName: name,
+      repo,
+      workflow,
+    });
+    return true;
+  } catch (err) {
+    const code = err.statusCode ?? err.code;
+    if (code === 409) {
+      console.log(`  trust: ${name} already configured`);
+      return true;
+    }
+    if (code === 400) {
+      console.error(
+        '  Hint: registry requires permissions in trust POST; use npm 11.14+ and complete browser 2FA.'
+      );
+    }
+    if (code === 401) {
+      console.error(
+        '  Hint: run in a terminal, complete browser sign-in when prompted, or configure trust at https://www.npmjs.com/package/' +
+          name.replace('/', '%2f') +
+          '/settings'
+      );
+    }
+    console.error(`  ${err.message ?? err}`);
+    return false;
+  }
 }
 
 function sleep(ms) {
@@ -178,11 +233,12 @@ async function runCheck() {
     for (const name of missingTrust) console.error(`  - ${name}`);
   }
   console.error('');
-  console.error('Run the Provision npm packages workflow or: npm run provision:npm');
+  console.error('Configure trusted publishing on npmjs.com or run: npm run provision:npm -- trust');
   process.exit(1);
 }
 
-async function runProvision() {
+/** @param {'all' | 'seed' | 'trust' | 'check'} mode */
+async function runProvision(mode) {
   const doSeed = mode === 'all' || mode === 'seed';
   const doTrust = mode === 'all' || mode === 'trust';
 
@@ -224,7 +280,7 @@ async function runProvision() {
         console.error('  SKIP: not on registry yet');
         continue;
       }
-      if (!configureTrust(pkg.name)) {
+      if (!(await configureTrust(pkg.name))) {
         console.error(`  WARN: trust failed for ${pkg.name}`);
         failed = true;
       }
@@ -239,12 +295,17 @@ async function runProvision() {
   console.log('=== done ===');
 }
 
-prepareLocalAuth();
+const isMain = process.argv[1] === fileURLToPath(import.meta.url);
 
-if (mode === 'check') {
-  await runCheck();
-} else {
-  await runProvision();
+if (isMain) {
+  const mode = parseMode(process.argv[2]);
+  prepareLocalAuth();
+
+  if (mode === 'check') {
+    await runCheck();
+  } else {
+    await runProvision(mode);
+  }
+
+  restoreNpmrc();
 }
-
-restoreNpmrc();
