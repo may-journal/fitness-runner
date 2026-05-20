@@ -94,11 +94,19 @@ export function formatMarkdownReport(rows, extra = {}) {
     }
   }
 
-  if (extra.attwRows?.length) {
+  const attwRows = extra.attwRows?.filter((a) => !a.skipped) ?? [];
+  const attwSkipped = extra.attwRows?.filter((a) => a.skipped) ?? [];
+  if (attwSkipped.length) {
+    lines.push(
+      '',
+      '_attw (Are The Types Wrong) skipped: CLI currently crashes in CI (`Cannot read properties of undefined`). Advisory only; re-enable when upstream fixes._'
+    );
+  }
+  if (attwRows.length) {
     lines.push('', '### Are The Types Wrong (attw)', '');
-    for (const a of extra.attwRows) {
-      lines.push(a.ok ? `- ${a.name}: ok` : `- ${a.name}: issues or tool error`);
-      if (a.summary) lines.push('', '```', a.summary.trim(), '```', '');
+    for (const a of attwRows) {
+      lines.push(a.ok ? `- ${a.name}: ok` : `- ${a.name}: issues`);
+      if (!a.ok && a.summary) lines.push('', '```', a.summary.trim(), '```', '');
     }
   }
 

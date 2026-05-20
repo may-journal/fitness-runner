@@ -43,8 +43,13 @@ export function parsePackDryRun(jsonText) {
  * @param {{ status: number | null, stdout?: string, stderr?: string }} result
  * @returns {{ ok: boolean, errors: number, warnings: number, output: string }}
  */
+/** @param {string} text */
+export function stripAnsi(text) {
+  return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 export function summarizePublint(result) {
-  const text = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
+  const text = stripAnsi(`${result.stdout ?? ''}${result.stderr ?? ''}`).trim();
   const ok = (result.status ?? 1) === 0;
   const countSection = (label) => {
     if (!text.includes(`${label}:`)) return 0;

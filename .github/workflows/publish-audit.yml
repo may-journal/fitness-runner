@@ -21,7 +21,7 @@ jobs:
       - uses: ./.github/actions/setup
       - run: npm run build
       - name: Audit publish footprint
-        run: node scripts/audit-publish/index.mjs --no-build --json --attw > audit.json
+        run: node scripts/audit-publish/index.mjs --no-build --json > audit.json
         continue-on-error: true
       - name: Format PR comment
         if: github.event_name == 'pull_request'

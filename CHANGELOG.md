@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1710
+### 2026.05.20.1716
 
+- Publish audit: track `packages/shared/types/vitest.config.d.ts` (fix publint in CI); drop broken attw from PR workflow; strip ANSI from publint output in comments.
 - CI: fix `findInstallRoot` test for hoisted vs workspace `node_modules`; write publish-audit JSON via `node scripts/audit-publish/index.mjs` so PR comments parse.
 - Cspell: single config at `@mayjournal/fitness-shared/cspell`; remove duplicate `packages/checks/cspell/cspell.json`.
 - Perf (issue #13): add `audit:publish`, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and plan; fix `exports` types-first on publishable packages.
