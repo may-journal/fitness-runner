@@ -1,10 +1,15 @@
 {
   "name": "@mayjournal/fitness-check-read-repo-first",
-  "version": "0.1.0-2026.05.20.1147",
+  "version": "0.1.0-2026.05.20.1156",
   "private": true,
   "description": "Fitness check: read-repo-first",
   "license": "MIT",
   "type": "module",
+  "dependencies": {
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5"
+  },
   "publishConfig": {
     "access": "restricted",
     "tag": "next"

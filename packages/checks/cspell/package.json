@@ -1,10 +1,14 @@
 {
   "name": "@mayjournal/fitness-check-cspell",
-  "version": "0.1.0-2026.05.20.1147",
+  "version": "0.1.0-2026.05.20.1156",
   "private": true,
   "description": "Fitness check: cspell",
   "license": "MIT",
   "type": "module",
+  "dependencies": {
+    "cspell": "^8.15.0",
+    "cspell-lib": "^8.15.0"
+  },
   "publishConfig": {
     "access": "restricted",
     "tag": "next"

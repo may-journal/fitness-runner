@@ -1,10 +1,23 @@
 {
   "name": "@mayjournal/fitness-check-eslint",
-  "version": "0.1.0-2026.05.20.1147",
+  "version": "0.1.0-2026.05.20.1156",
   "private": true,
   "description": "Fitness check: eslint",
   "license": "MIT",
   "type": "module",
+  "overrides": {
+    "eslint-plugin-typescript-sort-keys": {
+      "eslint": "$eslint"
+    }
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsdoc": "^62.5.4",
+    "eslint-plugin-typescript-sort-keys": "^3.3.0"
+  },
   "publishConfig": {
     "access": "restricted",
     "tag": "next"

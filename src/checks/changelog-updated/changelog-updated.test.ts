@@ -123,6 +123,21 @@ describe('changelogUpdatedCheck', () => {
     expect(result.meta?.filesChecked).toBe(1);
   });
 
+  it('passes when new section heading matches root package.json version suffix', async () => {
+    const fixed = '2026.02.16.1430';
+    const mockExec = () =>
+      `+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n+ ### ${fixed}\n+ - New runner feature.\n`;
+    writeFileSync(join(dir, 'CHANGELOG.md'), '# Changelog\n\n### 2026.02.15\n\n- item');
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ version: `0.1.0-${fixed}` }));
+    const result = await changelogUpdatedCheck.run(dir, {
+      stagedFiles: ['src/foo.ts', 'CHANGELOG.md'],
+      _execSync: mockExec,
+      _now: () => new Date(2026, 1, 16, 19, 0),
+    });
+    expect(result.ok).toBe(true);
+    expect(result.meta?.filesChecked).toBe(1);
+  });
+
   it('fails when new section heading does not match current time', async () => {
     const mockExec = () =>
       '+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n+ ### 2026.02.16.1900\n+ - New runner feature.\n';

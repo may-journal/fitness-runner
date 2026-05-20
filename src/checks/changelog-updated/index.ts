@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import { checkResult } from '../../utils/checkResult.js';
@@ -86,6 +86,8 @@ function getRestWordsFromDiff(byFile: Map<string, string>): Set<string> {
   return extractWords(restLines.join(' '));
 }
 
+const VERSION_TS_RE = /(\d{4}\.\d{2}\.\d{2}\.\d{4})$/;
+
 /** Format date as yyyy.mm.dd.HHMM for changelog heading. */
 function getExpectedChangelogTimestamp(now: Date): string {
   const y = now.getFullYear();
@@ -94,6 +96,20 @@ function getExpectedChangelogTimestamp(now: Date): string {
   const h = String(now.getHours()).padStart(2, '0');
   const min = String(now.getMinutes()).padStart(2, '0');
   return `${y}.${m}.${d}.${h}${min}`;
+}
+
+/** Match ensure-changelog-timestamp: heading aligns with root package version suffix. */
+function resolveExpectedChangelogTimestamp(root: string, now: Date): string {
+  try {
+    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+      version?: string;
+    };
+    const m = pkg.version?.match(VERSION_TS_RE);
+    if (m) return m[1];
+  } catch {
+    /* fall back to wall clock */
+  }
+  return getExpectedChangelogTimestamp(now);
 }
 
 /** Extract all ### yyyy.mm.dd.HHMM timestamps from added changelog content. */
@@ -107,12 +123,13 @@ function extractHeadingTimestamps(addedContent: string): string[] {
 
 /** Require every new changelog heading timestamp to match current date and time. */
 function checkChangelogTime(
+  root: string,
   addedContent: string,
   now: Date
 ): { errors: string[]; ok: false } | { ok: true } {
   const timestamps = extractHeadingTimestamps(addedContent);
   if (timestamps.length === 0) return { ok: true };
-  const expected = getExpectedChangelogTimestamp(now);
+  const expected = resolveExpectedChangelogTimestamp(root, now);
   const bad = timestamps.filter((t) => t !== expected);
   if (bad.length === 0) return { ok: true };
   return { errors: [MSG_CHANGELOG_TIME + ` (expected ### ${expected})`], ok: false };
@@ -168,11 +185,12 @@ function getChangelogOverlapInput(
 
 /** Runs time check then overlap; returns report or time error. */
 function runTimeAndOverlap(
+  root: string,
   next: { changelogAddedContent: string; changelogWords: Set<string>; restWords: Set<string> },
   context: { _now?: () => Date } | undefined
 ): ReturnType<typeof checkResult> {
   const now = (context?._now ?? (() => new Date()))();
-  const timeResult = checkChangelogTime(next.changelogAddedContent, now);
+  const timeResult = checkChangelogTime(root, next.changelogAddedContent, now);
   if (!timeResult.ok) return checkResult(false, timeResult.errors, 1);
   return checkOverlapAndReport(next.changelogWords, next.restWords);
 }
@@ -186,7 +204,7 @@ function runChangelogUpdated(
   if (early != null) return early;
   const next = getChangelogOverlapInput(root, getExecSync(context));
   if ('err' in next) return next.err;
-  return runTimeAndOverlap(next, context);
+  return runTimeAndOverlap(root, next, context);
 }
 
 /** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */

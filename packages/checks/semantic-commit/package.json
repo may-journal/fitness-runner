@@ -1,10 +1,13 @@
 {
   "name": "@mayjournal/fitness-check-semantic-commit",
-  "version": "0.1.0-2026.05.20.1147",
+  "version": "0.1.0-2026.05.20.1156",
   "private": true,
   "description": "Fitness check: semantic-commit",
   "license": "MIT",
   "type": "module",
+  "dependencies": {
+    "conventional-commit-types": "^3.0.0"
+  },
   "publishConfig": {
     "access": "restricted",
     "tag": "next"

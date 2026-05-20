@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.05.20.1147",
+  "version": "0.1.0-2026.05.20.1156",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -69,36 +69,15 @@
     "test": "cd ../.. && vitest run --coverage"
   },
   "prettier": "../../prettier.config.cjs",
-  "overrides": {
-    "eslint-plugin-typescript-sort-keys": {
-      "eslint": "$eslint"
-    }
-  },
   "dependencies": {
-    "@stylistic/eslint-plugin": "^5.6.1",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
-    "boxen": "^8.0.1",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
-    "conventional-commit-types": "^3.0.0",
-    "cspell": "^8.15.0",
-    "cspell-lib": "^8.15.0",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^62.5.4",
-    "eslint-plugin-typescript-sort-keys": "^3.3.0",
-    "jiti": "^2.6.1",
-    "prettier": "3.8.1",
-    "prettier-plugin-packagejson": "^3.0.2",
-    "prettier-plugin-sort-json": "^4.2.0",
-    "wrap-ansi": "^9.0.2"
+    "jiti": "^2.6.1"
   },
   "devDependencies": {
     "@types/node": "^25",
     "@vitest/coverage-v8": "^4.0.18",
     "tsconfig.js": "^3.0.0",
-    "tsx": "^4.21.0",
     "typescript": "^5.6",
     "vitest": "^4.0.18"
   },

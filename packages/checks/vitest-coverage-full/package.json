@@ -1,10 +1,13 @@
 {
   "name": "@mayjournal/fitness-check-vitest-coverage-full",
-  "version": "0.1.0-2026.05.20.1147",
+  "version": "0.1.0-2026.05.20.1156",
   "private": true,
   "description": "Fitness check: vitest-coverage-full",
   "license": "MIT",
   "type": "module",
+  "dependencies": {
+    "jiti": "^2.6.1"
+  },
   "publishConfig": {
     "access": "restricted",
     "tag": "next"
