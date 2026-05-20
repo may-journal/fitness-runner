@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.05.20.1453",
+  "version": "0.1.0-2026.05.20.1509",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "license": "MIT",
   "type": "module",
@@ -11,6 +11,7 @@
       "default": "./dist/index.js"
     },
     "./cspell": "./config/cspell.json",
+    "./eslint.base": "./config/eslint.base.cjs",
     "./eslint.config": {
       "types": "./types/eslint.config.d.ts",
       "default": "./config/eslint.config.cjs"
@@ -45,7 +46,7 @@
     "ci": "bash ../../scripts/nvm-use.sh && npm run format:check && npm run lint && npm run test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "lint": "cd ../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && eslint -c packages/shared/config/eslint.config.cjs packages/shared",
+    "lint": "cd ../.. && fitness-shared lint packages/shared",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
     "test": "npm run build && vitest run"

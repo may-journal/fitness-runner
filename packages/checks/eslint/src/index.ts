@@ -34,7 +34,9 @@ export async function runEslintViaAPI(
   fitnessRunnerRoot?: string
 ): Promise<{ errors: string[]; exitCode: number; filesChecked: number }> {
   const frRoot = fitnessRunnerRoot ?? getFitnessRunnerRoot();
-  const configPath = join(frRoot, 'eslint.config.cjs');
+  const { createEslintConfig } = require(join(frRoot, 'eslint.base.cjs')) as {
+    createEslintConfig: (parserOptions: Record<string, unknown>) => unknown[];
+  };
   const { ESLint } = require('eslint') as {
     ESLint: new (opts: Record<string, unknown>) => {
       lintFiles: (p: string[]) => Promise<ESLintJsonResult[]>;
@@ -44,18 +46,11 @@ export async function runEslintViaAPI(
   const eslint = new ESLint({
     cwd: root,
     errorOnUnmatchedPattern: false,
-    overrideConfig: [
-      {
-        files: ['**/*.ts'],
-        languageOptions: {
-          parserOptions: {
-            project: tsconfigPath,
-            tsconfigRootDir: root,
-          },
-        },
-      },
-    ],
-    overrideConfigFile: configPath,
+    overrideConfig: createEslintConfig({
+      project: tsconfigPath,
+      tsconfigRootDir: root,
+    }),
+    overrideConfigFile: true,
   });
   const patterns = paths.length > 0 ? paths : ['.'];
   const results = await eslint.lintFiles(patterns);

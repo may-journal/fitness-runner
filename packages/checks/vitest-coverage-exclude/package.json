@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-vitest-coverage-exclude",
-  "version": "0.1.0-2026.05.20.1453",
+  "version": "0.1.0-2026.05.20.1509",
   "description": "Fitness check: vitest-coverage-exclude",
   "license": "MIT",
   "type": "module",

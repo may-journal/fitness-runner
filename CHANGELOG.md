@@ -7,6 +7,12 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.05.20.1509
+
+- ESLint: centralize rules in `eslint.base.cjs`; CLI and fitness eslint check import `createEslintConfig` with their own TypeScript parser options so `projectService` and `project` no longer conflict.
+- Shared bin: add `fitness-shared lint` for monorepo ESLint; wire workspace lint scripts through it; run lint in pre-commit alongside fitness.
+- Check packages: add minimal lint-only `tsconfig.json` (extends shared check config) for ESLint `projectService` discovery; remove monorepo check enumeration from shared config.
+
 ### 2026.05.20.1453
 
 - Shared config: centralize TypeScript `compilerOptions` in `tsconfig.compiler.cjs`; generate `tsconfig.check.json` and `tsconfig.checks.json` from CJS sources so ESLint and build share one source of truth.

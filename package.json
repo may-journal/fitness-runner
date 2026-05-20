@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1453",
+  "version": "0.1.0-2026.05.20.1509",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -22,7 +22,7 @@
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "lint": "npm run lint -w @mayjournal/fitness",
-    "precommit": "npm run fitness",
+    "precommit": "npm run fitness && npm run lint",
     "prepare": "husky",
     "publish:ci": "npm publish -ws --access restricted",
     "test": "npm run test -w @mayjournal/fitness"
