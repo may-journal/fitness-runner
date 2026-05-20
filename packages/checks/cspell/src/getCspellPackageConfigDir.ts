@@ -1,7 +1,8 @@
 import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Directory containing this package's bundled cspell.json (next to compiled output). */
+/** Directory containing the shared cspell config (`@mayjournal/fitness-shared/cspell`). */
 export function getCspellPackageConfigDir(): string {
-  return dirname(fileURLToPath(new URL('../cspell.json', import.meta.url)));
+  const resolved = fileURLToPath(import.meta.resolve('@mayjournal/fitness-shared/cspell'));
+  return dirname(resolved);
 }

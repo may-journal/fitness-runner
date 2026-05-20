@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1705
+### 2026.05.20.1707
 
+- Cspell: single config at `@mayjournal/fitness-shared/cspell`; remove duplicate `packages/checks/cspell/cspell.json`.
 - Perf (issue #13): add `audit:publish`, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and plan; fix `exports` types-first on publishable packages.
 - Deps: remove redundant runner jiti, duplicate prettier plugins, and misplaced `@mayjournal/fitness` production deps on checks.
 - CI: remove Provision npm packages workflow; Publish runs OIDC `npm publish -ws` only.

@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-cspell",
-  "version": "0.1.0-2026.05.20.1705",
+  "version": "0.1.0-2026.05.20.1707",
   "description": "Fitness check: cspell",
   "repository": {
     "type": "git",
@@ -13,14 +13,12 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
-    },
-    "./cspell": "./cspell.json"
+    }
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "cspell.json"
+    "dist"
   ],
   "scripts": {
     "build": "fitness-shared build",

@@ -21,6 +21,8 @@
     "microbenchmarks",
     "devdeps",
     "dotenv",
+    "EOTP",
+    "otplease",
     "npmjs",
     "unstub",
     "eslintcache",
