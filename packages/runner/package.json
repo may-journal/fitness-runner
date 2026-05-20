@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.05.20.1509",
+  "version": "0.1.0-2026.05.20.1516",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -39,14 +39,14 @@
     "bin"
   ],
   "scripts": {
-    "build": "npm run build -w @mayjournal/fitness-shared && rm -rf dist && cd ../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && tsc -p packages/shared/config/tsconfig.json",
+    "build": "npm run build -w @mayjournal/fitness-shared && fitness-shared build",
     "ci": "bash ../../scripts/nvm-use.sh && npm run fitness",
     "fitness": "npm run build && node bin/fitness.js",
-    "lint": "cd ../.. && fitness-shared lint .",
+    "lint": "fitness-shared lint .",
     "precommit": "npm run fitness",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
-    "test": "cd ../.. && vitest run --config packages/shared/config/vitest.config.mjs --coverage"
+    "test": "fitness-shared test --coverage"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {

@@ -2,8 +2,21 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findWorkspaceRoot, readPackageName } from './workspace-root.js';
 
 export function runTest(argv = process.argv.slice(2)) {
+  const cwd = process.cwd();
+  const name = readPackageName(cwd);
+
+  if (name === '@mayjournal/fitness') {
+    const root = findWorkspaceRoot(cwd);
+    const configPath = join(dirname(fileURLToPath(import.meta.url)), '../config/vitest.config.mjs');
+    const vitestArgs = ['run', '--config', configPath];
+    if (argv.includes('--coverage')) vitestArgs.push('--coverage');
+    const result = spawnSync('vitest', vitestArgs, { cwd: root, stdio: 'inherit' });
+    process.exit(result.status ?? 1);
+  }
+
   const configPath = join(
     dirname(fileURLToPath(import.meta.url)),
     '../config/vitest.check.config.mjs'
@@ -28,7 +41,7 @@ export function runTest(argv = process.argv.slice(2)) {
   }
 
   const result = spawnSync('vitest', ['run', '--config', configPath, ...vitestArgs], {
-    cwd: process.cwd(),
+    cwd,
     env,
     stdio: 'inherit',
   });

@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.05.20.1516
+
+- Shared bin: resolve monorepo root inside `fitness-shared` build, lint, and test; remove `cd` from package scripts.
+- Lint: generate ephemeral runner `tsconfig.json` at lint time so ESLint `projectService` maps runner sources on clean checkouts.
+
 ### 2026.05.20.1509
 
 - ESLint: centralize rules in `eslint.base.cjs`; CLI and fitness eslint check import `createEslintConfig` with their own TypeScript parser options so `projectService` and `project` no longer conflict.

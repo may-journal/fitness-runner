@@ -1,25 +1,31 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { findWorkspaceRoot } from './workspace-root.js';
 
 const require = createRequire(import.meta.url);
 const eslintConfig = join(dirname(fileURLToPath(import.meta.url)), '../config/eslint.config.cjs');
 
-function findWorkspaceRoot(start) {
-  let dir = start;
-  while (true) {
-    const parent = dirname(dir);
-    if (parent === dir) return start;
-    const pkgPath = join(dir, 'package.json');
-    if (existsSync(pkgPath)) {
-      const pkg = JSON.parse(readFileSync(pkgPath, 'utf8'));
-      if (pkg.workspaces) return dir;
-    }
-    dir = parent;
-  }
+/** Ephemeral tsconfig so projectService maps runner sources (not committed). */
+function ensureRunnerLintTsconfig(root) {
+  const runnerDir = join(root, 'packages/runner');
+  if (!existsSync(runnerDir)) return;
+  writeFileSync(
+    join(runnerDir, 'tsconfig.json'),
+    `${JSON.stringify(
+      {
+        compilerOptions: { noEmit: true, rootDir: './src' },
+        exclude: ['src/**/*.test.ts'],
+        extends: '../shared/config/tsconfig.check.json',
+        include: ['src/**/*.ts'],
+      },
+      null,
+      2
+    )}\n`
+  );
 }
 
 export function runLint(argv = process.argv.slice(3)) {
@@ -43,6 +49,7 @@ export function runLint(argv = process.argv.slice(3)) {
     require(join(root, 'packages/shared/config/generate-tsconfig-json.cjs')).generateTsconfigJson(
       join(root, 'packages/shared/config')
     );
+    ensureRunnerLintTsconfig(root);
   }
 
   const result = spawnSync('eslint', ['-c', eslintConfig, ...paths], {
