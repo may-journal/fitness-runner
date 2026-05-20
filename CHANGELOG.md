@@ -7,9 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1842
+### 2026.05.20.1849
 
 - Publish: ship only `@mayjournal/fitness-shared`, `@mayjournal/fitness-checks`, and `@mayjournal/fitness` (public); bundle all checks into `@mayjournal/fitness-checks/checks/*`; mark individual check workspaces private.
+- Style: format `list-publishable-packages` for Prettier CI.
 - Fix (issue #17): move `prettier`, `prettier-plugin-packagejson`, `prettier-plugin-sort-json`, and `vitest` to `@mayjournal/fitness-shared` dependencies so consumer repos using shared Prettier/Vitest configs can run them without extra installs.
 - Fix `bin/fitness.js` using install path as cwd: drop `cwd` override so the runner inherits the consumer project root and loads `.fitnessrc` / `disabledChecks` correctly via `npx fitness`.
 - Monorepo: run `node packages/runner/bin/fitness.js` from repo root so local `npm run fitness` keeps monorepo root as cwd.

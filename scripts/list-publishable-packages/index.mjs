@@ -7,11 +7,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 /** Monorepo workspaces published to npm (not individual check packages). */
-const PUBLISHABLE_DIRS = [
-  'packages/shared',
-  'packages/checks-bundle',
-  'packages/runner',
-];
+const PUBLISHABLE_DIRS = ['packages/shared', 'packages/checks-bundle', 'packages/runner'];
 
 /** @returns {{ dir: string, name: string }[]} */
 export function listPublishablePackages() {
