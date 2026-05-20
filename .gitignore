@@ -161,5 +161,6 @@ prettier.config.js.map
 prettier.config.d.ts.map
 vitest.config.js
 vitest.config.js.map
-vitest.config.d.ts
+/vitest.config.d.ts
 vitest.config.d.ts.map
+!packages/shared/types/vitest.config.d.ts

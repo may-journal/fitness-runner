@@ -54,7 +54,11 @@ export async function runEslintViaAPI(
   });
   const patterns = paths.length > 0 ? paths : ['.'];
   const results = await eslint.lintFiles(patterns);
-  const errors = results.flatMap((r) => r.messages.map((msg) => formatMessage(r.filePath, msg)));
+  const errors = results.flatMap((r) =>
+    r.messages
+      .filter((msg) => !msg.message.includes('File ignored because of a matching ignore pattern'))
+      .map((msg) => formatMessage(r.filePath, msg))
+  );
   const exitCode = results.some((r) => r.errorCount > 0) ? 1 : 0;
   return { errors, exitCode, filesChecked: results.length };
 }
@@ -87,7 +91,11 @@ const IGNORED_BY_ESLINT = /\.(test|spec)\.(cjs|js|mjs|ts|tsx)$/;
 function getPaths(root: string, staged: string[]): string[] {
   if (staged.length === 0) return [];
   return staged.filter(
-    (p) => LINTABLE_EXT.test(p) && !IGNORED_BY_ESLINT.test(p) && existsSync(join(root, p))
+    (p) =>
+      LINTABLE_EXT.test(p) &&
+      !p.endsWith('.d.ts') &&
+      !IGNORED_BY_ESLINT.test(p) &&
+      existsSync(join(root, p))
   );
 }
 

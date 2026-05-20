@@ -15,6 +15,7 @@ module.exports = {
     '../../../packages/checks/**',
     '../../../packages/checks-bundle/**',
     '../../../packages/runner/src/**/*.test.ts',
+    '../../../packages/runner/src/**/*.bench.ts',
   ],
   include: ['../../../packages/runner/src/**/*.ts'],
 };

@@ -8,6 +8,7 @@ Repo maintenance scripts. Each folder has its own README.
 
 | Folder                                                          | Purpose                                                                      |
 | --------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| [audit-publish](./audit-publish/)                               | Publish footprint audit (publint + `npm pack --dry-run`) per workspace       |
 | [ensure-changelog-timestamp](./ensure-changelog-timestamp/)     | Pre-commit version and changelog timestamp bump                              |
 | [list-publishable-packages](./list-publishable-packages/)       | Discover `@mayjournal/*` workspaces to publish                               |
 | [nvm-use](./nvm-use/)                                           | Load nvm and `nvm use` for `.nvmrc`                                          |

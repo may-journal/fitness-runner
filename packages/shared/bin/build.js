@@ -25,7 +25,7 @@ function runCheckBuild(cwd) {
           },
           rootDir: './src',
         },
-        exclude: ['src/**/*.test.ts'],
+        exclude: ['src/**/*.test.ts', 'src/**/*.bench.ts'],
         extends: '@mayjournal/fitness-shared/tsconfig.check',
         include: ['src/**/*.ts'],
       },

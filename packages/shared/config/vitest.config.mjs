@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     coverage: {
       exclude: [
+        '**/*.bench.ts',
         '**/*.d.ts',
         '**/*.test.ts',
         '**/*.spec.ts',
