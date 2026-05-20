@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1716",
+  "version": "0.1.0-2026.05.20.1726",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -21,7 +21,7 @@
     "bench:load-check": "npm run bench -w @mayjournal/fitness",
     "build": "npm run build -w @mayjournal/fitness-shared && npm run build -ws --if-present",
     "ci": "npm run ci -w @mayjournal/fitness",
-    "fitness": "npm run fitness -w @mayjournal/fitness",
+    "fitness": "npm run build -w @mayjournal/fitness && node packages/runner/bin/fitness.js",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "knip": "npm run knip -ws --if-present",
