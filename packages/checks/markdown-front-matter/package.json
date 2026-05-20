@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-markdown-front-matter",
-  "version": "0.1.0-2026.05.20.1520",
+  "version": "0.1.0-2026.05.20.1544",
   "description": "Fitness check: markdown-front-matter",
   "license": "MIT",
   "type": "module",
@@ -18,7 +18,7 @@
   ],
   "scripts": {
     "build": "fitness-shared build",
-    "ci": "bash ../../../scripts/nvm-use.sh && npm run test",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
     "test": "npm run build && fitness-shared test"

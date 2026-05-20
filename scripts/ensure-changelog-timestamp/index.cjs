@@ -3,7 +3,7 @@ const { execSync } = require('node:child_process');
 const { readFileSync, readdirSync, statSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const root = join(__dirname, '..');
+const root = join(__dirname, '../..');
 const staged = execSync('git diff --cached --name-only', { cwd: root, encoding: 'utf8' })
   .trim()
   .split('\n');
