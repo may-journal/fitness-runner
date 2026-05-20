@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.05.20.1446",
+  "version": "0.1.0-2026.05.20.1453",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "license": "MIT",
   "type": "module",
@@ -41,7 +41,7 @@
     "types"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "node --eval \"require('./config/generate-tsconfig-json.cjs').generateTsconfigJson()\" && tsc",
     "ci": "bash ../../scripts/nvm-use.sh && npm run format:check && npm run lint && npm run test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",

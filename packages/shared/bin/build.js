@@ -1,9 +1,16 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process';
+import { createRequire } from 'node:module';
 import { unlinkSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const require = createRequire(import.meta.url);
+const configDir = join(dirname(fileURLToPath(import.meta.url)), '../config');
 
 export function runBuild() {
+  require(join(configDir, 'generate-tsconfig-json.cjs')).generateTsconfigJson(configDir);
+
   const cwd = process.cwd();
   const tsconfigPath = join(cwd, '.fitness-check-tsconfig.json');
 

@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-checks",
-  "version": "0.1.0-2026.05.20.1446",
+  "version": "0.1.0-2026.05.20.1453",
   "description": "Default check bundle for @mayjournal/fitness",
   "license": "MIT",
   "type": "module",
@@ -22,7 +22,7 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "node --eval \"require('../shared/config/generate-tsconfig-json.cjs').generateTsconfigJson()\" && tsc",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish"
   },

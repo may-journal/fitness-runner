@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1446
+### 2026.05.20.1453
 
+- Shared config: centralize TypeScript `compilerOptions` in `tsconfig.compiler.cjs`; generate `tsconfig.check.json` and `tsconfig.checks.json` from CJS sources so ESLint and build share one source of truth.
 - CI: commit hand-authored check and bundle `tsconfig.json` files (un-ignore in `.gitignore`) and build `@mayjournal/fitness-shared` before other workspaces so runner `tsc` resolves shared types.
 - ESLint: include check package and bundle `tsconfig.json` paths in `parserOptions.project` so type-aware lint finds monorepo check sources.
 - Cspell: skip staged `.gitignore`, `package-lock.json`, and `tsconfig.json` so explicit staged paths honor `ignorePaths`.

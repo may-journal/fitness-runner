@@ -148,9 +148,10 @@ src/**/*.js.map
 tsconfig.json
 # Hand-authored package tsconfig (not tsconfig.js output)
 !packages/shared/tsconfig.json
-!packages/checks/*/tsconfig.json
 !packages/checks-bundle/tsconfig.json
 build/tsconfig.json
+packages/shared/config/tsconfig.check.json
+packages/shared/config/tsconfig.checks.json
 
 # Compiled root configs (sources are *.config.ts / *.config.cjs)
 eslint.config.js

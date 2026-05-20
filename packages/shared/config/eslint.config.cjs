@@ -1,5 +1,4 @@
 'use strict';
-const { existsSync, readdirSync } = require('node:fs');
 const { join } = require('node:path');
 const jsdoc = require('eslint-plugin-jsdoc');
 const tseslint = require('@typescript-eslint/eslint-plugin');
@@ -10,15 +9,13 @@ const cspellConfig = require('./cspell.json');
 
 const repoRoot = join(__dirname, '../../..');
 
-const checkPackageTsconfigs = readdirSync(join(repoRoot, 'packages/checks'))
-  .map((name) => join(repoRoot, 'packages/checks', name, 'tsconfig.json'))
-  .filter(existsSync);
+require('./generate-tsconfig-json.cjs').generateTsconfigJson(__dirname);
 
 const lintProjects = [
   join(repoRoot, 'packages/shared/config/tsconfig.json'),
   join(repoRoot, 'packages/shared/tsconfig.json'),
+  join(repoRoot, 'packages/shared/config/tsconfig.checks.json'),
   join(repoRoot, 'packages/checks-bundle/tsconfig.json'),
-  ...checkPackageTsconfigs,
 ];
 
 const rules = {
