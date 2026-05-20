@@ -1,6 +1,7 @@
 {
   "name": "@mayjournal/fitness-check-vitest-coverage-full",
-  "version": "0.1.0-2026.05.20.1738",
+  "version": "0.1.0-2026.05.20.1842",
+  "private": true,
   "description": "Fitness check: vitest-coverage-full",
   "repository": {
     "type": "git",
@@ -28,8 +29,6 @@
     "format:check": "prettier . --check",
     "knip": "knip --no-exit-code",
     "lint": "fitness-shared lint",
-    "prepublishOnly": "npm run build",
-    "publish:ci": "npm publish",
     "test": "npm run build && fitness-shared test --coverage"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
@@ -49,10 +48,6 @@
   },
   "engines": {
     "node": ">=24"
-  },
-  "publishConfig": {
-    "access": "restricted",
-    "tag": "next"
   },
   "knip": {
     "entry": [

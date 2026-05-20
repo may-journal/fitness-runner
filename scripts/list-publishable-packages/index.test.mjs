@@ -8,10 +8,10 @@ import { listPublishablePackages } from './index.mjs';
 const repoRoot = join(fileURLToPath(new URL('.', import.meta.url)), '../..');
 
 describe('listPublishablePackages', () => {
-  it('returns 15 @mayjournal packages', () => {
+  it('returns 3 @mayjournal packages (shared, checks bundle, runner)', () => {
     const packages = listPublishablePackages();
 
-    assert.equal(packages.length, 15);
+    assert.equal(packages.length, 3);
     assert.ok(packages.every(({ name }) => name.startsWith('@mayjournal/')));
   });
 
@@ -26,17 +26,15 @@ describe('listPublishablePackages', () => {
     }
   });
 
-  it('sorts shared first, check packages next, bundle, then fitness last', () => {
+  it('sorts shared first, checks bundle second, fitness last', () => {
     const packages = listPublishablePackages();
     const names = packages.map(({ name }) => name);
 
-    assert.equal(names[0], '@mayjournal/fitness-shared');
-    assert.equal(names.at(-2), '@mayjournal/fitness-checks');
-    assert.equal(names.at(-1), '@mayjournal/fitness');
-
-    const checkNames = names.slice(1, -2);
-    assert.ok(checkNames.every((name) => name.startsWith('@mayjournal/fitness-check-')));
-    assert.deepEqual(checkNames, [...checkNames].sort());
+    assert.deepEqual(names, [
+      '@mayjournal/fitness-shared',
+      '@mayjournal/fitness-checks',
+      '@mayjournal/fitness',
+    ]);
   });
 
   it('skips private packages', () => {
@@ -44,6 +42,7 @@ describe('listPublishablePackages', () => {
     const names = new Set(packages.map(({ name }) => name));
 
     assert.ok(!names.has('fitness-runner'));
+    assert.ok(!names.has('@mayjournal/fitness-check-prettier'));
 
     for (const { dir } of packages) {
       const pkg = JSON.parse(readFileSync(join(repoRoot, dir, 'package.json'), 'utf8'));

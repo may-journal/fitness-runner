@@ -126,10 +126,10 @@ function seedPackage(pkg) {
   }
   console.log(`  registry: publishing ${pkg.name} (first time) from ${pkg.dir}`);
   if (dryRun) {
-    console.log('  [dry-run] would npm publish --access restricted');
+    console.log('  [dry-run] would npm publish --access public');
     return true;
   }
-  const result = npmCmd(['publish', '--access', 'restricted'], {
+  const result = npmCmd(['publish', '--access', 'public'], {
     cwd: join(root, pkg.dir),
     stdio: 'inherit',
   });

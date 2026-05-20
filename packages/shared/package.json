@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.05.20.1738",
+  "version": "0.1.0-2026.05.20.1842",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",
@@ -76,7 +76,7 @@
     "node": ">=24"
   },
   "publishConfig": {
-    "access": "restricted",
+    "access": "public",
     "tag": "next"
   },
   "knip": {

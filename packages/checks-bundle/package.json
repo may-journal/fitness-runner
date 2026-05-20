@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-checks",
-  "version": "0.1.0-2026.05.20.1738",
+  "version": "0.1.0-2026.05.20.1842",
   "description": "Default check bundle for @mayjournal/fitness",
   "repository": {
     "type": "git",
@@ -18,6 +18,11 @@
       "types": "./dist/defaultChecks.d.ts",
       "import": "./dist/defaultChecks.js",
       "default": "./dist/defaultChecks.js"
+    },
+    "./checks/*": {
+      "types": "./dist/checks/*/index.d.ts",
+      "import": "./dist/checks/*/index.js",
+      "default": "./dist/checks/*/index.js"
     }
   },
   "main": "dist/index.js",
@@ -26,39 +31,27 @@
     "dist"
   ],
   "scripts": {
-    "build": "fitness-shared build",
+    "build": "node scripts/bundle-check-dist.mjs && fitness-shared build",
     "knip": "knip --no-exit-code",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
-  "dependencies": {
-    "@mayjournal/fitness-check-changelog": "*",
-    "@mayjournal/fitness-check-changelog-updated": "*",
-    "@mayjournal/fitness-check-cspell": "*",
-    "@mayjournal/fitness-check-eslint": "*",
-    "@mayjournal/fitness-check-markdown-front-matter": "*",
-    "@mayjournal/fitness-check-markdown-no-bold-italic": "*",
-    "@mayjournal/fitness-check-node-version": "*",
-    "@mayjournal/fitness-check-prettier": "*",
-    "@mayjournal/fitness-check-read-repo-first": "*",
-    "@mayjournal/fitness-check-semantic-commit": "*",
-    "@mayjournal/fitness-check-vitest-coverage-exclude": "*",
-    "@mayjournal/fitness-check-vitest-coverage-full": "*"
-  },
   "engines": {
     "node": ">=24"
   },
   "publishConfig": {
-    "access": "restricted",
+    "access": "public",
     "tag": "next"
   },
   "knip": {
     "entry": [
-      "src/index.ts"
+      "src/index.ts",
+      "scripts/bundle-check-dist.mjs"
     ],
     "project": [
-      "src/**/*.ts"
+      "src/**/*.ts",
+      "scripts/**/*.mjs"
     ]
   }
 }

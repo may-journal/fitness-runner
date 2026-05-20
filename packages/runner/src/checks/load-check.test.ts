@@ -16,8 +16,8 @@ import { enUS } from '../runner/enUS.js';
 const REPO_ROOT = resolve(fileURLToPath(new URL('../../../..', import.meta.url)));
 
 describe('load-check', () => {
-  it('checkPackageName returns scoped package id', () => {
-    expect(checkPackageName('eslint')).toBe('@mayjournal/fitness-check-eslint');
+  it('checkPackageName returns bundled check subpath', () => {
+    expect(checkPackageName('eslint')).toBe('@mayjournal/fitness-checks/checks/eslint');
   });
 
   it('findInstallRoot walks up from a nested directory', () => {
@@ -141,29 +141,32 @@ describe('load-check', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-no-pkg-'));
     writeFileSync(join(dir, 'package.json'), '{}');
     await expect(loadCheck('changelog', dir)).rejects.toThrow(
-      enUS.CheckPackageNotInstalled.replace('{{pkg}}', '@mayjournal/fitness-check-changelog')
+      enUS.CheckPackageNotInstalled.replace(
+        '{{pkg}}',
+        '@mayjournal/fitness-checks/checks/changelog'
+      )
     );
   });
 
   it('loadCheck throws when default export name mismatches', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-bad-export-'));
-    const pkgDir = join(dir, 'node_modules', '@mayjournal', 'fitness-check-fake');
-    mkdirSync(pkgDir, { recursive: true });
+    const bundleDir = join(dir, 'node_modules', '@mayjournal', 'fitness-checks');
+    mkdirSync(join(bundleDir, 'checks', 'fake'), { recursive: true });
     writeFileSync(join(dir, 'package.json'), '{}');
     writeFileSync(
-      join(pkgDir, 'package.json'),
+      join(bundleDir, 'package.json'),
       JSON.stringify({
-        name: '@mayjournal/fitness-check-fake',
+        name: '@mayjournal/fitness-checks',
         type: 'module',
-        exports: './index.js',
+        exports: { './checks/fake': './checks/fake/index.js' },
       })
     );
     writeFileSync(
-      join(pkgDir, 'index.js'),
+      join(bundleDir, 'checks/fake/index.js'),
       'export default { name: "other", run: async () => ({ ok: true, errors: [] }) };'
     );
     await expect(loadCheck('fake', dir)).rejects.toThrow(
-      enUS.InvalidCheckExport.replace('{{pkg}}', '@mayjournal/fitness-check-fake').replace(
+      enUS.InvalidCheckExport.replace('{{pkg}}', '@mayjournal/fitness-checks/checks/fake').replace(
         '{{name}}',
         'fake'
       )
@@ -172,18 +175,18 @@ describe('load-check', () => {
 
   it('loadCheck throws when default export is not a check', async () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-bad-run-'));
-    const pkgDir = join(dir, 'node_modules', '@mayjournal', 'fitness-check-bad');
-    mkdirSync(pkgDir, { recursive: true });
+    const bundleDir = join(dir, 'node_modules', '@mayjournal', 'fitness-checks');
+    mkdirSync(join(bundleDir, 'checks', 'bad'), { recursive: true });
     writeFileSync(join(dir, 'package.json'), '{}');
     writeFileSync(
-      join(pkgDir, 'package.json'),
+      join(bundleDir, 'package.json'),
       JSON.stringify({
-        name: '@mayjournal/fitness-check-bad',
+        name: '@mayjournal/fitness-checks',
         type: 'module',
-        exports: './index.js',
+        exports: { './checks/bad': './checks/bad/index.js' },
       })
     );
-    writeFileSync(join(pkgDir, 'index.js'), 'export default { name: "bad" };');
+    writeFileSync(join(bundleDir, 'checks/bad/index.js'), 'export default { name: "bad" };');
     await expect(loadCheck('bad', dir)).rejects.toThrow(/Invalid check export/);
   });
 

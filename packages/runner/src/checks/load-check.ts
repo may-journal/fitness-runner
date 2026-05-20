@@ -20,9 +20,9 @@ export function isPathLoadedCheck(check: Check): boolean {
   return pathLoadedChecks.has(check);
 }
 
-/** npm package name for a built-in check. */
+/** npm subpath for a bundled check in @mayjournal/fitness-checks. */
 export function checkPackageName(name: string): string {
-  return `@mayjournal/fitness-check-${name}`;
+  return `@mayjournal/fitness-checks/checks/${name}`;
 }
 
 /** True when dir has package.json and node_modules that resolve the checks bundle. */
