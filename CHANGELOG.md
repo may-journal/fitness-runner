@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.05.20.1520
+
+- Build: use `fitness-shared build` in `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks`; remove inline `node --eval` tsconfig generation from package scripts.
+
 ### 2026.05.20.1516
 
 - Shared bin: resolve monorepo root inside `fitness-shared` build, lint, and test; remove `cd` from package scripts.
