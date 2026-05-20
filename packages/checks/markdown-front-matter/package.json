@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-markdown-front-matter",
-  "version": "0.1.0-2026.05.20.1627",
+  "version": "0.1.0-2026.05.20.1705",
   "description": "Fitness check: markdown-front-matter",
   "repository": {
     "type": "git",
@@ -10,8 +10,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
@@ -23,6 +23,7 @@
   "scripts": {
     "build": "fitness-shared build",
     "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
+    "knip": "knip --no-exit-code",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
     "test": "npm run build && fitness-shared test"
@@ -46,5 +47,14 @@
   "publishConfig": {
     "access": "restricted",
     "tag": "next"
+  },
+  "knip": {
+    "entry": [
+      "src/index.ts",
+      "src/**/*.test.ts"
+    ],
+    "project": [
+      "src/**/*.ts"
+    ]
   }
 }

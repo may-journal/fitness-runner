@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-changelog-updated",
-  "version": "0.1.0-2026.05.20.1627",
+  "version": "0.1.0-2026.05.20.1705",
   "description": "Fitness check: changelog-updated",
   "repository": {
     "type": "git",
@@ -10,8 +10,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     }
   },
@@ -25,6 +25,7 @@
     "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run format:check && npm run lint && npm run test",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "knip": "knip --no-exit-code",
     "lint": "fitness-shared lint",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish",
@@ -32,15 +33,12 @@
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {
-    "@mayjournal/fitness": "*",
     "@mayjournal/fitness-shared": "*"
   },
   "devDependencies": {
+    "@mayjournal/fitness": "*",
     "@types/node": "^25",
     "prettier": "3.8.1",
-    "prettier-plugin-packagejson": "^3.0.2",
-    "prettier-plugin-sort-json": "^4.2.0",
-    "tsconfig.js": "^3.0.0",
     "typescript": "^5.6",
     "vitest": "^4.0.18"
   },
@@ -53,5 +51,14 @@
   "publishConfig": {
     "access": "restricted",
     "tag": "next"
+  },
+  "knip": {
+    "entry": [
+      "src/index.ts",
+      "src/**/*.test.ts"
+    ],
+    "project": [
+      "src/**/*.ts"
+    ]
   }
 }

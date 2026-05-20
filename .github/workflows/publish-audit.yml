@@ -1,0 +1,55 @@
+name: Publish audit
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  publish-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run build
+      - name: Audit publish footprint
+        run: npm run audit:publish -- --no-build --json --attw > audit.json
+        continue-on-error: true
+      - name: Format PR comment
+        if: github.event_name == 'pull_request'
+        run: node scripts/audit-publish/pr-comment.mjs audit.json > comment.md
+      - name: Post PR comment
+        if: github.event_name == 'pull_request'
+        uses: thollander/actions-comment-pull-request@v2
+        with:
+          filePath: comment.md
+          comment_tag: publish-audit
+      - name: Strict publish audit (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: npm run audit:publish -- --no-build --strict --gate-runner
+
+  knip:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run build
+      - run: npm run knip
+
+  bench-load-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run bench:load-check

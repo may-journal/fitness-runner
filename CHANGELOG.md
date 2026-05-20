@@ -7,8 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1627
+### 2026.05.20.1705
 
+- Perf (issue #13): add `audit:publish`, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and plan; fix `exports` types-first on publishable packages.
+- Deps: remove redundant runner jiti, duplicate prettier plugins, and misplaced `@mayjournal/fitness` production deps on checks.
 - CI: remove Provision npm packages workflow; Publish runs OIDC `npm publish -ws` only.
 - Scripts: add `test:scripts` and colocated node:test coverage; keep optional local provision helpers.
 - Packages: add `repository` to publishable `@mayjournal/*` package.json files for npm trusted publishing.

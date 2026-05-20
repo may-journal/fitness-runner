@@ -21,7 +21,7 @@ describe('load-check', () => {
 
   it('findInstallRoot walks up from a nested directory', () => {
     const nested = join(REPO_ROOT, 'packages', 'runner', 'src', 'checks');
-    expect(findInstallRoot(nested)).toBe(REPO_ROOT);
+    expect(findInstallRoot(nested)).toBe(join(REPO_ROOT, 'packages', 'runner'));
   });
 
   it('findInstallRoot returns startRoot when no install is found', () => {

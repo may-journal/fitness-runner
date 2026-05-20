@@ -16,7 +16,9 @@
   "useGitignore": true,
   "version": "0.2",
   "words": [
+    "attw",
     "mayjournal",
+    "microbenchmarks",
     "devdeps",
     "dotenv",
     "npmjs",
@@ -25,6 +27,8 @@
     "fitnessrc",
     "jscoverage",
     "jspm",
+    "knip",
+    "thollander",
     "jsdoc",
     "eslint",
     "lintable",

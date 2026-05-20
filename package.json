@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1627",
+  "version": "0.1.0-2026.05.20.1705",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -16,11 +16,15 @@
     "packages/checks/*"
   ],
   "scripts": {
+    "audit:publish": "node scripts/audit-publish/index.mjs",
+    "audit:publish:comment": "node scripts/audit-publish/index.mjs --no-build --json --attw 2>/dev/null | node scripts/audit-publish/pr-comment.mjs",
+    "bench:load-check": "npm run bench -w @mayjournal/fitness",
     "build": "npm run build -w @mayjournal/fitness-shared && npm run build -ws --if-present",
     "ci": "npm run ci -w @mayjournal/fitness",
     "fitness": "npm run fitness -w @mayjournal/fitness",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
+    "knip": "npm run knip -ws --if-present",
     "lint": "npm run lint -w @mayjournal/fitness",
     "precommit": "npm run fitness && npm run lint",
     "prepare": "husky",
@@ -28,17 +32,20 @@
     "publish:ci": "npm publish -ws --access restricted",
     "setup:npm-trust": "node scripts/setup-npm-trusted-publishers/index.mjs",
     "test": "npm run test -w @mayjournal/fitness",
-    "test:scripts": "node --test scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
+    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {
+    "@arethetypeswrong/cli": "^0.17.4",
     "@mayjournal/fitness": "*",
     "@mayjournal/fitness-checks": "*",
     "@mayjournal/fitness-shared": "*",
     "husky": "^9.0.0",
+    "knip": "^5.88.1",
     "prettier": "3.8.1",
     "prettier-plugin-packagejson": "^3.0.2",
-    "prettier-plugin-sort-json": "^4.2.0"
+    "prettier-plugin-sort-json": "^4.2.0",
+    "publint": "^0.3.12"
   },
   "engines": {
     "node": ">=24"

@@ -1,0 +1,37 @@
+import { spawnSync } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+
+/** Packages to run attw on (advisory). */
+export const ATTW_PACKAGES = [
+  { dir: 'packages/runner', name: '@mayjournal/fitness' },
+  { dir: 'packages/shared', name: '@mayjournal/fitness-shared' },
+];
+
+/**
+ * @param {string} dir relative to repo root
+ * @param {{ execSync?: typeof spawnSync }} [hooks]
+ * @returns {{ ok: boolean, summary: string }}
+ */
+export function runAttwPackage(dir, hooks = {}) {
+  const execSync = hooks.execSync ?? spawnSync;
+  const cwd = join(root, dir);
+  const result = execSync('npx', ['attw', '--pack', '--profile', 'node16', '-f', 'table'], {
+    cwd,
+    encoding: 'utf8',
+    shell: false,
+  });
+  const summary = `${result.stdout ?? ''}${result.stderr ?? ''}`.trim();
+  const ok = result.status === 0;
+  return { ok, summary: summary || (ok ? 'No issues' : 'attw failed') };
+}
+
+/** @param {{ execSync?: typeof spawnSync }} [hooks] */
+export function runAttwAudit(hooks = {}) {
+  return ATTW_PACKAGES.map(({ dir, name }) => {
+    const { ok, summary } = runAttwPackage(dir, hooks);
+    return { name, ok, summary };
+  });
+}

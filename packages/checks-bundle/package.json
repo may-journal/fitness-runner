@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-checks",
-  "version": "0.1.0-2026.05.20.1627",
+  "version": "0.1.0-2026.05.20.1705",
   "description": "Default check bundle for @mayjournal/fitness",
   "repository": {
     "type": "git",
@@ -10,13 +10,13 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./defaultChecks": {
-      "import": "./dist/defaultChecks.js",
       "types": "./dist/defaultChecks.d.ts",
+      "import": "./dist/defaultChecks.js",
       "default": "./dist/defaultChecks.js"
     }
   },
@@ -27,6 +27,7 @@
   ],
   "scripts": {
     "build": "fitness-shared build",
+    "knip": "knip --no-exit-code",
     "prepublishOnly": "npm run build",
     "publish:ci": "npm publish"
   },
@@ -51,5 +52,13 @@
   "publishConfig": {
     "access": "restricted",
     "tag": "next"
+  },
+  "knip": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "project": [
+      "src/**/*.ts"
+    ]
   }
 }
