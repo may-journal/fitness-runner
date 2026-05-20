@@ -1,0 +1,112 @@
+{
+  "name": "@mayjournal/fitness",
+  "version": "0.1.0-2026.05.20.1147",
+  "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
+  "keywords": [
+    "cli",
+    "lint",
+    "checks",
+    "quality",
+    "ci",
+    "pre-commit",
+    "fitness"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/may-journal/fitness-runner.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./cspell": "./cspell.json",
+    "./eslint.config": {
+      "types": "./eslint.config.d.ts",
+      "default": "./eslint.config.cjs"
+    },
+    "./prettier.config": {
+      "types": "./prettier.config.d.ts",
+      "default": "./prettier.config.cjs"
+    },
+    "./tsconfig": "./tsconfig.json",
+    "./tsconfig.cjs": "./tsconfig.cjs",
+    "./vitest.config": {
+      "types": "./vitest.config.d.ts",
+      "default": "./vitest.config.mjs"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "fitness": "bin/fitness.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "eslint.config.cjs",
+    "eslint.config.d.ts",
+    "vitest.config.d.ts",
+    "vitest.config.mjs",
+    "tsconfig.lint.cjs",
+    "tsconfig.json",
+    "tsconfig.cjs",
+    "cspell.json",
+    "prettier.config.cjs",
+    "prettier.config.d.ts"
+  ],
+  "scripts": {
+    "build": "cd ../.. && tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && tsc",
+    "ci": "(nvm use 2>/dev/null || true) && npm run fitness",
+    "fitness": "npm run build && node bin/fitness.js",
+    "lint": "cd ../.. && tsconfig.js --once --extensions=js,cjs --extends-strategy=ignore && eslint .",
+    "precommit": "npm run fitness",
+    "prepublishOnly": "npm run build",
+    "publish:ci": "npm publish",
+    "test": "cd ../.. && vitest run --coverage"
+  },
+  "prettier": "../../prettier.config.cjs",
+  "overrides": {
+    "eslint-plugin-typescript-sort-keys": {
+      "eslint": "$eslint"
+    }
+  },
+  "dependencies": {
+    "@stylistic/eslint-plugin": "^5.6.1",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "boxen": "^8.0.1",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "conventional-commit-types": "^3.0.0",
+    "cspell": "^8.15.0",
+    "cspell-lib": "^8.15.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsdoc": "^62.5.4",
+    "eslint-plugin-typescript-sort-keys": "^3.3.0",
+    "jiti": "^2.6.1",
+    "prettier": "3.8.1",
+    "prettier-plugin-packagejson": "^3.0.2",
+    "prettier-plugin-sort-json": "^4.2.0",
+    "wrap-ansi": "^9.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "@vitest/coverage-v8": "^4.0.18",
+    "tsconfig.js": "^3.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "publishConfig": {
+    "access": "restricted",
+    "tag": "next"
+  }
+}

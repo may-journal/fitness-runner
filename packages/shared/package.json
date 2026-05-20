@@ -1,0 +1,12 @@
+{
+  "name": "@mayjournal/fitness-shared",
+  "version": "0.1.0-2026.05.20.1147",
+  "private": true,
+  "description": "Shared utilities for @mayjournal/fitness check packages",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "restricted",
+    "tag": "next"
+  }
+}

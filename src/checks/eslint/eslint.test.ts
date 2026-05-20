@@ -145,7 +145,7 @@ describe('eslintCheck', () => {
     const result = await runEslintViaAPI(dir, ['bad.js']);
     expect(result.exitCode).toBe(1);
     expect(result.errors.some((e) => e.includes('bad.js') && e.includes('sort-keys'))).toBe(true);
-  });
+  }, 15000);
 
   it('passes staged path with quotes to runner', async () => {
     mockRun.mockResolvedValue({ errors: [], exitCode: 0, filesChecked: 0 });

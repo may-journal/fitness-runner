@@ -11,7 +11,7 @@ Split this repo into an npm workspaces monorepo:
 - `@mayjournal/fitness-shared` — helpers used by checks (not installed by consumers directly)
 - `@mayjournal/fitness-checks` — optional bundle; installs all checks and exports the default run list
 
-Status: planned — branch `feat/split-runner-check-packages`.
+Status: step 1 complete — workspaces scaffolded on branch `feat/split-runner-check-packages`. Next: step 2 (move shared).
 
 ## Runtime (simplified)
 

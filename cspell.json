@@ -2,6 +2,7 @@
   "ignorePaths": [
     "node_modules",
     "dist",
+    "**/coverage/**",
     "coverage",
     ".git",
     ".husky",

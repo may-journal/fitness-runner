@@ -1,0 +1,12 @@
+{
+  "name": "@mayjournal/fitness-checks",
+  "version": "0.1.0-2026.05.20.1147",
+  "private": true,
+  "description": "Default check bundle for @mayjournal/fitness",
+  "license": "MIT",
+  "type": "module",
+  "publishConfig": {
+    "access": "restricted",
+    "tag": "next"
+  }
+}

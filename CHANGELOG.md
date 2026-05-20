@@ -7,9 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1133
+### 2026.05.20.1147
 
 - Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.
+- Scaffold npm workspaces: private root package.json, packages/runner, packages/shared, packages/checks-bundle, and packages/checks/\* stubs; bump versions under packages/ in ensure-changelog-timestamp.cjs; ignore **/coverage/** in cspell.
 - Checks fall back to @mayjournal/fitness configs when consumers lack local cspell, prettier, vitest, or tsconfig; add resolveFitnessConfigPath, resolveLintTsconfig (temp tsconfig for ESLint in parent cwd), and tsconfig.lint.cjs export; document consumer setup in README.
 - Switch publish workflow to npm trusted publishing (OIDC); use NODE_AUTH_TOKEN in .npmrc instead of NPM_TOKEN secret.
 
