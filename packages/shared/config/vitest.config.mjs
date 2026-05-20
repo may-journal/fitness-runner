@@ -4,8 +4,15 @@ export default defineConfig({
   esbuild: { target: 'ES2022' },
   test: {
     coverage: {
-      exclude: ['**/*.d.ts', '**/*.test.ts', '**/*.spec.ts', '**/*.types.ts'],
-      include: ['src/**/*.ts'],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+        '**/*.types.ts',
+        'packages/runner/src/index.ts',
+        'packages/runner/src/runner/index.ts',
+      ],
+      include: ['packages/runner/src/**/*.ts'],
       provider: 'v8',
       reporter: ['text', 'lcov'],
       thresholds: {
@@ -16,5 +23,6 @@ export default defineConfig({
       },
     },
     globals: true,
+    include: ['packages/runner/src/**/*.test.ts'],
   },
 });

@@ -1,10 +1,41 @@
 {
   "name": "@mayjournal/fitness-check-changelog",
-  "version": "0.1.0-2026.05.20.1156",
+  "version": "0.1.0-2026.05.20.1359",
   "private": true,
   "description": "Fitness check: changelog",
   "license": "MIT",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && vitest run --config vitest.config.mjs"
+  },
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
+  "dependencies": {
+    "@mayjournal/fitness": "*",
+    "@mayjournal/fitness-shared": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^25",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=24"
+  },
   "publishConfig": {
     "access": "restricted",
     "tag": "next"

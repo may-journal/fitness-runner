@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1156",
+  "version": "0.1.0-2026.05.20.1359",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -29,6 +29,8 @@
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {
+    "@mayjournal/fitness": "*",
+    "@mayjournal/fitness-checks": "*",
     "@mayjournal/fitness-shared": "*",
     "husky": "^9.0.0",
     "prettier": "3.8.1",

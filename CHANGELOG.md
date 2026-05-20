@@ -7,9 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1156
+### 2026.05.20.1359
 
 - Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.
+- Move runner and checks from root src/ into packages/runner and twelve packages/checks/\* workspaces with dynamic check loading and @mayjournal/fitness-checks-bundle defaults.
+- Add Architecture.md for monorepo layout; update README and complete plan steps 1–6 (shared configs, per-check vitest, remove legacy src/).
 - Scaffold npm workspaces: private root package.json, packages/runner, packages/shared, packages/checks-bundle, and packages/checks/\* stubs; bump versions under packages/ in ensure-changelog-timestamp.cjs; ignore **/coverage/** in cspell.
 - Move check tool dependencies from packages/runner into each packages/checks/\* package so published check packages declare only what they need; trim runner deps and refresh package-lock.json.
 - Changelog-updated: expect new section heading to match root package.json version suffix so pre-commit timestamp bumps pass after long CI runs.

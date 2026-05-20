@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.05.20.1156",
+  "version": "0.1.0-2026.05.20.1359",
   "private": true,
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "license": "MIT",

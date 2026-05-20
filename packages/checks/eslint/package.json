@@ -1,22 +1,53 @@
 {
   "name": "@mayjournal/fitness-check-eslint",
-  "version": "0.1.0-2026.05.20.1156",
+  "version": "0.1.0-2026.05.20.1359",
   "private": true,
   "description": "Fitness check: eslint",
   "license": "MIT",
   "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "npm run build && vitest run --config vitest.config.mjs"
+  },
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
   "overrides": {
     "eslint-plugin-typescript-sort-keys": {
       "eslint": "$eslint"
     }
   },
   "dependencies": {
+    "@mayjournal/fitness-shared": "*",
     "@typescript-eslint/eslint-plugin": "^8.55.0",
     "@typescript-eslint/parser": "^8.55.0",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsdoc": "^62.5.4",
     "eslint-plugin-typescript-sort-keys": "^3.3.0"
+  },
+  "devDependencies": {
+    "@mayjournal/fitness": "*",
+    "@types/node": "^25",
+    "typescript": "^5.6",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "@mayjournal/fitness": "*"
+  },
+  "engines": {
+    "node": ">=24"
   },
   "publishConfig": {
     "access": "restricted",

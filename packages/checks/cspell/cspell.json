@@ -1,0 +1,39 @@
+{
+  "ignorePaths": [
+    "node_modules",
+    "dist",
+    "**/coverage/**",
+    "coverage",
+    ".git",
+    ".husky",
+    "package-lock.json",
+    "**/*.test.ts",
+    ".gitignore",
+    "tsconfig.json"
+  ],
+  "useGitignore": true,
+  "version": "0.2",
+  "words": [
+    "devdeps",
+    "dotenv",
+    "mayjournal",
+    "npmjs",
+    "unstub",
+    "eslintcache",
+    "fitnessrc",
+    "jscoverage",
+    "jspm",
+    "jsdoc",
+    "eslint",
+    "lintable",
+    "LINTABLE",
+    "nvmrc",
+    "pids",
+    "precommit",
+    "semantic-commit",
+    "subpaths",
+    "subshell",
+    "vitest",
+    "tsx"
+  ]
+}

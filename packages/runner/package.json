@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.05.20.1156",
+  "version": "0.1.0-2026.05.20.1359",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -19,28 +19,18 @@
   "type": "module",
   "exports": {
     ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+      "import": "./dist/types/index.types.js",
+      "types": "./dist/types/index.types.d.ts",
+      "default": "./dist/types/index.types.js"
     },
-    "./cspell": "../shared/config/cspell.json",
-    "./eslint.config": {
-      "types": "../shared/types/eslint.config.d.ts",
-      "default": "../shared/config/eslint.config.cjs"
-    },
-    "./prettier.config": {
-      "types": "../shared/types/prettier.config.d.ts",
-      "default": "../shared/config/prettier.config.cjs"
-    },
-    "./tsconfig": "../shared/config/tsconfig.json",
-    "./tsconfig.cjs": "../shared/config/tsconfig.cjs",
-    "./vitest.config": {
-      "types": "../shared/types/vitest.config.d.ts",
-      "default": "../shared/config/vitest.config.mjs"
+    "./runner": {
+      "import": "./dist/runner/index.js",
+      "types": "./dist/runner/index.d.ts",
+      "default": "./dist/runner/index.js"
     }
   },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/types/index.types.js",
+  "types": "dist/types/index.types.d.ts",
   "bin": {
     "fitness": "bin/fitness.js"
   },
@@ -49,7 +39,7 @@
     "bin"
   ],
   "scripts": {
-    "build": "cd ../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && tsc -p packages/shared/config/tsconfig.json",
+    "build": "rm -rf dist && cd ../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && tsc -p packages/shared/config/tsconfig.json",
     "ci": "bash ../../scripts/nvm-use.sh && npm run fitness",
     "fitness": "npm run build && node bin/fitness.js",
     "lint": "cd ../.. && tsconfig.js --once --root packages/shared/config --extensions=js,cjs --extends-strategy=ignore && eslint -c packages/shared/config/eslint.config.cjs .",
