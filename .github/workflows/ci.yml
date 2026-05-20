@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: npm run build -ws --if-present
+      - run: npm run build
       - run: npm run test -ws --if-present
 
   fitness:
@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: npm run build -ws --if-present
+      - run: npm run build
       - run: npm run fitness
 
   lint:
@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: npm run build -ws --if-present
+      - run: npm run build
       - run: npm run lint
 
   format:

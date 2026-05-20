@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { join } from 'node:path';
+import { join, basename } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
 import {
   buildExecCheckResult,
@@ -19,6 +19,14 @@ import { getCspellPackageConfigDir } from './getCspellPackageConfigDir.js';
 
 const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
 const FILES_CHECKED_RE = /Files checked:\s*(\d+)/;
+
+/** Staged paths listed in cspell ignorePaths — skip when passed explicitly. */
+const CSPELL_STAGED_SKIP = new Set(['.gitignore', 'package-lock.json', 'tsconfig.json']);
+
+/** Drops staged paths that cspell.json ignorePaths would skip when passed explicitly. */
+function filterStagedForCspell(staged: string[]): string[] {
+  return staged.filter((p) => !CSPELL_STAGED_SKIP.has(basename(p)));
+}
 
 /** Runs npx cspell with cmdPart; returns exit code and combined stdout+stderr. */
 function execCspell(
@@ -70,7 +78,9 @@ function runCspellStaged(
   stagedFiles: string[],
   execSyncFn: ExecSyncFn
 ): { exitCode: number; output: string } {
-  const paths = stagedFiles.filter((p) => existsSync(join(root, p))).map((p) => join(root, p));
+  const paths = filterStagedForCspell(stagedFiles)
+    .filter((p) => existsSync(join(root, p)))
+    .map((p) => join(root, p));
   return paths.length === 0 ? { exitCode: 0, output: '' } : runCspell(root, paths, execSyncFn);
 }
 
@@ -142,7 +152,7 @@ async function checkOneFileWithLib(
 async function getPathsToCheck(root: string, staged: string[]): Promise<string[]> {
   const rel =
     staged.length > 0
-      ? staged.filter((p) => existsSync(join(root, p)))
+      ? filterStagedForCspell(staged).filter((p) => existsSync(join(root, p)))
       : await findFilesByExtension(root, '.md');
   return rel.map((p) => join(root, p));
 }

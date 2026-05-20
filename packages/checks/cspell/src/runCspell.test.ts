@@ -105,6 +105,19 @@ describe('cspell top-level exports', () => {
       expect(result.meta?.filesChecked).toBe(0);
     });
 
+    it('run() CLI path skips staged .gitignore (ignorePaths basename)', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
+      writeFileSync(join(dir, 'cspell.json'), '{}');
+      writeFileSync(join(dir, '.gitignore'), '# Nuxt\n');
+      const execSync = vi.fn(() => '');
+      const result = await cspellCheck.run(dir, {
+        stagedFiles: ['.gitignore', 'missing.md'],
+        _execSync: execSync,
+      });
+      expect(result.ok).toBe(true);
+      expect(execSync).not.toHaveBeenCalled();
+    });
+
     it('run() lib path when spellCheckFile throws returns FallbackRunHint', async () => {
       (globalThis as { __cspellThrow?: boolean }).__cspellThrow = true;
       const dir = mkdtempSync(join(tmpdir(), 'cspell-'));

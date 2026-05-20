@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1430",
+  "version": "0.1.0-2026.05.20.1435",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -16,7 +16,7 @@
     "packages/checks/*"
   ],
   "scripts": {
-    "build": "npm run build -ws --if-present",
+    "build": "npm run build -w @mayjournal/fitness-shared && npm run build -ws --if-present",
     "ci": "npm run ci -w @mayjournal/fitness",
     "fitness": "npm run fitness -w @mayjournal/fitness",
     "format": "prettier . --write",
