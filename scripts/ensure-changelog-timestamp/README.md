@@ -8,7 +8,7 @@ Pre-commit helper: when `CHANGELOG.md` is staged, bumps the latest `### YYYY.MM.
 
 ## When it runs
 
-`.husky/pre-commit` (after `nvm-use`), before fitness and lint.
+`githooks/pre-commit` (after `nvm-use`), before fitness and lint.
 
 ## Behavior
 
@@ -19,7 +19,7 @@ Pre-commit helper: when `CHANGELOG.md` is staged, bumps the latest `### YYYY.MM.
 
 ## Usage
 
-Normally invoked by Husky only. Manual run from repo root:
+Normally invoked by the pre-commit hook only. Manual run from repo root:
 
 ```bash
 node scripts/ensure-changelog-timestamp/index.cjs

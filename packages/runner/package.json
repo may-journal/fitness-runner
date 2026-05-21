@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.05.20.1927",
+  "version": "0.1.0-2026.05.20.1945",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -35,8 +35,9 @@
     "fitness": "bin/fitness.js"
   },
   "files": [
+    "bin",
     "dist",
-    "bin"
+    "githooks"
   ],
   "scripts": {
     "bench": "npm run build && vitest bench --config vitest.bench.config.mjs",

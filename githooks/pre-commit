@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+. scripts/nvm-use/nvm-use.sh
+node scripts/ensure-changelog-timestamp/index.cjs
+npm run precommit

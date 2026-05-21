@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { loadConfig } from './config/load.js';
 
 /** Runner always skips these dir names when walking; merged with config/cspell. */
-export const RUNNER_SKIP_DIRS = ['node_modules', 'dist', 'coverage', '.git', '.husky'];
+export const RUNNER_SKIP_DIRS = ['node_modules', 'dist', 'coverage', '.git', 'githooks'];
 
 /** Dir names from cspell.json ignorePaths (entries with no / or *). */
 function getSkipDirsFromCspell(root: string): Set<string> {

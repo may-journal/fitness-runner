@@ -1,3 +1,0 @@
-bash scripts/nvm-use/nvm-use.sh
-node scripts/ensure-changelog-timestamp/index.cjs
-npm run precommit

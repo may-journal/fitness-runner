@@ -43,8 +43,11 @@ describe('markdownFrontMatterCheck', () => {
     expect(result).toMatchObject({ ok: true, errors: [], meta: { filesChecked: 0 } });
   });
 
-  it('ignores markdown under node_modules, dist, coverage, .git, .husky', async () => {
-    writeRule('cspell.json', '{"ignorePaths":["node_modules","dist","coverage",".git",".husky"]}');
+  it('ignores markdown under node_modules, dist, coverage, .git, githooks', async () => {
+    writeRule(
+      'cspell.json',
+      '{"ignorePaths":["node_modules","dist","coverage",".git","githooks"]}'
+    );
     writeRule('README.md', '---\nfitnessFunctions: ["./package.json"]\n---\n# Root');
     writeRule('package.json', '{}');
     writeRule('node_modules/pkg/readme.md', '---\nfitnessFunctions: ["./nope"]\n---');

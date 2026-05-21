@@ -5,7 +5,7 @@
     "**/coverage/**",
     "coverage",
     ".git",
-    ".husky",
+    "githooks",
     "package-lock.json",
     "**/*.test.ts",
     "**/*.test.mjs",
@@ -36,11 +36,13 @@
     "lintable",
     "LINTABLE",
     "nvmrc",
+    "pipefail",
     "pids",
     "precommit",
     "semantic-commit",
     "subpaths",
     "subshell",
+    "toplevel",
     "vitest",
     "tsx"
   ]

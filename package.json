@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.05.20.1927",
+  "version": "0.1.0-2026.05.20.1945",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -27,12 +27,12 @@
     "knip": "npm run knip -ws --if-present",
     "lint": "npm run lint -w @mayjournal/fitness",
     "precommit": "npm run fitness && npm run lint",
-    "prepare": "husky",
+    "prepare": "test -d .git && git config core.hooksPath githooks || true",
     "provision:npm": "node scripts/provision-npm-packages/index.mjs",
     "publish:ci": "npm publish -w @mayjournal/fitness-shared --access public; npm publish -w @mayjournal/fitness-checks --access public; npm publish -w @mayjournal/fitness --access public",
     "setup:npm-trust": "node scripts/setup-npm-trusted-publishers/index.mjs",
     "test": "npm run test -w @mayjournal/fitness",
-    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
+    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-githooks.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {
@@ -40,7 +40,6 @@
     "@mayjournal/fitness": "*",
     "@mayjournal/fitness-checks": "*",
     "@mayjournal/fitness-shared": "*",
-    "husky": "^9.0.0",
     "knip": "^5.88.1",
     "prettier": "3.8.1",
     "prettier-plugin-packagejson": "^3.0.2",

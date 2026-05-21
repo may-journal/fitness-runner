@@ -100,14 +100,14 @@ export function parsePrettierOutput(output: string): string[] {
 /** Paths to skip when passing staged files to Prettier (no parser or ignore-file). */
 const PRETTIER_SKIP_STAGED = new Set([
   '.gitignore',
-  '.husky/commit-msg',
+  'githooks/commit-msg',
   '.npmrc',
   '.prettierignore',
   'LICENSE',
   'package-lock.json',
 ]);
 
-/** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list, scripts/, .husky. */
+/** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list, scripts/, githooks. */
 function getPathsToCheck(root: string, staged: string[]): string[] {
   if (staged.length === 0) return ['.'];
   return staged.filter(
@@ -115,7 +115,7 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
       existsSync(join(root, p)) &&
       !PRETTIER_SKIP_STAGED.has(p) &&
       !p.endsWith('.mdc') &&
-      !p.startsWith('.husky/') &&
+      !p.includes('githooks/') &&
       !p.startsWith('scripts/')
   );
 }

@@ -78,6 +78,17 @@ Install `@mayjournal/fitness-shared` if you want to wire these tools directly (o
 - `@mayjournal/fitness-shared/cspell` – cspell.json
 - `@mayjournal/fitness-shared/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
 
+### Git hooks (optional)
+
+`@mayjournal/fitness` ships starter hooks under `githooks/`. Copy them into your repo, then point Git at that folder once:
+
+```bash
+cp -a node_modules/@mayjournal/fitness/githooks githooks
+git config core.hooksPath githooks
+```
+
+Hooks run `npm run fitness` (pre-commit) and semantic-commit validation (commit-msg). Edit under `githooks/` after copy.
+
 ## Config
 
 Optional `.fitnessrc.ts` or `.fitnessrc.js` at repo root:

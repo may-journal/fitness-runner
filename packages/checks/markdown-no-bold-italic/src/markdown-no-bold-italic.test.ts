@@ -98,7 +98,7 @@ describe('markdownNoBoldItalicCheck', () => {
     const dir = mkdtempSync(join(tmpdir(), 'md-no-bold-'));
     writeFileSync(
       join(dir, 'cspell.json'),
-      '{"ignorePaths":["node_modules","dist","coverage",".git",".husky"]}'
+      '{"ignorePaths":["node_modules","dist","coverage",".git","githooks"]}'
     );
     writeFileSync(join(dir, 'ok.md'), 'Plain.');
     const nodeMod = join(dir, 'node_modules');
