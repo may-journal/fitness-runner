@@ -16,7 +16,7 @@ npm run audit:publish -- --gate-runner     # exit 1 if @mayjournal/fitness tarba
 npm run audit:publish -- --attw            # include advisory attw on runner + shared
 npm run audit:publish -- --json            # machine-readable report
 npm run audit:publish -- --markdown        # markdown table (stdout)
-npm run audit:publish:comment              # markdown for PR comments (no build)
+node scripts/audit-publish/index.mjs --no-build --json --attw 2>/dev/null | node scripts/audit-publish/pr-comment.mjs  # PR comment markdown
 ```
 
 ## Output
