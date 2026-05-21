@@ -7,9 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1914
+### 2026.05.20.1917
 
-- CI: restore Publish auth via repository secret `NPM_TOKEN` (`.npmrc` / `NODE_AUTH_TOKEN`); drop OIDC provenance for token publishes; build before publish in CI.
+- CI: build monorepo before publish; bump version `0.1.0-2026.05.20.1915` to finish publishing `@mayjournal/fitness-checks` and `@mayjournal/fitness`.
 - CI: enable npm OIDC provenance and manual `workflow_dispatch` on Publish so trusted publishing can authenticate.
 - Publish: ship only `@mayjournal/fitness-shared`, `@mayjournal/fitness-checks`, and `@mayjournal/fitness` (public); bundle all checks into `@mayjournal/fitness-checks/checks/*`; mark individual check workspaces private.
 - Style: format `list-publishable-packages` for Prettier CI.
