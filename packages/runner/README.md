@@ -8,7 +8,7 @@ CLI runner for fitness checks. See [Architecture.md](../../Architecture.md) for 
 
 ## Performance and publish footprint
 
-Issue [#13](https://github.com/may-journal/fitness-runner/issues/13) tracks bundle size and runtime tooling. Plan: [`plans/plan-issue-13-bundle-size-performance.md`](../../plans/plan-issue-13-bundle-size-performance.md).
+Issue [#13](https://github.com/may-journal/fitness-runner/issues/13) tracks bundle size and runtime tooling. Plan: [`plans/archive/plan-issue-13-bundle-size-performance.md`](../../plans/archive/plan-issue-13-bundle-size-performance.md).
 
 ### Publish audit (monorepo root)
 

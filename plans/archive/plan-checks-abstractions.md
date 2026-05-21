@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../package.json']
+relatedConfigurations: ['../../package.json']
 ---
 
 # Plan: Repeating patterns in checks and abstraction options
@@ -99,18 +99,18 @@ Abstraction: Add an optional `folder?: string` (or `displayFolder`) to the Check
 
 ## Summary table
 
-| Completed                                       | Pattern                     | Checks involved                                        | Suggested abstraction                                  |
-| ----------------------------------------------- | --------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
-| [2026.02.22.1620](../CHANGELOG.md#202602221620) | Result shape                | All                                                    | `checkResult(ok, errors?, filesChecked?)`              |
-| [2026.02.22.1620](../CHANGELOG.md#202602221620) | Context resolution          | cspell, eslint, prettier, changelog-updated            | `getStagedFiles`, `getExecSync`, resolved context type |
-|                                                 | CLI exec/parse/buildResult  | eslint, prettier, cspell                               | `runCliCheck` or `execWithOpts` + `buildCliResult`     |
-|                                                 | Staged vs default paths     | cspell, eslint, prettier                               | `getPathsToCheck(root, staged, options)`               |
-|                                                 | File-by-file .md validation | markdown-no-bold-italic, rules-front-matter            | `runFileByFileCheck(root, '.md', validateFile)`        |
-|                                                 | Config missing              | cspell, prettier, node-version                         | Convention + optional `whenConfigMissing`              |
-|                                                 | Read JSON                   | changelog, vitest-coverage-exclude, prettier           | `readJsonFile(root, path)`                             |
-|                                                 | Single-resource result      | node-version, semantic-commit, vitest-coverage-exclude | Convention or `singleResourceResult`                   |
-|                                                 | Test inject exec/time       | changelog-updated, cspell                              | Document only                                          |
-|                                                 | Check → folder for display  | read-repo-first                                        | Optional `Check.folder`                                |
+| Completed                                          | Pattern                     | Checks involved                                        | Suggested abstraction                                  |
+| -------------------------------------------------- | --------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| [2026.02.22.1620](../../CHANGELOG.md#202602221620) | Result shape                | All                                                    | `checkResult(ok, errors?, filesChecked?)`              |
+| [2026.02.22.1620](../../CHANGELOG.md#202602221620) | Context resolution          | cspell, eslint, prettier, changelog-updated            | `getStagedFiles`, `getExecSync`, resolved context type |
+|                                                    | CLI exec/parse/buildResult  | eslint, prettier, cspell                               | `runCliCheck` or `execWithOpts` + `buildCliResult`     |
+|                                                    | Staged vs default paths     | cspell, eslint, prettier                               | `getPathsToCheck(root, staged, options)`               |
+|                                                    | File-by-file .md validation | markdown-no-bold-italic, rules-front-matter            | `runFileByFileCheck(root, '.md', validateFile)`        |
+|                                                    | Config missing              | cspell, prettier, node-version                         | Convention + optional `whenConfigMissing`              |
+|                                                    | Read JSON                   | changelog, vitest-coverage-exclude, prettier           | `readJsonFile(root, path)`                             |
+|                                                    | Single-resource result      | node-version, semantic-commit, vitest-coverage-exclude | Convention or `singleResourceResult`                   |
+|                                                    | Test inject exec/time       | changelog-updated, cspell                              | Document only                                          |
+|                                                    | Check → folder for display  | read-repo-first                                        | Optional `Check.folder`                                |
 
 Implementing these in order of impact (result helper and context resolution first, then CLI/path helpers, then file-by-file and JSON) would reduce duplication while keeping each check’s behavior and testability intact.
 

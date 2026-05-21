@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1921
+### 2026.05.20.1927
 
+- Docs: move completed plans to `plans/archive/` and update links in Architecture and runner README.
 - CI: publish npm workspaces sequentially so `@mayjournal/fitness` can retry after shared and checks succeed.
 - CI: enable npm OIDC provenance and manual `workflow_dispatch` on Publish so trusted publishing can authenticate.
 - Publish: ship only `@mayjournal/fitness-shared`, `@mayjournal/fitness-checks`, and `@mayjournal/fitness` (public); bundle all checks into `@mayjournal/fitness-checks/checks/*`; mark individual check workspaces private.

@@ -162,4 +162,4 @@ Root `package.json` uses workspace dependencies on `@mayjournal/fitness` and `@m
 
 Build and test: `npm run build -ws`, `npm run test -w @mayjournal/fitness`, `npm run fitness`.
 
-Further implementation notes: [plans/plan-split-runner-check-packages.md](./plans/plan-split-runner-check-packages.md).
+Further implementation notes: [plans/archive/plan-split-runner-check-packages.md](./plans/archive/plan-split-runner-check-packages.md).
