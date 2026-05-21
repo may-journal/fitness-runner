@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1849
+### 2026.05.20.1905
 
+- CI: enable npm OIDC provenance and manual `workflow_dispatch` on Publish so trusted publishing can authenticate.
 - Publish: ship only `@mayjournal/fitness-shared`, `@mayjournal/fitness-checks`, and `@mayjournal/fitness` (public); bundle all checks into `@mayjournal/fitness-checks/checks/*`; mark individual check workspaces private.
 - Style: format `list-publishable-packages` for Prettier CI.
 - Fix (issue #17): move `prettier`, `prettier-plugin-packagejson`, `prettier-plugin-sort-json`, and `vitest` to `@mayjournal/fitness-shared` dependencies so consumer repos using shared Prettier/Vitest configs can run them without extra installs.
