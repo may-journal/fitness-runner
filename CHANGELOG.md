@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.06.27.1253
+### 2026.06.27.1258
 
+- Docs: update C4 architecture (levels 1–4) for issue #23 — local check paths in `.fitnessrc` `checks` list.
 - Docs: add Wardley map, competition matrix, and C4 architecture under `architecture/`; slim `Architecture.md` to index.
 - Docs: update README links to C4 architecture docs.
 - Cspell: add Wardley and competition-related terms to shared dictionary.
