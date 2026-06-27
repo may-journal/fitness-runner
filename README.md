@@ -34,7 +34,7 @@ npx fitness --check=semantic-commit
 
 Checks can register `contextInline` so the runner injects a named arg value into context and strips it from passthrough. For the commit-msg hook with semantic-commit, pass the message string: `fitness --check=semantic-commit --message="$(cat "$1")"`. See each check’s README for its arg name.
 
-See [Architecture.md](./Architecture.md) for monorepo layout and runtime flow.
+See [Architecture.md](./Architecture.md) for the C4 model ([architecture/](architecture/)).
 
 ## Checks
 

@@ -43,6 +43,12 @@
     "subpaths",
     "subshell",
     "toplevel",
+    "deaccelerator",
+    "deaccelerators",
+    "reimplementation",
+    "Wardley",
+    "wardley",
+    "Arai",
     "vitest",
     "tsx"
   ]

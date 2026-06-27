@@ -7,8 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1952
+### 2026.06.27.1253
 
+- Docs: add Wardley map, competition matrix, and C4 architecture under `architecture/`; slim `Architecture.md` to index.
+- Docs: update README links to C4 architecture docs.
+- Cspell: add Wardley and competition-related terms to shared dictionary.
 - Scripts: remove redundant root `setup:npm-trust` and `audit:publish:comment` npm aliases; use `provision:npm` and direct audit-publish node commands instead.
 - Docs: move completed plans to `plans/archive/` and update links in Architecture and runner README.
 - Hooks: replace Husky with native Git hooks in `githooks/`; README documents `cp -a node_modules/@mayjournal/fitness/githooks githooks` for consumer projects.
