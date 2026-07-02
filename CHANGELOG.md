@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.06.27.1258
+### 2026.07.02.1846
 
+- Docs: add C4 architecture level 5 (`architecture/05-user-journey.md`) — developer/agent CLI journey, including local check paths.
 - Docs: update C4 architecture (levels 1–4) for issue #23 — local check paths in `.fitnessrc` `checks` list.
 - Docs: add Wardley map, competition matrix, and C4 architecture under `architecture/`; slim `Architecture.md` to index.
 - Docs: update README links to C4 architecture docs.
