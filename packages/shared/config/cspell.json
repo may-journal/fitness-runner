@@ -52,6 +52,7 @@
     "vitest",
     "tsx",
     "swiftlint",
-    "jscpd"
+    "jscpd",
+    "lockfiles"
   ]
 }

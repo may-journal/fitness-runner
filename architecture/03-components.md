@@ -106,6 +106,8 @@ Explicit `checks` with missing entries: skip uninstalled name specs (`allowMissi
 
 Single-check mode bypasses the list: `npx fitness prettier`, `npx fitness --check=eslint`, or `npx fitness --check=./my-check.mjs`.
 
+`jscpd` is a `defaultChecks` member (bundled npm dependency, exec-based like `eslint`/`cspell`). `swiftlint` is the exception: opt-in only, never part of `defaultChecks`, and shells out to a brew-installed binary — the only check with no npm dependency at all; a missing binary or no Swift files in the repo both resolve without a crash.
+
 ## Run context
 
 | Field                  | Source                                      |

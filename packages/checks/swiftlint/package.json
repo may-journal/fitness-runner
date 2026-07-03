@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-changelog",
+  "name": "@mayjournal/fitness-check-swiftlint",
   "version": "0.1.0-2026.07.02.2306",
   "private": true,
-  "description": "Fitness check: changelog",
+  "description": "Fitness check: swiftlint",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"

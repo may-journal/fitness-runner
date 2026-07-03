@@ -7,9 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.02.2234
+### 2026.07.02.2306
 
-- Docs: add plan for opt-in `swiftlint` and `jscpd` checks, modeled on bottom-line/may-journals' existing setup. Add "swiftlint"/"jscpd" to shared cspell dictionary.
+- Feat: add `jscpd` (duplicate-code detection) and `swiftlint` (SwiftLint) checks, modeled on bottom-line/may-journals' existing setup. `jscpd` joins `defaultChecks` (bundled dependency, ignores markdown/JSON/lockfiles to avoid false-positive "duplication" on scaffolding); `swiftlint` stays opt-in only — it shells out to a brew-installed binary, not an npm package, and is the only check with no npm dependency. This repo's own `.fitnessrc.js` disables `jscpd` locally (2.3% duplication across ~12 structurally-similar check packages, over the proven 1% threshold — structural, not worth a forced refactor right now). Added `CheckName.Jscpd`; `swiftlint` intentionally omitted since `registry.test.ts` enforces the enum stays in sync with `defaultChecks`.
+- Docs: add plan for `swiftlint` and `jscpd` checks, modeled on bottom-line/may-journals' existing setup. Add "swiftlint"/"jscpd"/"lockfiles" to shared cspell dictionary.
 
 - Docs: promote README's "Git hooks" from a nested "(optional)" subsection under Exported configs to its own top-level section right after Config — automatic enforcement on commit is the point of the runner, not an optional add-on.
 - Docs: move README's `## Config` section (`.fitnessrc`) up next to `## Install`, ahead of Usage/Checks/Consumer projects, so setup and configuration read together.

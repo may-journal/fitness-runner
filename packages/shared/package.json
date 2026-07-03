@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.02.2234",
+  "version": "0.1.0-2026.07.02.2306",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",
@@ -59,6 +59,7 @@
   "prettier": "./config/prettier.config.cjs",
   "dependencies": {
     "jiti": "^2.6.1",
+    "jscpd": "^5.0.11",
     "prettier": "3.8.1",
     "prettier-plugin-packagejson": "^3.0.2",
     "prettier-plugin-sort-json": "^4.2.0",
