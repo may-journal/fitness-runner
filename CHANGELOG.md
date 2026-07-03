@@ -7,7 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.02.2324
+### 2026.07.02.2358
+
+- Fix: real external consumers hit `Cannot find package` for `semantic-commit` (`conventional-commit-types`) and `read-repo-first` (`boxen`) — both checks' own npm dependencies were never propagated to any published package (this monorepo's workspace hoisting masked it). Added `conventional-commit-types`, `cspell`, `cspell-lib`, `eslint`, `@typescript-eslint/*`, `eslint-config-prettier`, `eslint-plugin-jsdoc`, `eslint-plugin-typescript-sort-keys` to `@mayjournal/fitness-shared`'s dependencies (same pattern used for `jscpd`) so every `defaultChecks` member's runtime dependency actually reaches a consumer. Also dropped `read-repo-first`'s `boxen` dependency entirely — replaced its one decorative box-drawing call with a plain horizontal-rule helper using `chalk` (already a real dependency via the runner), so there's one fewer package to keep in sync.
 
 - Merge `main` into this branch, resolving conflicts in `CHANGELOG.md`, `README.md`, `architecture/02-containers.md`, `architecture/03-components.md`, `package-lock.json`, and every workspace `package.json` version field, then regenerating the lockfile.
 - Feat: add `jscpd` (duplicate-code detection) and `swiftlint` (SwiftLint) checks, modeled on bottom-line/may-journals' existing setup. `jscpd` joins `defaultChecks` (bundled dependency, ignores markdown/JSON/lockfiles to avoid false-positive "duplication" on scaffolding); `swiftlint` stays opt-in only — it shells out to a brew-installed binary, not an npm package, and is the only check with no npm dependency. This repo's own `.fitnessrc.js` disables `jscpd` locally (2.3% duplication across ~12 structurally-similar check packages, over the proven 1% threshold — structural, not worth a forced refactor right now). Added `CheckName.Jscpd`; `swiftlint` intentionally omitted since `registry.test.ts` enforces the enum stays in sync with `defaultChecks`.

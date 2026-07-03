@@ -1,6 +1,5 @@
 import { join } from 'node:path';
 import chalk from 'chalk';
-import boxen from 'boxen';
 import Table from 'cli-table3';
 import { checkResult, getColumns } from '@mayjournal/fitness-shared';
 import type { Check, CheckName } from '@mayjournal/fitness';
@@ -9,6 +8,12 @@ const READ_REPO_FIRST = 'read-repo-first' as CheckName;
 
 const NOTE_NO_VERIFY =
   ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
+
+/** Wraps content in a cyan horizontal rule (no box-drawing dependency needed for this). */
+function box(content: string): string {
+  const rule = chalk.cyan('─'.repeat(Math.max(20, getColumns())));
+  return `${rule}\n${content}\n${rule}\n`;
+}
 
 /** Builds feedback text for CLI display (Agent/User context). checkFolderByName overrides folder when name differs. */
 export function buildContextFeedback(
@@ -40,7 +45,7 @@ export function buildContextFeedback(
   lines.push('');
   lines.push(chalk.yellow(NOTE_NO_VERIFY.trim()));
   const content = lines.join('\n');
-  return boxen(content, { borderColor: 'cyan', margin: 1, padding: 1 }) + '\n';
+  return box(content);
 }
 
 /** Builds read-repo-first feedback string from run context. */

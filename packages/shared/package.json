@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.02.2324",
+  "version": "0.1.0-2026.07.02.2358",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",
@@ -58,6 +58,15 @@
   },
   "prettier": "./config/prettier.config.cjs",
   "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "conventional-commit-types": "^3.0.0",
+    "cspell": "^8.15.0",
+    "cspell-lib": "^8.15.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsdoc": "^62.5.4",
+    "eslint-plugin-typescript-sort-keys": "^3.3.0",
     "jiti": "^2.6.1",
     "jscpd": "^5.0.11",
     "prettier": "3.8.1",
