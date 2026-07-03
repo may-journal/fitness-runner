@@ -102,6 +102,25 @@ export default {
 
 If `checks` is set, only those checks run (in order). If omitted, the runner uses `defaultChecks` from `@mayjournal/fitness-checks` (install the bundle package). `disabledChecks` removes names from either list. Use `.fitnessrc.js` with `module.exports = { checks: [...] }` for plain Node.
 
+`checks` entries can also be local paths, mixed in with npm check names, to run a repo-specific check without publishing a package:
+
+```ts
+// ./fitness/checks/no-console.js
+export default {
+  name: 'no-console',
+  run: async () => ({ ok: true, errors: [] }),
+};
+```
+
+```ts
+// .fitnessrc.ts
+export default {
+  checks: ['cspell', './fitness/checks/no-console.js'], // npm name + local path, in order
+};
+```
+
+A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
+
 ## Check packages
 
 Each check lives in `packages/checks/<name>/` as `@mayjournal/fitness-check-<name>`. See [Architecture.md](./Architecture.md) for how the runner loads them and each check’s README for behavior.

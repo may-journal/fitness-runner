@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.02.1915
+### 2026.07.02.1925
 
+- Feat (issue #23): `.fitnessrc` `checks` accepts local module paths mixed with npm check names, in order; missing/invalid path entries fail the run (explicitly configured), `disabledChecks` never removes them; shared path-loading between CLI `--check=./foo.js` and config lives in `load-check.ts`. Archive completed plan.
 - Docs: simplify issue #23 plan to Goal/Plan checklist format, matching other repos.
 - Docs: add C4 architecture level 5 (`architecture/05-user-journey.md`) — developer/agent CLI journey, including local check paths.
 - Docs: update C4 architecture (levels 1–4) for issue #23 — local check paths in `.fitnessrc` `checks` list.

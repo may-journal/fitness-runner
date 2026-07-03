@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.07.02.1915",
+  "version": "0.1.0-2026.07.02.1925",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",

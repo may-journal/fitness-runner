@@ -6,6 +6,23 @@ import { loadConfig } from '@mayjournal/fitness-shared';
 import type { Check } from '../types/index.types.js';
 import { enUS } from '../runner/enUS.js';
 
+/** True if spec looks like a file path (for loading a check module) rather than an npm check name. */
+export function isPathSpec(spec: string): boolean {
+  return /[/\\]/.test(spec) || /\.(?:js|mjs|cjs|ts)$/i.test(spec);
+}
+
+/** True if value looks like a Check. */
+function isCheckLike(v: unknown): v is Check {
+  return !!v && typeof (v as Check).run === 'function' && (v as Check).name != null;
+}
+
+/** Returns default or first Check-like export from module. */
+function getCheckFromModule(mod: { [k: string]: unknown; default?: unknown }): Check | null {
+  if (isCheckLike(mod.default)) return mod.default;
+  for (const v of Object.values(mod)) if (isCheckLike(v)) return v;
+  return null;
+}
+
 const BUNDLE_DEFAULT_CHECKS = '@mayjournal/fitness-checks/defaultChecks';
 
 const pathLoadedChecks = new WeakSet<Check>();
@@ -48,23 +65,56 @@ export function findInstallRoot(startRoot: string): string {
   }
 }
 
+/** Loads a Check from a module path (default or first Check-like export); null when missing or invalid. */
+export async function loadCheckFromPath(root: string, spec: string): Promise<Check | null> {
+  const abs = resolve(root, spec);
+  if (!existsSync(abs)) return null;
+  try {
+    const url = pathToFileURL(abs).href;
+    const mod = (await import(url)) as { [k: string]: unknown; default?: unknown };
+    const check = getCheckFromModule(mod);
+    if (check) markPathLoadedCheck(check);
+    return check;
+  } catch {
+    return null;
+  }
+}
+
+/** Loads a path spec check; throws when missing or invalid — path specs are explicitly configured. */
+export async function loadCheckFromPathOrThrow(root: string, spec: string): Promise<Check> {
+  const check = await loadCheckFromPath(root, spec);
+  if (!check) throw new Error(enUS.CheckPathInvalid.replace('{{path}}', spec));
+  return check;
+}
+
 /** Creates a require function rooted at the nearest install directory for check packages. */
 function createRequireForRoot(root: string): NodeRequire {
   const installRoot = findInstallRoot(root);
   return createRequire(join(installRoot, 'package.json'));
 }
 
-/** Dedupes check names while preserving first occurrence order. */
-function dedupeCheckNames(names: readonly string[]): string[] {
-  const seen = new Set<string>();
-  return names.filter((name) => !seen.has(name) && (seen.add(name), true));
+/** Dedupes an ordered spec list; name specs by value, path specs by resolved absolute path. */
+function dedupeCheckSpecs(specs: readonly string[], root: string): string[] {
+  const seenNames = new Set<string>();
+  const seenPaths = new Set<string>();
+  return specs.filter((spec) => {
+    if (isPathSpec(spec)) {
+      const abs = resolve(root, spec);
+      if (seenPaths.has(abs)) return false;
+      seenPaths.add(abs);
+      return true;
+    }
+    if (seenNames.has(spec)) return false;
+    seenNames.add(spec);
+    return true;
+  });
 }
 
-/** Removes names listed in `disabledChecks` while preserving order. */
-function applyDisabledChecks(names: string[], disabled?: readonly string[]): string[] {
-  if (!disabled?.length) return names;
+/** Removes name specs listed in `disabledChecks`; path specs are opt-in only and never removed. */
+function applyDisabledChecks(specs: string[], disabled?: readonly string[]): string[] {
+  if (!disabled?.length) return specs;
   const disabledSet = new Set(disabled);
-  return names.filter((name) => !disabledSet.has(name));
+  return specs.filter((spec) => isPathSpec(spec) || !disabledSet.has(spec));
 }
 
 /** Reads default check names from the installed checks bundle. */
@@ -79,12 +129,12 @@ async function readBundleDefaultCheckNames(root: string): Promise<string[]> {
   return [...list];
 }
 
-/** Resolves base check names from `.fitnessrc` `checks` or bundle `defaultChecks`. */
+/** Resolves base check specs (names and/or paths) from `.fitnessrc` `checks` or bundle `defaultChecks`. */
 async function resolveBaseCheckNames(
   root: string,
   config: ReturnType<typeof loadConfig>
 ): Promise<string[]> {
-  if (config?.checks?.length) return dedupeCheckNames(config.checks);
+  if (config?.checks?.length) return dedupeCheckSpecs(config.checks, root);
   try {
     return await readBundleDefaultCheckNames(root);
   } catch {
@@ -92,11 +142,11 @@ async function resolveBaseCheckNames(
   }
 }
 
-/** Resolves ordered check names: `.fitnessrc` `checks`, else bundle `defaultChecks`, minus `disabledChecks`. */
+/** Resolves ordered check specs (names and/or paths): `.fitnessrc` `checks`, else bundle `defaultChecks`, minus `disabledChecks` (name specs only). */
 export async function resolveCheckNames(root: string): Promise<string[]> {
   const config = loadConfig(root);
-  const names = await resolveBaseCheckNames(root, config);
-  return applyDisabledChecks(names, config?.disabledChecks);
+  const specs = await resolveBaseCheckNames(root, config);
+  return applyDisabledChecks(specs, config?.disabledChecks);
 }
 
 /** Validates a loaded module default export is a Check with the expected name. */

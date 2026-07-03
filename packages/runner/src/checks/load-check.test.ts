@@ -7,7 +7,11 @@ import { describe, it, expect } from 'vitest';
 import {
   checkPackageName,
   findInstallRoot,
+  isPathLoadedCheck,
+  isPathSpec,
   loadCheck,
+  loadCheckFromPath,
+  loadCheckFromPathOrThrow,
   resolveCheckNames,
   tryLoadCheck,
 } from './load-check.js';
@@ -194,5 +198,79 @@ describe('load-check', () => {
     const dir = mkdtempSync(join(tmpdir(), 'fitness-try-null-'));
     writeFileSync(join(dir, 'package.json'), '{}');
     await expect(tryLoadCheck('missing', dir)).resolves.toBeNull();
+  });
+
+  it('isPathSpec distinguishes paths from names', () => {
+    expect(isPathSpec('./my-check.js')).toBe(true);
+    expect(isPathSpec('fitness/checks/my-check.mjs')).toBe(true);
+    expect(isPathSpec('eslint')).toBe(false);
+  });
+
+  it('loadCheckFromPath loads a default-exported check and marks it path-loaded', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-default-'));
+    writeFileSync(
+      join(dir, 'my-check.js'),
+      'export default { name: "my-check", run: async () => ({ ok: true, errors: [] }) };'
+    );
+    const check = await loadCheckFromPath(dir, './my-check.js');
+    expect(check?.name).toBe('my-check');
+    expect(isPathLoadedCheck(check!)).toBe(true);
+  });
+
+  it('loadCheckFromPath returns null when the path does not exist', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-missing-'));
+    await expect(loadCheckFromPath(dir, './nope.js')).resolves.toBeNull();
+  });
+
+  it('loadCheckFromPathOrThrow throws with the path in the message when missing', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-throw-'));
+    await expect(loadCheckFromPathOrThrow(dir, './nope.js')).rejects.toThrow(
+      enUS.CheckPathInvalid.replace('{{path}}', './nope.js')
+    );
+  });
+
+  it('loadCheckFromPathOrThrow resolves the check when valid', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-path-throw-ok-'));
+    writeFileSync(
+      join(dir, 'ok-check.js'),
+      'export default { name: "ok-check", run: async () => ({ ok: true, errors: [] }) };'
+    );
+    await expect(loadCheckFromPathOrThrow(dir, './ok-check.js')).resolves.toMatchObject({
+      name: 'ok-check',
+    });
+  });
+
+  it('resolveCheckNames keeps path specs alongside names, in order', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-mixed-specs-'));
+    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(
+      join(dir, '.fitnessrc.ts'),
+      'export default { checks: ["eslint", "./fitness/my-check.js", "prettier"] };'
+    );
+    await expect(resolveCheckNames(dir)).resolves.toEqual([
+      'eslint',
+      './fitness/my-check.js',
+      'prettier',
+    ]);
+  });
+
+  it('resolveCheckNames dedupes path specs by resolved absolute path', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-dedupe-path-'));
+    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(
+      join(dir, '.fitnessrc.ts'),
+      'export default { checks: ["./fitness/my-check.js", "./fitness/../fitness/my-check.js"] };'
+    );
+    await expect(resolveCheckNames(dir)).resolves.toEqual(['./fitness/my-check.js']);
+  });
+
+  it('resolveCheckNames never removes path specs via disabledChecks', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'fitness-disabled-path-'));
+    writeFileSync(join(dir, 'package.json'), '{}');
+    writeFileSync(
+      join(dir, '.fitnessrc.ts'),
+      'export default { checks: ["eslint", "./fitness/my-check.js"], disabledChecks: ["./fitness/my-check.js"] };'
+    );
+    await expect(resolveCheckNames(dir)).resolves.toEqual(['eslint', './fitness/my-check.js']);
   });
 });
