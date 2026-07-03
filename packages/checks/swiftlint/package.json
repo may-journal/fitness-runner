@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-eslint",
+  "name": "@mayjournal/fitness-check-swiftlint",
   "version": "0.1.0-2026.07.02.2324",
   "private": true,
-  "description": "Fitness check: eslint",
+  "description": "Fitness check: swiftlint",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -19,7 +19,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "fitness-shared build",
@@ -27,19 +28,8 @@
     "test": "npm run build && fitness-shared test"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
-  "overrides": {
-    "eslint-plugin-typescript-sort-keys": {
-      "eslint": "$eslint"
-    }
-  },
   "dependencies": {
-    "@mayjournal/fitness-shared": "*",
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
-    "eslint": "^9.0.0",
-    "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^62.5.4",
-    "eslint-plugin-typescript-sort-keys": "^3.3.0"
+    "@mayjournal/fitness-shared": "*"
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",

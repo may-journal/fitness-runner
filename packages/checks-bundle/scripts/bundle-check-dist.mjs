@@ -5,7 +5,7 @@ import { cpSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-/** Keep in sync with src/index.ts defaultChecks. */
+/** Every check to bundle for publishing — a superset of src/index.ts defaultChecks; opt-in checks (jscpd, swiftlint) belong here too so `.fitnessrc` `checks` can resolve them, even though they never run by default. */
 const CHECK_NAMES = [
   'read-repo-first',
   'changelog',
@@ -19,6 +19,8 @@ const CHECK_NAMES = [
   'semantic-commit',
   'vitest-coverage-exclude',
   'vitest-coverage-full',
+  'jscpd',
+  'swiftlint',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');

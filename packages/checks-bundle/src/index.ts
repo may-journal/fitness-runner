@@ -10,6 +10,7 @@ export const defaultChecks = [
   'node-version',
   'markdown-front-matter',
   'semantic-commit',
+  'jscpd',
   'vitest-coverage-exclude',
   'vitest-coverage-full',
 ] as const;

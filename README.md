@@ -45,6 +45,22 @@ export default {
 
 A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
 
+### Duplicate-code detection
+
+`jscpd` is part of `defaultChecks` — it's bundled as a dependency, no extra install. It fails when duplicated lines exceed 1% of the codebase; see [packages/checks/jscpd](packages/checks/jscpd) for flags and the `jscpd:ignore-start`/`jscpd:ignore-end` escape hatch for justified duplication.
+
+### Opt-in: SwiftLint
+
+`swiftlint` is not part of `defaultChecks` — most repos have no Swift code. Add it explicitly:
+
+```ts
+export default {
+  checks: ['cspell', 'swiftlint'],
+};
+```
+
+It shells out to a system binary (`brew install swiftlint`) — it isn't an npm package, so unlike every other check it isn't bundled; a missing binary fails clearly instead of crashing, and a repo with no Swift files passes clean. See [packages/checks/swiftlint](packages/checks/swiftlint) for behavior.
+
 ## Git hooks
 
 This is the point of the runner: checks enforced automatically on `git commit`, not something a developer has to remember to run. `@mayjournal/fitness` ships starter hooks under `githooks/`; copy them into your repo and point Git at that folder once:

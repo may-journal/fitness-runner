@@ -94,4 +94,6 @@ Numbers on nodes and arrows match the callout table.
 
 All name specs resolve through the installed `@mayjournal/fitness-checks` bundle — there is no separate per-check npm install today. `disabledChecks` applies to npm check names only; local paths are opt-in via explicit `checks` entries and are never removed by it.
 
+`jscpd` is a `defaultChecks` member (bundled dependency, no extra install). `swiftlint` is opt-in only, never in `defaultChecks` — it shells out to a system binary, not an npm package, so a missing install fails clearly rather than crashing.
+
 Install and usage: [README.md](../README.md).
