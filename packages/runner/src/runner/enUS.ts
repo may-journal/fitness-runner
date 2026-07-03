@@ -1,5 +1,6 @@
 export enum enUS {
   CheckPackageNotInstalled = 'Check package not installed: {{pkg}}',
+  CheckPathInvalid = 'Local check module not found or invalid: {{path}}',
   CheckTimeout = 'Check timed out after {{seconds}}s',
   ErrorBullet = '  ✖ ',
   InvalidCheckExport = 'Invalid check export from {{pkg}}: expected default.name === "{{name}}"',

@@ -1,11 +1,10 @@
-import { existsSync } from 'node:fs';
 import { execSync } from 'node:child_process';
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { loadConfig } from '@mayjournal/fitness-shared';
 import {
+  isPathSpec,
   loadCheck,
-  markPathLoadedCheck,
+  loadCheckFromPath,
+  loadCheckFromPathOrThrow,
   resolveCheckNames,
   tryLoadCheck,
 } from '../checks/load-check.js';
@@ -37,21 +36,29 @@ function getPassthroughArgs(argsAfterSpec: string[], check: Check): string[] {
   return argsAfterSpec.filter((_, i) => !parsed.stripIndices.includes(i));
 }
 
-/** Loads checks for resolved names; skips names with no installed package when allowMissing. */
-async function loadChecksByNames(
-  names: string[],
+/** Loads one spec: path specs throw when invalid (explicitly configured); name specs skip when missing and allowMissing. */
+async function loadOneSpec(
+  spec: string,
+  root: string,
+  allowMissing: boolean
+): Promise<Check | null> {
+  if (isPathSpec(spec)) return loadCheckFromPathOrThrow(root, spec);
+  return allowMissing ? tryLoadCheck(spec, root) : loadCheck(spec, root);
+}
+
+/** Loads each resolved spec (names and/or paths) to a Check, in order; dedupes by loaded check name. */
+async function resolveCheckSpecs(
+  specs: string[],
   root: string,
   allowMissing = false
 ): Promise<Check[]> {
   const checks: Check[] = [];
-  for (const name of names) {
-    let check: Check | null = null;
-    if (allowMissing) {
-      check = await tryLoadCheck(name, root);
-    } else {
-      check = await loadCheck(name, root);
-    }
-    if (check) checks.push(check);
+  const seenNames = new Set<string>();
+  for (const spec of specs) {
+    const check = await loadOneSpec(spec, root, allowMissing);
+    if (!check || seenNames.has(check.name)) continue;
+    seenNames.add(check.name);
+    checks.push(check);
   }
   return checks;
 }
@@ -59,9 +66,9 @@ async function loadChecksByNames(
 /** Resolves checks from config or bundle default list, in order. */
 async function resolveChecks(root: string): Promise<Check[]> {
   const config = loadConfig(root);
-  const names = await resolveCheckNames(root);
+  const specs = await resolveCheckNames(root);
   const fromConfig = Boolean(config?.checks?.length);
-  return loadChecksByNames(names, root, fromConfig);
+  return resolveCheckSpecs(specs, root, fromConfig);
 }
 
 /** Returns value of --check=<name-or-path> from argv if present. */
@@ -78,38 +85,6 @@ function getPositionalSpec(argv: string[]): string | undefined {
 /** Resolves check spec (name or path) from --check= or single positional. */
 function resolveCheckSpec(argv: string[]): string | undefined {
   return getCheckSpecFromArg(argv) ?? getPositionalSpec(argv);
-}
-
-/** True if spec looks like a file path (for loading a check module). */
-function isPathSpec(spec: string): boolean {
-  return /[/\\]/.test(spec) || /\.(?:js|mjs|cjs|ts)$/i.test(spec);
-}
-
-/** True if value looks like a Check. */
-function isCheckLike(v: unknown): v is Check {
-  return !!v && typeof (v as Check).run === 'function' && (v as Check).name != null;
-}
-
-/** Returns default or first Check-like export from module. */
-function getCheckFromModule(mod: { [k: string]: unknown; default?: unknown }): Check | null {
-  if (isCheckLike(mod.default)) return mod.default;
-  for (const v of Object.values(mod)) if (isCheckLike(v)) return v;
-  return null;
-}
-
-/** Loads a Check from a module path (default or first Check-like export). */
-async function loadCheckFromPath(root: string, spec: string): Promise<Check | null> {
-  const abs = resolve(root, spec);
-  if (!existsSync(abs)) return null;
-  try {
-    const url = pathToFileURL(abs).href;
-    const mod = (await import(url)) as { [k: string]: unknown; default?: unknown };
-    const check = getCheckFromModule(mod);
-    if (check) markPathLoadedCheck(check);
-    return check;
-  } catch {
-    return null;
-  }
 }
 
 /** Returns checks to run for a given spec (name or path), or all resolved when spec is undefined. */

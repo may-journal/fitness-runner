@@ -173,6 +173,48 @@ describe('run', () => {
     expect(process.exit).toHaveBeenCalledWith(0);
   });
 
+  it('runs a local check module referenced by path in .fitnessrc checks, alongside a name', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts': 'export default { checks: ["changelog", "./my-check.js"] };',
+      'my-check.js':
+        'export default { name: "my-check", run: async () => ({ ok: true, errors: [] }) };',
+    });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    execSyncMock.mockImplementationOnce(() => '');
+    const stderrChunks: string[] = [];
+    const stderrSpy = vi.spyOn(process.stderr, 'write').mockImplementation((chunk: unknown) => {
+      stderrChunks.push(String(chunk));
+      return true;
+    });
+    try {
+      await run(['node', 'fitness']);
+      process.chdir(origCwd);
+      const stderr = stderrChunks.join('');
+      expect(stderr).toMatch(/→ changelog/);
+      expect(stderr).toMatch(/→ my-check/);
+      expect(process.exit).toHaveBeenCalledWith(0);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+  });
+
+  it('exits 1 with resolution error when a config path spec is missing or invalid', async () => {
+    const dir = tempDir();
+    runDir(dir, {
+      '.fitnessrc.ts': 'export default { checks: ["changelog", "./nonexistent.js"] };',
+    });
+    const origCwd = process.cwd();
+    process.chdir(dir);
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(run(['node', 'fitness'])).rejects.toThrow('exit');
+    process.chdir(origCwd);
+    expect(process.exit).toHaveBeenCalledWith(1);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('./nonexistent.js'));
+    errSpy.mockRestore();
+  });
+
   it('runs each check once when config.checks has duplicate names', async () => {
     const dir = tempDir();
     runDir(dir, {

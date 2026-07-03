@@ -7,8 +7,18 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.05.20.1952
+### 2026.07.02.2005
 
+- Docs: promote README's "Git hooks" from a nested "(optional)" subsection under Exported configs to its own top-level section right after Config — automatic enforcement on commit is the point of the runner, not an optional add-on.
+- Docs: move README's `## Config` section (`.fitnessrc`) up next to `## Install`, ahead of Usage/Checks/Consumer projects, so setup and configuration read together.
+- Docs: fix stale `@mayjournal/fitness-check-*` package references in README and architecture docs (02/03/04) — checks resolve through the `@mayjournal/fitness-checks/checks/*` subpath; individual check workspaces are private and never published. Rewrite README's Consumer projects / à la carte guidance to match; drop a duplicate "Check packages" section. Rename `run-resolve.ts`'s internal `loadChecksBySpecs` to `resolveCheckSpecs` to match the name already used in `03-components.md`/`04-code.md`. Document the repo's own `git config core.hooksPath githooks` pre-commit setup in README.
+- Feat (issue #23): `.fitnessrc` `checks` accepts local module paths mixed with npm check names, in order; missing/invalid path entries fail the run (explicitly configured), `disabledChecks` never removes them; shared path-loading between CLI `--check=./foo.js` and config lives in `load-check.ts`. Archive completed plan.
+- Docs: simplify issue #23 plan to Goal/Plan checklist format, matching other repos.
+- Docs: add C4 architecture level 5 (`architecture/05-user-journey.md`) — developer/agent CLI journey, including local check paths.
+- Docs: update C4 architecture (levels 1–4) for issue #23 — local check paths in `.fitnessrc` `checks` list.
+- Docs: add Wardley map, competition matrix, and C4 architecture under `architecture/`; slim `Architecture.md` to index.
+- Docs: update README links to C4 architecture docs.
+- Cspell: add Wardley and competition-related terms to shared dictionary.
 - Scripts: remove redundant root `setup:npm-trust` and `audit:publish:comment` npm aliases; use `provision:npm` and direct audit-publish node commands instead.
 - Docs: move completed plans to `plans/archive/` and update links in Architecture and runner README.
 - Hooks: replace Husky with native Git hooks in `githooks/`; README documents `cp -a node_modules/@mayjournal/fitness/githooks githooks` for consumer projects.
