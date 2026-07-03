@@ -5,28 +5,34 @@ issue: https://github.com/may-journal/fitness-runner/issues/23
 
 # Plan: Local check paths in `.fitnessrc` (#23)
 
-Let `.fitnessrc` `checks` mix npm names and local paths — same as CLI `--check=./foo.js` already works today.
+> Let `.fitnessrc` `checks` mix npm names and local paths — same as CLI `--check=./foo.js` already works today.
 
-Architecture: [architecture/03-components.md](../architecture/03-components.md#resolve-check-specs-priority)
+## Goal
 
-## Already done
+A repo can list a local check module path in `.fitnessrc` `checks` alongside npm check names, in order, without publishing an `@mayjournal/fitness-check-*` package for one-off rules.
 
-- CLI can run a check from a path
-- Path checks run in-process
-- C4 docs describe the target behavior
+Architecture: [03-components.md](../architecture/03-components.md#resolve-check-specs-priority) already documents this as the target behavior.
 
-## Build
+## Plan
 
-1. Move path loading (`isPathSpec`, `loadCheckFromPath`) from `run-resolve.ts` → `load-check.ts` — CLI path checks still work; one code path for CLI and config.
+0. Already working (CLI single-check mode)
+   - [x] `npx fitness --check=./foo.js` loads a path spec (`isPathSpec` / `loadCheckFromPath` in `run-resolve.ts`)
+   - [x] Path-loaded checks run in-process, not in a worker (`markPathLoadedCheck`)
 
-2. When resolving config `checks`, branch on spec kind: name → `loadCheck`; path → `loadCheckFromPath` (fail if missing/invalid) — `checks: ['cspell', './fitness/my-check.js']` runs both in order.
+1. Share path loading between CLI and config
+   - [ ] Move `isPathSpec` / `loadCheckFromPath` from `run-resolve.ts` to `load-check.ts` — one code path for both callers
 
-3. `disabledChecks` still only filters names — path entries in `checks` are never removed by `disabledChecks`.
+2. Support paths in config `checks`
+   - [ ] `resolveBaseCheckNames` (`load-check.ts`) branches per entry: name → `loadCheck`, path → `loadCheckFromPath` (fail loud if missing/invalid — it was explicitly configured)
+   - [ ] `checks: ['cspell', './fitness/my-check.js']` runs both, in order
 
-4. Widen `FitnessConfig.checks` to accept paths — types match runtime behavior.
+3. `disabledChecks` stays name-only
+   - [ ] Path entries in `checks` are never removed by `disabledChecks` (opt-in only, same as today's design intent)
 
-5. Tests + README example — mixed config, bad path error, docs show a local check module.
+4. Types
+   - [ ] Widen `FitnessConfig.checks` to accept paths so types match runtime behavior
 
-## Not doing
-
-- Globs, `.ts` without build, `disabledChecks` for paths
+5. Tests + docs
+   - [ ] Test: mixed name/path config runs both
+   - [ ] Test: bad/missing path in config throws
+   - [ ] README example showing a local check module referenced by path
