@@ -45,6 +45,17 @@ export default {
 
 A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
 
+## Git hooks
+
+This is the point of the runner: checks enforced automatically on `git commit`, not something a developer has to remember to run. `@mayjournal/fitness` ships starter hooks under `githooks/`; copy them into your repo and point Git at that folder once:
+
+```bash
+cp -a node_modules/@mayjournal/fitness/githooks githooks
+git config core.hooksPath githooks
+```
+
+Hooks run `npm run fitness` (pre-commit) and semantic-commit validation (commit-msg). Edit under `githooks/` after copy.
+
 ## Usage
 
 CLI (from repo root):
@@ -107,17 +118,6 @@ Install `@mayjournal/fitness-shared` if you want to wire these tools directly (o
 - `@mayjournal/fitness-shared/tsconfig` – TypeScript (this repo’s build config)
 - `@mayjournal/fitness-shared/cspell` – cspell.json
 - `@mayjournal/fitness-shared/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
-
-### Git hooks (optional)
-
-`@mayjournal/fitness` ships starter hooks under `githooks/`. Copy them into your repo, then point Git at that folder once:
-
-```bash
-cp -a node_modules/@mayjournal/fitness/githooks githooks
-git config core.hooksPath githooks
-```
-
-Hooks run `npm run fitness` (pre-commit) and semantic-commit validation (commit-msg). Edit under `githooks/` after copy.
 
 ## Development
 
