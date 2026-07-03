@@ -50,6 +50,8 @@
     "wardley",
     "Arai",
     "vitest",
-    "tsx"
+    "tsx",
+    "swiftlint",
+    "jscpd"
   ]
 }

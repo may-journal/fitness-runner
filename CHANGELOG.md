@@ -7,7 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.02.2005
+### 2026.07.02.2234
+
+- Docs: add plan for opt-in `swiftlint` and `jscpd` checks, modeled on bottom-line/may-journals' existing setup. Add "swiftlint"/"jscpd" to shared cspell dictionary.
 
 - Docs: promote README's "Git hooks" from a nested "(optional)" subsection under Exported configs to its own top-level section right after Config — automatic enforcement on commit is the point of the runner, not an optional add-on.
 - Docs: move README's `## Config` section (`.fitnessrc`) up next to `## Install`, ahead of Usage/Checks/Consumer projects, so setup and configuration read together.
