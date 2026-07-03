@@ -13,6 +13,38 @@ Node fitness runner that runs checks for local dev, CI/CD, and GenAI workflows t
 npm install @mayjournal/fitness
 ```
 
+## Config
+
+Optional `.fitnessrc.ts` or `.fitnessrc.js` at repo root:
+
+```ts
+export default {
+  checks: ['changelog', 'node-version', 'semantic-commit'], // run these checks, in order
+  disabledChecks: ['cspell'], // optional: exclude from bundle defaultChecks
+};
+```
+
+If `checks` is set, only those checks run (in order). If omitted, the runner uses `defaultChecks` from `@mayjournal/fitness-checks` (install the bundle package). `disabledChecks` removes names from either list. Use `.fitnessrc.js` with `module.exports = { checks: [...] }` for plain Node.
+
+`checks` entries can also be local paths, mixed in with npm check names, to run a repo-specific check without publishing a package:
+
+```ts
+// ./fitness/checks/no-console.js
+export default {
+  name: 'no-console',
+  run: async () => ({ ok: true, errors: [] }),
+};
+```
+
+```ts
+// .fitnessrc.ts
+export default {
+  checks: ['cspell', './fitness/checks/no-console.js'], // npm name + local path, in order
+};
+```
+
+A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
+
 ## Usage
 
 CLI (from repo root):
@@ -44,7 +76,7 @@ Each check's source lives under `packages/checks/<name>/` with its own README. C
 
 Install `@mayjournal/fitness` and `@mayjournal/fitness-checks`. With no `.fitnessrc`, the runner uses bundle `defaultChecks`. Optional `.fitnessrc` can set `checks` to run a subset (still resolved from the installed bundle, in your order) or `disabledChecks` to exclude names from the bundle default.
 
-To add a repo-specific rule without a new dependency, skip the name and point `checks` at a local module path instead — see [Config](#config) below.
+To add a repo-specific rule without a new dependency, skip the name and point `checks` at a local module path instead — see [Config](#config) above.
 
 Add a script and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. Setup matrix and examples: [Architecture.md](./Architecture.md#consumer-setup).
 
@@ -86,38 +118,6 @@ git config core.hooksPath githooks
 ```
 
 Hooks run `npm run fitness` (pre-commit) and semantic-commit validation (commit-msg). Edit under `githooks/` after copy.
-
-## Config
-
-Optional `.fitnessrc.ts` or `.fitnessrc.js` at repo root:
-
-```ts
-export default {
-  checks: ['changelog', 'node-version', 'semantic-commit'], // run these checks, in order
-  disabledChecks: ['cspell'], // optional: exclude from bundle defaultChecks
-};
-```
-
-If `checks` is set, only those checks run (in order). If omitted, the runner uses `defaultChecks` from `@mayjournal/fitness-checks` (install the bundle package). `disabledChecks` removes names from either list. Use `.fitnessrc.js` with `module.exports = { checks: [...] }` for plain Node.
-
-`checks` entries can also be local paths, mixed in with npm check names, to run a repo-specific check without publishing a package:
-
-```ts
-// ./fitness/checks/no-console.js
-export default {
-  name: 'no-console',
-  run: async () => ({ ok: true, errors: [] }),
-};
-```
-
-```ts
-// .fitnessrc.ts
-export default {
-  checks: ['cspell', './fitness/checks/no-console.js'], // npm name + local path, in order
-};
-```
-
-A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
 
 ## Development
 
