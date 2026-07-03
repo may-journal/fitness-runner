@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.07.02.1925",
+  "version": "0.1.0-2026.07.02.1959",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {

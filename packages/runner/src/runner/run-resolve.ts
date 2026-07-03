@@ -46,8 +46,8 @@ async function loadOneSpec(
   return allowMissing ? tryLoadCheck(spec, root) : loadCheck(spec, root);
 }
 
-/** Loads checks for resolved specs (names and/or paths), in order; dedupes by loaded check name. */
-async function loadChecksBySpecs(
+/** Loads each resolved spec (names and/or paths) to a Check, in order; dedupes by loaded check name. */
+async function resolveCheckSpecs(
   specs: string[],
   root: string,
   allowMissing = false
@@ -68,7 +68,7 @@ async function resolveChecks(root: string): Promise<Check[]> {
   const config = loadConfig(root);
   const specs = await resolveCheckNames(root);
   const fromConfig = Boolean(config?.checks?.length);
-  return loadChecksBySpecs(specs, root, fromConfig);
+  return resolveCheckSpecs(specs, root, fromConfig);
 }
 
 /** Returns value of --check=<name-or-path> from argv if present. */

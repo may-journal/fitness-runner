@@ -38,15 +38,13 @@ See [Architecture.md](./Architecture.md) for the C4 model ([architecture/](archi
 
 ## Checks
 
-Each check is an npm package under `packages/checks/<name>/` (`@mayjournal/fitness-check-<name>`) with its own README. Default run order when `.fitnessrc` omits `checks` is `defaultChecks` from `@mayjournal/fitness-checks` (see [packages/checks-bundle/src/index.ts](./packages/checks-bundle/src/index.ts) and [Architecture.md](./Architecture.md)).
+Each check's source lives under `packages/checks/<name>/` with its own README. Consumers load a check by name via the `@mayjournal/fitness-checks/checks/<name>` subpath — the individual `@mayjournal/fitness-check-<name>` workspaces are private and never published on their own. Default run order when `.fitnessrc` omits `checks` is `defaultChecks` from `@mayjournal/fitness-checks` (see [packages/checks-bundle/src/index.ts](./packages/checks-bundle/src/index.ts) and [Architecture.md](./Architecture.md)).
 
 ## Consumer projects
 
-Install the runner plus either the checks bundle or individual check packages.
+Install `@mayjournal/fitness` and `@mayjournal/fitness-checks`. With no `.fitnessrc`, the runner uses bundle `defaultChecks`. Optional `.fitnessrc` can set `checks` to run a subset (still resolved from the installed bundle, in your order) or `disabledChecks` to exclude names from the bundle default.
 
-Bundle (recommended): install `@mayjournal/fitness` and `@mayjournal/fitness-checks`. With no `.fitnessrc`, the runner uses bundle `defaultChecks`. Optional `.fitnessrc` can set `checks` to override the list or `disabledChecks` to exclude names from the bundle default.
-
-À la carte: install `@mayjournal/fitness` and only the `@mayjournal/fitness-check-*` packages you need; set `checks` in `.fitnessrc` to that subset (each listed name must be installed).
+To add a repo-specific rule without a new dependency, skip the name and point `checks` at a local module path instead — see [Config](#config) below.
 
 Add a script and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. Setup matrix and examples: [Architecture.md](./Architecture.md#consumer-setup).
 
@@ -121,10 +119,6 @@ export default {
 
 A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
 
-## Check packages
-
-Each check lives in `packages/checks/<name>/` as `@mayjournal/fitness-check-<name>`. See [Architecture.md](./Architecture.md) for how the runner loads them and each check’s README for behavior.
-
 ## Development
 
 ```bash
@@ -134,4 +128,10 @@ npm run fitness
 npm run format
 npm run lint
 npm test
+```
+
+`npm install` runs `prepare`, which points Git at this repo's `githooks/` (pre-commit runs `npm run fitness` + lint; commit-msg validates semantic-commit). If hooks aren't firing — e.g. `core.hooksPath` got reset — re-run:
+
+```bash
+git config core.hooksPath githooks
 ```
