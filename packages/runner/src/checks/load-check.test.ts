@@ -38,10 +38,11 @@ describe('load-check', () => {
     expect(findInstallRoot(dir)).toBe(dir);
   });
 
-  it('resolveCheckNames returns bundle defaultChecks from repo root', async () => {
+  it('resolveCheckNames resolves the repo-root .fitnessrc (bundle defaults + opt-in dependency-currency)', async () => {
     const names = await resolveCheckNames(REPO_ROOT);
-    expect(names).toContain('changelog');
-    expect(names.length).toBe(12);
+    expect(names).toContain('changelog'); // a bundle default check
+    expect(names).toContain('jscpd'); // a bundle default (nothing disabled)
+    expect(names).toContain('dependency-currency'); // opt-in check enabled in .fitnessrc.js
   });
 
   it('resolveCheckNames throws when bundle is unavailable', async () => {

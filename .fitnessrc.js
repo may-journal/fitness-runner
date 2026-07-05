@@ -1,8 +1,8 @@
 /** @type {import('@mayjournal/fitness').FitnessConfig} */
-// jscpd disabled here: ~12 structurally-similar check packages (package.json scaffolding,
-// enUS.ts, test setup) sit at ~2.3% duplication, over the proven 1% threshold used by
-// consumer repos. That's inherent to this monorepo's shape, not something worth a forced
-// refactor right now — jscpd is still a defaultChecks member for every other consumer.
+const { defaultChecks } = require('@mayjournal/fitness-checks');
+
 module.exports = {
-  disabledChecks: ['jscpd'],
+  // Every default check plus the opt-in dependency-currency check — the repo runs the full suite
+  // on itself (dogfooding). Nothing is disabled.
+  checks: [...defaultChecks, 'dependency-currency'],
 };

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /** Copies built check packages into dist/checks/ for @mayjournal/fitness-checks publish. */
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,19 +30,21 @@ const repoRoot = join(bundleRoot, '../..');
 for (const name of CHECK_NAMES) {
   const src = join(repoRoot, 'packages/checks', name, 'dist');
   const workspace = `@mayjournal/fitness-check-${name}`;
-  if (!existsSync(src)) {
-    console.log(`building ${workspace}…`);
-    const build = spawnSync('npm', ['run', 'build', '-w', workspace], {
-      cwd: repoRoot,
-      stdio: 'inherit',
-    });
-    if (build.status !== 0) process.exit(build.status ?? 1);
-  }
+  // Always rebuild before copying: a prior build may have left a stale dist, and workspace build
+  // order does not guarantee this check compiled before the bundle. Copying a stale dist silently
+  // ships old code (has caused false check failures).
+  console.log(`building ${workspace}…`);
+  const build = spawnSync('npm', ['run', 'build', '-w', workspace], {
+    cwd: repoRoot,
+    stdio: 'inherit',
+  });
+  if (build.status !== 0) process.exit(build.status ?? 1);
   if (!existsSync(src)) {
     console.error(`Missing ${src} after build.`);
     process.exit(1);
   }
   const dest = join(bundleRoot, 'dist/checks', name);
+  rmSync(dest, { force: true, recursive: true }); // clear any stale bundled copy first
   mkdirSync(join(bundleRoot, 'dist/checks'), { recursive: true });
   cpSync(src, dest, { force: true, recursive: true });
   console.log(`bundled check: ${name}`);

@@ -55,8 +55,8 @@ function packageErrors(name: string, raw: OutdatedEntry | OutdatedEntry[]): stri
 
 /**
  * Sorted, de-duplicated "name: current → latest" lines for every non-internal dependency behind
- * latest. Identical lines (the same dep at the same version across several workspaces) collapse to
- * one — bumping it is a single action.
+ * latest. Identical lines (the same dep+version across several workspaces) collapse to one —
+ * bumping it is a single action.
  */
 export function outdatedErrors(report: OutdatedReport): string[] {
   const errors = new Set<string>();

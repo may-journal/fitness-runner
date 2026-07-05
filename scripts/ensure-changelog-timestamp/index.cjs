@@ -34,6 +34,9 @@ function isChangelogStaged(stagedFiles) {
 /** @param {string} dir @param {string[]} [paths] */
 function collectPackageJsonPaths(dir, paths = []) {
   for (const entry of readdirSync(dir)) {
+    // Skip node_modules: nested workspace deps (e.g. a non-hoisted chalk) are not our packages —
+    // bumping/staging their package.json corrupts the dep and fails `git add` (it's gitignored).
+    if (entry === 'node_modules') continue;
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {

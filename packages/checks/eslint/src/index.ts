@@ -1,6 +1,7 @@
 import { createRequire } from 'node:module';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import {
   buildExecCheckResult,
   getFitnessRunnerRoot,
@@ -34,7 +35,9 @@ export async function runEslintViaAPI(
   fitnessRunnerRoot?: string
 ): Promise<{ errors: string[]; exitCode: number; filesChecked: number }> {
   const frRoot = fitnessRunnerRoot ?? getFitnessRunnerRoot();
-  const { createEslintConfig } = require(join(frRoot, 'eslint.base.cjs')) as {
+  const { createEslintConfig } = (await import(
+    pathToFileURL(join(frRoot, 'eslint.base.mjs')).href
+  )) as {
     createEslintConfig: (parserOptions: Record<string, unknown>) => unknown[];
   };
   const { ESLint } = require('eslint') as {

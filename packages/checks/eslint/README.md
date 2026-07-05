@@ -1,6 +1,6 @@
 ---
 fitnessFunctions: ['eslint']
-relatedConfigurations: ['../../shared/config/eslint.config.cjs']
+relatedConfigurations: ['../../shared/config/eslint.config.mjs']
 ---
 
 # eslint
