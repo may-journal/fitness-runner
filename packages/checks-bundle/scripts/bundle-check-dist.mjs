@@ -21,6 +21,7 @@ const CHECK_NAMES = [
   'vitest-coverage-full',
   'jscpd',
   'swiftlint',
+  'dependency-currency',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');

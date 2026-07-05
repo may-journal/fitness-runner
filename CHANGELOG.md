@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.02.2358
+### 2026.07.05.1551
 
+- Feat: add the `dependency-currency` check — flags declared npm dependencies that are behind their latest published version (an installable update means the project isn't at peak fitness). Runs `npm outdated --json` (direct deps only), reports `name: current → latest` de-duplicated across workspaces, skips internal `@mayjournal/*` packages, and degrades to a pass when the registry is unreachable. Opt-in (network-dependent), bundled in `@mayjournal/fitness-checks/checks/*` but not in `defaultChecks`. Closes #30.
 - Fix: real external consumers hit `Cannot find package` for `semantic-commit` (`conventional-commit-types`) and `read-repo-first` (`boxen`) — both checks' own npm dependencies were never propagated to any published package (this monorepo's workspace hoisting masked it). Added `conventional-commit-types`, `cspell`, `cspell-lib`, `eslint`, `@typescript-eslint/*`, `eslint-config-prettier`, `eslint-plugin-jsdoc`, `eslint-plugin-typescript-sort-keys` to `@mayjournal/fitness-shared`'s dependencies (same pattern used for `jscpd`) so every `defaultChecks` member's runtime dependency actually reaches a consumer. Also dropped `read-repo-first`'s `boxen` dependency entirely — replaced its one decorative box-drawing call with a plain horizontal-rule helper using `chalk` (already a real dependency via the runner), so there's one fewer package to keep in sync.
 
 - Merge `main` into this branch, resolving conflicts in `CHANGELOG.md`, `README.md`, `architecture/02-containers.md`, `architecture/03-components.md`, `package-lock.json`, and every workspace `package.json` version field, then regenerating the lockfile.

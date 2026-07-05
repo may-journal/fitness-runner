@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.02.2358",
+  "version": "0.1.0-2026.07.05.1551",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",

@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-jscpd",
+  "name": "@mayjournal/fitness-check-dependency-currency",
   "version": "0.1.0-2026.07.05.1551",
   "private": true,
-  "description": "Fitness check: jscpd",
+  "description": "Fitness check: dependency-currency",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -24,6 +24,7 @@
   ],
   "scripts": {
     "build": "fitness-shared build",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
     "knip": "knip --no-exit-code",
     "test": "npm run build && fitness-shared test"
   },
