@@ -7,7 +7,12 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.02.2358
+### 2026.07.05.1506
+
+- Feat: add the mermaid diagram + callout-table check set (`mermaid-callouts`, `mermaid-callout-why`, `mermaid-diagram-prose`, `mermaid-legend`, `mermaid-level-bleed`) — opt-in checks that enforce the numbered-diagram + callout-table convention used in the architecture docs. Shared parsing lives in `fitness-shared` (`mermaid.ts`), with a `runMermaidDocCheck` helper so each check supplies only its `validateDoc` rule; legend diagrams (no callout numbers) are exempt from diagram↔table pairing. Enabled all five on this repo and aligned the architecture docs to pass.
+- Chore: re-enable `jscpd` on this repo (was locally disabled) and change the shared `jscpd` default to also ignore `**/*.test.*` / `**/*.spec.*` — repeated mock setup and fixtures read as false-positive duplication. Deduped `RunContext` (runner now re-exports the single `fitness-shared` definition) and extracted the shared check `run()` boilerplate to bring real duplication under threshold.
+- Fix: `bundle-check-dist.mjs` now always rebuilds each check and clears the destination before copying, so an incremental build can no longer ship a stale bundled `dist` (previously caused false check failures).
+- Chore: standardize `package.json` scripts across all `packages/checks/*` to one set (`build`, `ci`, `knip`, `test`).
 
 - Fix: real external consumers hit `Cannot find package` for `semantic-commit` (`conventional-commit-types`) and `read-repo-first` (`boxen`) — both checks' own npm dependencies were never propagated to any published package (this monorepo's workspace hoisting masked it). Added `conventional-commit-types`, `cspell`, `cspell-lib`, `eslint`, `@typescript-eslint/*`, `eslint-config-prettier`, `eslint-plugin-jsdoc`, `eslint-plugin-typescript-sort-keys` to `@mayjournal/fitness-shared`'s dependencies (same pattern used for `jscpd`) so every `defaultChecks` member's runtime dependency actually reaches a consumer. Also dropped `read-repo-first`'s `boxen` dependency entirely — replaced its one decorative box-drawing call with a plain horizontal-rule helper using `chalk` (already a real dependency via the runner), so there's one fewer package to keep in sync.
 

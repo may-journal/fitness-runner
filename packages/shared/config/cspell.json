@@ -16,6 +16,8 @@
   "useGitignore": true,
   "version": "0.2",
   "words": [
+    "bijective",
+    "dogfooding",
     "attw",
     "mayjournal",
     "microbenchmarks",

@@ -1,8 +1,17 @@
 /** @type {import('@mayjournal/fitness').FitnessConfig} */
-// jscpd disabled here: ~12 structurally-similar check packages (package.json scaffolding,
-// enUS.ts, test setup) sit at ~2.3% duplication, over the proven 1% threshold used by
-// consumer repos. That's inherent to this monorepo's shape, not something worth a forced
-// refactor right now — jscpd is still a defaultChecks member for every other consumer.
+const { defaultChecks } = require('@mayjournal/fitness-checks');
+
+// Opt-in mermaid diagram + callout-table checks live in this repo, so we run them on our
+// own architecture docs (dogfooding). They only activate on diagrams paired with a callout
+// table, so unrelated diagrams are untouched.
+const mermaidChecks = [
+  'mermaid-callouts',
+  'mermaid-callout-why',
+  'mermaid-diagram-prose',
+  'mermaid-legend',
+  'mermaid-level-bleed',
+];
+
 module.exports = {
-  disabledChecks: ['jscpd'],
+  checks: [...defaultChecks, ...mermaidChecks],
 };
