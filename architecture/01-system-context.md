@@ -15,12 +15,12 @@ C4Context
     System_Ext(tools, "5 Lint format test tools", "eslint, prettier, vitest, cspell, git, etc.")
     System_Ext(ci, "6 CI/CD", "GitHub Actions and similar")
 
-    Rel(developer, fitness, "7 Runs")
-    Rel(agent, fitness, "8 Runs via hooks or scripts")
-    Rel(fitness, consumer, "9 Validates")
-    Rel(fitness, tools, "10 Delegates")
-    Rel(ci, fitness, "11 Runs")
-    Rel(fitness, ci, "12 Exit code gates merge")
+    Rel(developer, fitness, "7")
+    Rel(agent, fitness, "8")
+    Rel(fitness, consumer, "9")
+    Rel(fitness, tools, "10")
+    Rel(ci, fitness, "11")
+    Rel(fitness, ci, "12")
 ```
 
 ```mermaid

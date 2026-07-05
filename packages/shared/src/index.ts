@@ -3,9 +3,17 @@ export { loadConfig } from './config/load.js';
 export { EXEC_OPTS, execSyncResult } from './execSyncResult.js';
 export { findFilesByExtension } from './findFilesByExtension.js';
 export { getFitnessRunnerRoot } from './getFitnessRunnerRoot.js';
+export {
+  extractDiagramNumbers,
+  isCalloutHeader,
+  pairDiagramsWithTables,
+  parseDoc,
+} from './mermaid.js';
+export type { CalloutTableBlock, DiagramBlock, DiagramTablePair, DocBlock } from './mermaid.js';
 export { getSkipDirs, getSkipDirsForWalk, RUNNER_SKIP_DIRS } from './getSkipDirs.js';
 export { resolveFitnessConfigPath } from './resolveFitnessConfigPath.js';
 export { resolveLintTsconfig } from './resolveLintTsconfig.js';
+export { runMermaidDocCheck } from './runMermaidDocCheck.js';
 export { getExecSync, getStagedFiles } from './runContext.js';
 export type { ExecSyncFn } from './runContext.js';
 export { quoteForShell } from './shellQuote.js';

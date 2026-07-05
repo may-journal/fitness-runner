@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-cspell",
-  "version": "0.1.0-2026.07.02.2358",
+  "version": "0.1.0-2026.07.05.1506",
   "private": true,
   "description": "Fitness check: cspell",
   "repository": {
@@ -23,8 +23,9 @@
   ],
   "scripts": {
     "build": "fitness-shared build",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
     "knip": "knip --no-exit-code",
-    "test": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run build && fitness-shared test --coverage --coverage-exclude src/index.ts"
+    "test": "npm run build && fitness-shared test"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {

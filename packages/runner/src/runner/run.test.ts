@@ -310,14 +310,18 @@ describe('run', () => {
     vi.resetModules();
     vi.doMock('../checks/load-check.js', async (importOriginal) => {
       const mod = await importOriginal<typeof import('../checks/load-check.js')>();
+      const check = {
+        name: 'markdown-front-matter',
+        folder: 'rules-front-matter',
+        run: async () => ({ ok: true, errors: [], meta: {} }),
+      };
+      // Mock both loaders: bundle-default resolution uses loadCheck, while an explicit
+      // `.fitnessrc` checks list (fromConfig) resolves through tryLoadCheck.
       return {
         ...mod,
         resolveCheckNames: async () => ['markdown-front-matter'],
-        loadCheck: async () => ({
-          name: 'markdown-front-matter',
-          folder: 'rules-front-matter',
-          run: async () => ({ ok: true, errors: [], meta: {} }),
-        }),
+        loadCheck: async () => check,
+        tryLoadCheck: async () => check,
       };
     });
     const { run: runFolderMap } = await import('./index.js');
