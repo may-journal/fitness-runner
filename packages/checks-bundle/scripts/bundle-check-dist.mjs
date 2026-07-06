@@ -27,6 +27,7 @@ const CHECK_NAMES = [
   'mermaid-legend',
   'mermaid-level-bleed',
   'dependency-currency',
+  'gitignore-why',
   'no-eslint-disable',
 ];
 
