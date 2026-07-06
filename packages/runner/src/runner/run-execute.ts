@@ -10,9 +10,9 @@ import { enUS } from './enUS.js';
 
 const CHECK_TIMEOUT_MS = 5000;
 
-/** Resolves check timeout ms; tests may pass _checkTimeoutMsForTesting for fast timeout tests. */
-function getCheckTimeoutMs(context?: RunContext): number {
-  return context?._checkTimeoutMsForTesting ?? CHECK_TIMEOUT_MS;
+/** Resolves check timeout ms: test override wins, then the check's own timeoutMs, then the default. */
+function getCheckTimeoutMs(check: Check, context?: RunContext): number {
+  return context?._checkTimeoutMsForTesting ?? check.timeoutMs ?? CHECK_TIMEOUT_MS;
 }
 
 /** Rejects after ms; used for in-process path-based checks that may hang async. */
@@ -48,7 +48,7 @@ async function runOneCheckInProcess(
   context?: RunContext
 ): Promise<ResultRowLike> {
   const start = performance.now();
-  const timeoutMs = getCheckTimeoutMs(context);
+  const timeoutMs = getCheckTimeoutMs(check, context);
   const runPromise =
     check.name === CheckName.ReadRepoFirst
       ? check.run(root, context)
@@ -88,7 +88,7 @@ function runOneCheckInWorker(
     type: 'module',
     workerData: { checkName: check.name, context, root },
   } as import('node:worker_threads').WorkerOptions);
-  const timeoutMs = getCheckTimeoutMs(context);
+  const timeoutMs = getCheckTimeoutMs(check, context);
   return new Promise((resolve) => {
     let settled = false;
     const timeoutMsg = interpolate(enUS.CheckTimeout, { seconds: timeoutMs / 1000 });

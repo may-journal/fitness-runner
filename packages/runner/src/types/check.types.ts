@@ -15,4 +15,6 @@ export type Check = {
   run: (root?: string, context?: RunContext) => Promise<CheckResult>;
   /** When true, run in main thread; otherwise run in worker (when not in tests). */
   runInProcess?: boolean;
+  /** Optional per-check timeout in ms (default 5000). Raise for network-bound checks (e.g. a registry query). */
+  timeoutMs?: number;
 };
