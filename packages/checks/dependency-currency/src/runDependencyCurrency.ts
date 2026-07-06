@@ -95,6 +95,9 @@ export const dependencyCurrencyCheck = {
     return checkResult(outdated.length === 0, errors, filesChecked);
   },
   runInProcess: true,
+  // `npm outdated` queries the registry per dependency; on a cold CI cache it can exceed the
+  // default 5s check timeout (observed ~5.5s). 30s gives headroom without masking a real hang.
+  timeoutMs: 30_000,
 } satisfies Check;
 
 export default dependencyCurrencyCheck;
