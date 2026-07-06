@@ -27,6 +27,7 @@ const CHECK_NAMES = [
   'mermaid-legend',
   'mermaid-level-bleed',
   'dependency-currency',
+  'markdown-filename-convention',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
