@@ -28,6 +28,7 @@ const CHECK_NAMES = [
   'mermaid-level-bleed',
   'dependency-currency',
   'gitignore-why',
+  'no-eslint-disable',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
