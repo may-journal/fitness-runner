@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-prettier",
+  "name": "@mayjournal/fitness-check-gitignore-why",
   "version": "0.1.0-2026.07.06.1111",
   "private": true,
-  "description": "Fitness check: prettier",
+  "description": "Fitness check: gitignore-why",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -19,7 +19,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "fitness-shared build",
@@ -29,8 +30,7 @@
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {
-    "@mayjournal/fitness-shared": "*",
-    "prettier": "^3.9.4"
+    "@mayjournal/fitness-shared": "*"
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",

@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-markdown-no-bold-italic",
-  "version": "0.1.0-2026.07.05.1946",
+  "version": "0.1.0-2026.07.06.1111",
   "private": true,
   "description": "Fitness check: markdown-no-bold-italic",
   "repository": {
@@ -37,7 +37,7 @@
     "@types/node": "^26.1.0",
     "prettier": "^3.9.4",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "@mayjournal/fitness": "*"

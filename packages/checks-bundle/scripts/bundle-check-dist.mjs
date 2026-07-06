@@ -27,6 +27,7 @@ const CHECK_NAMES = [
   'mermaid-legend',
   'mermaid-level-bleed',
   'dependency-currency',
+  'gitignore-why',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
