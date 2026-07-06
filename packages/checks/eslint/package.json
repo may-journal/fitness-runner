@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-eslint",
-  "version": "0.1.0-2026.07.06.1112",
+  "version": "0.1.0-2026.07.06.1502",
   "private": true,
   "description": "Fitness check: eslint",
   "repository": {
@@ -35,8 +35,8 @@
   },
   "dependencies": {
     "@mayjournal/fitness-shared": "*",
-    "@typescript-eslint/eslint-plugin": "^8.62.1",
-    "@typescript-eslint/parser": "^8.62.1",
+    "@typescript-eslint/eslint-plugin": "^8.63.0",
+    "@typescript-eslint/parser": "^8.63.0",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsdoc": "^63.0.12",
@@ -46,7 +46,7 @@
     "@mayjournal/fitness": "*",
     "@types/node": "^26.1.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "@mayjournal/fitness": "*"

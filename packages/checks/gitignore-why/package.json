@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-mermaid-callouts",
+  "name": "@mayjournal/fitness-check-gitignore-why",
   "version": "0.1.0-2026.07.06.1502",
   "private": true,
-  "description": "Fitness check: mermaid-callouts",
+  "description": "Fitness check: gitignore-why",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -19,7 +19,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "scripts": {
     "build": "fitness-shared build",

@@ -4,17 +4,64 @@ relatedConfigurations: ['../../../package.json']
 
 # markdown-filename-convention
 
-Enforces that every `.md` filename is either kebab-case or camelCase so doc trees stay predictable for links, tooling, and case-sensitive CI. Opt-in — not part of `defaultChecks`. Add `'markdown-filename-convention'` to `.fitnessrc` `checks` to enable it.
+Enforces that every `.md` file's basename is either kebab-case or camelCase, so doc trees stay predictable for links, tooling, and case-sensitive CI. Opt-in — not part of `defaultChecks`.
+
+## Enable
+
+```ts
+// .fitnessrc.ts
+export default { checks: ['markdown-filename-convention'] };
+```
+
+## What passes
+
+Kebab-case (lowercase words joined by single hyphens) or camelCase (lowercase first letter, then letters/digits):
+
+```
+docs/api-design.md      (kebab-case)
+plans/plan-checks.md    (kebab-case)
+docs/releaseNotes.md    (camelCase)
+docs/adr001.md          (camelCase, digits allowed)
+```
+
+Standard root docs are always allowed regardless of case:
+
+```
+README.md   CHANGELOG.md   CONTRIBUTING.md   CODE_OF_CONDUCT.md   LICENSE.md   SECURITY.md
+```
+
+## What fails
+
+`snake_case`, `PascalCase`, spaces, or any other style:
+
+```
+docs/Api_Design.md
+Architecture.md
+docs/My Notes.md
+```
+
+each report the path and the rule:
+
+```
+docs/Api_Design.md: filename must be kebab-case or camelCase
+Architecture.md: filename must be kebab-case or camelCase
+docs/My Notes.md: filename must be kebab-case or camelCase
+```
+
+## Advanced
+
+Only the basename is validated, so directory casing is ignored — `SomeDir/api-design.md` is judged solely by `api-design.md`. The two accepted patterns are:
+
+```
+kebab:  ^[a-z0-9]+(-[a-z0-9]+)*\.md$
+camel:  ^[a-z][a-zA-Z0-9]*\.md$
+```
+
+On case-insensitive filesystems (macOS default), two camelCase names that differ only in letter case resolve to the same file, so prefer kebab-case when that risk matters. To keep a non-conforming legacy filename, rename it to kebab-case or add its basename to the allowed set.
 
 ## Behavior
 
-- Discovers `.md` files with `findFilesByExtension(root, '.md')` (excludes `node_modules`, dist, coverage, .git, githooks).
-- Validates each file's basename only, so a path like `plans/foo-bar.md` is judged by `foo-bar.md`.
-- Pass: basename matches kebab-case `^[a-z0-9]+(-[a-z0-9]+)*\.md$` or camelCase `^[a-z][a-zA-Z0-9]*\.md$`.
-- Always allowed regardless of case: `README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `LICENSE.md`.
-- Fail: any other basename (`snake_case`, PascalCase, spaces, etc.) — one error per file, e.g. `path/to/Bad_Name.md: filename must be kebab-case or camelCase`.
-- `filesChecked` counts the `.md` files scanned.
-
-## Notes
-
-- On case-insensitive filesystems (macOS default) camelCase names that differ only in case can collide; prefer kebab-case where that risk matters.
+- Discovers files via `findFilesByExtension(root, '.md')` (standard skip dirs like `node_modules`, `dist`, `coverage`, `.git` excluded).
+- Pass: every basename is a standard root doc, kebab-case, or camelCase.
+- Fail: `path: filename must be kebab-case or camelCase` per non-conforming file.
+- `filesChecked` counts every `.md` file scanned.

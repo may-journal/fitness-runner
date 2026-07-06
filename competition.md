@@ -4,7 +4,7 @@ relatedConfigurations: ['package.json']
 
 # Competition
 
-Landscape for AI-assisted dev quality: who owns rules/skills context vs deterministic enforcement vs commodity checks. See [Wardley.md](./Wardley.md) for the strategic map.
+Landscape for AI-assisted dev quality: who owns rules/skills context vs deterministic enforcement vs commodity checks. See [wardley.md](./wardley.md) for the strategic map.
 
 Legend: Yes · Partial · No · — (not applicable)
 
@@ -62,4 +62,4 @@ Legend: Yes · Partial · No · — (not applicable)
 
 ## fitness-runner differentiation
 
-One runner, one ordered check list, same runs for `npm run fitness`, git hooks, and CI. Check packages with READMEs as source of truth; optional `.fitnessrc`; rules/skills point at checks rather than replacing them. Targets quality checks → fitness checks (one utility, every surface) in [Wardley.md](./Wardley.md).
+One runner, one ordered check list, same runs for `npm run fitness`, git hooks, and CI. Check packages with READMEs as source of truth; optional `.fitnessrc`; rules/skills point at checks rather than replacing them. Targets quality checks → fitness checks (one utility, every surface) in [wardley.md](./wardley.md).
