@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.05.1637",
+  "version": "0.1.0-2026.07.05.1935",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",
@@ -65,7 +65,7 @@
     "cspell-lib": "^10.0.1",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^63.0.11",
+    "eslint-plugin-jsdoc": "^63.0.12",
     "eslint-plugin-perfectionist": "^5.9.1",
     "jiti": "^2.7.0",
     "jscpd": "^5.0.11",

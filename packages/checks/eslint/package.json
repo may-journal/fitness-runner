@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-eslint",
-  "version": "0.1.0-2026.07.05.1637",
+  "version": "0.1.0-2026.07.05.1935",
   "private": true,
   "description": "Fitness check: eslint",
   "repository": {
@@ -23,6 +23,7 @@
   ],
   "scripts": {
     "build": "fitness-shared build",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
     "knip": "knip --no-exit-code",
     "test": "npm run build && fitness-shared test"
   },
@@ -38,7 +39,7 @@
     "@typescript-eslint/parser": "^8.62.1",
     "eslint": "^10.6.0",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^63.0.11",
+    "eslint-plugin-jsdoc": "^63.0.12",
     "eslint-plugin-perfectionist": "^5.9.1"
   },
   "devDependencies": {

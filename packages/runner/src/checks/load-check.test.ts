@@ -38,10 +38,11 @@ describe('load-check', () => {
     expect(findInstallRoot(dir)).toBe(dir);
   });
 
-  it('resolveCheckNames resolves the repo-root .fitnessrc (bundle defaults + opt-in dependency-currency)', async () => {
+  it('resolveCheckNames resolves the repo-root .fitnessrc (bundle defaults + opt-in mermaid + dependency-currency)', async () => {
     const names = await resolveCheckNames(REPO_ROOT);
     expect(names).toContain('changelog'); // a bundle default check
     expect(names).toContain('jscpd'); // a bundle default (nothing disabled)
+    expect(names).toContain('mermaid-callouts'); // opt-in mermaid check enabled in .fitnessrc.js
     expect(names).toContain('dependency-currency'); // opt-in check enabled in .fitnessrc.js
   });
 

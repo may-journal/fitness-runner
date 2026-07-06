@@ -1,0 +1,55 @@
+{
+  "name": "@mayjournal/fitness-check-mermaid-callouts",
+  "version": "0.1.0-2026.07.05.1935",
+  "private": true,
+  "description": "Fitness check: mermaid-callouts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/may-journal/fitness-runner.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "fitness-shared build",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
+    "knip": "knip --no-exit-code",
+    "test": "npm run build && fitness-shared test"
+  },
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
+  "dependencies": {
+    "@mayjournal/fitness-shared": "*"
+  },
+  "devDependencies": {
+    "@mayjournal/fitness": "*",
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.0.18"
+  },
+  "peerDependencies": {
+    "@mayjournal/fitness": "*"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "knip": {
+    "entry": [
+      "src/index.ts",
+      "src/**/*.test.ts"
+    ],
+    "project": [
+      "src/**/*.ts"
+    ]
+  }
+}

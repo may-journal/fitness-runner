@@ -75,7 +75,7 @@ Numbers on nodes and arrows match the callout table.
 | 8   | Reads `.fitnessrc`; `checks` accepts names and/or relative paths.                                                     | Shared between resolver and loader.                       |
 | 9   | `@mayjournal/fitness-checks/defaultChecks` when config has no `checks`.                                               | Ordered default list.                                     |
 | 10  | `git diff --cached --name-only` for staged file context.                                                              | Pre-commit and partial runs.                              |
-| 11  | User-facing invocation.                                                                                               |                                                           |
+| 11  | User-facing invocation.                                                                                               | Sole human entry point; all else is internal wiring.      |
 | 12  | `run()` delegates to resolver first.                                                                                  | Resolve before execute.                                   |
 | 13  | Resolver asks loader for check modules by spec (name or path).                                                        | Separation of argv/config from import mechanics.          |
 | 14  | Resolver loads fitness config for the check list.                                                                     | `.fitnessrc` drives order and subset.                     |

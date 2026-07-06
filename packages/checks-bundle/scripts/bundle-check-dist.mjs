@@ -21,6 +21,11 @@ const CHECK_NAMES = [
   'vitest-coverage-full',
   'jscpd',
   'swiftlint',
+  'mermaid-callouts',
+  'mermaid-callout-why',
+  'mermaid-diagram-prose',
+  'mermaid-legend',
+  'mermaid-level-bleed',
   'dependency-currency',
 ];
 
