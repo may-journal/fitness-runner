@@ -29,6 +29,7 @@ const CHECK_NAMES = [
   'dependency-currency',
   'gitignore-why',
   'no-eslint-disable',
+  'commit-attribution',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
