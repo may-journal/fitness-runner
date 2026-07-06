@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-semantic-commit",
+  "name": "@mayjournal/fitness-check-gitignore-why",
   "version": "0.1.0-2026.07.06.1154",
   "private": true,
-  "description": "Fitness check: semantic-commit",
+  "description": "Fitness check: gitignore-why",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -30,8 +30,7 @@
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {
-    "@mayjournal/fitness-shared": "*",
-    "conventional-commit-types": "^3.0.0"
+    "@mayjournal/fitness-shared": "*"
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",
