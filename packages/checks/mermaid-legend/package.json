@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-mermaid-legend",
-  "version": "0.1.0-2026.07.05.1946",
+  "version": "0.1.0-2026.07.06.1111",
   "private": true,
   "description": "Fitness check: mermaid-legend",
   "repository": {
@@ -35,7 +35,7 @@
     "@mayjournal/fitness": "*",
     "@types/node": "^26.1.0",
     "typescript": "^6.0.3",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.10"
   },
   "peerDependencies": {
     "@mayjournal/fitness": "*"

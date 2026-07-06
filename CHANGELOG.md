@@ -7,8 +7,9 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.05.1946
+### 2026.07.06.1111
 
+- Feat: add the `no-eslint-disable` check — fails when any source file (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, test files included) contains an ESLint disable directive (`eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`, block and file forms), reporting `path:line: directive` per hit. Opt-in (bundled, not in `defaultChecks`). Closes #10.
 - Fix: `dependency-currency` timed out in CI — `npm outdated` queries the registry and can exceed the runner's 5s default check timeout (observed ~5.5s on a cold cache). Added an optional `timeoutMs` to the `Check` type (the runner honors it over the default), and set `dependency-currency` to 30s.
 - Feat: add the mermaid diagram + callout-table check set (`mermaid-callouts`, `mermaid-callout-why`, `mermaid-diagram-prose`, `mermaid-legend`, `mermaid-level-bleed`) — opt-in checks that enforce the numbered-diagram + callout-table convention used in the architecture docs. Shared parsing lives in `fitness-shared` (`mermaid.ts`), with a `runMermaidDocCheck` helper so each check supplies only its `validateDoc` rule; legend diagrams (no callout numbers) are exempt from diagram↔table pairing. Enabled all five on this repo and aligned the architecture docs to pass.
 - Chore: re-enable `jscpd` on this repo (was locally disabled) and change the shared `jscpd` default to also ignore `**/*.test.*` / `**/*.spec.*` — repeated mock setup and fixtures read as false-positive duplication. Deduped `RunContext` (runner now re-exports the single `fitness-shared` definition) and extracted the shared check `run()` boilerplate to bring real duplication under threshold.
