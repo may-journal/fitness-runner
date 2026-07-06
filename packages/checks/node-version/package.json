@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-node-version",
-  "version": "0.1.0-2026.07.05.1506",
+  "version": "0.1.0-2026.07.05.1935",
   "private": true,
   "description": "Fitness check: node-version",
   "repository": {
@@ -33,9 +33,9 @@
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",
-    "@types/node": "^25",
-    "typescript": "^5.6",
-    "vitest": "^4.0.18"
+    "@types/node": "^26.1.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "@mayjournal/fitness": "*"

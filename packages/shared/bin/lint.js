@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { findWorkspaceRoot } from './workspace-root.js';
 
 const require = createRequire(import.meta.url);
-const eslintConfig = join(dirname(fileURLToPath(import.meta.url)), '../config/eslint.config.cjs');
+const eslintConfig = join(dirname(fileURLToPath(import.meta.url)), '../config/eslint.config.mjs');
 
 /** Ephemeral tsconfig so projectService maps runner sources (not committed). */
 function ensureRunnerLintTsconfig(root) {

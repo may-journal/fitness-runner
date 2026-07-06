@@ -9,7 +9,7 @@ describe('getFitnessRunnerRoot', () => {
     const { getFitnessRunnerRoot } = await import('@mayjournal/fitness-shared');
     const root = getFitnessRunnerRoot();
     expect(existsSync(join(root, 'cspell.json'))).toBe(true);
-    expect(existsSync(join(root, 'eslint.config.cjs'))).toBe(true);
+    expect(existsSync(join(root, 'eslint.config.mjs'))).toBe(true);
   });
 
   it('finds bundled configs when cwd is not the repo root', async () => {

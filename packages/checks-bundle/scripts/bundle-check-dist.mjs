@@ -26,6 +26,7 @@ const CHECK_NAMES = [
   'mermaid-diagram-prose',
   'mermaid-legend',
   'mermaid-level-bleed',
+  'dependency-currency',
 ];
 
 const bundleRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -34,9 +35,9 @@ const repoRoot = join(bundleRoot, '../..');
 for (const name of CHECK_NAMES) {
   const src = join(repoRoot, 'packages/checks', name, 'dist');
   const workspace = `@mayjournal/fitness-check-${name}`;
-  // Always rebuild before copying: a prior build may have left a stale dist, and
-  // workspace build order does not guarantee this check compiled before the bundle.
-  // Copying a stale dist silently ships old code (has caused false check failures).
+  // Always rebuild before copying: a prior build may have left a stale dist, and workspace build
+  // order does not guarantee this check compiled before the bundle. Copying a stale dist silently
+  // ships old code (has caused false check failures).
   console.log(`building ${workspace}…`);
   const build = spawnSync('npm', ['run', 'build', '-w', workspace], {
     cwd: repoRoot,

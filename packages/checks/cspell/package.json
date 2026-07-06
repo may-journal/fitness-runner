@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-cspell",
-  "version": "0.1.0-2026.07.05.1506",
+  "version": "0.1.0-2026.07.05.1935",
   "private": true,
   "description": "Fitness check: cspell",
   "repository": {
@@ -30,15 +30,15 @@
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {
     "@mayjournal/fitness-shared": "*",
-    "cspell": "^8.15.0",
-    "cspell-lib": "^8.15.0"
+    "cspell": "^10.0.1",
+    "cspell-lib": "^10.0.1"
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",
-    "@types/node": "^25",
-    "@vitest/coverage-v8": "^4.0.18",
-    "typescript": "^5.6",
-    "vitest": "^4.0.18"
+    "@types/node": "^26.1.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   },
   "peerDependencies": {
     "@mayjournal/fitness": "*"

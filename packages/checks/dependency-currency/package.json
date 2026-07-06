@@ -1,8 +1,8 @@
 {
-  "name": "@mayjournal/fitness-check-read-repo-first",
+  "name": "@mayjournal/fitness-check-dependency-currency",
   "version": "0.1.0-2026.07.05.1935",
   "private": true,
-  "description": "Fitness check: read-repo-first",
+  "description": "Fitness check: dependency-currency",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -30,9 +30,7 @@
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {
-    "@mayjournal/fitness-shared": "*",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5"
+    "@mayjournal/fitness-shared": "*"
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",

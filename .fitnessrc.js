@@ -13,5 +13,7 @@ const mermaidChecks = [
 ];
 
 module.exports = {
-  checks: [...defaultChecks, ...mermaidChecks],
+  // Every default check plus the opt-in mermaid + dependency-currency checks — the repo runs
+  // the full suite on itself (dogfooding). Nothing is disabled.
+  checks: [...defaultChecks, ...mermaidChecks, 'dependency-currency'],
 };

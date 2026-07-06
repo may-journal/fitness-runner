@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.05.1506",
+  "version": "0.1.0-2026.07.05.1935",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",
@@ -15,10 +15,10 @@
       "default": "./dist/index.js"
     },
     "./cspell": "./config/cspell.json",
-    "./eslint.base": "./config/eslint.base.cjs",
+    "./eslint.base": "./config/eslint.base.mjs",
     "./eslint.config": {
       "types": "./types/eslint.config.d.ts",
-      "default": "./config/eslint.config.cjs"
+      "default": "./config/eslint.config.mjs"
     },
     "./prettier.config": {
       "types": "./types/prettier.config.d.ts",
@@ -58,26 +58,26 @@
   },
   "prettier": "./config/prettier.config.cjs",
   "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.55.0",
-    "@typescript-eslint/parser": "^8.55.0",
+    "@typescript-eslint/eslint-plugin": "^8.62.1",
+    "@typescript-eslint/parser": "^8.62.1",
     "conventional-commit-types": "^3.0.0",
-    "cspell": "^8.15.0",
-    "cspell-lib": "^8.15.0",
-    "eslint": "^9.0.0",
+    "cspell": "^10.0.1",
+    "cspell-lib": "^10.0.1",
+    "eslint": "^10.6.0",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^62.5.4",
-    "eslint-plugin-typescript-sort-keys": "^3.3.0",
-    "jiti": "^2.6.1",
+    "eslint-plugin-jsdoc": "^63.0.12",
+    "eslint-plugin-perfectionist": "^5.9.1",
+    "jiti": "^2.7.0",
     "jscpd": "^5.0.11",
-    "prettier": "3.8.1",
+    "prettier": "^3.9.4",
     "prettier-plugin-packagejson": "^3.0.2",
     "prettier-plugin-sort-json": "^4.2.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.9"
   },
   "devDependencies": {
-    "@types/node": "^25",
+    "@types/node": "^26.1.0",
     "tsconfig.js": "^3.0.0",
-    "typescript": "^5.6"
+    "typescript": "^6.0.3"
   },
   "peerDependencies": {
     "@mayjournal/fitness": "*"
@@ -94,7 +94,7 @@
       "src/index.ts",
       "bin/*.js",
       "tests/**/*.ts",
-      "config/eslint.base.cjs",
+      "config/eslint.base.mjs",
       "config/prettier.config.cjs",
       "config/generate-tsconfig-json.cjs"
     ],
