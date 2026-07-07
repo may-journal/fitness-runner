@@ -1,8 +1,8 @@
 {
   "name": "@mayjournal/fitness-check-markdown-filename-convention",
-  "version": "0.1.0-2026.07.06.1502",
+  "version": "0.1.0-2026.07.07.0850",
   "private": true,
-  "description": "Fitness check: markdown-filename-convention",
+  "description": "Fitness check: markdown filename convention (kebab-case + camelCase flavors)",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -14,6 +14,16 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./kebab-case": {
+      "types": "./dist/kebab-case.d.ts",
+      "import": "./dist/kebab-case.js",
+      "default": "./dist/kebab-case.js"
+    },
+    "./camel-case": {
+      "types": "./dist/camel-case.d.ts",
+      "import": "./dist/camel-case.js",
+      "default": "./dist/camel-case.js"
     }
   },
   "main": "dist/index.js",
@@ -47,6 +57,8 @@
   "knip": {
     "entry": [
       "src/index.ts",
+      "src/kebab-case.ts",
+      "src/camel-case.ts",
       "src/**/*.test.ts"
     ],
     "project": [

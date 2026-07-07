@@ -20,6 +20,8 @@ module.exports = {
     ...mermaidChecks,
     'dependency-currency',
     'gitignore-why',
-    'markdown-filename-convention',
+    // This repo's docs are kebab-case, so we enable the kebab-case flavor here (dogfooding);
+    // the camelCase flavor stays opt-in (it would fail our hyphenated/numbered docs).
+    'markdown-filename-kebab-case',
   ],
 };
