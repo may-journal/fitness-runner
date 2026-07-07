@@ -4,7 +4,7 @@ relatedConfigurations: ['package.json']
 
 # @mayjournal/fitness
 
-CLI runner for fitness checks. See [Architecture.md](../../Architecture.md) and [architecture/](../../architecture/) for the C4 model.
+CLI runner for fitness checks. See [architecture-index.md](../../architecture-index.md) and [architecture/](../../architecture/) for the C4 model.
 
 ## Performance and publish footprint
 

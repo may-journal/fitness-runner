@@ -7,8 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.06.1337
+### 2026.07.07.0850
 
+- Feat: add the `markdown-filename-convention` check package, which exports two check names — `markdown-filename-kebab-case` and `markdown-filename-camel-case` — as two flavors of one shared function (`runMarkdownFilenameCheck` in `fitness-shared`, parameterized by a `FilenameConvention`). Each enforces a single convention on every `.md` basename (standard root docs like `README.md`/`CHANGELOG.md` exempt), rather than one check accepting either style. The bundler maps the package's per-flavor entry modules (`kebab-case`, `camel-case`) to the two `@mayjournal/fitness-checks/checks/*` subpaths so `.fitnessrc` can enable either. Opt-in (bundled, not in `defaultChecks`). Closes #11.
+- Chore: enable `markdown-filename-kebab-case` on this repo (dogfooding); the camelCase flavor stays opt-in since this repo's architecture and plan docs are kebab-case.
 - Feat: add the `no-eslint-disable` check — fails when any source file (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, test files included) contains an ESLint disable directive (`eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`, block and file forms), reporting `path:line: directive` per hit. Opt-in (bundled, not in `defaultChecks`). Closes #10.
 - Feat: add the `gitignore-why` check — requires every `.gitignore` pattern line to be immediately preceded by a `#` comment explaining why it exists. Opt-in (bundled, not in `defaultChecks`). Closes #6.
 - Docs: expand the `gitignore-why` README with passing/failing `.gitignore` examples and the exact error output, plus how to enable it.
