@@ -1,15 +1,16 @@
 import { defineConfig } from 'vitest/config';
+import { DTS_GLOB, ES_TARGET, SPEC_GLOB, TEST_GLOB, TYPES_GLOB } from './constants.cjs';
 
 export default defineConfig({
-  esbuild: { target: 'ES2022' },
+  esbuild: { target: ES_TARGET },
   test: {
     coverage: {
       exclude: [
         '**/*.bench.ts',
-        '**/*.d.ts',
-        '**/*.test.ts',
-        '**/*.spec.ts',
-        '**/*.types.ts',
+        DTS_GLOB,
+        TEST_GLOB,
+        SPEC_GLOB,
+        TYPES_GLOB,
         'packages/runner/src/index.ts',
         'packages/runner/src/runner/index.ts',
       ],

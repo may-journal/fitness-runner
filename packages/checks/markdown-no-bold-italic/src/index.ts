@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkResult, findFilesByExtension } from '@mayjournal/fitness-shared';
+import {
+  CHANGELOG_MD,
+  MD_EXT,
+  checkResult,
+  findFilesByExtension,
+} from '@mayjournal/fitness-shared';
 import { CheckName, type Check } from '@mayjournal/fitness';
 
 /** Remove fenced code blocks (```...```) and inline code (`...`) so emphasis inside code is not flagged. */
@@ -58,7 +63,7 @@ export const markdownNoBoldItalicCheck: Check = {
   async run(root = process.cwd()) {
     const errors: string[] = [];
     let filesChecked = 0;
-    const mdFiles = (await findFilesByExtension(root, '.md')).filter((f) => f !== 'CHANGELOG.md');
+    const mdFiles = (await findFilesByExtension(root, MD_EXT)).filter((f) => f !== CHANGELOG_MD);
     for (const file of mdFiles) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');

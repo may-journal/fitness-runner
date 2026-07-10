@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-mermaid-callouts",
-  "version": "0.1.0-2026.07.07.0850",
+  "version": "0.1.0-2026.07.10.1556",
   "private": true,
   "description": "Fitness check: mermaid-callouts",
   "repository": {
@@ -33,8 +33,8 @@
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",
-    "@types/node": "^26.1.0",
-    "typescript": "^6.0.3",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "peerDependencies": {

@@ -1,8 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check } from '@mayjournal/fitness';
 import {
+  CHANGELOG_MD as ROOT_CHANGELOG,
+  PACKAGE_JSON,
   checkResult,
   execSyncResult,
   getExecSync,
@@ -10,7 +12,6 @@ import {
 } from '@mayjournal/fitness-shared';
 import type { ExecSyncFn, RunContext } from '@mayjournal/fitness-shared';
 
-const ROOT_CHANGELOG = 'CHANGELOG.md';
 const MIN_OVERLAP = 3;
 const MIN_WORD_LEN = 3;
 const SUGGEST_WORDS = 10;
@@ -103,7 +104,7 @@ function getExpectedChangelogTimestamp(now: Date): string {
 /** Match ensure-changelog-timestamp: heading aligns with root package version suffix. */
 function resolveExpectedChangelogTimestamp(root: string, now: Date): string {
   try {
-    const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+    const pkg = JSON.parse(readFileSync(join(root, PACKAGE_JSON), 'utf8')) as {
       version?: string;
     };
     const m = pkg.version?.match(VERSION_TS_RE);
@@ -211,7 +212,7 @@ function runChangelogUpdated(
 
 /** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */
 export const changelogUpdatedCheck: Check = {
-  name: 'changelog-updated' as CheckName,
+  name: CheckName.ChangelogUpdated,
   async run(root = process.cwd(), context?: RunContext) {
     return runChangelogUpdated(root, context);
   },

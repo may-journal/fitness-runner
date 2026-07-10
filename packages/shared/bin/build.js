@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { rmSync, unlinkSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FITNESS_PKG, SHARED_CONFIG_DIR } from './constants.js';
 import { findWorkspaceRoot, readPackageName } from './workspace-root.js';
 
 const require = createRequire(import.meta.url);
@@ -21,7 +22,7 @@ function runCheckBuild(cwd) {
         compilerOptions: {
           outDir: './dist',
           paths: {
-            '@mayjournal/fitness': ['../../runner/dist/types/index.types.d.ts'],
+            [FITNESS_PKG]: ['../../runner/dist/types/index.types.d.ts'],
           },
           rootDir: './src',
         },
@@ -46,13 +47,7 @@ function runCheckBuild(cwd) {
 function runRunnerBuild(root, cwd) {
   const prep = spawnSync(
     'tsconfig.js',
-    [
-      '--once',
-      '--root',
-      'packages/shared/config',
-      '--extensions=js,cjs',
-      '--extends-strategy=ignore',
-    ],
+    ['--once', '--root', SHARED_CONFIG_DIR, '--extensions=js,cjs', '--extends-strategy=ignore'],
     { cwd: root, stdio: 'inherit' }
   );
   if (prep.status !== 0) process.exit(prep.status ?? 1);
@@ -69,7 +64,7 @@ function runRunnerBuild(root, cwd) {
 export function runBuild() {
   const cwd = process.cwd();
   const name = readPackageName(cwd);
-  if (name === '@mayjournal/fitness') {
+  if (name === FITNESS_PKG) {
     runRunnerBuild(findWorkspaceRoot(cwd), cwd);
     return;
   }

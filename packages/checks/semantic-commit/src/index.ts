@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { checkResult } from '@mayjournal/fitness-shared';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check } from '@mayjournal/fitness';
 
 const require = createRequire(import.meta.url);
 const conventionalCommitTypes = require('conventional-commit-types') as {
@@ -44,7 +44,7 @@ function getCommitSubject(
 /** Validates HEAD or proposed commit message follows Conventional Commits (type(scope): description). */
 export const semanticCheck: Check = {
   contextInline: { argName: '--message', contextKey: 'proposedCommitMessage' },
-  name: 'semantic-commit' as CheckName,
+  name: CheckName.SemanticCommit,
   async run(root = process.cwd(), context) {
     const subject = getCommitSubject(root, context);
     if (!subject.trim()) return checkResult(false, [MSG_EMPTY], 1);

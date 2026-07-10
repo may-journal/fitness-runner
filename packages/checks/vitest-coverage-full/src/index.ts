@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import type { Check, CheckName, RunContext } from '@mayjournal/fitness';
+import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 import {
   checkResult,
   execSyncResult,
@@ -119,7 +119,7 @@ async function runCoveragePhase(
 
 /** Ensures both consumer and @mayjournal/fitness have 100% thresholds and vitest run --coverage passes in root. */
 export const vitestCoverageFullCheck: Check = {
-  name: 'vitest-coverage-full' as CheckName,
+  name: CheckName.VitestCoverageFull,
   async run(root = process.cwd(), context?: RunContext) {
     const thresholdFail = thresholdCheckResult(root, context);
     if (thresholdFail) return thresholdFail;

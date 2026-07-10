@@ -1,11 +1,12 @@
 import { basename } from 'node:path';
 import { checkResult } from './checkResult.js';
+import { CHANGELOG_MD, MD_EXT } from './fileNames.js';
 import { findFilesByExtension } from './findFilesByExtension.js';
 import type { CheckResult } from './types/check-result.types.js';
 
 /** Standard root filenames always allowed regardless of case (conventional OSS docs). */
 export const ALLOWED_MARKDOWN_BASENAMES = new Set<string>([
-  'CHANGELOG.md',
+  CHANGELOG_MD,
   'CODE_OF_CONDUCT.md',
   'CONTRIBUTING.md',
   'LICENSE.md',
@@ -42,7 +43,7 @@ export async function runMarkdownFilenameCheck(
   convention: FilenameConvention
 ): Promise<CheckResult> {
   const errors: string[] = [];
-  const mdFiles = await findFilesByExtension(root, '.md');
+  const mdFiles = await findFilesByExtension(root, MD_EXT);
   for (const file of mdFiles) errors.push(...validateMarkdownFilename(file, convention));
   return checkResult(errors.length === 0, errors, mdFiles.length);
 }

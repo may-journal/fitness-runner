@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-prettier",
-  "version": "0.1.0-2026.07.07.0850",
+  "version": "0.1.0-2026.07.10.1556",
   "private": true,
   "description": "Fitness check: prettier",
   "repository": {
@@ -30,12 +30,12 @@
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "dependencies": {
     "@mayjournal/fitness-shared": "*",
-    "prettier": "^3.9.4"
+    "prettier": "^3.9.5"
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",
-    "@types/node": "^26.1.0",
-    "typescript": "^6.0.3",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "peerDependencies": {

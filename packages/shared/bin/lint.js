@@ -4,6 +4,7 @@ import { createRequire } from 'node:module';
 import { existsSync, writeFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { RUNNER_DIR, SHARED_CONFIG_DIR } from './constants.js';
 import { findWorkspaceRoot } from './workspace-root.js';
 
 const require = createRequire(import.meta.url);
@@ -11,7 +12,7 @@ const eslintConfig = join(dirname(fileURLToPath(import.meta.url)), '../config/es
 
 /** Ephemeral tsconfig so projectService maps runner sources (not committed). */
 function ensureRunnerLintTsconfig(root) {
-  const runnerDir = join(root, 'packages/runner');
+  const runnerDir = join(root, RUNNER_DIR);
   if (!existsSync(runnerDir)) return;
   writeFileSync(
     join(runnerDir, 'tsconfig.json'),
@@ -36,18 +37,12 @@ export function runLint(argv = process.argv.slice(3)) {
   if (existsSync(join(root, 'packages/shared/config/tsconfig.cjs'))) {
     const prep = spawnSync(
       'tsconfig.js',
-      [
-        '--once',
-        '--root',
-        'packages/shared/config',
-        '--extensions=js,cjs',
-        '--extends-strategy=ignore',
-      ],
+      ['--once', '--root', SHARED_CONFIG_DIR, '--extensions=js,cjs', '--extends-strategy=ignore'],
       { cwd: root, stdio: 'inherit' }
     );
     if (prep.status !== 0) process.exit(prep.status ?? 1);
     require(join(root, 'packages/shared/config/generate-tsconfig-json.cjs')).generateTsconfigJson(
-      join(root, 'packages/shared/config')
+      join(root, SHARED_CONFIG_DIR)
     );
     ensureRunnerLintTsconfig(root);
   }

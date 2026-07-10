@@ -6,6 +6,9 @@ import { isPathLoadedCheck } from '../checks/load-check.js';
 import { CheckName } from '../types/check-name.js';
 import type { Check, RunContext } from '../types/index.types.js';
 import { interpolate } from '../utils/interpolate.js';
+
+/** Worker error-channel key: both the reply-message discriminant and the worker event name. */
+const ERROR_KEY = 'error';
 import { enUS } from './enUS.js';
 
 const CHECK_TIMEOUT_MS = 5000;
@@ -110,7 +113,7 @@ function runOneCheckInWorker(
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);
-      if ('error' in msg) {
+      if (ERROR_KEY in msg) {
         resolve({ errors: [msg.error], filesChecked: -1, ms: msg.ms, name: check.name, ok: false });
       } else {
         const filesChecked = msg.result.meta?.filesChecked ?? -1;
@@ -123,7 +126,7 @@ function runOneCheckInWorker(
         });
       }
     });
-    worker.on('error', (err: Error) => {
+    worker.on(ERROR_KEY, (err: Error) => {
       if (settled) return;
       settled = true;
       clearTimeout(timeoutId);

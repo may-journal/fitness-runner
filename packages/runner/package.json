@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness",
-  "version": "0.1.0-2026.07.07.0850",
+  "version": "0.1.0-2026.07.10.1556",
   "description": "Node fitness runner that runs checks so local dev, CI/CD, and GenAI workflows stay aligned with your intended rules and quality bar.",
   "keywords": [
     "cli",
@@ -58,9 +58,9 @@
     "cli-table3": "^0.6.5"
   },
   "devDependencies": {
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@vitest/coverage-v8": "^4.1.10",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "engines": {

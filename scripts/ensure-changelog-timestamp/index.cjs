@@ -2,6 +2,7 @@
 const { execSync } = require('node:child_process');
 const { readFileSync, readdirSync, statSync, writeFileSync } = require('node:fs');
 const { join } = require('node:path');
+const { CHANGELOG_MD, NODE_MODULES, PACKAGE_JSON, REPO_ROOT } = require('../constants.cjs');
 
 const CHANGELOG_TIMESTAMP_RE = /^(### )\d{4}\.\d{2}\.\d{2}\.\d{4}/m;
 const VERSION_TIMESTAMP_RE = /-?\d{4}\.\d{2}\.\d{2}\.\d{4}$/;
@@ -28,7 +29,7 @@ function bumpPackageVersion(version, ts) {
 
 /** @param {string[]} stagedFiles */
 function isChangelogStaged(stagedFiles) {
-  return stagedFiles.includes('CHANGELOG.md');
+  return stagedFiles.includes(CHANGELOG_MD);
 }
 
 /** @param {string} dir @param {string[]} [paths] */
@@ -36,20 +37,20 @@ function collectPackageJsonPaths(dir, paths = []) {
   for (const entry of readdirSync(dir)) {
     // Skip node_modules: nested workspace deps (e.g. a non-hoisted chalk) are not our packages —
     // bumping/staging their package.json corrupts the dep and fails `git add` (it's gitignored).
-    if (entry === 'node_modules') continue;
+    if (entry === NODE_MODULES) continue;
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
       collectPackageJsonPaths(fullPath, paths);
       continue;
     }
-    if (entry === 'package.json') paths.push(fullPath);
+    if (entry === PACKAGE_JSON) paths.push(fullPath);
   }
   return paths;
 }
 
 function main() {
-  const root = join(__dirname, '../..');
+  const root = REPO_ROOT;
   const staged = execSync('git diff --cached --name-only', { cwd: root, encoding: 'utf8' })
     .trim()
     .split('\n')
@@ -58,13 +59,13 @@ function main() {
 
   const ts = formatTimestamp(new Date());
 
-  const changelogPath = join(root, 'CHANGELOG.md');
+  const changelogPath = join(root, CHANGELOG_MD);
   let content = readFileSync(changelogPath, 'utf8');
   content = replaceChangelogTimestamp(content, ts);
   writeFileSync(changelogPath, content);
 
   const packageJsonPaths = [
-    join(root, 'package.json'),
+    join(root, PACKAGE_JSON),
     ...collectPackageJsonPaths(join(root, 'packages')),
   ];
   const bumpedPaths = [];
@@ -77,7 +78,7 @@ function main() {
   }
 
   execSync('npm install', { cwd: root, stdio: 'inherit' });
-  const prettierTargets = ['CHANGELOG.md', ...bumpedPaths].join(' ');
+  const prettierTargets = [CHANGELOG_MD, ...bumpedPaths].join(' ');
   execSync(`npx prettier ${prettierTargets} --write`, { cwd: root, stdio: 'inherit' });
   execSync(
     `git add CHANGELOG.md package-lock.json ${bumpedPaths.map((p) => p.replace(`${root}/`, '')).join(' ')}`,

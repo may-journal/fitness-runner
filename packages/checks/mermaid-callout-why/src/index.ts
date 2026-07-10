@@ -1,5 +1,10 @@
 import type { Check, CheckName } from '@mayjournal/fitness';
-import { parseDoc, runMermaidDocCheck, type CalloutTableBlock } from '@mayjournal/fitness-shared';
+import {
+  TABLE_KIND,
+  parseDoc,
+  runMermaidDocCheck,
+  type CalloutTableBlock,
+} from '@mayjournal/fitness-shared';
 
 const WHY = /^why$/i;
 const NUMBERED = /^\[?\d+\]?$/;
@@ -31,7 +36,7 @@ function whyErrorsForTable(file: string, table: CalloutTableBlock): string[] {
 export function validateDoc(file: string, content: string): string[] {
   const errors: string[] = [];
   for (const block of parseDoc(content))
-    if (block.kind === 'table') errors.push(...whyErrorsForTable(file, block));
+    if (block.kind === TABLE_KIND) errors.push(...whyErrorsForTable(file, block));
   return errors;
 }
 
