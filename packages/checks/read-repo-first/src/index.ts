@@ -2,9 +2,9 @@ import { join } from 'node:path';
 import chalk from 'chalk';
 import Table from 'cli-table3';
 import { checkResult, getColumns } from '@mayjournal/fitness-shared';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 
-const READ_REPO_FIRST = 'read-repo-first' as CheckName;
+const READ_REPO_FIRST = CheckName.ReadRepoFirst;
 
 const NOTE_NO_VERIFY =
   ' NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.';
@@ -49,7 +49,7 @@ export function buildContextFeedback(
 }
 
 /** Builds read-repo-first feedback string from run context. */
-function getFeedbackFromContext(context: Parameters<Check['run']>[1]): string {
+function getFeedbackFromContext(context: RunContext | undefined): string {
   return buildContextFeedback(context?.enabledCheckNames ?? [], context?.checkFolderByName ?? {});
 }
 

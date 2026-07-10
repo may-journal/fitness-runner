@@ -1,5 +1,10 @@
 import type { Check, CheckName } from '@mayjournal/fitness';
-import { parseDoc, runMermaidDocCheck, type DiagramBlock } from '@mayjournal/fitness-shared';
+import {
+  DIAGRAM_KIND,
+  parseDoc,
+  runMermaidDocCheck,
+  type DiagramBlock,
+} from '@mayjournal/fitness-shared';
 
 const FLOWCHART = /^\s*(flowchart|graph)\b/;
 const CLASSDEF = /^\s*classDef\s+\w+/;
@@ -83,7 +88,7 @@ function legendErrorsForDiagram(file: string, block: DiagramBlock): string[] {
 export function validateDoc(file: string, content: string): string[] {
   const errors: string[] = [];
   for (const block of parseDoc(content))
-    if (block.kind === 'diagram') errors.push(...legendErrorsForDiagram(file, block));
+    if (block.kind === DIAGRAM_KIND) errors.push(...legendErrorsForDiagram(file, block));
   return errors;
 }
 

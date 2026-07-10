@@ -6,6 +6,7 @@ export {
   CSPELL_JSON,
   GITIGNORE,
   MD_EXT,
+  NODE_MODULES,
   NPMRC,
   PACKAGE_JSON,
   PACKAGE_LOCK_JSON,
@@ -13,7 +14,11 @@ export {
 } from './fileNames.js';
 export { findFilesByExtension } from './findFilesByExtension.js';
 export { getFitnessRunnerRoot } from './getFitnessRunnerRoot.js';
+export { SOURCE_FILE_EXTENSIONS, TS_FILE_EXTENSIONS } from './sourceExtensions.js';
+export { DTS_GLOB, SPEC_GLOB, TEST_GLOB, TYPES_GLOB } from './testGlobs.js';
 export {
+  DIAGRAM_KIND,
+  TABLE_KIND,
   extractDiagramNumbers,
   isCalloutHeader,
   pairDiagramsWithTables,

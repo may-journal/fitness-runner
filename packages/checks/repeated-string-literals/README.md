@@ -61,7 +61,7 @@ produces one error per duplicated value, most-repeated first:
 
 ## Configuration
 
-A project baseline for structural repeats that no constant can fix — check-name registries, TS discriminated-union members (the union type declaration is already the closed set), declarative config values, and standalone scripts that cannot import a shared constants module:
+A project baseline for the rare repeat no constant can fix: a value that must live once per runtime island (TS sources vs. published plain-JS bin scripts vs. repo automation scripts — islands that cannot share one constants module), or one spelling shared by genuinely different things (a CLI binary name vs. a check name). Everything else is a real duplicate — extract it instead:
 
 ```js
 // .fitnessrc.js

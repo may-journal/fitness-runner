@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check } from '@mayjournal/fitness';
 import {
   CHANGELOG_MD as ROOT_CHANGELOG,
   PACKAGE_JSON,
@@ -212,7 +212,7 @@ function runChangelogUpdated(
 
 /** When context has stagedFiles, ensures CHANGELOG.md additions share MIN_OVERLAP words with rest of staged diff. */
 export const changelogUpdatedCheck: Check = {
-  name: 'changelog-updated' as CheckName,
+  name: CheckName.ChangelogUpdated,
   async run(root = process.cwd(), context?: RunContext) {
     return runChangelogUpdated(root, context);
   },

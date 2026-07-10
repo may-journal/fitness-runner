@@ -1,13 +1,18 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkResult, findFilesByExtension, loadConfig } from '@mayjournal/fitness-shared';
+import {
+  SOURCE_FILE_EXTENSIONS,
+  checkResult,
+  findFilesByExtension,
+  loadConfig,
+} from '@mayjournal/fitness-shared';
 import type { Check, CheckName } from '@mayjournal/fitness';
 import { scanStringLiterals, type Literal } from './scan.js';
 
 export { IDIOMATIC_VALUES, MIN_LENGTH, scanStringLiterals, type Literal } from './scan.js';
 
 /** Source extensions scanned. Test/spec/bench files are excluded — fixtures legitimately repeat strings. */
-export const SOURCE_EXTENSIONS = ['.cjs', '.cts', '.js', '.mjs', '.mts', '.ts', '.tsx'];
+export const SOURCE_EXTENSIONS = SOURCE_FILE_EXTENSIONS;
 
 /** A string literal value must appear at least this many times (repo-wide) to be flagged. */
 export const MIN_OCCURRENCES = 3;

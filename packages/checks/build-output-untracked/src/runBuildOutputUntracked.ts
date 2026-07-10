@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
+  TS_FILE_EXTENSIONS,
   checkResult,
   execSyncResult,
   findFilesByExtension,
@@ -11,7 +12,7 @@ import type { Check, CheckName, RunContext } from '@mayjournal/fitness';
 import { enUS } from './enUS.js';
 
 /** Source extensions scanned for imports of build output. */
-const SOURCE_EXTENSIONS = ['.ts', '.mts', '.cts'];
+const SOURCE_EXTENSIONS = TS_FILE_EXTENSIONS;
 
 /** Matches the specifier of `from '…'`, `import('…')`, and `require('…')`. */
 const IMPORT_SPECIFIER_RE = /\b(?:from|import|require)\s*\(?\s*['"]([^'"]+)['"]/g;

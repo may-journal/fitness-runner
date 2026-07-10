@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-markdown-filename-convention",
-  "version": "0.1.0-2026.07.10.1453",
+  "version": "0.1.0-2026.07.10.1556",
   "private": true,
   "description": "Fitness check: markdown filename convention (kebab-case + camelCase flavors)",
   "repository": {
@@ -54,6 +54,16 @@
   "engines": {
     "node": ">=24"
   },
+  "fitnessChecks": [
+    {
+      "entry": "kebab-case",
+      "name": "markdown-filename-kebab-case"
+    },
+    {
+      "entry": "camel-case",
+      "name": "markdown-filename-camel-case"
+    }
+  ],
   "knip": {
     "entry": [
       "src/index.ts",

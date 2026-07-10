@@ -1,8 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { FITNESS_PKG, FITNESS_SHARED_PKG, REPO_ROOT, RUNNER_DIR } from '../constants.cjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+const root = REPO_ROOT;
 
 /** True when attw crashed instead of reporting package type issues. */
 export function isAttwToolCrash(summary) {
@@ -11,8 +12,8 @@ export function isAttwToolCrash(summary) {
 
 /** Packages to run attw on (advisory). */
 export const ATTW_PACKAGES = [
-  { dir: 'packages/runner', name: '@mayjournal/fitness' },
-  { dir: 'packages/shared', name: '@mayjournal/fitness-shared' },
+  { dir: RUNNER_DIR, name: FITNESS_PKG },
+  { dir: 'packages/shared', name: FITNESS_SHARED_PKG },
 ];
 
 /**

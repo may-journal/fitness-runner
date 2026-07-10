@@ -1,10 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkResult, findFilesByExtension } from '@mayjournal/fitness-shared';
+import {
+  SOURCE_FILE_EXTENSIONS,
+  checkResult,
+  findFilesByExtension,
+} from '@mayjournal/fitness-shared';
 import type { Check, CheckName } from '@mayjournal/fitness';
 
 /** Source file extensions scanned for eslint disable directives (test files included). */
-export const SOURCE_EXTENSIONS = ['.cjs', '.cts', '.js', '.mjs', '.mts', '.ts', '.tsx'];
+export const SOURCE_EXTENSIONS = SOURCE_FILE_EXTENSIONS;
 
 /** Matches any eslint disable directive form (file, block, `-line`, and `-next-line`). */
 export const ESLINT_DISABLE_RE = /eslint-disable(-next-line|-line)?/;

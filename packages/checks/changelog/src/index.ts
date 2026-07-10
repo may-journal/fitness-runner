@@ -6,7 +6,7 @@ import {
   PACKAGE_LOCK_JSON as PACKAGE_LOCK,
   checkResult,
 } from '@mayjournal/fitness-shared';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check } from '@mayjournal/fitness';
 
 const ERROR_MISSING = 'missing root CHANGELOG.md';
 const DATED_SECTION_RE = /^###\s+(\d{4}\.\d{2}\.\d{2}\.\d{4})/;
@@ -82,7 +82,7 @@ function getVersionErrors(root: string, changelogTs: string): string[] {
 
 /** Validates repo root has CHANGELOG.md; every ### heading must be ### yyyy.mm.dd.HHMM; package.json and package-lock version must match first heading. */
 export const changelogCheck: Check = {
-  name: 'changelog' as CheckName,
+  name: CheckName.Changelog,
   async run(root = process.cwd()) {
     const changelogPath = join(root, ROOT_CHANGELOG);
     if (!existsSync(changelogPath)) return checkResult(false, [ERROR_MISSING], 1);

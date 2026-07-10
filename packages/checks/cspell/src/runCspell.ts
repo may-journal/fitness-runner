@@ -18,7 +18,7 @@ import {
   resolveFitnessConfigPath,
 } from '@mayjournal/fitness-shared';
 import type { ExecSyncFn } from '@mayjournal/fitness-shared';
-import type { Check, CheckName, RunContext } from '@mayjournal/fitness';
+import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 import { enUS } from './enUS.js';
 import { getCspellPackageConfigDir } from './getCspellPackageConfigDir.js';
 
@@ -191,7 +191,7 @@ async function runViaLib(
 
 /** Cspell check: uses CLI when context provides execSync, else cspell-lib; falls back to package cspell.json. */
 export const cspellCheck: Check = {
-  name: 'cspell' as CheckName,
+  name: CheckName.Cspell,
   async run(root = process.cwd(), context?: RunContext) {
     const configPath = resolveFitnessConfigPath(root, CSPELL_JSON, getCspellPackageConfigDir());
     const staged = getStagedFiles(context);

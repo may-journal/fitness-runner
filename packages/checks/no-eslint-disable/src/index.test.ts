@@ -24,7 +24,15 @@ function tempDir(): string {
 
 describe('constants', () => {
   it('SOURCE_EXTENSIONS covers every documented extension', () => {
-    expect(SOURCE_EXTENSIONS).toEqual(['.cjs', '.cts', '.js', '.mjs', '.mts', '.ts', '.tsx']);
+    expect([...SOURCE_EXTENSIONS].sort()).toEqual([
+      '.cjs',
+      '.cts',
+      '.js',
+      '.mjs',
+      '.mts',
+      '.ts',
+      '.tsx',
+    ]);
   });
 
   it('ESLINT_DISABLE_RE matches every directive form', () => {

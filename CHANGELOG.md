@@ -7,7 +7,7 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.10.1453
+### 2026.07.10.1556
 
 - Feat: add the `repeated-string-literals` check — fails when the same string literal appears 3+ times across source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`; test/spec files excluded), reporting `"value" appears N times (file:line, …, +K more) — extract a shared constant`, most-repeated first. A small hand lexer skips line/block comments, regex literals, and template literals, and drops `import`/`require` module specifiers; idiomatic tokens where the literal is the clearest spelling (buffer encodings, `child_process` stdio modes, `typeof` results) are never flagged. Opt-in (bundled, not in `defaultChecks`). Closes #42 — the enum-candidate heuristic and per-repo allowlist are deferred to a fast-follow per that issue's own guidance.
 - Chore: centralize well-known repo filenames (`package.json`, `package-lock.json`, `CHANGELOG.md`, `tsconfig.json`, `cspell.json`, `.gitignore`, `.npmrc`) as shared constants (`fitness-shared` `fileNames.ts`) and use them across the checks and runner — dogfooding the new check's extract-a-shared-constant guidance on our own worst offenders.
@@ -17,6 +17,8 @@ relatedConfigurations: ['package.json']
 - Fix: `build-output-untracked` flagged its own test fixtures — strings like `'../dist/x.js'` inside `*.test.ts` — as dist imports; test/spec files are now excluded from the import scan (fixtures legitimately contain dist specifiers).
 - Fix: `repeated-string-literals` now also excludes `*.bench.*` files (bench fixtures repeat strings like test fixtures do) and never flags language directives (`'use strict'` — a directive prologue cannot be replaced by a constant).
 - Chore: enable `build-output-untracked` and `repeated-string-literals` on this repo (dogfooding), with a documented `allow` baseline in `.fitnessrc.js`. Extracted the genuinely-shared literals the check surfaced: `.md` as `MD_EXT` in `fitness-shared` `fileNames.ts` (six call sites), plus local constants for `--coverage` (`shared/bin/test.js`) and the `'readonly'` eslint globals value (`eslint.base.mjs`).
+- Feat: derive the bundler's check list from the `packages/checks/*` directories instead of a hand-maintained array — a directory bundles as a same-named check unless its package.json declares a `fitnessChecks` field mapping entry modules to check names (flavor packs like `markdown-filename-convention`); directories without a package.json are skipped. Closes #41.
+- Chore: fix every repeated string literal the new check found instead of allowlisting it — the `.fitnessrc.js` `allow` baseline shrinks from 55 entries to 3. Default checks now use the `CheckName` enum values for their `name` (the literal lives once, in the enum); mermaid block kinds (`DIAGRAM_KIND`/`TABLE_KIND`) and gitignore-why's `PATTERN` became single-source discriminant constants; source-extension sets (`SOURCE_FILE_EXTENSIONS`/`TS_FILE_EXTENSIONS`) and test-file globs moved to `fitness-shared`; the repo scripts and `shared/bin` each got a constants module (`scripts/constants.cjs`, `bin/constants.js`) with a resolved `REPO_ROOT` replacing six `'../..'` computations; `Parameters<Check['run']>[1]` type gymnastics became plain `RunContext | undefined`. The three `allow` survivors (`dist`, `eslint`, `package.json`) each live once per runtime island (TS src / published bin JS / repo scripts) that cannot share a constants module — or, for `eslint`, are the CLI binary name and the check name sharing a spelling.
 
 ### 2026.07.07.0850
 

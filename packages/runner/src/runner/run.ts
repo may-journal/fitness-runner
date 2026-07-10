@@ -6,11 +6,14 @@ import { runOneCheck } from './run-execute.js';
 import { buildTable, buildTotalLine, type ResultRow } from './run-output.js';
 import { getChecks } from './run-resolve.js';
 
+/** Sentinel thrown after process.exit so control flow reads as never-returning. */
+const EXIT_SENTINEL = 'exit';
+
 /** Logs unknown check/path and exits 1. */
 function exitUnknown(spec: string | undefined): never {
   console.error(chalk.red(enUS.UnknownCheckPrefix + (spec ?? enUS.UnknownCheckSpecNone)));
   process.exit(1);
-  throw new Error('exit');
+  throw new Error(EXIT_SENTINEL);
 }
 
 /** Runs each check and aggregates results plus counts. */
@@ -58,7 +61,7 @@ async function runImpl(
   if (resolutionError) {
     console.error(chalk.red(resolutionError));
     process.exit(1);
-    throw new Error('exit');
+    throw new Error(EXIT_SENTINEL);
   }
   if (!checks.length) exitUnknown(spec);
   const mergedContext = testOverrides ? { ...context, ...testOverrides } : context;

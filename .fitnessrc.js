@@ -27,75 +27,11 @@ module.exports = {
     'repeated-string-literals',
   ],
   repeatedStringLiterals: {
-    // Project baseline for repeated-string-literals (dogfooding). Everything here is a
-    // structural repeat where a shared constant is impossible or worse than the literal;
-    // genuine magic-string duplication stays flagged. Shrink this list, never grow it casually.
-    allow: [
-      // Check names: each necessarily appears in the bundler CHECK_SPECS, defaultChecks,
-      // the CheckName enum, and/or this file. #41 (derive CHECK_SPECS from the filesystem)
-      // would collapse most of these.
-      'build-output-untracked',
-      'changelog',
-      'changelog-updated',
-      'cspell',
-      'dependency-currency',
-      'eslint',
-      'gitignore-why',
-      'jscpd',
-      'markdown-filename-kebab-case',
-      'markdown-front-matter',
-      'markdown-no-bold-italic',
-      'mermaid-callout-why',
-      'mermaid-callouts',
-      'mermaid-diagram-prose',
-      'mermaid-legend',
-      'mermaid-level-bleed',
-      'node-version',
-      'prettier',
-      'read-repo-first',
-      'repeated-string-literals',
-      'semantic-commit',
-      'vitest-coverage-exclude',
-      'vitest-coverage-full',
-      // TS discriminated-union members: the union type declaration IS the closed set
-      // (mermaid block kinds, gitignore-why LineKind); a constant cannot replace the
-      // type-position occurrence.
-      'diagram',
-      'pattern',
-      'table',
-      // Declarative config values repeated across eslint/vitest/tsconfig configs and the
-      // check sources that validate them (severities, rule ids, targets, globs, extensions).
-      '**/*.d.ts',
-      '**/*.spec.ts',
-      '**/*.test.ts',
-      '**/*.types.ts',
-      '.cjs',
-      '.cts',
-      '.js',
-      '.mts',
-      '.ts',
-      'ES2022',
-      'error',
-      'sort-keys',
-      // Repo automation (scripts/, shared/bin, shared/config): standalone .cjs/.mjs that
-      // cannot import the fitness-shared constants module (it is TS, built after they run).
-      '--json',
-      '../..',
-      '.npmrc',
-      '@mayjournal/fitness',
-      '@mayjournal/fitness-shared',
-      'CHANGELOG.md',
-      'all',
-      'build',
-      'dist',
-      'exit',
-      'node_modules',
-      'npm',
-      'package.json',
-      'packages/runner',
-      'packages/shared/config',
-      'run',
-      'trust',
-    ],
+    // The irreducible baseline: each of these lives once per runtime island (TS src,
+    // published shared/bin JS, repo scripts) that cannot share one constants module, or —
+    // for 'eslint' — is both the CLI binary name and the check name (same spelling,
+    // different things: bin/lint.js + the CheckName enum + defaultChecks). Everything else
+    // the check flags is a real duplicate: extract it, don't grow this list.
+    allow: ['dist', 'eslint', 'package.json'],
   },
 };

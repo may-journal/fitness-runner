@@ -1,10 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { loadConfig } from './config/load.js';
-import { CSPELL_JSON } from './fileNames.js';
+import { CSPELL_JSON, NODE_MODULES } from './fileNames.js';
 
 /** Runner always skips these dir names when walking; merged with config/cspell. */
-export const RUNNER_SKIP_DIRS = ['node_modules', 'dist', 'coverage', '.git', 'githooks'];
+export const RUNNER_SKIP_DIRS = [NODE_MODULES, 'dist', 'coverage', '.git', 'githooks'];
 
 /** Dir names from cspell.json ignorePaths (entries with no / or *). */
 function getSkipDirsFromCspell(root: string): Set<string> {

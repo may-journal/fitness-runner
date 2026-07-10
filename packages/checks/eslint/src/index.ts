@@ -8,7 +8,7 @@ import {
   getStagedFiles,
   resolveLintTsconfig,
 } from '@mayjournal/fitness-shared';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 
 const require = createRequire(import.meta.url);
 
@@ -109,7 +109,7 @@ function getPathsToLint(root: string, staged: string[]): string[] {
 }
 
 /** Resolve paths to lint from root and context. */
-function resolvePaths(root: string, context: Parameters<Check['run']>[1]): string[] {
+function resolvePaths(root: string, context: RunContext | undefined): string[] {
   const staged = getStagedFiles(context);
   return getPathsToLint(root, staged);
 }
@@ -132,7 +132,7 @@ function eslintRunCatchResult(err: unknown): {
 async function runEslintWithFallback(
   root: string,
   paths: string[],
-  context: Parameters<Check['run']>[1]
+  context: RunContext | undefined
 ): Promise<{ errors: string[]; exitCode: number; filesChecked: number }> {
   const fitnessRunnerRoot = context?._fitnessRunnerRootForTesting;
   const run = context?._eslintRunForTesting ?? runEslintViaAPI;
@@ -145,7 +145,7 @@ async function runEslintWithFallback(
 
 /** ESLint check: runs this package's ESLint config against root (parent project) via Node API. */
 export const eslintCheck: Check = {
-  name: 'eslint' as CheckName,
+  name: CheckName.Eslint,
   async run(root = process.cwd(), context) {
     const paths = resolvePaths(root, context);
     const { errors, exitCode, filesChecked } = await runEslintWithFallback(root, paths, context);

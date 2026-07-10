@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { PACKAGE_JSON, loadConfig } from '@mayjournal/fitness-shared';
+import { NODE_MODULES, PACKAGE_JSON, loadConfig } from '@mayjournal/fitness-shared';
 import type { Check } from '../types/index.types.js';
 import { enUS } from '../runner/enUS.js';
 
@@ -45,7 +45,7 @@ export function checkPackageName(name: string): string {
 /** True when dir has package.json and node_modules that resolve the checks bundle. */
 function dirResolvesChecksBundle(dir: string): boolean {
   const pkgJson = join(dir, PACKAGE_JSON);
-  if (!existsSync(pkgJson) || !existsSync(join(dir, 'node_modules'))) return false;
+  if (!existsSync(pkgJson) || !existsSync(join(dir, NODE_MODULES))) return false;
   try {
     createRequire(pkgJson).resolve(BUNDLE_DEFAULT_CHECKS);
     return true;

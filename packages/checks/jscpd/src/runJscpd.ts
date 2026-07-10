@@ -1,6 +1,6 @@
 import { buildExecCheckResult, execSyncResult, getExecSync } from '@mayjournal/fitness-shared';
 import type { ExecSyncFn } from '@mayjournal/fitness-shared';
-import type { Check, CheckName, RunContext } from '@mayjournal/fitness';
+import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 import { enUS } from './enUS.js';
 
 /** Default flags: proven thresholds from consumer repos, scan-from-root so no per-repo path list is needed. Respects .gitignore by default (no flag needed). Ignores lockfiles/markdown/JSON and test/spec files — repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor. */
@@ -37,7 +37,7 @@ function parseFilesChecked(output: string): number {
 
 /** jscpd check: fails when duplicate lines exceed the configured threshold. */
 export const jscpdCheck: Check = {
-  name: 'jscpd' as CheckName,
+  name: CheckName.Jscpd,
   async run(root = process.cwd(), context?: RunContext) {
     const execSyncFn = getExecSync(context);
     const { exitCode, output } = execJscpd(root, execSyncFn);

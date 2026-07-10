@@ -9,9 +9,20 @@ import { homedir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { listPublishablePackages } from '../list-publishable-packages/index.mjs';
-import { configureTrustWithPermissions } from './trust-github-api.mjs';
+import { TRUST, configureTrustWithPermissions } from './trust-github-api.mjs';
+import {
+  JSON_FLAG,
+  NPM,
+  NPMRC,
+  NPM_SCRIPT_BUILD,
+  REPO_ROOT,
+  RUN_SUBCOMMAND,
+} from '../constants.cjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+/** The provision-everything mode (seed + trust). */
+const ALL = 'all';
+
+const root = REPO_ROOT;
 const repo = process.env.NPM_TRUST_REPO ?? 'may-journal/fitness-runner';
 const workflow = process.env.NPM_TRUST_WORKFLOW ?? 'publish.yml';
 const minNpm = '11.14.1';
@@ -25,27 +36,27 @@ let failed = false;
 let npmrcMoved = false;
 
 export function parseMode(arg) {
-  const normalized = (arg ?? 'all').replace(/^--/, '');
-  if (['all', 'seed', 'trust', 'check'].includes(normalized)) return normalized;
+  const normalized = (arg ?? ALL).replace(/^--/, '');
+  if ([ALL, 'seed', TRUST, 'check'].includes(normalized)) return normalized;
   console.error('Usage: npm run provision:npm [-- check|seed|trust]');
   process.exit(2);
 }
 
 function restoreNpmrc() {
   if (npmrcMoved && existsSync(npmrcBackup)) {
-    renameSync(npmrcBackup, join(root, '.npmrc'));
+    renameSync(npmrcBackup, join(root, NPMRC));
     npmrcMoved = false;
   }
 }
 
 /** npmrc paths for trust API after repo .npmrc was moved aside. */
 export function getTrustAuthNpmrcPaths() {
-  return npmrcMoved ? [join(homedir(), '.npmrc')] : undefined;
+  return npmrcMoved ? [join(homedir(), NPMRC)] : undefined;
 }
 
 function prepareLocalAuth() {
   const hasToken = Boolean(process.env.NODE_AUTH_TOKEN);
-  const npmrcPath = join(root, '.npmrc');
+  const npmrcPath = join(root, NPMRC);
   if (!hasToken && existsSync(npmrcPath)) {
     renameSync(npmrcPath, npmrcBackup);
     npmrcMoved = true;
@@ -55,7 +66,7 @@ function prepareLocalAuth() {
 
 function npmVersionOk() {
   const spawnSync = testHooks.spawnSync ?? realSpawnSync;
-  const result = spawnSync('npm', ['--version'], { encoding: 'utf8' });
+  const result = spawnSync(NPM, ['--version'], { encoding: 'utf8' });
   const v = (result.stdout ?? '0').trim().split('.').map(Number);
   const m = minNpm.split('.').map(Number);
   return (
@@ -70,7 +81,7 @@ function npmCmd(args, options = {}) {
   const bin = process.env.NPM_CLI
     ? [process.env.NPM_CLI]
     : npmVersionOk()
-      ? ['npm']
+      ? [NPM]
       : ['npx', '--yes', `npm@${minNpm}`];
   const spawnSync = testHooks.spawnSync ?? realSpawnSync;
   const result = spawnSync(bin[0], [...bin.slice(1), ...args], {
@@ -106,7 +117,7 @@ function packageExists(name) {
 
 /** @param {string} name */
 function trustConfigured(name) {
-  const result = npmCmd(['trust', 'list', name, '--json']);
+  const result = npmCmd([TRUST, 'list', name, JSON_FLAG]);
   if (result.status !== 0) return false;
   const text = (result.stdout ?? '').trim();
   if (!text) return false;
@@ -156,7 +167,7 @@ export async function configureTrust(name) {
   }
   if (!testHooks.configureTrustWithPermissions) {
     console.log('  trying: npm trust github (browser 2FA — same as npm login)');
-    const trustArgs = ['trust', 'github', name, '--file', workflow, '--repo', repo, '--yes'];
+    const trustArgs = [TRUST, 'github', name, '--file', workflow, '--repo', repo, '--yes'];
     const cli = npmCmd(trustArgs, { stdio: 'inherit' });
     if (cli.status === 0) {
       console.log(`  trust: ${name} configured via npm CLI`);
@@ -239,8 +250,8 @@ async function runCheck() {
 
 /** @param {'all' | 'seed' | 'trust' | 'check'} mode */
 async function runProvision(mode) {
-  const doSeed = mode === 'all' || mode === 'seed';
-  const doTrust = mode === 'all' || mode === 'trust';
+  const doSeed = mode === ALL || mode === 'seed';
+  const doTrust = mode === ALL || mode === TRUST;
 
   console.log(`=== provision npm packages (mode=${mode}) ===`);
   console.log(`repo: ${repo}  workflow: ${workflow}`);
@@ -257,7 +268,7 @@ async function runProvision(mode) {
     if (dryRun) {
       console.log('[dry-run] would npm run build');
     } else {
-      const build = npmCmd(['run', 'build'], { stdio: 'inherit' });
+      const build = npmCmd([RUN_SUBCOMMAND, NPM_SCRIPT_BUILD], { stdio: 'inherit' });
       if (build.status !== 0) process.exit(build.status ?? 1);
     }
     console.log('');

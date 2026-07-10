@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkResult } from '@mayjournal/fitness-shared';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check } from '@mayjournal/fitness';
 
-const NODE_VERSION = 'node-version' as CheckName;
+const NODE_VERSION = CheckName.NodeVersion;
 
 const NVMRC = '.nvmrc';
 const ERROR_MISSING = 'missing .nvmrc';
