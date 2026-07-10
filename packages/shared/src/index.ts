@@ -23,6 +23,12 @@ export { getSkipDirs, getSkipDirsForWalk, RUNNER_SKIP_DIRS } from './getSkipDirs
 export { resolveFitnessConfigPath } from './resolveFitnessConfigPath.js';
 export { resolveLintTsconfig } from './resolveLintTsconfig.js';
 export { runMermaidDocCheck } from './runMermaidDocCheck.js';
+export {
+  ALLOWED_MARKDOWN_BASENAMES,
+  runMarkdownFilenameCheck,
+  validateMarkdownFilename,
+} from './runMarkdownFilenameCheck.js';
+export type { FilenameConvention } from './runMarkdownFilenameCheck.js';
 export { getExecSync, getStagedFiles } from './runContext.js';
 export type { ExecSyncFn } from './runContext.js';
 export { quoteForShell } from './shellQuote.js';

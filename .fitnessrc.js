@@ -15,5 +15,13 @@ const mermaidChecks = [
 module.exports = {
   // Every default check plus the opt-in mermaid + dependency-currency checks — the repo runs
   // the full suite on itself (dogfooding). Nothing is disabled.
-  checks: [...defaultChecks, ...mermaidChecks, 'dependency-currency', 'gitignore-why'],
+  checks: [
+    ...defaultChecks,
+    ...mermaidChecks,
+    'dependency-currency',
+    'gitignore-why',
+    // This repo's docs are kebab-case, so we enable the kebab-case flavor here (dogfooding);
+    // the camelCase flavor stays opt-in (it would fail our hyphenated/numbered docs).
+    'markdown-filename-kebab-case',
+  ],
 };

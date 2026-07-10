@@ -7,13 +7,17 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.10.1418
+### 2026.07.10.1424
 
 - Feat: add the `repeated-string-literals` check — fails when the same string literal appears 3+ times across source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`; test/spec files excluded), reporting `"value" appears N times (file:line, …, +K more) — extract a shared constant`, most-repeated first. A small hand lexer skips line/block comments, regex literals, and template literals, and drops `import`/`require` module specifiers; idiomatic tokens where the literal is the clearest spelling (buffer encodings, `child_process` stdio modes, `typeof` results) are never flagged. Opt-in (bundled, not in `defaultChecks`). Closes #42 — the enum-candidate heuristic and per-repo allowlist are deferred to a fast-follow per that issue's own guidance.
 - Chore: centralize well-known repo filenames (`package.json`, `package-lock.json`, `CHANGELOG.md`, `tsconfig.json`, `cspell.json`, `.gitignore`, `.npmrc`) as shared constants (`fitness-shared` `fileNames.ts`) and use them across the checks and runner — dogfooding the new check's extract-a-shared-constant guidance on our own worst offenders.
+- Chore: bump `@arethetypeswrong/cli`, `@types/node`, `eslint-plugin-jsdoc`, `jscpd`, `knip`, `prettier`, and `typescript` (6.0.3 → 7.0.2) to latest to satisfy the `dependency-currency` check after upstream releases; full build/test/lint suite verified on the new toolchain.
+- Chore: merge `main` (the `markdown-filename-convention` check) into this branch, resolving conflicts in `CHANGELOG.md`, the bundler's `CHECK_SPECS` list, `package-lock.json`, and every workspace `package.json` version field, then regenerating the lockfile.
 
-### 2026.07.06.1337
+### 2026.07.07.0850
 
+- Feat: add the `markdown-filename-convention` check package, which exports two check names — `markdown-filename-kebab-case` and `markdown-filename-camel-case` — as two flavors of one shared function (`runMarkdownFilenameCheck` in `fitness-shared`, parameterized by a `FilenameConvention`). Each enforces a single convention on every `.md` basename (standard root docs like `README.md`/`CHANGELOG.md` exempt), rather than one check accepting either style. The bundler maps the package's per-flavor entry modules (`kebab-case`, `camel-case`) to the two `@mayjournal/fitness-checks/checks/*` subpaths so `.fitnessrc` can enable either. Opt-in (bundled, not in `defaultChecks`). Closes #11.
+- Chore: enable `markdown-filename-kebab-case` on this repo (dogfooding); the camelCase flavor stays opt-in since this repo's architecture and plan docs are kebab-case.
 - Feat: add the `no-eslint-disable` check — fails when any source file (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, test files included) contains an ESLint disable directive (`eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`, block and file forms), reporting `path:line: directive` per hit. Opt-in (bundled, not in `defaultChecks`). Closes #10.
 - Feat: add the `gitignore-why` check — requires every `.gitignore` pattern line to be immediately preceded by a `#` comment explaining why it exists. Opt-in (bundled, not in `defaultChecks`). Closes #6.
 - Docs: expand the `gitignore-why` README with passing/failing `.gitignore` examples and the exact error output, plus how to enable it.
