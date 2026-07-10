@@ -2,6 +2,7 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { PACKAGE_JSON, TSCONFIG_JSON } from './fileNames.js';
 import { RUNNER_SKIP_DIRS } from './getSkipDirs.js';
 
 const lintTsconfigCache = new Map<string, string>();
@@ -11,11 +12,11 @@ export function resolveLintTsconfig(root: string, fitnessRunnerRoot: string): st
   const cached = lintTsconfigCache.get(root);
   if (cached) return cached;
 
-  const require = createRequire(join(fitnessRunnerRoot, 'package.json'));
+  const require = createRequire(join(fitnessRunnerRoot, PACKAGE_JSON));
   const base = require(join(fitnessRunnerRoot, 'tsconfig.lint.cjs')) as Record<string, unknown>;
   const exclude = [...RUNNER_SKIP_DIRS, '**/*.test.ts', '**/*.spec.ts'].map((p) => join(root, p));
   const dir = mkdtempSync(join(tmpdir(), 'fitness-eslint-'));
-  const path = join(dir, 'tsconfig.json');
+  const path = join(dir, TSCONFIG_JSON);
   writeFileSync(
     path,
     JSON.stringify({

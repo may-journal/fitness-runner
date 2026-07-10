@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { loadConfig } from '@mayjournal/fitness-shared';
+import { PACKAGE_JSON, loadConfig } from '@mayjournal/fitness-shared';
 import type { Check } from '../types/index.types.js';
 import { enUS } from '../runner/enUS.js';
 
@@ -44,7 +44,7 @@ export function checkPackageName(name: string): string {
 
 /** True when dir has package.json and node_modules that resolve the checks bundle. */
 function dirResolvesChecksBundle(dir: string): boolean {
-  const pkgJson = join(dir, 'package.json');
+  const pkgJson = join(dir, PACKAGE_JSON);
   if (!existsSync(pkgJson) || !existsSync(join(dir, 'node_modules'))) return false;
   try {
     createRequire(pkgJson).resolve(BUNDLE_DEFAULT_CHECKS);
@@ -90,7 +90,7 @@ export async function loadCheckFromPathOrThrow(root: string, spec: string): Prom
 /** Creates a require function rooted at the nearest install directory for check packages. */
 function createRequireForRoot(root: string): NodeRequire {
   const installRoot = findInstallRoot(root);
-  return createRequire(join(installRoot, 'package.json'));
+  return createRequire(join(installRoot, PACKAGE_JSON));
 }
 
 /** Dedupes an ordered spec list; name specs by value, path specs by resolved absolute path. */

@@ -1,4 +1,5 @@
 import {
+  PACKAGE_JSON,
   checkResult,
   execSyncResult,
   findFilesByExtension,
@@ -69,7 +70,7 @@ export function outdatedErrors(report: OutdatedReport): string[] {
 
 /** Counts package.json manifests under root (node_modules and other skip dirs excluded). */
 async function countManifests(root: string): Promise<number> {
-  const files = await findFilesByExtension(root, 'package.json');
+  const files = await findFilesByExtension(root, PACKAGE_JSON);
   return files.length;
 }
 

@@ -2,6 +2,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join } from 'node:path';
 import {
+  GITIGNORE,
+  NPMRC,
+  PACKAGE_JSON,
+  PACKAGE_LOCK_JSON,
   buildExecCheckResult,
   execSyncResult,
   getFitnessRunnerRoot,
@@ -37,7 +41,7 @@ const PRETTIER_CONFIG_NAMES = [
 
 /** Returns true if package.json has a "prettier" field (string or object). */
 function hasPrettierInPackageJson(root: string): boolean {
-  const pkgPath = join(root, 'package.json');
+  const pkgPath = join(root, PACKAGE_JSON);
   if (!existsSync(pkgPath)) return false;
   try {
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { prettier?: unknown };
@@ -99,12 +103,12 @@ export function parsePrettierOutput(output: string): string[] {
 
 /** Paths to skip when passing staged files to Prettier (no parser or ignore-file). */
 const PRETTIER_SKIP_STAGED = new Set([
-  '.gitignore',
+  GITIGNORE,
   'githooks/commit-msg',
-  '.npmrc',
+  NPMRC,
   '.prettierignore',
   'LICENSE',
-  'package-lock.json',
+  PACKAGE_LOCK_JSON,
 ]);
 
 /** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list, scripts/, githooks. */

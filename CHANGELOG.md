@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.07.10.1418
+
+- Feat: add the `repeated-string-literals` check — fails when the same string literal appears 3+ times across source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`; test/spec files excluded), reporting `"value" appears N times (file:line, …, +K more) — extract a shared constant`, most-repeated first. A small hand lexer skips line/block comments, regex literals, and template literals, and drops `import`/`require` module specifiers; idiomatic tokens where the literal is the clearest spelling (buffer encodings, `child_process` stdio modes, `typeof` results) are never flagged. Opt-in (bundled, not in `defaultChecks`). Closes #42 — the enum-candidate heuristic and per-repo allowlist are deferred to a fast-follow per that issue's own guidance.
+- Chore: centralize well-known repo filenames (`package.json`, `package-lock.json`, `CHANGELOG.md`, `tsconfig.json`, `cspell.json`, `.gitignore`, `.npmrc`) as shared constants (`fitness-shared` `fileNames.ts`) and use them across the checks and runner — dogfooding the new check's extract-a-shared-constant guidance on our own worst offenders.
+
 ### 2026.07.06.1337
 
 - Feat: add the `no-eslint-disable` check — fails when any source file (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, test files included) contains an ESLint disable directive (`eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`, block and file forms), reporting `path:line: directive` per hit. Opt-in (bundled, not in `defaultChecks`). Closes #10.

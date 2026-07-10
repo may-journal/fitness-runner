@@ -3,6 +3,10 @@ import { execSync } from 'node:child_process';
 import { join, basename } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
 import {
+  CSPELL_JSON,
+  GITIGNORE,
+  PACKAGE_LOCK_JSON,
+  TSCONFIG_JSON,
   buildExecCheckResult,
   checkResult,
   execSyncResult,
@@ -21,7 +25,7 @@ const CSPELL_ISSUE_RE = /^(.+):(\d+):(\d+)\s+-\s+(.+)$/m;
 const FILES_CHECKED_RE = /Files checked:\s*(\d+)/;
 
 /** Staged paths listed in cspell ignorePaths — skip when passed explicitly. */
-const CSPELL_STAGED_SKIP = new Set(['.gitignore', 'package-lock.json', 'tsconfig.json']);
+const CSPELL_STAGED_SKIP = new Set([GITIGNORE, PACKAGE_LOCK_JSON, TSCONFIG_JSON]);
 
 /** Drops staged paths that cspell.json ignorePaths would skip when passed explicitly. */
 function filterStagedForCspell(staged: string[]): string[] {
@@ -188,7 +192,7 @@ async function runViaLib(
 export const cspellCheck: Check = {
   name: 'cspell' as CheckName,
   async run(root = process.cwd(), context?: RunContext) {
-    const configPath = resolveFitnessConfigPath(root, 'cspell.json', getCspellPackageConfigDir());
+    const configPath = resolveFitnessConfigPath(root, CSPELL_JSON, getCspellPackageConfigDir());
     const staged = getStagedFiles(context);
     const execSyncFn = getExecSync(context);
     if (context?._execSync) return runViaExec(root, staged, execSyncFn);

@@ -29,6 +29,7 @@ const CHECK_NAMES = [
   'dependency-currency',
   'gitignore-why',
   'no-eslint-disable',
+  'repeated-string-literals',
   'build-output-untracked',
 ];
 

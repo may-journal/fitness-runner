@@ -1,6 +1,15 @@
 export { buildExecCheckResult, checkResult } from './checkResult.js';
 export { loadConfig } from './config/load.js';
 export { EXEC_OPTS, execSyncResult } from './execSyncResult.js';
+export {
+  CHANGELOG_MD,
+  CSPELL_JSON,
+  GITIGNORE,
+  NPMRC,
+  PACKAGE_JSON,
+  PACKAGE_LOCK_JSON,
+  TSCONFIG_JSON,
+} from './fileNames.js';
 export { findFilesByExtension } from './findFilesByExtension.js';
 export { getFitnessRunnerRoot } from './getFitnessRunnerRoot.js';
 export {

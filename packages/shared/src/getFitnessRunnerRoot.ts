@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { CSPELL_JSON } from './fileNames.js';
 
 const SHARED_PACKAGE = '@mayjournal/fitness-shared';
 
@@ -17,7 +18,7 @@ function walkUpWhile(start: string, predicate: (dir: string) => boolean): string
 
 /** Nearest ancestor of dir that contains cspell.json (consumer or bundled config dir). */
 function findConfigRoot(dir: string): string {
-  return walkUpWhile(dir, (d) => existsSync(join(d, 'cspell.json')));
+  return walkUpWhile(dir, (d) => existsSync(join(d, CSPELL_JSON)));
 }
 
 /** Directory containing @mayjournal/fitness-shared config files. */

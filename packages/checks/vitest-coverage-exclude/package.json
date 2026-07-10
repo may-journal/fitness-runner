@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-vitest-coverage-exclude",
-  "version": "0.1.0-2026.07.06.1337",
+  "version": "0.1.0-2026.07.10.1418",
   "private": true,
   "description": "Fitness check: vitest-coverage-exclude",
   "repository": {
@@ -32,8 +32,8 @@
   },
   "devDependencies": {
     "@mayjournal/fitness": "*",
-    "@types/node": "^26.1.0",
-    "typescript": "^6.0.3",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "peerDependencies": {

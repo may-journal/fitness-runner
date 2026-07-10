@@ -1,11 +1,13 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkResult } from '@mayjournal/fitness-shared';
+import {
+  CHANGELOG_MD as ROOT_CHANGELOG,
+  PACKAGE_JSON,
+  PACKAGE_LOCK_JSON as PACKAGE_LOCK,
+  checkResult,
+} from '@mayjournal/fitness-shared';
 import type { Check, CheckName } from '@mayjournal/fitness';
 
-const ROOT_CHANGELOG = 'CHANGELOG.md';
-const PACKAGE_JSON = 'package.json';
-const PACKAGE_LOCK = 'package-lock.json';
 const ERROR_MISSING = 'missing root CHANGELOG.md';
 const DATED_SECTION_RE = /^###\s+(\d{4}\.\d{2}\.\d{2}\.\d{4})/;
 const VERSION_SUFFIX_RE = /-(\d{4}\.\d{2}\.\d{2}\.\d{4})$/;

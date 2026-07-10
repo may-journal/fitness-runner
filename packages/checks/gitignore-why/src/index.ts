@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkResult } from '@mayjournal/fitness-shared';
+import { GITIGNORE, checkResult } from '@mayjournal/fitness-shared';
 import type { Check, CheckName } from '@mayjournal/fitness';
 import { enUS } from './enUS.js';
 
@@ -42,7 +42,7 @@ export function findViolations(content: string): string[] {
 const gitignoreWhyCheck = {
   name: 'gitignore-why' as CheckName,
   async run(root = process.cwd()) {
-    const path = join(root, '.gitignore');
+    const path = join(root, GITIGNORE);
     if (!existsSync(path)) return checkResult(true, [], 0);
     const errors = findViolations(readFileSync(path, 'utf8'));
     return checkResult(errors.length === 0, errors, 1);
