@@ -72,10 +72,13 @@ export function scanFileForDistImports(relPath: string, content: string): string
   return errors;
 }
 
-/** Sorted, deduped source files (.ts/.mts/.cts) under root. */
+/** Matches a test/spec source file (fixtures legitimately contain dist import specifiers). */
+const TEST_FILE_RE = /\.(?:test|spec)\.(?:c|m)?ts$/;
+
+/** Sorted, deduped source files (.ts/.mts/.cts) under root; test/spec files excluded. */
 export async function collectSourceFiles(root: string): Promise<string[]> {
   const lists = await Promise.all(SOURCE_EXTENSIONS.map((ext) => findFilesByExtension(root, ext)));
-  return [...new Set(lists.flat())].sort();
+  return [...new Set(lists.flat())].filter((f) => !TEST_FILE_RE.test(f)).sort();
 }
 
 /** Fails when dist is tracked/un-ignored or a source file imports from build output. */

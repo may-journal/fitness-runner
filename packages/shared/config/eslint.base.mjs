@@ -5,6 +5,7 @@ import perfectionist from 'eslint-plugin-perfectionist';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import cspellConfig from './cspell.json' with { type: 'json' };
 
+const readonlyGlobal = 'readonly';
 const sortKeys = ['error', 'asc', { caseSensitive: true, natural: true }];
 // perfectionist replaces the unmaintained eslint-plugin-typescript-sort-keys (no eslint 10
 // support): natural ascending, case-sensitive, matching the `sort-keys` object rule above.
@@ -29,10 +30,10 @@ export function createEslintConfig(tsParserOptions) {
       files: ['**/*.cjs'],
       languageOptions: {
         globals: {
-          __dirname: 'readonly',
-          __filename: 'readonly',
-          module: 'readonly',
-          require: 'readonly',
+          __dirname: readonlyGlobal,
+          __filename: readonlyGlobal,
+          module: readonlyGlobal,
+          require: readonlyGlobal,
         },
         parser: tsParser,
         parserOptions: { ecmaVersion: 'latest', sourceType: 'script' },

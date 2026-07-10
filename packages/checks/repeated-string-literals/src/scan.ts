@@ -32,6 +32,8 @@ export const IDIOMATIC_VALUES = new Set([
   'string',
   'symbol',
   'undefined',
+  // language directives (a directive prologue cannot be replaced by a constant)
+  'use strict',
 ]);
 
 /** Words that, immediately before a string, mark it a module specifier to skip (`import`/`require`/`from`). */

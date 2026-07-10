@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type { Check, RunContext } from '@mayjournal/fitness';
-import { checkResult, findFilesByExtension } from '@mayjournal/fitness-shared';
+import { MD_EXT, checkResult, findFilesByExtension } from '@mayjournal/fitness-shared';
 
 const FRONTMATTER_RE = /^---\n([\s\S]*?)\n---/;
 const ARRAY_RE = /(?:fitnessFunctions|relatedConfigurations):\s*\[([^\]]*)\]/g;
@@ -101,7 +101,7 @@ const markdownFrontMatterCheck = {
     const registeredCheckNames = context?.registeredCheckNames ?? [];
     const errors: string[] = [];
     let filesChecked = 0;
-    for (const file of await findFilesByExtension(root, '.md')) {
+    for (const file of await findFilesByExtension(root, MD_EXT)) {
       filesChecked += 1;
       const content = readFileSync(join(root, file), 'utf8');
       const mdFileDir = join(root, dirname(file));

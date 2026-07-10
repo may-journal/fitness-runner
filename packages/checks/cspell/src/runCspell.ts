@@ -4,6 +4,7 @@ import { join, basename } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
 import {
   CSPELL_JSON,
+  MD_EXT,
   GITIGNORE,
   PACKAGE_LOCK_JSON,
   TSCONFIG_JSON,
@@ -157,7 +158,7 @@ async function getPathsToCheck(root: string, staged: string[]): Promise<string[]
   const rel =
     staged.length > 0
       ? filterStagedForCspell(staged).filter((p) => existsSync(join(root, p)))
-      : await findFilesByExtension(root, '.md');
+      : await findFilesByExtension(root, MD_EXT);
   return rel.map((p) => join(root, p));
 }
 

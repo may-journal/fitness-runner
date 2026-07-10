@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { findWorkspaceRoot, readPackageName } from './workspace-root.js';
 
+const COVERAGE_FLAG = '--coverage';
+
 export function runTest(argv = process.argv.slice(2)) {
   const cwd = process.cwd();
   const name = readPackageName(cwd);
@@ -12,7 +14,7 @@ export function runTest(argv = process.argv.slice(2)) {
     const root = findWorkspaceRoot(cwd);
     const configPath = join(dirname(fileURLToPath(import.meta.url)), '../config/vitest.config.mjs');
     const vitestArgs = ['run', '--config', configPath];
-    if (argv.includes('--coverage')) vitestArgs.push('--coverage');
+    if (argv.includes(COVERAGE_FLAG)) vitestArgs.push(COVERAGE_FLAG);
     const result = spawnSync('vitest', vitestArgs, { cwd: root, stdio: 'inherit' });
     process.exit(result.status ?? 1);
   }
@@ -26,7 +28,7 @@ export function runTest(argv = process.argv.slice(2)) {
 
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
-    if (arg === '--coverage') continue;
+    if (arg === COVERAGE_FLAG) continue;
     if (arg === '--coverage-exclude' && argv[i + 1]) {
       extraExclude.push(argv[++i]);
       continue;
@@ -35,7 +37,7 @@ export function runTest(argv = process.argv.slice(2)) {
   }
 
   const env = { ...process.env };
-  if (argv.includes('--coverage')) env.FITNESS_SHARED_TEST_COVERAGE = '1';
+  if (argv.includes(COVERAGE_FLAG)) env.FITNESS_SHARED_TEST_COVERAGE = '1';
   if (extraExclude.length > 0) {
     env.FITNESS_SHARED_COVERAGE_EXTRA_EXCLUDE = extraExclude.join(',');
   }

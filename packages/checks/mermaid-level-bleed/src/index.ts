@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Check, CheckName } from '@mayjournal/fitness';
 import {
+  MD_EXT,
   checkResult,
   findFilesByExtension,
   parseDoc,
@@ -39,7 +40,7 @@ export function levelDescriptions(content: string): Set<string> {
 /** Reads the numbered C4 level files under `root`, ordered by level. */
 async function collectLevels(root: string): Promise<Level[]> {
   const levels: Level[] = [];
-  for (const file of await findFilesByExtension(root, '.md')) {
+  for (const file of await findFilesByExtension(root, MD_EXT)) {
     const match = file.match(LEVEL_FILE);
     if (match)
       levels.push({

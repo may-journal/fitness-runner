@@ -12,7 +12,7 @@ Keeps compiled build output out of Git and out of source imports. Opt-in — not
   - `dist` must be git-ignored (verified with `git check-ignore -q dist`). Fail hint: add `dist/` to `.gitignore`.
   - `dist` must have no tracked files (`git ls-files -- dist` and `git ls-files -- '**/dist/**'` are both empty). Fail hint: remove the listed files with `git rm --cached`.
 - Rule B — no imports from build output:
-  - Scans `.ts`, `.mts`, and `.cts` source files and flags any `from '…'`, `import('…')`, or `require('…')` whose specifier reaches into a `dist/` path (for example `../dist/x.js` or `foo/dist/x.js`). Each violation is reported as `path:line`.
+  - Scans `.ts`, `.mts`, and `.cts` source files (test/spec files excluded — fixtures legitimately contain dist specifiers) and flags any `from '…'`, `import('…')`, or `require('…')` whose specifier reaches into a `dist/` path (for example `../dist/x.js` or `foo/dist/x.js`). Each violation is reported as `path:line`.
 
 ## Notes
 

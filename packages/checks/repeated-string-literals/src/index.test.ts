@@ -155,12 +155,23 @@ describe('repeatedStringLiteralsCheck', () => {
     expect(result.meta?.filesChecked).toBe(2);
   });
 
-  it('excludes test/spec files from the scan', async () => {
+  it('excludes test/spec/bench files from the scan', async () => {
     const dir = tempRepo({
       'a.test.ts': "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
+      'b.bench.ts': "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
     });
     const result = await repeatedStringLiteralsCheck.run(dir);
     expect(result.ok).toBe(true);
     expect(result.meta?.filesChecked).toBe(0);
+  });
+
+  it('never flags values allowed via .fitnessrc repeatedStringLiterals.allow', async () => {
+    const dir = tempRepo({
+      '.fitnessrc.js': "module.exports = { repeatedStringLiterals: { allow: ['active'] } };\n",
+      'a.ts': "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
+    });
+    const result = await repeatedStringLiteralsCheck.run(dir);
+    expect(result.ok).toBe(true);
+    expect(result.errors).toEqual([]);
   });
 });

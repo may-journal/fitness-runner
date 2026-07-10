@@ -52,14 +52,30 @@ produces one error per duplicated value, most-repeated first:
 
 ## Behavior
 
-- Scans `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts` via `findFilesByExtension` (skips `node_modules`, `dist`, `coverage`, `.git`, …). Test/spec files are excluded — fixtures repeat strings on purpose.
+- Scans `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts` via `findFilesByExtension` (skips `node_modules`, `dist`, `coverage`, `.git`, …). Test/spec/bench files are excluded — fixtures repeat strings on purpose.
 - A small hand lexer (no parser dependency, matching the other checks) extracts single- and double-quoted literals while ignoring line/block comments, regex literals, and template literals, and dropping module specifiers (the string after `import` / `require` / `from`).
 - Counts identical values repo-wide; flags any at or above `MIN_OCCURRENCES` (3). Values shorter than `MIN_LENGTH` (3) are ignored as noise.
-- Idiomatic tokens are never flagged (`IDIOMATIC_VALUES`): buffer encodings (`'utf8'`, `'base64'`, …), `child_process` stdio modes (`'inherit'`, `'pipe'`, …), and `typeof` results (`'object'`, `'string'`, …). For these closed sets the literal is the clearest spelling — a constant would hurt readability.
+- Idiomatic tokens are never flagged (`IDIOMATIC_VALUES`): buffer encodings (`'utf8'`, `'base64'`, …), `child_process` stdio modes (`'inherit'`, `'pipe'`, …), `typeof` results (`'object'`, `'string'`, …), and language directives (`'use strict'`). For these closed sets the literal is the clearest spelling — a constant would hurt readability (or, for a directive prologue, is impossible).
 - Error format: `"value" appears N times (file:line, …, +K more) — extract a shared constant`. Locations are capped at `MAX_LOCATIONS` (5) per value.
 - `filesChecked` counts every scanned source file.
+
+## Configuration
+
+A project baseline for structural repeats that no constant can fix — check-name registries, TS discriminated-union members (the union type declaration is already the closed set), declarative config values, and standalone scripts that cannot import a shared constants module:
+
+```js
+// .fitnessrc.js
+module.exports = {
+  checks: ['repeated-string-literals'],
+  repeatedStringLiterals: {
+    allow: ['my-check-name', 'kindValue'],
+  },
+};
+```
+
+`allow` entries match exact string values and are never flagged. Keep the list a shrinking baseline — if a repeat is a genuine, justified constant, the fix is to centralize it, which is the point.
 
 ## Limitations (v1, KISS)
 
 - Template literals are out of scope — only plain `'…'` / `"…"` literals are counted.
-- Thresholds and the idiomatic-token set are fixed constants (exported from the module); there is no `.fitnessrc` config or per-repo allowlist yet. If a repeat is a genuine, justified constant, the fix is to centralize it — which is the point.
+- Thresholds and the idiomatic-token set are fixed constants (exported from the module); there is no inline `// fitness:allow-literal` marker and no enum-candidate detection yet (both tracked in #44).

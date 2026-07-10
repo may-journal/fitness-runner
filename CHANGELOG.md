@@ -7,12 +7,16 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
-### 2026.07.10.1424
+### 2026.07.10.1453
 
 - Feat: add the `repeated-string-literals` check — fails when the same string literal appears 3+ times across source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`; test/spec files excluded), reporting `"value" appears N times (file:line, …, +K more) — extract a shared constant`, most-repeated first. A small hand lexer skips line/block comments, regex literals, and template literals, and drops `import`/`require` module specifiers; idiomatic tokens where the literal is the clearest spelling (buffer encodings, `child_process` stdio modes, `typeof` results) are never flagged. Opt-in (bundled, not in `defaultChecks`). Closes #42 — the enum-candidate heuristic and per-repo allowlist are deferred to a fast-follow per that issue's own guidance.
 - Chore: centralize well-known repo filenames (`package.json`, `package-lock.json`, `CHANGELOG.md`, `tsconfig.json`, `cspell.json`, `.gitignore`, `.npmrc`) as shared constants (`fitness-shared` `fileNames.ts`) and use them across the checks and runner — dogfooding the new check's extract-a-shared-constant guidance on our own worst offenders.
 - Chore: bump `@arethetypeswrong/cli`, `@types/node`, `eslint-plugin-jsdoc`, `jscpd`, `knip`, `prettier`, and `typescript` (6.0.3 → 7.0.2) to latest to satisfy the `dependency-currency` check after upstream releases; full build/test/lint suite verified on the new toolchain.
 - Chore: merge `main` (the `markdown-filename-convention` check) into this branch, resolving conflicts in `CHANGELOG.md`, the bundler's `CHECK_SPECS` list, `package-lock.json`, and every workspace `package.json` version field, then regenerating the lockfile.
+- Feat: add a `repeatedStringLiterals.allow` option to `.fitnessrc` (`FitnessConfig`) — exact string values the `repeated-string-literals` check never flags, as a project baseline for structural repeats no constant can fix (check-name registries, TS discriminated-union members, declarative config values, standalone scripts). The inline marker and enum-candidate heuristic remain deferred to #44.
+- Fix: `build-output-untracked` flagged its own test fixtures — strings like `'../dist/x.js'` inside `*.test.ts` — as dist imports; test/spec files are now excluded from the import scan (fixtures legitimately contain dist specifiers).
+- Fix: `repeated-string-literals` now also excludes `*.bench.*` files (bench fixtures repeat strings like test fixtures do) and never flags language directives (`'use strict'` — a directive prologue cannot be replaced by a constant).
+- Chore: enable `build-output-untracked` and `repeated-string-literals` on this repo (dogfooding), with a documented `allow` baseline in `.fitnessrc.js`. Extracted the genuinely-shared literals the check surfaced: `.md` as `MD_EXT` in `fitness-shared` `fileNames.ts` (six call sites), plus local constants for `--coverage` (`shared/bin/test.js`) and the `'readonly'` eslint globals value (`eslint.base.mjs`).
 
 ### 2026.07.07.0850
 

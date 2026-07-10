@@ -97,6 +97,15 @@ describe('collectSourceFiles', () => {
     writeFileSync(join(dir, 'd.txt'), '');
     expect(await collectSourceFiles(dir)).toEqual(['a.ts', 'b.mts', 'c.cts']);
   });
+
+  it('excludes test/spec files (fixtures legitimately contain dist import specifiers)', async () => {
+    const dir = tempDir();
+    writeFileSync(join(dir, 'a.ts'), '');
+    writeFileSync(join(dir, 'a.test.ts'), '');
+    writeFileSync(join(dir, 'b.spec.mts'), '');
+    writeFileSync(join(dir, 'c.test.cts'), '');
+    expect(await collectSourceFiles(dir)).toEqual(['a.ts']);
+  });
 });
 
 describe('buildOutputUntrackedCheck.run', () => {
