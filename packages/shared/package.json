@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.10.1556",
+  "version": "0.1.0-2026.07.10.1930",
   "description": "Shared utilities and configs for @mayjournal/fitness check packages",
   "repository": {
     "type": "git",
@@ -26,7 +26,6 @@
     },
     "./tsconfig": "./config/tsconfig.json",
     "./tsconfig.cjs": "./config/tsconfig.cjs",
-    "./tsconfig.lint.cjs": "./config/tsconfig.lint.cjs",
     "./tsconfig.check": "./config/tsconfig.check.json",
     "./vitest.check.config": "./config/vitest.check.config.mjs",
     "./vitest.config": {
@@ -63,7 +62,7 @@
     "conventional-commit-types": "^3.0.0",
     "cspell": "^10.0.1",
     "cspell-lib": "^10.0.1",
-    "eslint": "^10.6.0",
+    "eslint": "^10.7.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-jsdoc": "^63.0.13",
     "eslint-plugin-perfectionist": "^5.10.0",

@@ -6,7 +6,6 @@ import {
   buildExecCheckResult,
   getFitnessRunnerRoot,
   getStagedFiles,
-  resolveLintTsconfig,
 } from '@mayjournal/fitness-shared';
 import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 
@@ -38,21 +37,20 @@ export async function runEslintViaAPI(
   const { createEslintConfig } = (await import(
     pathToFileURL(join(frRoot, 'eslint.base.mjs')).href
   )) as {
-    createEslintConfig: (parserOptions: Record<string, unknown>) => unknown[];
+    createEslintConfig: () => unknown[];
   };
   const { ESLint } = require('eslint') as {
     ESLint: new (opts: Record<string, unknown>) => {
       lintFiles: (p: string[]) => Promise<ESLintJsonResult[]>;
     };
   };
-  const tsconfigPath = resolveLintTsconfig(root, frRoot);
   const eslint = new ESLint({
     cwd: root,
     errorOnUnmatchedPattern: false,
-    overrideConfig: createEslintConfig({
-      project: tsconfigPath,
-      tsconfigRootDir: root,
-    }),
+    // Shared flat config parses syntactically — no type-checker program, because no enabled rule
+    // is type-aware. A `project` here used to type-check the whole repo (~5s, the sole reason this
+    // check blew the default timeout) for zero extra findings. Whole-repo lint is now well under 1s.
+    overrideConfig: createEslintConfig(),
     overrideConfigFile: true,
   });
   const patterns = paths.length > 0 ? paths : ['.'];
