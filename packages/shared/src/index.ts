@@ -27,7 +27,6 @@ export {
 export type { CalloutTableBlock, DiagramBlock, DiagramTablePair, DocBlock } from './mermaid.js';
 export { getSkipDirs, getSkipDirsForWalk, RUNNER_SKIP_DIRS } from './getSkipDirs.js';
 export { resolveFitnessConfigPath } from './resolveFitnessConfigPath.js';
-export { resolveLintTsconfig } from './resolveLintTsconfig.js';
 export { runMermaidDocCheck } from './runMermaidDocCheck.js';
 export {
   ALLOWED_MARKDOWN_BASENAMES,

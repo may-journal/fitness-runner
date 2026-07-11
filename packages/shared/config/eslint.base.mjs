@@ -7,6 +7,10 @@ import cspellConfig from './cspell.json' with { type: 'json' };
 import { DTS_GLOB } from './constants.cjs';
 
 const readonlyGlobal = 'readonly';
+/** Latest ECMAScript syntax; every block parses syntactically (no type-checker program is built). */
+const ECMA_LATEST = 'latest';
+/** parserOptions shared by the ES-module (`.js`/`.mjs`) and TypeScript blocks. */
+const moduleParserOptions = { ecmaVersion: ECMA_LATEST, sourceType: 'module' };
 /** ESLint severity used for every enabled rule. */
 const ERROR = 'error';
 /** Rule id shared by the three sort-keys rule blocks below. */
@@ -28,8 +32,8 @@ const rules = {
 
 const ignores = [...cspellConfig.ignorePaths, 'packages/shared/types/**', DTS_GLOB];
 
-/** Shared ESLint flat config; pass TypeScript parserOptions per caller (CLI vs fitness check). */
-export function createEslintConfig(tsParserOptions) {
+/** Shared ESLint flat config. Every block parses syntactically — no enabled rule is type-aware. */
+export function createEslintConfig() {
   return [
     { ignores },
     {
@@ -42,7 +46,7 @@ export function createEslintConfig(tsParserOptions) {
           require: readonlyGlobal,
         },
         parser: tsParser,
-        parserOptions: { ecmaVersion: 'latest', sourceType: 'script' },
+        parserOptions: { ecmaVersion: ECMA_LATEST, sourceType: 'script' },
       },
       rules: { [SORT_KEYS]: sortKeys },
     },
@@ -50,7 +54,7 @@ export function createEslintConfig(tsParserOptions) {
       files: ['**/*.js', '**/*.mjs'],
       languageOptions: {
         parser: tsParser,
-        parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+        parserOptions: moduleParserOptions,
       },
       rules: { [SORT_KEYS]: sortKeys },
     },
@@ -58,7 +62,7 @@ export function createEslintConfig(tsParserOptions) {
       files: ['**/*.ts'],
       languageOptions: {
         parser: tsParser,
-        parserOptions: tsParserOptions,
+        parserOptions: moduleParserOptions,
       },
       plugins: {
         '@typescript-eslint': tseslint,
