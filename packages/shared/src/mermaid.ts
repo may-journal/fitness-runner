@@ -5,11 +5,17 @@
  * each check can apply its own pairing and validation rules on top.
  */
 
+/** Discriminant kind of a mermaid diagram block — the single source for the literal. */
+export const DIAGRAM_KIND = 'diagram' as const;
+
+/** Discriminant kind of a numbered callout table block. */
+export const TABLE_KIND = 'table' as const;
+
 /** A ```mermaid fenced block. */
 export interface DiagramBlock {
   /** Raw mermaid source, fences stripped. */
   body: string;
-  kind: 'diagram';
+  kind: typeof DIAGRAM_KIND;
   /** 1-based line of the opening fence. */
   line: number;
   /** Callout numbers referenced, in document order (may contain duplicates). */
@@ -20,7 +26,7 @@ export interface DiagramBlock {
 export interface CalloutTableBlock {
   /** Trimmed header cells. */
   header: string[];
-  kind: 'table';
+  kind: typeof TABLE_KIND;
   /** 1-based line of the header row. */
   line: number;
   /** Integers read from the first (`#`) column, in order (may contain duplicates). */
@@ -121,7 +127,7 @@ function parseDiagramBlock(
   return {
     block: {
       body: joined,
-      kind: 'diagram',
+      kind: DIAGRAM_KIND,
       line: start + 1,
       numbers: extractDiagramNumbers(joined),
     },
@@ -142,7 +148,7 @@ function parseTableBlock(
     j += 1;
   }
   const block = isCalloutHeader(header)
-    ? { header, kind: 'table' as const, line: start + 1, numbers: tableNumbers(rows), rows }
+    ? { header, kind: TABLE_KIND, line: start + 1, numbers: tableNumbers(rows), rows }
     : null;
   return { block, next: j };
 }
@@ -206,12 +212,12 @@ export function pairDiagramsWithTables(blocks: DocBlock[]): {
   orphanTables: CalloutTableBlock[];
   pairs: DiagramTablePair[];
 } {
-  const relevant = blocks.filter((b) => b.kind === 'table' || b.numbers.length > 0);
+  const relevant = blocks.filter((b) => b.kind === TABLE_KIND || b.numbers.length > 0);
   const pairs: DiagramTablePair[] = [];
   const orphanTables: CalloutTableBlock[] = [];
   let pending: DiagramBlock | null = null;
   for (const block of relevant) {
-    if (block.kind === 'diagram') {
+    if (block.kind === DIAGRAM_KIND) {
       pending = startDiagram(pending, block, pairs);
       continue;
     }

@@ -1,5 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
+import { DTS_GLOB, ES_TARGET, SPEC_GLOB, TEST_GLOB, TYPES_GLOB } from './constants.cjs';
+import { FITNESS_PKG } from '../bin/constants.js';
 
 /** @typedef {{ coverage?: boolean; coverageExtraExclude?: string[] }} CheckVitestOptions */
 
@@ -12,10 +14,10 @@ export function createCheckVitestConfig(packageRoot = process.cwd(), options = {
   const fitnessTypes = resolve(packageRoot, '../../runner/dist/types/index.types.js');
   /** @type {import('vitest/config').UserConfig} */
   const config = {
-    esbuild: { target: 'ES2022' },
+    esbuild: { target: ES_TARGET },
     resolve: {
       alias: {
-        '@mayjournal/fitness': fitnessTypes,
+        [FITNESS_PKG]: fitnessTypes,
       },
     },
     root: packageRoot,
@@ -26,10 +28,10 @@ export function createCheckVitestConfig(packageRoot = process.cwd(), options = {
   };
   if (options.coverage) {
     const exclude = [
-      '**/*.d.ts',
-      '**/*.test.ts',
-      '**/*.spec.ts',
-      '**/*.types.ts',
+      DTS_GLOB,
+      TEST_GLOB,
+      SPEC_GLOB,
+      TYPES_GLOB,
       ...(options.coverageExtraExclude ?? []),
     ];
     config.test = {

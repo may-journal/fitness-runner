@@ -1,5 +1,5 @@
 import { execSync } from 'node:child_process';
-import { loadConfig } from '@mayjournal/fitness-shared';
+import { NODE_MODULES, loadConfig } from '@mayjournal/fitness-shared';
 import {
   isPathSpec,
   loadCheck,
@@ -13,7 +13,7 @@ import { getContextInlineFromArgs } from '../utils/contextInlineFromArgs.js';
 
 /** Staged paths under node_modules are never passed to checks. */
 function stripNodeModulesFromStaged(paths: string[]): string[] {
-  return paths.filter((p) => !p.includes('node_modules'));
+  return paths.filter((p) => !p.includes(NODE_MODULES));
 }
 
 /** Returns staged file paths from git for context (always attempted); excludes node_modules. */

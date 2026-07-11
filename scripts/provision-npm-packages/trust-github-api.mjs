@@ -10,6 +10,10 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import { NODE_MODULES, NPMRC, REPO_ROOT } from '../constants.cjs';
+
+/** The npm `trust` subcommand — shared with the provisioning entry point. */
+export const TRUST = 'trust';
 
 const minNpm = '11.14.1';
 
@@ -35,7 +39,7 @@ function loadNpmDeps() {
     const ver = JSON.parse(readFileSync(npmPkg, 'utf8')).version;
     if (compareVer(ver, minNpm) < 0) continue;
     if (!best || compareVer(ver, best.ver) > 0)
-      best = { dir: join(npxBase, entry, 'node_modules'), ver };
+      best = { dir: join(npxBase, entry, NODE_MODULES), ver };
   }
   if (!best) {
     throw new Error(`Install npm ${minNpm}+ via npx first: npx --yes npm@${minNpm} -v`);
@@ -90,10 +94,7 @@ export function needsWebSignIn(err) {
 
 /** @param {string[] | undefined} pathsOverride */
 export function loadAuthFromNpmrc(pathsOverride) {
-  const paths = pathsOverride ?? [
-    join(homedir(), '.npmrc'),
-    join(dirname(fileURLToPath(import.meta.url)), '../../.npmrc'),
-  ];
+  const paths = pathsOverride ?? [join(homedir(), NPMRC), join(REPO_ROOT, NPMRC)];
   for (const p of paths) {
     if (!existsSync(p)) continue;
     const text = readFileSync(p, 'utf8');
@@ -200,7 +201,7 @@ export async function configureTrustWithPermissions(opts, depsOverride) {
 
   const baseOpts = {
     authType: 'web',
-    npmCommand: 'trust',
+    npmCommand: TRUST,
     registry,
     token,
   };

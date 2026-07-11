@@ -1,8 +1,5 @@
 import { createEslintConfig } from './eslint.base.mjs';
 
-const tsconfigRootDir = process.env.FITNESS_TSCONFIG_ROOT;
-
-export default createEslintConfig({
-  projectService: true,
-  ...(tsconfigRootDir && { tsconfigRootDir }),
-});
+// Syntactic parse only — no enabled rule is type-aware (see eslint.base.mjs), so we skip building a
+// TypeScript program (`projectService`). That program cost ~5s over the whole repo for no findings.
+export default createEslintConfig();

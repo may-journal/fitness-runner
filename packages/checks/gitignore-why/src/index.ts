@@ -1,18 +1,21 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { checkResult } from '@mayjournal/fitness-shared';
+import { GITIGNORE, checkResult } from '@mayjournal/fitness-shared';
 import type { Check, CheckName } from '@mayjournal/fitness';
 import { enUS } from './enUS.js';
 
+/** Discriminant for an actual ignore-pattern line — the single source for the literal. */
+const PATTERN = 'pattern';
+
 /** A classified .gitignore line: blank, a `#` comment, or an actual ignore pattern. */
-export type LineKind = 'blank' | 'comment' | 'pattern';
+export type LineKind = 'blank' | 'comment' | typeof PATTERN;
 
 /** Classify one raw .gitignore line: blank, comment (starts with `#`), or pattern (any other non-blank line). */
 export function classifyLine(line: string): LineKind {
   const trimmed = line.trim();
   if (trimmed === '') return 'blank';
   if (trimmed.startsWith('#')) return 'comment';
-  return 'pattern';
+  return PATTERN;
 }
 
 /** True when the line is a non-empty explanatory comment — a `#` followed by real text, not a bare `#`. */
@@ -31,7 +34,7 @@ export function findViolations(content: string): string[] {
   const lines = content.split('\n');
   const errors: string[] = [];
   lines.forEach((line, index) => {
-    if (classifyLine(line) !== 'pattern') return;
+    if (classifyLine(line) !== PATTERN) return;
     const above = index > 0 ? lines[index - 1] : '';
     if (!isExplanatoryComment(above)) errors.push(formatViolation(index + 1, line.trim()));
   });
@@ -42,7 +45,7 @@ export function findViolations(content: string): string[] {
 const gitignoreWhyCheck = {
   name: 'gitignore-why' as CheckName,
   async run(root = process.cwd()) {
-    const path = join(root, '.gitignore');
+    const path = join(root, GITIGNORE);
     if (!existsSync(path)) return checkResult(true, [], 0);
     const errors = findViolations(readFileSync(path, 'utf8'));
     return checkResult(errors.length === 0, errors, 1);

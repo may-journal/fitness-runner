@@ -1,9 +1,24 @@
 export { buildExecCheckResult, checkResult } from './checkResult.js';
 export { loadConfig } from './config/load.js';
 export { EXEC_OPTS, execSyncResult } from './execSyncResult.js';
+export {
+  CHANGELOG_MD,
+  CSPELL_JSON,
+  GITIGNORE,
+  MD_EXT,
+  NODE_MODULES,
+  NPMRC,
+  PACKAGE_JSON,
+  PACKAGE_LOCK_JSON,
+  TSCONFIG_JSON,
+} from './fileNames.js';
 export { findFilesByExtension } from './findFilesByExtension.js';
 export { getFitnessRunnerRoot } from './getFitnessRunnerRoot.js';
+export { SOURCE_FILE_EXTENSIONS, TS_FILE_EXTENSIONS } from './sourceExtensions.js';
+export { DTS_GLOB, SPEC_GLOB, TEST_GLOB, TYPES_GLOB } from './testGlobs.js';
 export {
+  DIAGRAM_KIND,
+  TABLE_KIND,
   extractDiagramNumbers,
   isCalloutHeader,
   pairDiagramsWithTables,
@@ -12,8 +27,13 @@ export {
 export type { CalloutTableBlock, DiagramBlock, DiagramTablePair, DocBlock } from './mermaid.js';
 export { getSkipDirs, getSkipDirsForWalk, RUNNER_SKIP_DIRS } from './getSkipDirs.js';
 export { resolveFitnessConfigPath } from './resolveFitnessConfigPath.js';
-export { resolveLintTsconfig } from './resolveLintTsconfig.js';
 export { runMermaidDocCheck } from './runMermaidDocCheck.js';
+export {
+  ALLOWED_MARKDOWN_BASENAMES,
+  runMarkdownFilenameCheck,
+  validateMarkdownFilename,
+} from './runMarkdownFilenameCheck.js';
+export type { FilenameConvention } from './runMarkdownFilenameCheck.js';
 export { getExecSync, getStagedFiles } from './runContext.js';
 export type { ExecSyncFn } from './runContext.js';
 export { quoteForShell } from './shellQuote.js';

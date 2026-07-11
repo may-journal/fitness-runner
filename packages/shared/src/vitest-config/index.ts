@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
+import { PACKAGE_JSON } from '../fileNames.js';
 
 const require = createRequire(import.meta.url);
 
@@ -58,7 +59,7 @@ export function tryLoadConfigFile(root: string, name: string): VitestConfigRaw |
 
 /** Try to load vitest config from package.json "vitest" key. */
 export function tryLoadPackageJsonVitest(root: string): VitestConfigRaw | null {
-  const pkgPath = join(root, 'package.json');
+  const pkgPath = join(root, PACKAGE_JSON);
   if (!existsSync(pkgPath)) return null;
   try {
     const pkg = JSON.parse(readFileSync(pkgPath, 'utf8')) as { vitest?: VitestConfigRaw };

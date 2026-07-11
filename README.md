@@ -93,11 +93,11 @@ npx fitness --check=semantic-commit
 
 Checks can register `contextInline` so the runner injects a named arg value into context and strips it from passthrough. For the commit-msg hook with semantic-commit, pass the message string: `fitness --check=semantic-commit --message="$(cat "$1")"`. See each check’s README for its arg name.
 
-See [Architecture.md](./Architecture.md) for the C4 model ([architecture/](architecture/)).
+See [architecture-index.md](./architecture-index.md) for the C4 model ([architecture/](architecture/)).
 
 ## Checks
 
-Each check's source lives under `packages/checks/<name>/` with its own README. Consumers load a check by name via the `@mayjournal/fitness-checks/checks/<name>` subpath — the individual `@mayjournal/fitness-check-<name>` workspaces are private and never published on their own. Default run order when `.fitnessrc` omits `checks` is `defaultChecks` from `@mayjournal/fitness-checks` (see [packages/checks-bundle/src/index.ts](./packages/checks-bundle/src/index.ts) and [Architecture.md](./Architecture.md)).
+Each check's source lives under `packages/checks/<name>/` with its own README. Consumers load a check by name via the `@mayjournal/fitness-checks/checks/<name>` subpath — the individual `@mayjournal/fitness-check-<name>` workspaces are private and never published on their own. Default run order when `.fitnessrc` omits `checks` is `defaultChecks` from `@mayjournal/fitness-checks` (see [packages/checks-bundle/src/index.ts](./packages/checks-bundle/src/index.ts) and [architecture-index.md](./architecture-index.md)).
 
 ## Consumer projects
 
@@ -105,7 +105,7 @@ Install `@mayjournal/fitness` and `@mayjournal/fitness-checks`. With no `.fitnes
 
 To add a repo-specific rule without a new dependency, skip the name and point `checks` at a local module path instead — see [Config](#config) above.
 
-Add a script and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. Setup matrix and examples: [Architecture.md](./Architecture.md#consumer-setup).
+Add a script and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. Setup matrix and examples: [architecture-index.md](./architecture-index.md#consumer-setup).
 
 ```json
 {

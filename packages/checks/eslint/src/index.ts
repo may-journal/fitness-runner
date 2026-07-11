@@ -6,9 +6,8 @@ import {
   buildExecCheckResult,
   getFitnessRunnerRoot,
   getStagedFiles,
-  resolveLintTsconfig,
 } from '@mayjournal/fitness-shared';
-import type { Check, CheckName } from '@mayjournal/fitness';
+import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 
 const require = createRequire(import.meta.url);
 
@@ -38,21 +37,20 @@ export async function runEslintViaAPI(
   const { createEslintConfig } = (await import(
     pathToFileURL(join(frRoot, 'eslint.base.mjs')).href
   )) as {
-    createEslintConfig: (parserOptions: Record<string, unknown>) => unknown[];
+    createEslintConfig: () => unknown[];
   };
   const { ESLint } = require('eslint') as {
     ESLint: new (opts: Record<string, unknown>) => {
       lintFiles: (p: string[]) => Promise<ESLintJsonResult[]>;
     };
   };
-  const tsconfigPath = resolveLintTsconfig(root, frRoot);
   const eslint = new ESLint({
     cwd: root,
     errorOnUnmatchedPattern: false,
-    overrideConfig: createEslintConfig({
-      project: tsconfigPath,
-      tsconfigRootDir: root,
-    }),
+    // Shared flat config parses syntactically — no type-checker program, because no enabled rule
+    // is type-aware. A `project` here used to type-check the whole repo (~5s, the sole reason this
+    // check blew the default timeout) for zero extra findings. Whole-repo lint is now well under 1s.
+    overrideConfig: createEslintConfig(),
     overrideConfigFile: true,
   });
   const patterns = paths.length > 0 ? paths : ['.'];
@@ -109,7 +107,7 @@ function getPathsToLint(root: string, staged: string[]): string[] {
 }
 
 /** Resolve paths to lint from root and context. */
-function resolvePaths(root: string, context: Parameters<Check['run']>[1]): string[] {
+function resolvePaths(root: string, context: RunContext | undefined): string[] {
   const staged = getStagedFiles(context);
   return getPathsToLint(root, staged);
 }
@@ -132,7 +130,7 @@ function eslintRunCatchResult(err: unknown): {
 async function runEslintWithFallback(
   root: string,
   paths: string[],
-  context: Parameters<Check['run']>[1]
+  context: RunContext | undefined
 ): Promise<{ errors: string[]; exitCode: number; filesChecked: number }> {
   const fitnessRunnerRoot = context?._fitnessRunnerRootForTesting;
   const run = context?._eslintRunForTesting ?? runEslintViaAPI;
@@ -145,7 +143,7 @@ async function runEslintWithFallback(
 
 /** ESLint check: runs this package's ESLint config against root (parent project) via Node API. */
 export const eslintCheck: Check = {
-  name: 'eslint' as CheckName,
+  name: CheckName.Eslint,
   async run(root = process.cwd(), context) {
     const paths = resolvePaths(root, context);
     const { errors, exitCode, filesChecked } = await runEslintWithFallback(root, paths, context);

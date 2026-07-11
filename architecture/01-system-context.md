@@ -37,7 +37,7 @@ Numbers on nodes and arrows match the callout table.
 | #   | Description                                                                                       | Why                                                                 |
 | --- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | 1   | Runs `npm run fitness`, git hooks, or single checks locally.                                      | Primary operator; same bar as CI.                                   |
-| 2   | Cursor, Claude Code, or other agents triggered to run fitness before/after edits.                 | GenAI workflows share the runner — see [Wardley.md](../Wardley.md). |
+| 2   | Cursor, Claude Code, or other agents triggered to run fitness before/after edits.                 | GenAI workflows share the runner — see [wardley.md](../wardley.md). |
 | 3   | Published npm packages: CLI, check packages, bundle, shared configs.                              | The product boundary — not one monolith binary.                     |
 | 4   | Any repo that installs `@mayjournal/fitness` and check packages; may author local check modules.  | Runner always executes in the consumer's working directory.         |
 | 5   | Commodity linters, formatters, test runners, and git.                                             | Checks wrap these; runner does not replace them.                    |

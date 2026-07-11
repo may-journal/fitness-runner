@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { checkResult } from './checkResult.js';
+import { MD_EXT } from './fileNames.js';
 import { findFilesByExtension } from './findFilesByExtension.js';
 import { parseDoc } from './mermaid.js';
 import type { CheckResult } from './types/check-result.types.js';
@@ -17,7 +18,7 @@ export async function runMermaidDocCheck(
 ): Promise<CheckResult> {
   const errors: string[] = [];
   let filesChecked = 0;
-  for (const file of await findFilesByExtension(root, '.md')) {
+  for (const file of await findFilesByExtension(root, MD_EXT)) {
     const content = readFileSync(join(root, file), 'utf8');
     if (parseDoc(content).length === 0) continue;
     filesChecked += 1;

@@ -1,4 +1,8 @@
 import {
+  DTS_GLOB,
+  SPEC_GLOB,
+  TEST_GLOB,
+  TYPES_GLOB,
   checkResult,
   getCoverageExcludeFromConfig,
   getFitnessRunnerRoot,
@@ -13,10 +17,10 @@ export { configFromMod, VITEST_CONFIG_NAMES } from '@mayjournal/fitness-shared';
 /** Allowed coverage exclude patterns: declaration, type-only, barrel index, worker entry; Vitest excludes tests by default. */
 export const ALLOWED_COVERAGE_EXCLUDE_PATTERNS = [
   '**/*.bench.ts',
-  '**/*.d.ts',
-  '**/*.types.ts',
-  '**/*.test.ts',
-  '**/*.spec.ts',
+  DTS_GLOB,
+  TYPES_GLOB,
+  TEST_GLOB,
+  SPEC_GLOB,
   '**/index.ts',
   '**/run-one-check-worker.ts',
 ] as const;

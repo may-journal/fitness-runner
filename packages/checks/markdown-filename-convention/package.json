@@ -1,0 +1,78 @@
+{
+  "name": "@mayjournal/fitness-check-markdown-filename-convention",
+  "version": "0.1.0-2026.07.10.2041",
+  "private": true,
+  "description": "Fitness check: markdown filename convention (kebab-case + camelCase flavors)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/may-journal/fitness-runner.git"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./kebab-case": {
+      "types": "./dist/kebab-case.d.ts",
+      "import": "./dist/kebab-case.js",
+      "default": "./dist/kebab-case.js"
+    },
+    "./camel-case": {
+      "types": "./dist/camel-case.d.ts",
+      "import": "./dist/camel-case.js",
+      "default": "./dist/camel-case.js"
+    }
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "fitness-shared build",
+    "ci": "bash ../../../scripts/nvm-use/nvm-use.sh && npm run test",
+    "knip": "knip --no-exit-code",
+    "test": "npm run build && fitness-shared test"
+  },
+  "prettier": "@mayjournal/fitness-shared/prettier.config",
+  "dependencies": {
+    "@mayjournal/fitness-shared": "*"
+  },
+  "devDependencies": {
+    "@mayjournal/fitness": "*",
+    "@types/node": "^26.1.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.9"
+  },
+  "peerDependencies": {
+    "@mayjournal/fitness": "*"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "fitnessChecks": [
+    {
+      "entry": "kebab-case",
+      "name": "markdown-filename-kebab-case"
+    },
+    {
+      "entry": "camel-case",
+      "name": "markdown-filename-camel-case"
+    }
+  ],
+  "knip": {
+    "entry": [
+      "src/index.ts",
+      "src/kebab-case.ts",
+      "src/camel-case.ts",
+      "src/**/*.test.ts"
+    ],
+    "project": [
+      "src/**/*.ts"
+    ]
+  }
+}

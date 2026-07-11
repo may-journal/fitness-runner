@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.07.06.1550",
+  "version": "0.1.0-2026.07.10.2041",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -34,13 +34,13 @@
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.18.4",
+    "@arethetypeswrong/cli": "^0.18.5",
     "@mayjournal/fitness": "*",
     "@mayjournal/fitness-checks": "*",
     "@mayjournal/fitness-shared": "*",
     "@vitest/coverage-v8": "^4.1.10",
-    "knip": "^6.24.0",
-    "prettier": "^3.9.4",
+    "knip": "^6.26.0",
+    "prettier": "^3.9.5",
     "prettier-plugin-packagejson": "^3.0.2",
     "prettier-plugin-sort-json": "^4.2.0",
     "publint": "^0.3.12",

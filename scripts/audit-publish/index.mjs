@@ -16,14 +16,16 @@ import {
   formatMarkdownReport,
 } from './format-report.mjs';
 
-const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
+import { JSON_FLAG, NPM, NPM_SCRIPT_BUILD, REPO_ROOT, RUN_SUBCOMMAND } from '../constants.cjs';
+
+const root = REPO_ROOT;
 
 /** @returns {string[]} argv to run publint from root devDependency */
 function publintCommand() {
   const pkgPath = join(root, 'node_modules/publint/package.json');
   const bin = JSON.parse(readFileSync(pkgPath, 'utf8')).bin;
   const cli = join(dirname(pkgPath), String(bin).replace(/^\.\//, ''));
-  return [cli, 'run'];
+  return [cli, RUN_SUBCOMMAND];
 }
 
 /**
@@ -70,7 +72,7 @@ export function auditOnePackage(dir, hooks = {}) {
   const cwd = join(root, dir);
   const publintArgv = hooks.publintArgv ?? [...publintCommand(), '.'];
 
-  const pack = execSync('npm', ['pack', '--dry-run', '--json'], {
+  const pack = execSync(NPM, ['pack', '--dry-run', JSON_FLAG], {
     cwd,
     encoding: 'utf8',
     shell: false,
@@ -98,7 +100,11 @@ export async function runPublishAudit(opts = {}) {
   const execSync = opts.execSync ?? spawnSync;
 
   if (!opts.skipBuild) {
-    const build = execSync('npm', ['run', 'build'], { cwd: root, encoding: 'utf8', shell: false });
+    const build = execSync(NPM, [RUN_SUBCOMMAND, NPM_SCRIPT_BUILD], {
+      cwd: root,
+      encoding: 'utf8',
+      shell: false,
+    });
     if (build.status !== 0) {
       process.stderr.write(build.stderr || build.stdout);
       process.exit(build.status ?? 1);
@@ -183,7 +189,7 @@ function parseArgs(argv) {
   return {
     attw: argv.includes('--attw'),
     gateRunner: argv.includes('--gate-runner'),
-    json: argv.includes('--json'),
+    json: argv.includes(JSON_FLAG),
     markdown: argv.includes('--markdown'),
     runnerMaxTarball: Number.isFinite(runnerMaxTarball)
       ? runnerMaxTarball

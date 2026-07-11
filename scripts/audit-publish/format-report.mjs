@@ -1,4 +1,5 @@
 /** @typedef {{ name: string, dir?: string, sizes?: { tarball: number, unpacked: number }, publint?: { ok: boolean, errors: number, warnings: number }, error?: string, attw?: { ok: boolean, summary?: string, error?: string } }} AuditRow */
+import { FITNESS_PKG } from '../constants.cjs';
 
 /** @param {number} bytes */
 export function formatBytes(bytes) {
@@ -7,7 +8,7 @@ export function formatBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MiB`;
 }
 
-export const RUNNER_PACKAGE = '@mayjournal/fitness';
+export const RUNNER_PACKAGE = FITNESS_PKG;
 /** Default max npm pack tarball bytes for @mayjournal/fitness (~24 KiB; baseline ~20 KiB). */
 export const DEFAULT_RUNNER_MAX_TARBALL = 24 * 1024;
 

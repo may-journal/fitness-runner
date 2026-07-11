@@ -16,8 +16,10 @@
   "useGitignore": true,
   "version": "0.2",
   "words": [
+    "basenames",
     "bijective",
     "dogfooding",
+    "sonarjs",
     "attw",
     "mayjournal",
     "microbenchmarks",
