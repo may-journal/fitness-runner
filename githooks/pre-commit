@@ -4,6 +4,6 @@ cd "$(git rev-parse --show-toplevel)"
 
 # Build the toolchain (fast when warm), restamp a staged CHANGELOG entry,
 # then gate the commit on the fitness suite.
-(cd go && go build -o bin ./cmd/...)
+(cd go && mkdir -p bin && go build -o bin ./cmd/...)
 go/bin/fitness-stamp-changelog
 go/bin/fitness

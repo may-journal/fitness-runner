@@ -15,7 +15,7 @@ Build from source today (GitHub Releases with prebuilt binaries are the distribu
 
 ```bash
 git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
-cd go && go build -o bin ./cmd/...
+cd go && mkdir -p bin && go build -o bin ./cmd/...
 ```
 
 Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds check binaries beside itself first, then on PATH. The Go toolchain is the entire build requirement — no npm, no node.
@@ -85,7 +85,7 @@ The opinionated tool configs (eslint flat config, prettier, vitest thresholds, c
 
 ```bash
 cd go
-go build -o bin ./cmd/...   # compile runner + all check binaries
+mkdir -p bin && go build -o bin ./cmd/...   # compile runner + all check binaries
 go test ./...
 cd .. && go/bin/fitness     # run the suite on this repo
 ```
