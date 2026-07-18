@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { describe, it, expect, vi } from 'vitest';
@@ -103,6 +103,26 @@ describe('cspell top-level exports', () => {
       });
       expect(result.ok).toBe(true);
       expect(result.meta?.filesChecked).toBe(0);
+    });
+
+    it('run() CLI path skips staged paths under a non-glob ignorePaths directory', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'cspell-'));
+      writeFileSync(join(dir, 'cspell.json'), '{"ignorePaths": ["wordlists"]}');
+      mkdirSync(join(dir, 'wordlists'));
+      // cspell:ignore zzqx — deliberate gibberish proving the path never reaches cspell
+      writeFileSync(join(dir, 'wordlists', 'en.txt'), 'zzqx');
+      writeFileSync(join(dir, 's.md'), 'x');
+      const seen: string[] = [];
+      const result = await cspellCheck.run(dir, {
+        stagedFiles: ['wordlists/en.txt', 's.md'],
+        _execSync: (cmd) => {
+          seen.push(String(cmd));
+          return '';
+        },
+      });
+      expect(result.ok).toBe(true);
+      expect(seen.join(' ')).not.toContain('en.txt');
+      expect(seen.join(' ')).toContain('s.md');
     });
 
     it('run() CLI path skips staged .gitignore (ignorePaths basename)', async () => {

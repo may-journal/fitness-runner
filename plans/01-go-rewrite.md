@@ -52,8 +52,8 @@ relatedConfigurations: ['../package.json']
 
 3. Native souls of two tool checks
 
-   - [ ] cspell soul — no unknown words in markdown and staged files; bundled base dictionary plus the project cspell.json `words`/`ignorePaths`
-   - [ ] jscpd soul — duplicated lines above 1 percent fail; token-normalized clone detection with min-lines/min-tokens semantics and the ignore-marker escape hatch
+   - [x] cspell soul — no unknown words in markdown and staged files; bundled base dictionary plus the project cspell.json `words`/`ignorePaths`
+   - [x] jscpd soul — duplicated lines above 1 percent fail; token-normalized clone detection with min-lines/min-tokens semantics and the ignore-marker escape hatch
 
 4. The stubborn four — last, decided on arrival
 

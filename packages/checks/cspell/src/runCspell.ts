@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { join, basename } from 'node:path';
 import { readConfigFile, spellCheckFile } from 'cspell-lib';
@@ -28,9 +28,33 @@ const FILES_CHECKED_RE = /Files checked:\s*(\d+)/;
 /** Staged paths listed in cspell ignorePaths — skip when passed explicitly. */
 const CSPELL_STAGED_SKIP = new Set([GITIGNORE, PACKAGE_LOCK_JSON, TSCONFIG_JSON]);
 
-/** Drops staged paths that cspell.json ignorePaths would skip when passed explicitly. */
-function filterStagedForCspell(staged: string[]): string[] {
-  return staged.filter((p) => !CSPELL_STAGED_SKIP.has(basename(p)));
+/** Non-glob ignorePaths entries from the resolved cspell config; empty on any read error. */
+function readNonGlobIgnorePaths(root: string): string[] {
+  try {
+    const configPath = resolveFitnessConfigPath(root, CSPELL_JSON, getCspellPackageConfigDir());
+    const raw = JSON.parse(readFileSync(configPath, 'utf8')) as { ignorePaths?: string[] };
+    return (raw.ignorePaths ?? []).filter((e) => typeof e === 'string' && !e.includes('*'));
+  } catch {
+    return [];
+  }
+}
+
+/** True when a non-glob ignorePaths entry covers p: equal, directory prefix, or path segment. */
+function ignoreEntryCovers(p: string, entry: string): boolean {
+  return (
+    p === entry ||
+    p.startsWith(entry + '/') ||
+    p.includes('/' + entry + '/') ||
+    p.endsWith('/' + entry)
+  );
+}
+
+/** Drops staged paths that cspell.json ignorePaths would skip when passed explicitly — cspell applies ignorePaths only to discovered files, never to explicit arguments, so committing an ignored path (e.g. the go/internal/spell/dict wordlists) must not spell-check it. */
+function filterStagedForCspell(root: string, staged: string[]): string[] {
+  const entries = readNonGlobIgnorePaths(root);
+  return staged.filter(
+    (p) => !CSPELL_STAGED_SKIP.has(basename(p)) && !entries.some((e) => ignoreEntryCovers(p, e))
+  );
 }
 
 /** Runs npx cspell with cmdPart; returns exit code and combined stdout+stderr. */
@@ -83,7 +107,7 @@ function runCspellStaged(
   stagedFiles: string[],
   execSyncFn: ExecSyncFn
 ): { exitCode: number; output: string } {
-  const paths = filterStagedForCspell(stagedFiles)
+  const paths = filterStagedForCspell(root, stagedFiles)
     .filter((p) => existsSync(join(root, p)))
     .map((p) => join(root, p));
   return paths.length === 0 ? { exitCode: 0, output: '' } : runCspell(root, paths, execSyncFn);
@@ -157,7 +181,7 @@ async function checkOneFileWithLib(
 async function getPathsToCheck(root: string, staged: string[]): Promise<string[]> {
   const rel =
     staged.length > 0
-      ? filterStagedForCspell(staged).filter((p) => existsSync(join(root, p)))
+      ? filterStagedForCspell(root, staged).filter((p) => existsSync(join(root, p)))
       : await findFilesByExtension(root, MD_EXT);
   return rel.map((p) => join(root, p));
 }

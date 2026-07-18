@@ -11,7 +11,8 @@
     "**/*.test.mjs",
     "**/cspell.json",
     ".gitignore",
-    "tsconfig.json"
+    "tsconfig.json",
+    "go/internal/spell/dict"
   ],
   "useGitignore": true,
   "version": "0.2",
@@ -78,6 +79,11 @@
     "FEFF",
     "vitestconf",
     "ENOTFOUND",
-    "jiti"
+    "jiti",
+    "clonedetect",
+    "doublestar",
+    "minimatch",
+    "splitmix",
+    "wordlists"
   ]
 }
