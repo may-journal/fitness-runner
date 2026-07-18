@@ -3,9 +3,9 @@ import type { ExecSyncFn } from '@mayjournal/fitness-shared';
 import { CheckName, type Check, type RunContext } from '@mayjournal/fitness';
 import { enUS } from './enUS.js';
 
-/** Default flags: proven thresholds from consumer repos, scan-from-root so no per-repo path list is needed. Respects .gitignore by default (no flag needed). Ignores lockfiles/markdown/JSON and test/spec files — repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor. */
+/** Default flags: proven thresholds from consumer repos, scan-from-root so no per-repo path list is needed. Respects .gitignore by default (no flag needed). Ignores lockfiles/markdown/JSON and test/spec files (including Go's _test.go convention) — repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor. */
 const JSCPD_FLAGS =
-  '--min-lines 5 --min-tokens 50 --threshold 1 --ignore "**/*.md,**/*.json,**/*.lock,**/*.test.*,**/*.spec.*" --reporters console .';
+  '--min-lines 5 --min-tokens 50 --threshold 1 --ignore "**/*.md,**/*.json,**/*.lock,**/*.test.*,**/*.spec.*,**/*_test.go" --reporters console .';
 
 const ANSI_RE = /\x1b\[[0-9;]*m/g;
 const ERROR_LINE_RE = /^ERROR: .+$/m;

@@ -8,7 +8,7 @@ Runs [jscpd](https://github.com/kucherenko/jscpd) to detect duplicated code. Opt
 
 ## Behavior
 
-- Runs: `npx jscpd --min-lines 5 --min-tokens 50 --threshold 1 --reporters console .` from repo root (respects `.gitignore` by default).
+- Runs: `npx jscpd --min-lines 5 --min-tokens 50 --threshold 1 --ignore "**/*.md,**/*.json,**/*.lock,**/*.test.*,**/*.spec.*,**/*_test.go" --reporters console .` from repo root (respects `.gitignore` by default). Test and spec files — including Go's `_test.go` convention — are ignored: repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor.
 - Pass: Duplicated lines stay under 1% of the codebase (jscpd's own `--threshold`).
 - Fail: Over threshold — jscpd exits non-zero; the check reports jscpd's own `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)` line.
 - `jscpd` is bundled as a dependency of `@mayjournal/fitness-shared` — consumers do not install it separately.

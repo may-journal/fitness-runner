@@ -33,15 +33,25 @@ type Palette struct {
 	boldGreenOff            string
 }
 
-// NewPalette builds the palette: decoration colors unless NO_COLOR; status
-// colors only when stderr is a terminal or FORCE_COLOR is set.
+// ColorsEnabled reports the two color gates every fitness surface shares:
+// decoration (borders/header; off only under NO_COLOR, even when piped,
+// exactly like cli-table3) and chalk-style colors (a terminal on stderr or
+// FORCE_COLOR).
+func ColorsEnabled() (decoration, chalk bool) {
+	if os.Getenv("NO_COLOR") != "" {
+		return false, false
+	}
+	return true, os.Getenv("FORCE_COLOR") != "" || isTerminal(os.Stderr)
+}
+
+// NewPalette builds the palette from the shared color gates.
 func NewPalette() Palette {
 	var p Palette
-	if os.Getenv("NO_COLOR") != "" {
-		return p
+	decoration, chalk := ColorsEnabled()
+	if decoration {
+		p.gray, p.head, p.off = "\x1b[90m", "\x1b[31m", "\x1b[39m"
 	}
-	p.gray, p.head, p.off = "\x1b[90m", "\x1b[31m", "\x1b[39m"
-	if os.Getenv("FORCE_COLOR") != "" || isTerminal(os.Stderr) {
+	if chalk {
 		p.red, p.green = "\x1b[31m", "\x1b[32m"
 		p.rst = "\x1b[39m"
 		p.boldOn = "\x1b[1m"

@@ -7,6 +7,12 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.07.18.1140
+
+- Feat: land plan 01 section 1 — all thirteen pure-logic checks are now Go binaries. Twelve new checks ported in one parallel pass (`gitignore-why`, `changelog`, `changelog-updated`, `semantic-commit`, `commit-attribution`, `read-repo-first`, `markdown-filename-kebab-case` + `markdown-filename-camel-case` as two thin binaries over one shared `internal/mdfilename` package, `markdown-front-matter`, `markdown-no-bold-italic`, `no-eslint-disable`, `build-output-untracked`, `repeated-string-literals`), each with table-driven tests porting the meaningful TypeScript cases (~200 Go test cases total) and each proven side-by-side against its TypeScript twin on this repo — passing checks pass identically, failing checks (`commit-attribution`, the camelCase flavor, `markdown-front-matter` in single-check mode, `no-eslint-disable`) fail with byte-identical errors. The `changelog` check upgrades to real JSON parsing (encoding/json) for the invalid-JSON error paths; `semantic-commit` and `commit-attribution` declare the `--message` context-inline handshake; `repeated-string-literals` reads its allow list from `.fitnessrc.json`.
+- Chore: add `.fitnessrc.json` carrying the `repeated-string-literals` allow baseline for the Go runner during the config transition (the TypeScript suite keeps reading `.fitnessrc.js`; both allow lists stay in sync until the dogfood cutover).
+- Fix: the `jscpd` check now also ignores Go test files (`**/*_test.go`) — the existing test/spec exclusion rationale (repeated mock setup and fixtures read as false-positive duplication) predates the Go tree and only covered the `.test.*`/`.spec.*` naming convention. The two real production clones the Go ports introduced were extracted instead: a shared per-file scan loop (`walkfs.ScanFiles`) now backs `markdown-front-matter` and `no-eslint-disable`, and the color-gate logic moved to `render.ColorsEnabled` for both the results table and the `read-repo-first` banner.
+
 ### 2026.07.18.1113
 
 - Fix: the `prettier` check errored on staged Go files — Prettier has no parser for `.go` or `go.mod`, so the first commit carrying the new `go/` tree failed pre-commit. Staged paths under `go/` are now dropped from the staged-mode invocation (same treatment as `scripts/` and `githooks/`); the full-repo glob run is unaffected.

@@ -27,20 +27,20 @@ relatedConfigurations: ['../package.json']
 1. The easy thirteen — pure logic, one at a time
 
    - [x] node-version — .nvmrc agreement
-   - [ ] gitignore-why — every ignore pattern carries a why-comment
-   - [ ] changelog — heading format, version suffix, lockfile agreement
-   - [ ] changelog-updated — staged-diff word overlap and timestamp gates
-     - [ ] Preserve the diff-parsing quirks exactly ('+++ ' headers, '+' not '++', CHANGELOG.md root path only)
-   - [ ] semantic-commit — conventional `type(scope): subject`, scope required
-   - [ ] commit-attribution — AI-Tools/AI-Models trailers, merge/revert exempt
-     - [ ] Tri-state message resolution: absent flag falls back to `git log -1`, present-but-empty does not
-   - [ ] read-repo-first — banner plus enabled-check table through the shared renderer
-   - [ ] markdown-filename-kebab-case and markdown-filename-camel-case — one binary, flavor from `FITNESS_CHECK_NAME`
-   - [ ] markdown-front-matter — front matter required; `relatedConfigurations` entries resolve as paths or enabled check names
-   - [ ] markdown-no-bold-italic — emphasis ban with verbatim snippet quoting
-   - [ ] no-eslint-disable — directive scan over the source extensions
-   - [ ] build-output-untracked — dist ignored and untracked, no source imports reaching into dist
-   - [ ] repeated-string-literals — lexer scan, idiomatic allow set, config allow list
+   - [x] gitignore-why — every ignore pattern carries a why-comment
+   - [x] changelog — heading format, version suffix, lockfile agreement
+   - [x] changelog-updated — staged-diff word overlap and timestamp gates
+     - [x] Preserve the diff-parsing quirks exactly ('+++ ' headers, '+' not '++', CHANGELOG.md root path only)
+   - [x] semantic-commit — conventional `type(scope): subject`, scope required
+   - [x] commit-attribution — AI-Tools/AI-Models trailers, merge/revert exempt
+     - [x] Tri-state message resolution: absent flag falls back to `git log -1`, present-but-empty does not
+   - [x] read-repo-first — banner plus enabled-check table through the shared renderer
+   - [x] markdown-filename-kebab-case and markdown-filename-camel-case — two thin binaries over one shared `internal/mdfilename` package (sibling-binary resolution wants one binary per name)
+   - [x] markdown-front-matter — front matter required; `relatedConfigurations` entries resolve as paths or enabled check names
+   - [x] markdown-no-bold-italic — emphasis ban with verbatim snippet quoting
+   - [x] no-eslint-disable — directive scan over the source extensions
+   - [x] build-output-untracked — dist ignored and untracked, no source imports reaching into dist
+   - [x] repeated-string-literals — lexer scan, idiomatic allow set, config allow list
 
 2. Parsers and the network — still native
 

@@ -1,0 +1,5 @@
+{
+  "repeatedStringLiterals": {
+    "allow": ["dist", "eslint", "package.json"]
+  }
+}

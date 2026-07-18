@@ -41,6 +41,22 @@ func SkipDirs(root string) map[string]bool {
 	return set
 }
 
+// ScanFiles runs scan over every file under root matching exts and returns
+// the collected error messages plus the file count — the read-loop shared by
+// the file-scanning checks. The first unreadable file aborts with its error.
+func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) ([]string, int, error) {
+	files := FilesByExt(root, exts...)
+	var errs []string
+	for _, file := range files {
+		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+		if err != nil {
+			return nil, 0, err
+		}
+		errs = append(errs, scan(file, string(content))...)
+	}
+	return errs, len(files), nil
+}
+
 // FilesByExt returns the sorted slash-separated relative paths of files
 // under root whose name ends in any of exts (suffix match, not glob — ".md"
 // matches "x.custom.md" too). Directories in the skip set are pruned by

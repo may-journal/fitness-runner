@@ -67,6 +67,13 @@
     "walkfs",
     "mdx",
     "npmx",
-    "unparseable"
+    "unparseable",
+    "gpgsign",
+    "unsetenv",
+    "mdfilename",
+    "dedupe",
+    "pathspec",
+    "mydist",
+    "inlines"
   ]
 }
