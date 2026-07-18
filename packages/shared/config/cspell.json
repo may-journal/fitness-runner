@@ -57,6 +57,9 @@
     "tsx",
     "swiftlint",
     "jscpd",
-    "lockfiles"
+    "lockfiles",
+    "stdlib",
+    "dogfood",
+    "cutover"
   ]
 }

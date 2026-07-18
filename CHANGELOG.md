@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.07.18.1057
+
+- Docs: add `plans/01-go-rewrite.md` — the milestone plan for rebuilding the runner and every check in Go as zero-dependency static binaries: one binary per check plus a `fitness` runner binary, stdlib-only, exec protocol with JSON results, ported one check at a time with side-by-side parity against the TypeScript checks; dep-heavy checks (prettier, eslint, vitest-coverage-full, swiftlint) come last with each approach decided on arrival. Follows the may-journals plan template (numbered title, Goal, numbered checkbox sections, verification last).
+- Chore: bump `@typescript-eslint/eslint-plugin` + `@typescript-eslint/parser` 8.63.0 → 8.64.0, `eslint-plugin-jsdoc` 63.0.13 → 63.1.0, and `knip` 6.26.0 → 6.27.0 to latest to satisfy the `dependency-currency` check after upstream releases; full build/fitness/lint suite verified on the updated tree.
+
 ### 2026.07.10.2041
 
 - Feat: add the `repeated-string-literals` check — fails when the same string literal appears 3+ times across source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`; test/spec files excluded), reporting `"value" appears N times (file:line, …, +K more) — extract a shared constant`, most-repeated first. A small hand lexer skips line/block comments, regex literals, and template literals, and drops `import`/`require` module specifiers; idiomatic tokens where the literal is the clearest spelling (buffer encodings, `child_process` stdio modes, `typeof` results) are never flagged. Opt-in (bundled, not in `defaultChecks`). Closes #42 — the enum-candidate heuristic and per-repo allowlist are deferred to a fast-follow per that issue's own guidance.

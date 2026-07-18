@@ -1,0 +1,70 @@
+---
+relatedConfigurations: ['../package.json']
+---
+
+# 01 — Go rewrite: the whole suite as static binaries
+
+> Node, a build step, and a dependency tree just to run a check. Rebuild it in Go — one static binary per check plus a runner, zero dependencies, ported one check at a time.
+
+## Goal
+
+`fitness` runs the full suite on any repo — local dev, git hooks, any CI image — as self-contained static binaries: nothing to install beyond dropping them on PATH, no Node, no build step, instant startup. Every check keeps its soul: same rule, same pass/fail judgment, same error vocabulary as the TypeScript checks in [architecture/03-components.md](../architecture/03-components.md). Ports land one check at a time, each proven against the TS check on this repo before its box flips; the TypeScript packages stay untouched until the Go suite reaches parity. Dep-heavy checks (prettier, eslint, vitest-coverage-full, swiftlint) come last, each approach decided only when we get there.
+
+## Plan
+
+0. Scaffold: a runner and one working check
+
+   - [ ] `go/` module builds `fitness` plus a hello check binary; `fitness node-version` runs it end to end on this repo
+     - [ ] Stdlib only — no third-party Go imports anywhere in the module
+     - [ ] One binary per check (`fitness-check-<name>`), runner execs them: `--root <dir>`, context via `FITNESS_*` env (staged files, enabled checks, commit message), JSON result on stdout (`ok`, `errors`, `filesChecked`), human display on stderr
+     - [ ] `--describe` handshake reports name, timeout budget, and context-inline arg — no registry, no header parsing
+     - [ ] Runner owns timeouts: process-group kill on expiry so a hung check's whole child tree dies
+     - [ ] Parallel pool (CPU count), results rendered in dispatch order — same table, totals line, and exit-code contract as today
+     - [ ] Config is `.fitnessrc.json` (same keys: `checks`, `disabledChecks`, `skipTheseDirectories`, `repeatedStringLiterals.allow`); a lone `.fitnessrc.js`/`.ts` gets a one-line migration hint
+     - [ ] A local path in `checks` execs any executable speaking the protocol — shell scripts included
+   - [ ] Shared internals the checks build on: skip-dir file walker, git helpers, markdown front matter/table/fence parsing, results renderer
+
+1. The easy thirteen — pure logic, one at a time
+
+   - [ ] node-version — .nvmrc agreement
+   - [ ] gitignore-why — every ignore pattern carries a why-comment
+   - [ ] changelog — heading format, version suffix, lockfile agreement
+   - [ ] changelog-updated — staged-diff word overlap and timestamp gates
+     - [ ] Preserve the diff-parsing quirks exactly ('+++ ' headers, '+' not '++', CHANGELOG.md root path only)
+   - [ ] semantic-commit — conventional `type(scope): subject`, scope required
+   - [ ] commit-attribution — AI-Tools/AI-Models trailers, merge/revert exempt
+     - [ ] Tri-state message resolution: absent flag falls back to `git log -1`, present-but-empty does not
+   - [ ] read-repo-first — banner plus enabled-check table through the shared renderer
+   - [ ] markdown-filename-kebab-case and markdown-filename-camel-case — one binary, flavor from `FITNESS_CHECK_NAME`
+   - [ ] markdown-front-matter — front matter required; `relatedConfigurations` entries resolve as paths or enabled check names
+   - [ ] markdown-no-bold-italic — emphasis ban with verbatim snippet quoting
+   - [ ] no-eslint-disable — directive scan over the source extensions
+   - [ ] build-output-untracked — dist ignored and untracked, no source imports reaching into dist
+   - [ ] repeated-string-literals — lexer scan, idiomatic allow set, config allow list
+
+2. Parsers and the network — still native
+
+   - [ ] Mermaid parser in `internal/mermaid`: fences, the five callout patterns with position dedupe, GFM callout tables, legend-invisible pairing — pinned by ported tests from `mermaid.test.ts`
+   - [ ] mermaid-callouts, mermaid-callout-why, mermaid-diagram-prose, mermaid-legend, mermaid-level-bleed — five thin checks over the one parser
+   - [ ] vitest-coverage-exclude — scan vitest configs for disallowed coverage excludes
+   - [ ] dependency-currency — native registry client instead of shelling to `npm outdated`
+     - [ ] net/http against the configured registry (honor `.npmrc`); offline or garbage responses degrade to pass, exactly like today
+
+3. Native souls of two tool checks
+
+   - [ ] cspell soul — no unknown words in markdown and staged files; bundled base dictionary plus the project cspell.json `words`/`ignorePaths`
+   - [ ] jscpd soul — duplicated lines above 1 percent fail; token-normalized clone detection with min-lines/min-tokens semantics and the ignore-marker escape hatch
+
+4. The stubborn four — last, decided on arrival
+
+   - [ ] prettier — decide exec-the-binary vs native drift heuristics when we get here, then build it
+   - [ ] eslint — the enforced rule set is small (sort-keys, complexity, max-lines, jsdoc-require, perfectionist sorts); decide native subset vs exec when we get here
+   - [ ] vitest-coverage-full — decide exec vs reading coverage artifacts when we get here
+   - [ ] swiftlint — exec wrapper, but it waits with its external-binary cohort
+
+5. Lock it in
+
+   - [ ] Side-by-side harness diffs TS vs Go per check on this repo (`ok`, `errors`, `filesChecked`); a check's box above only flips when it agrees
+   - [ ] Every check ports the meaningful cases from its TS tests; `go test ./...` green in CI alongside the existing suite
+   - [ ] Dogfood cutover: `.fitnessrc.json` switches this repo to the Go runner once every enabled check has parity
+   - [ ] Decide distribution (GitHub Releases install script vs npm-shipped platform binaries) and capture it in the README before the cutover ships
