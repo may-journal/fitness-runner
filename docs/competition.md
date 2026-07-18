@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['.fitnessrc.json']
+relatedConfigurations: ['../.fitnessrc.json']
 ---
 
 # Competition
@@ -62,4 +62,4 @@ Legend: Yes · Partial · No · — (not applicable)
 
 ## fitness-runner differentiation
 
-One runner, one ordered check list, same runs for `npm run fitness`, git hooks, and CI. Check packages with READMEs as source of truth; optional `.fitnessrc`; rules/skills point at checks rather than replacing them. Targets quality checks → fitness checks (one utility, every surface) in [wardley.md](./wardley.md).
+One runner, one ordered check list, same runs for `fitness`, git hooks, and CI. Check packages with READMEs as source of truth; optional `.fitnessrc`; rules/skills point at checks rather than replacing them. Targets quality checks → fitness checks (one utility, every surface) in [wardley.md](./wardley.md).

@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../../.fitnessrc.json']
+relatedConfigurations: ['../../../.fitnessrc.json']
 ---
 
 # Plan: Fitness check for dependencies vs devDependencies

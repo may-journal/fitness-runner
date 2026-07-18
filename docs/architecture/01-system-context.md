@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../.fitnessrc.json']
+relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
 # System Context

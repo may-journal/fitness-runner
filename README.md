@@ -7,7 +7,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 Zero-dependency Go fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
 
-Every check is its own static binary (`fitness-check-<name>`) orchestrated by a `fitness` runner binary: no runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 21-check suite this repo gates its own commits on runs in under two seconds. The original TypeScript implementation has been retired; its checks were ported one at a time with side-by-side parity before removal (see [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md)).
+Every check is its own static binary (`fitness-check-<name>`) orchestrated by a `fitness` runner binary: no runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 21-check suite this repo gates its own commits on runs in under two seconds. The original TypeScript implementation has been retired; its checks were ported one at a time with side-by-side parity before removal (see [docs/plans/archive/01-go-rewrite.md](./docs/plans/archive/01-go-rewrite.md)).
 
 ## Install
 
@@ -98,4 +98,4 @@ git config core.hooksPath githooks
 
 The spell-check dictionaries under [go/internal/spell/dict](go/internal/spell/dict) are frozen, committed data (provenance in each file header); a Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
 
-See [architecture-index.md](./architecture-index.md) for the C4 model ([architecture/](architecture/)).
+See [docs/architecture-index.md](./docs/architecture-index.md) for the C4 model ([docs/architecture/](docs/architecture/)).

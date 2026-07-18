@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../../.fitnessrc.json']
+relatedConfigurations: ['../../../.fitnessrc.json']
 ---
 
 # Plan: Repeating patterns in checks and abstraction options

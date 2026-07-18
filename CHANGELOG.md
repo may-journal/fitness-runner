@@ -7,6 +7,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1742
+
+- Chore: consolidate all documentation under `docs/` — `architecture/`, `plans/` (with its archive), `architecture-index.md`, `wardley.md`, and `competition.md` move together, so every doc-to-doc relative link survives unchanged; front matter `relatedConfigurations` paths deepen one level in 17 files, README links cross the new boundary, and the `mermaid-level-bleed` check keeps matching level files at `docs/architecture/` thanks to its unanchored path pattern. Also refreshed a stale npm-era phrase in `competition.md`.
+
 ### 2026.07.18.1721
 
 - Fix: `go build -o bin` fails when the gitignored `bin/` directory does not exist yet, breaking fresh clones, the pre-commit hook, and CI alike — every build command (hooks, CI, README, architecture docs) now runs `mkdir -p bin` first. Caught by the clean-clone simulation: clone, build, and the full suite now verify green from an empty checkout.

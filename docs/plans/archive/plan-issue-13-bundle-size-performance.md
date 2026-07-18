@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../../.fitnessrc.json']
+relatedConfigurations: ['../../../.fitnessrc.json']
 issue: https://github.com/may-journal/fitness-runner/issues/13
 ---
 
