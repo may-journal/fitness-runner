@@ -30,6 +30,8 @@
 // clone pair's lines once.
 package clonedetect
 
+import "github.com/may-journal/fitness-runner/go/internal/par"
+
 // File is one lexed source file ready for detection.
 type File struct {
 	Path   string
@@ -62,19 +64,19 @@ func (s Stats) Percentage() float64 {
 // Detect finds duplicated regions across files (same-file and cross-file
 // clones both count) and returns the line accounting. Files are processed
 // in slice order; the first occurrence of any window is the "original"
-// and never contributes duplicated lines.
+// and never contributes duplicated lines. Window hashing is pure per-file
+// work (tokens hash directly, no shared intern table), so it fans out on
+// the par pool; the cheap counting and marking passes below run serially
+// over the in-order results, keeping the outcome deterministic.
 func Detect(files []File, opt Options) Stats {
 	k := opt.MinTokens
+	hashes := par.Map(len(files), 0, func(i int) []uint64 {
+		return windowHashes(files[i].Tokens, k)
+	})
 	var stats Stats
-	ids := make(map[string]uint64)
-	hashes := make([][]uint64, len(files))
 	counts := make(map[uint64]int)
 	for fi, f := range files {
 		stats.TotalLines += f.Lines
-		if len(f.Tokens) < k {
-			continue
-		}
-		hashes[fi] = windowHashes(f.Tokens, k, ids)
 		for _, h := range hashes[fi] {
 			counts[h]++
 		}
@@ -106,13 +108,29 @@ func dupWindows(hs []uint64, counts map[uint64]int, seen map[uint64]bool) []int 
 	return dup
 }
 
-// hashBase is the polynomial rolling-hash base (the FNV-64 prime).
+// hashBase is both the polynomial rolling-hash base and the FNV-64 prime.
 const hashBase = 1099511628211
 
-// windowHashes interns each token value to a mixed 64-bit id and returns
-// the rolling polynomial hash of every k-token window.
-func windowHashes(tokens []Token, k int, ids map[string]uint64) []uint64 {
-	vals := internTokens(tokens, ids)
+// fnvOffset is the FNV-64 offset basis.
+const fnvOffset uint64 = 14695981039346656037
+
+// windowHashes hashes each token value independently and returns the
+// rolling polynomial hash of every k-token window, or nil when the file
+// is shorter than one window. It touches no shared state, so files hash
+// in parallel.
+//
+// Only hash equality matters to detection: equal token sequences always
+// produce equal window hashes, exactly as under the old intern table. A
+// spurious match now additionally requires two distinct token values
+// sharing one FNV-1a 64 value (previously intern ids were distinct by
+// construction), but that is birthday-bounded — even a million distinct
+// token values collide with probability under 10^-7 — so, like the
+// polynomial hash itself, token collisions stay effectively impossible.
+func windowHashes(tokens []Token, k int) []uint64 {
+	if len(tokens) < k {
+		return nil
+	}
+	vals := tokenHashes(tokens)
 	pow := uint64(1)
 	for i := 0; i < k-1; i++ {
 		pow *= hashBase
@@ -130,29 +148,25 @@ func windowHashes(tokens []Token, k int, ids map[string]uint64) []uint64 {
 	return out
 }
 
-// internTokens maps each token value through ids — assigning a fresh
-// mixed 64-bit id to values not seen before — and returns the id sequence.
-// ids persists across files so equal values intern identically everywhere.
-func internTokens(tokens []Token, ids map[string]uint64) []uint64 {
+// tokenHashes maps each token to the FNV-1a 64 hash of its value; equal
+// values hash equal everywhere, so no cross-file intern table is needed.
+func tokenHashes(tokens []Token) []uint64 {
 	vals := make([]uint64, len(tokens))
 	for i, t := range tokens {
-		id, ok := ids[t.Val]
-		if !ok {
-			id = mix(uint64(len(ids)) + 1)
-			ids[t.Val] = id
-		}
-		vals[i] = id
+		vals[i] = fnv1a(t.Val)
 	}
 	return vals
 }
 
-// mix is splitmix64: it spreads sequential intern ids across the 64-bit
-// space so polynomial collisions are vanishingly unlikely.
-func mix(x uint64) uint64 {
-	x += 0x9e3779b97f4a7c15
-	x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9
-	x = (x ^ (x >> 27)) * 0x94d049bb133111eb
-	return x ^ (x >> 31)
+// fnv1a is FNV-1a 64 over s, inlined rather than via hash/fnv to avoid a
+// per-token allocation and interface call on this hot path.
+func fnv1a(s string) uint64 {
+	h := fnvOffset
+	for i := 0; i < len(s); i++ {
+		h ^= uint64(s[i])
+		h *= hashBase
+	}
+	return h
 }
 
 // dupLineCount merges contiguous duplicated windows (ascending positions)

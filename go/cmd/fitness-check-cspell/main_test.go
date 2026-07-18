@@ -207,7 +207,7 @@ func TestConfigResolution(t *testing.T) {
 		// "mayjournal" is in the embedded shared cspell.json words list but
 		// not in the base dictionaries — assert the discrimination first, so
 		// a pass below can only come from the materialized config.
-		if base := spell.NewChecker(spell.EmbeddedWords()); len(base.CheckText("mayjournal")) != 1 {
+		if base := spell.NewEmbeddedChecker(); len(base.CheckText("mayjournal")) != 1 {
 			t.Fatal("mayjournal must be unknown to the base dictionaries for this test to prove anything")
 		}
 		root := t.TempDir()

@@ -33,9 +33,18 @@ type Issue struct {
 }
 
 // Checker holds the dictionary a text is checked against. Words are stored
-// lowercased with curly apostrophes normalized to ASCII.
+// lowercased with curly apostrophes normalized to ASCII; base, when set, is
+// an extra dictionary consulted in place (the embedded wordlists in
+// production — see NewEmbeddedChecker).
 type Checker struct {
 	words map[string]struct{}
+	base  baseDict
+}
+
+// baseDict is the lookup side of a base dictionary: Lookup receives
+// already-folded words and reports membership.
+type baseDict interface {
+	Lookup(word string) bool
 }
 
 // NewChecker builds a Checker over the union of the given word sets.
@@ -124,14 +133,23 @@ func (c *Checker) subWordExempt(word string, docWords map[string]struct{}) bool 
 func (c *Checker) known(word string, docWords map[string]struct{}) bool {
 	folded := foldWord(word)
 	for _, w := range []string{folded, strings.TrimSuffix(folded, "'s"), strings.TrimSuffix(folded, "'")} {
-		if _, ok := c.words[w]; ok {
-			return true
-		}
-		if _, ok := docWords[w]; ok {
+		if c.hasWord(w, docWords) {
 			return true
 		}
 	}
 	return false
+}
+
+// hasWord reports whether one folded word form is in any dictionary: the
+// checker's own words, the document's, or the base dictionary.
+func (c *Checker) hasWord(w string, docWords map[string]struct{}) bool {
+	if _, ok := c.words[w]; ok {
+		return true
+	}
+	if _, ok := docWords[w]; ok {
+		return true
+	}
+	return c.base != nil && c.base.Lookup(w)
 }
 
 // knownCompound reports whether an extended token, trimmed of surrounding

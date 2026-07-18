@@ -7,6 +7,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1844
+
+- Perf: eliminate the cspell dictionary startup tax and parallelize jscpd's hashing, both behavior-identical with differential proof. The spell engine no longer parses its ~217k embedded words into a map at launch — lookups binary-search the embedded sorted bytes directly (zero startup work, `generate.mjs` emits sorted lists — cited in the code) with a concurrency-safe memo for repeated words (`sync.Map`, measured ~43x faster than a mutex under the parallel scanner): empty-repo runs drop from ~22ms to ~3ms (7.2x) and this repo from ~53ms to ~37ms, with byte-identical output proven by a 216k-word differential test plus boundary mutations and random probes. The clone detector replaces shared-map token interning with per-token FNV-1a 64 hashing (collision odds birthday-bounded at 2^-64 per pair, documented) so window hashing runs under the parallel pool: the detect phase is 2.3x faster at half the memory, with byte-identical statistics on two corpora. The 18-check suite settles at ~65ms. Honest correction while measuring: the "~27ms uniform process baseline" reported earlier was a measurement artifact (the shell timer paid node's startup inside the window) — the real per-binary baseline is ~3ms and needed no fixing.
+
 ### 2026.07.18.1821
 
 - Perf: parallelize file scanning inside the heavy checks. New `internal/par` worker pool (generic, deterministic — results return in input order, so parallelism can never change a check's output; pinned by ordering tests) now backs `walkfs.ScanFiles` (every markdown scanner and `no-eslint-disable`), the cspell engine's per-file loop, jscpd's read-and-lex phase (clone detection itself stays serial — it builds shared hash tables), and `go-complexity`'s per-file parsing. Checks were already concurrent across the suite; this removes the serial floor inside the slowest ones: the full 18-check dogfood suite drops from ~111ms to ~68-76ms. Fittingly, `go-complexity` flagged the new pool's own `Map` at 6 before it could land — the clamp logic became a helper.

@@ -54,7 +54,7 @@ func main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	cfg := loadConfig(root)
-	checker := spell.NewChecker(spell.EmbeddedWords())
+	checker := spell.NewEmbeddedChecker()
 	checker.AddWords(cfg.Words)
 	checker.AddWords(cfg.IgnoreWords)
 	files, scanned := stagedPaths(root)
