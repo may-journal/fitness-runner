@@ -74,6 +74,10 @@
     "dedupe",
     "pathspec",
     "mydist",
-    "inlines"
+    "inlines",
+    "FEFF",
+    "vitestconf",
+    "ENOTFOUND",
+    "jiti"
   ]
 }

@@ -44,11 +44,11 @@ relatedConfigurations: ['../package.json']
 
 2. Parsers and the network — still native
 
-   - [ ] Mermaid parser in `internal/mermaid`: fences, the five callout patterns with position dedupe, GFM callout tables, legend-invisible pairing — pinned by ported tests from `mermaid.test.ts`
-   - [ ] mermaid-callouts, mermaid-callout-why, mermaid-diagram-prose, mermaid-legend, mermaid-level-bleed — five thin checks over the one parser
-   - [ ] vitest-coverage-exclude — scan vitest configs for disallowed coverage excludes
-   - [ ] dependency-currency — native registry client instead of shelling to `npm outdated`
-     - [ ] net/http against the configured registry (honor `.npmrc`); offline or garbage responses degrade to pass, exactly like today
+   - [x] Mermaid parser in `internal/mermaid`: fences, the five callout patterns with position dedupe, GFM callout tables, legend-invisible pairing — pinned by ported tests from `mermaid.test.ts`
+   - [x] mermaid-callouts, mermaid-callout-why, mermaid-diagram-prose, mermaid-legend, mermaid-level-bleed — five thin checks over the one parser
+   - [x] vitest-coverage-exclude — scan vitest configs for disallowed coverage excludes
+   - [x] dependency-currency — native registry client instead of shelling to `npm outdated`
+     - [x] net/http against the configured registry (honor `.npmrc`); offline or garbage responses degrade to pass, exactly like today
 
 3. Native souls of two tool checks
 
