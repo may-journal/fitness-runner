@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # swiftlint
 
-Runs [SwiftLint](https://github.com/realm/SwiftLint) via `swiftlint lint --strict`. Opt-in — not part of `defaultChecks`. Add `'swiftlint'` to `.fitnessrc` `checks` to enable it.
+Runs [SwiftLint](https://github.com/realm/SwiftLint) via `swiftlint lint --strict`. Opt-in — not in the runner's default list. Add `"swiftlint"` to the `checks` array in `.fitnessrc.json` to enable it.
 
 ## Behavior
 
@@ -12,8 +12,8 @@ Runs [SwiftLint](https://github.com/realm/SwiftLint) via `swiftlint lint --stric
 - Pass: No violations.
 - Fail: Any violation — reported as `file:line[:col] - reason (rule_id)`.
 - No Swift files in the repo: passes clean (`filesChecked: 0`) instead of erroring — safe to enable in a mostly-JS/TS repo.
-- SwiftLint is not an npm package — it's a system binary (`brew install swiftlint`). Unlike every other check, it is not bundled as a dependency; a missing binary fails clearly with an install hint rather than a stack trace.
+- SwiftLint is not an npm package — it's a system binary (`brew install swiftlint`), resolved from PATH at runtime (never `node_modules`); a missing binary fails clearly with a one-line install hint rather than a stack trace.
 
 ## Config
 
-Uses whatever `.swiftlint.yml` is present in the repo root — same "consumer config wins" convention as the other checks, but there's no fitness-shared fallback shipped for this one yet.
+Uses whatever `.swiftlint.yml` is present in the repo root — same "consumer config wins" convention as the other checks, but no shared-config fallback ships for this one yet.

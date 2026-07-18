@@ -7,10 +7,10 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): diagram labels must not duplicate callout table prose.
 
-Opt-in — not part of `defaultChecks`. Enable it via `.fitnessrc`:
+Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
 
-```ts
-export default { checks: ['mermaid-diagram-prose'] };
+```json
+{ "checks": ["mermaid-diagram-prose"] }
 ```
 
 ## Behavior

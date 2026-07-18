@@ -54,7 +54,7 @@ Legend: Yes · Partial · No · — (not applicable)
 - agent-guardrails — Explicitly ranks prompt rules ~60–70% reliable vs hooks ~100%; ships scripts and pre-commit, not a check plugin model.
 - AgentGuard — CI/pre-commit focused on AI-written code smells and secrets; not a general repo quality bar or rules bridge.
 - AI-RULES — Structured rules + evidence + audit prompts; AST/semantic rules still AI-guided, not deterministic gates.
-- ai-dev-os — Closest philosophy (few rules in context, verify post-generation); separate framework and verify command, not dynamic npm check packages.
+- ai-dev-os — Closest philosophy (few rules in context, verify post-generation); separate framework and verify command, not a static check-binary catalog.
 - cursor-handbook — Large rules/skills/commands library; `/lint-check` etc. are agent commands, not the same runs as CI unless you wire them yourself.
 - Claude Code hooks — Deterministic shell gates; you author and maintain; no bundle, no `.fitnessrc`, Claude-only.
 - Pre-commit / CI — Commodity pipeline on the Wardley map; mature, disconnected from `.cursor/rules` unless duplicated by hand.

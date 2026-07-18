@@ -7,10 +7,10 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): stacked C4 levels must not restate the parent.
 
-Opt-in — not part of `defaultChecks`. Enable it via `.fitnessrc`:
+Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
 
-```ts
-export default { checks: ['mermaid-level-bleed'] };
+```json
+{ "checks": ["mermaid-level-bleed"] }
 ```
 
 ## Behavior

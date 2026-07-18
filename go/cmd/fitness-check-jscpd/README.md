@@ -4,14 +4,14 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # jscpd
 
-Runs [jscpd](https://github.com/kucherenko/jscpd) to detect duplicated code. Opt-in — not part of `defaultChecks`. Add `'jscpd'` to `.fitnessrc` `checks` to enable it.
+Detects duplicated code with a native Go clone-detection engine implementing [jscpd](https://github.com/kucherenko/jscpd) semantics. Opt-in — not part of the runner's default list. Add `"jscpd"` to the `checks` array in `.fitnessrc.json` to enable it.
 
 ## Behavior
 
-- Runs: `npx jscpd --min-lines 5 --min-tokens 50 --threshold 1 --ignore "**/*.md,**/*.json,**/*.lock,**/*.test.*,**/*.spec.*,**/*_test.go" --reporters console .` from repo root (respects `.gitignore` by default). Test and spec files — including Go's `_test.go` convention — are ignored: repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor.
-- Pass: Duplicated lines stay under 1% of the codebase (jscpd's own `--threshold`).
-- Fail: Over threshold — jscpd exits non-zero; the check reports jscpd's own `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)` line.
-- `jscpd` is bundled as a dependency of `@mayjournal/fitness-shared` — consumers do not install it separately.
+- Scans every file under root with min-lines 5 and min-tokens 50, ignoring `**/*.md`, `**/*.json`, `**/*.lock`, `**/*.test.*`, `**/*.spec.*`, and `**/*_test.go`, plus gitignored and binary files. Test and spec files — including Go's `_test.go` convention — are ignored: repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor.
+- Pass: Duplicated lines stay under 1% of the codebase (jscpd's threshold semantics).
+- Fail: Over threshold — the check reports `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)`.
+- The engine is built into the check binary — no external jscpd tool to install.
 
 ## Escape hatch
 

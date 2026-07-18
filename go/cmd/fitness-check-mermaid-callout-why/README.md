@@ -7,10 +7,10 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): callout tables must include a Why column.
 
-Opt-in — not part of `defaultChecks`. Enable it via `.fitnessrc`:
+Opt-in — not part of the runner's default list. Enable it via `.fitnessrc.json`:
 
-```ts
-export default { checks: ['mermaid-callout-why'] };
+```json
+{ "checks": ["mermaid-callout-why"] }
 ```
 
 ## Behavior

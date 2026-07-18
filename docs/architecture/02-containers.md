@@ -57,7 +57,7 @@ Numbers on nodes and arrows match the callout table.
 | 2   | Same agent actor as system context.                                                              | Agents never link checks — they invoke the CLI.             |
 | 3   | `fitness` — argv, spec resolution, describe handshake, parallel pool, results table.             | Single orchestration surface, one static binary.            |
 | 4   | One static binary per check name, found beside the runner then on PATH.                          | Plugin model at the artifact level; no in-process registry. |
-| 5   | `@mayjournal/fitness-shared` — eslint/prettier/vitest/cspell configs consumed as data.           | Opinionated defaults; consumer local config wins.           |
+| 5   | Tool configs embedded in the binaries, materialized to a cache dir on demand.                    | Opinionated defaults; consumer local config wins.           |
 | 6   | Optional `.fitnessrc.json` — `checks` (names and/or paths), `disabledChecks`, per-check options. | Override order and subset; paths opt in explicitly.         |
 | 7   | Consumer-authored executables (any language) speaking the JSON protocol.                         | Repo-specific rules without publishing anything.            |
 | 8   | Files checks lint, format, spell-check, or scan.                                                 | Staged paths from git when available.                       |

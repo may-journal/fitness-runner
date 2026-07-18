@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # build-output-untracked
 
-Keeps compiled build output out of Git and out of source imports. Opt-in — not part of `defaultChecks`. Add `'build-output-untracked'` to `.fitnessrc` `checks` to enable it.
+Keeps compiled build output out of Git and out of source imports. Opt-in — not in the runner's default list. Add `"build-output-untracked"` to the `checks` array in `.fitnessrc.json` to enable it.
 
 ## Behavior
 
@@ -16,6 +16,5 @@ Keeps compiled build output out of Git and out of source imports. Opt-in — not
 
 ## Notes
 
-- Git commands run from the repo root via the shared `execSyncResult` helper (respects an injected exec for tests).
+- Git commands run from the repo root; only their stdout is parsed, so a failing git command contributes no phantom tracked files.
 - `filesChecked` counts the scanned source files plus one for the dist git checks.
-- Opt-in and bundled in `@mayjournal/fitness-checks/checks/*`, but never runs by default.

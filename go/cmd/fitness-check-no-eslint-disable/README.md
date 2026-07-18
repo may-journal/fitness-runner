@@ -4,13 +4,14 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # no-eslint-disable
 
-Fails when any source file contains an ESLint disable directive, keeping lint hygiene on the fix-the-rule path instead of accumulating suppressions. Opt-in — not part of `defaultChecks`.
+Fails when any source file contains an ESLint disable directive, keeping lint hygiene on the fix-the-rule path instead of accumulating suppressions. Opt-in — not in the runner's default list.
 
 ## Enable
 
-```ts
-// .fitnessrc.ts
-export default { checks: ['no-eslint-disable'] };
+Add it to the `checks` list in `.fitnessrc.json`:
+
+```json
+{ "checks": ["no-eslint-disable"] }
 ```
 
 ## What passes
@@ -58,7 +59,7 @@ Reword the rare case rather than suppressing it. Scanned extensions are `.ts`, `
 
 ## Behavior
 
-- Discovers each extension via `findFilesByExtension`, combining and de-duplicating the results; standard skip dirs (`node_modules`, `dist`, `coverage`, `.git`, and the other runner skip dirs) are excluded.
+- Walks the repo for files with each extension, combining and de-duplicating the results; standard skip dirs (`node_modules`, `dist`, `coverage`, `.git`, and the other runner skip dirs) are excluded.
 - Matches `eslint-disable(-next-line|-line)?` — file-level `eslint-disable`, block `eslint-disable ... eslint-enable`, `eslint-disable-line`, and `eslint-disable-next-line`.
 - Pass: no scanned file contains a directive.
 - Fail: `path/to/file.ts:42: <directive>` per hit.

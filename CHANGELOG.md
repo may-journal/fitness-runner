@@ -7,6 +7,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1749
+
+- Docs: bring every document in line with the Go-only, npm-free reality. All 27 check READMEs correct their era: `.fitnessrc.js`/`.ts` snippets become `.fitnessrc.json`, `npx fitness` becomes `fitness`, "bundled as a dependency" claims become the peer-tool exec or native-engine truth, TypeScript internals (defaultChecks exports, contextInline registration, `execSyncResult`, source-file pointers) become their Go equivalents, config-fallback descriptions state the three-step resolution (repo-local, installed `@mayjournal/fitness-shared`, embedded copy materialized on demand), and dead `.cursor/rules` pointers are dropped — rule documentation, error formats, and examples preserved byte-identical throughout. The architecture docs drop the last stale claims (the npm config package is embedded now; `npm run fitness` no longer exists), `competition.md` contrasts against the static check-binary catalog, and `architecture-index.md` leads with the two completed milestone plans. The ADR is deliberately untouched — it is a dated decision record.
+
 ### 2026.07.18.1742
 
 - Chore: consolidate all documentation under `docs/` — `architecture/`, `plans/` (with its archive), `architecture-index.md`, `wardley.md`, and `competition.md` move together, so every doc-to-doc relative link survives unchanged; front matter `relatedConfigurations` paths deepen one level in 17 files, README links cross the new boundary, and the `mermaid-level-bleed` check keeps matching level files at `docs/architecture/` thanks to its unanchored path pattern. Also refreshed a stale npm-era phrase in `competition.md`.

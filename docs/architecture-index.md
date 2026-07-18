@@ -15,4 +15,4 @@ C4 model for fitness-runner. Read [architecture/](architecture/) in order — sy
 
 Strategic maps: [wardley.md](./wardley.md) · [competition.md](./competition.md)
 
-Implementation notes: [plans/archive/plan-split-runner-check-packages.md](./plans/archive/plan-split-runner-check-packages.md).
+Implementation history: [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md) (the Go rewrite) and [plans/archive/02-npm-free.md](./plans/archive/02-npm-free.md) (removing the npm toolchain); earlier TypeScript-era plans remain in [plans/archive/](./plans/archive/).
