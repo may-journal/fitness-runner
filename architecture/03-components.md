@@ -10,42 +10,42 @@ C4Component
 
     Person(developer, "1 Developer")
 
-    System_Boundary(cli, "Runner CLI") {
+    System_Boundary(cli, "Runner binary (go/cmd/fitness)") {
         Container_Boundary(entry, "Entry") {
-            Component(main, "2 CLI entry", "Node")
+            Component(main, "2 CLI entry", "Go")
         }
         Container_Boundary(runner, "Run loop") {
-            Component(resolve, "3 Check resolver", "run-resolve")
-            Component(loader, "4 Check loader", "load-check")
-            Component(execute, "5 Check executor", "run-execute")
-            Component(output, "6 Results output", "run-output")
+            Component(config, "3 Config loader", ".fitnessrc.json")
+            Component(resolve, "4 Spec resolver", "name/path specs")
+            Component(execute, "5 Execution pool", "goroutines + group kill")
+            Component(output, "6 Results renderer", "internal/render")
         }
     }
 
-    System_Boundary(checks, "Check package") {
-        Component(check, "7 Check module", "default export")
+    System_Boundary(checks, "Check binaries") {
+        Component(check, "7 Check binary", "fitness-check-<name>")
     }
 
-    System_Boundary(shared, "Shared") {
-        Component(config, "8 Config loader", "loadConfig")
+    System_Boundary(shared, "Shared internals") {
+        Component(kit, "8 checkkit protocol", "go/internal")
     }
 
-    System_Ext(localCheck, "21 Local check module")
-    System_Ext(bundle, "9 defaultChecks")
+    System_Ext(localCheck, "21 Local check executable")
+    System_Ext(tools, "9 Peer tools", "prettier, eslint, vitest, swiftlint")
     System_Ext(git, "10 git")
 
     Rel(developer, main, "11")
-    Rel(main, resolve, "12")
-    Rel(resolve, loader, "13")
-    Rel(resolve, config, "14")
-    Rel(loader, bundle, "15")
-    Rel(loader, check, "16")
-    Rel(loader, localCheck, "22")
-    Rel(resolve, git, "17")
+    Rel(main, config, "12")
+    Rel(main, resolve, "13")
+    Rel(resolve, check, "14")
+    Rel(resolve, localCheck, "22")
+    Rel(main, git, "17")
     Rel(main, execute, "18")
     Rel(execute, check, "19")
     Rel(execute, localCheck, "23")
     Rel(main, output, "20")
+    Rel(check, kit, "15")
+    Rel(check, tools, "16")
 ```
 
 ```mermaid
@@ -63,59 +63,51 @@ C4Component
 
 Numbers on nodes and arrows match the callout table.
 
-| #   | Description                                                                                                           | Why                                                       |
-| --- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| 1   | Developer or agent invokes `fitness`.                                                                                 | Same entry as system context.                             |
-| 2   | `packages/runner/src/index.ts` — calls `run()` when main module.                                                      | Thin entry; logic lives in runner modules.                |
-| 3   | `getChecks` — argv parsing, single-check mode, context assembly.                                                      | One place for spec resolution (name, path, full list).    |
-| 4   | `resolveCheckNames`, `resolveCheckSpecs`, `loadCheck`/`tryLoadCheck`, `loadCheckFromPath`/`loadCheckFromPathOrThrow`. | Names → npm packages; paths → consumer modules.           |
-| 5   | `runOneCheck` — worker thread or in-process with timeout.                                                             | Isolates slow checks; path-loaded checks stay in-process. |
-| 6   | Results table, totals, chalk formatting, exit code.                                                                   | User-visible pass/fail summary.                           |
-| 7   | Each check's `Check` default export — `name`, `run()`.                                                                | Contract every package must satisfy.                      |
-| 8   | Reads `.fitnessrc`; `checks` accepts names and/or relative paths.                                                     | Shared between resolver and loader.                       |
-| 9   | `@mayjournal/fitness-checks/defaultChecks` when config has no `checks`.                                               | Ordered default list.                                     |
-| 10  | `git diff --cached --name-only` for staged file context.                                                              | Pre-commit and partial runs.                              |
-| 11  | User-facing invocation.                                                                                               | Sole human entry point; all else is internal wiring.      |
-| 12  | `run()` delegates to resolver first.                                                                                  | Resolve before execute.                                   |
-| 13  | Resolver asks loader for check modules by spec (name or path).                                                        | Separation of argv/config from import mechanics.          |
-| 14  | Resolver loads fitness config for the check list.                                                                     | `.fitnessrc` drives order and subset.                     |
-| 15  | Loader imports bundle subpath when needed.                                                                            | Default name list without hardcoding in runner.           |
-| 16  | Loader dynamic-imports the `@mayjournal/fitness-checks/checks/{name}` subpath.                                        | Throws if missing or `default.name` mismatch.             |
-| 17  | Resolver builds `stagedFiles` in `RunContext`.                                                                        | Checks receive consistent context.                        |
-| 18  | Run loop calls executor per check.                                                                                    | Sequential run with aggregated results.                   |
-| 19  | Executor calls `check.run(root, context)` for npm checks.                                                             | Check owns tool invocation.                               |
-| 20  | Run loop prints table after all checks finish.                                                                        | Single summary per invocation.                            |
-| 21  | Consumer module default-exporting `{ name, run }` — same as npm checks.                                               | Repo-specific checks without a published package.         |
-| 22  | Loader resolves path specs relative to project root; marks path-loaded.                                               | Config and CLI share one code path.                       |
-| 23  | Executor runs path-loaded checks in-process, not via worker.                                                          | Local modules may not be worker-safe.                     |
+| #   | Description                                                                                             | Why                                                         |
+| --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
+| 2   | `go/cmd/fitness/main.go` — argv, resolve, execute, render in one static binary.                         | No build step, no interpreter startup.                      |
+| 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
+| 4   | Ordered check list: config `checks` else the embedded default list; disabled names removed; deduped.    | One place for spec resolution (name, path, full list).      |
+| 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
+| 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass/fail summary.                             |
+| 7   | One static binary per check name, discovered beside the runner then on PATH.                            | Plugin model at the artifact level; no registry.            |
+| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
+| 9   | Tool-wrapper checks exec the real peer tool from `node_modules/.bin` (walking up) then PATH, never npx. | Orchestration, not reimplementation.                        |
+| 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
+| 11  | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
+| 12  | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
+| 13  | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
+| 14  | Resolver maps a name to the `fitness-check-<name>` binary and collects its `--describe` metadata.       | Timeout and context-inline metadata without header parsing. |
+| 15  | Check binaries build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
+| 16  | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                |
+| 17  | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          |
+| 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
+| 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        |
+| 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
+| 21  | Consumer executable speaking the same protocol — a shell script works.                                  | Repo-specific checks without publishing anything.           |
+| 22  | Resolver takes path specs (entries containing a separator) relative to the repo root.                   | Config and CLI share one code path.                         |
+| 23  | Local checks run exactly like bundled ones.                                                             | No special cases in the engine.                             |
 
 ## Resolve check specs (priority)
 
-`resolveCheckNames` in `packages/runner/src/checks/load-check.ts` produces an ordered spec list; `resolveCheckSpecs` in `packages/runner/src/runner/run-resolve.ts` loads each entry:
+`go/cmd/fitness` produces an ordered spec list, then resolves each entry to a binary:
 
-1. `.fitnessrc` with `checks` — use that list (order preserved). Each entry is either:
-   - Name spec — the `@mayjournal/fitness-checks/checks/{name}` subpath via `loadCheck`.
-   - Path spec — relative module path via `loadCheckFromPathOrThrow` (contains `/` or `\`, or ends in `.js` / `.mjs` / `.cjs` / `.ts`); throws when missing or invalid, since it was explicitly configured.
-2. No `checks` list — import `defaultChecks` from `@mayjournal/fitness-checks/defaultChecks` (names only).
-3. `disabledChecks` — remove matching name specs from the list from step 1 or 2. Path specs are unchanged (opt-in only).
-4. Neither step 1 nor 2 available — throw: install `@mayjournal/fitness-checks` or set `checks` in `.fitnessrc`.
+1. `.fitnessrc.json` with `checks` — use that list (order preserved). Name specs resolve to `fitness-check-<name>` beside the runner, then on PATH; unknown names are skipped silently. Path specs (entries containing a separator) resolve relative to the repo root and fail the run when missing or not executable.
+2. No `checks` — the runner's embedded default list; a missing binary for a default name fails the run.
+3. `disabledChecks` — remove matching name specs from step 1 or 2. Path specs are unchanged (opt-in only).
 
-Dedupe (first occurrence wins): name specs by check name; path specs by resolved absolute path; if a loaded path check's `name` matches an earlier entry, skip the duplicate.
+Dedupe is first-occurrence-wins by resolved check name; a path check's name comes from its `--describe` metadata, else its basename.
 
-Explicit `checks` with missing entries: skip uninstalled name specs (`allowMissing`); fail on missing or invalid path specs (path was explicitly configured).
+Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint`, or `fitness --check=./my-check`. Passthrough args after the spec reach the check; a check whose `--describe` declares a context-inline argument (the commit checks declare `--message`) has that value extracted into the environment and stripped from passthrough.
 
-Single-check mode bypasses the list: `npx fitness prettier`, `npx fitness --check=eslint`, or `npx fitness --check=./my-check.mjs`.
+## Run context (environment)
 
-`jscpd` is a `defaultChecks` member (bundled npm dependency, exec-based like `eslint`/`cspell`). `swiftlint` is the exception: opt-in only, never part of `defaultChecks`, and shells out to a brew-installed binary — the only check with no npm dependency at all; a missing binary or no Swift files in the repo both resolve without a crash.
+| Variable                 | Source                                      |
+| ------------------------ | ------------------------------------------- |
+| `FITNESS_CHECK_NAME`     | resolved name of the running check          |
+| `FITNESS_ENABLED_CHECKS` | names in this run, newline-separated        |
+| `FITNESS_STAGED_FILES`   | git staged paths (node_modules stripped)    |
+| `FITNESS_CTX_MESSAGE`    | `--message` value for context-inline checks |
 
-## Run context
-
-| Field                  | Source                                      |
-| ---------------------- | ------------------------------------------- |
-| `enabledCheckNames`    | names in this run                           |
-| `registeredCheckNames` | same as enabled                             |
-| `checkFolderByName`    | each loaded `Check.folder` when set         |
-| `stagedFiles`          | git staged paths (node_modules stripped)    |
-| `passthroughArgs`      | args after check spec for single-check runs |
-
-Built from loaded checks and the runner — not a separate registry.
+Built by the runner before dispatch — not a separate registry.

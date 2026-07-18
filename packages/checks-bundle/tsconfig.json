@@ -1,8 +1,0 @@
-{
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "extends": "../shared/config/tsconfig.check.json",
-  "include": ["src/**/*.ts"]
-}

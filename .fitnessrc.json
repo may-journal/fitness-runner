@@ -11,8 +11,6 @@
     "markdown-front-matter",
     "semantic-commit",
     "jscpd",
-    "vitest-coverage-exclude",
-    "vitest-coverage-full",
     "mermaid-callouts",
     "mermaid-callout-why",
     "mermaid-diagram-prose",

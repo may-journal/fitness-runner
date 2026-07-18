@@ -1,8 +1,8 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.07.18.1524",
+  "version": "0.1.0-2026.07.18.1556",
   "private": true,
-  "description": "Monorepo for @mayjournal/fitness runner and check packages",
+  "description": "Monorepo for the fitness Go runner, its check binaries, and the shared tool configs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
@@ -10,45 +10,41 @@
   "license": "MIT",
   "type": "module",
   "workspaces": [
-    "packages/runner",
-    "packages/shared",
-    "packages/checks-bundle",
-    "packages/checks/*"
+    "packages/shared"
   ],
   "scripts": {
     "audit:publish": "node scripts/audit-publish/index.mjs",
-    "bench:load-check": "npm run bench -w @mayjournal/fitness",
-    "build": "npm run build -w @mayjournal/fitness-shared && npm run build -ws --if-present",
+    "build": "npm run build:go",
     "build:go": "cd go && go build -o bin ./cmd/...",
-    "ci": "npm run ci -w @mayjournal/fitness",
+    "ci": "npm run fitness",
     "fitness": "npm run --silent build:go && go/bin/fitness",
-    "fitness:ts": "npm run build -w @mayjournal/fitness && node packages/runner/bin/fitness.js",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
-    "knip": "npm run knip -ws --if-present",
-    "lint": "npm run lint -w @mayjournal/fitness",
-    "parity:go": "node scripts/go-parity/index.mjs",
+    "lint": "eslint -c packages/shared/config/eslint.config.mjs .",
     "precommit": "npm run fitness && npm run lint",
     "prepare": "test -d .git && git config core.hooksPath githooks || true",
     "provision:npm": "node scripts/provision-npm-packages/index.mjs",
-    "publish:ci": "npm publish -w @mayjournal/fitness-shared --access public; npm publish -w @mayjournal/fitness-checks --access public; npm publish -w @mayjournal/fitness --access public",
-    "test": "npm run test -w @mayjournal/fitness",
+    "publish:ci": "npm publish -w @mayjournal/fitness-shared --access public",
+    "test": "npm run test:go",
     "test:go": "cd go && go test ./...",
-    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-githooks.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs scripts/go-parity/index.test.mjs"
+    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-githooks.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.18.5",
-    "@mayjournal/fitness": "*",
-    "@mayjournal/fitness-checks": "*",
     "@mayjournal/fitness-shared": "*",
-    "@vitest/coverage-v8": "^4.1.10",
-    "knip": "^6.26.0",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
+    "@typescript-eslint/parser": "^8.64.0",
+    "cspell": "^10.0.1",
+    "cspell-trie-lib": "^10.0.1",
+    "eslint": "^10.7.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-jsdoc": "^63.1.0",
+    "eslint-plugin-perfectionist": "^5.10.0",
     "prettier": "^3.9.5",
     "prettier-plugin-packagejson": "^3.0.2",
     "prettier-plugin-sort-json": "^4.2.0",
-    "publint": "^0.3.12",
-    "vitest": "^4.1.10"
+    "publint": "^0.3.12"
   },
   "engines": {
     "node": ">=24"

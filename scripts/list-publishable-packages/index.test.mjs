@@ -8,10 +8,10 @@ import { listPublishablePackages } from './index.mjs';
 const repoRoot = join(fileURLToPath(new URL('.', import.meta.url)), '../..');
 
 describe('listPublishablePackages', () => {
-  it('returns 3 @mayjournal packages (shared, checks bundle, runner)', () => {
+  it('returns the one publishable package (shared configs)', () => {
     const packages = listPublishablePackages();
 
-    assert.equal(packages.length, 3);
+    assert.equal(packages.length, 1);
     assert.ok(packages.every(({ name }) => name.startsWith('@mayjournal/')));
   });
 
@@ -26,15 +26,11 @@ describe('listPublishablePackages', () => {
     }
   });
 
-  it('sorts shared first, checks bundle second, fitness last', () => {
+  it('lists the shared configs package', () => {
     const packages = listPublishablePackages();
     const names = packages.map(({ name }) => name);
 
-    assert.deepEqual(names, [
-      '@mayjournal/fitness-shared',
-      '@mayjournal/fitness-checks',
-      '@mayjournal/fitness',
-    ]);
+    assert.deepEqual(names, ['@mayjournal/fitness-shared']);
   });
 
   it('skips private packages', () => {

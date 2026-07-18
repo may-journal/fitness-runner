@@ -1,107 +1,46 @@
 {
   "name": "@mayjournal/fitness-shared",
-  "version": "0.1.0-2026.07.18.1524",
-  "description": "Shared utilities and configs for @mayjournal/fitness check packages",
+  "version": "0.1.0-2026.07.18.1556",
+  "description": "Shared tool configs for @mayjournal/fitness checks — eslint, prettier, vitest, and cspell defaults consumed as data",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/may-journal/fitness-runner.git"
   },
   "license": "MIT",
-  "type": "module",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
-    },
     "./cspell": "./config/cspell.json",
     "./eslint.base": "./config/eslint.base.mjs",
-    "./eslint.config": {
-      "types": "./types/eslint.config.d.ts",
-      "default": "./config/eslint.config.mjs"
-    },
-    "./prettier.config": {
-      "types": "./types/prettier.config.d.ts",
-      "default": "./config/prettier.config.cjs"
-    },
-    "./tsconfig": "./config/tsconfig.json",
-    "./tsconfig.cjs": "./config/tsconfig.cjs",
-    "./tsconfig.check": "./config/tsconfig.check.json",
-    "./vitest.check.config": "./config/vitest.check.config.mjs",
-    "./vitest.config": {
-      "types": "./types/vitest.config.d.ts",
-      "default": "./config/vitest.config.mjs"
-    }
-  },
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "bin": {
-    "fitness-shared": "./bin/fitness-shared.js"
+    "./eslint.config": "./config/eslint.config.mjs",
+    "./prettier.config": "./config/prettier.config.cjs",
+    "./vitest.config": "./config/vitest.config.mjs"
   },
   "files": [
-    "bin",
-    "dist",
-    "config",
-    "types"
+    "config"
   ],
-  "scripts": {
-    "build": "fitness-shared build",
-    "ci": "bash ../../scripts/nvm-use/nvm-use.sh && npm run format:check && npm run lint && npm run test",
-    "format": "prettier . --write",
-    "format:check": "prettier . --check",
-    "knip": "knip --no-exit-code",
-    "lint": "fitness-shared lint",
-    "prepublishOnly": "npm run build",
-    "publish:ci": "npm publish",
-    "test": "npm run build && vitest run"
-  },
   "prettier": "./config/prettier.config.cjs",
   "dependencies": {
-    "@typescript-eslint/eslint-plugin": "^8.63.0",
-    "@typescript-eslint/parser": "^8.63.0",
-    "conventional-commit-types": "^3.0.0",
-    "cspell": "^10.0.1",
-    "cspell-lib": "^10.0.1",
-    "eslint": "^10.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.64.0",
+    "@typescript-eslint/parser": "^8.64.0",
     "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-jsdoc": "^63.0.13",
+    "eslint-plugin-jsdoc": "^63.1.0",
     "eslint-plugin-perfectionist": "^5.10.0",
-    "jiti": "^2.7.0",
-    "jscpd": "^5.0.12",
-    "prettier": "^3.9.5",
     "prettier-plugin-packagejson": "^3.0.2",
-    "prettier-plugin-sort-json": "^4.2.0",
-    "vitest": "^4.1.10"
-  },
-  "devDependencies": {
-    "@types/node": "^26.1.1",
-    "tsconfig.js": "^3.0.0",
-    "typescript": "^7.0.2"
+    "prettier-plugin-sort-json": "^4.2.0"
   },
   "peerDependencies": {
-    "@mayjournal/fitness": "*"
+    "eslint": ">=9",
+    "prettier": ">=3"
   },
-  "engines": {
-    "node": ">=24"
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    },
+    "prettier": {
+      "optional": true
+    }
   },
   "publishConfig": {
     "access": "public",
     "tag": "next"
-  },
-  "knip": {
-    "entry": [
-      "src/index.ts",
-      "bin/*.js",
-      "tests/**/*.ts",
-      "config/eslint.base.mjs",
-      "config/prettier.config.cjs",
-      "config/generate-tsconfig-json.cjs"
-    ],
-    "project": [
-      "src/**/*.ts",
-      "bin/**/*.js",
-      "tests/**/*.ts",
-      "config/**/*.{cjs,mjs}"
-    ]
   }
 }

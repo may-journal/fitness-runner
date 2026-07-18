@@ -7,7 +7,7 @@
 // FITNESS_ENABLED_CHECKS instead of an in-process run context (standalone
 // runs with no context print the table-less form), and the folder-override
 // map (checkFolderByName) does not cross the env protocol, so Src is always
-// src/checks/<name>/README.md. Table geometry and coloring mirror the
+// go/cmd/fitness-check-<name>/README.md. Table geometry and coloring mirror the
 // cli-table3 output: column widths 28 and max(20, max(70, width-8)-34)
 // including one space of padding per side, gray borders and red header
 // regardless of tty (unless NO_COLOR), chalk-style bold/cyan/yellow only on
@@ -87,7 +87,7 @@ func buildContextFeedback(names []string, cols int, p palette) string {
 }
 
 // checkTable draws the two-column Check|Src table, one row per enabled
-// check, each Src the check's README path src/checks/<name>/README.md.
+// check, each Src the check's README path go/cmd/fitness-check-<name>/README.md.
 func checkTable(names []string, cols int, p palette) string {
 	first, second := tableWidths(cols)
 	var b strings.Builder
@@ -95,7 +95,7 @@ func checkTable(names []string, cols int, p palette) string {
 	headerLine(&b, first, second, p)
 	for _, name := range names {
 		borderLine(&b, "├", "┼", "┤", first, second, p)
-		src := filepath.Join("src", "checks", name, "README.md")
+		src := filepath.Join("go", "cmd", "fitness-check-"+name, "README.md")
 		rowLine(&b, name, src, first, second, p)
 	}
 	borderLine(&b, "└", "┴", "┘", first, second, p)

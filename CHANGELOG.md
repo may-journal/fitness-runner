@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.07.18.1556
+
+- Feat: retire the TypeScript implementation — the Go suite is now the only fitness runner. Deleted `packages/runner`, `packages/checks` (all 26 TypeScript check packages), `packages/checks-bundle`, the legacy `.fitnessrc.js`, and the go-parity harness that existed to compare the two implementations (26/27 byte-parity was proven before deletion; see the archived plan). Each check's rule documentation moved to its Go home (`go/cmd/fitness-check-<name>/README.md`, front-matter paths rebased) and the `read-repo-first` banner now points there. `packages/shared` survives as a configs-only npm package (`@mayjournal/fitness-shared`: eslint, prettier, vitest, cspell configs consumed as data by the Go checks and by consumers; TypeScript build machinery, bin scripts, and runtime sources removed; the unmet optional vitest peer dropped so dependency-currency stays quiet on a repo with no vitest). Root scripts and workspaces slimmed accordingly (`npm run fitness` is the Go suite, `npm test` is `go test ./...`; `fitness:ts` and `parity:go` are gone), CI drops the fitness-ts/go-parity jobs and reworks build-test into scripts-test, devDependencies shrink to the lint/format stacks plus `cspell` + `cspell-trie-lib` (kept solely to regenerate the embedded spell dictionaries), and the vitest coverage checks leave this repo's `.fitnessrc.json` list — there is no vitest suite left to run (both checks remain in the Go catalog for consumer repos). README and the architecture C4 docs rewritten for the Go-only world.
+
 ### 2026.07.18.1524
 
 - Docs: merge the go-rewrite branch to main (fast-forward — the branch was strictly ahead, so no merge commit and no hook exception needed) and archive the completed milestone plan to `plans/archive/01-go-rewrite.md` with `status: completed` front matter per the plan-doc convention; the README Go-runner section now links to the archived plan.

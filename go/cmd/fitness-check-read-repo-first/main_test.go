@@ -1,5 +1,7 @@
 package main
 
+// cspell:ignore filen strin — truncation fragments in pinned table cells
+
 import (
 	"io"
 	"os"
@@ -55,7 +57,7 @@ func TestRunWritesBannerFromEnv(t *testing.T) {
 	})
 	for _, want := range []string{
 		"changelog", "eslint", "--no-verify",
-		"src/checks/changelog/README.md", "src/checks/eslint/README.md",
+		"go/cmd/fitness-check-changelog/READ", "go/cmd/fitness-check-eslint/README",
 	} {
 		if !strings.Contains(banner, want) {
 			t.Fatalf("banner missing %q:\n%s", want, banner)
@@ -75,7 +77,7 @@ func TestBuildContextFeedbackGolden(t *testing.T) {
 		"┌" + bar28 + "┬" + bar38 + "┐",
 		"│ Check                      │ Src                                  │",
 		"├" + bar28 + "┼" + bar38 + "┤",
-		"│ read-repo-first            │ src/checks/read-repo-first/README.md │",
+		"│ read-repo-first            │ go/cmd/fitness-check-read-repo-firs… │",
 		"└" + bar28 + "┴" + bar38 + "┘",
 		"",
 		"NOTE: Do not under any circumstance use `--no-verify` as it will cause issues downstream, fixing locally is your best bet.",
@@ -96,12 +98,12 @@ func TestBuildContextFeedbackCases(t *testing.T) {
 		notContains []string
 	}{
 		{"includes check names and src links", []string{"changelog", "eslint"},
-			[]string{"changelog", "eslint", "src/checks/changelog/README.md", "Check", "Src"}, nil},
+			[]string{"changelog", "eslint", "go/cmd/fitness-check-changelog/READ", "Check", "Src"}, nil},
 		{"omits table when empty", nil,
 			[]string{"Did you familiarize", "--no-verify"},
 			[]string{"│", "│ Check", "Enabled checks:"}},
 		{"truncates overlong cells with ellipsis", []string{"markdown-filename-kebab-case"},
-			[]string{"│ markdown-filename-kebab-c… │", "│ src/checks/markdown-filename-kebab-… │"}, nil},
+			[]string{"│ markdown-filename-kebab-c… │", "│ go/cmd/fitness-check-markdown-filen… │"}, nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -148,7 +150,7 @@ func TestPadCell(t *testing.T) {
 	}{
 		{"read-repo-first", 26, "read-repo-first           "},
 		{"markdown-filename-kebab-case", 26, "markdown-filename-kebab-c…"},
-		{"src/checks/repeated-string-literals/README.md", 36, "src/checks/repeated-string-literals…"},
+		{"go/cmd/fitness-check-repeated-string-literals/README.md", 36, "go/cmd/fitness-check-repeated-strin…"},
 		{"exact-width-content-here-x", 26, "exact-width-content-here-x"},
 	}
 	for _, tc := range cases {
@@ -168,7 +170,7 @@ func TestDecorationBytes(t *testing.T) {
 	wantTop := "\x1b[90m┌" + strings.Repeat("─", 28) + "\x1b[39m" +
 		"\x1b[90m┬" + strings.Repeat("─", 38) + "┐\x1b[39m"
 	wantRow := "\x1b[90m│\x1b[39m read-repo-first            \x1b[90m│\x1b[39m" +
-		" src/checks/read-repo-first/README.md \x1b[90m│\x1b[39m"
+		" go/cmd/fitness-check-read-repo-firs… \x1b[90m│\x1b[39m"
 	for _, want := range []string{wantHeader, wantTop, wantRow} {
 		if !strings.Contains(got, want) {
 			t.Fatalf("missing exact bytes %q in:\n%q", want, got)

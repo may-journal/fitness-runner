@@ -3,161 +3,108 @@
 relatedConfigurations: ['package.json']
 ---
 
-# @mayjournal/fitness
+# fitness
 
-Node fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
+Zero-dependency Go fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
+
+Every check is its own static binary (`fitness-check-<name>`) orchestrated by a `fitness` runner binary: no runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 21-check suite this repo gates its own commits on runs in under two seconds. The original TypeScript implementation has been retired; its checks were ported one at a time with side-by-side parity before removal (see [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md)).
 
 ## Install
 
+Build from source today (GitHub Releases with prebuilt binaries are the distribution path once publishing is wired):
+
 ```bash
-npm install @mayjournal/fitness
+git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
+npm run build:go   # or: cd go && go build -o bin ./cmd/...
 ```
+
+Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds check binaries beside itself first, then on PATH.
 
 ## Config
 
-Optional `.fitnessrc.ts` or `.fitnessrc.js` at repo root:
-
-```ts
-export default {
-  checks: ['changelog', 'node-version', 'semantic-commit'], // run these checks, in order
-  disabledChecks: ['cspell'], // optional: exclude from bundle defaultChecks
-};
-```
-
-If `checks` is set, only those checks run (in order). If omitted, the runner uses `defaultChecks` from `@mayjournal/fitness-checks` (install the bundle package). `disabledChecks` removes names from either list. Use `.fitnessrc.js` with `module.exports = { checks: [...] }` for plain Node.
-
-`checks` entries can also be local paths, mixed in with npm check names, to run a repo-specific check without publishing a package:
-
-```ts
-// ./fitness/checks/no-console.js
-export default {
-  name: 'no-console',
-  run: async () => ({ ok: true, errors: [] }),
-};
-```
-
-```ts
-// .fitnessrc.ts
-export default {
-  checks: ['cspell', './fitness/checks/no-console.js'], // npm name + local path, in order
-};
-```
-
-A local check module default-exports (or named-exports) an object with `name` and `run` — same shape as a published check. A missing or invalid path fails the run with an error, since it was explicitly configured; `disabledChecks` cannot remove path entries.
-
-### Duplicate-code detection
-
-`jscpd` is part of `defaultChecks` — it's bundled as a dependency, no extra install. It fails when duplicated lines exceed 1% of the codebase; see [packages/checks/jscpd](packages/checks/jscpd) for flags and the `jscpd:ignore-start`/`jscpd:ignore-end` escape hatch for justified duplication.
-
-### Opt-in: SwiftLint
-
-`swiftlint` is not part of `defaultChecks` — most repos have no Swift code. Add it explicitly:
-
-```ts
-export default {
-  checks: ['cspell', 'swiftlint'],
-};
-```
-
-It shells out to a system binary (`brew install swiftlint`) — it isn't an npm package, so unlike every other check it isn't bundled; a missing binary fails clearly instead of crashing, and a repo with no Swift files passes clean. See [packages/checks/swiftlint](packages/checks/swiftlint) for behavior.
-
-## Git hooks
-
-This is the point of the runner: checks enforced automatically on `git commit`, not something a developer has to remember to run. `@mayjournal/fitness` ships starter hooks under `githooks/`; copy them into your repo and point Git at that folder once:
-
-```bash
-cp -a node_modules/@mayjournal/fitness/githooks githooks
-git config core.hooksPath githooks
-```
-
-Hooks run `npm run fitness` (pre-commit) and semantic-commit validation (commit-msg). Edit under `githooks/` after copy.
-
-## Usage
-
-CLI (from repo root):
-
-```bash
-npx fitness
-```
-
-Run a single check by name (positional or flag; use `--` before flags if npx swallows them):
-
-```bash
-npx fitness prettier
-npx fitness prettier --write .
-# or
-npx fitness semantic-commit
-# or
-npx fitness --check=semantic-commit
-```
-
-Checks can register `contextInline` so the runner injects a named arg value into context and strips it from passthrough. For the commit-msg hook with semantic-commit, pass the message string: `fitness --check=semantic-commit --message="$(cat "$1")"`. See each check’s README for its arg name.
-
-See [architecture-index.md](./architecture-index.md) for the C4 model ([architecture/](architecture/)).
-
-## Checks
-
-Each check's source lives under `packages/checks/<name>/` with its own README. Consumers load a check by name via the `@mayjournal/fitness-checks/checks/<name>` subpath — the individual `@mayjournal/fitness-check-<name>` workspaces are private and never published on their own. Default run order when `.fitnessrc` omits `checks` is `defaultChecks` from `@mayjournal/fitness-checks` (see [packages/checks-bundle/src/index.ts](./packages/checks-bundle/src/index.ts) and [architecture-index.md](./architecture-index.md)).
-
-## Consumer projects
-
-Install `@mayjournal/fitness` and `@mayjournal/fitness-checks`. With no `.fitnessrc`, the runner uses bundle `defaultChecks`. Optional `.fitnessrc` can set `checks` to run a subset (still resolved from the installed bundle, in your order) or `disabledChecks` to exclude names from the bundle default.
-
-To add a repo-specific rule without a new dependency, skip the name and point `checks` at a local module path instead — see [Config](#config) above.
-
-Add a script and run from your repo root. Checks use shared configs automatically—you do not need local copies of `eslint.config`, `prettier.config`, `vitest.config`, `tsconfig`, or `cspell.json`. Setup matrix and examples: [architecture-index.md](./architecture-index.md#consumer-setup).
+Optional `.fitnessrc.json` at repo root:
 
 ```json
 {
-  "dependencies": {
-    "@mayjournal/fitness": "...",
-    "@mayjournal/fitness-checks": "..."
-  },
-  "scripts": {
-    "fitness": "fitness"
-  }
+  "checks": ["changelog", "node-version", "semantic-commit"],
+  "disabledChecks": ["cspell"],
+  "repeatedStringLiterals": { "allow": ["dist"] }
 }
 ```
 
+If `checks` is set, only those run (in order). If omitted, the runner uses its default list. `disabledChecks` removes names from either list. Unknown names in `checks` are skipped silently; `disabledChecks` never removes path entries.
+
+`checks` entries can also be local executable paths (entries containing `/`), mixed in with check names, to run a repo-specific check without publishing anything. A local check is any executable speaking the protocol below — a shell script works.
+
+## Check protocol
+
+The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root and context in `FITNESS_*` environment variables (staged files, enabled check names, the commit message for the commit checks):
+
+- stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n}`
+- stderr — human display output (banners, tool passthrough)
+- exit code — 0 when the check ran and passed, 1 ran and failed, other values mean it crashed
+- `--describe` — prints check metadata (name, timeout budget, context-inline arg) so the runner needs no registry
+
+The runner executes checks in a bounded parallel pool with per-check timeouts (process-group kill, so a hung check's whole child tree dies) and renders a summary table; the run exits 1 when any check fails.
+
+## Git hooks
+
+This is the point of the runner: checks enforced automatically on `git commit`. This repo's own hooks live under [githooks/](githooks/) — pre-commit runs the full suite, commit-msg validates the message through the semantic-commit check:
+
 ```bash
-npm run fitness
+npm run fitness -- --check=semantic-commit --message="$(cat "$1")"
 ```
 
-If your project already has its own config for a tool, that local file wins; otherwise fitness falls back to bundled configs from `@mayjournal/fitness-shared` (installed as a dependency of `@mayjournal/fitness`).
+Checks that consume the commit message declare a context-inline argument in their `--describe` metadata; the runner extracts `--message` from single-check argv into the environment.
 
-## Exported configs (optional)
+## Usage
 
-Install `@mayjournal/fitness-shared` if you want to wire these tools directly (outside `npm run fitness`). Fitness checks use the same exports internally:
+```bash
+npm run fitness              # full configured suite (builds go/bin first)
+go/bin/fitness               # same, without npm
+go/bin/fitness prettier      # one check by name
+go/bin/fitness --check=eslint
+go/bin/fitness prettier --write .   # passthrough args reach the check
+```
+
+## Checks
+
+All 27 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
+
+- Pure logic: node-version, gitignore-why, changelog, changelog-updated, semantic-commit, commit-attribution, read-repo-first, markdown-filename-kebab-case, markdown-filename-camel-case, markdown-front-matter, markdown-no-bold-italic, no-eslint-disable, build-output-untracked, repeated-string-literals
+- Parsers and network: the five mermaid diagram/callout checks, vitest-coverage-exclude, dependency-currency (native npm-registry client)
+- Native engines: cspell (embedded dictionaries, ~217k words) and jscpd (token-based clone detection) — no external tool needed
+- Tool wrappers: prettier, eslint, vitest-coverage-full, swiftlint — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx; a missing binary fails with a one-line install hint
+
+Default run order lives in the runner ([go/cmd/fitness/main.go](go/cmd/fitness/main.go)); opt-in checks (swiftlint, commit-attribution, the mermaid family, and others) are enabled per repo via `.fitnessrc.json`.
+
+## Shared configs
+
+[packages/shared](packages/shared) publishes `@mayjournal/fitness-shared` — tool configs consumed as data. The eslint and prettier checks fall back to these when a repo has no local config; install the package if you want to wire the tools directly:
 
 - `@mayjournal/fitness-shared/eslint.config` – ESLint flat config
-- `@mayjournal/fitness-shared/vitest.config` – Vitest
-- `@mayjournal/fitness-shared/tsconfig` – TypeScript (this repo’s build config)
-- `@mayjournal/fitness-shared/cspell` – cspell.json
-- `@mayjournal/fitness-shared/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
-
-## Go runner
-
-The suite has been rebuilt in Go per [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md): one static zero-dependency binary per check plus a `fitness` runner binary, all under [go/](go/). All 27 check names are ported with side-by-side parity against the TypeScript checks (`npm run parity:go` diffs every check's ok/errors/filesChecked on this repo).
-
-This repo now gates its own commits on the Go suite: `npm run fitness` builds the binaries (`npm run build:go`, ~300ms warm) and runs `go/bin/fitness`, driven by `.fitnessrc.json`. The full 23-check dogfood suite runs in under 2 seconds — the TypeScript suite (`npm run fitness:ts`, still fully supported and CI-gated during the transition) takes ~6.5s plus a build.
-
-Tool-wrapper checks (eslint, prettier, cspell natively reimplemented; vitest and swiftlint executed as peer tools) resolve peer binaries from `node_modules/.bin` walking up, then PATH — never npx — and fail with one-line install hints when missing.
-
-Distribution (decided): GitHub Releases with prebuilt static binaries plus `go install`, once the TypeScript retirement question is settled; an npm shim that fetches the platform binary can follow if consumers want `npx fitness` continuity. The npm TypeScript packages remain published and unchanged until then.
+- `@mayjournal/fitness-shared/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys)
+- `@mayjournal/fitness-shared/vitest.config` – Vitest coverage thresholds
+- `@mayjournal/fitness-shared/cspell` – cspell.json (also the source of the walker's skip dirs and the spell check's project dictionary)
 
 ## Development
 
 ```bash
-npm install
-npm run build
-npm run fitness
-npm run format
+npm install        # dev tooling: eslint/prettier stacks, cspell dictionaries for regeneration
+npm run build:go   # compile runner + all check binaries into go/bin
+npm run fitness    # run the suite on this repo
+npm test           # go test ./...
+npm run test:scripts  # node --test for the repo scripts
 npm run lint
-npm test
+npm run format
 ```
 
-`npm install` runs `prepare`, which points Git at this repo's `githooks/` (pre-commit runs `npm run fitness` + lint; commit-msg validates semantic-commit). If hooks aren't firing — e.g. `core.hooksPath` got reset — re-run:
+The spell-check dictionaries under [go/internal/spell/dict](go/internal/spell/dict) are generated from the installed `@cspell` packages — regenerate with `node go/internal/spell/dict/generate.mjs`.
+
+`npm install` runs `prepare`, which points Git at this repo's `githooks/`. If hooks aren't firing — e.g. `core.hooksPath` got reset — re-run:
 
 ```bash
 git config core.hooksPath githooks
 ```
+
+See [architecture-index.md](./architecture-index.md) for the C4 model ([architecture/](architecture/)).
