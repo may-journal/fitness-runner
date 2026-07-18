@@ -1,6 +1,6 @@
 {
   "name": "fitness-runner",
-  "version": "0.1.0-2026.07.18.1511",
+  "version": "0.1.0-2026.07.18.1521",
   "private": true,
   "description": "Monorepo for @mayjournal/fitness runner and check packages",
   "repository": {
@@ -19,18 +19,22 @@
     "audit:publish": "node scripts/audit-publish/index.mjs",
     "bench:load-check": "npm run bench -w @mayjournal/fitness",
     "build": "npm run build -w @mayjournal/fitness-shared && npm run build -ws --if-present",
+    "build:go": "cd go && go build -o bin ./cmd/...",
     "ci": "npm run ci -w @mayjournal/fitness",
-    "fitness": "npm run build -w @mayjournal/fitness && node packages/runner/bin/fitness.js",
+    "fitness": "npm run --silent build:go && go/bin/fitness",
+    "fitness:ts": "npm run build -w @mayjournal/fitness && node packages/runner/bin/fitness.js",
     "format": "prettier . --write",
     "format:check": "prettier . --check",
     "knip": "npm run knip -ws --if-present",
     "lint": "npm run lint -w @mayjournal/fitness",
+    "parity:go": "node scripts/go-parity/index.mjs",
     "precommit": "npm run fitness && npm run lint",
     "prepare": "test -d .git && git config core.hooksPath githooks || true",
     "provision:npm": "node scripts/provision-npm-packages/index.mjs",
     "publish:ci": "npm publish -w @mayjournal/fitness-shared --access public; npm publish -w @mayjournal/fitness-checks --access public; npm publish -w @mayjournal/fitness --access public",
     "test": "npm run test -w @mayjournal/fitness",
-    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-githooks.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs"
+    "test:go": "cd go && go test ./...",
+    "test:scripts": "node --test scripts/audit-publish/index.test.mjs scripts/list-publishable-packages/index.test.mjs scripts/provision-npm-packages/index.test.mjs scripts/provision-npm-packages/trust-github-api.test.mjs scripts/ensure-changelog-timestamp/index.test.mjs scripts/nvm-use/nvm-use.test.mjs scripts/setup-githooks.test.mjs scripts/setup-npm-trusted-publishers/index.test.mjs scripts/go-parity/index.test.mjs"
   },
   "prettier": "@mayjournal/fitness-shared/prettier.config",
   "devDependencies": {

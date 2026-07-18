@@ -135,6 +135,16 @@ Install `@mayjournal/fitness-shared` if you want to wire these tools directly (o
 - `@mayjournal/fitness-shared/cspell` – cspell.json
 - `@mayjournal/fitness-shared/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys); ESLint sort-keys enforces alphabetical object keys in TS/JS/CJS
 
+## Go runner
+
+The suite has been rebuilt in Go per [plans/01-go-rewrite.md](./plans/01-go-rewrite.md): one static zero-dependency binary per check plus a `fitness` runner binary, all under [go/](go/). All 27 check names are ported with side-by-side parity against the TypeScript checks (`npm run parity:go` diffs every check's ok/errors/filesChecked on this repo).
+
+This repo now gates its own commits on the Go suite: `npm run fitness` builds the binaries (`npm run build:go`, ~300ms warm) and runs `go/bin/fitness`, driven by `.fitnessrc.json`. The full 23-check dogfood suite runs in under 2 seconds — the TypeScript suite (`npm run fitness:ts`, still fully supported and CI-gated during the transition) takes ~6.5s plus a build.
+
+Tool-wrapper checks (eslint, prettier, cspell natively reimplemented; vitest and swiftlint executed as peer tools) resolve peer binaries from `node_modules/.bin` walking up, then PATH — never npx — and fail with one-line install hints when missing.
+
+Distribution (decided): GitHub Releases with prebuilt static binaries plus `go install`, once the TypeScript retirement question is settled; an npm shim that fetches the platform binary can follow if consumers want `npx fitness` continuity. The npm TypeScript packages remain published and unchanged until then.
+
 ## Development
 
 ```bash

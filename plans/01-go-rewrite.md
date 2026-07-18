@@ -64,7 +64,7 @@ relatedConfigurations: ['../package.json']
 
 5. Lock it in
 
-   - [ ] Side-by-side harness diffs TS vs Go per check on this repo (`ok`, `errors`, `filesChecked`); a check's box above only flips when it agrees
-   - [ ] Every check ports the meaningful cases from its TS tests; `go test ./...` green in CI alongside the existing suite
-   - [ ] Dogfood cutover: `.fitnessrc.json` switches this repo to the Go runner once every enabled check has parity
-   - [ ] Decide distribution (GitHub Releases install script vs npm-shipped platform binaries) and capture it in the README before the cutover ships
+   - [x] Side-by-side harness diffs TS vs Go per check on this repo (`ok`, `errors`, `filesChecked`); a check's box above only flips when it agrees
+   - [x] Every check ports the meaningful cases from its TS tests; `go test ./...` green in CI alongside the existing suite
+   - [x] Dogfood cutover: `.fitnessrc.json` switches this repo to the Go runner once every enabled check has parity
+   - [x] Decide distribution — decided: GitHub Releases + `go install` first, npm platform-binary shim later only if consumers want `npx` continuity; captured in the README Go-runner section

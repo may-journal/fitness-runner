@@ -84,6 +84,7 @@
     "doublestar",
     "minimatch",
     "splitmix",
-    "wordlists"
+    "wordlists",
+    "gofmt"
   ]
 }

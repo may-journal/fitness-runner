@@ -29,9 +29,10 @@ module.exports = {
   repeatedStringLiterals: {
     // The irreducible baseline: each of these lives once per runtime island (TS src,
     // published shared/bin JS, repo scripts) that cannot share one constants module, or —
-    // for 'eslint' — is both the CLI binary name and the check name (same spelling,
-    // different things: bin/lint.js + the CheckName enum + defaultChecks). Everything else
-    // the check flags is a real duplicate: extract it, don't grow this list.
-    allow: ['dist', 'eslint', 'package.json'],
+    // for 'eslint' and 'jscpd' — is both the CLI binary name and the check name (same
+    // spelling, different things: bin/lint.js + the CheckName enum + defaultChecks + the
+    // go-parity harness's documented count-semantics exemption). Everything else the
+    // check flags is a real duplicate: extract it, don't grow this list.
+    allow: ['dist', 'eslint', 'jscpd', 'package.json'],
   },
 };
