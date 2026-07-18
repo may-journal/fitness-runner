@@ -60,6 +60,13 @@
     "lockfiles",
     "stdlib",
     "dogfood",
-    "cutover"
+    "cutover",
+    "checkkit",
+    "gitx",
+    "stty",
+    "walkfs",
+    "mdx",
+    "npmx",
+    "unparseable"
   ]
 }

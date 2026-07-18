@@ -76,3 +76,6 @@ vitest.config.js.map
 vitest.config.d.ts.map
 # ...except the hand-authored vitest type shim
 !packages/shared/types/vitest.config.d.ts
+
+# Compiled Go binaries; rebuilt from go/ sources, never committed
+go/bin/

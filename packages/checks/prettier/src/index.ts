@@ -111,7 +111,12 @@ const PRETTIER_SKIP_STAGED = new Set([
   PACKAGE_LOCK_JSON,
 ]);
 
-/** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list, scripts/, githooks. */
+/** True when a staged path lives in a tree Prettier cannot parse (githooks/, scripts/, go/ — Go sources and go.mod have no parser). */
+function isUnparseableTree(p: string): boolean {
+  return p.includes('githooks/') || p.startsWith('scripts/') || p.startsWith('go/');
+}
+
+/** Paths to check: staged (existing) under root, or ["."] when none; excludes skip list and unparseable trees. */
 function getPathsToCheck(root: string, staged: string[]): string[] {
   if (staged.length === 0) return ['.'];
   return staged.filter(
@@ -119,8 +124,7 @@ function getPathsToCheck(root: string, staged: string[]): string[] {
       existsSync(join(root, p)) &&
       !PRETTIER_SKIP_STAGED.has(p) &&
       !p.endsWith('.mdc') &&
-      !p.includes('githooks/') &&
-      !p.startsWith('scripts/')
+      !isUnparseableTree(p)
   );
 }
 

@@ -1,4 +1,4 @@
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { execSync } from 'node:child_process';
@@ -67,6 +67,20 @@ describe('prettierCheck', () => {
     const calls = vi.mocked(execSync).mock.calls;
     expect(calls[calls.length - 1][0]).toContain(PRETTIER_CLI);
     expect(calls[calls.length - 1][0]).toContain('bar.ts');
+  });
+
+  it('drops staged go/ paths — Prettier has no parser for Go sources or go.mod', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'prettier-'));
+    writeFileSync(join(dir, '.prettierrc.json'), '{}');
+    writeFileSync(join(dir, 'bar.ts'), 'x');
+    mkdirSync(join(dir, 'go'));
+    writeFileSync(join(dir, 'go/go.mod'), 'module x');
+    vi.mocked(execSync).mockReturnValue('All matched files use Prettier code style!');
+    const result = await prettierCheck.run(dir, { stagedFiles: ['go/go.mod', 'bar.ts'] });
+    expect(result.ok).toBe(true);
+    const calls = vi.mocked(execSync).mock.calls;
+    expect(calls[calls.length - 1][0]).toContain('bar.ts');
+    expect(calls[calls.length - 1][0]).not.toContain('go.mod');
   });
 
   it('returns fallback error when exit non-zero and output has no [warn] paths', async () => {

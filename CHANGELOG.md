@@ -7,6 +7,11 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.07.18.1113
+
+- Fix: the `prettier` check errored on staged Go files — Prettier has no parser for `.go` or `go.mod`, so the first commit carrying the new `go/` tree failed pre-commit. Staged paths under `go/` are now dropped from the staged-mode invocation (same treatment as `scripts/` and `githooks/`); the full-repo glob run is unaffected.
+- Feat: land plan 01 section 0 — the Go scaffold. New `go/` module (stdlib-only) with the `fitness` runner binary and the first check binary, `fitness-check-node-version`, running end to end on this repo. The runner resolves check binaries (sibling dir then PATH, local executable paths from config), execs them with the `--root` + `FITNESS_*` env protocol (JSON result on stdout, display on stderr), asks each for `--describe` metadata (name, timeout budget, context-inline arg) with its own two-second budget, runs a bounded parallel pool with per-check process-group timeout kills (TERM then KILL), and renders the same results table, totals line, and exit-code contract as the TypeScript runner. Config is `.fitnessrc.json`; a lone legacy `.fitnessrc.js`/`.ts` gets a migration hint on full-suite runs only, so single-check runs work during the transition. Shared internals: skip-dir file walker, git helpers, markdown front matter/fence/table parsing, and the table renderer — all with `go test` coverage. The Go `node-version` check agrees with the TypeScript check on this repo (identical table row and byte-identical failure message); its plan checkbox and all of section 0 are flipped in `plans/01-go-rewrite.md`.
+
 ### 2026.07.18.1057
 
 - Docs: add `plans/01-go-rewrite.md` — the milestone plan for rebuilding the runner and every check in Go as zero-dependency static binaries: one binary per check plus a `fitness` runner binary, stdlib-only, exec protocol with JSON results, ported one check at a time with side-by-side parity against the TypeScript checks; dep-heavy checks (prettier, eslint, vitest-coverage-full, swiftlint) come last with each approach decided on arrival. Follows the may-journals plan template (numbered title, Goal, numbered checkbox sections, verification last).

@@ -14,19 +14,19 @@ relatedConfigurations: ['../package.json']
 
 0. Scaffold: a runner and one working check
 
-   - [ ] `go/` module builds `fitness` plus a hello check binary; `fitness node-version` runs it end to end on this repo
-     - [ ] Stdlib only — no third-party Go imports anywhere in the module
-     - [ ] One binary per check (`fitness-check-<name>`), runner execs them: `--root <dir>`, context via `FITNESS_*` env (staged files, enabled checks, commit message), JSON result on stdout (`ok`, `errors`, `filesChecked`), human display on stderr
-     - [ ] `--describe` handshake reports name, timeout budget, and context-inline arg — no registry, no header parsing
-     - [ ] Runner owns timeouts: process-group kill on expiry so a hung check's whole child tree dies
-     - [ ] Parallel pool (CPU count), results rendered in dispatch order — same table, totals line, and exit-code contract as today
-     - [ ] Config is `.fitnessrc.json` (same keys: `checks`, `disabledChecks`, `skipTheseDirectories`, `repeatedStringLiterals.allow`); a lone `.fitnessrc.js`/`.ts` gets a one-line migration hint
-     - [ ] A local path in `checks` execs any executable speaking the protocol — shell scripts included
-   - [ ] Shared internals the checks build on: skip-dir file walker, git helpers, markdown front matter/table/fence parsing, results renderer
+   - [x] `go/` module builds `fitness` plus a hello check binary; `fitness node-version` runs it end to end on this repo
+     - [x] Stdlib only — no third-party Go imports anywhere in the module
+     - [x] One binary per check (`fitness-check-<name>`), runner execs them: `--root <dir>`, context via `FITNESS_*` env (staged files, enabled checks, commit message), JSON result on stdout (`ok`, `errors`, `filesChecked`), human display on stderr
+     - [x] `--describe` handshake reports name, timeout budget, and context-inline arg — no registry, no header parsing
+     - [x] Runner owns timeouts: process-group kill on expiry so a hung check's whole child tree dies
+     - [x] Parallel pool (CPU count), results rendered in dispatch order — same table, totals line, and exit-code contract as today
+     - [x] Config is `.fitnessrc.json` (same keys: `checks`, `disabledChecks`, `skipTheseDirectories`, `repeatedStringLiterals.allow`); a lone `.fitnessrc.js`/`.ts` gets a one-line migration hint
+     - [x] A local path in `checks` execs any executable speaking the protocol — shell scripts included
+   - [x] Shared internals the checks build on: skip-dir file walker, git helpers, markdown front matter/table/fence parsing, results renderer
 
 1. The easy thirteen — pure logic, one at a time
 
-   - [ ] node-version — .nvmrc agreement
+   - [x] node-version — .nvmrc agreement
    - [ ] gitignore-why — every ignore pattern carries a why-comment
    - [ ] changelog — heading format, version suffix, lockfile agreement
    - [ ] changelog-updated — staged-diff word overlap and timestamp gates
