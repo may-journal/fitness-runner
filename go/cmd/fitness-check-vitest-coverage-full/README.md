@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../../../packages/shared/config/vitest.config.mjs']
+relatedConfigurations: ['../../internal/sharedconf/config/vitest.config.mjs']
 ---
 
 # vitest-coverage-full

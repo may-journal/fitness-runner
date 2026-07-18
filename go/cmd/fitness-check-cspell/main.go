@@ -8,6 +8,11 @@
 // staged context it checks every **/*.md under the root, honoring the
 // resolved cspell.json ignorePaths and, when useGitignore is set, the repo's
 // gitignore via `git check-ignore`.
+//
+// cspell.json resolves through internal/sharedconf: the repo's own file
+// wins, then an installed node_modules/@mayjournal/fitness-shared, then the
+// copy embedded in this binary, materialized to the cache on demand — so a
+// repo with no npm anywhere still gets the shared words and ignorePaths.
 package main
 
 import (
@@ -22,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
 )
 
@@ -183,12 +189,15 @@ type config struct {
 	UseGitignore bool     `json:"useGitignore"`
 }
 
-// loadConfig reads the resolved cspell.json; with none found (or unreadable)
-// the embedded dictionaries stand alone.
+// loadConfig reads the resolved cspell.json — repo-local, installed
+// @mayjournal/fitness-shared, or the embedded copy materialized on demand
+// (the sharedconf.Resolve contract); when even the fallback fails to
+// materialize (or the file is unreadable) the embedded dictionaries stand
+// alone.
 func loadConfig(root string) config {
 	var cfg config
-	p, ok := resolveConfigPath(root)
-	if !ok {
+	p := sharedconf.Resolve(root, "cspell.json")
+	if p == "" {
 		return cfg
 	}
 	raw, err := os.ReadFile(p)
@@ -197,34 +206,4 @@ func loadConfig(root string) config {
 	}
 	_ = json.Unmarshal(raw, &cfg)
 	return cfg
-}
-
-// resolveConfigPath mirrors the TypeScript resolution: <root>/cspell.json
-// wins; otherwise walk up from root looking for the shared config as an
-// installed package (node_modules/@mayjournal/fitness-shared/config) or as
-// the monorepo checkout (packages/shared/config).
-func resolveConfigPath(root string) (string, bool) {
-	local := filepath.Join(root, "cspell.json")
-	if fileExists(local) {
-		return local, true
-	}
-	shared := []string{
-		filepath.Join("node_modules", "@mayjournal", "fitness-shared", "config", "cspell.json"),
-		filepath.Join("packages", "shared", "config", "cspell.json"),
-	}
-	for dir := root; ; dir = filepath.Dir(dir) {
-		for _, rel := range shared {
-			if p := filepath.Join(dir, rel); fileExists(p) {
-				return p, true
-			}
-		}
-		if dir == filepath.Dir(dir) {
-			return "", false
-		}
-	}
-}
-
-func fileExists(p string) bool {
-	info, err := os.Stat(p)
-	return err == nil && !info.IsDir()
 }

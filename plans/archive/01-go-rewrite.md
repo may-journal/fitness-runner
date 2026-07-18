@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../../package.json']
+relatedConfigurations: ['../../.fitnessrc.json']
 status: completed
 completedAt: 2026-07-18
 ---

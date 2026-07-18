@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../package.json']
+relatedConfigurations: ['../.fitnessrc.json']
 ---
 
 # Containers
@@ -14,7 +14,7 @@ C4Container
     System_Boundary(ship, "Shipped artifacts") {
         Container(cli, "3 Runner binary", "Go", "fitness")
         Container(checks, "4 Check binaries", "Go", "fitness-check-name, 27 names")
-        Container(shared, "5 Shared configs", "npm", "@mayjournal/fitness-shared")
+        Container(shared, "5 Embedded configs", "Go", "internal/sharedconf, materialized on demand")
     }
 
     System_Boundary(consumer, "Consumer repo") {

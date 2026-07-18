@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -169,32 +170,30 @@ export default { test: { coverage: { exclude: [DTS_GLOB, "src/foo.ts"] } } };`,
 	}
 }
 
-// TestRunFallbackRoot pins the TS fallback behavior: a root without any
-// config source resolves the installed @mayjournal/fitness-shared package
-// and judges the config at its outermost cspell.json ancestor.
+// TestRunFallbackRoot pins the fallback chain: a root without any config
+// source is judged against the installed @mayjournal/fitness-shared config
+// directory (walking up from root), and a local config source shadows that
+// fallback entirely.
 func TestRunFallbackRoot(t *testing.T) {
 	tmp := t.TempDir()
-	outer := filepath.Join(tmp, "outer")
-	proj := filepath.Join(outer, "proj")
-	sharedDir := filepath.Join(proj, "node_modules", "@mayjournal", "fitness-shared")
-	configDir := filepath.Join(sharedDir, "config")
-	if err := os.MkdirAll(configDir, 0o755); err != nil {
+	proj := filepath.Join(tmp, "outer", "proj")
+	configDir := filepath.Join(tmp, "outer", "node_modules", "@mayjournal", "fitness-shared", "config")
+	for _, dir := range []string{proj, configDir} {
+		if err := os.MkdirAll(dir, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(configDir, "vitest.config.js"),
+		[]byte(`module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };`), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	writeFiles(t, map[string]string{
-		filepath.Join(sharedDir, "package.json"):     `{"exports":{"./cspell":"./config/cspell.json"}}`,
-		filepath.Join(configDir, "cspell.json"):      `{}`,
-		filepath.Join(outer, "cspell.json"):          `{}`,
-		filepath.Join(outer, "vitest.config.js"):     `module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };`,
-		filepath.Join(configDir, "vitest.config.js"): `module.exports = { test: { coverage: { exclude: ["**/*.d.ts"] } } };`,
-	})
 
 	res, err := run(proj, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.Ok || len(res.Errors) != 1 || !strings.Contains(res.Errors[0], `"src/foo.ts"`) {
-		t.Fatalf("expected outer-root fallback failure, got %+v", res)
+		t.Fatalf("expected installed-config fallback failure, got %+v", res)
 	}
 
 	// A local config source shadows the fallback entirely.
@@ -211,12 +210,26 @@ func TestRunFallbackRoot(t *testing.T) {
 	}
 }
 
-func writeFiles(t *testing.T, files map[string]string) {
-	t.Helper()
-	for path, content := range files {
-		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
-			t.Fatal(err)
-		}
+// TestLoadExcludeEmbeddedFallback pins the npm-free path: with no local
+// config and no node_modules anywhere up the tree, the exclude list comes
+// from the embedded vitest.config.mjs materialized out of the binary (its
+// three clean string literals; identifier entries are unresolvable).
+func TestLoadExcludeEmbeddedFallback(t *testing.T) {
+	got := loadExclude(t.TempDir())
+	want := []string{
+		"**/*.bench.ts",
+		"packages/runner/src/index.ts",
+		"packages/runner/src/runner/index.ts",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("loadExclude = %#v, want the embedded config's literals %#v", got, want)
+	}
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("embedded exclude list should pass the judgment: %+v", res)
 	}
 }
 

@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../../package.json']
+relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
 # Plan: Split runner from check packages

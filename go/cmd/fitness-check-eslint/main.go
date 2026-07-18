@@ -6,6 +6,15 @@
 // parsing, message formatting, ignore-notice filtering, and the fallback
 // error strings. Syntactic parse only (see ADR 0001), so the runner-default
 // timeout stands.
+//
+// The shared eslint.config.mjs forced via --config resolves through
+// internal/sharedconf: the repo's own file wins, then an installed
+// node_modules/@mayjournal/fitness-shared, then the copy embedded in this
+// binary, materialized to the cache. The shared config imports its plugins
+// (typescript-eslint, jsdoc, perfectionist, prettier) as bare specifiers, so
+// the materialized copy only loads in repos where Node can resolve those
+// packages — installing them alongside eslint stays the check's peer
+// contract, exactly as it was in the npm era.
 package main
 
 import (
@@ -20,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
 // eslintFallbackMessage mirrors ESLINT_FALLBACK_MESSAGE in the TS check.
@@ -28,8 +38,8 @@ const eslintFallbackMessage = "ESLint reported issues. Run: npx eslint ."
 // missingEslintMessage is the install hint when no eslint binary resolves.
 const missingEslintMessage = "eslint not found in node_modules/.bin (walking up from the repo root) or on PATH. Run: npm install --save-dev eslint"
 
-// cspellJSON anchors config-root resolution, exactly like getFitnessRunnerRoot.
-const cspellJSON = "cspell.json"
+// eslintConfigMjs is the shared flat-config filename resolved for --config.
+const eslintConfigMjs = "eslint.config.mjs"
 
 // ignoredFileNotice marks results for explicitly-passed ignored files; the TS
 // check dropped these messages while still counting the file.
@@ -89,13 +99,18 @@ func pathsToLint(root string, staged []string) []string {
 }
 
 // runEslint execs the CLI twin of the TS Node-API invocation: cwd root, the
-// shared config forced via --config, unmatched patterns tolerated, JSON out.
+// resolved shared config forced via --config (repo-local file, installed
+// @mayjournal/fitness-shared, or the embedded copy materialized on demand —
+// sharedconf.Resolve), unmatched patterns tolerated, JSON out. In the
+// vanishingly rare case nothing materializes, eslint runs on its own config
+// discovery instead.
 func runEslint(root, bin string, paths []string) (errs []string, exitCode, filesChecked int) {
-	args := append([]string{
-		"--config", filepath.Join(fitnessRunnerRoot(root), "eslint.config.mjs"),
-		"--no-error-on-unmatched-pattern",
-		"--format", "json",
-	}, paths...)
+	var args []string
+	if cfg := sharedconf.Resolve(root, eslintConfigMjs); cfg != "" {
+		args = append(args, "--config", cfg)
+	}
+	args = append(args, "--no-error-on-unmatched-pattern", "--format", "json")
+	args = append(args, paths...)
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = root
 	var stdout, stderr bytes.Buffer
@@ -186,47 +201,6 @@ func snippet(stdout, stderr *bytes.Buffer, runErr error) string {
 		return runErr.Error()
 	}
 	return strings.Join(parts, "\n")
-}
-
-// sharedConfigRel are the two places the shared package's config directory
-// lives relative to an ancestor of root: an installed node_modules
-// dependency, or the monorepo checkout itself.
-var sharedConfigRel = [...]string{
-	filepath.Join("node_modules", "@mayjournal", "fitness-shared", "config"),
-	filepath.Join("packages", "shared", "config"),
-}
-
-// fitnessRunnerRoot ports getFitnessRunnerRoot: the shared package's config
-// directory when it resolves (walking up from root instead of Node module
-// resolution), promoted to the highest ancestor holding cspell.json — which
-// is how a local checkout overrides the installed config.
-func fitnessRunnerRoot(root string) string {
-	for d := root; ; {
-		for _, rel := range sharedConfigRel {
-			dir := filepath.Join(d, rel)
-			if exists(filepath.Join(dir, cspellJSON)) {
-				return findConfigRoot(dir)
-			}
-		}
-		parent := filepath.Dir(d)
-		if parent == d {
-			break
-		}
-		d = parent
-	}
-	return findConfigRoot(root)
-}
-
-// findConfigRoot ports the TS walk-up: the highest ancestor (start included,
-// filesystem root excluded) containing cspell.json, else start itself.
-func findConfigRoot(start string) string {
-	last := start
-	for d := start; filepath.Dir(d) != d; d = filepath.Dir(d) {
-		if exists(filepath.Join(d, cspellJSON)) {
-			last = d
-		}
-	}
-	return last
 }
 
 // findEslint resolves the eslint binary: node_modules/.bin walking up from

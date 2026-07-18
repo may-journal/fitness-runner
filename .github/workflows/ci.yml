@@ -7,23 +7,15 @@ on:
     branches: [main]
 
 jobs:
-  scripts-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-      - run: npm run test:scripts
-
   fitness:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - run: npm run build
-      - run: npm run fitness
+      - run: cd go && go build -o bin ./cmd/...
+      - run: go/bin/fitness
 
   go:
     runs-on: ubuntu-latest
@@ -36,17 +28,3 @@ jobs:
       - run: cd go && go vet ./...
       - run: cd go && go build -o bin ./cmd/...
       - run: cd go && go test ./...
-
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-      - run: npm run lint
-
-  format:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup
-      - run: npm run format:check

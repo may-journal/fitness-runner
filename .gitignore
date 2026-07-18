@@ -1,25 +1,8 @@
-# Node and npm debug logs from failed installs or scripts
+# Logs from failed tool runs or scripts
 *.log
-# npm's own debug log files
-npm-debug.log*
-
-# Installed dependencies; restored by `npm install`, never committed
-node_modules/
-
-# Coverage output from tooling runs, regenerated per run
-coverage
-# Per-file lcov coverage reports
-*.lcov
-# nyc coverage instrumentation data
-.nyc_output
 
 # Legacy build-output dir name; also asserted ignored by the build-output-untracked check
 dist
-
-# npm cache dir when npm uses a project-local cache
-.npm
-# ESLint result cache (machine-local; speeds reruns)
-.eslintcache
 
 # Local environment variables and secrets
 .env
@@ -27,14 +10,6 @@ dist
 .env.*
 # Keep the committed, non-secret template
 !.env.example
-
-# `npm pack` tarballs produced by publish/audit tooling
-*.tgz
-
-
-
-
-
 
 # Compiled Go binaries; rebuilt from go/ sources, never committed
 go/bin/

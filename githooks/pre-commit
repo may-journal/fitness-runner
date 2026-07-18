@@ -2,6 +2,8 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-. scripts/nvm-use/nvm-use.sh
-node scripts/ensure-changelog-timestamp/index.cjs
-npm run precommit
+# Build the toolchain (fast when warm), restamp a staged CHANGELOG entry,
+# then gate the commit on the fitness suite.
+(cd go && go build -o bin ./cmd/...)
+go/bin/fitness-stamp-changelog
+go/bin/fitness

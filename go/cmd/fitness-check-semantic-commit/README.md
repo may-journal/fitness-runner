@@ -1,6 +1,6 @@
 ---
 fitnessFunctions: ['semantic-commit']
-relatedConfigurations: ['../../../package.json']
+relatedConfigurations: ['../../../.fitnessrc.json']
 ---
 
 # semantic-commit

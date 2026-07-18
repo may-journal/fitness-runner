@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
 // sortKeysJSON is a realistic JSON-formatter payload with one sort-keys
@@ -134,11 +136,15 @@ func TestRunMissingBinary(t *testing.T) {
 	}
 }
 
-func TestRunInvocation(t *testing.T) {
-	isolate(t)
-	root := t.TempDir()
+// installedConfigMjs is the compat path an npm-era @mayjournal/fitness-shared
+// install serves the shared flat config from.
+var installedConfigMjs = filepath.Join("node_modules", "@mayjournal", "fitness-shared", "config", eslintConfigMjs)
+
+// invokeAndRecord runs the check against root with a fake eslint that records
+// its working directory and argv, returning the recorded lines.
+func invokeAndRecord(t *testing.T, root string) []string {
+	t.Helper()
 	argsFile := filepath.Join(t.TempDir(), "args")
-	writeFile(t, filepath.Join(root, "node_modules", "@mayjournal", "fitness-shared", "config", cspellJSON), "{}")
 	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"),
 		"pwd -P > "+argsFile+"\nprintf '%s\\n' \"$@\" >> "+argsFile+"\necho '[]'")
 	if _, err := run(root, nil); err != nil {
@@ -148,16 +154,58 @@ func TestRunInvocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	got := strings.Split(strings.TrimRight(string(raw), "\n"), "\n")
+	return strings.Split(strings.TrimRight(string(raw), "\n"), "\n")
+}
+
+// wantInvocation is the full expected recording: eslint's cwd, then the
+// argv with the given --config path.
+func wantInvocation(t *testing.T, root, config string) []string {
+	t.Helper()
 	realRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	config := filepath.Join(root, "node_modules", "@mayjournal", "fitness-shared", "config", "eslint.config.mjs")
-	want := []string{realRoot, "--config", config, "--no-error-on-unmatched-pattern", "--format", "json", "."}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("invocation = %#v, want %#v", got, want)
-	}
+	return []string{realRoot, "--config", config, "--no-error-on-unmatched-pattern", "--format", "json", "."}
+}
+
+func TestRunInvocation(t *testing.T) {
+	t.Run("installed shared config wins over embedded", func(t *testing.T) {
+		isolate(t)
+		root := t.TempDir()
+		writeFile(t, filepath.Join(root, installedConfigMjs), "export default [];")
+		got := invokeAndRecord(t, root)
+		want := wantInvocation(t, root, filepath.Join(root, installedConfigMjs))
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("invocation = %#v, want %#v", got, want)
+		}
+	})
+	t.Run("repo-local config wins over installed", func(t *testing.T) {
+		isolate(t)
+		root := t.TempDir()
+		writeFile(t, filepath.Join(root, eslintConfigMjs), "export default [];")
+		writeFile(t, filepath.Join(root, installedConfigMjs), "export default [];")
+		got := invokeAndRecord(t, root)
+		want := wantInvocation(t, root, filepath.Join(root, eslintConfigMjs))
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("invocation = %#v, want %#v", got, want)
+		}
+	})
+	t.Run("embedded config materializes when nothing else resolves", func(t *testing.T) {
+		isolate(t)
+		root := t.TempDir()
+		got := invokeAndRecord(t, root)
+		dir, err := sharedconf.Materialize()
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := wantInvocation(t, root, filepath.Join(dir, eslintConfigMjs))
+		if !reflect.DeepEqual(got, want) {
+			t.Fatalf("invocation = %#v, want %#v", got, want)
+		}
+		if _, err := os.Stat(filepath.Join(dir, eslintConfigMjs)); err != nil {
+			t.Fatalf("materialized config missing: %v", err)
+		}
+	})
 }
 
 func TestRunStagedPaths(t *testing.T) {
@@ -254,41 +302,20 @@ func TestParseResults(t *testing.T) {
 	}
 }
 
-func TestFitnessRunnerRoot(t *testing.T) {
-	installed := filepath.Join("node_modules", "@mayjournal", "fitness-shared", "config")
-	monorepo := filepath.Join("packages", "shared", "config")
-	cases := []struct {
-		name string
-		// cspell.json locations relative to the base temp dir
-		files []string
-		// root and want relative to the base temp dir ("" = base itself)
-		root string
-		want string
-	}{
-		{"installed package", []string{filepath.Join(installed, cspellJSON)}, "", installed},
-		{"monorepo checkout", []string{filepath.Join(monorepo, cspellJSON)}, "", monorepo},
-		{"walks up from nested root", []string{filepath.Join(installed, cspellJSON)},
-			filepath.Join("a", "b"), installed},
-		{"root cspell.json overrides installed config",
-			[]string{filepath.Join(installed, cspellJSON), cspellJSON}, "", ""},
-		{"fallback highest ancestor with cspell.json", []string{cspellJSON},
-			filepath.Join("a", "b"), ""},
-		{"fallback to root itself", nil, "", ""},
+// TestRunInvocationWalksUpForInstalledConfig pins the compat walk: a nested
+// package still finds an ancestor's npm-era install.
+func TestRunInvocationWalksUpForInstalledConfig(t *testing.T) {
+	isolate(t)
+	base := t.TempDir()
+	writeFile(t, filepath.Join(base, installedConfigMjs), "export default [];")
+	root := filepath.Join(base, "nested", "pkg")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			base := t.TempDir()
-			for _, f := range tc.files {
-				writeFile(t, filepath.Join(base, f), "{}")
-			}
-			root := filepath.Join(base, tc.root)
-			if err := os.MkdirAll(root, 0o755); err != nil {
-				t.Fatal(err)
-			}
-			if got, want := fitnessRunnerRoot(root), filepath.Join(base, tc.want); got != want {
-				t.Fatalf("fitnessRunnerRoot = %q, want %q", got, want)
-			}
-		})
+	got := invokeAndRecord(t, root)
+	want := wantInvocation(t, root, filepath.Join(base, installedConfigMjs))
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("invocation = %#v, want %#v", got, want)
 	}
 }
 

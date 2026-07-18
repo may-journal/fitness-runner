@@ -4,10 +4,7 @@
     "changelog",
     "changelog-updated",
     "cspell",
-    "eslint",
     "markdown-no-bold-italic",
-    "prettier",
-    "node-version",
     "markdown-front-matter",
     "semantic-commit",
     "jscpd",
@@ -16,13 +13,17 @@
     "mermaid-diagram-prose",
     "mermaid-legend",
     "mermaid-level-bleed",
-    "dependency-currency",
     "gitignore-why",
     "markdown-filename-kebab-case",
     "build-output-untracked",
     "repeated-string-literals"
   ],
   "repeatedStringLiterals": {
-    "allow": ["dist", "eslint", "jscpd", "package.json"]
+    "allow": [
+      "dist",
+      "eslint",
+      "jscpd",
+      "package.json"
+    ]
   }
 }

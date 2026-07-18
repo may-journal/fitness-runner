@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../package.json']
+relatedConfigurations: ['../.fitnessrc.json']
 ---
 
 # Code
@@ -87,16 +87,16 @@ Numbers on classes and relationships match the callout table.
 
 ```text
 fitness-runner/
-  package.json                 dev tooling + the one npm workspace
+  .fitnessrc.json              the dogfood check list + options
   architecture/                C4 docs (this folder)
   go/
     go.mod                     single module, stdlib-only
     cmd/fitness/               runner binary
     cmd/fitness-check-name/    one main + README per check (27 names)
     internal/                  checkkit, walkfs, gitx, mdx, mermaid, spell,
-                               clonedetect, vitestconf, mdfilename, render, conf
+                               clonedetect, vitestconf, mdfilename, render,
+                               conf, sharedconf (embedded tool configs)
     bin/                       build output (gitignored)
-  packages/shared/             @mayjournal/fitness-shared — tool configs as data
 
 consumer-repo/                 (not in this monorepo)
   .fitnessrc.json              checks: names + optional local executable paths
@@ -105,4 +105,4 @@ consumer-repo/                 (not in this monorepo)
 
 ## Development in this repo
 
-`npm run fitness` compiles `go/bin` (about 300ms warm) and runs the suite this repo gates its own commits on — 21 checks in under two seconds, driven by `.fitnessrc.json`. `npm test` runs `go test ./...`; `npm run test:scripts` covers the node-based repo scripts (publishing, changelog stamping, dictionary generation).
+`go build -o bin ./cmd/...` from `go/` is the whole toolchain (about 300ms warm). `go/bin/fitness` runs the suite this repo gates its own commits on, driven by `.fitnessrc.json`; the pre-commit hook builds, restamps a staged CHANGELOG entry via `fitness-stamp-changelog`, and runs the suite. `go test ./...` covers everything — there are no node scripts left.

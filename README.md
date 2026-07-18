@@ -1,6 +1,6 @@
 ---
 # Top-level project config
-relatedConfigurations: ['package.json']
+relatedConfigurations: ['.fitnessrc.json']
 ---
 
 # fitness
@@ -15,10 +15,10 @@ Build from source today (GitHub Releases with prebuilt binaries are the distribu
 
 ```bash
 git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
-npm run build:go   # or: cd go && go build -o bin ./cmd/...
+cd go && go build -o bin ./cmd/...
 ```
 
-Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds check binaries beside itself first, then on PATH.
+Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds check binaries beside itself first, then on PATH. The Go toolchain is the entire build requirement — no npm, no node.
 
 ## Config
 
@@ -52,7 +52,7 @@ The runner executes checks in a bounded parallel pool with per-check timeouts (p
 This is the point of the runner: checks enforced automatically on `git commit`. This repo's own hooks live under [githooks/](githooks/) — pre-commit runs the full suite, commit-msg validates the message through the semantic-commit check:
 
 ```bash
-npm run fitness -- --check=semantic-commit --message="$(cat "$1")"
+go/bin/fitness --check=semantic-commit --message="$(cat "$1")"
 ```
 
 Checks that consume the commit message declare a context-inline argument in their `--describe` metadata; the runner extracts `--message` from single-check argv into the environment.
@@ -60,8 +60,7 @@ Checks that consume the commit message declare a context-inline argument in thei
 ## Usage
 
 ```bash
-npm run fitness              # full configured suite (builds go/bin first)
-go/bin/fitness               # same, without npm
+go/bin/fitness               # full configured suite
 go/bin/fitness prettier      # one check by name
 go/bin/fitness --check=eslint
 go/bin/fitness prettier --write .   # passthrough args reach the check
@@ -80,31 +79,23 @@ Default run order lives in the runner ([go/cmd/fitness/main.go](go/cmd/fitness/m
 
 ## Shared configs
 
-[packages/shared](packages/shared) publishes `@mayjournal/fitness-shared` — tool configs consumed as data. The eslint and prettier checks fall back to these when a repo has no local config; install the package if you want to wire the tools directly:
-
-- `@mayjournal/fitness-shared/eslint.config` – ESLint flat config
-- `@mayjournal/fitness-shared/prettier.config` – Prettier (semi, singleQuote, tabWidth 2, trailingComma es5, printWidth 100, sort-json for JSON keys)
-- `@mayjournal/fitness-shared/vitest.config` – Vitest coverage thresholds
-- `@mayjournal/fitness-shared/cspell` – cspell.json (also the source of the walker's skip dirs and the spell check's project dictionary)
+The opinionated tool configs (eslint flat config, prettier, vitest thresholds, cspell) are embedded inside the check binaries ([go/internal/sharedconf](go/internal/sharedconf)) and materialize to a cache directory on demand. Resolution order when a check needs a config: the repo's own config file wins, then an installed `@mayjournal/fitness-shared` npm package (previously published versions keep working), then the embedded copy. The eslint config references plugins that must exist in the consumer repo — exactly the check's peer-tool contract.
 
 ## Development
 
 ```bash
-npm install        # dev tooling: eslint/prettier stacks, cspell dictionaries for regeneration
-npm run build:go   # compile runner + all check binaries into go/bin
-npm run fitness    # run the suite on this repo
-npm test           # go test ./...
-npm run test:scripts  # node --test for the repo scripts
-npm run lint
-npm run format
+cd go
+go build -o bin ./cmd/...   # compile runner + all check binaries
+go test ./...
+cd .. && go/bin/fitness     # run the suite on this repo
 ```
 
-The spell-check dictionaries under [go/internal/spell/dict](go/internal/spell/dict) are generated from the installed `@cspell` packages — regenerate with `node go/internal/spell/dict/generate.mjs`.
-
-`npm install` runs `prepare`, which points Git at this repo's `githooks/`. If hooks aren't firing — e.g. `core.hooksPath` got reset — re-run:
+One-time setup after cloning — point Git at this repo's hooks (pre-commit restamps a staged CHANGELOG entry and runs the suite; commit-msg validates through the semantic-commit check):
 
 ```bash
 git config core.hooksPath githooks
 ```
+
+The spell-check dictionaries under [go/internal/spell/dict](go/internal/spell/dict) are frozen, committed data (provenance in each file header); a Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
 
 See [architecture-index.md](./architecture-index.md) for the C4 model ([architecture/](architecture/)).

@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['../package.json']
+relatedConfigurations: ['../.fitnessrc.json']
 ---
 
 # System Context
@@ -36,7 +36,7 @@ Numbers on nodes and arrows match the callout table.
 
 | #   | Description                                                                                           | Why                                                                 |
 | --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 1   | Runs `npm run fitness`, git hooks, or single checks locally.                                          | Primary operator; same bar as CI.                                   |
+| 1   | Runs `fitness`, git hooks, or single checks locally.                                          | Primary operator; same bar as CI.                                   |
 | 2   | Cursor, Claude Code, or other agents triggered to run fitness before/after edits.                     | GenAI workflows share the runner — see [wardley.md](../wardley.md). |
 | 3   | Static Go binaries (runner + 27 checks) plus one npm config package.                                  | The product boundary — self-contained executables.                  |
 | 4   | Any repo with the binaries on PATH; may author local check executables.                               | Runner always executes in the consumer's working directory.         |

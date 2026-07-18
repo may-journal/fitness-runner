@@ -2,5 +2,4 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-. scripts/nvm-use/nvm-use.sh
-npm run fitness -- --check=semantic-commit --message="$(cat "$1")"
+go/bin/fitness --check=semantic-commit --message="$(cat "$1")"

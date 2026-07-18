@@ -5,7 +5,24 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
+
+// installedConfigDir is the compat location an npm-era install serves the
+// shared config directory from, relative to a fixture root.
+var installedConfigDir = filepath.Join("node_modules", "@mayjournal", "fitness-shared", "config")
+
+// materializedDir returns the embedded shared config's cache directory — the
+// frRoot the check must fall back to with no install anywhere.
+func materializedDir(t *testing.T) string {
+	t.Helper()
+	dir, err := sharedconf.Materialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
 
 // fullThresholdsJS is a raw config the threshold fast path accepts.
 const fullThresholdsJS = "module.exports = { test: { coverage: { thresholds: " +
@@ -79,13 +96,9 @@ func TestThresholdGate(t *testing.T) {
 	t.Run("fitness-runner root thresholds not 100 fail second", func(t *testing.T) {
 		root := t.TempDir()
 		writeFile(t, filepath.Join(root, "vitest.config.js"), fullThresholdsJS)
-		// A fake @mayjournal/fitness-shared install makes FitnessRunnerRoot
-		// resolve to its config dir, whose thresholds sit at 90.
-		pkgDir := filepath.Join(root, "node_modules", "@mayjournal", "fitness-shared")
-		writeFile(t, filepath.Join(pkgDir, "package.json"),
-			`{"exports":{"./cspell":"./config/cspell.json"}}`)
-		writeFile(t, filepath.Join(pkgDir, "config", "cspell.json"), "{}")
-		writeFile(t, filepath.Join(pkgDir, "config", "vitest.config.mjs"), partialThresholdsJS)
+		// A fake @mayjournal/fitness-shared install wins the frRoot
+		// resolution over the embedded copy; its thresholds sit at 90.
+		writeFile(t, filepath.Join(root, installedConfigDir, "vitest.config.mjs"), partialThresholdsJS)
 		t.Setenv("PATH", t.TempDir())
 		res, err := run(root, nil)
 		if err != nil {
@@ -154,7 +167,32 @@ line2`, "", 1, false, "line2"},
 }
 
 func TestConfigFallbackArgs(t *testing.T) {
-	t.Run("no local config appends --config from fitness-runner root", func(t *testing.T) {
+	t.Run("no config anywhere rides the embedded shared config", func(t *testing.T) {
+		// Both threshold gates and the --config fallback must come from the
+		// vitest.config.mjs materialized out of the binary.
+		root := t.TempDir()
+		fakeBin := t.TempDir()
+		argsFile := filepath.Join(t.TempDir(), "args.txt")
+		installFakeVitest(t, fakeBin, "", "", 0, argsFile)
+		t.Setenv("PATH", fakeBin)
+		res, err := run(root, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !res.Ok {
+			t.Fatalf("unexpected result: %+v", res)
+		}
+		recorded, err := os.ReadFile(argsFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "run\n--coverage\n--config\n" + filepath.Join(materializedDir(t), fitnessVitestConfig) + "\n"
+		if string(recorded) != want {
+			t.Fatalf("args = %q, want %q", recorded, want)
+		}
+	})
+
+	t.Run("package.json thresholds gate locally, --config still shared", func(t *testing.T) {
 		root := t.TempDir()
 		writeFile(t, filepath.Join(root, "package.json"), fullThresholdsPkgJSON)
 		fakeBin := t.TempDir()
@@ -172,8 +210,34 @@ func TestConfigFallbackArgs(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		// FitnessRunnerRoot falls back to root itself in a bare temp dir.
-		want := "run\n--coverage\n--config\n" + filepath.Join(root, fitnessVitestConfig) + "\n"
+		// package.json is a config source for the threshold gate but not a
+		// vitest.config.* file, so the shared --config still applies.
+		want := "run\n--coverage\n--config\n" + filepath.Join(materializedDir(t), fitnessVitestConfig) + "\n"
+		if string(recorded) != want {
+			t.Fatalf("args = %q, want %q", recorded, want)
+		}
+	})
+
+	t.Run("installed shared config wins over embedded", func(t *testing.T) {
+		root := t.TempDir()
+		installed := filepath.Join(root, installedConfigDir)
+		writeFile(t, filepath.Join(installed, fitnessVitestConfig), fullThresholdsJS)
+		fakeBin := t.TempDir()
+		argsFile := filepath.Join(t.TempDir(), "args.txt")
+		installFakeVitest(t, fakeBin, "", "", 0, argsFile)
+		t.Setenv("PATH", fakeBin)
+		res, err := run(root, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !res.Ok {
+			t.Fatalf("unexpected result: %+v", res)
+		}
+		recorded, err := os.ReadFile(argsFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "run\n--coverage\n--config\n" + filepath.Join(installed, fitnessVitestConfig) + "\n"
 		if string(recorded) != want {
 			t.Fatalf("args = %q, want %q", recorded, want)
 		}

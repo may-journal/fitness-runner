@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
 // writeFakePrettier writes a shell script at path that records its argv to
@@ -58,6 +60,22 @@ func writeFiles(t *testing.T, root string, files map[string]string) {
 
 const sharedCfgToken = "%CFG%"
 
+// embeddedCfgToken stands in for the materialized embedded config path in
+// expected argv (the cache path is only known at runtime).
+const embeddedCfgToken = "%EMBEDDED%"
+
+// materializedConfig returns the embedded shared config's materialized path
+// for filename — what the check must fall back to with no local config and no
+// node_modules install.
+func materializedConfig(t *testing.T, filename string) string {
+	t.Helper()
+	dir, err := sharedconf.Materialize()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return filepath.Join(dir, filename)
+}
+
 const cleanOutput = "Checking formatting...\nAll matched files use Prettier code style!"
 
 func TestRun(t *testing.T) {
@@ -83,12 +101,19 @@ func TestRun(t *testing.T) {
 			wantArgv:  []string{"--check", "."},
 		},
 		{
-			name:      "shared config used when consumer has none",
+			name:      "installed shared config wins when consumer has none",
 			sharedCfg: true,
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 0,
 			wantArgv:  []string{"--config", sharedCfgToken, "--check", "."},
+		},
+		{
+			name:      "embedded config materializes when nothing is installed",
+			output:    cleanOutput,
+			wantOk:    true,
+			wantFiles: 0,
+			wantArgv:  []string{"--config", embeddedCfgToken, "--check", "."},
 		},
 		{
 			name:      "consumer package.json prettier field suppresses shared config",
@@ -201,8 +226,11 @@ func TestRun(t *testing.T) {
 			}
 			want := make([]string, len(tc.wantArgv))
 			for i, a := range tc.wantArgv {
-				if a == sharedCfgToken {
+				switch a {
+				case sharedCfgToken:
 					a = cfgPath
+				case embeddedCfgToken:
+					a = materializedConfig(t, prettierConfigCjs)
 				}
 				want[i] = a
 			}

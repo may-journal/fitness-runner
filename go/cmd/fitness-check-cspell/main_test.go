@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/spell"
 )
 
 func write(t *testing.T, root, rel, content string) {
@@ -168,34 +170,29 @@ func TestGlobModeUsesGitignore(t *testing.T) {
 	}
 }
 
+// installedCspellJSON is the compat location an npm-era install resolves
+// through — it must keep winning over the embedded fallback.
+const installedCspellJSON = "node_modules/@mayjournal/fitness-shared/config/cspell.json"
+
 func TestConfigResolution(t *testing.T) {
 	shared := `{"words":["zzzqqqv"]}`
-	cases := []struct {
-		name string
-		rel  string
-	}{
-		{"installed shared package", "node_modules/@mayjournal/fitness-shared/config/cspell.json"},
-		{"monorepo checkout", "packages/shared/config/cspell.json"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			root := t.TempDir()
-			write(t, root, tc.rel, shared)
-			write(t, root, "doc.md", "zzzqqqv allowed by shared config\n")
-			setStaged(t)
-			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !res.Ok || res.FilesChecked != 1 {
-				t.Fatalf("shared config not honored: %+v", res)
-			}
-		})
-	}
-	t.Run("root cspell.json wins over shared", func(t *testing.T) {
+	t.Run("installed shared package wins over embedded", func(t *testing.T) {
+		root := t.TempDir()
+		write(t, root, installedCspellJSON, shared)
+		write(t, root, "doc.md", "zzzqqqv allowed by shared config\n")
+		setStaged(t)
+		res, err := run(root, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !res.Ok || res.FilesChecked != 1 {
+			t.Fatalf("installed shared config not honored: %+v", res)
+		}
+	})
+	t.Run("root cspell.json wins over installed", func(t *testing.T) {
 		root := t.TempDir()
 		write(t, root, "cspell.json", `{"words":[]}`)
-		write(t, root, "packages/shared/config/cspell.json", shared)
+		write(t, root, installedCspellJSON, shared)
 		write(t, root, "doc.md", "zzzqqqv no longer allowed\n")
 		setStaged(t)
 		res, err := run(root, nil)
@@ -206,37 +203,34 @@ func TestConfigResolution(t *testing.T) {
 			t.Fatalf("expected shared words to be ignored when root config exists: %+v", res)
 		}
 	})
-	t.Run("no config anywhere still runs on embedded dictionaries", func(t *testing.T) {
+	t.Run("no config anywhere materializes the embedded shared config", func(t *testing.T) {
+		// "mayjournal" is in the embedded shared cspell.json words list but
+		// not in the base dictionaries — assert the discrimination first, so
+		// a pass below can only come from the materialized config.
+		if base := spell.NewChecker(spell.EmbeddedWords()); len(base.CheckText("mayjournal")) != 1 {
+			t.Fatal("mayjournal must be unknown to the base dictionaries for this test to prove anything")
+		}
 		root := t.TempDir()
-		write(t, root, "doc.md", "plain readable words\n")
+		write(t, root, "doc.md", "mayjournal is allowed by the embedded shared config\n")
 		setStaged(t)
 		res, err := run(root, nil)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if !res.Ok || res.FilesChecked != 1 {
-			t.Fatalf("expected clean run without config: %+v", res)
+			t.Fatalf("embedded shared config not honored: %+v", res)
 		}
 	})
-}
-
-func TestRunAgainstThisRepo(t *testing.T) {
-	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, statErr := os.Stat(filepath.Join(root, "packages", "shared", "config", "cspell.json")); statErr != nil {
-		t.Skip("repo layout not available")
-	}
-	setStaged(t)
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok {
-		t.Fatalf("this repo should pass its own cspell check, got errors: %v", res.Errors)
-	}
-	if res.FilesChecked == 0 {
-		t.Fatal("expected markdown files to be checked")
-	}
+	t.Run("embedded fallback still flags real misspellings", func(t *testing.T) {
+		root := t.TempDir()
+		write(t, root, "doc.md", "teh quik borwn fox\n")
+		setStaged(t)
+		res, err := run(root, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.Ok || len(res.Errors) == 0 {
+			t.Fatalf("expected misspellings flagged under the embedded config: %+v", res)
+		}
+	})
 }

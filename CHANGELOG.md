@@ -1,11 +1,15 @@
 ---
 # Changed package version should correlate with this file
-relatedConfigurations: ['package.json']
+relatedConfigurations: ['.fitnessrc.json']
 ---
 
 # Changelog
 
 ## Changes
+
+### 2026.07.18.1720
+
+- Feat: the repo is npm-free — plan 02 complete and archived. The shared tool configs now live inside the binaries (`go/internal/sharedconf` embeds the config directory and materializes it to a content-keyed cache dir on demand; resolution is local config, then an installed `@mayjournal/fitness-shared` for compatibility, then the embedded copy — 153 new tests across the six touched packages). The pre-commit stamping tool is Go (`fitness-stamp-changelog`: restamps the first heading when CHANGELOG.md is staged, re-stages, no version bumps — the changelog timestamp is the version now), and the githooks call `go build` plus the binaries directly. Deleted: package.json, package-lock.json, node_modules, .npmrc, .nvmrc, every node script under `scripts/`, the npm publish workflows, the node CI setup action, and the `@mayjournal/fitness-shared` package directory (published versions stay on npm and keep winning over the embedded fallback when installed). The spell dictionaries are frozen committed data — a Go regeneration tool fetching dictionary sources over HTTPS is deferred. This repo's dogfood list drops eslint, prettier, node-version, and dependency-currency (nothing left for them to judge here; all four stay in the catalog for consumer repos), leaving 17 checks. CI is two Go jobs. Cloning and building requires exactly one tool: Go.
 
 ### 2026.07.18.1556
 

@@ -8,10 +8,14 @@
 // is staged, passthrough args replace --check mode, [warn] lines become
 // per-file errors, and a non-zero exit that parsed nothing reports the
 // fallback message. When the repo has no Prettier config of its own, the
-// shared prettier.config.cjs bundled with @mayjournal/fitness-shared is
-// passed via --config (found by the same node_modules walk, mirroring the TS
-// resolveFitnessConfigPath); when neither exists the check runs on Prettier
-// defaults.
+// shared prettier.config.cjs is passed via --config: an installed
+// @mayjournal/fitness-shared wins (the npm-era node_modules walk, mirroring
+// the TS resolveFitnessConfigPath), else the copy embedded in this binary is
+// materialized to the cache (internal/sharedconf). The shared config resolves
+// its two plugins with createRequire from its own location, so the
+// materialized copy only loads in repos where Node can reach those plugins —
+// installing them stays the check's peer contract, unchanged from the npm
+// era.
 package main
 
 import (
@@ -24,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
 const (
@@ -156,19 +161,17 @@ func hasPrettierConfig(root string) bool {
 }
 
 // resolveConfigPath returns "" when the consumer has its own config, else the
-// shared prettier.config.cjs from the installed @mayjournal/fitness-shared
-// package ("" again when that is not installed either).
+// shared prettier.config.cjs — an installed @mayjournal/fitness-shared when
+// present, the embedded copy materialized from this binary otherwise
+// (sharedconf.Resolve; its repo-local step never fires here because
+// hasPrettierConfig already ruled a root-level prettier.config.cjs out). ""
+// again only when even the fallback fails to materialize, running Prettier on
+// its defaults.
 func resolveConfigPath(root string) string {
 	if hasPrettierConfig(root) {
 		return ""
 	}
-	return walkUp(root, func(dir string) string {
-		p := filepath.Join(dir, "node_modules", "@mayjournal", "fitness-shared", "config", prettierConfigCjs)
-		if _, err := os.Stat(p); err == nil {
-			return p
-		}
-		return ""
-	})
+	return sharedconf.Resolve(root, prettierConfigCjs)
 }
 
 // isUnparseableTree is true for staged paths in trees Prettier cannot parse

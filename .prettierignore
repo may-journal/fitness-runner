@@ -1,6 +1,0 @@
-node_modules
-dist
-coverage
-.git
-package-lock.json
-.vscode

@@ -1,6 +1,6 @@
 ---
-fitnessFunctions: ['prettier']
-relatedConfigurations: ['../../../packages/shared/config/prettier.config.cjs']
+fitnessFunctions: ['main.go']
+relatedConfigurations: ['../../internal/sharedconf/config/prettier.config.cjs']
 ---
 
 # prettier

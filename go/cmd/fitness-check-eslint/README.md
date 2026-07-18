@@ -1,6 +1,6 @@
 ---
-fitnessFunctions: ['eslint']
-relatedConfigurations: ['../../../packages/shared/config/eslint.config.mjs']
+fitnessFunctions: ['main.go']
+relatedConfigurations: ['../../internal/sharedconf/config/eslint.config.mjs']
 ---
 
 # eslint

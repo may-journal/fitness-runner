@@ -4,12 +4,18 @@
 // vitest-coverage-full check. Two departures from the TypeScript original,
 // both mechanical: coverage thresholds are judged textually via
 // internal/vitestconf instead of evaluating the config as JavaScript, and
-// vitest is exec'd directly — resolved from node_modules/.bin walking up
+// vitest is executed directly — resolved from node_modules/.bin walking up
 // from root, then PATH, never npx — so a missing binary fails with an
 // install hint where npx would have installed it on demand. Threshold
 // gating order, config fallback, last-line failure extraction, error
 // strings, and filesChecked all match the TS check. Node's execSync capped
 // captured output at 1 MiB (maxBuffer); this port does not.
+//
+// The fitness-runner root — the directory whose vitest.config.mjs backs both
+// the threshold fallback and the --config fallback — resolves through
+// internal/sharedconf: an installed node_modules/@mayjournal/fitness-shared
+// walking up from root, else the config directory embedded in this binary,
+// materialized to the cache.
 package main
 
 import (
@@ -22,6 +28,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/vitestconf"
 )
 
@@ -51,7 +58,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	frRoot := vitestconf.FitnessRunnerRoot(root)
+	frRoot := sharedconf.ResolveDir(root)
 	if !vitestconf.HasFullThresholds(root, frRoot) {
 		return checkkit.Fail(1, thresholdsNot100), nil
 	}
@@ -71,9 +78,10 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // vitestArgs is the TS buildVitestCoverageCmd: plain `run --coverage` when
 // the consumer has a local vitest.config.*, else with --config pointing at
-// the fitness-runner fallback (the TS resolveFitnessConfigPath: a local
-// vitest.config.mjs would win, but by then no local config exists). The TS
-// shell-quoted the path for execSync; args exec directly here, unquoted.
+// the fitness-runner fallback — frRoot, the sharedconf-resolved config
+// directory (the TS resolveFitnessConfigPath: a local vitest.config.mjs
+// would win, but by then no local config exists). The TS shell-quoted the
+// path for execSync; args exec directly here, unquoted.
 func vitestArgs(root, frRoot string) []string {
 	args := []string{"run", "--coverage"}
 	for _, name := range vitestconf.ConfigNames {

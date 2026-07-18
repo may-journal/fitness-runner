@@ -5,6 +5,11 @@
 // internal/vitestconf, so exclude entries built from variables, spreads, or
 // imports are invisible — the same judgment the TS applied to non-string
 // entries at runtime, one level earlier.
+//
+// A root without any config source is judged against the shared config
+// directory: an installed node_modules/@mayjournal/fitness-shared when
+// present, else the vitest.config.mjs embedded in this binary, materialized
+// to the cache (internal/sharedconf).
 package main
 
 import (
@@ -15,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/vitestconf"
 )
 
@@ -44,7 +50,19 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	return judge(vitestconf.LoadExclude(root)), nil
+	return judge(loadExclude(root)), nil
+}
+
+// loadExclude resolves the coverage exclude list the way the TS check's
+// loadVitestConfig(root, getFitnessRunnerRoot()) call did: from root when it
+// has a config source, else from the shared config directory
+// (sharedconf.ResolveDir — installed package first, embedded copy last).
+func loadExclude(root string) []string {
+	if exclude, found := vitestconf.LoadExcludeFromRoot(root); found {
+		return exclude
+	}
+	exclude, _ := vitestconf.LoadExcludeFromRoot(sharedconf.ResolveDir(root))
+	return exclude
 }
 
 // judge applies the allowed-pattern rule to the exclude list; filesChecked
