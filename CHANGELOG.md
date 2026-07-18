@@ -7,6 +7,10 @@ relatedConfigurations: ['package.json']
 
 ## Changes
 
+### 2026.07.18.1524
+
+- Docs: merge the go-rewrite branch to main (fast-forward — the branch was strictly ahead, so no merge commit and no hook exception needed) and archive the completed milestone plan to `plans/archive/01-go-rewrite.md` with `status: completed` front matter per the plan-doc convention; the README Go-runner section now links to the archived plan.
+
 ### 2026.07.18.1521
 
 - Feat: land plan 01 section 5 — lock it in. The go-parity harness (`npm run parity:go`, `scripts/go-parity/`) diffs every check name discovered from the built Go binaries against its TypeScript twin on this repo (ok, errors with path normalization, filesChecked with the documented jscpd exemption) — 27/27 agree. CI gains `go` (gofmt/vet/build/test), `go-parity`, and `fitness-ts` jobs, and the `fitness` job now runs the Go suite. Dogfood cutover: `.fitnessrc.json` carries the full 23-check list and `npm run fitness` now builds and runs the Go runner (~1.9s for the suite this repo gates commits on, vs ~6.5s plus a build for `npm run fitness:ts`, which stays supported and CI-gated during the transition). Distribution decided and captured in the README: GitHub Releases plus `go install` first; an npm platform-binary shim only if consumers want npx continuity. Plan 01 is fully checked off.

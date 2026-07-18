@@ -137,7 +137,7 @@ Install `@mayjournal/fitness-shared` if you want to wire these tools directly (o
 
 ## Go runner
 
-The suite has been rebuilt in Go per [plans/01-go-rewrite.md](./plans/01-go-rewrite.md): one static zero-dependency binary per check plus a `fitness` runner binary, all under [go/](go/). All 27 check names are ported with side-by-side parity against the TypeScript checks (`npm run parity:go` diffs every check's ok/errors/filesChecked on this repo).
+The suite has been rebuilt in Go per [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md): one static zero-dependency binary per check plus a `fitness` runner binary, all under [go/](go/). All 27 check names are ported with side-by-side parity against the TypeScript checks (`npm run parity:go` diffs every check's ok/errors/filesChecked on this repo).
 
 This repo now gates its own commits on the Go suite: `npm run fitness` builds the binaries (`npm run build:go`, ~300ms warm) and runs `go/bin/fitness`, driven by `.fitnessrc.json`. The full 23-check dogfood suite runs in under 2 seconds — the TypeScript suite (`npm run fitness:ts`, still fully supported and CI-gated during the transition) takes ~6.5s plus a build.
 

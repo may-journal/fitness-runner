@@ -1,5 +1,7 @@
 ---
-relatedConfigurations: ['../package.json']
+relatedConfigurations: ['../../package.json']
+status: completed
+completedAt: 2026-07-18
 ---
 
 # 01 — Go rewrite: the whole suite as static binaries
@@ -8,7 +10,7 @@ relatedConfigurations: ['../package.json']
 
 ## Goal
 
-`fitness` runs the full suite on any repo — local dev, git hooks, any CI image — as self-contained static binaries: nothing to install beyond dropping them on PATH, no Node, no build step, instant startup. Every check keeps its soul: same rule, same pass/fail judgment, same error vocabulary as the TypeScript checks in [architecture/03-components.md](../architecture/03-components.md). Ports land one check at a time, each proven against the TS check on this repo before its box flips; the TypeScript packages stay untouched until the Go suite reaches parity. Dep-heavy checks (prettier, eslint, vitest-coverage-full, swiftlint) come last, each approach decided only when we get there.
+`fitness` runs the full suite on any repo — local dev, git hooks, any CI image — as self-contained static binaries: nothing to install beyond dropping them on PATH, no Node, no build step, instant startup. Every check keeps its soul: same rule, same pass/fail judgment, same error vocabulary as the TypeScript checks in [architecture/03-components.md](../../architecture/03-components.md). Ports land one check at a time, each proven against the TS check on this repo before its box flips; the TypeScript packages stay untouched until the Go suite reaches parity. Dep-heavy checks (prettier, eslint, vitest-coverage-full, swiftlint) come last, each approach decided only when we get there.
 
 ## Plan
 

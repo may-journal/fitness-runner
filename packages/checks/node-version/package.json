@@ -1,6 +1,6 @@
 {
   "name": "@mayjournal/fitness-check-node-version",
-  "version": "0.1.0-2026.07.18.1521",
+  "version": "0.1.0-2026.07.18.1524",
   "private": true,
   "description": "Fitness check: node-version",
   "repository": {
