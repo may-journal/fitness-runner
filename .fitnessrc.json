@@ -3,6 +3,7 @@
     "read-repo-first",
     "changelog",
     "changelog-updated",
+    "changelog-bullets",
     "cspell",
     "markdown-no-bold-italic",
     "markdown-front-matter",

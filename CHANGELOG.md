@@ -7,9 +7,18 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1848
+
+- Feat: add the `changelog-bullets` check — the newest CHANGELOG section must be 3-5 bullets, each under 365 characters, each with a semantic type prefix.
+- Chore: enable it in this repo's dogfood list (19 checks) and add it to the catalog (29 names).
+- Docs: rewrite the previous entry to comply — it was one 1,230-character bullet, precisely the style this check exists to end.
+
 ### 2026.07.18.1844
 
-- Perf: eliminate the cspell dictionary startup tax and parallelize jscpd's hashing, both behavior-identical with differential proof. The spell engine no longer parses its ~217k embedded words into a map at launch — lookups binary-search the embedded sorted bytes directly (zero startup work, `generate.mjs` emits sorted lists — cited in the code) with a concurrency-safe memo for repeated words (`sync.Map`, measured ~43x faster than a mutex under the parallel scanner): empty-repo runs drop from ~22ms to ~3ms (7.2x) and this repo from ~53ms to ~37ms, with byte-identical output proven by a 216k-word differential test plus boundary mutations and random probes. The clone detector replaces shared-map token interning with per-token FNV-1a 64 hashing (collision odds birthday-bounded at 2^-64 per pair, documented) so window hashing runs under the parallel pool: the detect phase is 2.3x faster at half the memory, with byte-identical statistics on two corpora. The 18-check suite settles at ~65ms. Honest correction while measuring: the "~27ms uniform process baseline" reported earlier was a measurement artifact (the shell timer paid node's startup inside the window) — the real per-binary baseline is ~3ms and needed no fixing.
+- Perf: cspell lookups now binary-search the embedded sorted dictionary bytes with a `sync.Map` memo — zero startup parsing, 7.2x faster on small repos, ~30ms on this one.
+- Perf: jscpd hashes tokens directly (FNV-1a 64) instead of interning through a shared map, so window hashing runs on the parallel pool — 2.3x faster detection at half the memory.
+- Docs: both changes proven behavior-identical — a 216k-word differential test for the spell engine and byte-identical clone statistics on two corpora.
+- Fix: the earlier "27ms process baseline" was a shell-timer artifact (node startup inside the measured window); the real baseline is ~3ms and needed no work.
 
 ### 2026.07.18.1821
 
