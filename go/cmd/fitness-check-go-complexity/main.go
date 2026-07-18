@@ -19,6 +19,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -33,18 +34,23 @@ func main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	max := maxComplexity(root)
-	var errs []string
-	count := 0
+	var sources []string
 	for _, file := range walkfs.FilesByExt(root, ".go") {
-		if strings.HasSuffix(file, "_test.go") {
-			continue
+		if !strings.HasSuffix(file, "_test.go") {
+			sources = append(sources, file)
 		}
-		count++
-		fileErrs, err := scanFile(root, file, max)
+	}
+	count := len(sources)
+	perFile := par.Map(count, 0, func(i int) []string {
+		fileErrs, err := scanFile(root, sources[i], max)
 		if err != nil {
-			return checkkit.Result{}, err
+			return []string{err.Error()}
 		}
-		errs = append(errs, fileErrs...)
+		return fileErrs
+	})
+	var errs []string
+	for _, fe := range perFile {
+		errs = append(errs, fe...)
 	}
 	if len(errs) > 0 {
 		return checkkit.Fail(count, errs...), nil

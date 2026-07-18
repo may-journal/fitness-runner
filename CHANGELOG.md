@@ -7,6 +7,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1821
+
+- Perf: parallelize file scanning inside the heavy checks. New `internal/par` worker pool (generic, deterministic — results return in input order, so parallelism can never change a check's output; pinned by ordering tests) now backs `walkfs.ScanFiles` (every markdown scanner and `no-eslint-disable`), the cspell engine's per-file loop, jscpd's read-and-lex phase (clone detection itself stays serial — it builds shared hash tables), and `go-complexity`'s per-file parsing. Checks were already concurrent across the suite; this removes the serial floor inside the slowest ones: the full 18-check dogfood suite drops from ~111ms to ~68-76ms. Fittingly, `go-complexity` flagged the new pool's own `Map` at 6 before it could land — the clamp logic became a helper.
+
 ### 2026.07.18.1819
 
 - Feat: add the `go-complexity` check — the first net-new check of the Go era and the Go-native counterpart of the house eslint rule (`complexity: max 5`). Pure standard library (`go/ast` + `go/parser`): every function starts at 1 and gains a point per `if`/`for`/`range`/non-default `switch` or `select` clause/`&&`/`||`; function literals score separately like eslint scores arrows; `_test.go` files are exempt; the ceiling is configurable via `.fitnessrc.json` `goComplexity.max`. Opt-in (Go-specific, like `swiftlint`), enabled on this repo, scanning all 50 Go files in about 10ms.

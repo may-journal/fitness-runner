@@ -17,6 +17,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/clonedetect"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -89,20 +90,31 @@ func dropGitignored(kept []string, ignored map[string]bool) []string {
 // that vanish mid-scan; what remains is what "scanned" means, so its
 // length is the check's filesChecked.
 func lexTargets(root string, paths []string) []clonedetect.File {
+	lexed := par.Map(len(paths), 0, func(i int) *clonedetect.File {
+		return lexOne(root, paths[i])
+	})
 	var files []clonedetect.File
-	for _, rel := range paths {
-		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil || isBinary(raw) {
-			continue
+	for _, f := range lexed {
+		if f != nil {
+			files = append(files, *f)
 		}
-		content := string(raw)
-		files = append(files, clonedetect.File{
-			Path:   rel,
-			Tokens: clonedetect.Lex(content),
-			Lines:  clonedetect.CountLines(content),
-		})
 	}
 	return files
+}
+
+// lexOne reads and lexes a single path for the parallel pool; nil marks a
+// binary or vanished file (skipped, not scanned).
+func lexOne(root, rel string) *clonedetect.File {
+	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil || isBinary(raw) {
+		return nil
+	}
+	content := string(raw)
+	return &clonedetect.File{
+		Path:   rel,
+		Tokens: clonedetect.Lex(content),
+		Lines:  clonedetect.CountLines(content),
+	}
 }
 
 func matchesAny(globs []string, rel string) bool {

@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // runnerSkipDirs are always pruned, at any depth, by basename.
@@ -53,15 +55,32 @@ func addCspellBareIgnores(root string, set map[string]bool) {
 // the file-scanning checks. The first unreadable file aborts with its error.
 func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) ([]string, int, error) {
 	files := FilesByExt(root, exts...)
+	results := par.Map(len(files), 0, func(i int) scanResult {
+		return scanOne(root, files[i], scan)
+	})
 	var errs []string
-	for _, file := range files {
-		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
-		if err != nil {
-			return nil, 0, err
+	for _, r := range results {
+		if r.err != nil {
+			return nil, 0, r.err
 		}
-		errs = append(errs, scan(file, string(content))...)
+		errs = append(errs, r.errs...)
 	}
 	return errs, len(files), nil
+}
+
+// scanResult carries one file's scan outcome through the worker pool.
+type scanResult struct {
+	errs []string
+	err  error
+}
+
+// scanOne reads and scans a single file for the parallel ScanFiles pool.
+func scanOne(root, file string, scan func(relPath, content string) []string) scanResult {
+	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	if err != nil {
+		return scanResult{err: err}
+	}
+	return scanResult{errs: scan(file, string(content))}
 }
 
 // FilesByExt returns the sorted slash-separated relative paths of files

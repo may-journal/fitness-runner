@@ -27,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
 )
@@ -98,9 +99,12 @@ func checkableStaged(root, p string) bool {
 // checkFiles scans each file and formats issues exactly like the cspell CLI
 // run from the root: "<path>:<line>:<col> - Unknown word (<word>)".
 func checkFiles(root string, files []string, checker *spell.Checker) []string {
+	perFile := par.Map(len(files), 0, func(i int) []string {
+		return fileIssues(root, files[i], checker)
+	})
 	var errs []string
-	for _, rel := range files {
-		errs = append(errs, fileIssues(root, rel, checker)...)
+	for _, fe := range perFile {
+		errs = append(errs, fe...)
 	}
 	return errs
 }
