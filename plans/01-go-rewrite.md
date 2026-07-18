@@ -57,10 +57,10 @@ relatedConfigurations: ['../package.json']
 
 4. The stubborn four — last, decided on arrival
 
-   - [ ] prettier — decide exec-the-binary vs native drift heuristics when we get here, then build it
-   - [ ] eslint — the enforced rule set is small (sort-keys, complexity, max-lines, jsdoc-require, perfectionist sorts); decide native subset vs exec when we get here
-   - [ ] vitest-coverage-full — decide exec vs reading coverage artifacts when we get here
-   - [ ] swiftlint — exec wrapper, but it waits with its external-binary cohort
+   - [x] prettier — decided: exec the real binary (node_modules/.bin walk-up then PATH, never npx); staged filtering, passthrough, and error strings ported verbatim
+   - [x] eslint — decided: exec the eslint CLI with the shared flat config (a native rule subset would mean a TS parser in Go for a brittle approximation); byte-identical output on this repo
+   - [x] vitest-coverage-full — decided: threshold gating via internal/vitestconf, then exec vitest run --coverage with the TS config fallback; 120s describe budget
+   - [x] swiftlint — decided: system-binary exec via PATH with real JSON violation parsing; byte-identical against real swiftlint
 
 5. Lock it in
 

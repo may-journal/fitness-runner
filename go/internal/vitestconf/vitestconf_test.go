@@ -256,3 +256,99 @@ func TestFitnessRunnerRoot(t *testing.T) {
 		}
 	})
 }
+
+func TestHasFullThresholds(t *testing.T) {
+	const fullJS = "module.exports = { test: { coverage: { thresholds: " +
+		"{ branches: 100, functions: 100, lines: 100, statements: 100 } } } };"
+	const partialJS = "module.exports = { test: { coverage: { thresholds: " +
+		"{ branches: 90, functions: 100, lines: 100, statements: 100 } } } };"
+	cases := []struct {
+		name          string
+		rootFiles     map[string]string
+		rootDirs      []string
+		fallbackFiles map[string]string
+		noFallback    bool
+		want          bool
+	}{
+		{name: "all literal 100 pass", want: true,
+			rootFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "one threshold 90 fails", want: false,
+			rootFiles: map[string]string{"vitest.config.js": partialJS}},
+		{name: "no space after colon still matches", want: true,
+			rootFiles: map[string]string{"vitest.config.js": "branches:100, functions:100, lines:100, statements:100"}},
+		{name: "1000 is not 100", want: false,
+			rootFiles: map[string]string{"vitest.config.js": "branches: 1000, functions: 100, lines: 100, statements: 100"}},
+		{name: "raw fast path reads comments like the TS did", want: true,
+			rootFiles: map[string]string{"vitest.config.js": "module.exports = null; // branches: 100, functions: 100, lines: 100, statements: 100"}},
+		{name: "variable-built thresholds are unresolvable", want: false,
+			rootFiles: map[string]string{"vitest.config.mjs": "const t = 100; export default { test: { coverage: { thresholds: { branches: t, functions: t, lines: t, statements: t } } } };"}},
+		{name: "empty coverage block fails", want: false,
+			rootFiles: map[string]string{"vitest.config.js": "module.exports = { test: { coverage: {} } };"}},
+		{name: "fallback used when root has no source", want: true,
+			fallbackFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "root config decides over a full fallback", want: false,
+			rootFiles:     map[string]string{"vitest.config.js": partialJS},
+			fallbackFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "any raw-matching config file wins, not just the first", want: true,
+			rootFiles: map[string]string{
+				"vitest.config.cjs": partialJS,
+				"vitest.config.js":  fullJS,
+			}},
+		{name: "unreadable config candidate skipped", want: true,
+			rootDirs:  []string{"vitest.config.cjs"},
+			rootFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "config file beats full package.json vitest", want: false,
+			rootFiles: map[string]string{
+				"vitest.config.js": partialJS,
+				"package.json":     `{"vitest":{"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100,"statements":100}}}}`,
+			}},
+		{name: "package.json top-level coverage full", want: true,
+			rootFiles: map[string]string{"package.json": `{"vitest":{"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100,"statements":100}}}}`}},
+		{name: "package.json test.coverage full", want: true,
+			rootFiles: map[string]string{"package.json": `{"vitest":{"test":{"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100,"statements":100}}}}}`}},
+		{name: "package.json thresholds 99 decide false over full fallback", want: false,
+			rootFiles:     map[string]string{"package.json": `{"vitest":{"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100,"statements":99}}}}`},
+			fallbackFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "package.json vitest null falls through to fallback", want: true,
+			rootFiles:     map[string]string{"package.json": `{"vitest":null}`},
+			fallbackFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "invalid package.json falls through to fallback", want: true,
+			rootFiles:     map[string]string{"package.json": `{ invalid }`},
+			fallbackFiles: map[string]string{"vitest.config.js": fullJS}},
+		{name: "missing statements key fails", want: false,
+			rootFiles: map[string]string{"package.json": `{"vitest":{"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100}}}}`}},
+		{name: "string threshold values fail", want: false,
+			rootFiles: map[string]string{"package.json": `{"vitest":{"coverage":{"thresholds":{"branches":"100","functions":"100","lines":"100","statements":"100"}}}}`}},
+		{name: "non-object test.coverage does not fall back to coverage", want: false,
+			rootFiles: map[string]string{"package.json": `{"vitest":{"test":{"coverage":5},"coverage":{"thresholds":{"branches":100,"functions":100,"lines":100,"statements":100}}}}`}},
+		{name: "no source anywhere", want: false},
+		{name: "no source and no fallback", noFallback: true, want: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			for _, name := range tc.rootDirs {
+				if err := os.MkdirAll(filepath.Join(root, name), 0o755); err != nil {
+					t.Fatal(err)
+				}
+			}
+			for name, content := range tc.rootFiles {
+				if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			fallback := ""
+			if !tc.noFallback {
+				fallback = t.TempDir()
+				for name, content := range tc.fallbackFiles {
+					if err := os.WriteFile(filepath.Join(fallback, name), []byte(content), 0o644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			if got := HasFullThresholds(root, fallback); got != tc.want {
+				t.Fatalf("HasFullThresholds = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
