@@ -16,7 +16,8 @@
     "gitignore-why",
     "markdown-filename-kebab-case",
     "build-output-untracked",
-    "repeated-string-literals"
+    "repeated-string-literals",
+    "go-complexity"
   ],
   "repeatedStringLiterals": {
     "allow": [

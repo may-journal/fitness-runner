@@ -82,13 +82,7 @@ func (s *descriptionSet) has(text string) bool { return s.seen[text] }
 // addTableDescriptions adds normalized (lowercased, whitespace-collapsed)
 // descriptions from one callout table.
 func addTableDescriptions(table *mermaid.CalloutTableBlock, set *descriptionSet) {
-	index := 1
-	for i, cell := range table.Header {
-		if descriptionHeader.MatchString(cell) {
-			index = i
-			break
-		}
-	}
+	index := descriptionColumn(table.Header)
 	for _, row := range table.Rows {
 		cell := ""
 		if index < len(row) {
@@ -98,6 +92,17 @@ func addTableDescriptions(table *mermaid.CalloutTableBlock, set *descriptionSet)
 			set.add(text)
 		}
 	}
+}
+
+// descriptionColumn returns the index of the first header cell naming the
+// description column, defaulting to 1 (the TS fallback) when none matches.
+func descriptionColumn(header []string) int {
+	for i, cell := range header {
+		if descriptionHeader.MatchString(cell) {
+			return i
+		}
+	}
+	return 1
 }
 
 // levelDescriptions collects a doc's normalized callout descriptions, for

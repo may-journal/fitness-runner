@@ -68,11 +68,11 @@ go/bin/fitness prettier --write .   # passthrough args reach the check
 
 ## Checks
 
-All 27 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
+All 28 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
 
 - Pure logic: node-version, gitignore-why, changelog, changelog-updated, semantic-commit, commit-attribution, read-repo-first, markdown-filename-kebab-case, markdown-filename-camel-case, markdown-front-matter, markdown-no-bold-italic, no-eslint-disable, build-output-untracked, repeated-string-literals
 - Parsers and network: the five mermaid diagram/callout checks, vitest-coverage-exclude, dependency-currency (native npm-registry client)
-- Native engines: cspell (embedded dictionaries, ~217k words) and jscpd (token-based clone detection) — no external tool needed
+- Native engines: cspell (embedded dictionaries, ~217k words), jscpd (token-based clone detection), and go-complexity (cyclomatic complexity ceiling for Go, the house eslint rule's counterpart) — no external tool needed
 - Tool wrappers: prettier, eslint, vitest-coverage-full, swiftlint — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx; a missing binary fails with a one-line install hint
 
 Default run order lives in the runner ([go/cmd/fitness/main.go](go/cmd/fitness/main.go)); opt-in checks (swiftlint, commit-attribution, the mermaid family, and others) are enabled per repo via `.fitnessrc.json`.

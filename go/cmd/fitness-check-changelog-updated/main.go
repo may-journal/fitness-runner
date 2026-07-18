@@ -102,20 +102,32 @@ func parseStagedDiff(diff string) []diffFile {
 			current = strings.TrimPrefix(strings.TrimSpace(line[4:]), "b/")
 			continue
 		}
-		if current == "" || !strings.HasPrefix(line, "+") || strings.HasPrefix(line, "++") {
-			continue
+		if isAddedLine(current, line) {
+			files = accumulateAdded(files, index, current, line[1:])
 		}
-		text := line[1:]
-		i, seen := index[current]
-		switch {
-		case !seen:
-			index[current] = len(files)
-			files = append(files, diffFile{path: current, added: text})
-		case files[i].added != "":
-			files[i].added += " " + text
-		default:
-			files[i].added = text
-		}
+	}
+	return files
+}
+
+// isAddedLine reports whether line is added content attributable to a known
+// current file: a "+" prefix but not "++" (which would be a "+++" header).
+func isAddedLine(current, line string) bool {
+	return current != "" && strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "++")
+}
+
+// accumulateAdded folds one added line's text into path's entry in files —
+// created on first sight, space-joined after — using index (path → position
+// in files) to keep first-appearance order.
+func accumulateAdded(files []diffFile, index map[string]int, path, text string) []diffFile {
+	i, seen := index[path]
+	switch {
+	case !seen:
+		index[path] = len(files)
+		files = append(files, diffFile{path: path, added: text})
+	case files[i].added != "":
+		files[i].added += " " + text
+	default:
+		files[i].added = text
 	}
 	return files
 }
@@ -142,15 +154,7 @@ func extractWords(text string) []string {
 // judge applies the check's gates in TS order: changelog additions present,
 // rest-of-diff words present, timestamp agreement, then word overlap.
 func judge(root string, files []diffFile, at time.Time) checkkit.Result {
-	changelogAdded := ""
-	var restParts []string
-	for _, f := range files {
-		if f.path == changelogMD {
-			changelogAdded = f.added
-		} else {
-			restParts = append(restParts, f.added)
-		}
-	}
+	changelogAdded, restParts := splitDiff(files)
 	changelogWords := extractWords(changelogAdded)
 	if len(changelogWords) == 0 {
 		return checkkit.Fail(1, msgStageChangelog)
@@ -163,6 +167,19 @@ func judge(root string, files []diffFile, at time.Time) checkkit.Result {
 		return checkkit.Fail(1, msg)
 	}
 	return judgeOverlap(changelogWords, restWords)
+}
+
+// splitDiff separates the changelog's added content from every other file's,
+// keeping the rest in diff order.
+func splitDiff(files []diffFile) (changelogAdded string, restParts []string) {
+	for _, f := range files {
+		if f.path == changelogMD {
+			changelogAdded = f.added
+		} else {
+			restParts = append(restParts, f.added)
+		}
+	}
+	return changelogAdded, restParts
 }
 
 // checkChangelogTime requires every "### yyyy.mm.dd.HHMM" heading in the
@@ -204,16 +221,7 @@ func expectedTimestamp(root string, at time.Time) string {
 // shortfall (first five overlapping words) and suggests the first
 // suggestWords rest-diff words.
 func judgeOverlap(changelogWords, restWords []string) checkkit.Result {
-	restSet := make(map[string]bool, len(restWords))
-	for _, w := range restWords {
-		restSet[w] = true
-	}
-	var overlap []string
-	for _, w := range changelogWords {
-		if restSet[w] {
-			overlap = append(overlap, w)
-		}
-	}
+	overlap := overlapWords(changelogWords, restWords)
 	if len(overlap) >= minOverlap {
 		return checkkit.Pass(1)
 	}
@@ -229,4 +237,20 @@ func judgeOverlap(changelogWords, restWords []string) checkkit.Result {
 		fmt.Sprintf("%s%d%s%d: %s)",
 			msgOverlapHead, minOverlap, msgOverlapTail, len(overlap), strings.Join(shown, ", ")),
 		msgSuggestPrefix+strings.Join(suggested, ", "))
+}
+
+// overlapWords returns the changelog words also present in the rest of the
+// staged diff, in changelog first-occurrence order.
+func overlapWords(changelogWords, restWords []string) []string {
+	restSet := make(map[string]bool, len(restWords))
+	for _, w := range restWords {
+		restSet[w] = true
+	}
+	var overlap []string
+	for _, w := range changelogWords {
+		if restSet[w] {
+			overlap = append(overlap, w)
+		}
+	}
+	return overlap
 }

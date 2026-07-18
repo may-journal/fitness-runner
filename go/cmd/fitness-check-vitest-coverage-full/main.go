@@ -96,21 +96,38 @@ func vitestArgs(root, frRoot string) []string {
 	return append(args, "--config", configPath)
 }
 
+// isFile reports whether p exists and is not a directory.
+func isFile(p string) bool {
+	info, err := os.Stat(p)
+	return err == nil && !info.IsDir()
+}
+
+// vitestFromNodeModules walks node_modules/.bin up from the absolute root
+// looking for the vitest binary; empty when no ancestor has one or root
+// cannot be made absolute.
+func vitestFromNodeModules(root string) string {
+	dir, err := filepath.Abs(root)
+	if err != nil {
+		return ""
+	}
+	for {
+		candidate := filepath.Join(dir, "node_modules", ".bin", "vitest")
+		if isFile(candidate) {
+			return candidate
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return ""
+		}
+		dir = parent
+	}
+}
+
 // resolveVitest finds the vitest binary the way npx would have, without npx:
 // node_modules/.bin/vitest walking up from root, then PATH.
 func resolveVitest(root string) (string, bool) {
-	if dir, err := filepath.Abs(root); err == nil {
-		for {
-			candidate := filepath.Join(dir, "node_modules", ".bin", "vitest")
-			if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-				return candidate, true
-			}
-			parent := filepath.Dir(dir)
-			if parent == dir {
-				break
-			}
-			dir = parent
-		}
+	if bin := vitestFromNodeModules(root); bin != "" {
+		return bin, true
 	}
 	path, err := exec.LookPath("vitest")
 	if err != nil {

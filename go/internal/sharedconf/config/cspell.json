@@ -86,6 +86,10 @@
     "splitmix",
     "wordlists",
     "gofmt",
-    "sharedconf"
+    "sharedconf",
+    "fset",
+    "wordlist",
+    "flaggable",
+    "LSTMs"
   ]
 }

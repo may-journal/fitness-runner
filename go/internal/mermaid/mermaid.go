@@ -173,29 +173,44 @@ func spaceOrPipeFollows(line string, end int) bool {
 }
 
 // collectCalloutPositions records each callout number's absolute digit
-// position for one (non-style) line. Matching mirrors JS matchAll: a
-// successful match resumes after the consumed core (the lookahead consumes
-// nothing); a failed lookahead abandons that start and scans again from the
-// next character, exactly where the JS engine's scan would resume.
+// position for one (non-style) line by scanning it with every callout
+// pattern.
 func collectCalloutPositions(line string, offset int, byPosition map[int]int) {
 	for _, p := range calloutPatterns {
-		pos := 0
-		for {
-			loc := p.core.FindStringSubmatchIndex(line[pos:])
-			if loc == nil {
-				break
-			}
-			start, end := pos+loc[0], pos+loc[1]
-			if p.follows != nil && !p.follows(line, end) {
-				pos = start + 1
-				continue
-			}
-			if n, err := strconv.Atoi(line[pos+loc[2] : pos+loc[3]]); err == nil {
-				byPosition[offset+pos+loc[2]] = n
-			}
-			pos = end
-		}
+		p.scan(line, offset, byPosition)
 	}
+}
+
+// scan records the pattern's callout numbers on line into byPosition, keyed
+// by each digit's absolute position (line offset + in-line index). Matching
+// mirrors JS matchAll: a successful match resumes after the consumed core
+// (the lookahead consumes nothing); a failed lookahead abandons that start
+// and scans again from the next character, exactly where the JS engine's
+// scan would resume.
+func (p calloutPattern) scan(line string, offset int, byPosition map[int]int) {
+	pos := 0
+	for {
+		loc := p.core.FindStringSubmatchIndex(line[pos:])
+		if loc == nil {
+			break
+		}
+		start, end := pos+loc[0], pos+loc[1]
+		if p.lookaheadFails(line, end) {
+			pos = start + 1
+			continue
+		}
+		if n, err := strconv.Atoi(line[pos+loc[2] : pos+loc[3]]); err == nil {
+			byPosition[offset+pos+loc[2]] = n
+		}
+		pos = end
+	}
+}
+
+// lookaheadFails reports whether the pattern's emulated lookahead rejects a
+// core match ending at byte offset end; patterns without a lookahead never
+// reject.
+func (p calloutPattern) lookaheadFails(line string, end int) bool {
+	return p.follows != nil && !p.follows(line, end)
 }
 
 // ExtractDiagramNumbers returns the callout numbers referenced in a mermaid
@@ -376,26 +391,41 @@ func PairDiagramsWithTables(blocks []DocBlock) PairResult {
 	for _, block := range blocks {
 		switch b := block.(type) {
 		case *DiagramBlock:
-			if len(b.Numbers) == 0 {
-				continue // legend diagrams are invisible to pairing
-			}
-			if pending != nil {
-				result.Pairs = append(result.Pairs, DiagramTablePair{Diagram: pending})
-			}
-			pending = b
+			pending = pairDiagram(&result, pending, b)
 		case *CalloutTableBlock:
-			if pending != nil {
-				result.Pairs = append(result.Pairs, DiagramTablePair{Diagram: pending, Table: b})
-				pending = nil
-				continue
-			}
-			result.OrphanTables = append(result.OrphanTables, b)
+			pending = pairTable(&result, pending, b)
 		}
 	}
 	if pending != nil {
 		result.Pairs = append(result.Pairs, DiagramTablePair{Diagram: pending})
 	}
 	return result
+}
+
+// pairDiagram folds a diagram block into the pairing state and returns the
+// new pending diagram: a legend diagram (no callout numbers) is invisible to
+// pairing and leaves pending unchanged; a numbered diagram flushes any
+// pending diagram as a table-less pair and becomes pending itself.
+func pairDiagram(result *PairResult, pending, b *DiagramBlock) *DiagramBlock {
+	if len(b.Numbers) == 0 {
+		return pending
+	}
+	if pending != nil {
+		result.Pairs = append(result.Pairs, DiagramTablePair{Diagram: pending})
+	}
+	return b
+}
+
+// pairTable folds a callout table into the pairing state and returns the new
+// pending diagram: the table completes the pending diagram's pair (clearing
+// pending), or becomes an orphan when no numbered diagram precedes it.
+func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) *DiagramBlock {
+	if pending == nil {
+		result.OrphanTables = append(result.OrphanTables, b)
+		return nil
+	}
+	result.Pairs = append(result.Pairs, DiagramTablePair{Diagram: pending, Table: b})
+	return nil
 }
 
 // RunDocCheck runs a per-document validator over every .md file under root

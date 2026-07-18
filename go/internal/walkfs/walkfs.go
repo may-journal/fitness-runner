@@ -23,22 +23,29 @@ func SkipDirs(root string) map[string]bool {
 	for _, d := range runnerSkipDirs {
 		set[d] = true
 	}
+	addCspellBareIgnores(root, set)
+	return set
+}
+
+// addCspellBareIgnores adds every <root>/cspell.json ignorePaths entry that
+// is a bare name (no '/' or '*') to set. Any read/parse error contributes
+// nothing, matching the TS behavior.
+func addCspellBareIgnores(root string, set map[string]bool) {
 	raw, err := os.ReadFile(filepath.Join(root, "cspell.json"))
 	if err != nil {
-		return set
+		return
 	}
 	var spell struct {
 		IgnorePaths []string `json:"ignorePaths"`
 	}
 	if err := json.Unmarshal(raw, &spell); err != nil {
-		return set
+		return
 	}
 	for _, p := range spell.IgnorePaths {
 		if !strings.ContainsAny(p, "/*") {
 			set[p] = true
 		}
 	}
-	return set
 }
 
 // ScanFiles runs scan over every file under root matching exts and returns
@@ -69,23 +76,46 @@ func FilesByExt(root string, exts ...string) []string {
 			return nil
 		}
 		if d.IsDir() {
-			if path != root && skip[d.Name()] {
-				return filepath.SkipDir
-			}
-			return nil
+			return pruneDir(root, path, d.Name(), skip)
 		}
-		for _, ext := range exts {
-			if strings.HasSuffix(d.Name(), ext) {
-				rel, relErr := filepath.Rel(root, path)
-				if relErr != nil {
-					return nil
-				}
-				out = append(out, filepath.ToSlash(rel))
-				return nil
+		if hasAnySuffix(d.Name(), exts) {
+			if rel, ok := relSlash(root, path); ok {
+				out = append(out, rel)
 			}
 		}
 		return nil
 	})
 	sort.Strings(out)
 	return out
+}
+
+// pruneDir returns filepath.SkipDir when the walker should prune the
+// directory at path (its basename is in the skip set and it is not the walk
+// root itself), else nil to descend.
+func pruneDir(root, path, name string, skip map[string]bool) error {
+	if path != root && skip[name] {
+		return filepath.SkipDir
+	}
+	return nil
+}
+
+// hasAnySuffix reports whether name ends in any of exts (suffix match, not
+// glob).
+func hasAnySuffix(name string, exts []string) bool {
+	for _, ext := range exts {
+		if strings.HasSuffix(name, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+// relSlash converts path to its slash-separated form relative to root; ok is
+// false when path cannot be made relative.
+func relSlash(root, path string) (string, bool) {
+	rel, err := filepath.Rel(root, path)
+	if err != nil {
+		return "", false
+	}
+	return filepath.ToSlash(rel), true
 }

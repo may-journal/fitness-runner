@@ -55,52 +55,120 @@ var directiveRe = regexp.MustCompile(`(?i)\bc?spell(?:-?checker)?::?[ \t]*`)
 // mask regions, and every recognized directive masks its own text. Unknown
 // text after a bare "cspell:" is left alone, exactly like cspell.
 func maskDirectives(text string, masked []bool) map[string]struct{} {
-	words := make(map[string]struct{})
-	lines := lineOffsets(text)
-	blockStart := -1
-	for n := 0; n < len(lines); n++ {
-		lineStart, lineEnd := lines[n], len(text)
-		if n+1 < len(lines) {
-			lineEnd = lines[n+1]
-		}
-		loc := directiveRe.FindStringIndex(text[lineStart:lineEnd])
-		if loc == nil {
-			continue
-		}
-		dirStart := lineStart + loc[0]
-		rest := strings.ToLower(text[lineStart+loc[1] : lineEnd])
-		switch {
-		case keyword(rest, "disable-line"):
-			mark(masked, lineStart, lineEnd)
-		case keyword(rest, "disable-next"):
-			mark(masked, dirStart, lineEnd)
-			if n+1 < len(lines) {
-				nextEnd := len(text)
-				if n+2 < len(lines) {
-					nextEnd = lines[n+2]
-				}
-				mark(masked, lines[n+1], nextEnd)
-			}
-		case keyword(rest, "disable"):
-			if blockStart < 0 {
-				blockStart = dirStart
-			}
-		case keyword(rest, "enable"):
-			if blockStart >= 0 {
-				mark(masked, blockStart, lineEnd)
-				blockStart = -1
-			} else {
-				mark(masked, dirStart, lineStart+loc[1]+len("enable"))
-			}
-		case strings.HasPrefix(rest, "ignore") || strings.HasPrefix(rest, "word"):
-			addIgnoreWords(text[lineStart+loc[1]:lineEnd], words)
-			mark(masked, dirStart, lineEnd)
-		}
+	d := &directiveMasker{
+		text:       text,
+		masked:     masked,
+		lines:      lineOffsets(text),
+		words:      make(map[string]struct{}),
+		blockStart: -1,
 	}
-	if blockStart >= 0 {
-		mark(masked, blockStart, len(text))
+	for n := range d.lines {
+		d.maskLine(n)
 	}
-	return words
+	if d.blockStart >= 0 {
+		mark(masked, d.blockStart, len(text))
+	}
+	return d.words
+}
+
+// directiveMasker carries the state of one maskDirectives pass: the text and
+// mask being written, the text's line offsets, the collected ignore words,
+// and the start of an open disable…enable block (-1 when none is open).
+type directiveMasker struct {
+	text       string
+	masked     []bool
+	lines      []int
+	words      map[string]struct{}
+	blockStart int
+}
+
+// directiveAt locates one recognized directive: its line index, the line's
+// byte range, and the byte offsets of the directive prefix (dirStart) and of
+// the text following it (restStart).
+type directiveAt struct {
+	n, lineStart, lineEnd, dirStart, restStart int
+}
+
+// lineSpan returns the [start, end) byte range of line n, where end includes
+// the trailing newline (or is the end of text for the last line).
+func (d *directiveMasker) lineSpan(n int) (start, end int) {
+	end = len(d.text)
+	if n+1 < len(d.lines) {
+		end = d.lines[n+1]
+	}
+	return d.lines[n], end
+}
+
+// maskLine finds a directive prefix on line n and applies the directive that
+// follows it; lines without one are untouched.
+func (d *directiveMasker) maskLine(n int) {
+	lineStart, lineEnd := d.lineSpan(n)
+	loc := directiveRe.FindStringIndex(d.text[lineStart:lineEnd])
+	if loc == nil {
+		return
+	}
+	dir := directiveAt{
+		n:         n,
+		lineStart: lineStart,
+		lineEnd:   lineEnd,
+		dirStart:  lineStart + loc[0],
+		restStart: lineStart + loc[1],
+	}
+	rest := strings.ToLower(d.text[dir.restStart:lineEnd])
+	if !d.applyDisable(rest, dir) {
+		d.applyEnableOrIgnore(rest, dir)
+	}
+}
+
+// applyDisable handles the disable family (disable-line, disable-next,
+// disable), reporting whether rest named one of them.
+func (d *directiveMasker) applyDisable(rest string, dir directiveAt) bool {
+	switch {
+	case keyword(rest, "disable-line"):
+		mark(d.masked, dir.lineStart, dir.lineEnd)
+	case keyword(rest, "disable-next"):
+		d.maskNextLine(dir)
+	case keyword(rest, "disable"):
+		if d.blockStart < 0 {
+			d.blockStart = dir.dirStart
+		}
+	default:
+		return false
+	}
+	return true
+}
+
+// applyEnableOrIgnore handles enable (closing an open block or masking just
+// itself) and the ignore/word directives that also collect words.
+func (d *directiveMasker) applyEnableOrIgnore(rest string, dir directiveAt) {
+	switch {
+	case keyword(rest, "enable"):
+		d.closeBlock(dir)
+	case strings.HasPrefix(rest, "ignore") || strings.HasPrefix(rest, "word"):
+		addIgnoreWords(d.text[dir.restStart:dir.lineEnd], d.words)
+		mark(d.masked, dir.dirStart, dir.lineEnd)
+	}
+}
+
+// maskNextLine masks a disable-next directive from its start through the end
+// of the following line, when one exists.
+func (d *directiveMasker) maskNextLine(dir directiveAt) {
+	mark(d.masked, dir.dirStart, dir.lineEnd)
+	if dir.n+1 < len(d.lines) {
+		_, nextEnd := d.lineSpan(dir.n + 1)
+		mark(d.masked, d.lines[dir.n+1], nextEnd)
+	}
+}
+
+// closeBlock ends an open disable…enable block by masking the whole block, or
+// masks just the enable keyword when no block is open, exactly like cspell.
+func (d *directiveMasker) closeBlock(dir directiveAt) {
+	if d.blockStart >= 0 {
+		mark(d.masked, d.blockStart, dir.lineEnd)
+		d.blockStart = -1
+		return
+	}
+	mark(d.masked, dir.dirStart, dir.restStart+len("enable"))
 }
 
 // keyword reports whether rest starts with kw at a word boundary, mirroring

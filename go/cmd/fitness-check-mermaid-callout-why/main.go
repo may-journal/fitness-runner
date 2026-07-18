@@ -59,13 +59,7 @@ func isNumberedRowMissingWhy(row []string, whyIndex int) bool {
 // whyErrorsForTable returns the errors for one table: a missing Why column,
 // or numbered rows with an empty Why cell.
 func whyErrorsForTable(file string, table *mermaid.CalloutTableBlock) []string {
-	whyIndex := -1
-	for i, cell := range table.Header {
-		if whyCell.MatchString(cell) {
-			whyIndex = i
-			break
-		}
-	}
+	whyIndex := whyColumnIndex(table.Header)
 	if whyIndex == -1 {
 		return []string{fmt.Sprintf(
 			`%s: callout table at line %d is missing a "Why" column`, file, table.Line)}
@@ -79,6 +73,17 @@ func whyErrorsForTable(file string, table *mermaid.CalloutTableBlock) []string {
 		}
 	}
 	return errors
+}
+
+// whyColumnIndex returns the index of the first header cell naming the Why
+// column, or -1 when the table has none.
+func whyColumnIndex(header []string) int {
+	for i, cell := range header {
+		if whyCell.MatchString(cell) {
+			return i
+		}
+	}
+	return -1
 }
 
 // validateDoc collects the Why-column errors for every callout table in one

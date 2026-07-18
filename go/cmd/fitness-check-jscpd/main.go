@@ -67,7 +67,12 @@ func scanTargets(root string) []string {
 		}
 		kept = append(kept, rel)
 	}
-	ignored := clonedetect.GitIgnored(root, kept)
+	return dropGitignored(kept, clonedetect.GitIgnored(root, kept))
+}
+
+// dropGitignored removes the paths present in ignored; an empty ignored set
+// passes kept through untouched.
+func dropGitignored(kept []string, ignored map[string]bool) []string {
 	if len(ignored) == 0 {
 		return kept
 	}

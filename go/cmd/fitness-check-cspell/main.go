@@ -78,14 +78,21 @@ func stagedPaths(root string) (files []string, staged bool) {
 		return nil, false
 	}
 	for _, p := range stagedFiles {
-		if stagedSkip[path.Base(p)] {
-			continue
-		}
-		if info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p))); err == nil && !info.IsDir() {
+		if checkableStaged(root, p) {
 			files = append(files, p)
 		}
 	}
 	return files, true
+}
+
+// checkableStaged reports whether a staged path should be scanned: not an
+// always-ignored basename and still an existing non-directory under root.
+func checkableStaged(root, p string) bool {
+	if stagedSkip[path.Base(p)] {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))
+	return err == nil && !info.IsDir()
 }
 
 // checkFiles scans each file and formats issues exactly like the cspell CLI
@@ -93,21 +100,34 @@ func stagedPaths(root string) (files []string, staged bool) {
 func checkFiles(root string, files []string, checker *spell.Checker) []string {
 	var errs []string
 	for _, rel := range files {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			errs = append(errs, fmt.Sprintf("%s: cspell reported issues (run: npx cspell <files>)", rel))
-			continue
-		}
-		if bytes.IndexByte(data[:min(len(data), 8192)], 0) >= 0 {
-			continue // binary file: counted as checked, never spelled
-		}
-		issues := checker.CheckText(string(data))
-		if len(issues) > maxIssuesPerFile {
-			issues = issues[:maxIssuesPerFile]
-		}
-		for _, is := range issues {
-			errs = append(errs, fmt.Sprintf("%s:%d:%d - Unknown word (%s)", rel, is.Line, is.Col, is.Word))
-		}
+		errs = append(errs, fileIssues(root, rel, checker)...)
+	}
+	return errs
+}
+
+// fileIssues scans one file and returns its formatted issue lines: a read
+// failure yields the run-cspell hint, binary files yield nothing (counted as
+// checked, never spelled).
+func fileIssues(root, rel string, checker *spell.Checker) []string {
+	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		return []string{fmt.Sprintf("%s: cspell reported issues (run: npx cspell <files>)", rel)}
+	}
+	if bytes.IndexByte(data[:min(len(data), 8192)], 0) >= 0 {
+		return nil
+	}
+	return formatIssues(rel, checker.CheckText(string(data)))
+}
+
+// formatIssues renders issues for one file, capped at maxIssuesPerFile like
+// cspell's default maxNumberOfProblems.
+func formatIssues(rel string, issues []spell.Issue) []string {
+	if len(issues) > maxIssuesPerFile {
+		issues = issues[:maxIssuesPerFile]
+	}
+	var errs []string
+	for _, is := range issues {
+		errs = append(errs, fmt.Sprintf("%s:%d:%d - Unknown word (%s)", rel, is.Line, is.Col, is.Word))
 	}
 	return errs
 }
@@ -119,24 +139,11 @@ func markdownFiles(root string, cfg config) []string {
 	matcher := spell.NewIgnoreMatcher(append([]string{"node_modules", ".git"}, cfg.IgnorePaths...))
 	var files []string
 	_ = filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
-		if err != nil {
+		rel, ok := walkRel(root, p, err)
+		if !ok {
 			return nil
 		}
-		rel, relErr := filepath.Rel(root, p)
-		if relErr != nil || rel == "." {
-			return nil
-		}
-		rel = filepath.ToSlash(rel)
-		if d.IsDir() {
-			if matcher.Matches(rel) {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		if strings.HasSuffix(d.Name(), ".md") && !matcher.Matches(rel) {
-			files = append(files, rel)
-		}
-		return nil
+		return collectMarkdown(rel, d, matcher, &files)
 	})
 	if cfg.UseGitignore {
 		files = withoutGitignored(root, files)
@@ -151,6 +158,35 @@ func markdownFiles(root string, cfg config) []string {
 	return files
 }
 
+// walkRel converts a WalkDir callback's absolute path to a slash-separated
+// root-relative one; ok is false for walk errors and the root itself, which
+// the walk skips without failing.
+func walkRel(root, p string, err error) (string, bool) {
+	if err != nil {
+		return "", false
+	}
+	rel, relErr := filepath.Rel(root, p)
+	if relErr != nil || rel == "." {
+		return "", false
+	}
+	return filepath.ToSlash(rel), true
+}
+
+// collectMarkdown handles one WalkDir entry: ignored directories are pruned,
+// and non-ignored .md files accumulate into *files.
+func collectMarkdown(rel string, d os.DirEntry, matcher *spell.IgnoreMatcher, files *[]string) error {
+	if d.IsDir() {
+		if matcher.Matches(rel) {
+			return filepath.SkipDir
+		}
+		return nil
+	}
+	if strings.HasSuffix(d.Name(), ".md") && !matcher.Matches(rel) {
+		*files = append(*files, rel)
+	}
+	return nil
+}
+
 // withoutGitignored drops paths `git check-ignore` reports as ignored,
 // batched over stdin; outside a git repo (or without git) it filters
 // nothing.
@@ -158,19 +194,9 @@ func withoutGitignored(root string, files []string) []string {
 	if len(files) == 0 {
 		return files
 	}
-	cmd := exec.Command("git", "-C", root, "check-ignore", "--stdin", "-z")
-	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
-	out, err := cmd.Output()
-	if err != nil {
-		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 1 {
-			return files // not a git repo or git missing: no filtering
-		}
-	}
-	ignored := make(map[string]bool)
-	for _, p := range strings.Split(string(out), "\x00") {
-		if p != "" {
-			ignored[p] = true
-		}
+	ignored, ok := gitIgnoredSet(root, files)
+	if !ok {
+		return files // not a git repo or git missing: no filtering
 	}
 	var kept []string
 	for _, f := range files {
@@ -179,6 +205,33 @@ func withoutGitignored(root string, files []string) []string {
 		}
 	}
 	return kept
+}
+
+// gitIgnoredSet asks `git check-ignore --stdin -z` which files are ignored;
+// ok is false when git exits with anything but the check-ignore verdict
+// codes 0 and 1 (not a repo, git missing), meaning no filtering applies.
+func gitIgnoredSet(root string, files []string) (map[string]bool, bool) {
+	cmd := exec.Command("git", "-C", root, "check-ignore", "--stdin", "-z")
+	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
+	out, err := cmd.Output()
+	if err != nil {
+		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 1 {
+			return nil, false
+		}
+	}
+	return nulSeparatedSet(string(out)), true
+}
+
+// nulSeparatedSet builds the membership set of a NUL-separated list,
+// dropping empty entries (the trailing terminator).
+func nulSeparatedSet(out string) map[string]bool {
+	set := make(map[string]bool)
+	for _, p := range strings.Split(out, "\x00") {
+		if p != "" {
+			set[p] = true
+		}
+	}
+	return set
 }
 
 // config is the subset of cspell.json this check honors.

@@ -64,6 +64,25 @@ func LoadExcludeFromRoot(root string) (exclude []string, found bool) {
 // coverage block is test.coverage when present and non-null, else the
 // top-level coverage; only string entries of an array exclude count.
 func excludeFromPackageJSON(path string) ([]string, bool) {
+	cfg, ok := readVitestObject(path)
+	if !ok {
+		return nil, false
+	}
+	cov, ok := coverageBlockOf(cfg).(map[string]any)
+	if !ok {
+		return nil, true
+	}
+	list, ok := cov["exclude"].([]any)
+	if !ok {
+		return nil, true
+	}
+	return stringEntries(list), true
+}
+
+// readVitestObject reads the "vitest" object of the package.json at path;
+// ok is false when the file is unreadable or malformed or the key does not
+// hold an object — the TS tryLoadPackageJsonVitest contract.
+func readVitestObject(path string) (map[string]any, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, false
@@ -73,33 +92,19 @@ func excludeFromPackageJSON(path string) ([]string, bool) {
 		return nil, false
 	}
 	cfg, ok := pkg["vitest"].(map[string]any)
-	if !ok {
-		return nil, false
-	}
-	var block any
-	if test, ok := cfg["test"].(map[string]any); ok {
-		if c, exists := test["coverage"]; exists && c != nil {
-			block = c
-		}
-	}
-	if block == nil {
-		block = cfg["coverage"]
-	}
-	cov, ok := block.(map[string]any)
-	if !ok {
-		return nil, true
-	}
-	list, ok := cov["exclude"].([]any)
-	if !ok {
-		return nil, true
-	}
+	return cfg, ok
+}
+
+// stringEntries returns the string elements of a decoded JSON array,
+// skipping everything else — the TS check's only-strings-count rule.
+func stringEntries(list []any) []string {
 	var out []string
 	for _, entry := range list {
 		if s, ok := entry.(string); ok {
 			out = append(out, s)
 		}
 	}
-	return out, true
+	return out
 }
 
 // FitnessRunnerRoot mirrors the TS getFitnessRunnerRoot: resolve the
@@ -126,7 +131,7 @@ func sharedConfigDir(root string) string {
 	}
 	for {
 		pkgDir := filepath.Join(dir, "node_modules", "@mayjournal", "fitness-shared")
-		if info, err := os.Stat(pkgDir); err == nil && info.IsDir() {
+		if isDir(pkgDir) {
 			return cspellExportDir(pkgDir)
 		}
 		parent := filepath.Dir(dir)
@@ -135,6 +140,12 @@ func sharedConfigDir(root string) string {
 		}
 		dir = parent
 	}
+}
+
+// isDir reports whether path exists and is a directory.
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.IsDir()
 }
 
 // cspellExportDir resolves the "./cspell" entry of the package's exports map
@@ -198,7 +209,7 @@ func outermostCspellAncestor(start string) string {
 func CoverageExclude(src string) (exclude []string, found bool) {
 	tokens := lex(src)
 	for i := 0; i+2 < len(tokens); i++ {
-		if !isKey(tokens, i, "coverage") || !isPunct(tokens[i+1], ":") || !isPunct(tokens[i+2], "{") {
+		if !isCoverageOpener(tokens, i) {
 			continue
 		}
 		if ex, ok := excludeInObject(tokens, i+3); ok {
@@ -208,30 +219,50 @@ func CoverageExclude(src string) (exclude []string, found bool) {
 	return nil, false
 }
 
+// isCoverageOpener reports whether tokens[i:] opens a coverage object
+// literal: the key "coverage", a colon, and an opening brace. The caller
+// guarantees tokens i+1 and i+2 exist.
+func isCoverageOpener(tokens []token, i int) bool {
+	return isKey(tokens, i, "coverage") && isPunct(tokens[i+1], ":") && isPunct(tokens[i+2], "{")
+}
+
 // excludeInObject scans an object literal's tokens (start is the index just
 // past its opening brace) for a direct exclude key holding an array.
 func excludeInObject(tokens []token, start int) ([]string, bool) {
 	depth := 1
 	for i := start; i < len(tokens); i++ {
-		t := tokens[i]
-		if t.kind == tokPunct {
-			switch t.text {
-			case "{", "[", "(":
-				depth++
-			case "}", "]", ")":
-				depth--
-				if depth == 0 {
-					return nil, false
-				}
-			}
-			continue
+		depth += tokenDepthDelta(tokens[i])
+		if depth == 0 {
+			return nil, false
 		}
-		if depth == 1 && i+2 < len(tokens) && isKey(tokens, i, "exclude") &&
-			isPunct(tokens[i+1], ":") && isPunct(tokens[i+2], "[") {
+		if depth == 1 && isExcludeOpener(tokens, i) {
 			return arrayStrings(tokens, i+3), true
 		}
 	}
 	return nil, false
+}
+
+// isExcludeOpener reports whether tokens[i:] opens an exclude array: the key
+// "exclude", a colon, and an opening bracket, with both punctuation tokens
+// in range.
+func isExcludeOpener(tokens []token, i int) bool {
+	return i+2 < len(tokens) && isKey(tokens, i, "exclude") &&
+		isPunct(tokens[i+1], ":") && isPunct(tokens[i+2], "[")
+}
+
+// tokenDepthDelta returns the nesting-depth change a token causes: +1 for
+// opening punctuation, -1 for closing, 0 for everything else.
+func tokenDepthDelta(t token) int {
+	if t.kind != tokPunct {
+		return 0
+	}
+	switch t.text {
+	case "{", "[", "(":
+		return 1
+	case "}", "]", ")":
+		return -1
+	}
+	return 0
 }
 
 // arrayStrings collects the clean string-literal elements of an array (start
@@ -242,29 +273,26 @@ func arrayStrings(tokens []token, start int) []string {
 	var out []string
 	depth := 1
 	for i := start; i < len(tokens); i++ {
-		t := tokens[i]
-		if t.kind == tokPunct {
-			switch t.text {
-			case "{", "[", "(":
-				depth++
-			case "}", "]", ")":
-				depth--
-				if depth == 0 {
-					return out
-				}
-			}
-			continue
+		depth += tokenDepthDelta(tokens[i])
+		if depth == 0 {
+			return out
 		}
-		if depth != 1 || t.kind != tokString || !t.lit || i+1 >= len(tokens) {
-			continue
-		}
-		prev, next := tokens[i-1], tokens[i+1]
-		if prev.kind == tokPunct && (prev.text == "[" || prev.text == ",") &&
-			next.kind == tokPunct && (next.text == "," || next.text == "]") {
-			out = append(out, t.text)
+		if depth == 1 && isArrayElement(tokens, i) {
+			out = append(out, tokens[i].text)
 		}
 	}
 	return out
+}
+
+// isArrayElement reports whether tokens[i] is a clean string literal sitting
+// directly between array element delimiters: the opening bracket or a comma
+// before it, a comma or the closing bracket after it.
+func isArrayElement(tokens []token, i int) bool {
+	t := tokens[i]
+	if t.kind != tokString || !t.lit || i+1 >= len(tokens) {
+		return false
+	}
+	return isPunctEither(tokens[i-1], "[", ",") && isPunctEither(tokens[i+1], ",", "]")
 }
 
 // isKey reports whether token i is an object key named name: an identifier
@@ -272,17 +300,24 @@ func arrayStrings(tokens []token, start int) []string {
 // opening brace or comma).
 func isKey(tokens []token, i int, name string) bool {
 	t := tokens[i]
-	if t.kind != tokIdent && !(t.kind == tokString && t.lit) {
-		return false
-	}
-	if t.text != name {
-		return false
-	}
-	if i == 0 {
-		return true
-	}
-	prev := tokens[i-1]
-	return prev.kind == tokPunct && (prev.text == "{" || prev.text == ",")
+	return isKeyToken(t) && t.text == name && inKeyPosition(tokens, i)
+}
+
+// isKeyToken reports whether t can serve as an object key: an identifier or
+// a plain (fully literal) string.
+func isKeyToken(t token) bool {
+	return t.kind == tokIdent || (t.kind == tokString && t.lit)
+}
+
+// inKeyPosition reports whether index i is object-key position: the start of
+// input, or right after an opening brace or comma.
+func inKeyPosition(tokens []token, i int) bool {
+	return i == 0 || isPunctEither(tokens[i-1], "{", ",")
+}
+
+// isPunctEither reports whether t is a punctuation token whose text is a or b.
+func isPunctEither(t token, a, b string) bool {
+	return t.kind == tokPunct && (t.text == a || t.text == b)
 }
 
 func isPunct(t token, s string) bool {

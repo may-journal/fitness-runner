@@ -39,16 +39,25 @@ func NewIgnoreMatcher(entries []string) *IgnoreMatcher {
 // directory) is ignored.
 func (m *IgnoreMatcher) Matches(relPath string) bool {
 	segs := strings.Split(relPath, "/")
+	if m.matchesBare(segs) {
+		return true
+	}
+	for _, pat := range m.paths {
+		if matchSegments(pat, segs) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchesBare reports whether any bare (segment-only) pattern matches any
+// path segment.
+func (m *IgnoreMatcher) matchesBare(segs []string) bool {
 	for _, pat := range m.bare {
 		for _, seg := range segs {
 			if matchSegment(pat, seg) {
 				return true
 			}
-		}
-	}
-	for _, pat := range m.paths {
-		if matchSegments(pat, segs) {
-			return true
 		}
 	}
 	return false
@@ -60,15 +69,7 @@ func (m *IgnoreMatcher) Matches(relPath string) bool {
 func matchSegments(pat, path []string) bool {
 	for len(pat) > 0 {
 		if pat[0] == "**" {
-			if len(pat) == 1 {
-				return true
-			}
-			for i := 0; i <= len(path); i++ {
-				if matchSegments(pat[1:], path[i:]) {
-					return true
-				}
-			}
-			return false
+			return matchDoubleStar(pat, path)
 		}
 		if len(path) == 0 || !matchSegment(pat[0], path[0]) {
 			return false
@@ -76,6 +77,20 @@ func matchSegments(pat, path []string) bool {
 		pat, path = pat[1:], path[1:]
 	}
 	return true
+}
+
+// matchDoubleStar matches a pattern whose head is "**" by letting it span any
+// number of path segments, including none; a trailing "**" matches everything.
+func matchDoubleStar(pat, path []string) bool {
+	if len(pat) == 1 {
+		return true
+	}
+	for i := 0; i <= len(path); i++ {
+		if matchSegments(pat[1:], path[i:]) {
+			return true
+		}
+	}
+	return false
 }
 
 // matchSegment matches one glob segment ('*', '?', '[…]' classes) against
@@ -87,72 +102,110 @@ func matchSegment(pattern, s string) bool {
 
 func matchRunes(pat, s []rune) bool {
 	for len(pat) > 0 {
-		switch pat[0] {
-		case '*':
-			for skip := 0; skip <= len(s); skip++ {
-				if matchRunes(pat[1:], s[skip:]) {
-					return true
-				}
-			}
+		if pat[0] == '*' {
+			return matchStar(pat, s)
+		}
+		var ok bool
+		pat, s, ok = matchOne(pat, s)
+		if !ok {
 			return false
-		case '?':
-			if len(s) == 0 {
-				return false
-			}
-			pat, s = pat[1:], s[1:]
-		case '[':
-			rest, ok := matchClass(pat, s)
-			if !ok {
-				return false
-			}
-			pat, s = rest, s[1:]
-		default:
-			if len(s) == 0 || pat[0] != s[0] {
-				return false
-			}
-			pat, s = pat[1:], s[1:]
 		}
 	}
 	return len(s) == 0
+}
+
+// matchStar matches a pattern whose head is '*' by letting it absorb any
+// number of runes, including none.
+func matchStar(pat, s []rune) bool {
+	for skip := 0; skip <= len(s); skip++ {
+		if matchRunes(pat[1:], s[skip:]) {
+			return true
+		}
+	}
+	return false
+}
+
+// matchOne consumes one rune of s against the non-'*' pattern head ('?', a
+// '[…]' class, or a literal), returning both remainders and whether it
+// matched; an empty s never matches.
+func matchOne(pat, s []rune) (restPat, restS []rune, ok bool) {
+	if len(s) == 0 {
+		return nil, nil, false
+	}
+	switch pat[0] {
+	case '?':
+		return pat[1:], s[1:], true
+	case '[':
+		rest, matched := matchClass(pat, s)
+		return rest, s[1:], matched
+	default:
+		return pat[1:], s[1:], pat[0] == s[0]
+	}
 }
 
 // matchClass matches s[0] against the character class opening at pat[0]=='[';
 // it returns the pattern remainder past ']' and whether s[0] matched. A
 // malformed class (no closing bracket) matches a literal '['.
 func matchClass(pat, s []rune) (rest []rune, ok bool) {
-	end := -1
-	for i := 1; i < len(pat); i++ {
-		if pat[i] == ']' && i > 1 {
-			end = i
-			break
-		}
-	}
+	end := classEnd(pat)
 	if end < 0 {
-		if len(s) > 0 && s[0] == '[' {
-			return pat[1:], true
-		}
-		return nil, false
+		return matchLiteralBracket(pat, s)
 	}
-	if len(s) == 0 {
-		return nil, false
-	}
-	class, negate := pat[1:end], false
-	if len(class) > 0 && (class[0] == '!' || class[0] == '^') {
-		negate, class = true, class[1:]
-	}
-	matched := false
-	for i := 0; i < len(class); i++ {
-		if i+2 < len(class) && class[i+1] == '-' {
-			if class[i] <= s[0] && s[0] <= class[i+2] {
-				matched = true
-			}
-			i += 2
-		} else if class[i] == s[0] {
-			matched = true
-		}
-	}
-	if matched == negate {
+	if len(s) == 0 || !classMatches(pat[1:end], s[0]) {
 		return nil, false
 	}
 	return pat[end+1:], true
+}
+
+// classEnd returns the index of the ']' closing the class at pat[0]=='[', or
+// -1 if none; a ']' at index 1 is a class member, not the closer.
+func classEnd(pat []rune) int {
+	for i := 1; i < len(pat); i++ {
+		if pat[i] == ']' && i > 1 {
+			return i
+		}
+	}
+	return -1
+}
+
+// matchLiteralBracket handles a malformed class (no closing ']'): the '[' is
+// matched as a literal character, consuming only itself from the pattern.
+func matchLiteralBracket(pat, s []rune) (rest []rune, ok bool) {
+	if len(s) > 0 && s[0] == '[' {
+		return pat[1:], true
+	}
+	return nil, false
+}
+
+// classMatches reports whether r is matched by the class body (the runes
+// between the brackets), honoring a leading '!' or '^' negation.
+func classMatches(class []rune, r rune) bool {
+	class, negate := stripNegation(class)
+	for i := 0; i < len(class); {
+		matched, next := classMemberMatch(class, i, r)
+		if matched {
+			return !negate
+		}
+		i = next
+	}
+	return negate
+}
+
+// stripNegation strips a leading '!' or '^' from a class body, reporting
+// whether the class is negated.
+func stripNegation(class []rune) ([]rune, bool) {
+	if len(class) > 0 && (class[0] == '!' || class[0] == '^') {
+		return class[1:], true
+	}
+	return class, false
+}
+
+// classMemberMatch checks the class member starting at i (an a-b range when a
+// '-' with a bound follows, else a single rune) against r, returning whether
+// it matched and the index just past the member.
+func classMemberMatch(class []rune, i int, r rune) (matched bool, next int) {
+	if i+2 < len(class) && class[i+1] == '-' {
+		return class[i] <= r && r <= class[i+2], i + 3
+	}
+	return class[i] == r, i + 1
 }

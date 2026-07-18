@@ -109,6 +109,12 @@ func runMain(c Check, argv []string, stdout *os.File) int {
 		fmt.Fprintf(os.Stderr, "%s: %v\n", c.Describe.Name, err)
 		return 2
 	}
+	return emitResult(enc, result)
+}
+
+// emitResult normalizes a nil Errors slice to empty, encodes the Result on
+// enc, and returns the process exit code (0 passed, 1 failed).
+func emitResult(enc *json.Encoder, result Result) int {
 	if result.Errors == nil {
 		result.Errors = []string{}
 	}
@@ -124,19 +130,33 @@ func runMain(c Check, argv []string, stdout *os.File) int {
 func parseArgs(argv []string) (root string, args []string, describe bool) {
 	for i := 0; i < len(argv); i++ {
 		a := argv[i]
-		switch {
-		case a == "--describe":
+		if a == "--describe" {
 			describe = true
-		case a == "--root" && i+1 < len(argv):
-			root = argv[i+1]
-			i++
-		case strings.HasPrefix(a, "--root="):
-			root = strings.TrimPrefix(a, "--root=")
-		default:
-			args = append(args, a)
+			continue
 		}
+		if value, consumed, ok := rootFlagValue(argv, i); ok {
+			root = value
+			i += consumed - 1
+			continue
+		}
+		args = append(args, a)
 	}
 	return root, args, describe
+}
+
+// rootFlagValue interprets argv[i] as a --root flag in either form
+// (--root <dir> or --root=<dir>): it returns the root value, how many argv
+// entries the flag spanned, and whether argv[i] was a root flag at all.
+// A trailing --root with no value is not a root flag (it passes through).
+func rootFlagValue(argv []string, i int) (value string, consumed int, ok bool) {
+	a := argv[i]
+	if a == "--root" && i+1 < len(argv) {
+		return argv[i+1], 2, true
+	}
+	if strings.HasPrefix(a, "--root=") {
+		return strings.TrimPrefix(a, "--root="), 1, true
+	}
+	return "", 0, false
 }
 
 func mustGetwd() string {

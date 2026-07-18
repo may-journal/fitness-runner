@@ -73,14 +73,8 @@ func TermCols() int {
 	if !isTerminal(os.Stderr) {
 		return 80
 	}
-	out, err := exec.Command("stty", "size").Output()
-	if err == nil {
-		fields := strings.Fields(string(out))
-		if len(fields) == 2 {
-			if n, convErr := strconv.Atoi(fields[1]); convErr == nil && n > 0 {
-				return n
-			}
-		}
+	if n := sttyCols(); n > 0 {
+		return n
 	}
 	if n, err := strconv.Atoi(os.Getenv("COLUMNS")); err == nil && n > 0 {
 		return n
@@ -88,55 +82,96 @@ func TermCols() int {
 	return 80
 }
 
+// sttyCols parses the column count out of `stty size` output; 0 when stty
+// failed or its output is not "<rows> <cols>" with a positive column count.
+func sttyCols() int {
+	out, err := exec.Command("stty", "size").Output()
+	if err != nil {
+		return 0
+	}
+	fields := strings.Fields(string(out))
+	if len(fields) != 2 {
+		return 0
+	}
+	n, convErr := strconv.Atoi(fields[1])
+	if convErr != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
+
 // Table renders the rows into the bordered results table.
 func Table(rows []Row, cols int, p Palette) string {
-	timeW := cols - 51
-	if timeW < 10 {
-		timeW = 10
-	}
-	widths := []int{28, 10, 8, timeW}
+	widths := tableWidths(cols)
 	var b strings.Builder
 	border(&b, widths, "┌", "┬", "┐", p)
-	head := []string{"Check", "Status", "Files", "Time"}
-	headCells := make([]string, len(head))
-	for i, h := range head {
-		headCells[i] = p.head + pad(truncate(h, widths[i]-2), widths[i]-2) + p.off
-	}
-	rowLine(&b, headCells, p)
+	rowLine(&b, headerCells(widths, p), p)
 	for _, r := range rows {
 		border(&b, widths, "├", "┼", "┤", p)
-		files := "-"
-		if r.FilesChecked >= 0 {
-			files = strconv.Itoa(r.FilesChecked)
-		}
-		status := p.green + pad("passed", widths[1]-2) + p.rst
-		if !r.Ok {
-			status = p.red + pad("failed", widths[1]-2) + p.rst
-		}
-		cells := []string{
-			pad(truncate(r.Name, widths[0]-2), widths[0]-2),
-			status,
-			pad(truncate(files, widths[2]-2), widths[2]-2),
-			pad(truncate(fmt.Sprintf("%dms", r.Ms), widths[3]-2), widths[3]-2),
-		}
-		rowLine(&b, cells, p)
+		rowLine(&b, rowCells(r, widths, p), p)
 		if !r.Ok && len(r.Errors) > 0 {
-			border(&b, widths, "├", "┼", "┤", p)
-			spanW := widths[0] + widths[1] + widths[2] + widths[3] + 3 - 2
-			lines := []string{fmt.Sprintf("[%s] Please fix these items:", r.Name)}
-			for _, e := range r.Errors {
-				lines = append(lines, "  ✖ "+e)
-			}
-			for _, logical := range lines {
-				for _, wrapped := range wrap(logical, spanW) {
-					b.WriteString(p.gray + "│" + p.off + " " +
-						p.red + pad(wrapped, spanW) + p.rst + " " + p.gray + "│" + p.off + "\n")
-				}
-			}
+			errorBlock(&b, r, widths, p)
 		}
 	}
 	border(&b, widths, "└", "┴", "┘", p)
 	return strings.TrimSuffix(b.String(), "\n")
+}
+
+// tableWidths returns the four column widths for a terminal cols wide: fixed
+// Check/Status/Files columns plus a Time column absorbing the remainder,
+// never narrower than 10.
+func tableWidths(cols int) []int {
+	timeW := cols - 51
+	if timeW < 10 {
+		timeW = 10
+	}
+	return []int{28, 10, 8, timeW}
+}
+
+// headerCells styles the four column titles for the header row.
+func headerCells(widths []int, p Palette) []string {
+	head := []string{"Check", "Status", "Files", "Time"}
+	cells := make([]string, len(head))
+	for i, h := range head {
+		cells[i] = p.head + pad(truncate(h, widths[i]-2), widths[i]-2) + p.off
+	}
+	return cells
+}
+
+// rowCells renders one check row's four cells: name, colored status, file
+// count ("-" when below zero), and elapsed time.
+func rowCells(r Row, widths []int, p Palette) []string {
+	files := "-"
+	if r.FilesChecked >= 0 {
+		files = strconv.Itoa(r.FilesChecked)
+	}
+	status := p.green + pad("passed", widths[1]-2) + p.rst
+	if !r.Ok {
+		status = p.red + pad("failed", widths[1]-2) + p.rst
+	}
+	return []string{
+		pad(truncate(r.Name, widths[0]-2), widths[0]-2),
+		status,
+		pad(truncate(files, widths[2]-2), widths[2]-2),
+		pad(truncate(fmt.Sprintf("%dms", r.Ms), widths[3]-2), widths[3]-2),
+	}
+}
+
+// errorBlock writes a failed row's full-width word-wrapped error lines,
+// including the separating border above them.
+func errorBlock(b *strings.Builder, r Row, widths []int, p Palette) {
+	border(b, widths, "├", "┼", "┤", p)
+	spanW := widths[0] + widths[1] + widths[2] + widths[3] + 3 - 2
+	lines := []string{fmt.Sprintf("[%s] Please fix these items:", r.Name)}
+	for _, e := range r.Errors {
+		lines = append(lines, "  ✖ "+e)
+	}
+	for _, logical := range lines {
+		for _, wrapped := range wrap(logical, spanW) {
+			b.WriteString(p.gray + "│" + p.off + " " +
+				p.red + pad(wrapped, spanW) + p.rst + " " + p.gray + "│" + p.off + "\n")
+		}
+	}
 }
 
 // TotalLine formats the bold summary line.
@@ -199,34 +234,52 @@ func wrap(s string, width int) []string {
 	if len([]rune(s)) <= width {
 		return []string{s}
 	}
-	trimmed := strings.TrimLeft(s, " ")
-	words := strings.Split(trimmed, " ")
-	if prefix := s[:len(s)-len(trimmed)]; prefix != "" && len(words) > 0 {
-		words[0] = prefix + words[0]
-	}
 	var out []string
 	line := ""
-	for _, word := range words {
-		candidate := word
-		if line != "" {
-			candidate = line + " " + word
-		}
-		if len([]rune(candidate)) <= width {
+	for _, word := range splitIndented(s) {
+		if candidate := joinWord(line, word); len([]rune(candidate)) <= width {
 			line = candidate
 			continue
 		}
-		if line != "" {
-			out = append(out, line)
-		}
-		for len([]rune(word)) > width {
-			r := []rune(word)
-			out = append(out, string(r[:width]))
-			word = string(r[width:])
-		}
-		line = word
+		out, line = breakLongWord(out, line, word, width)
 	}
 	if line != "" {
 		out = append(out, line)
 	}
 	return out
+}
+
+// splitIndented splits s into space-separated words, keeping any leading
+// whitespace glued to the first word so the indent survives wrapping.
+func splitIndented(s string) []string {
+	trimmed := strings.TrimLeft(s, " ")
+	words := strings.Split(trimmed, " ")
+	if prefix := s[:len(s)-len(trimmed)]; prefix != "" && len(words) > 0 {
+		words[0] = prefix + words[0]
+	}
+	return words
+}
+
+// joinWord appends word to line with a separating space (no space when line
+// is empty).
+func joinWord(line, word string) string {
+	if line == "" {
+		return word
+	}
+	return line + " " + word
+}
+
+// breakLongWord flushes line (when non-empty) to out, hard-breaks word into
+// width-rune chunks, and returns the grown slice plus the leftover tail,
+// which becomes the caller's new current line.
+func breakLongWord(out []string, line, word string, width int) ([]string, string) {
+	if line != "" {
+		out = append(out, line)
+	}
+	for len([]rune(word)) > width {
+		r := []rune(word)
+		out = append(out, string(r[:width]))
+		word = string(r[width:])
+	}
+	return out, word
 }

@@ -132,16 +132,23 @@ func workspaceDirs(root string, raw json.RawMessage) []string {
 		if err != nil {
 			continue
 		}
-		for _, match := range matches {
-			info, err := os.Stat(match)
-			if err != nil || !info.IsDir() || seen[match] {
-				continue
-			}
-			seen[match] = true
-			out = append(out, match)
-		}
+		out = appendMatchedDirs(out, matches, seen)
 	}
 	sort.Strings(out)
+	return out
+}
+
+// appendMatchedDirs appends the glob matches that are existing directories
+// not already in seen, marking each as it goes.
+func appendMatchedDirs(out, matches []string, seen map[string]bool) []string {
+	for _, match := range matches {
+		info, err := os.Stat(match)
+		if err != nil || !info.IsDir() || seen[match] {
+			continue
+		}
+		seen[match] = true
+		out = append(out, match)
+	}
 	return out
 }
 
@@ -271,19 +278,31 @@ func npmrcRegistry(path string) string {
 		return ""
 	}
 	for _, line := range strings.Split(string(raw), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, ";") {
-			continue
-		}
-		key, value, found := strings.Cut(line, "=")
-		if !found || strings.TrimSpace(key) != "registry" {
-			continue
-		}
-		if v := strings.TrimRight(strings.TrimSpace(value), "/"); v != "" {
+		if v := registryValue(line); v != "" {
 			return v
 		}
 	}
 	return ""
+}
+
+// registryValue extracts the trimmed, slash-trimmed "registry" value from
+// one .npmrc line; empty for comments, blanks, other keys, or empty values.
+func registryValue(line string) string {
+	line = strings.TrimSpace(line)
+	if isNpmrcComment(line) {
+		return ""
+	}
+	key, value, found := strings.Cut(line, "=")
+	if !found || strings.TrimSpace(key) != "registry" {
+		return ""
+	}
+	return strings.TrimRight(strings.TrimSpace(value), "/")
+}
+
+// isNpmrcComment reports whether a trimmed .npmrc line carries no key=value:
+// blank lines and #- or ;-prefixed comments.
+func isNpmrcComment(line string) bool {
+	return line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, ";")
 }
 
 // fetchLatest resolves each name's dist-tags.latest from the registry with

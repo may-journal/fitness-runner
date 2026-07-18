@@ -85,7 +85,13 @@ func judge(exitCode int, output string) checkkit.Result {
 	if strings.Contains(output, noLintableFilesMarker) {
 		return checkkit.Pass(0)
 	}
-	violations := parseViolations(output)
+	return judgeExecResult(exitCode, parseViolations(output))
+}
+
+// judgeExecResult judges the exec outcome like the TS buildExecCheckResult:
+// ok only on exit 0 with no parsed violations, the fallback run hint when a
+// failure parsed nothing, else the violations themselves.
+func judgeExecResult(exitCode int, violations []string) checkkit.Result {
 	if exitCode == 0 && len(violations) == 0 {
 		return checkkit.Pass(0)
 	}

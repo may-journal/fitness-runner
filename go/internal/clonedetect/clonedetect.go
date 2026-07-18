@@ -81,20 +81,29 @@ func Detect(files []File, opt Options) Stats {
 	}
 	seen := make(map[uint64]bool)
 	for fi, f := range files {
-		var dup []int
-		for pos, h := range hashes[fi] {
-			if counts[h] < 2 {
-				continue
-			}
-			if !seen[h] {
-				seen[h] = true
-				continue
-			}
-			dup = append(dup, pos)
-		}
+		dup := dupWindows(hashes[fi], counts, seen)
 		stats.DuplicatedLines += dupLineCount(f.Tokens, dup, k, opt.MinLines)
 	}
 	return stats
+}
+
+// dupWindows returns the positions (ascending) of windows in hs whose hash
+// occurs at least twice across all files, skipping each hash's first
+// occurrence — the "original" copy stays free. It records first sightings
+// in seen, which persists across the per-file calls.
+func dupWindows(hs []uint64, counts map[uint64]int, seen map[uint64]bool) []int {
+	var dup []int
+	for pos, h := range hs {
+		if counts[h] < 2 {
+			continue
+		}
+		if !seen[h] {
+			seen[h] = true
+			continue
+		}
+		dup = append(dup, pos)
+	}
+	return dup
 }
 
 // hashBase is the polynomial rolling-hash base (the FNV-64 prime).
@@ -103,15 +112,7 @@ const hashBase = 1099511628211
 // windowHashes interns each token value to a mixed 64-bit id and returns
 // the rolling polynomial hash of every k-token window.
 func windowHashes(tokens []Token, k int, ids map[string]uint64) []uint64 {
-	vals := make([]uint64, len(tokens))
-	for i, t := range tokens {
-		id, ok := ids[t.Val]
-		if !ok {
-			id = mix(uint64(len(ids)) + 1)
-			ids[t.Val] = id
-		}
-		vals[i] = id
-	}
+	vals := internTokens(tokens, ids)
 	pow := uint64(1)
 	for i := 0; i < k-1; i++ {
 		pow *= hashBase
@@ -129,6 +130,22 @@ func windowHashes(tokens []Token, k int, ids map[string]uint64) []uint64 {
 	return out
 }
 
+// internTokens maps each token value through ids — assigning a fresh
+// mixed 64-bit id to values not seen before — and returns the id sequence.
+// ids persists across files so equal values intern identically everywhere.
+func internTokens(tokens []Token, ids map[string]uint64) []uint64 {
+	vals := make([]uint64, len(tokens))
+	for i, t := range tokens {
+		id, ok := ids[t.Val]
+		if !ok {
+			id = mix(uint64(len(ids)) + 1)
+			ids[t.Val] = id
+		}
+		vals[i] = id
+	}
+	return vals
+}
+
 // mix is splitmix64: it spreads sequential intern ids across the 64-bit
 // space so polynomial collisions are vanishingly unlikely.
 func mix(x uint64) uint64 {
@@ -144,19 +161,28 @@ func mix(x uint64) uint64 {
 func dupLineCount(tokens []Token, wins []int, k, minLines int) int {
 	lines := make(map[int]bool)
 	for i := 0; i < len(wins); {
-		end := wins[i] + k - 1
-		j := i + 1
-		for j < len(wins) && wins[j] <= end+1 {
-			end = wins[j] + k - 1
-			j++
-		}
+		next, end := mergeSpan(wins, i, k)
 		startLine, endLine := tokens[wins[i]].Line, tokens[end].Line
 		if endLine-startLine+1 >= minLines {
 			for l := startLine; l <= endLine; l++ {
 				lines[l] = true
 			}
 		}
-		i = j
+		i = next
 	}
 	return len(lines)
+}
+
+// mergeSpan grows the duplicated span opening at wins[i]: contiguous
+// windows — each starting no later than one past the current span end —
+// extend it. It returns the index of the first window past the span and
+// the last token index the span covers.
+func mergeSpan(wins []int, i, k int) (next, end int) {
+	end = wins[i] + k - 1
+	next = i + 1
+	for next < len(wins) && wins[next] <= end+1 {
+		end = wins[next] + k - 1
+		next++
+	}
+	return next, end
 }

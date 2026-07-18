@@ -108,20 +108,44 @@ func findDisallowedEmphasis(content string) []hit {
 func singleDelimiterMatches(s string, delim byte, excludeNewline bool) []string {
 	var out []string
 	for i := 0; i < len(s); i++ {
-		if s[i] != delim || (i > 0 && s[i-1] == delim) {
+		if !opensEmphasis(s, i, delim) {
 			continue
 		}
-		j := i + 1
-		for j < len(s) && s[j] != delim && !(excludeNewline && s[j] == '\n') {
-			j++
-		}
-		if j == i+1 || j == len(s) || s[j] != delim || (j+1 < len(s) && s[j+1] == delim) {
+		j := emphasisBodyEnd(s, i, delim, excludeNewline)
+		if !closesEmphasis(s, i, j, delim) {
 			continue
 		}
 		out = append(out, s[i:j+1])
 		i = j // the loop increment resumes scanning just past the match
 	}
 	return out
+}
+
+// opensEmphasis reports whether position i starts a candidate span: the
+// delimiter itself, not preceded by the same delimiter (the JS look-behind).
+func opensEmphasis(s string, i int, delim byte) bool {
+	return s[i] == delim && (i == 0 || s[i-1] != delim)
+}
+
+// emphasisBodyEnd scans the span body from i+1 and returns the index of the
+// first delimiter — or newline when excludeNewline, the asterisk body class
+// [^*\n]+ — or len(s) when the body never closes.
+func emphasisBodyEnd(s string, i int, delim byte, excludeNewline bool) int {
+	j := i + 1
+	for j < len(s) && s[j] != delim && !(excludeNewline && s[j] == '\n') {
+		j++
+	}
+	return j
+}
+
+// closesEmphasis reports whether j closes a span opened at i: a non-empty
+// body, the closing delimiter reached, and no doubled delimiter after it
+// (the JS look-ahead).
+func closesEmphasis(s string, i, j int, delim byte) bool {
+	if j == i+1 || j == len(s) || s[j] != delim {
+		return false
+	}
+	return !(j+1 < len(s) && s[j+1] == delim)
 }
 
 // validateFile validates one markdown file; returns error messages for

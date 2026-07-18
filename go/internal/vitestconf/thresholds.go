@@ -1,7 +1,6 @@
 package vitestconf
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -87,15 +86,7 @@ func rawHasFullThresholds(content string) bool {
 // tryLoadPackageJsonVitest contract), full only when its coverage block
 // carries a thresholds object with all four keys at exactly 100.
 func fullThresholdsFromPackageJSON(path string) (full, decided bool) {
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return false, false
-	}
-	var parsed map[string]any
-	if json.Unmarshal(raw, &parsed) != nil {
-		return false, false
-	}
-	vitest, ok := parsed["vitest"].(map[string]any)
+	vitest, ok := readVitestObject(path)
 	if !ok {
 		return false, false
 	}
@@ -125,10 +116,16 @@ func jsonThresholdsFull(block any) bool {
 		return false
 	}
 	for _, key := range thresholdKeys {
-		value, isNumber := thresholds[key].(float64)
-		if !isNumber || value != fullThreshold {
+		if !isFullThreshold(thresholds[key]) {
 			return false
 		}
 	}
 	return true
+}
+
+// isFullThreshold reports whether v is a JSON number equal to the required
+// full threshold.
+func isFullThreshold(v any) bool {
+	value, isNumber := v.(float64)
+	return isNumber && value == fullThreshold
 }

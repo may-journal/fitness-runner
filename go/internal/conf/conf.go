@@ -24,6 +24,10 @@ type Config struct {
 	RepeatedStringLiterals struct {
 		Allow []string `json:"allow"`
 	} `json:"repeatedStringLiterals"`
+	// GoComplexity holds options for the go-complexity check.
+	GoComplexity struct {
+		Max int `json:"max"`
+	} `json:"goComplexity"`
 }
 
 // FileName is the config file the runner reads at the repo root.
@@ -43,19 +47,27 @@ var ErrLegacyConfig = errors.New(
 func Load(root string) (*Config, error) {
 	raw, err := os.ReadFile(filepath.Join(root, FileName))
 	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-		for _, name := range legacyNames {
-			if _, statErr := os.Stat(filepath.Join(root, name)); statErr == nil {
-				return nil, ErrLegacyConfig
-			}
-		}
-		return nil, nil
+		return nil, missingConfigErr(root, err)
 	}
 	var c Config
 	if err := json.Unmarshal(raw, &c); err != nil {
 		return nil, err
 	}
 	return &c, nil
+}
+
+// missingConfigErr maps a failed .fitnessrc.json read to Load's error: a
+// non-not-exist error passes through, a legacy JS/TS config beside the
+// missing file earns ErrLegacyConfig, and a plainly absent config is nil
+// (the caller falls back to defaults).
+func missingConfigErr(root string, readErr error) error {
+	if !os.IsNotExist(readErr) {
+		return readErr
+	}
+	for _, name := range legacyNames {
+		if _, statErr := os.Stat(filepath.Join(root, name)); statErr == nil {
+			return ErrLegacyConfig
+		}
+	}
+	return nil
 }

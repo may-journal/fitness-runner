@@ -51,13 +51,22 @@ func stamp(root string, now time.Time) (bool, error) {
 	if next == string(raw) {
 		return false, nil
 	}
-	if err := os.WriteFile(path, []byte(next), 0o644); err != nil {
+	if err := writeAndRestage(root, path, next); err != nil {
 		return false, err
 	}
-	if out, err := exec.Command("git", "-C", root, "add", changelogName).CombinedOutput(); err != nil {
-		return false, fmt.Errorf("git add: %v: %s", err, out)
-	}
 	return true, nil
+}
+
+// writeAndRestage writes the restamped changelog and re-stages it so the
+// in-flight commit picks up the new heading.
+func writeAndRestage(root, path, next string) error {
+	if err := os.WriteFile(path, []byte(next), 0o644); err != nil {
+		return err
+	}
+	if out, err := exec.Command("git", "-C", root, "add", changelogName).CombinedOutput(); err != nil {
+		return fmt.Errorf("git add: %v: %s", err, out)
+	}
+	return nil
 }
 
 // changelogStaged reports whether CHANGELOG.md is in the staged file list.

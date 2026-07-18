@@ -244,9 +244,14 @@ func isDivision(prev byte) bool {
 	return false
 }
 
+// isASCIILetter reports an ASCII letter (a…z, either case).
+func isASCIILetter(b byte) bool {
+	return b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z'
+}
+
 // isWordChar reports whether b can be part of an identifier/keyword word.
 func isWordChar(b byte) bool {
-	return b >= 'A' && b <= 'Z' || b >= 'a' && b <= 'z' || b >= '0' && b <= '9' || b == '_' || b == '$'
+	return isASCIILetter(b) || b >= '0' && b <= '9' || b == '_' || b == '$'
 }
 
 // isSpace reports inline whitespace (newlines are handled separately for
@@ -257,7 +262,7 @@ func isSpace(b byte) bool {
 
 // isFlag reports a regex flag byte (a…z, either case).
 func isFlag(b byte) bool {
-	return b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z'
+	return isASCIILetter(b)
 }
 
 // at reports whether the source at the cursor starts with token.
@@ -295,28 +300,46 @@ func (cur *cursor) skipBlockComment() {
 	cur.i += 2
 }
 
+// classAfter tracks character-class state across one regex-body byte: `[`
+// enters a class, `]` leaves it, anything else keeps the current state.
+func classAfter(inClass bool, ch byte) bool {
+	if ch == '[' {
+		return true
+	}
+	if ch == ']' {
+		return false
+	}
+	return inClass
+}
+
+// scanRegexChar consumes one byte of a regex body, updating the char-class
+// state; reports done at the closing `/` (consumed) or at a newline (left
+// unconsumed — the unterminated-body bail).
+func (cur *cursor) scanRegexChar(inClass *bool) (done bool) {
+	ch := cur.content[cur.i]
+	if ch == '\\' {
+		cur.i += 2
+		return false
+	}
+	if ch == '\n' {
+		return true // unterminated — bail safely
+	}
+	cur.i++
+	if ch == '/' && !*inClass {
+		return true
+	}
+	*inClass = classAfter(*inClass, ch)
+	return false
+}
+
 // scanRegexBody advances through a regex body up to and including the
 // closing `/` (honoring char classes; an unterminated body bails at the
 // newline).
 func (cur *cursor) scanRegexBody() {
 	inClass := false
 	for cur.i < len(cur.content) {
-		ch := cur.content[cur.i]
-		if ch == '\\' {
-			cur.i += 2
-			continue
-		}
-		if ch == '\n' {
-			break // unterminated — bail safely
-		}
-		cur.i++
-		if ch == '/' && !inClass {
-			break
-		}
-		if ch == '[' {
-			inClass = true
-		} else if ch == ']' {
-			inClass = false
+		if cur.scanRegexChar(&inClass) {
+			return
 		}
 	}
 }
@@ -341,6 +364,16 @@ func (cur *cursor) recordLiteral(value string, line int, isModule bool) {
 	cur.out = append(cur.out, literal{line: line, value: value})
 }
 
+// readEscape consumes a backslash escape inside a string literal, appending
+// the escaped byte to value raw (the lexer never decodes escape sequences; a
+// trailing backslash at EOF appends nothing).
+func (cur *cursor) readEscape(value *strings.Builder) {
+	if cur.i+1 < len(cur.content) {
+		value.WriteByte(cur.content[cur.i+1])
+	}
+	cur.i += 2
+}
+
 // readString reads a single- or double-quoted string literal, honoring
 // escapes, and records it.
 func (cur *cursor) readString() {
@@ -352,10 +385,7 @@ func (cur *cursor) readString() {
 	var value strings.Builder
 	for cur.i < len(cur.content) && cur.content[cur.i] != quote {
 		if cur.content[cur.i] == '\\' {
-			if cur.i+1 < len(cur.content) {
-				value.WriteByte(cur.content[cur.i+1])
-			}
-			cur.i += 2
+			cur.readEscape(&value)
 			continue
 		}
 		if cur.content[cur.i] == '\n' {

@@ -87,8 +87,7 @@ var (
 func pathsToLint(root string, staged []string) []string {
 	var out []string
 	for _, p := range staged {
-		if lintableExt.MatchString(p) && !strings.HasSuffix(p, ".d.ts") &&
-			!ignoredByEslint.MatchString(p) && exists(filepath.Join(root, p)) {
+		if lintableStaged(root, p) {
 			out = append(out, p)
 		}
 	}
@@ -96,6 +95,16 @@ func pathsToLint(root string, staged []string) []string {
 		return []string{"."}
 	}
 	return out
+}
+
+// lintableStaged reports whether a staged path should be linted: a lintable
+// extension, not a declaration or test/spec file, and still existing under
+// root.
+func lintableStaged(root, p string) bool {
+	if !lintableExt.MatchString(p) || strings.HasSuffix(p, ".d.ts") {
+		return false
+	}
+	return !ignoredByEslint.MatchString(p) && exists(filepath.Join(root, p))
 }
 
 // runEslint execs the CLI twin of the TS Node-API invocation: cwd root, the

@@ -89,19 +89,26 @@ func Materialize() (string, error) {
 		return "", fmt.Errorf("sharedconf: %w", err)
 	}
 	for _, name := range fileNames() {
-		dst := filepath.Join(dir, name)
-		if _, err := os.Stat(dst); err == nil {
-			continue
-		}
-		data, err := fs.ReadFile(configFS, path.Join(configDir, name))
-		if err != nil {
-			return "", fmt.Errorf("sharedconf: %w", err)
-		}
-		if err := writeViaRename(dir, dst, data); err != nil {
+		if err := materializeFile(dir, name); err != nil {
 			return "", fmt.Errorf("sharedconf: %w", err)
 		}
 	}
 	return dir, nil
+}
+
+// materializeFile writes the embedded config file name into dir unless it is
+// already present — the content-keyed directory name guarantees an existing
+// file already holds the right bytes.
+func materializeFile(dir, name string) error {
+	dst := filepath.Join(dir, name)
+	if _, err := os.Stat(dst); err == nil {
+		return nil
+	}
+	data, err := fs.ReadFile(configFS, path.Join(configDir, name))
+	if err != nil {
+		return err
+	}
+	return writeViaRename(dir, dst, data)
 }
 
 // cacheBase is the parent of every materialized config directory: the user
@@ -118,23 +125,8 @@ func cacheBase() string {
 // onto dst. Losing the rename race to a concurrent materialization is
 // success: the winner wrote identical bytes.
 func writeViaRename(dir, dst string, data []byte) error {
-	tmp, err := os.CreateTemp(dir, filepath.Base(dst)+".tmp*")
+	name, err := writeTempFile(dir, dst, data)
 	if err != nil {
-		return err
-	}
-	name := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		tmp.Close()
-		os.Remove(name)
-		return err
-	}
-	if err := tmp.Chmod(0o644); err != nil {
-		tmp.Close()
-		os.Remove(name)
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		os.Remove(name)
 		return err
 	}
 	if err := os.Rename(name, dst); err != nil {
@@ -145,6 +137,36 @@ func writeViaRename(dir, dst string, data []byte) error {
 		return err
 	}
 	return nil
+}
+
+// writeTempFile creates a temp file in dir named after dst, fills it with
+// data at mode 0644, and returns its path; on any failure the temp file is
+// removed.
+func writeTempFile(dir, dst string, data []byte) (string, error) {
+	tmp, err := os.CreateTemp(dir, filepath.Base(dst)+".tmp*")
+	if err != nil {
+		return "", err
+	}
+	name := tmp.Name()
+	if err := fillAndClose(tmp, data); err != nil {
+		os.Remove(name)
+		return "", err
+	}
+	return name, nil
+}
+
+// fillAndClose writes data to tmp, sets mode 0644, and closes it; the file
+// is closed even when the write or chmod fails (removal is the caller's job).
+func fillAndClose(tmp *os.File, data []byte) error {
+	if _, err := tmp.Write(data); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		tmp.Close()
+		return err
+	}
+	return tmp.Close()
 }
 
 // Resolve returns the path a consumer check should hand its tool for the

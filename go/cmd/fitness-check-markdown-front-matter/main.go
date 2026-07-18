@@ -67,6 +67,12 @@ func validateFile(file, content, root, mdDir string, registered []string) []stri
 	if empty := emptyArrayErrors(file, inner); len(empty) > 0 {
 		return empty
 	}
+	return pathErrors(file, inner, root, mdDir, registered)
+}
+
+// pathErrors validates every front matter entry against root and mdDir,
+// collecting the non-empty error messages in entry order.
+func pathErrors(file, inner, root, mdDir string, registered []string) []string {
 	var errs []string
 	for _, entry := range frontMatterPaths(inner) {
 		if msg := validatePath(file, entry, root, mdDir, registered); msg != "" {
@@ -113,13 +119,18 @@ func frontMatterPaths(inner string) []string {
 // stripQuotes drops one leading and one trailing single or double quote,
 // mirroring the TS replace(/^['"]|['"]$/g, ”).
 func stripQuotes(s string) string {
-	if len(s) > 0 && (s[0] == '\'' || s[0] == '"') {
+	if len(s) > 0 && isQuote(s[0]) {
 		s = s[1:]
 	}
-	if len(s) > 0 && (s[len(s)-1] == '\'' || s[len(s)-1] == '"') {
+	if len(s) > 0 && isQuote(s[len(s)-1]) {
 		s = s[:len(s)-1]
 	}
 	return s
+}
+
+// isQuote reports whether c is a single or double quote.
+func isQuote(c byte) bool {
+	return c == '\'' || c == '"'
 }
 
 // validatePath returns the error message for one front matter entry, or ""

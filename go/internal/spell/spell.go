@@ -90,21 +90,33 @@ func (c *Checker) CheckText(text string) []Issue {
 // splitting.
 func (c *Checker) checkToken(text string, tok span, docWords map[string]struct{}, lines []int) []Issue {
 	token := text[tok.start:tok.end]
-	if utf8.RuneCountInString(token) < minWordLength ||
-		c.capsSuffixOk(token, docWords) || c.known(token, docWords) {
+	if c.tokenExempt(token, docWords) {
 		return nil
 	}
 	var issues []Issue
 	for _, sub := range splitSubWords(token) {
 		word := token[sub.start:sub.end]
-		if utf8.RuneCountInString(word) < minWordLength || c.known(word, docWords) ||
-			c.capsSuffixOk(word, docWords) || isRepeatedRune(word) {
+		if c.subWordExempt(word, docWords) {
 			continue
 		}
 		line, col := position(text, lines, tok.start+sub.start)
 		issues = append(issues, Issue{Word: word, Line: line, Col: col})
 	}
 	return issues
+}
+
+// tokenExempt reports whether a whole token needs no sub-word judging: too
+// short to flag, an ALL-CAPS+suffix form, or known outright.
+func (c *Checker) tokenExempt(token string, docWords map[string]struct{}) bool {
+	return utf8.RuneCountInString(token) < minWordLength ||
+		c.capsSuffixOk(token, docWords) || c.known(token, docWords)
+}
+
+// subWordExempt reports whether a sub-word escapes flagging: too short to
+// flag, known, an ALL-CAPS+suffix form, or a single repeated rune.
+func (c *Checker) subWordExempt(word string, docWords map[string]struct{}) bool {
+	return utf8.RuneCountInString(word) < minWordLength || c.known(word, docWords) ||
+		c.capsSuffixOk(word, docWords) || isRepeatedRune(word)
 }
 
 // known reports whether word (any case, possibly possessive) is in the
@@ -167,67 +179,88 @@ type span struct {
 	start, end int
 }
 
+// runScanner accumulates half-open spans of consecutive run bytes: extend
+// grows (or opens) the current run, end closes any open one.
+type runScanner struct {
+	spans []span
+	start int // -1 when no run is open
+}
+
+// extend continues the open run through byte i, opening one there if needed.
+func (s *runScanner) extend(i int) {
+	if s.start < 0 {
+		s.start = i
+	}
+}
+
+// end closes any open run just before byte at; without one it is a no-op.
+func (s *runScanner) end(at int) {
+	if s.start >= 0 {
+		s.spans = append(s.spans, span{s.start, at})
+		s.start = -1
+	}
+}
+
 // extendedSpans finds cspell's "possible words": maximal unmasked runs of
 // letters, digits, and joining punctuation (. + - _ and quotes) — the shape
 // compound dictionary entries take.
 func extendedSpans(text string, masked []bool) []span {
-	var out []span
-	start := -1
+	sc := runScanner{start: -1}
 	for i := 0; i < len(text); {
 		r, size := utf8.DecodeRuneInString(text[i:])
 		if !masked[i] && isExtendedChar(r) {
-			if start < 0 {
-				start = i
-			}
-		} else if start >= 0 {
-			out = append(out, span{start, i})
-			start = -1
+			sc.extend(i)
+		} else {
+			sc.end(i)
 		}
 		i += size
 	}
-	if start >= 0 {
-		out = append(out, span{start, len(text)})
-	}
-	return out
+	sc.end(len(text))
+	return sc.spans
 }
 
 func isExtendedChar(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsMark(r) || unicode.IsDigit(r) ||
-		r == '_' || r == '`' || r == '.' || r == '+' || r == '-' || isApostrophe(r)
+		strings.ContainsRune("_`.+-'’", r)
 }
 
 // tokenSpans extracts word tokens: runs of letters (plus combining marks)
 // with internal apostrophes, skipping masked bytes — cspell's word regexp as
 // a scanner.
 func tokenSpans(text string, masked []bool) []span {
-	var out []span
-	start := -1
-	end := func(at int) {
-		if start >= 0 {
-			out = append(out, span{start, at})
-			start = -1
-		}
-	}
+	sc := runScanner{start: -1}
 	for i := 0; i < len(text); {
 		r, size := utf8.DecodeRuneInString(text[i:])
 		switch {
-		case masked[i]:
-			end(i)
-		case unicode.IsLetter(r):
-			if start < 0 {
-				start = i
-			}
-		case start >= 0 && unicode.IsMark(r):
-			// marks extend a started token
-		case start >= 0 && isApostrophe(r) && letterFollows(text, masked, i+size):
-			// internal apostrophe: don't and CSS's stay single tokens
+		case unmaskedLetter(masked, i, r):
+			sc.extend(i)
+		case sc.start >= 0 && tokenExtends(text, masked, i, r, size):
+			// marks and internal apostrophes extend a started token:
+			// don't and CSS's stay single tokens
 		default:
-			end(i)
+			sc.end(i)
 		}
 		i += size
 	}
-	end(len(text))
-	return out
+	sc.end(len(text))
+	return sc.spans
+}
+
+// unmaskedLetter reports whether the rune r at byte i is an unmasked letter,
+// the only thing that can start (or plainly continue) a word token.
+func unmaskedLetter(masked []bool, i int, r rune) bool {
+	return !masked[i] && unicode.IsLetter(r)
+}
+
+// tokenExtends reports whether an already-started token continues through the
+// non-letter rune r (of byte width size) at byte i: unmasked combining marks
+// always extend, an unmasked apostrophe extends when an unmasked letter
+// follows.
+func tokenExtends(text string, masked []bool, i int, r rune, size int) bool {
+	if masked[i] {
+		return false
+	}
+	return unicode.IsMark(r) || (isApostrophe(r) && letterFollows(text, masked, i+size))
 }
 
 func isApostrophe(r rune) bool {
@@ -246,6 +279,7 @@ func letterFollows(text string, masked []bool, i int) bool {
 // camelSuffixes suppress the Upper-run camel break before an English suffix,
 // keeping LSTMs or URLs whole instead of splitting off "Ms"/"Ls".
 var camelSuffixes = map[string]bool{
+	// cspell:ignore ings ning — suffix fragments, not words
 	"s": true, "ing": true, "ies": true, "es": true, "ings": true, "ed": true, "ning": true,
 }
 
@@ -256,25 +290,43 @@ var camelSuffixes = map[string]bool{
 // are relative to the token.
 func splitSubWords(token string) []span {
 	runes := []rune(token)
-	offs := make([]int, len(runes)+1)
-	for i, r := range runes {
-		offs[i+1] = offs[i] + utf8.RuneLen(r)
-	}
+	offs := runeOffsets(runes)
 	var out []span
 	start := 0
 	for k := 1; k < len(runes); k++ {
-		if !isUpper(runes[k]) {
-			continue
-		}
-		lowerBefore := unicode.IsLower(runes[k-1])
-		upperRunEnd := isUpper(runes[k-1]) && k+1 < len(runes) && unicode.IsLower(runes[k+1]) &&
-			!camelSuffixes[lowerRun(runes[k+1:])]
-		if lowerBefore || upperRunEnd {
+		if camelBreakAt(runes, k) {
 			out = append(out, span{offs[start], offs[k]})
 			start = k
 		}
 	}
 	return append(out, span{offs[start], offs[len(runes)]})
+}
+
+// runeOffsets returns the byte offset of every rune boundary in runes,
+// including the final end-of-token offset (so it has len(runes)+1 entries).
+func runeOffsets(runes []rune) []int {
+	offs := make([]int, len(runes)+1)
+	for i, r := range runes {
+		offs[i+1] = offs[i] + utf8.RuneLen(r)
+	}
+	return offs
+}
+
+// camelBreakAt reports whether cspell breaks a token before runes[k] (k >= 1):
+// at an Upper following a lower, or at the Upper ending an Upper run.
+func camelBreakAt(runes []rune, k int) bool {
+	if !isUpper(runes[k]) {
+		return false
+	}
+	return unicode.IsLower(runes[k-1]) || upperRunEnd(runes, k)
+}
+
+// upperRunEnd reports whether runes[k] is the last Upper of an Upper run
+// followed by a lower that is more than an English suffix (HTMLElement breaks
+// before Element; LSTMs keeps Ms attached).
+func upperRunEnd(runes []rune, k int) bool {
+	return isUpper(runes[k-1]) && k+1 < len(runes) && unicode.IsLower(runes[k+1]) &&
+		!camelSuffixes[lowerRun(runes[k+1:])]
 }
 
 // lowerRun returns the maximal leading run of lowercase letters.

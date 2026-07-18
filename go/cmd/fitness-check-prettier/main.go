@@ -180,6 +180,15 @@ func isUnparseableTree(p string) bool {
 	return strings.Contains(p, "githooks/") || strings.HasPrefix(p, "scripts/") || strings.HasPrefix(p, "go/")
 }
 
+// skipStagedPath reports a staged path Prettier must not see: missing from
+// disk, on the skip list, a .mdc file, or in an unparseable tree.
+func skipStagedPath(root, p string) bool {
+	if _, err := os.Stat(filepath.Join(root, p)); err != nil {
+		return true
+	}
+	return prettierSkipStaged[p] || strings.HasSuffix(p, ".mdc") || isUnparseableTree(p)
+}
+
 // pathsToCheck returns the staged paths to hand Prettier — existing files
 // minus the skip list, .mdc files, and unparseable trees — or ["."] when
 // nothing is staged.
@@ -189,13 +198,9 @@ func pathsToCheck(root string, staged []string) []string {
 	}
 	var out []string
 	for _, p := range staged {
-		if _, err := os.Stat(filepath.Join(root, p)); err != nil {
-			continue
+		if !skipStagedPath(root, p) {
+			out = append(out, p)
 		}
-		if prettierSkipStaged[p] || strings.HasSuffix(p, ".mdc") || isUnparseableTree(p) {
-			continue
-		}
-		out = append(out, p)
 	}
 	return out
 }

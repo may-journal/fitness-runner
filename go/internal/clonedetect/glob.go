@@ -17,18 +17,25 @@ func matchSegments(pat, path []string) bool {
 		return len(path) == 0
 	}
 	if pat[0] == "**" {
-		if matchSegments(pat[1:], path) {
-			return true
-		}
-		if len(path) == 0 {
-			return false
-		}
-		return matchSegments(pat, path[1:])
+		return matchDoublestar(pat, path)
 	}
 	if len(path) == 0 || !matchSeg(pat[0], path[0]) {
 		return false
 	}
 	return matchSegments(pat[1:], path[1:])
+}
+
+// matchDoublestar resolves a leading "**" pattern segment: it matches zero
+// path segments (dropping the "**") or consumes one segment and retries
+// the same pattern.
+func matchDoublestar(pat, path []string) bool {
+	if matchSegments(pat[1:], path) {
+		return true
+	}
+	if len(path) == 0 {
+		return false
+	}
+	return matchSegments(pat, path[1:])
 }
 
 // matchSeg is classic iterative wildcard matching of one path segment,
@@ -38,10 +45,10 @@ func matchSeg(pat, s string) bool {
 	star, mark := -1, 0
 	for si < len(s) {
 		switch {
-		case pi < len(pat) && (pat[pi] == '?' || pat[pi] == s[si]):
+		case segConsumes(pat, pi, s[si]):
 			pi++
 			si++
-		case pi < len(pat) && pat[pi] == '*':
+		case segAtStar(pat, pi):
 			star, mark = pi, si
 			pi++
 		case star >= 0:
@@ -52,6 +59,23 @@ func matchSeg(pat, s string) bool {
 			return false
 		}
 	}
+	return tailStars(pat, pi)
+}
+
+// segConsumes reports whether the pattern byte at pi matches subject byte
+// c: '?' matches any byte, otherwise the bytes must be equal.
+func segConsumes(pat string, pi int, c byte) bool {
+	return pi < len(pat) && (pat[pi] == '?' || pat[pi] == c)
+}
+
+// segAtStar reports whether the pattern byte at pi is the '*' wildcard.
+func segAtStar(pat string, pi int) bool {
+	return pi < len(pat) && pat[pi] == '*'
+}
+
+// tailStars reports whether the pattern from pi onward is all '*' — each
+// matches the empty remainder, so an exhausted subject still matches.
+func tailStars(pat string, pi int) bool {
 	for pi < len(pat) && pat[pi] == '*' {
 		pi++
 	}

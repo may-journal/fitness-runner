@@ -7,6 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1819
+
+- Feat: add the `go-complexity` check — the first net-new check of the Go era and the Go-native counterpart of the house eslint rule (`complexity: max 5`). Pure standard library (`go/ast` + `go/parser`): every function starts at 1 and gains a point per `if`/`for`/`range`/non-default `switch` or `select` clause/`&&`/`||`; function literals score separately like eslint scores arrows; `_test.go` files are exempt; the ceiling is configurable via `.fitnessrc.json` `goComplexity.max`. Opt-in (Go-specific, like `swiftlint`), enabled on this repo, scanning all 50 Go files in about 10ms.
+- Refactor: burn every one of the 78 functions the new check flagged down under the ceiling — behavior-identical helper extractions across the runner, the vitestconf and clonedetect lexers (complexity 28 and 25 at the worst), the spell engine, the mermaid parser, the shared internals, and 24 check binaries, all under the existing test net (40 packages green, no exported API changes, no test expectations touched). The dogfood suite now gates commits on the very ceiling the codebase just earned.
+
 ### 2026.07.18.1749
 
 - Docs: bring every document in line with the Go-only, npm-free reality. All 27 check READMEs correct their era: `.fitnessrc.js`/`.ts` snippets become `.fitnessrc.json`, `npx fitness` becomes `fitness`, "bundled as a dependency" claims become the peer-tool exec or native-engine truth, TypeScript internals (defaultChecks exports, contextInline registration, `execSyncResult`, source-file pointers) become their Go equivalents, config-fallback descriptions state the three-step resolution (repo-local, installed `@mayjournal/fitness-shared`, embedded copy materialized on demand), and dead `.cursor/rules` pointers are dropped — rule documentation, error formats, and examples preserved byte-identical throughout. The architecture docs drop the last stale claims (the npm config package is embedded now; `npm run fitness` no longer exists), `competition.md` contrasts against the static check-binary catalog, and `architecture-index.md` leads with the two completed milestone plans. The ADR is deliberately untouched — it is a dated decision record.
