@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1909
+
+- Feat: `changelog-bullets` now judges every `###` section of CHANGELOG.md, not only the newest — count errors name their section.
+- Docs: rewrite the entire changelog history into compliance (219 findings to zero) — every heading byte-identical, facts and issue refs preserved, essays split into typed bullets, thin sections filled from their commits' real diffs.
+- Docs: the check README now documents whole-file semantics.
+- Test: `TestEverySectionIsJudged` pins the new scope; doc fixtures gain a compliant trailing section.
+
 ### 2026.07.18.1848
 
 - Feat: add the `changelog-bullets` check — the newest CHANGELOG section must be 3-5 bullets, each under 365 characters, each with a semantic type prefix.
@@ -22,389 +29,404 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.07.18.1821
 
-- Perf: parallelize file scanning inside the heavy checks. New `internal/par` worker pool (generic, deterministic — results return in input order, so parallelism can never change a check's output; pinned by ordering tests) now backs `walkfs.ScanFiles` (every markdown scanner and `no-eslint-disable`), the cspell engine's per-file loop, jscpd's read-and-lex phase (clone detection itself stays serial — it builds shared hash tables), and `go-complexity`'s per-file parsing. Checks were already concurrent across the suite; this removes the serial floor inside the slowest ones: the full 18-check dogfood suite drops from ~111ms to ~68-76ms. Fittingly, `go-complexity` flagged the new pool's own `Map` at 6 before it could land — the clamp logic became a helper.
+- Perf: parallelize file scanning inside the heavy checks — the full 18-check dogfood suite drops from ~111ms to ~68-76ms.
+- Feat: new `internal/par` worker pool — generic and deterministic, results return in input order, so parallelism can never change a check's output; pinned by ordering tests.
+- Refactor: the pool now backs `walkfs.ScanFiles` (every markdown scanner and `no-eslint-disable`), the cspell per-file loop, jscpd's read-and-lex phase (clone detection stays serial — it builds shared hash tables), and `go-complexity` parsing.
+- Chore: `go-complexity` flagged the new pool's own `Map` at 6 before it could land — the clamp logic became a helper.
 
 ### 2026.07.18.1819
 
-- Feat: add the `go-complexity` check — the first net-new check of the Go era and the Go-native counterpart of the house eslint rule (`complexity: max 5`). Pure standard library (`go/ast` + `go/parser`): every function starts at 1 and gains a point per `if`/`for`/`range`/non-default `switch` or `select` clause/`&&`/`||`; function literals score separately like eslint scores arrows; `_test.go` files are exempt; the ceiling is configurable via `.fitnessrc.json` `goComplexity.max`. Opt-in (Go-specific, like `swiftlint`), enabled on this repo, scanning all 50 Go files in about 10ms.
-- Refactor: burn every one of the 78 functions the new check flagged down under the ceiling — behavior-identical helper extractions across the runner, the vitestconf and clonedetect lexers (complexity 28 and 25 at the worst), the spell engine, the mermaid parser, the shared internals, and 24 check binaries, all under the existing test net (40 packages green, no exported API changes, no test expectations touched). The dogfood suite now gates commits on the very ceiling the codebase just earned.
+- Feat: add the `go-complexity` check — the first net-new check of the Go era and the Go-native counterpart of the house eslint rule (`complexity: max 5`), pure standard library (`go/ast` + `go/parser`).
+- Feat: scoring matches eslint — every function starts at 1 and gains a point per `if`/`for`/`range`/non-default `switch` or `select` clause/`&&`/`||`; function literals score separately; `_test.go` files are exempt; the ceiling is configurable via `goComplexity.max`.
+- Chore: opt-in (Go-specific, like `swiftlint`) and enabled on this repo — all 50 Go files scanned in about 10ms.
+- Refactor: burn every one of the 78 flagged functions down under the ceiling — behavior-identical helper extractions across the runner, the vitestconf and clonedetect lexers (complexity 28 and 25 at the worst), the spell engine, the mermaid parser, and 24 check binaries; 40 packages stay green with no test expectations touched.
 
 ### 2026.07.18.1749
 
-- Docs: bring every document in line with the Go-only, npm-free reality. All 27 check READMEs correct their era: `.fitnessrc.js`/`.ts` snippets become `.fitnessrc.json`, `npx fitness` becomes `fitness`, "bundled as a dependency" claims become the peer-tool exec or native-engine truth, TypeScript internals (defaultChecks exports, contextInline registration, `execSyncResult`, source-file pointers) become their Go equivalents, config-fallback descriptions state the three-step resolution (repo-local, installed `@mayjournal/fitness-shared`, embedded copy materialized on demand), and dead `.cursor/rules` pointers are dropped — rule documentation, error formats, and examples preserved byte-identical throughout. The architecture docs drop the last stale claims (the npm config package is embedded now; `npm run fitness` no longer exists), `competition.md` contrasts against the static check-binary catalog, and `architecture-index.md` leads with the two completed milestone plans. The ADR is deliberately untouched — it is a dated decision record.
+- Docs: bring every document in line with the Go-only, npm-free reality — all 27 check READMEs correct their era, with rule documentation, error formats, and examples preserved byte-identical throughout.
+- Docs: `.fitnessrc.js`/`.ts` snippets become `.fitnessrc.json`, `npx fitness` becomes `fitness`, "bundled as a dependency" claims become the peer-tool exec or native-engine truth, and TypeScript internals become their Go equivalents.
+- Docs: config-fallback descriptions now state the three-step resolution (repo-local, installed `@mayjournal/fitness-shared`, embedded copy materialized on demand); dead `.cursor/rules` pointers are dropped.
+- Docs: the architecture docs drop the last stale claims, `competition.md` contrasts against the static check-binary catalog, and `architecture-index.md` leads with the two completed milestone plans; the ADR is deliberately untouched — it is a dated decision record.
 
 ### 2026.07.18.1742
 
-- Chore: consolidate all documentation under `docs/` — `architecture/`, `plans/` (with its archive), `architecture-index.md`, `wardley.md`, and `competition.md` move together, so every doc-to-doc relative link survives unchanged; front matter `relatedConfigurations` paths deepen one level in 17 files, README links cross the new boundary, and the `mermaid-level-bleed` check keeps matching level files at `docs/architecture/` thanks to its unanchored path pattern. Also refreshed a stale npm-era phrase in `competition.md`.
+- Chore: consolidate all documentation under `docs/` — `architecture/`, `plans/` (with its archive), `architecture-index.md`, `wardley.md`, and `competition.md` move together, so every doc-to-doc relative link survives unchanged.
+- Fix: front matter `relatedConfigurations` paths deepen one level in 17 files and README links cross the new boundary.
+- Chore: the `mermaid-level-bleed` check keeps matching level files at `docs/architecture/` thanks to its unanchored path pattern; a stale npm-era phrase in `competition.md` refreshed.
 
 ### 2026.07.18.1721
 
-- Fix: `go build -o bin` fails when the gitignored `bin/` directory does not exist yet, breaking fresh clones, the pre-commit hook, and CI alike — every build command (hooks, CI, README, architecture docs) now runs `mkdir -p bin` first. Caught by the clean-clone simulation: clone, build, and the full suite now verify green from an empty checkout.
+- Fix: `go build -o bin` fails when the gitignored `bin/` directory does not exist yet, breaking fresh clones, the pre-commit hook, and CI alike.
+- Build: every build command — hooks, CI, README, architecture docs — now runs `mkdir -p bin` first.
+- Test: caught by the clean-clone simulation; clone, build, and the full suite now verify green from an empty checkout.
 
 ### 2026.07.18.1720
 
-- Feat: the repo is npm-free — plan 02 complete and archived. The shared tool configs now live inside the binaries (`go/internal/sharedconf` embeds the config directory and materializes it to a content-keyed cache dir on demand; resolution is local config, then an installed `@mayjournal/fitness-shared` for compatibility, then the embedded copy — 153 new tests across the six touched packages). The pre-commit stamping tool is Go (`fitness-stamp-changelog`: restamps the first heading when CHANGELOG.md is staged, re-stages, no version bumps — the changelog timestamp is the version now), and the githooks call `go build` plus the binaries directly. Deleted: package.json, package-lock.json, node_modules, .npmrc, .nvmrc, every node script under `scripts/`, the npm publish workflows, the node CI setup action, and the `@mayjournal/fitness-shared` package directory (published versions stay on npm and keep winning over the embedded fallback when installed). The spell dictionaries are frozen committed data — a Go regeneration tool fetching dictionary sources over HTTPS is deferred. This repo's dogfood list drops eslint, prettier, node-version, and dependency-currency (nothing left for them to judge here; all four stay in the catalog for consumer repos), leaving 17 checks. CI is two Go jobs. Cloning and building requires exactly one tool: Go.
+- Feat: the repo is npm-free — plan 02 complete and archived; cloning and building requires exactly one tool: Go.
+- Feat: the shared tool configs live inside the binaries — `go/internal/sharedconf` embeds the config directory and materializes it to a content-keyed cache dir on demand; resolution is local config, then an installed `@mayjournal/fitness-shared` for compatibility, then the embedded copy — 153 new tests across the six touched packages.
+- Feat: the pre-commit stamping tool is Go (`fitness-stamp-changelog`: restamps the first heading when CHANGELOG.md is staged, re-stages, no version bumps — the changelog timestamp is the version now), and the githooks call `go build` plus the binaries directly.
+- Chore: deleted package.json, package-lock.json, node_modules, .npmrc, .nvmrc, every node script under `scripts/`, the npm publish workflows, the node CI setup action, and the `@mayjournal/fitness-shared` package directory (published versions keep winning over the embedded fallback when installed); CI is two Go jobs.
+- Chore: the spell dictionaries are frozen committed data (a Go regeneration tool fetching sources over HTTPS is deferred); the dogfood list drops eslint, prettier, node-version, and dependency-currency (nothing left for them to judge here; all four stay in the catalog), leaving 17 checks.
 
 ### 2026.07.18.1556
 
-- Feat: retire the TypeScript implementation — the Go suite is now the only fitness runner. Deleted `packages/runner`, `packages/checks` (all 26 TypeScript check packages), `packages/checks-bundle`, the legacy `.fitnessrc.js`, and the go-parity harness that existed to compare the two implementations (26/27 byte-parity was proven before deletion; see the archived plan). Each check's rule documentation moved to its Go home (`go/cmd/fitness-check-<name>/README.md`, front-matter paths rebased) and the `read-repo-first` banner now points there. `packages/shared` survives as a configs-only npm package (`@mayjournal/fitness-shared`: eslint, prettier, vitest, cspell configs consumed as data by the Go checks and by consumers; TypeScript build machinery, bin scripts, and runtime sources removed; the unmet optional vitest peer dropped so dependency-currency stays quiet on a repo with no vitest). Root scripts and workspaces slimmed accordingly (`npm run fitness` is the Go suite, `npm test` is `go test ./...`; `fitness:ts` and `parity:go` are gone), CI drops the fitness-ts/go-parity jobs and reworks build-test into scripts-test, devDependencies shrink to the lint/format stacks plus `cspell` + `cspell-trie-lib` (kept solely to regenerate the embedded spell dictionaries), and the vitest coverage checks leave this repo's `.fitnessrc.json` list — there is no vitest suite left to run (both checks remain in the Go catalog for consumer repos). README and the architecture C4 docs rewritten for the Go-only world.
+- Feat: retire the TypeScript implementation — the Go suite is now the only fitness runner.
+- Chore: deleted `packages/runner`, `packages/checks` (all 26 TypeScript check packages), `packages/checks-bundle`, the legacy `.fitnessrc.js`, and the go-parity harness (26/27 byte-parity was proven before deletion; see the archived plan).
+- Docs: each check's rule documentation moved to its Go home (`go/cmd/fitness-check-<name>/README.md`, front-matter paths rebased), the `read-repo-first` banner points there, and README plus the architecture C4 docs are rewritten for the Go-only world.
+- Refactor: `packages/shared` survives as a configs-only npm package — eslint, prettier, vitest, and cspell configs consumed as data; build machinery, bin scripts, and runtime sources removed; the unmet optional vitest peer dropped so dependency-currency stays quiet.
+- Chore: root scripts slim to `npm run fitness` (Go suite) and `npm test` (`go test ./...`); CI drops the fitness-ts and go-parity jobs; devDependencies shrink to the lint/format stacks plus `cspell` + `cspell-trie-lib` (kept solely to regenerate the embedded dictionaries); the vitest coverage checks leave this repo's list (both stay in the catalog).
 
 ### 2026.07.18.1524
 
-- Docs: merge the go-rewrite branch to main (fast-forward — the branch was strictly ahead, so no merge commit and no hook exception needed) and archive the completed milestone plan to `plans/archive/01-go-rewrite.md` with `status: completed` front matter per the plan-doc convention; the README Go-runner section now links to the archived plan.
+- Chore: merge the go-rewrite branch to main — a fast-forward (the branch was strictly ahead), so no merge commit and no hook exception needed.
+- Docs: archive the completed milestone plan to `plans/archive/01-go-rewrite.md` with `status: completed` front matter per the plan-doc convention.
+- Docs: the README Go-runner section now links to the archived plan.
 
 ### 2026.07.18.1521
 
-- Feat: land plan 01 section 5 — lock it in. The go-parity harness (`npm run parity:go`, `scripts/go-parity/`) diffs every check name discovered from the built Go binaries against its TypeScript twin on this repo (ok, errors with path normalization, filesChecked with the documented jscpd exemption) — 27/27 agree. CI gains `go` (gofmt/vet/build/test), `go-parity`, and `fitness-ts` jobs, and the `fitness` job now runs the Go suite. Dogfood cutover: `.fitnessrc.json` carries the full 23-check list and `npm run fitness` now builds and runs the Go runner (~1.9s for the suite this repo gates commits on, vs ~6.5s plus a build for `npm run fitness:ts`, which stays supported and CI-gated during the transition). Distribution decided and captured in the README: GitHub Releases plus `go install` first; an npm platform-binary shim only if consumers want npx continuity. Plan 01 is fully checked off.
-- Chore: `jscpd` joins the repeated-string-literals allow baseline in both configs — like `eslint`, it is simultaneously the CLI binary name, the check name, and now the harness's documented count-semantics exemption, one occurrence per island.
+- Feat: land plan 01 section 5 — lock it in; plan 01 is fully checked off.
+- Feat: the go-parity harness (`npm run parity:go`, `scripts/go-parity/`) diffs every check name discovered from the built Go binaries against its TypeScript twin on this repo — ok, errors with path normalization, filesChecked with the documented jscpd exemption — and 27/27 agree.
+- Ci: CI gains `go` (gofmt/vet/build/test), `go-parity`, and `fitness-ts` jobs; the `fitness` job now runs the Go suite.
+- Feat: dogfood cutover — `.fitnessrc.json` carries the full 23-check list and `npm run fitness` builds and runs the Go runner (~1.9s vs ~6.5s plus a build for `npm run fitness:ts`, which stays supported and CI-gated during the transition).
+- Chore: distribution decided in the README (GitHub Releases plus `go install` first; an npm shim only if consumers want npx continuity); `jscpd` joins the repeated-string-literals allow baseline in both configs — CLI binary name, check name, and count-semantics exemption, one occurrence per island.
 
 ### 2026.07.18.1511
 
-- Feat: land plan 01 section 4 — the four tool-exec checks, completing the 27-name Go check catalog. Approach decided on arrival per the plan: every one execs the real tool (the check binaries stay zero-dependency; the tools are peers resolved from node_modules/.bin walking up, then PATH — never npx — with one-line install hints when missing). `prettier` ports the staged filtering, glob mode, passthrough (`--write .` verified), and `[warn]` parsing; `eslint` execs the CLI with the shared flat config resolved like the TypeScript check and matches it byte-for-byte on this repo (242 files) and on rule-violation fixtures; `vitest-coverage-full` reuses `internal/vitestconf` for the threshold gate (append-only additions, 22 new cases) then execs `vitest run --coverage` with the TS config fallback and a 120-second describe budget; `swiftlint` execs the system binary with real JSON violation parsing, byte-identical against swiftlint 0.65.0 on violating fixtures. All four verified side-by-side with the real tools plus scripted-fake mocks in `go test` (122 new cases), including missing-tool paths. Full-catalog sweep: 26 of 27 check names byte-match the TypeScript twins on this repo; the one difference is `jscpd` scanned-file-count semantics, documented in section 3, with verdict parity.
+- Feat: land plan 01 section 4 — the four tool-exec checks, completing the 27-name Go check catalog; every one execs the real tool as a peer, resolved from `node_modules/.bin` walking up, then PATH — never npx — with one-line install hints when missing.
+- Feat: `prettier` ports the staged filtering, glob mode, passthrough (`--write .` verified), and `[warn]` parsing; `eslint` execs the CLI with the shared flat config and matches the TypeScript check byte-for-byte on this repo (242 files) and on rule-violation fixtures.
+- Feat: `vitest-coverage-full` reuses `internal/vitestconf` for the threshold gate (22 new cases) then execs `vitest run --coverage` with the TS config fallback and a 120-second describe budget; `swiftlint` execs the system binary with real JSON violation parsing, byte-identical against swiftlint 0.65.0.
+- Test: all four verified side-by-side with the real tools plus scripted-fake mocks in `go test` (122 new cases), including the missing-tool paths.
+- Chore: full-catalog sweep — 26 of 27 check names byte-match the TypeScript twins on this repo; the one difference is `jscpd` scanned-file-count semantics, documented in section 3, with verdict parity.
 
 ### 2026.07.18.1312
 
-- Feat: land plan 01 section 3 — the native souls of the two heaviest tool checks. `cspell` is now a Go binary over `internal/spell`: camelCase-aware word extraction, cspell-compatible inline directives (`cspell:ignore`/`disable-line`/…), default URL/email/hash/escape masks, and 14 committed plain-text wordlists (~217k entries, 2.1MB) generated from the installed `@cspell` dictionary packages by `go/internal/spell/dict/generate.mjs` (provenance and regeneration command in every file header; the `@cspell` scope is found through module resolution, not hand-built paths). Parity: byte-identical output to the real cspell CLI on a 31-issue adversarial probe corpus, a clean 258-file tracked-source sweep, and this repo passing with the exact TypeScript file count (52) — about 7x faster. `jscpd` is now a Go binary over `internal/clonedetect`: a generic comment-stripping lexer, rolling-hash windows with jscpd’s min-lines/min-tokens/threshold semantics, the `jscpd:ignore-start`/`end` escape hatch, batched `git check-ignore` filtering, and the verbatim over-threshold error line. String literals keep their content in the token stream (full collapse falsely merged the 21 check mains’ boilerplate — jscpd distinguishes string values, and verdict parity is binding). Verdicts agree with the TypeScript check on this repo and on seeded-clone, ignore-marker, and below-threshold fixtures; scanned-file counts differ by documented scope semantics. 165 new Go tests.
-- Fix: the `cspell` check hung the pre-commit hook when the 2.1MB wordlists were staged — cspell applies ignorePaths only to discovered files, never to explicitly passed arguments, so staged-mode invocations spell-checked 206k lines of dictionary data. The staged filter now reads the resolved config and drops any staged path a non-glob ignorePaths entry covers (equal, directory prefix, or path segment), generalizing the previous hardcoded three-basename skip into the check's documented intent.
-- Chore: add `go/internal/spell/dict` to the shared cspell.json ignorePaths — the committed wordlists are dictionary data, not prose to spell-check.
+- Feat: `cspell` is now a Go binary over `internal/spell` — camelCase-aware word extraction, cspell-compatible inline directives, default URL/email/hash/escape masks, and 14 committed plain-text wordlists (~217k entries, 2.1MB) generated from the installed `@cspell` packages by `go/internal/spell/dict/generate.mjs` (provenance in every header).
+- Test: spell parity — byte-identical to the real cspell CLI on a 31-issue adversarial probe corpus and a clean 258-file tracked-source sweep; this repo passes with the exact TypeScript file count (52), about 7x faster.
+- Feat: `jscpd` is now a Go binary over `internal/clonedetect` — a generic comment-stripping lexer, rolling-hash windows with jscpd's min-lines/min-tokens/threshold semantics, the `jscpd:ignore-start`/`end` escape hatch, batched `git check-ignore` filtering, and the verbatim over-threshold error line.
+- Test: clone-detection parity — string literals keep their content in the token stream (full collapse falsely merged the 21 check mains' boilerplate); verdicts agree with the TypeScript check on this repo and on seeded-clone, ignore-marker, and below-threshold fixtures; 165 new Go tests.
+- Fix: the `cspell` check hung the pre-commit hook when the 2.1MB wordlists were staged — cspell applies ignorePaths only to discovered files, never explicit arguments — so the staged filter now drops any staged path a non-glob ignorePaths entry covers; `go/internal/spell/dict` joins the shared ignorePaths.
 
 ### 2026.07.18.1208
 
-- Feat: land plan 01 section 2 — the parsers-and-network checks are now Go binaries. `internal/mermaid` ports `mermaid.ts` exactly (fence scanning, the five callout patterns with JS-lookahead emulation over RE2 and absolute-position dedupe, GFM callout tables, legend-invisible pairing), pinned by 47 tests including 12 emulation edge cases first executed against the real JavaScript and a differential dump over all 52 repo markdown files that matched the JS parser byte-for-byte (15 diagrams, 6 callout tables, 198 callout numbers). The five mermaid checks (`mermaid-callouts`, `mermaid-callout-why`, `mermaid-diagram-prose`, `mermaid-legend`, `mermaid-level-bleed`) are thin binaries over that parser; `vitest-coverage-exclude` scans vitest config sources text-level (string-aware comment stripping in `internal/vitestconf`, shared home for the future coverage-full port) with the TS fallback-root semantics; `dependency-currency` replaces the `npm outdated` shell-out with a native net/http registry client (abbreviated-metadata endpoint, `.npmrc` registry honored, bounded concurrency, offline and garbage responses degrade to pass exactly like the TypeScript check) — ~2.6x faster than the npm oracle on this repo. All seven side-by-side comparisons against the TypeScript twins agree, passing with identical file counts (7/7/7/7/5, 1, 30).
+- Feat: land plan 01 section 2 — the parsers-and-network checks are now Go binaries; all seven side-by-side comparisons against the TypeScript twins agree, passing with identical file counts.
+- Feat: `internal/mermaid` ports `mermaid.ts` exactly — fence scanning, the five callout patterns with JS-lookahead emulation over RE2, GFM callout tables, legend-invisible pairing — pinned by 47 tests (12 emulation edge cases executed against the real JavaScript first) and a byte-for-byte differential dump over all 52 repo markdown files.
+- Feat: the five mermaid checks are thin binaries over that parser; `vitest-coverage-exclude` scans vitest config sources text-level via string-aware comment stripping in `internal/vitestconf` (shared home for the future coverage-full port), with the TS fallback-root semantics.
+- Feat: `dependency-currency` replaces the `npm outdated` shell-out with a native net/http registry client — abbreviated-metadata endpoint, `.npmrc` registry honored, bounded concurrency, offline and garbage responses degrade to pass exactly like the TypeScript check — ~2.6x faster than the npm oracle on this repo.
 
 ### 2026.07.18.1140
 
-- Feat: land plan 01 section 1 — all thirteen pure-logic checks are now Go binaries. Twelve new checks ported in one parallel pass (`gitignore-why`, `changelog`, `changelog-updated`, `semantic-commit`, `commit-attribution`, `read-repo-first`, `markdown-filename-kebab-case` + `markdown-filename-camel-case` as two thin binaries over one shared `internal/mdfilename` package, `markdown-front-matter`, `markdown-no-bold-italic`, `no-eslint-disable`, `build-output-untracked`, `repeated-string-literals`), each with table-driven tests porting the meaningful TypeScript cases (~200 Go test cases total) and each proven side-by-side against its TypeScript twin on this repo — passing checks pass identically, failing checks (`commit-attribution`, the camelCase flavor, `markdown-front-matter` in single-check mode, `no-eslint-disable`) fail with byte-identical errors. The `changelog` check upgrades to real JSON parsing (encoding/json) for the invalid-JSON error paths; `semantic-commit` and `commit-attribution` declare the `--message` context-inline handshake; `repeated-string-literals` reads its allow list from `.fitnessrc.json`.
-- Chore: add `.fitnessrc.json` carrying the `repeated-string-literals` allow baseline for the Go runner during the config transition (the TypeScript suite keeps reading `.fitnessrc.js`; both allow lists stay in sync until the dogfood cutover).
-- Fix: the `jscpd` check now also ignores Go test files (`**/*_test.go`) — the existing test/spec exclusion rationale (repeated mock setup and fixtures read as false-positive duplication) predates the Go tree and only covered the `.test.*`/`.spec.*` naming convention. The two real production clones the Go ports introduced were extracted instead: a shared per-file scan loop (`walkfs.ScanFiles`) now backs `markdown-front-matter` and `no-eslint-disable`, and the color-gate logic moved to `render.ColorsEnabled` for both the results table and the `read-repo-first` banner.
+- Feat: land plan 01 section 1 — all thirteen pure-logic checks are now Go binaries, twelve ported in one parallel pass, the markdown-filename pair as two thin binaries over one shared `internal/mdfilename` package.
+- Test: each port carries table-driven tests from the meaningful TypeScript cases (~200 Go cases total) and is proven side-by-side against its twin on this repo — passing checks pass identically, failing checks fail with byte-identical errors.
+- Feat: `changelog` upgrades to real JSON parsing for the invalid-JSON error paths; `semantic-commit` and `commit-attribution` declare the `--message` context-inline handshake; `repeated-string-literals` reads its allow list from `.fitnessrc.json`.
+- Chore: add `.fitnessrc.json` carrying the `repeated-string-literals` allow baseline for the Go runner during the config transition (the TypeScript suite keeps reading `.fitnessrc.js`; both lists stay in sync until the dogfood cutover).
+- Fix: `jscpd` now also ignores Go test files (`**/*_test.go`) — the test/spec exclusion rationale predates the Go tree; the two real production clones the ports introduced were extracted instead (a shared `walkfs.ScanFiles` scan loop and the `render.ColorsEnabled` color gate).
 
 ### 2026.07.18.1113
 
-- Fix: the `prettier` check errored on staged Go files — Prettier has no parser for `.go` or `go.mod`, so the first commit carrying the new `go/` tree failed pre-commit. Staged paths under `go/` are now dropped from the staged-mode invocation (same treatment as `scripts/` and `githooks/`); the full-repo glob run is unaffected.
-- Feat: land plan 01 section 0 — the Go scaffold. New `go/` module (stdlib-only) with the `fitness` runner binary and the first check binary, `fitness-check-node-version`, running end to end on this repo. The runner resolves check binaries (sibling dir then PATH, local executable paths from config), execs them with the `--root` + `FITNESS_*` env protocol (JSON result on stdout, display on stderr), asks each for `--describe` metadata (name, timeout budget, context-inline arg) with its own two-second budget, runs a bounded parallel pool with per-check process-group timeout kills (TERM then KILL), and renders the same results table, totals line, and exit-code contract as the TypeScript runner. Config is `.fitnessrc.json`; a lone legacy `.fitnessrc.js`/`.ts` gets a migration hint on full-suite runs only, so single-check runs work during the transition. Shared internals: skip-dir file walker, git helpers, markdown front matter/fence/table parsing, and the table renderer — all with `go test` coverage. The Go `node-version` check agrees with the TypeScript check on this repo (identical table row and byte-identical failure message); its plan checkbox and all of section 0 are flipped in `plans/01-go-rewrite.md`.
+- Fix: the `prettier` check errored on staged Go files — Prettier has no parser for `.go` or `go.mod`, so the first commit carrying the new `go/` tree failed pre-commit; staged paths under `go/` are now dropped from the staged-mode invocation (same treatment as `scripts/` and `githooks/`).
+- Feat: land plan 01 section 0 — the Go scaffold: a new stdlib-only `go/` module with the `fitness` runner and the first check binary, `fitness-check-node-version`, running end to end on this repo.
+- Feat: the runner resolves check binaries (sibling dir then PATH, local paths from config), execs them with the `--root` + `FITNESS_*` env protocol (JSON result on stdout, display on stderr), budgets each `--describe` handshake at two seconds, and kills timed-out checks by process group from a bounded pool — same table and exit codes as the TypeScript runner.
+- Feat: config is `.fitnessrc.json`; a lone legacy `.fitnessrc.js`/`.ts` gets a migration hint on full-suite runs only, so single-check runs work during the transition; shared internals (skip-dir walker, git helpers, markdown parsing, table renderer) all carry `go test` coverage.
+- Test: the Go `node-version` check agrees with the TypeScript check on this repo — identical table row and byte-identical failure message; its checkbox and all of section 0 are flipped in `plans/01-go-rewrite.md`.
 
 ### 2026.07.18.1057
 
-- Docs: add `plans/01-go-rewrite.md` — the milestone plan for rebuilding the runner and every check in Go as zero-dependency static binaries: one binary per check plus a `fitness` runner binary, stdlib-only, exec protocol with JSON results, ported one check at a time with side-by-side parity against the TypeScript checks; dep-heavy checks (prettier, eslint, vitest-coverage-full, swiftlint) come last with each approach decided on arrival. Follows the may-journals plan template (numbered title, Goal, numbered checkbox sections, verification last).
-- Chore: bump `@typescript-eslint/eslint-plugin` + `@typescript-eslint/parser` 8.63.0 → 8.64.0, `eslint-plugin-jsdoc` 63.0.13 → 63.1.0, and `knip` 6.26.0 → 6.27.0 to latest to satisfy the `dependency-currency` check after upstream releases; full build/fitness/lint suite verified on the updated tree.
+- Docs: add `plans/01-go-rewrite.md` — the milestone plan for rebuilding the runner and every check in Go as zero-dependency static binaries: one binary per check plus a `fitness` runner, stdlib-only, exec protocol with JSON results.
+- Docs: checks port one at a time with side-by-side parity against the TypeScript checks; the dep-heavy four (prettier, eslint, vitest-coverage-full, swiftlint) come last with each approach decided on arrival.
+- Docs: the plan follows the may-journals template — numbered title, Goal, numbered checkbox sections, verification last.
+- Chore: bump `@typescript-eslint/eslint-plugin` + `@typescript-eslint/parser` 8.63.0 → 8.64.0, `eslint-plugin-jsdoc` 63.0.13 → 63.1.0, and `knip` 6.26.0 → 6.27.0 to satisfy `dependency-currency`; full build/fitness/lint suite verified on the updated tree.
 
 ### 2026.07.10.2041
 
-- Feat: add the `repeated-string-literals` check — fails when the same string literal appears 3+ times across source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`; test/spec files excluded), reporting `"value" appears N times (file:line, …, +K more) — extract a shared constant`, most-repeated first. A small hand lexer skips line/block comments, regex literals, and template literals, and drops `import`/`require` module specifiers; idiomatic tokens where the literal is the clearest spelling (buffer encodings, `child_process` stdio modes, `typeof` results) are never flagged. Opt-in (bundled, not in `defaultChecks`). Closes #42 — the enum-candidate heuristic and per-repo allowlist are deferred to a fast-follow per that issue's own guidance.
-- Chore: centralize well-known repo filenames (`package.json`, `package-lock.json`, `CHANGELOG.md`, `tsconfig.json`, `cspell.json`, `.gitignore`, `.npmrc`) as shared constants (`fitness-shared` `fileNames.ts`) and use them across the checks and runner — dogfooding the new check's extract-a-shared-constant guidance on our own worst offenders.
-- Chore: bump `@arethetypeswrong/cli`, `@types/node`, `eslint-plugin-jsdoc`, `jscpd`, `knip`, `prettier`, and `typescript` (6.0.3 → 7.0.2) to latest to satisfy the `dependency-currency` check after upstream releases; full build/test/lint suite verified on the new toolchain.
-- Chore: merge `main` (the `markdown-filename-convention` check) into this branch, resolving conflicts in `CHANGELOG.md`, the bundler's `CHECK_SPECS` list, `package-lock.json`, and every workspace `package.json` version field, then regenerating the lockfile.
-- Feat: add a `repeatedStringLiterals.allow` option to `.fitnessrc` (`FitnessConfig`) — exact string values the `repeated-string-literals` check never flags, as a project baseline for structural repeats no constant can fix (check-name registries, TS discriminated-union members, declarative config values, standalone scripts). The inline marker and enum-candidate heuristic remain deferred to #44.
-- Fix: `build-output-untracked` flagged its own test fixtures — strings like `'../dist/x.js'` inside `*.test.ts` — as dist imports; test/spec files are now excluded from the import scan (fixtures legitimately contain dist specifiers).
-- Fix: `repeated-string-literals` now also excludes `*.bench.*` files (bench fixtures repeat strings like test fixtures do) and never flags language directives (`'use strict'` — a directive prologue cannot be replaced by a constant).
-- Chore: enable `build-output-untracked` and `repeated-string-literals` on this repo (dogfooding), with a documented `allow` baseline in `.fitnessrc.js`. Extracted the genuinely-shared literals the check surfaced: `.md` as `MD_EXT` in `fitness-shared` `fileNames.ts` (six call sites), plus local constants for `--coverage` (`shared/bin/test.js`) and the `'readonly'` eslint globals value (`eslint.base.mjs`).
-- Feat: derive the bundler's check list from the `packages/checks/*` directories instead of a hand-maintained array — a directory bundles as a same-named check unless its package.json declares a `fitnessChecks` field mapping entry modules to check names (flavor packs like `markdown-filename-convention`); directories without a package.json are skipped. Closes #41.
-- Chore: fix every repeated string literal the new check found instead of allowlisting it — the `.fitnessrc.js` `allow` baseline shrinks from 55 entries to 3. Default checks now use the `CheckName` enum values for their `name` (the literal lives once, in the enum); mermaid block kinds (`DIAGRAM_KIND`/`TABLE_KIND`) and gitignore-why's `PATTERN` became single-source discriminant constants; source-extension sets (`SOURCE_FILE_EXTENSIONS`/`TS_FILE_EXTENSIONS`) and test-file globs moved to `fitness-shared`; the repo scripts and `shared/bin` each got a constants module (`scripts/constants.cjs`, `bin/constants.js`) with a resolved `REPO_ROOT` replacing six `'../..'` computations; `Parameters<Check['run']>[1]` type gymnastics became plain `RunContext | undefined`. The three `allow` survivors (`dist`, `eslint`, `package.json`) each live once per runtime island (TS src / published bin JS / repo scripts) that cannot share a constants module — or, for `eslint`, are the CLI binary name and the check name sharing a spelling.
-- Fix: the `eslint` check no longer builds a TypeScript type-checker program, the root cause of its CI timeout. It ran type-aware linting (`project`) over the whole repo — ~5.4s on the runner, which tipped past the default 5s check timeout and failed CI on `main` — but not one enabled rule (`sort-keys`, `complexity`, `jsdoc/require-jsdoc`, `max-lines`, the perfectionist sorts) reads type information, so the program cost ~5s for zero findings. Parsing `.ts` syntactically (dropping `project`) is byte-for-byte identical in output and ~4x faster; the whole-repo check now runs under 1s, so it needs no raised timeout. Both lint paths — the in-process check and the `fitness-shared lint` CLI (`projectService`) — now use the shared syntactic config, and the scaffolding that existed only to feed the type program is deleted: `resolveLintTsconfig`, the runner-tsconfig writer and `FITNESS_TSCONFIG_ROOT` in `lint.js`, and the `tsconfig.lint.cjs` export plus its `lint` compiler profile.
-- Chore: bump `eslint` 10.6.0 → 10.7.0 to satisfy the `dependency-currency` check after the upstream release.
-- Docs: add ADR `architecture/adr/0001-fix-the-work-not-the-limit.md` — records the rule the eslint-check fix generalizes: a check's default timeout is a budget (a breach means wasted work, not a limit to raise), `timeoutMs` overrides are reserved for irreducible external latency, and a lint tool does only the analysis its active rules require (a syntactic parse unless a type-aware rule needs the type program).
-- Feat: add the `commit-attribution` check — validates a commit message discloses AI usage via two git trailers after the subject line (`AI-Tools:` and `AI-Models:`, each with a non-empty value); merge and revert commits are exempt. Mirrors `semantic-commit`'s `contextInline`/`proposedCommitMessage` resolution so the commit-msg hook flows the proposed message in. Opt-in (bundled, not in `defaultChecks`). Closes #7.
-- Docs: expand the `commit-attribution` README to the passing/failing/advanced standard — enable snippet with a commit-msg hook, a message carrying both trailers, the exact per-trailer error output, and the merge/revert exemptions; notes that it is intentionally not enabled on this repo since historical commits predate the trailer convention.
+- Feat: add the `repeated-string-literals` check — the same literal appearing 3+ times across source files fails, most-repeated first, with extract-a-constant guidance; comments, regexes, template literals, import specifiers, idiomatic tokens, directives (`'use strict'`), and test/spec/bench files are never flagged. Closes #42.
+- Feat: derive the bundler's check list from the `packages/checks/*` directories instead of a hand-maintained array — a directory bundles as a same-named check unless its package.json maps entry modules via `fitnessChecks` (flavor packs). Closes #41.
+- Feat: add the `commit-attribution` check — commit messages must disclose AI usage via `AI-Tools:` and `AI-Models:` trailers after the subject; merge and revert commits exempt; opt-in, with the README expanded to the passing/failing/advanced standard. Closes #7.
+- Fix: the `eslint` check no longer builds a TypeScript type-checker program — no enabled rule reads types, so it cost ~5s for zero findings and tipped CI past the timeout; syntactic parsing is byte-identical and ~4x faster, recorded as ADR 0001 (`fix-the-work-not-the-limit`); `build-output-untracked` stops flagging its own test fixtures.
+- Chore: dogfood both new checks, fix every repeated literal found (allow baseline 55 → 3 via shared constants and enum-valued check names), add the `repeatedStringLiterals.allow` option (inline marker and enum heuristic deferred to #44), bump the toolchain (TypeScript 6.0.3 → 7.0.2, eslint 10.7.0), and merge `main` into the branch.
 
 ### 2026.07.07.0850
 
-- Feat: add the `markdown-filename-convention` check package, which exports two check names — `markdown-filename-kebab-case` and `markdown-filename-camel-case` — as two flavors of one shared function (`runMarkdownFilenameCheck` in `fitness-shared`, parameterized by a `FilenameConvention`). Each enforces a single convention on every `.md` basename (standard root docs like `README.md`/`CHANGELOG.md` exempt), rather than one check accepting either style. The bundler maps the package's per-flavor entry modules (`kebab-case`, `camel-case`) to the two `@mayjournal/fitness-checks/checks/*` subpaths so `.fitnessrc` can enable either. Opt-in (bundled, not in `defaultChecks`). Closes #11.
-- Chore: enable `markdown-filename-kebab-case` on this repo (dogfooding); the camelCase flavor stays opt-in since this repo's architecture and plan docs are kebab-case.
-- Feat: add the `no-eslint-disable` check — fails when any source file (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, test files included) contains an ESLint disable directive (`eslint-disable`, `eslint-disable-line`, `eslint-disable-next-line`, block and file forms), reporting `path:line: directive` per hit. Opt-in (bundled, not in `defaultChecks`). Closes #10.
-- Feat: add the `gitignore-why` check — requires every `.gitignore` pattern line to be immediately preceded by a `#` comment explaining why it exists. Opt-in (bundled, not in `defaultChecks`). Closes #6.
-- Docs: expand the `gitignore-why` README with passing/failing `.gitignore` examples and the exact error output, plus how to enable it.
-- Chore: enable `gitignore-why` on this repo (dogfooding) and slim `.gitignore` down to the tools actually used here, with a WHY comment above every pattern — dropped stock-template ignores for unused frameworks (Bower, Grunt, Next.js, Nuxt, Gatsby, Sveltekit, Firebase, etc.).
-- Feat: add the `build-output-untracked` check — enforces that the `dist` build output stays out of Git (git-ignored and no tracked files) and that no `.ts`/`.mts`/`.cts` source imports reach into a `dist/` path, reporting each import as `path:line`. Opt-in (bundled, not in `defaultChecks`). Closes #8.
-- Chore: bump `knip` (6.25.0) and `eslint-plugin-perfectionist` (5.10.0) to latest to satisfy the `dependency-currency` check after upstream releases.
-- Fix: `dependency-currency` timed out in CI — `npm outdated` queries the registry and can exceed the runner's 5s default check timeout (observed ~5.5s on a cold cache). Added an optional `timeoutMs` to the `Check` type (the runner honors it over the default), and set `dependency-currency` to 30s.
-- Feat: add the mermaid diagram + callout-table check set (`mermaid-callouts`, `mermaid-callout-why`, `mermaid-diagram-prose`, `mermaid-legend`, `mermaid-level-bleed`) — opt-in checks that enforce the numbered-diagram + callout-table convention used in the architecture docs. Shared parsing lives in `fitness-shared` (`mermaid.ts`), with a `runMermaidDocCheck` helper so each check supplies only its `validateDoc` rule; legend diagrams (no callout numbers) are exempt from diagram↔table pairing. Enabled all five on this repo and aligned the architecture docs to pass.
-- Chore: re-enable `jscpd` on this repo (was locally disabled) and change the shared `jscpd` default to also ignore `**/*.test.*` / `**/*.spec.*` — repeated mock setup and fixtures read as false-positive duplication. Deduped `RunContext` (runner now re-exports the single `fitness-shared` definition) and extracted the shared check `run()` boilerplate to bring real duplication under threshold.
-- Fix: `bundle-check-dist.mjs` now always rebuilds each check and clears the destination before copying, so an incremental build can no longer ship a stale bundled `dist` (previously caused false check failures).
-- Chore: standardize `package.json` scripts across all `packages/checks/*` to one set (`build`, `ci`, `knip`, `test`).
-
-- Chore: bring every dependency to latest and enable the full check suite on this repo (nothing disabled). Migrated to TypeScript 6 (name `@types/node` in `types` since TS 6 no longer auto-includes it under NodeNext), ESLint 10, cspell 10, Vitest 4.1, knip 6, `@types/node` 26. ESLint 10 required two toolchain fixes: converted the shared eslint config to ESM (`eslint.base.mjs` / `eslint.config.mjs`) because `eslint-plugin-jsdoc` 63 is ESM-only, and replaced the unmaintained `eslint-plugin-typescript-sort-keys` (no eslint 10 support — calls the removed `context.getSourceCode()`) with `eslint-plugin-perfectionist` (`sort-interfaces` / `sort-enums`, natural ascending, same behavior). Added `vitest` to the root so the coverage check resolves its binary, and fixed the `ensure-changelog-timestamp` hook to skip `node_modules` (a non-hoisted nested `chalk` was being version-bumped and staged). Enabled `dependency-currency` and re-enabled `jscpd` (test/spec files ignored, real duplication under threshold). Also fixed `bundle-check-dist.mjs` to always rebuild each check and clear its destination (stale bundled dist caused false failures).
-- Feat: add the `dependency-currency` check — flags declared npm dependencies that are behind their latest published version (an installable update means the project isn't at peak fitness). Runs `npm outdated --json` (direct deps only), reports `name: current → latest` de-duplicated across workspaces, skips internal `@mayjournal/*` packages, and degrades to a pass when the registry is unreachable. Opt-in (network-dependent), bundled in `@mayjournal/fitness-checks/checks/*` but not in `defaultChecks`. Closes #30.
-- Fix: real external consumers hit `Cannot find package` for `semantic-commit` (`conventional-commit-types`) and `read-repo-first` (`boxen`) — both checks' own npm dependencies were never propagated to any published package (this monorepo's workspace hoisting masked it). Added `conventional-commit-types`, `cspell`, `cspell-lib`, `eslint`, `@typescript-eslint/*`, `eslint-config-prettier`, `eslint-plugin-jsdoc`, `eslint-plugin-typescript-sort-keys` to `@mayjournal/fitness-shared`'s dependencies (same pattern used for `jscpd`) so every `defaultChecks` member's runtime dependency actually reaches a consumer. Also dropped `read-repo-first`'s `boxen` dependency entirely — replaced its one decorative box-drawing call with a plain horizontal-rule helper using `chalk` (already a real dependency via the runner), so there's one fewer package to keep in sync.
-
-- Merge `main` into this branch, resolving conflicts in `CHANGELOG.md`, `README.md`, `architecture/02-containers.md`, `architecture/03-components.md`, `package-lock.json`, and every workspace `package.json` version field, then regenerating the lockfile.
-- Feat: add `jscpd` (duplicate-code detection) and `swiftlint` (SwiftLint) checks, modeled on bottom-line/may-journals' existing setup. `jscpd` joins `defaultChecks` (bundled dependency, ignores markdown/JSON/lockfiles to avoid false-positive "duplication" on scaffolding); `swiftlint` stays opt-in only — it shells out to a brew-installed binary, not an npm package, and is the only check with no npm dependency. This repo's own `.fitnessrc.js` disables `jscpd` locally (2.3% duplication across ~12 structurally-similar check packages, over the proven 1% threshold — structural, not worth a forced refactor right now). Added `CheckName.Jscpd`; `swiftlint` intentionally omitted since `registry.test.ts` enforces the enum stays in sync with `defaultChecks`.
-- Docs: add plan for `swiftlint` and `jscpd` checks, modeled on bottom-line/may-journals' existing setup. Add "swiftlint"/"jscpd"/"lockfiles" to shared cspell dictionary.
-- Docs: promote README's "Git hooks" from a nested "(optional)" subsection under Exported configs to its own top-level section right after Config — automatic enforcement on commit is the point of the runner, not an optional add-on.
-- Docs: move README's `## Config` section (`.fitnessrc`) up next to `## Install`, ahead of Usage/Checks/Consumer projects, so setup and configuration read together.
-- Docs: fix stale `@mayjournal/fitness-check-*` package references in README and architecture docs (02/03/04) — checks resolve through the `@mayjournal/fitness-checks/checks/*` subpath; individual check workspaces are private and never published. Rewrite README's Consumer projects / à la carte guidance to match; drop a duplicate "Check packages" section. Rename `run-resolve.ts`'s internal `loadChecksBySpecs` to `resolveCheckSpecs` to match the name already used in `03-components.md`/`04-code.md`. Document the repo's own `git config core.hooksPath githooks` pre-commit setup in README.
-- Feat (issue #23): `.fitnessrc` `checks` accepts local module paths mixed with npm check names, in order; missing/invalid path entries fail the run (explicitly configured), `disabledChecks` never removes them; shared path-loading between CLI `--check=./foo.js` and config lives in `load-check.ts`. Archive completed plan.
-- Docs: simplify issue #23 plan to Goal/Plan checklist format, matching other repos.
-- Docs: add C4 architecture level 5 (`architecture/05-user-journey.md`) — developer/agent CLI journey, including local check paths.
-- Docs: update C4 architecture (levels 1–4) for issue #23 — local check paths in `.fitnessrc` `checks` list.
-- Docs: add Wardley map, competition matrix, and C4 architecture under `architecture/`; slim `Architecture.md` to index.
-- Docs: update README links to C4 architecture docs.
-- Cspell: add Wardley and competition-related terms to shared dictionary.
-- Scripts: remove redundant root `setup:npm-trust` and `audit:publish:comment` npm aliases; use `provision:npm` and direct audit-publish node commands instead.
-- Docs: move completed plans to `plans/archive/` and update links in Architecture and runner README.
-- Hooks: replace Husky with native Git hooks in `githooks/`; README documents `cp -a node_modules/@mayjournal/fitness/githooks githooks` for consumer projects.
-- CI: publish npm workspaces sequentially so `@mayjournal/fitness` can retry after shared and checks succeed.
-- CI: enable npm OIDC provenance and manual `workflow_dispatch` on Publish so trusted publishing can authenticate.
-- Publish: ship only `@mayjournal/fitness-shared`, `@mayjournal/fitness-checks`, and `@mayjournal/fitness` (public); bundle all checks into `@mayjournal/fitness-checks/checks/*`; mark individual check workspaces private.
-- Style: format `list-publishable-packages` for Prettier CI.
-- Fix (issue #17): move `prettier`, `prettier-plugin-packagejson`, `prettier-plugin-sort-json`, and `vitest` to `@mayjournal/fitness-shared` dependencies so consumer repos using shared Prettier/Vitest configs can run them without extra installs.
-- Fix `bin/fitness.js` using install path as cwd: drop `cwd` override so the runner inherits the consumer project root and loads `.fitnessrc` / `disabledChecks` correctly via `npx fitness`.
-- Monorepo: run `node packages/runner/bin/fitness.js` from repo root so local `npm run fitness` keeps monorepo root as cwd.
+- Feat: add the check packages `markdown-filename-convention` (kebab-case + camelCase flavors over one shared parameterized function, #11), `no-eslint-disable` (#10), `gitignore-why` (#6), `build-output-untracked` (#8), the five-check mermaid diagram + callout-table set, `dependency-currency` (#30), and `jscpd` + `swiftlint` modeled on may-journals' setup.
+- Feat: `.fitnessrc` `checks` accepts local module paths mixed with npm check names, in order — missing or invalid path entries fail the run, `disabledChecks` never removes them, and path loading is shared between `--check=./foo.js` and config (#23).
+- Fix: `dependency-currency` timed out in CI (~5.5s on a cold registry cache) — checks gain an optional `timeoutMs` the runner honors (30s here); `bundle-check-dist.mjs` always rebuilds and clears its destination so a stale bundled `dist` cannot ship; `bin/fitness.js` drops its cwd override so `npx fitness` loads the consumer's `.fitnessrc`.
+- Chore: bring every dependency to latest and enable the full suite here — TypeScript 6, ESLint 10 (shared config to ESM; `typescript-sort-keys` replaced by `perfectionist`), cspell 10, Vitest 4.1, knip 6; `jscpd` re-enabled (test/spec ignored); check dependencies propagated to published packages, with `boxen` dropped entirely (#17).
+- Build: publish only `@mayjournal/fitness-shared`, `fitness-checks`, and `fitness` (checks bundled; individual workspaces private) with npm OIDC trusted publishing, provenance, and sequential workspace publish; Husky replaced by native Git hooks in `githooks/`; C4 architecture levels 1-5, a Wardley map, and a competition matrix land under `architecture/`.
 
 ### 2026.05.20.1716
 
-- Publish audit: track `packages/shared/types/vitest.config.d.ts` (fix publint in CI); drop broken attw from PR workflow; strip ANSI from publint output in comments.
-- CI: fix `findInstallRoot` test for hoisted vs workspace `node_modules`; write publish-audit JSON via `node scripts/audit-publish/index.mjs` so PR comments parse.
-- Cspell: single config at `@mayjournal/fitness-shared/cspell`; remove duplicate `packages/checks/cspell/cspell.json`.
-- Perf (issue #13): add `audit:publish`, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and plan; fix `exports` types-first on publishable packages.
-- Deps: remove redundant runner jiti, duplicate prettier plugins, and misplaced `@mayjournal/fitness` production deps on checks.
-- CI: remove Provision npm packages workflow; Publish runs OIDC `npm publish -ws` only.
-- Scripts: add `test:scripts` and colocated node:test coverage; keep optional local provision helpers.
-- Packages: add `repository` to publishable `@mayjournal/*` package.json files for npm trusted publishing.
-- Style: format provision and related scripts with Prettier for CI.
-- Release: add JS provision scripts (per-folder READMEs), Provision npm packages workflow, and publish-time checks to seed new `@mayjournal` workspaces and configure trusted publishing.
-- Build: use `fitness-shared build` in `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks`; remove inline `node --eval` tsconfig generation from package scripts.
+- Perf: land the publish-audit plan (#13) — an `audit:publish` script, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and types-first `exports` on the publishable packages.
+- Fix: publish-audit CI — track `packages/shared/types/vitest.config.d.ts` for publint, drop broken attw from the PR workflow, strip ANSI from publint output, fix the `findInstallRoot` test for hoisted vs workspace `node_modules`, and write the audit JSON via `node scripts/audit-publish/index.mjs` so PR comments parse.
+- Feat: add JS provision scripts (per-folder READMEs) and publish-time checks that seed new `@mayjournal` workspaces and configure trusted publishing — then slimmed: the Provision workflow removed, Publish runs OIDC `npm publish -ws` only, optional local helpers kept, and `test:scripts` adds colocated node:test coverage.
+- Chore: dependency and config hygiene — remove the redundant runner jiti, duplicate prettier plugins, and misplaced production deps on checks; a single cspell config at `@mayjournal/fitness-shared/cspell` (duplicate removed); `repository` added to publishable package.json files.
+- Build: `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks` build via `fitness-shared build` (inline `node --eval` tsconfig generation removed); provision and related scripts formatted with Prettier for CI.
 
 ### 2026.05.20.1516
 
-- Shared bin: resolve monorepo root inside `fitness-shared` build, lint, and test; remove `cd` from package scripts.
-- Lint: generate ephemeral runner `tsconfig.json` at lint time so ESLint `projectService` maps runner sources on clean checkouts.
+- Fix: `fitness-shared` build, lint, and test resolve the monorepo root internally.
+- Refactor: remove `cd` from the package scripts now that the bins resolve the root themselves.
+- Fix: generate an ephemeral runner `tsconfig.json` at lint time so ESLint `projectService` maps runner sources on clean checkouts.
 
 ### 2026.05.20.1509
 
-- ESLint: centralize rules in `eslint.base.cjs`; CLI and fitness eslint check import `createEslintConfig` with their own TypeScript parser options so `projectService` and `project` no longer conflict.
-- Shared bin: add `fitness-shared lint` for monorepo ESLint; wire workspace lint scripts through it; run lint in pre-commit alongside fitness.
-- Check packages: add minimal lint-only `tsconfig.json` (extends shared check config) for ESLint `projectService` discovery; remove monorepo check enumeration from shared config.
+- Refactor: centralize ESLint rules in `eslint.base.cjs` — the CLI and the fitness eslint check both import `createEslintConfig` with their own TypeScript parser options, so `projectService` and `project` no longer conflict.
+- Feat: add `fitness-shared lint` for monorepo ESLint; workspace lint scripts route through it; pre-commit runs lint alongside fitness.
+- Chore: check packages get a minimal lint-only `tsconfig.json` (extends the shared check config) for `projectService` discovery; monorepo check enumeration leaves the shared config.
 
 ### 2026.05.20.1453
 
-- Shared config: centralize TypeScript `compilerOptions` in `tsconfig.compiler.cjs`; generate `tsconfig.check.json` and `tsconfig.checks.json` from CJS sources so ESLint and build share one source of truth.
-- CI: commit hand-authored check and bundle `tsconfig.json` files (un-ignore in `.gitignore`) and build `@mayjournal/fitness-shared` before other workspaces so runner `tsc` resolves shared types.
-- ESLint: include check package and bundle `tsconfig.json` paths in `parserOptions.project` so type-aware lint finds monorepo check sources.
-- Cspell: skip staged `.gitignore`, `package-lock.json`, and `tsconfig.json` so explicit staged paths honor `ignorePaths`.
-- Restore `disabledChecks` on `.fitnessrc`: optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`; types on `@mayjournal/fitness-shared`, filter in runner `load-check.ts`; tests in `load-check.test.ts` and `run.test.ts`.
-- Add plans/plan-split-runner-check-packages.md for splitting @mayjournal/fitness runner from per-check npm packages.
-- Mark plan step 7d release with PR #12 in plans/plan-split-runner-check-packages.md.
-- Move runner and checks from root src/ into packages/runner and twelve packages/checks/\* workspaces with dynamic check loading and @mayjournal/fitness-checks-bundle defaults.
-- Add Architecture.md for monorepo layout; update README and complete plan steps 1–6 (shared configs, per-check vitest, remove legacy src/).
-- Scaffold npm workspaces: private root package.json, packages/runner, packages/shared, packages/checks-bundle, and packages/checks/\* stubs; bump versions under packages/ in ensure-changelog-timestamp.cjs; ignore **/coverage/** in cspell.
-- Move check tool dependencies from packages/runner into each packages/checks/\* package so published check packages declare only what they need; trim runner deps and refresh package-lock.json.
-- CI: run `npm run test -ws --if-present` so every workspace with a test script runs in GitHub Actions.
-- Check packages: scope Vitest to `src/**/*.test.ts`, point `@mayjournal/fitness` aliases at runner `dist/types`, and give vitest-coverage-full an explicit coverage config.
-- Changelog-updated: expect new section heading to match root package.json version suffix so pre-commit timestamp bumps pass after long CI runs.
-- Checks fall back to @mayjournal/fitness configs when consumers lack local cspell, prettier, vitest, or tsconfig; add resolveFitnessConfigPath, resolveLintTsconfig (temp tsconfig for ESLint in parent cwd), and tsconfig.lint.cjs export; document consumer setup in README.
-- Switch publish workflow to npm trusted publishing (OIDC); use NODE_AUTH_TOKEN in .npmrc instead of NPM_TOKEN secret.
+- Feat: split the repo into npm workspaces — runner and checks move from root `src/` into `packages/runner` and twelve `packages/checks/*` workspaces with dynamic check loading and `@mayjournal/fitness-checks-bundle` defaults; per-check tool deps live in each check's package; the plan completes through release (PR #12); `Architecture.md` documents the layout.
+- Feat: checks fall back to `@mayjournal/fitness` configs when consumers lack local cspell, prettier, vitest, or tsconfig — `resolveFitnessConfigPath`, `resolveLintTsconfig` (temp tsconfig for ESLint in the parent cwd), and a `tsconfig.lint.cjs` export; consumer setup documented in README.
+- Feat: restore `disabledChecks` on `.fitnessrc` — the optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`, typed in `fitness-shared`, filtered in `load-check.ts`, covered by tests.
+- Build: centralize TypeScript `compilerOptions` in `tsconfig.compiler.cjs`, generate check and bundle tsconfigs from CJS sources, commit them for CI, and build `fitness-shared` first so runner `tsc` and type-aware ESLint resolve monorepo sources; publishing switches to npm trusted publishing (OIDC) with `NODE_AUTH_TOKEN`.
+- Chore: CI runs workspace tests (`-ws --if-present`); Vitest is scoped per check package with runner-dist aliases; `changelog-updated` expects the heading to match the root version suffix after long CI runs; staged cspell honors `ignorePaths`; `ensure-changelog-timestamp.cjs` bumps versions under `packages/`.
 
 ### 2026.04.04.1748
 
-- Export `./vitest.config` as `vitest.config.mjs` and add `vitest.config.d.ts` for TypeScript consumers.
-- Resolve Prettier plugin paths with `createRequire` so consumers loading `@mayjournal/fitness/prettier.config` resolve plugins from this package.
+- Feat: export `./vitest.config` as `vitest.config.mjs`.
+- Feat: add `vitest.config.d.ts` for TypeScript consumers.
+- Fix: resolve Prettier plugin paths with `createRequire` so consumers loading `@mayjournal/fitness/prettier.config` resolve plugins from this package.
 
 ### 2026.04.04.1712
 
-- ESLint check: run via Node API with this package's eslint.config.cjs and parent project cwd so consumers need not install ESLint; add getFitnessRunnerRoot util; eslint runInProcess; RunContext \_eslintRunForTesting for tests; runner and vitest-coverage-full use shared root helper.
-- ESLint check: show file:line:col errors by extracting JSON array when stderr is mixed in; on parse failure append truncated ESLint output to fallback; add tryParseJsonArray to keep complexity under limit.
-- Scope package to @mayjournal/fitness; add LICENSE (MIT), GitHub Actions publish workflow (on CI success), publish:ci script, .npmrc for NPM_TOKEN; add plan-deps-vs-devdeps-check.md.
+- Feat: the ESLint check runs via the Node API with this package's `eslint.config.cjs` and the parent project cwd, so consumers need not install ESLint — adds `getFitnessRunnerRoot` (shared with the runner and vitest-coverage-full), `runInProcess`, and `RunContext._eslintRunForTesting`.
+- Fix: show `file:line:col` errors by extracting the JSON array when stderr is mixed in; on parse failure, append truncated ESLint output to the fallback; `tryParseJsonArray` keeps complexity under the limit.
+- Build: scope the package to `@mayjournal/fitness` — LICENSE (MIT), a GitHub Actions publish workflow on CI success, a `publish:ci` script, and `.npmrc` for `NPM_TOKEN`; `plan-deps-vs-devdeps-check.md` added.
 
 ### 2026.03.07.1922
 
-- Prettier: use prettier-plugin-packagejson for conventional package.json field order; add package-lock.json to .prettierignore so Prettier does not touch it.
-- Refactor: single source of truth for check registration. Add optional `Check.folder` and `RunContext.checkFolderByName` (serializable for worker); runner builds map from registry. Remove `CHECK_TO_FOLDER` from read-repo-first; rules-front-matter sets `folder: 'rules-front-matter'`. Add registry.test.ts to assert `CheckName` enum and registry stay in sync; document add-a-check steps in src/checks/README.md.
-- Refactor: shared quoteForShell in src/utils/shellQuote.ts; use in eslint, prettier, cspell. Shared Vitest config loader in src/checks/vitest-config (`VITEST_CONFIG_NAMES`, loadVitestConfig, getCoverageExcludeFromConfig, getThresholdsFromConfig); vitest-coverage-exclude and vitest-coverage-full use it.
-- Refactor: shared exec helper and buildExecCheckResult for CLI checks. Add execSyncResult() and EXEC_OPTS in src/utils/execSyncResult.ts; add buildExecCheckResult() in checkResult.ts. Use in eslint, prettier, cspell, vitest-coverage-full, changelog-updated.
-- Markdown-no-bold-italic: ignore emphasis inside link blocks [text](url) so underscores in URLs or link text are not falsely flagged.
+- Chore: Prettier uses `prettier-plugin-packagejson` for conventional `package.json` field order; `package-lock.json` joins `.prettierignore`.
+- Refactor: single source of truth for check registration — optional `Check.folder` plus `RunContext.checkFolderByName` (worker-serializable) built from the registry; `CHECK_TO_FOLDER` leaves read-repo-first; `registry.test.ts` asserts the `CheckName` enum and registry stay in sync; add-a-check steps documented.
+- Refactor: shared `quoteForShell` (`src/utils/shellQuote.ts`) used by eslint, prettier, and cspell; a shared Vitest config loader (`src/checks/vitest-config`) used by both coverage checks.
+- Refactor: shared exec helpers — `execSyncResult()` with `EXEC_OPTS`, and `buildExecCheckResult()` — adopted by eslint, prettier, cspell, vitest-coverage-full, and changelog-updated.
+- Fix: `markdown-no-bold-italic` ignores emphasis inside link blocks `[text](url)` so underscores in URLs or link text are not falsely flagged.
 
 ### 2026.03.07.1431
 
-- Runner: dedupe config.checks by name so each check runs once when .fitnessrc lists the same check multiple times.
+- Fix: the runner dedupes `config.checks` by name — `checksFromConfigList` keeps the first occurrence, so a check listed multiple times in `.fitnessrc` runs once.
+- Test: cover duplicate names in `config.checks` and add a re-entry guard test.
+- Refactor: extract `runImpl` to satisfy the eslint complexity ceiling.
 
 ### 2026.03.07.1406
 
-- ESLint: add max-lines rule (200, skipBlankLines/skipComments). Runner: split run.ts into run-resolve.ts (getChecks, config/spec resolution), run-execute.ts (runOneCheck, worker/in-process), run-output.ts (buildTable, buildTotalLine); run.ts keeps orchestration only.
+- Feat: ESLint gains the `max-lines` rule (200, skipBlankLines/skipComments).
+- Refactor: split `run.ts` into `run-resolve.ts` (getChecks, config/spec resolution), `run-execute.ts` (runOneCheck, worker/in-process), and `run-output.ts` (buildTable, buildTotalLine).
+- Refactor: `run.ts` keeps orchestration only.
 
 ### 2026.03.07.1007
 
-- Runner: always ignore `node_modules`—getSkipDirs returns runner skip dirs (`node_modules`, dist, coverage, .git, .husky) merged with config; staged files from git are filtered to exclude paths under `node_modules`.
-- Runner: run registry checks in a worker thread so 5s timeout is enforced via worker.terminate() when checks block (e.g. execSync); read-repo-first, vitest-coverage-full, and path-based checks stay in-process. Add run-one-check-worker.ts; tests use in-process (VITEST).
-- Vitest-coverage-exclude: add vitest.config.cjs to `VITEST_CONFIG_NAMES`.
-- Runner: add 5s per-check timeout; timed-out checks fail with "Check timed out after 5s" and runner continues.
-- Runner: add progress messages to stderr (Resolving checks…, Running checks:, and → name before each check) so users can see where the run is or where it hangs.
-- Utils: fix isMainModule when run via npx (resolve argv[1] and import.meta.url to real paths so symlinked .bin/fitness is detected as main). Add symlink test; add JSDoc and reduce complexity for lint.
-- Checks: add vitest-coverage-full (runs vitest run --coverage; requires 100% thresholds in consumer and @mayjournal/fitness package). Vitest-coverage-exclude: allow barrel index.ts exclude pattern. Add vitest.config.mjs (ESM). Cspell: add runCspell (CLI runner), enUS dict, runCspell.test, word unstub; refactor check to runViaExec/runViaLib; add JSDoc and reduce complexity. Utils: add isMainModule(import.meta.url) and tests. Plans: update plan-checks-abstractions.md.
+- Feat: the runner executes registry checks in a worker thread so the 5s timeout is enforced via `worker.terminate()` when checks block (e.g. execSync); read-repo-first, vitest-coverage-full, and path-based checks stay in-process; timed-out checks fail with "Check timed out after 5s" and the run continues.
+- Feat: `node_modules` is always ignored — `getSkipDirs` merges the runner skip dirs (`node_modules`, dist, coverage, .git, .husky) with config, and staged files from git are filtered the same way.
+- Feat: progress messages on stderr (Resolving checks…, Running checks:, and → name before each check) show where a run is or where it hangs.
+- Feat: add `vitest-coverage-full` (runs `vitest run --coverage`; requires 100% thresholds); cspell gains a `runCspell` CLI runner, the enUS dictionary, and a runViaExec/runViaLib split; `vitest-coverage-exclude` allows barrel `index.ts` excludes and recognizes `vitest.config.cjs`.
+- Fix: `isMainModule` works when run via npx — argv[1] and `import.meta.url` resolve to real paths so the symlinked `.bin/fitness` is detected as main; a symlink test, JSDoc, and complexity cleanups ride along.
 
 ### 2026.02.22.1620
 
-- Checks: add checkResult(ok, errors?, filesChecked?) and runContext (getStagedFiles, getExecSync); migrate all checks to use them. RunContext gains `_now` for tests.
-- Plans: add plan-checks-abstractions.md (repeating patterns in checks/\*, abstraction options). README: flowchart node renamed to PassthroughArgs. cspell.json: trim words list.
-- Dependencies: flatten into dependencies only (no dev/optional). Prettier: package.json override to use json parser so sort-json runs recursively (exports paths and condition keys); remove prettier-plugin-packagejson; add comments in prettier.config.cjs.
-- Runner: enUS enum for all user-facing copy (runner/enUS.ts); run logic in run.ts, index.ts barrel only. Add interpolate() util for {{key}} templates; total line uses enUS.TotalLine. Export enUS from runner and package. ESLint: eslint-plugin-typescript-sort-keys (string-enum + interface), @typescript-eslint aligned to ^8.55; overrides for plugin eslint peer.
+- Feat: add `checkResult(ok, errors?, filesChecked?)` and a `runContext` helper (getStagedFiles, getExecSync); every check migrates to them; `RunContext` gains `_now` for tests.
+- Docs: add `plan-checks-abstractions.md` (the repeating patterns in `checks/*` and abstraction options); the README flowchart node renamed to PassthroughArgs; the cspell words list trimmed.
+- Build: flatten dependencies into `dependencies` only (no dev/optional split).
+- Chore: Prettier overrides `package.json` to the json parser so sort-json runs recursively over exports paths and condition keys; `prettier-plugin-packagejson` removed; comments added in `prettier.config.cjs`.
+- Refactor: an `enUS` enum carries all user-facing runner copy (run logic in `run.ts`, `index.ts` barrel only), with an `interpolate()` util for `{{key}}` templates, exported from runner and package; eslint adds `typescript-sort-keys` (string-enum + interface) with `@typescript-eslint` aligned to ^8.55.
 
 ### 2026.02.22.1511
 
-- Prettier: single config (prettier.config.cjs), remove .prettierrc.json; add .prettierignore and prettier.config.d.ts with package.json types export; Prettier check recognizes .ts/.mts/.cts config names; .gitignore generated Prettier files; drop unsupported ignore option from config.
+- Refactor: Prettier collapses to a single config (`prettier.config.cjs`); `.prettierrc.json` removed.
+- Feat: add `.prettierignore` and `prettier.config.d.ts` with a package.json types export.
+- Fix: the Prettier check recognizes `.ts`/`.mts`/`.cts` config names.
+- Chore: gitignore the generated Prettier files and drop the unsupported `ignore` option from the config.
 
 ### 2026.02.22.1454
 
-- semantic-commit: fail when no message to validate (empty or git unavailable). commit-msg hook: pass message content via --message="$(cat "$1")". Export `MSG_EMPTY`.
+- Fix: `semantic-commit` fails when there is no message to validate (empty or git unavailable).
+- Feat: the commit-msg hook passes message content via `--message="$(cat "$1")"`.
+- Chore: export `MSG_EMPTY`.
 
 ### 2026.02.22.1431
 
-- Utils: replace findMd with findFilesByExtension(root, extension). getSkipDirs uses skipTheseDirectories from .fitnessrc if present, else cspell.json ignorePaths (dir names only); no default list. Add FitnessConfig.skipTheseDirectories; add .git, .husky to cspell.json.
+- Refactor: replace `findMd` with `findFilesByExtension(root, extension)`.
+- Feat: `getSkipDirs` uses `skipTheseDirectories` from `.fitnessrc` when present, else cspell.json `ignorePaths` (dir names only); no default list.
+- Feat: add `FitnessConfig.skipTheseDirectories`.
+- Chore: add `.git` and `.husky` to cspell.json.
 
 ### 2026.02.22.1408
 
-- Checks: add CheckName enum; all checks use enum for name (no static strings). Export CheckName from types; runner casts config check names to CheckName for registry lookup.
+- Feat: add the `CheckName` enum; all checks use it for `name` (no static strings).
+- Refactor: the runner casts config check names to `CheckName` for registry lookup.
+- Chore: export `CheckName` from types.
 
 ### 2026.02.22.1359
 
-- Docs: make Mermaid flowchart edge labels readable (linkStyle color for yes/no arrows).
+- Fix: make the README Mermaid flowchart edge labels readable — the theme gains `textColor` and `labelColor` so the yes/no arrow labels stop blending into the background.
+- Docs: reroute the context edges — `buildContext(staged, inlineFragment, checks, passthrough)` now feeds `runChecks`, and the single-check `contextInline` fragment hangs off the resolved checks.
+- Docs: annotate `getStagedContext()` with its mechanism (`git diff --cached` → stagedFiles).
 
 ### 2026.02.22.1332
 
-- Runner: check-registered contextInline; no check-name logic. Check type gains optional contextInline (argName, contextKey); semantic-commit registers --message → proposedCommitMessage; commit-msg hook uses --message="$(cat \"$1\")". Export ContextInline; update README and flow diagram.
+- Feat: the runner uses check-registered `contextInline` — no check-name logic remains in the runner.
+- Feat: the `Check` type gains optional `contextInline` (argName, contextKey); `ContextInline` is exported.
+- Feat: `semantic-commit` registers `--message` → `proposedCommitMessage`; the commit-msg hook uses `--message="$(cat "$1")"`.
+- Docs: update README and the flow diagram.
 
 ### 2026.02.22.1322
 
-- Plan: abstract runner check-name logic via check-registered context (contextInline/contextPath on Check type; no .fitnessrc change).
+- Docs: the runner-no-check-names plan lands on check-registered context — `contextInline` (and a future `contextPath`) on the `Check` type.
+- Docs: `.fitnessrc` needs no change under the chosen approach.
+- Docs: the plan doc slims from exploratory options down to the decision (139 lines removed).
 
 ### 2026.02.22.1259
 
-- Runner: rename specFromPositional to checkNameIsFirstArg and getCommitMsgPath to getContextFilePath for clarity; add plans/plan-runner-no-check-names.md with front matter and no bold/italic for checks.
+- Refactor: rename `specFromPositional` to `checkNameIsFirstArg` and `getCommitMsgPath` to `getContextFilePath` for clarity.
+- Docs: add `plans/plan-runner-no-check-names.md` with front matter.
+- Style: no bold/italic in the new plan, for the markdown checks.
 
 ### 2026.02.22.1247
 
-- Runner: abstract check deps; move getColumns to src/utils/terminal so runner has no check-specific imports; read-repo-first no longer exports getColumns; getColumns tests moved to utils/terminal.test.ts.
+- Refactor: abstract check dependencies out of the runner — `getColumns` moves to `src/utils/terminal` so the runner has no check-specific imports.
+- Refactor: `read-repo-first` no longer exports `getColumns`.
+- Test: the `getColumns` tests move to `utils/terminal.test.ts`.
 
 ### 2026.02.22.1241
 
-- README: align Mermaid code-flow diagram with runner (resolveCheckSpec, spec-defined branch, resolveChecksBySpec, buildContext).
+- Docs: align the README Mermaid code-flow diagram with the real runner flow.
+- Docs: nodes now name the actual functions — `resolveCheckSpec`, `resolveChecksBySpec`, `buildContext`.
+- Docs: the spec-defined branch appears in the flow.
 
 ### 2026.02.16.1646
 
-- Changelog check: require package.json version suffix and package-lock.json version to match CHANGELOG first ### heading (yyyy.mm.dd.HHMM).
+- Feat: the `changelog` check requires the `package.json` version suffix to match the first `###` heading (`yyyy.mm.dd.HHMM`).
+- Feat: the `package-lock.json` version must match the same heading.
+- Test: extend `changelog.test.ts` to cover both version gates.
+- Docs: update the check README.
 
 ### 2026.02.16.1634
 
-- Changelog-updated check: require new section heading to use current date and time (yyyy.mm.dd.HHMM) so GenAI cannot guess the time.
+- Feat: `changelog-updated` requires the new section heading to use the current date and time (`yyyy.mm.dd.HHMM`) so GenAI cannot guess the time.
+- Test: add current-time heading cases to `changelog-updated.test.ts`.
+- Docs: update the check README for the current-time rule.
 
 ### 2026.02.16.1900
 
-- Changelog-updated check: export human-facing message consts `(MSG_*)`; reuse in implementation and tests.
+- Refactor: `changelog-updated` exports its human-facing message consts (`MSG_*`).
+- Refactor: the implementation reuses the exported consts — one source for the copy.
+- Test: tests assert against the exported consts instead of duplicating strings.
 
 ### 2026.02.16.1800
 
-- Runner: add passthroughArgs to RunContext when running a single check; args after check name forwarded to checks (e.g. `npx fitness prettier --write`).
-- Prettier check: use passthroughArgs; run Prettier with forwarded args instead of --check when present.
+- Feat: the runner adds `passthroughArgs` to `RunContext` when running a single check.
+- Feat: args after the check name forward to checks (e.g. `npx fitness prettier --write`).
+- Feat: the Prettier check runs Prettier with forwarded args instead of `--check` when present.
 
 ### 2026.02.16.1700
 
-- Package: move eslint, prettier, vitest, and related config plugins from devDependencies to dependencies so consumers can use exported configs; keep @types/node, tsconfig.js, tsx, typescript as devDependencies.
-- Prettier check: detect config via package.json "prettier" field so consumers using `"prettier": "@mayjournal/fitness/prettier.config"` are checked.
+- Build: move eslint, prettier, vitest, and the related config plugins from devDependencies to dependencies so consumers can use the exported configs.
+- Build: keep `@types/node`, `tsconfig.js`, tsx, and typescript as devDependencies.
+- Feat: the Prettier check detects config via the package.json `"prettier"` field so consumers using `"prettier": "@mayjournal/fitness/prettier.config"` are checked.
 
 ### 2026.02.16.1600
 
-- ESLint: add sort-keys rule (natural ascending) for all object keys in .ts, .cjs, .js, .mjs; extend ESLint check to .cjs/.js/.mjs; reorder object literals across codebase.
-- Prettier: add prettier-plugin-sort-json with jsonRecursiveSort for alphabetical ordering of object keys and nested objects in arrays (JSON files).
-- Prettier check: runs prettier --check; skips when no config; staged files or full repo; exports prettierCheck.
-- Prettier: add Prettier with eslint-config-prettier; .prettierrc.json and .prettierignore; format/format:check scripts; CI format job; export prettier.config for consumers.
-- README: sync main and checks README with registry; add rules-front-matter README.
-- ESLint check README: add fitnessFunctions; relate to eslint.config.cjs.
-- Runner: table feedback with colspan row per failed check; errors contextual to row; dynamic width via getColumns from read-repo-first; README flow diagram update.
-- Rules-front-matter: reject empty fitnessFunctions and relatedConfigurations arrays; require at least one entry per array.
+- Feat: ESLint adds `sort-keys` (natural ascending) for all object keys in `.ts`, `.cjs`, `.js`, `.mjs`; the ESLint check extends to `.cjs`/`.js`/`.mjs`; object literals reordered across the codebase.
+- Feat: add Prettier with `eslint-config-prettier` — `.prettierrc.json`, `.prettierignore`, format scripts, a CI format job, and an exported `prettier.config`; `prettier-plugin-sort-json` with jsonRecursiveSort orders JSON keys and nested objects; the Prettier check runs `prettier --check` on staged files or the full repo and skips when no config.
+- Feat: the runner renders table feedback — a colspan row per failed check, errors contextual to the row, dynamic width via `getColumns` from read-repo-first.
+- Docs: sync the main and checks READMEs with the registry; add the rules-front-matter README and `fitnessFunctions` to the eslint-check README; update the README flow diagram.
+- Fix: `rules-front-matter` rejects empty `fitnessFunctions` and `relatedConfigurations` arrays — at least one entry per array.
 
 ### 2026.02.16.1500
 
-- Runner: format check results as table (cli-table3) with Check, Status, Files, Time columns; bold white headers.
-- Read-repo-first: table of enabled checks with Src column (plain paths for IDE link detection); add cli-table3.
-- Read-repo-first: remove TTY requirement; display feedback to CLI for Agent/User context; always pass. Remove `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` from CI.
-- Read-repo-first check: prompts Y/N to confirm familiarity with Fitness Checks; lists enabled checks; chalk/boxen/wrap-ansi formatting; runs first in registry.
-- Runner: chalk formatting for check results (green/red), errors, total line; `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` bypass for CI.
-- Cursor rules: consolidate into fitness-checks.mdc; remove changelog, changelog-updated, node-version, semantic-commit, vitest-coverage-exclude rules.
-- ESLint: add eslint.config.d.ts for ESM package compatibility.
-- Package and gitignore: updates for consolidated rules.
+- Feat: the runner formats check results as a table (cli-table3) — Check, Status, Files, Time columns, bold white headers, chalk green/red for results, errors, and the total line.
+- Feat: `read-repo-first` prompts Y/N to confirm familiarity with the checks, lists the enabled ones in a table with a plain-path Src column for IDE link detection, formats with chalk/boxen/wrap-ansi, and runs first in the registry.
+- Fix: `read-repo-first` drops its TTY requirement — feedback displays for Agent/User contexts and always passes; the `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` bypass leaves CI.
+- Chore: consolidate the cursor rules into `fitness-checks.mdc`, removing the per-check rule files.
+- Chore: add `eslint.config.d.ts` for ESM package compatibility; package and gitignore updates for the consolidated rules.
 
 ### 2026.02.16.1400
 
-- Package: add exports for eslint.config, vitest.config, tsconfig, tsconfig.cjs, and cspell for reuse by downstream projects.
+- Feat: add `package.json` exports so downstream projects can reuse the shared configs.
+- Feat: the exported entries — `./eslint.config`, `./vitest.config`, `./tsconfig.cjs`, and `./cspell` (raw `cspell.json` data).
+- Build: ship the config files in the npm package — the `files` list adds them beside `dist`.
 
 ### 2026.02.16.1300
 
-- Vitest-coverage-exclude: update README to use relative paths; properly associated with the name of the check.
-- Tsconfig: single root tsconfig.cjs for build and lint; remove build/; use tsconfig.js to convert .cjs to JSON.
-- Changelog-updated: ExecSyncFn maxBuffer type; add execSync fallback coverage test.
-- ESLint: replace eslint.config.ts with eslint.config.cjs for ESM package compatibility.
-- Tsconfig: remove shared base config; inline compiler options in tsconfig.cjs.
-- ESLint: remove stylistic plugin and rules; keep jsdoc/require-jsdoc and complexity max 5. Single block, project tsconfig.json.
-- Gitignore: ignore compiled root config outputs (eslint and vitest .js, .map, .d.ts).
+- Build: a single root `tsconfig.cjs` drives build and lint — the shared base config removed, compiler options inlined, `build/` gone, and `tsconfig.js` converts `.cjs` to JSON; generated root config outputs are gitignored.
+- Refactor: replace `eslint.config.ts` with `eslint.config.cjs` for ESM package compatibility.
+- Chore: ESLint drops the stylistic plugin and rules, keeping `jsdoc/require-jsdoc` and `complexity` max 5 in a single block with project tsconfig.json.
+- Fix: `changelog-updated` types the `ExecSyncFn` maxBuffer and adds an execSync fallback coverage test.
+- Docs: the `vitest-coverage-exclude` README uses relative paths and is properly associated with the name of the check.
 
 ### 2026.02.16.1025
 
-- ESLint check: run eslint (staged or .), parse JSON, report errors; hoist feedback and CLI consts; 100% coverage.
-- ESLint check: only pass .ts/.tsx staged paths (avoid no-config for .md); tests use .ts (bar, pathWithQuote, quoted).
+- Feat: the ESLint check runs eslint (staged paths or `.`), parses its JSON output, and reports errors.
+- Fix: only `.ts`/`.tsx` staged paths are passed, avoiding no-config failures on `.md`; tests use `.ts` fixtures (bar, pathWithQuote, quoted).
+- Refactor: hoist the feedback and CLI consts.
+- Test: 100% coverage on the check.
 
 ### 2026.02.16.1005
 
-- Runner: add feedback dressing (Please fix these items), hoist messages to shared consts; static import in runner tests.
+- Feat: the runner adds feedback dressing — "Please fix these items."
+- Refactor: hoist the messages to shared consts.
+- Test: runner tests use a static import.
 
 ### 2026.02.16.0958
 
-- Plans: add read-repo-first check design doc (plans/read-repo-first-check.md).
+- Docs: add the `read-repo-first` check design doc (`plans/read-repo-first-check.md`).
+- Docs: the problem is framed as machine-checkable proxies for a behavioral rule, with four design directions — structure-only validation, staged correlation, advisory no-op, and a configurable hybrid.
+- Docs: draft recommendation — start with structure-only validation (numbered folders at the repo root) as the minimal viable check.
 
 ### 2026.02.15.1700
 
-- Docs: clarify README tagline (fitness runner, checks, workflows).
-- Cspell: run in-process via cspell-lib (readConfigFile, spellCheckFile) for speed; keep CLI path when tests mock exec.
-- Runner: add total files scanned count to summary (sum of filesChecked from checks).
-- Runner: print total success and failure count and round time (performance) after runs.
-- Markdown-no-bold-italic: do not flag unordered list asterisk markers as italic.
+- Docs: clarify the README tagline (fitness runner, checks, workflows).
+- Perf: run cspell in-process via cspell-lib (readConfigFile, spellCheckFile) for speed; the CLI path remains when tests mock exec.
+- Feat: the summary prints total success and failure counts, rounded time, and total files scanned (the sum of `filesChecked` from checks).
+- Fix: `markdown-no-bold-italic` no longer flags unordered-list asterisk markers as italic.
 
 ### 2026.02.15.1600
 
-- Docs: remove bold/italic from check READMEs to satisfy markdown-no-bold-italic.
-- Remove .fitnessrc.ts.
-- Runner test: cover resolveChecks when .fitnessrc.ts provides custom checks (restore 100% coverage).
-- Rules-front-matter: allow fitnessFunctions and relatedConfigurations to reference any registered check name (not just paths).
-- Vitest-coverage-exclude check: only allow `**/*.d.ts` and `**/*.types.ts` in coverage exclude; Vitest excludes tests by default. Type-only files use `*.types.ts` naming.
-- Rename type files to `*.types.ts`; fix load.ts and coverage-exclude branches for 100% coverage.
-- CI: single fitness job runs npm run fitness; remove discover job and matrix.
-- Pre-commit: source nvm (`NVM_DIR`, nvm.sh) in husky hook so nvm use runs when PATH has no nvm.
-- CI: list checks as single-line `GITHUB_OUTPUT` (printf, tr -d newline) to avoid EOF delimiter; valid JSON for fitness job matrix.
-- Markdown-front-matter: require fitnessFunctions or relatedConfigurations in every .md; paths resolved relative to md file; findMd skips `node_modules`, dist, coverage, .git, .husky; export getFrontMatterPaths for tests (100% coverage). README/CHANGELOG front matter fixes (---, flow-style).
+- Docs: remove bold/italic from the check READMEs to satisfy `markdown-no-bold-italic`; README and CHANGELOG front matter fixed (---, flow-style).
+- Feat: `markdown-front-matter` requires `fitnessFunctions` or `relatedConfigurations` in every `.md`, paths resolved relative to the file — or any registered check name; `findMd` skips `node_modules`, dist, coverage, .git, .husky; `getFrontMatterPaths` exported for tests (100% coverage).
+- Feat: `vitest-coverage-exclude` only allows `**/*.d.ts` and `**/*.types.ts` in coverage exclude (Vitest excludes tests by default); type-only files renamed to `*.types.ts`; load.ts and coverage-exclude branches fixed for full coverage.
+- Chore: remove `.fitnessrc.ts`, with a runner test covering custom checks from a config to restore 100% coverage.
+- Ci: a single fitness job runs `npm run fitness` — the discover job and matrix removed, checks listed as single-line GITHUB_OUTPUT for valid JSON; pre-commit sources nvm in the husky hook so `nvm use` runs when PATH has no nvm.
 
 ### 2026.02.15.1500
 
-- Node-version check: compare .nvmrc to current Node only; remove nvm subshell logic. CI script runs nvm use when available.
-- Node-version check: run nvm use in a subshell when available and use that version for validation; fallback to process.version.
-- CI: default strategy matrix fromJson(needs.discover.outputs.checks) to '[]' when checks output is empty.
+- Refactor: the node-version check compares `.nvmrc` to the current Node only — the earlier nvm-subshell validation (with a process.version fallback) is removed.
+- Ci: the CI script runs `nvm use` when available.
+- Fix: default the strategy matrix `fromJson(needs.discover.outputs.checks)` to `'[]'` when the checks output is empty.
 
 ### 2026.02.15.1400
 
-- Runner: 100% coverage; path-load tests (named export, no Check, import throws); two positionals (check then msg path) for semantic-commit; getPositionalSpec and getCommitMsgContext fix for single vs two positionals.
+- Test: the runner reaches 100% coverage — path-load tests for the named-export, no-Check, and import-throws cases.
+- Feat: two positionals (check then message path) supported for semantic-commit.
+- Fix: `getPositionalSpec` and `getCommitMsgContext` handle single vs two positionals.
 
 ### 2026.02.15.1300
 
-- Rules front-matter check: validate fitnessFunctions and relatedConfigurations paths in all markdown; shared findMd helper.
-- Runner: accept check by name or path (--check=./path/to/check.js or positional); load Check from module default or named export.
+- Feat: the rules front-matter check validates `fitnessFunctions` and `relatedConfigurations` paths in all markdown.
+- Refactor: a shared `findMd` helper backs the markdown checks.
+- Feat: the runner accepts a check by name or path (`--check=./path/to/check.js` or positional).
+- Feat: a `Check` loads from a module's default or named export.
 
 ### 2026.02.15.0100
 
-- Runner: single CLI flag --check= only; commit-msg path positional; staged context always; full runner test coverage.
+- Refactor: the runner takes a single CLI flag — `--check=` only.
+- Feat: the commit-msg path rides as a positional.
+- Feat: staged context is always built.
+- Test: full runner test coverage.
 
 ### 2026.02.15.1200
 
-- GitHub Actions CI: dynamic fitness jobs from registry, composite setup action.
-- README: add Mermaid code-flow diagram (modern colors), move to bottom.
-- cspell check (optional: only runs when cspell.json present); cspell in runner dependencies.
-- cspell in deps only; remove spell from ci and package.json script; README and cspell README updates.
+- Ci: GitHub Actions runs dynamic fitness jobs from the registry with a composite setup action.
+- Feat: add the cspell check — optional, it only runs when `cspell.json` is present; cspell lives in runner dependencies only, with the spell script removed from ci and package.json.
+- Docs: add a Mermaid code-flow diagram to the README (modern colors, moved to the bottom); cspell README updates.
 
 ### 2026.02.15.1100
 
-- Commit-msg hook for semantic-commit; merge semantic-commit into single file; cursor rules point to check READMEs.
-- Changelog check: require ### yyyy.mm.dd.HHMM; every ### heading must match.
-- Remove duplicate check-node-version script and check-node; ci runs npm run fitness only.
-- Changelog-updated check: suggest up to 10 random words from staged diff when overlap is too low.
-- Changelog section format: yyyy.mm.dd.HHMM to match package version.
+- Feat: a commit-msg hook runs `semantic-commit`; the check merges into a single file; cursor rules point to the check READMEs.
+- Feat: the `changelog` check requires `### yyyy.mm.dd.HHMM` — every `###` heading must match, and the section format matches the package version.
+- Feat: `changelog-updated` suggests up to 10 random words from the staged diff when overlap is too low.
+- Chore: remove the duplicate check-node-version script and check-node; ci runs `npm run fitness` only.
 
 ### 2026.02.15.1000
 
-- Add fitness config (.fitnessrc.ts) and config loader; turn on all checks (changelog, semantic-commit).
-- Changelog-updated check (fuzzy match staged diff to changelog); colocate tests with source; merge runner tests, only checking changed lines, not whole file.
+- Feat: add the fitness config (`.fitnessrc.ts`) and config loader; turn on all checks (changelog, semantic-commit).
+- Feat: add the `changelog-updated` check — fuzzy-matches the staged diff to the changelog, checking only changed lines, not the whole file.
+- Refactor: colocate tests with source; merge the runner tests.

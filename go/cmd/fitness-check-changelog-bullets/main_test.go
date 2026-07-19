@@ -12,7 +12,7 @@ func doc(bullets ...string) string {
 	for _, b := range bullets {
 		s += "- " + b + "\n"
 	}
-	s += "\n### 2026.07.18.1800\n\n- this old sloppy bullet is history and never judged\n"
+	s += "\n### 2026.07.18.1800\n\n- Feat: a\n- Fix: b\n- Docs: c\n"
 	return s
 }
 
@@ -28,9 +28,9 @@ func TestBulletCountBounds(t *testing.T) {
 	}{
 		{"three passes", ok3(), ""},
 		{"five passes", []string{"Feat: a", "Fix: b", "Docs: c", "Chore: d", "Perf: e"}, ""},
-		{"two fails", []string{"Feat: a", "Fix: b"}, "has 2 bullets; keep entries to 3-5"},
-		{"six fails", []string{"Feat: a", "Fix: b", "Docs: c", "Chore: d", "Perf: e", "Refactor: f"}, "has 6 bullets; keep entries to 3-5"},
-		{"zero fails", nil, "has 0 bullets; keep entries to 3-5"},
+		{"two fails", []string{"Feat: a", "Fix: b"}, "has 2 bullets"},
+		{"six fails", []string{"Feat: a", "Fix: b", "Docs: c", "Chore: d", "Perf: e", "Refactor: f"}, "has 6 bullets"},
+		{"zero fails", nil, "has 0 bullets"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -84,9 +84,14 @@ func TestSemanticTypePrefix(t *testing.T) {
 	}
 }
 
-func TestOlderSectionsAreNeverJudged(t *testing.T) {
-	if errs := judge(doc(ok3()...)); len(errs) != 0 {
-		t.Fatalf("history bullets must not be judged: %v", errs)
+func TestEverySectionIsJudged(t *testing.T) {
+	content := doc(ok3()...) + "\n### 2026.05.01.0000\n\n- sloppy old bullet without a type\n"
+	errs := judge(content)
+	if len(errs) != 2 {
+		t.Fatalf("old sections are judged too (count + type): %v", errs)
+	}
+	if !strings.Contains(errs[0], `section "2026.05.01.0000"`) {
+		t.Fatalf("count error names its section: %v", errs)
 	}
 }
 
