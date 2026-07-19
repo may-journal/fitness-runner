@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0934
+
+- Feat: add the `markdown-links` check — every relative link in every markdown file must resolve to a real file or directory; absolute URLs are never touched, so the check stays offline and deterministic. The catalog is 31 names; the dogfood suite is 21 checks.
+- Fix: the new check found nine broken links on arrival — two path-depth bugs from the docs consolidation (competition.md and an archived plan's changelog links) plus six archived-plan links to files the npm purge deleted, now honest code spans noting the removal.
+- Docs: check counts across README and the architecture docs move to 31; the check's README documents the fence and code-span masking and the fragment-stripping rule.
+
 ### 2026.07.19.0915
 
 - Docs: architecture docs catch up with the last two days — check counts move from 27 to 30 across system context, containers, and code levels, and the monorepo layout tree gains `.github/`, `docs/`, the stamper binary, and `internal/par`.

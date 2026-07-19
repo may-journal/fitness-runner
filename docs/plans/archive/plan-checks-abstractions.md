@@ -101,8 +101,8 @@ Abstraction: Add an optional `folder?: string` (or `displayFolder`) to the Check
 
 | Completed                                          | Pattern                     | Checks involved                                        | Suggested abstraction                                  |
 | -------------------------------------------------- | --------------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
-| [2026.02.22.1620](../../CHANGELOG.md#202602221620) | Result shape                | All                                                    | `checkResult(ok, errors?, filesChecked?)`              |
-| [2026.02.22.1620](../../CHANGELOG.md#202602221620) | Context resolution          | cspell, eslint, prettier, changelog-updated            | `getStagedFiles`, `getExecSync`, resolved context type |
+| [2026.02.22.1620](../../../CHANGELOG.md#202602221620) | Result shape                | All                                                    | `checkResult(ok, errors?, filesChecked?)`              |
+| [2026.02.22.1620](../../../CHANGELOG.md#202602221620) | Context resolution          | cspell, eslint, prettier, changelog-updated            | `getStagedFiles`, `getExecSync`, resolved context type |
 |                                                    | CLI exec/parse/buildResult  | eslint, prettier, cspell                               | `runCliCheck` or `execWithOpts` + `buildCliResult`     |
 |                                                    | Staged vs default paths     | cspell, eslint, prettier                               | `getPathsToCheck(root, staged, options)`               |
 |                                                    | File-by-file .md validation | markdown-no-bold-italic, rules-front-matter            | `runFileByFileCheck(root, '.md', validateFile)`        |

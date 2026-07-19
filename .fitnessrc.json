@@ -16,6 +16,7 @@
     "mermaid-level-bleed",
     "gitignore-why",
     "markdown-filename-kebab-case",
+    "markdown-links",
     "build-output-untracked",
     "repeated-string-literals",
     "go-complexity",

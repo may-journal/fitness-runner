@@ -25,11 +25,11 @@ Consumers care about install size (tarball + transitive `node_modules`) and star
 
 | Phase                     | Status | Work                                                                                                                                               |
 | ------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1. `audit:publish`        | Done   | [`scripts/audit-publish/`](../../scripts/audit-publish/)                                                                                           |
+| 1. `audit:publish`        | Done   | `scripts/audit-publish/` (removed with the npm toolchain)                                                                                          |
 | 1b. Publint `exports` fix | Done   | `types` first in all 15 publishable `package.json` files                                                                                           |
 | 2. Knip + CI advisory     | Done   | Per-workspace `knip --no-exit-code`; root `npm run knip -ws --if-present` (reports issues, exit 0 until config is tuned)                           |
-| 3. Runtime benches        | Done   | [`load-check.bench.ts`](../../packages/runner/src/checks/load-check.bench.ts), [runner README](../../packages/runner/README.md)                    |
-| 4. PR size comment        | Done   | [`.github/workflows/publish-audit.yml`](../../.github/workflows/publish-audit.yml), [`pr-comment.mjs`](../../scripts/audit-publish/pr-comment.mjs) |
+| 3. Runtime benches        | Done   | `load-check.bench.ts` and the runner README (retired with the TypeScript packages)                                                                 |
+| 4. PR size comment        | Done   | `.github/workflows/publish-audit.yml` and `pr-comment.mjs` (removed with the npm toolchain)                                                        |
 | 5. attw + runner gate     | Done   | `--attw` (advisory), `--gate-runner` (24 KiB tarball, enforced on `main` push)                                                                     |
 
 ## Commands
@@ -44,7 +44,7 @@ npm run bench:load-check
 
 ## CI
 
-[`.github/workflows/publish-audit.yml`](../../.github/workflows/publish-audit.yml):
+`.github/workflows/publish-audit.yml` (removed with the npm toolchain):
 
 - PR: build → `audit:publish --json --attw` → sticky PR comment (advisory).
 - push `main`: `audit:publish --strict --gate-runner` (fails on publint or runner size).

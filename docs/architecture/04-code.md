@@ -79,7 +79,7 @@ Numbers on classes and relationships match the callout table.
 | 15  | The wrapper invokes the binary with cwd = root and the context env.                        | Check encapsulates its own tool calls.                              |
 | 16  | The last non-empty stdout line parses as the Result; crashes synthesize a failure.         | Stray tool noise ahead of the JSON is tolerated.                    |
 | 17  | Binaries read context from the environment via checkkit accessors.                         | No IPC; plain env vars work everywhere.                             |
-| 18  | Every check main delegates to `checkkit.Main`.                                             | One protocol implementation across 30 check binaries.               |
+| 18  | Every check main delegates to `checkkit.Main`.                                             | One protocol implementation across 31 check binaries.               |
 | 19  | Pass/Fail helpers build the Result the scaffolding emits.                                  | Uniform shapes, always non-nil error arrays.                        |
 | 20  | The renderer reads collected results in dispatch order.                                    | Single summary per invocation.                                      |
 
@@ -94,7 +94,7 @@ fitness-runner/
     go.mod                     single module, stdlib-only
     cmd/fitness/               runner binary
     cmd/fitness-stamp-changelog/   pre-commit changelog stamper
-    cmd/fitness-check-name/    one main + README per check (30 names)
+    cmd/fitness-check-name/    one main + README per check (31 names)
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
                                clonedetect, vitestconf, mdfilename, render,
                                conf, sharedconf (embedded tool configs)

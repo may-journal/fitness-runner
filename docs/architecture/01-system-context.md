@@ -38,7 +38,7 @@ Numbers on nodes and arrows match the callout table.
 | --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
 | 1   | Runs `fitness`, git hooks, or single checks locally.                                          | Primary operator; same bar as CI.                                   |
 | 2   | Cursor, Claude Code, or other agents triggered to run fitness before/after edits.                     | GenAI workflows share the runner — see [wardley.md](../wardley.md). |
-| 3   | Static Go binaries: the runner plus 30 checks, tool configs embedded.                                 | The product boundary — self-contained executables.                  |
+| 3   | Static Go binaries: the runner plus 31 checks, tool configs embedded.                                 | The product boundary — self-contained executables.                  |
 | 4   | Any repo with the binaries on PATH; may author local check executables.                               | Runner always executes in the consumer's working directory.         |
 | 5   | Commodity linters, formatters, test runners, and git.                                                 | Checks wrap these; runner does not replace them.                    |
 | 6   | Pipeline that runs fitness on push or PR.                                                             | Cloud enforcement of the same check list.                           |

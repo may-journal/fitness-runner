@@ -13,7 +13,7 @@ C4Container
 
     System_Boundary(ship, "Shipped artifacts") {
         Container(cli, "3 Runner binary", "Go", "fitness")
-        Container(checks, "4 Check binaries", "Go", "fitness-check-name, 30 names")
+        Container(checks, "4 Check binaries", "Go", "fitness-check-name, 31 names")
         Container(shared, "5 Embedded configs", "Go", "internal/sharedconf, materialized on demand")
     }
 

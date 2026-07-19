@@ -42,7 +42,7 @@ Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds ch
 
 ## Distribution
 
-Every channel delivers the same static binaries: the runner, the changelog stamper, and all 30 checks.
+Every channel delivers the same static binaries: the runner, the changelog stamper, and all 31 checks.
 
 1. `go install` — compiles from source via the public Go module proxy. No artifacts involved, and every published version is cached immutably.
 2. GitHub Releases — per-platform tarballs with a checksums file, built and uploaded by CI on every version tag.
@@ -98,9 +98,9 @@ go/bin/fitness prettier --write .   # passthrough args reach the check
 
 ## Checks
 
-All 30 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
+All 31 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
 
-- Pure logic: `node-version`, `gitignore-why`, `changelog`, `changelog-updated`, `changelog-bullets`, `semantic-commit`, `commit-attribution`, `read-repo-first`, `markdown-filename-kebab-case`, `markdown-filename-camel-case`, `markdown-front-matter`, `markdown-no-bold-italic`, `no-eslint-disable`, `build-output-untracked`, `repeated-string-literals`, `text-readability`
+- Pure logic: `node-version`, `gitignore-why`, `changelog`, `changelog-updated`, `changelog-bullets`, `semantic-commit`, `commit-attribution`, `read-repo-first`, `markdown-filename-kebab-case`, `markdown-filename-camel-case`, `markdown-front-matter`, `markdown-links`, `markdown-no-bold-italic`, `no-eslint-disable`, `build-output-untracked`, `repeated-string-literals`, `text-readability`
 - Parsers and network: the five mermaid diagram/callout checks, `vitest-coverage-exclude`, `dependency-currency` (native npm-registry client)
 - Native engines: `cspell` (embedded dictionaries, ~217k words), `jscpd` (token-based clone detection), and `go-complexity` (cyclomatic complexity ceiling for Go, the house eslint rule's counterpart) — no external tool needed
 - Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx. A missing binary fails with a one-line install hint.
