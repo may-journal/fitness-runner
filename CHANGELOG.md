@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0837
+
+- Feat: add the release workflow — every `go/vX.Y.Z` tag cross-compiles static tarballs for darwin and linux on both architectures, writes a checksums file, and publishes a GitHub Release with the newest CHANGELOG section as its notes.
+- Feat: add `.github/scripts/update-tap.sh` — regenerates the Homebrew formula from the release checksums and pushes it to `may-journal/homebrew-tap`; the workflow job skips politely until a `TAP_PUSH_TOKEN` secret exists.
+- Docs: add `docs/plans/03-publish.md` — the publishing milestone in the may-journals template: pre-flight history audit, release automation, brew tap, verification last.
+
 ### 2026.07.19.0821
 
 - Docs: README gains a Distribution section — the three decided channels layered on one artifact host: `go install` via the Go module proxy, GitHub Releases with prebuilt per-platform tarballs, and a Homebrew tap whose formula the release workflow bumps.

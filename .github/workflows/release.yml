@@ -1,0 +1,53 @@
+# cspell:ignore CGO GOOS GOARCH czf shasum
+name: Release
+
+on:
+  push:
+    tags: ['go/v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - name: Build per-platform tarballs
+        run: |
+          version="${GITHUB_REF_NAME#go/}"
+          mkdir -p out
+          for os in darwin linux; do
+            for arch in amd64 arm64; do
+              dir="out/fitness-${version}-${os}-${arch}"
+              mkdir -p "$dir"
+              (cd go && CGO_ENABLED=0 GOOS="$os" GOARCH="$arch" go build -o "../$dir" ./cmd/...)
+              tar -czf "${dir}.tar.gz" -C out "$(basename "$dir")"
+              rm -r "$dir"
+            done
+          done
+          (cd out && shasum -a 256 *.tar.gz > checksums.txt)
+      - name: Extract newest CHANGELOG section as release notes
+        run: awk '/^### /{n++} n==1' CHANGELOG.md > notes.md
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" out/*.tar.gz out/checksums.txt \
+            --title "fitness ${GITHUB_REF_NAME#go/}" --notes-file notes.md
+
+  tap:
+    needs: release
+    runs-on: ubuntu-latest
+    env:
+      TAP_PUSH_TOKEN: ${{ secrets.TAP_PUSH_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump Homebrew formula
+        if: env.TAP_PUSH_TOKEN != ''
+        env:
+          GH_TOKEN: ${{ secrets.TAP_PUSH_TOKEN }}
+        run: .github/scripts/update-tap.sh "$GITHUB_REF_NAME"
