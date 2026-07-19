@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0909
+
+- Docs: README install instructions now lead with the working channels — `go install` with pin and upgrade commands, then prebuilt release tarballs with a verified download URL, platform list, and checksum note; build-from-source moves to a contributors block.
+- Docs: the Distribution section drops the pre-launch phrasing — the first two channels are live, and the Homebrew item now points at issue #47 as planned work.
+- Chore: the documented release download URL was tested against the published release before landing (both the plain and encoded tag forms serve the asset).
+
 ### 2026.07.19.0859
 
 - Feat: the repo is public — `go install github.com/may-journal/fitness-runner/go/cmd/...` now resolves through the public Go module proxy; verified from a clean environment with all 32 binaries installed and running.

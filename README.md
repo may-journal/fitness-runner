@@ -11,7 +11,27 @@ Every check is its own static binary (`fitness-check-<name>`), orchestrated by a
 
 ## Install
 
-Build from source today (see Distribution below for the channels that light up with the first tagged release):
+<!-- cspell:ignore xzf -->
+
+With the Go toolchain (recommended — works today):
+
+```bash
+go install github.com/may-journal/fitness-runner/go/cmd/...@latest
+```
+
+One command installs the runner and every check binary into `$HOME/go/bin` — make sure that directory is on PATH. Pin a version with `@v0.20260719.852`. Upgrade by running the same command again with `@latest`.
+
+Prebuilt binaries (no toolchain needed) — grab the tarball for your platform from [the releases page](https://github.com/may-journal/fitness-runner/releases), then extract it onto PATH:
+
+```bash
+curl -L -o fitness.tar.gz \
+  https://github.com/may-journal/fitness-runner/releases/download/go/v0.20260719.852/fitness-0.20260719.852-darwin-arm64.tar.gz
+tar -xzf fitness.tar.gz && mv fitness-*/fitness* ~/bin/
+```
+
+Platforms: `darwin-arm64`, `darwin-amd64`, `linux-arm64`, `linux-amd64`. Verify downloads against `checksums.txt` on the same release. Upgrade by grabbing the next release.
+
+From source (contributors):
 
 ```bash
 git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
@@ -22,11 +42,11 @@ Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds ch
 
 ## Distribution
 
-Three channels, layered on one artifact host. Every channel delivers the same static binaries: the runner, the changelog stamper, and all 30 checks.
+Every channel delivers the same static binaries: the runner, the changelog stamper, and all 30 checks.
 
-1. `go install github.com/may-journal/fitness-runner/go/cmd/...@latest` — compiles from source via the Go module proxy into `$HOME/go/bin`. No artifacts involved, nothing hosted by us. Pin a version with `@vX.Y.Z`. Upgrade by re-running with `@latest`. Requires the Go toolchain and a public repo.
-2. GitHub Releases — prebuilt per-platform tarballs (darwin and linux, arm64 and amd64) with a checksums file, uploaded by CI on every version tag: [github.com/may-journal/fitness-runner/releases](https://github.com/may-journal/fitness-runner/releases). Download, extract onto PATH. Upgrade by grabbing the next release. No toolchain needed.
-3. Homebrew tap — `brew tap may-journal/tap && brew install fitness`. The formula points at the Release tarball, and the release workflow bumps it on every tag. `brew upgrade` delivers new versions alongside everything else brew manages.
+1. `go install` — compiles from source via the public Go module proxy. No artifacts involved, and every published version is cached immutably.
+2. GitHub Releases — per-platform tarballs with a checksums file, built and uploaded by CI on every version tag.
+3. Homebrew tap — planned, tracked in [issue #47](https://github.com/may-journal/fitness-runner/issues/47). The release-side automation already ships; the tap repo and formula come next.
 
 Versioning: the CHANGELOG timestamp is the only version, and release tags are derived from it. Heading `### 2026.07.19.0837` becomes tag `go/v0.20260719.837` — major pinned at 0 (Go reserves majors of 2 and up for `/vN` module paths), minor is the date, patch is the minute, ordering preserved. `.github/scripts/release-tag.sh` prints the tag for the newest heading, and CI refuses any tag that does not match. Consumers reference the plain version (`@v0.20260719.837`) or `@latest`. The Go proxy caches every published version immutably.
 
