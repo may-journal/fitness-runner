@@ -11,7 +11,7 @@ Every check is its own static binary (`fitness-check-<name>`), orchestrated by a
 
 ## Install
 
-Build from source today (GitHub Releases with prebuilt binaries are the distribution path once publishing is wired):
+Build from source today (see Distribution below for the channels that light up with the first tagged release):
 
 ```bash
 git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
@@ -19,6 +19,16 @@ cd go && mkdir -p bin && go build -o bin ./cmd/...
 ```
 
 Put `go/bin` on PATH (or copy the binaries somewhere on it). The runner finds check binaries beside itself first, then on PATH. The Go toolchain is the entire build requirement — no npm, no node.
+
+## Distribution
+
+Three channels, layered on one artifact host. Every channel delivers the same static binaries: the runner, the changelog stamper, and all 30 checks.
+
+1. `go install github.com/may-journal/fitness-runner/go/cmd/...@latest` — compiles from source via the Go module proxy into `$HOME/go/bin`. No artifacts involved, nothing hosted by us. Pin a version with `@vX.Y.Z`. Upgrade by re-running with `@latest`. Requires the Go toolchain and a public repo.
+2. GitHub Releases — prebuilt per-platform tarballs (darwin and linux, arm64 and amd64) with a checksums file, uploaded by CI on every version tag: [github.com/may-journal/fitness-runner/releases](https://github.com/may-journal/fitness-runner/releases). Download, extract onto PATH. Upgrade by grabbing the next release. No toolchain needed.
+3. Homebrew tap — `brew tap may-journal/tap && brew install fitness`. The formula points at the Release tarball, and the release workflow bumps it on every tag. `brew upgrade` delivers new versions alongside everything else brew manages.
+
+Versioning: the CHANGELOG timestamp stays the internal version (the pre-commit stamper owns it). Releases are semver tags in the `go/vX.Y.Z` form the subdirectory module requires. Consumers reference the plain version — `@vX.Y.Z` — and the Go proxy caches every published version immutably.
 
 ## Config
 

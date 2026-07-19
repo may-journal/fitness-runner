@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0821
+
+- Docs: README gains a Distribution section — the three decided channels layered on one artifact host: `go install` via the Go module proxy, GitHub Releases with prebuilt per-platform tarballs, and a Homebrew tap whose formula the release workflow bumps.
+- Docs: the upgrade story is stated per channel — re-run with `@latest`, grab the next release, or `brew upgrade`.
+- Docs: versioning documented — the CHANGELOG timestamp stays the internal version; releases are semver tags in the `go/vX.Y.Z` subdirectory-module form, referenced by consumers as plain `@vX.Y.Z`.
+
 ### 2026.07.19.0812
 
 - Feat: add the `text-readability` check — a document-level readability smoke detector that scores every markdown file with the three character-based formulas and fails only when 2 of 3 exceed their alarm band; files under 100 prose words are never judged. The catalog grows to 30 names.
