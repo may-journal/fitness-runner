@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0859
+
+- Feat: the repo is public — `go install github.com/may-journal/fitness-runner/go/cmd/...` now resolves through the public Go module proxy; verified from a clean environment with all 32 binaries installed and running.
+- Chore: the Homebrew tap is deferred to issue #47; the release-side automation for it is already in place and skips politely until the tap exists.
+- Docs: plan 03 flips the public-flip and go-install verification boxes — only the tap items remain open, each annotated with the issue.
+
 ### 2026.07.19.0852
 
 - Fix: release asset names carried a stray leading v (the workflow stripped only the tag's directory prefix), so the tap script could never match its checksums — the workflow now strips the full prefix and asset names agree with the formula generator.

@@ -21,16 +21,16 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
    - [x] `.github/workflows/release.yml` — on `go/v*` tag push: build all binaries per platform, tar per platform, checksums file, then publish the GitHub Release with the newest CHANGELOG section as notes
    - [x] `.github/scripts/release-tag.sh` derives the tag from the newest CHANGELOG heading; the workflow refuses a mismatched tag
-   - [ ] Flip the repo public
+   - [x] Flip the repo public
    - [x] Push the CHANGELOG-derived tag and confirm the workflow publishes the first release with all assets
 
 2. Brew tap
 
-   - [ ] Create public `may-journal/homebrew-tap` carrying `Formula/fitness.rb` — per-platform release tarball URLs with their checksums; installs every binary
-   - [ ] The release workflow regenerates and pushes the formula on each tag (requires a `TAP_PUSH_TOKEN` repo secret; the job skips politely without it)
+   - [ ] Create public `may-journal/homebrew-tap` carrying `Formula/fitness.rb` — per-platform release tarball URLs with their checksums; installs every binary (deferred to issue #47)
+   - [ ] The release workflow regenerates and pushes the formula on each tag (requires a `TAP_PUSH_TOKEN` repo secret; the job skips politely without it) (deferred to issue #47)
 
 3. Verification
 
-   - [ ] `go install` of the tagged version resolves through the public Go proxy from a clean environment
+   - [x] `go install` of the tagged version resolves through the public Go proxy from a clean environment
    - [x] The release page shows four tarballs plus checksums, and an extracted binary runs
-   - [ ] `brew install may-journal/tap/fitness` works on this machine and `fitness` runs
+   - [ ] `brew install may-journal/tap/fitness` works on this machine and `fitness` runs (deferred to issue #47)
