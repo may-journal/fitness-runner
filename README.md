@@ -7,7 +7,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 Zero-dependency Go fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
 
-Every check is its own static binary (`fitness-check-<name>`) orchestrated by a `fitness` runner binary: no runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 21-check suite this repo gates its own commits on runs in under two seconds. The original TypeScript implementation has been retired; its checks were ported one at a time with side-by-side parity before removal (see [docs/plans/archive/01-go-rewrite.md](./docs/plans/archive/01-go-rewrite.md)).
+Every check is its own static binary (`fitness-check-<name>`), orchestrated by a `fitness` runner binary. No runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 20-check suite this repo gates its own commits on runs in about 100 milliseconds. The original TypeScript implementation has been retired. Its checks were ported one at a time with side-by-side parity before removal (see [docs/plans/archive/01-go-rewrite.md](./docs/plans/archive/01-go-rewrite.md)).
 
 ## Install
 
@@ -38,24 +38,24 @@ If `checks` is set, only those run (in order). If omitted, the runner uses its d
 
 ## Check protocol
 
-The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root and context in `FITNESS_*` environment variables (staged files, enabled check names, the commit message for the commit checks):
+The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, enabled check names, and the commit message for the commit checks.
 
 - stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n}`
 - stderr — human display output (banners, tool passthrough)
 - exit code — 0 when the check ran and passed, 1 ran and failed, other values mean it crashed
 - `--describe` — prints check metadata (name, timeout budget, context-inline arg) so the runner needs no registry
 
-The runner executes checks in a bounded parallel pool with per-check timeouts (process-group kill, so a hung check's whole child tree dies) and renders a summary table; the run exits 1 when any check fails.
+The runner executes checks in a bounded parallel pool with per-check timeouts. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table, and the run exits 1 when any check fails.
 
 ## Git hooks
 
-This is the point of the runner: checks enforced automatically on `git commit`. This repo's own hooks live under [githooks/](githooks/) — pre-commit runs the full suite, commit-msg validates the message through the semantic-commit check:
+This is the point of the runner: checks enforced automatically on `git commit`. This repo's own hooks live under [githooks/](githooks/). Pre-commit runs the full suite, and commit-msg validates the message through the `semantic-commit` check:
 
 ```bash
 go/bin/fitness --check=semantic-commit --message="$(cat "$1")"
 ```
 
-Checks that consume the commit message declare a context-inline argument in their `--describe` metadata; the runner extracts `--message` from single-check argv into the environment.
+Checks that consume the commit message declare a context-inline argument in their `--describe` metadata. The runner extracts `--message` from single-check argv into the environment.
 
 ## Usage
 
@@ -68,18 +68,18 @@ go/bin/fitness prettier --write .   # passthrough args reach the check
 
 ## Checks
 
-All 29 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
+All 30 check names, one binary each under [go/cmd/](go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
 
-- Pure logic: node-version, gitignore-why, changelog, changelog-updated, changelog-bullets, semantic-commit, commit-attribution, read-repo-first, markdown-filename-kebab-case, markdown-filename-camel-case, markdown-front-matter, markdown-no-bold-italic, no-eslint-disable, build-output-untracked, repeated-string-literals
-- Parsers and network: the five mermaid diagram/callout checks, vitest-coverage-exclude, dependency-currency (native npm-registry client)
-- Native engines: cspell (embedded dictionaries, ~217k words), jscpd (token-based clone detection), and go-complexity (cyclomatic complexity ceiling for Go, the house eslint rule's counterpart) — no external tool needed
-- Tool wrappers: prettier, eslint, vitest-coverage-full, swiftlint — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx; a missing binary fails with a one-line install hint
+- Pure logic: `node-version`, `gitignore-why`, `changelog`, `changelog-updated`, `changelog-bullets`, `semantic-commit`, `commit-attribution`, `read-repo-first`, `markdown-filename-kebab-case`, `markdown-filename-camel-case`, `markdown-front-matter`, `markdown-no-bold-italic`, `no-eslint-disable`, `build-output-untracked`, `repeated-string-literals`, `text-readability`
+- Parsers and network: the five mermaid diagram/callout checks, `vitest-coverage-exclude`, `dependency-currency` (native npm-registry client)
+- Native engines: `cspell` (embedded dictionaries, ~217k words), `jscpd` (token-based clone detection), and `go-complexity` (cyclomatic complexity ceiling for Go, the house eslint rule's counterpart) — no external tool needed
+- Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx. A missing binary fails with a one-line install hint.
 
-Default run order lives in the runner ([go/cmd/fitness/main.go](go/cmd/fitness/main.go)); opt-in checks (swiftlint, commit-attribution, the mermaid family, and others) are enabled per repo via `.fitnessrc.json`.
+Default run order lives in the runner ([go/cmd/fitness/main.go](go/cmd/fitness/main.go)). Opt-in checks (`swiftlint`, `commit-attribution`, the mermaid family, and others) are enabled per repo via `.fitnessrc.json`.
 
 ## Shared configs
 
-The opinionated tool configs (eslint flat config, prettier, vitest thresholds, cspell) are embedded inside the check binaries ([go/internal/sharedconf](go/internal/sharedconf)) and materialize to a cache directory on demand. Resolution order when a check needs a config: the repo's own config file wins, then an installed `@mayjournal/fitness-shared` npm package (previously published versions keep working), then the embedded copy. The eslint config references plugins that must exist in the consumer repo — exactly the check's peer-tool contract.
+The opinionated tool configs (eslint flat config, prettier, vitest thresholds, cspell) are embedded inside the check binaries ([go/internal/sharedconf](go/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins. Next comes an installed `@mayjournal/fitness-shared` npm package (previously published versions keep working). The embedded copy is the final fallback. The eslint config references plugins that must exist in the consumer repo — exactly the check's peer-tool contract.
 
 ## Development
 
@@ -90,12 +90,12 @@ go test ./...
 cd .. && go/bin/fitness     # run the suite on this repo
 ```
 
-One-time setup after cloning — point Git at this repo's hooks (pre-commit restamps a staged CHANGELOG entry and runs the suite; commit-msg validates through the semantic-commit check):
+One-time setup after cloning — point Git at this repo's hooks. Pre-commit restamps a staged CHANGELOG entry and runs the suite. Commit-msg validates through the `semantic-commit` check:
 
 ```bash
 git config core.hooksPath githooks
 ```
 
-The spell-check dictionaries under [go/internal/spell/dict](go/internal/spell/dict) are frozen, committed data (provenance in each file header); a Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
+The spell-check dictionaries under [go/internal/spell/dict](go/internal/spell/dict) are frozen, committed data (provenance in each file header). A Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
 
 See [docs/architecture-index.md](./docs/architecture-index.md) for the C4 model ([docs/architecture/](docs/architecture/)).

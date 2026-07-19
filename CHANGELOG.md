@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0812
+
+- Feat: add the `text-readability` check — a document-level readability smoke detector that scores every markdown file with the three character-based formulas and fails only when 2 of 3 exceed their alarm band; files under 100 prose words are never judged. The catalog grows to 30 names.
+- Feat: failure output is structured as prompt fuel for an LLM — per-file alarms show each formula's value and band, then guidance lines carry the exact formulas, the edits that lower them, and pointers to the check README and the research doc.
+- Chore: enable it here at tightened bands (grade 15, LIX 50) via the new `textReadability` config; shipped defaults stay at the calibrated smoke-detector bands (18/60). The dogfood suite is 20 checks.
+- Docs: fix the three files the tightened bands flagged — README.md, the research doc, and the vitest-coverage-full README — by splitting long sentences, wrapping check names in code spans, and moving quoted tool output into fenced blocks; stale README counts corrected in passing.
+
 ### 2026.07.18.1940
 
 - Docs: the prose-complexity research now uses the archived plan documents as its experiment corpus — the changelog was a weak example (bullets are notation, and its one clean separator was true by construction).

@@ -28,6 +28,12 @@ type Config struct {
 	GoComplexity struct {
 		Max int `json:"max"`
 	} `json:"goComplexity"`
+	// TextReadability holds alarm bands for the text-readability check.
+	TextReadability struct {
+		MaxGrade float64 `json:"maxGrade"`
+		MaxLix   float64 `json:"maxLix"`
+		MinWords int     `json:"minWords"`
+	} `json:"textReadability"`
 }
 
 // FileName is the config file the runner reads at the repo root.

@@ -18,8 +18,13 @@
     "markdown-filename-kebab-case",
     "build-output-untracked",
     "repeated-string-literals",
-    "go-complexity"
+    "go-complexity",
+    "text-readability"
   ],
+  "textReadability": {
+    "maxGrade": 15,
+    "maxLix": 50
+  },
   "repeatedStringLiterals": {
     "allow": [
       "dist",
