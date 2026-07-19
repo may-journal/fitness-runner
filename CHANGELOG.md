@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1930
+
+- Docs: add `docs/research/prose-cognitive-complexity.md` — whether a check can judge the cognitive complexity of written paragraphs: the classical readability formulas, the cognitive-science measures beyond them, and prior CI tooling, surveyed with sources.
+- Docs: the research includes an experiment on this repo's own changelog rewrite — no classical formula separates tight bullets from essay bullets one bullet at a time; only whole-section scoring and the existing 365-character cap discriminate cleanly.
+- Docs: verdict for a future check — structural budgets and character-based formulas at document scale behind a frozen code-masking spec; sentence-connection measures are the unexplored ground.
+
 ### 2026.07.18.1909
 
 - Feat: `changelog-bullets` now judges every `###` section of CHANGELOG.md, not only the newest — count errors name their section.
