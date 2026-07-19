@@ -3,18 +3,18 @@ relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
 <!-- cspell:ignore Liau Flesch Kincaid Gunning Björnsson Yngve Kintsch Keenan Snowdon Vasishth Frazier Demberg Schuler Rajkumar Graesser McNamara Louwerse Kulikowich Crossley Hemingway proselint textlint reviewdog retext remark nlcst mdast textstat cmudict Pyphen Campbell's Goodhart's surprisal polysyllabic polysyllable nominalization nominalizations subordinator subordinators relativizer relativizers Zipf cloze CPIDR DEPID Coh Metrix TAACO TAALES SUBTLEX stopword stemmer appositives Levy's -->
-<!-- cspell:ignore Chall recalibrated Kabance Davison Kantor undercount PNAS tion ment ance outpredict unthresholded periodless norming backticked unbackticked gameable Senter Sirts TACL Shain -->
+<!-- cspell:ignore Chall recalibrated Kabance Davison Kantor undercount PNAS tion ment ance outpredict unthresholded periodless norming backticked unbackticked gameable Senter Sirts TACL Shain blockquote blockquotes devdeps FKGL -->
 
 # Judging the cognitive complexity of prose
 
-Can a fitness check score written paragraphs the way `go-complexity` scores functions? A research survey plus an experiment on this repo's own changelog history. Short answer: yes for coarse, document-level outlier detection with a handful of deterministic metrics; no for precise per-paragraph judgment — and the classical "readability formulas" measure far less than their names suggest.
+Can a fitness check score written paragraphs the way `go-complexity` scores functions? A research survey plus an experiment on this repo's own plan documents. Short answer: yes for coarse, document-level outlier detection with a handful of deterministic metrics; no for precise per-paragraph judgment — and the classical "readability formulas" measure far less than their names suggest.
 
 ## Summary
 
 - Every classical readability formula is a two-variable regression on the same two surface proxies: word length (standing in for vocabulary familiarity, via Zipf's law) and sentence length (standing in for syntactic working-memory load). None measures cohesion, ordering, ambiguity, or meaning — scrambling word order inside every sentence changes no score.
 - Three formulas are cleanly computable in deterministic stdlib-only Go: Coleman-Liau, ARI, and LIX need only letter, word, and sentence counts. The syllable-based formulas are implementation-defined (no two tools agree), Gunning Fog is not mechanizable as specified, and Dale-Chall requires an embedded word list that saturates on technical vocabulary.
 - All eight were normed on samples of 100+ words, with standard errors of 1.5-2.5 grade levels even at that length. On 1-3 sentence paragraphs, one missed sentence boundary swings results by 2-10 grades. Per-paragraph gating is statistically meaningless; document-level outlier detection is defensible.
-- The experiment on this repo's changelog (essay bullets at `HEAD~1` vs the tight rewrite at `HEAD`) confirms it: no formula works as a per-bullet gate (best AUC 0.701; a threshold catching 90% of old bullets falsely flags 71-92% of new ones), but section-level aggregation reaches AUC 0.824 (Coleman-Liau), and the only clean separator is the `changelog-bullets` check's own 365-character cap.
+- The experiment on this repo's archived plans (the two may-journals-template plans vs the six free-form plans the template replaced) is worse than inconclusive for the formulas — it inverts them. Every formula scores the preferred template style as harder on average than the rejected free-form style; paragraphs within one uniformly written plan swing 17 grade levels; and dropping the markdown block-boundary rule inflates one plan from grade 11.8 to 46.7. What separates the generations is checkable structure — the template itself — which the formulas cannot see and actively penalize.
 - The best-evidenced cognitive measures (per-word surprisal, propositional idea density, dependency length) need a language model, POS tagger, or parser. What survives with zero dependencies: structural budgets (sentence-length tails, clause chaining, nesting depth, nominalization and passive density) and cohesion proxies (connective density, adjacent-sentence word overlap) — the same family Hemingway Editor and Vale actually ship.
 - No one has built a true prose analog of SonarSource's cognitive-complexity metric (increments plus nesting multipliers). The design pattern transfers; the field is open.
 
@@ -56,37 +56,38 @@ Three mechanical traps dominate any implementation:
 - The academic instruments (Coh-Metrix, TAALES, TAACO) demonstrate that cohesion and word familiarity outpredict sentence length, but they emit hundreds of unthresholded features from GUI tools with heavyweight NLP models — structurally unusable as CI gates.
 - LLM-as-judge is the only approach that measures actual clarity rather than proxies, and it is not deterministic even at temperature zero. Practice that works: pinned model snapshots, rubric anchoring with few-shot band definitions, coarse pass/warn/fail bands rather than numeric scores, and caching verdicts by content hash so unchanged prose can never newly fail. For a runner whose contract is reproducibility, an LLM judge stays advisory or verdict-frozen.
 
-## The experiment: this repo's changelog as a labeled corpus
+## The experiment: this repo's plan documents as the corpus
 
-The 2026-07-18 changelog rewrite created a natural experiment: `HEAD~1` holds 217 bullets across 61 sections including the essay style (single bullets up to 1,514 characters), `HEAD` holds 238 tight bullets (all under 365 characters, by construction of the `changelog-bullets` check). Same facts, two prose styles, only 7 bullets shared. We scored both populations with ten metrics, masking inline code spans, links, and version tokens first (13-15% of characters).
+`docs/plans/archive/` holds two generations of the same document type: six free-form plans from the TypeScript era (goal-and-checklist hybrids in varied shapes) and the two plans written under the may-journals template after the free-form style was rejected — numbered title, one-line blockquote, a Goal paragraph, numbered checkbox sections. The house quality judgment is on record: the template replaced the free-form style. That makes the corpus labeled, and the question becomes whether the metrics agree with the judgment. We scored prose paragraphs, blockquotes, and list items separately (code spans, links, and version tokens masked), treating each markdown block end as a sentence boundary.
 
-Per-bullet discrimination (AUC = probability a random old bullet scores worse than a random new one):
+Document-level battery (grade-scale formulas except LIX):
 
-| Metric | Old mean | New mean | AUC |
-| --- | --- | --- | --- |
-| Coleman-Liau | 16.4 | 12.2 | 0.701 |
-| Flesch Reading Ease | 34.3 | 49.4 | 0.638 |
-| ARI | 15.4 | 13.3 | 0.596 |
-| Flesch-Kincaid Grade | 13.2 | 11.7 | 0.577 |
-| LIX | 48.9 | 45.7 | 0.547 |
-| Gunning Fog | 15.1 | 14.6 | 0.522 |
-| Words per sentence | 18.9 | 21.4 | 0.453 (inverted) |
+| Plan | Style | Words | FKGL | Coleman-Liau | ARI | LIX |
+| --- | --- | --- | --- | --- | --- | --- |
+| `01-go-rewrite.md` | template | 726 | 11.8 | 15.4 | 12.4 | 44.5 |
+| `02-npm-free.md` | template | 373 | 10.5 | 13.1 | 11.3 | 42.8 |
+| `plan-checks-abstractions.md` | free-form | 796 | 8.6 | 12.4 | 9.6 | 37.1 |
+| `plan-deps-vs-devdeps-check.md` | free-form | 200 | 9.9 | 12.6 | 9.0 | 40.1 |
+| `plan-issue-13-bundle-size-performance.md` | free-form | 151 | 6.4 | 10.8 | 6.8 | 31.0 |
+| `plan-issue-23-config-local-check-paths.md` | free-form | 193 | 6.3 | 9.3 | 6.1 | 30.4 |
+| `plan-split-runner-check-packages.md` | free-form | 470 | 6.6 | 10.7 | 6.7 | 33.8 |
+| `plan-swiftlint-jscpd-checks.md` | free-form | 400 | 9.8 | 12.7 | 10.2 | 38.0 |
 
 Findings, stated plainly:
 
-- No metric works as a per-bullet gate. Setting each metric's threshold to flag 90% of old bullets falsely flags 71-92% of the tight rewrite. Gunning Fog and LIX are coin flips here. Words-per-sentence discriminates in the wrong direction under period-only splitting, because a tight periodless one-liner counts as one long "sentence."
-- Aggregation rescues the signal. Scoring each section's bullets as one document lifts Coleman-Liau to AUC 0.824 (old sections mean 17.8, new 12.4 — the new median section sits at the old 10th percentile) and Reading Ease to 0.759. Sample size, not formula choice, was the binding constraint — exactly as the norming literature predicts.
-- The only clean separator is trivial: raw length. 15.7% of old bullets exceed 365 characters; zero new ones do (the worst new bullet is 360). A size cap out-discriminates every readability formula on this corpus.
-- Masking matters more than it seems. Unmasked, the old/new Flesch-Kincaid gap nearly vanishes (15.4 vs 15.0) because tight bullets are denser in backticked identifiers; masked, the gap triples. Any prose scorer for this repo must strip code spans first or it will punish precision.
-- Formulas explode on notation. The single worst bullet by grade level in either corpus was a 149-character old bullet — a comma list of unbackticked hyphenated identifiers scoring Reading Ease −101. The formulas were reading notation density, not prose difficulty.
-- Treating semicolons and em-dashes as sentence boundaries (the essay style hides sentences behind semicolons) lifts sentence-based metrics by 0.05-0.09 AUC but does not change any conclusion — the tight style chains clauses with em-dashes almost as often.
-- Reference point: the five longest README paragraphs score almost exactly like the new bullets (Reading Ease 44.8 vs 49.4) and clearly easier than the old ones (34.3). The essay bullets were measurably harder than this repo's ordinary prose; the rewrite restored the baseline.
+- The formulas invert the house judgment. Every formula scores the template plans as harder on average than the free-form plans they replaced, at document level (table above) and at unit level (list-item Coleman-Liau mean 15.6 template vs 9.9 free-form; every unit-level AUC lands on the wrong side of 0.5). The formulas reward the conversational filler the template eliminated and punish the information density it demanded. A gate built on them would have defended the rejected style.
+- Genuine paragraphs score sanely. The two Goal paragraphs — real 72-100 word prose, the formulas' native sample size — land at grade 11.6-13.5 with the character formulas in the same band: exactly where well-written technical prose belongs, and stable enough to be meaningful.
+- Per-paragraph scores are noise. Within `plan-checks-abstractions.md` — 26 paragraphs, one author, one register — Flesch-Kincaid swings from 2.3 to 19.7, a 17-grade spread inside a uniformly written document.
+- The markdown artifact dwarfs everything. Scored without the block-boundary rule, `01-go-rewrite.md` jumps from grade 11.8 to 46.7 (roughly 104 words per "sentence") because its 45 punctuation-free checkbox items merge into pseudo-sentences. Segmentation policy is worth 35 grades; no real quality difference on this corpus is worth 5.
+- What separates the generations is structure, not sentence statistics: one blockquote, one Goal paragraph, numbered checkbox sections. That shape is deterministically checkable by a template gate — and it is precisely the thing readability formulas cannot see.
+
+An earlier round of this experiment used the changelog rewrite (essay bullets vs the tight 365-character style) as its corpus. It reached the same negative conclusions — per-unit gating fails (best AUC 0.701 there), aggregation helps (0.824 at section level), masking code spans is essential, formulas explode on notation-dense text (Reading Ease −101 on one 149-character bullet) — but the corpus was weaker: changelog bullets are notation rather than paragraphs, and its one clean separator, the character cap, was true by construction. The plans corpus supersedes it as the example; the changelog numbers survive only as corroboration.
 
 ## Implications for a fitness check
 
 What the evidence supports, in order of defensibility:
 
-1. Structural budgets, not readability scores, at fine granularity. The mechanisms that actually separate tight from sloppy at bullet/paragraph scale are the ones `changelog-bullets` already uses — hard size caps and counts — plus Hemingway-style per-sentence rules (flag sentences of 30+ words, length-gated so short sentences are never scored) and depth counters (parenthetical nesting, clause chaining). All exact, all stdlib.
+1. Structural budgets, not readability scores, at fine granularity. Both of this repo's own quality interventions were structural gates — `changelog-bullets` (size caps and counts) and the may-journals plan template (one blockquote, Goal, numbered checkbox sections) — and in both corpora structure separated good from bad where formulas failed or inverted. Add Hemingway-style per-sentence rules (flag sentences of 30+ words, length-gated so short sentences are never scored) and depth counters (parenthetical nesting, clause chaining). All exact, all stdlib.
 2. Document-level outlier detection with a character-based formula. If a grade-style score is wanted, use Coleman-Liau or LIX over a whole markdown file, after a frozen masking spec (strip fences, placeholder inline code and URLs, treat block boundaries as sentence boundaries), with a 100-word minimum below which the check reports insufficient text rather than a score. Warn-level bands, not hard fails: the formulas are gameable, and optimizing them can make prose worse.
 3. Cohesion proxies are the unexplored high ground. Connective density and adjacent-sentence word overlap are deterministic, cheap, and target what formulas miss — whether sentences connect. No mainstream CI tool ships them.
 4. A Sonar-style prose cognitive-complexity score is buildable and would be novel — an additive increment scheme over nesting, clause load, flow breaks, and referent switches — but it should be validated against human judgments on this repo's docs before it gates anything.
@@ -97,4 +98,4 @@ What the evidence supports, in order of defensibility:
 - Formula primaries: Flesch 1948; Kincaid et al. 1975 (Navy recalibration); Gunning 1952; McLaughlin 1969 (SMOG); Coleman and Liau 1975; Senter and Smith 1967 (ARI); Dale and Chall 1948/1995; Björnsson 1968 and Anderson 1983 (LIX/RIX). Critiques: Duffy and Kabance 1982; Davison and Kantor 1982; DuBay 2004 survey.
 - Cognitive measures: Kintsch and Keenan 1973 (propositions); Brown et al. 2008 (CPIDR, Behavior Research Methods); Sirts et al. 2017 (DEPID); Gibson 1998/2000 (dependency locality); Hale 2001 and Levy 2008 (surprisal); Wilcox et al. 2023 (TACL); Shain et al. 2024 (PNAS); Graesser et al. 2004 (Coh-Metrix); Campbell 2018 (Cognitive Complexity, SonarSource whitepaper).
 - Tooling: Vale readability style (github.com/errata-ai/readability); Hemingway mechanics (freeCodeCamp deconstruction); textlint TxtAST architecture; textstat; retext-readability (per-sentence ensemble voting).
-- Experiment artifacts: scoring script and corpus extracts in the session scratchpad (`readability.py`); corpus is this repo's `CHANGELOG.md` at `dcb8376` (new) and its parent (old).
+- Experiment artifacts: scoring scripts in the session scratchpad (`readability.py`, `plans_experiment.py`); primary corpus is `docs/plans/archive/` at `8ea28ac`; the corroborating changelog corpus is `CHANGELOG.md` at `dcb8376` and its parent.

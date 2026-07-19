@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1940
+
+- Docs: the prose-complexity research now uses the archived plan documents as its experiment corpus — the changelog was a weak example (bullets are notation, and its one clean separator was true by construction).
+- Docs: the plans result is stronger and inverted — every readability formula scores the preferred may-journals-template plans as harder than the rejected free-form plans, and one uniformly written plan swings 17 grade levels paragraph to paragraph.
+- Docs: the changelog numbers stay only as corroboration; the implications section now names both house interventions (`changelog-bullets`, the plan template) as structural gates that beat formulas.
+
 ### 2026.07.18.1931
 
 - Docs: rename the research doc to `docs/research/0001-prose-cognitive-complexity.md`.
