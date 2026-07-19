@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0915
+
+- Docs: architecture docs catch up with the last two days — check counts move from 27 to 30 across system context, containers, and code levels, and the monorepo layout tree gains `.github/`, `docs/`, the stamper binary, and `internal/par`.
+- Fix: the containers doc's README link had pointed at `docs/README.md` since the docs consolidation — now `../../README.md`, with a sentence on artifact shipping via Releases and the Go module proxy.
+- Docs: the architecture index links the research directory and plan 03 alongside the two archived milestone plans.
+
 ### 2026.07.19.0909
 
 - Docs: README install instructions now lead with the working channels — `go install` with pin and upgrade commands, then prebuilt release tarballs with a verified download URL, platform list, and checksum note; build-from-source moves to a contributors block.

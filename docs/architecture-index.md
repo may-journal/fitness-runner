@@ -15,4 +15,6 @@ C4 model for fitness-runner. Read [architecture/](architecture/) in order — sy
 
 Strategic maps: [wardley.md](./wardley.md) · [competition.md](./competition.md)
 
-Implementation history: [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md) (the Go rewrite) and [plans/archive/02-npm-free.md](./plans/archive/02-npm-free.md) (removing the npm toolchain); earlier TypeScript-era plans remain in [plans/archive/](./plans/archive/).
+Research: [research/0001-prose-cognitive-complexity.md](./research/0001-prose-cognitive-complexity.md) — the study behind the `text-readability` check.
+
+Implementation history: [plans/archive/01-go-rewrite.md](./plans/archive/01-go-rewrite.md) (the Go rewrite), [plans/archive/02-npm-free.md](./plans/archive/02-npm-free.md) (removing the npm toolchain), and [plans/03-publish.md](./plans/03-publish.md) (releases and `go install`; the brew tap is tracked in issue #47). Earlier TypeScript-era plans remain in [plans/archive/](./plans/archive/).

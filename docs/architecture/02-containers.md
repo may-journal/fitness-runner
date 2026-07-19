@@ -13,7 +13,7 @@ C4Container
 
     System_Boundary(ship, "Shipped artifacts") {
         Container(cli, "3 Runner binary", "Go", "fitness")
-        Container(checks, "4 Check binaries", "Go", "fitness-check-name, 27 names")
+        Container(checks, "4 Check binaries", "Go", "fitness-check-name, 30 names")
         Container(shared, "5 Embedded configs", "Go", "internal/sharedconf, materialized on demand")
     }
 
@@ -85,4 +85,4 @@ Numbers on nodes and arrows match the callout table.
 
 `disabledChecks` applies to check names only; local paths are opt-in via explicit `checks` entries and are never removed by it. The cspell and jscpd checks are native engines needing no external tool; prettier, eslint, vitest-coverage-full, and swiftlint exec the real tool and fail clearly when it is missing.
 
-Install and usage: [README.md](../README.md).
+Install and usage: [README.md](../../README.md). Artifacts ship through GitHub Releases and the public Go module proxy — see the README's Distribution section.
