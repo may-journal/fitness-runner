@@ -25,7 +25,7 @@ jobs:
           go-version-file: go/go.mod
       - name: Build per-platform tarballs
         run: |
-          version="${GITHUB_REF_NAME#go/}"
+          version="${GITHUB_REF_NAME#go/v}"
           mkdir -p out
           for os in darwin linux; do
             for arch in amd64 arm64; do

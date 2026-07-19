@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0852
+
+- Fix: release asset names carried a stray leading v (the workflow stripped only the tag's directory prefix), so the tap script could never match its checksums — the workflow now strips the full prefix and asset names agree with the formula generator.
+- Chore: first release published end to end from the tag the changelog derived — both workflow jobs green, five assets, and the downloaded darwin binary runs on this machine.
+- Docs: plan 03 pre-flight and release-automation boxes flip; the public flip and tap creation remain open.
+
 ### 2026.07.19.0844
 
 - Fix: release versions now derive from the changelog heading instead of hand-cut semver — heading timestamp `2026.07.19.0837` maps to tag `go/v0.20260719.837`; major pinned at 0 because Go reserves higher majors for `/vN` module paths, and date and minute keep their ordering.

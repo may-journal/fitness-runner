@@ -14,15 +14,15 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 0. Pre-flight
 
-   - [ ] Full-history audit for credentials, personal information, and stray blobs before the public flip
-   - [ ] Push local `main` to origin
+   - [x] Full-history audit for credentials, personal information, and stray blobs before the public flip
+   - [x] Push local `main` to origin
 
 1. Release automation
 
-   - [ ] `.github/workflows/release.yml` — on `go/v*` tag push: build all binaries per platform, tar per platform, checksums file, then publish the GitHub Release with the newest CHANGELOG section as notes
-   - [ ] `.github/scripts/release-tag.sh` derives the tag from the newest CHANGELOG heading; the workflow refuses a mismatched tag
+   - [x] `.github/workflows/release.yml` — on `go/v*` tag push: build all binaries per platform, tar per platform, checksums file, then publish the GitHub Release with the newest CHANGELOG section as notes
+   - [x] `.github/scripts/release-tag.sh` derives the tag from the newest CHANGELOG heading; the workflow refuses a mismatched tag
    - [ ] Flip the repo public
-   - [ ] Push the CHANGELOG-derived tag and confirm the workflow publishes the first release with all assets
+   - [x] Push the CHANGELOG-derived tag and confirm the workflow publishes the first release with all assets
 
 2. Brew tap
 
@@ -32,5 +32,5 @@ relatedConfigurations: ['../../.fitnessrc.json']
 3. Verification
 
    - [ ] `go install` of the tagged version resolves through the public Go proxy from a clean environment
-   - [ ] The release page shows four tarballs plus checksums, and an extracted binary runs
+   - [x] The release page shows four tarballs plus checksums, and an extracted binary runs
    - [ ] `brew install may-journal/tap/fitness` works on this machine and `fitness` runs
