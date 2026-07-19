@@ -28,7 +28,7 @@ Three channels, layered on one artifact host. Every channel delivers the same st
 2. GitHub Releases — prebuilt per-platform tarballs (darwin and linux, arm64 and amd64) with a checksums file, uploaded by CI on every version tag: [github.com/may-journal/fitness-runner/releases](https://github.com/may-journal/fitness-runner/releases). Download, extract onto PATH. Upgrade by grabbing the next release. No toolchain needed.
 3. Homebrew tap — `brew tap may-journal/tap && brew install fitness`. The formula points at the Release tarball, and the release workflow bumps it on every tag. `brew upgrade` delivers new versions alongside everything else brew manages.
 
-Versioning: the CHANGELOG timestamp stays the internal version (the pre-commit stamper owns it). Releases are semver tags in the `go/vX.Y.Z` form the subdirectory module requires. Consumers reference the plain version — `@vX.Y.Z` — and the Go proxy caches every published version immutably.
+Versioning: the CHANGELOG timestamp is the only version, and release tags are derived from it. Heading `### 2026.07.19.0837` becomes tag `go/v0.20260719.837` — major pinned at 0 (Go reserves majors of 2 and up for `/vN` module paths), minor is the date, patch is the minute, ordering preserved. `.github/scripts/release-tag.sh` prints the tag for the newest heading, and CI refuses any tag that does not match. Consumers reference the plain version (`@v0.20260719.837`) or `@latest`. The Go proxy caches every published version immutably.
 
 ## Config
 

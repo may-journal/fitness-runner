@@ -13,6 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify the tag matches the newest CHANGELOG heading
+        run: |
+          want="$(.github/scripts/release-tag.sh)"
+          test "$GITHUB_REF_NAME" = "$want" || {
+            echo "tag $GITHUB_REF_NAME does not match CHANGELOG-derived $want" >&2
+            exit 1
+          }
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod

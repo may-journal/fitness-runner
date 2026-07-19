@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.19.0844
+
+- Fix: release versions now derive from the changelog heading instead of hand-cut semver — heading timestamp `2026.07.19.0837` maps to tag `go/v0.20260719.837`; major pinned at 0 because Go reserves higher majors for `/vN` module paths, and date and minute keep their ordering.
+- Feat: add `.github/scripts/release-tag.sh` — prints the tag for the newest heading; the release workflow refuses any tag that does not match it.
+- Docs: README and plan 03 state the one-version rule — the pre-commit stamper owns the version, releases only transcribe it.
+
 ### 2026.07.19.0837
 
 - Feat: add the release workflow — every `go/vX.Y.Z` tag cross-compiles static tarballs for darwin and linux on both architectures, writes a checksums file, and publishes a GitHub Release with the newest CHANGELOG section as its notes.

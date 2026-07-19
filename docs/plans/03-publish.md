@@ -8,7 +8,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Goal
 
-`go install github.com/may-journal/fitness-runner/go/cmd/...@latest` works from any machine through the public Go module proxy. Every `go/vX.Y.Z` tag triggers a release workflow that cross-compiles static tarballs for darwin and linux on both architectures, writes a checksums file, and publishes a GitHub Release with the newest CHANGELOG section as its notes. `brew tap may-journal/tap && brew install fitness` installs the whole suite, and the release workflow bumps the formula so `brew upgrade` delivers each new version.
+`go install github.com/may-journal/fitness-runner/go/cmd/...@latest` works from any machine through the public Go module proxy. Release tags derive from the newest CHANGELOG heading — `### 2026.07.19.0837` becomes `go/v0.20260719.837` — so the stamper stays the only version authority. Every tag triggers a release workflow that cross-compiles static tarballs for darwin and linux on both architectures, writes a checksums file, and publishes a GitHub Release with the newest CHANGELOG section as its notes. `brew tap may-journal/tap && brew install fitness` installs the whole suite, and the release workflow bumps the formula so `brew upgrade` delivers each new version.
 
 ## Plan
 
@@ -20,8 +20,9 @@ relatedConfigurations: ['../../.fitnessrc.json']
 1. Release automation
 
    - [ ] `.github/workflows/release.yml` — on `go/v*` tag push: build all binaries per platform, tar per platform, checksums file, then publish the GitHub Release with the newest CHANGELOG section as notes
+   - [ ] `.github/scripts/release-tag.sh` derives the tag from the newest CHANGELOG heading; the workflow refuses a mismatched tag
    - [ ] Flip the repo public
-   - [ ] Tag `go/v0.1.0` and confirm the workflow publishes the first release with all assets
+   - [ ] Push the CHANGELOG-derived tag and confirm the workflow publishes the first release with all assets
 
 2. Brew tap
 
