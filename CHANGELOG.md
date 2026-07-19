@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.07.18.1931
+
+- Docs: rename the research doc to `docs/research/0001-prose-cognitive-complexity.md`.
+- Docs: research docs now carry a `NNNN-` number prefix, matching the ADR convention (`docs/architecture/adr/0001-...`), so they order by arrival.
+- Chore: a pure `git mv` — content, front matter, and relative paths are unchanged.
+
 ### 2026.07.18.1930
 
 - Docs: add `docs/research/prose-cognitive-complexity.md` — whether a check can judge the cognitive complexity of written paragraphs: the classical readability formulas, the cognitive-science measures beyond them, and prior CI tooling, surveyed with sources.
