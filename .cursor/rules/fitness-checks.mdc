@@ -1,7 +1,7 @@
 ---
 description: Read all fitness checks and craft solutions with them in mind
-globs: packages/**, CHANGELOG.md, vitest.config.*, .nvmrc, .fitnessrc*, package.json
+globs: go/cmd/**, go/internal/**, CHANGELOG.md, .fitnessrc*
 alwaysApply: false
 ---
 
-Read all checks from `packages/checks/`—each subfolder is a check package that will be run. Review each check’s README for its behavior and conventions. Craft solutions with these checks in mind.
+Read all checks under `go/cmd/fitness-check-*/` — each directory is a check binary, most with a README describing its behavior and conventions. The shared logic they build on lives in `go/internal/`. Craft solutions with these checks in mind.

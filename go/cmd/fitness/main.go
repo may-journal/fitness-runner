@@ -1,6 +1,6 @@
 // Command fitness runs the configured check suite: it resolves check
 // binaries, execs them in a bounded parallel pool with per-check timeouts,
-// and renders the results table. See plans/01-go-rewrite.md.
+// and renders the results table. See docs/plans/archive/01-go-rewrite.md.
 package main
 
 import (
@@ -32,15 +32,10 @@ var defaultChecks = []string{
 	"changelog",
 	"changelog-updated",
 	"cspell",
-	"eslint",
 	"markdown-no-bold-italic",
-	"prettier",
-	"node-version",
 	"markdown-front-matter",
 	"semantic-commit",
 	"jscpd",
-	"vitest-coverage-exclude",
-	"vitest-coverage-full",
 }
 
 const defaultTimeout = 5000 * time.Millisecond

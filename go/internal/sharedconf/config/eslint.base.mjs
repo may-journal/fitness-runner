@@ -30,7 +30,7 @@ const rules = {
   'perfectionist/sort-interfaces': sortMembers,
 };
 
-const ignores = [...cspellConfig.ignorePaths, 'packages/shared/types/**', DTS_GLOB];
+const ignores = [...cspellConfig.ignorePaths, DTS_GLOB];
 
 /** Shared ESLint flat config. Every block parses syntactically — no enabled rule is type-aware. */
 export function createEslintConfig() {

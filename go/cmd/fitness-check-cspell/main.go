@@ -3,11 +3,12 @@
 // always winning over the embedded base dictionaries (internal/spell).
 //
 // Staged mode (FITNESS_STAGED_FILES non-empty) checks the staged files after
-// dropping .gitignore/package-lock.json/tsconfig.json basenames and paths
-// that no longer exist; with nothing left it passes without scanning. With no
-// staged context it checks every **/*.md under the root, honoring the
-// resolved cspell.json ignorePaths and, when useGitignore is set, the repo's
-// gitignore via `git check-ignore`.
+// dropping the always-ignored basenames (.gitignore/package-lock.json/
+// tsconfig.json), paths matched by the resolved cspell.json ignorePaths, and
+// paths that no longer exist; with nothing left it passes without scanning.
+// With no staged context it checks every **/*.md under the root, honoring the
+// same ignorePaths and, when useGitignore is set, the repo's gitignore via
+// `git check-ignore`.
 //
 // cspell.json resolves through internal/sharedconf: the repo's own file
 // wins, then an installed node_modules/@mayjournal/fitness-shared, then the
@@ -57,7 +58,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	checker := spell.NewEmbeddedChecker()
 	checker.AddWords(cfg.Words)
 	checker.AddWords(cfg.IgnoreWords)
-	files, scanned := stagedPaths(root)
+	files, scanned := stagedPaths(root, cfg)
 	if !scanned {
 		files = markdownFiles(root, cfg)
 	} else if len(files) == 0 {
@@ -71,15 +72,17 @@ func run(root string, _ []string) (checkkit.Result, error) {
 }
 
 // stagedPaths returns the staged files to check and whether staged context
-// exists at all: paths with an always-ignored basename or that no longer
-// exist on disk are dropped.
-func stagedPaths(root string) (files []string, staged bool) {
+// exists at all: paths with an always-ignored basename, matched by the
+// resolved cspell.json ignorePaths, or that no longer exist on disk are
+// dropped.
+func stagedPaths(root string, cfg config) (files []string, staged bool) {
 	stagedFiles := checkkit.StagedFiles()
 	if len(stagedFiles) == 0 {
 		return nil, false
 	}
+	matcher := spell.NewIgnoreMatcher(append([]string{"node_modules", ".git"}, cfg.IgnorePaths...))
 	for _, p := range stagedFiles {
-		if checkableStaged(root, p) {
+		if checkableStaged(root, p, matcher) {
 			files = append(files, p)
 		}
 	}
@@ -87,9 +90,13 @@ func stagedPaths(root string) (files []string, staged bool) {
 }
 
 // checkableStaged reports whether a staged path should be scanned: not an
-// always-ignored basename and still an existing non-directory under root.
-func checkableStaged(root, p string) bool {
+// always-ignored basename, not matched by the resolved ignorePaths, and still
+// an existing non-directory under root.
+func checkableStaged(root, p string, matcher *spell.IgnoreMatcher) bool {
 	if stagedSkip[path.Base(p)] {
+		return false
+	}
+	if matcher.Matches(p) {
 		return false
 	}
 	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))

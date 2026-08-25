@@ -63,7 +63,7 @@ func TestEmbeddedWordsFeedChecker(t *testing.T) {
 }
 
 // TestEmbeddedDictNames pins the embeddedDicts table to the dict/*.txt files
-// on disk: a wordlist added to generate.mjs without a matching //go:embed
+// on disk: a new wordlist added under dict/ without a matching //go:embed
 // would otherwise silently vanish from the dictionary.
 func TestEmbeddedDictNames(t *testing.T) {
 	entries, err := os.ReadDir("dict")
@@ -89,7 +89,7 @@ func TestEmbeddedDictNames(t *testing.T) {
 
 // TestEmbeddedDictsSearchable verifies the shape searchLines depends on:
 // header comments only before the first word, then non-empty, whitespace-trim
-// stable lines in byte-wise sorted order (generate.mjs emits them sorted).
+// stable lines in byte-wise sorted order (the committed lists are pre-sorted).
 func TestEmbeddedDictsSearchable(t *testing.T) {
 	for _, ed := range embeddedDicts {
 		t.Run(ed.name, func(t *testing.T) {

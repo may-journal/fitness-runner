@@ -2,8 +2,10 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-# Build the toolchain (fast when warm), restamp a staged CHANGELOG entry,
-# then gate the commit on the fitness suite.
-(cd go && mkdir -p bin && go build -o bin ./cmd/...)
+# Build the toolchain (fast when warm) and run the CI gate (fmt + vet +
+# go test), then restamp a staged CHANGELOG entry and gate the commit on
+# the fitness suite. All build/test logic lives in the Makefile.
+make build
+make check
 go/bin/fitness-stamp-changelog
 go/bin/fitness

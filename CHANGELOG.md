@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.08.25.1511
+
+- Chore: finish the npm-free migration — delete the now-unused Node `generate.mjs` generator (the 14 committed wordlists are the sole source, their headers and two Go comments rewritten to match) and remove a dead `.env` npm token plus its orphaned `.gitignore` allow rule.
+- Fix: the embedded fallback tool configs targeted the retired `packages/runner/src` layout — vitest coverage globs now use the conventional `src` tree with an index-file exclude, eslint drops a dead `packages/shared/types` ignore, and a stale `constants.cjs` comment goes.
+- Chore: tailor the check suite for this Go repo — disable the JavaScript-only checks via a new `disabledChecks` list in `.fitnessrc.json`, drop eslint, prettier, node-version, and the two vitest checks from the built-in `defaultChecks`, and add a root `Makefile` wired into the pre-commit hook.
+- Fix: the cspell check now honors `ignorePaths` for staged files, not only the markdown walk, so committing the dictionary sources under `go/internal/spell/dict` (already listed in `ignorePaths`) no longer fails on the fragments inside them.
+- Docs: add ADR 0002 retiring 0001's dual `fitness-shared lint` path, a pointer README for the camelCase filename check, a Cursor rule now aimed at `go/cmd`, and fixes to the README suite count and a moved plan-doc link.
+
 ### 2026.07.19.0934
 
 - Feat: add the `markdown-links` check — every relative link in every markdown file must resolve to a real file or directory; absolute URLs are never touched, so the check stays offline and deterministic. The catalog is 31 names; the dogfood suite is 21 checks.

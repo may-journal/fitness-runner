@@ -8,8 +8,6 @@ dist
 .env
 # Per-environment env files (also secret)
 .env.*
-# Keep the committed, non-secret template
-!.env.example
 
 # Compiled Go binaries; rebuilt from go/ sources, never committed
 go/bin/

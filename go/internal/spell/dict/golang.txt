@@ -1,8 +1,8 @@
 # golang.txt — generated word list for the fitness cspell check (Go port).
 # Sources (installed under node_modules/@cspell/, all MIT licensed):
 #   @cspell/dict-golang@6.0.26: dict-golang/dict/go.txt
-# Regenerate from the repository root with:
-#   node go/internal/spell/dict/generate.mjs
+# Frozen committed data; the Node generator was removed in the npm-free
+# migration. A Go regeneration tool is deferred (docs/plans/archive/02-npm-free.md).
 # 5754 words, lowercased, sorted, one per line.
 a
 aaaaresource

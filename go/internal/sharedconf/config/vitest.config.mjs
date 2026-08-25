@@ -11,10 +11,9 @@ export default defineConfig({
         TEST_GLOB,
         SPEC_GLOB,
         TYPES_GLOB,
-        'packages/runner/src/index.ts',
-        'packages/runner/src/runner/index.ts',
+        '**/index.ts',
       ],
-      include: ['packages/runner/src/**/*.ts'],
+      include: ['src/**/*.ts'],
       provider: 'v8',
       reporter: ['text', 'lcov'],
       thresholds: {
@@ -25,6 +24,6 @@ export default defineConfig({
       },
     },
     globals: true,
-    include: ['packages/runner/src/**/*.test.ts'],
+    include: ['src/**/*.test.ts'],
   },
 });

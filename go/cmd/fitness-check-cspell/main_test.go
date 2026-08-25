@@ -86,6 +86,17 @@ func TestStagedMode(t *testing.T) {
 			checked: 1,
 		},
 		{
+			// The embedded shared cspell.json ignores go/internal/spell/dict;
+			// staged mode must honor ignorePaths so a staged dictionary source
+			// file is never spell-checked. The fixture content would fail if
+			// scanned (zzzqqqv), proving the skip rather than a clean pass.
+			name:    "staged file under an ignorePaths directory is skipped",
+			files:   map[string]string{"go/internal/spell/dict/node.txt": "zzzqqqv\n"},
+			staged:  []string{"go/internal/spell/dict/node.txt"},
+			ok:      true,
+			checked: 0,
+		},
+		{
 			name: "mixed source shapes stay clean",
 			files: map[string]string{
 				"main.go":      "package main\n\nfunc main() {\n\tprintln(\"hello world\\nagain\")\n}\n",

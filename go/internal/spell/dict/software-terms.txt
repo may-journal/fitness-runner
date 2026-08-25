@@ -1,8 +1,8 @@
 # software-terms.txt — generated word list for the fitness cspell check (Go port).
 # Sources (installed under node_modules/@cspell/, all MIT licensed):
 #   @cspell/dict-software-terms@5.2.2: dict-software-terms/dict/softwareTerms.txt.gz, dict-software-terms/dict/software-tools.txt, dict-software-terms/dict/computing-acronyms.txt, dict-software-terms/dict/coding-compound-terms.txt, dict-software-terms/dict/networkingTerms.txt, dict-software-terms/dict/webServices.txt, dict-software-terms/dict/software-terms-alternative.txt
-# Regenerate from the repository root with:
-#   node go/internal/spell/dict/generate.mjs
+# Frozen committed data; the Node generator was removed in the npm-free
+# migration. A Go regeneration tool is deferred (docs/plans/archive/02-npm-free.md).
 # 3900 words, lowercased, sorted, one per line.
 +goog
 +io

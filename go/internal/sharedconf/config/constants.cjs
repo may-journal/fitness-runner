@@ -1,8 +1,7 @@
 'use strict';
 /**
  * Shared literals for the config files in this directory — CJS so both the .cjs and .mjs
- * configs can load it (require and import both work). The TS sources have their own twin
- * (`src/testGlobs.ts`); the two runtimes cannot share one module.
+ * configs can load it (require and import both work).
  */
 /** Declaration-file glob, excluded from lint and coverage. */
 exports.DTS_GLOB = '**/*.d.ts';

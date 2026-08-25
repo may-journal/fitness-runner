@@ -213,13 +213,12 @@ func TestRunFallbackRoot(t *testing.T) {
 // TestLoadExcludeEmbeddedFallback pins the npm-free path: with no local
 // config and no node_modules anywhere up the tree, the exclude list comes
 // from the embedded vitest.config.mjs materialized out of the binary (its
-// three clean string literals; identifier entries are unresolvable).
+// two clean string literals; identifier entries are unresolvable).
 func TestLoadExcludeEmbeddedFallback(t *testing.T) {
 	got := loadExclude(t.TempDir())
 	want := []string{
 		"**/*.bench.ts",
-		"packages/runner/src/index.ts",
-		"packages/runner/src/runner/index.ts",
+		"**/index.ts",
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("loadExclude = %#v, want the embedded config's literals %#v", got, want)

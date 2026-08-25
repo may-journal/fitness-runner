@@ -8,12 +8,13 @@ import (
 	"sync"
 )
 
-// The embedded base dictionaries are committed plain-text wordlists generated
-// from the installed cspell dictionary packages; see dict/generate.mjs for
-// sources, licenses, and the regeneration command. Each file is a '#'-prefixed
-// provenance header followed by the words: lowercased, deduplicated, sorted,
-// one per line — generate.mjs's emit() sorts every list before writing, which
-// is the guarantee the binary search below relies on (and
+// The embedded base dictionaries are committed plain-text wordlists derived
+// from the cspell dictionary packages; each file's '#'-prefixed provenance
+// header names its sources and licenses. The Node generator was removed in the
+// npm-free migration — a Go regeneration tool is deferred (see
+// docs/plans/archive/02-npm-free.md). Each file is that header followed by the
+// words: lowercased, deduplicated, sorted, one per line — the committed lists
+// are pre-sorted, which is the guarantee the binary search below relies on (and
 // TestEmbeddedDictsSearchable re-verifies byte-wise).
 //
 // Each file embeds as its own string so Lookup binary-searches the embedded
