@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.08.25.1516
+
+- Chore: stop tracking `go/internal/spell/.DS_Store`, a macOS Finder metadata file that a `git add -A` swept into the previous commit.
+- Chore: add a `.DS_Store` rule to `.gitignore` as a bare name, excluding the artifact from every directory rather than only the repo root.
+- Chore: annotate that rule with a why-comment (Finder view-state metadata, no project value) so it satisfies the `gitignore-why` check.
+
 ### 2026.08.25.1511
 
 - Chore: finish the npm-free migration — delete the now-unused Node `generate.mjs` generator (the 14 committed wordlists are the sole source, their headers and two Go comments rewritten to match) and remove a dead `.env` npm token plus its orphaned `.gitignore` allow rule.

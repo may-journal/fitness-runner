@@ -11,3 +11,6 @@ dist
 
 # Compiled Go binaries; rebuilt from go/ sources, never committed
 go/bin/
+
+# macOS Finder view-state metadata; never part of the project
+.DS_Store
