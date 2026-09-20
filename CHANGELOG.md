@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.20.1417
+
+- Feat: exempt capitalized doc basenames (README.md, LICENSE.md, AGENTS.md, CODE_OF_CONDUCT.md, ...) from the kebab-case and camelCase filename checks, so conventional all-caps docs pass at any path.
+- Refactor: replace the hardcoded `allowedBasenames` map with a single all-caps basename pattern, dropping the fixed OSS-doc list in favor of one rule.
+- Test: cover the all-caps exemption — README and AGENTS pass in root and nested paths, while lowercase and mixed-case names stay held to their convention.
+
 ### 2026.08.25.1516
 
 - Chore: stop tracking `go/internal/spell/.DS_Store`, a macOS Finder metadata file that a `git add -A` swept into the previous commit.
