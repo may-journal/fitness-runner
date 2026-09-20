@@ -37,29 +37,22 @@ var Camel = Convention{
 	Pattern: regexp.MustCompile(`^[a-z][a-zA-Z0-9]*\.md$`),
 }
 
-// allowedBasenames are standard root filenames always allowed regardless of
-// case (conventional OSS docs).
-var allowedBasenames = map[string]bool{
-	"CHANGELOG.md":       true,
-	"CODE_OF_CONDUCT.md": true,
-	"CONTRIBUTING.md":    true,
-	"LICENSE.md":         true,
-	"README.md":          true,
-	"SECURITY.md":        true,
-}
+// capsDoc matches capitalized doc basenames (README.md, LICENSE.md,
+// AGENTS.md, CODE_OF_CONDUCT.md, ...), which are exempt from the convention.
+var capsDoc = regexp.MustCompile(`^[A-Z0-9_]+\.md$`)
 
 // Validate returns the error for a non-conforming markdown path under the
 // convention, or "" when the basename is valid or exempt.
 func Validate(relPath string, c Convention) string {
 	base := path.Base(relPath)
-	if allowedBasenames[base] || c.Pattern.MatchString(base) {
+	if capsDoc.MatchString(base) || c.Pattern.MatchString(base) {
 		return ""
 	}
 	return fmt.Sprintf("%s: filename must be %s", relPath, c.Label)
 }
 
-// Run applies one convention to every .md file under root (standard root
-// docs exempt); filesChecked is the number of markdown files walked.
+// Run applies one convention to every .md file under root (capitalized doc
+// basenames exempt); filesChecked is the number of markdown files walked.
 func Run(root string, c Convention) checkkit.Result {
 	files := walkfs.FilesByExt(root, ".md")
 	var errors []string
