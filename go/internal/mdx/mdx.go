@@ -86,3 +86,75 @@ var tableSeparator = regexp.MustCompile(`^\s*\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)*\|?
 func IsTableSeparator(line string) bool {
 	return tableSeparator.MatchString(line)
 }
+
+// Heading is one ATX markdown heading found outside fenced code.
+type Heading struct {
+	// Level is the number of leading '#' (1-6).
+	Level int
+	// Text is the trimmed heading text after the marker.
+	Text string
+	// Line is the 1-based line number of the heading.
+	Line int
+}
+
+var atxHeading = regexp.MustCompile(`^(#{1,6})\s+(.*)$`)
+
+// Headings returns every ATX heading in document order, skipping any line
+// inside a fenced code block so a "## foo" in a code sample is not counted as
+// a heading.
+func Headings(content string) []Heading {
+	var out []Heading
+	for i, line := range blankFenced(content) {
+		if hm := atxHeading.FindStringSubmatch(strings.TrimRight(line, "\r")); hm != nil {
+			out = append(out, Heading{
+				Level: len(hm[1]),
+				Text:  strings.TrimSpace(hm[2]),
+				Line:  i + 1,
+			})
+		}
+	}
+	return out
+}
+
+// TextLine is a source line paired with its 1-based line number.
+type TextLine struct {
+	Num  int
+	Text string
+}
+
+// NonFencedLines returns one TextLine per line of content, with any line
+// inside a fenced code block emptied out (its Text set to "") so line-oriented
+// scans skip fenced content while line numbers stay accurate. A trailing CR is
+// trimmed.
+func NonFencedLines(content string) []TextLine {
+	blanked := blankFenced(content)
+	out := make([]TextLine, len(blanked))
+	for i, line := range blanked {
+		out[i] = TextLine{Num: i + 1, Text: strings.TrimRight(line, "\r")}
+	}
+	return out
+}
+
+// blankFenced returns content's lines with every line inside a fenced code
+// block replaced by "" (line indices preserved). Fence detection mirrors
+// Fences: a block closes at the first line whose trimmed start begins with the
+// same marker.
+func blankFenced(content string) []string {
+	lines := strings.Split(content, "\n")
+	inFence := false
+	marker := ""
+	for i, line := range lines {
+		if inFence {
+			if strings.HasPrefix(strings.TrimLeft(line, " \t"), marker) {
+				inFence = false
+			}
+			lines[i] = ""
+			continue
+		}
+		if m := fenceOpen.FindStringSubmatch(line); m != nil {
+			inFence, marker = true, m[1]
+			lines[i] = ""
+		}
+	}
+	return lines
+}

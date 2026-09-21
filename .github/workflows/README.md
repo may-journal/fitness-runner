@@ -1,0 +1,47 @@
+---
+relatedConfigurations: ['../../.fitnessrc.json']
+---
+
+# Workflows
+
+GitHub Actions workflows for this repo. The runner enforces the checks on commits; these workflows extend the same checks to places that are not files in the tree.
+
+## plan-check
+
+Plans live as GitHub Issues under the `Plan` label, so the file runner never sees them. [plan-check.yml](plan-check.yml) runs the `plan-structure` check on an Issue body and comments the result on the Issue.
+
+```mermaid
+flowchart TD
+    A[1 Issue event]:::trigger
+    B[2 Manual sweep]:::trigger
+    C[3 Plan label guard]:::step
+    D[4 Build and run plan-structure]:::step
+    E[5 Hash body and look for prior comment]:::step
+    F[6 Post comment once per body version]:::step
+    G[7 Fail the run on violations]:::step
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    D --> G
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element      | Description                                                        | Why                                                       |
+| --- | ------------ | ----------------------------------------------------------------- | --------------------------------------------------------- |
+| 1   | Issue event  | An Issue is opened, edited, reopened, or labeled.                 | Validates a plan the moment its description changes.       |
+| 2   | Manual sweep | A `workflow_dispatch` run walks every open `Plan` Issue.          | Backfills plans that predate the workflow.                 |
+| 3   | Plan guard   | Issue-event runs proceed only when the Issue carries `Plan`.      | Other Issues are not plans and need no structure check.    |
+| 4   | Run check    | Build `fitness-check-plan-structure` and feed it the body.        | One check binary, same rules as the local suite.           |
+| 5   | Dedupe       | Hash the body and search the Issue for that hash marker.          | One comment per description version, never a duplicate.    |
+| 6   | Comment      | Post a pass or fail comment carrying the hash marker.             | The result is visible where the plan lives.                |
+| 7   | Fail run     | Exit non-zero when any validated Issue has violations.            | Surfaces the problem in the Actions run, not just a note.  |
+
+## Triggers
+
+- `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue when it carries the `Plan` label.
+- `workflow_dispatch`: sweeps every open `Plan` Issue and comments on each body version not seen before.
+
+A changed description produces a new hash, so it earns a fresh comment while earlier comments stay as history.

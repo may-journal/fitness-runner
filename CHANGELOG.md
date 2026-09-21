@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.20.2014
+
+- Feat: add the `plan-structure` check — validates a plan (a `Plan`-labeled Issue body) against the Plan template: a one-line blockquote pitch, `## Background`, and `## What needs to happen` with a checklist, and no other sections. It reads the body from stdin, `--body-file`, or the context-inline `--body`, and passes inert with no input.
+- Feat: add `.github/workflows/plan-check.yml` — on `issues` events it validates the one `Plan` Issue, and on `workflow_dispatch` it sweeps every open `Plan` Issue; it comments once per body version (deduped by a content-hash marker) and fails the run on violations.
+- Feat: add `mdx.Headings`, an ATX heading scanner that skips fenced code, and cover it plus the new check with table-driven tests.
+- Docs: add `AGENTS.md` (an agent may work an Issue once a human comments "I approve this plan") and `.github/workflows/README.md` (a mermaid flow of `plan-check`), with a short GitHub Actions note in the top README.
+
 ### 2026.09.20.1941
 
 - Docs: add a `Plan` issue template (`.github/ISSUE_TEMPLATE/plan.md`) modeled on the personal `me` repo's — a one-line pitch, `## Background`, a `## What needs to happen` checklist, and no other sections.

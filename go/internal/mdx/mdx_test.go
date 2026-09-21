@@ -59,3 +59,17 @@ func TestIsTableSeparator(t *testing.T) {
 		}
 	}
 }
+
+func TestHeadings(t *testing.T) {
+	doc := "# Title\n\nintro\n\n## Background\n\ntext\n\n```\n## not a heading\n```\n\n### Deep\n#no space\n## What needs to happen\n"
+	got := Headings(doc)
+	want := []Heading{
+		{Level: 1, Text: "Title", Line: 1},
+		{Level: 2, Text: "Background", Line: 5},
+		{Level: 3, Text: "Deep", Line: 13},
+		{Level: 2, Text: "What needs to happen", Line: 15},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}

@@ -87,6 +87,10 @@ go/bin/fitness --check=semantic-commit --message="$(cat "$1")"
 
 Checks that consume the commit message declare a context-inline argument in their `--describe` metadata. The runner extracts `--message` from single-check argv into the environment.
 
+## GitHub Actions
+
+Some checks also run as GitHub Actions workflows, extending the same rules to targets that are not files in the tree — for example validating plan Issues, which no longer live as files. See [.github/workflows/README.md](.github/workflows/README.md).
+
 ## Usage
 
 ```bash
