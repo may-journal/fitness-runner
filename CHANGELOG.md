@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.20.1941
+
+- Docs: add a `Plan` issue template (`.github/ISSUE_TEMPLATE/plan.md`) modeled on the personal `me` repo's — a one-line pitch, `## Background`, a `## What needs to happen` checklist, and no other sections.
+- Chore: migrate every `docs/plans` file into a GitHub Issue under the new `Plan` label — the two active plans stay open (#49, #50) and the eight archived plans become closed completed records (#51 through #58).
+- Chore: delete the migrated `docs/plans` tree now that plans live as Issues, moving the `README.md` and `architecture-index.md` links from the plan files to their issues.
+- Docs: open #59 to run fitness checks as GitHub workflows, so a plan Issue is validated by a workflow comment the way a checked-in plan file used to be validated by the runner.
+
 ### 2026.09.20.1417
 
 - Feat: exempt capitalized doc basenames (README.md, LICENSE.md, AGENTS.md, CODE_OF_CONDUCT.md, ...) from the kebab-case and camelCase filename checks, so conventional all-caps docs pass at any path.

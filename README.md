@@ -7,7 +7,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 Zero-dependency Go fitness runner that runs checks for local dev, CI/CD, and GenAI workflows to stay aligned with your intended rules and quality bar.
 
-Every check is its own static binary (`fitness-check-<name>`), orchestrated by a `fitness` runner binary. No runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 21-check suite this repo gates its own commits on runs in about 100 milliseconds. The original TypeScript implementation has been retired. Its checks were ported one at a time with side-by-side parity before removal (see [docs/plans/archive/01-go-rewrite.md](./docs/plans/archive/01-go-rewrite.md)).
+Every check is its own static binary (`fitness-check-<name>`), orchestrated by a `fitness` runner binary. No runtime dependencies, no build step for consumers, instant startup, parallel execution. The full 21-check suite this repo gates its own commits on runs in about 100 milliseconds. The original TypeScript implementation has been retired. Its checks were ported one at a time with side-by-side parity before removal (see the Go-rewrite plan, issue #51).
 
 ## Install
 
