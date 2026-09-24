@@ -45,16 +45,3 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" out/*.tar.gz out/checksums.txt \
             --title "fitness ${GITHUB_REF_NAME#go/}" --notes-file notes.md
-
-  tap:
-    needs: release
-    runs-on: ubuntu-latest
-    env:
-      TAP_PUSH_TOKEN: ${{ secrets.TAP_PUSH_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Bump Homebrew formula
-        if: env.TAP_PUSH_TOKEN != ''
-        env:
-          GH_TOKEN: ${{ secrets.TAP_PUSH_TOKEN }}
-        run: .github/scripts/update-tap.sh "$GITHUB_REF_NAME"

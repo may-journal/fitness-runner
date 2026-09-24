@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.23.2217
+
+- Chore: delete `.github/scripts/update-tap.sh` — the repo no longer generates or pushes a Homebrew formula.
+- Chore: remove the `tap` job from `.github/workflows/release.yml`, so a version tag publishes the `go install` source and per-platform tarballs only.
+- Docs: drop the Homebrew tap from the README Distribution section and the brew-tap note from the architecture index; the tracking issue (#47) is closed as won't-do.
+
 ### 2026.09.20.2014
 
 - Feat: add the `plan-structure` check — validates a plan (a `Plan`-labeled Issue body) against the Plan template: a one-line blockquote pitch, `## Background`, and `## What needs to happen` with a checklist, and no other sections. It reads the body from stdin, `--body-file`, or the context-inline `--body`, and passes inert with no input.
