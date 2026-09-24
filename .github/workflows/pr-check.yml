@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: read
 
 jobs:
   pr-check:
@@ -19,17 +19,15 @@ jobs:
           go-version-file: go/go.mod
       - name: Build the pr-structure check
         run: cd go && go build -o bin/fitness-check-pr-structure ./cmd/fitness-check-pr-structure
-      - name: Validate PR description(s) and comment once per body version
+      - name: Validate PR description(s) and fail the run on violations
         uses: actions/github-script@v7
         env:
           CHECK_BIN: ${{ github.workspace }}/go/bin/fitness-check-pr-structure
         with:
           script: |
             const { execFileSync } = require('node:child_process');
-            const crypto = require('node:crypto');
             const bin = process.env.CHECK_BIN;
             const { owner, repo } = context.repo;
-            const marker = (hash) => `<!-- fitness:pr-structure:${hash} -->`;
 
             async function targets() {
               if (context.eventName === 'workflow_dispatch') {
@@ -53,26 +51,17 @@ jobs:
             }
 
             let failed = false;
+            core.summary.addHeading('PR structure', 2);
             for (const t of await targets()) {
-              const hash = crypto.createHash('sha256').update(t.body).digest('hex').slice(0, 12);
-              const mark = marker(hash);
-              const comments = await github.paginate(github.rest.issues.listComments, {
-                owner, repo, issue_number: t.number, per_page: 100,
-              });
-              const alreadyCommented = comments.some((c) => (c.body || '').includes(mark));
-
               const res = validate(t.body);
-              if (!res.ok) failed = true;
-              if (alreadyCommented) continue;
-
-              const heading = res.ok
-                ? '✅ PR structure looks good.'
-                : '❌ PR structure needs work:';
-              const list = res.ok ? '' : '\n' + res.errors.map((e) => `- ${e}`).join('\n');
-              await github.rest.issues.createComment({
-                owner, repo, issue_number: t.number,
-                body: `${heading}${list}\n\n${mark}`,
-              });
+              if (res.ok) {
+                core.summary.addRaw(`✅ #${t.number}: PR structure looks good.`, true);
+                continue;
+              }
+              failed = true;
+              core.summary.addRaw(`❌ #${t.number}: PR structure needs work:`, true);
+              core.summary.addList(res.errors);
             }
+            await core.summary.write();
 
             if (failed) core.setFailed('One or more PR descriptions have structure violations.');
