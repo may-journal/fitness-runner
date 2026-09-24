@@ -45,3 +45,40 @@ flowchart TD
 - `workflow_dispatch`: sweeps every open `Plan` Issue and comments on each body version not seen before.
 
 A changed description produces a new hash, so it earns a fresh comment while earlier comments stay as history.
+
+## pr-check
+
+A pull request description is not a file in the tree either. [pr-check.yml](pr-check.yml) runs the `pr-structure` check on a PR body and comments the result on the PR, using the same content-hash dedupe as plan-check.
+
+```mermaid
+flowchart TD
+    A[1 PR event]:::trigger
+    B[2 Manual sweep]:::trigger
+    C[3 Build and run pr-structure]:::step
+    D[4 Hash body and look for prior comment]:::step
+    E[5 Post comment once per body version]:::step
+    F[6 Fail the run on violations]:::step
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    C --> F
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element      | Description                                                     | Why                                                      |
+| --- | ------------ | -------------------------------------------------------------- | -------------------------------------------------------- |
+| 1   | PR event     | A PR is opened, edited, reopened, or synchronized.             | Validates a description the moment it changes.            |
+| 2   | Manual sweep | A `workflow_dispatch` run walks every open PR.                 | Backfills PRs that predate the workflow.                 |
+| 3   | Run check    | Build `fitness-check-pr-structure` and feed it the body.       | One check binary, same rules as the local suite.         |
+| 4   | Dedupe       | Hash the body and search the PR for that hash marker.          | One comment per description version, never a duplicate.  |
+| 5   | Comment      | Post a pass or fail comment carrying the hash marker.          | The result is visible where the PR is reviewed.          |
+| 6   | Fail run     | Exit non-zero when any validated PR has violations.            | Surfaces the problem in the Actions run, not just a note. |
+
+## Triggers (pr-check)
+
+- `pull_request` (`opened`, `edited`, `reopened`, `synchronize`): validates that one PR's description.
+- `workflow_dispatch`: sweeps every open PR and comments on each body version not seen before.
+
+Unlike plan-check there is no label guard: every PR carries a description, so every PR is validated.

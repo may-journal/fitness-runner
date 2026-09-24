@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.23.2353
+
+- Feat: add the `pr-structure` check — validates a pull request description against the PR template (a blockquote summary, `## Background`, and `## Changelog` with at least one bullet, and no other sections), reading the body from stdin, `--body-file`, or the context-inline `--body`, and passing inert with no input.
+- Feat: add `.github/PULL_REQUEST_TEMPLATE.md` and `.github/workflows/pr-check.yml` — on `pull_request` events it validates the description, on `workflow_dispatch` it sweeps every open PR; it comments once per body version and fails the run on violations.
+- Refactor: extract the shared template validation into `go/internal/mdtemplate` and the body resolution into `go/internal/bodycheck`; `plan-structure` now builds on both with no change in behavior.
+- Chore: exempt `.github/PULL_REQUEST_TEMPLATE.md` from `markdown-front-matter`, since GitHub inserts the template into every PR body verbatim and it cannot carry front matter.
+- Docs: document `pr-check` in the workflows README with a mermaid flow, and note PR-description validation in the top README.
+
 ### 2026.09.23.2217
 
 - Chore: delete `.github/scripts/update-tap.sh` — the repo no longer generates or pushes a Homebrew formula.

@@ -64,6 +64,8 @@
     "dogfood",
     "cutover",
     "checkkit",
+    "bodycheck",
+    "mdtemplate",
     "gitx",
     "stty",
     "walkfs",

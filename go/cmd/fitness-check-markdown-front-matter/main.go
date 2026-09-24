@@ -39,6 +39,9 @@ func runCheck(root string, registered []string) (checkkit.Result, error) {
 		return checkkit.Result{}, err
 	}
 	errs, fileCount, err := walkfs.ScanFiles(root, []string{".md"}, func(file, content string) []string {
+		if isExempt(file) {
+			return nil
+		}
 		mdDir := filepath.Dir(filepath.Join(absRoot, filepath.FromSlash(file)))
 		return validateFile(file, content, absRoot, mdDir, registered)
 	})
@@ -55,6 +58,16 @@ var (
 	arrayRe      = regexp.MustCompile(`(?:fitnessFunctions|relatedConfigurations):\s*\[([^\]]*)\]`)
 	emptyArrayRe = regexp.MustCompile(`(fitnessFunctions|relatedConfigurations):\s*\[\s*\]`)
 )
+
+// prTemplate is GitHub's PR description template. GitHub inserts it into every
+// PR body verbatim, so it cannot carry front matter — it is exempt.
+const prTemplate = ".github/PULL_REQUEST_TEMPLATE.md"
+
+// isExempt reports whether the markdown file is exempt from the front matter
+// rule because it is a GitHub template rendered verbatim.
+func isExempt(file string) bool {
+	return file == prTemplate
+}
 
 // validateFile returns one markdown file's error messages: missing or
 // keyless front matter is a single error, and empty arrays short-circuit

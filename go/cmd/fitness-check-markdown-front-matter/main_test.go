@@ -147,6 +147,14 @@ func TestRunCheck(t *testing.T) {
 			ok:           true,
 			filesChecked: 1,
 		},
+		{
+			name: "exempts the PR template, which cannot carry front matter",
+			files: map[string]string{
+				".github/PULL_REQUEST_TEMPLATE.md": "> summary\n\n## Background\n\ntext\n",
+			},
+			ok:           true,
+			filesChecked: 1,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
