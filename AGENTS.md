@@ -17,4 +17,4 @@ An agent may work an Issue as it sees fit — implement it, branch, commit, and 
 
 ## Once approved
 
-Follow the repo's normal flow: commit straight to `main`, run the full `fitness` suite before committing, and keep each change paired with a `CHANGELOG.md` entry.
+Follow the repo's normal flow: commit straight to `main`, run the full `fitness` suite before committing, and keep each change paired with a `CHANGELOG.md` entry. Name the approved Issue with a `Plan #NN` trailer on your commits. The `pre-push` hook blocks a push that does not trace to an approved Plan Issue, though chore and docs-only pushes are exempt.

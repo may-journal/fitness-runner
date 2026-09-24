@@ -1,0 +1,73 @@
+#!/usr/bin/env bash
+# Blocks a push unless the pushed commits trace to an approved Plan Issue.
+#
+# A Plan Issue is approved once a human comments a clear approval on it
+# ("I approve this plan", "Approved", or any comment containing "approve").
+# Commits declare the plan they implement with a `Plan #NN` trailer.
+#
+# Escape hatch: a push whose commits are all chore/docs is allowed with no
+# plan reference. Requires the `gh` CLI to resolve approval.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+zero="0000000000000000000000000000000000000000"
+
+# approved_plan reports success when issue $1 is Plan-labeled and carries an
+# approval comment.
+approved_plan() {
+  local n="$1"
+  gh issue view "$n" --json labels -q '.labels[].name' 2>/dev/null | grep -qx 'Plan' || return 1
+  gh issue view "$n" --json comments -q '.comments[].body' 2>/dev/null | grep -qiE 'approve'
+}
+
+# commits_of prints the shas being pushed for one ref update.
+commits_of() {
+  local local_sha="$1" remote_sha="$2"
+  if [ "$remote_sha" = "$zero" ]; then
+    git rev-list "$local_sha" --not --remotes=origin
+  else
+    git rev-list "${remote_sha}..${local_sha}"
+  fi
+}
+
+# all_chore_docs reports success when every listed commit is chore/docs.
+all_chore_docs() {
+  local c subj
+  for c in "$@"; do
+    subj="$(git log -1 --format=%s "$c")"
+    case "$subj" in
+      chore*|docs*) ;;
+      *) return 1 ;;
+    esac
+  done
+  return 0
+}
+
+while read -r _local_ref local_sha _remote_ref remote_sha; do
+  [ "$local_sha" = "$zero" ] && continue
+
+  commits="$(commits_of "$local_sha" "$remote_sha")"
+  [ -z "$commits" ] && continue
+
+  # shellcheck disable=SC2086
+  if all_chore_docs $commits; then
+    continue
+  fi
+
+  plans="$(git log --format=%B $commits | grep -oiE 'plan #\s*[0-9]+' | grep -oE '[0-9]+' | sort -u || true)"
+  if [ -z "$plans" ]; then
+    echo "pre-push: no 'Plan #NN' trailer in the pushed commits." >&2
+    echo "  Add a 'Plan #NN' trailer naming the approved Plan Issue, or push only chore/docs commits." >&2
+    exit 1
+  fi
+
+  approved=""
+  for n in $plans; do
+    if approved_plan "$n"; then approved="$n"; break; fi
+  done
+  if [ -z "$approved" ]; then
+    echo "pre-push: no approved Plan Issue among (${plans//$'\n'/ })." >&2
+    echo "  Get a human to comment an approval (e.g. 'Approved') on the Plan Issue before pushing." >&2
+    exit 1
+  fi
+done
