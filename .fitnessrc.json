@@ -20,7 +20,8 @@
     "build-output-untracked",
     "repeated-string-literals",
     "go-complexity",
-    "text-readability"
+    "text-readability",
+    "prose-budget"
   ],
   "disabledChecks": [
     "eslint",
@@ -35,6 +36,7 @@
     "maxGrade": 15,
     "maxLix": 50
   },
+  "proseBudget": {},
   "repeatedStringLiterals": {
     "allow": [
       "dist",

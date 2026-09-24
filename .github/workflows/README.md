@@ -48,7 +48,7 @@ A changed description produces a new hash, so it earns a fresh comment while ear
 
 ## pr-check
 
-A pull request description is not a file in the tree either, but a PR already has a status check surface. So unlike plan-check, [pr-check.yml](pr-check.yml) does not comment: it runs the `pr-structure` check on the PR body, writes any violations to the run summary, and fails the run so the red check blocks the merge.
+A pull request description is not a file in the tree either, but a PR already has a status check surface. So unlike plan-check, [pr-check.yml](pr-check.yml) does not comment. It runs the `pr-structure` check on the PR body, writes any violations to the run summary, and fails the run so the red check blocks the merge.
 
 ```mermaid
 flowchart TD

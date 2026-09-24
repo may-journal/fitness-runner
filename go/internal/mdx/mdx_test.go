@@ -2,6 +2,7 @@ package mdx
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -71,5 +72,54 @@ func TestHeadings(t *testing.T) {
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestProse(t *testing.T) {
+	cases := []struct {
+		name string
+		md   string
+		want string
+	}{
+		{"front matter dropped", "---\ntitle: x\n---\n\nReal prose here.", "Real prose here."},
+		{"html comments dropped", "<!-- cspell:ignore weird words -->\n\nReal prose here.", "Real prose here."},
+		{"fences skipped", "Before.\n\n```go\nfunc main() {}\n```\n\nAfter.", "Before. After."},
+		{"headings skipped", "# Title\n\nBody text.", "Body text."},
+		{"tables skipped", "| a | b |\n| - | - |\n\nBody text.", "Body text."},
+		{"block end gets period", "A list intro\n\nNext paragraph.", "A list intro. Next paragraph."},
+		{"list items are units", "- first item\n- second item\n", "first item. second item."},
+		{"checkbox stripped", "- [x] done thing\n", "done thing."},
+		{"blockquote marker stripped", "> Quoted line.\n", "Quoted line."},
+		{"code span masked", "Run `go build -o bin ./cmd/...` now.", "Run code now."},
+		{"link keeps text", "See [the plan](../plans/01.md) here.", "See the plan here."},
+		{"url dropped", "Docs at https://example.com/x live on.", "Docs at live on."},
+		{"version dropped", "Bump to v1.2.3 today.", "Bump to today."},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := strings.Join(strings.Fields(Prose(tc.md)), " ")
+			if got != tc.want {
+				t.Fatalf("Prose(%q) = %q, want %q", tc.md, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestWordCount(t *testing.T) {
+	cases := []struct {
+		name string
+		text string
+		want int
+	}{
+		{"plain words", "one two three", 3},
+		{"punctuation-only tokens ignored", "real words --- and *** more", 4},
+		{"empty is zero", "   ", 0},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := WordCount(tc.text); got != tc.want {
+				t.Fatalf("WordCount(%q) = %d, want %d", tc.text, got, tc.want)
+			}
+		})
 	}
 }

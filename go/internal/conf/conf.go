@@ -34,6 +34,19 @@ type Config struct {
 		MaxLix   float64 `json:"maxLix"`
 		MinWords int     `json:"minWords"`
 	} `json:"textReadability"`
+	// ProseBudget holds the prose-budget check's hard caps and exempt paths.
+	// Each limit falls back to a built-in default when zero; Exempt entries
+	// (an exact path or a `dir/**` prefix) union with the built-in
+	// CHANGELOG.md exemption.
+	ProseBudget struct {
+		MaxSentenceWords      int      `json:"maxSentenceWords"`
+		MaxParagraphSentences int      `json:"maxParagraphSentences"`
+		MaxSectionParagraphs  int      `json:"maxSectionParagraphs"`
+		MaxListItemWords      int      `json:"maxListItemWords"`
+		MaxListItems          int      `json:"maxListItems"`
+		MaxWords              int      `json:"maxWords"`
+		Exempt                []string `json:"exempt"`
+	} `json:"proseBudget"`
 }
 
 // FileName is the config file the runner reads at the repo root.

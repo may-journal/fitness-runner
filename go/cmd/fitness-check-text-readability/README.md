@@ -7,15 +7,20 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # text-readability
 
-A document-level readability smoke detector for markdown prose. Each `.md` file is scored with the three character-based readability formulas — Coleman-Liau, ARI, and LIX. A file fails only when at least two of the three sit in alarm territory. The bands, the ensemble vote, and the masking rules come from this repo's own corpus in [docs/research/0001-prose-cognitive-complexity.md](../../../docs/research/0001-prose-cognitive-complexity.md). Well-written technical prose here runs grade 11-15 and LIX 40-48. The alarms fire on genuine outliers — a 60-word run-on sentence, notation masquerading as prose — never on ordinary dense technical writing.
+A document-level readability smoke detector for markdown prose. Each `.md` file is scored with the three character-based readability formulas — Coleman-Liau, ARI, and LIX. A file fails only when at least two of the three sit in alarm territory.
+
+The bands, the ensemble vote, and the masking rules come from this repo's own corpus in [docs/research/0001-prose-cognitive-complexity.md](../../../docs/research/0001-prose-cognitive-complexity.md). Well-written technical prose here runs grade 11-15 and LIX 40-48. The alarms fire on genuine outliers — a 60-word run-on sentence, notation masquerading as prose — never on ordinary dense technical writing.
 
 Lower scores are not better. Readability formulas reward chatty filler and punish information density. On this repo's plan documents they rank the preferred style as the harder one. This check is a ceiling on absurdity, not a target to optimize.
 
 ## Behavior
 
 - Whole documents only, never paragraphs: files with fewer than 100 prose words are counted but not judged (below that the formulas are statistically meaningless).
-- Frozen masking spec before scoring: front matter and HTML comments dropped; fenced code, headings, and tables skipped; inline code spans become a placeholder word; link text kept, URLs and version tokens dropped; every block end (heading, list item, blank line) counts as a sentence boundary.
-- The three formulas use only letter, word, and sentence counts — no syllable guessing, no word lists — so the check is deterministic. Scores are implementation-defined; the thresholds are calibrated against this implementation, not the literature.
+- Frozen masking spec before scoring: front matter and HTML comments dropped; fenced code, headings, and tables skipped.
+- Inline code spans become a placeholder word; link text kept, URLs and version tokens dropped.
+- Every block end (heading, list item, blank line) counts as a sentence boundary.
+- The three formulas use only letter, word, and sentence counts — no syllable guessing, no word lists — so the check is deterministic.
+- Scores are implementation-defined; the thresholds are calibrated against this implementation, not the literature.
 - Alarm requires 2 of 3: Coleman-Liau >= 18, ARI >= 18, LIX >= 60 (defaults).
 - `--report` (passthrough arg) prints every file's scores to stderr without changing the verdict.
 

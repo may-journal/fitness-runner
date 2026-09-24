@@ -8,7 +8,9 @@ Flags declared npm dependencies that are behind their latest published version �
 
 ## Behavior
 
-- Queries the npm registry directly over HTTPS (`dist-tags` latest from the abbreviated metadata) for each dependency declared in the root `package.json` and its workspaces — no npm binary involved. Direct declared deps only, since you can only bump what you declare. The registry URL comes from the nearest `.npmrc` `registry=` entry (repo root, then home), defaulting to the public registry.
+- Queries the npm registry directly over HTTPS (`dist-tags` latest from the abbreviated metadata) for each dependency declared in the root `package.json` and its workspaces — no npm binary involved.
+- Direct declared deps only, since you can only bump what you declare.
+- The registry URL comes from the nearest `.npmrc` `registry=` entry (repo root, then home), defaulting to the public registry.
 - Pass: every dependency is at its latest published version.
 - Fail: one or more dependencies are behind — reports `name: current → latest` per dep. A declared-but-uninstalled dep reads as `name: missing → latest`.
 - Internal `@mayjournal/*` workspace packages are skipped (versioned in-repo, not published to the registry).

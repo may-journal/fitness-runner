@@ -4,17 +4,15 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # commit-attribution
 
-Validates that a commit message discloses the AI tooling used to produce it, via two git trailers after the subject line: `AI-Tools:` and `AI-Models:`. Each must be present with a non-empty value on its own line. Opt-in — not in the runner's default list, and unlike the other opt-in checks it is not enabled on this repo itself: every historical commit predates the trailer convention, so turning it on here would fail the whole suite. It is meant for repos that adopt the convention going forward.
+Validates that a commit message discloses the AI tooling used to produce it, via two git trailers after the subject line: `AI-Tools:` and `AI-Models:`. Each must be present with a non-empty value on its own line. Opt-in, and not enabled on this repo itself — every historical commit predates the convention, so it is meant for repos that adopt it going forward.
 
 ## Enable
 
-Add the check name to `checks` in `.fitnessrc.json` at the repo root:
+Add the name to `checks` in `.fitnessrc.json`, then wire it into a commit-msg hook so the proposed message is validated before the commit lands:
 
 ```json
 { "checks": ["commit-attribution"] }
 ```
-
-Wire it into a commit-msg hook so the proposed message is validated before the commit lands:
 
 ```sh
 # .git/hooks/commit-msg
@@ -23,7 +21,7 @@ fitness --check=commit-attribution --message="$(cat "$1")"
 
 ## What passes
 
-Both trailers present, each on its own line with a non-empty value, after the subject:
+Both trailers, each on its own line with a non-empty value, appearing anywhere in the body in any order (other trailers may sit alongside them):
 
 ```
 feat(api): add pagination to the search endpoint
@@ -32,52 +30,45 @@ Support cursor-based paging so large result sets stay fast.
 
 AI-Tools: Claude Code
 AI-Models: Opus 4.8
+Co-Authored-By: A. Dev <a@dev.io>
 ```
-
-The trailers may carry any non-empty value and appear anywhere in the body — order between them does not matter, and other trailers (`Co-Authored-By:`, `Closes:`) can sit alongside them.
 
 ## What fails
 
-A message missing either trailer reports one error per missing trailer. This body has neither:
+One error per missing trailer. This body has neither:
 
 ```
-feat(api): add pagination to the search endpoint
+feat(api): add pagination
 
 Just a body, no attribution.
 ```
-
-produces:
 
 ```
 commit message missing "AI-Models:" trailer
 commit message missing "AI-Tools:" trailer
 ```
 
-A trailer with no value (`AI-Tools:` followed by nothing, or only whitespace) does not count as present — the value after the colon must be non-empty. An empty commit message (no subject) fails with a single guidance error:
-
-```
-No commit message to validate; add "AI-Tools:" and "AI-Models:" trailers to disclose AI usage
-```
+A trailer with an empty value does not count as present. An empty message (no subject) fails with one guidance error naming both trailers.
 
 ## Advanced
 
-Merge and revert commits are exempt (they pass without trailers) because they are not authored content — the subject-line prefix is matched literally:
+Merge and revert commits are exempt — the subject prefix is matched literally:
 
 ```
 Merge branch 'feature' into main    → exempt
 Revert "feat(api): add endpoint"    → exempt
 ```
 
-Trailer detection is per-line via `^<Key>:[ \t]*(\S.*)$` (multiline), so an `AI-Tools:` string that appears mid-sentence in the body prose is not mistaken for a trailer — it must start its own line. Only two keys (`AI-Models`, `AI-Tools`) are required; to change or extend the required set, edit the check and its tests here and keep this README in sync.
+Detection is per-line via `^<Key>:[ \t]*(\S.*)$`, so an `AI-Tools:` mid-sentence is not mistaken for a trailer. To change the required keys, edit the check and its tests here.
 
 ## Behavior
 
-- Declares `--message` as its context-inline argument in its `--describe` metadata. When the runner forwards a proposed message (e.g. from a commit-msg hook), that message is validated; otherwise the check reads the last commit with `git log -1 --pretty=%B`. This mirrors `semantic-commit`'s resolution, so both flow the same proposed message from the same hook wiring.
-- Pass: the message contains both an `AI-Tools:` and an `AI-Models:` trailer, each with a non-empty value — or the subject is a `Merge `/`Revert ` commit.
-- Fail: one error per missing required trailer.
-- Fail (no repo / git error / empty message): returns the empty-message guidance error so hook and explicit `--message` runs get a clear signal.
-- `filesChecked` is always 1 (the single commit message under validation).
+- Declares `--message` as its context-inline argument. The runner forwards a proposed message (e.g. from a commit-msg hook) for validation; otherwise the check reads the last commit via `git log`.
+  - Mirrors `semantic-commit`.
+- Pass: both trailers present with non-empty values, or a `Merge `/`Revert ` subject.
+- Fail: one error per missing trailer; on no repo, git error, or empty message, the empty-message guidance error.
+- `filesChecked` is always 1.
 
 ## Contributing
 
-This README is the canonical description for this check. This check is a self-contained sub-project (the `fitness-check-commit-attribution` binary). To change the required trailers or relax rules, extend the check and tests here and keep the README in sync.
+This README is the canonical description for this check, a self-contained `fitness-check-commit-attribution` binary. To change the rules, extend the check and tests here and keep this README in sync.

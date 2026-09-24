@@ -64,6 +64,8 @@
     "dogfood",
     "cutover",
     "checkkit",
+    "blockquote",
+    "blockquotes",
     "bodycheck",
     "mdtemplate",
     "gitx",
