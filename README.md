@@ -88,7 +88,7 @@ Checks that consume the commit message declare a context-inline argument in thei
 
 ## GitHub Actions
 
-Some checks also run as GitHub Actions workflows, extending the same rules to targets that are not files in the tree — for example validating plan Issues, which no longer live as files. See [.github/workflows/README.md](.github/workflows/README.md).
+Some checks also run as GitHub Actions workflows, extending the same rules to targets that are not files in the tree — for example validating plan Issues and pull request descriptions, which do not live as files. See [.github/workflows/README.md](.github/workflows/README.md).
 
 ## Usage
 
