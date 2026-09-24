@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.24.1517
+
+- Chore: relax the plan approval gate — `AGENTS.md` now accepts any clear approval comment (`I approve this plan`, `Approved`, or a comment containing `approve`), not only the exact phrase.
+- Docs: spell out the accepted approval forms in the Approval gate section so the rule is unambiguous for agents and humans.
+- Docs: align the pending git-hooks plan (issue #63) to enforce the same looser, case-insensitive approval match.
+
 ### 2026.09.24.1456
 
 - Feat: add the `prose-budget` check — a hard-cap brevity linter for markdown prose. Masking out front matter, fenced code, tables, and headings, it enforces six limits: words per sentence, sentences per paragraph, paragraphs per section, words per list item, items per list, and total prose words per file, each overridable in `.fitnessrc.json`.

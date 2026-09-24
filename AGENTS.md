@@ -13,7 +13,7 @@ Plans live as GitHub Issues under the `Plan` label, not as files in the repo. Ea
 
 ## Approval gate
 
-An agent may work an Issue as it sees fit — implement it, branch, commit, and push — once a human has commented `I approve this plan` on that Issue. Until that comment exists, do not start the work. Refine the Issue description instead, then wait for approval.
+An agent may work an Issue as it sees fit — implement it, branch, commit, and push — once a human has approved it in a comment. Any clear approval counts: `I approve this plan`, `Approved`, or a comment containing `approve`. Until such a comment exists, do not start the work. Refine the Issue description instead, then wait for approval.
 
 ## Once approved
 
