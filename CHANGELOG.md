@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.24.1456
+
+- Feat: add the `prose-budget` check — a hard-cap brevity linter for markdown prose. Masking out front matter, fenced code, tables, and headings, it enforces six limits: words per sentence, sentences per paragraph, paragraphs per section, words per list item, items per list, and total prose words per file, each overridable in `.fitnessrc.json`.
+- Refactor: move the prose extraction, word count, sentence splitter, and inline masking into `go/internal/mdx` (`Prose`, `WordCount`, `Sentences`, `MaskInline`, `StripFrontMatter`); `text-readability` now builds on them with no change in behavior.
+- Chore: enable `prose-budget` on this repo with only the built-in `CHANGELOG.md` exemption, holding every markdown file to the budget.
+- Docs: split the top-level README and the prose-cognitive-complexity research essay into focused sub-docs under `docs/`, and tighten wordy sentences and list items across the check READMEs, so the whole tree conforms.
+
 ### 2026.09.24.0000
 
 - Feat: add the `pr-structure` check — validates a pull request description against the PR template (a blockquote summary, `## Background`, and `## Changelog` with at least one bullet, and no other sections), reading the body from stdin, `--body-file`, or the context-inline `--body`, and passing inert with no input.

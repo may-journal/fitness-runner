@@ -4,9 +4,9 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # pr-structure
 
-Validates that a pull request description follows the [PR template](../../../.github/PULL_REQUEST_TEMPLATE.md): a one-line blockquote summary, a `## Background` section, and a `## Changelog` section with at least one bullet, and no other `##` sections. The "what changed" lives in the diff, so the description carries only the why and the changelog.
+Validates that a pull request description follows the [PR template](../../../.github/PULL_REQUEST_TEMPLATE.md). Required: a one-line blockquote summary, a `## Background` section, a `## Changelog` section with at least one bullet, and no other `##` sections. The "what changed" lives in the diff, so the description carries only the why and the changelog.
 
-A PR description is not a file in the tree, so this check reads its target from stdin (or a `--body-file` path, `-` meaning stdin), falling back to the runner's context-inline `--body` value. With no input at all it passes with zero files checked, so the file runner never trips on it. It is driven by the [pr-check workflow](../../../.github/workflows/README.md), not the local suite.
+A PR description is not a file in the tree, so this check reads its target from stdin (or a `--body-file` path, `-` meaning stdin). It falls back to the runner's context-inline `--body` value. With no input at all it passes with zero files checked, so the file runner never trips on it. It is driven by the [pr-check workflow](../../../.github/workflows/README.md), not the local suite.
 
 ## Behavior
 

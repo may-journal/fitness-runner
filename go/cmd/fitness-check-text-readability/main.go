@@ -15,11 +15,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -38,24 +38,6 @@ type thresholds struct {
 	maxGrade float64
 	maxLix   float64
 	minWords int
-}
-
-var (
-	htmlCommentRe   = regexp.MustCompile(`(?s)<!--.*?-->`)
-	listItemRe      = regexp.MustCompile(`^(?:[-*+]|\d+\.)\s+(.*)$`)
-	checkboxRe      = regexp.MustCompile(`^\[[xX ]\]\s*`)
-	codeSpanRe      = regexp.MustCompile("`[^`]+`")
-	linkRe          = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
-	urlRe           = regexp.MustCompile(`https?://\S+`)
-	versionRe       = regexp.MustCompile(`\bv?\d+(?:\.\d+)+\b`)
-	terminalRe      = regexp.MustCompile(`[.!?:;]$`)
-	sentenceSplitRe = regexp.MustCompile(`[.!?]+(?:\s+|$)`)
-)
-
-// abbrevPairs neutralize the common mid-sentence periods before splitting.
-var abbrevPairs = [][2]string{
-	{"e.g.", "eg"}, {"E.g.", "eg"}, {"i.e.", "ie"}, {"I.e.", "ie"},
-	{"etc.", "etc"}, {"vs.", "vs"}, {"cf.", "cf"},
 }
 
 func main() {
@@ -131,7 +113,7 @@ func judgeFile(root, rel string, th thresholds, report bool) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("%s: %v", rel, err)}
 	}
-	c := measure(prose(string(raw)))
+	c := measure(mdx.Prose(string(raw)))
 	if report {
 		printScore(rel, c, th)
 	}
@@ -202,7 +184,7 @@ func formulas(c counts) (cli, ari, lix float64) {
 func measure(text string) counts {
 	var c counts
 	for _, tok := range strings.Fields(text) {
-		n := alnumLen(tok)
+		n := mdx.AlnumLen(tok)
 		if n == 0 {
 			continue
 		}
@@ -216,141 +198,11 @@ func measure(text string) counts {
 	return c
 }
 
-// alnumLen counts the alphanumeric characters in one token.
-func alnumLen(tok string) int {
-	n := 0
-	for _, r := range tok {
-		if isAlnum(r) {
-			n++
-		}
-	}
-	return n
-}
-
-// isAlnum reports whether r is an ASCII letter or digit.
-func isAlnum(r rune) bool {
-	return isASCIILetter(r) || (r >= '0' && r <= '9')
-}
-
-// isASCIILetter reports whether r is an ASCII letter, either case.
-func isASCIILetter(r rune) bool {
-	lower := r | 0x20
-	return lower >= 'a' && lower <= 'z'
-}
-
-// sentenceCount counts sentences after abbreviation protection; a text with
-// no boundary still counts as one sentence.
+// sentenceCount counts sentences via the shared splitter; a text with no
+// boundary still counts as one sentence.
 func sentenceCount(text string) int {
-	text = protect(text)
-	n := 0
-	for _, part := range sentenceSplitRe.Split(text, -1) {
-		if strings.IndexFunc(part, isAlnum) >= 0 {
-			n++
-		}
+	if n := len(mdx.Sentences(text)); n > 0 {
+		return n
 	}
-	if n == 0 {
-		return 1
-	}
-	return n
-}
-
-// protect rewrites known abbreviations so their periods stop looking like
-// sentence boundaries.
-func protect(text string) string {
-	for _, p := range abbrevPairs {
-		text = strings.ReplaceAll(text, p[0], p[1])
-	}
-	return text
-}
-
-// prose extracts scoreable prose from raw markdown under the frozen masking
-// spec: HTML comments and front matter dropped; fenced code, headings, and
-// tables skipped; every block end becomes a sentence boundary; inline code
-// spans become a placeholder word; links keep their text; URLs and version
-// tokens are dropped.
-func prose(content string) string {
-	content = htmlCommentRe.ReplaceAllString(content, " ")
-	lines := stripFrontMatter(strings.Split(content, "\n"))
-	e := &extractor{}
-	for _, ln := range lines {
-		e.line(ln)
-	}
-	e.flush()
-	return maskInline(strings.Join(e.units, " "))
-}
-
-// stripFrontMatter drops a leading --- front matter block, if present.
-func stripFrontMatter(lines []string) []string {
-	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
-		return lines
-	}
-	for i := 1; i < len(lines); i++ {
-		if strings.TrimSpace(lines[i]) == "---" {
-			return lines[i+1:]
-		}
-	}
-	return lines
-}
-
-// maskInline applies the inline masks to extracted prose.
-func maskInline(s string) string {
-	s = codeSpanRe.ReplaceAllString(s, "code")
-	s = linkRe.ReplaceAllString(s, "$1")
-	s = urlRe.ReplaceAllString(s, " ")
-	s = versionRe.ReplaceAllString(s, " ")
-	return s
-}
-
-// extractor folds markdown lines into prose units; each finished unit gets
-// terminal punctuation so block ends read as sentence boundaries.
-type extractor struct {
-	units   []string
-	buf     []string
-	inFence bool
-}
-
-// line consumes one raw markdown line.
-func (e *extractor) line(ln string) {
-	t := strings.TrimSpace(ln)
-	if strings.HasPrefix(t, "```") {
-		e.inFence = !e.inFence
-		e.flush()
-		return
-	}
-	if e.inFence || isBreak(t, ln) {
-		e.flush()
-		return
-	}
-	e.consume(t)
-}
-
-// isBreak reports whether the line ends the current prose unit without
-// contributing text: blank lines, table rows, and headings.
-func isBreak(trimmed, orig string) bool {
-	return trimmed == "" || strings.HasPrefix(trimmed, "|") || strings.HasPrefix(orig, "#")
-}
-
-// consume adds one content line to the current unit; a new list item first
-// closes the previous unit, and blockquote/checkbox markers are stripped.
-func (e *extractor) consume(t string) {
-	if m := listItemRe.FindStringSubmatch(t); m != nil {
-		e.flush()
-		t = m[1]
-	}
-	t = strings.TrimPrefix(t, "> ")
-	t = checkboxRe.ReplaceAllString(t, "")
-	e.buf = append(e.buf, t)
-}
-
-// flush closes the current unit, adding terminal punctuation when missing.
-func (e *extractor) flush() {
-	joined := strings.TrimSpace(strings.Join(e.buf, " "))
-	e.buf = nil
-	if joined == "" {
-		return
-	}
-	if !terminalRe.MatchString(joined) {
-		joined += "."
-	}
-	e.units = append(e.units, joined)
+	return 1
 }

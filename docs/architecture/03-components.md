@@ -93,13 +93,15 @@ Numbers on nodes and arrows match the callout table.
 
 `go/cmd/fitness` produces an ordered spec list, then resolves each entry to a binary:
 
-1. `.fitnessrc.json` with `checks` — use that list (order preserved). Name specs resolve to `fitness-check-<name>` beside the runner, then on PATH; unknown names are skipped silently. Path specs (entries containing a separator) resolve relative to the repo root and fail the run when missing or not executable.
+1. `.fitnessrc.json` with `checks` — use that list (order preserved).
+   - Name specs resolve to `fitness-check-<name>` beside the runner, then on PATH; unknown names are skipped silently.
+   - Path specs (entries containing a separator) resolve relative to the repo root and fail the run when missing or not executable.
 2. No `checks` — the runner's embedded default list; a missing binary for a default name fails the run.
 3. `disabledChecks` — remove matching name specs from step 1 or 2. Path specs are unchanged (opt-in only).
 
 Dedupe is first-occurrence-wins by resolved check name; a path check's name comes from its `--describe` metadata, else its basename.
 
-Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint`, or `fitness --check=./my-check`. Passthrough args after the spec reach the check; a check whose `--describe` declares a context-inline argument (the commit checks declare `--message`) has that value extracted into the environment and stripped from passthrough.
+Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint`, or `fitness --check=./my-check`. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument (the commit checks declare `--message`) has that value extracted into the environment and stripped from passthrough.
 
 ## Run context (environment)
 

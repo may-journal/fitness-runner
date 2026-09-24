@@ -158,3 +158,175 @@ func blankFenced(content string) []string {
 	}
 	return lines
 }
+
+// --- Prose extraction ---
+//
+// Prose and WordCount reduce a markdown document to its prose and
+// count its words under one frozen masking spec, shared by the readability
+// smoke detector (text-readability) and the volume budget (prose-budget).
+
+var (
+	htmlCommentRe   = regexp.MustCompile(`(?s)<!--.*?-->`)
+	listItemRe      = regexp.MustCompile(`^(?:[-*+]|\d+\.)\s+(.*)$`)
+	checkboxRe      = regexp.MustCompile(`^\[[xX ]\]\s*`)
+	codeSpanRe      = regexp.MustCompile("`[^`]+`")
+	linkRe          = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+	urlRe           = regexp.MustCompile(`https?://\S+`)
+	versionRe       = regexp.MustCompile(`\bv?\d+(?:\.\d+)+\b`)
+	terminalRe      = regexp.MustCompile(`[.!?:;]$`)
+	sentenceSplitRe = regexp.MustCompile(`[.!?]+(?:\s+|$)`)
+)
+
+// abbrevPairs neutralize common mid-sentence periods before splitting.
+var abbrevPairs = [][2]string{
+	{"e.g.", "eg"}, {"E.g.", "eg"}, {"i.e.", "ie"}, {"I.e.", "ie"},
+	{"etc.", "etc"}, {"vs.", "vs"}, {"cf.", "cf"},
+}
+
+// Sentences splits text into its sentences after abbreviation protection,
+// dropping parts with no alphanumeric content. Feed it Prose output (or one
+// masked paragraph); a text with no boundary yields one sentence.
+func Sentences(text string) []string {
+	text = protectAbbrev(text)
+	var out []string
+	for _, part := range sentenceSplitRe.Split(text, -1) {
+		if strings.IndexFunc(part, IsAlnum) >= 0 {
+			out = append(out, strings.TrimSpace(part))
+		}
+	}
+	return out
+}
+
+// protectAbbrev rewrites known abbreviations so their periods stop looking
+// like sentence boundaries.
+func protectAbbrev(text string) string {
+	for _, p := range abbrevPairs {
+		text = strings.ReplaceAll(text, p[0], p[1])
+	}
+	return text
+}
+
+// Prose extracts the prose from raw markdown under the frozen masking
+// spec: HTML comments and front matter dropped; fenced code, headings, and
+// tables skipped; every block end becomes a sentence boundary; inline code
+// spans become a placeholder word; links keep their text; URLs and version
+// tokens are dropped.
+func Prose(content string) string {
+	content = htmlCommentRe.ReplaceAllString(content, " ")
+	e := &proseExtractor{}
+	for _, ln := range strings.Split(StripFrontMatter(content), "\n") {
+		e.line(ln)
+	}
+	e.flush()
+	return MaskInline(strings.Join(e.units, " "))
+}
+
+// StripFrontMatter returns content with a leading --- front matter block
+// removed, if present.
+func StripFrontMatter(content string) string {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return content
+	}
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			return strings.Join(lines[i+1:], "\n")
+		}
+	}
+	return content
+}
+
+// WordCount returns the number of prose words in text: whitespace-separated
+// tokens carrying at least one alphanumeric character. Pair it with Prose to
+// count the words in a markdown document.
+func WordCount(text string) int {
+	n := 0
+	for _, tok := range strings.Fields(text) {
+		if AlnumLen(tok) > 0 {
+			n++
+		}
+	}
+	return n
+}
+
+// AlnumLen counts the ASCII alphanumeric characters in one token.
+func AlnumLen(tok string) int {
+	n := 0
+	for _, r := range tok {
+		if IsAlnum(r) {
+			n++
+		}
+	}
+	return n
+}
+
+// IsAlnum reports whether r is an ASCII letter or digit.
+func IsAlnum(r rune) bool {
+	lower := r | 0x20
+	return (lower >= 'a' && lower <= 'z') || (r >= '0' && r <= '9')
+}
+
+// MaskInline applies the inline masks to prose: inline code spans become a
+// short placeholder word, links keep their text, and URLs and version tokens
+// are dropped. Apply it to one paragraph or list item before counting words.
+func MaskInline(s string) string {
+	s = codeSpanRe.ReplaceAllString(s, "code")
+	s = linkRe.ReplaceAllString(s, "$1")
+	s = urlRe.ReplaceAllString(s, " ")
+	s = versionRe.ReplaceAllString(s, " ")
+	return s
+}
+
+// proseExtractor folds markdown lines into prose units; each finished unit
+// gets terminal punctuation so block ends read as sentence boundaries.
+type proseExtractor struct {
+	units   []string
+	buf     []string
+	inFence bool
+}
+
+// line consumes one raw markdown line.
+func (e *proseExtractor) line(ln string) {
+	t := strings.TrimSpace(ln)
+	if strings.HasPrefix(t, "```") {
+		e.inFence = !e.inFence
+		e.flush()
+		return
+	}
+	if e.inFence || isProseBreak(t, ln) {
+		e.flush()
+		return
+	}
+	e.consume(t)
+}
+
+// isProseBreak reports whether the line ends the current prose unit without
+// contributing text: blank lines, table rows, and headings.
+func isProseBreak(trimmed, orig string) bool {
+	return trimmed == "" || strings.HasPrefix(trimmed, "|") || strings.HasPrefix(orig, "#")
+}
+
+// consume adds one content line to the current unit; a new list item first
+// closes the previous unit, and blockquote/checkbox markers are stripped.
+func (e *proseExtractor) consume(t string) {
+	if m := listItemRe.FindStringSubmatch(t); m != nil {
+		e.flush()
+		t = m[1]
+	}
+	t = strings.TrimPrefix(t, "> ")
+	t = checkboxRe.ReplaceAllString(t, "")
+	e.buf = append(e.buf, t)
+}
+
+// flush closes the current unit, adding terminal punctuation when missing.
+func (e *proseExtractor) flush() {
+	joined := strings.TrimSpace(strings.Join(e.buf, " "))
+	e.buf = nil
+	if joined == "" {
+		return
+	}
+	if !terminalRe.MatchString(joined) {
+		joined += "."
+	}
+	e.units = append(e.units, joined)
+}
