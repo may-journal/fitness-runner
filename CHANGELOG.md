@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.25.1458
+
+- Feat: add the `pr-closes-issue` check — every PR must close at least one issue on merge with a GitHub closing keyword (`close`/`fix`/`resolve` and their tenses), so merged work never leaves its issue open.
+- Feat: fail a PR that only references issues (`addresses`, `part of`, a bare `#NN`) or names none, with no chore or docs exemption; also fail any `Implements #NN` (or `Plan #NN`) the body does not close.
+- Test: cover each closing verb and tense, references-only, no-issue, implements-without-closure, multiple implemented with one unclosed, and a plan line with and without a closure.
+- Docs: wire the check into `.github/workflows/pr-check.yml` beside `pr-structure`, add its README, and list it in `docs/checks.md`.
+
 ### 2026.09.25.1434
 
 - Feat: add the `mermaid-diagram-table-gap` check — it flags loose markdown prose between a numbered mermaid diagram (or its legend) and the callout table that follows, keeping the table the single home for detail.
