@@ -1,8 +1,9 @@
 // Package mermaid parses the mermaid diagrams and numbered callout tables
 // out of a markdown document — the Go port of the TypeScript shared
-// mermaid.ts plus its runMermaidDocCheck.ts driver. The five mermaid checks
+// mermaid.ts plus its runMermaidDocCheck.ts driver. The six mermaid checks
 // (mermaid-callouts, mermaid-callout-why, mermaid-diagram-prose,
-// mermaid-legend, mermaid-level-bleed) build on this API:
+// mermaid-diagram-table-gap, mermaid-legend, mermaid-level-bleed) build on
+// this API:
 //
 //   - ParseDoc returns the document's blocks in order: *DiagramBlock (a
 //     ```mermaid fenced block) and *CalloutTableBlock (a GFM table whose
