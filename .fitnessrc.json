@@ -21,7 +21,9 @@
     "repeated-string-literals",
     "go-complexity",
     "text-readability",
-    "prose-budget"
+    "prose-budget",
+    "no-plans-dir",
+    "plan-trailer"
   ],
   "disabledChecks": [
     "eslint",

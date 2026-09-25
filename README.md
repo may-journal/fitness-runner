@@ -57,11 +57,15 @@ go/bin/fitness prettier --write .   # passthrough args reach the check
 
 ## Git hooks
 
-Checks run automatically on `git commit`. This repo's hooks live under [githooks/](githooks/): pre-commit runs the full suite, and commit-msg validates the message through the `semantic-commit` check:
+Checks run automatically on `git` operations. This repo's hooks live under [githooks/](githooks/). Point Git at them once:
 
 ```bash
-go/bin/fitness --check=semantic-commit --message="$(cat "$1")"
+git config core.hooksPath githooks
 ```
+
+- pre-commit: builds, runs `make check`, restamps a staged `CHANGELOG` entry, then runs the full suite — including `no-plans-dir`, which blocks a `docs/plans/` file from creeping back.
+- commit-msg: validates the message through `semantic-commit` and the optional `Plan #NN` trailer through `plan-trailer`.
+- pre-push: blocks the push unless the pushed commits trace to an approved `Plan` Issue, resolved via `gh`. Chore and docs-only pushes are exempt.
 
 ## GitHub Actions
 

@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.24.1558
+
+- Feat: add the `no-plans-dir` check — fails when any file exists under `docs/plans/`, guarding the plans-to-Issues migration; it is in the suite, so pre-commit catches a stray plan file.
+- Feat: add the `plan-trailer` check — validates an optional `Plan #NN` commit trailer (a plan reference, if present, must read exactly `Plan #<number>`); the commit-msg hook runs it beside `semantic-commit`.
+- Feat: add a `pre-push` git hook that blocks a push unless the pushed commits trace to an approved `Plan` Issue (resolved via `gh`), with a chore and docs-only escape hatch.
+- Docs: document the hook set in the README Git hooks section and `AGENTS.md`, and add the two checks to the catalog.
+
 ### 2026.09.24.1517
 
 - Chore: relax the plan approval gate — `AGENTS.md` now accepts any clear approval comment (`I approve this plan`, `Approved`, or a comment containing `approve`), not only the exact phrase.
