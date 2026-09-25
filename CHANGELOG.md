@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.25.1434
+
+- Feat: add the `mermaid-diagram-table-gap` check — it flags loose markdown prose between a numbered mermaid diagram (or its legend) and the callout table that follows, keeping the table the single home for detail.
+- Feat: allow the one caption line (opens with `Numbers`, states they `match the callout table`) and leave prose before the diagram or after the table alone, so only the diagram-to-table gap is policed.
+- Test: cover prose after the diagram and after the legend, the caption-only case, varied and trailing-clause captions, prose before the diagram, and trailing prose after the table.
+- Docs: add the check README, bump the mermaid family count in `docs/checks.md` and the `internal/mermaid` package doc, and enable the check in this repo's `.fitnessrc.json`.
+
 ### 2026.09.24.1558
 
 - Feat: add the `no-plans-dir` check — fails when any file exists under `docs/plans/`, guarding the plans-to-Issues migration; it is in the suite, so pre-commit catches a stray plan file.
