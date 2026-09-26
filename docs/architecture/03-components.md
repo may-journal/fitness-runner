@@ -113,3 +113,9 @@ Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint
 | `FITNESS_CTX_MESSAGE`    | `--message` value for context-inline checks |
 
 Built by the runner before dispatch — not a separate registry.
+
+## Body mode
+
+Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `plan-check` and `pr-check` workflows use this to lint Issue and PR descriptions.
+
+An explicit `--body-file` is the only trigger, so a normal file-walking run is never affected. The prose, markdown, and mermaid checks opt in; a cross-file check like `mermaid-level-bleed` does not.

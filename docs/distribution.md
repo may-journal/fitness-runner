@@ -4,7 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 # Distribution
 
-Every channel delivers the same static binaries: the runner, the changelog stamper, and all 31 checks.
+Every channel delivers the same static binaries: the runner, the changelog stamper, and every check.
 
 1. `go install` — compiles from source via the public Go module proxy. No artifacts involved, and every published version is cached immutably.
 2. GitHub Releases — per-platform tarballs with a checksums file, built and uploaded by CI on every version tag.
