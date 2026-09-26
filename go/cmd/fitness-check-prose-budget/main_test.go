@@ -93,6 +93,33 @@ func TestRunExemptsChangelogOnly(t *testing.T) {
 	}
 }
 
+func TestRunBodyMode(t *testing.T) {
+	dir := t.TempDir()
+	over := filepath.Join(dir, "over.md")
+	if err := os.WriteFile(over, []byte("## H\n\n"+strings.Repeat("word ", 30)+"end.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := run(dir, []string{"--body-file", over})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("over-budget description must fail one file: %+v", res)
+	}
+
+	clean := filepath.Join(dir, "clean.md")
+	if err := os.WriteFile(clean, []byte("## H\n\nShort and clean prose.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err = run(dir, []string{"--body-file", clean})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("clean description must pass one file: %+v", res)
+	}
+}
+
 func write(t *testing.T, dir, name, content string) {
 	t.Helper()
 	full := filepath.Join(dir, filepath.FromSlash(name))

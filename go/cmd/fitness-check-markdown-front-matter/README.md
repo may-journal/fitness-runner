@@ -9,7 +9,7 @@ Validates that `.md` files with front matter declare `fitnessFunctions` or `rela
 
 ## Behavior
 
-- Pass: Every `.md` file either has no front matter, or has front matter with at least one of `fitnessFunctions` or `relatedConfigurations`, and all referenced paths exist.
+- Pass: A `.md` file has no front matter, or has front matter with `fitnessFunctions` or `relatedConfigurations` and all referenced paths exist.
 - Fail: Missing front matter with those keys → `missing front matter with fitnessFunctions or relatedConfigurations`.
 - Fail: Empty array → `fitnessFunctions`/`relatedConfigurations` must not be an empty array.
 - Fail: Path doesn't exist or escapes repo → `front matter path missing: …` or `front matter path escapes repo: …`.

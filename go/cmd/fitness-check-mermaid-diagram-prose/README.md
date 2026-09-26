@@ -15,7 +15,7 @@ Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
 
 ## Behavior
 
-When a diagram is paired with a callout table, flags relationship/edge labels that carry prose beyond a callout number (e.g. `"6 Uses"` instead of `"6"`). Descriptions belong in the table, not the diagram.
+When a diagram is paired with a callout table, flags relationship/edge labels with prose beyond a callout number (e.g. `"6 Uses"` instead of `"6"`). Descriptions belong in the table, not the diagram.
 
 Runs on every `.md` file with a mermaid diagram or callout table; files with
 neither are skipped and don't count toward `filesChecked`.

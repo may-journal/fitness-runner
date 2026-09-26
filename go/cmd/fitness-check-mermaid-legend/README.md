@@ -15,7 +15,7 @@ Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
 
 ## Behavior
 
-Requires every numbered flowchart callout node to carry a `:::class` style assignment, and flags callout nodes with no styling — so callouts render consistently and are legible in a legend.
+Requires every numbered flowchart callout node to carry a `:::class` style assignment, and flags nodes with no styling. Consistent styling keeps callouts legible in a legend.
 
 Runs on every `.md` file with a mermaid diagram or callout table; files with
 neither are skipped and don't count toward `filesChecked`.

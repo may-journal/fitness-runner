@@ -10,7 +10,7 @@ Supersedes [0001](./0001-fix-the-work-not-the-limit.md), decision 4 and conseque
 
 ## Context
 
-0001 assumed two code paths ran the same lint analysis — an in-process check and a `fitness-shared lint` CLI — sharing one config so a change landed once. The Go rewrite removed that split: every check now ships as a single static binary (`fitness-check-<name>`) with no separate CLI path.
+0001 assumed two code paths ran the same lint analysis — an in-process check and a `fitness-shared lint` CLI. They shared one config, so a change landed once. The Go rewrite removed that split: every check now ships as a single static binary (`fitness-check-<name>`) with no separate CLI path.
 
 ## Decision
 
@@ -18,4 +18,4 @@ There is one lint path, not two. The eslint check's config is owned by that one 
 
 ## Consequences
 
-The lint config is still a single point of change, but only one path consumes it, so there is no cross-path drift left to guard against.
+The lint config is still a single point of change, but only one path consumes it. No cross-path drift is left to guard against.

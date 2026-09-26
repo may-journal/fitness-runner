@@ -82,6 +82,32 @@ func TestJSONStringifyQuoting(t *testing.T) {
 	}
 }
 
+func TestRunBodyMode(t *testing.T) {
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "bad-body.md")
+	if err := os.WriteFile(bad, []byte("Hello **world** here."), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := run(t.TempDir(), []string{"--body-file", bad})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok {
+		t.Fatalf("bold description must fail: %+v", res)
+	}
+	good := filepath.Join(dir, "good-body.md")
+	if err := os.WriteFile(good, []byte("# Title\n\nPlain text and code `*not*`.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err = run(t.TempDir(), []string{"--body-file", good})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("clean description must pass one file: %+v", res)
+	}
+}
+
 func TestRun(t *testing.T) {
 	cases := []struct {
 		name       string

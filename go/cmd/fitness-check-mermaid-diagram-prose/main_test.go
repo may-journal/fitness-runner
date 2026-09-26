@@ -169,3 +169,31 @@ func TestRunCountsOnlyFilesWithBlocks(t *testing.T) {
 		t.Fatalf("errors = %#v", res.Errors)
 	}
 }
+
+// TestRunBodyMode validates a single supplied description document instead of
+// walking files.
+func TestRunBodyMode(t *testing.T) {
+	badPath := filepath.Join(t.TempDir(), "body.md")
+	if err := os.WriteFile(badPath, []byte(doc(`Rel(app, api, "6 Uses over HTTP")`)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := run(t.TempDir(), []string{"--body-file", badPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok {
+		t.Fatalf("expected body-mode failure, got %+v", res)
+	}
+
+	goodPath := filepath.Join(t.TempDir(), "clean.md")
+	if err := os.WriteFile(goodPath, []byte(doc(`Rel(app, api, "6")`)), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err = run(t.TempDir(), []string{"--body-file", goodPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", res)
+	}
+}

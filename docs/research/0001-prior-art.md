@@ -9,11 +9,15 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Vale
 
-Vale (Go, markdown-aware) is the direct precedent. Its readability style ships seven document-level metric rules as editable YAML conditions. The thresholds are Flesch-Kincaid > 8, Reading Ease < 70, Fog > 10, SMOG > 10, LIX > 35, ARI > 8, and Coleman-Liau > 9. Code fences and inline code are excluded by scope before scoring. Alerts are document-level, which makes poor PR annotations.
+Vale (Go, markdown-aware) is the direct precedent. Its readability style ships seven document-level metric rules as editable YAML conditions. The thresholds are Flesch-Kincaid > 8, Reading Ease < 70, Fog > 10, SMOG > 10, LIX > 35, ARI > 8, and Coleman-Liau > 9.
+
+Code fences and inline code are excluded by scope before scoring. Alerts are document-level, which makes poor PR annotations.
 
 ## Hemingway Editor
 
-Hemingway is exactly this: ARI for the grade badge, plus per-sentence flags only for sentences of 14+ words. Adverbs are `-ly` minus a whitelist. Passive is a be-verb plus participle. Complex phrases come from a substitution dictionary. Each detector is budgeted per 100 words, with no parsing and no ML.
+Hemingway is exactly this: ARI for the grade badge, plus per-sentence flags only for sentences of 14+ words. Adverbs are `-ly` minus a whitelist. Passive is a be-verb plus participle.
+
+Complex phrases come from a substitution dictionary. Each detector is budgeted per 100 words, with no parsing and no ML.
 
 Its entire mechanism is reproducible in a fitness check.
 

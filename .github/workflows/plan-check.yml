@@ -19,19 +19,60 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - name: Build the plan-structure check
-        run: cd go && go build -o bin/fitness-check-plan-structure ./cmd/fitness-check-plan-structure
+      - name: Build the checks
+        run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       - name: Validate plan issue(s) and comment once per body version
         uses: actions/github-script@v7
         env:
-          CHECK_BIN: ${{ github.workspace }}/go/bin/fitness-check-plan-structure
+          BIN_DIR: ${{ github.workspace }}/go/bin
+          WORKSPACE: ${{ github.workspace }}
         with:
           script: |
             const { execFileSync } = require('node:child_process');
             const crypto = require('node:crypto');
-            const bin = process.env.CHECK_BIN;
+            const fs = require('node:fs');
+            const os = require('node:os');
+            const path = require('node:path');
+            const binDir = process.env.BIN_DIR;
+            const workspace = process.env.WORKSPACE;
             const { owner, repo } = context.repo;
             const marker = (hash) => `<!-- fitness:plan-structure:${hash} -->`;
+
+            // The structure check reads the body on stdin; the prose/markdown
+            // doc checks read it via --body-file with --root at the checkout so
+            // their config (cspell wordlists, prose-budget limits) resolves.
+            const structureBin = 'fitness-check-plan-structure';
+            const docBins = [
+              'fitness-check-prose-budget',
+              'fitness-check-text-readability',
+              'fitness-check-markdown-no-bold-italic',
+              'fitness-check-mermaid-callouts',
+              'fitness-check-mermaid-callout-why',
+              'fitness-check-mermaid-diagram-prose',
+              'fitness-check-mermaid-diagram-table-gap',
+              'fitness-check-mermaid-legend',
+              'fitness-check-cspell',
+            ];
+
+            function runCheck(bin, args, input) {
+              try {
+                return JSON.parse(execFileSync(path.join(binDir, bin), args, { input, encoding: 'utf8' }));
+              } catch (e) {
+                // A validation failure exits non-zero but still prints the JSON result.
+                if (e.stdout) return JSON.parse(e.stdout);
+                throw e;
+              }
+            }
+
+            function validate(number, body) {
+              const errors = [...runCheck(structureBin, [], body).errors];
+              const tmp = path.join(os.tmpdir(), `desc-${number}.md`);
+              fs.writeFileSync(tmp, body);
+              for (const bin of docBins) {
+                errors.push(...runCheck(bin, ['--root', workspace, '--body-file', tmp], undefined).errors);
+              }
+              return errors;
+            }
 
             async function targets() {
               if (context.eventName === 'workflow_dispatch') {
@@ -46,16 +87,6 @@ jobs:
               return [{ number: i.number, body: i.body || '' }];
             }
 
-            function validate(body) {
-              try {
-                return JSON.parse(execFileSync(bin, [], { input: body, encoding: 'utf8' }));
-              } catch (e) {
-                // A validation failure exits non-zero but still prints the JSON result.
-                if (e.stdout) return JSON.parse(e.stdout);
-                throw e;
-              }
-            }
-
             let failed = false;
             for (const t of await targets()) {
               const hash = crypto.createHash('sha256').update(t.body).digest('hex').slice(0, 12);
@@ -65,18 +96,18 @@ jobs:
               });
               const alreadyCommented = comments.some((c) => (c.body || '').includes(mark));
 
-              const res = validate(t.body);
-              if (!res.ok) failed = true;
+              const errors = validate(t.number, t.body);
+              if (errors.length > 0) failed = true;
               if (alreadyCommented) continue;
 
-              const heading = res.ok
-                ? '✅ Plan structure looks good.'
-                : '❌ Plan structure needs work:';
-              const list = res.ok ? '' : '\n' + res.errors.map((e) => `- ${e}`).join('\n');
+              const heading = errors.length === 0
+                ? '✅ Plan looks good.'
+                : '❌ Plan needs work:';
+              const list = errors.length === 0 ? '' : '\n' + errors.map((e) => `- ${e}`).join('\n');
               await github.rest.issues.createComment({
                 owner, repo, issue_number: t.number,
                 body: `${heading}${list}\n\n${mark}`,
               });
             }
 
-            if (failed) core.setFailed('One or more plan issues have structure violations.');
+            if (failed) core.setFailed('One or more plan issues have violations.');

@@ -48,18 +48,18 @@ src/legacy.ts:6: eslint-disable
 
 ## Advanced
 
-Detection is a plain line scan (grep-like), so the directive text is flagged even when it appears inside a string or an unrelated comment:
+Detection is a plain line scan (grep-like), so the directive text is flagged even inside a string or unrelated comment:
 
 ```ts
 // Flagged, even though it only describes the directive:
 const hint = 'prefix a line with eslint-disable-next-line to skip a rule';
 ```
 
-Reword the rare case rather than suppressing it. Scanned extensions are `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, and test/spec files are included — the policy is zero-config and strict, with no allowlist.
+Reword the rare case rather than suppressing it. Scanned extensions are `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, and test/spec files are included. The policy is zero-config and strict, with no allowlist.
 
 ## Behavior
 
-- Walks the repo for files with each extension, combining and de-duplicating the results; standard skip dirs (`node_modules`, `dist`, `coverage`, `.git`, and the other runner skip dirs) are excluded.
+- Walks the repo for files with each extension, combining and de-duplicating results; standard skip dirs (`node_modules`, `dist`, `coverage`, `.git`, and others) are excluded.
 - Matches `eslint-disable(-next-line|-line)?` — file-level `eslint-disable`, block `eslint-disable ... eslint-enable`, `eslint-disable-line`, and `eslint-disable-next-line`.
 - Pass: no scanned file contains a directive.
 - Fail: `path/to/file.ts:42: <directive>` per hit.

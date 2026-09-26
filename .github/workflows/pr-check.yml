@@ -17,19 +17,62 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - name: Build the PR checks
-        run: cd go && mkdir -p bin && go build -o bin ./cmd/fitness-check-pr-structure ./cmd/fitness-check-pr-closes-issue
+      - name: Build the checks
+        run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       - name: Validate PR description(s) and fail the run on violations
         uses: actions/github-script@v7
         env:
-          CHECK_BINS: |
-            ${{ github.workspace }}/go/bin/fitness-check-pr-structure
-            ${{ github.workspace }}/go/bin/fitness-check-pr-closes-issue
+          BIN_DIR: ${{ github.workspace }}/go/bin
+          WORKSPACE: ${{ github.workspace }}
         with:
           script: |
             const { execFileSync } = require('node:child_process');
-            const bins = process.env.CHECK_BINS.split('\n').map((s) => s.trim()).filter(Boolean);
+            const fs = require('node:fs');
+            const os = require('node:os');
+            const path = require('node:path');
+            const binDir = process.env.BIN_DIR;
+            const workspace = process.env.WORKSPACE;
             const { owner, repo } = context.repo;
+
+            // Structure checks read the body on stdin; the prose/markdown doc
+            // checks read it via --body-file with --root at the checkout so
+            // their config (cspell wordlists, prose-budget limits) resolves.
+            const structureBins = [
+              'fitness-check-pr-structure',
+              'fitness-check-pr-closes-issue',
+            ];
+            const docBins = [
+              'fitness-check-prose-budget',
+              'fitness-check-text-readability',
+              'fitness-check-markdown-no-bold-italic',
+              'fitness-check-mermaid-callouts',
+              'fitness-check-mermaid-callout-why',
+              'fitness-check-mermaid-diagram-prose',
+              'fitness-check-mermaid-diagram-table-gap',
+              'fitness-check-mermaid-legend',
+              'fitness-check-cspell',
+            ];
+
+            function runCheck(bin, args, input) {
+              try {
+                return JSON.parse(execFileSync(path.join(binDir, bin), args, { input, encoding: 'utf8' }));
+              } catch (e) {
+                // A validation failure exits non-zero but still prints the JSON result.
+                if (e.stdout) return JSON.parse(e.stdout);
+                throw e;
+              }
+            }
+
+            function validate(number, body) {
+              const errors = [];
+              for (const bin of structureBins) errors.push(...runCheck(bin, [], body).errors);
+              const tmp = path.join(os.tmpdir(), `desc-${number}.md`);
+              fs.writeFileSync(tmp, body);
+              for (const bin of docBins) {
+                errors.push(...runCheck(bin, ['--root', workspace, '--body-file', tmp], undefined).errors);
+              }
+              return errors;
+            }
 
             async function targets() {
               if (context.eventName === 'workflow_dispatch') {
@@ -42,20 +85,10 @@ jobs:
               return [{ number: p.number, body: p.body || '' }];
             }
 
-            function validate(bin, body) {
-              try {
-                return JSON.parse(execFileSync(bin, [], { input: body, encoding: 'utf8' }));
-              } catch (e) {
-                // A validation failure exits non-zero but still prints the JSON result.
-                if (e.stdout) return JSON.parse(e.stdout);
-                throw e;
-              }
-            }
-
             let failed = false;
             core.summary.addHeading('PR checks', 2);
             for (const t of await targets()) {
-              const errors = bins.flatMap((bin) => validate(bin, t.body).errors);
+              const errors = validate(t.number, t.body);
               if (errors.length === 0) {
                 core.summary.addRaw(`✅ #${t.number}: PR description looks good.`, true);
                 continue;

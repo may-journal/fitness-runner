@@ -33,7 +33,9 @@ Long dependencies raise load (Yngve 1960; Gibson). Center-embedding and long sub
 
 ## Cohesion
 
-Cohesion is what the formulas miss entirely. It comes from the Coh-Metrix lineage (Graesser, McNamara, Louwerse). Two paragraphs can share lengths yet differ in difficulty. The split is whether sentences share referents and signal relations. This target is also the most tractable.
+Cohesion is what the formulas miss entirely. It comes from the Coh-Metrix lineage (Graesser, McNamara, Louwerse). Two paragraphs can share lengths yet differ in difficulty.
+
+The split is whether sentences share referents and signal relations. This target is also the most tractable.
 
 Connective density is a pure word list. Referential cohesion needs adjacent-sentence content-word overlap after stemming. Both are stdlib.
 

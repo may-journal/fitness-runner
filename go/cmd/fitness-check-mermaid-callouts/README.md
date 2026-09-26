@@ -18,8 +18,8 @@ Opt-in — not part of the runner's default list. Enable it via `.fitnessrc.json
 ## Behavior
 
 For each `.md` file, diagrams (` ```mermaid ` blocks) are paired with the
-numbered callout table that follows them (a GFM table whose first header cell is
-`#`, `No`, `Callout`, or `Ref`).
+numbered callout table that follows them. That table is a GFM table whose first
+header cell is `#`, `No`, `Callout`, or `Ref`.
 
 - Pass: every callout number in the diagram maps to exactly one table row,
   and vice versa. Un-numbered diagrams need no table.
@@ -30,8 +30,8 @@ numbered callout table that follows them (a GFM table whose first header cell is
 - Fail (unpaired table): `callout table … has no preceding mermaid diagram`.
 
 Callout numbers are read from the leading integer of quoted diagram labels
-(`Rel(a, b, "6")`, `Container(x, "3", …)`) and from the first (`#`) column of the
-callout table.
+(`Rel(a, b, "6")`, `Container(x, "3", …)`). In the table, they come from the
+first (`#`) column.
 
 ## Scope
 

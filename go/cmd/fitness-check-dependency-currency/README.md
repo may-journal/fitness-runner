@@ -8,7 +8,7 @@ Flags declared npm dependencies that are behind their latest published version â
 
 ## Behavior
 
-- Queries the npm registry directly over HTTPS (`dist-tags` latest from the abbreviated metadata) for each dependency declared in the root `package.json` and its workspaces â€” no npm binary involved.
+- Queries the npm registry over HTTPS (`dist-tags` latest) for each dependency declared in the root `package.json` and its workspaces â€” no npm binary.
 - Direct declared deps only, since you can only bump what you declare.
 - The registry URL comes from the nearest `.npmrc` `registry=` entry (repo root, then home), defaulting to the public registry.
 - Pass: every dependency is at its latest published version.
@@ -19,4 +19,5 @@ Flags declared npm dependencies that are behind their latest published version â
 ## Notes
 
 - `filesChecked` counts the `package.json` manifests under the project (excluding `node_modules` and other skip dirs).
-- Reports against `latest`, not `wanted`: a dependency inside its declared semver range but behind the newest release is still flagged, since the point is to stay current, not merely in-range.
+- Reports against `latest`, not `wanted`: a dependency inside its declared semver range but behind the newest release is still flagged.
+- The point is to stay current, not merely in-range.

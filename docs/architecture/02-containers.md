@@ -83,6 +83,6 @@ Numbers on nodes and arrows match the callout table.
 | Above + `checks` mixing names and local paths | Mixed names and executables | Full configured list in order               |
 | Above + `disabledChecks` only                 | Exclude names               | Default list minus disabled                 |
 
-`disabledChecks` applies to check names only; local paths are opt-in via explicit `checks` entries and are never removed by it. The cspell and jscpd checks are native engines needing no external tool; prettier, eslint, vitest-coverage-full, and swiftlint exec the real tool and fail clearly when it is missing.
+`disabledChecks` applies to check names only; local paths are opt-in via explicit `checks` entries and are never removed by it. The cspell and jscpd checks are native engines needing no external tool. Prettier, eslint, vitest-coverage-full, and swiftlint exec the real tool and fail clearly when it is missing.
 
 Install and usage: [README.md](../../README.md). Artifacts ship through GitHub Releases and the public Go module proxy — see the README's Distribution section.

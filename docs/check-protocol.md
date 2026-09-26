@@ -27,4 +27,4 @@ Optional `.fitnessrc.json` at repo root:
 
 If `checks` is set, only those run (in order). If omitted, the runner uses its default list. `disabledChecks` removes names from either list. Unknown names in `checks` are skipped silently; `disabledChecks` never removes path entries.
 
-`checks` entries can also be local executable paths (entries containing `/`), mixed in with check names, to run a repo-specific check without publishing anything. A local check is any executable speaking the protocol above — a shell script works.
+`checks` entries can also be local executable paths — entries containing `/` — mixed in with check names. This runs a repo-specific check without publishing anything. A local check is any executable speaking the protocol above — a shell script works.

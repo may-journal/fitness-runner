@@ -17,6 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
@@ -48,6 +49,13 @@ func main() {
 }
 
 func run(root string, args []string) (checkkit.Result, error) {
+	if res, handled, err := bodycheck.RunDoc(root, args, func(r, content string) []string {
+		return judgeContent("(description)", content, loadThresholds(r), false)
+	}); err != nil {
+		return checkkit.Result{}, err
+	} else if handled {
+		return res, nil
+	}
 	th := loadThresholds(root)
 	report := hasFlag(args, "--report")
 	files := walkfs.FilesByExt(root, ".md")
@@ -113,11 +121,17 @@ func judgeFile(root, rel string, th thresholds, report bool) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("%s: %v", rel, err)}
 	}
-	c := measure(mdx.Prose(string(raw)))
+	return judgeContent(rel, string(raw), th, report)
+}
+
+// judgeContent scores already-read markdown content under name and returns its
+// alarm, if any — the read-free core shared by the file walk and body mode.
+func judgeContent(name, content string, th thresholds, report bool) []string {
+	c := measure(mdx.Prose(content))
 	if report {
-		printScore(rel, c, th)
+		printScore(name, c, th)
 	}
-	return verdict(rel, c, th)
+	return verdict(name, c, th)
 }
 
 // verdict applies the 2-of-3 ensemble vote to one file's counts.

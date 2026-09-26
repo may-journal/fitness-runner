@@ -5,7 +5,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # changelog-bullets
 
-Keeps changelog entries tight: every `###` section of `CHANGELOG.md` must be 3 to 5 bullets, each under 365 characters, each starting with a capitalized semantic type prefix.
+Keeps changelog entries tight. Every `###` section of `CHANGELOG.md` must be 3 to 5 bullets, each under 365 characters, each starting with a capitalized semantic type prefix.
 
 ## Behavior
 

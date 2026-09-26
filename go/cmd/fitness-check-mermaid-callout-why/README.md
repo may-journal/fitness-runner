@@ -15,7 +15,7 @@ Opt-in — not part of the runner's default list. Enable it via `.fitnessrc.json
 
 ## Behavior
 
-For each numbered callout table, requires a `Why` column (case-insensitive) in the header, and warns when a numbered row leaves its `Why` cell empty.
+For each numbered callout table, requires a `Why` column (case-insensitive) in the header. It warns when a numbered row leaves its `Why` cell empty.
 
 Runs on every `.md` file with a mermaid diagram or callout table; files with
 neither are skipped and don't count toward `filesChecked`.

@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
@@ -53,22 +54,32 @@ func main() {
 	checkkit.Main(check)
 }
 
-func run(root string, _ []string) (checkkit.Result, error) {
+func run(root string, args []string) (checkkit.Result, error) {
+	if res, handled, err := bodycheck.RunDoc(root, args, func(r, content string) []string {
+		cfg := loadConfig(r)
+		return checkContent("(description)", content, newChecker(cfg))
+	}); handled || err != nil {
+		return res, err
+	}
+	return walkFiles(root), nil
+}
+
+// walkFiles spell-checks the staged markdown, or every markdown file under
+// root when there is no staged context.
+func walkFiles(root string) checkkit.Result {
 	cfg := loadConfig(root)
-	checker := spell.NewEmbeddedChecker()
-	checker.AddWords(cfg.Words)
-	checker.AddWords(cfg.IgnoreWords)
+	checker := newChecker(cfg)
 	files, scanned := stagedPaths(root, cfg)
 	if !scanned {
 		files = markdownFiles(root, cfg)
 	} else if len(files) == 0 {
-		return checkkit.Pass(0), nil
+		return checkkit.Pass(0)
 	}
 	errs := checkFiles(root, files, checker)
 	if len(errs) > 0 {
-		return checkkit.Fail(len(files), errs...), nil
+		return checkkit.Fail(len(files), errs...)
 	}
-	return checkkit.Pass(len(files)), nil
+	return checkkit.Pass(len(files))
 }
 
 // stagedPaths returns the staged files to check and whether staged context
@@ -101,6 +112,23 @@ func checkableStaged(root, p string, matcher *spell.IgnoreMatcher) bool {
 	}
 	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))
 	return err == nil && !info.IsDir()
+}
+
+// newChecker builds the spell.Checker used by both the file walk and body
+// mode: the embedded base dictionaries with the resolved cspell.json words and
+// ignoreWords layered on so project terms always win.
+func newChecker(cfg config) *spell.Checker {
+	checker := spell.NewEmbeddedChecker()
+	checker.AddWords(cfg.Words)
+	checker.AddWords(cfg.IgnoreWords)
+	return checker
+}
+
+// checkContent scans one in-memory document (never reading from disk) with the
+// same per-line/word pass checkFiles applies per file, emitting issues in the
+// identical "<name>:<line>:<col> - Unknown word (<word>)" format.
+func checkContent(name, content string, checker *spell.Checker) []string {
+	return formatIssues(name, checker.CheckText(content))
 }
 
 // checkFiles scans each file and formats issues exactly like the cspell CLI

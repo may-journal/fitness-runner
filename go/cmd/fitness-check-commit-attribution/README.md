@@ -4,11 +4,11 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # commit-attribution
 
-Validates that a commit message discloses the AI tooling used to produce it, via two git trailers after the subject line: `AI-Tools:` and `AI-Models:`. Each must be present with a non-empty value on its own line. Opt-in, and not enabled on this repo itself — every historical commit predates the convention, so it is meant for repos that adopt it going forward.
+Validates that a commit message discloses the AI tooling used, via two git trailers after the subject line: `AI-Tools:` and `AI-Models:`. Each must be present with a non-empty value on its own line. Opt-in, and not enabled on this repo itself — every historical commit predates the convention. It is meant for repos that adopt it going forward.
 
 ## Enable
 
-Add the name to `checks` in `.fitnessrc.json`, then wire it into a commit-msg hook so the proposed message is validated before the commit lands:
+Add the name to `checks` in `.fitnessrc.json`, then wire it into a commit-msg hook so the message is validated before the commit lands:
 
 ```json
 { "checks": ["commit-attribution"] }
@@ -21,7 +21,7 @@ fitness --check=commit-attribution --message="$(cat "$1")"
 
 ## What passes
 
-Both trailers, each on its own line with a non-empty value, appearing anywhere in the body in any order (other trailers may sit alongside them):
+Both trailers, each on its own line with a non-empty value, appear anywhere in the body in any order. Other trailers may sit alongside:
 
 ```
 feat(api): add pagination to the search endpoint
@@ -63,8 +63,8 @@ Detection is per-line via `^<Key>:[ \t]*(\S.*)$`, so an `AI-Tools:` mid-sentence
 
 ## Behavior
 
-- Declares `--message` as its context-inline argument. The runner forwards a proposed message (e.g. from a commit-msg hook) for validation; otherwise the check reads the last commit via `git log`.
-  - Mirrors `semantic-commit`.
+- Declares `--message` as its context-inline argument, mirroring `semantic-commit`.
+- The runner forwards a proposed message (e.g. from a commit-msg hook); otherwise the check reads the last commit via `git log`.
 - Pass: both trailers present with non-empty values, or a `Merge `/`Revert ` subject.
 - Fail: one error per missing trailer; on no repo, git error, or empty message, the empty-message guidance error.
 - `filesChecked` is always 1.

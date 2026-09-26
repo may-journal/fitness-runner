@@ -14,12 +14,12 @@ Each limit is overridable in `.fitnessrc.json` under `proseBudget`; a positive v
 
 | Limit | Key | Default |
 | --- | --- | --- |
-| Words per sentence | `maxSentenceWords` | 30 |
-| Sentences per paragraph | `maxParagraphSentences` | 5 |
-| Paragraphs per section | `maxSectionParagraphs` | 4 |
-| Words per list item | `maxListItemWords` | 30 |
-| Items per list | `maxListItems` | 10 |
-| Total prose words per file | `maxWords` | 400 |
+| Words per sentence | `maxSentenceWords` | 23 |
+| Sentences per paragraph | `maxParagraphSentences` | 4 |
+| Paragraphs per section | `maxSectionParagraphs` | 3 |
+| Words per list item | `maxListItemWords` | 23 |
+| Items per list | `maxListItems` | 8 |
+| Total prose words per file | `maxWords` | 300 |
 
 A paragraph is a run of consecutive prose lines. A section runs from one heading to the next. A list is a run of consecutive items; nested items count individually.
 

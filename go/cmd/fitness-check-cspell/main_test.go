@@ -1,6 +1,6 @@
 package main
 
-// cspell:ignore borwn nteh quik xqzzt vbnmm skipdir zzzqqqv
+// cspell:ignore borwn nteh quik xqzzt vbnmm skipdir zzzqqqv mispeled wrod
 
 import (
 	"os"
@@ -129,6 +129,41 @@ func TestStagedMode(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func writeBody(t *testing.T, content string) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "body.md")
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+// TestBodyMode covers cspell's body mode: an explicit --body-file document is
+// spell-checked with config resolved from root, so a project word declared in
+// the root's cspell.json is accepted while genuine misspellings fail. Using a
+// temp-dir cspell.json keeps the test independent of any checkout path.
+func TestBodyMode(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "cspell.json", `{"words":["borwn"]}`)
+
+	bad := writeBody(t, "teh mispeled wrod in the description\n")
+	if res, err := run(root, []string{"--body-file", bad}); err != nil || res.Ok || len(res.Errors) == 0 {
+		t.Fatalf("expected misspellings flagged, got %+v err %v", res, err)
+	}
+
+	// "borwn" is unknown to the base dictionaries; accepting it proves the
+	// project cspell.json resolved from root.
+	proj := writeBody(t, "The borwn value is intentional here.\n")
+	if res, err := run(root, []string{"--body-file", proj}); err != nil || !res.Ok {
+		t.Fatalf("expected project word accepted via root config, got %+v err %v", res, err)
+	}
+
+	clean := writeBody(t, "This describes a clean readable change to the project.\n")
+	if res, err := run(root, []string{"--body-file", clean}); err != nil || !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("expected clean pass with 1 file, got %+v err %v", res, err)
 	}
 }
 

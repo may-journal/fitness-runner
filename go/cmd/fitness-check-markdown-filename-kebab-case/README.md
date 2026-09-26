@@ -57,7 +57,7 @@ docs/Api_Design.md: filename must be kebab-case
 
 ## Advanced
 
-Only the basename is validated, so directory casing is ignored — `SomeDir/api-design.md` is judged solely by `api-design.md`. On case-insensitive filesystems (macOS default), two camelCase names that differ only in letter case resolve to the same file, so prefer `markdown-filename-kebab-case` when that collision risk matters. To keep a non-conforming legacy filename, rename it or add its basename to the allowed set in `go/internal/mdfilename`.
+Only the basename is validated, so directory casing is ignored — `SomeDir/api-design.md` is judged solely by `api-design.md`. On case-insensitive filesystems (macOS default), two camelCase names that differ only in letter case resolve to the same file. Prefer `markdown-filename-kebab-case` when that collision risk matters. To keep a non-conforming legacy filename, rename it or add its basename to the allowed set in `go/internal/mdfilename`.
 
 ## Behavior
 
