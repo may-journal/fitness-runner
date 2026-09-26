@@ -15,7 +15,7 @@ Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
 
 ## Behavior
 
-Across numbered `architecture/NN-*.md` files, compares callout descriptions at adjacent levels and warns when a lower level repeats an upper level verbatim without adding new information.
+Across numbered `architecture/NN-*.md` files, compares callout descriptions at adjacent levels. It warns when a lower level repeats an upper level verbatim, adding nothing new.
 
 Runs on every `.md` file with a mermaid diagram or callout table; files with
 neither are skipped and don't count toward `filesChecked`.

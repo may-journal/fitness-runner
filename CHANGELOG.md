@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.25.2046
+
+- Feat: lint Issue and PR descriptions with the prose and markdown checks, not just structure — `prose-budget`, `text-readability`, `markdown-no-bold-italic`, the mermaid family, and `cspell` now run against the body in the `plan-check` and `pr-check` workflows.
+- Feat: add a `bodycheck.RunDoc` body mode that runs a check's per-document rule on an explicit `--body-file` document, with config resolved from `--root`; ambient stdin never triggers it, so the file-walking suite is unchanged.
+- Feat: bring the `prose-budget` default limits down about 25% — words per sentence 30 to 23, sentences per paragraph 5 to 4, paragraphs per section 4 to 3, words per list item 30 to 23, items per list 10 to 8, and total prose words per file 400 to 300.
+- Chore: tighten every markdown file the repo lints to the lowered budget, splitting long sentences, paragraphs, sections, and lists rather than loosening any limit.
+- Docs: note description linting in `docs/checks.md` and update the `prose-budget` README limit table.
+
 ### 2026.09.25.1458
 
 - Feat: add the `pr-closes-issue` check — every PR must close at least one issue on merge with a GitHub closing keyword (`close`/`fix`/`resolve` and their tenses), so merged work never leaves its issue open.

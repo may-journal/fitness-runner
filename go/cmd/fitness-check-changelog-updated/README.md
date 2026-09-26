@@ -13,7 +13,7 @@ When the runner provides staged file context, it runs two checks. First, the add
 - Pass: Changelog additions share ≥ 3 words with the rest of the staged diff, and any new `### yyyy.mm.dd.HHMM` heading matches current date and time.
 - Fail: `CHANGELOG.md` missing on disk → prompt to add it and mention changes.
 - Fail: `CHANGELOG.md` not in the staged diff (no additions) → "Stage CHANGELOG.md and add an entry...".
-- Fail: New section heading uses wrong date/time → "CHANGELOG.md new section heading must use current date and time (yyyy.mm.dd.HHMM), not a guessed time" with expected value.
+- Fail: New section heading uses wrong date/time → error naming the expected `yyyy.mm.dd.HHMM` value.
 - Fail: Changelog additions share fewer than three words with rest of diff → error with count.
   - A second line lists up to 10 words from the staged diff (e.g. use words like: …) to help fix the entry.
 

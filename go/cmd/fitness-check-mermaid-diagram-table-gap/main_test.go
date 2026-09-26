@@ -182,3 +182,37 @@ func TestRunTableDriven(t *testing.T) {
 		})
 	}
 }
+
+// TestRunBodyMode validates a single supplied description document instead of
+// walking files.
+func TestRunBodyMode(t *testing.T) {
+	diagram := mermaidFence("Container(app, \"1\", \"UI\")\nRel(app, api, \"2\")")
+	caption := "Numbers on nodes and arrows match the callout table."
+	table := calloutTable([][2]string{{"1", "the app"}, {"2", "talks to"}})
+
+	bad := strings.Join([]string{diagram, "", "Four containers sit inside one app.", "", table}, "\n")
+	badPath := filepath.Join(t.TempDir(), "body.md")
+	if err := os.WriteFile(badPath, []byte(bad), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := run(t.TempDir(), []string{"--body-file", badPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok {
+		t.Fatalf("expected body-mode failure, got %+v", res)
+	}
+
+	good := strings.Join([]string{diagram, "", caption, "", table}, "\n")
+	goodPath := filepath.Join(t.TempDir(), "clean.md")
+	if err := os.WriteFile(goodPath, []byte(good), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err = run(t.TempDir(), []string{"--body-file", goodPath})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", res)
+	}
+}

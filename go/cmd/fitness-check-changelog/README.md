@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # changelog
 
-Validates that the repo root has a `CHANGELOG.md` and that every `###` heading is a dated section matching the package version style: `### yyyy.mm.dd.HHMM` (e.g. `### 2026.02.15.1100`). When `package.json` exists, the first (latest) CHANGELOG heading timestamp must match the version suffix in `package.json` (e.g. `0.1.0-2026.02.15.1100`), and `package-lock.json` version must match `package.json` version.
+The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated section matching the package version style: `### yyyy.mm.dd.HHMM` (e.g. `### 2026.02.15.1100`). When `package.json` exists, the first (latest) CHANGELOG heading timestamp must match its version suffix (e.g. `0.1.0-2026.02.15.1100`). The `package-lock.json` version must match the `package.json` version.
 
 ## Behavior
 

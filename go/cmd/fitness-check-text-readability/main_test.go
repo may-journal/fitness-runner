@@ -141,6 +141,26 @@ func TestRunEndToEnd(t *testing.T) {
 	}
 }
 
+func TestRunBodyMode(t *testing.T) {
+	dir := t.TempDir()
+	bad := filepath.Join(dir, "bad-body.md")
+	if err := os.WriteFile(bad, []byte(awfulProse()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := run(t.TempDir(), []string{"--body-file", bad})
+	if err != nil || res.Ok {
+		t.Fatalf("awful description must fail: %+v %v", res, err)
+	}
+	good := filepath.Join(dir, "good-body.md")
+	if err := os.WriteFile(good, []byte(plainProse()), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err = run(t.TempDir(), []string{"--body-file", good})
+	if err != nil || !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("clean description must pass one file: %+v %v", res, err)
+	}
+}
+
 func TestConfigOverrides(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, ".fitnessrc.json", `{"textReadability": {"maxGrade": 5, "minWords": 10}}`)

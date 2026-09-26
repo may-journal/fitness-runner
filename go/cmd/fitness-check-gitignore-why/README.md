@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # gitignore-why
 
-Requires every `.gitignore` ignore pattern to be immediately preceded by a `#` comment explaining why it exists, so ignores are never unexplained and stay easy to audit and onboard. Opt-in — not part of the runner's default list.
+Requires every `.gitignore` ignore pattern to be immediately preceded by a `#` comment explaining why it exists. This keeps ignores explained and easy to audit and onboard. Opt-in — not part of the runner's default list.
 
 ## Enable
 
@@ -58,15 +58,13 @@ produce one error per pattern:
 .gitignore:3: pattern ".env" has no explanatory # comment on the line above
 ```
 
-A comment that is not directly above the pattern also fails — here the blank line breaks the pairing, so line 3 is flagged:
+Other failures include a bare `#` (no text) above a pattern, another pattern directly above, or a pattern as the very first line. A comment not directly above the pattern also fails — the blank line breaks the pairing, so line 3 is flagged:
 
 ```gitignore
 # Dependencies
 
 node_modules/
 ```
-
-Other failures: a bare `#` (no text) above a pattern, another pattern directly above, or a pattern as the very first line.
 
 ## Behavior
 

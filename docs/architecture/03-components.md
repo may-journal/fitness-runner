@@ -101,7 +101,7 @@ Numbers on nodes and arrows match the callout table.
 
 Dedupe is first-occurrence-wins by resolved check name; a path check's name comes from its `--describe` metadata, else its basename.
 
-Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint`, or `fitness --check=./my-check`. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument (the commit checks declare `--message`) has that value extracted into the environment and stripped from passthrough.
+Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint`, or `fitness --check=./my-check`. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 
 ## Run context (environment)
 

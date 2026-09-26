@@ -14,6 +14,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
@@ -25,7 +26,14 @@ func main() {
 	})
 }
 
-func run(root string, _ []string) (checkkit.Result, error) {
+func run(root string, args []string) (checkkit.Result, error) {
+	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
+		return validateDoc("(description)", content)
+	}); err != nil {
+		return checkkit.Result{}, err
+	} else if handled {
+		return res, nil
+	}
 	errors, filesChecked, err := mermaid.RunDocCheck(root, validateDoc)
 	if err != nil {
 		return checkkit.Result{}, err

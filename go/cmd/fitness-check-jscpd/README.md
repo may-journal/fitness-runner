@@ -8,15 +8,15 @@ Detects duplicated code with a native Go clone-detection engine implementing [js
 
 ## Behavior
 
-- Scans every file under root with min-lines 5 and min-tokens 50. Ignores `**/*.md`, `**/*.json`, `**/*.lock`, `**/*.test.*`, `**/*.spec.*`, and `**/*_test.go`, plus gitignored and binary files.
-- Test and spec files — including Go's `_test.go` convention — are ignored: repeated mock setup and fixtures there read as false-positive duplication, not production code to refactor.
+- Scans every file under root with min-lines 5, min-tokens 50. Ignores `**/*.md`, `**/*.json`, `**/*.lock`, `**/*.test.*`, `**/*.spec.*`, and `**/*_test.go`, plus gitignored and binary files.
+- Test and spec files — including Go's `_test.go` convention — are ignored: repeated mock setup and fixtures there read as false-positive duplication, not production code.
 - Pass: Duplicated lines stay under 1% of the codebase (jscpd's threshold semantics).
 - Fail: Over threshold — the check reports `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)`.
 - The engine is built into the check binary — no external jscpd tool to install.
 
 ## Escape hatch
 
-For duplication that's a real, justified constraint (e.g. boilerplate a framework requires per type), wrap it in jscpd's inline-comment markers instead of trying to force a refactor:
+For duplication that's a real, justified constraint (e.g. boilerplate a framework requires per type), wrap it in jscpd's inline-comment markers. Don't force a refactor:
 
 ```
 // jscpd:ignore-start

@@ -9,7 +9,7 @@ Enforces a cyclomatic complexity ceiling on Go functions — the Go-native count
 
 ## Behavior
 
-- Every function starts at 1 and gains a point per branch: `if`, `for`, `range`, each non-default `switch` case or `select` clause, and each `&&` or `||`.
+- Every function starts at 1 and gains a point per branch: `if`, `for`, `range`, each non-default `switch`/`select` case, and each `&&` or `||`.
 - Function literals score separately from their enclosing function, the way eslint scores arrow functions.
 - Test files (`_test.go`) are exempt, matching the repo's test-file exemptions elsewhere.
 - A file that fails to parse fails the check with the parser's error.

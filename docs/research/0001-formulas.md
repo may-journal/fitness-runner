@@ -7,7 +7,9 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 # The classical formulas
 
-Every classical formula is a two-variable regression on the same surface proxies. Three compute cleanly in stdlib-only Go: Coleman-Liau, ARI, and LIX. They need only letter, word, and sentence counts. The syllable formulas are implementation-defined, and no two tools agree. Gunning Fog is not mechanizable, and Dale-Chall needs an embedded word list.
+Every classical formula is a two-variable regression on the same surface proxies. Three compute cleanly in stdlib-only Go: Coleman-Liau, ARI, and LIX. They need only letter, word, and sentence counts.
+
+The syllable formulas are implementation-defined, and no two tools agree. Gunning Fog is not mechanizable, and Dale-Chall needs an embedded word list.
 
 | Formula | Inputs | Stdlib-Go viable? | Notes |
 | --- | --- | --- | --- |
@@ -22,9 +24,9 @@ Every classical formula is a two-variable regression on the same surface proxies
 
 ## Validation pedigree
 
-Flesch-Kincaid was recalibrated in 1975. The test used ~531 Navy enlisted personnel. They read technical training material. That is the closest historical analog to developer docs. Even there the standard error neared two grade levels.
+Flesch-Kincaid was recalibrated in 1975. The test used ~531 Navy enlisted personnel reading technical training material. That is the closest historical analog to developer docs. Even there the standard error neared two grade levels.
 
-The critique literature attacked the scores. See Duffy and Kabance 1982, and Davison and Kantor 1982. Rewriting text to optimize scores did not reliably improve comprehension. Short words and chopped sentences are not clarity. Goodhart's law applies in full.
+The critique literature attacked the scores. See Duffy and Kabance 1982, and Davison and Kantor 1982. Rewriting text to optimize scores did not reliably improve comprehension. Short words and chopped sentences are not clarity; Goodhart's law applies in full.
 
 A hard threshold rewards terse jargon. It prefers "use the CLI to init the cfg". That beats "use the command-line interface to initialize the configuration".
 

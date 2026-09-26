@@ -13,13 +13,15 @@ Can a fitness check score written paragraphs the way `go-complexity` scores func
 
 Yes for coarse, document-level outlier detection with a handful of deterministic metrics. No for precise per-paragraph judgment. The classical readability formulas measure far less than their names suggest.
 
-Every classical formula is a two-variable regression on the same two surface proxies. Word length stands in for vocabulary familiarity via Zipf's law. Sentence length stands in for syntactic working-memory load. None measures cohesion, ordering, ambiguity, or meaning. Scrambling word order inside every sentence changes no score.
+Every classical formula is a two-variable regression on the same two surface proxies. Word length stands in for vocabulary familiarity via Zipf's law. Sentence length stands in for syntactic working-memory load.
+
+None measures cohesion, ordering, ambiguity, or meaning. Scrambling word order inside every sentence changes no score.
 
 ## Key findings
 
 - Three formulas compute cleanly in deterministic stdlib-only Go: Coleman-Liau, ARI, and LIX. The rest need dictionaries, word lists, or human judgment.
 - The formulas were normed on 100+ word samples. Per-paragraph gating is statistically meaningless. Document-level outlier detection is defensible.
-- On this repo's archived plans the formulas invert the house judgment. They score the preferred template style as harder than the rejected free-form style.
+- On this repo's archived plans the formulas invert the house judgment. They score the template style as harder than the rejected free-form style.
 - The best cognitive measures need a model, tagger, or parser. What survives with zero dependencies is structural budgets and cohesion proxies.
 - No one has built a true prose analog of SonarSource's cognitive-complexity metric. The design pattern transfers. The field is open.
 

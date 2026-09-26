@@ -17,6 +17,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -28,7 +29,18 @@ func main() {
 	})
 }
 
-func run(root string, _ []string) (checkkit.Result, error) {
+func run(root string, args []string) (checkkit.Result, error) {
+	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
+		return validateFile("(description)", content)
+	}); handled || err != nil {
+		return res, err
+	}
+	return walkFiles(root)
+}
+
+// walkFiles flags bold/italic in every .md file under root except the
+// changelog.
+func walkFiles(root string) (checkkit.Result, error) {
 	var errors []string
 	filesChecked := 0
 	for _, file := range walkfs.FilesByExt(root, ".md") {

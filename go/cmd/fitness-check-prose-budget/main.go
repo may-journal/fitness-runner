@@ -16,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
@@ -33,18 +34,23 @@ type limits struct {
 }
 
 // defaults are calibrated for tight technical docs: short sentences, small
-// paragraphs and sections, and bounded lists.
+// paragraphs and sections, and bounded lists — held about a quarter tighter
+// than the check's first cut.
 var defaults = limits{
-	sentenceWords:      30,
-	paragraphSentences: 5,
-	sectionParagraphs:  4,
-	listItemWords:      30,
-	listItems:          10,
-	words:              400,
+	sentenceWords:      23,
+	paragraphSentences: 4,
+	sectionParagraphs:  3,
+	listItemWords:      23,
+	listItems:          8,
+	words:              300,
 }
 
 // builtinExempt is exempt regardless of config, because it grows by design.
 const builtinExempt = "CHANGELOG.md"
+
+// descriptionName labels the pseudo-file in body-mode errors, where the
+// document is an Issue or PR description rather than a file on disk.
+const descriptionName = "(description)"
 
 var (
 	htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
@@ -58,8 +64,18 @@ func main() {
 	})
 }
 
-func run(root string, _ []string) (checkkit.Result, error) {
+func run(root string, args []string) (checkkit.Result, error) {
 	lim, exempt := settings(root)
+	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
+		return check(descriptionName, content, lim)
+	}); handled || err != nil {
+		return res, err
+	}
+	return walkFiles(root, lim, exempt), nil
+}
+
+// walkFiles applies the budget to every non-exempt .md file under root.
+func walkFiles(root string, lim limits, exempt []string) checkkit.Result {
 	files := walkfs.FilesByExt(root, ".md")
 	var errs []string
 	for _, rel := range files {
@@ -74,9 +90,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 		errs = append(errs, check(rel, string(raw), lim)...)
 	}
 	if len(errs) > 0 {
-		return checkkit.Fail(len(files), errs...), nil
+		return checkkit.Fail(len(files), errs...)
 	}
-	return checkkit.Pass(len(files)), nil
+	return checkkit.Pass(len(files))
 }
 
 // settings resolves the limits and exempt set: defaults with every positive

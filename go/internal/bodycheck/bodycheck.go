@@ -30,6 +30,43 @@ func Run(args []string, validate func(body string) []string) (checkkit.Result, e
 	return checkkit.Pass(1), nil
 }
 
+// RunDoc runs a file-walking doc check in body mode when an explicit
+// `--body-file` document is supplied, resolving config from root exactly as
+// the file walk would. It returns handled=false when no `--body-file` is
+// present, so the caller falls back to its normal file walk — the trigger is
+// explicit only, never the ambient stdin or context message the suite may
+// carry, so a normal suite run keeps walking files.
+func RunDoc(root string, args []string, validate func(root, content string) []string) (result checkkit.Result, handled bool, err error) {
+	content, ok, err := BodyFile(args)
+	if err != nil {
+		return checkkit.Result{}, false, err
+	}
+	if !ok {
+		return checkkit.Result{}, false, nil
+	}
+	if errs := validate(root, content); len(errs) > 0 {
+		return checkkit.Fail(1, errs...), true, nil
+	}
+	return checkkit.Pass(1), true, nil
+}
+
+// BodyFile resolves a document only from an explicit `--body-file` path (`-`
+// meaning stdin), returning ok=false when the flag is absent. Unlike
+// resolveBody it never falls back to the context message or ambient stdin, so
+// doc checks enter body mode only when a caller deliberately points them at a
+// file.
+func BodyFile(args []string) (content string, ok bool, err error) {
+	path, has := bodyFileArg(args)
+	if !has {
+		return "", false, nil
+	}
+	if path == "-" {
+		return readAll(os.Stdin)
+	}
+	raw, readErr := os.ReadFile(path)
+	return string(raw), true, readErr
+}
+
 // resolveBody returns the body text and whether any input was supplied, in
 // priority order: --body-file (- means stdin), the context-inline body
 // (FITNESS_CTX_MESSAGE), then piped stdin. A terminal stdin is treated as no

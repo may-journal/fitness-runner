@@ -7,9 +7,9 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 # Calibration on this repo's plans
 
-`docs/plans/archive/` holds two generations of the same document type. Six free-form plans from the TypeScript era are goal-and-checklist hybrids in varied shapes. The two later plans follow the may-journals template: numbered title, one-line blockquote, a Goal paragraph, numbered checkbox sections.
+`docs/plans/archive/` holds two generations of one document type. Six free-form TypeScript-era plans are goal-and-checklist hybrids. Two later plans follow the may-journals template: numbered title, one-line blockquote, a Goal paragraph, numbered checkbox sections.
 
-The house judgment is on record, since the template replaced the free-form style. That makes the corpus labeled, and the question becomes whether the metrics agree with the judgment. We scored prose paragraphs, blockquotes, and list items separately, with code spans, links, and version tokens masked, treating each markdown block end as a sentence boundary.
+The house judgment is on record: the template replaced the free-form style. That labels the corpus; the question is whether metrics agree. We scored paragraphs, blockquotes, and list items separately, masking code spans, links, and version tokens. Each markdown block end was a sentence boundary.
 
 | Plan | Style | Words | FKGL | Coleman-Liau | ARI | LIX |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -24,20 +24,20 @@ The house judgment is on record, since the template replaced the free-form style
 
 ## Findings
 
-The formulas invert the house judgment. Every formula scores the template plans as harder on average than the free-form plans they replaced. That holds at document level and at unit level, with list-item Coleman-Liau mean 15.6 template versus 9.9 free-form. A gate built on them would have defended the rejected style.
+The formulas invert that judgment. Every one scores the template plans harder than the free-form plans they replaced. That holds at document and unit level (list-item Coleman-Liau mean 15.6 versus 9.9). A gate built on them would have defended the rejected style.
 
-Genuine paragraphs score sanely. The two Goal paragraphs are real 72-100 word prose, the formulas' native sample size. They land at grade 11.6-13.5, exactly where well-written technical prose belongs.
+Genuine paragraphs score sanely. The two Goal paragraphs are real 72-100 word prose. They land at grade 11.6-13.5, where good technical prose belongs.
 
-Per-paragraph scores are noise. `plan-checks-abstractions.md` has 26 paragraphs in one register. Flesch-Kincaid swings from 2.3 to 19.7 inside it, a 17-grade spread in a uniformly written document.
+Per-paragraph scores are noise. Inside `plan-checks-abstractions.md` (26 paragraphs, one register) Flesch-Kincaid swings from 2.3 to 19.7 — a 17-grade spread in uniform text.
 
 ## The markdown artifact
 
-The markdown artifact dwarfs everything. Scored without the block-boundary rule, `01-go-rewrite.md` jumps from grade 11.8 to 46.7, roughly 104 words per "sentence". Its 45 punctuation-free checkbox items merge into pseudo-sentences. Segmentation policy is worth 35 grades; no real quality difference here is worth 5.
+The markdown artifact dwarfs everything. Without the block-boundary rule, `01-go-rewrite.md` jumps from grade 11.8 to 46.7, ~104 words per "sentence". Its 45 punctuation-free checkbox items merge into pseudo-sentences. Segmentation policy is worth 35 grades; no quality difference is worth 5.
 
-What separates the generations is structure, not sentence statistics: one blockquote, one Goal paragraph, numbered checkbox sections. That shape is deterministically checkable by a template gate. It is precisely the thing readability formulas cannot see.
+What separates the generations is structure, not sentence statistics: one blockquote, one Goal paragraph, numbered checkbox sections. That shape is deterministically checkable by a template gate, precisely what readability formulas cannot see.
 
 ## The earlier changelog round
 
-An earlier round used the changelog rewrite as its corpus, and reached the same negative conclusions. Per-unit gating failed (best AUC 0.701). Aggregation helped (0.824 at section level). Masking code spans was essential, and formulas exploded on notation-dense text (Reading Ease −101 on one bullet).
+An earlier round on the changelog rewrite reached the same conclusions. Per-unit gating failed (AUC 0.701); aggregation helped (0.824 at section level). Masking code spans was essential, and formulas exploded on notation-dense text (Reading Ease −101 on one bullet).
 
-But that corpus was weaker: changelog bullets are notation rather than paragraphs, and its one clean separator, the character cap, was true by construction. The plans corpus supersedes it. The changelog numbers survive only as corroboration.
+But that corpus was weaker: bullets are notation, not paragraphs, and its clean separator, the character cap, held by construction. The plans corpus supersedes it; the changelog numbers survive as corroboration.

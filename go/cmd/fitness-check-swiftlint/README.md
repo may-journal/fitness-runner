@@ -17,4 +17,4 @@ Runs [SwiftLint](https://github.com/realm/SwiftLint) via `swiftlint lint --stric
 
 ## Config
 
-Uses whatever `.swiftlint.yml` is present in the repo root — same "consumer config wins" convention as the other checks, but no shared-config fallback ships for this one yet.
+Uses whatever `.swiftlint.yml` is present in the repo root — the same "consumer config wins" convention as the other checks. No shared-config fallback ships for this one yet.
