@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.0032
+
+- Fix: `changelog-updated` goes inert during a merge, cherry-pick, or revert, so a replay commit's historical `### yyyy.mm.dd.HHMM` headings no longer read as new and fail pre-commit.
+- Feat: detect the replay via `MERGE_HEAD`, `CHERRY_PICK_HEAD`, or `REVERT_HEAD`, resolved with `git rev-parse --git-path` so it holds when `.git` is a file, not a directory; exposed as an injectable seam.
+- Test: cover the seam in both directions and a real-git `MERGE_HEAD` case; document the inert-during-replay behavior in the check README.
+
 ### 2026.09.25.2046
 
 - Feat: lint Issue and PR descriptions with the prose and markdown checks, not just structure — `prose-budget`, `text-readability`, `markdown-no-bold-italic`, the mermaid family, and `cspell` now run against the body in the `plan-check` and `pr-check` workflows.

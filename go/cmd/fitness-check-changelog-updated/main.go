@@ -56,6 +56,37 @@ var stagedDiff = func(root string) string {
 	return string(out)
 }
 
+// replayInProgress reports whether Git is mid-merge, mid-cherry-pick, or
+// mid-revert. Such a commit replays historical CHANGELOG additions rather than
+// authoring a new entry, so the freshness gates must not apply. A variable so
+// tests can pin it.
+var replayInProgress = func(root string) bool {
+	for _, ref := range []string{"MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"} {
+		if gitStateFileExists(root, ref) {
+			return true
+		}
+	}
+	return false
+}
+
+// gitStateFileExists reports whether Git's <ref> state file exists, resolving
+// its path with `git rev-parse --git-path` so it holds when the .git entry is
+// a file, not a directory.
+func gitStateFileExists(root, ref string) bool {
+	cmd := exec.Command("git", "rev-parse", "--git-path", ref)
+	cmd.Dir = root
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	path := strings.TrimSpace(string(out))
+	if !filepath.IsAbs(path) {
+		path = filepath.Join(root, path)
+	}
+	_, statErr := os.Stat(path)
+	return statErr == nil
+}
+
 func main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "changelog-updated"},
@@ -64,6 +95,9 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
+	if replayInProgress(root) {
+		return checkkit.Pass(0), nil
+	}
 	if len(resolveStagedFiles(root)) == 0 {
 		return checkkit.Pass(0), nil
 	}
