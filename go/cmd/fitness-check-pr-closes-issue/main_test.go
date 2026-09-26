@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -49,7 +50,7 @@ func TestValidate(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			got := validate(tc.body)
+			got := validate(tc.body, nil)
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Fatalf("validate(%q) = %v, want %v", tc.body, got, tc.want)
 			}
@@ -68,5 +69,40 @@ func TestRunWiring(t *testing.T) {
 	t.Setenv("FITNESS_CTX_MESSAGE", "addresses #1 only")
 	if res, err := run("", nil); err != nil || res.Ok {
 		t.Fatalf("references-only PR: expected failure, got %+v, err %v", res, err)
+	}
+}
+
+// TestValidateRequireClose covers the third rule: an issue a closed Plan closes
+// must be closed by the PR too.
+func TestValidateRequireClose(t *testing.T) {
+	rule3 := func(n int) string {
+		return fmt.Sprintf("PR closes a Plan that closes #%d, so the PR must also close #%d — add a closing keyword for it", n, n)
+	}
+	if got := validate("Closes #12 and closes #43", []int{43}); got != nil {
+		t.Fatalf("required issue closed: want nil, got %v", got)
+	}
+	got := validate("Closes #12", []int{43})
+	if want := []string{rule3(43)}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("required unclosed: got %v, want %v", got, want)
+	}
+	if got := validate("Closes #12", nil); got != nil {
+		t.Fatalf("no required: want nil, got %v", got)
+	}
+}
+
+func TestParseRequireClose(t *testing.T) {
+	cases := []struct {
+		args []string
+		want []int
+	}{
+		{[]string{"--require-close=43,44"}, []int{43, 44}},
+		{[]string{"--require-close", "7"}, []int{7}},
+		{[]string{"--body-file", "x"}, nil},
+		{[]string{"--require-close="}, nil},
+	}
+	for _, tc := range cases {
+		if got := parseRequireClose(tc.args); !reflect.DeepEqual(got, tc.want) {
+			t.Fatalf("parseRequireClose(%v) = %v, want %v", tc.args, got, tc.want)
+		}
 	}
 }
