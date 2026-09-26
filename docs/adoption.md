@@ -53,4 +53,4 @@ Two bits stay local: a `.fitnessrc.json` tuned to the repo's languages, and the 
 
 ## Org-wide
 
-An org-level required workflow can run the reusable `pr-check` across repos with no caller file at all. The org `.github` repo supplies the Plan issue template and conventions by default. Both are org-admin steps, tracked in the rollout issue.
+An org-level required workflow can run the reusable `pr-check` across repos with no caller file at all. Point the ruleset at `pr-check-reusable.yml@main`; it carries a `pull_request` trigger so a required workflow can run it. The org `.github` repo supplies the Plan issue template and conventions by default.

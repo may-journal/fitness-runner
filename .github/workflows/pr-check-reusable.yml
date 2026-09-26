@@ -6,12 +6,18 @@ name: PR check (reusable)
 # itself keeps its own build-from-source pr-check so it still tests its own
 # unreleased changes; every other repo uses this one.
 on:
+  # workflow_call: a repo adds a thin caller. pull_request: the org ruleset
+  # injects this file directly as a required workflow (which needs a
+  # pull_request trigger, not workflow_call).
   workflow_call:
     inputs:
       ref:
         description: fitness-runner version to install (a tag, or @latest)
         type: string
         default: latest
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,6 +26,9 @@ permissions:
 
 jobs:
   pr-check:
+    # fitness-runner runs its own build-from-source pr-check, so skip the
+    # pull_request path here; other repos (caller or required workflow) run it.
+    if: github.repository != 'may-journal/fitness-runner'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +37,7 @@ jobs:
           go-version: stable
       - name: Install the fitness checks
         run: |
-          go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}"
+          go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref || 'latest' }}"
           echo "BIN_DIR=$(go env GOPATH)/bin" >> "$GITHUB_ENV"
       - name: Validate PR description(s) and fail the run on violations
         uses: actions/github-script@v7
