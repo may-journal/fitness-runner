@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.1033
+
+- Docs: drop the hardcoded "31 checks" count from the C4 architecture docs, referencing the `fitness-check-*` set relatively so the number stops drifting as checks are added.
+- Docs: model body mode — the containers diagram gains the `plan-check` and `pr-check` workflows running check binaries against a description, and the components doc gains a body-mode section.
+- Docs: relativize the remaining fixed check counts in `distribution.md` and `checks.md`.
+
 ### 2026.09.26.0032
 
 - Fix: `changelog-updated` goes inert during a merge, cherry-pick, or revert, so a replay commit's historical `### yyyy.mm.dd.HHMM` headings no longer read as new and fail pre-commit.

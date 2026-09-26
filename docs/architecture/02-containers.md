@@ -13,7 +13,7 @@ C4Container
 
     System_Boundary(ship, "Shipped artifacts") {
         Container(cli, "3 Runner binary", "Go", "fitness")
-        Container(checks, "4 Check binaries", "Go", "fitness-check-name, 31 names")
+        Container(checks, "4 Check binaries", "Go", "fitness-check-name, one per check")
         Container(shared, "5 Embedded configs", "Go", "internal/sharedconf, materialized on demand")
     }
 
@@ -25,6 +25,7 @@ C4Container
 
     System_Ext(tools, "9 Peer tooling", "eslint, prettier, vitest, swiftlint, git")
     System_Ext(registry, "10 npm registry", "dependency-currency queries")
+    System_Ext(ci, "21 Description checks", "GitHub Actions", "plan-check and pr-check")
 
     Rel(developer, cli, "11")
     Rel(agent, cli, "12")
@@ -36,6 +37,7 @@ C4Container
     Rel(checks, code, "18")
     Rel(localChecks, code, "19")
     Rel(checks, registry, "20")
+    Rel(ci, checks, "22")
 ```
 
 ```mermaid
@@ -73,6 +75,8 @@ Numbers on nodes and arrows match the callout table.
 | 18  | Checks read the consumer tree (staged or full).                                                  | Validation target is always the app repo.                   |
 | 19  | Local checks live beside app code; any executable qualifies.                                     | Shell scripts speak the protocol fine.                      |
 | 20  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
+| 21  | The `plan-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.         | Descriptions held to the same bar as files.                 |
+| 22  | Workflows exec `fitness-check-name --body-file` with `--root` at the checkout, reusing body mode. | One rule engine for files and descriptions.                 |
 
 ## Consumer setup
 
