@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  issues: read
 
 jobs:
   pr-check:
@@ -33,14 +34,12 @@ jobs:
             const binDir = process.env.BIN_DIR;
             const workspace = process.env.WORKSPACE;
             const { owner, repo } = context.repo;
+            const prCloses = path.join(binDir, 'fitness-check-pr-closes-issue');
 
             // Structure checks read the body on stdin; the prose/markdown doc
             // checks read it via --body-file with --root at the checkout so
             // their config (cspell wordlists, prose-budget limits) resolves.
-            const structureBins = [
-              'fitness-check-pr-structure',
-              'fitness-check-pr-closes-issue',
-            ];
+            const structureBins = ['fitness-check-pr-structure'];
             const docBins = [
               'fitness-check-prose-budget',
               'fitness-check-text-readability',
@@ -63,11 +62,38 @@ jobs:
               }
             }
 
-            function validate(number, body) {
-              const errors = [];
-              for (const bin of structureBins) errors.push(...runCheck(bin, [], body).errors);
+            // closedIssues parses a body's closing-keyword targets through the
+            // pr-closes-issue binary, so the Plan side and PR side share one
+            // keyword set instead of a divergent copy here.
+            function closedIssues(bodyFile) {
+              return JSON.parse(execFileSync(prCloses, ['--emit-closed', '--body-file', bodyFile], { encoding: 'utf8' }));
+            }
+
+            // requiredClosures: for each issue the PR closes that is a Plan, the
+            // issues that Plan itself closes must be closed by the PR too.
+            async function requiredClosures(prClosedNums) {
+              const required = new Set();
+              for (const n of prClosedNums) {
+                let issue;
+                try { issue = (await github.rest.issues.get({ owner, repo, issue_number: n })).data; }
+                catch { continue; }
+                if (!(issue.labels || []).some((l) => (l.name || l) === 'Plan')) continue;
+                const planFile = path.join(os.tmpdir(), `plan-${n}.md`);
+                fs.writeFileSync(planFile, issue.body || '');
+                for (const m of closedIssues(planFile)) required.add(m);
+              }
+              return [...required];
+            }
+
+            async function validate(number, body) {
               const tmp = path.join(os.tmpdir(), `desc-${number}.md`);
               fs.writeFileSync(tmp, body);
+              const errors = [];
+              for (const bin of structureBins) errors.push(...runCheck(bin, [], body).errors);
+              const required = await requiredClosures(closedIssues(tmp));
+              const prArgs = ['--body-file', tmp];
+              if (required.length) prArgs.push('--require-close=' + required.join(','));
+              errors.push(...runCheck('fitness-check-pr-closes-issue', prArgs, undefined).errors);
               for (const bin of docBins) {
                 errors.push(...runCheck(bin, ['--root', workspace, '--body-file', tmp], undefined).errors);
               }
@@ -88,7 +114,7 @@ jobs:
             let failed = false;
             core.summary.addHeading('PR checks', 2);
             for (const t of await targets()) {
-              const errors = validate(t.number, t.body);
+              const errors = await validate(t.number, t.body);
               if (errors.length === 0) {
                 core.summary.addRaw(`✅ #${t.number}: PR description looks good.`, true);
                 continue;

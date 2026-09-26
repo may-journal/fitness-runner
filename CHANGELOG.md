@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.1611
+
+- Feat: `pr-closes-issue` now also fails a PR that closes a `Plan` without closing the issue that Plan solves, so an underlying bug or feature no longer stays open after the Plan closes (#77).
+- Feat: add a `--emit-closed` mode that prints a body's closing-keyword targets as JSON, and a `--require-close` flag the check verifies; `pr-check` reads each closed Plan's targets through `--emit-closed`, so one keyword set governs both sides.
+- Docs: adopt the convention in `AGENTS.md` — a Plan names the issue it solves with a closing keyword — and document the third rule in the `pr-closes-issue` README.
+- Test: cover `--require-close` (required issue closed, left open, and empty) and `--require-close` argument parsing.
+
 ### 2026.09.26.1033
 
 - Docs: drop the hardcoded "31 checks" count from the C4 architecture docs, referencing the `fitness-check-*` set relatively so the number stops drifting as checks are added.
