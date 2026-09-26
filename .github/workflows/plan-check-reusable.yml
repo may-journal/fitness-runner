@@ -1,0 +1,112 @@
+name: Plan check (reusable)
+
+# Reusable across the org: a consumer repo calls this from an `issues`-triggered
+# caller. It installs the published fitness checks and validates the calling
+# repo's Plan issue(s) — structure plus the prose/markdown checks on the body —
+# commenting once per body version. fitness-runner keeps its own
+# build-from-source plan-check so it still tests its own unreleased changes.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: fitness-runner version to install (a tag, or @latest)
+        type: string
+        default: latest
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  plan-check:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'Plan')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install the fitness checks
+        run: |
+          go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}"
+          echo "BIN_DIR=$(go env GOPATH)/bin" >> "$GITHUB_ENV"
+      - name: Validate plan issue(s) and comment once per body version
+        uses: actions/github-script@v7
+        env:
+          WORKSPACE: ${{ github.workspace }}
+        with:
+          script: |
+            const { execFileSync } = require('node:child_process');
+            const crypto = require('node:crypto');
+            const fs = require('node:fs');
+            const os = require('node:os');
+            const path = require('node:path');
+            const binDir = process.env.BIN_DIR;
+            const workspace = process.env.WORKSPACE;
+            const { owner, repo } = context.repo;
+            const marker = (hash) => `<!-- fitness:plan-structure:${hash} -->`;
+
+            const structureBin = 'fitness-check-plan-structure';
+            const docBins = [
+              'fitness-check-prose-budget',
+              'fitness-check-text-readability',
+              'fitness-check-markdown-no-bold-italic',
+              'fitness-check-mermaid-callouts',
+              'fitness-check-mermaid-callout-why',
+              'fitness-check-mermaid-diagram-prose',
+              'fitness-check-mermaid-diagram-table-gap',
+              'fitness-check-mermaid-legend',
+              'fitness-check-cspell',
+            ];
+
+            function runCheck(bin, args, input) {
+              try {
+                return JSON.parse(execFileSync(path.join(binDir, bin), args, { input, encoding: 'utf8' }));
+              } catch (e) {
+                if (e.stdout) return JSON.parse(e.stdout);
+                throw e;
+              }
+            }
+
+            function validate(number, body) {
+              const errors = [...runCheck(structureBin, [], body).errors];
+              const tmp = path.join(os.tmpdir(), `desc-${number}.md`);
+              fs.writeFileSync(tmp, body);
+              for (const bin of docBins) {
+                errors.push(...runCheck(bin, ['--root', workspace, '--body-file', tmp], undefined).errors);
+              }
+              return errors;
+            }
+
+            async function targets() {
+              if (context.eventName === 'workflow_dispatch') {
+                const issues = await github.paginate(github.rest.issues.listForRepo, {
+                  owner, repo, labels: 'Plan', state: 'open', per_page: 100,
+                });
+                return issues.filter((i) => !i.pull_request).map((i) => ({ number: i.number, body: i.body || '' }));
+              }
+              const i = context.payload.issue;
+              return [{ number: i.number, body: i.body || '' }];
+            }
+
+            let failed = false;
+            for (const t of await targets()) {
+              const hash = crypto.createHash('sha256').update(t.body).digest('hex').slice(0, 12);
+              const mark = marker(hash);
+              const comments = await github.paginate(github.rest.issues.listComments, {
+                owner, repo, issue_number: t.number, per_page: 100,
+              });
+              const alreadyCommented = comments.some((c) => (c.body || '').includes(mark));
+
+              const errors = validate(t.number, t.body);
+              if (errors.length > 0) failed = true;
+              if (alreadyCommented) continue;
+
+              const heading = errors.length === 0 ? '✅ Plan looks good.' : '❌ Plan needs work:';
+              const list = errors.length === 0 ? '' : '\n' + errors.map((e) => `- ${e}`).join('\n');
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: t.number, body: `${heading}${list}\n\n${mark}`,
+              });
+            }
+
+            if (failed) core.setFailed('One or more plan issues have violations.');

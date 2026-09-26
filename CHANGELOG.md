@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.1703
+
+- Feat: publish reusable `pr-check` and `plan-check` workflows (`workflow_call`) that install the checks and validate a calling repo's PR or Plan bodies, so a repo adopts by calling them instead of copying the logic.
+- Docs: add `docs/adoption.md` — the reusable-workflow callers, the version policy, and the org-wide rollout path (org required workflow plus the org `.github` repo).
+- Chore: fitness-runner keeps its own `pr-check` and `plan-check` building from source, so it still tests its own unreleased changes while other repos call the reusable workflows.
+
 ### 2026.09.26.1611
 
 - Feat: `pr-closes-issue` now also fails a PR that closes a `Plan` without closing the issue that Plan solves, so an underlying bug or feature no longer stays open after the Plan closes (#77).
