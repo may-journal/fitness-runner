@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.1834
+
+- Fix: default the reusable workflows to install fitness at `main`, not `@latest`, so the org-injected required workflow uses the current check set.
+- Fix: the latest release predated `pr-closes-issue`, `mermaid-diagram-table-gap`, and the tighter prose-budget, so an `@latest` install failed on missing binaries; `main` resolves them.
+- Chore: callers can still pass a pinned `ref` input to freeze a repo on a released check set.
+
 ### 2026.09.26.1741
 
 - Fix: give `pr-check-reusable` `pull_request` and `workflow_dispatch` triggers so an org ruleset can require it; a `workflow_call`-only workflow was rejected as a required workflow.
