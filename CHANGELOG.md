@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.1741
+
+- Fix: give `pr-check-reusable` `pull_request` and `workflow_dispatch` triggers so an org ruleset can require it; a `workflow_call`-only workflow was rejected as a required workflow.
+- Fix: fall back to `@latest` when no `inputs.ref` is passed (the required-workflow path passes none), and skip the job in fitness-runner, which runs its own build-from-source pr-check.
+- Docs: note in `docs/adoption.md` that the reusable pr-check doubles as an org required workflow.
+
 ### 2026.09.26.1703
 
 - Feat: publish reusable `pr-check` and `plan-check` workflows (`workflow_call`) that install the checks and validate a calling repo's PR or Plan bodies, so a repo adopts by calling them instead of copying the logic.
