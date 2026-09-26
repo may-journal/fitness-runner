@@ -8,8 +8,8 @@ When the runner provides staged file context, it runs two checks. First, the add
 
 ## Behavior
 
-- Pass (no staged context): Empty staged list → skip (ok).
-- Pass: Only `CHANGELOG.md` is staged (no other files to compare) → ok.
+- Pass (replay in progress): mid-merge, mid-cherry-pick, or mid-revert (`MERGE_HEAD`/`CHERRY_PICK_HEAD`/`REVERT_HEAD` present) → skip, since a replay re-stages historical entries.
+- Pass: no staged context, or only `CHANGELOG.md` staged (nothing to compare) → skip (ok).
 - Pass: Changelog additions share ≥ 3 words with the rest of the staged diff, and any new `### yyyy.mm.dd.HHMM` heading matches current date and time.
 - Fail: `CHANGELOG.md` missing on disk → prompt to add it and mention changes.
 - Fail: `CHANGELOG.md` not in the staged diff (no additions) → "Stage CHANGELOG.md and add an entry...".

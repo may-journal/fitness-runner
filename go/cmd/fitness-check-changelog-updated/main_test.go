@@ -222,6 +222,58 @@ func TestStandaloneAgainstRealGitRepo(t *testing.T) {
 	}
 }
 
+// setReplay pins replayInProgress for one test.
+func setReplay(t *testing.T, v bool) {
+	t.Helper()
+	prev := replayInProgress
+	replayInProgress = func(string) bool { return v }
+	t.Cleanup(func() { replayInProgress = prev })
+}
+
+// TestReplaySkipsHistoricalHeadings pins the seam: a replay commit ignores a
+// stale heading in the staged diff, while an ordinary commit still fails it.
+func TestReplaySkipsHistoricalHeadings(t *testing.T) {
+	diff := "+++ b/CHANGELOG.md\n+### 2026.07.07.0850\n+- old runner entry\n" +
+		"+++ b/src.txt\n+old runner entry code\n"
+	at := time.Date(2026, 9, 26, 10, 0, 0, 0, time.UTC)
+	t.Setenv("FITNESS_STAGED_FILES", "CHANGELOG.md")
+	inject(t, diff, at)
+
+	setReplay(t, true)
+	if res, err := run(t.TempDir(), nil); err != nil || !res.Ok {
+		t.Fatalf("replay: expected inert pass, got %+v err %v", res, err)
+	}
+
+	setReplay(t, false)
+	if res, err := run(t.TempDir(), nil); err != nil || res.Ok {
+		t.Fatalf("non-replay: expected fail on stale heading, got %+v err %v", res, err)
+	}
+}
+
+// TestReplayRealGitMergeHead exercises replayInProgress against real Git: a
+// staged stale heading fails normally, but goes inert once MERGE_HEAD exists.
+func TestReplayRealGitMergeHead(t *testing.T) {
+	dir := t.TempDir()
+	gitInit(t, dir)
+	writeFile(t, dir, "CHANGELOG.md", "# Changelog\n")
+	git(t, dir, "add", "-A")
+	git(t, dir, "commit", "-q", "-m", "init")
+	unsetStagedEnv(t)
+
+	writeFile(t, dir, "CHANGELOG.md", "# Changelog\n\n### 2026.07.07.0850\n\n- historical runner entry\n")
+	writeFile(t, dir, "src.txt", "historical runner entry code\n")
+	git(t, dir, "add", "-A")
+
+	if res, err := run(dir, nil); err != nil || res.Ok {
+		t.Fatalf("no replay: expected fail on stale heading, got %+v err %v", res, err)
+	}
+
+	writeFile(t, filepath.Join(dir, ".git"), "MERGE_HEAD", "0000000000000000000000000000000000000000\n")
+	if res, err := run(dir, nil); err != nil || !res.Ok {
+		t.Fatalf("merge in progress: expected inert pass, got %+v err %v", res, err)
+	}
+}
+
 func writeFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
