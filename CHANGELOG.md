@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.0953
+
+- Docs: add ADR 0003 recording the decision that quality lives as executable fitness functions, not prose guidelines.
+- Docs: capture the context (drift across repos), the decision (self-gating default, description linting, the reusable-workflow org rollout), and the consequences.
+- Docs: cross-link ADRs 0001 and 0002 and reference `docs/checks.md` and `docs/adoption.md`.
+
 ### 2026.09.26.2235
 
 - Feat: `semantic-commit` accepts an explicit `--message`, resolved before the `FITNESS_CTX_MESSAGE` and HEAD-message fallbacks, so it can validate a bare subject like a PR title.
