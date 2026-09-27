@@ -117,10 +117,7 @@ func run(argv []string) int {
 
 	rows, success, failure, files := summarize(checks, outcomes)
 	printSummary(rows, success, failure, files, time.Since(start).Milliseconds())
-	if failure > 0 {
-		return 1
-	}
-	return 0
+	return finish(rows, failure)
 }
 
 // loadConfig loads the repo config; a legacy JS/TS config (kept while the TS
