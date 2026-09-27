@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.2235
+
+- Feat: `semantic-commit` accepts an explicit `--message`, resolved before the `FITNESS_CTX_MESSAGE` and HEAD-message fallbacks, so it can validate a bare subject like a PR title.
+- Feat: the `pr-check` workflows run `semantic-commit` on the PR title, so a non-semantic title no longer lands as a bad commit subject on `main` at squash-merge.
+- Test: cover the `--message` path passing and failing a title without touching git.
+
 ### 2026.09.26.1912
 
 - Feat: language checks self-gate — `eslint`, `prettier`, `no-eslint-disable`, `node-version`, the vitest coverage checks, and `swiftlint` skip (pass, zero files) when the repo has no `package.json` or no Swift, so a repo no longer disables the checks that do not apply.

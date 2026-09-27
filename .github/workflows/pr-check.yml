@@ -85,10 +85,11 @@ jobs:
               return [...required];
             }
 
-            async function validate(number, body) {
+            async function validate(number, body, title) {
               const tmp = path.join(os.tmpdir(), `desc-${number}.md`);
               fs.writeFileSync(tmp, body);
               const errors = [];
+              errors.push(...runCheck('fitness-check-semantic-commit', ['--message', title], undefined).errors);
               for (const bin of structureBins) errors.push(...runCheck(bin, [], body).errors);
               const required = await requiredClosures(closedIssues(tmp));
               const prArgs = ['--body-file', tmp];
@@ -105,16 +106,16 @@ jobs:
                 const prs = await github.paginate(github.rest.pulls.list, {
                   owner, repo, state: 'open', per_page: 100,
                 });
-                return prs.map((p) => ({ number: p.number, body: p.body || '' }));
+                return prs.map((p) => ({ number: p.number, body: p.body || '', title: p.title || '' }));
               }
               const p = context.payload.pull_request;
-              return [{ number: p.number, body: p.body || '' }];
+              return [{ number: p.number, body: p.body || '', title: p.title || '' }];
             }
 
             let failed = false;
             core.summary.addHeading('PR checks', 2);
             for (const t of await targets()) {
-              const errors = await validate(t.number, t.body);
+              const errors = await validate(t.number, t.body, t.title);
               if (errors.length === 0) {
                 core.summary.addRaw(`✅ #${t.number}: PR description looks good.`, true);
                 continue;

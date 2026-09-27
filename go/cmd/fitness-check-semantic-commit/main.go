@@ -22,12 +22,31 @@ func main() {
 	})
 }
 
-func run(root string, _ []string) (checkkit.Result, error) {
-	msg, provided := checkkit.CtxMessage()
+func run(root string, args []string) (checkkit.Result, error) {
+	msg, provided := messageArg(args)
+	if !provided {
+		msg, provided = checkkit.CtxMessage()
+	}
 	if !provided {
 		msg = gitx.HeadMessage(root)
 	}
 	return judge(firstLine(msg)), nil
+}
+
+// messageArg extracts an explicit --message value (either form) from args, so
+// the check can validate a subject passed directly — e.g. a PR title from the
+// pr-check workflow, which runs the binary without the runner's context-inline
+// extraction.
+func messageArg(args []string) (string, bool) {
+	for i, a := range args {
+		if v, ok := strings.CutPrefix(a, "--message="); ok {
+			return v, true
+		}
+		if a == "--message" && i+1 < len(args) {
+			return args[i+1], true
+		}
+	}
+	return "", false
 }
 
 // semanticTypes is the accepted commit-type vocabulary, inlined from the
