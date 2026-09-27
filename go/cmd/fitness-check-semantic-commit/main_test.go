@@ -87,6 +87,18 @@ func TestRunValidatesProvidedMessage(t *testing.T) {
 	}
 }
 
+func TestRunValidatesMessageArg(t *testing.T) {
+	// An explicit --message (a PR title passed directly) is validated without
+	// touching env or git.
+	withoutMessage(t)
+	if res, err := run(t.TempDir(), []string{"--message", "feat(api): add endpoint"}); err != nil || !res.Ok {
+		t.Fatalf("valid title: expected pass, got %+v err %v", res, err)
+	}
+	if res, err := run(t.TempDir(), []string{"--message", "add endpoint"}); err != nil || res.Ok {
+		t.Fatalf("non-semantic title: expected fail, got %+v err %v", res, err)
+	}
+}
+
 func TestRunValidatesOnlyFirstLine(t *testing.T) {
 	withMessage(t, "chore(scope): description\n\nMade-with: Cursor")
 	res, err := run(t.TempDir(), nil)
