@@ -86,11 +86,20 @@ type outcome struct {
 }
 
 func main() {
-	args := os.Args[1:]
-	if len(args) > 0 && args[0] == "init" {
-		os.Exit(runInit(args[1:]))
+	os.Exit(dispatch(os.Args[1:]))
+}
+
+// dispatch routes the subcommands (`init`, `hook <name>`) before falling
+// through to the check runner, so the git hooks stay one-line shims.
+func dispatch(args []string) int {
+	switch {
+	case len(args) > 0 && args[0] == "init":
+		return runInit(args[1:])
+	case len(args) > 1 && args[0] == "hook":
+		return runHook(args[1], args[2:])
+	default:
+		return run(args)
 	}
-	os.Exit(run(args))
 }
 
 func run(argv []string) int {
