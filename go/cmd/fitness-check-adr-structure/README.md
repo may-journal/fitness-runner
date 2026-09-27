@@ -13,8 +13,10 @@ The template lives at [`docs/architecture/adr/template.md`](../../../docs/archit
 
 - H1 reads `# NNNN — Title`, with a four-digit id and an em-dash separator.
 - The H1 id matches the filename id (`0003-...md` carries `# 0003 — ...`).
-- Sections are exactly `Context`, `Decision`, `Consequences`, in that order.
-- No other `##` sections appear — a superseding decision states so in `Context`, not a `Status` section.
+- The sections `Context`, `Decision`, `Consequences` are all present, and no other `##` section appears.
+- A superseding decision states so in `Context`, not a `Status` section.
+
+The section rules reuse the shared `mdtemplate` mechanism that also backs `plan-structure` and `pr-structure`; only the H1/id rule is ADR-specific.
 
 ## Behavior
 

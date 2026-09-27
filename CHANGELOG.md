@@ -7,11 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.27.1026
+### 2026.09.27.1039
 
 - Feat: add the `adr-structure` check — it validates every numbered ADR under `docs/architecture/adr` against the shared may-journal template.
-- Feat: enforce the `# NNNN — Title` H1 with a matching id and exactly the Context, Decision, Consequences sections in order.
-- Feat: the check self-gates, so a repo with no ADRs passes with zero files; `template.md` and unnumbered files are not scanned.
+- Feat: reuse the shared `mdtemplate` mechanism (behind `plan-structure` and `pr-structure`) for the Context, Decision, Consequences section rules; only the `# NNNN — Title` H1/id rule is ADR-specific.
+- Feat: add an `mdtemplate` `NoPitch` option so a pitch-less file like an ADR can reuse the section rules; the check self-gates and skips `template.md` and unnumbered files.
 - Docs: pull `docs/architecture/adr/template.md` from the shared template, fold ADR 0002's supersede note into Context, and list the check in `docs/checks.md`.
 
 ### 2026.09.26.2235

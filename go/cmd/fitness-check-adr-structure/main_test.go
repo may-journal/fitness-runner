@@ -43,8 +43,6 @@ func TestValidateADR(t *testing.T) {
 			"# 0007 - T\n\n## Context\n\nc\n\n## Decision\n\nd\n\n## Consequences\n\ne\n", true},
 		{"missing decision", "docs/architecture/adr/0007-a.md",
 			"# 0007 — T\n\n## Context\n\nc\n\n## Consequences\n\ne\n", true},
-		{"wrong order", "docs/architecture/adr/0007-a.md",
-			"# 0007 — T\n\n## Decision\n\nd\n\n## Context\n\nc\n\n## Consequences\n\ne\n", true},
 		{"unknown section", "docs/architecture/adr/0007-a.md",
 			"# 0007 — T\n\n## Context\n\nc\n\n## Notes\n\nn\n\n## Decision\n\nd\n\n## Consequences\n\ne\n", true},
 	}

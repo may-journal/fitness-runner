@@ -38,6 +38,9 @@ type Spec struct {
 	Placeholder      string
 	Sections         []Section
 	BanOpenQuestions bool
+	// NoPitch skips the leading-blockquote pitch rule, for a document that
+	// opens straight into sections — a file like an ADR, not an Issue body.
+	NoPitch bool
 }
 
 // Error messages are constants so both checks' tests can pin the exact wording.
@@ -73,7 +76,9 @@ var contentRules = map[Content]contentRule{
 func Validate(body string, spec Spec) []string {
 	headings := mdx.Headings(body)
 	var errs []string
-	errs = append(errs, pitchErrors(body, headings, spec)...)
+	if !spec.NoPitch {
+		errs = append(errs, pitchErrors(body, headings, spec)...)
+	}
 	errs = append(errs, sectionErrors(body, headings, spec)...)
 	errs = append(errs, extraSectionErrors(headings, spec)...)
 	return errs
