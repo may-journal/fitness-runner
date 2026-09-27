@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.26.1912
+
+- Feat: language checks self-gate — `eslint`, `prettier`, `no-eslint-disable`, `node-version`, the vitest coverage checks, and `swiftlint` skip (pass, zero files) when the repo has no `package.json` or no Swift, so a repo no longer disables the checks that do not apply.
+- Feat: make the runner's default the full self-gating catalog, so Swift, Go, JS, and docs repos share one list and a repo needs no `.fitnessrc.json` for the common case; the strict, network, format-specific, and workflow-body checks stay opt-in.
+- Test: cover each check skipping on a repo without its language, and seed a marker file so the tool-missing failure paths still run.
+- Docs: note self-gating and the new default in `docs/checks.md`.
+
 ### 2026.09.26.1834
 
 - Fix: default the reusable workflows to install fitness at `main`, not `@latest`, so the org-injected required workflow uses the current check set.

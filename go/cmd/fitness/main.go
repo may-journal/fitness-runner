@@ -27,15 +27,41 @@ import (
 // defaultChecks is the run order when config has no checks list — the Go
 // twin of the bundle's defaultChecks (the bundle concept dissolves when
 // checks are sibling binaries).
+// defaultChecks is the comprehensive catalog a repo gets with no .fitnessrc.
+// Language checks self-gate — they skip when their language or tool is absent —
+// so this one list fits Swift, Go, JS, and docs-only repos alike. Opt-in only:
+// the strict or network checks (node-version, dependency-currency, the vitest
+// coverage checks), the format-specific ones (changelog-bullets,
+// markdown-filename-camel-case), commit-attribution, and the workflow body
+// checks (plan-structure, pr-structure, pr-closes-issue).
 var defaultChecks = []string{
 	"read-repo-first",
+	"semantic-commit",
+	"plan-trailer",
 	"changelog",
 	"changelog-updated",
 	"cspell",
-	"markdown-no-bold-italic",
-	"markdown-front-matter",
-	"semantic-commit",
 	"jscpd",
+	"gitignore-why",
+	"no-plans-dir",
+	"repeated-string-literals",
+	"markdown-front-matter",
+	"markdown-filename-kebab-case",
+	"markdown-links",
+	"markdown-no-bold-italic",
+	"text-readability",
+	"prose-budget",
+	"mermaid-callouts",
+	"mermaid-callout-why",
+	"mermaid-diagram-prose",
+	"mermaid-diagram-table-gap",
+	"mermaid-legend",
+	"mermaid-level-bleed",
+	"go-complexity",
+	"swiftlint",
+	"eslint",
+	"prettier",
+	"no-eslint-disable",
 }
 
 const defaultTimeout = 5000 * time.Millisecond

@@ -286,6 +286,19 @@ func TestRun(t *testing.T) {
 	}
 }
 
+// TestRunSkipsWhenNoPackageJSON is the regression guard that a repo with no
+// package.json (empty temp dir) passes clean with zero files checked and
+// makes no registry requests.
+func TestRunSkipsWhenNoPackageJSON(t *testing.T) {
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 || len(res.Errors) != 0 {
+		t.Fatalf("no-package.json repo must skip clean: %+v", res)
+	}
+}
+
 func TestEntryLine(t *testing.T) {
 	cases := []struct {
 		name      string

@@ -134,6 +134,18 @@ func TestRunExemptsTestsAndHonorsConfig(t *testing.T) {
 	}
 }
 
+// TestRunSkipsWhenNoGoFiles is the regression guard that a repo with no Go
+// source (empty temp dir) passes clean with zero files checked.
+func TestRunSkipsWhenNoGoFiles(t *testing.T) {
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 || len(res.Errors) != 0 {
+		t.Fatalf("no-Go repo must skip clean: %+v", res)
+	}
+}
+
 func TestUnparsableFileReportsError(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "bad.go", "package p\nfunc {")

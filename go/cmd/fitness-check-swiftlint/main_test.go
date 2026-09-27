@@ -40,6 +40,17 @@ func fakeSwiftlint(t *testing.T, output string, exitCode int) string {
 	return callFile
 }
 
+// swiftRoot returns a fresh temp dir holding a foo.swift file, so run's
+// no-Swift-files guard passes and the check proceeds to swiftlint.
+func swiftRoot(t *testing.T) string {
+	t.Helper()
+	root := t.TempDir()
+	if err := os.WriteFile(filepath.Join(root, "foo.swift"), []byte("// swift\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	return root
+}
+
 func TestRunJudgment(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -72,7 +83,7 @@ func TestRunJudgment(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fakeSwiftlint(t, tc.output, tc.exitCode)
-			res, err := run(t.TempDir(), nil)
+			res, err := run(swiftRoot(t), nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -96,7 +107,7 @@ func TestRunJudgment(t *testing.T) {
 
 func TestRunInvocation(t *testing.T) {
 	callFile := fakeSwiftlint(t, passOutput, 0)
-	root := t.TempDir()
+	root := swiftRoot(t)
 	if _, err := run(root, nil); err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +136,7 @@ func TestRunInvocation(t *testing.T) {
 
 func TestRunMissingBinary(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	res, err := run(t.TempDir(), nil)
+	res, err := run(swiftRoot(t), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,5 +145,21 @@ func TestRunMissingBinary(t *testing.T) {
 	}
 	if len(res.Errors) != 1 || res.Errors[0] != "SwiftLint not installed: brew install swiftlint" {
 		t.Fatalf("errors = %v, want the install hint", res.Errors)
+	}
+}
+
+// TestRunSkipsWhenNoSwiftFiles verifies the self-gating guard: a repo with
+// no .swift files passes clean without invoking swiftlint at all.
+func TestRunSkipsWhenNoSwiftFiles(t *testing.T) {
+	t.Setenv("PATH", t.TempDir())
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("no-Swift repo must skip clean: %+v", res)
+	}
+	if len(res.Errors) != 0 {
+		t.Fatalf("errors = %v, want none", res.Errors)
 	}
 }

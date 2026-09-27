@@ -39,8 +39,26 @@ func TestJudge(t *testing.T) {
 	}
 }
 
+// TestNonJSProjectSkips pins the self-gate: a root without any package.json
+// is not a JS project, so the check skips clean instead of failing on a
+// missing .nvmrc.
+func TestNonJSProjectSkips(t *testing.T) {
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected skip (ok, 0 files) on non-JS repo, got %+v", res)
+	}
+}
+
 func TestRunMissingNvmrc(t *testing.T) {
 	dir := t.TempDir()
+	// A package.json passes the self-gate so the missing-.nvmrc failure path
+	// is still exercised.
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	res, err := run(dir, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -52,6 +70,9 @@ func TestRunMissingNvmrc(t *testing.T) {
 
 func TestRunAgainstRealNvmrc(t *testing.T) {
 	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(dir, ".nvmrc"), []byte("1\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

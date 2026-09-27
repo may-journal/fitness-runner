@@ -106,6 +106,18 @@ func TestRunScansEveryExtensionAndNothingElse(t *testing.T) {
 	}
 }
 
+// TestRunSkipsWhenNoSourceFiles is the regression guard that a repo with no
+// JS/TS source (empty temp dir) passes clean with zero files checked.
+func TestRunSkipsWhenNoSourceFiles(t *testing.T) {
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 || len(res.Errors) != 0 {
+		t.Fatalf("no-JS repo must skip clean: %+v", res)
+	}
+}
+
 func TestRunPrunesSkipDirectories(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "node_modules/pkg/index.js", "/* eslint-disable */\n")

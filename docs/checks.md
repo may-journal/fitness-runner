@@ -13,9 +13,9 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 - Native engines: `cspell` (embedded dictionaries, ~217k words) and `jscpd` (token-based clone detection) — no external tool needed
 - `go-complexity`: cyclomatic complexity ceiling for Go, the house eslint rule's counterpart
 - Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx
-- A missing tool binary fails with a one-line install hint
+- A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
-Default run order lives in the runner ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Opt-in checks (`swiftlint`, `commit-attribution`, the mermaid family, and others) are enabled per repo via `.fitnessrc.json`.
+Default run order lives in the runner ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). The default is now the full catalog: language checks self-gate, so Swift, Go, JS, and docs repos share one list. Opt-in checks (`node-version`, `dependency-currency`, the vitest coverage checks, `changelog-bullets`, and the workflow body checks) are enabled per repo via `.fitnessrc.json`.
 
 ## Shared configs
 
