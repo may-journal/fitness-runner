@@ -116,8 +116,9 @@ func run(argv []string) int {
 	outcomes := runPool(root, checks, passthrough, env, jobs)
 
 	rows, success, failure, files := summarize(checks, outcomes)
-	printSummary(rows, success, failure, files, time.Since(start).Milliseconds())
-	return finish(rows, failure)
+	elapsed := time.Since(start).Milliseconds()
+	printSummary(rows, success, failure, files, elapsed)
+	return finish(rows, success, failure, files, elapsed)
 }
 
 // loadConfig loads the repo config; a legacy JS/TS config (kept while the TS

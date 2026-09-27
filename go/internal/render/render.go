@@ -106,8 +106,8 @@ func Table(rows []Row, cols int, p Palette) string {
 	var b strings.Builder
 	border(&b, widths, "┌", "┬", "┐", p)
 	rowLine(&b, headerCells(widths, p), p)
+	border(&b, widths, "├", "┼", "┤", p)
 	for _, r := range rows {
-		border(&b, widths, "├", "┼", "┤", p)
 		rowLine(&b, rowCells(r, widths, p), p)
 		if !r.Ok && len(r.Errors) > 0 {
 			errorBlock(&b, r, widths, p)
@@ -176,10 +176,13 @@ func errorBlock(b *strings.Builder, r Row, widths []int, p Palette) {
 
 // TotalLine formats the bold summary line.
 func TotalLine(success, failure, files int, ms int64, p Palette) string {
-	line := fmt.Sprintf("Total: %d succeeded, %d failed, %d files in %dms", success, failure, files, ms)
+	total := success + failure
+	line := fmt.Sprintf("✓ All %d checks passed · %d files scanned · %dms", total, files, ms)
 	color := p.green
 	if failure > 0 {
 		color = p.red
+		line = fmt.Sprintf("✗ %d of %d checks passed, %d failed · %d files scanned · %dms",
+			success, total, failure, files, ms)
 	}
 	if color == "" {
 		return line
