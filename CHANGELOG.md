@@ -7,7 +7,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.27.0953
+### 2026.09.27.1013
 
 - Docs: add ADR 0003 recording the decision that quality lives as executable fitness functions, not prose guidelines.
 - Docs: capture the context (drift across repos), the decision (self-gating default, description linting, the reusable-workflow org rollout), and the consequences.

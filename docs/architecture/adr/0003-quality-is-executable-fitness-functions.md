@@ -4,10 +4,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # 0003 — Quality is executable fitness functions
 
-## Status
-
-Accepted.
-
 ## Context
 
 may-journal spans many repos in several languages. Written guidelines and ad hoc CI let each repo drift. Rules lived in prose no tool enforced, and every repo wired its own checks. Quality was inconsistent, and a good rule in one repo was absent in the next.
