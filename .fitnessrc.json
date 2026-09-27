@@ -25,7 +25,8 @@
     "prose-budget",
     "no-plans-dir",
     "plan-trailer",
-    "doc-template"
+    "doc-template",
+    "no-contrastive-reframing"
   ],
   "disabledChecks": [
     "eslint",
