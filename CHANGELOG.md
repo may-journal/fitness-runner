@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.1341
+
+- Feat: add `fitness init` — install the shared may-journal git hooks (commit-msg, pre-commit, pre-push) into `.githooks` and set `core.hooksPath`, so a repo pulls them by version instead of copying.
+- Feat: embed the canonical consumer hooks in the module; they call the installed `fitness` binary, and pre-commit runs a repo's `.githooks/pre-commit.local` for its own build and tests.
+- Feat: publish a reusable `ci-reusable.yml` that owns the whole file-suite build — runner OS, Go setup, the `fitness` install, and swiftlint — so a repo's `ci.yml` is a thin caller.
+- Docs: document `fitness init` and the reusable CI caller in `docs/adoption.md`.
+
 ### 2026.09.27.1306
 
 - Feat: both reporters now lead with a headline — checks passed of total, files scanned, and total time — with positive confirmation on an all-green run.

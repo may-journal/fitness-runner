@@ -8,7 +8,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, not b
 
 ## Reusable workflows
 
-fitness-runner publishes two `workflow_call` workflows: [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml) and [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml). Each installs the checks with `go install`, then validates the calling repo's PR or Plan bodies. A consumer repo adds two thin callers.
+fitness-runner publishes three `workflow_call` workflows: [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), and [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml). Each installs the checks with `go install`, then runs the file suite or validates the calling repo's PR or Plan bodies. A consumer repo adds thin callers.
 
 `.github/workflows/pr-check.yml`:
 
@@ -43,13 +43,32 @@ jobs:
       issues: write
 ```
 
+## Reusable CI
+
+`.github/workflows/ci.yml` (a Swift repo passes `swift: true` on a macOS runner):
+
+```yaml
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+jobs:
+  fitness:
+    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main
+    with:
+      runs-on: macos-latest
+      swift: true
+```
+
 ## Version policy
 
 The callers track `@main` to stay current. Pin a release tag when a repo needs a frozen check set, then bump on its own schedule.
 
 ## Per-repo pieces
 
-Two bits stay local: a `.fitnessrc.json` tuned to the repo's languages, and the git hooks (`core.hooksPath`). The planned `fitness init` command writes both in one step. Until then, copy them from an adopted repo and adjust the check list.
+Run `fitness init` to install the shared git hooks and point `core.hooksPath` at them. A repo keeps a `.fitnessrc.json` tuned to its languages, and adds repo-specific build or tests in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Shared may-journal git hook, installed by `fitness init`. Do not edit here;
+# change it in fitness-runner and re-run `fitness init` to update.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+msg="$(cat "$1")"
+fitness --check=semantic-commit --message="$msg"
+fitness --check=plan-trailer --message="$msg"
