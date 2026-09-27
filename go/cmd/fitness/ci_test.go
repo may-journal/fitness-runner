@@ -13,10 +13,11 @@ func TestCISummaryMarkdown(t *testing.T) {
 		{Name: "prose-budget", Ok: false, FilesChecked: 68, Ms: 15, Errors: []string{"docs/checks.md: a list has 9 items (max 8)"}},
 		{Name: "timed-out", Ok: false, FilesChecked: -1, Ms: 5000, Errors: []string{"Check timed out after 5s"}},
 	}
-	md := ciSummaryMarkdown(rows)
+	md := ciSummaryMarkdown(rows, 1, 2, 80, 55)
 
 	for _, want := range []string{
 		"## Fitness checks",
+		"❌ **1 of 3 checks passed**, 2 failed — 80 files scanned in 55ms",
 		"| Check | Status | Files | Time |",
 		"| cspell | ✅ pass | 12 | 40ms |",
 		"| prose-budget | ❌ fail | 68 | 15ms |",
@@ -31,6 +32,17 @@ func TestCISummaryMarkdown(t *testing.T) {
 	// A passing check gets no detail section.
 	if strings.Contains(md, "### ❌ cspell") {
 		t.Error("passing check should not get a detail section")
+	}
+}
+
+func TestHeadline(t *testing.T) {
+	green := headline(27, 0, 837, 80)
+	if green != "✅ **All 27 checks passed** — 837 files scanned in 80ms" {
+		t.Fatalf("green headline: %q", green)
+	}
+	failing := headline(25, 2, 837, 80)
+	if failing != "❌ **25 of 27 checks passed**, 2 failed — 837 files scanned in 80ms" {
+		t.Fatalf("failing headline: %q", failing)
 	}
 }
 

@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.1306
+
+- Feat: both reporters now lead with a headline — checks passed of total, files scanned, and total time — with positive confirmation on an all-green run.
+- Feat: the terminal total line reads "✓ All N checks passed · F files scanned · Tms" on green, and names the passed and failed counts otherwise.
+- Feat: tighten the terminal table — one rule under the header and contiguous rows, so passing checks stay compact and failures stand out with their error block.
+- Test: cover the headline in the green and failing cases, and the updated total line.
+
 ### 2026.09.27.1224
 
 - Feat: `fitness` writes a GitHub Actions job summary — a check, status, files, and time table plus each failing check's errors — so the PR checks page shows results without opening the logs.

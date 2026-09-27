@@ -65,8 +65,12 @@ func TestErrorBlockWraps(t *testing.T) {
 }
 
 func TestTotalLine(t *testing.T) {
-	got := TotalLine(21, 0, 393, 1458, plain())
-	if got != "Total: 21 succeeded, 0 failed, 393 files in 1458ms" {
-		t.Fatalf("got %q", got)
+	green := TotalLine(21, 0, 393, 1458, plain())
+	if green != "✓ All 21 checks passed · 393 files scanned · 1458ms" {
+		t.Fatalf("green: got %q", green)
+	}
+	failing := TotalLine(20, 1, 393, 1458, plain())
+	if failing != "✗ 20 of 21 checks passed, 1 failed · 393 files scanned · 1458ms" {
+		t.Fatalf("failing: got %q", failing)
 	}
 }

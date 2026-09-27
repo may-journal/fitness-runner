@@ -16,9 +16,9 @@ const maxAnnotations = 10
 
 // finish emits the CI report when running under GitHub Actions, then maps the
 // failure count to the process exit code.
-func finish(rows []render.Row, failure int) int {
+func finish(rows []render.Row, success, failure, files int, elapsedMs int64) int {
 	if isGitHubActions() {
-		emitCIReport(rows)
+		emitCIReport(rows, success, failure, files, elapsedMs)
 	}
 	if failure > 0 {
 		return 1
@@ -36,8 +36,8 @@ func isGitHubActions() bool {
 // running under GitHub Actions. It never changes the process result — the
 // exit code still comes from the check outcomes — so it is additive to the
 // terminal table a local run prints.
-func emitCIReport(rows []render.Row) {
-	writeStepSummary(ciSummaryMarkdown(rows))
+func emitCIReport(rows []render.Row, success, failure, files int, elapsedMs int64) {
+	writeStepSummary(ciSummaryMarkdown(rows, success, failure, files, elapsedMs))
 	for _, line := range annotations(rows, maxAnnotations) {
 		fmt.Fprintln(os.Stdout, line)
 	}
@@ -59,9 +59,10 @@ func writeStepSummary(md string) {
 
 // ciSummaryMarkdown renders the results as a markdown job summary: a
 // status table, then a section per failing check listing its errors.
-func ciSummaryMarkdown(rows []render.Row) string {
+func ciSummaryMarkdown(rows []render.Row, success, failure, files int, elapsedMs int64) string {
 	var b strings.Builder
 	b.WriteString("## Fitness checks\n\n")
+	b.WriteString(headline(success, failure, files, elapsedMs) + "\n\n")
 	b.WriteString("| Check | Status | Files | Time |\n| --- | --- | --- | --- |\n")
 	for _, r := range rows {
 		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", r.Name, statusMark(r.Ok), filesCell(r.FilesChecked), r.Ms)
@@ -70,6 +71,18 @@ func ciSummaryMarkdown(rows []render.Row) string {
 		b.WriteString(rowDetail(r))
 	}
 	return b.String()
+}
+
+// headline is the one-line aggregate atop the summary: a positive line when
+// every check passed, otherwise a count of what passed and what failed. Both
+// forms name the files scanned and total time.
+func headline(success, failure, files int, elapsedMs int64) string {
+	total := success + failure
+	if failure == 0 {
+		return fmt.Sprintf("✅ **All %d checks passed** — %d files scanned in %dms", total, files, elapsedMs)
+	}
+	return fmt.Sprintf("❌ **%d of %d checks passed**, %d failed — %d files scanned in %dms",
+		success, total, failure, files, elapsedMs)
 }
 
 // statusMark renders a row's ok flag as a marked word.
