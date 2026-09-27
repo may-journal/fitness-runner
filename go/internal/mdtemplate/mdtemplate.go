@@ -38,6 +38,9 @@ type Spec struct {
 	Placeholder      string
 	Sections         []Section
 	BanOpenQuestions bool
+	// NoPitch skips the leading-blockquote pitch rule, for a document that
+	// opens straight into sections — a file like an ADR, not an Issue body.
+	NoPitch bool
 }
 
 // Error messages are constants so both checks' tests can pin the exact wording.
@@ -66,6 +69,40 @@ var contentRules = map[Content]contentRule{
 	Bullet:    {bulletRe, "has no list item (- …)"},
 }
 
+// commentRe matches the opening of an HTML comment, the guidance a template
+// section carries to tell a person or bot what belongs there.
+var commentRe = regexp.MustCompile(`<!--`)
+
+// SpecFromTemplate derives a Spec from a template file's own shape: its
+// level-2 headings become the required sections (presence only, order aside),
+// and the pitch rule is on only when the template itself opens with a
+// blockquote. noun names the document in messages.
+func SpecFromTemplate(body, noun string) Spec {
+	headings := mdx.Headings(body)
+	var sections []Section
+	for _, h := range headings {
+		if h.Level == 2 {
+			sections = append(sections, Section{Heading: h.Text, Requires: Prose})
+		}
+	}
+	_, hasPitch := pitchLine(body, headings)
+	return Spec{Noun: noun, Sections: sections, NoPitch: !hasPitch}
+}
+
+// MissingCommentSections returns the level-2 headings of a template whose
+// section body carries no HTML comment, so a template must guide every
+// section rather than leave one bare.
+func MissingCommentSections(body string) []string {
+	headings := mdx.Headings(body)
+	var out []string
+	for _, h := range headings {
+		if h.Level == 2 && !sectionHasMatch(body, headings, h.Text, commentRe) {
+			out = append(out, h.Text)
+		}
+	}
+	return out
+}
+
 // Validate returns one message per violation of spec, in order: the pitch,
 // then each required section (missing, then its content rule), then every
 // unexpected level-2 heading in document order. An empty result means the body
@@ -73,7 +110,9 @@ var contentRules = map[Content]contentRule{
 func Validate(body string, spec Spec) []string {
 	headings := mdx.Headings(body)
 	var errs []string
-	errs = append(errs, pitchErrors(body, headings, spec)...)
+	if !spec.NoPitch {
+		errs = append(errs, pitchErrors(body, headings, spec)...)
+	}
 	errs = append(errs, sectionErrors(body, headings, spec)...)
 	errs = append(errs, extraSectionErrors(headings, spec)...)
 	return errs

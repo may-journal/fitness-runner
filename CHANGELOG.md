@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.1116
+
+- Feat: add the `doc-template` check — a `template.md` or `*.template.md` file defines a document's sections, and every markdown file in its folder or a descendant must match, via the shared `mdtemplate` engine.
+- Feat: require every `##` section of a template, including the `.github` PR and Issue templates, to carry a guiding HTML comment; the nearest template above a file wins.
+- Feat: add `mdtemplate` `SpecFromTemplate`, `MissingCommentSections`, and a `NoPitch` spec option, so a pitch-less file reuses the section rules that Issue and PR bodies use.
+- Docs: adopt the shared ADR `template.md`, fold ADR 0002's supersede note from Status into Context, and list the check in `docs/checks.md`.
+
 ### 2026.09.26.2235
 
 - Feat: `semantic-commit` accepts an explicit `--message`, resolved before the `FITNESS_CTX_MESSAGE` and HEAD-message fallbacks, so it can validate a bare subject like a PR title.
