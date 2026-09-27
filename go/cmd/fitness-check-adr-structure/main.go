@@ -1,10 +1,10 @@
 // Command fitness-check-adr-structure validates that every numbered ADR under
 // docs/architecture/adr follows the house template: an `# NNNN — Title` H1
-// whose id matches the filename, and the sections Context, Decision, and
-// Consequences in that order, with an optional Status section first. It self-
-// gates — a repo with no ADRs passes with zero files. The template.md and any
-// unnumbered file are not scanned, so the template itself never trips the id
-// rule it documents.
+// whose id matches the filename, and exactly the sections Context, Decision,
+// and Consequences in that order. It mirrors docs/architecture/adr/template.md,
+// the template shared across may-journal repos. It self-gates — a repo with no
+// ADRs passes with zero files. The template.md and any unnumbered file are not
+// scanned, so the template itself never trips the id rule it documents.
 package main
 
 import (
@@ -74,9 +74,12 @@ var (
 	sectionRe = regexp.MustCompile(`(?m)^## (.+?)\s*$`)
 )
 
-// allowed is the ADR section vocabulary; Status is optional and everything
-// else is required, so the accepted orderings are exactly two.
-var allowed = map[string]bool{"Status": true, "Context": true, "Decision": true, "Consequences": true}
+// allowed is the ADR section vocabulary; the template has exactly these
+// three, in this order, and no others.
+var allowed = map[string]bool{"Context": true, "Decision": true, "Consequences": true}
+
+// sectionOrder is the one accepted heading sequence, matching template.md.
+const sectionOrder = "Context, Decision, Consequences"
 
 // validateADR returns one ADR's structure errors: a malformed or mismatched
 // H1, and any section-set or ordering violation.
@@ -106,8 +109,8 @@ func sectionErrors(file, content string) []string {
 	var errs []string
 	if bad := unknownSections(got); len(bad) > 0 {
 		errs = append(errs, fmt.Sprintf(
-			"%s: unexpected section(s) %s — an ADR uses Status (optional), Context, Decision, Consequences",
-			file, strings.Join(bad, ", ")))
+			"%s: unexpected section(s) %s — an ADR uses only %s",
+			file, strings.Join(bad, ", "), sectionOrder))
 	}
 	if msg := sequenceError(got); msg != "" {
 		errs = append(errs, file+": "+msg)
@@ -136,15 +139,14 @@ func unknownSections(got []string) []string {
 }
 
 // sequenceError projects the headings to the known vocabulary and reports a
-// violation unless they match one of the two accepted orderings — which also
-// catches a missing section, a duplicate, or Status placed after Context.
+// violation unless they match the one accepted ordering — which also catches
+// a missing or duplicated section.
 func sequenceError(got []string) string {
 	joined := strings.Join(filterKnown(got), ", ")
-	if joined == "Context, Decision, Consequences" ||
-		joined == "Status, Context, Decision, Consequences" {
+	if joined == sectionOrder {
 		return ""
 	}
-	return "sections must be Context, Decision, Consequences in order (optional Status first); found: " + joined
+	return "sections must be " + sectionOrder + " in order; found: " + joined
 }
 
 // filterKnown keeps the ADR-vocabulary headings in document order.

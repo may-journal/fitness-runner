@@ -7,12 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.27.1021
+### 2026.09.27.1026
 
-- Feat: add the `adr-structure` check — it validates every numbered ADR under `docs/architecture/adr` against the house template.
-- Feat: enforce the `# NNNN — Title` H1 with a matching id, the Context, Decision, Consequences order, and an optional Status section first.
+- Feat: add the `adr-structure` check — it validates every numbered ADR under `docs/architecture/adr` against the shared may-journal template.
+- Feat: enforce the `# NNNN — Title` H1 with a matching id and exactly the Context, Decision, Consequences sections in order.
 - Feat: the check self-gates, so a repo with no ADRs passes with zero files; `template.md` and unnumbered files are not scanned.
-- Docs: add `docs/architecture/adr/template.md` as the canonical ADR shape and list the check in `docs/checks.md`.
+- Docs: pull `docs/architecture/adr/template.md` from the shared template, fold ADR 0002's supersede note into Context, and list the check in `docs/checks.md`.
 
 ### 2026.09.26.2235
 

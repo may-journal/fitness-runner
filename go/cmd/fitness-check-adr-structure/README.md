@@ -7,15 +7,14 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Validates that every numbered ADR under `docs/architecture/adr` follows the house template, so the record format holds as a check rather than a habit.
 
-The template lives at [`docs/architecture/adr/template.md`](../../../docs/architecture/adr/template.md).
+The template lives at [`docs/architecture/adr/template.md`](../../../docs/architecture/adr/template.md) and is shared across may-journal repos.
 
 ## Rules
 
 - H1 reads `# NNNN — Title`, with a four-digit id and an em-dash separator.
 - The H1 id matches the filename id (`0003-...md` carries `# 0003 — ...`).
-- Sections are `Context`, `Decision`, `Consequences` in that order.
-- A `Status` section is optional and, when present, comes first — the house style uses it only to record a supersede link.
-- No other `##` sections appear.
+- Sections are exactly `Context`, `Decision`, `Consequences`, in that order.
+- No other `##` sections appear — a superseding decision states so in `Context`, not a `Status` section.
 
 ## Behavior
 

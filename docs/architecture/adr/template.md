@@ -2,20 +2,16 @@
 relatedConfigurations: ['../../../.fitnessrc.json']
 ---
 
-# NNNN — Title as a short claim
-
-## Status
-
-Optional. Include this section only to record that the ADR supersedes an earlier one. A new ADR omits it.
+# NNNN — Title
 
 ## Context
 
-State the forces. What changed, what pressure applies, and why a decision is due. Keep it to a few short sentences.
+<!-- Brief context statement not longer than a Tweet. -->
 
 ## Decision
 
-State the decision in the present tense. Name what the project does now and the constraints the choice sets.
+<!-- Markdown numbered bullets with (KISS) for each decision. No pontificating, just plain bullets with decisions. -->
 
 ## Consequences
 
-State what becomes true as a result. Name the benefits, the costs, and what stays out of scope.
+<!-- Numbered bullets with known positive, negative, or neutral consequences. This will likely change as the app grows. -->
