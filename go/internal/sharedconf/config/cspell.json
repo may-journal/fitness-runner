@@ -95,6 +95,7 @@
     "fset",
     "wordlist",
     "flaggable",
-    "LSTMs"
+    "LSTMs",
+    "WRONLY"
   ]
 }

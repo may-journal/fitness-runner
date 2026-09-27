@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.1224
+
+- Feat: `fitness` writes a GitHub Actions job summary — a check, status, files, and time table plus each failing check's errors — so the PR checks page shows results without opening the logs.
+- Feat: emit `::error` annotations for failing checks, parsing the file and line from the error strings, capped at ten per step with a note in the summary when more exist.
+- Feat: gate the CI output behind the `GITHUB_ACTIONS` env, so a local run's terminal output is unchanged.
+- Test: cover the summary markdown, annotation formatting and file/line parsing, the cap-and-note behavior, and escaping.
+
 ### 2026.09.27.1155
 
 - Feat: add the `no-contrastive-reframing` check — it flags the "not X, it's Y" pattern in markdown prose, where a sentence rejects a claim then restates the real point.
