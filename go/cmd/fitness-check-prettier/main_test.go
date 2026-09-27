@@ -195,6 +195,9 @@ func TestRun(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
+			// A package.json satisfies the no-JS-project guard; a case that
+			// supplies its own (e.g. a prettier field) overwrites this one.
+			writeFiles(t, root, map[string]string{"package.json": "{}"})
 			writeFiles(t, root, tc.files)
 			cfgPath := filepath.Join(root, "node_modules", "@mayjournal", "fitness-shared", "config", prettierConfigCjs)
 			if tc.sharedCfg {
@@ -243,6 +246,7 @@ func TestRun(t *testing.T) {
 
 func TestRunMissingPrettier(t *testing.T) {
 	root := t.TempDir()
+	writeFiles(t, root, map[string]string{"package.json": "{}"})
 	t.Setenv("PATH", t.TempDir())
 	t.Setenv("FITNESS_STAGED_FILES", "")
 	res, err := run(root, nil)
@@ -254,9 +258,24 @@ func TestRunMissingPrettier(t *testing.T) {
 	}
 }
 
+// TestRunSkipsWhenNoPackageJSON pins the self-gating guard: a repo with no
+// package.json passes without running (or requiring) Prettier.
+func TestRunSkipsWhenNoPackageJSON(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("PATH", t.TempDir())
+	t.Setenv("FITNESS_STAGED_FILES", "")
+	res, err := run(root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected skip (ok, 0 files), got %+v", res)
+	}
+}
+
 func TestNodeModulesBinPreferredOverPath(t *testing.T) {
 	root := t.TempDir()
-	writeFiles(t, root, map[string]string{".prettierrc.json": "{}"})
+	writeFiles(t, root, map[string]string{".prettierrc.json": "{}", "package.json": "{}"})
 	local := filepath.Join(root, "node_modules", ".bin", "prettier")
 	writeFakePrettier(t, local, cleanOutput, 0)
 	binDir := t.TempDir()

@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 const (
@@ -46,6 +47,9 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
+	if len(walkfs.FilesByExt(root, ".swift")) == 0 {
+		return checkkit.Pass(0), nil
+	}
 	bin, err := exec.LookPath("swiftlint")
 	if err != nil {
 		return checkkit.Fail(0, notInstalled), nil

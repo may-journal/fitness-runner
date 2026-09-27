@@ -145,6 +145,12 @@ export default { test: { coverage: { exclude: [DTS_GLOB, "src/foo.ts"] } } };`,
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
+			// Mark the root as a JS project so the package.json self-gate
+			// lets the check run; a real package.json in tc.files overwrites
+			// this bare one.
+			if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
+				t.Fatal(err)
+			}
 			for name, content := range tc.files {
 				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 					t.Fatal(err)
@@ -182,6 +188,11 @@ func TestRunFallbackRoot(t *testing.T) {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			t.Fatal(err)
 		}
+	}
+	// proj needs a package.json to pass the self-gate before the fallback
+	// resolution is exercised.
+	if err := os.WriteFile(filepath.Join(proj, "package.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(configDir, "vitest.config.js"),
 		[]byte(`module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };`), 0o644); err != nil {
@@ -223,12 +234,29 @@ func TestLoadExcludeEmbeddedFallback(t *testing.T) {
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("loadExclude = %#v, want the embedded config's literals %#v", got, want)
 	}
-	res, err := run(t.TempDir(), nil)
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	res, err := run(dir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("embedded exclude list should pass the judgment: %+v", res)
+	}
+}
+
+// TestNonJSProjectSkips pins the self-gate: a root without any package.json
+// is not a JS project, so the check skips clean instead of judging a
+// fallback config it never opted into.
+func TestNonJSProjectSkips(t *testing.T) {
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected skip (ok, 0 files) on non-JS repo, got %+v", res)
 	}
 }
 

@@ -45,6 +45,13 @@ func fakeEslint(t *testing.T, root, stdout string, exitCode int) {
 	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"), body)
 }
 
+// writePackageJSON drops a minimal package.json at root so the no-JS-project
+// guard lets the check run.
+func writePackageJSON(t *testing.T, root string) {
+	t.Helper()
+	writeFile(t, filepath.Join(root, "package.json"), "{}")
+}
+
 // isolate scrubs PATH and the staged-file env so no real tool or ambient
 // runner context leaks into a test.
 func isolate(t *testing.T) {
@@ -89,6 +96,7 @@ func TestRunJudgment(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			isolate(t)
 			root := t.TempDir()
+			writePackageJSON(t, root)
 			fakeEslint(t, root, tc.stdout, tc.exitCode)
 			res, err := run(root, nil)
 			if err != nil {
@@ -112,6 +120,7 @@ func TestRunJudgment(t *testing.T) {
 func TestRunCrashFallbackQuotesStderr(t *testing.T) {
 	isolate(t)
 	root := t.TempDir()
+	writePackageJSON(t, root)
 	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"),
 		"echo 'Error: Could not find config file.' >&2\nexit 2")
 	res, err := run(root, nil)
@@ -127,12 +136,26 @@ func TestRunCrashFallbackQuotesStderr(t *testing.T) {
 func TestRunMissingBinary(t *testing.T) {
 	isolate(t)
 	root := t.TempDir()
+	writePackageJSON(t, root)
 	res, err := run(root, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.Ok || res.FilesChecked != 0 || len(res.Errors) != 1 || res.Errors[0] != missingEslintMessage {
 		t.Fatalf("unexpected result: %+v", res)
+	}
+}
+
+// TestRunSkipsWhenNoPackageJSON pins the self-gating guard: a repo with no
+// package.json passes without running (or requiring) eslint.
+func TestRunSkipsWhenNoPackageJSON(t *testing.T) {
+	isolate(t)
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected skip (ok, 0 files), got %+v", res)
 	}
 }
 
@@ -144,6 +167,7 @@ var installedConfigMjs = filepath.Join("node_modules", "@mayjournal", "fitness-s
 // its working directory and argv, returning the recorded lines.
 func invokeAndRecord(t *testing.T, root string) []string {
 	t.Helper()
+	writePackageJSON(t, root)
 	argsFile := filepath.Join(t.TempDir(), "args")
 	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"),
 		"pwd -P > "+argsFile+"\nprintf '%s\\n' \"$@\" >> "+argsFile+"\necho '[]'")
@@ -211,6 +235,7 @@ func TestRunInvocation(t *testing.T) {
 func TestRunStagedPaths(t *testing.T) {
 	isolate(t)
 	root := t.TempDir()
+	writePackageJSON(t, root)
 	quoted := `src/bar "quoted".ts`
 	for _, p := range []string{"a.js", quoted} {
 		writeFile(t, filepath.Join(root, p), "x")

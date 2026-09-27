@@ -30,6 +30,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/vitestconf"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // Error strings ported verbatim from the TS check's enUS.
@@ -58,22 +59,31 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
+	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+		return checkkit.Pass(0), nil
+	}
+	return runVitest(root), nil
+}
+
+// runVitest applies the coverage rule to a JS project: full thresholds here and
+// in the shared config, then a passing vitest run.
+func runVitest(root string) checkkit.Result {
 	frRoot := sharedconf.ResolveDir(root)
 	if !vitestconf.HasFullThresholds(root, frRoot) {
-		return checkkit.Fail(1, thresholdsNot100), nil
+		return checkkit.Fail(1, thresholdsNot100)
 	}
 	if !vitestconf.HasFullThresholds(frRoot, "") {
-		return checkkit.Fail(1, fitnessRunnerThresholdsNot100), nil
+		return checkkit.Fail(1, fitnessRunnerThresholdsNot100)
 	}
 	bin, found := resolveVitest(root)
 	if !found {
-		return checkkit.Fail(1, missingVitestHint), nil
+		return checkkit.Fail(1, missingVitestHint)
 	}
 	exitCode, output := execVitest(bin, root, vitestArgs(root, frRoot))
 	if exitCode == 0 {
-		return checkkit.Pass(1), nil
+		return checkkit.Pass(1)
 	}
-	return checkkit.Fail(1, failureMessage(output)), nil
+	return checkkit.Fail(1, failureMessage(output))
 }
 
 // vitestArgs is the TS buildVitestCoverageCmd: plain `run --coverage` when

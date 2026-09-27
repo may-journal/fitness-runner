@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 func main() {
@@ -25,6 +26,9 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
+	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+		return checkkit.Pass(0), nil
+	}
 	raw, err := os.ReadFile(filepath.Join(root, ".nvmrc"))
 	if err != nil {
 		return checkkit.Fail(1, "missing .nvmrc"), nil

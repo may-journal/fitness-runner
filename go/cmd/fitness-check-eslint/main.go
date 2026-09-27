@@ -30,6 +30,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // eslintFallbackMessage mirrors ESLINT_FALLBACK_MESSAGE in the TS check.
@@ -53,6 +54,9 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
+	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+		return checkkit.Pass(0), nil
+	}
 	if abs, err := filepath.Abs(root); err == nil {
 		root = abs
 	}

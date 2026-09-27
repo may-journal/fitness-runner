@@ -36,6 +36,10 @@ const partialThresholdsJS = "module.exports = { test: { coverage: { thresholds: 
 const fullThresholdsPkgJSON = `{"vitest":{"coverage":{"thresholds":` +
 	`{"branches":100,"functions":100,"lines":100,"statements":100}}}}`
 
+// barePkgJSON marks a root as a JS project so the package.json self-gate
+// lets the check run, without being a threshold config source itself.
+const barePkgJSON = "{}"
+
 func writeFile(t *testing.T, path, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -82,6 +86,7 @@ func itoa(n int) string {
 func TestThresholdGate(t *testing.T) {
 	t.Run("root thresholds not 100 fail before any exec", func(t *testing.T) {
 		root := t.TempDir()
+		writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 		writeFile(t, filepath.Join(root, "vitest.config.js"), partialThresholdsJS)
 		t.Setenv("PATH", t.TempDir()) // no vitest anywhere: the gate must fail first
 		res, err := run(root, nil)
@@ -95,6 +100,7 @@ func TestThresholdGate(t *testing.T) {
 
 	t.Run("fitness-runner root thresholds not 100 fail second", func(t *testing.T) {
 		root := t.TempDir()
+		writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 		writeFile(t, filepath.Join(root, "vitest.config.js"), fullThresholdsJS)
 		// A fake @mayjournal/fitness-shared install wins the frRoot
 		// resolution over the embedded copy; its thresholds sit at 90.
@@ -110,8 +116,22 @@ func TestThresholdGate(t *testing.T) {
 	})
 }
 
+// TestNonJSProjectSkips pins the self-gate: a root without any package.json
+// is not a JS project, so the check skips clean instead of failing on
+// missing thresholds/vitest.
+func TestNonJSProjectSkips(t *testing.T) {
+	res, err := run(t.TempDir(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected skip (ok, 0 files) on non-JS repo, got %+v", res)
+	}
+}
+
 func TestMissingVitest(t *testing.T) {
 	root := t.TempDir()
+	writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 	writeFile(t, filepath.Join(root, "vitest.config.js"), fullThresholdsJS)
 	t.Setenv("PATH", t.TempDir())
 	res, err := run(root, nil)
@@ -145,6 +165,7 @@ line2`, "", 1, false, "line2"},
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
+			writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 			writeFile(t, filepath.Join(root, "vitest.config.js"), fullThresholdsJS)
 			fakeBin := t.TempDir()
 			installFakeVitest(t, fakeBin, tc.out, tc.errOut, tc.code, "")
@@ -171,6 +192,7 @@ func TestConfigFallbackArgs(t *testing.T) {
 		// Both threshold gates and the --config fallback must come from the
 		// vitest.config.mjs materialized out of the binary.
 		root := t.TempDir()
+		writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 		fakeBin := t.TempDir()
 		argsFile := filepath.Join(t.TempDir(), "args.txt")
 		installFakeVitest(t, fakeBin, "", "", 0, argsFile)
@@ -220,6 +242,7 @@ func TestConfigFallbackArgs(t *testing.T) {
 
 	t.Run("installed shared config wins over embedded", func(t *testing.T) {
 		root := t.TempDir()
+		writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 		installed := filepath.Join(root, installedConfigDir)
 		writeFile(t, filepath.Join(installed, fitnessVitestConfig), fullThresholdsJS)
 		fakeBin := t.TempDir()
@@ -245,6 +268,7 @@ func TestConfigFallbackArgs(t *testing.T) {
 
 	t.Run("local config runs without --config", func(t *testing.T) {
 		root := t.TempDir()
+		writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 		writeFile(t, filepath.Join(root, "vitest.config.mts"), fullThresholdsJS)
 		fakeBin := t.TempDir()
 		argsFile := filepath.Join(t.TempDir(), "args.txt")
@@ -266,6 +290,7 @@ func TestConfigFallbackArgs(t *testing.T) {
 func TestResolveVitestPrefersNodeModulesBin(t *testing.T) {
 	parent := t.TempDir()
 	root := filepath.Join(parent, "nested", "repo")
+	writeFile(t, filepath.Join(root, "package.json"), barePkgJSON)
 	writeFile(t, filepath.Join(root, "vitest.config.js"), fullThresholdsJS)
 	// The walking-up resolution must pick the ancestor's node_modules/.bin
 	// over a PATH candidate that would fail the run.
