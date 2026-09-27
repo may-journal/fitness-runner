@@ -7,12 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.27.1417
+### 2026.09.27.1429
 
 - Feat: add `fitness hook commit-msg`, `pre-commit`, and `pre-push` subcommands that own the hook orchestration in Go.
 - Feat: port the eighty-line Bash plan-approval gate into `fitness hook pre-push`; the embedded hooks are now one-line shims that exec the subcommand.
 - Feat: `fitness init` installs the shims, so a repo's hooks stay one line while the logic lives in the tested binary.
 - Test: cover the plan-number extraction and the chore/docs commit classification.
+- Docs: document `fitness init` and `fitness hook` in the README, and add a `fitness help` command that prints the usage.
 
 ### 2026.09.27.1341
 

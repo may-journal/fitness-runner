@@ -89,9 +89,22 @@ func main() {
 	os.Exit(dispatch(os.Args[1:]))
 }
 
-// dispatch routes the subcommands (`init`, `hook <name>`) before falling
-// through to the check runner, so the git hooks stay one-line shims.
+// dispatch routes help and the subcommands (`init`, `hook <name>`) before
+// falling through to the check runner, so the git hooks stay one-line shims.
 func dispatch(args []string) int {
+	if isHelp(args) {
+		return printUsage()
+	}
+	return route(args)
+}
+
+// isHelp reports whether the first argument asks for usage.
+func isHelp(args []string) bool {
+	return len(args) > 0 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h")
+}
+
+// route dispatches the subcommands, defaulting to the check runner.
+func route(args []string) int {
 	switch {
 	case len(args) > 0 && args[0] == "init":
 		return runInit(args[1:])
@@ -100,6 +113,21 @@ func dispatch(args []string) int {
 	default:
 		return run(args)
 	}
+}
+
+// printUsage writes the command summary.
+func printUsage() int {
+	fmt.Println(`fitness — run the configured checks.
+
+Usage:
+  fitness                  run the full configured suite
+  fitness <name>           run one check by name
+  fitness --check=<name>   run one check by name
+  fitness init             install the shared git hooks into this repo
+  fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
+
+Docs: https://github.com/may-journal/fitness-runner#usage`)
+	return 0
 }
 
 func run(argv []string) int {
