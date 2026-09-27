@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.1155
+
+- Feat: add the `no-contrastive-reframing` check — it flags the "not X, it's Y" pattern in markdown prose, where a sentence rejects a claim then restates the real point.
+- Feat: match the split form ("It's not a workout. It's a lifestyle.") and the single-sentence form, gated on a demonstrative opening to favor precision over recall.
+- Feat: reuse the `mdx` prose masking and drop quoted spans, so fenced code, headings, inline code, and quoted examples never trip it.
+- Test: cover both forms, curly quotes, cross-paragraph splits, ordinary negations, the additive "not only X but also Y", and the masking exemptions.
+
 ### 2026.09.27.1116
 
 - Feat: add the `doc-template` check — a `template.md` or `*.template.md` file defines a document's sections, and every markdown file in its folder or a descendant must match, via the shared `mdtemplate` engine.

@@ -45,6 +45,7 @@ var defaultChecks = []string{
 	"gitignore-why",
 	"no-plans-dir",
 	"doc-template",
+	"no-contrastive-reframing",
 	"repeated-string-literals",
 	"markdown-front-matter",
 	"markdown-filename-kebab-case",
