@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.27.1021
+
+- Feat: add the `adr-structure` check — it validates every numbered ADR under `docs/architecture/adr` against the house template.
+- Feat: enforce the `# NNNN — Title` H1 with a matching id, the Context, Decision, Consequences order, and an optional Status section first.
+- Feat: the check self-gates, so a repo with no ADRs passes with zero files; `template.md` and unnumbered files are not scanned.
+- Docs: add `docs/architecture/adr/template.md` as the canonical ADR shape and list the check in `docs/checks.md`.
+
 ### 2026.09.26.2235
 
 - Feat: `semantic-commit` accepts an explicit `--message`, resolved before the `FITNESS_CTX_MESSAGE` and HEAD-message fallbacks, so it can validate a bare subject like a PR title.

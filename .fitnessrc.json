@@ -24,7 +24,8 @@
     "text-readability",
     "prose-budget",
     "no-plans-dir",
-    "plan-trailer"
+    "plan-trailer",
+    "adr-structure"
   ],
   "disabledChecks": [
     "eslint",

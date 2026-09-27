@@ -44,6 +44,7 @@ var defaultChecks = []string{
 	"jscpd",
 	"gitignore-why",
 	"no-plans-dir",
+	"adr-structure",
 	"repeated-string-literals",
 	"markdown-front-matter",
 	"markdown-filename-kebab-case",
