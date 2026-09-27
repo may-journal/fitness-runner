@@ -1,0 +1,43 @@
+name: CI (reusable)
+
+# The shared fitness file-suite build. A calling repo's ci.yml is a thin
+# caller that passes only its inputs; the whole build lives here.
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: Runner label; use macos-latest for a Swift repo so swiftlint can run.
+        type: string
+        default: ubuntu-latest
+      swift:
+        description: Install swiftlint (a Swift repo needs it; requires a macOS runner).
+        type: boolean
+        default: false
+      ref:
+        description: fitness-runner ref to install the checks from.
+        type: string
+        default: main
+
+jobs:
+  fitness:
+    runs-on: ${{ inputs.runs-on }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history and the PR head (not the merge commit) so
+          # changelog-updated, semantic-commit, and plan-trailer see a real
+          # commit and its ancestry.
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+      - name: Install the fitness checks
+        run: |
+          go install github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Install swiftlint
+        if: ${{ inputs.swift }}
+        run: command -v swiftlint >/dev/null 2>&1 || brew install swiftlint
+      - name: Run fitness
+        run: fitness

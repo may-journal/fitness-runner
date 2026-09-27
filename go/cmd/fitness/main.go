@@ -86,7 +86,11 @@ type outcome struct {
 }
 
 func main() {
-	os.Exit(run(os.Args[1:]))
+	args := os.Args[1:]
+	if len(args) > 0 && args[0] == "init" {
+		os.Exit(runInit(args[1:]))
+	}
+	os.Exit(run(args))
 }
 
 func run(argv []string) int {

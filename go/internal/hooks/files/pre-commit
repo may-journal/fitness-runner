@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Shared may-journal git hook, installed by `fitness init`. Do not edit here;
+# change it in fitness-runner and re-run `fitness init` to update.
+#
+# Repo-specific build and tests belong in an executable .githooks/pre-commit.local,
+# which runs last — so a repo adds its own build without forking this hook.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+
+fitness-stamp-changelog
+fitness
+
+if [ -x .githooks/pre-commit.local ]; then
+  .githooks/pre-commit.local
+fi
