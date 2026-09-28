@@ -147,7 +147,7 @@ func (g ghClient) api(args ...string) ([]byte, error) {
 	return cmd.Output()
 }
 
-// decodeLines decodes the --jq output of gh: one JSON value per line.
+// decodeLines decodes the --jq output of gh: one JSON object per line.
 func decodeLines[T any](out []byte) ([]T, error) {
 	var vals []T
 	dec := json.NewDecoder(bytes.NewReader(out))
@@ -190,12 +190,19 @@ func (g ghClient) openPlans() ([]target, error) {
 	return decodeLines[target](out)
 }
 
+// commentBodies selects objects, not bare bodies: gh prints a string result
+// raw rather than as JSON, which would not decode.
 func (g ghClient) commentBodies(n int) ([]string, error) {
-	out, err := g.api("--paginate", "--jq", ".[].body", "issues/"+strconv.Itoa(n)+"/comments?per_page=100")
+	out, err := g.api("--paginate", "--jq", ".[] | {body: (.body // \"\")}", "issues/"+strconv.Itoa(n)+"/comments?per_page=100")
 	if err != nil {
 		return nil, err
 	}
-	return decodeLines[string](out)
+	comments, err := decodeLines[target](out)
+	bodies := make([]string, len(comments))
+	for i, c := range comments {
+		bodies[i] = c.Body
+	}
+	return bodies, err
 }
 
 func (g ghClient) comment(n int, body string) error {

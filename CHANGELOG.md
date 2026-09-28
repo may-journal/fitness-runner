@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1156
+
+- Fix: `fitness plan-check` reads a Plan's existing comments, so a Plan that already has a comment gets a verdict again.
+- Fix: every gh query in the workflow subcommands emits JSON objects, since gh prints a bare string result raw.
+- Test: add an opt-in `FITNESS_LIVE_GH=1` test that checks the gh queries against the real gh.
+
 ### 2026.09.28.1151
 
 - Fix: the shared workflows install fitness with `GOPROXY=direct`, so `@main` is the latest merge rather than a stale proxy copy.
