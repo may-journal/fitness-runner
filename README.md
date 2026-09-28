@@ -49,23 +49,21 @@ Put `go/bin` on PATH, or copy the binaries onto it. The runner finds check binar
 ## Usage
 
 ```bash
-go/bin/fitness               # full configured suite
-go/bin/fitness prettier      # one check by name
-go/bin/fitness --check=eslint
-go/bin/fitness prettier --write .   # passthrough args reach the check
+fitness                      # full configured suite
+fitness prettier             # one check by name
+fitness --check=eslint
+fitness prettier --write .   # passthrough args reach the check
+fitness init                 # install the shared git hooks into a repo
+fitness hook pre-commit      # run a hook's logic (the installed shims call these)
 ```
 
 ## Git hooks
 
-Checks run automatically on `git` operations. This repo's hooks live under [githooks/](githooks/). Point Git at them once:
+In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
 
-```bash
-git config core.hooksPath githooks
-```
-
-- pre-commit: builds, runs `make check`, restamps a staged `CHANGELOG` entry, then runs the full suite — including `no-plans-dir`, which blocks a returning `docs/plans/` file.
-- commit-msg: validates the message through `semantic-commit` and the optional `Plan #NN` trailer through `plan-trailer`.
-- pre-push: blocks the push unless the pushed commits trace to an approved `Plan` Issue, resolved via `gh`. Chore and docs-only pushes are exempt.
+- commit-msg: validates the message through `semantic-commit` and the `Plan #NN` trailer through `plan-trailer`.
+- pre-commit: stamps a staged `CHANGELOG` entry, runs the full suite, then a repo's own `.githooks/pre-commit.local`.
+- pre-push: blocks the push unless the commits trace to an approved `Plan` Issue, resolved via `gh`; chore/docs pushes are exempt.
 
 ## GitHub Actions
 
