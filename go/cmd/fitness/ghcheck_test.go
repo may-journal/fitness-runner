@@ -189,3 +189,28 @@ func TestDecodeLines(t *testing.T) {
 		t.Fatalf("decodeLines = %+v, want %+v", got, want)
 	}
 }
+
+// TestGHClientLive runs the real gh against a public repo, so the query
+// output formats are checked end to end. Opt in with FITNESS_LIVE_GH=1.
+func TestGHClientLive(t *testing.T) {
+	if os.Getenv("FITNESS_LIVE_GH") != "1" {
+		t.Skip("set FITNESS_LIVE_GH=1 to run against the real gh")
+	}
+	gh := ghClient{repo: "may-journal/fitness-runner"}
+	bodies, err := gh.commentBodies(108)
+	if err != nil || len(bodies) == 0 {
+		t.Fatalf("commentBodies(108) = %d bodies, %v", len(bodies), err)
+	}
+	if !strings.Contains(strings.Join(bodies, "\n"), "fitness:plan-structure:") {
+		t.Error("no plan-structure marker among the comments on #108")
+	}
+	if _, labels, err := gh.issue(108); err != nil || !hasLabel(labels, "Plan") {
+		t.Errorf("issue(108) labels = %v, %v; want Plan", labels, err)
+	}
+	if _, err := gh.openPRs(); err != nil {
+		t.Errorf("openPRs: %v", err)
+	}
+	if _, err := gh.openPlans(); err != nil {
+		t.Errorf("openPlans: %v", err)
+	}
+}
