@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1350
+
+- Fix: `changelog-bullets` accepts a semantic commit subject such as `feat(release): `, alongside the capitalized `Feat: ` prefix.
+- Test: cover scoped, bang, and lowercase semantic prefixes, and reject empty or capitalized scopes.
+- Docs: describe both accepted prefix forms in the `changelog-bullets` README.
+
 ### 2026.09.28.1323
 
 - Ci: host the org Auto-merge workflow here, since public repos cannot run workflows from the private may-journal/.github repo.

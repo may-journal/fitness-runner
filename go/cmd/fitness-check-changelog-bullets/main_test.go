@@ -71,12 +71,13 @@ func TestContinuationLinesCountTowardLength(t *testing.T) {
 }
 
 func TestSemanticTypePrefix(t *testing.T) {
-	for _, good := range []string{"Feat: x", "Fix: x", "Docs: x", "Style: x", "Refactor: x", "Perf: x", "Test: x", "Build: x", "Ci: x", "Chore: x", "Revert: x"} {
+	for _, good := range []string{"Feat: x", "Fix: x", "Docs: x", "Style: x", "Refactor: x", "Perf: x", "Test: x", "Build: x", "Ci: x", "Chore: x", "Revert: x",
+		"feat: x", "fix(release): x", "chore(ci)!: x", "docs!: x"} {
 		if errs := judge(doc(good, "Fix: b", "Docs: c")); len(errs) != 0 {
 			t.Fatalf("%q must pass: %v", good, errs)
 		}
 	}
-	for _, bad := range []string{"feat: lowercase", "Added something", "Feature: wrong word", "Feat:no space"} {
+	for _, bad := range []string{"Added something", "Feature: wrong word", "Feat:no space", "feat(scope):no space", "Feat(scope): capitalized scope", "feat(): empty scope", "FEAT: shouting"} {
 		errs := judge(doc(bad, "Fix: b", "Docs: c"))
 		if len(errs) != 1 || !strings.Contains(errs[0], "must start with a semantic type") {
 			t.Fatalf("%q must fail with the type error: %v", bad, errs)

@@ -5,13 +5,14 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # changelog-bullets
 
-Keeps changelog entries tight. Every `###` section of `CHANGELOG.md` must be 3 to 5 bullets, each under 365 characters, each starting with a capitalized semantic type prefix.
+Keeps changelog entries tight. Every `###` section of `CHANGELOG.md` must be 3 to 5 bullets, each under 365 characters. Each bullet starts with a semantic type, as `Feat:` or `feat(scope):`.
 
 ## Behavior
 
 - Every `###` section is judged — history has to meet the bar too, and count errors name their section.
 - Bullet count must be 3 to 5; continuation lines join their bullet for the length count.
 - Every bullet must start with one of: `Feat:`, `Fix:`, `Docs:`, `Style:`, `Refactor:`, `Perf:`, `Test:`, `Build:`, `Ci:`, `Chore:`, `Revert:`.
+- A semantic commit subject works too: a lowercase type with an optional scope and `!`, such as `feat(release): ` or `fix!: `.
 - A repo without `CHANGELOG.md` passes with zero files checked.
 
 ## Errors

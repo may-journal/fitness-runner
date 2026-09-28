@@ -23,7 +23,9 @@ const (
 
 var (
 	headingRe = regexp.MustCompile(`^### `)
-	typeRe    = regexp.MustCompile(`^(Feat|Fix|Docs|Style|Refactor|Perf|Test|Build|Ci|Chore|Revert): `)
+	// A bullet opens with a capitalized type (`Feat: `) or a semantic commit
+	// subject (`feat(scope)!: `), lowercase with an optional scope and bang.
+	typeRe = regexp.MustCompile(`^((Feat|Fix|Docs|Style|Refactor|Perf|Test|Build|Ci|Chore|Revert)|(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^()\s]+\))?!?): `)
 )
 
 func main() {
@@ -84,7 +86,7 @@ func judgeBullet(b bullet) []string {
 	}
 	if !typeRe.MatchString(b.text) {
 		errs = append(errs, fmt.Sprintf(
-			"CHANGELOG.md:%d: bullet must start with a semantic type (Feat:, Fix:, Docs:, Style:, Refactor:, Perf:, Test:, Build:, Ci:, Chore:, Revert:)", b.line))
+			"CHANGELOG.md:%d: bullet must start with a semantic type (Feat:, Fix:, ... or feat(scope):, fix(scope):, ...)", b.line))
 	}
 	return errs
 }
