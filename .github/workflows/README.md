@@ -79,3 +79,7 @@ flowchart TD
 - `workflow_dispatch`: sweeps every open PR and reports each in the run summary.
 
 Unlike plan-check there is no label guard and no comment. Every PR carries a description, so every PR is validated, and the status check is the verdict.
+
+## auto-merge
+
+[auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It merges with the bot's token so CI still runs on `main`.
