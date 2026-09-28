@@ -88,7 +88,7 @@ func walkFiles(root string) checkkit.Result {
 // resolved cspell.json ignorePaths, or that no longer exist on disk are
 // dropped.
 func stagedPaths(root string, cfg config) (files []string, staged bool) {
-	stagedFiles := checkkit.StagedFiles()
+	stagedFiles := checkkit.ChangedFiles()
 	if len(stagedFiles) == 0 {
 		return nil, false
 	}

@@ -35,7 +35,7 @@ func main() {
 func run(root string, _ []string) (checkkit.Result, error) {
 	max := maxComplexity(root)
 	var sources []string
-	for _, file := range walkfs.FilesByExt(root, ".go") {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".go")) {
 		if !strings.HasSuffix(file, "_test.go") {
 			sources = append(sources, file)
 		}

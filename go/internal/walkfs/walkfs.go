@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
@@ -52,11 +53,34 @@ func addCspellBareIgnores(root string, set map[string]bool) {
 	}
 }
 
-// ScanFiles runs scan over every file under root matching exts and returns
-// the collected error messages plus the file count — the read-loop shared by
-// the file-scanning checks. The first unreadable file aborts with its error.
+// InScope narrows files to the run's changed files, keeping all of them when
+// the run is unscoped. A check that judges each file on its own passes its
+// walk through InScope; one that compares files, or only detects whether a
+// file type exists, keeps the full walk.
+func InScope(files []string) []string {
+	changed := checkkit.ChangedFiles()
+	if changed == nil {
+		return files
+	}
+	want := make(map[string]bool, len(changed))
+	for _, f := range changed {
+		want[f] = true
+	}
+	var out []string
+	for _, f := range files {
+		if want[f] {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// ScanFiles runs scan over every in-scope file under root matching exts and
+// returns the collected error messages plus the file count — the read-loop
+// shared by the file-scanning checks. The first unreadable file aborts with
+// its error.
 func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) ([]string, int, error) {
-	files := FilesByExt(root, exts...)
+	files := InScope(FilesByExt(root, exts...))
 	results := par.Map(len(files), 0, func(i int) scanResult {
 		return scanOne(root, files[i], scan)
 	})

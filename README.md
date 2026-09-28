@@ -64,7 +64,7 @@ fitness plan-check           # validate Plan issues and comment the result (in G
 In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
 
 - commit-msg: validates the message through `semantic-commit` and the `Plan #NN` trailer through `plan-trailer`.
-- pre-commit: stamps a staged `CHANGELOG` entry, runs the full suite, then a repo's own `.githooks/pre-commit.local`.
+- pre-commit: stamps a staged `CHANGELOG` entry, checks the staged files, then a repo's own `.githooks/pre-commit.local`.
 - pre-push: blocks the push unless the commits trace to an approved `Plan` Issue, resolved via `gh`; chore/docs pushes are exempt.
 
 ## GitHub Actions

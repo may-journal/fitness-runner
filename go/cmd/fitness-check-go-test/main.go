@@ -19,7 +19,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	mods := toolchain.Modules(root)
+	mods := toolchain.ScopedModules(root)
 	if len(mods) == 0 {
 		return checkkit.Pass(0), nil
 	}

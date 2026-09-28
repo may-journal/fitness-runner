@@ -14,7 +14,7 @@ Run `fitness prettier` from your app root to check formatting. Pass through args
 ## Behavior
 
 - Pass: All checked files use Prettier code style.
-- When context has staged files: Only those paths are checked.
+- In a scoped run: Only changed paths are checked, passing with 0 files when Prettier parses none.
 - Otherwise: Runs `prettier --check .` from repo root.
 - Config: Local project config if present; otherwise the shared prettier config resolved as above (no copy required in the consumer repo).
 

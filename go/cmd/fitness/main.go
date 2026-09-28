@@ -152,6 +152,7 @@ Usage:
   fitness                  run the full configured suite
   fitness <name>           run one check by name
   fitness --check=<name>   run one check by name
+  fitness --all            scan every file, even with files staged
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
@@ -181,7 +182,7 @@ func run(argv []string) int {
 		errRed(err.Error())
 		return 1
 	}
-	env, passthrough := singleCheckArgs(root, checks, passthrough)
+	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
@@ -232,8 +233,8 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
-func singleCheckArgs(root string, checks []resolved, passthrough []string) (env, remaining []string) {
-	env = contextEnv(root, checks)
+func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool) (env, remaining []string) {
+	env = contextEnv(root, checks, all)
 	if len(checks) != 1 {
 		return env, nil
 	}
@@ -394,7 +395,7 @@ func collectPassthrough(argv []string, specIdx int, fromFlag bool) []string {
 // isRunnerArg reports whether argv[i] belongs to the runner itself (the
 // spec or a --check=/--jobs= flag) and must not be forwarded.
 func isRunnerArg(a string, i, specIdx int) bool {
-	return i == specIdx || strings.HasPrefix(a, "--check=") || strings.HasPrefix(a, "--jobs=")
+	return i == specIdx || a == allFlag || strings.HasPrefix(a, "--check=") || strings.HasPrefix(a, "--jobs=")
 }
 
 // resolveChecks builds the check list: the one named on the CLI, else every
@@ -515,10 +516,15 @@ func waitDescribe(cmd *exec.Cmd) bool {
 	}
 }
 
-// contextEnv is the environment every check receives.
-func contextEnv(root string, checks []resolved) []string {
-	env := os.Environ()
+// contextEnv is the environment every check receives. FITNESS_CHANGED_FILES
+// is set only for a scoped run, so an inherited value never leaks into a
+// full scan.
+func contextEnv(root string, checks []resolved, all bool) []string {
+	env := withoutVar(os.Environ(), "FITNESS_CHANGED_FILES")
 	env = append(env, "FITNESS_STAGED_FILES="+strings.Join(gitx.StagedFiles(root), "\n"))
+	if changed := changedScope(root, all); len(changed) > 0 {
+		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
+	}
 	names := make([]string, len(checks))
 	for i, c := range checks {
 		names[i] = c.name

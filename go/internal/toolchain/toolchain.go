@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -31,6 +32,37 @@ func Modules(root string) []string {
 		}
 	}
 	return mods
+}
+
+// Unchanged reports whether a scoped run changes no Go file (.go, go.mod, or
+// go.sum), so go-test and go-vet, which work on whole packages, can skip it.
+// An unscoped run is never unchanged.
+func Unchanged() bool {
+	changed := checkkit.ChangedFiles()
+	if changed == nil {
+		return false
+	}
+	for _, f := range changed {
+		if isGoFile(f) {
+			return false
+		}
+	}
+	return true
+}
+
+// isGoFile reports whether a path is Go source or module metadata.
+func isGoFile(p string) bool {
+	base := path.Base(p)
+	return strings.HasSuffix(base, ".go") || base == "go.mod" || base == "go.sum"
+}
+
+// ScopedModules returns the repo's modules for go-test and go-vet, or none
+// when a scoped run changed no Go file.
+func ScopedModules(root string) []string {
+	if Unchanged() {
+		return nil
+	}
+	return Modules(root)
 }
 
 // Fixture reports whether a slash-separated path sits under a testdata or
@@ -72,12 +104,13 @@ var hookVars = map[string]bool{
 }
 
 // CleanEnv returns env without git's hook variables, so a toolchain run from
-// a git hook cannot touch the repository through them.
+// a git hook cannot touch the repository through them, and without the
+// runner's FITNESS_* context, so a repo's own tests never inherit a scope.
 func CleanEnv(env []string) []string {
 	var out []string
 	for _, kv := range env {
 		name, _, _ := strings.Cut(kv, "=")
-		if !hookVars[name] {
+		if !hookVars[name] && !strings.HasPrefix(name, "FITNESS_") {
 			out = append(out, kv)
 		}
 	}

@@ -62,7 +62,7 @@ jobs:
       swift: true
 ```
 
-An org ruleset makes this suite a required check, which the caller job reports as `fitness / fitness`. Add each new repo to [fitness-suite-required.json](https://github.com/may-journal/.github/blob/main/rulesets/fitness-suite-required.json) in may-journal/.github, or its suite stays optional.
+A pull request checks only the files it changes, and the push to `main` after merge checks every file. An org ruleset makes this suite a required check, which the caller job reports as `fitness / fitness`. Add each new repo to [fitness-suite-required.json](https://github.com/may-journal/.github/blob/main/rulesets/fitness-suite-required.json) in may-journal/.github, or its suite stays optional.
 
 ## Version policy
 

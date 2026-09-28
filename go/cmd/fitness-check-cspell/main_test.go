@@ -25,7 +25,7 @@ func write(t *testing.T, root, rel, content string) {
 
 func setStaged(t *testing.T, files ...string) {
 	t.Helper()
-	t.Setenv("FITNESS_STAGED_FILES", strings.Join(files, "\n"))
+	t.Setenv("FITNESS_CHANGED_FILES", strings.Join(files, "\n"))
 }
 
 func TestDescribe(t *testing.T) {

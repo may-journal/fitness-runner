@@ -11,20 +11,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Full history, so a pull request can diff against its base branch.
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
       - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
+      # A pull request checks the files it changes; a push to main checks
+      # every file. The gofmt, go-vet, and go-test checks cover the Go gate.
       - run: go/bin/fitness
-
-  go:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go/go.mod
-      - run: test -z "$(gofmt -l go)"
-      - run: cd go && go vet ./...
-      - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
-      - run: cd go && go test ./...
