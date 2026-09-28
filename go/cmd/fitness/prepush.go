@@ -43,12 +43,13 @@ func checkRefUpdate(line string) int {
 	return checkPlanApproval(commits)
 }
 
-// commitsOf lists the commits a ref update pushes: everything not yet on origin
-// for a new branch, else the remote..local range.
+// commitsOf lists the commits a ref update pushes: those not already on origin.
+// Excluding every origin ref, not just the remote tip, keeps commits merged in
+// from another branch (say main) out of the gate.
 func commitsOf(local, remote string) []string {
-	args := []string{"rev-list", remote + ".." + local}
-	if remote == zeroSha {
-		args = []string{"rev-list", local, "--not", "--remotes=origin"}
+	args := []string{"rev-list", local, "--not", "--remotes=origin"}
+	if remote != zeroSha {
+		args = append(args, remote)
 	}
 	out, err := exec.Command("git", args...).Output()
 	if err != nil {
@@ -57,7 +58,9 @@ func commitsOf(local, remote string) []string {
 	return strings.Fields(string(out))
 }
 
-// allChoreDocs reports whether every pushed commit is a chore or docs commit.
+// allChoreDocs reports whether every pushed commit is a chore, docs, or merge
+// commit. A merge is exempt because the commits it brings in are gated on their
+// own.
 func allChoreDocs(commits []string) bool {
 	subjects := make([]string, len(commits))
 	for i, c := range commits {
@@ -69,7 +72,7 @@ func allChoreDocs(commits []string) bool {
 // allChoreDocsSubjects is the pure classifier over commit subjects.
 func allChoreDocsSubjects(subjects []string) bool {
 	for _, s := range subjects {
-		if !strings.HasPrefix(s, "chore") && !strings.HasPrefix(s, "docs") {
+		if !strings.HasPrefix(s, "chore") && !strings.HasPrefix(s, "docs") && !strings.HasPrefix(s, "Merge ") {
 			return false
 		}
 	}

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.0919
+
+- Fix: `fitness hook pre-push` gates only commits not yet on origin, so merging main into a branch no longer blocks on main's own commits.
+- Fix: the pre-push gate treats merge commits as exempt, like chore and docs; the commits a merge brings in are gated on their own.
+- Test: cover the pre-push range against a real repo with main merged into a pushed branch.
+
 ### 2026.09.27.1429
 
 - Feat: add `fitness hook commit-msg`, `pre-commit`, and `pre-push` subcommands that own the hook orchestration in Go.
