@@ -49,3 +49,31 @@ func TestCleanEnvDropsGitHookVars(t *testing.T) {
 		t.Errorf("CleanEnv = %v, want %v", got, want)
 	}
 }
+
+func TestCleanEnvDropsRunnerContext(t *testing.T) {
+	got := CleanEnv([]string{"PATH=/bin", "FITNESS_CHANGED_FILES=a.md", "FITNESS_STAGED_FILES=a.md"})
+	if want := []string{"PATH=/bin"}; !reflect.DeepEqual(got, want) {
+		t.Errorf("CleanEnv = %v, want %v", got, want)
+	}
+}
+
+func TestUnchanged(t *testing.T) {
+	cases := []struct {
+		name, changed string
+		want          bool
+	}{
+		{"unscoped run", "", false},
+		{"docs only", "README.md\ndocs/a.md", true},
+		{"go source", "README.md\ngo/cmd/x/main.go", false},
+		{"go.mod", "go/go.mod", false},
+		{"go.sum", "go/go.sum", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Setenv("FITNESS_CHANGED_FILES", tc.changed)
+			if got := Unchanged(); got != tc.want {
+				t.Fatalf("Unchanged() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

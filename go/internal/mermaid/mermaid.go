@@ -429,14 +429,14 @@ func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) 
 	return nil
 }
 
-// RunDocCheck runs a per-document validator over every .md file under root
-// that contains at least one mermaid diagram or callout table; files with
+// RunDocCheck runs a per-document validator over every in-scope .md file
+// under root that contains at least one mermaid diagram or callout table; files with
 // neither are skipped and don't count toward filesChecked. Shared by the
 // mermaid diagram + callout table checks so each supplies only its own
 // validate rule. A file read error aborts the check (the caller crashes,
 // matching the TS driver's thrown readFileSync error).
 func RunDocCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	for _, file := range walkfs.FilesByExt(root, ".md") {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
 		raw, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if readErr != nil {
 			return nil, 0, readErr

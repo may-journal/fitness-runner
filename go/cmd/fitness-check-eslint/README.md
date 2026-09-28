@@ -15,7 +15,7 @@ The shared config imports its plugins (typescript-eslint, jsdoc, perfectionist, 
 
 - Pass: No errors in checked files.
 - Execs eslint with `cwd` set to the repo root, forcing the resolved shared config via `--config`.
-- When context has staged files: Only those paths are linted; otherwise lints `.`.
+- In a scoped run: Only changed paths are linted, passing with 0 files when none is lintable. Otherwise lints `.`.
 - Lints `.ts`, `.tsx`, `.cjs`, `.js`, `.mjs` (excluding test files).
 - Enforces `sort-keys` (natural ascending) and other rules from `eslint.config.mjs`.
 

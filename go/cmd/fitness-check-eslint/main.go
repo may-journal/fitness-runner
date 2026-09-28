@@ -54,7 +54,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+	if !applies(root) {
 		return checkkit.Pass(0), nil
 	}
 	if abs, err := filepath.Abs(root); err == nil {
@@ -64,7 +64,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if !found {
 		return checkkit.Fail(0, missingEslintMessage), nil
 	}
-	paths := pathsToLint(root, checkkit.StagedFiles())
+	paths := pathsToLint(root, checkkit.ChangedFiles())
 	errs, exitCode, filesChecked := runEslint(root, bin, paths)
 	return buildExecCheckResult(exitCode, errs, filesChecked), nil
 }
@@ -85,6 +85,27 @@ var (
 	lintableExt     = regexp.MustCompile(`\.(cjs|js|mjs|tsx?)$`)
 	ignoredByEslint = regexp.MustCompile(`\.(test|spec)\.(cjs|js|mjs|ts|tsx)$`)
 )
+
+// applies reports whether ESLint has anything to judge: a JS project, and in
+// a scoped run at least one changed file it lints, so a run with none skips
+// ESLint instead of linting the whole repo.
+func applies(root string) bool {
+	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+		return false
+	}
+	changed := checkkit.ChangedFiles()
+	return changed == nil || anyLintable(root, changed)
+}
+
+// anyLintable reports whether any changed path is one ESLint would lint.
+func anyLintable(root string, changed []string) bool {
+	for _, p := range changed {
+		if lintableStaged(root, p) {
+			return true
+		}
+	}
+	return false
+}
 
 // pathsToLint ports getPathsToLint: staged lintable existing paths under
 // root — skipping declaration and test/spec files — or ["."] when none.

@@ -88,15 +88,17 @@ func leaning(base string) string {
 	return Camel.Label
 }
 
-// Run applies one convention to every .md file under root (capitalized doc
-// basenames exempt), but only when it is the repo's detected convention;
-// otherwise the other flavor judges and this one passes with zero files.
-// filesChecked is the number of markdown files walked.
+// Run applies one convention to every in-scope .md file under root
+// (capitalized doc basenames exempt), but only when it is the repo's detected
+// convention; otherwise the other flavor judges and this one passes with zero
+// files. Detection always reads every markdown file, so a scoped run judges by
+// the whole repo's convention. filesChecked is the number of files judged.
 func Run(root string, c Convention) checkkit.Result {
-	files := walkfs.FilesByExt(root, ".md")
-	if Detect(files).Label != c.Label {
+	all := walkfs.FilesByExt(root, ".md")
+	if Detect(all).Label != c.Label {
 		return checkkit.Pass(0)
 	}
+	files := walkfs.InScope(all)
 	var errors []string
 	for _, file := range files {
 		if msg := Validate(file, c); msg != "" {

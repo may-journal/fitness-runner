@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1440
+
+- Perf: pre-commit checks only the staged files, and a pull request only the files it changes against its base branch.
+- Perf: a push to `main`, or `fitness --all`, still checks every file, so the full suite runs after merge.
+- Perf: `go-test` and `go-vet` skip when no Go file changed, and `eslint` and `prettier` skip when nothing they lint changed.
+- Perf: pre-commit no longer runs `make check`, and CI drops its `go` job, since the Go checks already cover both.
+- Docs: describe changed-file scoping in the check protocol, adoption guide, and check READMEs.
+
 ### 2026.09.28.1408
 
 - Docs: the adoption guide says an org ruleset makes the fitness suite a required check.

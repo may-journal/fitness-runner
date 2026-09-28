@@ -4,7 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 # Check protocol
 
-The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, enabled check names, and the commit message for the commit checks.
+The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, enabled check names, and the commit message for the commit checks.
 
 - stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n}`
 - stderr — human display output (banners, tool passthrough)
@@ -16,6 +16,10 @@ The runner executes checks in a bounded parallel pool with per-check timeouts. A
 ## Applicability
 
 Every check runs in every repo, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
+
+## Changed files
+
+A scoped run lists changed files in `FITNESS_CHANGED_FILES`: the staged files locally, or a pull request's diff against its base. A push to `main` or `fitness --all` leaves it unset, so every file is checked. Checks that compare files, such as jscpd, keep a full walk.
 
 ## Config
 

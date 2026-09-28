@@ -146,3 +146,17 @@ func TestRunOtherFlavorPassesClean(t *testing.T) {
 		t.Fatalf("kebab flavor in a camelCase repo = %+v, want a clean pass", res)
 	}
 }
+
+func TestRunScopedJudgesChangedFiles(t *testing.T) {
+	dir := t.TempDir()
+	writeFiles(t, dir, "api-design.md", "old-notes.md", "releaseNotes.md", "badName.md")
+	t.Setenv("FITNESS_CHANGED_FILES", "badName.md")
+	res := Run(dir, Kebab)
+	if res.FilesChecked != 1 {
+		t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
+	}
+	want := "badName.md: filename must be kebab-case"
+	if len(res.Errors) != 1 || res.Errors[0] != want {
+		t.Fatalf("errors = %v, want [%q]", res.Errors, want)
+	}
+}

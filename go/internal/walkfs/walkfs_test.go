@@ -101,3 +101,33 @@ func TestIgnoreNilWithoutPatterns(t *testing.T) {
 		t.Error("a nil matcher must ignore nothing")
 	}
 }
+
+func TestInScope(t *testing.T) {
+	files := []string{"a.md", "docs/b.md", "c.md"}
+	t.Setenv("FITNESS_CHANGED_FILES", "")
+	if got := InScope(files); !reflect.DeepEqual(got, files) {
+		t.Fatalf("unscoped = %v, want every file", got)
+	}
+	t.Setenv("FITNESS_CHANGED_FILES", "docs/b.md\ngone.md\nmain.go")
+	if got := InScope(files); !reflect.DeepEqual(got, []string{"docs/b.md"}) {
+		t.Fatalf("scoped = %v, want [docs/b.md]", got)
+	}
+}
+
+func TestScanFilesScoped(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, "a.md", "x")
+	write(t, root, "b.md", "x")
+	t.Setenv("FITNESS_CHANGED_FILES", "b.md")
+	var seen []string
+	_, n, err := ScanFiles(root, []string{".md"}, func(rel, _ string) []string {
+		seen = append(seen, rel)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 || !reflect.DeepEqual(seen, []string{"b.md"}) {
+		t.Fatalf("scanned %v (n=%d), want only b.md", seen, n)
+	}
+}

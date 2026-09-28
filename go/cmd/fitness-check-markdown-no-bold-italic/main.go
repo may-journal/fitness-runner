@@ -38,12 +38,12 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return walkFiles(root)
 }
 
-// walkFiles flags bold/italic in every .md file under root except the
-// changelog.
+// walkFiles flags bold/italic in every in-scope .md file under root except
+// the changelog.
 func walkFiles(root string) (checkkit.Result, error) {
 	var errors []string
 	filesChecked := 0
-	for _, file := range walkfs.FilesByExt(root, ".md") {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
 		if file == "CHANGELOG.md" {
 			continue
 		}

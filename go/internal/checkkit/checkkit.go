@@ -58,6 +58,13 @@ func StagedFiles() []string {
 	return splitLines(os.Getenv("FITNESS_STAGED_FILES"))
 }
 
+// ChangedFiles returns the changed paths the runner scoped this run to: the
+// staged files at commit time, or a pull request's diff against its base.
+// Nil means the run is unscoped and every file is judged.
+func ChangedFiles() []string {
+	return splitLines(os.Getenv("FITNESS_CHANGED_FILES"))
+}
+
 // EnabledChecks returns the enabled check names for this run, in order.
 func EnabledChecks() []string {
 	return splitLines(os.Getenv("FITNESS_ENABLED_CHECKS"))

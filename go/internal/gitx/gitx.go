@@ -13,8 +13,25 @@ func StagedFiles(root string) []string {
 	if err != nil {
 		return nil
 	}
+	return nameList(string(out))
+}
+
+// ChangedSince returns the paths HEAD changes since its merge base with base
+// (`git diff --name-only base...HEAD`) with node_modules entries removed; nil
+// on any git failure, such as a base ref the clone never fetched.
+func ChangedSince(root, base string) []string {
+	out, err := exec.Command("git", "-C", root, "diff", "--name-only", base+"...HEAD").Output()
+	if err != nil {
+		return nil
+	}
+	return nameList(string(out))
+}
+
+// nameList splits `git diff --name-only` output into paths, dropping blank
+// lines and node_modules entries.
+func nameList(out string) []string {
 	var files []string
-	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
 		if line == "" || strings.Contains(line, "node_modules") {
 			continue
 		}

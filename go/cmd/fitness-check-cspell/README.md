@@ -10,7 +10,7 @@ Spell-checks with a native Go engine and dictionaries embedded in the check bina
 ## Behavior
 
 - Pass: No unknown words in checked files.
-- When context has staged files: Only those paths are checked.
+- In a scoped run: Only changed paths are checked.
 - Otherwise: Runs the spell-check on `**/*.md`.
 - Config: A repo-local `cspell.json` wins; otherwise an installed `@mayjournal/fitness-shared` package under `node_modules`; otherwise the copy embedded in the binary, materialized on demand.
 - No copy is required in the consumer repo.

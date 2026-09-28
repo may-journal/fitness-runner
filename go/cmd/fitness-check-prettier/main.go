@@ -93,7 +93,10 @@ func run(root string, args []string) (checkkit.Result, error) {
 		return checkkit.Fail(0, notInstalled), nil
 	}
 	configPath := resolveConfigPath(root)
-	paths := pathsToCheck(root, checkkit.StagedFiles())
+	paths, ok := scopedPaths(root, args)
+	if !ok {
+		return checkkit.Pass(0), nil
+	}
 	exitCode, output := execPrettier(bin, root, prettierArgv(configPath, args, paths))
 	parsed := parsePrettierOutput(output)
 	return buildExecResult(exitCode, parsed, filesChecked(parsed, paths)), nil
@@ -191,6 +194,15 @@ func skipStagedPath(root, p string) bool {
 		return true
 	}
 	return prettierSkipStaged[p] || strings.HasSuffix(p, ".mdc") || isUnparseableTree(p)
+}
+
+// scopedPaths returns the paths to hand Prettier, and false when a scoped run
+// changed nothing Prettier parses, so it skips instead of checking the whole
+// repo. Passthrough args always run.
+func scopedPaths(root string, args []string) ([]string, bool) {
+	changed := checkkit.ChangedFiles()
+	paths := pathsToCheck(root, changed)
+	return paths, changed == nil || len(paths) > 0 || len(args) > 0
 }
 
 // pathsToCheck returns the staged paths to hand Prettier — existing files

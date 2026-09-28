@@ -52,12 +52,12 @@ func writePackageJSON(t *testing.T, root string) {
 	writeFile(t, filepath.Join(root, "package.json"), "{}")
 }
 
-// isolate scrubs PATH and the staged-file env so no real tool or ambient
+// isolate scrubs PATH and the changed-file env so no real tool or ambient
 // runner context leaks into a test.
 func isolate(t *testing.T) {
 	t.Helper()
 	t.Setenv("PATH", t.TempDir())
-	t.Setenv("FITNESS_STAGED_FILES", "")
+	t.Setenv("FITNESS_CHANGED_FILES", "")
 }
 
 func TestRunJudgment(t *testing.T) {
@@ -240,7 +240,7 @@ func TestRunStagedPaths(t *testing.T) {
 	for _, p := range []string{"a.js", quoted} {
 		writeFile(t, filepath.Join(root, p), "x")
 	}
-	t.Setenv("FITNESS_STAGED_FILES", "a.js\n"+quoted+"\nREADME.md")
+	t.Setenv("FITNESS_CHANGED_FILES", "a.js\n"+quoted+"\nREADME.md")
 	argsFile := filepath.Join(t.TempDir(), "args")
 	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"),
 		"printf '%s\\n' \"$@\" > "+argsFile+"\necho '[]'")
@@ -376,4 +376,25 @@ func TestFindEslint(t *testing.T) {
 			t.Fatalf("findEslint = %q, want not found", got)
 		}
 	})
+}
+
+func TestRunSkipsWhenNothingLintableChanged(t *testing.T) {
+	isolate(t)
+	root := t.TempDir()
+	writePackageJSON(t, root)
+	writeFile(t, filepath.Join(root, "README.md"), "x")
+	t.Setenv("FITNESS_CHANGED_FILES", "README.md")
+	argsFile := filepath.Join(t.TempDir(), "args")
+	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"),
+		"printf '%s\\n' \"$@\" > "+argsFile+"\necho '[]'")
+	res, err := run(root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("result = %+v, want a pass with 0 files", res)
+	}
+	if _, err := os.Stat(argsFile); err == nil {
+		t.Fatal("eslint was invoked, want it skipped")
+	}
 }

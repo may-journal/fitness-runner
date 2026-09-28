@@ -26,7 +26,8 @@ jobs:
         with:
           # Full history and the PR head (not the merge commit) so
           # changelog-updated, semantic-commit, and plan-trailer see a real
-          # commit and its ancestry.
+          # commit and its ancestry, and a pull request can diff against its
+          # base branch to check only the files it changes.
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v5

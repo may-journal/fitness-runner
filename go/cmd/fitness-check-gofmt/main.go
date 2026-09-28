@@ -42,10 +42,10 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(len(files)), nil
 }
 
-// goFiles returns the repo's own .go files, leaving out fixtures.
+// goFiles returns the repo's own in-scope .go files, leaving out fixtures.
 func goFiles(root string) []string {
 	var files []string
-	for _, f := range walkfs.FilesByExt(root, ".go") {
+	for _, f := range walkfs.InScope(walkfs.FilesByExt(root, ".go")) {
 		if !toolchain.Fixture(f) {
 			files = append(files, f)
 		}

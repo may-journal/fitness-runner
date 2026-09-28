@@ -58,7 +58,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 	}
 	th := loadThresholds(root)
 	report := hasFlag(args, "--report")
-	files := walkfs.FilesByExt(root, ".md")
+	files := walkfs.InScope(walkfs.FilesByExt(root, ".md"))
 	var errs []string
 	for _, rel := range files {
 		errs = append(errs, judgeFile(root, rel, th, report)...)

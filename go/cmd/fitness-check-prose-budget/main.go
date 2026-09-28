@@ -74,9 +74,10 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return walkFiles(root, lim, exempt), nil
 }
 
-// walkFiles applies the budget to every non-exempt .md file under root.
+// walkFiles applies the budget to every in-scope, non-exempt .md file under
+// root.
 func walkFiles(root string, lim limits, exempt []string) checkkit.Result {
-	files := walkfs.FilesByExt(root, ".md")
+	files := walkfs.InScope(walkfs.FilesByExt(root, ".md"))
 	var errs []string
 	for _, rel := range files {
 		if isExempt(rel, exempt) {

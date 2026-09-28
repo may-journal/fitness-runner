@@ -165,13 +165,12 @@ func TestRun(t *testing.T) {
 			wantArgv:  []string{"--check", "bar.ts", "packages/a.ts"},
 		},
 		{
-			name:      "staged list filtered to nothing falls back to glob",
+			name:      "changed list filtered to nothing skips prettier",
 			files:     map[string]string{".prettierrc.json": "{}", "go/go.mod": "module x"},
 			staged:    "go/go.mod",
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 0,
-			wantArgv:  []string{"--check", "."},
 		},
 		{
 			name:      "passthrough args replace check mode",
@@ -209,7 +208,7 @@ func TestRun(t *testing.T) {
 			fake := filepath.Join(binDir, "prettier")
 			writeFakePrettier(t, fake, tc.output, tc.exit)
 			t.Setenv("PATH", binDir+":/usr/bin:/bin")
-			t.Setenv("FITNESS_STAGED_FILES", tc.staged)
+			t.Setenv("FITNESS_CHANGED_FILES", tc.staged)
 
 			res, err := run(root, tc.args)
 			if err != nil {
@@ -226,6 +225,12 @@ func TestRun(t *testing.T) {
 			}
 			if res.FilesChecked != tc.wantFiles {
 				t.Fatalf("filesChecked = %d, want %d", res.FilesChecked, tc.wantFiles)
+			}
+			if tc.wantArgv == nil {
+				if _, err := os.Stat(fake + ".args"); err == nil {
+					t.Fatal("fake prettier was invoked, want it skipped")
+				}
+				return
 			}
 			want := make([]string, len(tc.wantArgv))
 			for i, a := range tc.wantArgv {
@@ -248,7 +253,7 @@ func TestRunMissingPrettier(t *testing.T) {
 	root := t.TempDir()
 	writeFiles(t, root, map[string]string{"package.json": "{}"})
 	t.Setenv("PATH", t.TempDir())
-	t.Setenv("FITNESS_STAGED_FILES", "")
+	t.Setenv("FITNESS_CHANGED_FILES", "")
 	res, err := run(root, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -263,7 +268,7 @@ func TestRunMissingPrettier(t *testing.T) {
 func TestRunSkipsWhenNoPackageJSON(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("PATH", t.TempDir())
-	t.Setenv("FITNESS_STAGED_FILES", "")
+	t.Setenv("FITNESS_CHANGED_FILES", "")
 	res, err := run(root, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -281,7 +286,7 @@ func TestNodeModulesBinPreferredOverPath(t *testing.T) {
 	binDir := t.TempDir()
 	writeFakePrettier(t, filepath.Join(binDir, "prettier"), "[warn] wrong-binary.ts", 1)
 	t.Setenv("PATH", binDir+":/usr/bin:/bin")
-	t.Setenv("FITNESS_STAGED_FILES", "")
+	t.Setenv("FITNESS_CHANGED_FILES", "")
 	res, err := run(root, nil)
 	if err != nil {
 		t.Fatal(err)
