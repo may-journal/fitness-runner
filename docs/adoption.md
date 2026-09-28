@@ -8,7 +8,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, not b
 
 ## Reusable workflows
 
-fitness-runner publishes three `workflow_call` workflows: [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), and [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step: the file suite, `fitness pr-check`, or `fitness plan-check`. A consumer repo adds thin callers.
+fitness-runner publishes three `workflow_call` workflows: [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), and [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step: the file suite, `fitness pr-check`, or `fitness plan-check`. The install sets `GOPROXY=direct`, since the Go proxy can serve a stale `@main` after a merge. A consumer repo adds thin callers.
 
 `.github/workflows/pr-check.yml`:
 

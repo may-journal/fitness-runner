@@ -36,6 +36,10 @@ jobs:
         with:
           go-version: stable
       - name: Install the fitness checks
+        env:
+          # Resolve the ref against GitHub, not proxy.golang.org, which caches
+          # what @main points to and can serve a build from before the latest merge.
+          GOPROXY: direct
         run: |
           go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref || 'main' }}"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"

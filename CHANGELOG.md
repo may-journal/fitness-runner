@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1151
+
+- Fix: the shared workflows install fitness with `GOPROXY=direct`, so `@main` is the latest merge rather than a stale proxy copy.
+- Chore: add `goproxy` to the Go spelling dictionary.
+- Docs: note in the adoption guide why the shared install skips the Go proxy.
+
 ### 2026.09.28.1055
 
 - Feat: add `fitness pr-check`, which validates a PR's title and description and writes the verdict to the job summary and log.
