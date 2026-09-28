@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1323
+
+- Ci: host the org Auto-merge workflow here, since public repos cannot run workflows from the private may-journal/.github repo.
+- Ci: it turns on squash auto-merge for ready pull requests with the bot's token, so merges still start CI on `main`.
+- Docs: describe it in the workflows README and the adoption doc's org-wide section.
+
 ### 2026.09.28.1257
 
 - Feat: every check runs in every repo; config keeps only `disabledChecks`, `ignore`, and options, and local path checks are gone.
