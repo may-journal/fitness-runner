@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1222
+
+- Fix: `markdown-links` decodes a percent-encoded link path, so a link like `my%20file.md` resolves to the file it names.
+- Test: cover a resolving and a missing percent-encoded link.
+- Docs: note the decoding in the `markdown-links` README.
+
 ### 2026.09.28.1156
 
 - Fix: `fitness plan-check` reads a Plan's existing comments, so a Plan that already has a comment gets a verdict again.
