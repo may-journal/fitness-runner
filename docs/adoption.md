@@ -62,6 +62,8 @@ jobs:
       swift: true
 ```
 
+An org ruleset makes this suite a required check, which the caller job reports as `fitness / fitness`. Add each new repo to [fitness-suite-required.json](https://github.com/may-journal/.github/blob/main/rulesets/fitness-suite-required.json) in may-journal/.github, or its suite stays optional.
+
 ## Version policy
 
 The callers track `@main` to stay current. Pin a release tag when a repo needs a frozen check set, then bump on its own schedule.

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1408
+
+- Docs: the adoption guide says an org ruleset makes the fitness suite a required check.
+- Docs: the caller job reports `fitness / fitness`, the status check name the ruleset requires.
+- Docs: a new repo must join `fitness-suite-required.json` in may-journal/.github to be required.
+
 ### 2026.09.28.1350
 
 - Fix: `changelog-bullets` accepts a semantic commit subject such as `feat(release): `, alongside the capitalized `Feat: ` prefix.
