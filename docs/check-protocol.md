@@ -13,6 +13,10 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 
 The runner executes checks in a bounded parallel pool with per-check timeouts. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table, and the run exits 1 when any check fails.
 
+## Applicability
+
+Every check runs in every repo, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
+
 ## Config
 
 Optional `.fitnessrc.json` at repo root:
