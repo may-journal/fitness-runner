@@ -55,6 +55,8 @@ fitness --check=eslint
 fitness prettier --write .   # passthrough args reach the check
 fitness init                 # install the shared git hooks into a repo
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
+fitness pr-check             # validate PR titles and descriptions (in GitHub Actions)
+fitness plan-check           # validate Plan issues and comment the result (in GitHub Actions)
 ```
 
 ## Git hooks
@@ -67,7 +69,7 @@ In a consumer repo, run `fitness init` once — it installs the shared hooks as 
 
 ## GitHub Actions
 
-Some checks also run as GitHub Actions workflows. They extend the same rules to non-file targets like plan Issues and pull request descriptions. See [.github/workflows/README.md](.github/workflows/README.md).
+Some checks also run as GitHub Actions workflows. They extend the same rules to non-file targets like plan Issues and pull request descriptions. Each workflow step is one `fitness` call. See [.github/workflows/README.md](.github/workflows/README.md).
 
 ## Documentation
 

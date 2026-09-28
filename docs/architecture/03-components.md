@@ -66,7 +66,7 @@ Numbers on nodes and arrows match the callout table.
 | #   | Description                                                                                             | Why                                                         |
 | --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
-| 2   | `go/cmd/fitness/main.go` — argv, resolve, execute, render in one static binary.                         | No build step, no interpreter startup.                      |
+| 2   | `go/cmd/fitness/main.go` — routes the subcommands, else argv, resolve, execute, render.                 | No build step, no interpreter startup.                      |
 | 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
 | 4   | Ordered check list: config `checks` else the embedded default list; disabled names removed; deduped.    | One place for spec resolution (name, path, full list).      |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
@@ -116,6 +116,19 @@ Built by the runner before dispatch — not a separate registry.
 
 ## Body mode
 
-Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `plan-check` and `pr-check` workflows use this to lint Issue and PR descriptions.
+Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `fitness plan-check` and `fitness pr-check` subcommands use this to lint Issue and PR descriptions.
 
 An explicit `--body-file` is the only trigger, so a normal file-walking run is never affected. The prose, markdown, and mermaid checks opt in; a cross-file check like `mermaid-level-bleed` does not.
+
+## Subcommands
+
+Before the run loop, the CLI entry routes a few subcommands. Each one lets a git hook or workflow step shrink to one line, while the logic stays in tested Go.
+
+| Subcommand            | Does                                                                                  | Why                                                   |
+| --------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `fitness init`        | Writes the embedded hook shims to `.githooks` and sets `core.hooksPath`.              | A repo pulls its hooks by version, never copies them. |
+| `fitness hook <name>` | Runs the commit-msg, pre-commit, or pre-push logic the shims call.                    | Hook logic lives in one place, not in each repo.      |
+| `fitness pr-check`    | Reads the Actions event, then checks a PR's title and body with the body-mode checks. | The PR check workflows run one step.                  |
+| `fitness plan-check`  | Checks a Plan issue's body, then comments the verdict once per body version.          | The plan check workflows run one step.                |
+
+The two workflow subcommands reach GitHub through the `gh` CLI, like the pre-push hook.

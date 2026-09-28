@@ -89,8 +89,9 @@ func main() {
 	os.Exit(dispatch(os.Args[1:]))
 }
 
-// dispatch routes help and the subcommands (`init`, `hook <name>`) before
-// falling through to the check runner, so the git hooks stay one-line shims.
+// dispatch routes help and the subcommands (`init`, `hook <name>`,
+// `pr-check`, `plan-check`) before falling through to the check runner, so the
+// git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
 		return printUsage()
@@ -103,16 +104,32 @@ func isHelp(args []string) bool {
 	return len(args) > 0 && (args[0] == "help" || args[0] == "--help" || args[0] == "-h")
 }
 
+// subcommands maps each subcommand name to its handler, which gets the
+// arguments after the name.
+var subcommands = map[string]func(args []string) int{
+	"init":       runInit,
+	"hook":       runHookArgs,
+	"pr-check":   func([]string) int { return runPRCheck() },
+	"plan-check": func([]string) int { return runPlanCheck() },
+}
+
 // route dispatches the subcommands, defaulting to the check runner.
 func route(args []string) int {
-	switch {
-	case len(args) > 0 && args[0] == "init":
-		return runInit(args[1:])
-	case len(args) > 1 && args[0] == "hook":
-		return runHook(args[1], args[2:])
-	default:
-		return run(args)
+	if len(args) > 0 {
+		if handler, ok := subcommands[args[0]]; ok {
+			return handler(args[1:])
+		}
 	}
+	return run(args)
+}
+
+// runHookArgs runs `fitness hook <name> [args]`; a bare `hook` with no name
+// falls through to the check runner, as before.
+func runHookArgs(args []string) int {
+	if len(args) == 0 {
+		return run([]string{"hook"})
+	}
+	return runHook(args[0], args[1:])
 }
 
 // printUsage writes the command summary.
@@ -125,6 +142,8 @@ Usage:
   fitness --check=<name>   run one check by name
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
+  fitness pr-check         validate PR titles and descriptions (GitHub Actions)
+  fitness plan-check       validate Plan issues and comment the result (GitHub Actions)
 
 Docs: https://github.com/may-journal/fitness-runner#usage`)
 	return 0

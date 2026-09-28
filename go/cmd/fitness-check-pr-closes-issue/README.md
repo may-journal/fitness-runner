@@ -6,7 +6,7 @@ relatedConfigurations: ['../../../.github/workflows/pr-check.yml']
 
 Every PR must close at least one issue on merge ([#69](https://github.com/may-journal/fitness-runner/issues/69)). GitHub auto-closes a linked issue only for a fixed set of keywords. A PR that merely references an issue leaves it open, and this check fails that.
 
-Runs in [pr-check.yml](../../../.github/workflows/pr-check.yml) beside `pr-structure`. It reads the PR body from stdin, a `--body-file` path, or the context-inline `--body`, and passes inert with no input. For a closed Plan, the workflow reads that Plan's own closing targets via `--emit-closed` and requires the PR to close them too.
+Runs in [pr-check.yml](../../../.github/workflows/pr-check.yml) beside `pr-structure`. It reads the PR body from stdin, a `--body-file` path, or the context-inline `--body`, and passes inert with no input. For a closed Plan, `fitness pr-check` reads that Plan's own closing targets via `--emit-closed` and requires the PR to close them too.
 
 ## Behavior
 
