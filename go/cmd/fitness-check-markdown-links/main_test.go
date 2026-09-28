@@ -13,7 +13,7 @@ func repo(t *testing.T) string {
 	if err := os.MkdirAll(filepath.Join(dir, "docs", "sub"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	for _, f := range []string{"target.md", "docs/other.md", "docs/sub/deep.md"} {
+	for _, f := range []string{"target.md", "docs/other.md", "docs/sub/deep.md", "docs/with space.txt"} {
 		if err := os.WriteFile(filepath.Join(dir, filepath.FromSlash(f)), []byte("x"), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -37,6 +37,8 @@ func TestLinkResolution(t *testing.T) {
 		want    []string
 	}{
 		{"file resolves", "a.md", "[t](target.md)", nil},
+		{"percent-encoded space resolves", "a.md", "[t](docs/with%20space.txt)", nil},
+		{"percent-encoded missing file is broken", "a.md", "[t](docs/no%20such.md)", []string{"a.md:1: broken relative link: docs/no%20such.md"}},
 		{"dir resolves", "a.md", "[t](docs/)", nil},
 		{"dot-slash resolves", "a.md", "[t](./target.md)", nil},
 		{"parent traversal resolves", "docs/b.md", "[t](../target.md)", nil},

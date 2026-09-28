@@ -10,6 +10,7 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -112,6 +113,11 @@ func resolvable(target string) (string, bool) {
 	}
 	if i := strings.IndexByte(target, '#'); i >= 0 {
 		target = target[:i]
+	}
+	// A link may percent-encode its path (a space as %20); check the file
+	// it names, falling back to the raw text when it does not decode.
+	if decoded, err := url.PathUnescape(target); err == nil {
+		target = decoded
 	}
 	return target, target != ""
 }
