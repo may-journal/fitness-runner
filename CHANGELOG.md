@@ -7,13 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.28.1043
+### 2026.09.28.1055
 
 - Feat: add `fitness pr-check`, which validates a PR's title and description and writes the verdict to the job summary and log.
 - Feat: add `fitness plan-check`, which validates a Plan issue and comments the result once per body version.
 - Refactor: replace the inline JavaScript in the plan-check and pr-check workflows, and their reusable twins, with one step calling `fitness`.
 - Test: cover both subcommands against a fake GitHub API and fake check binaries.
-- Docs: document `fitness pr-check` and `fitness plan-check` in the READMEs.
+- Docs: document both subcommands in the READMEs, and add the runner's subcommands to the architecture docs.
 
 ### 2026.09.28.0919
 

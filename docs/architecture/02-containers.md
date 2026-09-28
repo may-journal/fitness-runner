@@ -76,7 +76,7 @@ Numbers on nodes and arrows match the callout table.
 | 19  | Local checks live beside app code; any executable qualifies.                                     | Shell scripts speak the protocol fine.                      |
 | 20  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
 | 21  | The `plan-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.         | Descriptions held to the same bar as files.                 |
-| 22  | Workflows exec `fitness-check-name --body-file` with `--root` at the checkout, reusing body mode. | One rule engine for files and descriptions.                 |
+| 22  | `fitness pr-check` and `plan-check` exec each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
 
 ## Consumer setup
 
