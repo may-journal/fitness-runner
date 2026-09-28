@@ -11,18 +11,7 @@ Two check binaries share one validation core (`go/internal/mdfilename`) — two 
 - `markdown-filename-kebab-case` — basename must be kebab-case: `^[a-z0-9]+(-[a-z0-9]+)*\.md$`
 - `markdown-filename-camel-case` — basename must be camelCase: `^[a-z][a-zA-Z0-9]*\.md$`
 
-Kebab-case is on by default; camelCase is opt-in. A repo uses one convention, never both.
-
-## Switch to camelCase
-
-Turn off the default flavor and enable the other in `.fitnessrc.json`:
-
-```json
-{
-  "disabledChecks": ["markdown-filename-kebab-case"],
-  "enableChecks": ["markdown-filename-camel-case"]
-}
-```
+Both run in every repo, but only the repo's own convention judges. Hyphenated names vote kebab-case, names with capitals vote camelCase, and the majority wins; kebab-case wins a tie.
 
 ## What passes
 

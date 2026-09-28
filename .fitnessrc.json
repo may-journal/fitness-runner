@@ -1,13 +1,4 @@
 {
-  "disabledChecks": [
-    "eslint",
-    "no-eslint-disable",
-    "prettier",
-    "node-version",
-    "dependency-currency",
-    "vitest-coverage-exclude",
-    "vitest-coverage-full"
-  ],
   "textReadability": {
     "maxGrade": 15,
     "maxLix": 50

@@ -20,20 +20,14 @@ Optional `.fitnessrc.json` at repo root:
 ```json
 {
   "disabledChecks": ["cspell"],
-  "enableChecks": ["commit-attribution"],
   "ignore": ["profile/README.md", ".github/workflow-templates/**"],
   "repeatedStringLiterals": { "allow": ["dist"] }
 }
 ```
 
-Most repos set no check list. The default list holds every check that judges repo files, and each passes clean when its language, tool, or file is absent. `disabledChecks` removes names; `enableChecks` appends opt-in checks such as `commit-attribution`.
+Every check runs in every repo, and each passes clean when its language, tool, config, or input is absent. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning.
 
 ## Ignored paths
 
 `ignore` lists paths every file check skips, with gitignore-like globs. A bare name matches at any depth, `**` crosses directories, and a matched directory hides everything beneath it.
 
-## Check lists
-
-A `checks` list replaces the defaults: only those run, in order, and `enableChecks` is ignored. Unknown names are skipped silently, and `disabledChecks` never removes path entries.
-
-Entries containing `/` are local executable paths, mixed in with check names. This runs a repo-specific check without publishing anything. A local check is any executable speaking the protocol above — a shell script works.

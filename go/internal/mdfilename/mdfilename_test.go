@@ -79,13 +79,13 @@ func TestRunKebabFlavor(t *testing.T) {
 
 func TestRunCamelFlavor(t *testing.T) {
 	dir := t.TempDir()
-	writeFiles(t, dir, "releaseNotes.md", "README.md", "api-design.md")
+	writeFiles(t, dir, "releaseNotes.md", "installGuide.md", "README.md", "api-design.md")
 	res := Run(dir, Camel)
 	if res.Ok {
 		t.Fatalf("expected failure, got %+v", res)
 	}
-	if res.FilesChecked != 3 {
-		t.Fatalf("filesChecked = %d, want 3", res.FilesChecked)
+	if res.FilesChecked != 4 {
+		t.Fatalf("filesChecked = %d, want 4", res.FilesChecked)
 	}
 	want := "api-design.md: filename must be camelCase"
 	if len(res.Errors) != 1 || res.Errors[0] != want {
@@ -115,5 +115,34 @@ func TestRunEmptyRepoPasses(t *testing.T) {
 	res := Run(t.TempDir(), Kebab)
 	if !res.Ok || res.FilesChecked != 0 || len(res.Errors) != 0 {
 		t.Fatalf("expected pass over 0 files, got %+v", res)
+	}
+}
+
+func TestDetect(t *testing.T) {
+	cases := []struct {
+		name  string
+		files []string
+		want  Convention
+	}{
+		{"no markdown defaults to kebab", nil, Kebab},
+		{"only neutral and exempt names default to kebab", []string{"README.md", "adr001.md", "notes.md"}, Kebab},
+		{"hyphenated majority is kebab", []string{"api-design.md", "release-notes.md", "installGuide.md"}, Kebab},
+		{"capitalized majority is camel", []string{"releaseNotes.md", "docs/installGuide.md", "api-design.md"}, Camel},
+		{"a tie goes to kebab", []string{"releaseNotes.md", "api-design.md"}, Kebab},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := Detect(tc.files); got.Label != tc.want.Label {
+				t.Errorf("Detect = %s, want %s", got.Label, tc.want.Label)
+			}
+		})
+	}
+}
+
+func TestRunOtherFlavorPassesClean(t *testing.T) {
+	dir := t.TempDir()
+	writeFiles(t, dir, "releaseNotes.md", "installGuide.md", "api-design.md")
+	if res := Run(dir, Kebab); !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("kebab flavor in a camelCase repo = %+v, want a clean pass", res)
 	}
 }

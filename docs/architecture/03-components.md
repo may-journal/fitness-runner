@@ -16,7 +16,7 @@ C4Component
         }
         Container_Boundary(runner, "Run loop") {
             Component(config, "3 Config loader", ".fitnessrc.json")
-            Component(resolve, "4 Spec resolver", "name/path specs")
+            Component(resolve, "4 Check resolver", "allChecks minus disabled")
             Component(execute, "5 Execution pool", "goroutines + group kill")
             Component(output, "6 Results renderer", "internal/render")
         }
@@ -30,7 +30,6 @@ C4Component
         Component(kit, "8 checkkit protocol", "go/internal")
     }
 
-    System_Ext(localCheck, "21 Local check executable")
     System_Ext(tools, "9 Peer tools", "prettier, eslint, vitest, swiftlint")
     System_Ext(git, "10 git")
 
@@ -38,11 +37,9 @@ C4Component
     Rel(main, config, "12")
     Rel(main, resolve, "13")
     Rel(resolve, check, "14")
-    Rel(resolve, localCheck, "22")
     Rel(main, git, "17")
     Rel(main, execute, "18")
     Rel(execute, check, "19")
-    Rel(execute, localCheck, "23")
     Rel(main, output, "20")
     Rel(check, kit, "15")
     Rel(check, tools, "16")
@@ -68,7 +65,7 @@ Numbers on nodes and arrows match the callout table.
 | 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
 | 2   | `go/cmd/fitness/main.go` — routes the subcommands, else argv, resolve, execute, render.                 | No build step, no interpreter startup.                      |
 | 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
-| 4   | Ordered check list: config `checks` else the embedded default list; disabled names removed; deduped.    | One place for spec resolution (name, path, full list).      |
+| 4   | Ordered check list: the CLI name, else the embedded `allChecks` minus `disabledChecks`.                 | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass/fail summary.                             |
 | 7   | One static binary per check name, discovered beside the runner then on PATH.                            | Plugin model at the artifact level; no registry.            |
@@ -85,23 +82,17 @@ Numbers on nodes and arrows match the callout table.
 | 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
 | 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        |
 | 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
-| 21  | Consumer executable speaking the same protocol — a shell script works.                                  | Repo-specific checks without publishing anything.           |
-| 22  | Resolver takes path specs (entries containing a separator) relative to the repo root.                   | Config and CLI share one code path.                         |
-| 23  | Local checks run exactly like bundled ones.                                                             | No special cases in the engine.                             |
 
 ## Resolve check specs (priority)
 
-`go/cmd/fitness` produces an ordered spec list, then resolves each entry to a binary:
+`go/cmd/fitness` produces an ordered name list, then resolves each name to `fitness-check-<name>` beside the runner, then on PATH:
 
-1. `.fitnessrc.json` with `checks` — use that list (order preserved).
-   - Name specs resolve to `fitness-check-<name>` beside the runner, then on PATH; unknown names are skipped silently.
-   - Path specs (entries containing a separator) resolve relative to the repo root and fail the run when missing or not executable.
-2. No `checks` — the runner's embedded default list plus any `enableChecks`; a missing binary for a default name fails the run.
-3. `disabledChecks` — remove matching name specs from step 1 or 2. Path specs are unchanged (opt-in only).
+1. A CLI name (`fitness prettier` or `--check=eslint`) — run only that built-in check; an unknown name is an error.
+2. Otherwise — the embedded `allChecks` list, in order, minus `disabledChecks`. A missing binary for a listed check fails the run.
 
-Dedupe is first-occurrence-wins by resolved check name; a path check's name comes from its `--describe` metadata, else its basename.
+Every check runs in every repo and passes clean with zero files when it does not apply. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning.
 
-Single-check mode bypasses the list: `fitness prettier`, `fitness --check=eslint`, or `fitness --check=./my-check`. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
+Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 
 ## Run context (environment)
 

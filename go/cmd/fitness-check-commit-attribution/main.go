@@ -1,13 +1,16 @@
 // Command fitness-check-commit-attribution validates that the HEAD or
 // proposed commit message discloses AI usage via "AI-Tools:" and
 // "AI-Models:" git trailers — the Go port of the commit-attribution check.
-// Merge and revert commits are exempt. The runner forwards a proposed
+// It applies only to repos that use the convention: the proposed message or
+// one of the last historyDepth commits carries a trailer. Merge and revert
+// commits are exempt. The runner forwards a proposed
 // message via --message (surfaced as FITNESS_CTX_MESSAGE); a message that is
 // provided but empty fails rather than falling back to git log.
 package main
 
 import (
 	"fmt"
+	"os/exec"
 	"regexp"
 	"strings"
 
@@ -32,7 +35,36 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	return judge(resolveMessage(root)), nil
+	message := resolveMessage(root)
+	if !adopted(root, message) {
+		return checkkit.Pass(0), nil
+	}
+	return judge(message), nil
+}
+
+// historyDepth is how many recent commits adopted inspects for a trailer.
+const historyDepth = "100"
+
+// adopted reports whether the repo uses the AI-disclosure convention: the
+// message under validation or a recent HEAD commit carries either trailer.
+func adopted(root, message string) bool {
+	if anyTrailer(message) {
+		return true
+	}
+	cmd := exec.Command("git", "log", "-n", historyDepth, "--format=%B")
+	cmd.Dir = root
+	out, err := cmd.Output()
+	return err == nil && anyTrailer(string(out))
+}
+
+// anyTrailer reports whether text carries any required trailer.
+func anyTrailer(text string) bool {
+	for _, key := range requiredTrailers {
+		if hasTrailer(text, key) {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveMessage returns the commit message under validation: the runner's

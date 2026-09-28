@@ -17,8 +17,9 @@ func TestLoadMissingIsNil(t *testing.T) {
 func TestLoadParsesKeys(t *testing.T) {
 	dir := t.TempDir()
 	content := `{
-  "checks": ["changelog", "./local/check"],
+  "checks": ["changelog"],
   "disabledChecks": ["cspell"],
+  "ignore": ["profile/README.md"],
   "skipTheseDirectories": ["vendor"],
   "repeatedStringLiterals": {"allow": ["dist"]}
 }`
@@ -29,8 +30,8 @@ func TestLoadParsesKeys(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.Checks) != 2 || cfg.Checks[1] != "./local/check" {
-		t.Fatalf("checks: %v", cfg.Checks)
+	if len(cfg.LegacyChecks) != 1 || cfg.Ignore[0] != "profile/README.md" {
+		t.Fatalf("legacy checks %v, ignore %v", cfg.LegacyChecks, cfg.Ignore)
 	}
 	if cfg.DisabledChecks[0] != "cspell" || cfg.SkipTheseDirectories[0] != "vendor" {
 		t.Fatalf("cfg: %+v", cfg)
@@ -60,7 +61,7 @@ func TestLoadJSONWinsOverLegacy(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg, err := Load(dir)
-	if err != nil || cfg == nil || cfg.Checks[0] != "a" {
+	if err != nil || cfg == nil || cfg.LegacyChecks[0] != "a" {
 		t.Fatalf("got %+v, %v", cfg, err)
 	}
 }

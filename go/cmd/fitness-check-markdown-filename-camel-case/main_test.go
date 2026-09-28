@@ -8,7 +8,7 @@ import (
 
 func TestRunWiresCamelConvention(t *testing.T) {
 	dir := t.TempDir()
-	for _, name := range []string{"releaseNotes.md", "README.md", "api-design.md"} {
+	for _, name := range []string{"releaseNotes.md", "installGuide.md", "README.md", "api-design.md"} {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("# doc\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -17,7 +17,7 @@ func TestRunWiresCamelConvention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Ok || res.FilesChecked != 3 {
+	if res.Ok || res.FilesChecked != 4 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
 	want := "api-design.md: filename must be camelCase"

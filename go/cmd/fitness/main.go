@@ -24,21 +24,19 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// defaultChecks is the run order when config has no checks list — the Go
-// twin of the bundle's defaultChecks (the bundle concept dissolves when
+// allChecks is the run order when config has no checks list — the Go
+// twin of the bundle's allChecks (the bundle concept dissolves when
 // checks are sibling binaries).
-// defaultChecks is the comprehensive catalog a repo gets with no checks list.
-// Every check self-gates — it passes clean when its language, tool, or file is
-// absent — so this one list fits Swift, Go, JS, and docs-only repos alike, and
-// a repo's .fitnessrc.json names only disabledChecks. Opt-in only: the strict
-// or network checks (node-version, dependency-currency, the vitest coverage
-// checks), markdown-filename-camel-case (the opposite of the kebab-case
-// default), commit-attribution (a trailer convention a repo adopts), and the
-// workflow body checks (plan-structure, pr-structure, pr-closes-issue).
-var defaultChecks = []string{
+// allChecks is every check, in run order. Every repo runs all of them: each
+// check detects whether it applies — its language, tool, config, or input is
+// present — and passes clean with zero files when it does not, so one list
+// fits Swift, Go, JS, and docs-only repos alike. A repo turns a check off
+// with disabledChecks in .fitnessrc.json.
+var allChecks = []string{
 	"read-repo-first",
 	"semantic-commit",
 	"plan-trailer",
+	"commit-attribution",
 	"changelog",
 	"changelog-updated",
 	"changelog-bullets",
@@ -51,6 +49,7 @@ var defaultChecks = []string{
 	"repeated-string-literals",
 	"markdown-front-matter",
 	"markdown-filename-kebab-case",
+	"markdown-filename-camel-case",
 	"markdown-links",
 	"markdown-no-bold-italic",
 	"text-readability",
@@ -61,6 +60,9 @@ var defaultChecks = []string{
 	"mermaid-diagram-table-gap",
 	"mermaid-legend",
 	"mermaid-level-bleed",
+	"plan-structure",
+	"pr-structure",
+	"pr-closes-issue",
 	"go-complexity",
 	"go-vet",
 	"gofmt",
@@ -70,6 +72,10 @@ var defaultChecks = []string{
 	"eslint",
 	"prettier",
 	"no-eslint-disable",
+	"node-version",
+	"dependency-currency",
+	"vitest-coverage-exclude",
+	"vitest-coverage-full",
 }
 
 const defaultTimeout = 5000 * time.Millisecond
@@ -170,7 +176,7 @@ func run(argv []string) int {
 	}
 
 	fmt.Fprintln(os.Stderr, "Resolving checks...")
-	checks, err := prepareChecks(root, cfg, spec)
+	checks, err := prepareChecks(cfg, spec)
 	if err != nil {
 		errRed(err.Error())
 		return 1
@@ -195,13 +201,21 @@ func loadConfig(root, spec string) (*conf.Config, error) {
 	if err != nil && (spec == "" || !errors.Is(err, conf.ErrLegacyConfig)) {
 		return nil, err
 	}
+	warnLegacyChecks(cfg)
 	return cfg, nil
+}
+
+// warnLegacyChecks notes on stderr that a retired checks list is ignored.
+func warnLegacyChecks(cfg *conf.Config) {
+	if cfg != nil && len(cfg.LegacyChecks) > 0 {
+		fmt.Fprintln(os.Stderr, "fitness: the checks list in .fitnessrc.json is ignored; every check runs. Turn one off with disabledChecks.")
+	}
 }
 
 // prepareChecks resolves the check list, turning an empty resolution into
 // the Unknown-check error the CLI renders.
-func prepareChecks(root string, cfg *conf.Config, spec string) ([]resolved, error) {
-	checks, err := resolveChecks(root, cfg, spec)
+func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
+	checks, err := resolveChecks(cfg, spec)
 	if err != nil {
 		return nil, err
 	}
@@ -383,39 +397,23 @@ func isRunnerArg(a string, i, specIdx int) bool {
 	return i == specIdx || strings.HasPrefix(a, "--check=") || strings.HasPrefix(a, "--jobs=")
 }
 
-// resolveChecks builds the ordered, deduped check list.
-func resolveChecks(root string, cfg *conf.Config, spec string) ([]resolved, error) {
+// resolveChecks builds the check list: the one named on the CLI, else every
+// check minus the config's disabledChecks.
+func resolveChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 	if spec != "" {
-		return resolveSingle(root, spec)
+		return resolveSingle(spec)
 	}
-	names, fromConfig := configuredNames(cfg)
-	return resolveList(root, names, fromConfig, disabledSet(cfg))
+	return resolveList(allChecks, disabledSet(cfg))
 }
 
-// resolveSingle resolves a CLI spec into a one-element list; an empty list
-// means Unknown check.
-func resolveSingle(root, spec string) ([]resolved, error) {
-	c, err := resolveOne(root, spec, true, false)
-	if err != nil {
+// resolveSingle resolves a CLI check name into a one-element list; an empty
+// list means Unknown check.
+func resolveSingle(spec string) ([]resolved, error) {
+	c, err := resolveName(spec, true)
+	if err != nil || c == nil {
 		return nil, err
 	}
-	if c == nil {
-		return nil, nil
-	}
 	return []resolved{*c}, nil
-}
-
-// configuredNames returns the check names to run and whether they came from
-// config: a config checks list overrides the defaults, otherwise the
-// defaults run with any enableChecks appended.
-func configuredNames(cfg *conf.Config) ([]string, bool) {
-	if cfg == nil {
-		return defaultChecks, false
-	}
-	if len(cfg.Checks) > 0 {
-		return cfg.Checks, true
-	}
-	return append(append([]string{}, defaultChecks...), cfg.EnableChecks...), false
 }
 
 // disabledSet builds the lookup of config-disabled check names.
@@ -430,75 +428,34 @@ func disabledSet(cfg *conf.Config) map[string]bool {
 	return disabled
 }
 
-// resolveList resolves an ordered name list, dropping disabled entries,
-// silent misses, and duplicate names (first occurrence wins).
-func resolveList(root string, names []string, fromConfig bool, disabled map[string]bool) ([]resolved, error) {
+// resolveList resolves each name not disabled, in order.
+func resolveList(names []string, disabled map[string]bool) ([]resolved, error) {
 	var out []resolved
-	seen := map[string]bool{}
-	for _, entry := range names {
-		c, err := resolveEntry(root, entry, fromConfig, disabled)
+	for _, name := range names {
+		if disabled[name] {
+			continue
+		}
+		c, err := resolveName(name, false)
 		if err != nil {
 			return nil, err
 		}
-		if c == nil || seen[c.name] {
-			continue
-		}
-		seen[c.name] = true
 		out = append(out, *c)
 	}
 	return out, nil
 }
 
-// resolveEntry resolves one list entry; nil means skip (a disabled name, or
-// a config entry whose binary is missing).
-func resolveEntry(root, entry string, fromConfig bool, disabled map[string]bool) (*resolved, error) {
-	if !isPathSpec(entry) && disabled[entry] {
+// resolveName maps a check name to its binary. A missing binary is nil for
+// a CLI name (the caller renders Unknown check) and an error for the list,
+// since every check ships together.
+func resolveName(name string, cli bool) (*resolved, error) {
+	bin, err := findCheckBinary(name)
+	if err == nil {
+		return &resolved{name: name, bin: bin, desc: describe(bin)}, nil
+	}
+	if cli {
 		return nil, nil
 	}
-	return resolveOne(root, entry, false, fromConfig)
-}
-
-func isPathSpec(spec string) bool {
-	return strings.ContainsAny(spec, "/\\")
-}
-
-// resolveOne maps a spec to a check binary. Missing name specs: nil for CLI
-// (caller renders Unknown check) and config entries (skipped silently), an
-// error for default-list names. Missing path specs always error unless CLI.
-func resolveOne(root, spec string, cli, fromConfig bool) (*resolved, error) {
-	if isPathSpec(spec) {
-		return resolvePathSpec(root, spec, cli)
-	}
-	bin, err := findCheckBinary(spec)
-	if err != nil {
-		if cli || fromConfig {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", spec)
-	}
-	return &resolved{name: spec, bin: bin, desc: describe(bin)}, nil
-}
-
-// resolvePathSpec resolves a local path spec to its executable; the check
-// name comes from --describe metadata when present, else the basename sans
-// extension.
-func resolvePathSpec(root, spec string, cli bool) (*resolved, error) {
-	abs := spec
-	if !filepath.IsAbs(abs) {
-		abs = filepath.Join(root, spec)
-	}
-	if !isExecutableFile(abs) {
-		if cli {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("Local check not found or not executable: %s", spec)
-	}
-	name := strings.TrimSuffix(filepath.Base(abs), filepath.Ext(abs))
-	desc := describe(abs)
-	if desc.Name != "" {
-		name = desc.Name
-	}
-	return &resolved{name: name, bin: abs, desc: desc}, nil
+	return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", name)
 }
 
 // isExecutableFile reports whether path is a non-directory with any execute

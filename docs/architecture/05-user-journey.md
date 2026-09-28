@@ -47,13 +47,10 @@ flowchart TB
     exitZero[(9 Exit 0)]:::system
     failuresShown[10 Failures shown]:::blocked
     fixIssues(11 Fix issues):::action
-    authorLocal(12 Author local check executable):::action
-    editRc(13 Add path to .fitnessrc):::action
-    configError[(14 Config error)]:::blocked
-    ciRun[(15 CI runs fitness)]:::system
+    configError[(12 Config error)]:::blocked
+    ciRun[(13 CI runs fitness)]:::system
 
     dev --> terminal
-    dev --> authorLocal
     terminal --> runFull
     terminal --> runSingle
     runFull --> resolveConfig
@@ -66,8 +63,6 @@ flowchart TB
     resultsTable --> failuresShown
     failuresShown --> fixIssues
     fixIssues --> runFull
-    authorLocal --> editRc
-    editRc --> resolveConfig
     ciRun --> resolveConfig
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
@@ -85,14 +80,12 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 2   | Terminal / shell.                | Screen  | Repo root; the working directory is the app under test, not the runner's own source.                                 |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                                                            |
 | 4   | `fitness <name>` / `--check=…`.  | Action  | Single-check mode bypasses list resolution entirely.                                                                 |
-| 5   | Resolve check specs.             | System  | `.fitnessrc.json` `checks` (names and/or paths) else the default list plus `enableChecks`; `disabledChecks` filters names only. |
+| 5   | Resolve check list.              | System  | Every built-in check minus `.fitnessrc.json` `disabledChecks`; checks that do not apply pass clean.                  |
 | 6   | Passthrough args forwarded.      | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).                                     |
 | 7   | Run loop executes each check.    | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout.                                |
 | 8   | Results table printed.           | Screen  | Pass/fail per check, totals, ANSI formatting.                                                                        |
 | 9   | Exit 0.                          | System  | All checks passed — deterministic, not LLM-judged.                                                                   |
 | 10  | Failures shown in table.         | Screen  | Exit 1; failing check's `errors` printed inline.                                                                     |
 | 11  | Fix and rerun.                   | Action  | Developer/agent edits source, returns to #3.                                                                         |
-| 12  | Author a local check executable. | Action  | Consumer-repo executable speaking the JSON protocol — a shell script works.                                          |
-| 13  | Add its path to `checks`.        | Action  | Path specs (entries containing a separator) opt in explicitly; `disabledChecks` cannot remove them.                  |
-| 14  | Missing or invalid path throws.  | System  | Path entries fail loud — explicitly configured, unlike name specs which allow-miss.                                  |
-| 15  | CI runs the same command.        | System  | Same `fitness` invocation gates the merge — no CI-only config branch.                                                |
+| 12  | Bad config or missing binary.    | System  | Fails loud — every check ships together, so a missing binary is a broken install.                                    |
+| 13  | CI runs the same command.        | System  | Same `fitness` invocation gates the merge — no CI-only config branch.                                                |

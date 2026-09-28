@@ -1,43 +1,38 @@
 package main
 
 import (
-	"reflect"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 )
 
-func TestConfiguredNamesDefaultsWithoutConfig(t *testing.T) {
-	names, fromConfig := configuredNames(nil)
-	if fromConfig || !reflect.DeepEqual(names, defaultChecks) {
-		t.Errorf("configuredNames(nil) = %v, %v; want the defaults", names, fromConfig)
+func TestAllChecksHasEveryCheckBinary(t *testing.T) {
+	dirs, err := filepath.Glob(filepath.Join("..", "fitness-check-*"))
+	if err != nil || len(dirs) == 0 {
+		t.Fatalf("no check directories found: %v", err)
 	}
-}
-
-func TestConfiguredNamesChecksListOverrides(t *testing.T) {
-	cfg := &conf.Config{Checks: []string{"cspell"}, EnableChecks: []string{"commit-attribution"}}
-	names, fromConfig := configuredNames(cfg)
-	if !fromConfig || !reflect.DeepEqual(names, []string{"cspell"}) {
-		t.Errorf("configuredNames = %v, %v; want only the checks list", names, fromConfig)
-	}
-}
-
-func TestConfiguredNamesEnableChecksAppends(t *testing.T) {
-	cfg := &conf.Config{EnableChecks: []string{"commit-attribution"}}
-	names, fromConfig := configuredNames(cfg)
-	if fromConfig || len(names) != len(defaultChecks)+1 || names[len(names)-1] != "commit-attribution" {
-		t.Errorf("configuredNames = %v; want the defaults plus commit-attribution", names)
-	}
-	if slices.Contains(defaultChecks, "commit-attribution") {
-		t.Error("appending must not modify the default list")
-	}
-}
-
-func TestDefaultChecksIncludeGoAndBuildChecks(t *testing.T) {
-	for _, name := range []string{"go-vet", "go-test", "gofmt", "changelog-bullets", "build-output-untracked"} {
-		if !slices.Contains(defaultChecks, name) {
-			t.Errorf("default list is missing %s", name)
+	for _, d := range dirs {
+		name := filepath.Base(d)[len("fitness-check-"):]
+		if !slices.Contains(allChecks, name) {
+			t.Errorf("allChecks is missing %s; every check runs in every repo", name)
 		}
+	}
+	for _, name := range allChecks {
+		if _, err := os.Stat(filepath.Join("..", "fitness-check-"+name)); err != nil {
+			t.Errorf("allChecks names %s, which has no binary", name)
+		}
+	}
+}
+
+func TestDisabledSet(t *testing.T) {
+	if len(disabledSet(nil)) != 0 {
+		t.Error("no config must disable nothing")
+	}
+	set := disabledSet(&conf.Config{DisabledChecks: []string{"jscpd"}})
+	if !set["jscpd"] || len(set) != 1 {
+		t.Errorf("disabledSet = %v", set)
 	}
 }

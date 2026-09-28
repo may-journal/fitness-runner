@@ -79,8 +79,9 @@ func TestHasTrailer(t *testing.T) {
 	}
 }
 
-// initRepo creates a temp git repo whose HEAD carries the given message.
-func initRepo(t *testing.T, message string) string {
+// initRepo creates a temp git repo with one commit per message, the last
+// one at HEAD.
+func initRepo(t *testing.T, messages ...string) string {
 	t.Helper()
 	dir := t.TempDir()
 	git := func(args ...string) {
@@ -94,7 +95,9 @@ func initRepo(t *testing.T, message string) string {
 	git("config", "user.email", "test@example.com")
 	git("config", "user.name", "Test")
 	git("config", "commit.gpgsign", "false")
-	git("commit", "--allow-empty", "-q", "-m", message)
+	for _, m := range messages {
+		git("commit", "--allow-empty", "-q", "-m", m)
+	}
 	return dir
 }
 
@@ -116,23 +119,39 @@ func TestRunFallsBackToHeadMessage(t *testing.T) {
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("expected pass on HEAD with trailers, got %+v", res)
 	}
-	res, err = run(initRepo(t, "feat(api): add endpoint\n\nno trailers"), nil)
+	res, err = run(initRepo(t, validMessage, "feat(api): add endpoint\n\nno trailers"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if res.Ok || len(res.Errors) != 2 {
-		t.Fatalf("expected two trailer errors from HEAD, got %+v", res)
+		t.Fatalf("expected two trailer errors from HEAD in an adopting repo, got %+v", res)
 	}
 }
 
-func TestRunOutsideGitRepoFails(t *testing.T) {
+func TestRunSkipsRepoWithoutTheConvention(t *testing.T) {
+	unsetCtxMessage(t)
+	res, err := run(initRepo(t, "feat(api): add endpoint\n\nno trailers"), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected a clean pass where no commit uses trailers, got %+v", res)
+	}
+	t.Setenv("FITNESS_CTX_MESSAGE", "feat(api): another\n\nstill none")
+	res, _ = run(initRepo(t, "feat(api): add endpoint"), nil)
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected a clean pass for a proposed message too, got %+v", res)
+	}
+}
+
+func TestRunOutsideGitRepoPassesClean(t *testing.T) {
 	unsetCtxMessage(t)
 	res, err := run(t.TempDir(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Ok || res.Errors[0] != msgEmpty {
-		t.Fatalf("expected empty-message failure, got %+v", res)
+	if !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("expected a clean pass outside a repo, got %+v", res)
 	}
 }
 

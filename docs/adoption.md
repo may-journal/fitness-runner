@@ -68,7 +68,7 @@ The callers track `@main` to stay current. Pin a release tag when a repo needs a
 
 ## Per-repo pieces
 
-Run `fitness init` to install the shared git hooks and point `core.hooksPath` at them. A repo runs every check by default, since each check skips itself when its language or tool is absent. Go repos get `go vet`, `go test`, and `gofmt` this way. A `.fitnessrc.json` names only exceptions:
+Run `fitness init` to install the shared git hooks and point `core.hooksPath` at them. A repo runs every check, since each check skips itself when its language, tool, or config is absent. Go repos get `go vet`, `go test`, and `gofmt` this way. A `.fitnessrc.json` names only exceptions:
 
 ```json
 {
@@ -77,7 +77,7 @@ Run `fitness init` to install the shared git hooks and point `core.hooksPath` at
 }
 ```
 
-Avoid a `checks` list: it replaces the defaults, so the repo misses checks added later. Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
+Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 

@@ -9,10 +9,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.09.28.1257
 
+- Feat: every check runs in every repo; `.fitnessrc.json` keeps only `disabledChecks`, `ignore`, and check options, and local path checks are gone.
 - Feat: add `go-vet`, `go-test`, and `gofmt` checks, which run the Go toolchain per module and pass clean without Go.
-- Feat: add an `ignore` list of gitignore-like globs every file check skips, and `enableChecks` to append opt-in checks to the defaults.
-- Feat: the default list gains the Go checks, `changelog-bullets`, and `build-output-untracked`, which now skips a repo with no TypeScript and no `dist`.
-- Docs: check READMEs, the adoption doc, and the config docs describe on-by-default checks, `disabledChecks`, `enableChecks`, and `ignore`.
+- Feat: add an `ignore` list of gitignore-like globs every file check skips; a leftover `checks` list is ignored with a warning.
+- Feat: `commit-attribution` applies once a repo uses its trailers, the filename checks follow the repo's detected case, and `build-output-untracked` skips repos without TypeScript or `dist`.
 - Fix: `make` and the `go-test` check drop git's hook variables, so tests run from a hook cannot write into the real repository.
 
 ### 2026.09.28.1222
