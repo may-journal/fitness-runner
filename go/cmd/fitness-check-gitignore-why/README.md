@@ -4,14 +4,14 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # gitignore-why
 
-Requires every `.gitignore` ignore pattern to be immediately preceded by a `#` comment explaining why it exists. This keeps ignores explained and easy to audit and onboard. Opt-in — not part of the runner's default list.
+Requires every `.gitignore` ignore pattern to be immediately preceded by a `#` comment explaining why it exists. This keeps ignores explained and easy to audit and onboard. On by default.
 
-## Enable
+## Turn off
 
-Add it to the `checks` array in `.fitnessrc.json`:
+To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{ "checks": ["gitignore-why"] }
+{ "disabledChecks": ["gitignore-why"] }
 ```
 
 ## What passes

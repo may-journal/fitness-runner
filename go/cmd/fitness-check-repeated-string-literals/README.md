@@ -4,17 +4,17 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # repeated-string-literals
 
-Fails when the same string literal appears 3+ times across sources — a signal it should be a shared constant. When the repeats are a small closed set like `'active'` / `'pending'`, a union type or enum fits better. Opt-in.
+Fails when the same string literal appears 3+ times across sources — a signal it should be a shared constant. When the repeats are a small closed set like `'active'` / `'pending'`, a union type or enum fits better. On by default.
 
 ## Why not just ESLint / `jscpd`?
 
 - `jscpd` finds duplicated multi-line blocks (`--min-lines 5`); a single repeated literal is one token on one line, so it never sees it.
 - `sonarjs/no-duplicate-string` (ESLint) only flags strings of 10+ chars containing a separator, which excludes the short, identifier-like tokens (`'active'`, `'GET'`) this check targets.
 
-## Enable
+## Turn off
 
 ```json
-{ "checks": ["repeated-string-literals"] }
+{ "disabledChecks": ["repeated-string-literals"] }
 ```
 
 ## What passes / fails
@@ -47,7 +47,6 @@ Use `allow` for the rare repeat no constant can fix. That means a value that mus
 
 ```json
 {
-  "checks": ["repeated-string-literals"],
   "repeatedStringLiterals": { "allow": ["my-check-name", "kindValue"] }
 }
 ```

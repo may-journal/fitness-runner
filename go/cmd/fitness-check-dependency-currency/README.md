@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # dependency-currency
 
-Flags declared npm dependencies that are behind their latest published version — an installable update means the project isn't at peak fitness. Opt-in — not in the runner's default list. Add `"dependency-currency"` to the `checks` array in `.fitnessrc.json` to enable it.
+Flags declared npm dependencies that are behind their latest published version — an installable update means the project isn't at peak fitness. It runs in every repo and passes clean without a `package.json`.
 
 ## Behavior
 

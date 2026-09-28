@@ -62,19 +62,19 @@ Numbers on classes and relationships match the callout table.
 
 | #   | Description                                                                                | Why                                                                 |
 | --- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
-| 1   | The check contract: `fitness-check-name --root dir [args…]`, JSON result on stdout.        | Every check — bundled or consumer-local — is one executable.        |
+| 1   | The check contract: `fitness-check-name --root dir [args…]`, JSON result on stdout.        | Every check is one executable.                                      |
 | 2   | Metadata a check prints for `--describe`: name, timeout budget, context-inline argument.   | The runner discovers capabilities with a handshake, not a registry. |
 | 3   | Environment the runner exports before dispatch.                                            | Checks stay stateless; context flows one way.                       |
 | 4   | `{Ok, Errors, FilesChecked}` — emitted by the check, parsed by the runner.                 | Aggregated into the results table.                                  |
-| 5   | Builds the ordered, deduped check list from config or the embedded defaults.               | Single source for which checks run.                                 |
-| 6   | Runs `binary --describe` with a two-second budget and group kill.                          | A local script that ignores the flag cannot hang resolution.        |
+| 5   | Builds the ordered check list: the CLI name, else `allChecks` minus `disabledChecks`.      | Single source for which checks run.                                 |
+| 6   | Runs `binary --describe` with a two-second budget and group kill.                          | A check that ignores the flag cannot hang resolution.               |
 | 7   | Bounded goroutine pool dispatching in order, collecting outcomes by index.                 | Parallel execution with strictly ordered rendering afterwards.      |
 | 8   | Execs one check with `exec.Command` + Setpgid; timeout sends TERM then KILL to the group.  | A hung check's whole child tree dies (5s default budget).           |
 | 9   | Renders rows into the bordered table with the totals line.                                 | Deterministic output regardless of completion order.                |
 | 10  | Main scaffolding every check binary delegates to: flag parsing, describe, result emission. | Checks implement one Run function; the protocol lives once.         |
 | 11  | Resolution asks each resolved binary to describe itself.                                   | Timeouts and inline args ride the same handshake.                   |
 | 12  | Describe output parsed as JSON.                                                            | Stdlib all the way down.                                            |
-| 13  | Name specs resolve beside the runner, then on PATH; path specs relative to root.           | Filesystem convention replaces module resolution.                   |
+| 13  | Each name resolves to `fitness-check-<name>` beside the runner, then on PATH.              | Filesystem convention replaces module resolution.                   |
 | 14  | The pool runs each outcome slot concurrently under a semaphore.                            | CPU-bounded parallelism.                                            |
 | 15  | The wrapper invokes the binary with cwd = root and the context env.                        | Check encapsulates its own tool calls.                              |
 | 16  | The last non-empty stdout line parses as the Result; crashes synthesize a failure.         | Stray tool noise ahead of the JSON is tolerated.                    |
@@ -87,7 +87,7 @@ Numbers on classes and relationships match the callout table.
 
 ```text
 fitness-runner/
-  .fitnessrc.json              the dogfood check list + options
+  .fitnessrc.json              the dogfood exceptions + options
   .github/                     CI and the tag-triggered release workflow
   docs/                        C4 architecture (this folder), plans, research
   go/
@@ -101,8 +101,7 @@ fitness-runner/
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)
-  .fitnessrc.json              checks: names + optional local executable paths
-  fitness/checks/              optional local check executables
+  .fitnessrc.json              optional: disabledChecks, ignore, per-check options
 ```
 
 ## Development in this repo

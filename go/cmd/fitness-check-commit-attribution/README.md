@@ -4,15 +4,13 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # commit-attribution
 
-Validates that a commit message discloses the AI tooling used, via two git trailers after the subject line: `AI-Tools:` and `AI-Models:`. Each must be present with a non-empty value on its own line. Opt-in, and not enabled on this repo itself — every historical commit predates the convention. It is meant for repos that adopt it going forward.
+Validates that a commit message discloses the AI tooling used, via two git trailers after the subject line: `AI-Tools:` and `AI-Models:`. Each must be present with a non-empty value on its own line.
 
-## Enable
+It applies only to repos that use the convention: the message being checked, or one of the last 100 commits, carries either trailer. Elsewhere it passes clean with zero files.
 
-Add the name to `checks` in `.fitnessrc.json`, then wire it into a commit-msg hook so the message is validated before the commit lands:
+## Adopt
 
-```json
-{ "checks": ["commit-attribution"] }
-```
+Add both trailers to a commit, and every later commit must carry them too. Wire the check into a commit-msg hook so a message is validated before the commit lands:
 
 ```sh
 # .git/hooks/commit-msg

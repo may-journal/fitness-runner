@@ -53,8 +53,11 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	errors := distTrackingErrors(root)
 	files := collectSourceFiles(root)
+	if !applies(root, files) {
+		return checkkit.Pass(0), nil
+	}
+	errors := distTrackingErrors(root)
 	for _, file := range files {
 		raw, err := os.ReadFile(filepath.Join(root, file))
 		if err != nil {
@@ -66,6 +69,19 @@ func run(root string, _ []string) (checkkit.Result, error) {
 		return checkkit.Fail(len(files)+1, errors...), nil
 	}
 	return checkkit.Pass(len(files) + 1), nil
+}
+
+// applies reports whether the repo has anything to judge: TypeScript source,
+// a dist directory on disk, or tracked dist files. A docs-only or Go repo has
+// none, so the check passes clean there and is safe in the default list.
+func applies(root string, files []string) bool {
+	if len(files) > 0 {
+		return true
+	}
+	if _, err := os.Stat(filepath.Join(root, "dist")); err == nil {
+		return true
+	}
+	return len(trackedDistFiles(root)) > 0
 }
 
 // distTrackingErrors reports rule A: dist must be git-ignored and have no

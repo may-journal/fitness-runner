@@ -22,12 +22,10 @@ CHANGELOG.md:12: bullet is 1230 characters; keep each under 365
 CHANGELOG.md:14: bullet must start with a semantic type (Feat:, Fix:, ...)
 ```
 
-## Enable
+## Turn off
 
-Opt-in — add the name to your `checks` list in `.fitnessrc.json`:
+On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{
-  "checks": ["changelog-bullets"]
-}
+{ "disabledChecks": ["changelog-bullets"] }
 ```

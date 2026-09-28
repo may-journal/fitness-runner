@@ -3,6 +3,11 @@
 # Commands mirror .github/workflows (ci.yml / release.yml) so `make` matches CI.
 
 GO_DIR := go
+
+# Git hooks export these, pointing at the real repository. Tests that build
+# throwaway repos with plain `git` commands would inherit them and write into
+# the real repo instead, so no target passes them on.
+unexport GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTORY GIT_PREFIX
 # Extra args for `make run`, e.g. `make run ARGS="--help"`.
 ARGS ?=
 

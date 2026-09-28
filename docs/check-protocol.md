@@ -13,18 +13,25 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 
 The runner executes checks in a bounded parallel pool with per-check timeouts. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table, and the run exits 1 when any check fails.
 
+## Applicability
+
+Every check runs in every repo, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
+
 ## Config
 
 Optional `.fitnessrc.json` at repo root:
 
 ```json
 {
-  "checks": ["changelog", "node-version", "semantic-commit"],
   "disabledChecks": ["cspell"],
+  "ignore": ["profile/README.md", ".github/workflow-templates/**"],
   "repeatedStringLiterals": { "allow": ["dist"] }
 }
 ```
 
-If `checks` is set, only those run (in order). If omitted, the runner uses its default list. `disabledChecks` removes names from either list. Unknown names in `checks` are skipped silently; `disabledChecks` never removes path entries.
+Every check runs in every repo, and each passes clean when its language, tool, config, or input is absent. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning.
 
-`checks` entries can also be local executable paths — entries containing `/` — mixed in with check names. This runs a repo-specific check without publishing anything. A local check is any executable speaking the protocol above — a shell script works.
+## Ignored paths
+
+`ignore` lists paths every file check skips, with gitignore-like globs. A bare name matches at any depth, `**` crosses directories, and a matched directory hides everything beneath it.
+

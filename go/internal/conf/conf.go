@@ -12,12 +12,15 @@ import (
 
 // Config is the shape of .fitnessrc.json.
 type Config struct {
-	// Checks is the ordered list of check names and/or local executable
-	// paths (entries containing a path separator). When set, only these run.
-	Checks []string `json:"checks"`
-	// DisabledChecks removes name entries from the resolved list; path
-	// entries are opt-in only and never removed.
+	// LegacyChecks is the retired checks list. Every check now runs, so the
+	// runner ignores it and warns until a repo removes it.
+	LegacyChecks []string `json:"checks"`
+	// DisabledChecks turns off checks by name for this repo.
 	DisabledChecks []string `json:"disabledChecks"`
+	// Ignore lists glob patterns (gitignore-like: a bare name matches at any
+	// depth, "**" crosses directories, a matched directory hides everything
+	// beneath it) for paths every file check skips.
+	Ignore []string `json:"ignore"`
 	// SkipTheseDirectories overrides the walker's skip-dir set.
 	SkipTheseDirectories []string `json:"skipTheseDirectories"`
 	// RepeatedStringLiterals holds options for that check.

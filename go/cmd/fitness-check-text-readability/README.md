@@ -45,12 +45,10 @@ Optional bands in `.fitnessrc.json` (any positive value overrides its default):
 }
 ```
 
-## Enable
+## Turn off
 
-Opt-in — add the name to your `checks` list in `.fitnessrc.json`:
+On by default. To turn it off:
 
 ```json
-{
-  "checks": ["text-readability"]
-}
+{ "disabledChecks": ["text-readability"] }
 ```

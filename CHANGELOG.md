@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1257
+
+- Feat: every check runs in every repo; config keeps only `disabledChecks`, `ignore`, and options, and local path checks are gone.
+- Feat: add `go-vet`, `go-test`, and `gofmt` checks, plus an `ignore` list of gitignore-like globs every file check skips.
+- Test: a contract test builds every check and requires a clean pass with 0 files wherever it does not apply.
+- Feat: `commit-attribution` applies once a repo uses its trailers, filename checks follow the detected case, and `build-output-untracked` needs TypeScript or `dist`.
+- Fix: `make` and the `go-test` check drop git's hook variables, so tests run from a hook cannot write into the real repository.
+
 ### 2026.09.28.1222
 
 - Fix: `markdown-links` decodes a percent-encoded link path, so a link like `my%20file.md` resolves to the file it names.

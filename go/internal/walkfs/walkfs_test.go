@@ -72,3 +72,32 @@ func TestFilesByExtSuffixMatch(t *testing.T) {
 		t.Fatalf("suffix match failed: %v", got)
 	}
 }
+
+func TestFilesByExtHonorsConfigIgnore(t *testing.T) {
+	root := t.TempDir()
+	write(t, root, ".fitnessrc.json", `{"ignore": ["profile/README.md", ".github/workflow-templates/**", "generated"]}`)
+	write(t, root, "AGENTS.md", "")
+	write(t, root, "profile/README.md", "")
+	write(t, root, "profile/other.md", "")
+	write(t, root, ".github/workflow-templates/ci.md", "")
+	write(t, root, "docs/generated/api.md", "")
+	got := FilesByExt(root, ".md")
+	want := []string{"AGENTS.md", "profile/other.md"}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("FilesByExt = %v, want %v", got, want)
+	}
+}
+
+func TestIgnoreNilWithoutPatterns(t *testing.T) {
+	root := t.TempDir()
+	if Ignore(root) != nil {
+		t.Error("no config must yield a nil matcher")
+	}
+	write(t, root, ".fitnessrc.json", `{"checks": []}`)
+	if Ignore(root) != nil {
+		t.Error("a config without ignore must yield a nil matcher")
+	}
+	if Ignored(nil, "anything.md") {
+		t.Error("a nil matcher must ignore nothing")
+	}
+}

@@ -21,12 +21,10 @@ Every relative link in every markdown file must resolve to an existing file or d
 docs/competition.md:11: broken relative link: ./README.md
 ```
 
-## Enable
+## Turn off
 
-Opt-in — add the name to your `checks` list in `.fitnessrc.json`:
+On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{
-  "checks": ["markdown-links"]
-}
+{ "disabledChecks": ["markdown-links"] }
 ```

@@ -9,10 +9,10 @@ Foundational check of the mermaid diagram + callout table fitness-function set
 numbered mermaid diagram has an associated callout table and that their callout
 numbers are a 1-1 match.
 
-Opt-in — not part of the runner's default list. Enable it via `.fitnessrc.json`:
+On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{ "checks": ["mermaid-callouts"] }
+{ "disabledChecks": ["mermaid-callouts"] }
 ```
 
 ## Behavior

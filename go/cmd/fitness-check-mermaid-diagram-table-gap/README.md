@@ -7,10 +7,10 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)). The callout table is the single home for detail. No loose prose may sit between a numbered diagram (or its legend) and its table ([#66](https://github.com/may-journal/fitness-runner/issues/66)).
 
-Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
+On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{ "checks": ["mermaid-diagram-table-gap"] }
+{ "disabledChecks": ["mermaid-diagram-table-gap"] }
 ```
 
 ## Behavior

@@ -15,7 +15,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 - Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
-Default run order lives in the runner ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). The default is now the full catalog: language checks self-gate, so Swift, Go, JS, and docs repos share one list. Opt-in checks (`node-version`, `dependency-currency`, the vitest coverage checks, `changelog-bullets`, and the workflow body checks) are enabled per repo via `.fitnessrc.json`.
+Every check runs in every repo, in the order listed in the runner ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies, so Swift, Go, JS, and docs repos share one list. A repo turns a check off with `disabledChecks` in `.fitnessrc.json`.
 
 ## Shared configs
 
