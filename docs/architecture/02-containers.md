@@ -86,6 +86,7 @@ Numbers on nodes and arrows match the callout table.
 | Above + `.fitnessrc.json` with `checks`       | Override list               | Your configured order and subset            |
 | Above + `checks` mixing names and local paths | Mixed names and executables | Full configured list in order               |
 | Above + `disabledChecks` only                 | Exclude names               | Default list minus disabled                 |
+| Above + `enableChecks`                        | Add opt-in names            | Default list plus the opt-in checks         |
 
 `disabledChecks` applies to check names only; local paths are opt-in via explicit `checks` entries and are never removed by it. The cspell and jscpd checks are native engines needing no external tool. Prettier, eslint, vitest-coverage-full, and swiftlint exec the real tool and fail clearly when it is missing.
 

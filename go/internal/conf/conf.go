@@ -18,6 +18,13 @@ type Config struct {
 	// DisabledChecks removes name entries from the resolved list; path
 	// entries are opt-in only and never removed.
 	DisabledChecks []string `json:"disabledChecks"`
+	// EnableChecks appends opt-in checks to the default list, so a repo can
+	// add one without restating every default. Ignored when Checks is set.
+	EnableChecks []string `json:"enableChecks"`
+	// Ignore lists glob patterns (gitignore-like: a bare name matches at any
+	// depth, "**" crosses directories, a matched directory hides everything
+	// beneath it) for paths every file check skips.
+	Ignore []string `json:"ignore"`
 	// SkipTheseDirectories overrides the walker's skip-dir set.
 	SkipTheseDirectories []string `json:"skipTheseDirectories"`
 	// RepeatedStringLiterals holds options for that check.

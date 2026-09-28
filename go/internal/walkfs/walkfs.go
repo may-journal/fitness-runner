@@ -11,7 +11,9 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/par"
+	"github.com/may-journal/fitness-runner/go/internal/spell"
 )
 
 // runnerSkipDirs are always pruned, at any depth, by basename.
@@ -86,26 +88,69 @@ func scanOne(root, file string, scan func(relPath, content string) []string) sca
 // FilesByExt returns the sorted slash-separated relative paths of files
 // under root whose name ends in any of exts (suffix match, not glob — ".md"
 // matches "x.custom.md" too). Directories in the skip set are pruned by
-// basename at any depth. Unreadable subtrees are skipped, never fatal.
+// basename at any depth, and paths matching the config's ignore list are
+// left out. Unreadable subtrees are skipped, never fatal.
 func FilesByExt(root string, exts ...string) []string {
-	skip := SkipDirs(root)
-	var out []string
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return nil
-		}
-		if d.IsDir() {
-			return pruneDir(root, path, d.Name(), skip)
-		}
-		if hasAnySuffix(d.Name(), exts) {
-			if rel, ok := relSlash(root, path); ok {
-				out = append(out, rel)
-			}
-		}
+	w := walker{root: root, exts: exts, skip: SkipDirs(root), ignore: Ignore(root)}
+	_ = filepath.WalkDir(root, w.visit)
+	sort.Strings(w.out)
+	return w.out
+}
+
+// walker carries one FilesByExt walk's settings and results.
+type walker struct {
+	root   string
+	exts   []string
+	skip   map[string]bool
+	ignore *spell.IgnoreMatcher
+	out    []string
+}
+
+// visit is the WalkDir callback: it prunes skipped and ignored directories
+// and collects matching files that are not ignored.
+func (w *walker) visit(path string, d fs.DirEntry, err error) error {
+	if err != nil {
 		return nil
-	})
-	sort.Strings(out)
-	return out
+	}
+	rel, ok := relSlash(w.root, path)
+	if d.IsDir() {
+		return w.pruneIgnored(rel, pruneDir(w.root, path, d.Name(), w.skip))
+	}
+	if ok && w.wants(rel, d.Name()) {
+		w.out = append(w.out, rel)
+	}
+	return nil
+}
+
+// wants reports whether a file belongs in the result: its name has one of
+// the walk's extensions and its path is not ignored.
+func (w *walker) wants(rel, name string) bool {
+	return hasAnySuffix(name, w.exts) && !Ignored(w.ignore, rel)
+}
+
+// pruneIgnored upgrades a directory's walk decision to SkipDir when the
+// directory matches the ignore list; the root itself is never pruned.
+func (w *walker) pruneIgnored(rel string, decision error) error {
+	if decision == nil && rel != "." && Ignored(w.ignore, rel) {
+		return filepath.SkipDir
+	}
+	return decision
+}
+
+// Ignore compiles the ignore list from root's .fitnessrc.json; nil when the
+// config is missing, unreadable, or lists no patterns.
+func Ignore(root string) *spell.IgnoreMatcher {
+	cfg, err := conf.Load(root)
+	if err != nil || cfg == nil || len(cfg.Ignore) == 0 {
+		return nil
+	}
+	return spell.NewIgnoreMatcher(cfg.Ignore)
+}
+
+// Ignored reports whether the slash-separated relative path matches m; a nil
+// matcher ignores nothing.
+func Ignored(m *spell.IgnoreMatcher, rel string) bool {
+	return m != nil && m.Matches(rel)
 }
 
 // pruneDir returns filepath.SkipDir when the walker should prune the

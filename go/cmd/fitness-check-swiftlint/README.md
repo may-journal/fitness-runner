@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # swiftlint
 
-Runs [SwiftLint](https://github.com/realm/SwiftLint) via `swiftlint lint --strict`. Opt-in — not in the runner's default list. Add `"swiftlint"` to the `checks` array in `.fitnessrc.json` to enable it.
+Runs [SwiftLint](https://github.com/realm/SwiftLint) via `swiftlint lint --strict`. On by default; turn it off with `disabledChecks` in `.fitnessrc.json`.
 
 ## Behavior
 

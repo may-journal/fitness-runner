@@ -85,7 +85,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 2   | Terminal / shell.                | Screen  | Repo root; the working directory is the app under test, not the runner's own source.                                 |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                                                            |
 | 4   | `fitness <name>` / `--check=…`.  | Action  | Single-check mode bypasses list resolution entirely.                                                                 |
-| 5   | Resolve check specs.             | System  | `.fitnessrc.json` `checks` (names and/or paths) else the embedded default list; `disabledChecks` filters names only. |
+| 5   | Resolve check specs.             | System  | `.fitnessrc.json` `checks` (names and/or paths) else the default list plus `enableChecks`; `disabledChecks` filters names only. |
 | 6   | Passthrough args forwarded.      | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).                                     |
 | 7   | Run loop executes each check.    | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout.                                |
 | 8   | Results table printed.           | Screen  | Pass/fail per check, totals, ANSI formatting.                                                                        |

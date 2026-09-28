@@ -209,6 +209,30 @@ func TestRun(t *testing.T) {
 		}
 	})
 
+	t.Run("passes clean with no TypeScript and no dist", func(t *testing.T) {
+		dir := initRepo(t, false)
+		writeFile(t, dir, "README.md", "# docs\n")
+		res, err := run(dir, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !res.Ok || res.FilesChecked != 0 {
+			t.Fatalf("unexpected result: %+v", res)
+		}
+	})
+
+	t.Run("still requires dist ignored when dist exists without TypeScript", func(t *testing.T) {
+		dir := initRepo(t, false)
+		writeFile(t, dir, "dist/app.js", "")
+		res, err := run(dir, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if res.Ok || !reflect.DeepEqual(res.Errors, []string{msgNotIgnored}) {
+			t.Fatalf("unexpected result: %+v", res)
+		}
+	})
+
 	t.Run("orders tracking errors before import errors", func(t *testing.T) {
 		dir := initRepo(t, false)
 		trackFile(t, dir, "dist/build.js")

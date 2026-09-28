@@ -27,19 +27,21 @@ import (
 // defaultChecks is the run order when config has no checks list — the Go
 // twin of the bundle's defaultChecks (the bundle concept dissolves when
 // checks are sibling binaries).
-// defaultChecks is the comprehensive catalog a repo gets with no .fitnessrc.
-// Language checks self-gate — they skip when their language or tool is absent —
-// so this one list fits Swift, Go, JS, and docs-only repos alike. Opt-in only:
-// the strict or network checks (node-version, dependency-currency, the vitest
-// coverage checks), the format-specific ones (changelog-bullets,
-// markdown-filename-camel-case), commit-attribution, and the workflow body
-// checks (plan-structure, pr-structure, pr-closes-issue).
+// defaultChecks is the comprehensive catalog a repo gets with no checks list.
+// Every check self-gates — it passes clean when its language, tool, or file is
+// absent — so this one list fits Swift, Go, JS, and docs-only repos alike, and
+// a repo's .fitnessrc.json names only disabledChecks. Opt-in only: the strict
+// or network checks (node-version, dependency-currency, the vitest coverage
+// checks), markdown-filename-camel-case (the opposite of the kebab-case
+// default), commit-attribution (a trailer convention a repo adopts), and the
+// workflow body checks (plan-structure, pr-structure, pr-closes-issue).
 var defaultChecks = []string{
 	"read-repo-first",
 	"semantic-commit",
 	"plan-trailer",
 	"changelog",
 	"changelog-updated",
+	"changelog-bullets",
 	"cspell",
 	"jscpd",
 	"gitignore-why",
@@ -60,6 +62,10 @@ var defaultChecks = []string{
 	"mermaid-legend",
 	"mermaid-level-bleed",
 	"go-complexity",
+	"go-vet",
+	"gofmt",
+	"go-test",
+	"build-output-untracked",
 	"swiftlint",
 	"eslint",
 	"prettier",
@@ -399,13 +405,17 @@ func resolveSingle(root, spec string) ([]resolved, error) {
 	return []resolved{*c}, nil
 }
 
-// configuredNames returns the check names to run (the config list overrides
-// the default list) and whether they came from config.
+// configuredNames returns the check names to run and whether they came from
+// config: a config checks list overrides the defaults, otherwise the
+// defaults run with any enableChecks appended.
 func configuredNames(cfg *conf.Config) ([]string, bool) {
-	if cfg != nil && len(cfg.Checks) > 0 {
+	if cfg == nil {
+		return defaultChecks, false
+	}
+	if len(cfg.Checks) > 0 {
 		return cfg.Checks, true
 	}
-	return defaultChecks, false
+	return append(append([]string{}, defaultChecks...), cfg.EnableChecks...), false
 }
 
 // disabledSet builds the lookup of config-disabled check names.

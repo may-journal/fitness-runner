@@ -4,14 +4,14 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # no-eslint-disable
 
-Fails when any source file contains an ESLint disable directive, keeping lint hygiene on the fix-the-rule path instead of accumulating suppressions. Opt-in — not in the runner's default list.
+Fails when any source file contains an ESLint disable directive, keeping lint hygiene on the fix-the-rule path instead of accumulating suppressions. On by default.
 
-## Enable
+## Turn off
 
-Add it to the `checks` list in `.fitnessrc.json`:
+To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{ "checks": ["no-eslint-disable"] }
+{ "disabledChecks": ["no-eslint-disable"] }
 ```
 
 ## What passes

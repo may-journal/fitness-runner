@@ -8,10 +8,10 @@ Validates that a commit message discloses the AI tooling used, via two git trail
 
 ## Enable
 
-Add the name to `checks` in `.fitnessrc.json`, then wire it into a commit-msg hook so the message is validated before the commit lands:
+Add the name to `enableChecks` in `.fitnessrc.json`, then wire it into a commit-msg hook so the message is validated before the commit lands:
 
 ```json
-{ "checks": ["commit-attribution"] }
+{ "enableChecks": ["commit-attribution"] }
 ```
 
 ```sh

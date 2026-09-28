@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.1257
+
+- Feat: add `go-vet`, `go-test`, and `gofmt` checks, which run the Go toolchain per module and pass clean without Go.
+- Feat: add an `ignore` list of gitignore-like globs every file check skips, and `enableChecks` to append opt-in checks to the defaults.
+- Feat: the default list gains the Go checks, `changelog-bullets`, and `build-output-untracked`, which now skips a repo with no TypeScript and no `dist`.
+- Docs: check READMEs, the adoption doc, and the config docs describe on-by-default checks, `disabledChecks`, `enableChecks`, and `ignore`.
+- Fix: `make` and the `go-test` check drop git's hook variables, so tests run from a hook cannot write into the real repository.
+
 ### 2026.09.28.1222
 
 - Fix: `markdown-links` decodes a percent-encoded link path, so a link like `my%20file.md` resolves to the file it names.

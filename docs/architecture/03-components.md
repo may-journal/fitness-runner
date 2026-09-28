@@ -96,7 +96,7 @@ Numbers on nodes and arrows match the callout table.
 1. `.fitnessrc.json` with `checks` — use that list (order preserved).
    - Name specs resolve to `fitness-check-<name>` beside the runner, then on PATH; unknown names are skipped silently.
    - Path specs (entries containing a separator) resolve relative to the repo root and fail the run when missing or not executable.
-2. No `checks` — the runner's embedded default list; a missing binary for a default name fails the run.
+2. No `checks` — the runner's embedded default list plus any `enableChecks`; a missing binary for a default name fails the run.
 3. `disabledChecks` — remove matching name specs from step 1 or 2. Path specs are unchanged (opt-in only).
 
 Dedupe is first-occurrence-wins by resolved check name; a path check's name comes from its `--describe` metadata, else its basename.

@@ -33,14 +33,12 @@ The ceiling defaults to 5. Override per repo in `.fitnessrc.json`:
 }
 ```
 
-## Enable
+## Turn off
 
-Opt-in (Go-specific, like `swiftlint`) — add the name to your `checks` list:
+On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{
-  "checks": ["go-complexity"]
-}
+{ "disabledChecks": ["go-complexity"] }
 ```
 
 Native Go engine (`go/ast` + `go/parser` from the standard library); no external tool required.

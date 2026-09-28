@@ -32,6 +32,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // maxIssuesPerFile mirrors cspell's default maxNumberOfProblems.
@@ -187,6 +188,7 @@ func markdownFiles(root string, cfg config) []string {
 	if cfg.UseGitignore {
 		files = withoutGitignored(root, files)
 	}
+	files = withoutConfigIgnored(root, files)
 	sort.Slice(files, func(i, j int) bool {
 		li, lj := strings.ToLower(files[i]), strings.ToLower(files[j])
 		if li != lj {
@@ -224,6 +226,22 @@ func collectMarkdown(rel string, d os.DirEntry, matcher *spell.IgnoreMatcher, fi
 		*files = append(*files, rel)
 	}
 	return nil
+}
+
+// withoutConfigIgnored drops paths matching the .fitnessrc.json ignore list,
+// which every file check honors.
+func withoutConfigIgnored(root string, files []string) []string {
+	m := walkfs.Ignore(root)
+	if m == nil {
+		return files
+	}
+	var kept []string
+	for _, f := range files {
+		if !walkfs.Ignored(m, f) {
+			kept = append(kept, f)
+		}
+	}
+	return kept
 }
 
 // withoutGitignored drops paths `git check-ignore` reports as ignored,

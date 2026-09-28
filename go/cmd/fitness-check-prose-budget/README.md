@@ -34,7 +34,6 @@ A paragraph is a run of consecutive prose lines. A section runs from one heading
 
 ```json
 {
-  "checks": ["prose-budget"],
   "proseBudget": {
     "maxListItems": 8,
     "exempt": ["docs/generated/**"]

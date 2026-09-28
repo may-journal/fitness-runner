@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # build-output-untracked
 
-Keeps compiled build output out of Git and out of source imports. Opt-in — not in the runner's default list. Add `"build-output-untracked"` to the `checks` array in `.fitnessrc.json` to enable it.
+Keeps compiled build output out of Git and out of source imports. On by default; turn it off with `disabledChecks` in `.fitnessrc.json`.
 
 ## Behavior
 

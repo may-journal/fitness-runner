@@ -7,10 +7,10 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): numbered callouts must have a legend and consistent styling.
 
-Opt-in — not in the runner's default list. Enable it via `.fitnessrc.json`:
+On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
 
 ```json
-{ "checks": ["mermaid-legend"] }
+{ "disabledChecks": ["mermaid-legend"] }
 ```
 
 ## Behavior
