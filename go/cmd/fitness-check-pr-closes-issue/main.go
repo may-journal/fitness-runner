@@ -16,6 +16,9 @@
 // array and exits; the pr-check workflow uses this to read a Plan's closed
 // issues with the same keyword set, then feeds them back via --require-close.
 //
+// Keywords inside inline code or fenced code are quoted examples, not
+// closures, so every rule skips them.
+//
 // It reads its target from stdin, a `--body-file` path (`-` meaning stdin), or
 // the runner's context-inline `--body` value, and passes inert with no input.
 package main
@@ -31,6 +34,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
 func main() {
@@ -69,6 +73,7 @@ func run(_ string, args []string) (checkkit.Result, error) {
 // validate reports the PR body's closure violations: the base rules, plus any
 // required underlying issue (from a closed Plan) the PR does not itself close.
 func validate(body string, required []int) []string {
+	body = mdx.StripCode(body)
 	closed := closedIssues(body)
 	errors := baseErrors(body, closed)
 	for _, n := range required {
@@ -110,7 +115,7 @@ func emitClosedMode(argv []string) bool {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	if err := json.NewEncoder(os.Stdout).Encode(sortedClosed(closedIssues(body))); err != nil {
+	if err := json.NewEncoder(os.Stdout).Encode(sortedClosed(closedIssues(mdx.StripCode(body)))); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}

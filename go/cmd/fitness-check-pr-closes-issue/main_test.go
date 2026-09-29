@@ -41,6 +41,8 @@ func TestValidate(t *testing.T) {
 			body: "Implements #5. Implements #6.\n\nCloses #5.",
 			want: []string{rule2(6)},
 		},
+		{name: "inline code is not a closure", body: "Merging `Closes #12` closed it.", want: []string{rule1}},
+		{name: "fenced code is not a closure", body: "```\nFixes #12\nImplements #5\n```\nCloses #6", want: nil},
 		{name: "plan line with closure passes", body: "Plan #63 for context.\n\nResolves #63.", want: nil},
 		{
 			name: "plan line without closure fails both rules",

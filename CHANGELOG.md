@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.2208
+
+- Fix: `pr-closes-issue` skips closing keywords inside inline or fenced code, since they quote an example rather than close an issue.
+- Fix: a Plan quoting another repo's `Closes #51` no longer requires its PR to close this repo's #51.
+- Refactor: the checklist parser reuses the shared `mdx` fence detection.
+- Test: cover keywords in inline and fenced code, plus the new `mdx.StripCode` helper.
+- Docs: note the code rule in the `pr-closes-issue` README.
+
 ### 2026.09.28.2204
 
 - Feat: `fitness close-check` reopens an issue closed as completed with unchecked items, unless closed as not planned or duplicate.

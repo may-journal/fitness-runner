@@ -16,7 +16,7 @@ Three rules run over the PR description:
 - Every issue the PR says it implements (`Implements #NN` or `Plan #NN`) must be among the closed issues; an unclosed one fails, named individually.
 - When the PR closes a `Plan`, every issue that Plan closes must be closed by the PR too, via `--require-close`.
 
-The full closing-keyword set is `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. References like `addresses #12`, `part of #12`, or a bare `#12` never count as a closure.
+The full closing-keyword set is `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. References like `addresses #12`, `part of #12`, or a bare `#12` never count as a closure. Nor does a keyword quoted in inline or fenced code.
 
 There is no chore or docs exemption — every PR is held to the first rule.
 
