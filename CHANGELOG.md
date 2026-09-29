@@ -7,6 +7,18 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.2234
+
+- Fix: `changelog-updated` accepts a newest heading up to five minutes behind the clock, so a stamp just before a minute boundary passes.
+- Test: cover a heading one minute behind the check, one older than the grace, and one ahead of the clock.
+- Docs: the `changelog-updated` README describes the five-minute stamp grace.
+
+### 2026.09.28.2140
+
+- Fix: `changelog-updated` requires the current time only on the newest added section heading, so a changelog rewrite that re-adds older headings passes.
+- Test: cover older headings re-added below a current one, and a stale newest heading above older ones.
+- Docs: the `changelog-updated` README says only the newest added heading must use the current time, in shorter sentences.
+
 ### 2026.09.28.1440
 
 - Perf: pre-commit checks only the staged files, and a pull request only the files it changes against its base branch.
