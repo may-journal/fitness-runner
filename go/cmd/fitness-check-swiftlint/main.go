@@ -41,7 +41,7 @@ type violation struct {
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "swiftlint"},
+		Describe: checkkit.Describe{Name: "swiftlint", TimeoutMs: 120000},
 		Run:      run,
 	})
 }
