@@ -45,7 +45,7 @@ jobs:
 
 ## Reusable CI
 
-`.github/workflows/ci.yml` (a Swift repo passes `swift: true` on a macOS runner):
+`.github/workflows/ci.yml` (a Swift repo passes `swift: true`, which installs the Linux swiftlint build):
 
 ```yaml
 name: CI
@@ -58,7 +58,6 @@ jobs:
   fitness:
     uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main
     with:
-      runs-on: macos-latest
       swift: true
 ```
 

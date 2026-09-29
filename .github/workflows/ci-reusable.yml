@@ -6,11 +6,11 @@ on:
   workflow_call:
     inputs:
       runs-on:
-        description: Runner label; use macos-latest for a Swift repo so swiftlint can run.
+        description: Runner label. ubuntu-latest runs swiftlint too, at a tenth of the macOS cost.
         type: string
         default: ubuntu-latest
       swift:
-        description: Install swiftlint (a Swift repo needs it; requires a macOS runner).
+        description: Install swiftlint (a Swift repo needs it). Linux runners get the official Linux build.
         type: boolean
         default: false
       ref:
@@ -41,8 +41,19 @@ jobs:
         run: |
           go install github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - name: Install swiftlint
-        if: ${{ inputs.swift }}
+      - name: Install swiftlint (macOS)
+        if: ${{ inputs.swift && runner.os == 'macOS' }}
         run: command -v swiftlint >/dev/null 2>&1 || brew install swiftlint
+      - name: Install swiftlint (Linux)
+        if: ${{ inputs.swift && runner.os == 'Linux' }}
+        env:
+          ARCH: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" \
+            "https://github.com/realm/SwiftLint/releases/latest/download/swiftlint_linux_${ARCH}.zip"
+          unzip -q -o "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
+          chmod +x "$RUNNER_TEMP/swiftlint/swiftlint"
+          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/swiftlint/swiftlint" version
       - name: Run fitness
         run: fitness
