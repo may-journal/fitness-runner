@@ -32,6 +32,9 @@ type target struct {
 	Number int    `json:"number"`
 	Title  string `json:"title"`
 	Body   string `json:"body"`
+	// StateReason and ClosedAt are set on a closed issue's event payload.
+	StateReason string `json:"state_reason"`
+	ClosedAt    string `json:"closed_at"`
 }
 
 // githubAPI is the slice of GitHub the workflow subcommands need; the real
@@ -42,6 +45,15 @@ type githubAPI interface {
 	openPlans() ([]target, error)
 	commentBodies(n int) ([]string, error)
 	comment(n int, body string) error
+	reopen(n int) error
+	closingPR(n int) (closer, error)
+}
+
+// closer is the pull request whose merge closed an issue; both fields are
+// empty when a person or a commit closed it.
+type closer struct {
+	Author string `json:"author"`
+	Merger string `json:"merger"`
 }
 
 // bodyChecker runs check binaries against a body. exec is swappable so tests
@@ -113,8 +125,12 @@ func writeBody(body string) (string, error) {
 // ghEvent is the part of the Actions event payload the subcommands read.
 type ghEvent struct {
 	name        string
+	Action      string  `json:"action"`
 	PullRequest *target `json:"pull_request"`
 	Issue       *target `json:"issue"`
+	Sender      struct {
+		Login string `json:"login"`
+	} `json:"sender"`
 }
 
 // readEvent loads the triggering event from the Actions environment.
@@ -208,4 +224,46 @@ func (g ghClient) commentBodies(n int) ([]string, error) {
 func (g ghClient) comment(n int, body string) error {
 	_, err := g.api("-X", "POST", "-f", "body="+body, "issues/"+strconv.Itoa(n)+"/comments")
 	return err
+}
+
+func (g ghClient) reopen(n int) error {
+	_, err := g.api("-X", "PATCH", "-f", "state=open", "issues/"+strconv.Itoa(n))
+	return err
+}
+
+// closingPRQuery reads the latest closed event's closer. Only GraphQL
+// exposes it; REST names the actor but not the closing pull request. A merge
+// records either the PR or its merge commit as the closer, so a commit is
+// traced back to its PR.
+const closingPRQuery = `query($owner: String!, $name: String!, $n: Int!) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $n) {
+      timelineItems(itemTypes: CLOSED_EVENT, last: 1) {
+        nodes { ... on ClosedEvent { closer {
+          ... on PullRequest { author { login } mergedBy { login } }
+          ... on Commit { associatedPullRequests(first: 1) { nodes { author { login } mergedBy { login } } } }
+        } } }
+      }
+    }
+  }
+}`
+
+// closingPRFilter picks the PR from either closer shape, or nothing.
+const closingPRFilter = `.data.repository.issue.timelineItems.nodes[0].closer as $c
+  | ($c.associatedPullRequests.nodes[0] // $c // {})
+  | {author: (.author.login // ""), merger: (.mergedBy.login // "")}`
+
+func (g ghClient) closingPR(n int) (closer, error) {
+	owner, name, _ := strings.Cut(g.repo, "/")
+	cmd := exec.Command("gh", "api", "graphql",
+		"-f", "query="+closingPRQuery, "-F", "owner="+owner, "-F", "name="+name, "-F", "n="+strconv.Itoa(n),
+		"--jq", closingPRFilter)
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return closer{}, err
+	}
+	var c closer
+	err = json.Unmarshal(out, &c)
+	return c, err
 }

@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.28.2204
+
+- Feat: `fitness close-check` reopens an issue closed as completed with unchecked items, unless closed as not planned or duplicate.
+- Feat: it comments once, listing the items and mentioning the closer, plus the closing PR's author and merger.
+- Feat: `fitness pr-check` fails a PR whose closing keyword targets an issue with unchecked items, naming each item.
+- Ci: publish `close-check-reusable.yml`, and run close-check on this repo's own issues.
+- Docs: describe the rule and caller in the adoption guide and READMEs; tests cover each case with a fake GitHub API.
+
 ### 2026.09.28.1440
 
 - Perf: pre-commit checks only the staged files, and a pull request only the files it changes against its base branch.

@@ -20,6 +20,12 @@ The full closing-keyword set is `close`, `closes`, `closed`, `fix`, `fixes`, `fi
 
 There is no chore or docs exemption — every PR is held to the first rule.
 
+## Unchecked items
+
+A PR must not close an issue whose checklist is unfinished ([#141](https://github.com/may-journal/fitness-runner/issues/141)). For each issue the PR closes, `fitness pr-check` lists every unchecked `- [ ]` item, skipping fenced code. Each one fails the PR, named with its issue number.
+
+Tick each item as it is delivered, or stop closing the issue. After merge, `fitness close-check` reopens any issue that still closed with unchecked items.
+
 ## Contributing
 
 This README is the canonical description for this check. The closing-keyword list is GitHub's fixed set; keep it in sync here and in `closingKeywords` if GitHub's set ever changes.

@@ -90,16 +90,25 @@ func validatePlan(t target, c bodyChecker) []string {
 // version's marker, so re-runs and unrelated edits stay quiet.
 func commentOnce(t target, errs []string, gh githubAPI) error {
 	mark := planMarker(t.Body)
-	existing, err := gh.commentBodies(t.Number)
-	if err != nil {
+	seen, err := hasMarker(t.Number, mark, gh)
+	if err != nil || seen {
 		return err
+	}
+	return gh.comment(t.Number, planComment(errs, mark))
+}
+
+// hasMarker reports whether a comment on issue n already carries mark.
+func hasMarker(n int, mark string, gh githubAPI) (bool, error) {
+	existing, err := gh.commentBodies(n)
+	if err != nil {
+		return false, err
 	}
 	for _, body := range existing {
 		if strings.Contains(body, mark) {
-			return nil
+			return true, nil
 		}
 	}
-	return gh.comment(t.Number, planComment(errs, mark))
+	return false, nil
 }
 
 // planMarker tags a comment with a hash of the body it judged; the format

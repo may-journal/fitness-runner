@@ -54,7 +54,7 @@ A pull request description is not a file in the tree either, but a PR already ha
 flowchart TD
     A[1 PR event]:::trigger
     B[2 Manual sweep]:::trigger
-    C[3 Build and run pr-structure]:::step
+    C[3 Build and run the PR checks]:::step
     D[4 Write violations to the run summary]:::step
     E[5 Fail the run on violations]:::step
     A --> C
@@ -69,7 +69,7 @@ flowchart TD
 | --- | ------------ | ----------------------------------------------------------- | --------------------------------------------------------- |
 | 1   | PR event     | A PR is opened, edited, reopened, or synchronized.          | Validates a description the moment it changes.             |
 | 2   | Manual sweep | A `workflow_dispatch` run walks every open PR.              | Audits every open description on demand.                   |
-| 3   | Run check    | Build the checks and run `fitness pr-check` on the PR.      | One tested binary, same rules as the local suite.          |
+| 3   | Run check    | Run `fitness pr-check`, which also reads each closed issue's checklist. | One tested binary, same rules as the local suite.     |
 | 4   | Summary      | Write each PR's result and its violations to the run summary. | The errors are visible on the run page, no thread noise.  |
 | 5   | Fail run     | Exit non-zero when any validated PR has violations.         | A required status check blocks the merge, not just a note. |
 
@@ -79,6 +79,36 @@ flowchart TD
 - `workflow_dispatch`: sweeps every open PR and reports each in the run summary.
 
 Unlike plan-check there is no label guard and no comment. Every PR carries a description, so every PR is validated, and the status check is the verdict.
+
+## close-check
+
+[close-check.yml](close-check.yml) runs `fitness close-check` when an issue closes, so unfinished work stays open. Other repos call [close-check-reusable.yml](close-check-reusable.yml).
+
+```mermaid
+flowchart TD
+    A[1 Issue closed]:::trigger
+    B[2 Reason guard]:::step
+    C[3 Find unchecked items]:::step
+    D[4 Look for prior comment]:::step
+    E[5 Reopen the issue]:::step
+    F[6 Comment and mention]:::step
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element        | Description                                                         | Why                                                   |
+| --- | -------------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| 1   | Issue closed   | An `issues: closed` event, by hand or from a merged PR's keyword.  | Catches every close, whatever caused it.              |
+| 2   | Reason guard   | A close as not planned or duplicate stops here.                    | Dropped work may leave its checklist unfinished.      |
+| 3   | Unchecked scan | List each `- [ ]` item, skipping any inside fenced code.           | Only real tasks count, not examples.                  |
+| 4   | Dedupe         | Hash the close time and body, then look for that marker.           | A re-run never reopens or comments twice.             |
+| 5   | Reopen         | Set the Issue back to open.                                        | Unfinished work stays visible in the open list.       |
+| 6   | Comment        | List the items and mention the closer, the PR author, and merger.  | Whoever closed it hears why it came back.             |
 
 ## auto-merge
 

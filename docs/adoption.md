@@ -8,7 +8,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, not b
 
 ## Reusable workflows
 
-fitness-runner publishes three `workflow_call` workflows: [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), and [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step: the file suite, `fitness pr-check`, or `fitness plan-check`. The install sets `GOPROXY=direct`, since the Go proxy can serve a stale `@main` after a merge. A consumer repo adds thin callers.
+fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml), and [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step. The install sets `GOPROXY=direct`, since the Go proxy can serve a stale `@main` after a merge. A consumer repo adds thin callers.
 
 `.github/workflows/pr-check.yml`:
 
@@ -42,6 +42,26 @@ jobs:
       contents: read
       issues: write
 ```
+
+## Closing issues
+
+Every repo with Issues adds this [close-check](../.github/workflows/README.md#close-check) caller, as org required workflows cannot run on issue events:
+
+```yaml
+name: Close check
+on:
+  issues:
+    types: [closed]
+jobs:
+  close-check:
+    uses: may-journal/fitness-runner/.github/workflows/close-check-reusable.yml@main
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+```
+
+It reopens issues closed with unchecked items; `fitness pr-check` fails PRs closing one.
 
 ## Reusable CI
 
