@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # changelog-updated
 
-When the runner provides staged file context, it runs two checks. First, the added lines in `CHANGELOG.md` (in the staged diff) must share at least three words with the rest of the staged diff. Second, the newest added `### yyyy.mm.dd.HHMM` heading must use the current date and time at check run time, down to the minute. Older headings further down the diff are history, such as sections a changelog rewrite splits, and keep their times.
+When the runner provides staged file context, it runs two checks. First, the added lines in `CHANGELOG.md` (in the staged diff) must share at least three words with the rest of the staged diff. Second, the newest added `### yyyy.mm.dd.HHMM` heading must use the check run time, or up to five minutes before it. Older headings further down the diff are history, such as sections a changelog rewrite splits, and keep their times.
 
 ## Behavior
 
@@ -17,7 +17,7 @@ When the runner provides staged file context, it runs two checks. First, the add
 - Fail: Changelog additions share fewer than three words with rest of diff → error with count.
   - A second line lists up to 10 words from the staged diff (e.g. use words like: …) to help fix the entry.
 
-Only the modified (added) parts of `CHANGELOG.md` in the diff are considered, not the whole file. Words are lowercased and length ≥ 3. Time is taken at check run (e.g. pre-commit); use that exact `yyyy.mm.dd.HHMM` for new section headings.
+Only the modified (added) parts of `CHANGELOG.md` in the diff are considered, not the whole file. Words are lowercased and length ≥ 3. Time is taken at check run (e.g. pre-commit). A `package.json` version ending in `yyyy.mm.dd.HHMM` must match the heading exactly.
 
 ## Contributing
 

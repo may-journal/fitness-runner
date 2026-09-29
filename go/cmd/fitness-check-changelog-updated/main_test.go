@@ -135,6 +135,38 @@ func TestRun(t *testing.T) {
 			wantErrors:   []string{msgChangelogTime + " (expected ### 2026.02.16.1430)"},
 		},
 		{
+			name:   "heading stamped a minute before the check passes",
+			staged: "src/foo.ts\nCHANGELOG.md",
+			diff: "+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n" +
+				"+ ### 2026.02.16.1429\n+ - New runner feature.\n",
+			changelog:    true,
+			at:           fixed.Add(30 * time.Second),
+			ok:           true,
+			filesChecked: 1,
+		},
+		{
+			name:   "heading older than the stamp grace fails",
+			staged: "src/foo.ts\nCHANGELOG.md",
+			diff: "+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n" +
+				"+ ### 2026.02.16.1424\n+ - New runner feature.\n",
+			changelog:    true,
+			at:           fixed,
+			ok:           false,
+			filesChecked: 1,
+			wantErrors:   []string{msgChangelogTime + " (expected ### 2026.02.16.1430)"},
+		},
+		{
+			name:   "heading a minute ahead of the clock fails",
+			staged: "src/foo.ts\nCHANGELOG.md",
+			diff: "+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n" +
+				"+ ### 2026.02.16.1431\n+ - New runner feature.\n",
+			changelog:    true,
+			at:           fixed,
+			ok:           false,
+			filesChecked: 1,
+			wantErrors:   []string{msgChangelogTime + " (expected ### 2026.02.16.1430)"},
+		},
+		{
 			name:   "older headings re-added below a current one pass",
 			staged: "src/foo.ts\nCHANGELOG.md",
 			diff: "+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n" +
