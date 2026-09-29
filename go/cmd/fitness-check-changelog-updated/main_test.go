@@ -134,6 +134,29 @@ func TestRun(t *testing.T) {
 			filesChecked: 1,
 			wantErrors:   []string{msgChangelogTime + " (expected ### 2026.02.16.1430)"},
 		},
+		{
+			name:   "older headings re-added below a current one pass",
+			staged: "src/foo.ts\nCHANGELOG.md",
+			diff: "+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n" +
+				"+ ### 2026.02.16.1430\n+ - New runner feature.\n" +
+				"+ ### 2026.01.02.0900\n+ - Older runner entry.\n",
+			changelog:    true,
+			at:           fixed,
+			ok:           true,
+			filesChecked: 1,
+		},
+		{
+			name:   "stale newest heading fails even above older ones",
+			staged: "src/foo.ts\nCHANGELOG.md",
+			diff: "+++ b/src/foo.ts\n+ New runner feature.\n+++ b/CHANGELOG.md\n" +
+				"+ ### 2026.02.16.1900\n+ - New runner feature.\n" +
+				"+ ### 2026.01.02.0900\n+ - Older runner entry.\n",
+			changelog:    true,
+			at:           fixed,
+			ok:           false,
+			filesChecked: 1,
+			wantErrors:   []string{msgChangelogTime + " (expected ### 2026.02.16.1430)"},
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

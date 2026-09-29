@@ -216,19 +216,18 @@ func splitDiff(files []diffFile) (changelogAdded string, restParts []string) {
 	return changelogAdded, restParts
 }
 
-// checkChangelogTime requires every "### yyyy.mm.dd.HHMM" heading in the
-// added changelog content to match the expected stamp; ok true when there are
-// no headings or all agree.
+// checkChangelogTime requires the first "### yyyy.mm.dd.HHMM" heading in the
+// added changelog content, the newest section, to match the expected stamp.
+// Later added headings are history a rewrite re-adds, so they keep their
+// times. ok is true when there are no headings or the newest agrees.
 func checkChangelogTime(root, added string, at time.Time) (msg string, ok bool) {
-	matches := headingRe.FindAllStringSubmatch(added, -1)
-	if len(matches) == 0 {
+	m := headingRe.FindStringSubmatch(added)
+	if m == nil {
 		return "", true
 	}
 	expected := expectedTimestamp(root, at)
-	for _, m := range matches {
-		if m[1] != expected {
-			return msgChangelogTime + " (expected ### " + expected + ")", false
-		}
+	if m[1] != expected {
+		return msgChangelogTime + " (expected ### " + expected + ")", false
 	}
 	return "", true
 }
