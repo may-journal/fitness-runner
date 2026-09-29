@@ -11,7 +11,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Fix: `changelog-updated` requires the current time only on the newest added section heading, so a changelog rewrite that re-adds older headings passes.
 - Test: cover older headings re-added below a current one, and a stale newest heading above older ones.
-- Docs: the `changelog-updated` README says only the newest added heading must use the current time.
+- Docs: the `changelog-updated` README says only the newest added heading must use the current time, in shorter sentences.
 
 ### 2026.09.28.1440
 
