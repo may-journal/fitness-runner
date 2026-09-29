@@ -6,9 +6,14 @@ name: Auto-merge
 # auto-merge for each ready pull request, so it merges once approved and
 # green. It uses the bot's AUTO_MERGE_TOKEN: GitHub starts no workflows from
 # GITHUB_TOKEN pushes, so merging with it would skip CI on main.
+#
+# The ruleset starts it only on opened, reopened, and synchronize, whatever
+# types are listed. GitHub refuses auto-merge on a draft, so a draft marked
+# ready needs the auto-merge-on-ready.yml caller, which calls this workflow.
 on:
   pull_request:
-    types: [opened, reopened, ready_for_review, synchronize]
+    types: [opened, reopened, synchronize]
+  workflow_call:
 
 permissions:
   contents: read

@@ -1,0 +1,15 @@
+name: Auto-merge on ready
+# The org ruleset never starts auto-merge.yml on ready_for_review, so a draft
+# marked ready would not get auto-merge. This caller runs it on that event.
+# pull_request_target runs the base branch's copy and checks out no PR code.
+on:
+  pull_request_target:
+    types: [ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  auto-merge:
+    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@main
+    secrets: inherit

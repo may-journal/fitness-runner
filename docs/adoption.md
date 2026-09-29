@@ -83,3 +83,18 @@ Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 ## Org-wide
 
 An org-level required workflow can run the reusable `pr-check` across repos with no caller file at all. Point the ruleset at `pr-check-reusable.yml@main`; it carries a `pull_request` trigger so a required workflow can run it. The org's `auto-merge.yml` runs the same way and lives here too, since public repos cannot run a private repo's workflows. The org `.github` repo supplies the Plan issue template and conventions by default.
+
+A draft marked ready never starts that ruleset workflow, so each repo also adds this caller as `.github/workflows/auto-merge-on-ready.yml`:
+
+```yaml
+name: Auto-merge on ready
+on:
+  pull_request_target:
+    types: [ready_for_review]
+permissions:
+  contents: read
+jobs:
+  auto-merge:
+    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@main
+    secrets: inherit
+```

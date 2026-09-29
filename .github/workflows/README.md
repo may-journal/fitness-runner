@@ -83,3 +83,5 @@ Unlike plan-check there is no label guard and no comment. Every PR carries a des
 ## auto-merge
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It merges with the bot's token so CI still runs on `main`.
+
+A draft gets auto-merge when marked ready through [auto-merge-on-ready.yml](auto-merge-on-ready.yml), a caller each repo copies.

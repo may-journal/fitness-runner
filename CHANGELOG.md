@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.29.1723
+
+- Fix: a draft pull request gets auto-merge once it is marked ready, through a new `auto-merge-on-ready.yml` caller on `ready_for_review`.
+- Fix: `auto-merge.yml` also runs as a `workflow_call`, so the caller reuses it.
+- Ci: `auto-merge.yml` lists only the events its ruleset starts it on, since GitHub refuses auto-merge on a draft.
+- Docs: the workflows README and adoption guide explain the draft gap and show the caller each repo adds.
+
 ### 2026.09.28.2300
 
 - Fix: `ci-reusable` installs the official Linux swiftlint build on Linux runners, so Swift repos can drop `runs-on: macos-latest`.
