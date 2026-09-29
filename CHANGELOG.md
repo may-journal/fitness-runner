@@ -11,6 +11,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Fix: `ci-reusable` installs the official Linux swiftlint build on Linux runners, so Swift repos can drop `runs-on: macos-latest`.
 - Fix: macOS runners still install swiftlint with brew, so current callers keep working.
+- Fix: give `swiftlint` a 120-second budget, since a cold lint on a Linux runner outlasts the 5-second default.
 - Docs: the adoption guide's Swift example runs on the default ubuntu runner, which costs about a tenth of macOS.
 
 ### 2026.09.28.2234
