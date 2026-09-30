@@ -96,3 +96,58 @@ func TestCommitsOfSkipsCommitsAlreadyOnOrigin(t *testing.T) {
 		t.Fatalf("new-branch commitsOf = %d commits, want 2", len(got))
 	}
 }
+
+func TestIssueNumbers(t *testing.T) {
+	got := issueNumbers("Fixes #147. Part of #148.\n\nSee #147 and it&#39;s fine")
+	if want := []string{"147", "148"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("issueNumbers = %v, want %v", got, want)
+	}
+}
+
+// TestPlanCandidatesLaterPush covers a push with no trailer: the Plan comes
+// from the branch's first commit, already on origin, or its open PR body.
+func TestPlanCandidatesLaterPush(t *testing.T) {
+	remote, dir := t.TempDir(), t.TempDir()
+	git := func(args ...string) string {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		cmd.Env = append(cmd.Environ(), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	git("init", "-q", "--bare", remote)
+	git("init", "-q", "-b", "main")
+	git("remote", "add", "origin", remote)
+	git("commit", "-q", "--allow-empty", "-m", "feat(x): landed\n\nPlan #4")
+	git("push", "-q", "origin", "main")
+	git("switch", "-q", "-c", "topic")
+	git("commit", "-q", "--allow-empty", "-m", "feat(x): start\n\nPlan #5")
+	git("push", "-q", "origin", "topic")
+	remoteTip := git("rev-parse", "HEAD")
+	git("commit", "-q", "--allow-empty", "-m", "fix(x): follow-up")
+	t.Chdir(dir)
+
+	orig := openPRBody
+	t.Cleanup(func() { openPRBody = orig })
+	openPRBody = func(branch string) string {
+		if branch != "topic" {
+			t.Fatalf("PR looked up for %q, want topic", branch)
+		}
+		return "Fixes #6. Part of #5."
+	}
+
+	head := git("rev-parse", "HEAD")
+	got := planCandidates(commitsOf(head, remoteTip), head, "topic")
+	if want := []string{"5", "6"}; !reflect.DeepEqual(got, want) {
+		t.Fatalf("planCandidates = %v, want %v (main's Plan #4 must not count)", got, want)
+	}
+
+	// A pushed trailer still wins, with no PR lookup.
+	openPRBody = func(string) string { t.Fatal("PR looked up despite a pushed trailer"); return "" }
+	if got := planCandidates([]string{remoteTip}, head, "topic"); !reflect.DeepEqual(got, []string{"5"}) {
+		t.Fatalf("planCandidates with a pushed trailer = %v, want [5]", got)
+	}
+}

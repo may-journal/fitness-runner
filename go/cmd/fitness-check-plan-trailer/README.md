@@ -6,6 +6,8 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Validates an optional `Plan #NN` commit trailer. A commit may name the Plan Issue it implements with a line reading exactly `Plan #<number>`. The trailer is optional, so a message without one passes. A plan reference that is present must be well formed.
 
+The trailer goes on the branch's first commit only, since [issue-link-once](../fitness-check-issue-link-once/README.md) fails a repeat.
+
 Like `semantic-commit`, it reads the proposed message from the context-inline `--message` value, falling back to the HEAD commit message. The `commit-msg` hook runs it beside `semantic-commit`.
 
 ## Behavior

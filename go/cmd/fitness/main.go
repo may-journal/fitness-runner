@@ -36,6 +36,7 @@ var allChecks = []string{
 	"read-repo-first",
 	"semantic-commit",
 	"plan-trailer",
+	"issue-link-once",
 	"commit-attribution",
 	"changelog",
 	"changelog-updated",
