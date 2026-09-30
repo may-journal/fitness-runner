@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"testing"
@@ -196,7 +197,38 @@ func TestMissingResultFailsClosed(t *testing.T) {
 	}
 }
 
+// pinAttribution fixes the build and run the verdict footer names, and
+// returns that footer.
+func pinAttribution(t *testing.T) string {
+	t.Helper()
+	buildInfo = func() (*debug.BuildInfo, bool) {
+		return &debug.BuildInfo{Settings: []debug.BuildSetting{{Key: "vcs.revision", Value: "abcdef1234567890"}}}, true
+	}
+	t.Cleanup(func() { buildInfo = debug.ReadBuildInfo })
+	t.Setenv("GITHUB_SERVER_URL", "https://github.com")
+	t.Setenv("GITHUB_REPOSITORY", "o/r")
+	t.Setenv("GITHUB_RUN_ID", "42")
+	return "<sub>Checked by fitness-runner [abcdef1](https://github.com/may-journal/fitness-runner/commit/abcdef1234567890) · [workflow run](https://github.com/o/r/actions/runs/42)</sub>"
+}
+
+func TestAttributionFromAnInstalledVersion(t *testing.T) {
+	t.Setenv("GITHUB_RUN_ID", "")
+	cases := map[string]string{
+		"v0.0.0-20260930220000-0123456789ab": "<sub>Checked by fitness-runner [0123456](https://github.com/may-journal/fitness-runner/commit/0123456789ab)</sub>",
+		"v1.2.3":                             "<sub>Checked by fitness-runner [v1.2.3](https://github.com/may-journal/fitness-runner/releases/tag/v1.2.3)</sub>",
+		"(devel)":                            "<sub>Checked by fitness-runner (unknown build)</sub>",
+	}
+	defer func() { buildInfo = debug.ReadBuildInfo }()
+	for v, want := range cases {
+		buildInfo = func() (*debug.BuildInfo, bool) { return &debug.BuildInfo{Main: debug.Module{Version: v}}, true }
+		if got := attribution(); got != want {
+			t.Errorf("attribution(%s) = %q, want %q", v, got, want)
+		}
+	}
+}
+
 func TestPlanCheckCommentsOncePerBody(t *testing.T) {
+	foot := pinAttribution(t)
 	var calls []call
 	gh := &fakeGH{}
 	ev := ghEvent{name: "issues", Issue: &target{Number: 5, Body: "abc"}}
@@ -208,13 +240,14 @@ func TestPlanCheckCommentsOncePerBody(t *testing.T) {
 	if len(gh.comments[5]) != 1 {
 		t.Fatalf("comments = %d, want 1 (the re-run stays quiet)", len(gh.comments[5]))
 	}
-	want := "✅ Plan looks good.\n\n<!-- fitness:plan-structure:ba7816bf8f01 -->"
+	want := "✅ Plan looks good.\n\n" + foot + "\n\n<!-- fitness:plan-structure:ba7816bf8f01 -->"
 	if gh.comments[5][0].Body != want {
 		t.Errorf("comment = %q, want %q", gh.comments[5][0].Body, want)
 	}
 }
 
 func TestPlanCheckFailureComment(t *testing.T) {
+	foot := pinAttribution(t)
 	var calls []call
 	gh := &fakeGH{}
 	ev := ghEvent{name: "issues", Issue: &target{Number: 2, Body: "abc"}}
@@ -222,7 +255,7 @@ func TestPlanCheckFailureComment(t *testing.T) {
 	if code := planCheck(ev, gh, c); code != 1 {
 		t.Fatalf("planCheck = %d, want 1", code)
 	}
-	want := "❌ Plan needs work:\n- missing Background\n\n<!-- fitness:plan-structure:ba7816bf8f01 -->"
+	want := "❌ Plan needs work:\n- missing Background\n\n" + foot + "\n\n<!-- fitness:plan-structure:ba7816bf8f01 -->"
 	if gh.comments[2][0].Body != want {
 		t.Errorf("comment = %q, want %q", gh.comments[2][0].Body, want)
 	}
@@ -245,6 +278,7 @@ func runPlan(gh *fakeGH, n int, body string, fail map[string]string) int {
 }
 
 func TestPlanCheckEditsAPassAfterAPass(t *testing.T) {
+	foot := pinAttribution(t)
 	now = func() time.Time { return time.Date(2026, 9, 30, 22, 15, 0, 0, time.UTC) }
 	defer func() { now = time.Now }()
 	gh := &fakeGH{}
@@ -253,7 +287,7 @@ func TestPlanCheckEditsAPassAfterAPass(t *testing.T) {
 	if len(gh.comments[4]) != 1 {
 		t.Fatalf("comments = %d, want the first one edited", len(gh.comments[4]))
 	}
-	want := "✅ Validated (updated 2026-09-30 22:15 UTC)\n\n" + planMarker("two")
+	want := "✅ Validated (updated 2026-09-30 22:15 UTC)\n\n" + foot + "\n\n" + planMarker("two")
 	if got := gh.comments[4][0].Body; got != want {
 		t.Errorf("comment = %q, want %q", got, want)
 	}

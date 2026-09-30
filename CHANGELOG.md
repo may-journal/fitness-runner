@@ -12,6 +12,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: `fitness plan-check` edits its passing verdict to `✅ Validated (updated <UTC time>)` when a new body passes too, instead of posting another comment.
 - Feat: it hides every older plan-check verdict on the Issue as outdated.
 - Feat: it labels each checked Issue `fitness` plus `fitness-valid` or `fitness-invalid`, creating missing labels.
+- Feat: each verdict links the fitness-runner commit that judged it and the workflow run.
 - Docs: the workflows README and step names describe the single verdict and labels.
 
 ### 2026.09.30.2100

@@ -226,13 +226,18 @@ var now = time.Now
 
 // validatedComment replaces a passing verdict when a later body passes too.
 func validatedComment(mark string) string {
-	return passIcon + " Validated (updated " + now().UTC().Format("2006-01-02 15:04 UTC") + ")\n\n" + mark
+	return passIcon + " Validated (updated " + now().UTC().Format("2006-01-02 15:04 UTC") + ")" + footer(mark)
 }
 
 // planComment is the verdict comment for a Plan body.
 func planComment(errs []string, mark string) string {
 	if len(errs) == 0 {
-		return passIcon + " Plan looks good.\n\n" + mark
+		return passIcon + " Plan looks good." + footer(mark)
 	}
-	return "❌ Plan needs work:\n" + strings.TrimSuffix(bulletList(errs), "\n") + "\n\n" + mark
+	return "❌ Plan needs work:\n" + strings.TrimSuffix(bulletList(errs), "\n") + footer(mark)
+}
+
+// footer ends a verdict with its attribution and the body-version marker.
+func footer(mark string) string {
+	return "\n\n" + attribution() + "\n\n" + mark
 }
