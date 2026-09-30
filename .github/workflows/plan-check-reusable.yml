@@ -3,7 +3,7 @@ name: Plan check (reusable)
 # Reusable across the org: a consumer repo calls this from an `issues`-triggered
 # caller. It installs the published fitness checks and validates the calling
 # repo's Plan issue(s) — structure plus the prose/markdown checks on the body —
-# commenting once per body version. fitness-runner keeps its own
+# keeping one verdict comment and label per Issue. fitness-runner keeps its own
 # build-from-source plan-check so it still tests its own unreleased changes.
 on:
   workflow_call:
@@ -34,7 +34,7 @@ jobs:
         run: |
           go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - name: Validate plan issue(s) and comment once per body version
+      - name: Validate plan issue(s), keep one verdict comment, and label it
         run: fitness plan-check
         env:
           GH_TOKEN: ${{ github.token }}

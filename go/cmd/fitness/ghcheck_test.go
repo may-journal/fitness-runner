@@ -4,8 +4,10 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 // fakeGH is an in-memory githubAPI.
@@ -13,7 +15,9 @@ type fakeGH struct {
 	issues   map[int]fakeIssue
 	prs      []target
 	plans    []target
-	comments map[int][]string
+	comments map[int][]verdict
+	labels   map[string]bool
+	nextID   int64
 }
 
 type fakeIssue struct {
@@ -25,17 +29,71 @@ func (f *fakeGH) issue(n int) (string, []string, error) {
 	i := f.issues[n]
 	return i.body, i.labels, nil
 }
+func (f *fakeGH) verdicts(n int) ([]verdict, error) {
+	return append([]verdict(nil), f.comments[n]...), nil
+}
 func (f *fakeGH) openPRs() ([]target, error)   { return f.prs, nil }
 func (f *fakeGH) openPlans() ([]target, error) { return f.plans, nil }
-func (f *fakeGH) commentBodies(n int) ([]string, error) {
-	return f.comments[n], nil
-}
 func (f *fakeGH) comment(n int, body string) error {
 	if f.comments == nil {
-		f.comments = map[int][]string{}
+		f.comments = map[int][]verdict{}
 	}
-	f.comments[n] = append(f.comments[n], body)
+	f.nextID++
+	f.comments[n] = append(f.comments[n], verdict{ID: f.nextID, NodeID: "node" + strconv.FormatInt(f.nextID, 10), Body: body})
 	return nil
+}
+func (f *fakeGH) editComment(id int64, body string) error {
+	return f.eachComment(func(v *verdict) {
+		if v.ID == id {
+			v.Body = body
+		}
+	})
+}
+func (f *fakeGH) hideComment(nodeID string) error {
+	return f.eachComment(func(v *verdict) {
+		if v.NodeID == nodeID {
+			v.IsHidden = true
+		}
+	})
+}
+func (f *fakeGH) eachComment(fn func(*verdict)) error {
+	for _, vs := range f.comments {
+		for i := range vs {
+			fn(&vs[i])
+		}
+	}
+	return nil
+}
+func (f *fakeGH) ensureLabel(name, _ string) error {
+	if f.labels == nil {
+		f.labels = map[string]bool{}
+	}
+	f.labels[name] = true
+	return nil
+}
+func (f *fakeGH) addLabels(n int, names []string) error {
+	i := f.issues[n]
+	i.labels = append(i.labels, names...)
+	f.setIssue(n, i)
+	return nil
+}
+func (f *fakeGH) removeLabel(n int, name string) error {
+	i := f.issues[n]
+	var kept []string
+	for _, l := range i.labels {
+		if l != name {
+			kept = append(kept, l)
+		}
+	}
+	i.labels = kept
+	f.setIssue(n, i)
+	return nil
+}
+func (f *fakeGH) setIssue(n int, i fakeIssue) {
+	if f.issues == nil {
+		f.issues = map[int]fakeIssue{}
+	}
+	f.issues[n] = i
 }
 
 // call records one fake check invocation.
@@ -151,8 +209,8 @@ func TestPlanCheckCommentsOncePerBody(t *testing.T) {
 		t.Fatalf("comments = %d, want 1 (the re-run stays quiet)", len(gh.comments[5]))
 	}
 	want := "✅ Plan looks good.\n\n<!-- fitness:plan-structure:ba7816bf8f01 -->"
-	if gh.comments[5][0] != want {
-		t.Errorf("comment = %q, want %q", gh.comments[5][0], want)
+	if gh.comments[5][0].Body != want {
+		t.Errorf("comment = %q, want %q", gh.comments[5][0].Body, want)
 	}
 }
 
@@ -165,8 +223,8 @@ func TestPlanCheckFailureComment(t *testing.T) {
 		t.Fatalf("planCheck = %d, want 1", code)
 	}
 	want := "❌ Plan needs work:\n- missing Background\n\n<!-- fitness:plan-structure:ba7816bf8f01 -->"
-	if gh.comments[2][0] != want {
-		t.Errorf("comment = %q, want %q", gh.comments[2][0], want)
+	if gh.comments[2][0].Body != want {
+		t.Errorf("comment = %q, want %q", gh.comments[2][0].Body, want)
 	}
 }
 
@@ -176,6 +234,79 @@ func TestPlanCheckDispatchChecksOpenPlans(t *testing.T) {
 	planCheck(ghEvent{name: "workflow_dispatch"}, gh, fakeChecker(nil, nil, &calls))
 	if len(gh.comments[1]) != 1 || len(gh.comments[2]) != 1 {
 		t.Fatalf("comments = %v, want one on each open Plan", gh.comments)
+	}
+}
+
+// runPlan checks body on issue n with the named checks failing.
+func runPlan(gh *fakeGH, n int, body string, fail map[string]string) int {
+	var calls []call
+	ev := ghEvent{name: "issues", Issue: &target{Number: n, Body: body}}
+	return planCheck(ev, gh, fakeChecker(fail, nil, &calls))
+}
+
+func TestPlanCheckEditsAPassAfterAPass(t *testing.T) {
+	now = func() time.Time { return time.Date(2026, 9, 30, 22, 15, 0, 0, time.UTC) }
+	defer func() { now = time.Now }()
+	gh := &fakeGH{}
+	runPlan(gh, 4, "one", nil)
+	runPlan(gh, 4, "two", nil)
+	if len(gh.comments[4]) != 1 {
+		t.Fatalf("comments = %d, want the first one edited", len(gh.comments[4]))
+	}
+	want := "✅ Validated (updated 2026-09-30 22:15 UTC)\n\n" + planMarker("two")
+	if got := gh.comments[4][0].Body; got != want {
+		t.Errorf("comment = %q, want %q", got, want)
+	}
+	runPlan(gh, 4, "two", nil)
+	if len(gh.comments[4]) != 1 || gh.comments[4][0].IsHidden {
+		t.Errorf("same body re-run changed comments: %+v", gh.comments[4])
+	}
+}
+
+func TestPlanCheckPostsAPassAfterAFail(t *testing.T) {
+	gh := &fakeGH{}
+	runPlan(gh, 4, "one", map[string]string{"cspell": "unknown word"})
+	runPlan(gh, 4, "two", nil)
+	c := gh.comments[4]
+	if len(c) != 2 || !c[0].IsHidden || c[1].IsHidden || !strings.HasPrefix(c[1].Body, "✅ Plan looks good.") {
+		t.Errorf("comments = %+v, want the fail hidden and a new pass", c)
+	}
+}
+
+func TestPlanCheckPostsAFailAfterAPass(t *testing.T) {
+	gh := &fakeGH{}
+	runPlan(gh, 4, "one", nil)
+	runPlan(gh, 4, "two", map[string]string{"cspell": "unknown word"})
+	c := gh.comments[4]
+	if len(c) != 2 || !c[0].IsHidden || !strings.HasPrefix(c[1].Body, "❌") {
+		t.Errorf("comments = %+v, want the pass hidden and a new fail", c)
+	}
+}
+
+func TestPlanCheckHidesEveryOlderVerdict(t *testing.T) {
+	gh := &fakeGH{}
+	runPlan(gh, 4, "one", map[string]string{"cspell": "a"})
+	runPlan(gh, 4, "two", map[string]string{"cspell": "b"})
+	runPlan(gh, 4, "three", nil)
+	runPlan(gh, 4, "four", nil)
+	c := gh.comments[4]
+	if len(c) != 3 || !c[0].IsHidden || !c[1].IsHidden || c[2].IsHidden {
+		t.Errorf("comments = %+v, want two hidden fails and one live pass", c)
+	}
+}
+
+func TestPlanCheckLabelsTheVerdict(t *testing.T) {
+	gh := &fakeGH{issues: map[int]fakeIssue{4: {labels: []string{"Plan"}}}}
+	runPlan(gh, 4, "one", map[string]string{"cspell": "a"})
+	if got := gh.issues[4].labels; !reflect.DeepEqual(got, []string{"Plan", "fitness", "fitness-invalid"}) {
+		t.Errorf("labels after a fail = %v", got)
+	}
+	runPlan(gh, 4, "two", nil)
+	if got := gh.issues[4].labels; !reflect.DeepEqual(got, []string{"Plan", "fitness", "fitness-valid"}) {
+		t.Errorf("labels after a pass = %v", got)
+	}
+	if !gh.labels["fitness"] || !gh.labels["fitness-valid"] || !gh.labels["fitness-invalid"] {
+		t.Errorf("created labels = %v, want all three", gh.labels)
 	}
 }
 
@@ -197,12 +328,12 @@ func TestGHClientLive(t *testing.T) {
 		t.Skip("set FITNESS_LIVE_GH=1 to run against the real gh")
 	}
 	gh := ghClient{repo: "may-journal/fitness-runner"}
-	bodies, err := gh.commentBodies(108)
-	if err != nil || len(bodies) == 0 {
-		t.Fatalf("commentBodies(108) = %d bodies, %v", len(bodies), err)
+	vs, err := gh.verdicts(108)
+	if err != nil || len(vs) == 0 {
+		t.Fatalf("verdicts(108) = %d verdicts, %v", len(vs), err)
 	}
-	if !strings.Contains(strings.Join(bodies, "\n"), "fitness:plan-structure:") {
-		t.Error("no plan-structure marker among the comments on #108")
+	if vs[0].ID == 0 || vs[0].NodeID == "" {
+		t.Errorf("verdict ids missing: %+v", vs[0])
 	}
 	if _, labels, err := gh.issue(108); err != nil || !hasLabel(labels, "Plan") {
 		t.Errorf("issue(108) labels = %v, %v; want Plan", labels, err)

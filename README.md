@@ -56,7 +56,7 @@ fitness prettier --write .   # passthrough args reach the check
 fitness init                 # install the shared git hooks into a repo
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
 fitness pr-check             # validate PR titles and descriptions (in GitHub Actions)
-fitness plan-check           # validate Plan issues and comment the result (in GitHub Actions)
+fitness plan-check           # validate Plan issues, comment and label the result (in GitHub Actions)
 ```
 
 ## Git hooks

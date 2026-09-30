@@ -8,7 +8,7 @@ GitHub Actions workflows for this repo. The runner enforces the checks on commit
 
 ## plan-check
 
-Plans live as GitHub Issues under the `Plan` label, so the file runner never sees them. [plan-check.yml](plan-check.yml) runs `fitness plan-check`, which checks an Issue body with `plan-structure` and the prose checks, then comments the result on the Issue.
+Plans live as GitHub Issues under the `Plan` label, so the file runner never sees them. [plan-check.yml](plan-check.yml) runs `fitness plan-check` to lint an Issue body. It keeps one live verdict comment and label on the Issue.
 
 ```mermaid
 flowchart TD
@@ -17,14 +17,18 @@ flowchart TD
     C[3 Plan label guard]:::step
     D[4 Build and run plan-structure]:::step
     E[5 Hash body and look for prior comment]:::step
-    F[6 Post comment once per body version]:::step
-    G[7 Fail the run on violations]:::step
+    F[6 Edit or post one verdict comment]:::step
+    G[7 Hide older verdicts]:::step
+    H[8 Label the verdict]:::step
+    I[9 Fail the run on violations]:::step
     A --> C
     B --> C
     C --> D
     D --> E
     E --> F
-    D --> G
+    F --> G
+    D --> H
+    D --> I
     classDef trigger fill:#eef,stroke:#333
     classDef step fill:#efe,stroke:#333
 ```
@@ -36,15 +40,17 @@ flowchart TD
 | 3   | Plan guard   | Issue-event runs proceed only when the Issue carries `Plan`.      | Other Issues are not plans and need no structure check.    |
 | 4   | Run check    | Build the checks and run `fitness plan-check` on the body.        | One tested binary, same rules as the local suite.          |
 | 5   | Dedupe       | Hash the body and search the Issue for that hash marker.          | One comment per description version, never a duplicate.    |
-| 6   | Comment      | Post a pass or fail comment carrying the hash marker.             | The result is visible where the plan lives.                |
-| 7   | Fail run     | Exit non-zero when any validated Issue has violations.            | Surfaces the problem in the Actions run, not just a note.  |
+| 6   | Comment      | A pass after a pass edits it to `✅ Validated`; else post anew. | One live verdict, no pile of repeats. |
+| 7   | Hide         | Hide older bot verdicts as outdated.                              | Only the live verdict stays open.                          |
+| 8   | Label        | Add `fitness` and `fitness-valid` or `fitness-invalid`.          | Issue lists show the verdict.                              |
+| 9   | Fail run     | Exit non-zero when any validated Issue has violations.            | Surfaces the problem in the Actions run, not just a note.  |
 
 ## Triggers
 
 - `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue when it carries the `Plan` label.
 - `workflow_dispatch`: sweeps every open `Plan` Issue and comments on each body version not seen before.
 
-A changed description produces a new hash, so it earns a fresh comment while earlier comments stay as history.
+A changed description earns a new verdict; earlier ones stay hidden.
 
 ## pr-check
 
