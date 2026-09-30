@@ -93,3 +93,5 @@ A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on 
 ## auto-merge
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It merges with the bot's token so CI still runs on `main`.
+
+Each repo copies [auto-merge-on-ready.yml](auto-merge-on-ready.yml), so drafts marked ready get it.
