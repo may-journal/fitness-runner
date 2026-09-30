@@ -80,6 +80,10 @@ flowchart TD
 
 Unlike plan-check there is no label guard and no comment. Every PR carries a description, so every PR is validated, and the status check is the verdict.
 
+## fitness-suite
+
+A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, with `swift` on when the repo has Swift files. It runs everywhere but fitness-runner, which builds checks from source.
+
 ## auto-merge
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It merges with the bot's token so CI still runs on `main`.
