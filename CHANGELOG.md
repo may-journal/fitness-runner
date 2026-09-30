@@ -7,7 +7,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.28.2208
+### 2026.09.30.1452
 
 - Fix: `pr-closes-issue` skips closing keywords inside inline or fenced code, since they quote an example rather than close an issue.
 - Fix: a Plan quoting another repo's `Closes #51` no longer requires its PR to close this repo's #51.
@@ -15,13 +15,32 @@ relatedConfigurations: ['.fitnessrc.json']
 - Test: cover keywords in inline and fenced code, plus the new `mdx.StripCode` helper.
 - Docs: note the code rule in the `pr-closes-issue` README.
 
-### 2026.09.28.2204
+### 2026.09.30.1451
 
 - Feat: `fitness close-check` reopens an issue closed as completed with unchecked items, unless closed as not planned or duplicate.
 - Feat: it comments once, listing the items and mentioning the closer, plus the closing PR's author and merger.
 - Feat: `fitness pr-check` fails a PR whose closing keyword targets an issue with unchecked items, naming each item.
 - Ci: publish `close-check-reusable.yml`, and run close-check on this repo's own issues.
 - Docs: describe the rule and caller in the adoption guide and READMEs; tests cover each case with a fake GitHub API.
+
+### 2026.09.28.2300
+
+- Fix: `ci-reusable` installs the official Linux swiftlint build on Linux runners, so Swift repos can drop `runs-on: macos-latest`.
+- Fix: macOS runners still install swiftlint with brew, so current callers keep working.
+- Fix: give `swiftlint` a 120-second budget, since a cold lint on a Linux runner outlasts the 5-second default.
+- Docs: the adoption guide's Swift example runs on the default ubuntu runner, which costs about a tenth of macOS.
+
+### 2026.09.28.2234
+
+- Fix: `changelog-updated` accepts a newest heading up to five minutes behind the clock, so a stamp just before a minute boundary passes.
+- Test: cover a heading one minute behind the check, one older than the grace, and one ahead of the clock.
+- Docs: the `changelog-updated` README describes the five-minute stamp grace.
+
+### 2026.09.28.2140
+
+- Fix: `changelog-updated` requires the current time only on the newest added section heading, so a changelog rewrite that re-adds older headings passes.
+- Test: cover older headings re-added below a current one, and a stale newest heading above older ones.
+- Docs: the `changelog-updated` README says only the newest added heading must use the current time, in shorter sentences.
 
 ### 2026.09.28.1440
 

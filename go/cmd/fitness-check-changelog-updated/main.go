@@ -1,11 +1,11 @@
 // Command fitness-check-changelog-updated gates staged commits on the
 // changelog: CHANGELOG.md additions must share at least three distinct words
-// with the rest of the staged diff, and every new "### yyyy.mm.dd.HHMM"
+// with the rest of the staged diff, and the newest added "### yyyy.mm.dd.HHMM"
 // section heading must carry the expected stamp (the root package.json
-// version suffix, else the current local wall clock) — the Go port of the
-// changelog-updated check. One deviation from the TypeScript original: the
-// suggestion line lists the first ten rest-diff words deterministically where
-// TS sampled ten at random.
+// version suffix, else a minute of the last five on the local wall clock) —
+// the Go port of the changelog-updated check. One deviation from the
+// TypeScript original: the suggestion line lists the first ten rest-diff
+// words deterministically where TS sampled ten at random.
 package main
 
 import (
@@ -26,6 +26,10 @@ const (
 	minOverlap   = 3
 	minWordLen   = 3
 	suggestWords = 10
+
+	// stampGrace is how far behind the clock the newest heading may be.
+	stampGrace  = 5 * time.Minute
+	stampLayout = "2006.01.02.1504"
 
 	changelogMD = "CHANGELOG.md"
 	packageJSON = "package.json"
@@ -216,38 +220,59 @@ func splitDiff(files []diffFile) (changelogAdded string, restParts []string) {
 	return changelogAdded, restParts
 }
 
-// checkChangelogTime requires every "### yyyy.mm.dd.HHMM" heading in the
-// added changelog content to match the expected stamp; ok true when there are
-// no headings or all agree.
+// checkChangelogTime requires the first "### yyyy.mm.dd.HHMM" heading in the
+// added changelog content, the newest section, to carry the expected stamp.
+// Later added headings are history a rewrite re-adds, so they keep their
+// times. ok is true when there are no headings or the newest agrees.
 func checkChangelogTime(root, added string, at time.Time) (msg string, ok bool) {
-	matches := headingRe.FindAllStringSubmatch(added, -1)
-	if len(matches) == 0 {
+	m := headingRe.FindStringSubmatch(added)
+	if m == nil {
 		return "", true
 	}
-	expected := expectedTimestamp(root, at)
-	for _, m := range matches {
-		if m[1] != expected {
-			return msgChangelogTime + " (expected ### " + expected + ")", false
-		}
+	if version, found := versionTimestamp(root); found {
+		return timeMismatch(m[1] == version, version)
 	}
-	return "", true
+	return timeMismatch(withinStampGrace(m[1], at), at.Format(stampLayout))
 }
 
-// expectedTimestamp prefers the end-anchored yyyy.mm.dd.HHMM suffix of the
-// root package.json version; anything short of that falls back to the current
-// local wall clock.
-func expectedTimestamp(root string, at time.Time) string {
-	if raw, err := os.ReadFile(filepath.Join(root, packageJSON)); err == nil {
-		var pkg struct {
-			Version string `json:"version"`
-		}
-		if json.Unmarshal(raw, &pkg) == nil {
-			if m := versionTSRe.FindStringSubmatch(pkg.Version); m != nil {
-				return m[1]
-			}
-		}
+// timeMismatch turns a heading verdict into checkChangelogTime's result,
+// naming the expected stamp on failure.
+func timeMismatch(ok bool, expected string) (string, bool) {
+	if ok {
+		return "", true
 	}
-	return at.Format("2006.01.02.1504")
+	return msgChangelogTime + " (expected ### " + expected + ")", false
+}
+
+// withinStampGrace reports whether stamp names a minute from stampGrace
+// before at up to at's own minute. The pre-commit hook stamps the heading
+// before the suite runs, so the clock may pass a minute boundary in between.
+func withinStampGrace(stamp string, at time.Time) bool {
+	t, err := time.ParseInLocation(stampLayout, stamp, at.Location())
+	if err != nil {
+		return false
+	}
+	minute := at.Truncate(time.Minute)
+	return !t.After(minute) && !t.Before(minute.Add(-stampGrace))
+}
+
+// versionTimestamp returns the end-anchored yyyy.mm.dd.HHMM suffix of the
+// root package.json version, which overrides the clock when present.
+func versionTimestamp(root string) (string, bool) {
+	raw, err := os.ReadFile(filepath.Join(root, packageJSON))
+	if err != nil {
+		return "", false
+	}
+	var pkg struct {
+		Version string `json:"version"`
+	}
+	if json.Unmarshal(raw, &pkg) != nil {
+		return "", false
+	}
+	if m := versionTSRe.FindStringSubmatch(pkg.Version); m != nil {
+		return m[1], true
+	}
+	return "", false
 }
 
 // judgeOverlap passes when the changelog additions share at least minOverlap

@@ -45,7 +45,7 @@ jobs:
 
 ## Closing issues
 
-Every repo with Issues adds this [close-check](../.github/workflows/README.md#close-check) caller, as org required workflows cannot run on issue events:
+Every repo with Issues adds this [close-check](../.github/workflows/README.md#close-check) caller, since org required workflows skip issue events:
 
 ```yaml
 name: Close check
@@ -65,7 +65,7 @@ It reopens issues closed with unchecked items; `fitness pr-check` fails PRs clos
 
 ## Reusable CI
 
-`.github/workflows/ci.yml` (a Swift repo passes `swift: true` on a macOS runner):
+`.github/workflows/ci.yml` (a Swift repo passes `swift: true`, which installs the Linux swiftlint build):
 
 ```yaml
 name: CI
@@ -78,7 +78,6 @@ jobs:
   fitness:
     uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main
     with:
-      runs-on: macos-latest
       swift: true
 ```
 
