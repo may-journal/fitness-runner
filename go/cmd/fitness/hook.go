@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
+	"strconv"
 	"strings"
 )
 
@@ -38,23 +40,49 @@ func chdirToplevel() error {
 	return os.Chdir(strings.TrimSpace(string(out)))
 }
 
-// hookCommitMsg validates the proposed commit message with semantic-commit and
-// plan-trailer — the message file is the first argument.
+// hookCommitMsg validates the proposed commit message with semantic-commit,
+// plan-trailer, and issue-link-once — the message file is the first argument.
 func hookCommitMsg(args []string) int {
+	msg, ok := readMessage(args)
+	if !ok {
+		return 1
+	}
+	for _, check := range []string{"semantic-commit", "plan-trailer"} {
+		if code := run([]string{"--check=" + check, "--message=" + msg}); code != 0 {
+			return code
+		}
+	}
+	if amending() {
+		_ = os.Setenv("FITNESS_COMMIT_AMEND", "1")
+	}
+	return run([]string{"--check=issue-link-once", "--message=" + msg})
+}
+
+// readMessage reads the commit message file named by the hook's first
+// argument, reporting any failure on stderr.
+func readMessage(args []string) (string, bool) {
 	if len(args) < 1 {
 		fmt.Fprintln(os.Stderr, "fitness hook commit-msg: missing message file")
-		return 1
+		return "", false
 	}
 	data, err := os.ReadFile(args[0])
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		return 1
+		return "", false
 	}
-	msg := string(data)
-	if code := run([]string{"--check=semantic-commit", "--message=" + msg}); code != 0 {
-		return code
-	}
-	return run([]string{"--check=plan-trailer", "--message=" + msg})
+	return string(data), true
+}
+
+// amending reports whether the git process running this hook was invoked with
+// --amend. The shims exec fitness, so the parent process is git itself.
+func amending() bool {
+	out, err := exec.Command("ps", "-o", "args=", "-p", strconv.Itoa(os.Getppid())).Output()
+	return err == nil && amendArgs(string(out))
+}
+
+// amendArgs is the pure test over a git command line.
+func amendArgs(args string) bool {
+	return slices.Contains(strings.Fields(args), "--amend")
 }
 
 // hookPreCommit stamps a staged CHANGELOG entry, runs the full suite, then the

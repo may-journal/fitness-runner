@@ -56,16 +56,16 @@ fitness prettier --write .   # passthrough args reach the check
 fitness init                 # install the shared git hooks into a repo
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
 fitness pr-check             # validate PR titles and descriptions (in GitHub Actions)
-fitness plan-check           # validate Plan issues and comment the result (in GitHub Actions)
+fitness plan-check           # validate Plan issues, comment and label the result (in GitHub Actions)
 ```
 
 ## Git hooks
 
 In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
 
-- commit-msg: validates the message through `semantic-commit` and the `Plan #NN` trailer through `plan-trailer`.
+- commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message.
 - pre-commit: stamps a staged `CHANGELOG` entry, checks the staged files, then a repo's own `.githooks/pre-commit.local`.
-- pre-push: blocks the push unless the commits trace to an approved `Plan` Issue, resolved via `gh`; chore/docs pushes are exempt.
+- pre-push: blocks the push unless the branch or its PR names an approved `Plan` Issue, via `gh`; chore/docs pushes are exempt.
 
 ## GitHub Actions
 
