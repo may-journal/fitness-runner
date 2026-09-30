@@ -7,13 +7,21 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.30.1727
+### 2026.09.30.1803
 
 - Feat: `issue-link-once`, run by the `commit-msg` hook, fails a commit linking an Issue the branch or its open PR already links.
 - Feat: `pre-push` finds the approved Plan in any branch commit or the open PR, so later pushes need no trailer.
 - Fix: `pre-push` reads only the pushed commits, not their ancestors, so a trailer on `main` no longer passes the gate.
 - Chore: this repo's own `githooks` call the Go hooks, so both share one implementation.
 - Docs: `AGENTS.md`, the README, and the `plan-trailer` README put the trailer on the branch's first commit only.
+
+### 2026.09.30.2238
+
+- Feat: `fitness plan-check` edits its passing verdict to `✅ Validated (updated <UTC time>)` when a new body passes too, instead of posting another comment.
+- Feat: it hides every older plan-check verdict on the Issue as outdated.
+- Feat: it labels each checked Issue `fitness` plus `fitness-valid` or `fitness-invalid`, creating missing labels.
+- Feat: each verdict links the fitness-runner commit that judged it and the workflow run.
+- Docs: the workflows README and step names describe the single verdict and labels.
 
 ### 2026.09.30.2100
 
