@@ -6,19 +6,20 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Keeps Issue timelines readable ([#153](https://github.com/may-journal/fitness-runner/issues/153)). Every commit that links an Issue adds an entry to its timeline. So a branch links each Issue from one commit at most.
 
-The `commit-msg` hook runs it on the proposed message, beside `semantic-commit` and `plan-trailer`. Without a context-inline `--message` it passes inert, so full-suite runs leave it alone.
-
 ## Behavior
 
 - A link is `#NN`, `owner/repo#NN`, or an Issue or PR URL on github.com. A bare `#NN` belongs to origin's repo.
-- Fail: an earlier commit on the branch, since its merge base with origin's default branch, links the same Issue.
-- Fail: the branch's open PR body links the Issue, since the PR already shows on its timeline.
-- Pass: links to Issues nothing else on the branch links yet, and messages with no links.
+- Fail: an earlier commit on the branch, since the base branch, links the same Issue.
+- Fail: the open PR body links the Issue, and the commit is newer than the PR.
 - Comment lines and anything below the scissors line are ignored, as git drops them.
-- An amend leaves out HEAD, the commit it replaces.
-- With no open PR, or no network, it warns and skips the PR rule.
 
-Every PR must close an Issue, so in practice only commits pushed before the PR opens link one. The squash commit on `main` carries the PR body, and that link stays.
+## Where it runs
+
+The `commit-msg` hook judges the proposed message. An amend leaves out HEAD, the commit it replaces. With no open PR, or no network, it skips the PR rule.
+
+On a pull request, the org `fitness-suite` workflow judges every branch commit, oldest first, in every repo ([#157](https://github.com/may-journal/fitness-runner/issues/157)). The one link written before the PR opened passes, judged by author date, which a rebase keeps. A failure stays red until you rewrite that commit without the link and force-push with `--force-with-lease`.
+
+Anywhere else, such as a local suite run or a push to `main`, it passes inert.
 
 ## Contributing
 

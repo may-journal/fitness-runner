@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.30.1847
+
+- Feat: on a pull request in CI, `issue-link-once` judges every branch commit and fails a repeat link, in every repo.
+- Feat: a commit authored after the PR opened fails when it links an Issue the PR body links.
+- Feat: each failure names the commit and says to rewrite it, then force-push with `--force-with-lease`.
+- Docs: the check README and `AGENTS.md` describe the CI rule and its fix.
+
 ### 2026.09.30.1830
 
 - Fix: a draft pull request gets auto-merge once it is marked ready, through a new `auto-merge-on-ready.yml` caller on `ready_for_review`.
