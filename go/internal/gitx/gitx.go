@@ -96,3 +96,13 @@ func OriginSlug(root string) string {
 	}
 	return strings.ToLower(m[1])
 }
+
+// Format returns one commit's `git log --format` output for format; empty on
+// failure.
+func Format(root, rev, format string) string {
+	out, err := exec.Command("git", "-C", root, "log", "-1", "--format="+format, rev).Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}

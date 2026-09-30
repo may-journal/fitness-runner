@@ -1,10 +1,13 @@
 package main
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 const repo = "may-journal/fitness-runner"
@@ -106,5 +109,108 @@ func TestBranchCommits(t *testing.T) {
 	t.Setenv(amendEnv, "1")
 	if prior := branchCommits(dir); len(prior) != 0 {
 		t.Fatalf("amend should leave HEAD out, got %+v", prior)
+	}
+}
+
+func TestJudgeBranch(t *testing.T) {
+	opened := time.Date(2026, 9, 30, 12, 0, 0, 0, time.UTC)
+	before, after := opened.Add(-time.Hour), opened.Add(time.Hour)
+	commit := func(sha, msg string, at time.Time) earlier {
+		return earlier{sha: sha, subject: strings.SplitN(msg, "\n", 2)[0], message: msg, authored: at}
+	}
+	pr := &openPR{number: 30, body: "Closes #12", opened: opened}
+	cases := []struct {
+		name    string
+		commits []earlier
+		ok      bool
+		hint    string
+	}{
+		{"pre-PR link passes", []earlier{commit("aaaaaaa1", "feat(x): start\n\nPlan #12", before)}, true, ""},
+		{"branch repeat fails", []earlier{
+			commit("aaaaaaa1", "feat(x): start\n\nPlan #12", before),
+			commit("bbbbbbb2", "fix(x): more\n\nPlan #12", before),
+		}, false, "commit bbbbbbb"},
+		{"post-PR link fails", []earlier{commit("ccccccc3", "fix(x): more\n\nFixes #12", after)}, false, "open PR #30"},
+		{"post-PR link to another issue passes", []earlier{commit("ccccccc3", "fix(x): more\n\nSee #13", after)}, true, ""},
+		{"no links passes", []earlier{commit("ddddddd4", "fix(x): more", after)}, true, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := judgeBranch(repo, tc.commits, pr)
+			if res.Ok != tc.ok {
+				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
+			}
+			if !tc.ok && (!strings.Contains(res.Errors[0], tc.hint) || !strings.Contains(res.Errors[0], "--force-with-lease")) {
+				t.Fatalf("error %q should name %q and the fix", res.Errors[0], tc.hint)
+			}
+		})
+	}
+}
+
+func TestParseEvent(t *testing.T) {
+	payload := `{"pull_request":{"number":7,"body":"Closes #3","created_at":"2026-09-30T12:00:00Z","head":{"sha":"abc"}}}`
+	pr, base, ok := parseEvent([]byte(payload), "origin/main")
+	if !ok || pr.number != 7 || pr.body != "Closes #3" || pr.head != "abc" || base != "origin/main" || pr.opened.IsZero() {
+		t.Fatalf("parseEvent = %+v, %q, %v", pr, base, ok)
+	}
+	if _, _, ok := parseEvent([]byte(`{"ref":"refs/heads/main"}`), "origin/main"); ok {
+		t.Fatal("a push payload has no pull request")
+	}
+}
+
+// TestRunInert covers no event payload: a local suite run or a push to main.
+func TestRunInert(t *testing.T) {
+	t.Setenv("GITHUB_BASE_REF", "")
+	t.Setenv("GITHUB_EVENT_PATH", "")
+	os.Unsetenv("FITNESS_CTX_MESSAGE")
+	res, err := run(t.TempDir(), nil)
+	if err != nil || !res.Ok || res.FilesChecked != 0 {
+		t.Fatalf("run = %+v, %v; want an inert pass", res, err)
+	}
+}
+
+// TestPullRequestRun drives run end to end from an event payload, with main
+// merged into the branch: main's commits and the merge never count.
+func TestPullRequestRun(t *testing.T) {
+	remote, dir := t.TempDir(), t.TempDir()
+	git := func(args ...string) string {
+		cmd := exec.Command("git", args...)
+		cmd.Dir = dir
+		cmd.Env = append(cmd.Environ(), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t",
+			"GIT_AUTHOR_DATE=2026-09-30T10:00:00Z")
+		out, err := cmd.CombinedOutput()
+		if err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+		return strings.TrimSpace(string(out))
+	}
+	git("init", "-q", "--bare", remote)
+	git("init", "-q", "-b", "main")
+	git("remote", "add", "origin", remote)
+	git("commit", "-q", "--allow-empty", "-m", "feat(x): landed\n\nPlan #12")
+	git("push", "-q", "origin", "main")
+	git("switch", "-q", "-c", "topic")
+	git("commit", "-q", "--allow-empty", "-m", "feat(x): start\n\nPlan #12")
+	git("switch", "-q", "main")
+	git("commit", "-q", "--allow-empty", "-m", "feat(x): more on main\n\nPlan #12")
+	git("push", "-q", "origin", "main")
+	git("switch", "-q", "topic")
+	git("merge", "-q", "--no-edit", "main")
+	head := git("rev-parse", "HEAD")
+
+	event := filepath.Join(t.TempDir(), "event.json")
+	payload := `{"pull_request":{"number":9,"body":"Closes #12","created_at":"2026-09-30T12:00:00Z","head":{"sha":"` + head + `"}}}`
+	if err := os.WriteFile(event, []byte(payload), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GITHUB_BASE_REF", "main")
+	t.Setenv("GITHUB_EVENT_PATH", event)
+	os.Unsetenv("FITNESS_CTX_MESSAGE")
+	res, err := run(dir, nil)
+	if err != nil || !res.Ok {
+		t.Fatalf("run = %+v, %v; the one pre-PR link should pass", res, err)
+	}
+	if res.FilesChecked != 2 {
+		t.Fatalf("judged %d commits, want 2 (start + merge)", res.FilesChecked)
 	}
 }
