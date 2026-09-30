@@ -1,0 +1,42 @@
+name: Fitness suite
+
+# Required in every org repo: the may-journal/.github ruleset
+# rulesets/fitness-suite-workflow.json injects this file on each pull request.
+# It runs ci-reusable, installing swiftlint when the repo has Swift sources.
+# The full `uses:` path matters: an injected workflow resolves `./` in the
+# target repo. Two kinds of repo skip the job: one whose own workflow already
+# calls ci-reusable (it reports `fitness / fitness`), and fitness-runner, whose
+# CI builds the checks from source.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.detect.outputs.run }}
+      swift: ${{ steps.detect.outputs.swift }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: detect
+        run: |
+          run=true
+          if [ "$GITHUB_REPOSITORY" = may-journal/fitness-runner ] ||
+            grep -r -q -s --exclude=fitness-suite.yml 'ci-reusable.yml' .github/workflows; then
+            run=false
+          fi
+          swift=false
+          if git ls-files '*.swift' | grep -q .; then swift=true; fi
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "swift=$swift" >> "$GITHUB_OUTPUT"
+
+  org-fitness:
+    needs: detect
+    if: needs.detect.outputs.run == 'true'
+    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main
+    with:
+      swift: ${{ needs.detect.outputs.swift == 'true' }}

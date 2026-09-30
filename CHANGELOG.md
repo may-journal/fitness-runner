@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.30.1520
+
+- Feat: add `fitness-suite.yml`, which an org ruleset can inject on every pull request to run the fitness suite through `ci-reusable`.
+- Feat: `fitness-suite.yml` installs swiftlint when the repo has Swift sources, since an injected workflow gets no inputs.
+- Fix: it skips fitness-runner and any repo whose own workflow already calls `ci-reusable`, so no suite runs twice.
+- Docs: describe `fitness-suite` in `.github/workflows/README.md`.
+
 ### 2026.09.28.2300
 
 - Fix: `ci-reusable` installs the official Linux swiftlint build on Linux runners, so Swift repos can drop `runs-on: macos-latest`.
