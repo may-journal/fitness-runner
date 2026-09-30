@@ -4,8 +4,7 @@ name: Fitness suite
 # rulesets/fitness-suite-workflow.json injects this file on each pull request.
 # It runs ci-reusable, installing swiftlint when the repo has Swift sources.
 # The full `uses:` path matters: an injected workflow resolves `./` in the
-# target repo. Two kinds of repo skip the job: one whose own workflow already
-# calls ci-reusable (it reports `fitness / fitness`), and fitness-runner, whose
+# target repo. Only fitness-runner skips the job, since its own
 # CI builds the checks from source.
 on:
   pull_request:
@@ -25,8 +24,7 @@ jobs:
       - id: detect
         run: |
           run=true
-          if [ "$GITHUB_REPOSITORY" = may-journal/fitness-runner ] ||
-            grep -r -q -s --exclude=fitness-suite.yml 'ci-reusable.yml' .github/workflows; then
+          if [ "$GITHUB_REPOSITORY" = may-journal/fitness-runner ]; then
             run=false
           fi
           swift=false

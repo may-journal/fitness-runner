@@ -82,7 +82,7 @@ Unlike plan-check there is no label guard and no comment. Every PR carries a des
 
 ## fitness-suite
 
-A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, with `swift` on when the repo has Swift files. It skips repos that call `ci-reusable` themselves.
+A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, with `swift` on when the repo has Swift files. It runs everywhere but fitness-runner, which builds checks from source.
 
 ## auto-merge
 

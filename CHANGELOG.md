@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.30.2100
+
+- Fix: `fitness-suite` runs in every repo except fitness-runner, even one with its own `ci-reusable` caller.
+- Fix: so the org ruleset enforces the suite everywhere, with no gap while per-repo callers are removed.
+- Docs: the workflows README says only fitness-runner skips it.
+
 ### 2026.09.30.1520
 
 - Feat: add `fitness-suite.yml`, which an org ruleset can inject on every pull request to run the fitness suite through `ci-reusable`.
