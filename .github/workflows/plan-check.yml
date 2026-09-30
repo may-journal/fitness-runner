@@ -21,7 +21,7 @@ jobs:
           go-version-file: go/go.mod
       - name: Build the checks
         run: cd go && mkdir -p bin && go build -o bin ./cmd/...
-      - name: Validate plan issue(s) and comment once per body version
+      - name: Validate plan issue(s), keep one verdict comment, and label it
         run: go/bin/fitness plan-check
         env:
           GH_TOKEN: ${{ github.token }}
