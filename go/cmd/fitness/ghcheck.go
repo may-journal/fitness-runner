@@ -43,8 +43,14 @@ type githubAPI interface {
 	issue(n int) (body string, labels []string, err error)
 	openPRs() ([]target, error)
 	openPlans() ([]target, error)
-	commentBodies(n int) ([]string, error)
+	verdicts(n int) ([]verdict, error)
 	comment(n int, body string) error
+	commentBodies(n int) ([]string, error)
+	editComment(id int64, body string) error
+	hideComment(nodeID string) error
+	ensureLabel(name, color string) error
+	addLabels(n int, names []string) error
+	removeLabel(n int, name string) error
 	reopen(n int) error
 	closingPR(n int) (closer, error)
 }
@@ -54,6 +60,15 @@ type githubAPI interface {
 type closer struct {
 	Author string `json:"author"`
 	Merger string `json:"merger"`
+}
+
+// verdict is one bot comment carrying a plan-check marker. ID is the REST
+// id for edits; NodeID is the GraphQL id for hiding.
+type verdict struct {
+	ID       int64  `json:"id"`
+	NodeID   string `json:"nodeId"`
+	Body     string `json:"body"`
+	IsHidden bool   `json:"isHidden"`
 }
 
 // bodyChecker runs check binaries against a body. exec is swappable so tests
@@ -206,6 +221,36 @@ func (g ghClient) openPlans() ([]target, error) {
 	return decodeLines[target](out)
 }
 
+// verdictsQuery lists an issue's comments with the hidden state, which only
+// GraphQL exposes.
+const verdictsQuery = `query($owner: String!, $name: String!, $number: Int!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $number) {
+      comments(first: 100, after: $endCursor) {
+        pageInfo { hasNextPage endCursor }
+        nodes { id databaseId body isMinimized author { __typename } }
+      }
+    }
+  }
+}`
+
+// verdicts returns the bot's plan-check comments, oldest first.
+func (g ghClient) verdicts(n int) ([]verdict, error) {
+	owner, name, _ := strings.Cut(g.repo, "/")
+	jq := `.data.repository.issue.comments.nodes[]
+		| select(.author.__typename == "Bot" and (.body | contains("fitness:plan-structure:")))
+		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized}`
+	cmd := exec.Command("gh", "api", "graphql", "--paginate",
+		"-f", "query="+verdictsQuery, "-F", "owner="+owner, "-F", "name="+name,
+		"-F", "number="+strconv.Itoa(n), "--jq", jq)
+	cmd.Stderr = os.Stderr
+	out, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	return decodeLines[verdict](out)
+}
+
 // commentBodies selects objects, not bare bodies: gh prints a string result
 // raw rather than as JSON, which would not decode.
 func (g ghClient) commentBodies(n int) ([]string, error) {
@@ -266,4 +311,41 @@ func (g ghClient) closingPR(n int) (closer, error) {
 	var c closer
 	err = json.Unmarshal(out, &c)
 	return c, err
+}
+
+func (g ghClient) editComment(id int64, body string) error {
+	_, err := g.api("-X", "PATCH", "-f", "body="+body, "issues/comments/"+strconv.FormatInt(id, 10))
+	return err
+}
+
+// hideComment collapses a comment as outdated.
+func (g ghClient) hideComment(nodeID string) error {
+	cmd := exec.Command("gh", "api", "graphql", "--silent",
+		"-f", "query=mutation($id: ID!) { minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) { clientMutationId } }",
+		"-f", "id="+nodeID)
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// ensureLabel creates the repo label when it is missing.
+func (g ghClient) ensureLabel(name, color string) error {
+	if _, err := exec.Command("gh", "api", "--silent", "repos/"+g.repo+"/labels/"+name).Output(); err == nil {
+		return nil
+	}
+	_, err := g.api("-X", "POST", "-f", "name="+name, "-f", "color="+color, "labels")
+	return err
+}
+
+func (g ghClient) addLabels(n int, names []string) error {
+	args := []string{"-X", "POST", "--silent"}
+	for _, l := range names {
+		args = append(args, "-f", "labels[]="+l)
+	}
+	_, err := g.api(append(args, "issues/"+strconv.Itoa(n)+"/labels")...)
+	return err
+}
+
+func (g ghClient) removeLabel(n int, name string) error {
+	_, err := g.api("-X", "DELETE", "--silent", "issues/"+strconv.Itoa(n)+"/labels/"+name)
+	return err
 }

@@ -89,6 +89,20 @@ func closeMarker(issue target) string {
 	return "<!-- fitness:close-check:" + hex.EncodeToString(sum[:])[:12] + " -->"
 }
 
+// hasMarker reports whether a comment on issue n already carries mark.
+func hasMarker(n int, mark string, gh githubAPI) (bool, error) {
+	existing, err := gh.commentBodies(n)
+	if err != nil {
+		return false, err
+	}
+	for _, body := range existing {
+		if strings.Contains(body, mark) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // mentions is the @-mention line for the closer, and for a merge close the
 // PR's author and merger, each once. Apps cannot be notified, so they are
 // left out.

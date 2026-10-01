@@ -30,12 +30,12 @@ func TestCloseCheckReopensAManualClose(t *testing.T) {
 		t.Fatalf("comments = %d, want 1", len(got))
 	}
 	for _, want := range []string{"- write docs\n- ship it\n", "cc @alice\n", "<!-- fitness:close-check:"} {
-		if !strings.Contains(got[0], want) {
-			t.Errorf("comment missing %q: %q", want, got[0])
+		if !strings.Contains(got[0].Body, want) {
+			t.Errorf("comment missing %q: %q", want, got[0].Body)
 		}
 	}
-	if strings.Contains(got[0], "- done") {
-		t.Errorf("comment lists a ticked item: %q", got[0])
+	if strings.Contains(got[0].Body, "- done") {
+		t.Errorf("comment lists a ticked item: %q", got[0].Body)
 	}
 	closeCheck(ev, gh)
 	if len(gh.comments[8]) != 1 {
@@ -49,16 +49,16 @@ func TestCloseCheckMentionsTheClosingPRsAuthorAndMerger(t *testing.T) {
 	if len(gh.reopened) != 1 {
 		t.Fatalf("reopened = %v, want one reopen", gh.reopened)
 	}
-	if !strings.Contains(gh.comments[8][0], "cc @carol @bob\n") {
-		t.Errorf("comment = %q, want cc @carol @bob, each once", gh.comments[8][0])
+	if !strings.Contains(gh.comments[8][0].Body, "cc @carol @bob\n") {
+		t.Errorf("comment = %q, want cc @carol @bob, each once", gh.comments[8][0].Body)
 	}
 }
 
 func TestCloseCheckSkipsAppMentions(t *testing.T) {
 	gh := &fakeGH{closers: map[int]closer{8: {Author: "bob", Merger: "github-actions[bot]"}}}
 	closeCheck(closedEvent(openChecklist, "", "github-actions[bot]"), gh)
-	if !strings.Contains(gh.comments[8][0], "cc @bob\n") {
-		t.Errorf("comment = %q, want cc @bob only", gh.comments[8][0])
+	if !strings.Contains(gh.comments[8][0].Body, "cc @bob\n") {
+		t.Errorf("comment = %q, want cc @bob only", gh.comments[8][0].Body)
 	}
 }
 

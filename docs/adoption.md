@@ -45,7 +45,7 @@ jobs:
 
 ## Closing issues
 
-Every repo with Issues adds this [close-check](../.github/workflows/README.md#close-check) caller, since org required workflows skip issue events:
+may-journal/.github syncs this [close-check](../.github/workflows/README.md#close-check) caller into each repo:
 
 ```yaml
 name: Close check
@@ -81,7 +81,7 @@ jobs:
       swift: true
 ```
 
-A pull request checks only the files it changes, and the push to `main` after merge checks every file. An org ruleset makes this suite a required check, which the caller job reports as `fitness / fitness`. Add each new repo to [fitness-suite-required.json](https://github.com/may-journal/.github/blob/main/rulesets/fitness-suite-required.json) in may-journal/.github, or its suite stays optional.
+A pull request checks only the files it changes, and the push to `main` after merge checks every file. An org ruleset already runs this suite in every repo, so most repos need no caller.
 
 ## Version policy
 
@@ -102,4 +102,21 @@ Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 
-An org-level required workflow can run the reusable `pr-check` across repos with no caller file at all. Point the ruleset at `pr-check-reusable.yml@main`; it carries a `pull_request` trigger so a required workflow can run it. The org's `auto-merge.yml` runs the same way and lives here too, since public repos cannot run a private repo's workflows. The org `.github` repo supplies the Plan issue template and conventions by default.
+An org-level required workflow can run the reusable `pr-check` across repos with no caller file at all. Point the ruleset at `pr-check-reusable.yml@main`; it carries a `pull_request` trigger so a required workflow can run it. The org `.github` repo supplies the Plan issue template and conventions by default.
+
+The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
+
+A draft marked ready never starts it, so may-journal/.github syncs this caller into each repo as `.github/workflows/auto-merge-on-ready.yml`:
+
+```yaml
+name: Auto-merge on ready
+on:
+  pull_request_target:
+    types: [ready_for_review]
+permissions:
+  contents: read
+jobs:
+  auto-merge:
+    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@main
+    secrets: inherit
+```

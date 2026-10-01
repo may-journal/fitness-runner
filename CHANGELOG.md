@@ -7,7 +7,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.09.30.1452
+### 2026.09.30.1928
 
 - Fix: `pr-closes-issue` skips closing keywords inside inline or fenced code, since they quote an example rather than close an issue.
 - Fix: a Plan quoting another repo's `Closes #51` no longer requires its PR to close this repo's #51.
@@ -15,13 +15,62 @@ relatedConfigurations: ['.fitnessrc.json']
 - Test: cover keywords in inline and fenced code, plus the new `mdx.StripCode` helper.
 - Docs: note the code rule in the `pr-closes-issue` README.
 
-### 2026.09.30.1451
+### 2026.09.30.1927
 
 - Feat: `fitness close-check` reopens an issue closed as completed with unchecked items, unless closed as not planned or duplicate.
 - Feat: it comments once, listing the items and mentioning the closer, plus the closing PR's author and merger.
 - Feat: `fitness pr-check` fails a PR whose closing keyword targets an issue with unchecked items, naming each item.
 - Ci: publish `close-check-reusable.yml`, and run close-check on this repo's own issues.
 - Docs: describe the rule and caller in the adoption guide and READMEs; tests cover each case with a fake GitHub API.
+
+### 2026.09.30.1916
+
+- Ci: `auto-merge.yml` acts as the `may-journal-automation` GitHub App, minting a one-hour token, instead of the bot's `AUTO_MERGE_TOKEN`.
+- Ci: it fails with a clear error when `AUTOMATION_APP_ID` or `AUTOMATION_APP_KEY` is missing.
+- Docs: the workflows README and adoption guide name the App and its two org secrets.
+
+### 2026.09.30.1847
+
+- Feat: on a pull request in CI, `issue-link-once` judges every branch commit and fails a repeat link, in every repo.
+- Feat: a commit authored after the PR opened fails when it links an Issue the PR body links.
+- Feat: each failure names the commit and says to rewrite it, then force-push with `--force-with-lease`.
+- Docs: the check README and `AGENTS.md` describe the CI rule and its fix.
+
+### 2026.09.30.1830
+
+- Fix: a draft pull request gets auto-merge once it is marked ready, through a new `auto-merge-on-ready.yml` caller on `ready_for_review`.
+- Fix: `auto-merge.yml` also runs as a `workflow_call`, so the caller reuses it.
+- Ci: `auto-merge.yml` lists only the events its ruleset starts it on, since GitHub refuses auto-merge on a draft.
+- Docs: the workflows README and adoption guide explain the draft gap and show the caller each repo adds.
+
+### 2026.09.30.1803
+
+- Feat: `issue-link-once`, run by the `commit-msg` hook, fails a commit linking an Issue the branch or its open PR already links.
+- Feat: `pre-push` finds the approved Plan in any branch commit or the open PR, so later pushes need no trailer.
+- Fix: `pre-push` reads only the pushed commits, not their ancestors, so a trailer on `main` no longer passes the gate.
+- Chore: this repo's own `githooks` call the Go hooks, so both share one implementation.
+- Docs: `AGENTS.md`, the README, and the `plan-trailer` README put the trailer on the branch's first commit only.
+
+### 2026.09.30.2238
+
+- Feat: `fitness plan-check` edits its passing verdict to `✅ Validated (updated <UTC time>)` when a new body passes too, instead of posting another comment.
+- Feat: it hides every older plan-check verdict on the Issue as outdated.
+- Feat: it labels each checked Issue `fitness` plus `fitness-valid` or `fitness-invalid`, creating missing labels.
+- Feat: each verdict links the fitness-runner commit that judged it and the workflow run.
+- Docs: the workflows README and step names describe the single verdict and labels.
+
+### 2026.09.30.2100
+
+- Fix: `fitness-suite` runs in every repo except fitness-runner, even one with its own `ci-reusable` caller.
+- Fix: so the org ruleset enforces the suite everywhere, with no gap while per-repo callers are removed.
+- Docs: the workflows README says only fitness-runner skips it.
+
+### 2026.09.30.1520
+
+- Feat: add `fitness-suite.yml`, which an org ruleset can inject on every pull request to run the fitness suite through `ci-reusable`.
+- Feat: `fitness-suite.yml` installs swiftlint when the repo has Swift sources, since an injected workflow gets no inputs.
+- Fix: it skips fitness-runner and any repo whose own workflow already calls `ci-reusable`, so no suite runs twice.
+- Docs: describe `fitness-suite` in `.github/workflows/README.md`.
 
 ### 2026.09.28.2300
 

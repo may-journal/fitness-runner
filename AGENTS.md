@@ -19,4 +19,8 @@ An agent may work an Issue as it sees fit — implement it, branch, commit, and 
 
 ## Once approved
 
-Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and keep each change paired with a `CHANGELOG.md` entry. Name the approved Issue with a `Plan #NN` trailer on your commits. The `pre-push` hook blocks a push that does not trace to an approved Plan Issue, though chore and docs-only pushes are exempt.
+Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and keep each change paired with a `CHANGELOG.md` entry.
+
+Name the approved Issue with a `Plan #NN` trailer on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
+
+The `pre-push` hook blocks a push that does not trace to an approved Plan Issue through the branch or its open PR. Chore and docs-only pushes are exempt.
