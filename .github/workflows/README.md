@@ -54,13 +54,13 @@ A changed description earns a new verdict; earlier ones stay hidden.
 
 ## pr-check
 
-A pull request description is not a file in the tree either, but a PR already has a status check surface. So unlike plan-check, [pr-check.yml](pr-check.yml) does not comment. It runs `fitness pr-check` on the PR title and body and writes any violations to the run summary and log. The run then fails, so the red check blocks the merge.
+A PR description is not a file either, but a PR has a status check. So [pr-check.yml](pr-check.yml) does not comment. It runs `fitness pr-check` on the title and body and writes violations to the run summary. The run fails, so the red check blocks the merge.
 
 ```mermaid
 flowchart TD
     A[1 PR event]:::trigger
     B[2 Manual sweep]:::trigger
-    C[3 Build and run pr-structure]:::step
+    C[3 Build and run the PR checks]:::step
     D[4 Write violations to the run summary]:::step
     E[5 Fail the run on violations]:::step
     A --> C
@@ -75,7 +75,7 @@ flowchart TD
 | --- | ------------ | ----------------------------------------------------------- | --------------------------------------------------------- |
 | 1   | PR event     | A PR is opened, edited, reopened, or synchronized.          | Validates a description the moment it changes.             |
 | 2   | Manual sweep | A `workflow_dispatch` run walks every open PR.              | Audits every open description on demand.                   |
-| 3   | Run check    | Build the checks and run `fitness pr-check` on the PR.      | One tested binary, same rules as the local suite.          |
+| 3   | Run check    | Run `fitness pr-check`, which also reads each closed issue's checklist. | One tested binary, same rules as the local suite.     |
 | 4   | Summary      | Write each PR's result and its violations to the run summary. | The errors are visible on the run page, no thread noise.  |
 | 5   | Fail run     | Exit non-zero when any validated PR has violations.         | A required status check blocks the merge, not just a note. |
 
@@ -84,14 +84,44 @@ flowchart TD
 - `pull_request` (`opened`, `edited`, `reopened`, `synchronize`): validates that one PR's description.
 - `workflow_dispatch`: sweeps every open PR and reports each in the run summary.
 
-Unlike plan-check there is no label guard and no comment. Every PR carries a description, so every PR is validated, and the status check is the verdict.
+There is no label guard: every PR has a description, so every PR is validated, and the status check is the verdict.
 
 ## fitness-suite
 
 A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, with `swift` on when the repo has Swift files. It runs everywhere but fitness-runner, which builds checks from source.
 
+## close-check
+
+[close-check.yml](close-check.yml) runs `fitness close-check` when an issue closes, so unfinished work stays open. Other repos call [close-check-reusable.yml](close-check-reusable.yml).
+
+```mermaid
+flowchart TD
+    A[1 Issue closed]:::trigger
+    B[2 Reason guard]:::step
+    C[3 Find unchecked items]:::step
+    D[4 Look for prior comment]:::step
+    E[5 Reopen the issue]:::step
+    F[6 Comment and mention]:::step
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element        | Description                                                         | Why                                                   |
+| --- | -------------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
+| 1   | Issue closed   | An `issues: closed` event, from a person or a PR keyword.          | Catches every close.                                  |
+| 2   | Reason guard   | A not planned or duplicate close stops here.                       | Dropped work may stay unfinished.                     |
+| 3   | Unchecked scan | List each `- [ ]` item, skipping any inside fenced code.           | Only real tasks count, not examples.                  |
+| 4   | Dedupe         | Hash the close time and body, then look for that marker.           | A re-run never reopens or comments twice.             |
+| 5   | Reopen         | Set the Issue back to open.                                        | Unfinished work stays visible.                        |
+| 6   | Comment        | List the items and mention the closer, PR author, and merger.      | The closer hears why it came back.                    |
+
 ## auto-merge
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.
 
-Each repo copies [auto-merge-on-ready.yml](auto-merge-on-ready.yml), so drafts marked ready get it.
+may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it.

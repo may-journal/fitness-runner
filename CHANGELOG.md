@@ -7,6 +7,22 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.30.1928
+
+- Fix: `pr-closes-issue` skips closing keywords inside inline or fenced code, since they quote an example rather than close an issue.
+- Fix: a Plan quoting another repo's `Closes #51` no longer requires its PR to close this repo's #51.
+- Refactor: the checklist parser reuses the shared `mdx` fence detection.
+- Test: cover keywords in inline and fenced code, plus the new `mdx.StripCode` helper.
+- Docs: note the code rule in the `pr-closes-issue` README.
+
+### 2026.09.30.1927
+
+- Feat: `fitness close-check` reopens an issue closed as completed with unchecked items, unless closed as not planned or duplicate.
+- Feat: it comments once, listing the items and mentioning the closer, plus the closing PR's author and merger.
+- Feat: `fitness pr-check` fails a PR whose closing keyword targets an issue with unchecked items, naming each item.
+- Ci: publish `close-check-reusable.yml`, and run close-check on this repo's own issues.
+- Docs: describe the rule and caller in the adoption guide and READMEs; tests cover each case with a fake GitHub API.
+
 ### 2026.09.30.1916
 
 - Ci: `auto-merge.yml` acts as the `may-journal-automation` GitHub App, minting a one-hour token, instead of the bot's `AUTO_MERGE_TOKEN`.

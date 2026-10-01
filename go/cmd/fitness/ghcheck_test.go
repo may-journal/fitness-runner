@@ -19,6 +19,8 @@ type fakeGH struct {
 	comments map[int][]verdict
 	labels   map[string]bool
 	nextID   int64
+	closers  map[int]closer
+	reopened []int
 }
 
 type fakeIssue struct {
@@ -32,6 +34,13 @@ func (f *fakeGH) issue(n int) (string, []string, error) {
 }
 func (f *fakeGH) verdicts(n int) ([]verdict, error) {
 	return append([]verdict(nil), f.comments[n]...), nil
+}
+func (f *fakeGH) commentBodies(n int) ([]string, error) {
+	var bodies []string
+	for _, v := range f.comments[n] {
+		bodies = append(bodies, v.Body)
+	}
+	return bodies, nil
 }
 func (f *fakeGH) openPRs() ([]target, error)   { return f.prs, nil }
 func (f *fakeGH) openPlans() ([]target, error) { return f.plans, nil }
@@ -96,6 +105,12 @@ func (f *fakeGH) setIssue(n int, i fakeIssue) {
 	}
 	f.issues[n] = i
 }
+
+func (f *fakeGH) reopen(n int) error {
+	f.reopened = append(f.reopened, n)
+	return nil
+}
+func (f *fakeGH) closingPR(n int) (closer, error) { return f.closers[n], nil }
 
 // call records one fake check invocation.
 type call struct {
@@ -175,6 +190,41 @@ func TestPRCheckRequiresAPlansClosures(t *testing.T) {
 		}
 	}
 	t.Fatal("pr-closes-issue was not run in check mode")
+}
+
+func TestPRCheckFailsOnAClosedIssuesUncheckedItems(t *testing.T) {
+	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(t.TempDir(), "summary.md"))
+	var calls []call
+	gh := &fakeGH{issues: map[int]fakeIssue{
+		20: {body: "- [x] done\n- [ ] write docs\n```\n- [ ] fenced example\n```\n- [ ] ship it"},
+		21: {body: "- [x] all done"},
+	}}
+	closes := map[string]string{"pr body": "[20,21]"}
+	ev := ghEvent{name: "pull_request", PullRequest: &target{Number: 9, Title: "feat: x", Body: "pr body"}}
+	if code := prCheck(ev, gh, fakeChecker(nil, closes, &calls)); code != 1 {
+		t.Fatalf("prCheck = %d, want 1", code)
+	}
+	summary, _ := os.ReadFile(os.Getenv("GITHUB_STEP_SUMMARY"))
+	for _, want := range []string{`#20, which has an unchecked item: "write docs"`, `#20, which has an unchecked item: "ship it"`} {
+		if !strings.Contains(string(summary), want) {
+			t.Errorf("summary missing %s: %q", want, summary)
+		}
+	}
+	for _, unwanted := range []string{"fenced example", "#21"} {
+		if strings.Contains(string(summary), unwanted) {
+			t.Errorf("summary names %s: %q", unwanted, summary)
+		}
+	}
+}
+
+func TestPRCheckPassesWhenClosedIssuesAreTicked(t *testing.T) {
+	t.Setenv("GITHUB_STEP_SUMMARY", "")
+	var calls []call
+	gh := &fakeGH{issues: map[int]fakeIssue{20: {body: "- [x] done\n```\n- [ ] fenced example\n```"}}}
+	ev := ghEvent{name: "pull_request", PullRequest: &target{Number: 9, Title: "feat: x", Body: "pr body"}}
+	if code := prCheck(ev, gh, fakeChecker(nil, map[string]string{"pr body": "[20]"}, &calls)); code != 0 {
+		t.Fatalf("prCheck = %d, want 0", code)
+	}
 }
 
 func TestPRCheckDispatchChecksEveryOpenPR(t *testing.T) {
@@ -377,5 +427,13 @@ func TestGHClientLive(t *testing.T) {
 	}
 	if _, err := gh.openPlans(); err != nil {
 		t.Errorf("openPlans: %v", err)
+	}
+	// #137 closed when PR #139 was squash-merged, so its closer is a commit.
+	if c, err := gh.closingPR(137); err != nil || c.Author == "" || c.Merger == "" {
+		t.Errorf("closingPR(137) = %+v, %v; want the PR's author and merger", c, err)
+	}
+	// #138 was closed by hand as not planned, so there is no closing PR.
+	if c, err := gh.closingPR(138); err != nil || c != (closer{}) {
+		t.Errorf("closingPR(138) = %+v, %v; want no PR", c, err)
 	}
 }

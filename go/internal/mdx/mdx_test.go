@@ -123,3 +123,11 @@ func TestWordCount(t *testing.T) {
 		})
 	}
 }
+
+func TestStripCode(t *testing.T) {
+	in := "Closes #1 and `Closes #2`.\n```\nCloses #3\n```\nFixes #4"
+	want := "Closes #1 and  .\n\n\n\nFixes #4"
+	if got := StripCode(in); got != want {
+		t.Errorf("StripCode = %q, want %q", got, want)
+	}
+}

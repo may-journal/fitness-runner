@@ -1,0 +1,25 @@
+name: Close check
+
+on:
+  issues:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  close-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - name: Build the checks
+        run: cd go && mkdir -p bin && go build -o bin ./cmd/...
+      - name: Reopen the issue if it closed with unchecked items
+        run: go/bin/fitness close-check
+        env:
+          GH_TOKEN: ${{ github.token }}

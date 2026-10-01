@@ -121,5 +121,6 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 | `fitness hook <name>` | Runs the commit-msg, pre-commit, or pre-push logic the shims call.                    | Hook logic lives in one place, not in each repo.      |
 | `fitness pr-check`    | Reads the Actions event, then checks a PR's title and body with the body-mode checks. | The PR check workflows run one step.                  |
 | `fitness plan-check`  | Checks a Plan issue's body, then comments the verdict once per body version.          | The plan check workflows run one step.                |
+| `fitness close-check` | Reopens an issue closed as completed with unchecked items, and comments once.         | The close check workflows run one step.               |
 
-The two workflow subcommands reach GitHub through the `gh` CLI, like the pre-push hook.
+The three workflow subcommands reach GitHub through the `gh` CLI, like the pre-push hook.

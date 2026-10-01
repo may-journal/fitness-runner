@@ -135,6 +135,12 @@ func NonFencedLines(content string) []TextLine {
 	return out
 }
 
+// StripCode returns content with fenced code blocks blanked and inline code
+// spans replaced by a space, so a scan for issue references sees only prose.
+func StripCode(content string) string {
+	return codeSpanRe.ReplaceAllString(strings.Join(blankFenced(content), "\n"), " ")
+}
+
 // blankFenced returns content's lines with every line inside a fenced code
 // block replaced by "" (line indices preserved). Fence detection mirrors
 // Fences: a block closes at the first line whose trimmed start begins with the
