@@ -12,10 +12,11 @@
 // @mayjournal/fitness-shared wins (the npm-era node_modules walk, mirroring
 // the TS resolveFitnessConfigPath), else the copy embedded in this binary is
 // materialized to the cache (internal/sharedconf). The shared config resolves
-// its two plugins with createRequire from its own location, so the
-// materialized copy only loads in repos where Node can reach those plugins —
-// installing them stays the check's peer contract, unchanged from the npm
-// era.
+// its two plugins with createRequire from its own location, which never has
+// them, so the check puts the repo's node_modules folders on NODE_PATH.
+// Installing the plugins stays the check's peer contract, unchanged from the
+// npm era. When Prettier fails without parsing a file, its own [error] lines
+// are reported, so a missing plugin names itself.
 package main
 
 import (
@@ -97,9 +98,13 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if !ok {
 		return checkkit.Pass(0), nil
 	}
-	exitCode, output := execPrettier(bin, root, prettierArgv(configPath, args, paths))
+	env := os.Environ()
+	if configPath != "" {
+		env = withNodePath(env, root)
+	}
+	exitCode, output := execPrettier(bin, root, env, prettierArgv(configPath, args, paths))
 	parsed := parsePrettierOutput(output)
-	return buildExecResult(exitCode, parsed, filesChecked(parsed, paths)), nil
+	return buildExecResult(exitCode, parsed, prettierErrors(output), filesChecked(parsed, paths)), nil
 }
 
 // walkUp calls fn on root (absolute) and each ancestor, returning fn's first
@@ -119,6 +124,43 @@ func walkUp(root string, fn func(dir string) string) string {
 		}
 		dir = parent
 	}
+}
+
+// nodeModulesDirs lists every node_modules folder from root up to the
+// filesystem root, nearest first, the same walk that finds the binary.
+func nodeModulesDirs(root string) []string {
+	var dirs []string
+	walkUp(root, func(dir string) string {
+		p := filepath.Join(dir, "node_modules")
+		if info, err := os.Stat(p); err == nil && info.IsDir() {
+			dirs = append(dirs, p)
+		}
+		return ""
+	})
+	return dirs
+}
+
+// withNodePath returns env with root's node_modules folders prepended to
+// NODE_PATH, so the shared config, materialized outside the repo, can load
+// the plugins the repo installs.
+func withNodePath(env []string, root string) []string {
+	dirs := nodeModulesDirs(root)
+	if len(dirs) == 0 {
+		return env
+	}
+	out := make([]string, 0, len(env)+1)
+	existing := ""
+	for _, kv := range env {
+		if v, ok := strings.CutPrefix(kv, "NODE_PATH="); ok {
+			existing = v
+			continue
+		}
+		out = append(out, kv)
+	}
+	if existing != "" {
+		dirs = append(dirs, existing)
+	}
+	return append(out, "NODE_PATH="+strings.Join(dirs, string(os.PathListSeparator)))
 }
 
 // resolvePrettierBin finds the Prettier executable: node_modules/.bin walking
@@ -242,9 +284,10 @@ func prettierArgv(configPath string, passthrough, paths []string) []string {
 // execPrettier runs the resolved binary in root; returns the exit code and
 // one combined stdout+stderr buffer, mirroring the TS execSyncResult (which
 // redirected with `2>&1`). A failure carrying no exit code maps to 1.
-func execPrettier(bin, root string, argv []string) (exitCode int, output string) {
+func execPrettier(bin, root string, env, argv []string) (exitCode int, output string) {
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
+	cmd.Env = env
 	var combined bytes.Buffer
 	cmd.Stdout = &combined
 	cmd.Stderr = &combined
@@ -271,6 +314,23 @@ func parsePrettierOutput(output string) []string {
 	return files
 }
 
+// maxPrettierErrors caps the [error] lines reported when Prettier fails
+// without parsing a file; the first few name the cause.
+const maxPrettierErrors = 5
+
+// prettierErrors returns Prettier's own [error] lines, up to
+// maxPrettierErrors, such as a plugin the shared config cannot load.
+func prettierErrors(output string) []string {
+	var errs []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "[error] ") && len(errs) < maxPrettierErrors {
+			errs = append(errs, line)
+		}
+	}
+	return errs
+}
+
 // filesChecked mirrors the TS getFilesChecked: error count when files
 // failed, 0 for the "." glob, else the staged-path count.
 func filesChecked(parsed, paths []string) int {
@@ -284,13 +344,14 @@ func filesChecked(parsed, paths []string) int {
 }
 
 // buildExecResult is the TS buildExecCheckResult: ok only on exit 0 with no
-// parsed errors; a failure that parsed nothing gets the fallback message.
-func buildExecResult(exitCode int, parsed []string, files int) checkkit.Result {
+// parsed errors; a failure that parsed nothing gets the fallback message,
+// followed by Prettier's own [error] lines when it printed any.
+func buildExecResult(exitCode int, parsed, prettierErrs []string, files int) checkkit.Result {
 	if exitCode == 0 && len(parsed) == 0 {
 		return checkkit.Pass(files)
 	}
 	if len(parsed) == 0 {
-		return checkkit.Fail(files, prettierFallbackMessage)
+		return checkkit.Fail(files, append([]string{prettierFallbackMessage}, prettierErrs...)...)
 	}
 	return checkkit.Fail(files, parsed...)
 }
