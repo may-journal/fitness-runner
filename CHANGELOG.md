@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.30.1916
+
+- Ci: `auto-merge.yml` acts as the `may-journal-automation` GitHub App, minting a one-hour token, instead of the bot's `AUTO_MERGE_TOKEN`.
+- Ci: it fails with a clear error when `AUTOMATION_APP_ID` or `AUTOMATION_APP_KEY` is missing.
+- Docs: the workflows README and adoption guide name the App and its two org secrets.
+
 ### 2026.09.30.1847
 
 - Feat: on a pull request in CI, `issue-link-once` judges every branch commit and fails a repeat link, in every repo.

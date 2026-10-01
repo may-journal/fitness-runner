@@ -4,8 +4,9 @@ name: Auto-merge
 # because this repo is public: public repos cannot run a private repo's
 # workflows, and private repos can run a public one's. It turns on squash
 # auto-merge for each ready pull request, so it merges once approved and
-# green. It uses the bot's AUTO_MERGE_TOKEN: GitHub starts no workflows from
-# GITHUB_TOKEN pushes, so merging with it would skip CI on main.
+# green. It acts as the may-journal-automation GitHub App, so the timeline
+# names automation rather than a person or Claude's bot. GitHub starts no
+# workflows from GITHUB_TOKEN pushes, so an App token keeps CI running on main.
 #
 # The ruleset starts it only on opened, reopened, and synchronize, whatever
 # types are listed. GitHub refuses auto-merge on a draft, so a draft marked
@@ -23,13 +24,25 @@ jobs:
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     steps:
+      - name: Check the App secrets
+        env:
+          APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
+          APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
+        run: |
+          for name in APP_ID APP_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::AUTOMATION_${name} is not available to this repo"
+              exit 1
+            fi
+          done
+      - name: Mint a one-hour App token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_KEY }}
       - name: Enable squash auto-merge
         env:
-          GH_TOKEN: ${{ secrets.AUTO_MERGE_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
-        run: |
-          if [ -z "$GH_TOKEN" ]; then
-            echo "::error::AUTO_MERGE_TOKEN is not available to this repo"
-            exit 1
-          fi
-          gh pr merge --auto --squash "$PR_URL"
+        run: gh pr merge --auto --squash "$PR_URL"
