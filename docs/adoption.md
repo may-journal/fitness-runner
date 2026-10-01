@@ -4,7 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 # Adoption
 
-Every may-journal repo runs the same checks by calling reusable workflows, not by copying them. This keeps repos current as the check set grows.
+Every may-journal repo runs the same checks by calling reusable workflows, which keeps repos current as checks grow.
 
 ## Reusable workflows
 
@@ -65,7 +65,9 @@ It reopens issues closed with unchecked items; `fitness pr-check` fails PRs clos
 
 ## Reusable CI
 
-`.github/workflows/ci.yml` (a Swift repo passes `swift: true`, which installs the Linux swiftlint build):
+Node repos get Node from `.nvmrc` and `npm ci` from the lockfile. SwiftLint is pinned by `swiftlint-version`; bump it with laptops.
+
+`.github/workflows/ci.yml` (a Swift repo passes `swift: true`, which installs the pinned SwiftLint):
 
 ```yaml
 name: CI
@@ -102,7 +104,7 @@ Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 
-An org-level required workflow can run the reusable `pr-check` across repos with no caller file at all. Point the ruleset at `pr-check-reusable.yml@main`; it carries a `pull_request` trigger so a required workflow can run it. The org `.github` repo supplies the Plan issue template and conventions by default.
+An org ruleset can run `pr-check-reusable.yml@main` in every repo with no caller file, since it carries a `pull_request` trigger. The org `.github` repo supplies the Plan issue template and conventions by default.
 
 The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
 
