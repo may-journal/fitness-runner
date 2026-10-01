@@ -8,7 +8,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, not b
 
 ## Reusable workflows
 
-fitness-runner publishes three `workflow_call` workflows: [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), and [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step: the file suite, `fitness pr-check`, or `fitness plan-check`. The install sets `GOPROXY=direct`, since the Go proxy can serve a stale `@main` after a merge. A consumer repo adds thin callers.
+fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml), and [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step. The install sets `GOPROXY=direct`, since the Go proxy can serve a stale `@main` after a merge. A consumer repo adds thin callers.
 
 `.github/workflows/pr-check.yml`:
 
@@ -43,6 +43,26 @@ jobs:
       issues: write
 ```
 
+## Closing issues
+
+may-journal/.github syncs this [close-check](../.github/workflows/README.md#close-check) caller into each repo:
+
+```yaml
+name: Close check
+on:
+  issues:
+    types: [closed]
+jobs:
+  close-check:
+    uses: may-journal/fitness-runner/.github/workflows/close-check-reusable.yml@main
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: read
+```
+
+It reopens issues closed with unchecked items; `fitness pr-check` fails PRs closing one.
+
 ## Reusable CI
 
 `.github/workflows/ci.yml` (a Swift repo passes `swift: true`, which installs the Linux swiftlint build):
@@ -61,7 +81,7 @@ jobs:
       swift: true
 ```
 
-A pull request checks only the files it changes, and the push to `main` after merge checks every file. An org ruleset makes this suite a required check, which the caller job reports as `fitness / fitness`. Add each new repo to [fitness-suite-required.json](https://github.com/may-journal/.github/blob/main/rulesets/fitness-suite-required.json) in may-journal/.github, or its suite stays optional.
+A pull request checks only the files it changes, and the push to `main` after merge checks every file. An org ruleset already runs this suite in every repo, so most repos need no caller.
 
 ## Version policy
 
@@ -86,7 +106,7 @@ An org-level required workflow can run the reusable `pr-check` across repos with
 
 The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
 
-A draft marked ready never starts it, so each repo adds this caller as `.github/workflows/auto-merge-on-ready.yml`:
+A draft marked ready never starts it, so may-journal/.github syncs this caller into each repo as `.github/workflows/auto-merge-on-ready.yml`:
 
 ```yaml
 name: Auto-merge on ready

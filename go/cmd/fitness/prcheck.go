@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/checklist"
 )
 
 // runPRCheck validates the triggering PR's title and description, or every
@@ -66,7 +68,8 @@ func prTargets(ev ghEvent, gh githubAPI) ([]target, error) {
 }
 
 // validatePR runs the PR checks: the title as a semantic-commit subject, the
-// description's structure, its closing keywords, and the prose checks.
+// description's structure, its closing keywords, the checklists of the issues
+// it closes, and the prose checks.
 func validatePR(t target, gh githubAPI, c bodyChecker) []string {
 	bodyFile, err := writeBody(t.Body)
 	if err != nil {
@@ -75,17 +78,53 @@ func validatePR(t target, gh githubAPI, c bodyChecker) []string {
 	defer os.Remove(bodyFile)
 	errs := c.errorsOf("semantic-commit", []string{"--message", t.Title}, "")
 	errs = append(errs, c.errorsOf("pr-structure", nil, t.Body)...)
-	errs = append(errs, c.errorsOf("pr-closes-issue", closesArgs(bodyFile, requiredClosures(c.closedIssues(bodyFile), gh, c)), "")...)
+	closed := closedIssueBodies(c.closedIssues(bodyFile), gh)
+	errs = append(errs, c.errorsOf("pr-closes-issue", closesArgs(bodyFile, requiredClosures(closed, c)), "")...)
+	errs = append(errs, uncheckedErrors(closed)...)
 	return append(errs, c.docErrors(bodyFile)...)
+}
+
+// linkedIssue is an issue the PR closes, as read from GitHub.
+type linkedIssue struct {
+	number int
+	body   string
+	labels []string
+}
+
+// closedIssueBodies reads each issue the PR closes once; an unreadable issue
+// is skipped.
+func closedIssueBodies(nums []int, gh githubAPI) []linkedIssue {
+	var issues []linkedIssue
+	for _, n := range nums {
+		body, labels, err := gh.issue(n)
+		if err != nil {
+			continue
+		}
+		issues = append(issues, linkedIssue{n, body, labels})
+	}
+	return issues
+}
+
+// uncheckedErrors names each unchecked item in an issue the PR closes, since
+// merging would close unfinished work.
+func uncheckedErrors(issues []linkedIssue) []string {
+	var errs []string
+	for _, i := range issues {
+		for _, item := range checklist.Unchecked(i.body) {
+			errs = append(errs, fmt.Sprintf(
+				"PR closes #%d, which has an unchecked item: %q — tick it once it is done, or stop closing #%d", i.number, item, i.number))
+		}
+	}
+	return errs
 }
 
 // requiredClosures returns the issues the PR must also close: for each Plan
 // the PR closes, the issues that Plan itself closes.
-func requiredClosures(prCloses []int, gh githubAPI, c bodyChecker) []int {
+func requiredClosures(closed []linkedIssue, c bodyChecker) []int {
 	var required []int
 	seen := map[int]bool{}
-	for _, n := range prCloses {
-		for _, m := range planCloses(n, gh, c) {
+	for _, i := range closed {
+		for _, m := range planCloses(i, c) {
 			if !seen[m] {
 				seen[m] = true
 				required = append(required, m)
@@ -95,14 +134,12 @@ func requiredClosures(prCloses []int, gh githubAPI, c bodyChecker) []int {
 	return required
 }
 
-// planCloses lists the issues that issue n closes when it is a Plan; nil for
-// a non-Plan or unreadable issue.
-func planCloses(n int, gh githubAPI, c bodyChecker) []int {
-	body, labels, err := gh.issue(n)
-	if err != nil || !hasLabel(labels, "Plan") {
+// planCloses lists the issues a Plan closes; nil for a non-Plan.
+func planCloses(i linkedIssue, c bodyChecker) []int {
+	if !hasLabel(i.labels, "Plan") {
 		return nil
 	}
-	planFile, err := writeBody(body)
+	planFile, err := writeBody(i.body)
 	if err != nil {
 		return nil
 	}
