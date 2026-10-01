@@ -17,5 +17,8 @@ Run `fitness prettier` from your app root to check formatting. Pass through args
 - In a scoped run: Only changed paths are checked, passing with 0 files when Prettier parses none.
 - Otherwise: Runs `prettier --check .` from repo root.
 - Config: Local project config if present; otherwise the shared prettier config resolved as above (no copy required in the consumer repo).
+- Plugins: the shared config loads `prettier-plugin-packagejson` and `prettier-plugin-sort-json`, so the repo installs both.
+- The check puts the repo's `node_modules` folders on `NODE_PATH`, where the shared config finds them.
+- When Prettier fails without naming a file, its own `[error]` lines follow the fallback message, such as a plugin it cannot load.
 
 Errors list file paths that need formatting.
