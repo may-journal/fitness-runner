@@ -354,3 +354,75 @@ func TestHasPrettierConfig(t *testing.T) {
 		})
 	}
 }
+
+// writePluginProbePrettier writes a fake Prettier that, like the real one with
+// the shared config, starts only when NODE_PATH reaches the packagejson plugin.
+func writePluginProbePrettier(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	script := "#!/bin/sh\n" +
+		"for d in $(echo \"$NODE_PATH\" | tr ':' ' '); do\n" +
+		"  if [ -d \"$d/prettier-plugin-packagejson\" ]; then echo 'All matched files use Prettier code style!'; exit 0; fi\n" +
+		"done\n" +
+		"echo \"[error] Cannot find module 'prettier-plugin-packagejson'\"\n" +
+		"exit 2\n"
+	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// TestSharedConfigFindsRepoPlugins covers a repo on the shared config: with
+// the plugins installed it passes, and without them Prettier's own error is
+// reported beside the fallback message.
+func TestSharedConfigFindsRepoPlugins(t *testing.T) {
+	t.Setenv("FITNESS_CHANGED_FILES", "")
+	t.Setenv("NODE_PATH", "")
+	t.Setenv("PATH", "/usr/bin:/bin")
+
+	installed := t.TempDir()
+	writeFiles(t, installed, map[string]string{
+		"package.json": "{}",
+		"node_modules/prettier-plugin-packagejson/package.json": "{}",
+	})
+	writePluginProbePrettier(t, filepath.Join(installed, "node_modules", ".bin", "prettier"))
+	if res, err := run(installed, nil); err != nil || !res.Ok {
+		t.Fatalf("plugins installed: want pass, got %+v, %v", res, err)
+	}
+
+	missing := t.TempDir()
+	writeFiles(t, missing, map[string]string{"package.json": "{}"})
+	writePluginProbePrettier(t, filepath.Join(missing, "node_modules", ".bin", "prettier"))
+	res, err := run(missing, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{prettierFallbackMessage, "[error] Cannot find module 'prettier-plugin-packagejson'"}
+	if res.Ok || !reflect.DeepEqual(res.Errors, want) {
+		t.Fatalf("plugins missing: errors = %v, want %v", res.Errors, want)
+	}
+}
+
+func TestWithNodePath(t *testing.T) {
+	root := t.TempDir()
+	writeFiles(t, root, map[string]string{"node_modules/x/package.json": "{}"})
+	nm := filepath.Join(root, "node_modules")
+	if abs, err := filepath.EvalSymlinks(nm); err == nil {
+		nm = abs
+	}
+	got := withNodePath([]string{"A=1", "NODE_PATH=/elsewhere"}, root)
+	last := got[len(got)-1]
+	if !strings.HasPrefix(last, "NODE_PATH=") || !strings.HasSuffix(last, string(os.PathListSeparator)+"/elsewhere") {
+		t.Fatalf("NODE_PATH = %q, want the repo's node_modules first and /elsewhere kept", last)
+	}
+	if first := strings.Split(strings.TrimPrefix(last, "NODE_PATH="), string(os.PathListSeparator))[0]; !strings.HasSuffix(first, "node_modules") {
+		t.Fatalf("first NODE_PATH entry = %q, want a node_modules folder", first)
+	}
+	if got[0] != "A=1" || len(got) != 2 {
+		t.Fatalf("env = %v, want A=1 kept and one NODE_PATH", got)
+	}
+	if empty := withNodePath([]string{"A=1"}, t.TempDir()); len(empty) != 1 {
+		t.Fatalf("no node_modules: env = %v, want unchanged", empty)
+	}
+}

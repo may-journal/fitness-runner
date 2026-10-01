@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.09.30.2301
+
+- Fix: the prettier check puts the repo's `node_modules` folders on `NODE_PATH`, so the shared config loads the plugins the repo installs.
+- Fix: when Prettier fails without naming a file, the check reports its own `[error]` lines, such as a plugin it cannot load.
+- Test: cover a repo on the shared config with the plugins installed, one missing them, and how `NODE_PATH` is built.
+- Docs: the prettier README says which two plugins a repo installs.
+
 ### 2026.09.30.1928
 
 - Fix: `pr-closes-issue` skips closing keywords inside inline or fenced code, since they quote an example rather than close an issue.
