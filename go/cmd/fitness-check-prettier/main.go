@@ -266,6 +266,8 @@ func pathsToCheck(root string, staged []string) []string {
 // prettierArgv builds Prettier's argv: --config when a shared config applies,
 // then either the passthrough args verbatim (no --check) or --check plus the
 // paths ("." when the filtered list is empty) — the TS buildPrettierCmd order.
+// --ignore-unknown passes a file Prettier has no parser for, such as a staged
+// Swift source, instead of failing the run.
 func prettierArgv(configPath string, passthrough, paths []string) []string {
 	var argv []string
 	if configPath != "" {
@@ -274,7 +276,7 @@ func prettierArgv(configPath string, passthrough, paths []string) []string {
 	if len(passthrough) > 0 {
 		return append(argv, passthrough...)
 	}
-	argv = append(argv, "--check")
+	argv = append(argv, "--check", "--ignore-unknown")
 	if len(paths) == 0 {
 		return append(argv, ".")
 	}

@@ -98,7 +98,7 @@ func TestRun(t *testing.T) {
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 0,
-			wantArgv:  []string{"--check", "."},
+			wantArgv:  []string{"--check", "--ignore-unknown", "."},
 		},
 		{
 			name:      "installed shared config wins when consumer has none",
@@ -106,14 +106,14 @@ func TestRun(t *testing.T) {
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 0,
-			wantArgv:  []string{"--config", sharedCfgToken, "--check", "."},
+			wantArgv:  []string{"--config", sharedCfgToken, "--check", "--ignore-unknown", "."},
 		},
 		{
 			name:      "embedded config materializes when nothing is installed",
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 0,
-			wantArgv:  []string{"--config", embeddedCfgToken, "--check", "."},
+			wantArgv:  []string{"--config", embeddedCfgToken, "--check", "--ignore-unknown", "."},
 		},
 		{
 			name:      "consumer package.json prettier field suppresses shared config",
@@ -122,7 +122,7 @@ func TestRun(t *testing.T) {
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 0,
-			wantArgv:  []string{"--check", "."},
+			wantArgv:  []string{"--check", "--ignore-unknown", "."},
 		},
 		{
 			name:  "warn lines become per-file errors",
@@ -133,7 +133,7 @@ func TestRun(t *testing.T) {
 			wantOk:     false,
 			wantErrors: []string{"src/foo.ts"},
 			wantFiles:  1,
-			wantArgv:   []string{"--check", "."},
+			wantArgv:   []string{"--check", "--ignore-unknown", "."},
 		},
 		{
 			name:       "fallback message when non-zero exit parses nothing",
@@ -143,7 +143,7 @@ func TestRun(t *testing.T) {
 			wantOk:     false,
 			wantErrors: []string{prettierFallbackMessage},
 			wantFiles:  0,
-			wantArgv:   []string{"--check", "."},
+			wantArgv:   []string{"--check", "--ignore-unknown", "."},
 		},
 		{
 			name: "staged paths pass through the skip filters",
@@ -162,7 +162,7 @@ func TestRun(t *testing.T) {
 			output:    cleanOutput,
 			wantOk:    true,
 			wantFiles: 2,
-			wantArgv:  []string{"--check", "bar.ts", "packages/a.ts"},
+			wantArgv:  []string{"--check", "--ignore-unknown", "bar.ts", "packages/a.ts"},
 		},
 		{
 			name:      "changed list filtered to nothing skips prettier",
@@ -294,8 +294,8 @@ func TestNodeModulesBinPreferredOverPath(t *testing.T) {
 	if !res.Ok {
 		t.Fatalf("expected node_modules/.bin fake to run and pass, got %+v", res)
 	}
-	if got := recordedArgv(t, local); !reflect.DeepEqual(got, []string{"--check", "."}) {
-		t.Fatalf("argv = %v, want [--check .]", got)
+	if got := recordedArgv(t, local); !reflect.DeepEqual(got, []string{"--check", "--ignore-unknown", "."}) {
+		t.Fatalf("argv = %v, want [--check --ignore-unknown .]", got)
 	}
 }
 

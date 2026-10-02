@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.01.2305
+
+- Fix: the prettier check runs Prettier with `--ignore-unknown`, so a changed file it has no parser for, such as Swift, passes.
+- Test: the prettier argv tests expect `--check --ignore-unknown` before the paths.
+- Docs: the prettier README says a file type with no parser passes through `--ignore-unknown`.
+
 ### 2026.10.01.1602
 
 - Ci: `ci-reusable` sets up Node from `.nvmrc` and runs `npm ci` when a repo has them, so Node repos run their own tools.
