@@ -13,6 +13,10 @@ on:
         description: Install swiftlint (a Swift repo needs it). Linux runners get the official Linux build.
         type: boolean
         default: false
+      swiftlint-version:
+        description: SwiftLint release to install on every runner, so CI and laptops lint alike.
+        type: string
+        default: 0.65.1
       ref:
         description: fitness-runner ref to install the checks from.
         type: string
@@ -33,6 +37,16 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: stable
+      # Node repos: the prettier, vitest, node-version, and dependency-currency
+      # checks run the repo's own installed tools, as on a laptop.
+      - name: Set up Node from .nvmrc
+        if: ${{ hashFiles('.nvmrc') != '' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Install npm packages
+        if: ${{ hashFiles('package-lock.json') != '' }}
+        run: npm ci
       - name: Install the fitness checks
         env:
           # Resolve the ref against GitHub, not proxy.golang.org, which caches
@@ -41,16 +55,16 @@ jobs:
         run: |
           go install github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-      - name: Install swiftlint (macOS)
-        if: ${{ inputs.swift && runner.os == 'macOS' }}
-        run: command -v swiftlint >/dev/null 2>&1 || brew install swiftlint
-      - name: Install swiftlint (Linux)
-        if: ${{ inputs.swift && runner.os == 'Linux' }}
+      # One pinned SwiftLint everywhere: "latest" let a release add a rule
+      # overnight that laptops had never seen.
+      - name: Install swiftlint
+        if: ${{ inputs.swift }}
         env:
-          ARCH: ${{ runner.arch == 'ARM64' && 'arm64' || 'amd64' }}
+          VERSION: ${{ inputs.swiftlint-version }}
+          ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}
         run: |
           curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" \
-            "https://github.com/realm/SwiftLint/releases/latest/download/swiftlint_linux_${ARCH}.zip"
+            "https://github.com/realm/SwiftLint/releases/download/${VERSION}/${ASSET}.zip"
           unzip -q -o "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
           chmod +x "$RUNNER_TEMP/swiftlint/swiftlint"
           echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"

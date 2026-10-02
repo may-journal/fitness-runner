@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.01.1602
+
+- Ci: `ci-reusable` sets up Node from `.nvmrc` and runs `npm ci` when a repo has them, so Node repos run their own tools.
+- Ci: SwiftLint is pinned to 0.65.1 on macOS and Linux through a `swiftlint-version` input, instead of whatever is latest.
+- Docs: the adoption guide says how Node repos are set up and how to move SwiftLint forward.
+
 ### 2026.09.30.2301
 
 - Fix: the prettier check puts the repo's `node_modules` folders on `NODE_PATH`, so the shared config loads the plugins the repo installs.
