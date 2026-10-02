@@ -34,14 +34,23 @@ func TestBulletCountBounds(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			errs := judge(doc(tc.bullets...))
-			if tc.wantErr == "" && len(errs) != 0 {
-				t.Fatalf("want pass, got %v", errs)
-			}
-			if tc.wantErr != "" && (len(errs) == 0 || !strings.Contains(errs[0], tc.wantErr)) {
-				t.Fatalf("want %q, got %v", tc.wantErr, errs)
-			}
+			expectFirstError(t, judge(doc(tc.bullets...)), tc.wantErr)
 		})
+	}
+}
+
+// expectFirstError checks errs is empty when want is empty, else that the
+// first error contains want.
+func expectFirstError(t *testing.T, errs []string, want string) {
+	t.Helper()
+	if want == "" {
+		if len(errs) != 0 {
+			t.Fatalf("want pass, got %v", errs)
+		}
+		return
+	}
+	if len(errs) == 0 || !strings.Contains(errs[0], want) {
+		t.Fatalf("want %q, got %v", want, errs)
 	}
 }
 
@@ -70,13 +79,16 @@ func TestContinuationLinesCountTowardLength(t *testing.T) {
 	}
 }
 
-func TestSemanticTypePrefix(t *testing.T) {
+func TestSemanticTypePrefixAccepts(t *testing.T) {
 	for _, good := range []string{"Feat: x", "Fix: x", "Docs: x", "Style: x", "Refactor: x", "Perf: x", "Test: x", "Build: x", "Ci: x", "Chore: x", "Revert: x",
 		"feat: x", "fix(release): x", "chore(ci)!: x", "docs!: x"} {
 		if errs := judge(doc(good, "Fix: b", "Docs: c")); len(errs) != 0 {
 			t.Fatalf("%q must pass: %v", good, errs)
 		}
 	}
+}
+
+func TestSemanticTypePrefixRejects(t *testing.T) {
 	for _, bad := range []string{"Added something", "Feature: wrong word", "Feat:no space", "feat(scope):no space", "Feat(scope): capitalized scope", "feat(): empty scope", "FEAT: shouting"} {
 		errs := judge(doc(bad, "Fix: b", "Docs: c"))
 		if len(errs) != 1 || !strings.Contains(errs[0], "must start with a semantic type") {
@@ -98,15 +110,18 @@ func TestEverySectionIsJudged(t *testing.T) {
 
 func TestRunFileHandling(t *testing.T) {
 	dir := t.TempDir()
-	res, err := run(dir, nil)
-	if err != nil || !res.Ok || res.FilesChecked != 0 {
-		t.Fatalf("missing changelog passes with 0 files: %+v %v", res, err)
-	}
+	expectPassingRun(t, dir, 0, "missing changelog passes with 0 files")
 	if err := os.WriteFile(filepath.Join(dir, "CHANGELOG.md"), []byte(doc(ok3()...)), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	res, err = run(dir, nil)
-	if err != nil || !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("valid changelog passes with 1 file: %+v %v", res, err)
+	expectPassingRun(t, dir, 1, "valid changelog passes with 1 file")
+}
+
+// expectPassingRun runs the check on dir and requires a pass over wantFiles files.
+func expectPassingRun(t *testing.T, dir string, wantFiles int, message string) {
+	t.Helper()
+	res, err := run(dir, nil)
+	if err != nil || !res.Ok || res.FilesChecked != wantFiles {
+		t.Fatalf("%s: %+v %v", message, res, err)
 	}
 }

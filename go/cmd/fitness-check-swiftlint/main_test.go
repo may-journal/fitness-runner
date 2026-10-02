@@ -3,9 +3,12 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 const passOutput = "[\n\n]\n"
@@ -83,23 +86,15 @@ func TestRunJudgment(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fakeSwiftlint(t, tc.output, tc.exitCode)
-			res, err := run(swiftRoot(t), nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			res := runClean(t, swiftRoot(t))
 			if res.Ok != tc.ok {
 				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
 			}
 			if res.FilesChecked != 0 {
 				t.Fatalf("filesChecked = %d, want 0", res.FilesChecked)
 			}
-			if len(res.Errors) != len(tc.wantErrors) {
-				t.Fatalf("errors = %v, want %v", res.Errors, tc.wantErrors)
-			}
-			for i, want := range tc.wantErrors {
-				if res.Errors[i] != want {
-					t.Fatalf("error[%d] = %q, want %q", i, res.Errors[i], want)
-				}
+			if !slices.Equal(res.Errors, tc.wantErrors) {
+				t.Fatalf("errors = %q, want %q", res.Errors, tc.wantErrors)
 			}
 		})
 	}
@@ -108,38 +103,26 @@ func TestRunJudgment(t *testing.T) {
 func TestRunInvocation(t *testing.T) {
 	callFile := fakeSwiftlint(t, passOutput, 0)
 	root := swiftRoot(t)
-	if _, err := run(root, nil); err != nil {
-		t.Fatal(err)
-	}
+	runClean(t, root)
 	recorded, err := os.ReadFile(callFile)
 	if err != nil {
 		t.Fatal(err)
-	}
-	lines := strings.Split(strings.TrimRight(string(recorded), "\n"), "\n")
-	wantArgs := []string{"lint", "--strict", "--reporter", "json", "--quiet", "."}
-	if len(lines) != len(wantArgs)+1 {
-		t.Fatalf("recorded lines = %v, want %d args + cwd", lines, len(wantArgs))
-	}
-	for i, want := range wantArgs {
-		if lines[i] != want {
-			t.Fatalf("arg[%d] = %q, want %q", i, lines[i], want)
-		}
 	}
 	wantCwd, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if lines[len(lines)-1] != wantCwd {
-		t.Fatalf("cwd = %q, want %q", lines[len(lines)-1], wantCwd)
+	// One line per argument, then the working directory.
+	lines := strings.Split(strings.TrimRight(string(recorded), "\n"), "\n")
+	want := []string{"lint", "--strict", "--reporter", "json", "--quiet", ".", wantCwd}
+	if !slices.Equal(lines, want) {
+		t.Fatalf("recorded args + cwd = %q, want %q", lines, want)
 	}
 }
 
 func TestRunMissingBinary(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	res, err := run(swiftRoot(t), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, swiftRoot(t))
 	if res.Ok || res.FilesChecked != 0 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
@@ -152,14 +135,21 @@ func TestRunMissingBinary(t *testing.T) {
 // no .swift files passes clean without invoking swiftlint at all.
 func TestRunSkipsWhenNoSwiftFiles(t *testing.T) {
 	t.Setenv("PATH", t.TempDir())
-	res, err := run(t.TempDir(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, t.TempDir())
 	if !res.Ok || res.FilesChecked != 0 {
 		t.Fatalf("no-Swift repo must skip clean: %+v", res)
 	}
 	if len(res.Errors) != 0 {
 		t.Fatalf("errors = %v, want none", res.Errors)
 	}
+}
+
+// runClean runs the check on root, failing on a run error.
+func runClean(t *testing.T, root string) checkkit.Result {
+	t.Helper()
+	res, err := run(root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
 }

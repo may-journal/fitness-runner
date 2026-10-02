@@ -1,20 +1,4 @@
 {
-  "ignorePaths": [
-    "node_modules",
-    "dist",
-    "**/coverage/**",
-    "coverage",
-    ".git",
-    "githooks",
-    "package-lock.json",
-    "**/*.test.ts",
-    "**/*.test.mjs",
-    "**/cspell.json",
-    ".gitignore",
-    "tsconfig.json",
-    "go/internal/spell/dict"
-  ],
-  "useGitignore": true,
   "version": "0.2",
   "words": [
     "basenames",
@@ -97,6 +81,18 @@
     "wordlist",
     "flaggable",
     "LSTMs",
-    "WRONLY"
+    "WRONLY",
+    "asmo",
+    "fatalerror",
+    "gecos",
+    "globalrcs",
+    "jitless",
+    "largepages",
+    "lttng",
+    "napi",
+    "nodedir",
+    "noprofile",
+    "norc",
+    "rcfile"
   ]
 }

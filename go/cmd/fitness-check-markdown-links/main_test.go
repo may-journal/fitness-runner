@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 func repo(t *testing.T) string {
@@ -77,21 +79,32 @@ func TestLinkResolution(t *testing.T) {
 
 func TestRunEndToEnd(t *testing.T) {
 	dir := repo(t)
-	if err := os.WriteFile(filepath.Join(dir, "ok.md"), []byte("[t](target.md)"), 0o644); err != nil {
+	res := writeAndRun(t, dir, "ok.md", "[t](target.md)")
+	expectCounts(t, res, true, 4, 0, "clean repo")
+	res = writeAndRun(t, dir, "bad.md", "[t](gone.md)")
+	expectCounts(t, res, false, 5, 1, "one broken link expected")
+	if !strings.Contains(res.Errors[0], "bad.md:1: broken relative link: gone.md") {
+		t.Fatalf("error format: %v", res.Errors)
+	}
+}
+
+// writeAndRun adds one file to dir and runs the check.
+func writeAndRun(t *testing.T, dir, name, content string) checkkit.Result {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	res, err := run(dir, nil)
-	if err != nil || !res.Ok || res.FilesChecked != 4 {
-		t.Fatalf("clean repo: %+v %v", res, err)
+	if err != nil {
+		t.Fatalf("%s: %v", name, err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "bad.md"), []byte("[t](gone.md)"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(dir, nil)
-	if err != nil || res.Ok || res.FilesChecked != 5 || len(res.Errors) != 1 {
-		t.Fatalf("one broken link expected: %+v %v", res, err)
-	}
-	if !strings.Contains(res.Errors[0], "bad.md:1: broken relative link: gone.md") {
-		t.Fatalf("error format: %v", res.Errors)
+	return res
+}
+
+// expectCounts requires the verdict, file count and error count.
+func expectCounts(t *testing.T, res checkkit.Result, ok bool, files, errorCount int, label string) {
+	t.Helper()
+	if res.Ok != ok || res.FilesChecked != files || len(res.Errors) != errorCount {
+		t.Fatalf("%s: %+v", label, res)
 	}
 }

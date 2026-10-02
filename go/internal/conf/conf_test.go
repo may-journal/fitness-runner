@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -14,26 +15,27 @@ func TestLoadMissingIsNil(t *testing.T) {
 	}
 }
 
+// writeConfigFile writes content to dir/name, failing the test on error.
+func writeConfigFile(t *testing.T, dir, name, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestLoadParsesKeys(t *testing.T) {
 	dir := t.TempDir()
 	content := `{
   "checks": ["changelog"],
   "disabledChecks": ["cspell"],
-  "ignore": ["profile/README.md"],
-  "skipTheseDirectories": ["vendor"],
   "repeatedStringLiterals": {"allow": ["dist"]}
 }`
-	if err := os.WriteFile(filepath.Join(dir, FileName), []byte(content), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeConfigFile(t, dir, FileName, content)
 	cfg, err := Load(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(cfg.LegacyChecks) != 1 || cfg.Ignore[0] != "profile/README.md" {
-		t.Fatalf("legacy checks %v, ignore %v", cfg.LegacyChecks, cfg.Ignore)
-	}
-	if cfg.DisabledChecks[0] != "cspell" || cfg.SkipTheseDirectories[0] != "vendor" {
+	if len(cfg.LegacyChecks) != 1 || cfg.DisabledChecks[0] != "cspell" {
 		t.Fatalf("cfg: %+v", cfg)
 	}
 	if cfg.RepeatedStringLiterals.Allow[0] != "dist" {
@@ -43,9 +45,7 @@ func TestLoadParsesKeys(t *testing.T) {
 
 func TestLoadLegacyConfigErrors(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, ".fitnessrc.js"), []byte("module.exports={}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeConfigFile(t, dir, ".fitnessrc.js", "module.exports={}")
 	_, err := Load(dir)
 	if !errors.Is(err, ErrLegacyConfig) {
 		t.Fatalf("want ErrLegacyConfig, got %v", err)
@@ -54,12 +54,8 @@ func TestLoadLegacyConfigErrors(t *testing.T) {
 
 func TestLoadJSONWinsOverLegacy(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, ".fitnessrc.js"), []byte("x"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, FileName), []byte(`{"checks":["a"]}`), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeConfigFile(t, dir, ".fitnessrc.js", "x")
+	writeConfigFile(t, dir, FileName, `{"checks":["a"]}`)
 	cfg, err := Load(dir)
 	if err != nil || cfg == nil || cfg.LegacyChecks[0] != "a" {
 		t.Fatalf("got %+v, %v", cfg, err)
@@ -68,10 +64,32 @@ func TestLoadJSONWinsOverLegacy(t *testing.T) {
 
 func TestLoadInvalidJSONErrors(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, FileName), []byte("{nope"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeConfigFile(t, dir, FileName, "{nope")
 	if _, err := Load(dir); err == nil {
 		t.Fatal("invalid JSON must error")
+	}
+}
+
+func TestLoadRejectsRetiredKeys(t *testing.T) {
+	cases := []struct {
+		name, content, want string
+	}{
+		{"ignore", `{"ignore": ["x"]}`, `sets "ignore"; `},
+		{"skip dirs", `{"skipTheseDirectories": []}`, `sets "skipTheseDirectories"; `},
+		{"exempt", `{"proseBudget": {"maxWords": 9, "exempt": ["a.md"]}}`, `sets "proseBudget.exempt"; `},
+		{"all three", `{"ignore": [], "skipTheseDirectories": [], "proseBudget": {"exempt": []}}`,
+			`sets "ignore", "skipTheseDirectories", "proseBudget.exempt"; `},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := os.WriteFile(filepath.Join(dir, FileName), []byte(tc.content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			_, err := Load(dir)
+			if err == nil || !strings.Contains(err.Error(), tc.want) {
+				t.Fatalf("err = %v, want it to contain %q", err, tc.want)
+			}
+		})
 	}
 }

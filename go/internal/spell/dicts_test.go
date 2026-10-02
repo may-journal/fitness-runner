@@ -38,15 +38,16 @@ func TestEmbeddedWords(t *testing.T) {
 		"the", "fitness", "typescript", "readme", "changelog", "goroutine",
 		"npm", "don't", "prettier-plugin-packagejson",
 	}
-	for _, w := range present {
-		if !embeddedBase.Lookup(w) {
-			t.Errorf("expected embedded word %q", w)
-		}
-	}
-	absent := []string{"borwn", "", "# comment"}
-	for _, w := range absent {
-		if embeddedBase.Lookup(w) {
-			t.Errorf("did not expect embedded word %q", w)
+	assertLookup(t, present, true)
+	assertLookup(t, []string{"borwn", "", "# comment"}, false)
+}
+
+// assertLookup checks each word's embedded membership is want.
+func assertLookup(t *testing.T, words []string, want bool) {
+	t.Helper()
+	for _, w := range words {
+		if got := embeddedBase.Lookup(w); got != want {
+			t.Errorf("embedded Lookup(%q) = %v, want %v", w, got, want)
 		}
 	}
 }
@@ -66,6 +67,21 @@ func TestEmbeddedWordsFeedChecker(t *testing.T) {
 // on disk: a new wordlist added under dict/ without a matching //go:embed
 // would otherwise silently vanish from the dictionary.
 func TestEmbeddedDictNames(t *testing.T) {
+	onDisk := dictFilesOnDisk(t)
+	for _, ed := range embeddedDicts {
+		if !onDisk[ed.name] {
+			t.Errorf("embedded %q has no dict/*.txt on disk", ed.name)
+		}
+		delete(onDisk, ed.name)
+	}
+	for name := range onDisk {
+		t.Errorf("dict/%s on disk but not embedded", name)
+	}
+}
+
+// dictFilesOnDisk returns the set of dict/*.txt file names.
+func dictFilesOnDisk(t *testing.T) map[string]bool {
+	t.Helper()
 	entries, err := os.ReadDir("dict")
 	if err != nil {
 		t.Fatalf("reading dict dir: %v", err)
@@ -76,15 +92,7 @@ func TestEmbeddedDictNames(t *testing.T) {
 			onDisk[e.Name()] = true
 		}
 	}
-	for _, ed := range embeddedDicts {
-		if !onDisk[ed.name] {
-			t.Errorf("embedded %q has no dict/*.txt on disk", ed.name)
-		}
-		delete(onDisk, ed.name)
-	}
-	for name := range onDisk {
-		t.Errorf("dict/%s on disk but not embedded", name)
-	}
+	return onDisk
 }
 
 // TestEmbeddedDictsSearchable verifies the shape searchLines depends on:
@@ -118,12 +126,18 @@ func checkBodyLine(t *testing.T, i int, prev, line string, last bool) {
 	if line == "" && last {
 		return // the final "" after a trailing newline
 	}
-	if line == "" || strings.HasPrefix(line, "#") || line != strings.TrimSpace(line) {
+	if !isSearchableLine(line) {
 		t.Fatalf("line %d: unsearchable body line %q", i+1, line)
 	}
 	if line < prev {
 		t.Fatalf("line %d: %q sorts before %q — not byte-wise sorted", i+1, line, prev)
 	}
+}
+
+// isSearchableLine reports whether a body line is a non-empty, non-comment
+// word with no surrounding whitespace.
+func isSearchableLine(line string) bool {
+	return line != "" && !strings.HasPrefix(line, "#") && line == strings.TrimSpace(line)
 }
 
 // TestEmbeddedLookupDifferential sweeps the new binary-search Lookup against

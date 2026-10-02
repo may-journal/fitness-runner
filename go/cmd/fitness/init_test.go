@@ -25,6 +25,20 @@ func TestEmbeddedHooks(t *testing.T) {
 	}
 }
 
+// assertHooksExecutable checks every hook is written under dir and executable.
+func assertHooksExecutable(t *testing.T, dir string) {
+	t.Helper()
+	for _, name := range hooks.Names {
+		info, err := os.Stat(filepath.Join(dir, ".githooks", name))
+		if err != nil {
+			t.Fatalf("missing hook %s: %v", name, err)
+		}
+		if info.Mode().Perm()&0o100 == 0 {
+			t.Errorf("%s is not executable (%v)", name, info.Mode())
+		}
+	}
+}
+
 func TestInstallHooks(t *testing.T) {
 	dir := t.TempDir()
 	git := func(args ...string) {
@@ -40,16 +54,7 @@ func TestInstallHooks(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Every hook is written and executable.
-	for _, name := range hooks.Names {
-		info, err := os.Stat(filepath.Join(dir, ".githooks", name))
-		if err != nil {
-			t.Fatalf("missing hook %s: %v", name, err)
-		}
-		if info.Mode().Perm()&0o100 == 0 {
-			t.Errorf("%s is not executable (%v)", name, info.Mode())
-		}
-	}
+	assertHooksExecutable(t, dir)
 
 	// git now points at .githooks.
 	out, err := exec.Command("git", "-C", dir, "config", "core.hooksPath").Output()

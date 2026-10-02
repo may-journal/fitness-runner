@@ -6,9 +6,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
 )
 
@@ -37,64 +39,99 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
+// result is the verdict a case expects: ok, files checked, and the leading
+// error lines.
+type result struct {
+	ok         bool
+	checked    int
+	wantErrors []string
+}
+
+// assertResult compares a run's verdict with want.
+func assertResult(t *testing.T, res checkkit.Result, err error, want result) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok != want.ok || res.FilesChecked != want.checked {
+		t.Fatalf("ok=%v files=%d, want ok=%v files=%d (errors: %v)",
+			res.Ok, res.FilesChecked, want.ok, want.checked, res.Errors)
+	}
+	assertLeadingErrors(t, res.Errors, want.wantErrors)
+}
+
+// assertLeadingErrors checks that got starts with want, in order.
+func assertLeadingErrors(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) < len(want) || !slices.Equal(got[:len(want)], want) {
+		t.Fatalf("errors = %v, want them to start with %v", got, want)
+	}
+}
+
+// runCase writes files into a fresh root, sets the changed-file scope, and
+// runs the check there.
+func runCase(t *testing.T, files map[string]string, staged []string) (checkkit.Result, error) {
+	t.Helper()
+	root := t.TempDir()
+	for rel, content := range files {
+		write(t, root, rel, content)
+	}
+	setStaged(t, staged...)
+	return run(root, nil)
+}
+
 func TestStagedMode(t *testing.T) {
 	cases := []struct {
-		name       string
-		files      map[string]string
-		staged     []string
-		ok         bool
-		checked    int
-		wantErrors []string
+		name   string
+		files  map[string]string
+		staged []string
+		want   result
 	}{
 		{
-			name:    "always-ignored basenames and missing files drop to a clean empty run",
-			files:   map[string]string{".gitignore": "borwn\n", "tsconfig.json": "{", "package-lock.json": "{"},
-			staged:  []string{".gitignore", "tsconfig.json", "package-lock.json", "missing.md"},
-			ok:      true,
-			checked: 0,
+			name:   "missing files drop to a clean empty run",
+			staged: []string{"missing.md"},
+			want:   result{ok: true},
 		},
 		{
-			name:    "clean staged file passes",
-			files:   map[string]string{"docs.md": "clean readable words\n"},
-			staged:  []string{"docs.md"},
-			ok:      true,
-			checked: 1,
+			name:   "clean staged file passes",
+			files:  map[string]string{"docs.md": "clean readable words\n"},
+			staged: []string{"docs.md"},
+			want:   result{ok: true, checked: 1},
 		},
 		{
-			name:    "misspelling fails with cspell's error format",
-			files:   map[string]string{"sub/s.md": "good words\nteh quik borwn fox\n"},
-			staged:  []string{"sub/s.md"},
-			ok:      false,
-			checked: 1,
-			wantErrors: []string{
+			name:   "misspelling fails with cspell's error format",
+			files:  map[string]string{"sub/s.md": "good words\nteh quik borwn fox\n"},
+			staged: []string{"sub/s.md"},
+			want: result{checked: 1, wantErrors: []string{
 				"sub/s.md:2:5 - Unknown word (quik)",
 				"sub/s.md:2:10 - Unknown word (borwn)",
+			}},
+		},
+		{
+			name:   "project words win over the base dictionaries",
+			files:  map[string]string{"cspell.json": `{"words":["borwn"]}`, "s.md": "borwn fox\n"},
+			staged: []string{"s.md"},
+			want:   result{ok: true, checked: 1},
+		},
+		{
+			name:   "binary staged file is counted but never spelled",
+			files:  map[string]string{"blob.bin": "xqzzt\x00vbnmm"},
+			staged: []string{"blob.bin"},
+			want:   result{ok: true, checked: 1},
+		},
+		{
+			name: "lock, ignore, and dictionary files are spelled like any other",
+			files: map[string]string{
+				".gitignore":                      "borwn\n",
+				"package-lock.json":               `{"name":"zzzqqqv"}`,
+				"go/internal/spell/dict/node.txt": "skipdir\n",
 			},
-		},
-		{
-			name:    "project words win over the base dictionaries",
-			files:   map[string]string{"cspell.json": `{"words":["borwn"]}`, "s.md": "borwn fox\n"},
-			staged:  []string{"s.md"},
-			ok:      true,
-			checked: 1,
-		},
-		{
-			name:    "binary staged file is counted but never spelled",
-			files:   map[string]string{"blob.bin": "xqzzt\x00vbnmm"},
-			staged:  []string{"blob.bin"},
-			ok:      true,
-			checked: 1,
-		},
-		{
-			// The embedded shared cspell.json ignores go/internal/spell/dict;
-			// staged mode must honor ignorePaths so a staged dictionary source
-			// file is never spell-checked. The fixture content would fail if
-			// scanned (zzzqqqv), proving the skip rather than a clean pass.
-			name:    "staged file under an ignorePaths directory is skipped",
-			files:   map[string]string{"go/internal/spell/dict/node.txt": "zzzqqqv\n"},
-			staged:  []string{"go/internal/spell/dict/node.txt"},
-			ok:      true,
-			checked: 0,
+			staged: []string{".gitignore", "go/internal/spell/dict/node.txt", "package-lock.json"},
+			want: result{checked: 3, wantErrors: []string{
+				".gitignore:1:1 - Unknown word (borwn)",
+				"go/internal/spell/dict/node.txt:1:1 - Unknown word (skipdir)",
+				"package-lock.json:1:10 - Unknown word (zzzqqqv)",
+			}},
 		},
 		{
 			name: "mixed source shapes stay clean",
@@ -103,31 +140,14 @@ func TestStagedMode(t *testing.T) {
 				"index.ts":     "export const camelCaseName = { enabled: true };\n",
 				"package.json": `{"name":"fixture","scripts":{"test":"vitest run"}}`,
 			},
-			staged:  []string{"main.go", "index.ts", "package.json"},
-			ok:      true,
-			checked: 3,
+			staged: []string{"main.go", "index.ts", "package.json"},
+			want:   result{ok: true, checked: 3},
 		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := t.TempDir()
-			for rel, content := range tc.files {
-				write(t, root, rel, content)
-			}
-			setStaged(t, tc.staged...)
-			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok || res.FilesChecked != tc.checked {
-				t.Fatalf("ok=%v files=%d, want ok=%v files=%d (errors: %v)",
-					res.Ok, res.FilesChecked, tc.ok, tc.checked, res.Errors)
-			}
-			for i, want := range tc.wantErrors {
-				if i >= len(res.Errors) || res.Errors[i] != want {
-					t.Fatalf("errors = %v, want %v", res.Errors, tc.wantErrors)
-				}
-			}
+			res, err := runCase(t, tc.files, tc.staged)
+			assertResult(t, res, err, tc.want)
 		})
 	}
 }
@@ -145,74 +165,73 @@ func writeBody(t *testing.T, content string) string {
 // spell-checked with config resolved from root, so a project word declared in
 // the root's cspell.json is accepted while genuine misspellings fail. Using a
 // temp-dir cspell.json keeps the test independent of any checkout path.
+// "borwn" is unknown to the base dictionaries; accepting it proves the
+// project cspell.json resolved from root.
 func TestBodyMode(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "cspell.json", `{"words":["borwn"]}`)
-
-	bad := writeBody(t, "teh mispeled wrod in the description\n")
-	if res, err := run(root, []string{"--body-file", bad}); err != nil || res.Ok || len(res.Errors) == 0 {
-		t.Fatalf("expected misspellings flagged, got %+v err %v", res, err)
+	cases := []struct {
+		name, body string
+		want       result
+	}{
+		{"misspellings flagged", "teh mispeled wrod in the description\n",
+			result{checked: 1, wantErrors: []string{"(description):1:5 - Unknown word (mispeled)"}}},
+		{"project word accepted via root config", "The borwn value is intentional here.\n", result{ok: true, checked: 1}},
+		{"clean pass", "This describes a clean readable change to the project.\n", result{ok: true, checked: 1}},
 	}
-
-	// "borwn" is unknown to the base dictionaries; accepting it proves the
-	// project cspell.json resolved from root.
-	proj := writeBody(t, "The borwn value is intentional here.\n")
-	if res, err := run(root, []string{"--body-file", proj}); err != nil || !res.Ok {
-		t.Fatalf("expected project word accepted via root config, got %+v err %v", res, err)
-	}
-
-	clean := writeBody(t, "This describes a clean readable change to the project.\n")
-	if res, err := run(root, []string{"--body-file", clean}); err != nil || !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("expected clean pass with 1 file, got %+v err %v", res, err)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := run(root, []string{"--body-file", writeBody(t, tc.body)})
+			assertResult(t, res, err, tc.want)
+		})
 	}
 }
 
-func TestGlobModeWalksIgnorePathsAndSorts(t *testing.T) {
-	root := t.TempDir()
-	write(t, root, "cspell.json", `{"words":["borwn"],"ignorePaths":["skipdir","**/*.test.md"]}`)
-	write(t, root, "README.md", "borwn is a project word\n")
-	write(t, root, "b-docs/inner.md", "teh quik fox\n")
-	write(t, root, "a.test.md", "zzzqqqv misspelled but ignored\n")
-	write(t, root, "skipdir/skipped.md", "zzzqqqv misspelled but ignored\n")
-	write(t, root, "node_modules/pkg/vendored.md", "zzzqqqv always ignored\n")
-	write(t, root, "notes.txt", "not markdown zzzqqqv\n")
-	setStaged(t)
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok || res.FilesChecked != 2 {
-		t.Fatalf("ok=%v files=%d, want fail with 2 files (errors: %v)", res.Ok, res.FilesChecked, res.Errors)
-	}
-	want := []string{"b-docs/inner.md:1:5 - Unknown word (quik)"}
-	if len(res.Errors) != 1 || res.Errors[0] != want[0] {
-		t.Fatalf("errors = %v, want %v", res.Errors, want)
+func git(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
 	}
 }
 
-func TestGlobModeUsesGitignore(t *testing.T) {
+// TestUnscopedModeChecksEveryTrackedFile proves the unscoped run spells
+// every tracked file of any type, gitignored or under node_modules, and
+// leaves out only untracked files and those marked linguist-generated.
+func TestUnscopedModeChecksEveryTrackedFile(t *testing.T) {
 	root := t.TempDir()
-	for _, args := range [][]string{{"init", "-q"}} {
-		cmd := exec.Command("git", args...)
-		cmd.Dir = root
-		if out, err := cmd.CombinedOutput(); err != nil {
-			t.Skipf("git unavailable: %v (%s)", err, out)
-		}
+	git(t, root, "init", "-q")
+	files := map[string]string{
+		".gitignore":                   "generated/\n",
+		".gitattributes":               "*.lock linguist-generated\n",
+		"deps/pkg.lock":                "zzzqqqv\n",
+		"README.md":                    "clean words\n",
+		"b-docs/inner.md":              "teh quik fox\n",
+		"generated/out.md":             "borwn\n",
+		"node_modules/pkg/vendored.md": "skipdir\n",
+		"notes.txt":                    "vbnmm\n",
+		"untracked.md":                 "xqzzt\n",
 	}
-	write(t, root, "cspell.json", `{"useGitignore":true,"ignorePaths":[]}`)
-	write(t, root, ".gitignore", "generated/\n")
-	write(t, root, "kept.md", "teh quik fox\n")
-	write(t, root, "generated/out.md", "zzzqqqv would fail if scanned\n")
+	for rel, content := range files {
+		write(t, root, rel, content)
+	}
+	git(t, root, "add", "-f", ".gitignore", ".gitattributes", "deps", "README.md", "b-docs", "generated", "node_modules", "notes.txt")
 	setStaged(t)
 	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.FilesChecked != 1 {
-		t.Fatalf("filesChecked = %d, want 1 (gitignored dir excluded); errors: %v", res.FilesChecked, res.Errors)
-	}
-	if res.Ok || !strings.Contains(res.Errors[0], "Unknown word (quik)") {
-		t.Fatalf("expected quik flagged in kept.md, got %v", res.Errors)
+	assertResult(t, res, err, result{checked: 7, wantErrors: []string{
+		"b-docs/inner.md:1:5 - Unknown word (quik)",
+		"generated/out.md:1:1 - Unknown word (borwn)",
+		"node_modules/pkg/vendored.md:1:1 - Unknown word (skipdir)",
+		"notes.txt:1:1 - Unknown word (vbnmm)",
+	}})
+}
+
+func TestIgnorePathsFails(t *testing.T) {
+	for _, config := range []string{`{"ignorePaths":["skipdir"]}`, `{"ignorePaths":[]}`} {
+		res, err := runCase(t, map[string]string{"cspell.json": config, "a.md": "clean words\n"}, nil)
+		assertResult(t, res, err, result{wantErrors: []string{
+			"cspell.json sets ignorePaths; cspell checks every tracked file, so remove ignorePaths and fix the findings instead",
+		}})
 	}
 }
 
@@ -226,7 +245,7 @@ func TestConfigResolution(t *testing.T) {
 		root := t.TempDir()
 		write(t, root, installedCspellJSON, shared)
 		write(t, root, "doc.md", "zzzqqqv allowed by shared config\n")
-		setStaged(t)
+		setStaged(t, "doc.md")
 		res, err := run(root, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -240,7 +259,7 @@ func TestConfigResolution(t *testing.T) {
 		write(t, root, "cspell.json", `{"words":[]}`)
 		write(t, root, installedCspellJSON, shared)
 		write(t, root, "doc.md", "zzzqqqv no longer allowed\n")
-		setStaged(t)
+		setStaged(t, "doc.md")
 		res, err := run(root, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -258,7 +277,7 @@ func TestConfigResolution(t *testing.T) {
 		}
 		root := t.TempDir()
 		write(t, root, "doc.md", "mayjournal is allowed by the embedded shared config\n")
-		setStaged(t)
+		setStaged(t, "doc.md")
 		res, err := run(root, nil)
 		if err != nil {
 			t.Fatal(err)
@@ -270,7 +289,7 @@ func TestConfigResolution(t *testing.T) {
 	t.Run("embedded fallback still flags real misspellings", func(t *testing.T) {
 		root := t.TempDir()
 		write(t, root, "doc.md", "teh quik borwn fox\n")
-		setStaged(t)
+		setStaged(t, "doc.md")
 		res, err := run(root, nil)
 		if err != nil {
 			t.Fatal(err)

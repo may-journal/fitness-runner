@@ -6,8 +6,10 @@ package conf
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // Config is the shape of .fitnessrc.json.
@@ -17,12 +19,6 @@ type Config struct {
 	LegacyChecks []string `json:"checks"`
 	// DisabledChecks turns off checks by name for this repo.
 	DisabledChecks []string `json:"disabledChecks"`
-	// Ignore lists glob patterns (gitignore-like: a bare name matches at any
-	// depth, "**" crosses directories, a matched directory hides everything
-	// beneath it) for paths every file check skips.
-	Ignore []string `json:"ignore"`
-	// SkipTheseDirectories overrides the walker's skip-dir set.
-	SkipTheseDirectories []string `json:"skipTheseDirectories"`
 	// RepeatedStringLiterals holds options for that check.
 	RepeatedStringLiterals struct {
 		Allow []string `json:"allow"`
@@ -37,18 +33,15 @@ type Config struct {
 		MaxLix   float64 `json:"maxLix"`
 		MinWords int     `json:"minWords"`
 	} `json:"textReadability"`
-	// ProseBudget holds the prose-budget check's hard caps and exempt paths.
-	// Each limit falls back to a built-in default when zero; Exempt entries
-	// (an exact path or a `dir/**` prefix) union with the built-in
-	// CHANGELOG.md exemption.
+	// ProseBudget holds the prose-budget check's hard caps. Each limit falls
+	// back to a built-in default when zero.
 	ProseBudget struct {
-		MaxSentenceWords      int      `json:"maxSentenceWords"`
-		MaxParagraphSentences int      `json:"maxParagraphSentences"`
-		MaxSectionParagraphs  int      `json:"maxSectionParagraphs"`
-		MaxListItemWords      int      `json:"maxListItemWords"`
-		MaxListItems          int      `json:"maxListItems"`
-		MaxWords              int      `json:"maxWords"`
-		Exempt                []string `json:"exempt"`
+		MaxSentenceWords      int `json:"maxSentenceWords"`
+		MaxParagraphSentences int `json:"maxParagraphSentences"`
+		MaxSectionParagraphs  int `json:"maxSectionParagraphs"`
+		MaxListItemWords      int `json:"maxListItemWords"`
+		MaxListItems          int `json:"maxListItems"`
+		MaxWords              int `json:"maxWords"`
 	} `json:"proseBudget"`
 }
 
@@ -65,7 +58,8 @@ var ErrLegacyConfig = errors.New(
 
 // Load reads root's config. A missing file returns (nil, nil): the caller
 // falls back to the default check list. A legacy JS/TS config with no JSON
-// config returns ErrLegacyConfig.
+// config returns ErrLegacyConfig. A config that still sets a retired
+// exclusion key returns an error naming each one.
 func Load(root string) (*Config, error) {
 	raw, err := os.ReadFile(filepath.Join(root, FileName))
 	if err != nil {
@@ -75,7 +69,46 @@ func Load(root string) (*Config, error) {
 	if err := json.Unmarshal(raw, &c); err != nil {
 		return nil, err
 	}
+	if retired := retiredKeys(raw); len(retired) > 0 {
+		return nil, fmt.Errorf("%s sets %s; every check now judges every tracked file, so remove %s and fix the findings instead",
+			FileName, strings.Join(retired, ", "), pronoun(len(retired)))
+	}
 	return &c, nil
+}
+
+// retiredKeys names the exclusion keys raw still sets, in a fixed order:
+// top-level ignore and skipTheseDirectories, and proseBudget.exempt.
+func retiredKeys(raw []byte) []string {
+	var top struct {
+		Ignore      json.RawMessage `json:"ignore"`
+		SkipDirs    json.RawMessage `json:"skipTheseDirectories"`
+		ProseBudget struct {
+			Exempt json.RawMessage `json:"exempt"`
+		} `json:"proseBudget"`
+	}
+	_ = json.Unmarshal(raw, &top) // raw already parsed as a Config
+	var names []string
+	for _, k := range []struct {
+		name string
+		val  json.RawMessage
+	}{
+		{"ignore", top.Ignore},
+		{"skipTheseDirectories", top.SkipDirs},
+		{"proseBudget.exempt", top.ProseBudget.Exempt},
+	} {
+		if k.val != nil {
+			names = append(names, `"`+k.name+`"`)
+		}
+	}
+	return names
+}
+
+// pronoun picks "it" or "them" for the retired-key error.
+func pronoun(n int) string {
+	if n == 1 {
+		return "it"
+	}
+	return "them"
 }
 
 // missingConfigErr maps a failed .fitnessrc.json read to Load's error: a

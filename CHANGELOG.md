@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.01.2331
+
+- Feat: every check judges every tracked file through `git ls-files`; only untracked files, symlinks, and `linguist-generated` files for cspell and jscpd stay out.
+- Feat: a repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, cspell `ignorePaths`, or `.prettierignore` fails instead of skipping files.
+- Feat: prose-budget caps prose words per section instead of per file; older `CHANGELOG.md` bullets are reworded to fit.
+- Feat: tests, Markdown, and JSON lose their exemptions, and `markdown-front-matter` reads front matter inside an HTML comment.
+- Test: every test function over complexity 5 is table-driven or uses helpers; each check README and `docs/checks.md` describe the rules.
+
 ### 2026.10.01.2305
 
 - Fix: the prettier check runs Prettier with `--ignore-unknown`, so a changed file it has no parser for, such as Swift, passes.
@@ -173,7 +181,7 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.09.28.0919
 
 - Fix: `fitness hook pre-push` gates only commits not yet on origin, so merging main into a branch no longer blocks on main's own commits.
-- Fix: the pre-push gate treats merge commits as exempt, like chore and docs; the commits a merge brings in are gated on their own.
+- Fix: the pre-push gate exempts merge commits, like chore and docs; the commits a merge brings in are gated on their own.
 - Test: cover the pre-push range against a real repo with main merged into a pushed branch.
 
 ### 2026.09.27.1429
@@ -186,49 +194,51 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.09.27.1341
 
-- Feat: add `fitness init` — install the shared may-journal git hooks (commit-msg, pre-commit, pre-push) into `.githooks` and set `core.hooksPath`, so a repo pulls them by version instead of copying.
-- Feat: embed the canonical consumer hooks in the module; they call the installed `fitness` binary, and pre-commit runs a repo's `.githooks/pre-commit.local` for its own build and tests.
-- Feat: publish a reusable `ci-reusable.yml` that owns the whole file-suite build — runner OS, Go setup, the `fitness` install, and swiftlint — so a repo's `ci.yml` is a thin caller.
+- Feat: add `fitness init`, which installs the shared commit-msg, pre-commit, and pre-push hooks into `.githooks` and sets `core.hooksPath`, so repos pull them by version.
+- Feat: embed the canonical consumer hooks in the module; they call `fitness`, and pre-commit runs a repo's `.githooks/pre-commit.local` for its build and tests.
+- Feat: publish a reusable `ci-reusable.yml` that owns the file-suite build, so a repo's `ci.yml` is a thin caller.
+- Feat: `ci-reusable.yml` covers the runner OS, Go setup, the `fitness` install, and swiftlint.
 - Docs: document `fitness init` and the reusable CI caller in `docs/adoption.md`.
 
 ### 2026.09.27.1306
 
-- Feat: both reporters now lead with a headline — checks passed of total, files scanned, and total time — with positive confirmation on an all-green run.
-- Feat: the terminal total line reads "✓ All N checks passed · F files scanned · Tms" on green, and names the passed and failed counts otherwise.
-- Feat: tighten the terminal table — one rule under the header and contiguous rows, so passing checks stay compact and failures stand out with their error block.
+- Feat: both reporters lead with a headline of checks passed of total, files scanned, and total time, confirming an all-green run.
+- Feat: the terminal total line reads "✓ All N checks passed · F files scanned · Tms" on green, and names passed and failed counts otherwise.
+- Feat: tighten the terminal table to one rule under the header and contiguous rows, so passes stay compact and failures stand out.
 - Test: cover the headline in the green and failing cases, and the updated total line.
 
 ### 2026.09.27.1224
 
-- Feat: `fitness` writes a GitHub Actions job summary — a check, status, files, and time table plus each failing check's errors — so the PR checks page shows results without opening the logs.
-- Feat: emit `::error` annotations for failing checks, parsing the file and line from the error strings, capped at ten per step with a note in the summary when more exist.
+- Feat: `fitness` writes a GitHub Actions job summary: a check, status, files, and time table plus each failure's errors, readable without the logs.
+- Feat: emit `::error` annotations, parsing file and line from each error, capped at ten per step; the summary notes any more.
 - Feat: gate the CI output behind the `GITHUB_ACTIONS` env, so a local run's terminal output is unchanged.
 - Test: cover the summary markdown, annotation formatting and file/line parsing, the cap-and-note behavior, and escaping.
 
 ### 2026.09.27.1155
 
-- Feat: add the `no-contrastive-reframing` check — it flags the "not X, it's Y" pattern in markdown prose, where a sentence rejects a claim then restates the real point.
-- Feat: match the split form ("It's not a workout. It's a lifestyle.") and the single-sentence form, gated on a demonstrative opening to favor precision over recall.
+- Feat: add the `no-contrastive-reframing` check; it flags markdown prose that rejects a claim, then restates the point: "not X, it's Y".
+- Feat: match the split form ("It's not a workout. It's a lifestyle.") and the single-sentence form, gated on a demonstrative opening for precision.
 - Feat: reuse the `mdx` prose masking and drop quoted spans, so fenced code, headings, inline code, and quoted examples never trip it.
 - Test: cover both forms, curly quotes, cross-paragraph splits, ordinary negations, the additive "not only X but also Y", and the masking exemptions.
 
 ### 2026.09.27.1116
 
-- Feat: add the `doc-template` check — a `template.md` or `*.template.md` file defines a document's sections, and every markdown file in its folder or a descendant must match, via the shared `mdtemplate` engine.
-- Feat: require every `##` section of a template, including the `.github` PR and Issue templates, to carry a guiding HTML comment; the nearest template above a file wins.
-- Feat: add `mdtemplate` `SpecFromTemplate`, `MissingCommentSections`, and a `NoPitch` spec option, so a pitch-less file reuses the section rules that Issue and PR bodies use.
+- Feat: add the `doc-template` check: a `template.md` or `*.template.md` defines a document's sections, and every markdown file in its folder tree must match.
+- Feat: each template `##` section, `.github` PR and Issue templates included, needs a guiding HTML comment; the nearest template above a file wins.
+- Feat: add `mdtemplate` `SpecFromTemplate`, `MissingCommentSections`, and a `NoPitch` option, so a pitch-less file reuses the section rules of Issue and PR bodies.
 - Docs: adopt the shared ADR `template.md`, fold ADR 0002's supersede note from Status into Context, and list the check in `docs/checks.md`.
 
 ### 2026.09.26.2235
 
-- Feat: `semantic-commit` accepts an explicit `--message`, resolved before the `FITNESS_CTX_MESSAGE` and HEAD-message fallbacks, so it can validate a bare subject like a PR title.
-- Feat: the `pr-check` workflows run `semantic-commit` on the PR title, so a non-semantic title no longer lands as a bad commit subject on `main` at squash-merge.
+- Feat: `semantic-commit` accepts an explicit `--message`, ahead of the `FITNESS_CTX_MESSAGE` and HEAD fallbacks, so it can validate a subject like a PR title.
+- Feat: the `pr-check` workflows run `semantic-commit` on the PR title, so a non-semantic title never becomes a bad squash-merge subject on `main`.
 - Test: cover the `--message` path passing and failing a title without touching git.
 
 ### 2026.09.26.1912
 
-- Feat: language checks self-gate — `eslint`, `prettier`, `no-eslint-disable`, `node-version`, the vitest coverage checks, and `swiftlint` skip (pass, zero files) when the repo has no `package.json` or no Swift, so a repo no longer disables the checks that do not apply.
-- Feat: make the runner's default the full self-gating catalog, so Swift, Go, JS, and docs repos share one list and a repo needs no `.fitnessrc.json` for the common case; the strict, network, format-specific, and workflow-body checks stay opt-in.
+- Feat: language checks self-gate: `eslint`, `prettier`, `no-eslint-disable`, `node-version`, vitest coverage checks, and `swiftlint` pass on zero files without `package.json` or Swift.
+- Feat: the runner's default is the full self-gating catalog, so Swift, Go, JS, and docs repos share one list without a `.fitnessrc.json`.
+- Feat: the strict, network, format-specific, and workflow-body checks stay opt-in.
 - Test: cover each check skipping on a repo without its language, and seed a marker file so the tool-missing failure paths still run.
 - Docs: note self-gating and the new default in `docs/checks.md`.
 
@@ -241,81 +251,86 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.09.26.1741
 
 - Fix: give `pr-check-reusable` `pull_request` and `workflow_dispatch` triggers so an org ruleset can require it; a `workflow_call`-only workflow was rejected as a required workflow.
-- Fix: fall back to `@latest` when no `inputs.ref` is passed (the required-workflow path passes none), and skip the job in fitness-runner, which runs its own build-from-source pr-check.
+- Fix: fall back to `@latest` when no `inputs.ref` is passed, as on the required-workflow path.
+- Fix: skip the job in fitness-runner, which runs its own build-from-source pr-check.
 - Docs: note in `docs/adoption.md` that the reusable pr-check doubles as an org required workflow.
 
 ### 2026.09.26.1703
 
-- Feat: publish reusable `pr-check` and `plan-check` workflows (`workflow_call`) that install the checks and validate a calling repo's PR or Plan bodies, so a repo adopts by calling them instead of copying the logic.
+- Feat: publish reusable `pr-check` and `plan-check` workflows (`workflow_call`) that install the checks and validate a calling repo's PR or Plan bodies.
+- Feat: a repo adopts them by calling the workflows instead of copying the logic.
 - Docs: add `docs/adoption.md` — the reusable-workflow callers, the version policy, and the org-wide rollout path (org required workflow plus the org `.github` repo).
-- Chore: fitness-runner keeps its own `pr-check` and `plan-check` building from source, so it still tests its own unreleased changes while other repos call the reusable workflows.
+- Chore: fitness-runner keeps its own `pr-check` and `plan-check` built from source, so it tests its unreleased changes while others call the reusable ones.
 
 ### 2026.09.26.1611
 
-- Feat: `pr-closes-issue` now also fails a PR that closes a `Plan` without closing the issue that Plan solves, so an underlying bug or feature no longer stays open after the Plan closes (#77).
-- Feat: add a `--emit-closed` mode that prints a body's closing-keyword targets as JSON, and a `--require-close` flag the check verifies; `pr-check` reads each closed Plan's targets through `--emit-closed`, so one keyword set governs both sides.
-- Docs: adopt the convention in `AGENTS.md` — a Plan names the issue it solves with a closing keyword — and document the third rule in the `pr-closes-issue` README.
+- Feat: `pr-closes-issue` also fails a PR that closes a `Plan` but not the issue the Plan solves, which would stay open (#77).
+- Feat: add `--emit-closed`, which prints a body's closing-keyword targets as JSON, and a `--require-close` flag the check verifies.
+- Feat: `pr-check` reads each closed Plan's targets through `--emit-closed`, so one keyword set governs both sides.
+- Docs: `AGENTS.md` says a Plan names the issue it solves with a closing keyword, and the `pr-closes-issue` README documents the third rule.
 - Test: cover `--require-close` (required issue closed, left open, and empty) and `--require-close` argument parsing.
 
 ### 2026.09.26.1033
 
-- Docs: drop the hardcoded "31 checks" count from the C4 architecture docs, referencing the `fitness-check-*` set relatively so the number stops drifting as checks are added.
-- Docs: model body mode — the containers diagram gains the `plan-check` and `pr-check` workflows running check binaries against a description, and the components doc gains a body-mode section.
+- Docs: drop the hardcoded "31 checks" count from the C4 architecture docs, naming the `fitness-check-*` set so the number stops drifting.
+- Docs: the containers diagram adds `plan-check` and `pr-check` workflows running checks on a description; the components doc gains a body-mode section.
 - Docs: relativize the remaining fixed check counts in `distribution.md` and `checks.md`.
 
 ### 2026.09.26.0032
 
-- Fix: `changelog-updated` goes inert during a merge, cherry-pick, or revert, so a replay commit's historical `### yyyy.mm.dd.HHMM` headings no longer read as new and fail pre-commit.
-- Feat: detect the replay via `MERGE_HEAD`, `CHERRY_PICK_HEAD`, or `REVERT_HEAD`, resolved with `git rev-parse --git-path` so it holds when `.git` is a file, not a directory; exposed as an injectable seam.
+- Fix: `changelog-updated` goes inert during a merge, cherry-pick, or revert, so a replay commit's old `### yyyy.mm.dd.HHMM` headings no longer fail pre-commit.
+- Feat: detect replays via `MERGE_HEAD`, `CHERRY_PICK_HEAD`, or `REVERT_HEAD`, resolved with `git rev-parse --git-path` so it works when `.git` is a file, behind an injectable seam.
 - Test: cover the seam in both directions and a real-git `MERGE_HEAD` case; document the inert-during-replay behavior in the check README.
 
 ### 2026.09.25.2046
 
-- Feat: lint Issue and PR descriptions with the prose and markdown checks, not just structure — `prose-budget`, `text-readability`, `markdown-no-bold-italic`, the mermaid family, and `cspell` now run against the body in the `plan-check` and `pr-check` workflows.
-- Feat: add a `bodycheck.RunDoc` body mode that runs a check's per-document rule on an explicit `--body-file` document, with config resolved from `--root`; ambient stdin never triggers it, so the file-walking suite is unchanged.
-- Feat: bring the `prose-budget` default limits down about 25% — words per sentence 30 to 23, sentences per paragraph 5 to 4, paragraphs per section 4 to 3, words per list item 30 to 23, items per list 10 to 8, and total prose words per file 400 to 300.
-- Chore: tighten every markdown file the repo lints to the lowered budget, splitting long sentences, paragraphs, sections, and lists rather than loosening any limit.
+- Feat: lint Issue and PR descriptions beyond structure, with `prose-budget`, `text-readability`, `markdown-no-bold-italic`, the mermaid family, and `cspell` in the `plan-check` and `pr-check` workflows.
+- Feat: add a `bodycheck.RunDoc` mode that runs a check's per-document rule on a `--body-file`, with config from `--root`; stdin never triggers it.
+- Feat: cut `prose-budget` defaults ~25%: sentence words 30→23, paragraph sentences 5→4, section paragraphs 4→3, item words 30→23, list items 10→8, file words 400→300.
+- Chore: tighten every markdown file the repo lints to the lowered budget, splitting long sentences, paragraphs, sections, and lists instead of loosening limits.
 - Docs: note description linting in `docs/checks.md` and update the `prose-budget` README limit table.
 
 ### 2026.09.25.1458
 
-- Feat: add the `pr-closes-issue` check — every PR must close at least one issue on merge with a GitHub closing keyword (`close`/`fix`/`resolve` and their tenses), so merged work never leaves its issue open.
-- Feat: fail a PR that only references issues (`addresses`, `part of`, a bare `#NN`) or names none, with no chore or docs exemption; also fail any `Implements #NN` (or `Plan #NN`) the body does not close.
-- Test: cover each closing verb and tense, references-only, no-issue, implements-without-closure, multiple implemented with one unclosed, and a plan line with and without a closure.
+- Feat: add the `pr-closes-issue` check: every PR must close an issue on merge with a GitHub closing keyword (`close`/`fix`/`resolve`, any tense).
+- Feat: fail a PR that only references issues (`addresses`, `part of`, a bare `#NN`) or names none, with no chore or docs exemption.
+- Feat: also fail any `Implements #NN` or `Plan #NN` the body does not close.
+- Test: cover each closing verb and tense, references-only, no-issue, implements-without-closure, multiple implemented with one unclosed, and a plan line with or without closure.
 - Docs: wire the check into `.github/workflows/pr-check.yml` beside `pr-structure`, add its README, and list it in `docs/checks.md`.
 
 ### 2026.09.25.1434
 
-- Feat: add the `mermaid-diagram-table-gap` check — it flags loose markdown prose between a numbered mermaid diagram (or its legend) and the callout table that follows, keeping the table the single home for detail.
-- Feat: allow the one caption line (opens with `Numbers`, states they `match the callout table`) and leave prose before the diagram or after the table alone, so only the diagram-to-table gap is policed.
-- Test: cover prose after the diagram and after the legend, the caption-only case, varied and trailing-clause captions, prose before the diagram, and trailing prose after the table.
-- Docs: add the check README, bump the mermaid family count in `docs/checks.md` and the `internal/mermaid` package doc, and enable the check in this repo's `.fitnessrc.json`.
+- Feat: add the `mermaid-diagram-table-gap` check; it flags loose prose between a numbered mermaid diagram or its legend and the callout table after it.
+- Feat: allow one caption line (opens with `Numbers`, states they `match the callout table`); prose before the diagram or after the table is left alone.
+- Test: cover prose after the diagram or legend, caption-only, varied and trailing-clause captions, prose before the diagram, and prose after the table.
+- Docs: add the check README, bump the mermaid family count in `docs/checks.md` and the `internal/mermaid` doc, and enable the check in `.fitnessrc.json`.
 
 ### 2026.09.24.1558
 
-- Feat: add the `no-plans-dir` check — fails when any file exists under `docs/plans/`, guarding the plans-to-Issues migration; it is in the suite, so pre-commit catches a stray plan file.
-- Feat: add the `plan-trailer` check — validates an optional `Plan #NN` commit trailer (a plan reference, if present, must read exactly `Plan #<number>`); the commit-msg hook runs it beside `semantic-commit`.
-- Feat: add a `pre-push` git hook that blocks a push unless the pushed commits trace to an approved `Plan` Issue (resolved via `gh`), with a chore and docs-only escape hatch.
+- Feat: add the `no-plans-dir` check: any file under `docs/plans/` fails, guarding the plans-to-Issues migration; pre-commit catches a stray plan file.
+- Feat: add the `plan-trailer` check: an optional commit trailer referencing a plan must read exactly `Plan #<number>`; the commit-msg hook runs it.
+- Feat: add a `pre-push` hook: a push needs commits tracing to an approved `Plan` Issue via `gh`, except chore and docs-only pushes.
 - Docs: document the hook set in the README Git hooks section and `AGENTS.md`, and add the two checks to the catalog.
 
 ### 2026.09.24.1517
 
-- Chore: relax the plan approval gate — `AGENTS.md` now accepts any clear approval comment (`I approve this plan`, `Approved`, or a comment containing `approve`), not only the exact phrase.
+- Chore: relax the plan approval gate: `AGENTS.md` accepts any clear approval comment (`I approve this plan`, `Approved`, or one containing `approve`), not just the exact phrase.
 - Docs: spell out the accepted approval forms in the Approval gate section so the rule is unambiguous for agents and humans.
 - Docs: align the pending git-hooks plan (issue #63) to enforce the same looser, case-insensitive approval match.
 
 ### 2026.09.24.1456
 
-- Feat: add the `prose-budget` check — a hard-cap brevity linter for markdown prose. Masking out front matter, fenced code, tables, and headings, it enforces six limits: words per sentence, sentences per paragraph, paragraphs per section, words per list item, items per list, and total prose words per file, each overridable in `.fitnessrc.json`.
-- Refactor: move the prose extraction, word count, sentence splitter, and inline masking into `go/internal/mdx` (`Prose`, `WordCount`, `Sentences`, `MaskInline`, `StripFrontMatter`); `text-readability` now builds on them with no change in behavior.
+- Feat: add the `prose-budget` check, a hard-cap brevity linter for markdown prose that masks front matter, fenced code, tables, and headings.
+- Feat: its limits on sentence and item words, paragraph sentences, section paragraphs, list items, and file words are each overridable in `.fitnessrc.json`.
+- Refactor: move prose extraction, word count, sentence splitter, and inline masking into `go/internal/mdx` (`Prose`, `WordCount`, `Sentences`, `MaskInline`, `StripFrontMatter`); `text-readability` builds on them unchanged.
 - Chore: enable `prose-budget` on this repo with only the built-in `CHANGELOG.md` exemption, holding every markdown file to the budget.
-- Docs: split the top-level README and the prose-cognitive-complexity research essay into focused sub-docs under `docs/`, and tighten wordy sentences and list items across the check READMEs, so the whole tree conforms.
+- Docs: split the top-level README and the prose-cognitive-complexity essay into focused docs under `docs/`, and tighten wordy check READMEs, so the tree conforms.
 
 ### 2026.09.24.0000
 
-- Feat: add the `pr-structure` check — validates a pull request description against the PR template (a blockquote summary, `## Background`, and `## Changelog` with at least one bullet, and no other sections), reading the body from stdin, `--body-file`, or the context-inline `--body`, and passing inert with no input.
-- Feat: add `.github/PULL_REQUEST_TEMPLATE.md` and `.github/workflows/pr-check.yml` — on `pull_request` events it validates the description, on `workflow_dispatch` it sweeps every open PR; it fails the run as a status check and writes violations to the GitHub Step Summary rather than commenting, since a PR already has a check surface.
-- Refactor: extract the shared template validation into `go/internal/mdtemplate` and the body resolution into `go/internal/bodycheck`; `plan-structure` now builds on both with no change in behavior.
+- Feat: add the `pr-structure` check: a PR description must match the template (a blockquote summary, `## Background`, `## Changelog` with a bullet, nothing else).
+- Feat: add `.github/PULL_REQUEST_TEMPLATE.md` and a `pr-check.yml` that validates on `pull_request`, sweeps open PRs on `workflow_dispatch`, and reports via status check and Step Summary.
+- Refactor: move template validation to `go/internal/mdtemplate` and body reading (stdin, `--body-file`, `--body`; none passes) to `go/internal/bodycheck`, shared with `plan-structure`.
 - Chore: exempt `.github/PULL_REQUEST_TEMPLATE.md` from `markdown-front-matter`, since GitHub inserts the template into every PR body verbatim and it cannot carry front matter.
 - Docs: document `pr-check` in the workflows README with a mermaid flow, and note PR-description validation in the top README.
 
@@ -323,27 +338,28 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Chore: delete `.github/scripts/update-tap.sh` — the repo no longer generates or pushes a Homebrew formula.
 - Chore: remove the `tap` job from `.github/workflows/release.yml`, so a version tag publishes the `go install` source and per-platform tarballs only.
-- Docs: drop the Homebrew tap from the README Distribution section and the brew-tap note from the architecture index; the tracking issue (#47) is closed as won't-do.
+- Docs: drop the Homebrew tap from the README Distribution section and the architecture index; the tracking issue (#47) is closed as won't-do.
 
 ### 2026.09.20.2014
 
-- Feat: add the `plan-structure` check — validates a plan (a `Plan`-labeled Issue body) against the Plan template: a one-line blockquote pitch, `## Background`, and `## What needs to happen` with a checklist, and no other sections. It reads the body from stdin, `--body-file`, or the context-inline `--body`, and passes inert with no input.
-- Feat: add `.github/workflows/plan-check.yml` — on `issues` events it validates the one `Plan` Issue, and on `workflow_dispatch` it sweeps every open `Plan` Issue; it comments once per body version (deduped by a content-hash marker) and fails the run on violations.
+- Feat: add the `plan-structure` check: a `Plan`-labeled Issue body must have a one-line blockquote pitch, `## Background`, and a `## What needs to happen` checklist, nothing else.
+- Feat: it reads the body from stdin, `--body-file`, or the context-inline `--body`, and passes inert with no input.
+- Feat: add `.github/workflows/plan-check.yml`: validate a `Plan` Issue on `issues`, sweep open Plans on `workflow_dispatch`, comment once per body version, and fail on violations.
 - Feat: add `mdx.Headings`, an ATX heading scanner that skips fenced code, and cover it plus the new check with table-driven tests.
-- Docs: add `AGENTS.md` (an agent may work an Issue once a human comments "I approve this plan") and `.github/workflows/README.md` (a mermaid flow of `plan-check`), with a short GitHub Actions note in the top README.
+- Docs: add `AGENTS.md`, where an agent works an Issue once a human comments "I approve this plan", plus `.github/workflows/README.md` with a `plan-check` flow.
 
 ### 2026.09.20.1941
 
-- Docs: add a `Plan` issue template (`.github/ISSUE_TEMPLATE/plan.md`) modeled on the personal `me` repo's — a one-line pitch, `## Background`, a `## What needs to happen` checklist, and no other sections.
-- Chore: migrate every `docs/plans` file into a GitHub Issue under the new `Plan` label — the two active plans stay open (#49, #50) and the eight archived plans become closed completed records (#51 through #58).
-- Chore: delete the migrated `docs/plans` tree now that plans live as Issues, moving the `README.md` and `architecture-index.md` links from the plan files to their issues.
-- Docs: open #59 to run fitness checks as GitHub workflows, so a plan Issue is validated by a workflow comment the way a checked-in plan file used to be validated by the runner.
+- Docs: add a `Plan` issue template (`.github/ISSUE_TEMPLATE/plan.md`) modeled on the personal `me` repo's: a one-line pitch, `## Background`, a `## What needs to happen` checklist, nothing else.
+- Chore: migrate every `docs/plans` file into a `Plan`-labeled Issue: two active plans stay open (#49, #50); eight archived plans close as completed (#51-#58).
+- Chore: delete the migrated `docs/plans` tree now that plans live as Issues, pointing the `README.md` and `architecture-index.md` plan links at their issues.
+- Docs: open #59 to run fitness checks as GitHub workflows, so a workflow comment validates plan Issues, as the runner did plan files.
 
 ### 2026.09.20.1417
 
-- Feat: exempt capitalized doc basenames (README.md, LICENSE.md, AGENTS.md, CODE_OF_CONDUCT.md, ...) from the kebab-case and camelCase filename checks, so conventional all-caps docs pass at any path.
+- Feat: exempt capitalized doc basenames (README.md, LICENSE.md, AGENTS.md, `CODE_OF_CONDUCT.md`, ...) from the kebab-case and camelCase filename checks, so all-caps docs pass anywhere.
 - Refactor: replace the hardcoded `allowedBasenames` map with a single all-caps basename pattern, dropping the fixed OSS-doc list in favor of one rule.
-- Test: cover the all-caps exemption — README and AGENTS pass in root and nested paths, while lowercase and mixed-case names stay held to their convention.
+- Test: cover the all-caps exemption: README and AGENTS pass in root and nested paths, while lowercase and mixed-case names keep their convention.
 
 ### 2026.08.25.1516
 
@@ -353,72 +369,84 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.08.25.1511
 
-- Chore: finish the npm-free migration — delete the now-unused Node `generate.mjs` generator (the 14 committed wordlists are the sole source, their headers and two Go comments rewritten to match) and remove a dead `.env` npm token plus its orphaned `.gitignore` allow rule.
-- Fix: the embedded fallback tool configs targeted the retired `packages/runner/src` layout — vitest coverage globs now use the conventional `src` tree with an index-file exclude, eslint drops a dead `packages/shared/types` ignore, and a stale `constants.cjs` comment goes.
-- Chore: tailor the check suite for this Go repo — disable the JavaScript-only checks via a new `disabledChecks` list in `.fitnessrc.json`, drop eslint, prettier, node-version, and the two vitest checks from the built-in `defaultChecks`, and add a root `Makefile` wired into the pre-commit hook.
-- Fix: the cspell check now honors `ignorePaths` for staged files, not only the markdown walk, so committing the dictionary sources under `go/internal/spell/dict` (already listed in `ignorePaths`) no longer fails on the fragments inside them.
-- Docs: add ADR 0002 retiring 0001's dual `fitness-shared lint` path, a pointer README for the camelCase filename check, a Cursor rule now aimed at `go/cmd`, and fixes to the README suite count and a moved plan-doc link.
+- Chore: finish the npm-free migration: delete the unused `generate.mjs` (the 14 committed wordlists are the sole source) and a dead `.env` npm token.
+- Fix: embedded fallback configs targeted the retired `packages/runner/src` layout; vitest globs now use `src` minus index files, and eslint drops a dead ignore.
+- Chore: tailor the suite to Go: a new `disabledChecks` list turns off JavaScript-only checks, `defaultChecks` drops them, and a root `Makefile` joins pre-commit.
+- Fix: cspell now honors `ignorePaths` for staged files too, so committing dictionary sources under `go/internal/spell/dict` no longer fails on their fragments.
+- Docs: add ADR 0002 retiring 0001's dual `fitness-shared lint` path, a camelCase check README, a Cursor rule aimed at `go/cmd`, and README fixes.
 
 ### 2026.07.19.0934
 
-- Feat: add the `markdown-links` check — every relative link in every markdown file must resolve to a real file or directory; absolute URLs are never touched, so the check stays offline and deterministic. The catalog is 31 names; the dogfood suite is 21 checks.
-- Fix: the new check found nine broken links on arrival — two path-depth bugs from the docs consolidation (competition.md and an archived plan's changelog links) plus six archived-plan links to files the npm purge deleted, now honest code spans noting the removal.
-- Docs: check counts across README and the architecture docs move to 31; the check's README documents the fence and code-span masking and the fragment-stripping rule.
+- Feat: add the `markdown-links` check: every relative link in every markdown file must resolve to a real file or directory.
+- Feat: absolute URLs are skipped, so the check stays offline and deterministic; the catalog is 31 names and the dogfood suite 21 checks.
+- Fix: the new check found nine broken links on arrival: two path-depth bugs from the docs consolidation, in `competition.md` and an archived plan.
+- Fix: six archived-plan links to files the npm purge deleted become code spans noting the removal.
+- Docs: README and architecture check counts move to 31; the check's README documents fence and code-span masking and fragment stripping.
 
 ### 2026.07.19.0915
 
-- Docs: architecture docs catch up with the last two days — check counts move from 27 to 30 across system context, containers, and code levels, and the monorepo layout tree gains `.github/`, `docs/`, the stamper binary, and `internal/par`.
-- Fix: the containers doc's README link had pointed at `docs/README.md` since the docs consolidation — now `../../README.md`, with a sentence on artifact shipping via Releases and the Go module proxy.
+- Docs: architecture docs catch up: check counts move from 27 to 30 across the system context, containers, and code levels.
+- Docs: the monorepo layout tree gains `.github/`, `docs/`, the stamper binary, and `internal/par`.
+- Fix: the containers doc's README link pointed at `docs/README.md` after the docs consolidation; it now targets `../../README.md`.
+- Docs: the containers doc adds a sentence on artifact shipping via Releases and the Go module proxy.
 - Docs: the architecture index links the research directory and plan 03 alongside the two archived milestone plans.
 
 ### 2026.07.19.0909
 
-- Docs: README install instructions now lead with the working channels — `go install` with pin and upgrade commands, then prebuilt release tarballs with a verified download URL, platform list, and checksum note; build-from-source moves to a contributors block.
-- Docs: the Distribution section drops the pre-launch phrasing — the first two channels are live, and the Homebrew item now points at issue #47 as planned work.
-- Chore: the documented release download URL was tested against the published release before landing (both the plain and encoded tag forms serve the asset).
+- Docs: README install instructions lead with the working channels: `go install` with pin and upgrade commands, then prebuilt release tarballs.
+- Docs: tarballs come with a verified download URL, platform list, and checksum note; build-from-source moves to a contributors block.
+- Docs: the Distribution section drops the pre-launch phrasing: the first two channels are live, and the Homebrew item points at issue #47.
+- Chore: the documented release download URL was tested against the published release before landing; both plain and encoded tag forms serve the asset.
 
 ### 2026.07.19.0859
 
-- Feat: the repo is public — `go install github.com/may-journal/fitness-runner/go/cmd/...` now resolves through the public Go module proxy; verified from a clean environment with all 32 binaries installed and running.
-- Chore: the Homebrew tap is deferred to issue #47; the release-side automation for it is already in place and skips politely until the tap exists.
+- Feat: the repo is public, so `go install github.com/may-journal/fitness-runner/go/cmd/...` resolves through the Go module proxy; all 32 binaries install and run from a clean environment.
+- Chore: the Homebrew tap is deferred to issue #47; its release automation is in place and skips politely until the tap exists.
 - Docs: plan 03 flips the public-flip and go-install verification boxes — only the tap items remain open, each annotated with the issue.
 
 ### 2026.07.19.0852
 
-- Fix: release asset names carried a stray leading v (the workflow stripped only the tag's directory prefix), so the tap script could never match its checksums — the workflow now strips the full prefix and asset names agree with the formula generator.
-- Chore: first release published end to end from the tag the changelog derived — both workflow jobs green, five assets, and the downloaded darwin binary runs on this machine.
+- Fix: asset names had a stray leading v because the workflow stripped only the tag's directory prefix, breaking the tap script's checksum match.
+- Fix: the workflow now strips the full prefix, so asset names agree with the formula generator.
+- Chore: the first release published end to end from the changelog-derived tag: both jobs green, five assets, and the darwin binary runs here.
 - Docs: plan 03 pre-flight and release-automation boxes flip; the public flip and tap creation remain open.
 
 ### 2026.07.19.0844
 
-- Fix: release versions now derive from the changelog heading instead of hand-cut semver — heading timestamp `2026.07.19.0837` maps to tag `go/v0.20260719.837`; major pinned at 0 because Go reserves higher majors for `/vN` module paths, and date and minute keep their ordering.
+- Fix: release versions derive from the changelog heading instead of hand-cut semver: timestamp `2026.07.19.0837` maps to tag `go/v0.20260719.837`.
+- Fix: the major stays 0 because Go reserves higher majors for `/vN` module paths, and date and minute keep their ordering.
 - Feat: add `.github/scripts/release-tag.sh` — prints the tag for the newest heading; the release workflow refuses any tag that does not match it.
 - Docs: README and plan 03 state the one-version rule — the pre-commit stamper owns the version, releases only transcribe it.
 
 ### 2026.07.19.0837
 
-- Feat: add the release workflow — every `go/vX.Y.Z` tag cross-compiles static tarballs for darwin and linux on both architectures, writes a checksums file, and publishes a GitHub Release with the newest CHANGELOG section as its notes.
-- Feat: add `.github/scripts/update-tap.sh` — regenerates the Homebrew formula from the release checksums and pushes it to `may-journal/homebrew-tap`; the workflow job skips politely until a `TAP_PUSH_TOKEN` secret exists.
+- Feat: add the release workflow: every `go/vX.Y.Z` tag cross-compiles static tarballs for darwin and linux on both architectures, plus a checksums file.
+- Feat: it publishes a GitHub Release with the newest CHANGELOG section as its notes.
+- Feat: add `.github/scripts/update-tap.sh`, which pushes a Homebrew formula built from the release checksums to `may-journal/homebrew-tap`; the job skips until `TAP_PUSH_TOKEN` exists.
 - Docs: add `docs/plans/03-publish.md` — the publishing milestone in the may-journals template: pre-flight history audit, release automation, brew tap, verification last.
 
 ### 2026.07.19.0821
 
-- Docs: README gains a Distribution section — the three decided channels layered on one artifact host: `go install` via the Go module proxy, GitHub Releases with prebuilt per-platform tarballs, and a Homebrew tap whose formula the release workflow bumps.
+- Docs: README gains a Distribution section: three decided channels layered on one artifact host.
+- Docs: they are `go install` via the Go module proxy, GitHub Releases with per-platform tarballs, and a Homebrew tap the release workflow bumps.
 - Docs: the upgrade story is stated per channel — re-run with `@latest`, grab the next release, or `brew upgrade`.
-- Docs: versioning documented — the CHANGELOG timestamp stays the internal version; releases are semver tags in the `go/vX.Y.Z` subdirectory-module form, referenced by consumers as plain `@vX.Y.Z`.
+- Docs: the CHANGELOG timestamp stays the internal version; releases are semver tags in `go/vX.Y.Z` subdirectory-module form, used as plain `@vX.Y.Z`.
 
 ### 2026.07.19.0812
 
-- Feat: add the `text-readability` check — a document-level readability smoke detector that scores every markdown file with the three character-based formulas and fails only when 2 of 3 exceed their alarm band; files under 100 prose words are never judged. The catalog grows to 30 names.
-- Feat: failure output is structured as prompt fuel for an LLM — per-file alarms show each formula's value and band, then guidance lines carry the exact formulas, the edits that lower them, and pointers to the check README and the research doc.
-- Chore: enable it here at tightened bands (grade 15, LIX 50) via the new `textReadability` config; shipped defaults stay at the calibrated smoke-detector bands (18/60). The dogfood suite is 20 checks.
-- Docs: fix the three files the tightened bands flagged — README.md, the research doc, and the vitest-coverage-full README — by splitting long sentences, wrapping check names in code spans, and moving quoted tool output into fenced blocks; stale README counts corrected in passing.
+- Feat: add the `text-readability` check, the catalog's 30th, a document-level smoke detector scoring each markdown file with three character-based formulas.
+- Feat: a file fails only when 2 of 3 formulas exceed their alarm band; files under 100 prose words are never judged.
+- Feat: failures are LLM prompt fuel: per-file alarms show each formula's value and band, then guidance gives the formulas, fixes, and doc pointers.
+- Chore: enable it at tightened bands (grade 15, LIX 50) via `textReadability`, keeping shipped defaults at 18/60; the dogfood suite is 20 checks.
+- Docs: fix the three files the bands flagged (README.md, the research doc, the vitest-coverage-full README) by splitting sentences and fencing quoted tool output.
 
 ### 2026.07.18.1940
 
-- Docs: the prose-complexity research now uses the archived plan documents as its experiment corpus — the changelog was a weak example (bullets are notation, and its one clean separator was true by construction).
-- Docs: the plans result is stronger and inverted — every readability formula scores the preferred may-journals-template plans as harder than the rejected free-form plans, and one uniformly written plan swings 17 grade levels paragraph to paragraph.
-- Docs: the changelog numbers stay only as corroboration; the implications section now names both house interventions (`changelog-bullets`, the plan template) as structural gates that beat formulas.
+- Docs: the prose-complexity research now uses the archived plan documents as its experiment corpus.
+- Docs: the changelog was a weak example, since bullets are notation and its one clean separator was true by construction.
+- Docs: the plans result is stronger and inverted: every readability formula scores the preferred template plans as harder than the rejected free-form ones.
+- Docs: one uniformly written plan swings 17 grade levels from paragraph to paragraph.
+- Docs: the changelog numbers stay as corroboration; the implications name both house interventions (`changelog-bullets`, the plan template) as structural gates that beat formulas.
 
 ### 2026.07.18.1931
 
@@ -428,14 +456,16 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.07.18.1930
 
-- Docs: add `docs/research/prose-cognitive-complexity.md` — whether a check can judge the cognitive complexity of written paragraphs: the classical readability formulas, the cognitive-science measures beyond them, and prior CI tooling, surveyed with sources.
-- Docs: the research includes an experiment on this repo's own changelog rewrite — no classical formula separates tight bullets from essay bullets one bullet at a time; only whole-section scoring and the existing 365-character cap discriminate cleanly.
-- Docs: verdict for a future check — structural budgets and character-based formulas at document scale behind a frozen code-masking spec; sentence-connection measures are the unexplored ground.
+- Docs: add `docs/research/prose-cognitive-complexity.md`, asking whether a check can judge the cognitive complexity of paragraphs, and surveying readability formulas, cognitive-science measures, and CI tooling.
+- Docs: the research tests this repo's own changelog rewrite: no classical formula separates tight bullets from essay bullets one bullet at a time.
+- Docs: only whole-section scoring and the existing 365-character cap discriminate cleanly.
+- Docs: verdict for a future check: structural budgets and character-based formulas at document scale behind a frozen code-masking spec; sentence-connection measures are unexplored.
 
 ### 2026.07.18.1909
 
 - Feat: `changelog-bullets` now judges every `###` section of CHANGELOG.md, not only the newest — count errors name their section.
-- Docs: rewrite the entire changelog history into compliance (219 findings to zero) — every heading byte-identical, facts and issue refs preserved, essays split into typed bullets, thin sections filled from their commits' real diffs.
+- Docs: rewrite the entire changelog history into compliance (219 findings to zero), keeping every heading byte-identical and facts and issue refs intact.
+- Docs: essays split into typed bullets, and thin sections fill from their commits' real diffs.
 - Docs: the check README now documents whole-file semantics.
 - Test: `TestEverySectionIsJudged` pins the new scope; doc fixtures gain a compliant trailing section.
 
@@ -447,35 +477,37 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.07.18.1844
 
-- Perf: cspell lookups now binary-search the embedded sorted dictionary bytes with a `sync.Map` memo — zero startup parsing, 7.2x faster on small repos, ~30ms on this one.
-- Perf: jscpd hashes tokens directly (FNV-1a 64) instead of interning through a shared map, so window hashing runs on the parallel pool — 2.3x faster detection at half the memory.
+- Perf: cspell lookups binary-search the embedded sorted dictionary bytes with a `sync.Map` memo: zero startup parsing, 7.2x faster on small repos, ~30ms here.
+- Perf: jscpd hashes tokens directly (FNV-1a 64) without a shared intern map, so hashing runs in parallel: 2.3x faster at half the memory.
 - Docs: both changes proven behavior-identical — a 216k-word differential test for the spell engine and byte-identical clone statistics on two corpora.
-- Fix: the earlier "27ms process baseline" was a shell-timer artifact (node startup inside the measured window); the real baseline is ~3ms and needed no work.
+- Fix: the earlier "27ms process baseline" was a shell-timer artifact (node startup inside the timed window); the real baseline is ~3ms.
 
 ### 2026.07.18.1821
 
 - Perf: parallelize file scanning inside the heavy checks — the full 18-check dogfood suite drops from ~111ms to ~68-76ms.
-- Feat: new `internal/par` worker pool — generic and deterministic, results return in input order, so parallelism can never change a check's output; pinned by ordering tests.
-- Refactor: the pool now backs `walkfs.ScanFiles` (every markdown scanner and `no-eslint-disable`), the cspell per-file loop, jscpd's read-and-lex phase (clone detection stays serial — it builds shared hash tables), and `go-complexity` parsing.
+- Feat: add `internal/par`, a generic deterministic worker pool: results keep input order, so parallelism never changes a check's output; ordering tests pin it.
+- Refactor: the pool backs `walkfs.ScanFiles`, the cspell per-file loop, jscpd's read-and-lex phase (detection stays serial on shared hash tables), and `go-complexity` parsing.
 - Chore: `go-complexity` flagged the new pool's own `Map` at 6 before it could land — the clamp logic became a helper.
 
 ### 2026.07.18.1819
 
-- Feat: add the `go-complexity` check — the first net-new check of the Go era and the Go-native counterpart of the house eslint rule (`complexity: max 5`), pure standard library (`go/ast` + `go/parser`).
-- Feat: scoring matches eslint — every function starts at 1 and gains a point per `if`/`for`/`range`/non-default `switch` or `select` clause/`&&`/`||`; function literals score separately; `_test.go` files are exempt; the ceiling is configurable via `goComplexity.max`.
-- Chore: opt-in (Go-specific, like `swiftlint`) and enabled on this repo — all 50 Go files scanned in about 10ms.
-- Refactor: burn every one of the 78 flagged functions down under the ceiling — behavior-identical helper extractions across the runner, the vitestconf and clonedetect lexers (complexity 28 and 25 at the worst), the spell engine, the mermaid parser, and 24 check binaries; 40 packages stay green with no test expectations touched.
+- Feat: add `go-complexity`, the Go era's first net-new check: the house eslint rule (`complexity: max 5`) in pure `go/ast` and `go/parser`.
+- Feat: scoring matches eslint: each function starts at 1, plus one per `if`/`for`/`range`/non-default `switch` or `select` clause/`&&`/`||`; function literals score separately.
+- Chore: opt-in like `swiftlint`, with `_test.go` exempt and the ceiling set by `goComplexity.max`; enabled here, scanning all 50 Go files in about 10ms.
+- Refactor: burn all 78 flagged functions under the ceiling with behavior-identical helper extractions; 40 packages stay green with no test expectations touched.
+- Refactor: the fixes span the runner, vitestconf and clonedetect lexers (28 and 25 at worst), spell engine, mermaid parser, and 24 check binaries.
 
 ### 2026.07.18.1749
 
-- Docs: bring every document in line with the Go-only, npm-free reality — all 27 check READMEs correct their era, with rule documentation, error formats, and examples preserved byte-identical throughout.
-- Docs: `.fitnessrc.js`/`.ts` snippets become `.fitnessrc.json`, `npx fitness` becomes `fitness`, "bundled as a dependency" claims become the peer-tool exec or native-engine truth, and TypeScript internals become their Go equivalents.
+- Docs: align every document with the Go-only, npm-free reality; all 27 check READMEs correct their era, keeping rules, error formats, and examples byte-identical.
+- Docs: `.fitnessrc.js`/`.ts` snippets become `.fitnessrc.json`, `npx fitness` becomes `fitness`, "bundled" claims become peer-tool exec or native-engine truth, and TypeScript internals become Go.
 - Docs: config-fallback descriptions now state the three-step resolution (repo-local, installed `@mayjournal/fitness-shared`, embedded copy materialized on demand); dead `.cursor/rules` pointers are dropped.
-- Docs: the architecture docs drop the last stale claims, `competition.md` contrasts against the static check-binary catalog, and `architecture-index.md` leads with the two completed milestone plans; the ADR is deliberately untouched — it is a dated decision record.
+- Docs: the architecture docs drop the last stale claims, and `competition.md` contrasts against the static check-binary catalog.
+- Docs: `architecture-index.md` leads with the two completed milestone plans; the ADR stays untouched as a dated decision record.
 
 ### 2026.07.18.1742
 
-- Chore: consolidate all documentation under `docs/` — `architecture/`, `plans/` (with its archive), `architecture-index.md`, `wardley.md`, and `competition.md` move together, so every doc-to-doc relative link survives unchanged.
+- Chore: consolidate all documentation under `docs/`: `architecture/`, `plans/` with its archive, `architecture-index.md`, `wardley.md`, and `competition.md` move together, keeping relative links intact.
 - Fix: front matter `relatedConfigurations` paths deepen one level in 17 files and README links cross the new boundary.
 - Chore: the `mermaid-level-bleed` check keeps matching level files at `docs/architecture/` thanks to its unanchored path pattern; a stale npm-era phrase in `competition.md` refreshed.
 
@@ -488,18 +520,18 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.07.18.1720
 
 - Feat: the repo is npm-free — plan 02 complete and archived; cloning and building requires exactly one tool: Go.
-- Feat: the shared tool configs live inside the binaries — `go/internal/sharedconf` embeds the config directory and materializes it to a content-keyed cache dir on demand; resolution is local config, then an installed `@mayjournal/fitness-shared` for compatibility, then the embedded copy — 153 new tests across the six touched packages.
-- Feat: the pre-commit stamping tool is Go (`fitness-stamp-changelog`: restamps the first heading when CHANGELOG.md is staged, re-stages, no version bumps — the changelog timestamp is the version now), and the githooks call `go build` plus the binaries directly.
-- Chore: deleted package.json, package-lock.json, node_modules, .npmrc, .nvmrc, every node script under `scripts/`, the npm publish workflows, the node CI setup action, and the `@mayjournal/fitness-shared` package directory (published versions keep winning over the embedded fallback when installed); CI is two Go jobs.
-- Chore: the spell dictionaries are frozen committed data (a Go regeneration tool fetching sources over HTTPS is deferred); the dogfood list drops eslint, prettier, node-version, and dependency-currency (nothing left for them to judge here; all four stay in the catalog), leaving 17 checks.
+- Feat: `go/internal/sharedconf` embeds the shared configs, cached on demand by content key, as the fallback after local config and an installed `@mayjournal/fitness-shared`.
+- Feat: the Go `fitness-stamp-changelog` restamps the first heading of a staged CHANGELOG.md and re-stages it; the timestamp is now the version.
+- Chore: deleted package.json, package-lock.json, `node_modules`, .npmrc, .nvmrc, node scripts, npm publish workflows, the node CI action, and `@mayjournal/fitness-shared`; CI is two Go jobs.
+- Chore: spell dictionaries are frozen committed data; the dogfood list drops eslint, prettier, node-version, and dependency-currency, all in the catalog, leaving 17 checks.
 
 ### 2026.07.18.1556
 
 - Feat: retire the TypeScript implementation — the Go suite is now the only fitness runner.
-- Chore: deleted `packages/runner`, `packages/checks` (all 26 TypeScript check packages), `packages/checks-bundle`, the legacy `.fitnessrc.js`, and the go-parity harness (26/27 byte-parity was proven before deletion; see the archived plan).
-- Docs: each check's rule documentation moved to its Go home (`go/cmd/fitness-check-<name>/README.md`, front-matter paths rebased), the `read-repo-first` banner points there, and README plus the architecture C4 docs are rewritten for the Go-only world.
-- Refactor: `packages/shared` survives as a configs-only npm package — eslint, prettier, vitest, and cspell configs consumed as data; build machinery, bin scripts, and runtime sources removed; the unmet optional vitest peer dropped so dependency-currency stays quiet.
-- Chore: root scripts slim to `npm run fitness` (Go suite) and `npm test` (`go test ./...`); CI drops the fitness-ts and go-parity jobs; devDependencies shrink to the lint/format stacks plus `cspell` + `cspell-trie-lib` (kept solely to regenerate the embedded dictionaries); the vitest coverage checks leave this repo's list (both stay in the catalog).
+- Chore: deleted `packages/runner`, `packages/checks` (26 TypeScript checks), `packages/checks-bundle`, the legacy `.fitnessrc.js`, and the go-parity harness (26/27 byte-parity proven first).
+- Docs: each check's rule docs moved to `go/cmd/fitness-check-<name>/README.md`, the `read-repo-first` banner points there, and README and the C4 docs are rewritten for Go.
+- Refactor: `packages/shared` survives as a configs-only npm package of eslint, prettier, vitest, and cspell data; build machinery, bin scripts, and runtime sources go.
+- Chore: scripts slim to `npm run fitness` and `npm test`; CI drops fitness-ts and go-parity; devDependencies keep lint, format, and `cspell`; vitest checks leave the list.
 
 ### 2026.07.18.1524
 
@@ -510,79 +542,81 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.07.18.1521
 
 - Feat: land plan 01 section 5 — lock it in; plan 01 is fully checked off.
-- Feat: the go-parity harness (`npm run parity:go`, `scripts/go-parity/`) diffs every check name discovered from the built Go binaries against its TypeScript twin on this repo — ok, errors with path normalization, filesChecked with the documented jscpd exemption — and 27/27 agree.
+- Feat: the go-parity harness (`npm run parity:go`) diffs every Go check's ok, errors, and filesChecked against its TypeScript twin; 27/27 agree, jscpd counts excepted.
 - Ci: CI gains `go` (gofmt/vet/build/test), `go-parity`, and `fitness-ts` jobs; the `fitness` job now runs the Go suite.
-- Feat: dogfood cutover — `.fitnessrc.json` carries the full 23-check list and `npm run fitness` builds and runs the Go runner (~1.9s vs ~6.5s plus a build for `npm run fitness:ts`, which stays supported and CI-gated during the transition).
-- Chore: distribution decided in the README (GitHub Releases plus `go install` first; an npm shim only if consumers want npx continuity); `jscpd` joins the repeated-string-literals allow baseline in both configs — CLI binary name, check name, and count-semantics exemption, one occurrence per island.
+- Feat: dogfood cutover: `.fitnessrc.json` carries the full 23-check list, and `npm run fitness` runs the Go runner (~1.9s vs ~6.5s for TypeScript); `npm run fitness:ts` stays CI-gated.
+- Chore: README distribution picks GitHub Releases plus `go install`, with an npm shim only for npx continuity; `jscpd` joins both configs' repeated-string-literals allow baseline.
 
 ### 2026.07.18.1511
 
-- Feat: land plan 01 section 4 — the four tool-exec checks, completing the 27-name Go check catalog; every one execs the real tool as a peer, resolved from `node_modules/.bin` walking up, then PATH — never npx — with one-line install hints when missing.
-- Feat: `prettier` ports the staged filtering, glob mode, passthrough (`--write .` verified), and `[warn]` parsing; `eslint` execs the CLI with the shared flat config and matches the TypeScript check byte-for-byte on this repo (242 files) and on rule-violation fixtures.
-- Feat: `vitest-coverage-full` reuses `internal/vitestconf` for the threshold gate (22 new cases) then execs `vitest run --coverage` with the TS config fallback and a 120-second describe budget; `swiftlint` execs the system binary with real JSON violation parsing, byte-identical against swiftlint 0.65.0.
+- Feat: plan 01 section 4 lands four tool-exec checks, completing the 27-name catalog; each runs its real tool from `node_modules/.bin` upward, then PATH.
+- Feat: `prettier` ports staged filtering, glob mode, passthrough, and `[warn]` parsing; `eslint` runs the CLI with the shared flat config, matching TypeScript byte-for-byte.
+- Feat: `vitest-coverage-full` reuses `internal/vitestconf` for the threshold gate (22 new cases), then runs `vitest run --coverage`; `swiftlint` parses real JSON violations, byte-identical against swiftlint 0.65.0.
 - Test: all four verified side-by-side with the real tools plus scripted-fake mocks in `go test` (122 new cases), including the missing-tool paths.
-- Chore: full-catalog sweep — 26 of 27 check names byte-match the TypeScript twins on this repo; the one difference is `jscpd` scanned-file-count semantics, documented in section 3, with verdict parity.
+- Chore: full-catalog sweep: 26 of 27 checks byte-match their TypeScript twins here; only `jscpd` differs, in scanned-file counts, with verdict parity.
 
 ### 2026.07.18.1312
 
-- Feat: `cspell` is now a Go binary over `internal/spell` — camelCase-aware word extraction, cspell-compatible inline directives, default URL/email/hash/escape masks, and 14 committed plain-text wordlists (~217k entries, 2.1MB) generated from the installed `@cspell` packages by `go/internal/spell/dict/generate.mjs` (provenance in every header).
-- Test: spell parity — byte-identical to the real cspell CLI on a 31-issue adversarial probe corpus and a clean 258-file tracked-source sweep; this repo passes with the exact TypeScript file count (52), about 7x faster.
-- Feat: `jscpd` is now a Go binary over `internal/clonedetect` — a generic comment-stripping lexer, rolling-hash windows with jscpd's min-lines/min-tokens/threshold semantics, the `jscpd:ignore-start`/`end` escape hatch, batched `git check-ignore` filtering, and the verbatim over-threshold error line.
-- Test: clone-detection parity — string literals keep their content in the token stream (full collapse falsely merged the 21 check mains' boilerplate); verdicts agree with the TypeScript check on this repo and on seeded-clone, ignore-marker, and below-threshold fixtures; 165 new Go tests.
-- Fix: the `cspell` check hung the pre-commit hook when the 2.1MB wordlists were staged — cspell applies ignorePaths only to discovered files, never explicit arguments — so the staged filter now drops any staged path a non-glob ignorePaths entry covers; `go/internal/spell/dict` joins the shared ignorePaths.
+- Feat: `cspell` is a Go binary over `internal/spell`: camelCase-aware words, inline directives, default masks, and 14 committed wordlists (~217k entries) from `@cspell` packages.
+- Test: spell parity: byte-identical to cspell on a 31-issue adversarial corpus and a 258-file sweep; here, the same 52 files, ~7x faster.
+- Feat: `jscpd` is a Go binary over `internal/clonedetect`: a comment-stripping lexer, rolling-hash windows with jscpd's thresholds, the `jscpd:ignore-start`/`end` escape hatch, and batched `git check-ignore`.
+- Test: string literals keep content, as full collapse falsely merged check mains' boilerplate; verdicts match TypeScript here and on fixtures; 165 new tests.
+- Fix: staged 2.1MB wordlists hung pre-commit's `cspell`, as cspell ignores ignorePaths for explicit arguments; the filter drops covered paths, and `go/internal/spell/dict` joins ignorePaths.
 
 ### 2026.07.18.1208
 
-- Feat: land plan 01 section 2 — the parsers-and-network checks are now Go binaries; all seven side-by-side comparisons against the TypeScript twins agree, passing with identical file counts.
-- Feat: `internal/mermaid` ports `mermaid.ts` exactly — fence scanning, the five callout patterns with JS-lookahead emulation over RE2, GFM callout tables, legend-invisible pairing — pinned by 47 tests (12 emulation edge cases executed against the real JavaScript first) and a byte-for-byte differential dump over all 52 repo markdown files.
-- Feat: the five mermaid checks are thin binaries over that parser; `vitest-coverage-exclude` scans vitest config sources text-level via string-aware comment stripping in `internal/vitestconf` (shared home for the future coverage-full port), with the TS fallback-root semantics.
-- Feat: `dependency-currency` replaces the `npm outdated` shell-out with a native net/http registry client — abbreviated-metadata endpoint, `.npmrc` registry honored, bounded concurrency, offline and garbage responses degrade to pass exactly like the TypeScript check — ~2.6x faster than the npm oracle on this repo.
+- Feat: land plan 01 section 2: the parsers-and-network checks are Go binaries; all seven match their TypeScript twins, file counts included.
+- Feat: `internal/mermaid` ports `mermaid.ts` exactly: fence scanning, five callout patterns with JS-lookahead emulation over RE2, GFM callout tables, and legend-invisible pairing.
+- Test: 47 tests pin it (12 emulation edge cases checked against real JavaScript first), plus a byte-for-byte diff over all 52 markdown files.
+- Feat: the five mermaid checks are thin binaries over that parser; `vitest-coverage-exclude` scans config text with string-aware comment stripping in `internal/vitestconf`.
+- Feat: `dependency-currency` swaps `npm outdated` for a native net/http registry client (`.npmrc` registry, bounded concurrency); offline or garbage responses pass; ~2.6x faster.
 
 ### 2026.07.18.1140
 
-- Feat: land plan 01 section 1 — all thirteen pure-logic checks are now Go binaries, twelve ported in one parallel pass, the markdown-filename pair as two thin binaries over one shared `internal/mdfilename` package.
-- Test: each port carries table-driven tests from the meaningful TypeScript cases (~200 Go cases total) and is proven side-by-side against its twin on this repo — passing checks pass identically, failing checks fail with byte-identical errors.
-- Feat: `changelog` upgrades to real JSON parsing for the invalid-JSON error paths; `semantic-commit` and `commit-attribution` declare the `--message` context-inline handshake; `repeated-string-literals` reads its allow list from `.fitnessrc.json`.
-- Chore: add `.fitnessrc.json` carrying the `repeated-string-literals` allow baseline for the Go runner during the config transition (the TypeScript suite keeps reading `.fitnessrc.js`; both lists stay in sync until the dogfood cutover).
-- Fix: `jscpd` now also ignores Go test files (`**/*_test.go`) — the test/spec exclusion rationale predates the Go tree; the two real production clones the ports introduced were extracted instead (a shared `walkfs.ScanFiles` scan loop and the `render.ColorsEnabled` color gate).
+- Feat: land plan 01 section 1: all thirteen pure-logic checks are Go binaries, the markdown-filename pair as two thin binaries over `internal/mdfilename`.
+- Test: each port carries table-driven tests from TypeScript cases (~200 total) and matches its twin here: passes pass, failures fail with byte-identical errors.
+- Feat: `changelog` parses JSON for invalid-JSON errors; `semantic-commit` and `commit-attribution` declare the `--message` handshake; `repeated-string-literals` reads its allow list from `.fitnessrc.json`.
+- Chore: add `.fitnessrc.json` with the `repeated-string-literals` allow baseline for the Go runner; the TypeScript suite keeps `.fitnessrc.js`, both in sync until cutover.
+- Fix: `jscpd` also ignores Go test files (`**/*_test.go`); the two real production clones from the ports became a shared `walkfs.ScanFiles` loop and `render.ColorsEnabled`.
 
 ### 2026.07.18.1113
 
-- Fix: the `prettier` check errored on staged Go files — Prettier has no parser for `.go` or `go.mod`, so the first commit carrying the new `go/` tree failed pre-commit; staged paths under `go/` are now dropped from the staged-mode invocation (same treatment as `scripts/` and `githooks/`).
-- Feat: land plan 01 section 0 — the Go scaffold: a new stdlib-only `go/` module with the `fitness` runner and the first check binary, `fitness-check-node-version`, running end to end on this repo.
-- Feat: the runner resolves check binaries (sibling dir then PATH, local paths from config), execs them with the `--root` + `FITNESS_*` env protocol (JSON result on stdout, display on stderr), budgets each `--describe` handshake at two seconds, and kills timed-out checks by process group from a bounded pool — same table and exit codes as the TypeScript runner.
-- Feat: config is `.fitnessrc.json`; a lone legacy `.fitnessrc.js`/`.ts` gets a migration hint on full-suite runs only, so single-check runs work during the transition; shared internals (skip-dir walker, git helpers, markdown parsing, table renderer) all carry `go test` coverage.
-- Test: the Go `node-version` check agrees with the TypeScript check on this repo — identical table row and byte-identical failure message; its checkbox and all of section 0 are flipped in `plans/01-go-rewrite.md`.
+- Fix: Prettier has no parser for `.go` or `go.mod`, so the `prettier` check failed the first `go/` commit; staged mode drops `go/` paths.
+- Feat: land plan 01 section 0, the Go scaffold: a stdlib-only `go/` module whose `fitness` runner and first check, `fitness-check-node-version`, run here.
+- Feat: the runner finds check binaries beside it or on PATH, passes `--root` and `FITNESS_*`, reads stdout JSON, and kills hung process groups.
+- Feat: config is `.fitnessrc.json`; a lone legacy `.fitnessrc.js`/`.ts` gets a migration hint on full-suite runs only; shared internals carry `go test` coverage.
+- Test: the Go `node-version` check matches the TypeScript one here, row and failure message alike; section 0 is checked off in `plans/01-go-rewrite.md`.
 
 ### 2026.07.18.1057
 
-- Docs: add `plans/01-go-rewrite.md` — the milestone plan for rebuilding the runner and every check in Go as zero-dependency static binaries: one binary per check plus a `fitness` runner, stdlib-only, exec protocol with JSON results.
-- Docs: checks port one at a time with side-by-side parity against the TypeScript checks; the dep-heavy four (prettier, eslint, vitest-coverage-full, swiftlint) come last with each approach decided on arrival.
+- Docs: add `plans/01-go-rewrite.md`, the milestone plan to rebuild the runner and every check in Go as zero-dependency static binaries.
+- Docs: one stdlib-only binary per check plus a `fitness` runner, speaking an exec protocol with JSON results.
+- Docs: checks port one at a time with TypeScript parity; the dep-heavy four (prettier, eslint, vitest-coverage-full, swiftlint) come last, each decided on arrival.
 - Docs: the plan follows the may-journals template — numbered title, Goal, numbered checkbox sections, verification last.
 - Chore: bump `@typescript-eslint/eslint-plugin` + `@typescript-eslint/parser` 8.63.0 → 8.64.0, `eslint-plugin-jsdoc` 63.0.13 → 63.1.0, and `knip` 6.26.0 → 6.27.0 to satisfy `dependency-currency`; full build/fitness/lint suite verified on the updated tree.
 
 ### 2026.07.10.2041
 
-- Feat: add the `repeated-string-literals` check — the same literal appearing 3+ times across source files fails, most-repeated first, with extract-a-constant guidance; comments, regexes, template literals, import specifiers, idiomatic tokens, directives (`'use strict'`), and test/spec/bench files are never flagged. Closes #42.
-- Feat: derive the bundler's check list from the `packages/checks/*` directories instead of a hand-maintained array — a directory bundles as a same-named check unless its package.json maps entry modules via `fitnessChecks` (flavor packs). Closes #41.
-- Feat: add the `commit-attribution` check — commit messages must disclose AI usage via `AI-Tools:` and `AI-Models:` trailers after the subject; merge and revert commits exempt; opt-in, with the README expanded to the passing/failing/advanced standard. Closes #7.
-- Fix: the `eslint` check no longer builds a TypeScript type-checker program — no enabled rule reads types, so it cost ~5s for zero findings and tipped CI past the timeout; syntactic parsing is byte-identical and ~4x faster, recorded as ADR 0001 (`fix-the-work-not-the-limit`); `build-output-untracked` stops flagging its own test fixtures.
-- Chore: dogfood both new checks, fix every repeated literal found (allow baseline 55 → 3 via shared constants and enum-valued check names), add the `repeatedStringLiterals.allow` option (inline marker and enum heuristic deferred to #44), bump the toolchain (TypeScript 6.0.3 → 7.0.2, eslint 10.7.0), and merge `main` into the branch.
+- Feat: add `repeated-string-literals`: a literal used 3+ times across source files fails, skipping comments, regexes, templates, imports, directives, and tests. Closes #42.
+- Feat: derive the bundler's check list from `packages/checks/*`; each directory bundles as its same-named check unless package.json maps entries via `fitnessChecks`. Closes #41.
+- Feat: add opt-in `commit-attribution`: commit messages must disclose AI usage via `AI-Tools:` and `AI-Models:` trailers; merge and revert commits exempt. Closes #7.
+- Fix: `eslint` drops the TypeScript type-checker no rule used, which cost ~5s and broke CI; parsing is byte-identical, ~4x faster (ADR 0001).
+- Chore: dogfood both checks, fixing repeated literals (baseline 55 → 3), add `repeatedStringLiterals.allow`, bump TypeScript to 7.0.2 and eslint to 10.7.0, and merge `main`.
 
 ### 2026.07.07.0850
 
-- Feat: add the check packages `markdown-filename-convention` (kebab-case + camelCase flavors over one shared parameterized function, #11), `no-eslint-disable` (#10), `gitignore-why` (#6), `build-output-untracked` (#8), the five-check mermaid diagram + callout-table set, `dependency-currency` (#30), and `jscpd` + `swiftlint` modeled on may-journals' setup.
-- Feat: `.fitnessrc` `checks` accepts local module paths mixed with npm check names, in order — missing or invalid path entries fail the run, `disabledChecks` never removes them, and path loading is shared between `--check=./foo.js` and config (#23).
-- Fix: `dependency-currency` timed out in CI (~5.5s on a cold registry cache) — checks gain an optional `timeoutMs` the runner honors (30s here); `bundle-check-dist.mjs` always rebuilds and clears its destination so a stale bundled `dist` cannot ship; `bin/fitness.js` drops its cwd override so `npx fitness` loads the consumer's `.fitnessrc`.
-- Chore: bring every dependency to latest and enable the full suite here — TypeScript 6, ESLint 10 (shared config to ESM; `typescript-sort-keys` replaced by `perfectionist`), cspell 10, Vitest 4.1, knip 6; `jscpd` re-enabled (test/spec ignored); check dependencies propagated to published packages, with `boxen` dropped entirely (#17).
-- Build: publish only `@mayjournal/fitness-shared`, `fitness-checks`, and `fitness` (checks bundled; individual workspaces private) with npm OIDC trusted publishing, provenance, and sequential workspace publish; Husky replaced by native Git hooks in `githooks/`; C4 architecture levels 1-5, a Wardley map, and a competition matrix land under `architecture/`.
+- Feat: add check packages `markdown-filename-convention` (kebab and camelCase, #11), `no-eslint-disable` (#10), `gitignore-why` (#6), `build-output-untracked` (#8), five mermaid checks, `dependency-currency` (#30), `jscpd`, and `swiftlint`.
+- Feat: `.fitnessrc` `checks` mixes local module paths with npm check names in order; bad paths fail, and `disabledChecks` never removes them (#23).
+- Fix: `dependency-currency` timed out in CI, so checks gain a `timeoutMs` the runner honors; `bundle-check-dist.mjs` always rebuilds, and `npx fitness` loads the consumer's `.fitnessrc`.
+- Chore: update every dependency (TypeScript 6, ESLint 10, cspell 10, Vitest 4.1, knip 6), enable the full suite and `jscpd`, and drop `boxen` (#17).
+- Build: publish only `@mayjournal/fitness-shared`, `fitness-checks`, and `fitness` via npm OIDC; Git hooks replace Husky; add C4 docs, Wardley map, and competition matrix.
 
 ### 2026.05.20.1716
 
-- Perf: land the publish-audit plan (#13) — an `audit:publish` script, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and types-first `exports` on the publishable packages.
-- Fix: publish-audit CI — track `packages/shared/types/vitest.config.d.ts` for publint, drop broken attw from the PR workflow, strip ANSI from publint output, fix the `findInstallRoot` test for hoisted vs workspace `node_modules`, and write the audit JSON via `node scripts/audit-publish/index.mjs` so PR comments parse.
-- Feat: add JS provision scripts (per-folder READMEs) and publish-time checks that seed new `@mayjournal` workspaces and configure trusted publishing — then slimmed: the Provision workflow removed, Publish runs OIDC `npm publish -ws` only, optional local helpers kept, and `test:scripts` adds colocated node:test coverage.
-- Chore: dependency and config hygiene — remove the redundant runner jiti, duplicate prettier plugins, and misplaced production deps on checks; a single cspell config at `@mayjournal/fitness-shared/cspell` (duplicate removed); `repository` added to publishable package.json files.
+- Perf: land the publish-audit plan (#13): an `audit:publish` script, publish-audit CI with PR comments, `bench:load-check`, per-workspace knip, and types-first `exports`.
+- Fix: publish-audit CI tracks vitest `.d.ts` for publint, drops broken attw, strips publint ANSI, fixes the `findInstallRoot` test, and repairs PR-comment audit JSON.
+- Feat: add provision scripts and publish-time checks that seed `@mayjournal` workspaces and set up trusted publishing, slimmed to OIDC `npm publish -ws` with `test:scripts` coverage.
+- Chore: dependency and config hygiene: drop runner's redundant jiti, duplicate prettier plugins, misplaced check deps, and a duplicate cspell config; add `repository` fields.
 - Build: `@mayjournal/fitness-shared` and `@mayjournal/fitness-checks` build via `fitness-shared build` (inline `node --eval` tsconfig generation removed); provision and related scripts formatted with Prettier for CI.
 
 ### 2026.05.20.1516
@@ -593,17 +627,18 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.05.20.1509
 
-- Refactor: centralize ESLint rules in `eslint.base.cjs` — the CLI and the fitness eslint check both import `createEslintConfig` with their own TypeScript parser options, so `projectService` and `project` no longer conflict.
+- Refactor: centralize ESLint rules in `eslint.base.cjs`; the CLI and the eslint check both import `createEslintConfig` with their own parser options.
+- Refactor: separate parser options keep `projectService` and `project` from conflicting.
 - Feat: add `fitness-shared lint` for monorepo ESLint; workspace lint scripts route through it; pre-commit runs lint alongside fitness.
 - Chore: check packages get a minimal lint-only `tsconfig.json` (extends the shared check config) for `projectService` discovery; monorepo check enumeration leaves the shared config.
 
 ### 2026.05.20.1453
 
-- Feat: split the repo into npm workspaces — runner and checks move from root `src/` into `packages/runner` and twelve `packages/checks/*` workspaces with dynamic check loading and `@mayjournal/fitness-checks-bundle` defaults; per-check tool deps live in each check's package; the plan completes through release (PR #12); `Architecture.md` documents the layout.
-- Feat: checks fall back to `@mayjournal/fitness` configs when consumers lack local cspell, prettier, vitest, or tsconfig — `resolveFitnessConfigPath`, `resolveLintTsconfig` (temp tsconfig for ESLint in the parent cwd), and a `tsconfig.lint.cjs` export; consumer setup documented in README.
-- Feat: restore `disabledChecks` on `.fitnessrc` — the optional list removes names from an explicit `checks` list or from bundle `defaultChecks` after `resolveCheckNames`, typed in `fitness-shared`, filtered in `load-check.ts`, covered by tests.
-- Build: centralize TypeScript `compilerOptions` in `tsconfig.compiler.cjs`, generate check and bundle tsconfigs from CJS sources, commit them for CI, and build `fitness-shared` first so runner `tsc` and type-aware ESLint resolve monorepo sources; publishing switches to npm trusted publishing (OIDC) with `NODE_AUTH_TOKEN`.
-- Chore: CI runs workspace tests (`-ws --if-present`); Vitest is scoped per check package with runner-dist aliases; `changelog-updated` expects the heading to match the root version suffix after long CI runs; staged cspell honors `ignorePaths`; `ensure-changelog-timestamp.cjs` bumps versions under `packages/`.
+- Feat: split the repo into npm workspaces: `packages/runner` and twelve `packages/checks/*` with dynamic loading, `@mayjournal/fitness-checks-bundle` defaults, and per-check tool deps (PR #12).
+- Feat: checks fall back to `@mayjournal/fitness` configs when consumers lack cspell, prettier, vitest, or tsconfig, via `resolveFitnessConfigPath`, `resolveLintTsconfig`, and `tsconfig.lint.cjs`.
+- Feat: restore `disabledChecks` on `.fitnessrc`: the optional list removes names from `checks` or bundle `defaultChecks` after `resolveCheckNames`, with tests.
+- Build: centralize `compilerOptions` in `tsconfig.compiler.cjs`, generate and commit check and bundle tsconfigs, build `fitness-shared` first, and publish via npm OIDC with `NODE_AUTH_TOKEN`.
+- Chore: CI runs workspace tests and per-package Vitest; `changelog-updated` matches the root version suffix; staged cspell honors `ignorePaths`; the stamper bumps `packages/` versions.
 
 ### 2026.04.04.1748
 
@@ -613,14 +648,15 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.04.04.1712
 
-- Feat: the ESLint check runs via the Node API with this package's `eslint.config.cjs` and the parent project cwd, so consumers need not install ESLint — adds `getFitnessRunnerRoot` (shared with the runner and vitest-coverage-full), `runInProcess`, and `RunContext._eslintRunForTesting`.
-- Fix: show `file:line:col` errors by extracting the JSON array when stderr is mixed in; on parse failure, append truncated ESLint output to the fallback; `tryParseJsonArray` keeps complexity under the limit.
-- Build: scope the package to `@mayjournal/fitness` — LICENSE (MIT), a GitHub Actions publish workflow on CI success, a `publish:ci` script, and `.npmrc` for `NPM_TOKEN`; `plan-deps-vs-devdeps-check.md` added.
+- Feat: the ESLint check runs via the Node API with this package's `eslint.config.cjs` and the parent cwd, so consumers need not install ESLint.
+- Feat: add `getFitnessRunnerRoot`, shared with the runner and vitest-coverage-full, plus `runInProcess` and `RunContext._eslintRunForTesting`.
+- Fix: show `file:line:col` errors by extracting the JSON array from mixed stderr; on parse failure, append truncated ESLint output to the fallback.
+- Build: scope the package to `@mayjournal/fitness`: MIT LICENSE, a publish workflow on CI success, `publish:ci`, and `.npmrc` for `NPM_TOKEN`; add `plan-deps-vs-devdeps-check.md`.
 
 ### 2026.03.07.1922
 
 - Chore: Prettier uses `prettier-plugin-packagejson` for conventional `package.json` field order; `package-lock.json` joins `.prettierignore`.
-- Refactor: single source of truth for check registration — optional `Check.folder` plus `RunContext.checkFolderByName` (worker-serializable) built from the registry; `CHECK_TO_FOLDER` leaves read-repo-first; `registry.test.ts` asserts the `CheckName` enum and registry stay in sync; add-a-check steps documented.
+- Refactor: one source of truth for check registration: `Check.folder` plus a registry-built `RunContext.checkFolderByName` replace `CHECK_TO_FOLDER`; a test keeps enum and registry in sync.
 - Refactor: shared `quoteForShell` (`src/utils/shellQuote.ts`) used by eslint, prettier, and cspell; a shared Vitest config loader (`src/checks/vitest-config`) used by both coverage checks.
 - Refactor: shared exec helpers — `execSyncResult()` with `EXEC_OPTS`, and `buildExecCheckResult()` — adopted by eslint, prettier, cspell, vitest-coverage-full, and changelog-updated.
 - Fix: `markdown-no-bold-italic` ignores emphasis inside link blocks `[text](url)` so underscores in URLs or link text are not falsely flagged.
@@ -639,19 +675,19 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.03.07.1007
 
-- Feat: the runner executes registry checks in a worker thread so the 5s timeout is enforced via `worker.terminate()` when checks block (e.g. execSync); read-repo-first, vitest-coverage-full, and path-based checks stay in-process; timed-out checks fail with "Check timed out after 5s" and the run continues.
-- Feat: `node_modules` is always ignored — `getSkipDirs` merges the runner skip dirs (`node_modules`, dist, coverage, .git, .husky) with config, and staged files from git are filtered the same way.
+- Feat: registry checks run in workers, so `worker.terminate()` enforces the 5s timeout and the run continues; read-repo-first, vitest-coverage-full, and path-based checks stay in-process.
+- Feat: `node_modules` is always ignored: `getSkipDirs` merges the runner skip dirs (`node_modules`, dist, coverage, .git, .husky) with config, and filters staged files too.
 - Feat: progress messages on stderr (Resolving checks…, Running checks:, and → name before each check) show where a run is or where it hangs.
-- Feat: add `vitest-coverage-full` (runs `vitest run --coverage`; requires 100% thresholds); cspell gains a `runCspell` CLI runner, the enUS dictionary, and a runViaExec/runViaLib split; `vitest-coverage-exclude` allows barrel `index.ts` excludes and recognizes `vitest.config.cjs`.
-- Fix: `isMainModule` works when run via npx — argv[1] and `import.meta.url` resolve to real paths so the symlinked `.bin/fitness` is detected as main; a symlink test, JSDoc, and complexity cleanups ride along.
+- Feat: add `vitest-coverage-full` (`vitest run --coverage` at 100% thresholds); cspell gains a CLI runner and enUS dictionary; `vitest-coverage-exclude` allows barrel `index.ts` excludes and reads `vitest.config.cjs`.
+- Fix: `isMainModule` works via npx: argv[1] and `import.meta.url` resolve to real paths, so symlinked `.bin/fitness` counts as main; a symlink test rides along.
 
 ### 2026.02.22.1620
 
 - Feat: add `checkResult(ok, errors?, filesChecked?)` and a `runContext` helper (getStagedFiles, getExecSync); every check migrates to them; `RunContext` gains `_now` for tests.
 - Docs: add `plan-checks-abstractions.md` (the repeating patterns in `checks/*` and abstraction options); the README flowchart node renamed to PassthroughArgs; the cspell words list trimmed.
 - Build: flatten dependencies into `dependencies` only (no dev/optional split).
-- Chore: Prettier overrides `package.json` to the json parser so sort-json runs recursively over exports paths and condition keys; `prettier-plugin-packagejson` removed; comments added in `prettier.config.cjs`.
-- Refactor: an `enUS` enum carries all user-facing runner copy (run logic in `run.ts`, `index.ts` barrel only), with an `interpolate()` util for `{{key}}` templates, exported from runner and package; eslint adds `typescript-sort-keys` (string-enum + interface) with `@typescript-eslint` aligned to ^8.55.
+- Chore: Prettier parses `package.json` as json so sort-json runs recursively over exports paths and condition keys; `prettier-plugin-packagejson` removed; `prettier.config.cjs` commented.
+- Refactor: an `enUS` enum holds all user-facing runner copy, with an `interpolate()` util for `{{key}}` templates; eslint adds `typescript-sort-keys` with `@typescript-eslint` at ^8.55.
 
 ### 2026.02.22.1511
 
@@ -681,7 +717,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.02.22.1359
 
-- Fix: make the README Mermaid flowchart edge labels readable — the theme gains `textColor` and `labelColor` so the yes/no arrow labels stop blending into the background.
+- Fix: make the README Mermaid flowchart edge labels readable; the theme gains `textColor` and `labelColor`, so yes/no arrow labels stop blending in.
 - Docs: reroute the context edges — `buildContext(staged, inlineFragment, checks, passthrough)` now feeds `runChecks`, and the single-check `contextInline` fragment hangs off the resolved checks.
 - Docs: annotate `getStagedContext()` with its mechanism (`git diff --cached` → stagedFiles).
 
@@ -749,16 +785,16 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.02.16.1600
 
-- Feat: ESLint adds `sort-keys` (natural ascending) for all object keys in `.ts`, `.cjs`, `.js`, `.mjs`; the ESLint check extends to `.cjs`/`.js`/`.mjs`; object literals reordered across the codebase.
-- Feat: add Prettier with `eslint-config-prettier` — `.prettierrc.json`, `.prettierignore`, format scripts, a CI format job, and an exported `prettier.config`; `prettier-plugin-sort-json` with jsonRecursiveSort orders JSON keys and nested objects; the Prettier check runs `prettier --check` on staged files or the full repo and skips when no config.
+- Feat: ESLint adds natural ascending `sort-keys` for object keys in `.ts`/`.cjs`/`.js`/`.mjs`; the ESLint check covers `.cjs`/`.js`/`.mjs`, and object literals are reordered.
+- Feat: add Prettier (`eslint-config-prettier`, sort-json, CI format job, exported config); the Prettier check runs `prettier --check` on staged files or repo, skipping without config.
 - Feat: the runner renders table feedback — a colspan row per failed check, errors contextual to the row, dynamic width via `getColumns` from read-repo-first.
-- Docs: sync the main and checks READMEs with the registry; add the rules-front-matter README and `fitnessFunctions` to the eslint-check README; update the README flow diagram.
+- Docs: sync main and checks READMEs with the registry, add rules-front-matter README and `fitnessFunctions` to the eslint-check README, and update the flow diagram.
 - Fix: `rules-front-matter` rejects empty `fitnessFunctions` and `relatedConfigurations` arrays — at least one entry per array.
 
 ### 2026.02.16.1500
 
-- Feat: the runner formats check results as a table (cli-table3) — Check, Status, Files, Time columns, bold white headers, chalk green/red for results, errors, and the total line.
-- Feat: `read-repo-first` prompts Y/N to confirm familiarity with the checks, lists the enabled ones in a table with a plain-path Src column for IDE link detection, formats with chalk/boxen/wrap-ansi, and runs first in the registry.
+- Feat: results render in a cli-table3 table: Check, Status, Files, Time columns, bold white headers, chalk green/red for results, errors, and totals.
+- Feat: `read-repo-first` asks Y/N to confirm familiarity with checks, lists enabled ones with a plain-path Src column for IDE links, and runs first.
 - Fix: `read-repo-first` drops its TTY requirement — feedback displays for Agent/User contexts and always passes; the `FITNESS_READ_REPO_CI_ONLY_DO_NOT_USE_OTHERWISE` bypass leaves CI.
 - Chore: consolidate the cursor rules into `fitness-checks.mdc`, removing the per-check rule files.
 - Chore: add `eslint.config.d.ts` for ESM package compatibility; package and gitignore updates for the consolidated rules.
@@ -771,7 +807,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.02.16.1300
 
-- Build: a single root `tsconfig.cjs` drives build and lint — the shared base config removed, compiler options inlined, `build/` gone, and `tsconfig.js` converts `.cjs` to JSON; generated root config outputs are gitignored.
+- Build: one root `tsconfig.cjs` drives build and lint, with options inlined and shared base and `build/` gone; `tsconfig.js` converts `.cjs` to gitignored JSON.
 - Refactor: replace `eslint.config.ts` with `eslint.config.cjs` for ESM package compatibility.
 - Chore: ESLint drops the stylistic plugin and rules, keeping `jsdoc/require-jsdoc` and `complexity` max 5 in a single block with project tsconfig.json.
 - Fix: `changelog-updated` types the `ExecSyncFn` maxBuffer and adds an execSync fallback coverage test.
@@ -793,7 +829,7 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.02.16.0958
 
 - Docs: add the `read-repo-first` check design doc (`plans/read-repo-first-check.md`).
-- Docs: the problem is framed as machine-checkable proxies for a behavioral rule, with four design directions — structure-only validation, staged correlation, advisory no-op, and a configurable hybrid.
+- Docs: frame the problem as machine-checkable proxies for a behavioral rule, with four directions: structure-only validation, staged correlation, advisory no-op, and configurable hybrid.
 - Docs: draft recommendation — start with structure-only validation (numbered folders at the repo root) as the minimal viable check.
 
 ### 2026.02.15.1700
@@ -806,10 +842,10 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.02.15.1600
 
 - Docs: remove bold/italic from the check READMEs to satisfy `markdown-no-bold-italic`; README and CHANGELOG front matter fixed (---, flow-style).
-- Feat: `markdown-front-matter` requires `fitnessFunctions` or `relatedConfigurations` in every `.md`, paths resolved relative to the file — or any registered check name; `findMd` skips `node_modules`, dist, coverage, .git, .husky; `getFrontMatterPaths` exported for tests (100% coverage).
-- Feat: `vitest-coverage-exclude` only allows `**/*.d.ts` and `**/*.types.ts` in coverage exclude (Vitest excludes tests by default); type-only files renamed to `*.types.ts`; load.ts and coverage-exclude branches fixed for full coverage.
+- Feat: `markdown-front-matter` requires `fitnessFunctions` or `relatedConfigurations` in every `.md`, with file-relative paths or a check name; `findMd` skips `node_modules`, dist, coverage, .git, .husky.
+- Feat: `vitest-coverage-exclude` allows only `**/*.d.ts` and `**/*.types.ts` in coverage exclude, as Vitest skips tests by default; type-only files become `*.types.ts`.
 - Chore: remove `.fitnessrc.ts`, with a runner test covering custom checks from a config to restore 100% coverage.
-- Ci: a single fitness job runs `npm run fitness` — the discover job and matrix removed, checks listed as single-line GITHUB_OUTPUT for valid JSON; pre-commit sources nvm in the husky hook so `nvm use` runs when PATH has no nvm.
+- Ci: one fitness job runs `npm run fitness`, replacing the discover matrix; the husky pre-commit hook sources nvm, so `nvm use` runs without it on PATH.
 
 ### 2026.02.15.1500
 
@@ -840,7 +876,7 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.02.15.1200
 
 - Ci: GitHub Actions runs dynamic fitness jobs from the registry with a composite setup action.
-- Feat: add the cspell check — optional, it only runs when `cspell.json` is present; cspell lives in runner dependencies only, with the spell script removed from ci and package.json.
+- Feat: add the optional cspell check, run when `cspell.json` exists; cspell lives only in runner dependencies, and spell script leaves ci and package.json.
 - Docs: add a Mermaid code-flow diagram to the README (modern colors, moved to the bottom); cspell README updates.
 
 ### 2026.02.15.1100

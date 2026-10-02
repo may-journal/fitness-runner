@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // inject pins the staged diff and the clock for one test.
@@ -192,28 +194,42 @@ func TestRun(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if tc.changelog {
-				writeFile(t, dir, "CHANGELOG.md", "# Changelog\n\n### 2026-02-15\n\n- item\n")
-			}
-			if tc.pkgVersion != "" {
-				writeFile(t, dir, "package.json", `{"version":"`+tc.pkgVersion+`"}`)
-			}
+			dir := writeFixture(t, tc.changelog, tc.pkgVersion)
 			t.Setenv("FITNESS_STAGED_FILES", tc.staged)
 			inject(t, tc.diff, tc.at)
-			res, err := run(dir, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok || res.FilesChecked != tc.filesChecked {
-				t.Fatalf("ok=%v filesChecked=%d, want ok=%v filesChecked=%d (errors: %v)",
-					res.Ok, res.FilesChecked, tc.ok, tc.filesChecked, res.Errors)
-			}
+			res := runExpecting(t, dir, tc.ok, tc.filesChecked)
 			if tc.wantErrors != nil && !reflect.DeepEqual(res.Errors, tc.wantErrors) {
 				t.Fatalf("errors = %q, want %q", res.Errors, tc.wantErrors)
 			}
 		})
 	}
+}
+
+// writeFixture creates a temp root with an optional changelog and package.json.
+func writeFixture(t *testing.T, changelog bool, pkgVersion string) string {
+	t.Helper()
+	dir := t.TempDir()
+	if changelog {
+		writeFile(t, dir, "CHANGELOG.md", "# Changelog\n\n### 2026-02-15\n\n- item\n")
+	}
+	if pkgVersion != "" {
+		writeFile(t, dir, "package.json", `{"version":"`+pkgVersion+`"}`)
+	}
+	return dir
+}
+
+// runExpecting runs the check and requires the given verdict and file count.
+func runExpecting(t *testing.T, dir string, ok bool, filesChecked int) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok != ok || res.FilesChecked != filesChecked {
+		t.Fatalf("ok=%v filesChecked=%d, want ok=%v filesChecked=%d (errors: %v)",
+			res.Ok, res.FilesChecked, ok, filesChecked, res.Errors)
+	}
+	return res
 }
 
 func TestParseStagedDiff(t *testing.T) {
@@ -256,25 +272,13 @@ func TestStandaloneAgainstRealGitRepo(t *testing.T) {
 	git(t, dir, "commit", "-q", "-m", "init")
 	unsetStagedEnv(t)
 
-	res, err := run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 0 {
-		t.Fatalf("nothing staged: got %+v, want pass with 0 files", res)
-	}
+	runExpecting(t, dir, true, 0) // nothing staged
 
 	writeFile(t, dir, "CHANGELOG.md", "# Changelog\n\n- added runner feature validation\n")
 	writeFile(t, dir, "src.txt", "added runner feature validation code\n")
 	git(t, dir, "add", "-A")
 
-	res, err = run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("staged overlap: got %+v, want pass with 1 file", res)
-	}
+	runExpecting(t, dir, true, 1) // staged overlap
 }
 
 // setReplay pins replayInProgress for one test.

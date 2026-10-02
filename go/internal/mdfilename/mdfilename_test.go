@@ -102,12 +102,12 @@ func TestRunAllConformingPasses(t *testing.T) {
 	}
 }
 
-func TestRunSkipsPrunedDirectories(t *testing.T) {
+func TestRunSkipsNoDirectory(t *testing.T) {
 	dir := t.TempDir()
 	writeFiles(t, dir, "api-design.md", "node_modules/badName.md", "dist/AlsoBad.md")
 	res := Run(dir, Kebab)
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("expected pass over 1 file with skip dirs pruned, got %+v", res)
+	if res.Ok || res.FilesChecked != 3 || len(res.Errors) != 2 {
+		t.Fatalf("expected node_modules and dist judged too, got %+v", res)
 	}
 }
 

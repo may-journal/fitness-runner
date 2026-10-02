@@ -5,10 +5,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 func write(t *testing.T, root, rel, content string) {
@@ -254,35 +257,63 @@ func TestRun(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := t.TempDir()
-			for rel, content := range tc.files {
-				write(t, root, rel, content)
-			}
-			srv := newRegistry(t, tc.replies)
-			if tc.offline {
-				srv.Close()
-			}
-			write(t, root, ".npmrc", "registry="+srv.URL+"\n")
-			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok {
-				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
-			}
-			if res.FilesChecked != tc.filesChecked {
-				t.Fatalf("filesChecked = %d, want %d", res.FilesChecked, tc.filesChecked)
-			}
-			if tc.ok {
-				if len(res.Errors) != 0 {
-					t.Fatalf("errors = %v, want none", res.Errors)
-				}
-				return
-			}
-			if !reflect.DeepEqual(res.Errors, tc.wantErrors) {
-				t.Fatalf("errors = %#v, want %#v", res.Errors, tc.wantErrors)
-			}
+			root := setupRepo(t, tc.files, tc.replies, tc.offline)
+			res := runExpecting(t, root, tc.ok, tc.filesChecked)
+			expectErrors(t, res.Errors, tc.ok, tc.wantErrors)
 		})
+	}
+}
+
+// setupRepo writes files into a temp root and points .npmrc at a fake
+// registry, closed first when offline.
+func setupRepo(t *testing.T, files map[string]string, replies map[string]reply, offline bool) string {
+	t.Helper()
+	root := t.TempDir()
+	for rel, content := range files {
+		write(t, root, rel, content)
+	}
+	srv := newRegistry(t, replies)
+	if offline {
+		srv.Close()
+	}
+	write(t, root, ".npmrc", "registry="+srv.URL+"\n")
+	// A real repo tracks its manifests, never the installed node_modules.
+	write(t, root, ".gitignore", "node_modules\n")
+	for _, args := range [][]string{{"init", "-q"}, {"add", "-A"}} {
+		if out, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v (%s)", args, err, out)
+		}
+	}
+	return root
+}
+
+// runExpecting runs the check and requires the given verdict and file count.
+func runExpecting(t *testing.T, root string, ok bool, filesChecked int) checkkit.Result {
+	t.Helper()
+	res, err := run(root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok != ok {
+		t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, ok, res.Errors)
+	}
+	if res.FilesChecked != filesChecked {
+		t.Fatalf("filesChecked = %d, want %d", res.FilesChecked, filesChecked)
+	}
+	return res
+}
+
+// expectErrors requires no errors on a pass, else exactly want.
+func expectErrors(t *testing.T, got []string, ok bool, want []string) {
+	t.Helper()
+	if ok {
+		if len(got) != 0 {
+			t.Fatalf("errors = %v, want none", got)
+		}
+		return
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("errors = %#v, want %#v", got, want)
 	}
 }
 

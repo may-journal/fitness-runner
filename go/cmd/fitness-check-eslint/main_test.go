@@ -4,10 +4,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
 	"testing"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
@@ -46,10 +48,25 @@ func fakeEslint(t *testing.T, root, stdout string, exitCode int) {
 }
 
 // writePackageJSON drops a minimal package.json at root so the no-JS-project
-// guard lets the check run.
+// guard lets the check run, plus one lintable a.js so there is a file to lint.
 func writePackageJSON(t *testing.T, root string) {
 	t.Helper()
 	writeFile(t, filepath.Join(root, "package.json"), "{}")
+	writeFile(t, filepath.Join(root, "a.js"), "x")
+}
+
+// assertResult compares a run's verdict with the expected one.
+func assertResult(t *testing.T, res checkkit.Result, err error, ok bool, files int, errors []string) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.Ok != ok || res.FilesChecked != files {
+		t.Fatalf("ok=%v files=%d, want ok=%v files=%d (errors: %v)", res.Ok, res.FilesChecked, ok, files, res.Errors)
+	}
+	if !slices.Equal(res.Errors, errors) {
+		t.Fatalf("errors = %#v, want %#v", res.Errors, errors)
+	}
 }
 
 // isolate scrubs PATH and the changed-file env so no real tool or ambient
@@ -76,9 +93,9 @@ func TestRunJudgment(t *testing.T) {
 		{"exit from errorCount not process exit", sortKeysJSON, 0, false, 1, []string{
 			"/r/bad.js:1:19 - Expected object keys to be in natural ascending case-sensitive order. 'a' should be before 'z'. (sort-keys)",
 		}},
-		{"ignore notice filtered but file counted",
+		{"an ignored file fails",
 			`[{"errorCount":0,"filePath":"/r/skip.js","messages":[{"message":"File ignored because of a matching ignore pattern. Use \"--no-ignore\" to disable file ignore settings or use \"--no-warn-ignored\" to suppress this warning.","ruleId":null,"severity":1}],"warningCount":1}]`,
-			0, true, 1, nil},
+			0, false, 1, []string{"/r/skip.js - ESLint ignores this tracked file; remove the ignore pattern so it is linted"}},
 		{"warning without errorCount still fails",
 			`[{"errorCount":0,"filePath":"/r/warn.js","messages":[{"column":2,"line":3,"message":"Watch out.","ruleId":"sort-keys","severity":1}],"warningCount":1}]`,
 			0, false, 1, []string{"/r/warn.js:3:2 - Watch out. (sort-keys)"}},
@@ -99,20 +116,7 @@ func TestRunJudgment(t *testing.T) {
 			writePackageJSON(t, root)
 			fakeEslint(t, root, tc.stdout, tc.exitCode)
 			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok || res.FilesChecked != tc.files {
-				t.Fatalf("ok=%v files=%d, want ok=%v files=%d (errors: %v)",
-					res.Ok, res.FilesChecked, tc.ok, tc.files, res.Errors)
-			}
-			want := tc.errors
-			if want == nil {
-				want = []string{}
-			}
-			if !reflect.DeepEqual(res.Errors, want) {
-				t.Fatalf("errors = %#v, want %#v", res.Errors, want)
-			}
+			assertResult(t, res, err, tc.ok, tc.files, tc.errors)
 		})
 	}
 }
@@ -124,13 +128,7 @@ func TestRunCrashFallbackQuotesStderr(t *testing.T) {
 	writeScript(t, filepath.Join(root, "node_modules", ".bin", "eslint"),
 		"echo 'Error: Could not find config file.' >&2\nexit 2")
 	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := []string{eslintFallbackMessage, "Output: Error: Could not find config file."}
-	if res.Ok || res.FilesChecked != 0 || !reflect.DeepEqual(res.Errors, want) {
-		t.Fatalf("result = %+v, want errors %#v", res, want)
-	}
+	assertResult(t, res, err, false, 0, []string{eslintFallbackMessage, "Output: Error: Could not find config file."})
 }
 
 func TestRunMissingBinary(t *testing.T) {
@@ -138,12 +136,7 @@ func TestRunMissingBinary(t *testing.T) {
 	root := t.TempDir()
 	writePackageJSON(t, root)
 	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok || res.FilesChecked != 0 || len(res.Errors) != 1 || res.Errors[0] != missingEslintMessage {
-		t.Fatalf("unexpected result: %+v", res)
-	}
+	assertResult(t, res, err, false, 0, []string{missingEslintMessage})
 }
 
 // TestRunSkipsWhenNoPackageJSON pins the self-gating guard: a repo with no
@@ -182,15 +175,18 @@ func invokeAndRecord(t *testing.T, root string) []string {
 }
 
 // wantInvocation is the full expected recording: eslint's cwd, then the
-// argv with the given --config path.
-func wantInvocation(t *testing.T, root, config string) []string {
+// argv with the given --config path and the files to lint.
+func wantInvocation(t *testing.T, root, config string, files ...string) []string {
 	t.Helper()
 	realRoot, err := filepath.EvalSymlinks(root)
 	if err != nil {
 		t.Fatal(err)
 	}
-	return []string{realRoot, "--config", config, "--no-error-on-unmatched-pattern", "--format", "json", "."}
+	return append([]string{realRoot, "--config", config, "--no-error-on-unmatched-pattern", "--format", "json"}, files...)
 }
+
+// installedRel is installedConfigMjs as the walk lists it.
+var installedRel = filepath.ToSlash(installedConfigMjs)
 
 func TestRunInvocation(t *testing.T) {
 	t.Run("installed shared config wins over embedded", func(t *testing.T) {
@@ -198,7 +194,7 @@ func TestRunInvocation(t *testing.T) {
 		root := t.TempDir()
 		writeFile(t, filepath.Join(root, installedConfigMjs), "export default [];")
 		got := invokeAndRecord(t, root)
-		want := wantInvocation(t, root, filepath.Join(root, installedConfigMjs))
+		want := wantInvocation(t, root, filepath.Join(root, installedConfigMjs), "a.js", installedRel)
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("invocation = %#v, want %#v", got, want)
 		}
@@ -209,7 +205,7 @@ func TestRunInvocation(t *testing.T) {
 		writeFile(t, filepath.Join(root, eslintConfigMjs), "export default [];")
 		writeFile(t, filepath.Join(root, installedConfigMjs), "export default [];")
 		got := invokeAndRecord(t, root)
-		want := wantInvocation(t, root, filepath.Join(root, eslintConfigMjs))
+		want := wantInvocation(t, root, filepath.Join(root, eslintConfigMjs), "a.js", eslintConfigMjs, installedRel)
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("invocation = %#v, want %#v", got, want)
 		}
@@ -222,7 +218,7 @@ func TestRunInvocation(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := wantInvocation(t, root, filepath.Join(dir, eslintConfigMjs))
+		want := wantInvocation(t, root, filepath.Join(dir, eslintConfigMjs), "a.js")
 		if !reflect.DeepEqual(got, want) {
 			t.Fatalf("invocation = %#v, want %#v", got, want)
 		}
@@ -268,14 +264,15 @@ func TestPathsToLint(t *testing.T) {
 		staged []string
 		want   []string
 	}{
-		{"no staged lints dot", nil, []string{"."}},
+		{"unscoped lints every lintable file", nil,
+			[]string{"a.js", "b.cjs", "c.mjs", "d.ts", "e.tsx", "f.d.ts", "g.test.ts", "h.spec.js"}},
 		{"lintable staged kept", []string{"a.js", "b.cjs", "c.mjs", "d.ts", "e.tsx"},
 			[]string{"a.js", "b.cjs", "c.mjs", "d.ts", "e.tsx"}},
-		{"declaration and test files dropped", []string{"a.js", "f.d.ts", "g.test.ts", "h.spec.js"},
-			[]string{"a.js"}},
+		{"declaration and test files kept", []string{"a.js", "f.d.ts", "g.test.ts", "h.spec.js"},
+			[]string{"a.js", "f.d.ts", "g.test.ts", "h.spec.js"}},
 		{"non-lintable extensions dropped", []string{"a.js", "README.md", "x.go"}, []string{"a.js"}},
 		{"missing file dropped", []string{"a.js", "gone.ts"}, []string{"a.js"}},
-		{"all filtered falls back to dot", []string{"f.d.ts", "README.md", "gone.ts"}, []string{"."}},
+		{"nothing lintable left", []string{"README.md", "gone.ts"}, nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -338,7 +335,7 @@ func TestRunInvocationWalksUpForInstalledConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := invokeAndRecord(t, root)
-	want := wantInvocation(t, root, filepath.Join(base, installedConfigMjs))
+	want := wantInvocation(t, root, filepath.Join(base, installedConfigMjs), "a.js")
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("invocation = %#v, want %#v", got, want)
 	}

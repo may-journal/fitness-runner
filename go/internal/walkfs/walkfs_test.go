@@ -2,6 +2,7 @@ package walkfs
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -18,49 +19,34 @@ func write(t *testing.T, root, rel, content string) {
 	}
 }
 
-func TestSkipDirsDefaultsAndCspell(t *testing.T) {
+func git(t *testing.T, dir string, args ...string) {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git %v: %v\n%s", args, err, out)
+	}
+}
+
+func TestFilesByExtOutsideGitWalksEverything(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, "cspell.json", `{"ignorePaths": ["node_modules", "custom-skip", "**/glob/**", "with/slash"]}`)
-	set := SkipDirs(root)
-	for _, want := range []string{"node_modules", "dist", "coverage", ".git", "githooks", "custom-skip"} {
-		if !set[want] {
-			t.Errorf("missing skip dir %q", want)
+	for _, rel := range []string{"root.md", "src/a.md", "src/c.ts", "node_modules/pkg/x.md",
+		"dist/y.md", "coverage/z.md", "githooks/h.md", ".git/HEAD.md", "sub/.git/k.md"} {
+		write(t, root, rel, "")
+	}
+	write(t, root, ".fitnessrc.json", `{"ignore": ["src"]}`)
+	write(t, root, "cspell.json", `{"ignorePaths": ["dist"]}`)
+	cases := []struct {
+		exts []string
+		want []string
+	}{
+		{[]string{".md"}, []string{"coverage/z.md", "dist/y.md", "githooks/h.md", "node_modules/pkg/x.md", "root.md", "src/a.md"}},
+		{[]string{".ts"}, []string{"src/c.ts"}},
+		{[]string{"x.custom.md", ".ts"}, []string{"src/c.ts"}},
+	}
+	for _, tc := range cases {
+		if got := FilesByExt(root, tc.exts...); !reflect.DeepEqual(got, tc.want) {
+			t.Errorf("FilesByExt(%v) = %v, want %v", tc.exts, got, tc.want)
 		}
-	}
-	if set["**/glob/**"] || set["with/slash"] {
-		t.Error("glob/slash entries must not join the skip set")
-	}
-}
-
-func TestSkipDirsBadCspellIgnored(t *testing.T) {
-	root := t.TempDir()
-	write(t, root, "cspell.json", "not json at all")
-	if len(SkipDirs(root)) != 5 {
-		t.Error("bad cspell.json must contribute nothing")
-	}
-}
-
-func TestFilesByExt(t *testing.T) {
-	root := t.TempDir()
-	write(t, root, "root.md", "")
-	write(t, root, "src/a.md", "")
-	write(t, root, "src/deep/b.md", "")
-	write(t, root, "src/c.ts", "")
-	write(t, root, "node_modules/pkg/x.md", "")
-	write(t, root, "dist/y.md", "")
-	write(t, root, "custom-skip/z.md", "")
-	write(t, root, "cspell.json", `{"ignorePaths": ["custom-skip"]}`)
-
-	got := FilesByExt(root, ".md")
-	want := []string{"root.md", "src/a.md", "src/deep/b.md"}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("got %v, want %v", got, want)
-	}
-
-	both := FilesByExt(root, ".md", ".ts")
-	wantBoth := []string{"root.md", "src/a.md", "src/c.ts", "src/deep/b.md"}
-	if !reflect.DeepEqual(both, wantBoth) {
-		t.Fatalf("got %v, want %v", both, wantBoth)
 	}
 }
 
@@ -73,32 +59,24 @@ func TestFilesByExtSuffixMatch(t *testing.T) {
 	}
 }
 
-func TestFilesByExtHonorsConfigIgnore(t *testing.T) {
+func TestFilesByExtInGitListsTrackedFiles(t *testing.T) {
 	root := t.TempDir()
-	write(t, root, ".fitnessrc.json", `{"ignore": ["profile/README.md", ".github/workflow-templates/**", "generated"]}`)
-	write(t, root, "AGENTS.md", "")
-	write(t, root, "profile/README.md", "")
-	write(t, root, "profile/other.md", "")
-	write(t, root, ".github/workflow-templates/ci.md", "")
-	write(t, root, "docs/generated/api.md", "")
-	got := FilesByExt(root, ".md")
-	want := []string{"AGENTS.md", "profile/other.md"}
-	if !reflect.DeepEqual(got, want) {
+	git(t, root, "init", "-q")
+	write(t, root, ".gitignore", "dist\nforced.md\n")
+	for _, rel := range []string{"a.md", "node_modules/p/b.md", "githooks/c.md", "gone.md", "untracked.md", "dist/d.md", "forced.md"} {
+		write(t, root, rel, "")
+	}
+	git(t, root, "add", ".gitignore", "a.md", "node_modules", "githooks", "gone.md")
+	git(t, root, "add", "-f", "forced.md")
+	must(t, os.Symlink("a.md", filepath.Join(root, "link.md")))
+	git(t, root, "add", "link.md")
+	must(t, os.Remove(filepath.Join(root, "gone.md")))
+	want := []string{"a.md", "forced.md", "githooks/c.md", "node_modules/p/b.md"}
+	if got := FilesByExt(root, ".md"); !reflect.DeepEqual(got, want) {
 		t.Errorf("FilesByExt = %v, want %v", got, want)
 	}
-}
-
-func TestIgnoreNilWithoutPatterns(t *testing.T) {
-	root := t.TempDir()
-	if Ignore(root) != nil {
-		t.Error("no config must yield a nil matcher")
-	}
-	write(t, root, ".fitnessrc.json", `{"checks": []}`)
-	if Ignore(root) != nil {
-		t.Error("a config without ignore must yield a nil matcher")
-	}
-	if Ignored(nil, "anything.md") {
-		t.Error("a nil matcher must ignore nothing")
+	if got := FilesByExt(filepath.Join(root, "githooks"), ".md"); !reflect.DeepEqual(got, []string{"c.md"}) {
+		t.Errorf("FilesByExt(subdir) = %v, want [c.md]", got)
 	}
 }
 
@@ -129,5 +107,13 @@ func TestScanFilesScoped(t *testing.T) {
 	}
 	if n != 1 || !reflect.DeepEqual(seen, []string{"b.md"}) {
 		t.Fatalf("scanned %v (n=%d), want only b.md", seen, n)
+	}
+}
+
+// must fails the test on a setup error.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

@@ -5,7 +5,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // initRepo creates a temp git repo; when ignoreDist is set, .gitignore holds
@@ -131,7 +134,7 @@ func TestCollectSourceFiles(t *testing.T) {
 		writeFile(t, dir, name, "")
 	}
 	got := collectSourceFiles(dir)
-	want := []string{"a.ts", "b.mts", "c.cts", "nested/deep.ts"}
+	want := []string{"a.test.ts", "a.ts", "b.mts", "b.spec.mts", "c.cts", "c.test.cts", "dist/generated.ts", "nested/deep.ts"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("files = %#v, want %#v", got, want)
 	}
@@ -184,70 +187,62 @@ func TestDistTrackingErrors(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	t.Run("passes on a clean repo and counts files + 1", func(t *testing.T) {
-		dir := initRepo(t, true)
-		writeFile(t, dir, "clean.ts", "import x from './local.js';\n")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !res.Ok || len(res.Errors) != 0 || res.FilesChecked != 2 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
+	badImport := `bad.ts:1 imports build output: "../dist/x.js"`
+	cases := []struct {
+		name       string
+		ignoreDist bool
+		tracked    []string          // written empty and force-added
+		files      map[string]string // written and added
+		untracked  map[string]string // written only
+		errors     []string
+		count      int
+	}{
+		{name: "passes on a clean repo and counts files + 1", ignoreDist: true,
+			files: map[string]string{"clean.ts": "import x from './local.js';\n"}, count: 2},
+		{name: "fails on a dist import in source", ignoreDist: true,
+			files: map[string]string{"bad.ts": "import x from '../dist/x.js';\n"}, errors: []string{badImport}, count: 2},
+		{name: "an untracked source file is left out", ignoreDist: true,
+			untracked: map[string]string{"bad.ts": "import x from '../dist/x.js';\n"}},
+		{name: "passes clean with no TypeScript and no dist",
+			files: map[string]string{"README.md": "# docs\n"}},
+		{name: "still requires dist ignored when dist exists without TypeScript",
+			untracked: map[string]string{"dist/app.js": ""}, errors: []string{msgNotIgnored}, count: 1},
+		{name: "orders tracking errors before import errors", tracked: []string{"dist/build.js"},
+			files:  map[string]string{"bad.ts": "import x from '../dist/x.js';\n"},
+			errors: []string{msgNotIgnored, "Remove tracked files: dist/build.js (git rm --cached)", badImport}, count: 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := initRepo(t, tc.ignoreDist)
+			for _, rel := range tc.tracked {
+				trackFile(t, dir, rel)
+			}
+			writeAll(t, dir, tc.files, true)
+			writeAll(t, dir, tc.untracked, false)
+			res, err := run(dir, nil)
+			assertRun(t, res, err, tc.errors, tc.count)
+		})
+	}
+}
 
-	t.Run("fails on a dist import in source", func(t *testing.T) {
-		dir := initRepo(t, true)
-		writeFile(t, dir, "bad.ts", "import x from '../dist/x.js';\n")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
+// writeAll writes each file into dir, adding it to the index when add is set.
+func writeAll(t *testing.T, dir string, files map[string]string, add bool) {
+	t.Helper()
+	for rel, content := range files {
+		writeFile(t, dir, rel, content)
+		if add {
+			git(t, dir, "add", "--", rel)
 		}
-		want := []string{`bad.ts:1 imports build output: "../dist/x.js"`}
-		if res.Ok || !reflect.DeepEqual(res.Errors, want) || res.FilesChecked != 2 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
+	}
+}
 
-	t.Run("passes clean with no TypeScript and no dist", func(t *testing.T) {
-		dir := initRepo(t, false)
-		writeFile(t, dir, "README.md", "# docs\n")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !res.Ok || res.FilesChecked != 0 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
-
-	t.Run("still requires dist ignored when dist exists without TypeScript", func(t *testing.T) {
-		dir := initRepo(t, false)
-		writeFile(t, dir, "dist/app.js", "")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if res.Ok || !reflect.DeepEqual(res.Errors, []string{msgNotIgnored}) {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
-
-	t.Run("orders tracking errors before import errors", func(t *testing.T) {
-		dir := initRepo(t, false)
-		trackFile(t, dir, "dist/build.js")
-		writeFile(t, dir, "bad.ts", "import x from '../dist/x.js';\n")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := []string{
-			msgNotIgnored,
-			"Remove tracked files: dist/build.js (git rm --cached)",
-			`bad.ts:1 imports build output: "../dist/x.js"`,
-		}
-		if res.Ok || !reflect.DeepEqual(res.Errors, want) || res.FilesChecked != 2 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
+// assertRun checks a verdict: it passes exactly when errors is empty.
+func assertRun(t *testing.T, res checkkit.Result, err error, errors []string, count int) {
+	t.Helper()
+	if err != nil || res.FilesChecked != count {
+		t.Fatalf("unexpected result: %+v (err %v), want %d files", res, err, count)
+	}
+	if res.Ok != (len(errors) == 0) || !slices.Equal(res.Errors, errors) {
+		t.Fatalf("ok = %v, errors = %#v, want %#v", res.Ok, res.Errors, errors)
+	}
 }

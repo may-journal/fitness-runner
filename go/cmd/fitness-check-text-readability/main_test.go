@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 func defaults() thresholds {
@@ -15,7 +17,7 @@ func defaults() thresholds {
 
 func TestFormulasOnKnownCounts(t *testing.T) {
 	c := measure("The cat sat. The dog ran.")
-	if c.words != 6 || c.letters != 18 || c.sentences != 2 || c.longWords != 0 {
+	if got := [4]int{c.words, c.letters, c.sentences, c.longWords}; got != [4]int{6, 18, 2, 0} {
 		t.Fatalf("counts wrong: %+v", c)
 	}
 	cli, ari, lix := formulas(c)
@@ -84,19 +86,28 @@ func awfulProse() string {
 
 func TestVerdict(t *testing.T) {
 	th := defaults()
-	if errs := verdict("good.md", measure(plainProse()), th); len(errs) != 0 {
-		t.Fatalf("plain prose must pass: %v", errs)
-	}
-	if errs := verdict("short.md", measure("Dense incomprehensible bureaucratic verbiage"), th); len(errs) != 0 {
-		t.Fatalf("short files are never judged: %v", errs)
+	for _, tc := range []struct{ file, text, why string }{
+		{"good.md", plainProse(), "plain prose must pass"},
+		{"short.md", "Dense incomprehensible bureaucratic verbiage", "short files are never judged"},
+	} {
+		if errs := verdict(tc.file, measure(tc.text), th); len(errs) != 0 {
+			t.Fatalf("%s: %v", tc.why, errs)
+		}
 	}
 	errs := verdict("bad.md", measure(awfulProse()), th)
-	if len(errs) != 1 || !strings.Contains(errs[0], "readability alarm") {
-		t.Fatalf("awful prose must alarm: %v", errs)
+	if len(errs) != 1 || !containsAll(errs[0], "readability alarm", "bad.md:", "alarm at") {
+		t.Fatalf("awful prose must alarm, naming the file and the bands: %v", errs)
 	}
-	if !strings.Contains(errs[0], "bad.md:") || !strings.Contains(errs[0], "alarm at") {
-		t.Fatalf("alarm names the file and the bands: %v", errs)
+}
+
+// containsAll reports whether s contains every one of parts.
+func containsAll(s string, parts ...string) bool {
+	for _, part := range parts {
+		if !strings.Contains(s, part) {
+			return false
+		}
 	}
+	return true
 }
 
 func TestGuidanceIsLLMFuel(t *testing.T) {
@@ -120,19 +131,23 @@ func write(t *testing.T, dir, name, content string) {
 	}
 }
 
+// runExpecting runs the check and requires the verdict and file count.
+func runExpecting(t *testing.T, dir string, args []string, ok bool, files int, label string) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, args)
+	if err != nil || res.Ok != ok || res.FilesChecked != files {
+		t.Fatalf("%s: %+v %v", label, res, err)
+	}
+	return res
+}
+
 func TestRunEndToEnd(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "good.md", plainProse())
 	write(t, dir, "short.md", "Tiny.")
-	res, err := run(dir, nil)
-	if err != nil || !res.Ok || res.FilesChecked != 2 {
-		t.Fatalf("clean repo: %+v %v", res, err)
-	}
+	runExpecting(t, dir, nil, true, 2, "clean repo")
 	write(t, dir, "bad.md", awfulProse())
-	res, err = run(dir, nil)
-	if err != nil || res.Ok || res.FilesChecked != 3 {
-		t.Fatalf("one alarm expected: %+v %v", res, err)
-	}
+	res := runExpecting(t, dir, nil, false, 3, "one alarm expected")
 	if len(res.Errors) != 4 || !strings.Contains(res.Errors[0], "bad.md:") {
 		t.Fatalf("want 1 alarm + 3 guidance lines, alarm first: %v", res.Errors)
 	}
@@ -143,32 +158,18 @@ func TestRunEndToEnd(t *testing.T) {
 
 func TestRunBodyMode(t *testing.T) {
 	dir := t.TempDir()
-	bad := filepath.Join(dir, "bad-body.md")
-	if err := os.WriteFile(bad, []byte(awfulProse()), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err := run(t.TempDir(), []string{"--body-file", bad})
-	if err != nil || res.Ok {
-		t.Fatalf("awful description must fail: %+v %v", res, err)
-	}
-	good := filepath.Join(dir, "good-body.md")
-	if err := os.WriteFile(good, []byte(plainProse()), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(t.TempDir(), []string{"--body-file", good})
-	if err != nil || !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("clean description must pass one file: %+v %v", res, err)
-	}
+	write(t, dir, "bad-body.md", awfulProse())
+	write(t, dir, "good-body.md", plainProse())
+	bad, good := filepath.Join(dir, "bad-body.md"), filepath.Join(dir, "good-body.md")
+	runExpecting(t, t.TempDir(), []string{"--body-file", bad}, false, 1, "awful description must fail")
+	runExpecting(t, t.TempDir(), []string{"--body-file", good}, true, 1, "clean description must pass one file")
 }
 
 func TestConfigOverrides(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, ".fitnessrc.json", `{"textReadability": {"maxGrade": 5, "minWords": 10}}`)
 	write(t, dir, "plain.md", plainProse())
-	res, err := run(dir, nil)
-	if err != nil || res.Ok {
-		t.Fatalf("lowered ceiling must flag plain prose: %+v %v", res, err)
-	}
+	runExpecting(t, dir, nil, false, 1, "lowered ceiling must flag plain prose")
 	if th := loadThresholds(dir); th.maxGrade != 5 || th.minWords != 10 || th.maxLix != defaultMaxLix {
 		t.Fatalf("config overlay wrong: %+v", th)
 	}

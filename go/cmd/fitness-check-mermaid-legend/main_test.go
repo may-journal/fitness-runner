@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // flowchart builds a mermaid flowchart doc with the given body lines — the
@@ -113,10 +115,7 @@ func writeFile(t *testing.T, root, name, content string) {
 }
 
 func TestRunNoRelevantFiles(t *testing.T) {
-	res, err := run(t.TempDir(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runOn(t, t.TempDir())
 	if !res.Ok || res.FilesChecked != 0 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
@@ -125,10 +124,7 @@ func TestRunNoRelevantFiles(t *testing.T) {
 func TestRunFailsUnstyledCallout(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "a.md", flowchart("persona((1 Persona))", "classDef persona fill:#eef"))
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runOn(t, root)
 	if res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
@@ -142,41 +138,35 @@ func TestRunCountsOnlyMermaidFiles(t *testing.T) {
 	root := t.TempDir()
 	writeFile(t, root, "good.md", flowchart("a[1 A]:::x", "classDef x fill:#eef"))
 	writeFile(t, root, "plain.md", "# No diagrams here\n")
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runOn(t, root)
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
 }
 
+// runOn runs the check over root with args, failing the test on a crash.
+func runOn(t *testing.T, root string, args ...string) checkkit.Result {
+	t.Helper()
+	res, err := run(root, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
+}
+
 // TestRunBodyMode validates a single supplied description document instead of
 // walking files.
 func TestRunBodyMode(t *testing.T) {
-	bad := flowchart("persona((1 Persona))", "classDef persona fill:#eef")
-	badPath := filepath.Join(t.TempDir(), "body.md")
-	if err := os.WriteFile(badPath, []byte(bad), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err := run(t.TempDir(), []string{"--body-file", badPath})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok {
-		t.Fatalf("expected body-mode failure, got %+v", res)
+	bodies := t.TempDir()
+	writeFile(t, bodies, "body.md", flowchart("persona((1 Persona))", "classDef persona fill:#eef"))
+	bad := runOn(t, t.TempDir(), "--body-file", filepath.Join(bodies, "body.md"))
+	if bad.Ok {
+		t.Fatalf("expected body-mode failure, got %+v", bad)
 	}
 
-	good := flowchart("persona((1 Persona)):::persona", "classDef persona fill:#eef")
-	goodPath := filepath.Join(t.TempDir(), "clean.md")
-	if err := os.WriteFile(goodPath, []byte(good), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(t.TempDir(), []string{"--body-file", goodPath})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", res)
+	writeFile(t, bodies, "clean.md", flowchart("persona((1 Persona)):::persona", "classDef persona fill:#eef"))
+	good := runOn(t, t.TempDir(), "--body-file", filepath.Join(bodies, "clean.md"))
+	if !good.Ok || good.FilesChecked != 1 {
+		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", good)
 	}
 }

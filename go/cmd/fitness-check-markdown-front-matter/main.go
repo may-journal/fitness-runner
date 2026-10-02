@@ -39,9 +39,6 @@ func runCheck(root string, registered []string) (checkkit.Result, error) {
 		return checkkit.Result{}, err
 	}
 	errs, fileCount, err := walkfs.ScanFiles(root, []string{".md"}, func(file, content string) []string {
-		if isExempt(file) {
-			return nil
-		}
 		mdDir := filepath.Dir(filepath.Join(absRoot, filepath.FromSlash(file)))
 		return validateFile(file, content, absRoot, mdDir, registered)
 	})
@@ -59,21 +56,30 @@ var (
 	emptyArrayRe = regexp.MustCompile(`(fitnessFunctions|relatedConfigurations):\s*\[\s*\]`)
 )
 
-// prTemplate is GitHub's PR description template. GitHub inserts it into every
-// PR body verbatim, so it cannot carry front matter — it is exempt.
-const prTemplate = ".github/PULL_REQUEST_TEMPLATE.md"
-
-// isExempt reports whether the markdown file is exempt from the front matter
-// rule because it is a GitHub template rendered verbatim.
-func isExempt(file string) bool {
-	return file == prTemplate
+// frontMatter returns the document's front matter body: a plain leading
+// "---" block, or one wrapped in an HTML comment that opens on the first
+// line. GitHub copies a PR template into every PR body verbatim and hides
+// comments, so the template carries its front matter that way.
+func frontMatter(content string) (string, bool) {
+	if inner, ok := mdx.FrontMatter(content); ok {
+		return inner, true
+	}
+	first, rest, _ := strings.Cut(content, "\n")
+	if strings.TrimSpace(first) != "<!--" {
+		return "", false
+	}
+	comment, _, closed := strings.Cut(rest, "\n-->")
+	if !closed {
+		return "", false
+	}
+	return mdx.FrontMatter(comment + "\n")
 }
 
 // validateFile returns one markdown file's error messages: missing or
 // keyless front matter is a single error, and empty arrays short-circuit
 // path validation, exactly like the TS validateFile.
 func validateFile(file, content, root, mdDir string, registered []string) []string {
-	inner, ok := mdx.FrontMatter(content)
+	inner, ok := frontMatter(content)
 	if !ok || !hasRequiredKeys(inner) {
 		return []string{file + ": missing front matter with fitnessFunctions or relatedConfigurations"}
 	}

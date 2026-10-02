@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // doc wraps a diagram body with a callout table so the diagram is paired
@@ -121,10 +123,7 @@ func write(t *testing.T, root, path, content string) {
 }
 
 func TestRunPassesWhenNoRelevantFiles(t *testing.T) {
-	res, err := run(t.TempDir(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runOn(t, t.TempDir())
 	if !res.Ok || res.FilesChecked != 0 || len(res.Errors) != 0 {
 		t.Fatalf("unexpected result: %+v", res)
 	}
@@ -133,10 +132,7 @@ func TestRunPassesWhenNoRelevantFiles(t *testing.T) {
 func TestRunFailsDocWithProseRelationshipLabel(t *testing.T) {
 	root := t.TempDir()
 	write(t, root, "a.md", doc(`Rel(app, api, "6 Uses over HTTP")`))
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runOn(t, root)
 	if res.Ok {
 		t.Fatalf("expected failure, got %+v", res)
 	}
@@ -155,10 +151,7 @@ func TestRunCountsOnlyFilesWithBlocks(t *testing.T) {
 	write(t, root, "prose-only.md", "# Title\n\nno mermaid here\n")
 	write(t, root, "table-only.md", "| # | D |\n| --- | --- |\n| 1 | a |\n")
 	write(t, root, "docs/nested.md", doc("app -->|6 calls the api| api"))
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runOn(t, root)
 	if res.Ok {
 		t.Fatalf("expected failure from nested doc, got %+v", res)
 	}
@@ -170,29 +163,27 @@ func TestRunCountsOnlyFilesWithBlocks(t *testing.T) {
 	}
 }
 
+// runOn runs the check over root with args and fails the test on a crash.
+func runOn(t *testing.T, root string, args ...string) checkkit.Result {
+	t.Helper()
+	res, err := run(root, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
+}
+
 // TestRunBodyMode validates a single supplied description document instead of
 // walking files.
 func TestRunBodyMode(t *testing.T) {
-	badPath := filepath.Join(t.TempDir(), "body.md")
-	if err := os.WriteFile(badPath, []byte(doc(`Rel(app, api, "6 Uses over HTTP")`)), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err := run(t.TempDir(), []string{"--body-file", badPath})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok {
+	bodyDir := t.TempDir()
+	write(t, bodyDir, "body.md", doc(`Rel(app, api, "6 Uses over HTTP")`))
+	if res := runOn(t, t.TempDir(), "--body-file", filepath.Join(bodyDir, "body.md")); res.Ok {
 		t.Fatalf("expected body-mode failure, got %+v", res)
 	}
 
-	goodPath := filepath.Join(t.TempDir(), "clean.md")
-	if err := os.WriteFile(goodPath, []byte(doc(`Rel(app, api, "6")`)), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(t.TempDir(), []string{"--body-file", goodPath})
-	if err != nil {
-		t.Fatal(err)
-	}
+	write(t, bodyDir, "clean.md", doc(`Rel(app, api, "6")`))
+	res := runOn(t, t.TempDir(), "--body-file", filepath.Join(bodyDir, "clean.md"))
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", res)
 	}

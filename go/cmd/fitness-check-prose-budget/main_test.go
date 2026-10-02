@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -55,68 +56,59 @@ func TestCheckLimits(t *testing.T) {
 	}
 }
 
-func TestTotalWordsFallback(t *testing.T) {
+func TestSectionWordBudget(t *testing.T) {
 	lim := tight
 	lim.words = 3
-	errs := check("f.md", "## H\n\nfour words right here.\n", lim)
-	if !strings.Contains(firstErr(errs), "over the 3-word budget") {
-		t.Fatalf("expected word-budget error, got %v", errs)
+	cases := []struct {
+		name, md string
+		want     []string
+	}{
+		{"each section under the cap passes", "## A\n\nOne two three.\n\n## B\n\n- one two\n- three\n", nil},
+		{"one section over the cap fails", "## A\n\nOne two.\n\n## B\n\nFour words right here.\n",
+			[]string{`f.md: section "B" has 4 prose words (max 3)`}},
+		{"lists count toward the section", "## A\n\nOne two.\n\n- three four\n",
+			[]string{`f.md: section "A" has 4 prose words (max 3)`}},
+		{"prose before the first heading is its own section", "Four words up top.\n\n## A\n\nOne.\n",
+			[]string{`f.md: section "" has 4 prose words (max 3)`}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := check("f.md", tc.md, lim); !slices.Equal(got, tc.want) {
+				t.Fatalf("errors = %q, want %q", got, tc.want)
+			}
+		})
 	}
 }
 
-func TestIsExempt(t *testing.T) {
-	exempt := []string{"CHANGELOG.md", "docs/x/**"}
-	for _, rel := range []string{"CHANGELOG.md", "docs/x/a.md", "docs/x/sub/b.md"} {
-		if !isExempt(rel, exempt) {
-			t.Errorf("%q should be exempt", rel)
-		}
-	}
-	for _, rel := range []string{"README.md", "docs/x.md", "docs/xy/a.md"} {
-		if isExempt(rel, exempt) {
-			t.Errorf("%q should not be exempt", rel)
-		}
-	}
-}
-
-func TestRunExemptsChangelogOnly(t *testing.T) {
+func TestRunJudgesChangelog(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "CHANGELOG.md", "## H\n\n"+strings.Repeat("word ", 50)+"way too many words in one sentence indeed.\n")
 	write(t, dir, "README.md", "## H\n\nShort and clean.\n")
 	write(t, dir, ".fitnessrc.json", `{}`)
 
 	res, err := run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok {
-		t.Fatalf("CHANGELOG.md must be exempt and README clean: %+v", res)
+	if err != nil || res.Ok || !strings.HasPrefix(firstErr(res.Errors), "CHANGELOG.md: a sentence has 58 words") {
+		t.Fatalf("CHANGELOG.md must be judged like any file: %+v (err %v)", res, err)
 	}
 }
 
 func TestRunBodyMode(t *testing.T) {
-	dir := t.TempDir()
-	over := filepath.Join(dir, "over.md")
-	if err := os.WriteFile(over, []byte("## H\n\n"+strings.Repeat("word ", 30)+"end.\n"), 0o644); err != nil {
-		t.Fatal(err)
+	cases := []struct {
+		name, body string
+		ok         bool
+	}{
+		{"over-budget description fails", "## H\n\n" + strings.Repeat("word ", 30) + "end.\n", false},
+		{"clean description passes", "## H\n\nShort and clean prose.\n", true},
 	}
-	res, err := run(dir, []string{"--body-file", over})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("over-budget description must fail one file: %+v", res)
-	}
-
-	clean := filepath.Join(dir, "clean.md")
-	if err := os.WriteFile(clean, []byte("## H\n\nShort and clean prose.\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(dir, []string{"--body-file", clean})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("clean description must pass one file: %+v", res)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			write(t, dir, "body.md", tc.body)
+			res, err := run(dir, []string{"--body-file", filepath.Join(dir, "body.md")})
+			if err != nil || res.Ok != tc.ok || res.FilesChecked != 1 {
+				t.Fatalf("want ok=%v over one file: %+v (err %v)", tc.ok, res, err)
+			}
+		})
 	}
 }
 

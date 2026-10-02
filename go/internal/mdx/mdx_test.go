@@ -21,19 +21,14 @@ func TestFrontMatter(t *testing.T) {
 
 func TestFences(t *testing.T) {
 	doc := "intro\n```mermaid\nA --> B\n```\ntext\n~~~~go\ncode\n~~~~\n```\nplain\n"
-	fences := Fences(doc)
-	if len(fences) != 3 {
-		t.Fatalf("got %d fences, want 3", len(fences))
+	want := []Fence{
+		{Info: "mermaid", Line: 2, Body: "A --> B"},
+		{Info: "go", Line: 6, Body: "code"},
+		// unterminated block runs to end of document
+		{Info: "", Line: 9, Body: "plain\n"},
 	}
-	if fences[0].Info != "mermaid" || fences[0].Line != 2 || fences[0].Body != "A --> B" {
-		t.Fatalf("fence 0: %+v", fences[0])
-	}
-	if fences[1].Info != "go" || fences[1].Body != "code" {
-		t.Fatalf("fence 1: %+v", fences[1])
-	}
-	// unterminated block runs to end of document
-	if fences[2].Info != "" || fences[2].Body != "plain\n" {
-		t.Fatalf("fence 2: %+v", fences[2])
+	if got := Fences(doc); !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
 	}
 }
 

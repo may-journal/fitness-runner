@@ -103,34 +103,29 @@ func (T) m() {
 	}
 }
 
-func TestRunExemptsTestsAndHonorsConfig(t *testing.T) {
-	dir := t.TempDir()
+func TestRunJudgesTestsAndHonorsConfig(t *testing.T) {
 	complex := "package p\n\nfunc f() {\n\tif true {\n\t}\n\tif true {\n\t}\n}\n"
-	write(t, dir, "a.go", complex)
-	write(t, dir, "a_test.go", complex)
-	write(t, dir, ".fitnessrc.json", `{"goComplexity": {"max": 2}}`)
-
-	res, err := run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
+	cases := []struct {
+		name   string
+		config string
+		errors int
+	}{
+		{"max 2 flags source and test alike", `{"goComplexity": {"max": 2}}`, 2},
+		{"default max 5 passes both", "", 0},
 	}
-	if res.Ok || len(res.Errors) != 1 {
-		t.Fatalf("only a.go judged (max 2): %+v", res)
-	}
-	if res.FilesChecked != 1 {
-		t.Fatalf("test files exempt from filesChecked: %d", res.FilesChecked)
-	}
-
-	// default max 5 passes the same file
-	if err := os.Remove(filepath.Join(dir, ".fitnessrc.json")); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok {
-		t.Fatalf("complexity 3 under default max 5 must pass: %+v", res)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			write(t, dir, "a.go", complex)
+			write(t, dir, "a_test.go", complex)
+			if tc.config != "" {
+				write(t, dir, ".fitnessrc.json", tc.config)
+			}
+			res, err := run(dir, nil)
+			if err != nil || len(res.Errors) != tc.errors || res.FilesChecked != 2 {
+				t.Fatalf("want %d errors over 2 files: %+v (err %v)", tc.errors, res, err)
+			}
+		})
 	}
 }
 

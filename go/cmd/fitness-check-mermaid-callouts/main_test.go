@@ -37,10 +37,18 @@ func write(t *testing.T, dir, relPath, content string) {
 	}
 }
 
-// runOn runs the check over dir and fails the test on a crash.
-func runOn(t *testing.T, dir string) checkkit.Result {
+// writeAll lays each relPath to content fixture out under dir.
+func writeAll(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
-	res, err := run(dir, nil)
+	for relPath, content := range files {
+		write(t, dir, relPath, content)
+	}
+}
+
+// runOn runs the check over dir with args and fails the test on a crash.
+func runOn(t *testing.T, dir string, args ...string) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, args)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -171,9 +179,7 @@ func TestRunTableDriven(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			for relPath, content := range tc.files {
-				write(t, dir, relPath, content)
-			}
+			writeAll(t, dir, tc.files)
 			res := runOn(t, dir)
 			if res.Ok != tc.ok {
 				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
@@ -235,19 +241,14 @@ func TestValidateDocOrphanBeforePairErrors(t *testing.T) {
 // TestRunBodyMode validates a single supplied description document instead of
 // walking files.
 func TestRunBodyMode(t *testing.T) {
+	dir := t.TempDir()
 	bad := strings.Join([]string{
 		mermaidFence("Rel(a, b, \"1\")\nRel(b, c, \"2\")"),
 		"",
 		calloutTable([][2]string{{"1", "x"}}),
 	}, "\n")
-	badPath := filepath.Join(t.TempDir(), "body.md")
-	if err := os.WriteFile(badPath, []byte(bad), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err := run(t.TempDir(), []string{"--body-file", badPath})
-	if err != nil {
-		t.Fatal(err)
-	}
+	write(t, dir, "body.md", bad)
+	res := runOn(t, t.TempDir(), "--body-file", filepath.Join(dir, "body.md"))
 	if res.Ok {
 		t.Fatalf("expected body-mode failure, got %+v", res)
 	}
@@ -257,14 +258,8 @@ func TestRunBodyMode(t *testing.T) {
 		"",
 		calloutTable([][2]string{{"1", "x"}}),
 	}, "\n")
-	goodPath := filepath.Join(t.TempDir(), "clean.md")
-	if err := os.WriteFile(goodPath, []byte(good), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(t.TempDir(), []string{"--body-file", goodPath})
-	if err != nil {
-		t.Fatal(err)
-	}
+	write(t, dir, "clean.md", good)
+	res = runOn(t, t.TempDir(), "--body-file", filepath.Join(dir, "clean.md"))
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", res)
 	}

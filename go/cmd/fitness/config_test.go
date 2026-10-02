@@ -9,12 +9,18 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 )
 
-func TestAllChecksHasEveryCheckBinary(t *testing.T) {
+// checkDirectories lists the sibling fitness-check-* directories.
+func checkDirectories(t *testing.T) []string {
+	t.Helper()
 	dirs, err := filepath.Glob(filepath.Join("..", "fitness-check-*"))
 	if err != nil || len(dirs) == 0 {
 		t.Fatalf("no check directories found: %v", err)
 	}
-	for _, d := range dirs {
+	return dirs
+}
+
+func TestAllChecksHasEveryCheckBinary(t *testing.T) {
+	for _, d := range checkDirectories(t) {
 		name := filepath.Base(d)[len("fitness-check-"):]
 		if !slices.Contains(allChecks, name) {
 			t.Errorf("allChecks is missing %s; every check runs in every repo", name)

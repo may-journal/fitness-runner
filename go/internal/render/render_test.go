@@ -8,6 +8,16 @@ import (
 
 func plain() Palette { return Palette{} }
 
+// assertLineWidths checks every line of out is exactly width runes wide.
+func assertLineWidths(t *testing.T, out string, width int) {
+	t.Helper()
+	for i, line := range strings.Split(out, "\n") {
+		if got := utf8.RuneCountInString(line); got != width {
+			t.Errorf("line %d width = %d, want %d: %q", i, got, width, line)
+		}
+	}
+}
+
 func TestTableGeometryAt80(t *testing.T) {
 	rows := []Row{
 		{Name: "read-repo-first", Ok: true, FilesChecked: 0, Ms: 7},
@@ -15,23 +25,17 @@ func TestTableGeometryAt80(t *testing.T) {
 			Errors: []string{"some/path.md: filename must be kebab-case"}},
 	}
 	out := Table(rows, 80, plain())
-	lines := strings.Split(out, "\n")
-	for i, line := range lines {
-		if got := utf8.RuneCountInString(line); got != 80 {
-			t.Errorf("line %d width = %d, want 80: %q", i, got, line)
+	assertLineWidths(t, out, 80)
+	wants := []struct{ text, why string }{
+		{"│ markdown-filename-kebab-c… │", "long name must truncate with ellipsis at 26 chars"},
+		{"[markdown-filename-kebab-case] Please fix these items:", "error block header missing"},
+		{"  ✖ some/path.md: filename must be kebab-case", "error bullet missing"},
+		{"│ read-repo-first            │ passed   │ 0      │ 7ms", "row cells misaligned"},
+	}
+	for _, w := range wants {
+		if !strings.Contains(out, w.text) {
+			t.Error(w.why)
 		}
-	}
-	if !strings.Contains(out, "│ markdown-filename-kebab-c… │") {
-		t.Error("long name must truncate with ellipsis at 26 chars")
-	}
-	if !strings.Contains(out, "[markdown-filename-kebab-case] Please fix these items:") {
-		t.Error("error block header missing")
-	}
-	if !strings.Contains(out, "  ✖ some/path.md: filename must be kebab-case") {
-		t.Error("error bullet missing")
-	}
-	if !strings.Contains(out, "│ read-repo-first            │ passed   │ 0      │ 7ms") {
-		t.Error("row cells misaligned")
 	}
 }
 
@@ -54,11 +58,7 @@ func TestFilesDashWhenNegative(t *testing.T) {
 func TestErrorBlockWraps(t *testing.T) {
 	long := strings.Repeat("word ", 30) + "end"
 	out := Table([]Row{{Name: "x", Ok: false, FilesChecked: 1, Ms: 1, Errors: []string{long}}}, 80, plain())
-	for i, line := range strings.Split(out, "\n") {
-		if got := utf8.RuneCountInString(line); got != 80 {
-			t.Fatalf("wrapped line %d width = %d: %q", i, got, line)
-		}
-	}
+	assertLineWidths(t, out, 80)
 	if !strings.Contains(out, "│   ✖ word") {
 		t.Error("first wrapped line must keep the bullet indent")
 	}
