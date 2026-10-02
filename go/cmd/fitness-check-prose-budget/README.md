@@ -19,24 +19,23 @@ Each limit is overridable in `.fitnessrc.json` under `proseBudget`; a positive v
 | Paragraphs per section | `maxSectionParagraphs` | 3 |
 | Words per list item | `maxListItemWords` | 23 |
 | Items per list | `maxListItems` | 8 |
-| Total prose words per file | `maxWords` | 300 |
+| Prose words per section | `maxWords` | 300 |
 
-A paragraph is a run of consecutive prose lines. A section runs from one heading to the next. A list is a run of consecutive items; nested items count individually.
+A paragraph is a run of consecutive prose lines. A section runs from one heading to the next, and its paragraphs and lists count toward `maxWords`. Prose before the first heading is its own section. A list is a run of consecutive items; nested items count individually.
 
 ## Behavior
 
 - Pass: every masked paragraph, section, and list in the file is within all six limits.
 - Fail: one error per limit crossed, naming the file, the offending element, and its count versus the limit.
-- `CHANGELOG.md` is a built-in exemption; configured `exempt` paths union with it.
-- An exempt entry is an exact path or a `dir/**` slash prefix — no globbing.
+- Every tracked `.md` file is judged, `CHANGELOG.md` included; there is no exempt list.
+- A `.fitnessrc.json` that sets `proseBudget.exempt` fails the run.
 
 ## Configuration
 
 ```json
 {
   "proseBudget": {
-    "maxListItems": 8,
-    "exempt": ["docs/generated/**"]
+    "maxListItems": 8
   }
 }
 ```

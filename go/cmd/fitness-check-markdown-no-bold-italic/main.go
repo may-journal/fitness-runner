@@ -1,8 +1,8 @@
 // Command fitness-check-markdown-no-bold-italic validates that markdown
 // files do not use **bold**, __bold__, *italic*, or _italic_ emphasis — the
 // Go port of the markdown-no-bold-italic check. Emphasis inside fenced code
-// blocks, inline code, and markdown links is exempt, as is the root
-// CHANGELOG.md. The italic patterns carry JavaScript look-behind and
+// blocks, inline code, and markdown links is allowed; every tracked .md
+// file is checked, CHANGELOG.md included. The italic patterns carry JavaScript look-behind and
 // look-ahead assertions the TS original relied on, so their scan is
 // hand-rolled here; the flagged snippet is quoted byte-for-byte like
 // JSON.stringify.
@@ -38,15 +38,11 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return walkFiles(root)
 }
 
-// walkFiles flags bold/italic in every in-scope .md file under root except
-// the changelog.
+// walkFiles flags bold/italic in every in-scope .md file under root.
 func walkFiles(root string) (checkkit.Result, error) {
 	var errors []string
 	filesChecked := 0
 	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
-		if file == "CHANGELOG.md" {
-			continue
-		}
 		filesChecked++
 		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if err != nil {

@@ -14,4 +14,14 @@ Validates that `.md` files with front matter declare `fitnessFunctions` or `rela
 - Fail: Empty array → `fitnessFunctions`/`relatedConfigurations` must not be an empty array.
 - Fail: Path doesn't exist or escapes repo → `front matter path missing: …` or `front matter path escapes repo: …`.
 
+Front matter may sit inside an HTML comment that opens on the first line, so GitHub hides it. The PR template uses this form, since GitHub copies it into every PR body:
+
+```markdown
+<!--
+---
+relatedConfigurations: ['../.fitnessrc.json']
+---
+-->
+```
+
 Paths in `fitnessFunctions`/`relatedConfigurations` may be registered check names (e.g. `eslint`); those are always valid. Paths are resolved relative to the `.md` file’s directory. External URLs and anchors (`http`, `#`, `mailto:`) are skipped.

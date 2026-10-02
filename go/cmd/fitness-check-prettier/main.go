@@ -2,12 +2,13 @@
 // Go port of the prettier check. The binary stays zero-dependency: Prettier
 // is resolved at runtime as a peer of the repo under check (node_modules/.bin
 // walking up from root, then PATH — never npx), and a missing binary fails
-// with a one-line install hint. Everything else is the TS check verbatim:
-// staged paths are filtered (skip-list entries, .mdc, and the githooks/,
-// scripts/, go/ trees Prettier cannot parse), the glob "." runs when nothing
-// is staged, passthrough args replace --check mode, [warn] lines become
-// per-file errors, and a non-zero exit that parsed nothing reports the
-// fallback message. When the repo has no Prettier config of its own, the
+// with a one-line install hint. Prettier checks every tracked file (or every
+// changed file in a scoped run) with --ignore-unknown, so a file type it has
+// no parser for passes instead of being skipped by name. It ignores nothing
+// else: --ignore-path points at an empty file and --with-node-modules is on,
+// and a repo with a .prettierignore fails. Passthrough args replace --check
+// mode, [warn] lines become per-file errors, and a non-zero exit that parsed
+// nothing reports the fallback message. When the repo has no Prettier config of its own, the
 // shared prettier.config.cjs is passed via --config: an installed
 // @mayjournal/fitness-shared wins (the npm-era node_modules walk, mirroring
 // the TS resolveFitnessConfigPath), else the copy embedded in this binary is
@@ -67,16 +68,13 @@ var prettierConfigNames = []string{
 	"prettier.config.ts",
 }
 
-// prettierSkipStaged are staged paths never handed to Prettier (no parser or
-// covered by ignore files) — the TS PRETTIER_SKIP_STAGED set.
-var prettierSkipStaged = map[string]bool{
-	".gitignore":          true,
-	"githooks/commit-msg": true,
-	".npmrc":              true,
-	".prettierignore":     true,
-	"LICENSE":             true,
-	"package-lock.json":   true,
-}
+// prettierIgnoreFile is the ignore file Prettier would honor; the check
+// fails a repo that has one.
+const prettierIgnoreFile = ".prettierignore"
+
+// ignoreNothing is Prettier's --ignore-path: an empty file, so neither
+// .gitignore nor .prettierignore hides a tracked file.
+const ignoreNothing = "/dev/null"
 
 func main() {
 	checkkit.Main(checkkit.Check{
@@ -86,12 +84,9 @@ func main() {
 }
 
 func run(root string, args []string) (checkkit.Result, error) {
-	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
-		return checkkit.Pass(0), nil
-	}
-	bin := resolvePrettierBin(root)
-	if bin == "" {
-		return checkkit.Fail(0, notInstalled), nil
+	bin, res, done := preflight(root)
+	if done {
+		return res, nil
 	}
 	configPath := resolveConfigPath(root)
 	paths, ok := scopedPaths(root, args)
@@ -105,6 +100,22 @@ func run(root string, args []string) (checkkit.Result, error) {
 	exitCode, output := execPrettier(bin, root, env, prettierArgv(configPath, args, paths))
 	parsed := parsePrettierOutput(output)
 	return buildExecResult(exitCode, parsed, prettierErrors(output), filesChecked(parsed, paths)), nil
+}
+
+// preflight resolves the Prettier binary, or the verdict that ends the run
+// first: a failure for any repo with a .prettierignore, then a pass for a
+// repo with no package.json, then a failure without Prettier installed.
+func preflight(root string) (bin string, res checkkit.Result, done bool) {
+	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
+		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
+	}
+	if len(walkfs.FilesByExt(root, packageJSONName)) == 0 {
+		return "", checkkit.Pass(0), true
+	}
+	if bin = resolvePrettierBin(root); bin == "" {
+		return "", checkkit.Fail(0, notInstalled), true
+	}
+	return bin, checkkit.Result{}, false
 }
 
 // walkUp calls fn on root (absolute) and each ancestor, returning fn's first
@@ -223,23 +234,8 @@ func resolveConfigPath(root string) string {
 	return sharedconf.Resolve(root, prettierConfigCjs)
 }
 
-// isUnparseableTree is true for staged paths in trees Prettier cannot parse
-// (githooks/, scripts/, go/ — Go sources and go.mod have no parser).
-func isUnparseableTree(p string) bool {
-	return strings.Contains(p, "githooks/") || strings.HasPrefix(p, "scripts/") || strings.HasPrefix(p, "go/")
-}
-
-// skipStagedPath reports a staged path Prettier must not see: missing from
-// disk, on the skip list, a .mdc file, or in an unparseable tree.
-func skipStagedPath(root, p string) bool {
-	if _, err := os.Stat(filepath.Join(root, p)); err != nil {
-		return true
-	}
-	return prettierSkipStaged[p] || strings.HasSuffix(p, ".mdc") || isUnparseableTree(p)
-}
-
 // scopedPaths returns the paths to hand Prettier, and false when a scoped run
-// changed nothing Prettier parses, so it skips instead of checking the whole
+// changed no file still on disk, so it skips instead of checking the whole
 // repo. Passthrough args always run.
 func scopedPaths(root string, args []string) ([]string, bool) {
 	changed := checkkit.ChangedFiles()
@@ -247,16 +243,15 @@ func scopedPaths(root string, args []string) ([]string, bool) {
 	return paths, changed == nil || len(paths) > 0 || len(args) > 0
 }
 
-// pathsToCheck returns the staged paths to hand Prettier — existing files
-// minus the skip list, .mdc files, and unparseable trees — or ["."] when
-// nothing is staged.
-func pathsToCheck(root string, staged []string) []string {
-	if len(staged) == 0 {
-		return []string{"."}
+// pathsToCheck returns the changed paths still on disk, or every tracked
+// file when the run is unscoped.
+func pathsToCheck(root string, changed []string) []string {
+	if len(changed) == 0 {
+		return walkfs.FilesByExt(root, "")
 	}
 	var out []string
-	for _, p := range staged {
-		if !skipStagedPath(root, p) {
+	for _, p := range changed {
+		if info, err := os.Stat(filepath.Join(root, p)); err == nil && !info.IsDir() {
 			out = append(out, p)
 		}
 	}
@@ -264,23 +259,18 @@ func pathsToCheck(root string, staged []string) []string {
 }
 
 // prettierArgv builds Prettier's argv: --config when a shared config applies,
-// then either the passthrough args verbatim (no --check) or --check plus the
-// paths ("." when the filtered list is empty) — the TS buildPrettierCmd order.
-// --ignore-unknown passes a file Prettier has no parser for, such as a staged
-// Swift source, instead of failing the run.
+// the flags that make Prettier ignore nothing it can parse, then either the
+// passthrough args verbatim (no --check) or --check plus the paths.
 func prettierArgv(configPath string, passthrough, paths []string) []string {
 	var argv []string
 	if configPath != "" {
 		argv = append(argv, "--config", configPath)
 	}
+	argv = append(argv, "--ignore-unknown", "--ignore-path", ignoreNothing, "--with-node-modules")
 	if len(passthrough) > 0 {
 		return append(argv, passthrough...)
 	}
-	argv = append(argv, "--check", "--ignore-unknown")
-	if len(paths) == 0 {
-		return append(argv, ".")
-	}
-	return append(argv, paths...)
+	return append(append(argv, "--check"), paths...)
 }
 
 // execPrettier runs the resolved binary in root; returns the exit code and
@@ -334,13 +324,10 @@ func prettierErrors(output string) []string {
 }
 
 // filesChecked mirrors the TS getFilesChecked: error count when files
-// failed, 0 for the "." glob, else the staged-path count.
+// failed, else the path count.
 func filesChecked(parsed, paths []string) int {
 	if len(parsed) > 0 {
 		return len(parsed)
-	}
-	if len(paths) == 1 && paths[0] == "." {
-		return 0
 	}
 	return len(paths)
 }

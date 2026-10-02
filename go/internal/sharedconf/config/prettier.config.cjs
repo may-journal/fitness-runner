@@ -4,7 +4,7 @@ const { createRequire } = require('node:module');
 const requireFromFile = createRequire(__filename);
 
 /** @type {import('prettier').Config} */
-// package.json sorted via sort-package-json (conventional order); package-lock.json in .prettierignore.
+// package.json sorted via sort-package-json (conventional order); JSON keys sorted recursively.
 const config = {
   jsonRecursiveSort: true,
   plugins: [

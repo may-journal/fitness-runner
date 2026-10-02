@@ -28,14 +28,13 @@ Optional `.fitnessrc.json` at repo root:
 ```json
 {
   "disabledChecks": ["cspell"],
-  "ignore": ["profile/README.md", ".github/workflow-templates/**"],
   "repeatedStringLiterals": { "allow": ["dist"] }
 }
 ```
 
 Every check runs in every repo, and each passes clean when its language, tool, config, or input is absent. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning.
 
-## Ignored paths
+## Every tracked file
 
-`ignore` lists paths every file check skips, with gitignore-like globs. A bare name matches at any depth, `**` crosses directories, and a matched directory hides everything beneath it.
+File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A config setting `ignore`, `skipTheseDirectories`, or `proseBudget.exempt` fails.
 

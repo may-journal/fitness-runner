@@ -59,7 +59,7 @@ Reword the rare case rather than suppressing it. Scanned extensions are `.ts`, `
 
 ## Behavior
 
-- Walks the repo for files with each extension, combining and de-duplicating results; standard skip dirs (`node_modules`, `dist`, `coverage`, `.git`, and others) are excluded.
+- Lists every tracked file with each extension, combining and de-duplicating results; no directory is skipped.
 - Matches `eslint-disable(-next-line|-line)?` — file-level `eslint-disable`, block `eslint-disable ... eslint-enable`, `eslint-disable-line`, and `eslint-disable-next-line`.
 - Pass: no scanned file contains a directive.
 - Fail: `path/to/file.ts:42: <directive>` per hit.

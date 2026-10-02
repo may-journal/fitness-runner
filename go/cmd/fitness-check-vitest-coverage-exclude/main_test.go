@@ -3,144 +3,97 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"reflect"
-	"strings"
+	"slices"
 	"testing"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-const allowedList = "**/*.bench.ts, **/*.d.ts, **/*.types.ts, **/*.test.ts, " +
-	"**/*.spec.ts, **/index.ts, **/run-one-check-worker.ts"
+// removeMsg is the failure line for one exclude entry, quoted as reported.
+func removeMsg(quoted string) string {
+	return "Vitest coverage exclude must be empty, so coverage judges every file; remove: " + quoted
+}
 
 func TestJudge(t *testing.T) {
 	cases := []struct {
 		name    string
 		exclude []string
-		ok      bool
 		errors  []string
 	}{
-		{"empty exclude passes", nil, true, nil},
-		{"non-.ts patterns pass", []string{"node_modules", "dist"}, true, nil},
-		{"all allowed patterns pass", allowedCoverageExcludePatterns, true, nil},
-		{"src-prefixed conventional passes", []string{"src/**/*.types.ts"}, true, nil},
-		{"test glob passes", []string{"src/**/*.test.ts"}, true, nil},
-		{"spec glob passes", []string{"**/*.spec.ts"}, true, nil},
-		{"plain .ts path fails", []string{"src/config/load.ts"}, false, []string{
-			"Vitest coverage exclude only allows " + allowedList +
-				`; disallowed: "src/config/load.ts"`,
-		}},
-		{"directory glob fails", []string{"src/types/**"}, false, []string{
-			"Vitest coverage exclude only allows " + allowedList +
-				`; disallowed: "src/types/**"`,
-		}},
-		{"padded pattern trims for judgment but reports verbatim",
-			[]string{"  src/foo.ts  "}, false, []string{
-				"Vitest coverage exclude only allows " + allowedList +
-					`; disallowed: "  src/foo.ts  "`,
-			}},
-		{"padded allowed pattern passes", []string{"  **/*.d.ts  "}, true, nil},
-		{"all disallowed patterns reported", []string{"src/foo.ts", "src/types/**"}, false,
-			[]string{
-				"Vitest coverage exclude only allows " + allowedList +
-					`; disallowed: "src/foo.ts"`,
-				"Vitest coverage exclude only allows " + allowedList +
-					`; disallowed: "src/types/**"`,
-			}},
+		{"empty exclude passes", nil, nil},
+		{"non-.ts patterns fail", []string{"node_modules", "dist"},
+			[]string{removeMsg(`"node_modules"`), removeMsg(`"dist"`)}},
+		{"test and type patterns fail", []string{"**/*.test.ts", "**/*.d.ts"},
+			[]string{removeMsg(`"**/*.test.ts"`), removeMsg(`"**/*.d.ts"`)}},
+		{"directory glob fails", []string{"src/types/**"}, []string{removeMsg(`"src/types/**"`)}},
+		{"padded pattern reports verbatim", []string{"  src/foo.ts  "}, []string{removeMsg(`"  src/foo.ts  "`)}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			res := judge(tc.exclude)
-			assertResult(t, res, tc.ok, tc.errors)
+			assertResult(t, judge(tc.exclude), nil, 1, tc.errors)
 		})
 	}
 }
 
-func TestAllowedSuffixes(t *testing.T) {
-	cases := []struct {
-		pattern string
-		want    bool
-	}{
-		{"foo.d.ts", true},
-		{"bar.types.ts", true},
-		{"baz.test.ts", true},
-		{"baz.spec.ts", true},
-		{"qux.bench.ts", true},
-		{"index.ts", true},
-		{"run-one-check-worker.ts", true},
-		{"baz.ts", false},
-	}
-	for _, tc := range cases {
-		if got := allowedSuffixes.MatchString(tc.pattern); got != tc.want {
-			t.Errorf("allowedSuffixes.MatchString(%q) = %v, want %v", tc.pattern, got, tc.want)
+// writeFiles writes each name:content pair into dir.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
 		}
 	}
 }
 
 func TestRun(t *testing.T) {
+	foo := []string{removeMsg(`"src/foo.ts"`)}
 	cases := []struct {
-		name       string
-		files      map[string]string
-		ok         bool
-		wantErrors int
-		wantInErr  string
+		name   string
+		files  map[string]string
+		errors []string
 	}{
-		{"no config passes", nil, true, 0, ""},
+		{"no config passes", nil, nil},
 		{"empty exclude passes", map[string]string{
 			"vitest.config.js": `module.exports = { test: { coverage: { exclude: [] } } };`,
-		}, true, 0, ""},
-		{"non-.ts excludes pass", map[string]string{
-			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["node_modules", "dist"] } } };`,
-		}, true, 0, ""},
-		{"conventional excludes pass", map[string]string{
-			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["**/*.bench.ts", "**/*.d.ts", "**/*.types.ts", "**/*.test.ts", "**/*.spec.ts", "**/index.ts", "**/run-one-check-worker.ts"] } } };`,
-		}, true, 0, ""},
-		{"plain .ts path fails", map[string]string{
-			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["src/config/load.ts"] } } };`,
-		}, false, 1, "load.ts"},
-		{"directory glob fails", map[string]string{
-			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["src/types/**"] } } };`,
-		}, false, 1, "src/types/**"},
-		{"both disallowed reported", map[string]string{
-			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["src/foo.ts", "src/types/**"] } } };`,
-		}, false, 2, ""},
+		}, nil},
+		{"conventional excludes fail too", map[string]string{
+			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["**/*.test.ts", "dist"] } } };`,
+		}, []string{removeMsg(`"**/*.test.ts"`), removeMsg(`"dist"`)}},
 		{"unresolvable identifiers skipped, literal judged", map[string]string{
 			"vitest.config.mjs": `import { DTS_GLOB } from "./globs.js";
 export default { test: { coverage: { exclude: [DTS_GLOB, "src/foo.ts"] } } };`,
-		}, false, 1, `"src/foo.ts"`},
-		{"package.json vitest allowed passes", map[string]string{
-			"package.json": `{"vitest":{"test":{"coverage":{"exclude":["**/*.types.ts"]}}}}`,
-		}, true, 0, ""},
-		{"package.json top-level coverage disallowed fails", map[string]string{
+		}, foo},
+		{"package.json vitest exclude fails", map[string]string{
+			"package.json": `{"vitest":{"test":{"coverage":{"exclude":["src/foo.ts"]}}}}`,
+		}, foo},
+		{"package.json top-level coverage fails", map[string]string{
 			"package.json": `{"vitest":{"coverage":{"exclude":["src/foo.ts"]}}}`,
-		}, false, 1, `"src/foo.ts"`},
-		{"package.json vitest non-object ignored", map[string]string{
-			"package.json": `{"vitest":"invalid"}`,
-		}, true, 0, ""},
-		{"package.json invalid JSON ignored", map[string]string{
-			"package.json": `not json`,
-		}, true, 0, ""},
+		}, foo},
+		{"package.json vitest non-object ignored", map[string]string{"package.json": `{"vitest":"invalid"}`}, nil},
+		{"package.json invalid JSON ignored", map[string]string{"package.json": `not json`}, nil},
 		{"package.json non-array exclude passes", map[string]string{
 			"package.json": `{"vitest":{"coverage":{"exclude":"not-array"}}}`,
-		}, true, 0, ""},
-		{"throwing config yields no excludes", map[string]string{
-			"vitest.config.js": `throw new Error("bad");`,
-		}, true, 0, ""},
-		{"cjs wins over ts (allowed shadows disallowed)", map[string]string{
-			"vitest.config.cjs": `module.exports = { test: { coverage: { exclude: ["**/*.d.ts"] } } };`,
+		}, nil},
+		{"throwing config yields no excludes", map[string]string{"vitest.config.js": `throw new Error("bad");`}, nil},
+		{"cjs wins over ts", map[string]string{
+			"vitest.config.cjs": `module.exports = { test: { coverage: { exclude: [] } } };`,
 			"vitest.config.ts":  `export default { test: { coverage: { exclude: ["src/foo.ts"] } } };`,
-		}, true, 0, ""},
-		{"cjs wins over js (disallowed shadows allowed)", map[string]string{
+		}, nil},
+		{"cjs wins over js", map[string]string{
 			"vitest.config.cjs": `module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };`,
-			"vitest.config.js":  `module.exports = { test: { coverage: { exclude: ["**/*.d.ts"] } } };`,
-		}, false, 1, `"src/foo.ts"`},
+			"vitest.config.js":  `module.exports = { test: { coverage: { exclude: [] } } };`,
+		}, foo},
 		{"config file wins over package.json", map[string]string{
-			"vitest.config.js": `module.exports = { test: { coverage: { exclude: ["**/*.d.ts"] } } };`,
+			"vitest.config.js": `module.exports = { test: { coverage: { exclude: [] } } };`,
 			"package.json":     `{"vitest":{"coverage":{"exclude":["src/foo.ts"]}}}`,
-		}, true, 0, ""},
+		}, nil},
 		{"config without coverage exclude passes", map[string]string{
 			"vitest.config.mjs": `export default { test: {} };`,
-		}, true, 0, ""},
+		}, nil},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -148,30 +101,10 @@ export default { test: { coverage: { exclude: [DTS_GLOB, "src/foo.ts"] } } };`,
 			// Mark the root as a JS project so the package.json self-gate
 			// lets the check run; a real package.json in tc.files overwrites
 			// this bare one.
-			if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
-				t.Fatal(err)
-			}
-			for name, content := range tc.files {
-				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
+			writeFiles(t, dir, map[string]string{"package.json": "{}"})
+			writeFiles(t, dir, tc.files)
 			res, err := run(dir, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok {
-				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
-			}
-			if res.FilesChecked != 1 {
-				t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
-			}
-			if len(res.Errors) != tc.wantErrors {
-				t.Fatalf("errors = %v, want %d of them", res.Errors, tc.wantErrors)
-			}
-			if tc.wantInErr != "" && !strings.Contains(res.Errors[0], tc.wantInErr) {
-				t.Fatalf("error %q does not contain %q", res.Errors[0], tc.wantInErr)
-			}
+			assertResult(t, res, err, 1, tc.errors)
 		})
 	}
 }
@@ -182,69 +115,32 @@ export default { test: { coverage: { exclude: [DTS_GLOB, "src/foo.ts"] } } };`,
 // fallback entirely.
 func TestRunFallbackRoot(t *testing.T) {
 	tmp := t.TempDir()
+	writeFiles(t, tmp, map[string]string{
+		"outer/proj/package.json": "{}",
+		"outer/node_modules/@mayjournal/fitness-shared/config/vitest.config.js": `module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };`,
+	})
 	proj := filepath.Join(tmp, "outer", "proj")
-	configDir := filepath.Join(tmp, "outer", "node_modules", "@mayjournal", "fitness-shared", "config")
-	for _, dir := range []string{proj, configDir} {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	// proj needs a package.json to pass the self-gate before the fallback
-	// resolution is exercised.
-	if err := os.WriteFile(filepath.Join(proj, "package.json"), []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(configDir, "vitest.config.js"),
-		[]byte(`module.exports = { test: { coverage: { exclude: ["src/foo.ts"] } } };`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
 	res, err := run(proj, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok || len(res.Errors) != 1 || !strings.Contains(res.Errors[0], `"src/foo.ts"`) {
-		t.Fatalf("expected installed-config fallback failure, got %+v", res)
-	}
+	assertResult(t, res, err, 1, []string{removeMsg(`"src/foo.ts"`)})
 
-	// A local config source shadows the fallback entirely.
-	if err := os.WriteFile(filepath.Join(proj, "vitest.config.js"),
-		[]byte(`module.exports = { test: { coverage: { exclude: ["**/*.d.ts"] } } };`), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeFiles(t, proj, map[string]string{
+		"vitest.config.js": `module.exports = { test: { coverage: { exclude: [] } } };`,
+	})
 	res, err = run(proj, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok {
-		t.Fatalf("expected local config to shadow fallback, got %+v", res)
-	}
+	assertResult(t, res, err, 1, nil)
 }
 
 // TestLoadExcludeEmbeddedFallback pins the npm-free path: with no local
 // config and no node_modules anywhere up the tree, the exclude list comes
-// from the embedded vitest.config.mjs materialized out of the binary (its
-// two clean string literals; identifier entries are unresolvable).
+// from the embedded vitest.config.mjs, which excludes nothing.
 func TestLoadExcludeEmbeddedFallback(t *testing.T) {
-	got := loadExclude(t.TempDir())
-	want := []string{
-		"**/*.bench.ts",
-		"**/index.ts",
-	}
-	if !reflect.DeepEqual(got, want) {
-		t.Fatalf("loadExclude = %#v, want the embedded config's literals %#v", got, want)
+	if got := loadExclude(t.TempDir()); len(got) != 0 {
+		t.Fatalf("loadExclude = %#v, want the embedded config's empty list", got)
 	}
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeFiles(t, dir, map[string]string{"package.json": "{}"})
 	res, err := run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("embedded exclude list should pass the judgment: %+v", res)
-	}
+	assertResult(t, res, err, 1, nil)
 }
 
 // TestNonJSProjectSkips pins the self-gate: a root without any package.json
@@ -252,28 +148,19 @@ func TestLoadExcludeEmbeddedFallback(t *testing.T) {
 // fallback config it never opted into.
 func TestNonJSProjectSkips(t *testing.T) {
 	res, err := run(t.TempDir(), nil)
+	assertResult(t, res, err, 0, nil)
+}
+
+// assertResult checks a verdict: it passes exactly when errors is empty.
+func assertResult(t *testing.T, res checkkit.Result, err error, files int, errors []string) {
+	t.Helper()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.Ok || res.FilesChecked != 0 {
-		t.Fatalf("expected skip (ok, 0 files) on non-JS repo, got %+v", res)
+	if res.Ok != (len(errors) == 0) || res.FilesChecked != files {
+		t.Fatalf("ok = %v, files = %d, want files %d (errors: %v)", res.Ok, res.FilesChecked, files, res.Errors)
 	}
-}
-
-func assertResult(t *testing.T, res checkkit.Result, ok bool, errors []string) {
-	t.Helper()
-	if res.Ok != ok {
-		t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, ok, res.Errors)
-	}
-	if res.FilesChecked != 1 {
-		t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
-	}
-	if len(res.Errors) != len(errors) {
+	if !slices.Equal(res.Errors, errors) {
 		t.Fatalf("errors = %v, want %v", res.Errors, errors)
-	}
-	for i, want := range errors {
-		if res.Errors[i] != want {
-			t.Fatalf("error[%d] = %q, want %q", i, res.Errors[i], want)
-		}
 	}
 }

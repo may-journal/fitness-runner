@@ -1,18 +1,12 @@
 import { defineConfig } from 'vitest/config';
-import { DTS_GLOB, ES_TARGET, SPEC_GLOB, TEST_GLOB, TYPES_GLOB } from './constants.cjs';
+import { ES_TARGET } from './constants.cjs';
 
 export default defineConfig({
   esbuild: { target: ES_TARGET },
   test: {
     coverage: {
-      exclude: [
-        '**/*.bench.ts',
-        DTS_GLOB,
-        TEST_GLOB,
-        SPEC_GLOB,
-        TYPES_GLOB,
-        '**/index.ts',
-      ],
+      // Empty on purpose: Vitest's default exclude list skips tests and declarations.
+      exclude: [],
       include: ['src/**/*.ts'],
       provider: 'v8',
       reporter: ['text', 'lcov'],

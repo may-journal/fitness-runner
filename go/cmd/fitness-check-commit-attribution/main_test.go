@@ -3,7 +3,10 @@ package main
 import (
 	"os"
 	"os/exec"
+	"slices"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 const validMessage = "feat(api): add endpoint\n\nBody\n\nAI-Tools: Claude Code\nAI-Models: Opus 4.8"
@@ -46,13 +49,8 @@ func TestJudge(t *testing.T) {
 			if res.FilesChecked != 1 {
 				t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
 			}
-			if len(res.Errors) != len(tc.wantErrors) {
-				t.Fatalf("errors = %v, want %v", res.Errors, tc.wantErrors)
-			}
-			for i, want := range tc.wantErrors {
-				if res.Errors[i] != want {
-					t.Fatalf("errors[%d] = %q, want %q", i, res.Errors[i], want)
-				}
+			if !slices.Equal(res.Errors, tc.wantErrors) {
+				t.Fatalf("errors = %q, want %q", res.Errors, tc.wantErrors)
 			}
 		})
 	}
@@ -110,19 +108,23 @@ func unsetCtxMessage(t *testing.T) {
 	}
 }
 
-func TestRunFallsBackToHeadMessage(t *testing.T) {
-	unsetCtxMessage(t)
-	res, err := run(initRepo(t, validMessage), nil)
+// runClean runs the check on dir and fails the test on a run error.
+func runClean(t *testing.T, dir string) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	return res
+}
+
+func TestRunFallsBackToHeadMessage(t *testing.T) {
+	unsetCtxMessage(t)
+	res := runClean(t, initRepo(t, validMessage))
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("expected pass on HEAD with trailers, got %+v", res)
 	}
-	res, err = run(initRepo(t, validMessage, "feat(api): add endpoint\n\nno trailers"), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res = runClean(t, initRepo(t, validMessage, "feat(api): add endpoint\n\nno trailers"))
 	if res.Ok || len(res.Errors) != 2 {
 		t.Fatalf("expected two trailer errors from HEAD in an adopting repo, got %+v", res)
 	}
@@ -130,10 +132,7 @@ func TestRunFallsBackToHeadMessage(t *testing.T) {
 
 func TestRunSkipsRepoWithoutTheConvention(t *testing.T) {
 	unsetCtxMessage(t)
-	res, err := run(initRepo(t, "feat(api): add endpoint\n\nno trailers"), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, initRepo(t, "feat(api): add endpoint\n\nno trailers"))
 	if !res.Ok || res.FilesChecked != 0 {
 		t.Fatalf("expected a clean pass where no commit uses trailers, got %+v", res)
 	}

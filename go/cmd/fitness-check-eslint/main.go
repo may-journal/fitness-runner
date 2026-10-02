@@ -2,9 +2,11 @@
 // the Go port of the eslint check. The TypeScript check ran ESLint in-process
 // through its Node API; this binary execs the real eslint CLI instead,
 // resolved from node_modules/.bin walking up from the root, then PATH — never
-// npx. The judgment is ported verbatim: staged-path filtering, JSON result
-// parsing, message formatting, ignore-notice filtering, and the fallback
-// error strings. Syntactic parse only (see ADR 0001), so the runner-default
+// npx. It lints every tracked .cjs/.js/.mjs/.ts/.tsx file (or every changed
+// one in a scoped run), declarations and tests included, and fails a file
+// ESLint reports as ignored, so no ignore pattern hides one. JSON result
+// parsing, message formatting, and the fallback error strings are ported
+// verbatim. Syntactic parse only (see ADR 0001), so the runner-default
 // timeout stands.
 //
 // The shared eslint.config.mjs forced via --config resolves through
@@ -42,9 +44,12 @@ const missingEslintMessage = "eslint not found in node_modules/.bin (walking up 
 // eslintConfigMjs is the shared flat-config filename resolved for --config.
 const eslintConfigMjs = "eslint.config.mjs"
 
-// ignoredFileNotice marks results for explicitly-passed ignored files; the TS
-// check dropped these messages while still counting the file.
+// ignoredFileNotice marks results for explicitly-passed ignored files; each
+// one fails, since the check judges every tracked file.
 const ignoredFileNotice = "File ignored because of a matching ignore pattern"
+
+// lintableExts are the file endings ESLint lints.
+var lintableExts = []string{".cjs", ".js", ".mjs", ".ts", ".tsx"}
 
 func main() {
 	checkkit.Main(checkkit.Check{
@@ -65,6 +70,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 		return checkkit.Fail(0, missingEslintMessage), nil
 	}
 	paths := pathsToLint(root, checkkit.ChangedFiles())
+	if len(paths) == 0 {
+		return checkkit.Pass(0), nil
+	}
 	errs, exitCode, filesChecked := runEslint(root, bin, paths)
 	return buildExecCheckResult(exitCode, errs, filesChecked), nil
 }
@@ -81,10 +89,7 @@ func buildExecCheckResult(exitCode int, errs []string, filesChecked int) checkki
 	return checkkit.Fail(filesChecked, errs...)
 }
 
-var (
-	lintableExt     = regexp.MustCompile(`\.(cjs|js|mjs|tsx?)$`)
-	ignoredByEslint = regexp.MustCompile(`\.(test|spec)\.(cjs|js|mjs|ts|tsx)$`)
-)
+var lintableExt = regexp.MustCompile(`\.(cjs|js|mjs|tsx?)$`)
 
 // applies reports whether ESLint has anything to judge: a JS project, and in
 // a scoped run at least one changed file it lints, so a run with none skips
@@ -107,29 +112,25 @@ func anyLintable(root string, changed []string) bool {
 	return false
 }
 
-// pathsToLint ports getPathsToLint: staged lintable existing paths under
-// root — skipping declaration and test/spec files — or ["."] when none.
-func pathsToLint(root string, staged []string) []string {
+// pathsToLint returns the changed lintable paths still under root, or every
+// tracked lintable file when the run is unscoped.
+func pathsToLint(root string, changed []string) []string {
+	if changed == nil {
+		return walkfs.FilesByExt(root, lintableExts...)
+	}
 	var out []string
-	for _, p := range staged {
+	for _, p := range changed {
 		if lintableStaged(root, p) {
 			out = append(out, p)
 		}
 	}
-	if len(out) == 0 {
-		return []string{"."}
-	}
 	return out
 }
 
-// lintableStaged reports whether a staged path should be linted: a lintable
-// extension, not a declaration or test/spec file, and still existing under
-// root.
+// lintableStaged reports whether a changed path should be linted: a lintable
+// extension, still existing under root.
 func lintableStaged(root, p string) bool {
-	if !lintableExt.MatchString(p) || strings.HasSuffix(p, ".d.ts") {
-		return false
-	}
-	return !ignoredByEslint.MatchString(p) && exists(filepath.Join(root, p))
+	return lintableExt.MatchString(p) && exists(filepath.Join(root, p))
 }
 
 // runEslint execs the CLI twin of the TS Node-API invocation: cwd root, the
@@ -196,25 +197,27 @@ func parseResults(out []byte) ([]eslintResult, bool) {
 	return results, true
 }
 
-// summarize folds parsed results into the TS shape: formatted messages minus
-// explicit-ignore notices, exit 1 when any file has errors, files = results.
+// summarize folds parsed results into the TS shape: every message formatted
+// (an ignored-file notice included, as a failure), exit 1 when any file has
+// errors or was ignored, files = results.
 func summarize(results []eslintResult) (errs []string, exitCode, filesChecked int) {
 	for _, r := range results {
 		if r.ErrorCount > 0 {
 			exitCode = 1
 		}
 		for _, m := range r.Messages {
-			if strings.Contains(m.Message, ignoredFileNotice) {
-				continue
-			}
 			errs = append(errs, formatMessage(r.FilePath, m))
 		}
 	}
 	return errs, exitCode, len(results)
 }
 
-// formatMessage renders one finding as file:line:col - message (rule).
+// formatMessage renders one finding as file:line:col - message (rule); an
+// ignored-file notice says to remove the ignore pattern.
 func formatMessage(filePath string, m eslintMessage) string {
+	if strings.Contains(m.Message, ignoredFileNotice) {
+		return filePath + " - ESLint ignores this tracked file; remove the ignore pattern so it is linted"
+	}
 	rule := ""
 	if m.RuleID != "" {
 		rule = " (" + m.RuleID + ")"

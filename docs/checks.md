@@ -15,7 +15,11 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 - Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
-Every check runs in every repo, in the order listed in the runner ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies, so Swift, Go, JS, and docs repos share one list. A repo turns a check off with `disabledChecks` in `.fitnessrc.json`.
+Every check runs in every repo, in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. A repo turns a check off with `disabledChecks` in `.fitnessrc.json`.
+
+## Every tracked file
+
+Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and jscpd also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, cspell `ignorePaths`, or a `.prettierignore` fails.
 
 ## Shared configs
 

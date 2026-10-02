@@ -41,10 +41,6 @@ var importSpecifierRe = regexp.MustCompile(`\b(?:from|import|require)\s*\(?\s*['
 // path; the ../dist alternative deliberately has no trailing slash.
 var distSpecifierRe = regexp.MustCompile(`(^|/)dist/|\.\./dist`)
 
-// testFileRe matches a test/spec source file (fixtures legitimately contain
-// dist import specifiers).
-var testFileRe = regexp.MustCompile(`\.(?:test|spec)\.(?:c|m)?ts$`)
-
 func main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "build-output-untracked"},
@@ -147,15 +143,9 @@ func dedupeSorted(lists ...[]string) []string {
 }
 
 // collectSourceFiles returns the sorted, deduped source files (.ts/.mts/.cts)
-// under root, skip dirs pruned and test/spec files excluded.
+// under root, tests included.
 func collectSourceFiles(root string) []string {
-	var out []string
-	for _, file := range walkfs.FilesByExt(root, sourceExtensions...) {
-		if !testFileRe.MatchString(file) {
-			out = append(out, file)
-		}
-	}
-	return out
+	return walkfs.FilesByExt(root, sourceExtensions...)
 }
 
 // scanFileForDistImports reports rule B: a `path:line imports build output`

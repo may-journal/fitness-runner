@@ -49,32 +49,40 @@ func TestStampOnlyWhenStaged(t *testing.T) {
 	}
 	now := time.Date(2026, 7, 18, 14, 5, 0, 0, time.Local)
 
-	// not staged: no-op
-	changed, err := stamp(dir, now)
-	if err != nil || changed {
-		t.Fatalf("unstaged changelog must be a no-op: changed=%v err=%v", changed, err)
-	}
+	expectStamp(t, dir, now, false, "unstaged changelog must be a no-op")
 
 	// staged: restamp + re-stage
-	if out, err := exec.Command("git", "-C", dir, "add", "CHANGELOG.md").CombinedOutput(); err != nil {
-		t.Fatalf("%v: %s", err, out)
-	}
-	changed, err = stamp(dir, now)
-	if err != nil || !changed {
-		t.Fatalf("staged changelog must restamp: changed=%v err=%v", changed, err)
-	}
+	gitOutput(t, dir, "add", "CHANGELOG.md")
+	expectStamp(t, dir, now, true, "staged changelog must restamp")
 	raw, _ := os.ReadFile(path)
 	if !strings.Contains(string(raw), "### 2026.07.18.1405") {
 		t.Fatalf("heading not restamped: %s", raw)
 	}
-	staged, _ := exec.Command("git", "-C", dir, "diff", "--cached", "--name-only").Output()
-	if !strings.Contains(string(staged), "CHANGELOG.md") {
+	if staged := gitOutput(t, dir, "diff", "--cached", "--name-only"); !strings.Contains(staged, "CHANGELOG.md") {
 		t.Fatal("restamped changelog must be re-staged")
 	}
-	diff, _ := exec.Command("git", "-C", dir, "diff", "--name-only").Output()
-	if strings.TrimSpace(string(diff)) != "" {
+	if diff := gitOutput(t, dir, "diff", "--name-only"); strings.TrimSpace(diff) != "" {
 		t.Fatalf("working tree must match the index after re-stage: %s", diff)
 	}
+}
+
+// expectStamp runs stamp and requires no error and the given changed flag.
+func expectStamp(t *testing.T, dir string, now time.Time, want bool, label string) {
+	t.Helper()
+	changed, err := stamp(dir, now)
+	if err != nil || changed != want {
+		t.Fatalf("%s: changed=%v err=%v", label, changed, err)
+	}
+}
+
+// gitOutput runs git in dir and returns its output, failing on error.
+func gitOutput(t *testing.T, dir string, args ...string) string {
+	t.Helper()
+	out, err := exec.Command("git", append([]string{"-C", dir}, args...)...).CombinedOutput()
+	if err != nil {
+		t.Fatalf("git %v: %v: %s", args, err, out)
+	}
+	return string(out)
 }
 
 func TestFormatTimestamp(t *testing.T) {

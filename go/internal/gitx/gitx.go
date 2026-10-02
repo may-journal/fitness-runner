@@ -7,8 +7,7 @@ import (
 	"strings"
 )
 
-// StagedFiles returns `git diff --cached --name-only` for root with
-// node_modules entries removed; nil on any git failure (not a repo, no git).
+// StagedFiles returns `git diff --cached --name-only` for root; nil on any git failure (not a repo, no git).
 func StagedFiles(root string) []string {
 	out, err := exec.Command("git", "-C", root, "diff", "--cached", "--name-only").Output()
 	if err != nil {
@@ -18,7 +17,7 @@ func StagedFiles(root string) []string {
 }
 
 // ChangedSince returns the paths HEAD changes since its merge base with base
-// (`git diff --name-only base...HEAD`) with node_modules entries removed; nil
+// (`git diff --name-only base...HEAD`); nil
 // on any git failure, such as a base ref the clone never fetched.
 func ChangedSince(root, base string) []string {
 	out, err := exec.Command("git", "-C", root, "diff", "--name-only", base+"...HEAD").Output()
@@ -29,14 +28,13 @@ func ChangedSince(root, base string) []string {
 }
 
 // nameList splits `git diff --name-only` output into paths, dropping blank
-// lines and node_modules entries.
+// lines.
 func nameList(out string) []string {
 	var files []string
 	for _, line := range strings.Split(strings.TrimSpace(out), "\n") {
-		if line == "" || strings.Contains(line, "node_modules") {
-			continue
+		if line != "" {
+			files = append(files, line)
 		}
-		files = append(files, line)
 	}
 	return files
 }

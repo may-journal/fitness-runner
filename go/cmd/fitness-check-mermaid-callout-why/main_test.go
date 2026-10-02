@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // diagram is the fenced mermaid block the TS suite prefixes its documents
@@ -90,16 +92,23 @@ func write(t *testing.T, dir, rel, content string) {
 	}
 }
 
+// runOn runs the check over root with args and fails the test on a crash.
+func runOn(t *testing.T, root string, args ...string) checkkit.Result {
+	t.Helper()
+	res, err := run(root, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
+}
+
 // TestRun ports the TS check-level suite: filesChecked counts only files
 // with at least one parsed mermaid block.
 func TestRun(t *testing.T) {
 	t.Run("passes when there are no relevant files", func(t *testing.T) {
 		dir := t.TempDir()
 		write(t, dir, "plain.md", "# no mermaid here\n")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		res := runOn(t, dir)
 		if !res.Ok || res.FilesChecked != 0 || len(res.Errors) != 0 {
 			t.Fatalf("unexpected result: %+v", res)
 		}
@@ -109,10 +118,7 @@ func TestRun(t *testing.T) {
 		dir := t.TempDir()
 		write(t, dir, "a.md",
 			doc(diagram, "", "| # | Description |", "| --- | --- |", "| 1 | an edge |"))
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		res := runOn(t, dir)
 		if res.Ok || res.FilesChecked != 1 {
 			t.Fatalf("unexpected result: %+v", res)
 		}
@@ -130,10 +136,7 @@ func TestRun(t *testing.T) {
 		write(t, dir, "docs/bad.md",
 			doc(diagram, "", "| # | Description |", "| --- | --- |", "| 1 | an edge |"))
 		write(t, dir, "docs/plain.md", "just prose\n")
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+		res := runOn(t, dir)
 		if res.Ok || res.FilesChecked != 2 || len(res.Errors) != 1 {
 			t.Fatalf("unexpected result: %+v", res)
 		}
@@ -143,28 +146,14 @@ func TestRun(t *testing.T) {
 // TestRunBodyMode validates a single supplied description document instead of
 // walking files.
 func TestRunBodyMode(t *testing.T) {
-	bad := doc(diagram, "", "| # | Description |", "| --- | --- |", "| 1 | an edge |")
-	badPath := filepath.Join(t.TempDir(), "body.md")
-	if err := os.WriteFile(badPath, []byte(bad), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err := run(t.TempDir(), []string{"--body-file", badPath})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok {
+	dir := t.TempDir()
+	write(t, dir, "body.md", doc(diagram, "", "| # | Description |", "| --- | --- |", "| 1 | an edge |"))
+	if res := runOn(t, t.TempDir(), "--body-file", filepath.Join(dir, "body.md")); res.Ok {
 		t.Fatalf("expected body-mode failure, got %+v", res)
 	}
 
-	good := doc(diagram, "", "| # | Description | Why |", "| --- | --- | --- |", "| 1 | an edge | because |")
-	goodPath := filepath.Join(t.TempDir(), "clean.md")
-	if err := os.WriteFile(goodPath, []byte(good), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(t.TempDir(), []string{"--body-file", goodPath})
-	if err != nil {
-		t.Fatal(err)
-	}
+	write(t, dir, "clean.md", doc(diagram, "", "| # | Description | Why |", "| --- | --- | --- |", "| 1 | an edge | because |"))
+	res := runOn(t, t.TempDir(), "--body-file", filepath.Join(dir, "clean.md"))
 	if !res.Ok || res.FilesChecked != 1 {
 		t.Fatalf("expected clean body-mode pass with 1 file, got %+v", res)
 	}

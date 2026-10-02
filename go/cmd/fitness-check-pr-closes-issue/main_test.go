@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 const rule1 = "PR description has no GitHub closing keyword (close/fix/resolve + #NN) — every PR must close at least one issue on merge"
@@ -63,15 +65,23 @@ func TestValidate(t *testing.T) {
 // TestRunWiring confirms run threads the context-inline body through validate;
 // the inert no-input path is bodycheck's own concern and is tested there.
 func TestRunWiring(t *testing.T) {
-	t.Setenv("FITNESS_CTX_MESSAGE", "> pitch\n\nCloses #1")
-	if res, err := run("", nil); err != nil || !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("valid PR: got %+v, err %v", res, err)
+	if res := runWithBody(t, "> pitch\n\nCloses #1"); !res.Ok || res.FilesChecked != 1 {
+		t.Fatalf("valid PR: got %+v", res)
 	}
+	if res := runWithBody(t, "addresses #1 only"); res.Ok {
+		t.Fatalf("references-only PR: expected failure, got %+v", res)
+	}
+}
 
-	t.Setenv("FITNESS_CTX_MESSAGE", "addresses #1 only")
-	if res, err := run("", nil); err != nil || res.Ok {
-		t.Fatalf("references-only PR: expected failure, got %+v, err %v", res, err)
+// runWithBody runs the check with body as the context-inline PR body.
+func runWithBody(t *testing.T, body string) checkkit.Result {
+	t.Helper()
+	t.Setenv("FITNESS_CTX_MESSAGE", body)
+	res, err := run("", nil)
+	if err != nil {
+		t.Fatalf("body %q: %v", body, err)
 	}
+	return res
 }
 
 // TestValidateRequireClose covers the third rule: an issue a closed Plan closes

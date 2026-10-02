@@ -16,6 +16,16 @@ func closedEvent(body, reason, sender string) ghEvent {
 	return ev
 }
 
+// onlyComment fails unless issue n has exactly one comment, and returns its body.
+func onlyComment(t *testing.T, gh *fakeGH, n int) string {
+	t.Helper()
+	got := gh.comments[n]
+	if len(got) != 1 {
+		t.Fatalf("comments = %d, want 1", len(got))
+	}
+	return got[0].Body
+}
+
 func TestCloseCheckReopensAManualClose(t *testing.T) {
 	gh := &fakeGH{}
 	ev := closedEvent(openChecklist, "completed", "alice")
@@ -25,18 +35,9 @@ func TestCloseCheckReopensAManualClose(t *testing.T) {
 	if len(gh.reopened) != 1 || gh.reopened[0] != 8 {
 		t.Fatalf("reopened = %v, want [8]", gh.reopened)
 	}
-	got := gh.comments[8]
-	if len(got) != 1 {
-		t.Fatalf("comments = %d, want 1", len(got))
-	}
-	for _, want := range []string{"- write docs\n- ship it\n", "cc @alice\n", "<!-- fitness:close-check:"} {
-		if !strings.Contains(got[0].Body, want) {
-			t.Errorf("comment missing %q: %q", want, got[0].Body)
-		}
-	}
-	if strings.Contains(got[0].Body, "- done") {
-		t.Errorf("comment lists a ticked item: %q", got[0].Body)
-	}
+	body := onlyComment(t, gh, 8)
+	assertContainsAll(t, "comment", body, "- write docs\n- ship it\n", "cc @alice\n", "<!-- fitness:close-check:")
+	assertContainsNone(t, "comment", body, "- done")
 	closeCheck(ev, gh)
 	if len(gh.comments[8]) != 1 {
 		t.Errorf("comments after re-run = %d, want 1 (the re-run stays quiet)", len(gh.comments[8]))

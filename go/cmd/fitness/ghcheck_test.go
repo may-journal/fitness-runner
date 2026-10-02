@@ -149,11 +149,37 @@ func TestPRCheckPasses(t *testing.T) {
 	if !strings.Contains(string(summary), "✅ #7: PR description looks good.") {
 		t.Errorf("summary = %q", summary)
 	}
+	assertTitleThenBodyCalls(t, calls)
+}
+
+// assertTitleThenBodyCalls checks the PR title is checked first, then the body.
+func assertTitleThenBodyCalls(t *testing.T, calls []call) {
+	t.Helper()
 	if calls[0].name != "semantic-commit" || calls[0].args[1] != "feat: x" {
 		t.Errorf("first call = %+v, want semantic-commit on the title", calls[0])
 	}
 	if calls[1].name != "pr-structure" || calls[1].stdin != "body" {
 		t.Errorf("second call = %+v, want pr-structure on stdin", calls[1])
+	}
+}
+
+// assertContainsAll reports each wanted piece that text, named what, lacks.
+func assertContainsAll(t *testing.T, what, text string, wants ...string) {
+	t.Helper()
+	for _, want := range wants {
+		if !strings.Contains(text, want) {
+			t.Errorf("%s missing %q: %q", what, want, text)
+		}
+	}
+}
+
+// assertContainsNone reports each unwanted piece that text, named what, holds.
+func assertContainsNone(t *testing.T, what, text string, unwanted ...string) {
+	t.Helper()
+	for _, piece := range unwanted {
+		if strings.Contains(text, piece) {
+			t.Errorf("%s names %q: %q", what, piece, text)
+		}
 	}
 }
 
@@ -205,16 +231,9 @@ func TestPRCheckFailsOnAClosedIssuesUncheckedItems(t *testing.T) {
 		t.Fatalf("prCheck = %d, want 1", code)
 	}
 	summary, _ := os.ReadFile(os.Getenv("GITHUB_STEP_SUMMARY"))
-	for _, want := range []string{`#20, which has an unchecked item: "write docs"`, `#20, which has an unchecked item: "ship it"`} {
-		if !strings.Contains(string(summary), want) {
-			t.Errorf("summary missing %s: %q", want, summary)
-		}
-	}
-	for _, unwanted := range []string{"fenced example", "#21"} {
-		if strings.Contains(string(summary), unwanted) {
-			t.Errorf("summary names %s: %q", unwanted, summary)
-		}
-	}
+	assertContainsAll(t, "summary", string(summary),
+		`#20, which has an unchecked item: "write docs"`, `#20, which has an unchecked item: "ship it"`)
+	assertContainsNone(t, "summary", string(summary), "fenced example", "#21")
 }
 
 func TestPRCheckPassesWhenClosedIssuesAreTicked(t *testing.T) {
@@ -379,16 +398,20 @@ func TestPlanCheckHidesEveryOlderVerdict(t *testing.T) {
 	}
 }
 
+// assertLabels checks issue n carries exactly want after the named run.
+func assertLabels(t *testing.T, gh *fakeGH, n int, after string, want ...string) {
+	t.Helper()
+	if got := gh.issues[n].labels; !reflect.DeepEqual(got, want) {
+		t.Errorf("labels after %s = %v", after, got)
+	}
+}
+
 func TestPlanCheckLabelsTheVerdict(t *testing.T) {
 	gh := &fakeGH{issues: map[int]fakeIssue{4: {labels: []string{"Plan"}}}}
 	runPlan(gh, 4, "one", map[string]string{"cspell": "a"})
-	if got := gh.issues[4].labels; !reflect.DeepEqual(got, []string{"Plan", "fitness", "fitness-invalid"}) {
-		t.Errorf("labels after a fail = %v", got)
-	}
+	assertLabels(t, gh, 4, "a fail", "Plan", "fitness", "fitness-invalid")
 	runPlan(gh, 4, "two", nil)
-	if got := gh.issues[4].labels; !reflect.DeepEqual(got, []string{"Plan", "fitness", "fitness-valid"}) {
-		t.Errorf("labels after a pass = %v", got)
-	}
+	assertLabels(t, gh, 4, "a pass", "Plan", "fitness", "fitness-valid")
 	if !gh.labels["fitness"] || !gh.labels["fitness-valid"] || !gh.labels["fitness-invalid"] {
 		t.Errorf("created labels = %v, want all three", gh.labels)
 	}
@@ -412,6 +435,15 @@ func TestGHClientLive(t *testing.T) {
 		t.Skip("set FITNESS_LIVE_GH=1 to run against the real gh")
 	}
 	gh := ghClient{repo: "may-journal/fitness-runner"}
+	checkLiveVerdicts(t, gh)
+	checkLiveListings(t, gh)
+	checkLiveMergedClose(t, gh)
+	checkLiveManualClose(t, gh)
+}
+
+// checkLiveVerdicts reads the verdicts on Plan #108.
+func checkLiveVerdicts(t *testing.T, gh ghClient) {
+	t.Helper()
 	vs, err := gh.verdicts(108)
 	if err != nil || len(vs) == 0 {
 		t.Fatalf("verdicts(108) = %d verdicts, %v", len(vs), err)
@@ -419,6 +451,11 @@ func TestGHClientLive(t *testing.T) {
 	if vs[0].ID == 0 || vs[0].NodeID == "" {
 		t.Errorf("verdict ids missing: %+v", vs[0])
 	}
+}
+
+// checkLiveListings reads one issue's labels and the open PR and Plan lists.
+func checkLiveListings(t *testing.T, gh ghClient) {
+	t.Helper()
 	if _, labels, err := gh.issue(108); err != nil || !hasLabel(labels, "Plan") {
 		t.Errorf("issue(108) labels = %v, %v; want Plan", labels, err)
 	}
@@ -428,10 +465,20 @@ func TestGHClientLive(t *testing.T) {
 	if _, err := gh.openPlans(); err != nil {
 		t.Errorf("openPlans: %v", err)
 	}
+}
+
+// checkLiveMergedClose looks up the PR that closed a merged issue.
+func checkLiveMergedClose(t *testing.T, gh ghClient) {
+	t.Helper()
 	// #137 closed when PR #139 was squash-merged, so its closer is a commit.
 	if c, err := gh.closingPR(137); err != nil || c.Author == "" || c.Merger == "" {
 		t.Errorf("closingPR(137) = %+v, %v; want the PR's author and merger", c, err)
 	}
+}
+
+// checkLiveManualClose confirms a hand-closed issue has no closing PR.
+func checkLiveManualClose(t *testing.T, gh ghClient) {
+	t.Helper()
 	// #138 was closed by hand as not planned, so there is no closing PR.
 	if c, err := gh.closingPR(138); err != nil || c != (closer{}) {
 		t.Errorf("closingPR(138) = %+v, %v; want no PR", c, err)

@@ -34,7 +34,7 @@ const rows = all.filter((r) => r.status === 'active');
 
 ## Behavior
 
-- Scans `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts` (skipping `node_modules`, `dist`, `coverage`, `.git`). Test, spec, and bench files are excluded.
+- Scans every tracked `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts` file, test, spec, and bench files included.
 - A hand lexer extracts single- and double-quoted literals, ignoring comments, regex, and template literals, and dropping module specifiers (after `import`, `require`, `from`).
 - Counts identical values repo-wide; flags any at or above the threshold (3). Values under the length floor (3) are ignored.
 - Idiomatic tokens are never flagged: buffer encodings (`'utf8'`), stdio modes (`'inherit'`), `typeof` results (`'object'`), and directives (`'use strict'`) — a constant would hurt readability there.

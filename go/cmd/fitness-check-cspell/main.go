@@ -2,18 +2,17 @@
 // unknown words in the checked files, with the project cspell.json words
 // always winning over the embedded base dictionaries (internal/spell).
 //
-// Staged mode (FITNESS_STAGED_FILES non-empty) checks the staged files after
-// dropping the always-ignored basenames (.gitignore/package-lock.json/
-// tsconfig.json), paths matched by the resolved cspell.json ignorePaths, and
-// paths that no longer exist; with nothing left it passes without scanning.
-// With no staged context it checks every **/*.md under the root, honoring the
-// same ignorePaths and, when useGitignore is set, the repo's gitignore via
-// `git check-ignore`.
+// Scoped mode (a changed-file list in the environment) checks the changed
+// files that still exist on disk; with none left it passes without scanning.
+// With no scope it checks every tracked file (internal/walkfs). Files the
+// repo's .gitattributes marks linguist-generated, such as lock files, are
+// left out. Binary files are counted but never spelled. No path is ever ignored: a resolved
+// cspell.json that sets ignorePaths fails the check instead.
 //
 // cspell.json resolves through internal/sharedconf: the repo's own file
 // wins, then an installed node_modules/@mayjournal/fitness-shared, then the
 // copy embedded in this binary, materialized to the cache on demand — so a
-// repo with no npm anywhere still gets the shared words and ignorePaths.
+// repo with no npm anywhere still gets the shared words.
 package main
 
 import (
@@ -21,10 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
-	"path"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
@@ -37,14 +33,6 @@ import (
 
 // maxIssuesPerFile mirrors cspell's default maxNumberOfProblems.
 const maxIssuesPerFile = 100
-
-// stagedSkip lists basenames the shared cspell.json always ignores; staged
-// paths matching them are dropped before any scanning.
-var stagedSkip = map[string]bool{
-	".gitignore":        true,
-	"package-lock.json": true,
-	"tsconfig.json":     true,
-}
 
 var check = checkkit.Check{
 	Describe: checkkit.Describe{Name: "cspell"},
@@ -65,54 +53,48 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return walkFiles(root), nil
 }
 
-// walkFiles spell-checks the staged markdown, or every markdown file under
-// root when there is no staged context.
+// walkFiles spell-checks the changed files, or every tracked file under
+// root when the run is unscoped. A resolved cspell.json with ignorePaths
+// fails before any scan.
 func walkFiles(root string) checkkit.Result {
 	cfg := loadConfig(root)
-	checker := newChecker(cfg)
-	files, scanned := stagedPaths(root, cfg)
-	if !scanned {
-		files = markdownFiles(root, cfg)
-	} else if len(files) == 0 {
-		return checkkit.Pass(0)
+	if cfg.IgnorePaths != nil {
+		return checkkit.Fail(0, fmt.Sprintf(
+			"%s sets ignorePaths; cspell checks every tracked file, so remove ignorePaths and fix the findings instead",
+			cfg.path))
 	}
-	errs := checkFiles(root, files, checker)
+	files := targets(root)
+	errs := checkFiles(root, files, newChecker(cfg))
 	if len(errs) > 0 {
 		return checkkit.Fail(len(files), errs...)
 	}
 	return checkkit.Pass(len(files))
 }
 
-// stagedPaths returns the staged files to check and whether staged context
-// exists at all: paths with an always-ignored basename, matched by the
-// resolved cspell.json ignorePaths, or that no longer exist on disk are
-// dropped.
-func stagedPaths(root string, cfg config) (files []string, staged bool) {
+// targets lists the files to spell-check: the changed files, or every
+// tracked file when the run is unscoped, minus those .gitattributes marks
+// linguist-generated, such as lock files.
+func targets(root string) []string {
+	files, scanned := stagedPaths(root)
+	if !scanned {
+		files = walkfs.FilesByExt(root, "")
+	}
+	return walkfs.WithoutGenerated(root, files)
+}
+
+// stagedPaths returns the changed files to check and whether a scope exists
+// at all: only paths that no longer exist on disk are dropped.
+func stagedPaths(root string) (files []string, staged bool) {
 	stagedFiles := checkkit.ChangedFiles()
 	if len(stagedFiles) == 0 {
 		return nil, false
 	}
-	matcher := spell.NewIgnoreMatcher(append([]string{"node_modules", ".git"}, cfg.IgnorePaths...))
 	for _, p := range stagedFiles {
-		if checkableStaged(root, p, matcher) {
+		if info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p))); err == nil && !info.IsDir() {
 			files = append(files, p)
 		}
 	}
 	return files, true
-}
-
-// checkableStaged reports whether a staged path should be scanned: not an
-// always-ignored basename, not matched by the resolved ignorePaths, and still
-// an existing non-directory under root.
-func checkableStaged(root, p string, matcher *spell.IgnoreMatcher) bool {
-	if stagedSkip[path.Base(p)] {
-		return false
-	}
-	if matcher.Matches(p) {
-		return false
-	}
-	info, err := os.Stat(filepath.Join(root, filepath.FromSlash(p)))
-	return err == nil && !info.IsDir()
 }
 
 // newChecker builds the spell.Checker used by both the file walk and body
@@ -172,131 +154,13 @@ func formatIssues(rel string, issues []spell.Issue) []string {
 	return errs
 }
 
-// markdownFiles walks root for **/*.md, pruning ignored directories, then
-// filters through ignorePaths and (when configured) the repo's gitignore.
-// Paths come back sorted case-insensitively like cspell's own file order.
-func markdownFiles(root string, cfg config) []string {
-	matcher := spell.NewIgnoreMatcher(append([]string{"node_modules", ".git"}, cfg.IgnorePaths...))
-	var files []string
-	_ = filepath.WalkDir(root, func(p string, d os.DirEntry, err error) error {
-		rel, ok := walkRel(root, p, err)
-		if !ok {
-			return nil
-		}
-		return collectMarkdown(rel, d, matcher, &files)
-	})
-	if cfg.UseGitignore {
-		files = withoutGitignored(root, files)
-	}
-	files = withoutConfigIgnored(root, files)
-	sort.Slice(files, func(i, j int) bool {
-		li, lj := strings.ToLower(files[i]), strings.ToLower(files[j])
-		if li != lj {
-			return li < lj
-		}
-		return files[i] < files[j]
-	})
-	return files
-}
-
-// walkRel converts a WalkDir callback's absolute path to a slash-separated
-// root-relative one; ok is false for walk errors and the root itself, which
-// the walk skips without failing.
-func walkRel(root, p string, err error) (string, bool) {
-	if err != nil {
-		return "", false
-	}
-	rel, relErr := filepath.Rel(root, p)
-	if relErr != nil || rel == "." {
-		return "", false
-	}
-	return filepath.ToSlash(rel), true
-}
-
-// collectMarkdown handles one WalkDir entry: ignored directories are pruned,
-// and non-ignored .md files accumulate into *files.
-func collectMarkdown(rel string, d os.DirEntry, matcher *spell.IgnoreMatcher, files *[]string) error {
-	if d.IsDir() {
-		if matcher.Matches(rel) {
-			return filepath.SkipDir
-		}
-		return nil
-	}
-	if strings.HasSuffix(d.Name(), ".md") && !matcher.Matches(rel) {
-		*files = append(*files, rel)
-	}
-	return nil
-}
-
-// withoutConfigIgnored drops paths matching the .fitnessrc.json ignore list,
-// which every file check honors.
-func withoutConfigIgnored(root string, files []string) []string {
-	m := walkfs.Ignore(root)
-	if m == nil {
-		return files
-	}
-	var kept []string
-	for _, f := range files {
-		if !walkfs.Ignored(m, f) {
-			kept = append(kept, f)
-		}
-	}
-	return kept
-}
-
-// withoutGitignored drops paths `git check-ignore` reports as ignored,
-// batched over stdin; outside a git repo (or without git) it filters
-// nothing.
-func withoutGitignored(root string, files []string) []string {
-	if len(files) == 0 {
-		return files
-	}
-	ignored, ok := gitIgnoredSet(root, files)
-	if !ok {
-		return files // not a git repo or git missing: no filtering
-	}
-	var kept []string
-	for _, f := range files {
-		if !ignored[f] {
-			kept = append(kept, f)
-		}
-	}
-	return kept
-}
-
-// gitIgnoredSet asks `git check-ignore --stdin -z` which files are ignored;
-// ok is false when git exits with anything but the check-ignore verdict
-// codes 0 and 1 (not a repo, git missing), meaning no filtering applies.
-func gitIgnoredSet(root string, files []string) (map[string]bool, bool) {
-	cmd := exec.Command("git", "-C", root, "check-ignore", "--stdin", "-z")
-	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
-	out, err := cmd.Output()
-	if err != nil {
-		if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 1 {
-			return nil, false
-		}
-	}
-	return nulSeparatedSet(string(out)), true
-}
-
-// nulSeparatedSet builds the membership set of a NUL-separated list,
-// dropping empty entries (the trailing terminator).
-func nulSeparatedSet(out string) map[string]bool {
-	set := make(map[string]bool)
-	for _, p := range strings.Split(out, "\x00") {
-		if p != "" {
-			set[p] = true
-		}
-	}
-	return set
-}
-
-// config is the subset of cspell.json this check honors.
+// config is the subset of cspell.json this check reads; path is the
+// resolved file it came from. IgnorePaths is read only to reject it.
 type config struct {
-	Words        []string `json:"words"`
-	IgnoreWords  []string `json:"ignoreWords"`
-	IgnorePaths  []string `json:"ignorePaths"`
-	UseGitignore bool     `json:"useGitignore"`
+	Words       []string        `json:"words"`
+	IgnoreWords []string        `json:"ignoreWords"`
+	IgnorePaths json.RawMessage `json:"ignorePaths"`
+	path        string
 }
 
 // loadConfig reads the resolved cspell.json — repo-local, installed
@@ -315,5 +179,15 @@ func loadConfig(root string) config {
 		return cfg
 	}
 	_ = json.Unmarshal(raw, &cfg)
+	cfg.path = displayPath(root, p)
 	return cfg
+}
+
+// displayPath shows the resolved cspell.json relative to root when it lives
+// inside the repo, else as its absolute path.
+func displayPath(root, p string) string {
+	if rel, err := filepath.Rel(root, p); err == nil && !strings.HasPrefix(rel, "..") {
+		return filepath.ToSlash(rel)
+	}
+	return p
 }

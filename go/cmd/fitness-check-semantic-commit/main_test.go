@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 const typesList = "feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert"
@@ -78,10 +80,7 @@ func withoutMessage(t *testing.T) {
 
 func TestRunValidatesProvidedMessage(t *testing.T) {
 	withMessage(t, "feat(api): add endpoint")
-	res, err := run(t.TempDir(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, t.TempDir())
 	if !res.Ok {
 		t.Fatalf("expected pass, got %+v", res)
 	}
@@ -101,10 +100,7 @@ func TestRunValidatesMessageArg(t *testing.T) {
 
 func TestRunValidatesOnlyFirstLine(t *testing.T) {
 	withMessage(t, "chore(scope): description\n\nMade-with: Cursor")
-	res, err := run(t.TempDir(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, t.TempDir())
 	if !res.Ok {
 		t.Fatalf("expected pass on first line, got %+v", res)
 	}
@@ -113,10 +109,7 @@ func TestRunValidatesOnlyFirstLine(t *testing.T) {
 func TestRunFailsOnEmptyProvidedMessage(t *testing.T) {
 	// Present-but-empty must not fall back to git log (tri-state).
 	withMessage(t, "")
-	res, err := run(headRepo(t, "feat(api): add endpoint"), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, headRepo(t, "feat(api): add endpoint"))
 	if res.Ok || res.Errors[0] != msgEmpty {
 		t.Fatalf("expected msgEmpty failure, got %+v", res)
 	}
@@ -124,17 +117,11 @@ func TestRunFailsOnEmptyProvidedMessage(t *testing.T) {
 
 func TestRunFallsBackToHeadMessage(t *testing.T) {
 	withoutMessage(t)
-	pass, err := run(headRepo(t, "feat(api): add endpoint\n\nBody"), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	pass := runClean(t, headRepo(t, "feat(api): add endpoint\n\nBody"))
 	if !pass.Ok {
 		t.Fatalf("expected pass from HEAD, got %+v", pass)
 	}
-	fail, err := run(headRepo(t, "Fix something\n\nBody"), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	fail := runClean(t, headRepo(t, "Fix something\n\nBody"))
 	if fail.Ok || fail.Errors[0] !=
 		`Commit message: "Fix something" — use type(scope): description (types: `+typesList+`)` {
 		t.Fatalf("expected format failure from HEAD, got %+v", fail)
@@ -143,10 +130,7 @@ func TestRunFallsBackToHeadMessage(t *testing.T) {
 
 func TestRunFailsOutsideGitRepo(t *testing.T) {
 	withoutMessage(t)
-	res, err := run(t.TempDir(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	res := runClean(t, t.TempDir())
 	if res.Ok || res.Errors[0] != msgEmpty {
 		t.Fatalf("expected msgEmpty failure, got %+v", res)
 	}
@@ -169,4 +153,14 @@ func headRepo(t *testing.T, msg string) string {
 	git("config", "commit.gpgsign", "false")
 	git("commit", "-q", "--allow-empty", "-m", msg)
 	return dir
+}
+
+// runClean runs the check on dir with no arguments, failing on a run error.
+func runClean(t *testing.T, dir string) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
 }
