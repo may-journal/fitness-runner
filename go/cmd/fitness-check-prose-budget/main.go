@@ -2,11 +2,9 @@
 // prose. Per .md file — with front matter, fenced code, tables, and headings
 // masked out, the same masking text-readability scores — it enforces six
 // limits: words per sentence, sentences per paragraph, paragraphs per section,
-// words per list item, items per list, and total prose words per file. Each
+// words per list item, items per list, and prose words per section. Each
 // limit falls back to a default and is overridable in .fitnessrc.json.
-//
-// CHANGELOG.md is always exempt; configured exempt paths (an exact path or a
-// `dir/**` prefix) union with it.
+// Every tracked .md file is judged, CHANGELOG.md included.
 package main
 
 import (
@@ -45,9 +43,6 @@ var defaults = limits{
 	words:              300,
 }
 
-// builtinExempt is exempt regardless of config, because it grows by design.
-const builtinExempt = "CHANGELOG.md"
-
 // descriptionName labels the pseudo-file in body-mode errors, where the
 // document is an Issue or PR description rather than a file on disk.
 const descriptionName = "(description)"
@@ -65,24 +60,20 @@ func main() {
 }
 
 func run(root string, args []string) (checkkit.Result, error) {
-	lim, exempt := settings(root)
+	lim := settings(root)
 	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
 		return check(descriptionName, content, lim)
 	}); handled || err != nil {
 		return res, err
 	}
-	return walkFiles(root, lim, exempt), nil
+	return walkFiles(root, lim), nil
 }
 
-// walkFiles applies the budget to every in-scope, non-exempt .md file under
-// root.
-func walkFiles(root string, lim limits, exempt []string) checkkit.Result {
+// walkFiles applies the budget to every in-scope .md file under root.
+func walkFiles(root string, lim limits) checkkit.Result {
 	files := walkfs.InScope(walkfs.FilesByExt(root, ".md"))
 	var errs []string
 	for _, rel := range files {
-		if isExempt(rel, exempt) {
-			continue
-		}
 		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 		if err != nil {
 			errs = append(errs, fmt.Sprintf("%s: %v", rel, err))
@@ -96,18 +87,16 @@ func walkFiles(root string, lim limits, exempt []string) checkkit.Result {
 	return checkkit.Pass(len(files))
 }
 
-// settings resolves the limits and exempt set: defaults with every positive
-// config value overlaid, and the built-in exemption combined with configured
-// paths.
-func settings(root string) (limits, []string) {
+// settings resolves the limits: defaults with every positive config value
+// overlaid.
+func settings(root string) limits {
 	lim := defaults
-	exempt := []string{builtinExempt}
 	cfg, err := conf.Load(root)
 	if err != nil || cfg == nil {
-		return lim, exempt
+		return lim
 	}
 	applyLimits(&lim, cfg)
-	return lim, append(exempt, cfg.ProseBudget.Exempt...)
+	return lim
 }
 
 // applyLimits overlays every positive proseBudget config value onto lim.
@@ -126,55 +115,25 @@ func over(dst *int, v int) {
 	}
 }
 
-// isExempt reports whether rel matches an exempt entry: an exact path, or a
-// `dir/**` prefix matching any file under dir.
-func isExempt(rel string, exempt []string) bool {
-	for _, e := range exempt {
-		if rel == e {
-			return true
-		}
-		if dir, ok := strings.CutSuffix(e, "/**"); ok && strings.HasPrefix(rel, dir+"/") {
-			return true
-		}
-	}
-	return false
-}
-
-// check returns every limit violation in one file, in a stable order: the
-// file-word fallback, then section, paragraph, and list violations.
+// check returns every limit violation in one file, in a stable order:
+// section, then paragraph, then list violations.
 func check(rel, content string, lim limits) []string {
 	blocks := parse(content)
-	var errs []string
-	if msg := wordsError(rel, blocks, lim); msg != "" {
-		errs = append(errs, msg)
-	}
-	errs = append(errs, sectionErrors(rel, blocks, lim)...)
+	errs := sectionErrors(rel, blocks, lim)
 	errs = append(errs, paragraphErrors(rel, blocks, lim)...)
 	errs = append(errs, listErrors(rel, blocks, lim)...)
 	return errs
 }
 
-// wordsError reports the total-prose-words fallback violation, if any.
-func wordsError(rel string, blocks []block, lim limits) string {
-	if n := totalWords(blocks); n >= lim.words {
-		return fmt.Sprintf("%s: %d prose words over the %d-word budget", rel, n, lim.words)
-	}
-	return ""
-}
-
-// totalWords sums the prose words across every block.
-func totalWords(blocks []block) int {
-	n := 0
-	for _, bl := range blocks {
-		n += bl.words()
-	}
-	return n
-}
-
-// sectionErrors reports each section whose paragraph count exceeds the limit.
+// sectionErrors reports each section over the word budget or the
+// paragraph limit, in document order.
 func sectionErrors(rel string, blocks []block, lim limits) []string {
 	var errs []string
 	for _, s := range countSections(blocks) {
+		if s.words > lim.words {
+			errs = append(errs, fmt.Sprintf(
+				"%s: section %q has %d prose words (max %d)", rel, s.name, s.words, lim.words))
+		}
 		if s.paras > lim.sectionParagraphs {
 			errs = append(errs, fmt.Sprintf(
 				"%s: section %q has %d paragraphs (max %d)", rel, s.name, s.paras, lim.sectionParagraphs))
@@ -183,27 +142,30 @@ func sectionErrors(rel string, blocks []block, lim limits) []string {
 	return errs
 }
 
-// section is one heading-delimited section's paragraph tally.
+// section is one heading-delimited section's tally: prose words across its
+// paragraphs and lists, and its paragraph count. Prose before the first
+// heading forms a section named "".
 type section struct {
 	name  string
+	words int
 	paras int
 }
 
-// countSections tallies paragraph blocks per section, in document order.
+// countSections tallies words and paragraphs per section, in document order.
 func countSections(blocks []block) []section {
 	var secs []section
 	idx := map[int]int{}
 	for _, bl := range blocks {
-		if bl.isList {
-			continue
-		}
 		i, ok := idx[bl.section]
 		if !ok {
-			idx[bl.section] = len(secs)
+			i = len(secs)
+			idx[bl.section] = i
 			secs = append(secs, section{name: bl.sectionName})
-			i = len(secs) - 1
 		}
-		secs[i].paras++
+		secs[i].words += bl.words()
+		if !bl.isList {
+			secs[i].paras++
+		}
 	}
 	return secs
 }

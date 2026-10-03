@@ -38,15 +38,37 @@ func writeTree(t *testing.T, files map[string]string) string {
 	return root
 }
 
+// verdict is what a case expects: an empty wantError means a pass.
+type verdict struct {
+	wantError    string
+	filesChecked int
+}
+
+// tooMany is the failure message for a duplicate percentage.
+func tooMany(pct string) string {
+	return "ERROR: jscpd found too many duplicates (" + pct + "%) over threshold (1.0%)"
+}
+
+// assertVerdict runs the check on root and compares it with want.
+func assertVerdict(t *testing.T, root string, want verdict) {
+	t.Helper()
+	res, err := run(root, nil)
+	if err != nil || res.FilesChecked != want.filesChecked {
+		t.Fatalf("filesChecked = %d (err %v), want %d", res.FilesChecked, err, want.filesChecked)
+	}
+	got := strings.Join(res.Errors, "\n")
+	if res.Ok != (want.wantError == "") || got != want.wantError {
+		t.Fatalf("ok = %v, errors = %q, want %q", res.Ok, got, want.wantError)
+	}
+}
+
 func TestRun(t *testing.T) {
 	clone := cloneBlock("c", 6, 10)
 	marked := "// jscpd:ignore-start\n" + clone + "// jscpd:ignore-end\n"
 	cases := []struct {
-		name         string
-		files        map[string]string
-		ok           bool
-		wantErrors   []string
-		filesChecked int
+		name  string
+		files map[string]string
+		want  verdict
 	}{
 		{
 			// 6 duplicated of 60 total lines = 10.0% > 1.0%.
@@ -55,9 +77,7 @@ func TestRun(t *testing.T) {
 				"src/a.js": clone + cloneBlock("fa", 24, 3),
 				"src/b.js": clone + cloneBlock("fb", 24, 3),
 			},
-			false,
-			[]string{"ERROR: jscpd found too many duplicates (10.0%) over threshold (1.0%)"},
-			2,
+			verdict{tooMany("10.0"), 2},
 		},
 		{
 			"clone inside ignore markers passes",
@@ -65,96 +85,67 @@ func TestRun(t *testing.T) {
 				"src/a.js": marked + cloneBlock("fa", 24, 3),
 				"src/b.js": marked + cloneBlock("fb", 24, 3),
 			},
-			true, nil, 2,
+			verdict{"", 2},
 		},
 		{
 			"duplicate under min tokens passes",
-			map[string]string{
-				"src/a.js": cloneBlock("s", 6, 3),
-				"src/b.js": cloneBlock("s", 6, 3),
-			},
-			true, nil, 2,
+			map[string]string{"src/a.js": cloneBlock("s", 6, 3), "src/b.js": cloneBlock("s", 6, 3)},
+			verdict{"", 2},
 		},
 		{
 			"duplicate under min lines passes",
-			map[string]string{
-				"src/a.js": cloneBlock("w", 3, 20),
-				"src/b.js": cloneBlock("w", 3, 20),
-			},
-			true, nil, 2,
+			map[string]string{"src/a.js": cloneBlock("w", 3, 20), "src/b.js": cloneBlock("w", 3, 20)},
+			verdict{"", 2},
 		},
 		{
-			"ignore globs exclude tests markdown json and locks",
+			"tests, markdown, json, and locks are compared too",
 			map[string]string{
-				"src/a.test.js": clone,
-				"src/b.test.js": clone,
-				"docs/a.md":     clone,
-				"docs/b.md":     clone,
-				"conf/a.json":   clone,
-				"conf/b.json":   clone,
-				"deps/a.lock":   clone,
-				"deps/b.lock":   clone,
-				"src/only.js":   "const onlyOne = someValue;\n",
+				"src/a_test.go": clone + cloneBlock("ta", 24, 3),
+				"docs/b.md":     clone + cloneBlock("tb", 24, 3),
+				"conf/c.json":   cloneBlock("tc", 30, 3),
+				"deps/d.lock":   cloneBlock("td", 30, 3),
 			},
-			true, nil, 1,
+			verdict{tooMany("5.0"), 4},
 		},
 		{
 			"binary files are skipped",
 			map[string]string{
-				"blob.dat":    "\x00\x01\x02binary",
+				"blob.dat":    "\x00\x01\x02 binary",
 				"src/only.js": "const onlyOne = someValue;\n",
 			},
-			true, nil, 1,
+			verdict{"", 1},
 		},
-		{
-			"empty repo passes",
-			map[string]string{},
-			true, nil, 0,
-		},
+		{"empty repo passes", map[string]string{}, verdict{"", 0}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := writeTree(t, tc.files)
-			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok {
-				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
-			}
-			if res.FilesChecked != tc.filesChecked {
-				t.Errorf("filesChecked = %d, want %d", res.FilesChecked, tc.filesChecked)
-			}
-			if !tc.ok {
-				if len(res.Errors) != 1 || res.Errors[0] != tc.wantErrors[0] {
-					t.Errorf("errors = %v, want %v", res.Errors, tc.wantErrors)
-				}
-			}
+			assertVerdict(t, writeTree(t, tc.files), tc.want)
 		})
 	}
 }
 
-func TestRunRespectsGitignore(t *testing.T) {
+// TestRunScansTrackedFilesOnly proves a git repo's tracked files are
+// compared even when gitignored, while untracked files and files marked
+// linguist-generated are left out.
+func TestRunScansTrackedFilesOnly(t *testing.T) {
 	clone := cloneBlock("c", 6, 10)
 	root := writeTree(t, map[string]string{
-		".gitignore":   "vendor/\n",
-		"vendor/a.js":  clone,
-		"vendor/b.js":  clone,
-		"src/only.js":  "const onlyOne = someValue;\n",
-		"src/other.js": "const otherOne = otherValue;\n",
+		".gitignore":     "vendor/\n",
+		".gitattributes": "*.lock linguist-generated\n",
+		"deps/a.lock":    clone + cloneBlock("la", 24, 3),
+		"deps/b.lock":    clone + cloneBlock("lb", 24, 3),
+		"vendor/a.js":    clone + cloneBlock("va", 24, 3),
+		"src/b.js":       clone + cloneBlock("vb", 24, 3),
+		"untracked/c.js": clone,
+		"untracked/d.js": clone,
+		"untracked/e.js": clone,
 	})
-	if out, err := exec.Command("git", "-C", root, "init", "-q").CombinedOutput(); err != nil {
-		t.Fatalf("git init: %v (%s)", err, out)
+	for _, args := range [][]string{{"init", "-q"}, {"add", "-f", ".gitignore", ".gitattributes", "deps", "vendor", "src"}} {
+		if out, err := exec.Command("git", append([]string{"-C", root}, args...)...).CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v (%s)", args, err, out)
+		}
 	}
-	res, err := run(root, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok {
-		t.Fatalf("expected pass with gitignored clone, got %+v", res)
-	}
-	// .gitignore + the two src files; the vendor clones are filtered out.
-	if res.FilesChecked != 3 {
-		t.Fatalf("filesChecked = %d, want 3", res.FilesChecked)
-	}
+	// .gitignore, .gitattributes, and the two tracked clones; the generated
+	// lock files are left out: 6 of 62 lines duplicated.
+	assertVerdict(t, root, verdict{tooMany("9.7"), 4})
 }

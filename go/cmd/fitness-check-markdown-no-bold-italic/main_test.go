@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"testing"
 )
 
@@ -83,28 +84,24 @@ func TestJSONStringifyQuoting(t *testing.T) {
 }
 
 func TestRunBodyMode(t *testing.T) {
-	dir := t.TempDir()
-	bad := filepath.Join(dir, "bad-body.md")
-	if err := os.WriteFile(bad, []byte("Hello **world** here."), 0o644); err != nil {
-		t.Fatal(err)
+	cases := []struct {
+		name, body string
+		ok         bool
+	}{
+		{"bold description fails", "Hello **world** here.", false},
+		{"clean description passes", "# Title\n\nPlain text and code `*not*`.\n", true},
 	}
-	res, err := run(t.TempDir(), []string{"--body-file", bad})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if res.Ok {
-		t.Fatalf("bold description must fail: %+v", res)
-	}
-	good := filepath.Join(dir, "good-body.md")
-	if err := os.WriteFile(good, []byte("# Title\n\nPlain text and code `*not*`.\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	res, err = run(t.TempDir(), []string{"--body-file", good})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("clean description must pass one file: %+v", res)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			body := filepath.Join(t.TempDir(), "body.md")
+			if err := os.WriteFile(body, []byte(tc.body), 0o644); err != nil {
+				t.Fatal(err)
+			}
+			res, err := run(t.TempDir(), []string{"--body-file", body})
+			if err != nil || res.Ok != tc.ok || res.FilesChecked != 1 {
+				t.Fatalf("want ok=%v over one file: %+v (err %v)", tc.ok, res, err)
+			}
+		})
 	}
 }
 
@@ -130,18 +127,21 @@ func TestRun(t *testing.T) {
 		}, false, []string{
 			`d.md: disallowed _italic_ (use only when explicitly required): "_italic_"`,
 		}, 1},
-		{"root CHANGELOG.md exempt, nested one is not", map[string]string{
-			"CHANGELOG.md":      "## 1.0.0 — **bold** allowed here",
+		{"every CHANGELOG.md is judged, the root one too", map[string]string{
+			"CHANGELOG.md":      "## 1.0.0 — **bold** here",
 			"docs/CHANGELOG.md": "Nested **bold**.",
 		}, false, []string{
+			`CHANGELOG.md: disallowed **bold** (use only when explicitly required): "**bold**"`,
 			`docs/CHANGELOG.md: disallowed **bold** (use only when explicitly required): "**bold**"`,
-		}, 1},
-		{"skip dirs pruned via cspell", map[string]string{
-			"cspell.json":             `{"ignorePaths":["node_modules","dist","coverage",".git","githooks"]}`,
+		}, 2},
+		{"no directory is skipped", map[string]string{
 			"ok.md":                   "Plain.",
 			"node_modules/pkg.md":     "**bold**",
 			"dist/generated/notes.md": "_italic_",
-		}, true, nil, 1},
+		}, false, []string{
+			`dist/generated/notes.md: disallowed _italic_ (use only when explicitly required): "_italic_"`,
+			`node_modules/pkg.md: disallowed **bold** (use only when explicitly required): "**bold**"`,
+		}, 3},
 		{"multiple files sorted, errors in file order", map[string]string{
 			"b.md":     "Say __hello__.",
 			"a/one.md": "This is *italic* text.",
@@ -152,26 +152,21 @@ func TestRun(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			root := t.TempDir()
-			for rel, content := range tc.files {
-				write(t, root, rel, content)
-			}
-			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if res.Ok != tc.ok {
-				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
-			}
-			if res.FilesChecked != tc.wantFiles {
-				t.Fatalf("filesChecked = %d, want %d", res.FilesChecked, tc.wantFiles)
-			}
-			if tc.wantErrors != nil && !reflect.DeepEqual(res.Errors, tc.wantErrors) {
-				t.Fatalf("errors = %v, want %v", res.Errors, tc.wantErrors)
-			}
-			if tc.wantErrors == nil && len(res.Errors) != 0 {
-				t.Fatalf("expected no errors, got %v", res.Errors)
+			res, err := run(writeTree(t, tc.files), nil)
+			if err != nil || res.Ok != tc.ok || res.FilesChecked != tc.wantFiles || !slices.Equal(res.Errors, tc.wantErrors) {
+				t.Fatalf("ok = %v, files = %d, errors = %v, want %v, %d, %v (err %v)",
+					res.Ok, res.FilesChecked, res.Errors, tc.ok, tc.wantFiles, tc.wantErrors, err)
 			}
 		})
 	}
+}
+
+// writeTree writes files into a fresh temp dir and returns it.
+func writeTree(t *testing.T, files map[string]string) string {
+	t.Helper()
+	root := t.TempDir()
+	for rel, content := range files {
+		write(t, root, rel, content)
+	}
+	return root
 }

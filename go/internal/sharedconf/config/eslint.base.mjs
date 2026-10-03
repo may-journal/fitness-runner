@@ -3,8 +3,6 @@ import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 import perfectionist from 'eslint-plugin-perfectionist';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
-import cspellConfig from './cspell.json' with { type: 'json' };
-import { DTS_GLOB } from './constants.cjs';
 
 const readonlyGlobal = 'readonly';
 /** Latest ECMAScript syntax; every block parses syntactically (no type-checker program is built). */
@@ -30,12 +28,12 @@ const rules = {
   'perfectionist/sort-interfaces': sortMembers,
 };
 
-const ignores = [...cspellConfig.ignorePaths, DTS_GLOB];
-
-/** Shared ESLint flat config. Every block parses syntactically — no enabled rule is type-aware. */
+/**
+ * Shared ESLint flat config. Every block parses syntactically — no enabled rule is type-aware.
+ * It ignores nothing: the eslint check hands it every tracked file.
+ */
 export function createEslintConfig() {
   return [
-    { ignores },
     {
       files: ['**/*.cjs'],
       languageOptions: {

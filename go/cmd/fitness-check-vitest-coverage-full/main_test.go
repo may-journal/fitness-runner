@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
@@ -170,21 +171,28 @@ line2`, "", 1, false, "line2"},
 			fakeBin := t.TempDir()
 			installFakeVitest(t, fakeBin, tc.out, tc.errOut, tc.code, "")
 			t.Setenv("PATH", fakeBin)
-			res, err := run(root, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			res := runOneFile(t, root)
 			if res.Ok != tc.ok {
 				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
-			}
-			if res.FilesChecked != 1 {
-				t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
 			}
 			if !tc.ok && res.Errors[0] != tc.wantError {
 				t.Fatalf("error = %q, want %q", res.Errors[0], tc.wantError)
 			}
 		})
 	}
+}
+
+// runOneFile runs the check on root and requires exactly one file checked.
+func runOneFile(t *testing.T, root string) checkkit.Result {
+	t.Helper()
+	res, err := run(root, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesChecked != 1 {
+		t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
+	}
+	return res
 }
 
 func TestConfigFallbackArgs(t *testing.T) {

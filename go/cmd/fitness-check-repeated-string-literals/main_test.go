@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
+	"strings"
 	"testing"
 )
 
@@ -127,11 +129,8 @@ func TestFindDuplicates(t *testing.T) {
 		if len(errs) != 2 {
 			t.Fatalf("errors = %v, want 2", errs)
 		}
-		if want := `"thrice" appears 4 times`; len(errs[0]) < len(want) || errs[0][:len(want)] != want {
-			t.Fatalf("errors[0] = %q, want prefix %q", errs[0], want)
-		}
-		if want := `"twice" appears 3 times`; len(errs[1]) < len(want) || errs[1][:len(want)] != want {
-			t.Fatalf("errors[1] = %q, want prefix %q", errs[1], want)
+		if !strings.HasPrefix(errs[0], `"thrice" appears 4 times`) || !strings.HasPrefix(errs[1], `"twice" appears 3 times`) {
+			t.Fatalf("errors = %q, want thrice (4) before twice (3)", errs)
 		}
 	})
 
@@ -146,73 +145,39 @@ func TestFindDuplicates(t *testing.T) {
 }
 
 func TestRun(t *testing.T) {
-	t.Run("passes when no literal repeats past the threshold", func(t *testing.T) {
-		dir := tempRepo(t, map[string]string{"a.ts": "const a = 'alpha';\nconst b = 'beta';\n"})
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !res.Ok || len(res.Errors) != 0 || res.FilesChecked != 1 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
-
-	t.Run("fails on a literal repeated across files", func(t *testing.T) {
-		dir := tempRepo(t, map[string]string{
-			"a.ts": "const a = 'active';\nconst b = 'active';\n",
-			"b.ts": "const c = 'active';\n",
-		})
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		want := []string{`"active" appears 3 times (a.ts:1, a.ts:2, b.ts:1) — extract a shared constant`}
-		if res.Ok || !reflect.DeepEqual(res.Errors, want) || res.FilesChecked != 2 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
-
-	t.Run("excludes test/spec/bench files from the scan", func(t *testing.T) {
-		dir := tempRepo(t, map[string]string{
-			"a.test.ts":  "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
-			"b.bench.ts": "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
-		})
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !res.Ok || res.FilesChecked != 0 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
-
-	t.Run("never flags values allowed via .fitnessrc.json repeatedStringLiterals.allow", func(t *testing.T) {
-		dir := tempRepo(t, map[string]string{
-			".fitnessrc.json": `{"repeatedStringLiterals": {"allow": ["active"]}}`,
-			"a.ts":            "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
-		})
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !res.Ok || len(res.Errors) != 0 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
-
-	t.Run("a legacy .fitnessrc.js degrades to no allow list", func(t *testing.T) {
-		dir := tempRepo(t, map[string]string{
-			".fitnessrc.js": "module.exports = { repeatedStringLiterals: { allow: ['active'] } };\n",
-			"a.ts":          "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n",
-		})
-		res, err := run(dir, nil)
-		if err != nil {
-			t.Fatal(err)
-		}
+	thrice := "const a = 'active';\nconst b = 'active';\nconst c = 'active';\n"
+	cases := []struct {
+		name   string
+		files  map[string]string
+		errors []string
+		count  int
+	}{
+		{"passes when no literal repeats past the threshold",
+			map[string]string{"a.ts": "const a = 'alpha';\nconst b = 'beta';\n"}, nil, 1},
+		{"fails on a literal repeated across files",
+			map[string]string{"a.ts": "const a = 'active';\nconst b = 'active';\n", "b.ts": "const c = 'active';\n"},
+			[]string{`"active" appears 3 times (a.ts:1, a.ts:2, b.ts:1) — extract a shared constant`}, 2},
+		{"scans test and bench files like any source",
+			map[string]string{"a.test.ts": thrice, "b.bench.ts": thrice},
+			[]string{`"active" appears 6 times (a.test.ts:1, a.test.ts:2, a.test.ts:3, b.bench.ts:1, b.bench.ts:2, +1 more) — extract a shared constant`}, 2},
+		{"never flags values allowed via .fitnessrc.json repeatedStringLiterals.allow",
+			map[string]string{".fitnessrc.json": `{"repeatedStringLiterals": {"allow": ["active"]}}`, "a.ts": thrice}, nil, 1},
 		// Deviation from TS (which evaluates .fitnessrc.js): the Go check
-		// cannot run JS, so the allow list is empty and the value is flagged.
-		if res.Ok || len(res.Errors) != 1 {
-			t.Fatalf("unexpected result: %+v", res)
-		}
-	})
+		// cannot run JS, so the allow list is empty and the value is flagged;
+		// the config file is itself scanned as source.
+		{"a legacy .fitnessrc.js degrades to no allow list",
+			map[string]string{".fitnessrc.js": "module.exports = { repeatedStringLiterals: { allow: ['active'] } };\n", "a.ts": thrice},
+			[]string{`"active" appears 4 times (.fitnessrc.js:1, a.ts:1, a.ts:2, a.ts:3) — extract a shared constant`}, 2},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res, err := run(tempRepo(t, tc.files), nil)
+			if err != nil || res.Ok != (len(tc.errors) == 0) || res.FilesChecked != tc.count {
+				t.Fatalf("unexpected result: %+v (err %v)", res, err)
+			}
+			if !slices.Equal(res.Errors, tc.errors) {
+				t.Fatalf("errors = %v, want %v", res.Errors, tc.errors)
+			}
+		})
+	}
 }

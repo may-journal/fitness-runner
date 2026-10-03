@@ -99,16 +99,20 @@ func TestBranchCommits(t *testing.T) {
 	if len(prior) != 1 || prior[0].subject != "feat(x): start" {
 		t.Fatalf("branchCommits = %+v, want only the topic commit", prior)
 	}
-	if res := judge("fix(x): again\n\nPlan #12", repo, prior, nil); !res.Ok {
-		t.Fatalf("a link already on main should not count: %v", res.Errors)
-	}
-	if res := judge("fix(x): again\n\nPlan #13", repo, prior, nil); res.Ok {
-		t.Fatal("a link already on the branch should fail")
-	}
+	expectJudgeVerdict(t, "fix(x): again\n\nPlan #12", prior, true, "a link already on main should not count")
+	expectJudgeVerdict(t, "fix(x): again\n\nPlan #13", prior, false, "a link already on the branch should fail")
 
 	t.Setenv(amendEnv, "1")
 	if prior := branchCommits(dir); len(prior) != 0 {
 		t.Fatalf("amend should leave HEAD out, got %+v", prior)
+	}
+}
+
+// expectJudgeVerdict judges msg against prior with no open PR and requires want.
+func expectJudgeVerdict(t *testing.T, msg string, prior []earlier, want bool, why string) {
+	t.Helper()
+	if res := judge(msg, repo, prior, nil); res.Ok != want {
+		t.Fatalf("%s: %v", why, res.Errors)
 	}
 }
 
@@ -150,7 +154,12 @@ func TestJudgeBranch(t *testing.T) {
 func TestParseEvent(t *testing.T) {
 	payload := `{"pull_request":{"number":7,"body":"Closes #3","created_at":"2026-09-30T12:00:00Z","head":{"sha":"abc"}}}`
 	pr, base, ok := parseEvent([]byte(payload), "origin/main")
-	if !ok || pr.number != 7 || pr.body != "Closes #3" || pr.head != "abc" || base != "origin/main" || pr.opened.IsZero() {
+	if !ok {
+		t.Fatalf("parseEvent = %+v, %q, %v", pr, base, ok)
+	}
+	got := []any{pr.number, pr.body, pr.head, base, pr.opened.IsZero()}
+	want := []any{7, "Closes #3", "abc", "origin/main", false}
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("parseEvent = %+v, %q, %v", pr, base, ok)
 	}
 	if _, _, ok := parseEvent([]byte(`{"ref":"refs/heads/main"}`), "origin/main"); ok {

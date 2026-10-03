@@ -18,6 +18,6 @@ Flags declared npm dependencies that are behind their latest published version â
 
 ## Notes
 
-- `filesChecked` counts the `package.json` manifests under the project (excluding `node_modules` and other skip dirs).
+- `filesChecked` counts the tracked `package.json` manifests.
 - Reports against `latest`, not `wanted`: a dependency inside its declared semver range but behind the newest release is still flagged.
 - The point is to stay current, not merely in-range.

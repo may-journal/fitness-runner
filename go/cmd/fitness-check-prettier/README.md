@@ -15,11 +15,16 @@ Run `fitness prettier` from your app root to check formatting. Pass through args
 
 - Pass: All checked files use Prettier code style.
 - In a scoped run: Only changed paths are checked, passing with 0 files when Prettier parses none.
-- Otherwise: Runs `prettier --check --ignore-unknown .` from repo root.
-- A file type Prettier has no parser for passes, through `--ignore-unknown`.
+- Otherwise: Runs `prettier --check` on every tracked file from the repo root.
 - Config: Local project config if present; otherwise the shared prettier config resolved as above (no copy required in the consumer repo).
 - Plugins: the shared config loads `prettier-plugin-packagejson` and `prettier-plugin-sort-json`, so the repo installs both.
 - The check puts the repo's `node_modules` folders on `NODE_PATH`, where the shared config finds them.
 - When Prettier fails without naming a file, its own `[error]` lines follow the fallback message, such as a plugin it cannot load.
 
 Errors list file paths that need formatting.
+
+## Every tracked file
+
+- `--ignore-unknown` lets a file type Prettier cannot parse pass, instead of skipping it by name.
+- `--ignore-path /dev/null` and `--with-node-modules` override `.gitignore` and the `node_modules` default.
+- A `.prettierignore` at the root fails, even in a repo without `package.json`; delete it and format the files instead.

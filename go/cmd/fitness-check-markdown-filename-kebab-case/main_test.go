@@ -3,12 +3,17 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func TestRunWiresKebabConvention(t *testing.T) {
+// runOn writes each named markdown file into a temp root and runs the check.
+func runOn(t *testing.T, names []string) checkkit.Result {
+	t.Helper()
 	dir := t.TempDir()
-	for _, name := range []string{"api-design.md", "README.md", "releaseNotes.md"} {
+	for _, name := range names {
 		if err := os.WriteFile(filepath.Join(dir, name), []byte("# doc\n"), 0o644); err != nil {
 			t.Fatal(err)
 		}
@@ -17,25 +22,26 @@ func TestRunWiresKebabConvention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if res.Ok || res.FilesChecked != 3 {
-		t.Fatalf("unexpected result: %+v", res)
-	}
-	want := "releaseNotes.md: filename must be kebab-case"
-	if len(res.Errors) != 1 || res.Errors[0] != want {
-		t.Fatalf("errors = %v, want [%q]", res.Errors, want)
-	}
+	return res
 }
 
-func TestRunPassesOnConformingRepo(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "api-design.md"), []byte("# doc\n"), 0o644); err != nil {
-		t.Fatal(err)
+func TestRunWiresKebabConvention(t *testing.T) {
+	cases := []struct {
+		name       string
+		files      []string
+		ok         bool
+		filesCount int
+		wantErrors []string
+	}{
+		{"flags the nonconforming file", []string{"api-design.md", "README.md", "releaseNotes.md"}, false, 3, []string{"releaseNotes.md: filename must be kebab-case"}},
+		{"passes on a conforming repo", []string{"api-design.md"}, true, 1, nil},
 	}
-	res, err := run(dir, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !res.Ok || res.FilesChecked != 1 || len(res.Errors) != 0 {
-		t.Fatalf("unexpected result: %+v", res)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			res := runOn(t, tc.files)
+			if res.Ok != tc.ok || res.FilesChecked != tc.filesCount || !slices.Equal(res.Errors, tc.wantErrors) {
+				t.Fatalf("unexpected result: %+v, want errors %q", res, tc.wantErrors)
+			}
+		})
 	}
 }

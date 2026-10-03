@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // levelDoc builds a doc with one diagram and one callout table of
@@ -30,6 +32,27 @@ func writeFiles(t *testing.T, dir string, files map[string]string) {
 		if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// runOn runs the check over dir and fails the test on a crash.
+func runOn(t *testing.T, dir string) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return res
+}
+
+// assertErrors checks got against want, where a nil want means no errors.
+func assertErrors(t *testing.T, got, want []string) {
+	t.Helper()
+	if want != nil && !reflect.DeepEqual(got, want) {
+		t.Fatalf("errors = %#v, want %#v", got, want)
+	}
+	if want == nil && len(got) != 0 {
+		t.Fatalf("errors = %#v, want none", got)
 	}
 }
 
@@ -130,20 +153,12 @@ func TestRun(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
 			writeFiles(t, dir, tc.files)
-			res, err := run(dir, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			res := runOn(t, dir)
 			if res.Ok != tc.ok || res.FilesChecked != tc.wantFilesChecked {
 				t.Fatalf("ok=%v filesChecked=%d, want ok=%v filesChecked=%d (errors: %v)",
 					res.Ok, res.FilesChecked, tc.ok, tc.wantFilesChecked, res.Errors)
 			}
-			if tc.wantErrors != nil && !reflect.DeepEqual(res.Errors, tc.wantErrors) {
-				t.Fatalf("errors = %#v, want %#v", res.Errors, tc.wantErrors)
-			}
-			if tc.wantErrors == nil && len(res.Errors) != 0 {
-				t.Fatalf("errors = %#v, want none", res.Errors)
-			}
+			assertErrors(t, res.Errors, tc.wantErrors)
 		})
 	}
 }

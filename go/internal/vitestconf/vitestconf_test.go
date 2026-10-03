@@ -7,6 +7,26 @@ import (
 	"testing"
 )
 
+// writeFiles writes each name:content pair directly under dir.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// makeDirs creates each named directory under root.
+func makeDirs(t *testing.T, root string, names []string) {
+	t.Helper()
+	for _, name := range names {
+		if err := os.MkdirAll(filepath.Join(root, name), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
 func TestCoverageExclude(t *testing.T) {
 	cases := []struct {
 		name  string
@@ -160,11 +180,7 @@ func TestLoadExcludeFromRoot(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			for name, content := range tc.files {
-				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
+			writeFiles(t, dir, tc.files)
 			got, found := LoadExcludeFromRoot(dir)
 			if found != tc.found {
 				t.Fatalf("found = %v, want %v (got %v)", found, tc.found, got)
@@ -327,24 +343,12 @@ func TestHasFullThresholds(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			root := t.TempDir()
-			for _, name := range tc.rootDirs {
-				if err := os.MkdirAll(filepath.Join(root, name), 0o755); err != nil {
-					t.Fatal(err)
-				}
-			}
-			for name, content := range tc.rootFiles {
-				if err := os.WriteFile(filepath.Join(root, name), []byte(content), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
+			makeDirs(t, root, tc.rootDirs)
+			writeFiles(t, root, tc.rootFiles)
 			fallback := ""
 			if !tc.noFallback {
 				fallback = t.TempDir()
-				for name, content := range tc.fallbackFiles {
-					if err := os.WriteFile(filepath.Join(fallback, name), []byte(content), 0o644); err != nil {
-						t.Fatal(err)
-					}
-				}
+				writeFiles(t, fallback, tc.fallbackFiles)
 			}
 			if got := HasFullThresholds(root, fallback); got != tc.want {
 				t.Fatalf("HasFullThresholds = %v, want %v", got, tc.want)

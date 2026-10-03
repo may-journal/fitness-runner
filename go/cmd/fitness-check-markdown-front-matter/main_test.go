@@ -37,15 +37,18 @@ func TestRunCheck(t *testing.T) {
 			filesChecked: 0,
 		},
 		{
-			name: "ignores markdown under node_modules and dist",
+			name: "judges markdown under node_modules and dist too",
 			files: map[string]string{
 				"README.md":                  "---\nfitnessFunctions: [\"./package.json\"]\n---\n# Root",
 				"package.json":               "{}",
 				"node_modules/pkg/readme.md": "---\nfitnessFunctions: [\"./nope\"]\n---",
 				"dist/docs.md":               "# Doc",
 			},
-			ok:           true,
-			filesChecked: 1,
+			ok: false, filesChecked: 3,
+			wantErrors: []string{
+				"dist/docs.md: missing front matter with fitnessFunctions or relatedConfigurations",
+				"node_modules/pkg/readme.md: front matter path missing: ./nope",
+			},
 		},
 		{
 			name:  "fails when markdown has no front matter",
@@ -148,12 +151,41 @@ func TestRunCheck(t *testing.T) {
 			filesChecked: 1,
 		},
 		{
-			name: "exempts the PR template, which cannot carry front matter",
+			name: "judges the PR template like any file",
 			files: map[string]string{
 				".github/PULL_REQUEST_TEMPLATE.md": "> summary\n\n## Background\n\ntext\n",
 			},
+			ok: false, filesChecked: 1,
+			wantErrors: []string{".github/PULL_REQUEST_TEMPLATE.md: missing front matter with fitnessFunctions or relatedConfigurations"},
+		},
+		{
+			name: "reads front matter wrapped in an HTML comment",
+			files: map[string]string{
+				".github/PULL_REQUEST_TEMPLATE.md": "<!--\n---\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n-->\n\n> summary\n",
+				".fitnessrc.json":                  "{}",
+			},
 			ok:           true,
 			filesChecked: 1,
+		},
+		{
+			name: "checks paths inside commented front matter",
+			files: map[string]string{
+				"a.md": "<!--\n---\nrelatedConfigurations: ['./gone.json']\n---\n-->\n# A\n",
+			},
+			ok: false, filesChecked: 1,
+			wantErrors: []string{"a.md: front matter path missing: ./gone.json"},
+		},
+		{
+			name: "an unclosed or late comment carries no front matter",
+			files: map[string]string{
+				"a.md": "<!--\n---\nrelatedConfigurations: ['./a.md']\n---\n",
+				"b.md": "# B\n<!--\n---\nrelatedConfigurations: ['./b.md']\n---\n-->\n",
+			},
+			ok: false, filesChecked: 2,
+			wantErrors: []string{
+				"a.md: missing front matter with fitnessFunctions or relatedConfigurations",
+				"b.md: missing front matter with fitnessFunctions or relatedConfigurations",
+			},
 		},
 	}
 	for _, tc := range cases {
@@ -164,17 +196,11 @@ func TestRunCheck(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if res.Ok != tc.ok {
-				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
+			if res.Ok != tc.ok || res.FilesChecked != tc.filesChecked {
+				t.Fatalf("ok = %v, files = %d, want %v, %d (errors: %v)", res.Ok, res.FilesChecked, tc.ok, tc.filesChecked, res.Errors)
 			}
-			if res.FilesChecked != tc.filesChecked {
-				t.Fatalf("filesChecked = %d, want %d", res.FilesChecked, tc.filesChecked)
-			}
-			if tc.wantErrors != nil && !slices.Equal(res.Errors, tc.wantErrors) {
+			if !slices.Equal(res.Errors, tc.wantErrors) {
 				t.Fatalf("errors = %q, want %q", res.Errors, tc.wantErrors)
-			}
-			if tc.ok && len(res.Errors) != 0 {
-				t.Fatalf("expected no errors, got %q", res.Errors)
 			}
 		})
 	}

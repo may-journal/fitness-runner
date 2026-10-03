@@ -4,8 +4,8 @@
 // function starts at 1 and gains a point per branch: if, for, range,
 // non-default switch/select clause, && and ||. Function literals are
 // scored separately from their enclosing function, like eslint scores
-// arrow functions. Test files (_test.go) are exempt, matching the repo's
-// test-file exemptions elsewhere. The ceiling is configurable via
+// arrow functions. Every tracked .go file is scored, tests included. The
+// ceiling is configurable via
 // .fitnessrc.json: {"goComplexity": {"max": N}}; default 5.
 package main
 
@@ -15,7 +15,6 @@ import (
 	"go/parser"
 	"go/token"
 	"sort"
-	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
@@ -34,12 +33,7 @@ func main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	max := maxComplexity(root)
-	var sources []string
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".go")) {
-		if !strings.HasSuffix(file, "_test.go") {
-			sources = append(sources, file)
-		}
-	}
+	sources := walkfs.InScope(walkfs.FilesByExt(root, ".go"))
 	count := len(sources)
 	perFile := par.Map(count, 0, func(i int) []string {
 		fileErrs, err := scanFile(root, sources[i], max)

@@ -2,12 +2,11 @@
 // duplicated lines above 1% of scanned lines fail the repo. Instead of
 // shelling out to jscpd it runs internal/clonedetect — a generic lexer plus a
 // rolling-hash detector with jscpd's min-lines/min-tokens semantics and
-// the jscpd:ignore-start/-end escape hatch. Scan scope: every file under
-// root minus the TS check's ignore globs, minus gitignored files (jscpd
-// respects .gitignore by default), minus binary files, with the walker's
-// standard directories pruned. Verdict and error format match the TS
-// check; exact percentage parity with jscpd's per-language tokenizers is
-// explicitly not the goal.
+// the jscpd:ignore-start/-end escape hatch. Scan scope: every tracked file
+// (internal/walkfs), minus files .gitattributes marks linguist-generated
+// and binary files, which have no lines to compare. Verdict and error format
+// match the TS check; exact percentage parity with jscpd's per-language
+// tokenizers is explicitly not the goal.
 package main
 
 import (
@@ -29,16 +28,6 @@ const (
 	minTokens = 50
 )
 
-// ignoreGlobs is the TS check's --ignore set, verbatim.
-var ignoreGlobs = []string{
-	"**/*.md",
-	"**/*.json",
-	"**/*.lock",
-	"**/*.test.*",
-	"**/*.spec.*",
-	"**/*_test.go",
-}
-
 func main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "jscpd"},
@@ -57,33 +46,11 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(len(files)), nil
 }
 
-// scanTargets walks every file under root (the empty suffix matches all,
-// with walkfs's standard skip dirs pruned), then drops the ignore-glob
-// matches and gitignored paths.
+// scanTargets lists every tracked file under root (the empty suffix
+// matches all), minus those .gitattributes marks linguist-generated, such
+// as lock files.
 func scanTargets(root string) []string {
-	var kept []string
-	for _, rel := range walkfs.FilesByExt(root, "") {
-		if matchesAny(ignoreGlobs, rel) {
-			continue
-		}
-		kept = append(kept, rel)
-	}
-	return dropGitignored(kept, clonedetect.GitIgnored(root, kept))
-}
-
-// dropGitignored removes the paths present in ignored; an empty ignored set
-// passes kept through untouched.
-func dropGitignored(kept []string, ignored map[string]bool) []string {
-	if len(ignored) == 0 {
-		return kept
-	}
-	var out []string
-	for _, rel := range kept {
-		if !ignored[rel] {
-			out = append(out, rel)
-		}
-	}
-	return out
+	return walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, ""))
 }
 
 // lexTargets reads and lexes each path, skipping binary files and files
@@ -115,15 +82,6 @@ func lexOne(root, rel string) *clonedetect.File {
 		Tokens: clonedetect.Lex(content),
 		Lines:  clonedetect.CountLines(content),
 	}
-}
-
-func matchesAny(globs []string, rel string) bool {
-	for _, g := range globs {
-		if clonedetect.MatchGlob(g, rel) {
-			return true
-		}
-	}
-	return false
 }
 
 // isBinary applies git's heuristic: a NUL byte in the first 8000 bytes.

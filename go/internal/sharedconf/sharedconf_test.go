@@ -51,12 +51,37 @@ func TestFileNamesMatchTheFrozenSet(t *testing.T) {
 	}
 }
 
-func TestMaterializeWritesTheWholeDirectory(t *testing.T) {
-	base := redirectCache(t)
+// mustMaterialize runs Materialize, failing the test on error.
+func mustMaterialize(t *testing.T) string {
+	t.Helper()
 	dir, err := Materialize()
 	if err != nil {
 		t.Fatal(err)
 	}
+	return dir
+}
+
+// assertFileContent checks the file at p reads back as want.
+func assertFileContent(t *testing.T, p, want string) {
+	t.Helper()
+	if got, err := os.ReadFile(p); err != nil || string(got) != want {
+		t.Fatalf("%s content = %q, want %q (read error: %v)", p, got, want, err)
+	}
+}
+
+// assertMatchesEmbedded checks dir/fname holds the embedded copy of fname.
+func assertMatchesEmbedded(t *testing.T, dir, fname string) {
+	t.Helper()
+	want, err := fs.ReadFile(configFS, path.Join(configDir, fname))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertFileContent(t, filepath.Join(dir, fname), string(want))
+}
+
+// assertCacheDirName checks dir is <base>/fitness/sharedconf-<12 hex chars>.
+func assertCacheDirName(t *testing.T, dir, base string) {
+	t.Helper()
 	if parent := filepath.Dir(dir); parent != filepath.Join(base, "fitness") {
 		t.Fatalf("cache parent = %q, want %q", parent, filepath.Join(base, "fitness"))
 	}
@@ -64,58 +89,57 @@ func TestMaterializeWritesTheWholeDirectory(t *testing.T) {
 	if !strings.HasPrefix(name, "sharedconf-") || len(name) != len("sharedconf-")+12 {
 		t.Fatalf("cache dir name = %q, want sharedconf-<12 hex chars>", name)
 	}
+}
+
+// assertMaterializedFile checks dir/fname exists with mode 0644 and the
+// embedded content.
+func assertMaterializedFile(t *testing.T, dir, fname string) {
+	t.Helper()
+	info, err := os.Stat(filepath.Join(dir, fname))
+	if err != nil {
+		t.Fatalf("%s not materialized: %v", fname, err)
+	}
+	if info.Mode().Perm() != 0o644 {
+		t.Fatalf("%s mode = %v, want 0644", fname, info.Mode().Perm())
+	}
+	assertMatchesEmbedded(t, dir, fname)
+}
+
+func TestMaterializeWritesTheWholeDirectory(t *testing.T) {
+	base := redirectCache(t)
+	dir := mustMaterialize(t)
+	assertCacheDirName(t, dir, base)
 	for _, fname := range embeddedNames {
-		p := filepath.Join(dir, fname)
-		info, err := os.Stat(p)
-		if err != nil {
-			t.Fatalf("%s not materialized: %v", fname, err)
-		}
-		if info.Mode().Perm() != 0o644 {
-			t.Fatalf("%s mode = %v, want 0644", fname, info.Mode().Perm())
-		}
-		want, err := fs.ReadFile(configFS, path.Join(configDir, fname))
-		if err != nil {
-			t.Fatal(err)
-		}
-		got, err := os.ReadFile(p)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if string(got) != string(want) {
-			t.Fatalf("%s content differs from the embedded copy", fname)
-		}
+		assertMaterializedFile(t, dir, fname)
 	}
 }
 
 func TestMaterializeIdempotentAndRestoresMissingFiles(t *testing.T) {
 	redirectCache(t)
-	dir, err := Materialize()
-	if err != nil {
-		t.Fatal(err)
-	}
+	dir := mustMaterialize(t)
 	// An existing file is trusted (the directory name is content-keyed) and
 	// never rewritten; a missing file is restored.
-	kept := filepath.Join(dir, "cspell.json")
-	if err := os.WriteFile(kept, []byte("locally kept"), 0o644); err != nil {
+	writeTree(t, dir, map[string]string{"cspell.json": "locally kept"})
+	if err := os.Remove(filepath.Join(dir, "prettier.config.cjs")); err != nil {
 		t.Fatal(err)
 	}
-	restored := filepath.Join(dir, "prettier.config.cjs")
-	if err := os.Remove(restored); err != nil {
-		t.Fatal(err)
-	}
-	again, err := Materialize()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if again != dir {
+	if again := mustMaterialize(t); again != dir {
 		t.Fatalf("second Materialize = %q, want the same dir %q", again, dir)
 	}
-	if got, err := os.ReadFile(kept); err != nil || string(got) != "locally kept" {
-		t.Fatalf("existing file rewritten: %q, %v", got, err)
-	}
-	want, _ := fs.ReadFile(configFS, path.Join(configDir, "prettier.config.cjs"))
-	if got, err := os.ReadFile(restored); err != nil || string(got) != string(want) {
-		t.Fatalf("missing file not restored: %v", err)
+	assertFileContent(t, filepath.Join(dir, "cspell.json"), "locally kept")
+	assertMatchesEmbedded(t, dir, "prettier.config.cjs")
+}
+
+// assertSameDirs checks every concurrent writer succeeded with one dir.
+func assertSameDirs(t *testing.T, dirs []string, errs []error) {
+	t.Helper()
+	for i := range dirs {
+		if errs[i] != nil {
+			t.Fatalf("writer %d: %v", i, errs[i])
+		}
+		if dirs[i] != dirs[0] {
+			t.Fatalf("writer %d dir = %q, want %q", i, dirs[i], dirs[0])
+		}
 	}
 }
 
@@ -133,20 +157,10 @@ func TestMaterializeConcurrent(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	for i := range writers {
-		if errs[i] != nil {
-			t.Fatalf("writer %d: %v", i, errs[i])
-		}
-		if dirs[i] != dirs[0] {
-			t.Fatalf("writer %d dir = %q, want %q", i, dirs[i], dirs[0])
-		}
-	}
+	assertSameDirs(t, dirs, errs)
+	// Each file must survive concurrent materialization intact.
 	for _, fname := range embeddedNames {
-		want, _ := fs.ReadFile(configFS, path.Join(configDir, fname))
-		got, err := os.ReadFile(filepath.Join(dirs[0], fname))
-		if err != nil || string(got) != string(want) {
-			t.Fatalf("%s corrupted by concurrent materialization: %v", fname, err)
-		}
+		assertMatchesEmbedded(t, dirs[0], fname)
 	}
 }
 
@@ -201,10 +215,7 @@ func TestResolve(t *testing.T) {
 			filepath.ToSlash(filepath.Join(installedRel, "cspell.json")): "{}",
 		})
 		got := Resolve(root, "prettier.config.cjs")
-		dir, err := Materialize()
-		if err != nil {
-			t.Fatal(err)
-		}
+		dir := mustMaterialize(t)
 		if want := filepath.Join(dir, "prettier.config.cjs"); got != want {
 			t.Fatalf("Resolve = %q, want materialized %q", got, want)
 		}
@@ -242,10 +253,7 @@ func TestResolveDir(t *testing.T) {
 	t.Run("no install materializes the embedded copy", func(t *testing.T) {
 		redirectCache(t)
 		got := ResolveDir(t.TempDir())
-		dir, err := Materialize()
-		if err != nil {
-			t.Fatal(err)
-		}
+		dir := mustMaterialize(t)
 		if got != dir {
 			t.Fatalf("ResolveDir = %q, want materialized %q", got, dir)
 		}

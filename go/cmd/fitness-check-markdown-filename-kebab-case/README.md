@@ -47,7 +47,7 @@ Only the basename is validated, so directory casing is ignored — `SomeDir/api-
 
 ## Behavior
 
-- Discovers every `.md` file under root (standard skip dirs like `node_modules`, `dist`, `coverage`, `.git` excluded).
+- Discovers every tracked `.md` file; no directory is skipped.
 - Pass: every basename is a standard root doc or matches the enabled flavor's convention.
 - Fail: `path: filename must be <kebab-case|camelCase>` per non-conforming file.
 - `filesChecked` counts every `.md` file scanned.

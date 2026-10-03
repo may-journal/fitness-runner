@@ -17,7 +17,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"sort"
 	"strings"
 	"unicode/utf8"
@@ -28,7 +27,7 @@ import (
 )
 
 // sourceExtensions are the source file extensions scanned — the TS
-// SOURCE_FILE_EXTENSIONS set. Test/spec/bench files are excluded separately.
+// SOURCE_FILE_EXTENSIONS set. Test, spec, and bench files are scanned too.
 var sourceExtensions = []string{".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx"}
 
 // minLength: string literals shorter than this many runes are ignored as
@@ -42,10 +41,6 @@ const minOccurrences = 3
 // maxLocations caps the locations listed per duplicated value to keep an
 // error line readable.
 const maxLocations = 5
-
-// fixtureFileRe matches a test/spec/bench source file (fixtures there
-// repeat strings intentionally).
-var fixtureFileRe = regexp.MustCompile(`\.(?:bench|spec|test)\.(?:c|m)?[jt]sx?$`)
 
 // idiomaticValues are JS/Node tokens where the literal IS the clearest
 // spelling — extracting a constant would hurt readability. Closed sets only:
@@ -109,16 +104,10 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(len(files)), nil
 }
 
-// findSourceFiles returns sorted relative paths of scanned source files
-// (test/spec/bench excluded).
+// findSourceFiles returns sorted relative paths of every tracked source
+// file.
 func findSourceFiles(root string) []string {
-	var out []string
-	for _, f := range walkfs.FilesByExt(root, sourceExtensions...) {
-		if !fixtureFileRe.MatchString(f) {
-			out = append(out, f)
-		}
-	}
-	return out
+	return walkfs.FilesByExt(root, sourceExtensions...)
 }
 
 // allowedValues returns the exact values allowed via .fitnessrc.json

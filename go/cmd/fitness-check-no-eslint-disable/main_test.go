@@ -93,9 +93,7 @@ func TestRunFailsOncePerDirectiveForm(t *testing.T) {
 
 func TestRunScansEveryExtensionAndNothingElse(t *testing.T) {
 	dir := t.TempDir()
-	for _, ext := range sourceExtensions {
-		write(t, dir, "src/f"+ext, "// eslint-disable-next-line\n")
-	}
+	writeEveryExtension(t, dir, "// eslint-disable-next-line\n")
 	write(t, dir, "ignore.md", "eslint-disable everywhere\n")
 	res, err := run(dir, nil)
 	if err != nil {
@@ -103,6 +101,14 @@ func TestRunScansEveryExtensionAndNothingElse(t *testing.T) {
 	}
 	if res.Ok || res.FilesChecked != len(sourceExtensions) || len(res.Errors) != len(sourceExtensions) {
 		t.Fatalf("unexpected result: %+v", res)
+	}
+}
+
+// writeEveryExtension writes one source file per scanned extension.
+func writeEveryExtension(t *testing.T, dir, content string) {
+	t.Helper()
+	for _, ext := range sourceExtensions {
+		write(t, dir, "src/f"+ext, content)
 	}
 }
 
@@ -118,7 +124,7 @@ func TestRunSkipsWhenNoSourceFiles(t *testing.T) {
 	}
 }
 
-func TestRunPrunesSkipDirectories(t *testing.T) {
+func TestRunSkipsNoDirectory(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "node_modules/pkg/index.js", "/* eslint-disable */\n")
 	write(t, dir, "dist/out.js", "/* eslint-disable */\n")
@@ -127,7 +133,7 @@ func TestRunPrunesSkipDirectories(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !res.Ok || res.FilesChecked != 1 {
-		t.Fatalf("unexpected result: %+v", res)
+	if res.Ok || res.FilesChecked != 3 || len(res.Errors) != 2 {
+		t.Fatalf("want node_modules and dist judged too: %+v", res)
 	}
 }

@@ -56,9 +56,7 @@ func TestRunMissingNvmrc(t *testing.T) {
 	dir := t.TempDir()
 	// A package.json passes the self-gate so the missing-.nvmrc failure path
 	// is still exercised.
-	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeRootFile(t, dir, "package.json", "{}")
 	res, err := run(dir, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -70,12 +68,8 @@ func TestRunMissingNvmrc(t *testing.T) {
 
 func TestRunAgainstRealNvmrc(t *testing.T) {
 	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, ".nvmrc"), []byte("1\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
+	writeRootFile(t, dir, "package.json", "{}")
+	writeRootFile(t, dir, ".nvmrc", "1\n")
 	res, err := run(dir, nil)
 	if err != nil {
 		t.Fatal(err)
@@ -83,5 +77,13 @@ func TestRunAgainstRealNvmrc(t *testing.T) {
 	// any installed node satisfies a required major of 1
 	if !res.Ok {
 		t.Fatalf("expected pass against .nvmrc=1, got %+v", res)
+	}
+}
+
+// writeRootFile writes one file at the top of dir.
+func writeRootFile(t *testing.T, dir, name, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }

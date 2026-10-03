@@ -159,23 +159,47 @@ func TestParseDoc(t *testing.T) {
 	}
 }
 
+// assertPairCounts checks how many pairs and orphan tables a pairing found.
+func assertPairCounts(t *testing.T, result PairResult, pairs, orphans int) {
+	t.Helper()
+	if len(result.Pairs) != pairs {
+		t.Fatalf("pairs = %d, want %d", len(result.Pairs), pairs)
+	}
+	if len(result.OrphanTables) != orphans {
+		t.Fatalf("orphanTables = %d, want %d", len(result.OrphanTables), orphans)
+	}
+}
+
+// assertPair checks one pair's diagram numbers and its table: a nil table
+// wants no table at all, otherwise a table with exactly those numbers.
+func assertPair(t *testing.T, index int, pair DiagramTablePair, diagram, table []int) {
+	t.Helper()
+	if !reflect.DeepEqual(pair.Diagram.Numbers, diagram) {
+		t.Fatalf("pair %d diagram numbers = %v, want %v", index, pair.Diagram.Numbers, diagram)
+	}
+	assertPairTable(t, index, pair.Table, table)
+}
+
+func assertPairTable(t *testing.T, index int, got *CalloutTableBlock, want []int) {
+	t.Helper()
+	if want == nil {
+		if got != nil {
+			t.Fatalf("pair %d table = %+v, want nil", index, got)
+		}
+		return
+	}
+	if got == nil || !reflect.DeepEqual(got.Numbers, want) {
+		t.Fatalf("pair %d table = %+v, want numbers %v", index, got, want)
+	}
+}
+
 func TestPairDiagramsWithTables(t *testing.T) {
 	t.Run("pairs each diagram with the following table and flags orphan tables", func(t *testing.T) {
 		blocks := ParseDoc("| # | Description |\n| --- | --- |\n| 1 | orphan |\n\n" +
 			mermaidFence(`Rel(a, b, "1")`) + "\n\n| # | Description |\n| --- | --- |\n| 1 | paired |")
 		result := PairDiagramsWithTables(blocks)
-		if len(result.OrphanTables) != 1 {
-			t.Fatalf("orphanTables = %d, want 1", len(result.OrphanTables))
-		}
-		if len(result.Pairs) != 1 {
-			t.Fatalf("pairs = %d, want 1", len(result.Pairs))
-		}
-		if !reflect.DeepEqual(result.Pairs[0].Diagram.Numbers, []int{1}) {
-			t.Fatalf("diagram numbers = %v, want [1]", result.Pairs[0].Diagram.Numbers)
-		}
-		if result.Pairs[0].Table == nil || !reflect.DeepEqual(result.Pairs[0].Table.Numbers, []int{1}) {
-			t.Fatalf("table = %+v, want numbers [1]", result.Pairs[0].Table)
-		}
+		assertPairCounts(t, result, 1, 1)
+		assertPair(t, 0, result.Pairs[0], []int{1}, []int{1})
 	})
 
 	t.Run("pairs a diagram with nil when no table follows", func(t *testing.T) {
@@ -185,9 +209,7 @@ func TestPairDiagramsWithTables(t *testing.T) {
 		if !reflect.DeepEqual(result.Pairs, want) {
 			t.Fatalf("pairs = %+v, want %+v", result.Pairs, want)
 		}
-		if len(result.OrphanTables) != 0 {
-			t.Fatalf("orphanTables = %d, want 0", len(result.OrphanTables))
-		}
+		assertPairCounts(t, result, 1, 0)
 	})
 
 	t.Run("skips a legend diagram so the numbered diagram pairs with the table", func(t *testing.T) {
@@ -195,48 +217,23 @@ func TestPairDiagramsWithTables(t *testing.T) {
 			mermaidFence("Person(p, \"Person\")\nSystem(s, \"System\")") + // legend: no callout numbers
 			"\n\n| # | Description |\n| --- | --- |\n| 1 | paired past the legend |")
 		result := PairDiagramsWithTables(blocks)
-		if len(result.OrphanTables) != 0 {
-			t.Fatalf("orphanTables = %d, want 0", len(result.OrphanTables))
-		}
-		if len(result.Pairs) != 1 {
-			t.Fatalf("pairs = %d, want 1", len(result.Pairs))
-		}
-		if !reflect.DeepEqual(result.Pairs[0].Diagram.Numbers, []int{1}) {
-			t.Fatalf("diagram numbers = %v, want [1]", result.Pairs[0].Diagram.Numbers)
-		}
-		if result.Pairs[0].Table == nil || !reflect.DeepEqual(result.Pairs[0].Table.Numbers, []int{1}) {
-			t.Fatalf("table = %+v, want numbers [1]", result.Pairs[0].Table)
-		}
+		assertPairCounts(t, result, 1, 0)
+		assertPair(t, 0, result.Pairs[0], []int{1}, []int{1})
 	})
 
 	t.Run("flushes a pending diagram when a second numbered diagram starts", func(t *testing.T) {
 		blocks := ParseDoc(mermaidFence(`a["1 x"]`) + "\n" + mermaidFence(`b["2 y"]`) +
 			"\n\n| # | D |\n| --- | --- |\n| 2 | b |")
 		result := PairDiagramsWithTables(blocks)
-		if len(result.Pairs) != 2 {
-			t.Fatalf("pairs = %d, want 2", len(result.Pairs))
-		}
-		if result.Pairs[0].Table != nil {
-			t.Fatalf("first pair table = %+v, want nil", result.Pairs[0].Table)
-		}
-		if !reflect.DeepEqual(result.Pairs[0].Diagram.Numbers, []int{1}) {
-			t.Fatalf("first diagram numbers = %v, want [1]", result.Pairs[0].Diagram.Numbers)
-		}
-		if result.Pairs[1].Table == nil || !reflect.DeepEqual(result.Pairs[1].Table.Numbers, []int{2}) {
-			t.Fatalf("second pair table = %+v, want numbers [2]", result.Pairs[1].Table)
-		}
+		assertPairCounts(t, result, 2, 0)
+		assertPair(t, 0, result.Pairs[0], []int{1}, nil)
+		assertPair(t, 1, result.Pairs[1], []int{2}, []int{2})
 	})
 }
 
-func TestRunDocCheck(t *testing.T) {
-	root := t.TempDir()
-	files := map[string]string{
-		"diagram.md":              mermaidFence(`a["1 x"]`) + "\n",
-		"prose.md":                "# Title\n\njust prose, no blocks\n",
-		"table-only.md":           "| # | D |\n| --- | --- |\n| 1 | a |\n",
-		"docs/nested.md":          mermaidFence(`b["2 y"]`) + "\n",
-		"node_modules/skipped.md": mermaidFence(`c["3 z"]`) + "\n",
-	}
+// writeDocs creates each slash-separated name:content pair under root.
+func writeDocs(t *testing.T, root string, files map[string]string) {
+	t.Helper()
 	for name, content := range files {
 		path := filepath.Join(root, filepath.FromSlash(name))
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
@@ -246,6 +243,17 @@ func TestRunDocCheck(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+}
+
+func TestRunDocCheck(t *testing.T) {
+	root := t.TempDir()
+	writeDocs(t, root, map[string]string{
+		"diagram.md":               mermaidFence(`a["1 x"]`) + "\n",
+		"prose.md":                 "# Title\n\njust prose, no blocks\n",
+		"table-only.md":            "| # | D |\n| --- | --- |\n| 1 | a |\n",
+		"docs/nested.md":           mermaidFence(`b["2 y"]`) + "\n",
+		"node_modules/included.md": mermaidFence(`c["3 z"]`) + "\n",
+	})
 
 	var seen []string
 	errs, filesChecked, err := RunDocCheck(root, func(file, content string) []string {
@@ -258,10 +266,11 @@ func TestRunDocCheck(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if filesChecked != 3 {
-		t.Fatalf("filesChecked = %d, want 3 (block-free and skip-dir files excluded)", filesChecked)
+	// No directory is skipped any more; only block-free files are left out.
+	if filesChecked != 4 {
+		t.Fatalf("filesChecked = %d, want 4 (block-free files excluded)", filesChecked)
 	}
-	wantSeen := []string{"diagram.md", "docs/nested.md", "table-only.md"}
+	wantSeen := []string{"diagram.md", "docs/nested.md", "node_modules/included.md", "table-only.md"}
 	if !reflect.DeepEqual(seen, wantSeen) {
 		t.Fatalf("validated files = %v, want %v", seen, wantSeen)
 	}

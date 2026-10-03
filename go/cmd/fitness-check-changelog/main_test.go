@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 const validChangelog = "# Changelog\n\n### 2026.02.15.1100\n\n- item"
@@ -108,26 +110,39 @@ func TestRun(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
-			for name, content := range tc.files {
-				if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			res, err := run(dir, nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			writeFiles(t, dir, tc.files)
+			res := runOneFile(t, dir)
 			if res.Ok != tc.ok {
 				t.Fatalf("ok = %v, want %v (errors: %v)", res.Ok, tc.ok, res.Errors)
-			}
-			if res.FilesChecked != 1 {
-				t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
 			}
 			if !tc.ok && !reflect.DeepEqual(res.Errors, tc.wantErrors) {
 				t.Fatalf("errors = %q, want %q", res.Errors, tc.wantErrors)
 			}
 		})
 	}
+}
+
+// writeFiles writes each name/content pair under dir.
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for name, content := range files {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// runOneFile runs the check and requires exactly one file checked.
+func runOneFile(t *testing.T, dir string) checkkit.Result {
+	t.Helper()
+	res, err := run(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.FilesChecked != 1 {
+		t.Fatalf("filesChecked = %d, want 1", res.FilesChecked)
+	}
+	return res
 }
 
 func TestPackageChangelogMismatch(t *testing.T) {
@@ -144,20 +159,21 @@ func TestStrictlyEqualMirrorsJS(t *testing.T) {
 	absent := jsonVersion{}
 	null := jsonVersion{value: nil, present: true}
 	str := jsonVersion{value: "1.0.0", present: true}
-	if !strictlyEqual(absent, absent) {
-		t.Fatal("undefined === undefined should hold")
-	}
-	if strictlyEqual(absent, null) {
-		t.Fatal("undefined === null should not hold")
-	}
-	if !strictlyEqual(null, null) {
-		t.Fatal("null === null should hold")
-	}
-	if strictlyEqual(str, jsonVersion{value: float64(1), present: true}) {
-		t.Fatal("cross-type strict equality should not hold")
-	}
 	obj := jsonVersion{value: map[string]any{}, present: true}
-	if strictlyEqual(obj, obj) {
-		t.Fatal("two parsed objects are never strictly equal")
+	cases := []struct {
+		name string
+		a, b jsonVersion
+		want bool
+	}{
+		{"undefined === undefined should hold", absent, absent, true},
+		{"undefined === null should not hold", absent, null, false},
+		{"null === null should hold", null, null, true},
+		{"cross-type strict equality should not hold", str, jsonVersion{value: float64(1), present: true}, false},
+		{"two parsed objects are never strictly equal", obj, obj, false},
+	}
+	for _, tc := range cases {
+		if strictlyEqual(tc.a, tc.b) != tc.want {
+			t.Fatal(tc.name)
+		}
 	}
 }
