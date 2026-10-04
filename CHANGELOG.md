@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1522
+
+- Feat: correlate Release Please versions with reviewable changelog release sections.
+- Fix: reject manifest-only releases, mismatched version files, and empty or duplicate release notes.
+- Refactor: make release check availability explicit and unit-tested.
+- Test: cover bootstrap, malformed metadata, semantic versions, bullets, and scoped release changes.
+
 ### 2026.10.04.1440
 
 - Fix: reject named test helpers passed through `t.Run` so wrappers cannot hide independently measured tests.
