@@ -60,12 +60,17 @@ func assertEntry(t *testing.T, reader *tar.Reader, want string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if header.Name != want {
-		t.Fatalf("header: %+v", header)
-	}
+	assertHeader(t, header, want)
 	data, err := io.ReadAll(reader)
 	if err != nil || string(data) != "binary" {
 		t.Fatalf("archive data: %s %v", data, err)
+	}
+}
+
+func assertHeader(t *testing.T, header *tar.Header, want string) {
+	t.Helper()
+	if header.Name != want || header.Mode != 0755 {
+		t.Fatalf("header: %+v", header)
 	}
 }
 

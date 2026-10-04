@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.0951
+
+- Fix: pin the action and CI examples to the release with compiled Go hooks.
+- Docs: align direct installer URLs with the compiled entry points.
+- Test: verify executable permissions in release archives.
+
 ### 2026.10.04.0945
 
 - Refactor: move release packaging, tag checks, publishing, and native smoke checks from shell scripts into typed Go.

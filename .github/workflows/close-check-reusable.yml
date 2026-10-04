@@ -31,7 +31,7 @@ jobs:
           cache: false
       - name: Install the pinned fitness bundle
         if: ${{ inputs.ref == '' }}
-        uses: may-journal/fitness-runner@go/v0.20261004.913
+        uses: may-journal/fitness-runner@go/v0.20261004.951
         with:
           install-only: 'true'
       - name: Build an explicitly requested source ref
