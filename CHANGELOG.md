@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1140
+
+- Fix: speed up spelling scans by matching ignore patterns only on lines with the required markers.
+- Test: compare optimized masks with the original algorithm across dictionaries, random inputs, and fuzz cases.
+- Test: run the full candidate bundle before release and the full public action after publishing, keeping the timeout unchanged.
+
 ### 2026.10.04.1106
 
 - Fix: remove the check filter from release action verification so it runs the full suite.

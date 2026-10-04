@@ -12,20 +12,25 @@ import (
 // (Urls, Email, CommitHash, hex and hash forms, UUID, Unicode refs). The
 // lookahead-dependent Base64/PublicKey/SshRsa patterns are deliberately not
 // replicated; commit-hash "must contain a digit" is enforced in code below.
-var ignorePatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(?:https?|ftp)://[^\s"]+`),
-	regexp.MustCompile(`(?i)<?\b[\w.+-]{1,128}@\w{1,63}(?:\.\w{1,63}){1,4}\b>?`),
-	regexp.MustCompile(`(?i)\[[0-9a-f]{7,}\]`),
-	regexp.MustCompile(`(?i)\b0x[0-9a-f_]+n?\b`),
-	regexp.MustCompile(`(?i)#[0-9a-f]{3,8}\b`),
-	regexp.MustCompile(`(?i)\bsha\d+-[a-z0-9+/]{25,}={0,3}`),
-	regexp.MustCompile(`(?i)(?:\b(?:sha\d+|md5|base64|crypt|bcrypt|scrypt|security-token|assertion)[-,:$=]|#code/)[-\w/+%.]{25,}={0,3}`),
-	regexp.MustCompile(`(?i)\bU\+[0-9a-f]{4,5}(?:-[0-9a-f]{4,5})?`),
-	regexp.MustCompile(`(?i)\b[0-9a-fx]{8}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{12}\b`),
+type ignorePattern struct {
+	re      *regexp.Regexp
+	markers string
+}
+
+var ignorePatterns = []ignorePattern{
+	{regexp.MustCompile(`(?i)(?:https?|ftp)://[^\s"]+`), ":/"},
+	{regexp.MustCompile(`(?i)<?\b[\w.+-]{1,128}@\w{1,63}(?:\.\w{1,63}){1,4}\b>?`), "@"},
+	{regexp.MustCompile(`(?i)\[[0-9a-f]{7,}\]`), "["},
+	{regexp.MustCompile(`(?i)\b0x[0-9a-f_]+n?\b`), "xX"},
+	{regexp.MustCompile(`(?i)#[0-9a-f]{3,8}\b`), "#"},
+	{regexp.MustCompile(`(?i)\bsha\d+-[a-z0-9+/]{25,}={0,3}`), "-"},
+	{regexp.MustCompile(`(?i)(?:\b(?:sha\d+|md5|base64|crypt|bcrypt|scrypt|security-token|assertion)[-,:$=]|#code/)[-\w/+%.]{25,}={0,3}`), "-,:$=#"},
+	{regexp.MustCompile(`(?i)\bU\+[0-9a-f]{4,5}(?:-[0-9a-f]{4,5})?`), "+"},
+	{regexp.MustCompile(`(?i)\b[0-9a-fx]{8}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{12}\b`), "-"},
 	// Escape sequences in string literals: cspell's word splitter treats \n in
 	// "\nconst" as a break so "const" is judged alone; masking the escape gets
 	// the same judgment.
-	regexp.MustCompile(`(?i)\\(?:[anrvtbf]|[xu][0-9a-f]+)`),
+	{regexp.MustCompile(`(?i)\\(?:[anrvtbf]|[xu][0-9a-f]+)`), "\\"},
 }
 
 // hexRun is cspell's CommitHash pattern minus its lookahead: the "contains a
@@ -33,11 +38,34 @@ var ignorePatterns = []*regexp.Regexp{
 var hexRun = regexp.MustCompile(`(?i)\b(?:0x)?[0-9a-f]{7,}\b`)
 
 // maskPatterns marks every byte matched by the default ignore patterns.
+// No ignore pattern matches a newline. Match each line separately and avoid
+// regex scans when a required punctuation mark or digit is absent.
 func maskPatterns(text string, masked []bool) {
-	for _, re := range ignorePatterns {
-		for _, m := range re.FindAllStringIndex(text, -1) {
-			mark(masked, m[0], m[1])
+	offset := 0
+	for line := range strings.SplitSeq(text, "\n") {
+		maskPatternLine(line, masked[offset:offset+len(line)])
+		offset += len(line) + 1
+	}
+}
+
+func maskPatternLine(line string, masked []bool) {
+	for _, pattern := range ignorePatterns {
+		if strings.ContainsAny(line, pattern.markers) {
+			maskMatches(pattern.re, line, masked)
 		}
+	}
+	maskHexRuns(line, masked)
+}
+
+func maskMatches(re *regexp.Regexp, text string, masked []bool) {
+	for _, m := range re.FindAllStringIndex(text, -1) {
+		mark(masked, m[0], m[1])
+	}
+}
+
+func maskHexRuns(text string, masked []bool) {
+	if !strings.ContainsAny(text, "0123456789") {
+		return
 	}
 	for _, m := range hexRun.FindAllStringIndex(text, -1) {
 		if strings.ContainsAny(text[m[0]:m[1]], "0123456789") {

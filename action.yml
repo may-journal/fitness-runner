@@ -27,8 +27,8 @@ runs:
       shell: bash
       working-directory: ${{ runner.temp }}
       env:
-        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1050
-        ASSET: fitness-install-0.20261004.1050-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140
+        ASSET: fitness-install-0.20261004.1140-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
       run: |
         curl -fsSL --retry 3 "$RELEASE_URL/$ASSET" -o "$ASSET"
         curl -fsSL --retry 3 "$RELEASE_URL/checksums.txt" -o "$ASSET.checksums"
@@ -37,7 +37,7 @@ runs:
     - id: install
       shell: bash
       env:
-        FITNESS_EXECUTABLE: ${{ runner.temp }}/fitness-install-0.20261004.1050-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+        FITNESS_EXECUTABLE: ${{ runner.temp }}/fitness-install-0.20261004.1140-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
         FITNESS_VERSION: ${{ inputs.version }}
         FITNESS_CHECK: ${{ inputs.check }}
         FITNESS_POLICY: ${{ inputs.policy }}
