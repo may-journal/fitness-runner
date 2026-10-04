@@ -83,3 +83,24 @@ func TestRemainingArguments(t *testing.T) {
 		t.Fatalf("remaining %v: %v", args, err)
 	}
 }
+
+func TestOptionalCheckSelection(t *testing.T) {
+	options, _, err := Parse([]string{"--policy=external", "--checks=go-test-coverage"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, names, err := options.Resolve("", nil, "", []string{"go-test"}, "go-test-coverage")
+	if err != nil || len(names) != 1 || names[0] != "go-test-coverage" {
+		t.Fatalf("%v %v", names, err)
+	}
+}
+func TestOptionalCheckDoesNotChangeDefault(t *testing.T) {
+	options, _, err := Parse([]string{"--policy=external"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, names, err := options.Resolve("", nil, "", []string{"go-test"}, "go-test-coverage")
+	if err != nil || len(names) != 1 || names[0] != "go-test" {
+		t.Fatalf("%v %v", names, err)
+	}
+}

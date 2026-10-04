@@ -144,6 +144,10 @@ func requireAllChecks(paths []string, output string) error {
 	}
 	for _, path := range paths {
 		name := strings.TrimPrefix(filepath.Base(path), "fitness-check-")
+		// Coverage remains explicitly selected during its approved rollout.
+		if name == "go-test-coverage" {
+			continue
+		}
 		if !strings.Contains(output, "→ "+name+"\n") {
 			return fmt.Errorf("external default omitted check %s", name)
 		}

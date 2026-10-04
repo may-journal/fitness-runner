@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1226
+
+- Feat: an optional Go coverage check with full entry coverage and file, package, and folder reports.
+- Feat: test overlap reports and measured coverage from compiled child tools.
+- Test: cover hierarchy gaps, untested packages, distinct assertions, child processes, and concurrent runs.
+
 ### 2026.10.04.1159
 
 - Feat: report all workflow outcomes through native annotations, summaries, and complete overflow artifacts.
