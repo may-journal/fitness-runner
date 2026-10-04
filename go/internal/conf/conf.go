@@ -14,8 +14,9 @@ import (
 
 // Config is the shape of .fitnessrc.json.
 type Config struct {
-	// LegacyChecks is the retired checks list. Every check now runs, so the
-	// runner ignores it and warns until a repo removes it.
+	// Policy selects org or external use; both default to all checks.
+	Policy string `json:"policy"`
+	// LegacyChecks optionally selects checks in external mode. Org ignores it.
 	LegacyChecks []string `json:"checks"`
 	// DisabledChecks turns off checks by name for this repo.
 	DisabledChecks []string `json:"disabledChecks"`

@@ -24,14 +24,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// allChecks is the run order when config has no checks list — the Go
-// twin of the bundle's allChecks (the bundle concept dissolves when
-// checks are sibling binaries).
-// allChecks is every check, in run order. Every repo runs all of them: each
-// check detects whether it applies — its language, tool, config, or input is
-// present — and passes clean with zero files when it does not, so one list
-// fits Swift, Go, JS, and docs-only repos alike. A repo turns a check off
-// with disabledChecks in .fitnessrc.json.
+// allChecks is the org default and the catalog for explicit external lists.
+// Org checks self-gate when their language, tool, config, or input is absent.
+// External policy also defaults to the full catalog, with optional selection.
 var allChecks = []string{
 	"read-repo-first",
 	"semantic-commit",
@@ -154,6 +149,8 @@ Usage:
   fitness                  run the full configured suite
   fitness <name>           run one check by name
   fitness --check=<name>   run one check by name
+  fitness --policy=external --checks=name,name
+                           run exactly the selected checks
   fitness --all            scan every file, even with files staged
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
@@ -171,16 +168,7 @@ func run(argv []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	spec, _, jobs, passthrough := parseArgv(argv)
-
-	cfg, err := loadConfig(root, spec)
-	if err != nil {
-		errRed(err.Error())
-		return 1
-	}
-
-	fmt.Fprintln(os.Stderr, "Resolving checks...")
-	checks, err := prepareChecks(cfg, spec)
+	checks, jobs, passthrough, err := selectedChecks(root, argv)
 	if err != nil {
 		errRed(err.Error())
 		return 1
@@ -205,7 +193,6 @@ func loadConfig(root, spec string) (*conf.Config, error) {
 	if err != nil && (spec == "" || !errors.Is(err, conf.ErrLegacyConfig)) {
 		return nil, err
 	}
-	warnLegacyChecks(cfg)
 	return cfg, nil
 }
 

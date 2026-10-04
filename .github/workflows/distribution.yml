@@ -50,3 +50,12 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" smoke
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - name: Run the full suite with the candidate Go installer
+        env:
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
+        run: |
+          chmod +x out/fitness-install-*-${{ matrix.platform }}
+          out/fitness-install-*-${{ matrix.platform }} -- --policy=external

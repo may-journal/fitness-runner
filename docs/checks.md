@@ -15,7 +15,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 - Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
-Every check runs in every repo, in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. A repo turns a check off with `disabledChecks` in `.fitnessrc.json`.
+Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. A repo turns a check off with `disabledChecks` in `.fitnessrc.json`. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md).
 
 ## Every tracked file
 

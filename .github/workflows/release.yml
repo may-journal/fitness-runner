@@ -62,10 +62,12 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" verify-download
-      - name: Run the released root action without Go
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - name: Run the full suite through the released action
         uses: ./
         with:
-          check: markdown-filename-kebab-case
+          policy: external
         env:
-          PATH: ${{ runner.temp }}/fitness-consumer-tools
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache

@@ -7,6 +7,36 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1140
+
+- Fix: speed up spelling scans by matching ignore patterns only on lines with the required markers.
+- Test: compare optimized masks with the original algorithm across dictionaries, random inputs, and fuzz cases.
+- Test: run the full candidate bundle before release and the full public action after publishing, keeping the timeout unchanged.
+
+### 2026.10.04.1106
+
+- Fix: remove the check filter from release action verification so it runs the full suite.
+- Test: run the full public action on all four platforms during PR checks, with Go for this repo's project tests.
+- Docs: remove the pending-publication note now that the full-suite release is verified.
+
+### 2026.10.04.1050
+
+- Fix: run every check by default in external mode and let each check decide whether it applies.
+- Docs: make full-suite runs the main Jenkins, Actions, and compiled hook examples.
+- Test: verify every shipped check starts in default external runs, while keeping explicit filters optional.
+
+### 2026.10.04.1040
+
+- Test: run selected checks and compiled hooks without Go or GitHub tokens in consumer repos.
+- Docs: add full external-mode examples for Jenkins, Actions, and compiled commit hooks.
+- Feat: bind external action inputs to the new Go release and verify chosen checks during publishing.
+
+### 2026.10.04.1036
+
+- Feat: add external policy with exact check lists from CLI flags or repo config.
+- Feat: pass external policy and check lists through the compiled Go action entry point.
+- Test: cover list precedence, invalid selections, and unchanged org defaults.
+
 ### 2026.10.04.1019
 
 - Test: build release fixtures with Go and verify embedded versions, hashes, checksums, and publishing arguments.
