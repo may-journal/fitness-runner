@@ -129,3 +129,20 @@ The hook checks working-tree files, not an isolated staged snapshot. A failed ch
 The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks.
 
 Upgrade or roll back by choosing an exact release with `--version VERSION`. `--version latest` is explicit opt-in; logs show the resolved version and hash. The action's `version` input follows the same rules.
+
+
+## Release automation
+
+A successful main CI run tags the exact commit using its changelog version. The release workflow builds and tests all four platforms, then checks the public downloads and action. Only a verified release becomes latest and opens a PR to update this repo's pins and setup examples. Pin PRs pass normal checks and review; their generated changes do not start another release.
+
+The workflow uses `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`. Install that GitHub App on this repo with write access to Contents, Pull requests, Issues, and Workflows. The App creates tags, a tracking issue, and the pin PR. Its token allows those events to start the next workflow and the PR checks.
+
+## Retry a release
+
+For a failed tag job, fix the cause and rerun the CI job. If a tag already exists at that commit, it is kept. A tag at a different commit is an error; add a new changelog version. 
+
+For a failed release job, rerun the failed jobs in the Release workflow. Publish retries check existing asset bytes and upload missing files. They reject changed bytes. A pin retry keeps its existing PR and review edits.
+
+## Consumer updates
+
+This updates pins in the Fitness repo. A consumer on a fixed tag or commit SHA stays on that ref until its own update PR merges. Use an updater in each consumer repo to propose those changes. The explicit `latest` version option follows verified releases; it does not update the action's source ref.

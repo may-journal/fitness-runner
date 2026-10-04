@@ -67,6 +67,12 @@ In a consumer repo, run `fitness init` once — it installs the shared hooks as 
 
 Some checks also run as GitHub Actions workflows. They extend the same rules to non-file targets like plan Issues and pull request descriptions. Each workflow step is one `fitness` call. See [.github/workflows/README.md](.github/workflows/README.md).
 
+## Release updates
+
+A green CI run on main tags its exact commit from the changelog. The release workflow builds and tests all four platforms. It checks public downloads before marking the release latest and opening a pin update PR. That PR updates this repo's installer, shared workflows, and setup examples through normal review and checks.
+
+See [release automation and recovery](docs/ci.md#release-automation) for App access and retry steps. Other repos with fixed version tags or commit SHAs need their own update PRs.
+
 ## Documentation
 
 - [Distribution and versioning](docs/distribution.md)

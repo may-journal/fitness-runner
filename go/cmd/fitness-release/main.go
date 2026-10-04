@@ -36,7 +36,7 @@ func reportFailure(operation string, err error) {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use build, smoke, verify-download, verify-tag, publish, or tag")
+		return fmt.Errorf("use build, smoke, verify-download, verify-tag, publish, promote, ensure-tag, pin-release, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
@@ -52,6 +52,9 @@ func run(args []string) error {
 
 func dispatch(command string, config release.Config) error {
 	handlers := map[string]func() error{
+		"ensure-tag":      func() error { return config.EnsureTag(context.Background()) },
+		"pin-release":     func() error { return config.PinRelease(context.Background()) },
+		"promote":         func() error { return config.Promote(context.Background()) },
 		"build":           func() error { return config.Build(context.Background()) },
 		"smoke":           func() error { return config.Smoke(context.Background(), false) },
 		"verify-download": func() error { return config.Smoke(context.Background(), true) },

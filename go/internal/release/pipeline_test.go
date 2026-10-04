@@ -201,7 +201,7 @@ func assertPublish(t *testing.T, c Config) {
 	if err := json.Unmarshal(data, &args); err != nil {
 		t.Fatal(err)
 	}
-	expected := []string{"release", "create", "go/v0.20261004.37", filepath.Join(c.Out, "bundle.tar.gz"), filepath.Join(c.Out, "checksums.txt"), "--verify-tag", "--title", "fitness v0.20261004.37", "--notes-file", filepath.Join(c.Out, "notes.md")}
+	expected := []string{"release", "create", "go/v0.20261004.37", filepath.Join(c.Out, "bundle.tar.gz"), filepath.Join(c.Out, "checksums.txt"), "--verify-tag", "--title", "fitness v0.20261004.37", "--notes-file", filepath.Join(c.Out, "notes.md"), "--latest=false"}
 	if strings.Join(args, "\n") != strings.Join(expected, "\n") {
 		t.Fatalf("publish arguments: %q", args)
 	}

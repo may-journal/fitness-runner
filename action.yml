@@ -29,17 +29,29 @@ runs:
       working-directory: ${{ runner.temp }}
       env:
         RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140
-        ASSET: fitness-install-0.20261004.1140-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+        REQUESTED_VERSION: ${{ inputs.version }}
+        PLATFORM: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
       run: |
         printf 'FITNESS_FAILURE_REPORTED=false\n' >> "$GITHUB_ENV"
+        if [ -n "$REQUESTED_VERSION" ] && [ "$REQUESTED_VERSION" != latest ]; then
+          REQUESTED_VERSION="${REQUESTED_VERSION#go/}"
+          REQUESTED_VERSION="${REQUESTED_VERSION#v}"
+          if [[ ! "$REQUESTED_VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            printf '::error::Invalid Fitness version; use numeric major.minor.patch or latest.\n'
+            exit 1
+          fi
+          RELEASE_URL="https://github.com/may-journal/fitness-runner/releases/download/go/v$REQUESTED_VERSION"
+        fi
+        ASSET="fitness-install-${RELEASE_URL##*/v}-$PLATFORM"
         curl -fsSL --retry 3 "$RELEASE_URL/$ASSET" -o "$ASSET"
         curl -fsSL --retry 3 "$RELEASE_URL/checksums.txt" -o "$ASSET.checksums"
         grep "  $ASSET$" "$ASSET.checksums" | shasum -a 256 -c -
         chmod +x "$ASSET"
+        printf 'executable=%s/%s\n' "$PWD" "$ASSET" >> "$GITHUB_OUTPUT"
     - id: install
       shell: bash
       env:
-        FITNESS_EXECUTABLE: ${{ runner.temp }}/fitness-install-0.20261004.1140-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+        FITNESS_EXECUTABLE: ${{ steps.download.outputs.executable }}
         FITNESS_VERSION: ${{ inputs.version }}
         FITNESS_CHECK: ${{ inputs.check }}
         FITNESS_POLICY: ${{ inputs.policy }}

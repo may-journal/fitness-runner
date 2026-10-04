@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1245
+
+- Feat: create release tags from tested main commits and open verified pin update PRs.
+- Fix: retry publish without replacing existing assets and promote only verified releases.
+- Fix: select the requested installer version and prevent pin update release loops.
+- Test: cover immutable tags, release retries, pin branches, and public workflow gates.
+
 ### 2026.10.04.1159
 
 - Feat: report all workflow outcomes through native annotations, summaries, and complete overflow artifacts.
