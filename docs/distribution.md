@@ -14,3 +14,9 @@ Every channel delivers the same static binaries: the runner, the changelog stamp
 The CHANGELOG timestamp is the only version, and release tags are derived from it. Heading `### 2026.07.19.0837` becomes tag `go/v0.20260719.837`. Major is pinned at 0, because Go reserves majors of 2 and up for `/vN` module paths. Minor is the date, patch is the minute, and ordering is preserved.
 
 `.github/scripts/release-tag.sh` prints the tag for the newest heading, and CI refuses any tag that does not match. Consumers reference the plain version (`@v0.20260719.837`) or `@latest`. The Go proxy caches every published version immutably.
+
+## Release gate
+
+[Binary distribution](../.github/workflows/distribution.yml) builds all four bundles and smoke-tests them on native hosts without Go on PATH. The release workflow publishes only after those checks pass. Each release includes `fitness.sh`, with its exact version and bundle hashes embedded.
+
+The [root action](../action.yml) has a fixed default version. Update that pin and the shared workflow refs when shipping a new release. Existing pins stay unchanged; consumers opt into each upgrade. See [CI setup](ci.md) for complete examples.

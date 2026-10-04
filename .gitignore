@@ -14,3 +14,6 @@ go/bin/
 
 # macOS Finder view-state metadata; never part of the project
 .DS_Store
+
+# Release archives and installer, rebuilt by the packaging script
+out/

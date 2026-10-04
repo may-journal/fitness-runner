@@ -8,7 +8,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, which
 
 ## Reusable workflows
 
-fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml), and [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml). Each installs the checks with `go install`, then runs one `fitness` step. The install sets `GOPROXY=direct`, since the Go proxy can serve a stale `@main` after a merge. A consumer repo adds thin callers.
+fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml), and [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
 
 `.github/workflows/pr-check.yml`:
 

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.0857
+
+- Ci: test real release bundles on all four hosts before publishing; keep explicit source refs for shared workflow callers.
+- Docs: add full shell, hook, Jenkins, and Actions setup steps with no local installer to maintain.
+- Test: run install and cache tests with Go absent, and assert bad downloads never execute the runner.
+
 ### 2026.10.04.0850
 
 - Feat: install pinned binary bundles through a shell entry point or root action, with verified downloads and cache repair.

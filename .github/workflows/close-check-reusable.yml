@@ -11,9 +11,9 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: fitness-runner version to install (a tag, or main)
+        description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
-        default: main
+        default: ''
 
 permissions:
   contents: read
@@ -25,16 +25,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v5
+        if: ${{ inputs.ref != '' }}
         with:
           go-version: stable
           cache: false
-      - name: Install the fitness checks
+      - name: Install the pinned fitness bundle
+        if: ${{ inputs.ref == '' }}
+        uses: may-journal/fitness-runner@go/v0.20261004.900
+        with:
+          install-only: 'true'
+      - name: Build an explicitly requested source ref
+        if: ${{ inputs.ref != '' }}
         env:
-          # Resolve the ref against GitHub, not proxy.golang.org, which caches
-          # what @main points to and can serve a build from before the latest merge.
           GOPROXY: direct
+          FITNESS_SOURCE_REF: ${{ inputs.ref }}
         run: |
-          go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref }}"
+          go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Reopen the issue if it closed with unchecked items
         run: fitness close-check
