@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/toolchain"
 )
@@ -20,6 +21,7 @@ type runner struct {
 func (r runner) command(args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(r.ctx, r.bin, args...)
 	cmd.Dir = r.dir
+	cmd.WaitDelay = 2 * time.Second
 	cmd.Env = append(toolchain.CleanEnv(os.Environ()), "GOWORK=off")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -41,6 +43,7 @@ func (r runner) measure(pkg, pattern string) (Profile, error) {
 	args := []string{"test", "-count=1", "-covermode=atomic", "-coverpkg=./...", "-coverprofile=" + profile, "-run=" + pattern, pkg}
 	cmd := exec.CommandContext(r.ctx, r.bin, args...)
 	cmd.Dir = r.dir
+	cmd.WaitDelay = 2 * time.Second
 	cmd.Env = append(toolchain.CleanEnv(os.Environ()), "GOWORK=off", "FITNESS_GO_COVER_DIR="+child)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -79,5 +82,17 @@ func mergeProfileFile(p Profile, file string) error {
 	if err != nil {
 		return err
 	}
+	if err := matchingBlocks(p, other); err != nil {
+		return err
+	}
 	return p.Merge(other)
+}
+
+func matchingBlocks(expected, child Profile) error {
+	for b := range child {
+		if _, ok := expected[b]; !ok {
+			return fmt.Errorf("child coverage differs from test instrumentation in %s", b.File)
+		}
+	}
+	return nil
 }

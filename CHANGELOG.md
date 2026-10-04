@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1230
+
+- Fix: reject mismatched child coverage and flag changing setup coverage in test overlap reports.
+- Test: cover invalid profiles, temporary path failures, scope, and unstable test runs.
+- Docs: explain how repeated setup runs affect overlap reports.
+
 ### 2026.10.04.1226
 
 - Feat: an optional Go coverage check with full entry coverage and file, package, and folder reports.

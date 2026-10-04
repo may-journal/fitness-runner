@@ -100,3 +100,39 @@ func requireReport(t *testing.T, r Report, err error, pass bool) {
 		t.Fatalf("%+v", r)
 	}
 }
+
+func TestStrictProfileRecords(t *testing.T) {
+	records := []string{"m/a.go:1..1,2.1 1 1", "m/a.go:1.1,2.1 1 0\nm/a.go:1.1,2.1 2 1"}
+	for _, record := range records {
+		if _, err := ReadProfile(strings.NewReader("mode: set\n" + record + "\n")); err == nil {
+			t.Fatal(record)
+		}
+	}
+}
+func TestChildInstrumentationMustMatch(t *testing.T) {
+	b := Block{File: "m/a.go", StartLine: 1, StartColumn: 1, EndLine: 2, EndColumn: 1, Statements: 1}
+	if err := matchingBlocks(Profile{b: false}, Profile{b: true}); err != nil {
+		t.Fatal(err)
+	}
+	other := b
+	other.EndLine++
+	if err := matchingBlocks(Profile{b: false}, Profile{other: true}); err == nil {
+		t.Fatal("changed source layout accepted")
+	}
+}
+func TestReportShowsCountsTargetsAndGaps(t *testing.T) {
+	p := Profile{{File: "m/a.go", StartLine: 1, Statements: 1}: false}
+	r, err := summarize(nil, p, map[string]bool{"m": true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.FileCount() != 1 {
+		t.Fatal(r.FileCount())
+	}
+	output := strings.Join(r.Lines(), "\n")
+	for _, want := range []string{"0/1 statements", "required 100%", "target 100%", "uncovered statements"} {
+		if !strings.Contains(output, want) {
+			t.Fatal(output)
+		}
+	}
+}

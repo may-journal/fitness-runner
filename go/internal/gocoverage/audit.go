@@ -39,7 +39,11 @@ func (r runner) auditPackage(pkg string) ([]testGroup, error) {
 	if err != nil {
 		return nil, err
 	}
-	return r.auditNames(pkg, string(out), baseline)
+	groups, err := r.auditNames(pkg, string(out), baseline)
+	if err != nil {
+		return nil, err
+	}
+	return r.verifyBaseline(pkg, baseline, groups)
 }
 func (r runner) auditNames(pkg, out string, baseline Profile) ([]testGroup, error) {
 	var groups []testGroup
@@ -125,4 +129,17 @@ func identicalGroups(group testGroup, previous []testGroup) []string {
 		}
 	}
 	return findings
+}
+
+func (r runner) verifyBaseline(pkg string, baseline Profile, groups []testGroup) ([]testGroup, error) {
+	repeated, err := r.measure(pkg, "^$")
+	if err != nil {
+		return nil, err
+	}
+	if !maps.Equal(baseline, repeated) {
+		for i := range groups {
+			groups[i].Stable = false
+		}
+	}
+	return groups, nil
 }

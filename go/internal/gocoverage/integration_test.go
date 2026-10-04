@@ -209,3 +209,62 @@ func TestMissingProfileAndChildData(t *testing.T) {
 		t.Fatal("invalid child data passed")
 	}
 }
+
+func TestChangedFileScope(t *testing.T) {
+	root := fixture(t)
+	t.Setenv("FITNESS_CHANGED_FILES", "readme.md")
+	report := execute(t, root, Options{})
+	if report.FileCount() != 0 {
+		t.Fatal(report)
+	}
+}
+func TestTempFailureAndBadSavedProfile(t *testing.T) {
+	root := fixture(t)
+	t.Setenv("TMPDIR", filepath.Join(root, "missing"))
+	if _, err := Run(context.Background(), root, Options{}); err == nil {
+		t.Fatal("missing temp directory accepted")
+	}
+	write(t, root, "bad-profile", "mode: broken\n")
+	r := runner{dir: root}
+	if _, err := r.profiles(filepath.Join(root, "bad-profile"), root); err == nil {
+		t.Fatal("bad profile accepted")
+	}
+	if err := mergeProfileFile(Profile{}, filepath.Join(root, "missing")); err == nil {
+		t.Fatal("missing profile accepted")
+	}
+}
+func TestAuditPropagatesTestErrors(t *testing.T) {
+	root := fixture(t)
+	write(t, root, "main_test.go", "package main\nimport \"testing\"\nfunc TestBroken(t *testing.T) { t.Fatal(\"audit failure\") }\n")
+	bin, err := exec.LookPath("go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := runner{ctx: context.Background(), bin: bin, dir: root, temp: t.TempDir()}
+	_, err = r.audit([]Package{{ImportPath: "example.test/app", TestGoFiles: []string{"main_test.go"}}})
+	if err == nil || !strings.Contains(err.Error(), "audit failure") {
+		t.Fatal(err)
+	}
+}
+
+func TestAuditDetectsChangingCoverage(t *testing.T) {
+	root := fixture(t)
+	write(t, root, "main.go", `package main
+func main() { exercise(false) }
+func exercise(flag bool) { if flag { println(1); return }; println(2) }
+`)
+	write(t, root, "main_test.go", `package main
+import ("os";"testing")
+func TestFlip(t *testing.T) {
+ data,_:=os.ReadFile("marker")
+ flag:=string(data)!="yes"
+ exercise(flag)
+ next:="yes"; if !flag { next="no" }
+ if err:=os.WriteFile("marker",[]byte(next),0600); err!=nil { t.Fatal(err) }
+}
+`)
+	report := execute(t, root, Options{Audit: true})
+	if !strings.Contains(strings.Join(report.Findings, "\n"), "unstable coverage") {
+		t.Fatal(report.Findings)
+	}
+}
