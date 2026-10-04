@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1106
+
+- Fix: remove the check filter from release action verification so it runs the full suite.
+- Test: run the full public action on all four platforms during PR checks, with Go for this repo's project tests.
+- Docs: remove the pending-publication note now that the full-suite release is verified.
+
 ### 2026.10.04.1050
 
 - Fix: run every check by default in external mode and let each check decide whether it applies.

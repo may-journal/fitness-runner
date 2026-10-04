@@ -50,3 +50,12 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" smoke
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - name: Run the full suite through the public action
+        uses: ./
+        with:
+          policy: external
+        env:
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-action-cache

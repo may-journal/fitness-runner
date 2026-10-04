@@ -6,7 +6,7 @@ relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
 
 Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need tools such as Go, Node, or SwiftLint.
 
-The examples pin `go/v0.20261004.1050` and run all checks in external mode. This release must be published and verified before these new examples are used. The earlier external release requires a check list; this release makes it optional.
+The examples pin `go/v0.20261004.1050` and run all checks in external mode. The earlier external release requires a check list; this release makes it optional.
 
 ## Download the Go installer
 
