@@ -1,6 +1,14 @@
 {
   "version": "0.2",
   "words": [
+    "gocoverage",
+    "covermode",
+    "coverpkg",
+    "coverprofile",
+    "covdata",
+    "textfmt",
+    "GOCOVERDIR",
+    "subtests",
     "basenames",
     "bijective",
     "dogfooding",

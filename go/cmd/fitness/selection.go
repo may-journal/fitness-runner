@@ -29,7 +29,7 @@ func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]
 	if cfg != nil {
 		policy, configured = cfg.Policy, cfg.LegacyChecks
 	}
-	policy, names, err := options.Resolve(policy, configured, spec, allChecks)
+	policy, names, err := options.Resolve(policy, configured, spec, allChecks, "go-test-coverage")
 	if err != nil {
 		return nil, err
 	}

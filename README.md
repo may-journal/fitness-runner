@@ -74,3 +74,7 @@ Some checks also run as GitHub Actions workflows. They extend the same rules to 
 - [Checks catalog and shared configs](docs/checks.md)
 - [Development](docs/development.md)
 - [Architecture index](docs/architecture-index.md)
+
+## Go coverage
+
+The optional [Go coverage check](go/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage and reports gaps down the source tree. It also rejects wrappers that can hide independently measured tests. Run `fitness --check=go-test-coverage --all`.
