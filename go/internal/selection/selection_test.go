@@ -14,6 +14,7 @@ func TestSelection(t *testing.T) {
 		mode                   string
 	}{
 		{name: "org default", mode: Org},
+		{name: "external defaults to all", policy: External, want: knownChecks, mode: External},
 		{name: "org ignores retired list", configured: []string{"old"}, mode: Org},
 		{name: "config", policy: External, configured: []string{"beta", "alpha"}, want: []string{"beta", "alpha"}, mode: External},
 		{name: "CLI list wins", policy: External, configured: []string{"old"}, args: []string{"--checks=alpha"}, want: []string{"alpha"}, mode: External},
@@ -59,7 +60,7 @@ func TestInvalidSelections(t *testing.T) {
 	}{
 		{policy: "bad"},
 		{args: []string{"--checks=alpha"}},
-		{policy: External},
+		{policy: External, configured: []string{}},
 		{policy: External, configured: []string{""}},
 		{policy: External, configured: []string{"missing"}},
 		{policy: External, configured: []string{"alpha", "alpha"}},

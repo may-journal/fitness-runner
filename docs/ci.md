@@ -6,7 +6,7 @@ relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
 
 Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need tools such as Go, Node, or SwiftLint.
 
-The examples pin `go/v0.20261004.1040` and select two local file checks in external mode. This release must be published and verified before these new examples are used. The prior release supports single checks but does not support external policy.
+The examples pin `go/v0.20261004.1050` and run all checks in external mode. This release must be published and verified before these new examples are used. The earlier external release requires a check list; this release makes it optional.
 
 ## Download the Go installer
 
@@ -15,10 +15,10 @@ This setup is for Linux amd64, from any directory. It installs into a private di
 ```bash
 mkdir -p "$HOME/.local/fitness"
 cd "$HOME/.local/fitness"
-curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1040/fitness-install-0.20261004.1040-linux-amd64 -o fitness-install-0.20261004.1040-linux-amd64
-curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1040/checksums.txt -o checksums.txt
-grep '  fitness-install-0.20261004.1040-linux-amd64$' checksums.txt | shasum -a 256 -c -
-chmod +x fitness-install-0.20261004.1040-linux-amd64
+curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1050/fitness-install-0.20261004.1050-linux-amd64 -o fitness-install-0.20261004.1050-linux-amd64
+curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1050/checksums.txt -o checksums.txt
+grep '  fitness-install-0.20261004.1050-linux-amd64$' checksums.txt | shasum -a 256 -c -
+chmod +x fitness-install-0.20261004.1050-linux-amd64
 ```
 
 For another host, replace `linux-amd64` in the asset URL, filename, and later commands with the matching platform below. These are release assets, not paths to files checked into Git.
@@ -35,25 +35,24 @@ For another host, replace `linux-amd64` in the asset URL, filename, and later co
 From the consumer repository root, run one command:
 
 ```bash
-"$HOME/.local/fitness/fitness-install-0.20261004.1040-linux-amd64" -- --policy=external --checks=markdown-filename-kebab-case,markdown-links --all
+"$HOME/.local/fitness/fitness-install-0.20261004.1050-linux-amd64" -- --policy=external --all
 ```
 
 The Go executable fetches a pinned bundle, verifies hashes and archive paths, and caches the binaries. Failed downloads, installs, or checks return a failing exit code. No copied shell installer is involved.
 
 ## Repo policy
 
-To keep the same list in hooks and CI, commit this `.fitnessrc.json` in the consumer repo:
+To use external mode in both hooks and CI, commit this `.fitnessrc.json` in the consumer repo:
 
 ```json
 {
-  "policy": "external",
-  "checks": ["markdown-filename-kebab-case", "markdown-links"]
+  "policy": "external"
 }
 ```
 
-Then invoke the installer without runner flags to use this list. CLI policy overrides config policy; CLI check selection replaces the whole config list. Empty, unknown, or duplicate names fail before checks run. An explicit list wins over `disabledChecks` and never grows on upgrade.
+Then invoke the installer without runner flags to run every check. Each check decides whether it applies; applicable project checks may need their own tools. Use `--checks=name,name` or a config `checks` list only to request a subset. CLI selection replaces the config list; empty, unknown, or duplicate names fail.
 
-Without an explicit policy, Fitness keeps its org defaults and ignores a legacy `checks` list. External mode never infers policy from the Git remote or installs hooks by default. Local file checks need no GitHub token, org membership, or source upload; a first download still needs network access.
+A full-suite run includes new checks after an upgrade; an explicit list stays fixed and wins over `disabledChecks`. External mode never infers policy from the Git remote or installs hooks by default. Local file checks need no GitHub token or source upload; remote checks and project tools keep their own prerequisites. The runner preserves existing org behavior when policy is omitted.
 
 ## Jenkins
 
@@ -71,17 +70,17 @@ pipeline {
       steps {
         dir("${env.WORKSPACE}@tmp/fitness") {
           sh '''
-            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1040/fitness-install-0.20261004.1040-linux-amd64 -o fitness-install-0.20261004.1040-linux-amd64
-            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1040/checksums.txt -o checksums.txt
-            grep '  fitness-install-0.20261004.1040-linux-amd64$' checksums.txt | shasum -a 256 -c -
-            chmod +x fitness-install-0.20261004.1040-linux-amd64
+            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1050/fitness-install-0.20261004.1050-linux-amd64 -o fitness-install-0.20261004.1050-linux-amd64
+            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1050/checksums.txt -o checksums.txt
+            grep '  fitness-install-0.20261004.1050-linux-amd64$' checksums.txt | shasum -a 256 -c -
+            chmod +x fitness-install-0.20261004.1050-linux-amd64
           '''
         }
       }
     }
     stage('Fitness') {
       steps {
-        sh '"$WORKSPACE@tmp/fitness/fitness-install-0.20261004.1040-linux-amd64" -- --policy=external --checks=markdown-filename-kebab-case,markdown-links --all'
+        sh '"$WORKSPACE@tmp/fitness/fitness-install-0.20261004.1050-linux-amd64" -- --policy=external --all'
       }
     }
   }
@@ -104,10 +103,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: may-journal/fitness-runner@go/v0.20261004.1040
+      - uses: may-journal/fitness-runner@go/v0.20261004.1050
         with:
           policy: external
-          checks: markdown-filename-kebab-case,markdown-links
 ```
 
 The action downloads the native installer and checks its hash, then invokes it. Go handles action inputs, outputs, caching, and check execution. Use a full action commit SHA if your team requires a fixed source ref.
@@ -117,7 +115,7 @@ The action downloads the native installer and checks its hash, then invokes it. 
 After downloading the installer, run this once from the consumer repository root:
 
 ```bash
-"$HOME/.local/fitness/fitness-install-0.20261004.1040-linux-amd64" --install-hook -- --policy=external --checks=markdown-filename-kebab-case,markdown-links --all
+"$HOME/.local/fitness/fitness-install-0.20261004.1050-linux-amd64" --install-hook -- --policy=external --all
 ```
 
 This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, changelog stamp, or automatic file fix is involved.

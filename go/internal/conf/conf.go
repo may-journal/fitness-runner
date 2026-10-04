@@ -14,9 +14,9 @@ import (
 
 // Config is the shape of .fitnessrc.json.
 type Config struct {
-	// Policy explicitly selects org defaults or external check selection.
+	// Policy selects org or external use; both default to all checks.
 	Policy string `json:"policy"`
-	// LegacyChecks selects checks in external mode. Org mode ignores it.
+	// LegacyChecks optionally selects checks in external mode. Org ignores it.
 	LegacyChecks []string `json:"checks"`
 	// DisabledChecks turns off checks by name for this repo.
 	DisabledChecks []string `json:"disabledChecks"`

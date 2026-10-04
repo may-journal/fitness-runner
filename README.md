@@ -44,7 +44,7 @@ Put `go/bin` on PATH, or copy the binaries onto it. The runner finds check binar
 
 ```bash
 fitness                      # full configured suite
-fitness --policy=external --checks=markdown-links,prose-budget  # exact selection
+fitness --policy=external     # all checks, each decides applicability
 fitness prettier             # one check by name
 fitness --check=eslint
 fitness prettier --write .   # passthrough args reach the check

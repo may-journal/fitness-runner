@@ -34,9 +34,10 @@ func nativeFixture(t *testing.T, c Config) Metadata {
 	if err := os.Mkdir(directory, 0700); err != nil {
 		t.Fatal(err)
 	}
-	buildNative(t, filepath.Join(directory, runnerName), "", "./cmd/fitness")
-	buildNative(t, filepath.Join(directory, "fitness-check-markdown-filename-kebab-case"), "", "./cmd/fitness-check-markdown-filename-kebab-case")
-	buildNative(t, filepath.Join(directory, "fitness-check-markdown-links"), "", "./cmd/fitness-check-markdown-links")
+	buildNative(t, directory, "", "./cmd/...")
+	if err := removeTools(directory); err != nil {
+		t.Fatal(err)
+	}
 	return finishNativeFixture(t, c, directory, version, platform)
 }
 

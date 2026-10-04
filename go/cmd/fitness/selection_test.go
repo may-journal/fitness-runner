@@ -38,6 +38,7 @@ func testConsumerSelections(t *testing.T, bins, root string) {
 	consumerRun(t, bins, root, 0, "--policy=org", "--check=markdown-links")
 	assertConsumerUnchanged(t, root, config)
 	testConsumerFailures(t, bins, root)
+	testDefaultExternalSuite(t, bins, root)
 }
 
 func testConsumerFailures(t *testing.T, bins, root string) {
@@ -124,5 +125,16 @@ func testMissingGo(t *testing.T, bins, root string) {
 		t.Fatalf("git add: %v %s", err, output)
 	}
 	output := consumerRun(t, bins, root, 1, "--checks=go-vet", "--all")
+	requireText(t, output, "Go not installed")
+}
+
+func testDefaultExternalSuite(t *testing.T, bins, root string) {
+	t.Helper()
+	writeSelectionFile(t, root, ".fitnessrc.json", `{"policy":"external"}`)
+	output := consumerRun(t, bins, root, 1, "--all")
+	requireText(t, output, "policy=external checks="+strings.Join(allChecks, ","))
+	for _, name := range allChecks {
+		requireText(t, output, "→ "+name)
+	}
 	requireText(t, output, "Go not installed")
 }

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1050
+
+- Fix: run every check by default in external mode and let each check decide whether it applies.
+- Docs: make full-suite runs the main Jenkins, Actions, and compiled hook examples.
+- Test: verify every shipped check starts in default external runs, while keeping explicit filters optional.
+
 ### 2026.10.04.1040
 
 - Test: run selected checks and compiled hooks without Go or GitHub tokens in consumer repos.

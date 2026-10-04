@@ -62,7 +62,7 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" verify-download
-      - name: Run the released root action without Go
+      - name: Run the optional-filter action example without Go
         uses: ./
         with:
           policy: external

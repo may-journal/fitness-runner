@@ -107,9 +107,46 @@ func (s smoke) expectFailure(ctx context.Context) error {
 }
 
 func (s smoke) prepareExternalConfig(ctx context.Context) error {
-	config := `{"policy":"external","checks":["markdown-filename-kebab-case","markdown-links"]}`
+	config := `{"policy":"external"}`
 	if err := os.WriteFile(filepath.Join(s.repo, ".fitnessrc.json"), []byte(config), 0600); err != nil {
 		return err
 	}
-	return s.run(ctx, "git", "add", "readme.md", ".fitnessrc.json")
+	if err := s.run(ctx, "git", "add", "readme.md", ".fitnessrc.json"); err != nil {
+		return err
+	}
+	return s.checkDefaultSuite(ctx)
+}
+
+// The fixture lacks a valid commit and changelog, so all-check execution fails.
+// Verify every shipped check runs; none may be hidden by external policy.
+func (s smoke) checkDefaultSuite(ctx context.Context) error {
+	output, err := s.command(ctx, s.installer, "--install-only").Output()
+	if err != nil {
+		return err
+	}
+	names, err := filepath.Glob(filepath.Join(strings.TrimSpace(string(output)), "fitness-check-*"))
+	if err != nil {
+		return err
+	}
+	command := s.command(ctx, s.installer, "--", externalPolicy, "--all")
+	command.Stderr = nil
+	output, err = command.CombinedOutput()
+	status, ok := err.(*exec.ExitError)
+	if !ok || status.ExitCode() != 1 {
+		return fmt.Errorf("full-suite fixture must fail checks: %v\n%s", err, output)
+	}
+	return requireAllChecks(names, string(output))
+}
+
+func requireAllChecks(paths []string, output string) error {
+	if len(paths) == 0 {
+		return fmt.Errorf("bundle contains no check binaries")
+	}
+	for _, path := range paths {
+		name := strings.TrimPrefix(filepath.Base(path), "fitness-check-")
+		if !strings.Contains(output, "→ "+name+"\n") {
+			return fmt.Errorf("external default omitted check %s", name)
+		}
+	}
+	return nil
 }

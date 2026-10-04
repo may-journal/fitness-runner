@@ -34,7 +34,7 @@ Optional `.fitnessrc.json` at repo root:
 
 Org mode runs every check; each passes clean when it does not apply. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning in org mode.
 
-External mode sets `"policy": "external"` and a nonempty `"checks"` list. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list and overrides `disabledChecks`. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
+External mode sets `"policy": "external"` and runs all checks by default; a nonempty `"checks"` list is an optional filter. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list and overrides `disabledChecks`. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
 
 ## Every tracked file
 

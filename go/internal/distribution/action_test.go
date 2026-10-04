@@ -88,3 +88,15 @@ func TestExternalActionInputs(t *testing.T) {
 		t.Fatal("conflicting selections accepted")
 	}
 }
+
+func TestExternalActionDefaultsToAll(t *testing.T) {
+	options, err := actionInputs(Options{}, func(name string) string {
+		if name == "FITNESS_POLICY" {
+			return "external"
+		}
+		return ""
+	})
+	if err != nil || !reflect.DeepEqual(options.Args, []string{"--policy=external"}) {
+		t.Fatalf("default action %+v: %v", options, err)
+	}
+}

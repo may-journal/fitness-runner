@@ -81,7 +81,7 @@ func (o Options) Resolve(policy string, configured []string, single string, know
 	if err != nil {
 		return policy, nil, err
 	}
-	return policy, names, validateNames(policy, names, known)
+	return resolvedNames(policy, names, known)
 }
 
 func (o Options) names(policy string, configured []string, single string) ([]string, error) {
@@ -137,4 +137,11 @@ func validateList(names []string, known map[string]bool) error {
 		seen[name] = true
 	}
 	return nil
+}
+
+func resolvedNames(policy string, names, known []string) (string, []string, error) {
+	if policy == External && names == nil {
+		names = append([]string{}, known...)
+	}
+	return policy, names, validateNames(policy, names, known)
 }

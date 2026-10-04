@@ -26,7 +26,7 @@ import (
 
 // allChecks is the org default and the catalog for explicit external lists.
 // Org checks self-gate when their language, tool, config, or input is absent.
-// External policy selects an exact subset without inheriting org defaults.
+// External policy also defaults to the full catalog, with optional selection.
 var allChecks = []string{
 	"read-repo-first",
 	"semantic-commit",
