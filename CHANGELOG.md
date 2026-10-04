@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1040
+
+- Test: run selected checks and compiled hooks without Go or GitHub tokens in consumer repos.
+- Docs: add full external-mode examples for Jenkins, Actions, and compiled commit hooks.
+- Feat: bind external action inputs to the new Go release and verify chosen checks during publishing.
+
 ### 2026.10.04.1036
 
 - Feat: add external policy with exact check lists from CLI flags or repo config.

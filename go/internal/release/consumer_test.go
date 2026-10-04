@@ -36,6 +36,7 @@ func nativeFixture(t *testing.T, c Config) Metadata {
 	}
 	buildNative(t, filepath.Join(directory, runnerName), "", "./cmd/fitness")
 	buildNative(t, filepath.Join(directory, "fitness-check-markdown-filename-kebab-case"), "", "./cmd/fitness-check-markdown-filename-kebab-case")
+	buildNative(t, filepath.Join(directory, "fitness-check-markdown-links"), "", "./cmd/fitness-check-markdown-links")
 	return finishNativeFixture(t, c, directory, version, platform)
 }
 

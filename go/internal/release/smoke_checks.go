@@ -9,7 +9,9 @@ import (
 	"strings"
 )
 
-const filenameCheck = "--check=markdown-filename-kebab-case"
+const externalChecks = "markdown-filename-kebab-case,markdown-links"
+const externalPolicy = "--policy=external"
+const checksFlag = "--checks=" + externalChecks
 
 func (s smoke) command(ctx context.Context, name string, args ...string) *exec.Cmd {
 	cmd := exec.CommandContext(ctx, name, args...)
@@ -29,7 +31,7 @@ func (s smoke) check(ctx context.Context) error {
 	if err := s.prepareRepo(ctx); err != nil {
 		return err
 	}
-	if err := s.run(ctx, s.installer, "--", filenameCheck, "--all"); err != nil {
+	if err := s.run(ctx, s.installer, "--", externalPolicy, checksFlag, "--all"); err != nil {
 		return err
 	}
 	if err := s.checkAction(ctx); err != nil {
@@ -48,12 +50,12 @@ func (s smoke) prepareRepo(ctx context.Context) error {
 	if err := os.WriteFile(filepath.Join(s.repo, "readme.md"), []byte("# Example\n"), 0600); err != nil {
 		return err
 	}
-	return s.run(ctx, "git", "add", "readme.md")
+	return s.prepareExternalConfig(ctx)
 }
 
 func (s smoke) checkAction(ctx context.Context) error {
 	cmd := s.command(ctx, s.installer, "--github-action")
-	cmd.Env = append(cmd.Env, "FITNESS_INSTALL_ONLY=true", "GITHUB_PATH="+filepath.Join(s.work, "path"), "GITHUB_OUTPUT="+filepath.Join(s.work, "outputs"))
+	cmd.Env = append(cmd.Env, "FITNESS_INSTALL_ONLY=true", "FITNESS_POLICY=external", "FITNESS_CHECKS="+externalChecks, "GITHUB_PATH="+filepath.Join(s.work, "path"), "GITHUB_OUTPUT="+filepath.Join(s.work, "outputs"))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -66,7 +68,7 @@ func (s smoke) checkAction(ctx context.Context) error {
 }
 
 func (s smoke) installHook(ctx context.Context) error {
-	if err := s.run(ctx, s.installer, "--install-hook", "--", filenameCheck, "--all"); err != nil {
+	if err := s.run(ctx, s.installer, "--install-hook", "--", externalPolicy, checksFlag, "--all"); err != nil {
 		return err
 	}
 	return s.commit(ctx, "valid")
@@ -93,7 +95,7 @@ func (s smoke) rejectInvalid(ctx context.Context) error {
 }
 
 func (s smoke) expectFailure(ctx context.Context) error {
-	err := s.run(ctx, s.installer, "--", filenameCheck, "--all")
+	err := s.run(ctx, s.installer, "--", externalPolicy, checksFlag, "--all")
 	status, ok := err.(*exec.ExitError)
 	if !ok {
 		return fmt.Errorf("expected a failing check, got %v", err)
@@ -102,4 +104,12 @@ func (s smoke) expectFailure(ctx context.Context) error {
 		return fmt.Errorf("check exit status changed: %d", status.ExitCode())
 	}
 	return nil
+}
+
+func (s smoke) prepareExternalConfig(ctx context.Context) error {
+	config := `{"policy":"external","checks":["markdown-filename-kebab-case","markdown-links"]}`
+	if err := os.WriteFile(filepath.Join(s.repo, ".fitnessrc.json"), []byte(config), 0600); err != nil {
+		return err
+	}
+	return s.run(ctx, "git", "add", "readme.md", ".fitnessrc.json")
 }

@@ -24,14 +24,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// allChecks is the run order when config has no checks list — the Go
-// twin of the bundle's allChecks (the bundle concept dissolves when
-// checks are sibling binaries).
-// allChecks is every check, in run order. Every repo runs all of them: each
-// check detects whether it applies — its language, tool, config, or input is
-// present — and passes clean with zero files when it does not, so one list
-// fits Swift, Go, JS, and docs-only repos alike. A repo turns a check off
-// with disabledChecks in .fitnessrc.json.
+// allChecks is the org default and the catalog for explicit external lists.
+// Org checks self-gate when their language, tool, config, or input is absent.
+// External policy selects an exact subset without inheriting org defaults.
 var allChecks = []string{
 	"read-repo-first",
 	"semantic-commit",

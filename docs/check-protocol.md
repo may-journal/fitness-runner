@@ -15,7 +15,7 @@ The runner executes checks in a bounded parallel pool with per-check timeouts. A
 
 ## Applicability
 
-Every check runs in every repo, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
+Org mode runs every check, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
 
 ## Changed files
 
@@ -32,7 +32,9 @@ Optional `.fitnessrc.json` at repo root:
 }
 ```
 
-Every check runs in every repo, and each passes clean when its language, tool, config, or input is absent. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning.
+Org mode runs every check; each passes clean when it does not apply. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning in org mode.
+
+External mode sets `"policy": "external"` and a nonempty `"checks"` list. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list and overrides `disabledChecks`. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
 
 ## Every tracked file
 
