@@ -78,6 +78,10 @@ func MarkFailure() {
 	if !Enabled() {
 		return
 	}
+	writeEnvironment("FITNESS_FAILURE_REPORTED", "true")
+}
+
+func writeEnvironment(key, value string) {
 	path := os.Getenv("GITHUB_ENV")
 	if path == "" {
 		return
@@ -88,7 +92,7 @@ func MarkFailure() {
 		return
 	}
 	defer file.Close()
-	if _, err := fmt.Fprintln(file, "FITNESS_FAILURE_REPORTED=true"); err != nil {
+	if _, err := fmt.Fprintf(file, "%s=%s\n", key, value); err != nil {
 		fmt.Fprintf(os.Stderr, "Could not mark reported failure: %v\n", err)
 	}
 }

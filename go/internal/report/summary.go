@@ -1,6 +1,7 @@
 package report
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -88,6 +89,7 @@ func publishReport(path string, complete []byte) {
 		summaryFallback(string(complete), err)
 		return
 	}
+	writeEnvironment("FITNESS_REPORT_ID", rand.Text())
 	fmt.Fprintf(os.Stderr, "Complete Fitness report available for artifact upload: %s\n", report)
 }
 

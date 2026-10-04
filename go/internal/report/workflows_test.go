@@ -32,6 +32,9 @@ func checkWorkflowReporting(t *testing.T, path string) {
 
 func checkReportArtifacts(t *testing.T, body string, jobs int) {
 	t.Helper()
+	if strings.Count(body, "env.FITNESS_REPORT_ID") != jobs {
+		t.Fatal("reusable workflow calls must have distinct report artifacts")
+	}
 	if strings.Count(body, "name: Retain complete Fitness reports") != jobs {
 		t.Fatal("reporting jobs must retain full overflow reports")
 	}
@@ -106,5 +109,20 @@ func checkArtifactLink(t *testing.T, workflow, summaryPath, artifact string) {
 	want := artifact != "" && strings.Contains(workflow, "REPORT_ARTIFACT_URL:")
 	if strings.Contains(summary, "[Download complete Fitness reports]("+artifact+")") != want {
 		t.Fatalf("unexpected artifact link for %q: %s", artifact, summary)
+	}
+}
+
+func TestActionResetsPriorFailureMarker(t *testing.T) {
+	body := readWorkflow(t, "../../../action.yml")
+	start := strings.Index(body, "run: |\n") + len("run: |\n")
+	bootstrap := strings.SplitN(body[start:], "curl", 2)[0]
+	path := filepath.Join(t.TempDir(), "env")
+	cmd := exec.Command("/bin/bash", "-e", "-c", bootstrap)
+	cmd.Env = []string{"GITHUB_ENV=" + path, "FITNESS_FAILURE_REPORTED=true"}
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("bootstrap: %v %s", err, out)
+	}
+	if got := readWorkflow(t, path); got != "FITNESS_FAILURE_REPORTED=false\n" {
+		t.Fatalf("stale failure marker: %q", got)
 	}
 }

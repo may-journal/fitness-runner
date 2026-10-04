@@ -72,6 +72,7 @@ func TestSummaryOverflowPreservesCompleteReport(t *testing.T) {
 	t.Setenv("GITHUB_ACTIONS", "true")
 	root := t.TempDir()
 	t.Setenv("RUNNER_TEMP", root)
+	t.Setenv("GITHUB_ENV", filepath.Join(root, "env"))
 	path := filepath.Join(root, "summary")
 	t.Setenv("GITHUB_STEP_SUMMARY", path)
 	first := strings.Repeat("é", summaryLimit/2-10)
@@ -162,5 +163,22 @@ func TestSummaryPrefixReplacesInvalidUTF8(t *testing.T) {
 	}
 	if input[5] != 0xff {
 		t.Fatal("original report changed")
+	}
+}
+
+// A caller can invoke the same reusable workflow more than once in one run.
+func TestOverflowArtifactIdentityIsUnique(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("RUNNER_TEMP", root)
+	env := filepath.Join(root, "env")
+	t.Setenv("GITHUB_ENV", env)
+	publishReport("summary", []byte("first invocation"))
+	publishReport("summary", []byte("second invocation"))
+	entries := strings.Fields(string(mustRead(t, env)))
+	if len(entries) != 2 {
+		t.Fatalf("artifact identities: %v", entries)
+	}
+	if entries[0] == entries[1] {
+		t.Fatal("reusable invocations share an artifact identity")
 	}
 }

@@ -31,6 +31,7 @@ runs:
         RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140
         ASSET: fitness-install-0.20261004.1140-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
       run: |
+        printf 'FITNESS_FAILURE_REPORTED=false\n' >> "$GITHUB_ENV"
         curl -fsSL --retry 3 "$RELEASE_URL/$ASSET" -o "$ASSET"
         curl -fsSL --retry 3 "$RELEASE_URL/checksums.txt" -o "$ASSET.checksums"
         grep "  $ASSET$" "$ASSET.checksums" | shasum -a 256 -c -
