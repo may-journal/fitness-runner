@@ -21,7 +21,7 @@ done
 # The typed installer carries the hashes for every bundle in this release.
 bundle_hashes=$(awk -v prefix="fitness-$version-" '{
   name=$2; sub("^" prefix, "", name); sub(/\.tar\.gz$/, "", name)
-  printf "%s%s=%s", separator, name, $1; separator="," 
+  printf "%s%s=%s", separator, name, $1; separator=","
 }' out/checksums.txt)
 for os in darwin linux; do
   for arch in amd64 arm64; do
