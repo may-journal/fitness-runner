@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/render"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // maxAnnotations is GitHub's per-step display cap for error annotations. Past
@@ -29,7 +28,7 @@ func finish(rows []render.Row, success, failure, files int, elapsedMs int64) int
 // isGitHubActions reports whether the runner is executing inside a GitHub
 // Actions job.
 func isGitHubActions() bool {
-	return os.Getenv("GITHUB_ACTIONS") == "true"
+	return report.Enabled()
 }
 
 // emitCIReport writes the job summary and prints error annotations when
@@ -38,23 +37,17 @@ func isGitHubActions() bool {
 // terminal table a local run prints.
 func emitCIReport(rows []render.Row, success, failure, files int, elapsedMs int64) {
 	writeStepSummary(ciSummaryMarkdown(rows, success, failure, files, elapsedMs))
+	if failure > 0 {
+		report.MarkFailure()
+	}
 	for _, line := range annotations(rows, maxAnnotations) {
-		fmt.Fprintln(os.Stdout, line)
+		fmt.Println(line)
 	}
 }
 
 // writeStepSummary appends md to the GITHUB_STEP_SUMMARY file when it is set.
 func writeStepSummary(md string) {
-	path := os.Getenv("GITHUB_STEP_SUMMARY")
-	if path == "" {
-		return
-	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	_, _ = f.WriteString(md)
+	report.WriteSummary(md)
 }
 
 // ciSummaryMarkdown renders the results as a markdown job summary: a
@@ -65,7 +58,7 @@ func ciSummaryMarkdown(rows []render.Row, success, failure, files int, elapsedMs
 	b.WriteString(headline(success, failure, files, elapsedMs) + "\n\n")
 	b.WriteString("| Check | Status | Files | Time |\n| --- | --- | --- | --- |\n")
 	for _, r := range rows {
-		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", r.Name, statusMark(r.Ok), filesCell(r.FilesChecked), r.Ms)
+		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", report.EscapeMarkdown(r.Name), statusMark(r.Ok), filesCell(r.FilesChecked), r.Ms)
 	}
 	for _, r := range rows {
 		b.WriteString(rowDetail(r))
@@ -109,9 +102,9 @@ func rowDetail(r render.Row) string {
 		return ""
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "\n### ❌ %s\n\n", r.Name)
+	fmt.Fprintf(&b, "\n### ❌ %s\n\n", report.EscapeMarkdown(r.Name))
 	for _, e := range r.Errors {
-		fmt.Fprintf(&b, "- %s\n", e)
+		fmt.Fprintf(&b, "- %s\n", report.EscapeMarkdown(e))
 	}
 	return b.String()
 }
@@ -135,46 +128,22 @@ func allAnnotationLines(rows []render.Row) []string {
 		if r.Ok {
 			continue
 		}
-		for _, e := range r.Errors {
+		for _, e := range rowErrors(r) {
 			out = append(out, annotationLine(r.Name, e))
 		}
 	}
 	return out
 }
 
-var (
-	// fileLineRe pulls a leading "path:line" out of an error string (cspell,
-	// go-complexity, and the like format their errors this way).
-	fileLineRe = regexp.MustCompile(`^([^\s:]+\.[A-Za-z0-9]+):(\d+)`)
-	// fileOnlyRe pulls a leading "path:" when there is no line (prose-budget
-	// reports a file-level violation without a line).
-	fileOnlyRe = regexp.MustCompile(`^([^\s:]+\.[A-Za-z0-9]+):`)
-)
-
-// annotationLine formats one error as an ::error workflow command, linking it
-// to a file and line when the error string carries them.
+// annotationLine delegates location parsing and escaping to the shared reporter.
 func annotationLine(check, err string) string {
-	msg := escapeData(check + ": " + err)
-	if m := fileLineRe.FindStringSubmatch(err); m != nil {
-		return fmt.Sprintf("::error file=%s,line=%s::%s", escapeProp(m[1]), m[2], msg)
-	}
-	if m := fileOnlyRe.FindStringSubmatch(err); m != nil {
-		return fmt.Sprintf("::error file=%s::%s", escapeProp(m[1]), msg)
-	}
-	return "::error::" + msg
+	return report.Annotation(check, err, true)
 }
 
-// escapeData percent-encodes a workflow-command message per GitHub's spec.
-func escapeData(s string) string {
-	s = strings.ReplaceAll(s, "%", "%25")
-	s = strings.ReplaceAll(s, "\r", "%0D")
-	return strings.ReplaceAll(s, "\n", "%0A")
-}
-
-// escapeProp percent-encodes a workflow-command property value, which also
-// forbids a bare comma and colon.
-func escapeProp(s string) string {
-	s = escapeData(s)
-	s = strings.ReplaceAll(s, ":", "%3A")
-	return strings.ReplaceAll(s, ",", "%2C")
+// rowErrors ensures a failing check without diagnostics still has an annotation.
+func rowErrors(r render.Row) []string {
+	if len(r.Errors) == 0 {
+		return []string{"check failed without a diagnostic; see the check log"}
+	}
+	return r.Errors
 }

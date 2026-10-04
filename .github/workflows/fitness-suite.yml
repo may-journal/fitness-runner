@@ -31,6 +31,18 @@ jobs:
           if git ls-files '*.swift' | grep -q .; then swift=true; fi
           echo "run=$run" >> "$GITHUB_OUTPUT"
           echo "swift=$swift" >> "$GITHUB_OUTPUT"
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && (false) }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
 
   org-fitness:
     needs: detect

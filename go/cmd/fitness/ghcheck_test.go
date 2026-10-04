@@ -139,6 +139,7 @@ func fakeChecker(fail map[string]string, closes map[string]string, calls *[]call
 }
 
 func TestPRCheckPasses(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(t.TempDir(), "summary.md"))
 	var calls []call
 	ev := ghEvent{name: "pull_request", PullRequest: &target{Number: 7, Title: "feat: x", Body: "body"}}
@@ -184,6 +185,7 @@ func assertContainsNone(t *testing.T, what, text string, unwanted ...string) {
 }
 
 func TestPRCheckFailsAndReports(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(t.TempDir(), "summary.md"))
 	var calls []call
 	ev := ghEvent{name: "pull_request", PullRequest: &target{Number: 3, Title: "x", Body: "b"}}
@@ -198,6 +200,7 @@ func TestPRCheckFailsAndReports(t *testing.T) {
 }
 
 func TestPRCheckRequiresAPlansClosures(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_STEP_SUMMARY", "")
 	var calls []call
 	gh := &fakeGH{issues: map[int]fakeIssue{
@@ -219,6 +222,7 @@ func TestPRCheckRequiresAPlansClosures(t *testing.T) {
 }
 
 func TestPRCheckFailsOnAClosedIssuesUncheckedItems(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(t.TempDir(), "summary.md"))
 	var calls []call
 	gh := &fakeGH{issues: map[int]fakeIssue{
@@ -237,6 +241,7 @@ func TestPRCheckFailsOnAClosedIssuesUncheckedItems(t *testing.T) {
 }
 
 func TestPRCheckPassesWhenClosedIssuesAreTicked(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_STEP_SUMMARY", "")
 	var calls []call
 	gh := &fakeGH{issues: map[int]fakeIssue{20: {body: "- [x] done\n```\n- [ ] fenced example\n```"}}}
@@ -247,6 +252,7 @@ func TestPRCheckPassesWhenClosedIssuesAreTicked(t *testing.T) {
 }
 
 func TestPRCheckDispatchChecksEveryOpenPR(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
 	t.Setenv("GITHUB_STEP_SUMMARY", filepath.Join(t.TempDir(), "summary.md"))
 	var calls []call
 	gh := &fakeGH{prs: []target{{Number: 1, Title: "feat: a"}, {Number: 2, Title: "fix: b"}}}

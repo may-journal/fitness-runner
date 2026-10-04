@@ -4,7 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"os"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checklist"
@@ -16,12 +16,12 @@ import (
 func runCloseCheck() int {
 	ev, err := readEvent()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness close-check: "+err.Error())
+		report.Error("fitness close-check", err)
 		return 1
 	}
 	gh, err := newGHClient()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness close-check: "+err.Error())
+		report.Error("fitness close-check", err)
 		return 1
 	}
 	return closeCheck(ev, gh)
@@ -31,23 +31,24 @@ func runCloseCheck() int {
 func closeCheck(ev ghEvent, gh githubAPI) int {
 	issue, err := closedIssue(ev)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness close-check: "+err.Error())
+		report.Error("fitness close-check", err)
 		return 1
 	}
 	if skippedReason(issue.StateReason) {
-		fmt.Printf("#%d closed as %s, so its checklist may stay unfinished.\n", issue.Number, issue.StateReason)
+		closeOutcome(issue, fmt.Sprintf("Closed as %s; unfinished items are allowed.", issue.StateReason))
 		return 0
 	}
 	items := checklist.Unchecked(issue.Body)
 	if len(items) == 0 {
-		fmt.Printf("#%d closed with every checklist item done.\n", issue.Number)
+		closeOutcome(issue, "Closed with every checklist item done.")
 		return 0
 	}
 	if err := reopenOnce(issue, items, ev.Sender.Login, gh); err != nil {
-		fmt.Fprintln(os.Stderr, "fitness close-check: "+err.Error())
+		report.Error(fmt.Sprintf("fitness close-check #%d", issue.Number), err)
+		report.WriteSummary(targetLink("issues", issue.Number))
 		return 1
 	}
-	fmt.Printf("#%d reopened: %d unchecked item(s).\n", issue.Number, len(items))
+	closeOutcome(issue, fmt.Sprintf("Reopened: %d unchecked item(s).", len(items)))
 	return 0
 }
 

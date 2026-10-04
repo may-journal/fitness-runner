@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1154
+
+- Feat: report all workflow outcomes through native annotations, summaries, and complete overflow artifacts.
+- Fix: cover runner setup, issue checks, installer failures, and release commands while preserving exit codes.
+- Test: verify source paths, body findings, escaped output, summary limits, and workflow fallback coverage.
+
 ### 2026.10.04.1140
 
 - Fix: speed up spelling scans by matching ignore patterns only on lines with the required markers.

@@ -22,6 +22,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/render"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // allChecks is the org default and the catalog for explicit external lists.
@@ -165,12 +166,12 @@ Docs: https://github.com/may-journal/fitness-runner#usage`)
 func run(argv []string) int {
 	root, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		report.Error("fitness setup", err)
 		return 1
 	}
 	checks, jobs, passthrough, err := selectedChecks(root, argv)
 	if err != nil {
-		errRed(err.Error())
+		report.Error("fitness setup", err)
 		return 1
 	}
 	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
@@ -674,8 +675,4 @@ func lastJSONLine(out []byte) []byte {
 // trimFloat renders seconds without trailing zeros (5, 0.2, 1.5).
 func trimFloat(f float64) string {
 	return strconv.FormatFloat(f, 'f', -1, 64)
-}
-
-func errRed(msg string) {
-	fmt.Fprintln(os.Stderr, msg)
 }

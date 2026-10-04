@@ -10,9 +10,12 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 func TestNativeConsumerWorkflow(t *testing.T) {
+	summary := configureSmokeReporting(t)
 	c := testConfig(t)
 	metadata := nativeFixture(t, c)
 	t.Setenv("FITNESS_CACHE_DIR", t.TempDir())
@@ -23,6 +26,30 @@ func TestNativeConsumerWorkflow(t *testing.T) {
 	withDownload(t, c, metadata)
 	if err := c.Smoke(context.Background(), true); err != nil {
 		t.Fatal(err)
+	}
+	assertSmokeReporting(t, summary)
+}
+
+func configureSmokeReporting(t *testing.T) string {
+	t.Helper()
+	summary := filepath.Join(t.TempDir(), "summary")
+	t.Setenv("GITHUB_ACTIONS", "true")
+	t.Setenv("GITHUB_STEP_SUMMARY", summary)
+	t.Setenv("GITHUB_ENV", summary+".env")
+	return summary
+}
+
+func assertSmokeReporting(t *testing.T, summary string) {
+	t.Helper()
+	for _, path := range []string{summary, summary + ".env"} {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Fatalf("smoke fixture published a workflow report at %s: %v", path, err)
+		}
+	}
+	report.Outcome("fitness-release smoke", "Completed successfully.")
+	data, err := os.ReadFile(summary)
+	if err != nil || !strings.Contains(string(data), "✅ fitness-release smoke") {
+		t.Fatalf("parent reporting lost: %q, %v", data, err)
 	}
 }
 
