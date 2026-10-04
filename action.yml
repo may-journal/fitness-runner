@@ -28,7 +28,7 @@ runs:
       shell: bash
       working-directory: ${{ runner.temp }}
       env:
-        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140
+        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/v1.0.1
         REQUESTED_VERSION: ${{ inputs.version }}
         ACTION_REF: ${{ github.action_ref }}
         PLATFORM: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}

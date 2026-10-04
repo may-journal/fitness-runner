@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.2202
+
+- Chore: update Fitness pins to verified release v1.0.1.
+- Chore: keep the installer and shared workflows on the same release.
+- Docs: refresh the pinned release used in setup examples.
+
 ## 1.0.1
 
 - Fix: installer: expose verified bundle tools to hooks ([#193](https://github.com/may-journal/fitness-runner/issues/193)) ([fc22abc](https://github.com/may-journal/fitness-runner/commit/fc22abc5ef7cdba5cde213ca1a3a3dca1f54e1ac))

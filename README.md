@@ -21,7 +21,7 @@ For consumers who choose source builds:
 go install github.com/may-journal/fitness-runner/go/cmd/...@latest
 ```
 
-One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Pin a version with `@v0.20260719.852`. Upgrade by rerunning with `@latest`.
+One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Pin a version with `@v1.0.1`. Upgrade by rerunning with `@latest`.
 
 ### Prebuilt binaries
 
