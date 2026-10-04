@@ -7,6 +7,45 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1019
+
+- Test: build release fixtures with Go and verify embedded versions, hashes, checksums, and publishing arguments.
+- Test: exercise compiled installation, action outputs, and commit rejection in a private consumer repository.
+- Test: cover CLI errors, corrupt downloads, unsafe archives, and isolated consumer environments.
+
+### 2026.10.04.0951
+
+- Fix: pin the action and CI examples to the release with compiled Go hooks.
+- Docs: align direct installer URLs with the compiled entry points.
+- Test: verify executable permissions in release archives.
+
+### 2026.10.04.0945
+
+- Refactor: move release packaging, tag checks, publishing, and native smoke checks from shell scripts into typed Go.
+- Feat: install a compiled Go pre-commit hook and handle action inputs and outputs in Go.
+- Docs: download native installers directly from release URLs; remove the shell launcher and its examples.
+
+### 2026.10.04.0918
+
+- Feat: move download, archive, and cache logic into a typed Go installer compiled for each host.
+- Fix: switch cache copies with an atomic pointer so a repair leaves running checks intact.
+- Test: cover concurrent installs, offline cache use, bad archives, and option parsing in Go.
+- Ci: test public release URLs and the root action on four hosts before completing the release run.
+- Style: trim whitespace after the name and separator fields in the printf line.
+
+### 2026.10.04.0900
+
+- Ci: test real release bundles on all four hosts before publishing; keep explicit source refs for shared workflow callers.
+- Docs: add full shell, hook, Jenkins, and Actions setup steps with no local installer to maintain.
+- Test: run install and cache tests with Go absent, and assert bad downloads never execute the runner.
+- Fix: keep gzip on the test path for Linux tar; test the root action with the packaged installer on each host.
+
+### 2026.10.04.0850
+
+- Feat: install pinned binary bundles through a shell entry point or root action, with verified downloads and cache repair.
+- Ci: publish the shell installer with each release and run shared file checks from binaries.
+- Test: cover install failures, archive safety, cache repair, and runner exit codes without Go on the consumer path.
+
 ### 2026.10.01.2331
 
 - Feat: every check judges every tracked file through `git ls-files`; only untracked files, symlinks, and `linguist-generated` files for cspell and jscpd stay out.

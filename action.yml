@@ -1,0 +1,38 @@
+name: Fitness
+description: Run a pinned, verified Fitness binary bundle without compiling it.
+inputs:
+  version:
+    description: Exact bundle version. Empty uses the installer pin; latest is explicit opt-in.
+    default: ''
+  check:
+    description: Optional single check; empty runs the configured suite.
+    default: ''
+  install-only:
+    description: Install the bundle and add it to PATH without running checks.
+    default: 'false'
+outputs:
+  bin:
+    description: Directory containing the runner and every check.
+    value: ${{ steps.install.outputs.bin }}
+runs:
+  using: composite
+  steps:
+    - name: Download the compiled Go installer
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      env:
+        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.951
+        ASSET: fitness-install-0.20261004.951-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+      run: |
+        curl -fsSL --retry 3 "$RELEASE_URL/$ASSET" -o "$ASSET"
+        curl -fsSL --retry 3 "$RELEASE_URL/checksums.txt" -o "$ASSET.checksums"
+        grep "  $ASSET$" "$ASSET.checksums" | shasum -a 256 -c -
+        chmod +x "$ASSET"
+    - id: install
+      shell: bash
+      env:
+        FITNESS_EXECUTABLE: ${{ runner.temp }}/fitness-install-0.20261004.951-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+        FITNESS_VERSION: ${{ inputs.version }}
+        FITNESS_CHECK: ${{ inputs.check }}
+        FITNESS_INSTALL_ONLY: ${{ inputs.install-only }}
+      run: '"$FITNESS_EXECUTABLE" --github-action'

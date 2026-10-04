@@ -12,9 +12,9 @@ on:
   workflow_call:
     inputs:
       ref:
-        description: fitness-runner version to install (a tag, or main)
+        description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
-        default: main
+        default: ''
   pull_request:
     types: [opened, edited, reopened, synchronize]
   workflow_dispatch:
@@ -33,15 +33,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
+        if: ${{ inputs.ref != '' }}
         with:
           go-version: stable
-      - name: Install the fitness checks
+      - name: Install the pinned fitness bundle
+        if: ${{ inputs.ref == '' }}
+        uses: may-journal/fitness-runner@go/v0.20261004.951
+        with:
+          install-only: 'true'
+      - name: Build an explicitly requested source ref
+        if: ${{ inputs.ref != '' }}
         env:
-          # Resolve the ref against GitHub, not proxy.golang.org, which caches
-          # what @main points to and can serve a build from before the latest merge.
           GOPROXY: direct
+          FITNESS_SOURCE_REF: ${{ inputs.ref }}
         run: |
-          go install "github.com/may-journal/fitness-runner/go/cmd/...@${{ inputs.ref || 'main' }}"
+          go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Validate PR description(s) and fail the run on violations
         run: fitness pr-check

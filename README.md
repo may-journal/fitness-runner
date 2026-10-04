@@ -15,7 +15,7 @@ Every check is its own static binary (`fitness-check-<name>`), orchestrated by a
 
 ### Go toolchain
 
-Recommended:
+For consumers who choose source builds:
 
 ```bash
 go install github.com/may-journal/fitness-runner/go/cmd/...@latest
@@ -25,15 +25,9 @@ One command installs the runner and every check binary into `$HOME/go/bin`; put 
 
 ### Prebuilt binaries
 
-No toolchain needed. Grab the tarball for your platform from [the releases page](https://github.com/may-journal/fitness-runner/releases), then extract it onto PATH:
+Download the compiled Go installer for your platform from [the releases page](https://github.com/may-journal/fitness-runner/releases). It fetches and checks the full binary bundle, with no Go toolchain on the consumer machine.
 
-```bash
-curl -L -o fitness.tar.gz \
-  https://github.com/may-journal/fitness-runner/releases/download/go/v0.20260719.852/fitness-0.20260719.852-darwin-arm64.tar.gz
-tar -xzf fitness.tar.gz && mv fitness-*/fitness* ~/bin/
-```
-
-Platforms: `darwin-arm64`, `darwin-amd64`, `linux-arm64`, `linux-amd64`. Verify downloads against `checksums.txt`. Upgrade by grabbing the next release.
+The [complete setup guide](docs/ci.md) gives exact download URLs and commands for hooks, Jenkins, and Actions. The installer, hook, and release tools are Go executables; no shell installer is shipped.
 
 ### From source
 

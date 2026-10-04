@@ -1,0 +1,52 @@
+name: Binary distribution
+on:
+  pull_request:
+  workflow_call:
+permissions:
+  contents: read
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
+      - run: go test ./internal/distribution ./internal/release
+        working-directory: go
+      - run: go run ./cmd/fitness-release build --root ..
+        working-directory: go
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fitness-release
+          path: out/
+          retention-days: 3
+          compression-level: 0
+  smoke:
+    needs: bundle
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: macos-latest
+            platform: darwin-arm64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: fitness-release
+          path: out
+      - name: Run the Go release verifier
+        env:
+          VERIFIER: out/fitness-release-${{ matrix.platform }}
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
+        run: |
+          chmod +x "$VERIFIER"
+          "$VERIFIER" smoke
