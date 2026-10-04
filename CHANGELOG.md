@@ -7,12 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.04.1157
+### 2026.10.04.1159
 
 - Feat: report all workflow outcomes through native annotations, summaries, and complete overflow artifacts.
 - Fix: cover runner setup, issue checks, installer failures, and release commands while preserving exit codes.
 - Test: verify source paths, body findings, escaped output, summary limits, and workflow fallback coverage.
 - Fix: isolate report artifacts and failure markers across repeated workflow and action calls.
+- Test: model checkout fixtures with an explicit path instead of inheriting the host workspace.
 
 ### 2026.10.04.1140
 
