@@ -8,6 +8,7 @@ import (
 )
 
 func TestMapPreservesOrder(t *testing.T) {
+	t.Run("single worker", testMapSingleWorkerIsSequentialOrder)
 	got := Map(100, 8, func(i int) int {
 		time.Sleep(time.Duration(rand.Intn(3)) * time.Millisecond)
 		return i * 2
@@ -25,7 +26,7 @@ func TestMapZeroItems(t *testing.T) {
 	}
 }
 
-func TestMapSingleWorkerIsSequentialOrder(t *testing.T) {
+func testMapSingleWorkerIsSequentialOrder(t *testing.T) {
 	var seen []int
 	got := Map(5, 1, func(i int) int {
 		seen = append(seen, i)

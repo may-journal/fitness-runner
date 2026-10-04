@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1331
+
+- Fix: fail Go coverage checks when stable top-level tests claim the same nonempty coverage blocks.
+- Test: consolidate Fitness's duplicate test groups while retaining their assertions as named subtests.
+- Docs: keep partial overlap as a review signal and reserve failure for exact duplicate coverage.
+
 ### 2026.10.04.1309
 
 - Fix: resolve directory aliases before mapping coverage profiles to source paths.

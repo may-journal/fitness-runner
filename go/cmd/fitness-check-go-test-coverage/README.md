@@ -38,15 +38,11 @@ This measures statements, not branches or assertion quality.
 
 ## Test overlap
 
-```sh
-fitness --check=go-test-coverage --all --audit
-```
-
 The audit runs each top-level test and shared setup twice with fresh profiles. Subtests stay with their parent. It subtracts setup coverage before comparing covered blocks. Changes across repeats mark the group as unstable.
 
 Reports show test names, elapsed time including setup, covered blocks, unique blocks, and identical coverage sets. Unstable sets are flagged and excluded from overlap advice. Tests with no measured production coverage get a separate finding and do not count as identical coverage.
 
-Shared coverage is a review hint: different assertions can cover the same code. The audit never removes tests or fails on overlap.
+The audit always runs. Two stable top-level tests that claim exactly the same nonempty set of Go coverage blocks fail the check. Combine their assertions under one top-level test; named subtests can preserve the individual cases. Partial overlap remains a review signal because distinct paths commonly share setup and control flow; the legacy `--audit` flag remains accepted.
 
 ## Source map
 
@@ -57,7 +53,7 @@ AUDIT_DIR="$(mktemp -d)"
 fitness --check=go-test-coverage --all --audit-map="$AUDIT_DIR/claims.json"
 ```
 
-This option runs the audit. The output path must be new, with an existing parent outside the repository. A completed measurement writes the map even when entry coverage fails.
+The output path must be new, with an existing parent outside the repository. A completed measurement writes the map even when entry coverage fails.
 
 ## Map fields
 
@@ -88,7 +84,7 @@ Use the same source and build flags for test and child coverage. Conflicting cou
 
 The check uses existing Go module discovery and changed-file scope. Each module runs with its own fresh profiles and workspace mode off. Test errors, missing Go, bad profiles, and missing source coverage fail. Repos without Go modules pass.
 
-All profiles live in private temporary paths and are removed on return. Tests may still write their own files. The audit can be costly because it reruns tests; normal coverage does not run it. The runner allows fifteen minutes; the check stops work after fourteen.
+All profiles live in private temporary paths and are removed on return. Tests may still write their own files. The audit can be costly because it reruns every top-level test twice. The runner allows fifteen minutes; the check stops work after fourteen.
 
 ## Rollout
 

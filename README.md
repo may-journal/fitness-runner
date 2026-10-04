@@ -77,4 +77,4 @@ Some checks also run as GitHub Actions workflows. They extend the same rules to 
 
 ## Go coverage
 
-The optional [Go coverage check](go/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage and reports gaps down the source tree. Run `fitness --check=go-test-coverage --all`; add `--audit` to review test overlap.
+The optional [Go coverage check](go/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage, reports gaps down the source tree, and rejects top-level tests with identical coverage. Run `fitness --check=go-test-coverage --all`.

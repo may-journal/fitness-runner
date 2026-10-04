@@ -24,6 +24,7 @@ func writeConfigFile(t *testing.T, dir, name, content string) {
 }
 
 func TestLoadParsesKeys(t *testing.T) {
+	t.Run("JSON wins over legacy", testLoadJSONWinsOverLegacy)
 	dir := t.TempDir()
 	content := `{
   "checks": ["changelog"],
@@ -52,7 +53,7 @@ func TestLoadLegacyConfigErrors(t *testing.T) {
 	}
 }
 
-func TestLoadJSONWinsOverLegacy(t *testing.T) {
+func testLoadJSONWinsOverLegacy(t *testing.T) {
 	dir := t.TempDir()
 	writeConfigFile(t, dir, ".fitnessrc.js", "x")
 	writeConfigFile(t, dir, FileName, `{"checks":["a"]}`)

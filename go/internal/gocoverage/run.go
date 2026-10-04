@@ -74,9 +74,7 @@ func (r runner) report(packages []Package, p Profile, entry map[string]bool, opt
 	if err != nil {
 		return report, err
 	}
-	if options.Audit || options.AuditMap != "" {
-		err = r.addAudit(&report, packages, options.AuditMap != "")
-	}
+	err = r.addAudit(&report, packages, options.AuditMap != "")
 	return report, err
 }
 func localEntries(packages []Package, requested []string, found map[string]bool) []string {
@@ -107,6 +105,7 @@ func (r runner) addAudit(report *Report, packages []Package, export bool) error 
 		return err
 	}
 	report.Findings = overlap(groups)
+	report.Failures = append(report.Failures, duplicateFailures(groups)...)
 	if export {
 		claims := claimMap(groups)
 		claims.Module = r.label

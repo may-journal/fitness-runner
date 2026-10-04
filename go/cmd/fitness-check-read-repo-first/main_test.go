@@ -66,6 +66,8 @@ func TestRunWritesBannerFromEnv(t *testing.T) {
 }
 
 func TestBuildContextFeedbackGolden(t *testing.T) {
+	t.Run("context cases", testBuildContextFeedbackCases)
+	t.Run("decoration bytes", testDecorationBytes)
 	rule := strings.Repeat("─", 80)
 	bar28 := strings.Repeat("─", 28)
 	bar38 := strings.Repeat("─", 38)
@@ -90,7 +92,7 @@ func TestBuildContextFeedbackGolden(t *testing.T) {
 	}
 }
 
-func TestBuildContextFeedbackCases(t *testing.T) {
+func testBuildContextFeedbackCases(t *testing.T) {
 	cases := []struct {
 		name        string
 		checks      []string
@@ -162,7 +164,7 @@ func TestPadCell(t *testing.T) {
 
 // TestDecorationBytes pins the piped-output byte parity with cli-table3:
 // gray borders in two spans per line, red header cells spanning padding.
-func TestDecorationBytes(t *testing.T) {
+func testDecorationBytes(t *testing.T) {
 	p := palette{gray: "\x1b[90m", head: "\x1b[31m", off: "\x1b[39m"}
 	got := buildContextFeedback([]string{"read-repo-first"}, 80, p)
 	wantHeader := "\x1b[90m│\x1b[39m\x1b[31m Check                      \x1b[39m" +
