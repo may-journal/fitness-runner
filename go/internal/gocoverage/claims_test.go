@@ -147,6 +147,7 @@ func TestExportRequiresExistingParent(t *testing.T) {
 }
 func TestSourcePathsAreRelativeToModule(t *testing.T) {
 	root := t.TempDir()
+	write(t, root, "api/api.go", "package api\n")
 	got, err := sourceFiles(root, []Package{{ImportPath: "m", Dir: root, GoFiles: []string{"entry.go"}}, {ImportPath: "m/api", Dir: filepath.Join(root, "api"), GoFiles: []string{"api.go"}}})
 	if err != nil {
 		t.Fatal(err)
@@ -154,5 +155,30 @@ func TestSourcePathsAreRelativeToModule(t *testing.T) {
 	want := map[string]string{"m/entry.go": "entry.go", "m/api/api.go": "api/api.go"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatal(got)
+	}
+}
+
+func TestSourcePathsResolveDirectoryAliases(t *testing.T) {
+	root := t.TempDir()
+	link := filepath.Join(t.TempDir(), "alias")
+	if err := os.Symlink(root, link); err != nil {
+		t.Fatal(err)
+	}
+	real, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := sourceFiles(link, []Package{{ImportPath: "m", Dir: real, GoFiles: []string{"main.go"}}})
+	if err != nil || got["m/main.go"] != "main.go" {
+		t.Fatalf("%v %v", got, err)
+	}
+}
+
+func TestSourcePathsAcceptRelativeModule(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	got, err := sourceFiles(".", []Package{{ImportPath: "m", Dir: root, GoFiles: []string{"main.go"}}})
+	if err != nil || got["m/main.go"] != "main.go" {
+		t.Fatalf("%v %v", got, err)
 	}
 }

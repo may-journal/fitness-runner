@@ -5,7 +5,7 @@ import (
 )
 
 func sourceFiles(module string, packages []Package) (map[string]string, error) {
-	root, err := filepath.Abs(module)
+	root, err := canonicalDirectory(module)
 	if err != nil {
 		return nil, err
 	}
@@ -18,7 +18,11 @@ func sourceFiles(module string, packages []Package) (map[string]string, error) {
 	return sources, nil
 }
 func packageSources(sources map[string]string, root string, pkg Package) error {
-	relative, err := filepath.Rel(root, pkg.Dir)
+	directory, err := filepath.EvalSymlinks(pkg.Dir)
+	if err != nil {
+		return err
+	}
+	relative, err := filepath.Rel(root, directory)
 	if err != nil {
 		return err
 	}
@@ -26,4 +30,12 @@ func packageSources(sources map[string]string, root string, pkg Package) error {
 		sources[pkg.ImportPath+"/"+file] = filepath.ToSlash(filepath.Join(relative, file))
 	}
 	return nil
+}
+
+func canonicalDirectory(directory string) (string, error) {
+	absolute, err := filepath.Abs(directory)
+	if err != nil {
+		return "", err
+	}
+	return filepath.EvalSymlinks(absolute)
 }

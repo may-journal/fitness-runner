@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1309
+
+- Fix: resolve directory aliases before mapping coverage profiles to source paths.
+- Test: verify source maps for modules opened through symbolic links.
+- Test: cover relative module roots as well as absolute paths.
+
 ### 2026.10.04.1259
 
 - Feat: export source-line claims, per-test block sets, and pairwise shared coverage as JSON.
