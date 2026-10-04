@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.0850
+
+- Feat: install pinned binary bundles through a shell entry point or root action, with verified downloads and cache repair.
+- Ci: publish the shell installer with each release and run shared file checks from binaries.
+- Test: cover install failures, archive safety, cache repair, and runner exit codes without Go on the consumer path.
+
 ### 2026.10.01.2331
 
 - Feat: every check judges every tracked file through `git ls-files`; only untracked files, symlinks, and `linguist-generated` files for cspell and jscpd stay out.
