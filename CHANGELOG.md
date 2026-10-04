@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.0.1](https://github.com/may-journal/fitness-runner/compare/v1.0.0...v1.0.1) (2026-10-04)
+
+
+### Bug Fixes
+
+* **installer:** expose verified bundle tools to hooks ([#193](https://github.com/may-journal/fitness-runner/issues/193)) ([fc22abc](https://github.com/may-journal/fitness-runner/commit/fc22abc5ef7cdba5cde213ca1a3a3dca1f54e1ac))
+
 ### 2026.10.04.1625
 
 - Fix: expose verified bundle tools to installer commands and shared hooks.
