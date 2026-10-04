@@ -24,6 +24,10 @@ type Config struct {
 	RepeatedStringLiterals struct {
 		Allow []string `json:"allow"`
 	} `json:"repeatedStringLiterals"`
+	// GoTestCoverage declares library entry packages for the optional coverage check.
+	GoTestCoverage struct {
+		Entries []string `json:"entries"`
+	} `json:"goTestCoverage"`
 	// GoComplexity holds options for the go-complexity check.
 	GoComplexity struct {
 		Max int `json:"max"`

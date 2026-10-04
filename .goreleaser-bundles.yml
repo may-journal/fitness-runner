@@ -30,6 +30,7 @@ archives:
       - fitness-check-gitignore-why
       - fitness-check-go-complexity
       - fitness-check-go-test
+      - fitness-check-go-test-coverage
       - fitness-check-go-vet
       - fitness-check-gofmt
       - fitness-check-issue-link-once

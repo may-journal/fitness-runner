@@ -19,14 +19,15 @@ func checkDirectories(t *testing.T) []string {
 	return dirs
 }
 
-func TestAllChecksHasEveryCheckBinary(t *testing.T) {
+func TestCatalogHasEveryCheckBinary(t *testing.T) {
+	catalog := append(append([]string{}, allChecks...), "go-test-coverage")
 	for _, d := range checkDirectories(t) {
 		name := filepath.Base(d)[len("fitness-check-"):]
-		if !slices.Contains(allChecks, name) {
-			t.Errorf("allChecks is missing %s; every check runs in every repo", name)
+		if !slices.Contains(catalog, name) {
+			t.Errorf("catalog is missing %s", name)
 		}
 	}
-	for _, name := range allChecks {
+	for _, name := range catalog {
 		if _, err := os.Stat(filepath.Join("..", "fitness-check-"+name)); err != nil {
 			t.Errorf("allChecks names %s, which has no binary", name)
 		}

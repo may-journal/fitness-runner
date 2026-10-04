@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1440
+
+- Fix: reject named test helpers passed through `t.Run` so wrappers cannot hide independently measured tests.
+- Test: restore separate tests after verifying equal coverage does not prove their assertions or inputs are redundant.
+- Docs: retain exact and partial overlap as review signals instead of treating path equality as source duplication.
+
 ### 2026.10.04.1357
 
 - Feat: adopt Release Please for reviewed release versions, tags, and draft notes.
@@ -14,6 +20,36 @@ relatedConfigurations: ['.fitnessrc.json']
 - Fix: preserve legacy downloads and choose the matching installer for tagged or latest releases.
 - Refactor: run GitHub release metadata and tracking issue updates through tested Go commands.
 - Test: preserve the release notes body without splitting lists and verify bootstrap scripts.
+
+### 2026.10.04.1309
+
+- Fix: resolve directory aliases before mapping coverage profiles to source paths.
+- Test: verify source maps for modules opened through symbolic links.
+- Test: cover relative module roots as well as absolute paths.
+
+### 2026.10.04.1259
+
+- Feat: export source-line claims, per-test block sets, and pairwise shared coverage as JSON.
+- Feat: retain column ranges, shared setup owners, and stable source IDs alongside existing overlap metrics.
+- Test: cover partial overlap, separate blocks on one line, deterministic output, and safe report paths.
+
+### 2026.10.04.1242
+
+- Fix: separate tests with no measured production coverage from tests with overlapping coverage.
+- Feat: show covered block totals alongside each test group's unique contribution.
+- Test: keep empty coverage sets out of duplicate findings.
+
+### 2026.10.04.1230
+
+- Fix: reject mismatched child coverage and flag changing setup coverage in test overlap reports.
+- Test: cover invalid profiles, temporary path failures, scope, and unstable test runs.
+- Docs: explain how repeated setup runs affect overlap reports.
+
+### 2026.10.04.1226
+
+- Feat: an optional Go coverage check with full entry coverage and file, package, and folder reports.
+- Feat: test overlap reports and measured coverage from compiled child tools.
+- Test: cover hierarchy gaps, untested packages, distinct assertions, child processes, and concurrent runs.
 
 ### 2026.10.04.1159
 

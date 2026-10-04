@@ -67,7 +67,7 @@ func validPolicy(policy string) error {
 }
 
 // Resolve returns nil names for the existing org selection behavior.
-func (o Options) Resolve(policy string, configured []string, single string, known []string) (string, []string, error) {
+func (o Options) Resolve(policy string, configured []string, single string, known []string, optional ...string) (string, []string, error) {
 	if o.policySet {
 		policy = o.Policy
 	}
@@ -81,7 +81,7 @@ func (o Options) Resolve(policy string, configured []string, single string, know
 	if err != nil {
 		return policy, nil, err
 	}
-	return resolvedNames(policy, names, known)
+	return resolvedNames(policy, names, known, optional...)
 }
 
 func (o Options) names(policy string, configured []string, single string) ([]string, error) {
@@ -139,9 +139,9 @@ func validateList(names []string, known map[string]bool) error {
 	return nil
 }
 
-func resolvedNames(policy string, names, known []string) (string, []string, error) {
+func resolvedNames(policy string, names, known []string, optional ...string) (string, []string, error) {
 	if policy == External && names == nil {
 		names = append([]string{}, known...)
 	}
-	return policy, names, validateNames(policy, names, known)
+	return policy, names, validateNames(policy, names, append(append([]string{}, known...), optional...))
 }
