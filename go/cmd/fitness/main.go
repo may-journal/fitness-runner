@@ -154,6 +154,8 @@ Usage:
   fitness                  run the full configured suite
   fitness <name>           run one check by name
   fitness --check=<name>   run one check by name
+  fitness --policy=external --checks=name,name
+                           run exactly the selected checks
   fitness --all            scan every file, even with files staged
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
@@ -171,16 +173,7 @@ func run(argv []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
 	}
-	spec, _, jobs, passthrough := parseArgv(argv)
-
-	cfg, err := loadConfig(root, spec)
-	if err != nil {
-		errRed(err.Error())
-		return 1
-	}
-
-	fmt.Fprintln(os.Stderr, "Resolving checks...")
-	checks, err := prepareChecks(cfg, spec)
+	checks, jobs, passthrough, err := selectedChecks(root, argv)
 	if err != nil {
 		errRed(err.Error())
 		return 1
@@ -205,7 +198,6 @@ func loadConfig(root, spec string) (*conf.Config, error) {
 	if err != nil && (spec == "" || !errors.Is(err, conf.ErrLegacyConfig)) {
 		return nil, err
 	}
-	warnLegacyChecks(cfg)
 	return cfg, nil
 }
 

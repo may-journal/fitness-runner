@@ -18,8 +18,12 @@ func actionInputs(options Options, getenv func(string) string) (Options, error) 
 	if version := getenv("FITNESS_VERSION"); version != "" {
 		options.Version = version
 	}
-	if check := getenv("FITNESS_CHECK"); check != "" {
-		options.Args = []string{"--check=" + check}
+	args, err := actionSelection(getenv)
+	if err != nil {
+		return options, err
+	}
+	if len(args) > 0 {
+		options.Args = args
 	}
 	value := getenv("FITNESS_INSTALL_ONLY")
 	if value == "" {
@@ -51,4 +55,22 @@ func appendActionFile(path, value string) error {
 	defer file.Close()
 	_, err = file.WriteString(value)
 	return err
+}
+
+func actionSelection(getenv func(string) string) ([]string, error) {
+	check, checks := getenv("FITNESS_CHECK"), getenv("FITNESS_CHECKS")
+	if check != "" && checks != "" {
+		return nil, fmt.Errorf("choose action check or checks, not both")
+	}
+	var args []string
+	for _, input := range []struct{ flag, value string }{
+		{"--policy=", getenv("FITNESS_POLICY")},
+		{"--checks=", checks},
+		{"--check=", check},
+	} {
+		if input.value != "" {
+			args = append(args, input.flag+input.value)
+		}
+	}
+	return args, nil
 }

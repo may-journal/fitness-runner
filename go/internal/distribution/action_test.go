@@ -75,3 +75,16 @@ func assertHookConfig(t *testing.T, hook string, args []string) {
 		t.Fatalf("hook config: %+v", options)
 	}
 }
+
+func TestExternalActionInputs(t *testing.T) {
+	env := map[string]string{"FITNESS_POLICY": "external", "FITNESS_CHECKS": "markdown-links,prose-budget"}
+	options, err := actionInputs(Options{}, func(name string) string { return env[name] })
+	want := []string{"--policy=external", "--checks=markdown-links,prose-budget"}
+	if err != nil || !reflect.DeepEqual(options.Args, want) {
+		t.Fatalf("options %+v: %v", options, err)
+	}
+	env["FITNESS_CHECK"] = "other"
+	if _, err := actionInputs(Options{}, func(name string) string { return env[name] }); err == nil {
+		t.Fatal("conflicting selections accepted")
+	}
+}

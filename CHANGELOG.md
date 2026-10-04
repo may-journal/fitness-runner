@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1036
+
+- Feat: add external policy with exact check lists from CLI flags or repo config.
+- Feat: pass external policy and check lists through the compiled Go action entry point.
+- Test: cover list precedence, invalid selections, and unchanged org defaults.
+
 ### 2026.10.04.1019
 
 - Test: build release fixtures with Go and verify embedded versions, hashes, checksums, and publishing arguments.
