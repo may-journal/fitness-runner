@@ -122,6 +122,12 @@ This installs a compiled Go `pre-commit` executable and its check settings into 
 
 The hook checks working-tree files, not an isolated staged snapshot. A failed check blocks the commit; CI runs independently of local hooks. Teams with an existing hook manager can invoke the installer through that manager instead.
 
+## Calling shared Go hooks
+
+Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook commit-msg` followed by the message file. The installer puts verified bundle tools on the child process PATH while preserving project tools. The shared pre-commit hook stamps the staged changelog; the external check-only hook above does not.
+
+This behavior requires a release containing the bundled-tool PATH fix. Earlier installers need manual PATH setup for the shared pre-commit stamper.
+
 ## Cache and versions
 
 `--install-only` prints the binary directory without running checks. Save that path and invoke its `fitness` executable for offline use. The compiled installer also works offline when its pinned bundle is cached.

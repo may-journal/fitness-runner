@@ -7,6 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1625
+
+- Fix: expose verified bundle tools to installer commands and shared hooks.
+
+
 ## 1.0.0 (2026-10-04)
 
 - Feat: coverage: check Go entry coverage and test overlap ([#182](https://github.com/may-journal/fitness-runner/issues/182)) ([98aba91](https://github.com/may-journal/fitness-runner/commit/98aba9109aedddf82d12d13ef5c932fc4aa698b7))
