@@ -136,3 +136,14 @@ func TestReportShowsCountsTargetsAndGaps(t *testing.T) {
 		}
 	}
 }
+
+func TestEmptyCoverageIsNotADuplicateFinding(t *testing.T) {
+	groups := []testGroup{{Name: "metadata", Stable: true, Covered: map[Block]bool{}}, {Name: "external", Stable: true, Covered: map[Block]bool{}}}
+	output := strings.Join(overlap(groups), "\n")
+	if strings.Contains(output, "identical coverage") || strings.Contains(output, "no unique coverage") {
+		t.Fatal(output)
+	}
+	if strings.Count(output, "no measured production coverage") != 2 {
+		t.Fatal(output)
+	}
+}

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1242
+
+- Fix: separate tests with no measured production coverage from tests with overlapping coverage.
+- Feat: show covered block totals alongside each test group's unique contribution.
+- Test: keep empty coverage sets out of duplicate findings.
+
 ### 2026.10.04.1230
 
 - Fix: reject mismatched child coverage and flag changing setup coverage in test overlap reports.

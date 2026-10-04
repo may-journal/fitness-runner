@@ -42,11 +42,11 @@ This measures statements, not branches or assertion quality.
 fitness --check=go-test-coverage --all --audit
 ```
 
-The audit runs each top-level test twice with fresh profiles. Subtests stay with their parent. It subtracts coverage from runs without tests to account for shared setup, then compares covered blocks.
+The audit runs each top-level test and shared setup twice with fresh profiles. Subtests stay with their parent. It subtracts setup coverage before comparing covered blocks. Changes across repeats mark the group as unstable.
 
-Two setup runs must agree. Changes in setup or test coverage mark that group as unstable.
+Reports show test names, elapsed time including setup, covered blocks, unique blocks, and identical coverage sets. Unstable sets are flagged and excluded from overlap advice. Tests with no measured production coverage get a separate finding and do not count as identical coverage.
 
-Reports show test names, elapsed time including setup, unique blocks, and identical coverage sets. Unstable sets are flagged and excluded from overlap advice. Shared coverage is a review hint: different assertions can cover the same code. The audit never removes tests or fails on overlap.
+Shared coverage is a review hint: different assertions can cover the same code. The audit never removes tests or fails on overlap.
 
 ## Compiled tools
 

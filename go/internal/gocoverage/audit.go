@@ -106,7 +106,10 @@ func groupFindings(group testGroup, previous []testGroup, owners map[Block]int) 
 	if !group.Stable {
 		return []string{timing + ": unstable coverage; excluded from overlap advice"}
 	}
-	findings := []string{fmt.Sprintf("%s: %d unique covered blocks; subtests grouped with parent", timing, uniqueBlocks(group, owners))}
+	findings := []string{fmt.Sprintf("%s: %d covered blocks, %d unique; subtests grouped with parent", timing, len(group.Covered), uniqueBlocks(group, owners))}
+	if len(group.Covered) == 0 {
+		return append(findings, group.Name+": no measured production coverage; check instrumentation and assertions")
+	}
 	if uniqueBlocks(group, owners) == 0 {
 		findings = append(findings, group.Name+": no unique coverage; review assertions before removing tests")
 	}
