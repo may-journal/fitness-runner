@@ -28,19 +28,19 @@ func (s smoke) run(ctx context.Context, name string, args ...string) error {
 }
 
 func (s smoke) check(ctx context.Context) error {
-	if err := s.prepareRepo(ctx); err != nil {
-		return err
+	steps := []func(context.Context) error{
+		s.prepareRepo,
+		func(ctx context.Context) error {
+			return s.run(ctx, s.installer, "--", externalPolicy, checksFlag, "--all")
+		},
+		s.checkHookTools, s.checkAction, s.installHook, s.rejectInvalid,
 	}
-	if err := s.run(ctx, s.installer, "--", externalPolicy, checksFlag, "--all"); err != nil {
-		return err
+	for _, step := range steps {
+		if err := step(ctx); err != nil {
+			return err
+		}
 	}
-	if err := s.checkAction(ctx); err != nil {
-		return err
-	}
-	if err := s.installHook(ctx); err != nil {
-		return err
-	}
-	return s.rejectInvalid(ctx)
+	return nil
 }
 
 func (s smoke) prepareRepo(ctx context.Context) error {
@@ -107,7 +107,7 @@ func (s smoke) expectFailure(ctx context.Context) error {
 }
 
 func (s smoke) prepareExternalConfig(ctx context.Context) error {
-	config := `{"policy":"external"}`
+	config := externalConfig
 	if err := os.WriteFile(filepath.Join(s.repo, ".fitnessrc.json"), []byte(config), 0600); err != nil {
 		return err
 	}

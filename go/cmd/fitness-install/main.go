@@ -62,7 +62,7 @@ func runInstalled(bin string, options distribution.Options) int {
 		return 0
 	}
 	runner := filepath.Join(bin, "fitness")
-	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), os.Environ()))
+	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), runnerEnvironment(bin)))
 }
 
 func failure(err error) int {
