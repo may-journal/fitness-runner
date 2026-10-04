@@ -9,14 +9,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## 1.0.0 (2026-10-04)
 
+- Feat: coverage: check Go entry coverage and test overlap ([#182](https://github.com/may-journal/fitness-runner/issues/182)) ([98aba91](https://github.com/may-journal/fitness-runner/commit/98aba9109aedddf82d12d13ef5c932fc4aa698b7))
+- Feat: release: adopt Release Please and GoReleaser ([#184](https://github.com/may-journal/fitness-runner/issues/184)) ([8904789](https://github.com/may-journal/fitness-runner/commit/8904789a5ecaae79dff784a32a8efe9ffa5a6212))
+- Feat: release: require reviewable version notes ([#188](https://github.com/may-journal/fitness-runner/issues/188)) ([43933bb](https://github.com/may-journal/fitness-runner/commit/43933bb12805f8b7a22ffbfd6ea786916c4798fa))
 
-### Features
-
-* **coverage:** check Go entry coverage and test overlap ([#182](https://github.com/may-journal/fitness-runner/issues/182)) ([98aba91](https://github.com/may-journal/fitness-runner/commit/98aba9109aedddf82d12d13ef5c932fc4aa698b7))
-* **release:** adopt Release Please and GoReleaser ([#184](https://github.com/may-journal/fitness-runner/issues/184)) ([8904789](https://github.com/may-journal/fitness-runner/commit/8904789a5ecaae79dff784a32a8efe9ffa5a6212))
-* **release:** require reviewable version notes ([#188](https://github.com/may-journal/fitness-runner/issues/188)) ([43933bb](https://github.com/may-journal/fitness-runner/commit/43933bb12805f8b7a22ffbfd6ea786916c4798fa))
-
-### 2026.10.04.1522
+### 2026.10.04.1527
 
 - Feat: correlate Release Please versions with reviewable changelog release sections.
 - Fix: reject manifest-only releases, mismatched version files, and empty or duplicate release notes.
