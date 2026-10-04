@@ -19,6 +19,7 @@ jobs:
           name: fitness-release
           path: out/
           retention-days: 3
+          compression-level: 0
   smoke:
     needs: bundle
     strategy:

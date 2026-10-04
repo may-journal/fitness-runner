@@ -8,14 +8,14 @@ relatedConfigurations: ['../action.yml', '../fitness.sh']
 
 Fitness builds its runner and checks when a release is published. Consumers download the binaries; they do not compile Fitness or install Go. Selected project checks can still need tools such as Go, Node, or SwiftLint.
 
-The examples pin `go/v0.20261004.900` and run one check without org policy. Multiple chosen checks and external policy are tracked in issue #175. Leave out the runner arguments only when you want the current full suite.
+The examples pin `go/v0.20261004.913` and run one check without org policy. Multiple chosen checks and external policy are tracked in issue #175. Leave out the runner arguments only when you want the current full suite.
 
 ## Shell
 
 Use Bash, curl, and either sha256sum or shasum on Linux or macOS, on amd64 or arm64. Run from a Git checkout. No GitHub token is needed for public release assets; the first download needs HTTPS access to GitHub.
 
 ```bash
-bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.900/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
+bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
 ```
 
 The first `--` names Bash's command; the second ends installer options. Downloads finish before the script runs. Failed downloads, installs, or checks fail the command.
@@ -34,7 +34,7 @@ pipeline {
     }
     stage('Fitness') {
       steps {
-        sh '''bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.900/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all'''
+        sh '''bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all'''
       }
     }
   }
@@ -57,7 +57,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: may-journal/fitness-runner@go/v0.20261004.900
+      - uses: may-journal/fitness-runner@go/v0.20261004.913
         with:
           check: markdown-filename-kebab-case
 ```
@@ -80,7 +80,7 @@ mkdir -p "$(dirname "$hook")"
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
-bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.900/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
+bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
 HOOK
 )
 chmod +x "$hook"

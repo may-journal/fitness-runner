@@ -50,7 +50,7 @@ jobs:
         run: npm ci
       - name: Install the pinned fitness bundle
         if: ${{ inputs.ref == '' }}
-        uses: may-journal/fitness-runner@go/v0.20261004.900
+        uses: may-journal/fitness-runner@go/v0.20261004.913
         with:
           install-only: 'true'
       - name: Build an explicitly requested source ref

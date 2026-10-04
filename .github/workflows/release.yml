@@ -36,3 +36,22 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" out/*.tar.gz out/fitness-install-* out/checksums.txt out/fitness.sh \
             --verify-tag --title "fitness ${GITHUB_REF_NAME#go/}" --notes-file "$RUNNER_TEMP/notes.md"
+  verify-download:
+    needs: release
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test public downloads without Go
+        run: .github/scripts/check-published.sh
+        env:
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
+      - name: Test the released root action
+        uses: ./
+        with:
+          check: markdown-filename-kebab-case
+        env:
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache

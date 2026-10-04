@@ -5,6 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 version=$(.github/scripts/release-tag.sh)
 version=${version#go/v}
+rm -rf out
 mkdir -p out
 for os in darwin linux; do
   for arch in amd64 arm64; do

@@ -14,7 +14,7 @@ import (
 )
 
 // Release publishing embeds the exact version and platform bundle hashes.
-var version = "0.20261004.900"
+var version = "0.20261004.913"
 var bundleHashes string
 
 func main() { os.Exit(run(os.Args[1:])) }

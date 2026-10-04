@@ -2,7 +2,7 @@
 # Only fetch and start the compiled installer; release/cache/archive logic is Go.
 # cspell:ignore pipefail mktemp shasum sha256sum uname aarch64 esac
 set -euo pipefail
-version='0.20261004.900'
+version='0.20261004.913'
 installer_hashes=''
 base="https://github.com/may-journal/fitness-runner/releases/download/go/v$version"
 case "$(uname -s)/$(uname -m)" in
