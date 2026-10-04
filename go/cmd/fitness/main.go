@@ -37,6 +37,7 @@ var allChecks = []string{
 	"changelog",
 	"changelog-updated",
 	"changelog-bullets",
+	"release-changelog",
 	"cspell",
 	"jscpd",
 	"gitignore-why",

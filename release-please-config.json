@@ -9,7 +9,7 @@
       "include-component-in-tag": false,
       "pull-request-header": "> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release.\n\n## Changelog",
       "pull-request-footer": "Agent: Release Please.",
-      "skip-changelog": true,
+      "skip-changelog": false,
       "draft": true,
       "force-tag-creation": true
     }

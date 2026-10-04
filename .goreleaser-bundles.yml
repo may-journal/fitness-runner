@@ -57,6 +57,7 @@ archives:
       - fitness-check-prettier
       - fitness-check-prose-budget
       - fitness-check-read-repo-first
+      - fitness-check-release-changelog
       - fitness-check-repeated-string-literals
       - fitness-check-semantic-commit
       - fitness-check-swiftlint
