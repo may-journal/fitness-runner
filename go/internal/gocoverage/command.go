@@ -16,6 +16,7 @@ import (
 type runner struct {
 	ctx            context.Context
 	dir, bin, temp string
+	label          string
 }
 
 func (r runner) command(args ...string) ([]byte, error) {

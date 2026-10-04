@@ -29,6 +29,12 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}
+	return finish(root, options.AuditMap, report)
+}
+func finish(root, name string, report gocoverage.Report) (checkkit.Result, error) {
+	if err := report.WriteAudit(root, name); err != nil {
+		return checkkit.Fail(0, err.Error()), nil
+	}
 	for _, line := range report.Lines() {
 		fmt.Fprintln(os.Stderr, line)
 	}
@@ -52,6 +58,7 @@ func parseFlags(options gocoverage.Options, args []string) (gocoverage.Options, 
 	flags := flag.NewFlagSet("go-test-coverage", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	entries := flags.String("entry", strings.Join(options.Entries, ","), "comma-separated library entry import paths")
+	flags.StringVar(&options.AuditMap, "audit-map", "", "write a JSON source map to a new file outside the repository")
 	flags.BoolVar(&options.Audit, "audit", false, "audit test coverage overlap")
 	if err := flags.Parse(args); err != nil {
 		return options, err

@@ -268,3 +268,28 @@ func TestFlip(t *testing.T) {
 		t.Fatal(report.Findings)
 	}
 }
+
+func TestRealAuditRetainsSourceClaims(t *testing.T) {
+	root := fixture(t)
+	report := execute(t, root, Options{AuditMap: filepath.Join(t.TempDir(), "claims.json")})
+	if len(report.Maps) != 1 {
+		t.Fatal(report.Maps)
+	}
+	claims := report.Maps[0]
+	if claims.Module != "." || len(claims.Lines) == 0 {
+		t.Fatal(claims)
+	}
+	requireChildClaims(t, claims.Blocks)
+}
+func requireChildClaims(t *testing.T, blocks []BlockClaim) {
+	t.Helper()
+	found := false
+	for _, block := range blocks {
+		if block.File == "example.test/app/service/service.go" && len(block.Tests) > 0 {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("entry test did not claim child source")
+	}
+}

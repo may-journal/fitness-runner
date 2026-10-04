@@ -133,3 +133,23 @@ func verifyDescription(t *testing.T, out []byte) {
 		t.Fatalf("%s", out)
 	}
 }
+
+func TestAuditMapOptionAndExport(t *testing.T) {
+	root := module(t)
+	write(t, root, "main_test.go", "package main\nimport \"testing\"\nfunc TestEntry(t *testing.T) { main() }\n")
+	file := filepath.Join(t.TempDir(), "claims.json")
+	result, err := run(root, []string{"--audit-map=" + file})
+	if err != nil || !result.Ok {
+		t.Fatalf("%+v %v", result, err)
+	}
+	if _, err := os.Stat(file); err != nil {
+		t.Fatal(err)
+	}
+}
+func TestAuditMapExportFailure(t *testing.T) {
+	root := t.TempDir()
+	result, err := run(root, []string{"--audit-map=" + filepath.Join(root, "claims.json")})
+	if err != nil || result.Ok {
+		t.Fatalf("%+v %v", result, err)
+	}
+}

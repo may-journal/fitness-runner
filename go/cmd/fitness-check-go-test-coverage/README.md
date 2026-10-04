@@ -48,6 +48,36 @@ Reports show test names, elapsed time including setup, covered blocks, unique bl
 
 Shared coverage is a review hint: different assertions can cover the same code. The audit never removes tests or fails on overlap.
 
+## Source map
+
+Keep the summary metrics and add line-to-test claims with an explicit export. The map includes test block sets and pairwise intersections, so partial overlap is visible.
+
+```sh
+AUDIT_DIR="$(mktemp -d)"
+fitness --check=go-test-coverage --all --audit-map="$AUDIT_DIR/claims.json"
+```
+
+This option runs the audit. The output path must be new, with an existing parent outside the repository. A completed measurement writes the map even when entry coverage fails.
+
+## Map fields
+
+Each module has numbered blocks and lines, test claims, and overlapping test pairs. Source paths are relative to the module; `sourceFiles` maps profile names to those paths. IDs are local to each module and repeat consistently for the same claims.
+
+| Field | Meaning |
+| --- | --- |
+| `blocks` | File, line and column range, statement count, test owners, and shared setup owners. |
+| `lines` | Source line, block IDs, test owners, and shared setup owners. |
+| `tests` | Test name, stable status, covered block IDs, and setup block IDs. |
+| `overlaps` | Two test names, shared block IDs, and shared source-line IDs. |
+
+Go measures statement blocks. The line map projects their ranges; it does not claim that each physical line ran. Tests can share a line while reaching separate blocks: their shared line list is nonempty and their shared block list is empty.
+
+## Claim rules
+
+Only stable test contributions count toward pair comparisons. Shared setup is retained with its own owners, and unstable groups retain their status without confirmed claims. Subtests remain grouped under their top-level test.
+
+Array order and IDs are fixed by source positions and test names. The map omits wall-clock timing; durations remain in the existing summary. Pair entries include partial intersections as well as identical sets.
+
 ## Compiled tools
 
 Tests that launch a Go binary must build it with `go build -cover`. They must set the child's `GOCOVERDIR` to the `FITNESS_GO_COVER_DIR` path supplied by this check. The check merges those measured statements with the test profile. Ordinary builds and child runs without collected data earn no credit.

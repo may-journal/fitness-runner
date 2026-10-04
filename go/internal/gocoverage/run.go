@@ -10,8 +10,9 @@ import (
 )
 
 type Options struct {
-	Entries []string
-	Audit   bool
+	Entries  []string
+	Audit    bool
+	AuditMap string
 }
 
 func Run(ctx context.Context, root string, options Options) (Report, error) {
@@ -34,7 +35,7 @@ func runModules(ctx context.Context, root, bin, temp string, mods []string, opti
 	var result Report
 	found := map[string]bool{}
 	for _, mod := range mods {
-		r := runner{ctx: ctx, dir: filepath.Join(root, mod), bin: bin, temp: temp}
+		r := runner{ctx: ctx, dir: filepath.Join(root, mod), bin: bin, temp: temp, label: mod}
 		report, err := r.module(options, found)
 		if err != nil {
 			return result, fmt.Errorf("%s: %w", mod, err)
@@ -66,15 +67,15 @@ func (r runner) module(options Options, found map[string]bool) (Report, error) {
 	if err := validateInventory(packages, p); err != nil {
 		return Report{}, err
 	}
-	return r.report(packages, p, entry, options.Audit)
+	return r.report(packages, p, entry, options)
 }
-func (r runner) report(packages []Package, p Profile, entry map[string]bool, audit bool) (Report, error) {
+func (r runner) report(packages []Package, p Profile, entry map[string]bool, options Options) (Report, error) {
 	report, err := summarize(packages, p, entry)
 	if err != nil {
 		return report, err
 	}
-	if audit {
-		report.Findings, err = r.audit(packages)
+	if options.Audit || options.AuditMap != "" {
+		err = r.addAudit(&report, packages, options.AuditMap != "")
 	}
 	return report, err
 }
@@ -93,8 +94,27 @@ func localEntries(packages []Package, requested []string, found map[string]bool)
 	return local
 }
 func (r *Report) append(other Report) {
+	r.Maps = append(r.Maps, other.Maps...)
 	r.Rows = append(r.Rows, other.Rows...)
 	r.Gaps = append(r.Gaps, other.Gaps...)
 	r.Findings = append(r.Findings, other.Findings...)
 	r.Failures = append(r.Failures, other.Failures...)
+}
+
+func (r runner) addAudit(report *Report, packages []Package, export bool) error {
+	groups, err := r.audit(packages)
+	if err != nil {
+		return err
+	}
+	report.Findings = overlap(groups)
+	if export {
+		claims := claimMap(groups)
+		claims.Module = r.label
+		claims.SourceFiles, err = sourceFiles(r.dir, packages)
+		if err != nil {
+			return err
+		}
+		report.Maps = append(report.Maps, claims)
+	}
+	return nil
 }

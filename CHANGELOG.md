@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1259
+
+- Feat: export source-line claims, per-test block sets, and pairwise shared coverage as JSON.
+- Feat: retain column ranges, shared setup owners, and stable source IDs alongside existing overlap metrics.
+- Test: cover partial overlap, separate blocks on one line, deterministic output, and safe report paths.
+
 ### 2026.10.04.1242
 
 - Fix: separate tests with no measured production coverage from tests with overlapping coverage.

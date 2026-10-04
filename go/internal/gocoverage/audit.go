@@ -12,11 +12,12 @@ import (
 type testGroup struct {
 	Name     string
 	Covered  map[Block]bool
+	Setup    map[Block]bool
 	Duration time.Duration
 	Stable   bool
 }
 
-func (r runner) audit(packages []Package) ([]string, error) {
+func (r runner) audit(packages []Package) ([]testGroup, error) {
 	var groups []testGroup
 	for _, pkg := range packages {
 		if len(pkg.TestGoFiles)+len(pkg.XTestGoFiles) == 0 {
@@ -28,7 +29,7 @@ func (r runner) audit(packages []Package) ([]string, error) {
 		}
 		groups = append(groups, tests...)
 	}
-	return overlap(groups), nil
+	return groups, nil
 }
 func (r runner) auditPackage(pkg string) ([]testGroup, error) {
 	out, err := r.command("test", "-list=^Test", pkg)
@@ -73,7 +74,7 @@ func (r runner) auditTest(pkg, name string, baseline Profile) (testGroup, error)
 		return testGroup{}, err
 	}
 	a, b := contribution(first, baseline), contribution(second, baseline)
-	return testGroup{Name: pkg + "/" + name, Covered: a, Stable: maps.Equal(a, b), Duration: time.Since(start)}, nil
+	return testGroup{Name: pkg + "/" + name, Covered: a, Setup: contribution(baseline, nil), Stable: maps.Equal(a, b), Duration: time.Since(start)}, nil
 }
 func contribution(profile, baseline Profile) map[Block]bool {
 	result := map[Block]bool{}

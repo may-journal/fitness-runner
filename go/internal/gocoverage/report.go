@@ -15,6 +15,7 @@ type Row struct {
 	Entry bool
 }
 type Report struct {
+	Maps           []ModuleMap
 	Rows           []Row
 	Gaps, Findings []string
 	Failures       []string
