@@ -26,9 +26,6 @@ jobs:
       matrix:
         runner: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
     runs-on: ${{ matrix.runner }}
-    env:
-      FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-      FITNESS_TEST_TOOL_PATH: ${{ runner.temp }}/fitness-native-tools
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -36,11 +33,16 @@ jobs:
           name: fitness-release
           path: out
       - run: .github/scripts/smoke-release.sh
+        env:
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
+          FITNESS_TEST_TOOL_PATH: ${{ runner.temp }}/fitness-native-tools
       - name: Bind the action to the staged release
         run: cp out/fitness.sh fitness.sh
       - name: Run the root action without Go
         uses: ./
         env:
           PATH: ${{ runner.temp }}/fitness-native-tools
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
+          FITNESS_TEST_RELEASE_DIR: ${{ github.workspace }}/out
         with:
           check: markdown-filename-kebab-case

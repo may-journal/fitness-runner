@@ -12,7 +12,7 @@ The examples pin `go/v0.20261004.900` and run one check without org policy. Mult
 
 ## Shell
 
-Use Bash, curl, tar, gzip, and either sha256sum or shasum on Linux or macOS, on amd64 or arm64. Run from a Git checkout. No GitHub token is needed for public release assets; the first download needs HTTPS access to GitHub.
+Use Bash, curl, and either sha256sum or shasum on Linux or macOS, on amd64 or arm64. Run from a Git checkout. No GitHub token is needed for public release assets; the first download needs HTTPS access to GitHub.
 
 ```bash
 bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.900/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
@@ -98,4 +98,4 @@ The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`. Set `
 
 The release URL pins both the installer and its bundle. To upgrade or roll back, change the URL or action ref to a tested release. `--version latest` and the action's `version: latest` are explicit opt-ins; logs show the resolved version and hash.
 
-A source checkout of `fitness.sh` fetches the selected release's checksum list. The published script embeds its own release hashes, so it can run from a warm cache without network access. Fetching that script with curl still needs network access each time.
+The Go installer owns downloads, archive checks, and the cache; the shell entry point only fetches and starts it. A source checkout of `fitness.sh` fetches its installer checksum list. The compiled installer embeds its release hashes and runs from a warm cache without network access. The shell entry point fetches that installer each time; save the executable for offline use.

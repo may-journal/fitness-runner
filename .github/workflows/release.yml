@@ -34,5 +34,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" out/*.tar.gz out/checksums.txt out/fitness.sh \
+          gh release create "$GITHUB_REF_NAME" out/*.tar.gz out/fitness-install-* out/checksums.txt out/fitness.sh \
             --verify-tag --title "fitness ${GITHUB_REF_NAME#go/}" --notes-file "$RUNNER_TEMP/notes.md"

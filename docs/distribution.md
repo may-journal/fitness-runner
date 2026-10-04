@@ -17,6 +17,6 @@ The CHANGELOG timestamp is the only version, and release tags are derived from i
 
 ## Release gate
 
-[Binary distribution](../.github/workflows/distribution.yml) builds all four bundles and smoke-tests them on native hosts without Go on PATH. The release workflow publishes only after those checks pass. Each release includes `fitness.sh`, with its exact version and bundle hashes embedded.
+[Binary distribution](../.github/workflows/distribution.yml) builds all four bundles and smoke-tests them on native hosts without Go on PATH. The release workflow publishes only after those checks pass. Each release includes a compiled `fitness-install` for each host, with its version and bundle hashes embedded. The small `fitness.sh` entry point verifies and starts that installer.
 
 The [root action](../action.yml) has a fixed default version. Update that pin and the shared workflow refs when shipping a new release. Existing pins stay unchanged; consumers opt into each upgrade. See [CI setup](ci.md) for complete examples.

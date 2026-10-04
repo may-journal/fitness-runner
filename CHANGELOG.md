@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.0908
+
+- Feat: move download, archive, and cache logic into a typed Go installer compiled for each host.
+- Fix: switch cache copies with an atomic pointer so a repair leaves running checks intact.
+- Test: cover concurrent installs, offline cache use, bad archives, and option parsing in Go.
+
 ### 2026.10.04.0900
 
 - Ci: test real release bundles on all four hosts before publishing; keep explicit source refs for shared workflow callers.

@@ -8,7 +8,7 @@ trap 'rm -rf "$work"' EXIT
 tools=${FITNESS_TEST_TOOL_PATH:-$work/tools}
 cache=${FITNESS_CACHE_DIR:-$work/cache}
 mkdir -p "$tools" "$cache" "$work/repo"
-for tool in bash awk mkdir mktemp rm rmdir sleep tar gzip sort uniq wc tr find mv shasum sha256sum uname git chmod; do
+for tool in bash awk mkdir mktemp rm rmdir sleep sort uniq wc tr find mv shasum sha256sum uname git chmod; do
   path=$(command -v "$tool" || true)
   if [ -n "$path" ]; then ln -s "$path" "$tools/$tool"; fi
 done
@@ -16,9 +16,31 @@ done
 for archive in "$root"/out/*.tar.gz; do
   digest=$(shasum -a 256 "$archive" | awk '{print $1}')
   name=${archive##*/fitness-}
-  cp "$archive" "$cache/${name%.tar.gz}-$digest.tar.gz"
+  key="$cache/fitness-${name%.tar.gz}-$digest"
+  mkdir -p "$key"
+  cp "$archive" "$key/archive.tar.gz"
 done
-export PATH="$tools" FITNESS_CACHE_DIR="$cache"
+cat > "$tools/curl" <<'CURL'
+#!/bin/bash
+set -eu
+out=''
+url=''
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -o) out=$2; shift 2 ;;
+    --retry) shift 2 ;;
+    -*) shift ;;
+    *) url=$1; shift ;;
+  esac
+done
+if [ -n "$out" ]; then
+  /bin/cp "$FITNESS_TEST_RELEASE_DIR/${url##*/}" "$out"
+else
+  /bin/cat "$FITNESS_TEST_RELEASE_DIR/${url##*/}"
+fi
+CURL
+chmod +x "$tools/curl"
+export PATH="$tools" FITNESS_CACHE_DIR="$cache" FITNESS_TEST_RELEASE_DIR="$root/out"
 if command -v go; then echo 'Go must not be available' >&2; exit 1; fi
 cd "$work/repo"
 git init -q
