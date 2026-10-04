@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1019
+
+- Test: build release fixtures with Go and verify embedded versions, hashes, checksums, and publishing arguments.
+- Test: exercise compiled installation, action outputs, and commit rejection in a private consumer repository.
+- Test: cover CLI errors, corrupt downloads, unsafe archives, and isolated consumer environments.
+
 ### 2026.10.04.0951
 
 - Fix: pin the action and CI examples to the release with compiled Go hooks.
