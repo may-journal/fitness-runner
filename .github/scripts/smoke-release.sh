@@ -5,18 +5,20 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/../.." && pwd)
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
-mkdir "$work/tools" "$work/cache" "$work/repo"
-for tool in bash awk mkdir mktemp rm rmdir sleep tar sort uniq wc tr find mv shasum sha256sum uname git chmod; do
+tools=${FITNESS_TEST_TOOL_PATH:-$work/tools}
+cache=${FITNESS_CACHE_DIR:-$work/cache}
+mkdir -p "$tools" "$cache" "$work/repo"
+for tool in bash awk mkdir mktemp rm rmdir sleep tar gzip sort uniq wc tr find mv shasum sha256sum uname git chmod; do
   path=$(command -v "$tool" || true)
-  if [ -n "$path" ]; then ln -s "$path" "$work/tools/$tool"; fi
+  if [ -n "$path" ]; then ln -s "$path" "$tools/$tool"; fi
 done
 # All archives are genuine release artifacts; only transport is local before publishing.
 for archive in "$root"/out/*.tar.gz; do
   digest=$(shasum -a 256 "$archive" | awk '{print $1}')
   name=${archive##*/fitness-}
-  cp "$archive" "$work/cache/${name%.tar.gz}-$digest.tar.gz"
+  cp "$archive" "$cache/${name%.tar.gz}-$digest.tar.gz"
 done
-export PATH="$work/tools" FITNESS_CACHE_DIR="$work/cache"
+export PATH="$tools" FITNESS_CACHE_DIR="$cache"
 if command -v go; then echo 'Go must not be available' >&2; exit 1; fi
 cd "$work/repo"
 git init -q

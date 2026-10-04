@@ -12,7 +12,7 @@ The examples pin `go/v0.20261004.900` and run one check without org policy. Mult
 
 ## Shell
 
-Use Bash, curl, tar, and either sha256sum or shasum on Linux or macOS, on amd64 or arm64. Run from a Git checkout. No GitHub token is needed for public release assets; the first download needs HTTPS access to GitHub.
+Use Bash, curl, tar, gzip, and either sha256sum or shasum on Linux or macOS, on amd64 or arm64. Run from a Git checkout. No GitHub token is needed for public release assets; the first download needs HTTPS access to GitHub.
 
 ```bash
 bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.900/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all

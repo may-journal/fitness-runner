@@ -95,7 +95,7 @@ func (f *fixture) prepareTools(t *testing.T, platform string) {
 	if err := os.Mkdir(f.tools, 0700); err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range strings.Fields("bash awk mkdir mktemp rm rmdir sleep tar sort uniq wc tr find mv shasum sha256sum") {
+	for _, name := range strings.Fields("bash awk mkdir mktemp rm rmdir sleep tar gzip sort uniq wc tr find mv shasum sha256sum") {
 		linkTool(t, f.tools, name)
 	}
 	parts := strings.Split(platform, "-")

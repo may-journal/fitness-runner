@@ -7,11 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.04.0857
+### 2026.10.04.0900
 
 - Ci: test real release bundles on all four hosts before publishing; keep explicit source refs for shared workflow callers.
 - Docs: add full shell, hook, Jenkins, and Actions setup steps with no local installer to maintain.
 - Test: run install and cache tests with Go absent, and assert bad downloads never execute the runner.
+- Fix: keep gzip on the test path for Linux tar; test the root action with the packaged installer on each host.
 
 ### 2026.10.04.0850
 
