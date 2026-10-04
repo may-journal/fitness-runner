@@ -69,9 +69,9 @@ Some checks also run as GitHub Actions workflows. They extend the same rules to 
 
 ## Release updates
 
-A green CI run on main tags its exact commit from the changelog. The release workflow builds and tests all four platforms. It checks public downloads before marking the release latest and opening a pin update PR. That PR updates this repo's installer, shared workflows, and setup examples through normal review and checks.
+After main CI passes, Release Please opens or updates a release PR from conventional commits. Merging that PR creates a draft release and a `v1.x` tag. GoReleaser builds and packages four platforms; native and public checks gate promotion to latest. A Go module tag and a pin update PR follow verification.
 
-See [release automation and recovery](docs/ci.md#release-automation) for App access and retry steps. Other repos with fixed version tags or commit SHAs need their own update PRs.
+Release and pin PRs use the normal review and checks. See [release automation and recovery](docs/ci.md#release-automation) for App access and retries. Other repos with fixed tags or commit SHAs need their own update PRs.
 
 ## Documentation
 

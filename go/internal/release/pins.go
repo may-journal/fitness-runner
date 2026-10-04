@@ -6,8 +6,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/distribution"
 )
 
 var ErrPinDowngrade = errors.New("release pins are newer")
@@ -15,7 +16,8 @@ var ErrPinDowngrade = errors.New("release pins are newer")
 const pinVersion = `(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)`
 
 var pinVersionPattern = regexp.MustCompile(`^` + pinVersion + `$`)
-var pinReference = regexp.MustCompile(`(?:go/v|fitness-install-|var version = "|Pin a version with ` + "`@v" + `)` + pinVersion)
+var pinNumber = regexp.MustCompile(pinVersion)
+var pinTag = regexp.MustCompile(`(?:go/)?v` + pinVersion)
 
 // PinFiles lists the release references maintained by the release workflow.
 func PinFiles() []string {
@@ -27,33 +29,23 @@ func PinFiles() []string {
 	}
 }
 
-// NormalizePins masks only supported Fitness references for release loop checks.
-func NormalizePins(path, text string) string {
-	if !slices.Contains(PinFiles(), path) {
-		return text
-	}
-	return replacePins(path, text, "VERSION")
-}
-
 func referencePattern(path string) *regexp.Regexp {
 	switch path {
 	case "go/cmd/fitness-install/main.go":
 		return regexp.MustCompile(`var version = "` + pinVersion + `"`)
 	case "README.md":
-		return regexp.MustCompile("Pin a version with `@v" + pinVersion + "`")
+		return regexp.MustCompile("Pin a version with `@(?:go/)?v" + pinVersion + "`")
 	case "docs/ci.md", "action.yml":
-		return regexp.MustCompile(`(?:https://github\.com/may-journal/fitness-runner/releases/download/go/v|may-journal/fitness-runner@go/v|fitness-install-|` + "`go/v" + `)` + pinVersion + `(?:[/'` + "`" + `"\s-]|$)`)
+		return regexp.MustCompile(`(?:https://github\.com/may-journal/fitness-runner/releases/download/(?:go/)?v|may-journal/fitness-runner@(?:go/)?v|fitness-install-|` + "`(?:go/)?v" + `)` + pinVersion + `(?:[/'` + "`" + `"\s-]|$)`)
 	default:
-		return regexp.MustCompile(`may-journal/fitness-runner@go/v` + pinVersion + `(?:[\s'"#]|$)`)
+		return regexp.MustCompile(`may-journal/fitness-runner@(?:go/)?v` + pinVersion + `(?:[\s'"#]|$)`)
 	}
 }
 
 func replacePins(path, text, version string) string {
 	return referencePattern(path).ReplaceAllStringFunc(text, func(reference string) string {
-		return pinReference.ReplaceAllStringFunc(reference, func(pin string) string {
-			start := strings.IndexFunc(pin, func(r rune) bool { return r >= '0' && r <= '9' })
-			return pin[:start] + version
-		})
+		reference = pinTag.ReplaceAllString(reference, distribution.ReleaseTag(version))
+		return pinNumber.ReplaceAllString(reference, version)
 	})
 }
 
@@ -107,8 +99,7 @@ func (c Config) preparePinEdit(path, version string) (pinEdit, error) {
 
 func checkPinVersions(path, text, target string) error {
 	for _, reference := range referencePattern(path).FindAllString(text, -1) {
-		match := pinReference.FindStringSubmatch(reference)
-		current := strings.Join(match[1:], ".")
+		current := pinNumber.FindString(reference)
 		if comparePinVersions(current, target) > 0 {
 			return fmt.Errorf("%w: refusing to downgrade %s from %s to %s", ErrPinDowngrade, path, current, target)
 		}

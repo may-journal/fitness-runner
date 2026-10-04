@@ -49,7 +49,11 @@ jobs:
             printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  release-tag:
+  release-please:
+    concurrency:
+      group: fitness-release-please
+      cancel-in-progress: false
+      queue: max
     needs: fitness
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
@@ -68,10 +72,22 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - name: Tag the exact commit that passed Fitness
+      - name: Prepare releases with Release Please
         id: report-step-1
-        run: go run ./cmd/fitness-release ensure-tag --root ..
+        uses: googleapis/release-please-action@v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+      - name: Apply the repository PR template
+        if: ${{ steps.report-step-1.outputs.pr != '' }}
+        id: report-step-2
+        run: go run ./cmd/fitness-release release-pr --root ..
         working-directory: go
+        env:
+          RELEASE_PR: ${{ steps.report-step-1.outputs.pr }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
@@ -88,7 +104,7 @@ jobs:
         env:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"

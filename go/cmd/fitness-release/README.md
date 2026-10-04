@@ -1,33 +1,45 @@
 ---
-relatedConfigurations: ['../../../.github/workflows/release.yml']
+relatedConfigurations: ['../../../.github/workflows/release.yml', '../../../.goreleaser-bundles.yml', '../../../.goreleaser-tools.yml']
 ---
+<!-- cspell:ignore goreleaser -->
+
 
 # fitness-release
 
-Typed Go tooling for release packaging, publishing, and native checks. It replaces the shell release scripts. Only the build step needs Go installed; later jobs use this tool's compiled executable.
+Small Go helpers for bundle hashes, native checks, release promotion, and pin edits. Release Please owns versions, tags, and release PRs. GoReleaser owns builds, archives, checksums, and publication.
+
+## Build a local snapshot
+
+From the repository root, with GoReleaser OSS 2.18.2 installed:
+
+```bash
+export FITNESS_VERSION="$(go -C go run ./cmd/fitness-release version --root ..)"
+goreleaser release --clean --snapshot --skip=publish --config .goreleaser-bundles.yml
+export FITNESS_BUNDLE_HASHES="$(go -C go run ./cmd/fitness-release bundle-hashes --root ..)"
+goreleaser release --clean --snapshot --skip=publish --config .goreleaser-tools.yml
+go -C go run ./cmd/fitness-release assemble --root ..
+```
+
+The bundle pass creates four archives. The tools pass embeds their hashes in four installers and builds native verifier tools. `assemble` copies the outputs into `out` and writes metadata for the checks. Verifiers remain CI artifacts; consumers only need the installer.
 
 ## Commands
 
-From the repository root:
+| Command | Purpose |
+| --- | --- |
+| `version` | Print the version from `version.txt`. |
+| `tag` | Print its root `v` tag. |
+| `bundle-hashes` | Print archive hashes for installer build flags. |
+| `assemble` | Gather GoReleaser outputs for native checks. |
+| `smoke` | Test built assets without public downloads. |
+| `verify-download` | Test published assets on the current host. |
+| `verify-tag` | Match `GITHUB_REF_NAME` to the version file. |
+| `promote` | Mark a verified release stable and latest without a downgrade. |
+| `update-pins` | Prepare pin and changelog edits for create-pull-request. |
 
-```text
-go -C go run ./cmd/fitness-release build --root ..
-go -C go run ./cmd/fitness-release tag --root ..
-```
+Invoke helpers with `go -C go run ./cmd/fitness-release COMMAND --root ..`. Later workflow jobs use the compiled verifier from `out` instead.
 
-The build creates four runner bundles, four installers, and native verifier tools in `out`. The installers embed the bundle hashes. Verifier tools are CI artifacts, not files consumers must install.
+## Verification and recovery
 
-## Verification
+`smoke` and `verify-download` exercise the installer and a compiled commit hook without Go on the consumer PATH. The workflow also runs the full suite through the public action. These gates run on Linux and macOS, each with Intel and ARM hosts.
 
-`smoke` tests the built assets. `verify-download` fetches the public assets and tests them. Both run the installer, action input handling, and a compiled Go commit hook with Go absent from the consumer PATH.
-
-`verify-tag` checks the tag against the changelog heading. `publish` extracts release notes and invokes the GitHub CLI with the verified asset list. See the [distribution guide](../../../docs/distribution.md).
-
-
-## Automation
-
-`ensure-tag` pushes the changelog tag at the checked-out commit after main CI passes. It rejects a tag that points elsewhere and skips valid generated pin updates. The workflow supplies an App token so the tag starts the release job.
-
-`promote` marks the verified release latest unless a newer version is already latest. `pin-release` opens the pin update PR and its tracking issue from current main. Both read the release version from `out/release.json`; the workflow runs them only after all public checks pass.
-
-A `publish` retry checks existing asset bytes and uploads missing files without replacing published assets. A `pin-release` retry preserves the existing PR and review edits. See [automation setup and recovery](../../../docs/ci.md#release-automation) for token access and retry steps.
+Publication uses `.goreleaser-publish.yml` only while the Release Please release is a draft. Retries may replace draft assets; public releases skip publication and rerun checks. See [release recovery](../../../docs/ci.md#retry-a-release) for the workflow steps.

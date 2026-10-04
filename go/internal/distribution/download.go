@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -103,6 +104,16 @@ func checkedHash(hash string) (string, error) {
 
 func contentHash(data []byte) string { return fmt.Sprintf("%x", sha256.Sum256(data)) }
 func (i *Installer) assetURL(version, name string) string {
-	return i.ReleaseURL + "/download/go/v" + version + "/" + name
+	return i.ReleaseURL + "/download/" + ReleaseTag(version) + "/" + name
 }
 func defaultClient() *http.Client { return &http.Client{Timeout: 2 * time.Minute} }
+
+var legacyReleaseVersion = regexp.MustCompile(`^0\.[0-9]{8}\.[0-9]+$`)
+
+// ReleaseTag keeps date-based releases on their historical module tag prefix.
+func ReleaseTag(version string) string {
+	if legacyReleaseVersion.MatchString(version) {
+		return "go/v" + version
+	}
+	return "v" + version
+}

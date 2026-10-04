@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/distribution"
 )
 
 type smoke struct {
@@ -61,7 +63,7 @@ func (c Config) installerData(ctx context.Context, version, name string, publish
 	if !published {
 		return os.ReadFile(filepath.Join(c.Out, name))
 	}
-	url := "https://github.com/may-journal/fitness-runner/releases/download/go/v" + version + "/" + name
+	url := "https://github.com/may-journal/fitness-runner/releases/download/" + distribution.ReleaseTag(version) + "/" + name
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

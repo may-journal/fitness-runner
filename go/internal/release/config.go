@@ -1,5 +1,4 @@
-// Package release builds and verifies release assets. Consumers execute the
-// compiled installer; only release infrastructure needs a Go compiler.
+// Package release verifies GoReleaser assets and prepares installer hash metadata.
 package release
 
 import (
@@ -8,8 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -19,7 +16,6 @@ const installerName = "fitness-install"
 const verifierName = "fitness-release"
 
 var platforms = []string{"darwin-amd64", "darwin-arm64", "linux-amd64", "linux-arm64"}
-var headingPattern = regexp.MustCompile(`(?m)^### (\d{4})\.(\d{2})\.(\d{2})\.(\d{4})$`)
 
 type Asset struct {
 	Name string `json:"name"`
@@ -36,24 +32,16 @@ func New(root string) (Config, error) {
 	return Config{Root: root, Out: filepath.Join(root, "out")}, err
 }
 
-func Version(changelog []byte) (string, error) {
-	match := headingPattern.FindSubmatch(changelog)
-	if match == nil {
-		return "", fmt.Errorf("CHANGELOG.md has no release heading")
-	}
-	minute, err := strconv.Atoi(string(match[4]))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("0.%s%s%s.%d", match[1], match[2], match[3], minute), nil
-}
-
 func (c Config) Version() (string, error) {
-	data, err := os.ReadFile(filepath.Join(c.Root, "CHANGELOG.md"))
+	data, err := os.ReadFile(filepath.Join(c.Root, "version.txt"))
 	if err != nil {
 		return "", err
 	}
-	return Version(data)
+	version := strings.TrimSpace(string(data))
+	if !pinVersionPattern.MatchString(version) {
+		return "", fmt.Errorf("invalid version.txt version %q", version)
+	}
+	return version, nil
 }
 
 func (c Config) Metadata() (Metadata, error) {

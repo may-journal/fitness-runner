@@ -173,24 +173,17 @@ func assertNoGo(t *testing.T, s smoke) {
 	requireError(t, s.linkTools())
 }
 
-func TestArchiveRejectsDirectoriesAndLinks(t *testing.T) {
-	for _, kind := range []string{"directory", "link"} {
-		t.Run(kind, func(t *testing.T) { assertUnsafeEntry(t, kind) })
-	}
+// The fixture archive exercises consumer behavior without duplicating the
+// production packaging pipeline, which is owned by GoReleaser.
+func archiveDirectory(path, directory string) error {
+	return exec.Command("tar", "-czf", path, "-C", filepath.Dir(directory), filepath.Base(directory)).Run()
 }
 
-func assertUnsafeEntry(t *testing.T, kind string) {
-	t.Helper()
-	directory := t.TempDir()
-	path := filepath.Join(directory, "unsafe")
-	var err error
-	if kind == "directory" {
-		err = os.Mkdir(path, 0700)
-	} else {
-		err = os.Symlink("missing", path)
+func removeTools(directory string) error {
+	for _, name := range []string{installerName, verifierName} {
+		if err := os.Remove(filepath.Join(directory, name)); err != nil {
+			return err
+		}
 	}
-	if err != nil {
-		t.Fatal(err)
-	}
-	requireError(t, archiveDirectory(filepath.Join(t.TempDir(), "bundle.tar.gz"), directory))
+	return nil
 }

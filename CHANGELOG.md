@@ -7,13 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.04.1250
+### 2026.10.04.1357
 
-- Feat: create release tags from tested main commits and open verified pin update PRs.
-- Fix: retry publish without replacing existing assets and promote only verified releases.
-- Fix: select the requested installer version and prevent pin update release loops.
-- Test: cover immutable tags, release retries, pin branches, and public workflow gates.
-- Docs: explain automatic release tags, verified pin updates, and recovery commands.
+- Feat: adopt Release Please for reviewed release versions, tags, and draft notes.
+- Feat: use GoReleaser for binary builds, archives, checksums, and verified asset publication.
+- Fix: preserve legacy downloads and choose the matching installer for tagged or latest releases.
+- Refactor: run GitHub release metadata and tracking issue updates through tested Go commands.
+- Test: preserve the release notes body without splitting lists and verify bootstrap scripts.
 
 ### 2026.10.04.1159
 

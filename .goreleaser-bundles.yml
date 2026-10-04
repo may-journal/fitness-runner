@@ -1,0 +1,71 @@
+# cspell:ignore trimpath
+version: 2
+project_name: fitness
+snapshot:
+  version_template: '{{ .Env.FITNESS_VERSION }}'
+changelog:
+  disable: true
+dist: out/bundles
+builds:
+  - dir: go
+    main: ./cmd/...
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags: [-s -w]
+archives:
+  - id: bundle
+    ids:
+      - fitness
+      - fitness-check-build-output-untracked
+      - fitness-check-changelog
+      - fitness-check-changelog-bullets
+      - fitness-check-changelog-updated
+      - fitness-check-commit-attribution
+      - fitness-check-cspell
+      - fitness-check-dependency-currency
+      - fitness-check-doc-template
+      - fitness-check-eslint
+      - fitness-check-gitignore-why
+      - fitness-check-go-complexity
+      - fitness-check-go-test
+      - fitness-check-go-vet
+      - fitness-check-gofmt
+      - fitness-check-issue-link-once
+      - fitness-check-jscpd
+      - fitness-check-markdown-filename-camel-case
+      - fitness-check-markdown-filename-kebab-case
+      - fitness-check-markdown-front-matter
+      - fitness-check-markdown-links
+      - fitness-check-markdown-no-bold-italic
+      - fitness-check-mermaid-callout-why
+      - fitness-check-mermaid-callouts
+      - fitness-check-mermaid-diagram-prose
+      - fitness-check-mermaid-diagram-table-gap
+      - fitness-check-mermaid-legend
+      - fitness-check-mermaid-level-bleed
+      - fitness-check-no-contrastive-reframing
+      - fitness-check-no-eslint-disable
+      - fitness-check-no-plans-dir
+      - fitness-check-node-version
+      - fitness-check-plan-structure
+      - fitness-check-plan-trailer
+      - fitness-check-pr-closes-issue
+      - fitness-check-pr-structure
+      - fitness-check-prettier
+      - fitness-check-prose-budget
+      - fitness-check-read-repo-first
+      - fitness-check-repeated-string-literals
+      - fitness-check-semantic-commit
+      - fitness-check-swiftlint
+      - fitness-check-text-readability
+      - fitness-check-vitest-coverage-exclude
+      - fitness-check-vitest-coverage-full
+      - fitness-stamp-changelog
+    formats: [tar.gz]
+    name_template: 'fitness-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    wrap_in_directory: true
+    files: [none*]
+checksum:
+  name_template: checksums.txt

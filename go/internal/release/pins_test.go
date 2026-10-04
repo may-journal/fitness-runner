@@ -98,22 +98,6 @@ func TestPinVersionComparison(t *testing.T) {
 	}
 }
 
-func TestNormalizeOnlyFitnessPins(t *testing.T) {
-	before := "uses: may-journal/fitness-runner@go/v0.20261004.951\nuses: other/tool@go/v0.20261004.951\n"
-	after := strings.Replace(before, "fitness-runner@go/v0.20261004.951", "fitness-runner@go/v0.20261004.1140", 1)
-	path := ".github/workflows/ci-reusable.yml"
-	if NormalizePins(path, before) != NormalizePins(path, after) {
-		t.Fatal("pin-only edit not normalized")
-	}
-	changedCode := after + "run: unexpected-command\n"
-	if NormalizePins(path, before) == NormalizePins(path, changedCode) {
-		t.Fatal("code change masked")
-	}
-	if NormalizePins("unrelated.yml", before) != before {
-		t.Fatal("unknown file changed")
-	}
-}
-
 func TestPinReadFailureDoesNotWrite(t *testing.T) {
 	c := pinFixture(t)
 	if err := os.Remove(filepath.Join(c.Root, "README.md")); err != nil {
@@ -124,5 +108,38 @@ func TestPinReadFailureDoesNotWrite(t *testing.T) {
 	data, _ := os.ReadFile(filepath.Join(c.Root, "action.yml"))
 	if strings.Contains(string(data), "1200") {
 		t.Fatal("partially wrote after read failure")
+	}
+}
+
+func TestPinsMigrateLegacyTagsToRootTags(t *testing.T) {
+	c := pinFixture(t)
+	for _, version := range []string{"1.0.0", "1.1.0"} {
+		changed, err := c.UpdatePins(version)
+		if err != nil || len(changed) != len(PinFiles()) {
+			t.Fatalf("migrate %s: %v, %v", version, changed, err)
+		}
+		assertRootPins(t, c, version)
+	}
+}
+
+func assertRootPins(t *testing.T, c Config, version string) {
+	t.Helper()
+	for _, path := range PinFiles() {
+		data, err := os.ReadFile(filepath.Join(c.Root, path))
+		if err != nil {
+			t.Fatal(err)
+		}
+		text := string(data)
+		if !strings.Contains(text, version) || strings.Contains(text, "go/v"+version) {
+			t.Fatalf("wrong release route in %s: %s", path, text)
+		}
+		assertUnrelatedPin(t, path, text)
+	}
+}
+
+func assertUnrelatedPin(t *testing.T, path, text string) {
+	t.Helper()
+	if !strings.Contains(text, "other/tool@go/v0.20261004.951") {
+		t.Fatalf("unrelated dependency changed in %s", path)
 	}
 }

@@ -9,10 +9,10 @@ import (
 
 func TestReleaseCommands(t *testing.T) {
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte("### 2026.10.04.0037\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "version.txt"), []byte("1.0.0\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("GITHUB_REF_NAME", "go/v0.20261004.37")
+	t.Setenv("GITHUB_REF_NAME", "v1.0.0")
 	for _, command := range []string{"tag", "verify-tag"} {
 		if err := run([]string{command, "--root", root}); err != nil {
 			t.Fatalf("%s: %v", command, err)
@@ -22,7 +22,7 @@ func TestReleaseCommands(t *testing.T) {
 
 func TestReleaseCommandErrors(t *testing.T) {
 	root := t.TempDir()
-	cases := [][]string{nil, {"unknown"}, {"tag", "--invalid"}, {"tag", "--root", root}, {"verify-tag", "--root", root}, {"publish", "--root", root}, {"smoke", "--root", root}, {"verify-download", "--root", root}, {"build", "--root", root}}
+	cases := [][]string{nil, {"unknown"}, {"tag", "--invalid"}, {"tag", "--root", root}, {"verify-tag", "--root", root}, {"assemble", "--root", root}, {"smoke", "--root", root}, {"verify-download", "--root", root}, {"bundle-hashes", "--root", root}}
 	for _, args := range cases {
 		if err := run(args); err == nil {
 			t.Fatalf("accepted %q", args)
@@ -35,10 +35,10 @@ func TestReleaseReportsActionOutcomes(t *testing.T) {
 	summary := filepath.Join(t.TempDir(), "summary")
 	t.Setenv("GITHUB_STEP_SUMMARY", summary)
 	root := t.TempDir()
-	if err := os.WriteFile(filepath.Join(root, "CHANGELOG.md"), []byte("### 2026.10.04.0037\n"), 0600); err != nil {
+	if err := os.WriteFile(filepath.Join(root, "version.txt"), []byte("1.0.0\n"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("GITHUB_REF_NAME", "go/v0.20261004.37")
+	t.Setenv("GITHUB_REF_NAME", "v1.0.0")
 	if status := command([]string{"verify-tag", "--root", root}); status != 0 {
 		t.Fatalf("verify-tag status %d", status)
 	}
