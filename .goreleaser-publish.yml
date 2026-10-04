@@ -1,0 +1,27 @@
+version: 2
+project_name: fitness
+snapshot:
+  version_template: '{{ .Env.FITNESS_VERSION }}'
+changelog:
+  disable: true
+dist: out/publish
+builds:
+  - skip: true
+checksum:
+  name_template: checksums.txt
+  extra_files:
+    - glob: 'out/fitness-{{ .Version }}-*.tar.gz'
+    - glob: 'out/fitness-install-{{ .Version }}-*'
+release:
+  name_template: '{{ .Tag }}'
+  use_existing_draft: true
+  draft: false
+  prerelease: true
+  make_latest: false
+  # The workflow calls this pass only while the release is a draft.
+  # GoReleaser can resume a partial draft upload without replacing public bytes.
+  replace_existing_artifacts: true
+  mode: keep-existing
+  extra_files:
+    - glob: 'out/fitness-{{ .Version }}-*.tar.gz'
+    - glob: 'out/fitness-install-{{ .Version }}-*'

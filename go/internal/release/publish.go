@@ -2,10 +2,10 @@ package release
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 )
 
@@ -14,56 +14,58 @@ func (c Config) VerifyTag(tag string) error {
 	if err != nil {
 		return err
 	}
-	if tag != "go/v"+version {
-		return fmt.Errorf("tag %s does not match changelog version go/v%s", tag, version)
+	if tag != "v"+version {
+		return fmt.Errorf("tag %s does not match version.txt v%s", tag, version)
 	}
 	return nil
 }
 
-func Notes(changelog string) string {
-	start := strings.Index(changelog, "\n### ")
-	if start < 0 {
-		return ""
-	}
-	text := changelog[start+1:]
-	if end := strings.Index(text, "\n### "); end >= 0 {
-		text = text[:end]
-	}
-	return text
+func (c Config) runPublishCommand(ctx context.Context, args ...string) error {
+	command := exec.CommandContext(ctx, "gh", args...)
+	command.Dir = c.Root
+	command.Stdout, command.Stderr = os.Stdout, os.Stderr
+	return command.Run()
 }
 
-func (c Config) Publish(ctx context.Context) error {
+func (c Config) publishOutput(ctx context.Context, args ...string) ([]byte, error) {
+	command := exec.CommandContext(ctx, "gh", args...)
+	command.Dir = c.Root
+	command.Stderr = os.Stderr
+	return command.Output()
+}
+
+// Promote marks a verified release latest without downgrading a newer release.
+// The workflow serializes this read and write with other promotion jobs.
+func (c Config) Promote(ctx context.Context) error {
 	metadata, err := c.Metadata()
 	if err != nil {
 		return err
 	}
-	if err := c.VerifyTag(os.Getenv("GITHUB_REF_NAME")); err != nil {
-		return err
+	if !pinVersionPattern.MatchString(metadata.Version) {
+		return fmt.Errorf("invalid release version %q", metadata.Version)
 	}
-	path, err := c.releaseNotes()
+	latest, err := c.latestPublishedVersion(ctx)
 	if err != nil {
 		return err
 	}
-	return c.publishAssets(ctx, metadata, path)
+	if comparePinVersions(latest, metadata.Version) >= 0 {
+		return nil
+	}
+	return c.runPublishCommand(ctx, "release", "edit", "v"+metadata.Version, "--prerelease=false", "--latest")
 }
 
-func (c Config) releaseNotes() (string, error) {
-	data, err := os.ReadFile(filepath.Join(c.Root, "CHANGELOG.md"))
+func (c Config) latestPublishedVersion(ctx context.Context) (string, error) {
+	data, err := c.publishOutput(ctx, "release", "view", "--json", "tagName")
 	if err != nil {
 		return "", err
 	}
-	path := filepath.Join(c.Out, "notes.md")
-	return path, os.WriteFile(path, []byte(Notes(string(data))), 0600)
-}
-
-func (c Config) publishAssets(ctx context.Context, metadata Metadata, notes string) error {
-	args := []string{"release", "create", "go/v" + metadata.Version}
-	for _, asset := range metadata.Assets {
-		args = append(args, filepath.Join(c.Out, asset.Name))
+	var release struct{ TagName string }
+	if err := json.Unmarshal(data, &release); err != nil {
+		return "", err
 	}
-	args = append(args, filepath.Join(c.Out, "checksums.txt"), "--verify-tag", "--title", "fitness v"+metadata.Version, "--notes-file", notes)
-	cmd := exec.CommandContext(ctx, "gh", args...)
-	cmd.Dir = c.Root
-	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	return cmd.Run()
+	version := strings.TrimPrefix(strings.TrimPrefix(release.TagName, "go/"), "v")
+	if !pinVersionPattern.MatchString(version) {
+		return "", fmt.Errorf("invalid latest release tag %q", release.TagName)
+	}
+	return version, nil
 }

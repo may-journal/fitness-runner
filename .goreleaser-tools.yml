@@ -1,0 +1,39 @@
+# cspell:ignore trimpath
+version: 2
+project_name: fitness
+snapshot:
+  version_template: '{{ .Env.FITNESS_VERSION }}'
+changelog:
+  disable: true
+dist: out/tools
+builds:
+  - id: installer
+    dir: go
+    main: ./cmd/fitness-install
+    binary: 'fitness-install-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
+    no_unique_dist_dir: true
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags:
+      - '-s -w -X main.version={{ .Version }} -X main.bundleHashes={{ .Env.FITNESS_BUNDLE_HASHES }}'
+  - id: verifier
+    dir: go
+    main: ./cmd/fitness-release
+    binary: 'fitness-release-{{ .Os }}-{{ .Arch }}'
+    no_unique_dist_dir: true
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath, -buildvcs=false]
+    ldflags: [-s -w]
+archives:
+  - id: installer
+    ids: [installer]
+    formats: [binary]
+    name_template: '{{ .Binary }}'
+checksum:
+  name_template: checksums.txt
+  extra_files:
+    - glob: 'out/bundles/fitness-{{ .Version }}-*.tar.gz'

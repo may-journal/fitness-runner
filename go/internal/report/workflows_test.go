@@ -115,7 +115,7 @@ func checkArtifactLink(t *testing.T, workflow, summaryPath, artifact string) {
 func TestActionResetsPriorFailureMarker(t *testing.T) {
 	body := readWorkflow(t, "../../../action.yml")
 	start := strings.Index(body, "run: |\n") + len("run: |\n")
-	bootstrap := strings.SplitN(body[start:], "curl", 2)[0]
+	bootstrap := strings.SplitN(body[start:], "\n        curl -fsSL", 2)[0]
 	path := filepath.Join(t.TempDir(), "env")
 	cmd := exec.Command("/bin/bash", "-e", "-c", bootstrap)
 	cmd.Env = []string{"GITHUB_ENV=" + path, "FITNESS_FAILURE_REPORTED=true"}

@@ -128,4 +128,22 @@ The hook checks working-tree files, not an isolated staged snapshot. A failed ch
 
 The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks.
 
-Upgrade or roll back by choosing an exact release with `--version VERSION`. `--version latest` is explicit opt-in; logs show the resolved version and hash. The action's `version` input follows the same rules.
+Upgrade or roll back by choosing an exact release with `--version VERSION`. `--version latest` is explicit opt-in; logs show the resolved version and hash. The action's `version` input follows the same rules. An exact action tag loads its matching installer; main, SHA, and local action refs use the verified fallback pin.
+
+## Release automation
+
+After main CI passes, Release Please groups conventional commits in a release PR and owns its version and GitHub notes. Once merged, it creates a draft release and an explicit root `v` tag. The root changelog remains the development audit; generated release notes stay on GitHub.
+
+GoReleaser OSS 2.18.2 builds, archives, checksums, and publishes the assets after native checks on four platforms. It reuses the draft and publishes a prerelease for public download checks. Passing checks promote the release to latest and add its `go/v` module tag at the same commit. The create-pull-request action then proposes pin updates; `chore` pin commits do not request another release.
+
+The workflow uses `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`. Install that App with write access to Contents, Pull requests, Issues, and Workflows. Its token lets tags and PR events start workflows without a manual trigger. Release and pin PRs retain normal review, checks, and existing auto-merge rules.
+
+## Retry a release
+
+For a failed Release Please job, fix the cause and rerun the CI job. For a failed build or public check, rerun the failed jobs in the Release workflow. Each version keeps its existing tag and release.
+
+GoReleaser can replace incomplete assets only while the release is a draft. Once public, the workflow skips publication and reruns verification. Pin PR updates use create-pull-request; review and merge remain in the normal PR flow.
+
+## Consumer updates
+
+This updates pins in the Fitness repo. A consumer on a fixed tag or commit SHA stays on that ref until its own update PR merges. Use an updater in each consumer repo to propose those changes. The explicit `latest` version option follows verified releases; it does not update the action's source ref.

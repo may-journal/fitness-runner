@@ -1,13 +1,17 @@
 // Command fitness-release builds, publishes, and verifies release assets.
+// cspell:ignore releasemeta
 package main
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/may-journal/fitness-runner/go/internal/release"
+	"github.com/may-journal/fitness-runner/go/internal/releasemeta"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -36,7 +40,7 @@ func reportFailure(operation string, err error) {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use build, smoke, verify-download, verify-tag, publish, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, tracking-issue, update-pins, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
@@ -47,21 +51,71 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	return dispatch(args[0], config)
+	return dispatch(args[0], config, *root)
 }
 
-func dispatch(command string, config release.Config) error {
+func dispatch(command string, config release.Config, root string) error {
 	handlers := map[string]func() error{
-		"build":           func() error { return config.Build(context.Background()) },
+		"bundle-hashes": func() error {
+			hashes, err := config.BundleHashes()
+			if err == nil {
+				fmt.Println(hashes)
+			}
+			return err
+		},
+		"assemble":        config.Assemble,
+		"update-pins":     config.PreparePins,
+		"promote":         func() error { return config.Promote(context.Background()) },
+		"release-pr":      func() error { return updateReleasePR(root) },
+		"tracking-issue":  func() error { return trackingIssue(root) },
 		"smoke":           func() error { return config.Smoke(context.Background(), false) },
 		"verify-download": func() error { return config.Smoke(context.Background(), true) },
 		"verify-tag":      func() error { return config.VerifyTag(os.Getenv("GITHUB_REF_NAME")) },
-		"publish":         func() error { return config.Publish(context.Background()) },
-		"tag":             func() error { version, err := config.Version(); fmt.Println("go/v" + version); return err },
+		"version": func() error {
+			version, err := config.Version()
+			if err == nil {
+				fmt.Println(version)
+			}
+			return err
+		},
+		"tag": func() error {
+			version, err := config.Version()
+			if err == nil {
+				fmt.Println("v" + version)
+			}
+			return err
+		},
 	}
 	handler, ok := handlers[command]
 	if !ok {
 		return fmt.Errorf("unknown release command %q", command)
 	}
 	return handler()
+}
+
+func updateReleasePR(root string) error {
+	var value struct {
+		Number int `json:"number"`
+	}
+	if err := json.Unmarshal([]byte(os.Getenv("RELEASE_PR")), &value); err != nil {
+		return err
+	}
+	client := releasemeta.Client{Root: root, Repo: os.Getenv("GITHUB_REPOSITORY")}
+	return client.UpdateReleasePR(context.Background(), value.Number)
+}
+
+func trackingIssue(root string) error {
+	version := os.Getenv("RELEASE_VERSION")
+	client := releasemeta.Client{Root: root, Repo: os.Getenv("GITHUB_REPOSITORY")}
+	number, err := client.EnsureTrackingIssue(context.Background(), "pins-"+version, "Update Fitness pins to v"+version, "Use verified Fitness release v"+version+" in the installer, shared workflows, and setup docs.")
+	if err != nil {
+		return err
+	}
+	file, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.WriteString("number=" + strconv.Itoa(number) + "\n")
+	return err
 }

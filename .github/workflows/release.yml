@@ -1,20 +1,33 @@
+# cspell:ignore goreleaser
 name: Release
 on:
   push:
-    tags: ['go/v*']
+    tags: ['v*']
+concurrency:
+  group: fitness-release
+  cancel-in-progress: false
+  queue: max
 permissions:
   contents: write
 jobs:
   verify:
+    outputs:
+      version: ${{ steps.report-step-1.outputs.version }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - name: Verify the tag matches the newest CHANGELOG heading
+      - name: Verify the tag matches the release version
         id: report-step-1
-        run: go run ./cmd/fitness-release verify-tag --root ..
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          go run ./cmd/fitness-release verify-tag --root ..
+          printf 'version=%s\n' "${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
         working-directory: go
       - name: Retain complete Fitness reports
         id: fitness-reports
@@ -50,17 +63,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: fitness-release
           path: out
-      - name: Publish verified release assets
-        id: report-step-1
+      - name: Inspect release publication state
+        id: publication
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          chmod +x out/fitness-release-linux-amd64
-          out/fitness-release-linux-amd64 publish
+          draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
+          case "$draft" in true|false) ;; *) exit 1 ;; esac
+          printf 'draft=%s\n' "$draft" >> "$GITHUB_OUTPUT"
+      - name: Publish tested assets with GoReleaser
+        if: ${{ steps.publication.outputs.draft == 'true' }}
+        id: report-step-1
+        uses: goreleaser/goreleaser-action@v7.2.3
+        with:
+          version: v2.18.2
+          args: release --clean --skip=archive --config .goreleaser-publish.yml
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
@@ -88,7 +114,7 @@ jobs:
           fi
 
   verify-download:
-    needs: release
+    needs: [release, verify]
     strategy:
       fail-fast: false
       matrix:
@@ -104,6 +130,8 @@ jobs:
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with:
           name: fitness-release
@@ -125,6 +153,7 @@ jobs:
         uses: ./
         with:
           policy: external
+          version: ${{ needs.verify.outputs.version }}
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
       - name: Retain complete Fitness reports
@@ -144,6 +173,118 @@ jobs:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
           REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REPORT_ARTIFACT_URL" ]; then
+            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  promote-pins:
+    needs: [verify-download, verify]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release automation token
+        id: app-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: fitness-release
+          path: out
+      - name: Promote the verified release
+        id: report-step-1
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          chmod +x out/fitness-release-linux-amd64
+          out/fitness-release-linux-amd64 promote
+      - name: Publish the Go module tag
+        id: report-step-2
+        env:
+          RELEASE_TAG: v${{ needs.verify.outputs.version }}
+        run: |
+          release_sha="$(git rev-list -n 1 "$RELEASE_TAG")"
+          module_tag="go/$RELEASE_TAG"
+          if git rev-parse --verify "$module_tag" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "$module_tag")" = "$release_sha"
+          else
+            git tag "$module_tag" "$release_sha"
+            git push origin "refs/tags/$module_tag"
+          fi
+      - name: Prepare verified release pins
+        id: report-step-3
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RELEASE_TAG: v${{ needs.verify.outputs.version }}
+        run: |
+          latest="$(gh release view --json tagName --jq .tagName)"
+          if [ "$latest" = "$RELEASE_TAG" ]; then
+            out/fitness-release-linux-amd64 update-pins
+          fi
+      - name: Track the pin update
+        id: pin-issue
+        if: ${{ steps.report-step-3.outputs.changed == 'true' }}
+        run: out/fitness-release-linux-amd64 tracking-issue
+        env:
+          RELEASE_VERSION: ${{ needs.verify.outputs.version }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      - name: Open the pin update PR
+        id: pin-pr
+        if: ${{ steps.report-step-3.outputs.changed == 'true' }}
+        uses: peter-evans/create-pull-request@v8.1.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          branch: automation/release-pins
+          commit-message: 'chore(release): update verified Fitness pins'
+          title: 'chore(release): update Fitness pins to v${{ needs.verify.outputs.version }}'
+          add-paths: |
+            action.yml
+            go/cmd/fitness-install/main.go
+            .github/workflows/*-reusable.yml
+            docs/ci.md
+            README.md
+            CHANGELOG.md
+          body: |
+            > Keep Fitness users on the verified release.
+
+            ## Background
+
+            All four public platform checks passed for v${{ needs.verify.outputs.version }}.
+            Closes #${{ steps.pin-issue.outputs.number }}. Agent: Fitness release automation.
+
+            ## Changelog
+
+            - Chore: update Fitness pins to the verified release.
+            - Chore: keep the installer and shared workflows on the same release.
+            - Docs: refresh the pinned release used in setup examples.
+      - name: Retain complete Fitness reports
+        id: fitness-reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
+          path: ${{ runner.temp }}/fitness-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure' || steps.report-step-3.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"

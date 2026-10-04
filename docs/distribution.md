@@ -1,22 +1,23 @@
 ---
-relatedConfigurations: ['../.fitnessrc.json']
+relatedConfigurations: ['../release-please-config.json', '../.goreleaser-bundles.yml', '../.goreleaser-tools.yml', '../.goreleaser-publish.yml']
 ---
+<!-- cspell:ignore goreleaser -->
+
 
 # Distribution
 
-Every channel delivers the same static binaries: the runner, the changelog stamper, and every check.
-
-1. `go install` — compiles from source via the public Go module proxy. No artifacts involved, and every published version is cached immutably.
-2. GitHub Releases — per-platform tarballs with a checksums file, built and uploaded by CI on every version tag.
+Consumers install source with `go install` or download verified static binaries from GitHub Releases. Each binary bundle contains the runner, checks, and changelog stamper.
 
 ## Versioning
 
-The CHANGELOG timestamp is the only version, and release tags are derived from it. Heading `### 2026.07.19.0837` becomes tag `go/v0.20260719.837`. Major is pinned at 0, because Go reserves majors of 2 and up for `/vN` module paths. Minor is the date, patch is the minute, and ordering is preserved.
+Release Please owns semantic versions in `version.txt`, starting at `1.0.0`. Root tags such as `v1.0.0` identify binary releases. After verification, a `go/v1.0.0` alias points at the same commit for the module in `go/`. Go consumers use `@v1.0.0` or `@latest`; version 2 would require a module path migration to `/v2`.
 
-`go -C go run ./cmd/fitness-release tag --root ..` prints the tag for the newest heading; CI rejects a tag that does not match. Consumers reference the plain version (`@v0.20260719.837`) or `@latest`. The Go proxy caches every published version immutably.
+Existing `go/v0.date.time` tags and their asset URLs remain valid. The installer and root action select legacy URLs for version 0 and root release tags for version 1. The root timestamp changelog records development changes and no longer sets release versions.
 
-## Release gate
+## Build and release gates
 
-[Binary distribution](../.github/workflows/distribution.yml) builds all four bundles and smoke-tests them on native hosts without Go on PATH. The release workflow publishes only after those checks pass. Each release includes a compiled `fitness-install` for each host, with its version and bundle hashes embedded. There is no shell launcher; CI downloads and invokes the native executable.
+GoReleaser OSS 2.18.2 owns builds, archives, checksums, and publication. The [bundle config](../.goreleaser-bundles.yml) builds the runner and checks first. The [tools config](../.goreleaser-tools.yml) then builds installers with those bundle hashes embedded. Pull requests use snapshots and test all four platforms on native hosts without Go on the consumer PATH.
 
-The [Go release tool](../go/cmd/fitness-release/README.md) owns packaging, publishing, and smoke checks. The [root action](../action.yml) has a fixed default version. Update that pin and the shared workflow refs when shipping a new release. Existing pins stay unchanged; see [CI setup](ci.md) for upgrades and complete examples.
+After main CI passes, Release Please maintains a release PR. Its merge creates a draft with notes and an explicit root version tag. The release workflow repeats native checks, then the [publish config](../.goreleaser-publish.yml) adds assets to that draft and publishes a prerelease. Public installer and action checks must pass before promotion to latest.
+
+A verified release gains its Go module alias and a pin update PR through create-pull-request. Release Please ignores those `chore` pin commits for release decisions. See [CI setup](ci.md#release-automation) for App access, review, recovery, and consumer upgrades.

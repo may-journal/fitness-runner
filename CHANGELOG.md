@@ -7,11 +7,19 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.04.1403
+### 2026.10.04.1440
 
 - Fix: reject named test helpers passed through `t.Run` so wrappers cannot hide independently measured tests.
 - Test: restore separate tests after verifying equal coverage does not prove their assertions or inputs are redundant.
 - Docs: retain exact and partial overlap as review signals instead of treating path equality as source duplication.
+
+### 2026.10.04.1357
+
+- Feat: adopt Release Please for reviewed release versions, tags, and draft notes.
+- Feat: use GoReleaser for binary builds, archives, checksums, and verified asset publication.
+- Fix: preserve legacy downloads and choose the matching installer for tagged or latest releases.
+- Refactor: run GitHub release metadata and tracking issue updates through tested Go commands.
+- Test: preserve the release notes body without splitting lists and verify bootstrap scripts.
 
 ### 2026.10.04.1309
 

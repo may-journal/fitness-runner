@@ -67,6 +67,12 @@ In a consumer repo, run `fitness init` once — it installs the shared hooks as 
 
 Some checks also run as GitHub Actions workflows. They extend the same rules to non-file targets like plan Issues and pull request descriptions. Each workflow step is one `fitness` call. See [.github/workflows/README.md](.github/workflows/README.md).
 
+## Release updates
+
+After main CI passes, Release Please opens or updates a release PR from conventional commits. Merging that PR creates a draft release and a `v1.x` tag. GoReleaser builds and packages four platforms; native and public checks gate promotion to latest. A Go module tag and a pin update PR follow verification.
+
+Release and pin PRs use the normal review and checks. See [release automation and recovery](docs/ci.md#release-automation) for App access and retries. Other repos with fixed tags or commit SHAs need their own update PRs.
+
 ## Documentation
 
 - [Distribution and versioning](docs/distribution.md)

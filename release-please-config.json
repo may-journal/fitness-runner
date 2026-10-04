@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "bootstrap-sha": "8e71c36811225bda2d4a057ebb26172244725adc",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "initial-version": "1.0.0",
+      "version-file": "version.txt",
+      "include-component-in-tag": false,
+      "pull-request-header": "> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release.\n\n## Changelog",
+      "pull-request-footer": "Agent: Release Please.",
+      "skip-changelog": true,
+      "draft": true,
+      "force-tag-creation": true
+    }
+  }
+}
