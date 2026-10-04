@@ -13,6 +13,12 @@ relatedConfigurations: ['.fitnessrc.json']
 - Test: compare optimized masks with the original algorithm across dictionaries, random inputs, and fuzz cases.
 - Test: run the full candidate bundle before release and the full public action after publishing, keeping the timeout unchanged.
 
+### 2026.10.04.1119
+
+- Docs: require native GitHub annotations and job summaries across all workflows in ADR 0003.
+- Docs: link the reporting contract from architecture and workflow guides.
+- Docs: record reporting gaps, output limits, and checks needed for workflow adoption.
+
 ### 2026.10.04.1106
 
 - Fix: remove the check filter from release action verification so it runs the full suite.

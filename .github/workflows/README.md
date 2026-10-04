@@ -6,6 +6,8 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 GitHub Actions workflows for this repo. The runner enforces the checks on commits; these workflows extend the same checks to places that are not files in the tree.
 
+All workflows follow [ADR 0003](../../docs/architecture/adr/0003-native-github-workflow-feedback.md): native failure annotations, useful job summaries, and accurate source locations when available. The ADR records current coverage and the review requirements for new work.
+
 ## plan-check
 
 Plans live as GitHub Issues under the `Plan` label, so the file runner never sees them. [plan-check.yml](plan-check.yml) runs `fitness plan-check` to lint an Issue body. It keeps one live verdict comment and label on the Issue.
