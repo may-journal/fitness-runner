@@ -9,13 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go/go.mod
       - name: Verify the tag matches the newest CHANGELOG heading
-        run: |
-          want="$(.github/scripts/release-tag.sh)"
-          test "$GITHUB_REF_NAME" = "$want" || {
-            echo "tag $GITHUB_REF_NAME does not match CHANGELOG-derived $want" >&2
-            exit 1
-          }
+        run: go run ./cmd/fitness-release verify-tag --root ..
+        working-directory: go
   binaries:
     needs: verify
     uses: ./.github/workflows/distribution.yml
@@ -28,30 +27,45 @@ jobs:
         with:
           name: fitness-release
           path: out
-      - name: Extract newest CHANGELOG section as release notes
-        run: awk '/^### /{n++} n==1' CHANGELOG.md > "$RUNNER_TEMP/notes.md"
-      - name: Publish tested bundles and shell installer
+      - name: Publish verified release assets
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" out/*.tar.gz out/fitness-install-* out/checksums.txt out/fitness.sh \
-            --verify-tag --title "fitness ${GITHUB_REF_NAME#go/}" --notes-file "$RUNNER_TEMP/notes.md"
+          chmod +x out/fitness-release-linux-amd64
+          out/fitness-release-linux-amd64 publish
   verify-download:
     needs: release
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: macos-latest
+            platform: darwin-arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
-      - name: Test public downloads without Go
-        run: .github/scripts/check-published.sh
+      - uses: actions/download-artifact@v4
+        with:
+          name: fitness-release
+          path: out
+      - name: Verify public downloads with the Go tool
         env:
+          VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
-      - name: Test the released root action
+          FITNESS_TEST_TOOL_PATH: ${{ runner.temp }}/fitness-consumer-tools
+        run: |
+          chmod +x "$VERIFIER"
+          "$VERIFIER" verify-download
+      - name: Run the released root action without Go
         uses: ./
         with:
           check: markdown-filename-kebab-case
         env:
+          PATH: ${{ runner.temp }}/fitness-consumer-tools
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache

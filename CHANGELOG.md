@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.0945
+
+- Refactor: move release packaging, tag checks, publishing, and native smoke checks from shell scripts into typed Go.
+- Feat: install a compiled Go pre-commit hook and handle action inputs and outputs in Go.
+- Docs: download native installers directly from release URLs; remove the shell launcher and its examples.
+
 ### 2026.10.04.0918
 
 - Feat: move download, archive, and cache logic into a typed Go installer compiled for each host.

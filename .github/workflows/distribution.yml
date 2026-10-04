@@ -12,8 +12,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - run: cd go && go test ./internal/distribution
-      - run: .github/scripts/package-release.sh
+      - run: go test ./internal/distribution ./internal/release
+        working-directory: go
+      - run: go run ./cmd/fitness-release build --root ..
+        working-directory: go
       - uses: actions/upload-artifact@v4
         with:
           name: fitness-release
@@ -25,7 +27,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        runner: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest]
+        include:
+          - runner: ubuntu-latest
+            platform: linux-amd64
+          - runner: ubuntu-24.04-arm
+            platform: linux-arm64
+          - runner: macos-15-intel
+            platform: darwin-amd64
+          - runner: macos-latest
+            platform: darwin-arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
@@ -33,17 +43,10 @@ jobs:
         with:
           name: fitness-release
           path: out
-      - run: .github/scripts/smoke-release.sh
+      - name: Run the Go release verifier
         env:
+          VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-          FITNESS_TEST_TOOL_PATH: ${{ runner.temp }}/fitness-native-tools
-      - name: Bind the action to the staged release
-        run: cp out/fitness.sh fitness.sh
-      - name: Run the root action without Go
-        uses: ./
-        env:
-          PATH: ${{ runner.temp }}/fitness-native-tools
-          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-          FITNESS_TEST_RELEASE_DIR: ${{ github.workspace }}/out
-        with:
-          check: markdown-filename-kebab-case
+        run: |
+          chmod +x "$VERIFIER"
+          "$VERIFIER" smoke

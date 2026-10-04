@@ -1,20 +1,21 @@
 ---
-relatedConfigurations: ['../../../fitness.sh', '../../../action.yml']
+relatedConfigurations: ['../../../action.yml']
 ---
 
 # fitness-install
 
-Installs a pinned release and runs Fitness without compiling consumer code. Release publishing embeds the version and the SHA-256 hashes of all four bundles. The shell entry point only downloads, verifies, and starts this executable.
+Installs a pinned release and runs Fitness without compiling consumer code. Release publishing embeds the version and the SHA-256 hashes of all four bundles. CI downloads and invokes the native executable directly.
 
 ## Usage
 
 ```bash
 fitness-install -- --check=markdown-filename-kebab-case --all
 fitness-install --install-only
+fitness-install --install-hook -- --check=markdown-filename-kebab-case --all
 fitness-install --version latest -- --help
 ```
 
-Installer flags precede `--`; arguments after it reach Fitness unchanged. Install-only mode prints the directory holding the runner and every check. The runner replaces the installer process, so check exit codes and signals reach CI.
+Installer flags precede `--`; arguments after it reach Fitness unchanged. Install-only mode prints the directory holding the runner and every check. The runner replaces the installer process, so check exit codes and signals reach CI. `--install-hook` writes a compiled Go hook and saved options, preserving existing hooks.
 
 ## Cache
 

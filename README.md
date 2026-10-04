@@ -25,13 +25,9 @@ One command installs the runner and every check binary into `$HOME/go/bin`; put 
 
 ### Prebuilt binaries
 
-No Go toolchain is needed. From a consumer checkout, download and run the pinned release installer:
+Download the compiled Go installer for your platform from [the releases page](https://github.com/may-journal/fitness-runner/releases). It fetches and checks the full binary bundle, with no Go toolchain on the consumer machine.
 
-```bash
-bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
-```
-
-Fitness owns platform detection, hash checks, and the binary cache. See the [complete hook, Jenkins, and Actions examples](docs/ci.md), including install-only mode and rollback. The example selects one check; omit its runner arguments to run the full suite.
+The [complete setup guide](docs/ci.md) gives exact download URLs and commands for hooks, Jenkins, and Actions. The installer, hook, and release tools are Go executables; no shell installer is shipped.
 
 ### From source
 

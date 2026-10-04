@@ -2,7 +2,7 @@ name: Fitness
 description: Run a pinned, verified Fitness binary bundle without compiling it.
 inputs:
   version:
-    description: Exact release version. Empty uses the action's pin; latest is explicit opt-in.
+    description: Exact bundle version. Empty uses the installer pin; latest is explicit opt-in.
     default: ''
   check:
     description: Optional single check; empty runs the configured suite.
@@ -17,23 +17,22 @@ outputs:
 runs:
   using: composite
   steps:
+    - name: Download the compiled Go installer
+      shell: bash
+      working-directory: ${{ runner.temp }}
+      env:
+        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913
+        ASSET: fitness-install-0.20261004.913-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
+      run: |
+        curl -fsSL --retry 3 "$RELEASE_URL/$ASSET" -o "$ASSET"
+        curl -fsSL --retry 3 "$RELEASE_URL/checksums.txt" -o "$ASSET.checksums"
+        grep "  $ASSET$" "$ASSET.checksums" | shasum -a 256 -c -
+        chmod +x "$ASSET"
     - id: install
       shell: bash
       env:
-        FITNESS_ACTION_PATH: ${{ github.action_path }}
+        FITNESS_EXECUTABLE: ${{ runner.temp }}/fitness-install-0.20261004.913-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
         FITNESS_VERSION: ${{ inputs.version }}
-      run: |
-        args=(--install-only)
-        if [ -n "$FITNESS_VERSION" ]; then args+=(--version "$FITNESS_VERSION"); fi
-        bin=$(bash "$FITNESS_ACTION_PATH/fitness.sh" "${args[@]}")
-        echo "$bin" >> "$GITHUB_PATH"
-        echo "bin=$bin" >> "$GITHUB_OUTPUT"
-    - if: inputs.install-only != 'true'
-      shell: bash
-      env:
-        FITNESS_BIN: ${{ steps.install.outputs.bin }}
         FITNESS_CHECK: ${{ inputs.check }}
-      run: |
-        args=()
-        if [ -n "$FITNESS_CHECK" ]; then args+=("--check=$FITNESS_CHECK"); fi
-        "$FITNESS_BIN/fitness" "${args[@]}"
+        FITNESS_INSTALL_ONLY: ${{ inputs.install-only }}
+      run: '"$FITNESS_EXECUTABLE" --github-action'

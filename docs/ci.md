@@ -1,28 +1,48 @@
 ---
-relatedConfigurations: ['../action.yml', '../fitness.sh']
+relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
 ---
 
 # Run prebuilt Fitness in CI
 
-<!-- cspell:ignore Multibranch -->
+Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need tools such as Go, Node, or SwiftLint.
 
-Fitness builds its runner and checks when a release is published. Consumers download the binaries; they do not compile Fitness or install Go. Selected project checks can still need tools such as Go, Node, or SwiftLint.
+The examples pin `go/v0.20261004.913` and select one existing check. Multiple chosen checks and external policy remain in issue #175. Omit the runner arguments only when you want the full suite.
 
-The examples pin `go/v0.20261004.913` and run one check without org policy. Multiple chosen checks and external policy are tracked in issue #175. Leave out the runner arguments only when you want the current full suite.
+## Download the Go installer
 
-## Shell
-
-Use Bash, curl, and either sha256sum or shasum on Linux or macOS, on amd64 or arm64. Run from a Git checkout. No GitHub token is needed for public release assets; the first download needs HTTPS access to GitHub.
+This setup is for Linux amd64, from any directory. It installs into a private directory under your home and verifies the executable before running it. It needs curl and shasum, plus Git for file checks.
 
 ```bash
-bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
+mkdir -p "$HOME/.local/fitness"
+cd "$HOME/.local/fitness"
+curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness-install-0.20261004.913-linux-amd64 -o fitness-install-0.20261004.913-linux-amd64
+curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/checksums.txt -o checksums.txt
+grep '  fitness-install-0.20261004.913-linux-amd64$' checksums.txt | shasum -a 256 -c -
+chmod +x fitness-install-0.20261004.913-linux-amd64
 ```
 
-The first `--` names Bash's command; the second ends installer options. Downloads finish before the script runs. Failed downloads, installs, or checks fail the command.
+For another host, replace `linux-amd64` in the asset URL, filename, and later commands with the matching platform below. These are release assets, not paths to files checked into Git.
+
+| Host | Platform |
+| --- | --- |
+| Linux, Intel or AMD 64-bit | `linux-amd64` |
+| Linux, ARM 64-bit | `linux-arm64` |
+| macOS, Intel | `darwin-amd64` |
+| macOS, Apple silicon | `darwin-arm64` |
+
+## Run checks
+
+From the consumer repository root, run one command:
+
+```bash
+"$HOME/.local/fitness/fitness-install-0.20261004.913-linux-amd64" -- --check=markdown-filename-kebab-case --all
+```
+
+The Go executable fetches a pinned bundle, verifies hashes and archive paths, and caches the binaries. Failed downloads, installs, or checks return a failing exit code. No copied shell installer is involved.
 
 ## Jenkins
 
-Save this as `Jenkinsfile` in the consumer repo. Create a Pipeline from SCM or Multibranch Pipeline job with that repo and its checkout credentials. The `linux` agent must have the shell tools listed above.
+Save this complete `Jenkinsfile` in the consumer repo and configure a Pipeline from SCM job. Its `linux` agent must be Linux amd64 with curl and shasum. The temporary workspace directory holds the downloaded executable; the check runs in the consumer checkout.
 
 ```groovy
 pipeline {
@@ -32,20 +52,32 @@ pipeline {
     stage('Checkout') {
       steps { checkout scm }
     }
+    stage('Download Fitness') {
+      steps {
+        dir("${env.WORKSPACE}@tmp/fitness") {
+          sh '''
+            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness-install-0.20261004.913-linux-amd64 -o fitness-install-0.20261004.913-linux-amd64
+            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/checksums.txt -o checksums.txt
+            grep '  fitness-install-0.20261004.913-linux-amd64$' checksums.txt | shasum -a 256 -c -
+            chmod +x fitness-install-0.20261004.913-linux-amd64
+          '''
+        }
+      }
+    }
     stage('Fitness') {
       steps {
-        sh '''bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all'''
+        sh '"$WORKSPACE@tmp/fitness/fitness-install-0.20261004.913-linux-amd64" -- --check=markdown-filename-kebab-case --all'
       }
     }
   }
 }
 ```
 
-No local wrapper is required. Jenkins fails the stage if the command fails. Keep the repo's build and test stages alongside this stage.
+The download stage only invokes standard tools. All installer logic runs in Go. Jenkins fails the check stage when Fitness returns a failure.
 
 ## GitHub Actions
 
-Save this as `.github/workflows/fitness.yml` in the consumer repo:
+Save as `.github/workflows/fitness.yml` in the consumer repo:
 
 ```yaml
 name: Fitness
@@ -62,40 +94,24 @@ jobs:
           check: markdown-filename-kebab-case
 ```
 
-Use the same shell command from the Jenkins example in a `run` step if you prefer. The action uses the release pinned in its source and checks files in the consumer checkout. Use a full action commit SHA when your team requires a fixed source ref.
+The action downloads the native installer and checks its hash, then invokes it. Go handles action inputs, outputs, caching, and check execution. Use a full action commit SHA if your team requires a fixed source ref.
 
 ## Commit hook
 
-From the consumer repo root, run this once per clone. It uses Git's current hook path and refuses to replace an existing hook. If a hook manager owns that path, add the Fitness command through that manager.
+After downloading the installer, run this once from the consumer repository root:
 
 ```bash
-set -eu
-hook=$(git rev-parse --path-format=absolute --git-path hooks/pre-commit)
-if [ -e "$hook" ] || [ -L "$hook" ]; then
-  echo "Existing hook: $hook; add Fitness through its owner." >&2
-  exit 1
-fi
-mkdir -p "$(dirname "$hook")"
-(set -C; cat > "$hook" <<'HOOK'
-#!/usr/bin/env bash
-set -euo pipefail
-cd "$(git rev-parse --show-toplevel)"
-bootstrap=$(curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.913/fitness.sh) && bash -c "$bootstrap" -- -- --check=markdown-filename-kebab-case --all
-HOOK
-)
-chmod +x "$hook"
+"$HOME/.local/fitness/fitness-install-0.20261004.913-linux-amd64" --install-hook -- --check=markdown-filename-kebab-case --all
 ```
 
-The hook checks working-tree files, not an isolated staged snapshot. It does not stamp changelogs or fix files. CI runs even when a local hook is bypassed.
+This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, changelog stamp, or automatic file fix is involved.
 
-## Offline use and cache
+The hook checks working-tree files, not an isolated staged snapshot. A failed check blocks the commit; CI runs independently of local hooks. Teams with an existing hook manager can invoke the installer through that manager instead.
 
-To install without running, pass `--install-only` to the published script. It prints the directory holding `fitness` and all check binaries. Save that path and invoke its `fitness` binary for offline use.
+## Cache and versions
 
-The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`. Set `FITNESS_CACHE_DIR` to choose another private path. Archives and installed binaries are checked against the release hash before reuse; damaged cache entries are replaced.
+`--install-only` prints the binary directory without running checks. Save that path and invoke its `fitness` executable for offline use. The compiled installer also works offline when its pinned bundle is cached.
 
-## Versions and rollback
+The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks.
 
-The release URL pins both the installer and its bundle. To upgrade or roll back, change the URL or action ref to a tested release. `--version latest` and the action's `version: latest` are explicit opt-ins; logs show the resolved version and hash.
-
-The Go installer owns downloads, archive checks, and the cache; the shell entry point only fetches and starts it. A source checkout of `fitness.sh` fetches its installer checksum list. The compiled installer embeds its release hashes and runs from a warm cache without network access. The shell entry point fetches that installer each time; save the executable for offline use.
+Upgrade or roll back by choosing an exact release with `--version VERSION`. `--version latest` is explicit opt-in; logs show the resolved version and hash. The action's `version` input follows the same rules.

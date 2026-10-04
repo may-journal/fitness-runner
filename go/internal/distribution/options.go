@@ -22,9 +22,11 @@ var binaryPattern = regexp.MustCompile(`^fitness(-[a-z0-9-]+)?$`)
 
 // Options separates installer flags from untouched runner arguments.
 type Options struct {
-	Version     string
-	InstallOnly bool
-	Args        []string
+	Version      string
+	InstallOnly  bool
+	GitHubAction bool
+	InstallHook  bool
+	Args         []string
 }
 
 func ParseOptions(args []string, version string, output io.Writer) (Options, error) {
@@ -32,15 +34,15 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags := flag.NewFlagSet("fitness-install", flag.ContinueOnError)
 	flags.SetOutput(output)
 	flags.StringVar(&options.Version, "version", version, "exact release version, or explicit latest")
+	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
+	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
 	if err := flags.Parse(args); err != nil {
 		return options, err
 	}
 	options.Args = flags.Args()
-	if options.InstallOnly && len(options.Args) > 0 {
-		return options, errors.New("install-only does not accept runner arguments")
-	}
-	return options, nil
+	return options, options.validate()
+
 }
 
 func normalizeVersion(version string) (string, error) {
@@ -84,4 +86,21 @@ func ParseHashes(encoded string) map[string]string {
 		}
 	}
 	return hashes
+}
+
+func (options Options) validate() error {
+	if options.InstallOnly && len(options.Args) > 0 {
+		return errors.New("install-only does not accept runner arguments")
+	}
+	if options.InstallHook {
+		return options.validateHook()
+	}
+	return nil
+}
+
+func (options Options) validateHook() error {
+	if options.InstallOnly || options.GitHubAction {
+		return errors.New("install-hook cannot be combined with install-only or github-action")
+	}
+	return nil
 }

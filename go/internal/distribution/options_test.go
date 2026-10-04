@@ -17,7 +17,7 @@ func TestOptions(t *testing.T) {
 }
 
 func TestInvalidOptions(t *testing.T) {
-	for _, args := range [][]string{{"--unknown"}, {"--version"}, {"--install-only", "--", "argument"}} {
+	for _, args := range [][]string{{"--unknown"}, {"--version"}, {"--install-only", "--", "argument"}, {"--install-only", "--install-hook"}, {"--github-action", "--install-hook"}} {
 		t.Run(strings.Join(args, " "), func(t *testing.T) {
 			if _, err := ParseOptions(args, testVersion, io.Discard); err == nil {
 				t.Fatal("invalid option accepted")
