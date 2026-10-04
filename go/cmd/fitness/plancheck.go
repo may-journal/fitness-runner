@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 	"os"
 	"strings"
 	"time"
@@ -15,17 +16,17 @@ import (
 func runPlanCheck() int {
 	root, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		report.Error("fitness plan-check", err)
 		return 1
 	}
 	ev, err := readEvent()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness plan-check: "+err.Error())
+		report.Error("fitness plan-check", err)
 		return 1
 	}
 	gh, err := newGHClient()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness plan-check: "+err.Error())
+		report.Error("fitness plan-check", err)
 		return 1
 	}
 	return planCheck(ev, gh, newBodyChecker(root))
@@ -36,12 +37,12 @@ func runPlanCheck() int {
 func planCheck(ev ghEvent, gh githubAPI, c bodyChecker) int {
 	targets, err := planTargets(ev, gh)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness plan-check: "+err.Error())
+		report.Error("fitness plan-check", err)
 		return 1
 	}
 	failed, err := checkPlans(targets, gh, c)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness plan-check: "+err.Error())
+		report.Error("fitness plan-check", err)
 		return 1
 	}
 	if failed {
@@ -54,8 +55,11 @@ func planCheck(ev ghEvent, gh githubAPI, c bodyChecker) int {
 // checkPlans validates, comments on, and labels each target, reporting
 // whether any failed.
 func checkPlans(targets []target, gh githubAPI, c bodyChecker) (failed bool, err error) {
+	report := newTargetReport("plan-check", "issues")
+	defer report.finish()
 	for _, t := range targets {
 		errs := validatePlan(t, c)
+		report.add(t.Number, errs)
 		failed = failed || len(errs) > 0
 		if err := postVerdict(t, errs, gh); err != nil {
 			return failed, err

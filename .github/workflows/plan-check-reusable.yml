@@ -28,6 +28,7 @@ jobs:
         with:
           go-version: stable
       - name: Install the pinned fitness bundle
+        id: report-step-1
         if: ${{ inputs.ref == '' }}
         uses: may-journal/fitness-runner@go/v0.20261004.951
         with:
@@ -41,6 +42,32 @@ jobs:
           go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Validate plan issue(s), keep one verdict comment, and label it
+        id: report-step-2
         run: fitness plan-check
         env:
           GH_TOKEN: ${{ github.token }}
+      - name: Retain complete Fitness reports
+        id: fitness-reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
+          path: ${{ runner.temp }}/fitness-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REPORT_ARTIFACT_URL" ]; then
+            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi

@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // Release publishing embeds the exact version and platform bundle hashes.
@@ -57,13 +58,21 @@ func runInstalled(bin string, options distribution.Options) int {
 	}
 	if options.InstallOnly {
 		fmt.Println(bin)
+		report.Outcome("fitness-install", "Verified Fitness binaries installed successfully.")
 		return 0
 	}
 	runner := filepath.Join(bin, "fitness")
 	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), os.Environ()))
 }
 
-func failure(err error) int { fmt.Fprintln(os.Stderr, "fitness:", err); return 1 }
+func failure(err error) int {
+	if report.Enabled() {
+		report.Error("fitness-install", err)
+	} else {
+		fmt.Fprintln(os.Stderr, "fitness:", err)
+	}
+	return 1
+}
 
 func commandOptions(args []string) (distribution.Options, error) {
 	if filepath.Base(os.Args[0]) == "pre-commit" {
@@ -77,5 +86,6 @@ func installHook(options distribution.Options) int {
 		return failure(err)
 	}
 	fmt.Println("fitness: installed the Go pre-commit hook")
+	report.Outcome("fitness-install", "Installed the Go pre-commit hook successfully.")
 	return 0
 }

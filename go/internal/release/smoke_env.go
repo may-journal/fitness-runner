@@ -64,11 +64,13 @@ func linkTool(directory, name string) error {
 func cleanEnvironment() []string {
 	var env []string
 	for _, entry := range os.Environ() {
-		if !strings.HasPrefix(entry, "GIT_") {
+		if !strings.HasPrefix(entry, "GIT_") && !strings.HasPrefix(entry, "GITHUB_ACTIONS=") {
 			env = append(env, entry)
 		}
 	}
-	return env
+	// Invalid fixtures must fail without publishing failures for a passing smoke test.
+	// The parent verifier keeps its environment and reports the final outcome.
+	return append(env, "GITHUB_ACTIONS=false")
 }
 
 func verifyHash(expected string, data []byte) error {

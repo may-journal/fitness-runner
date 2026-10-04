@@ -13,8 +13,35 @@ jobs:
         with:
           go-version-file: go/go.mod
       - name: Verify the tag matches the newest CHANGELOG heading
+        id: report-step-1
         run: go run ./cmd/fitness-release verify-tag --root ..
         working-directory: go
+      - name: Retain complete Fitness reports
+        id: fitness-reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
+          path: ${{ runner.temp }}/fitness-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REPORT_ARTIFACT_URL" ]; then
+            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   binaries:
     needs: verify
     uses: ./.github/workflows/distribution.yml
@@ -28,11 +55,38 @@ jobs:
           name: fitness-release
           path: out
       - name: Publish verified release assets
+        id: report-step-1
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           chmod +x out/fitness-release-linux-amd64
           out/fitness-release-linux-amd64 publish
+      - name: Retain complete Fitness reports
+        id: fitness-reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
+          path: ${{ runner.temp }}/fitness-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REPORT_ARTIFACT_URL" ]; then
+            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   verify-download:
     needs: release
     strategy:
@@ -55,6 +109,7 @@ jobs:
           name: fitness-release
           path: out
       - name: Verify public downloads with the Go tool
+        id: report-step-1
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
@@ -66,8 +121,34 @@ jobs:
         with:
           go-version-file: go/go.mod
       - name: Run the full suite through the released action
+        id: report-step-2
         uses: ./
         with:
           policy: external
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
+      - name: Retain complete Fitness reports
+        id: fitness-reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
+          path: ${{ runner.temp }}/fitness-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REPORT_ARTIFACT_URL" ]; then
+            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi

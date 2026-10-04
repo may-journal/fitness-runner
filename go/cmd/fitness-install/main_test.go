@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
@@ -73,5 +74,51 @@ func TestHookRefusesOutsideRepository(t *testing.T) {
 	t.Setenv("GIT_DIR", filepath.Join(t.TempDir(), "missing"))
 	if status := runInstalled(t.TempDir(), distribution.Options{InstallHook: true}); status != 1 {
 		t.Fatalf("hook status %d", status)
+	}
+}
+
+func TestInstallReportsActionOutcomes(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
+	summary := filepath.Join(t.TempDir(), "summary")
+	t.Setenv("GITHUB_STEP_SUMMARY", summary)
+	bin := t.TempDir()
+	if status := runInstalled(bin, distribution.Options{InstallOnly: true}); status != 0 {
+		t.Fatalf("install-only status %d", status)
+	}
+	requireSummary(t, summary, "Verified Fitness binaries installed successfully.")
+	if status := runInstalled(bin, distribution.Options{}); status != 1 {
+		t.Fatalf("missing executable status %d", status)
+	}
+	requireSummary(t, summary, "❌ fitness-install")
+}
+
+func TestInstallLocalDoesNotWriteSummary(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "false")
+	summary := filepath.Join(t.TempDir(), "summary")
+	t.Setenv("GITHUB_STEP_SUMMARY", summary)
+	if status := runInstalled(t.TempDir(), distribution.Options{InstallOnly: true}); status != 0 {
+		t.Fatalf("status %d", status)
+	}
+	if _, err := os.Stat(summary); !os.IsNotExist(err) {
+		t.Fatalf("local command wrote a summary: %v", err)
+	}
+}
+
+func TestInstallFailureSurvivesSummaryError(t *testing.T) {
+	t.Setenv("GITHUB_ACTIONS", "true")
+	t.Setenv("GITHUB_STEP_SUMMARY", t.TempDir())
+	if status := run([]string{"--unknown"}); status != 1 {
+		t.Fatalf("status %d", status)
+	}
+}
+
+func requireSummary(t *testing.T, path, want string) {
+	t.Helper()
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(data), want) {
+		t.Fatalf("summary %q does not contain %q", data, want)
 	}
 }

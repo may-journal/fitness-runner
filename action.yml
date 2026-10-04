@@ -24,12 +24,14 @@ runs:
   using: composite
   steps:
     - name: Download the compiled Go installer
+      id: download
       shell: bash
       working-directory: ${{ runner.temp }}
       env:
         RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140
         ASSET: fitness-install-0.20261004.1140-${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
       run: |
+        printf 'FITNESS_FAILURE_REPORTED=false\n' >> "$GITHUB_ENV"
         curl -fsSL --retry 3 "$RELEASE_URL/$ASSET" -o "$ASSET"
         curl -fsSL --retry 3 "$RELEASE_URL/checksums.txt" -o "$ASSET.checksums"
         grep "  $ASSET$" "$ASSET.checksums" | shasum -a 256 -c -
@@ -44,3 +46,16 @@ runs:
         FITNESS_CHECKS: ${{ inputs.checks }}
         FITNESS_INSTALL_ONLY: ${{ inputs.install-only }}
       run: '"$FITNESS_EXECUTABLE" --github-action'
+    # Shell builtins also work when a consumer deliberately excludes Go from PATH.
+    - name: Report action outcome
+      if: ${{ always() }}
+      shell: bash
+      env:
+        REPORT_STATUS: ${{ steps.download.outcome == 'failure' && 'failure' || steps.install.outcome == 'failure' && 'failure' || steps.install.outcome }}
+        REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && steps.install.outcome == 'failure' }}
+      run: |
+        if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+          printf '::error::Fitness installation or execution failed; open the action logs for the failed operation and its cause.\n'
+          printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
+        fi
+        printf '### Fitness action: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

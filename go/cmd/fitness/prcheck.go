@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 	"os"
 	"strconv"
 	"strings"
@@ -15,17 +16,17 @@ import (
 func runPRCheck() int {
 	root, err := os.Getwd()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		report.Error("fitness pr-check", err)
 		return 1
 	}
 	ev, err := readEvent()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness pr-check: "+err.Error())
+		report.Error("fitness pr-check", err)
 		return 1
 	}
 	gh, err := newGHClient()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness pr-check: "+err.Error())
+		report.Error("fitness pr-check", err)
 		return 1
 	}
 	return prCheck(ev, gh, newBodyChecker(root))
@@ -36,18 +37,22 @@ func runPRCheck() int {
 func prCheck(ev ghEvent, gh githubAPI, c bodyChecker) int {
 	targets, err := prTargets(ev, gh)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "fitness pr-check: "+err.Error())
+		report.Error("fitness pr-check", err)
 		return 1
 	}
 	var summary strings.Builder
 	summary.WriteString("## PR checks\n\n")
 	failed := false
+	report := newTargetReport("pr-check", "pull")
 	for _, t := range targets {
 		errs := validatePR(t, gh, c)
 		failed = failed || len(errs) > 0
 		summary.WriteString(prReport(t.Number, errs))
+		report.add(t.Number, errs)
 	}
-	writeStepSummary(summary.String())
+	fmt.Fprintf(&summary, "\n%d PRs checked.\n", len(targets))
+	writeStepSummary(summary.String() + report.links())
+	report.emit()
 	fmt.Print(summary.String())
 	if failed {
 		fmt.Fprintln(os.Stderr, "One or more PR descriptions have violations.")
@@ -183,7 +188,7 @@ func prReport(n int, errs []string) string {
 func bulletList(errs []string) string {
 	var b strings.Builder
 	for _, e := range errs {
-		b.WriteString("- " + e + "\n")
+		b.WriteString("- " + report.EscapeMarkdown(e) + "\n")
 	}
 	return b.String()
 }

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -47,6 +49,7 @@ func TestHeadline(t *testing.T) {
 }
 
 func TestAnnotationLine(t *testing.T) {
+	annotationWorkspace(t)
 	cases := []struct {
 		name  string
 		check string
@@ -121,5 +124,22 @@ func TestEscaping(t *testing.T) {
 	}
 	if strings.Contains(line, "\n") || !strings.Contains(line, "%0A") {
 		t.Fatalf("newline not escaped: %q", line)
+	}
+}
+
+// Model a checkout explicitly instead of inheriting the CI host workspace.
+func annotationWorkspace(t *testing.T) {
+	t.Helper()
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("GITHUB_WORKSPACE", root)
+	for _, name := range []string{"go/x/README.md", "docs/checks.md"} {
+		path := filepath.Join(root, name)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte("fixture"), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }

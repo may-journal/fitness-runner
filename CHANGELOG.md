@@ -7,11 +7,25 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1159
+
+- Feat: report all workflow outcomes through native annotations, summaries, and complete overflow artifacts.
+- Fix: cover runner setup, issue checks, installer failures, and release commands while preserving exit codes.
+- Test: verify source paths, body findings, escaped output, summary limits, and workflow fallback coverage.
+- Fix: isolate report artifacts and failure markers across repeated workflow and action calls.
+- Test: model checkout fixtures with an explicit path instead of inheriting the host workspace.
+
 ### 2026.10.04.1140
 
 - Fix: speed up spelling scans by matching ignore patterns only on lines with the required markers.
 - Test: compare optimized masks with the original algorithm across dictionaries, random inputs, and fuzz cases.
 - Test: run the full candidate bundle before release and the full public action after publishing, keeping the timeout unchanged.
+
+### 2026.10.04.1119
+
+- Docs: require native GitHub annotations and job summaries across all workflows in ADR 0003.
+- Docs: link the reporting contract from architecture and workflow guides.
+- Docs: record reporting gaps, output limits, and checks needed for workflow adoption.
 
 ### 2026.10.04.1106
 

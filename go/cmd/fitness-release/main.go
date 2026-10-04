@@ -8,14 +8,32 @@ import (
 	"os"
 
 	"github.com/may-journal/fitness-runner/go/internal/release"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-func main() {
-	if err := run(os.Args[1:]); err != nil {
+func main() { os.Exit(command(os.Args[1:])) }
+
+func command(args []string) int {
+	operation := "fitness-release"
+	if len(args) > 0 {
+		operation += " " + args[0]
+	}
+	if err := run(args); err != nil {
+		reportFailure(operation, err)
+		return 1
+	}
+	report.Outcome(operation, "Completed successfully.")
+	return 0
+}
+
+func reportFailure(operation string, err error) {
+	if report.Enabled() {
+		report.Error(operation, err)
+	} else {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
 	}
 }
+
 func run(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("use build, smoke, verify-download, verify-tag, publish, or tag")
