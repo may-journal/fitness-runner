@@ -115,7 +115,6 @@ func TestMaterializeWritesTheWholeDirectory(t *testing.T) {
 }
 
 func TestMaterializeIdempotentAndRestoresMissingFiles(t *testing.T) {
-	t.Run("concurrent", testMaterializeConcurrent)
 	redirectCache(t)
 	dir := mustMaterialize(t)
 	// An existing file is trusted (the directory name is content-keyed) and
@@ -144,7 +143,7 @@ func assertSameDirs(t *testing.T, dirs []string, errs []error) {
 	}
 }
 
-func testMaterializeConcurrent(t *testing.T) {
+func TestMaterializeConcurrent(t *testing.T) {
 	redirectCache(t)
 	const writers = 8
 	dirs := make([]string, writers)

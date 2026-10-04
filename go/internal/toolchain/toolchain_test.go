@@ -43,7 +43,6 @@ func TestLabelAndLines(t *testing.T) {
 }
 
 func TestCleanEnvDropsGitHookVars(t *testing.T) {
-	t.Run("runner context", testCleanEnvDropsRunnerContext)
 	got := CleanEnv([]string{"PATH=/bin", "GIT_DIR=/repo/.git", "GIT_INDEX_FILE=/repo/.git/index", "GIT_AUTHOR_NAME=bot", "GOFLAGS=-mod=mod"})
 	want := []string{"PATH=/bin", "GIT_AUTHOR_NAME=bot", "GOFLAGS=-mod=mod"}
 	if !reflect.DeepEqual(got, want) {
@@ -51,7 +50,7 @@ func TestCleanEnvDropsGitHookVars(t *testing.T) {
 	}
 }
 
-func testCleanEnvDropsRunnerContext(t *testing.T) {
+func TestCleanEnvDropsRunnerContext(t *testing.T) {
 	got := CleanEnv([]string{"PATH=/bin", "FITNESS_CHANGED_FILES=a.md", "FITNESS_STAGED_FILES=a.md"})
 	if want := []string{"PATH=/bin"}; !reflect.DeepEqual(got, want) {
 		t.Errorf("CleanEnv = %v, want %v", got, want)

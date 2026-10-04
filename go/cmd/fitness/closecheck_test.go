@@ -45,7 +45,6 @@ func TestCloseCheckReopensAManualClose(t *testing.T) {
 }
 
 func TestCloseCheckMentionsTheClosingPRsAuthorAndMerger(t *testing.T) {
-	t.Run("skips app mentions", testCloseCheckSkipsAppMentions)
 	gh := &fakeGH{closers: map[int]closer{8: {Author: "bob", Merger: "carol"}}}
 	closeCheck(closedEvent(openChecklist, "completed", "carol"), gh)
 	if len(gh.reopened) != 1 {
@@ -56,7 +55,7 @@ func TestCloseCheckMentionsTheClosingPRsAuthorAndMerger(t *testing.T) {
 	}
 }
 
-func testCloseCheckSkipsAppMentions(t *testing.T) {
+func TestCloseCheckSkipsAppMentions(t *testing.T) {
 	gh := &fakeGH{closers: map[int]closer{8: {Author: "bob", Merger: "github-actions[bot]"}}}
 	closeCheck(closedEvent(openChecklist, "", "github-actions[bot]"), gh)
 	if !strings.Contains(gh.comments[8][0].Body, "cc @bob\n") {

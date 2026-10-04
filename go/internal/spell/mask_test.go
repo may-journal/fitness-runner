@@ -32,8 +32,6 @@ func assertSameMask(t *testing.T, text string) {
 }
 
 func TestMaskPatternEquivalence(t *testing.T) {
-	t.Run("randomized", testMaskPatternRandomizedEquivalence)
-	t.Run("embedded word lists", testMaskEmbeddedWordlistEquivalence)
 	samples := []string{
 		"", "\n", "word\n", "\nword", "plain prose without special marks",
 		"HTTPS://example.com/a\nbadword", "<name+tag@example.com>\r\nnext",
@@ -49,7 +47,7 @@ func TestMaskPatternEquivalence(t *testing.T) {
 	}
 }
 
-func testMaskPatternRandomizedEquivalence(t *testing.T) {
+func TestMaskPatternRandomizedEquivalence(t *testing.T) {
 	random := rand.New(rand.NewSource(175))
 	tokens := []string{"plain", "\n", "\r\n", " ", "\t", "@", "https://example.com", "[abc123def]", "\\xABCDE", "U+ABCD", "#ABCDEF", "0x0123face", "deadbeef", "λ", "\u2028", "name@example.com", "sha256-abcdefghijklmnopqrstuvwxyz0123456789"}
 	for range 500 {
@@ -61,7 +59,7 @@ func testMaskPatternRandomizedEquivalence(t *testing.T) {
 	}
 }
 
-func testMaskEmbeddedWordlistEquivalence(t *testing.T) {
+func TestMaskEmbeddedWordlistEquivalence(t *testing.T) {
 	for _, dictionary := range embeddedDicts {
 		t.Run(dictionary.name, func(t *testing.T) { assertSameMask(t, dictionary.data) })
 	}

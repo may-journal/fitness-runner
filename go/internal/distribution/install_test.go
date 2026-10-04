@@ -42,7 +42,6 @@ func TestRepairRetainsOldGeneration(t *testing.T) {
 }
 
 func TestDamagedArchiveCache(t *testing.T) {
-	t.Run("concurrent install", testConcurrentInstall)
 	f := fixture(t)
 	bin := installed(t, f)
 	writeTestFile(t, filepath.Join(filepath.Dir(bin), "archive.tar.gz"), "corrupt")
@@ -60,7 +59,7 @@ func TestOfflineEmbeddedHashes(t *testing.T) {
 	installed(t, f)
 }
 
-func testConcurrentInstall(t *testing.T) {
+func TestConcurrentInstall(t *testing.T) {
 	f := fixture(t)
 	var group sync.WaitGroup
 	for range 4 {

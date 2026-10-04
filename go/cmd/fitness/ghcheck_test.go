@@ -373,8 +373,6 @@ func TestPlanCheckEditsAPassAfterAPass(t *testing.T) {
 }
 
 func TestPlanCheckPostsAPassAfterAFail(t *testing.T) {
-	t.Run("posts fail after pass", testPlanCheckPostsAFailAfterAPass)
-	t.Run("labels verdict", testPlanCheckLabelsTheVerdict)
 	gh := &fakeGH{}
 	runPlan(gh, 4, "one", map[string]string{"cspell": "unknown word"})
 	runPlan(gh, 4, "two", nil)
@@ -384,7 +382,7 @@ func TestPlanCheckPostsAPassAfterAFail(t *testing.T) {
 	}
 }
 
-func testPlanCheckPostsAFailAfterAPass(t *testing.T) {
+func TestPlanCheckPostsAFailAfterAPass(t *testing.T) {
 	gh := &fakeGH{}
 	runPlan(gh, 4, "one", nil)
 	runPlan(gh, 4, "two", map[string]string{"cspell": "unknown word"})
@@ -414,7 +412,7 @@ func assertLabels(t *testing.T, gh *fakeGH, n int, after string, want ...string)
 	}
 }
 
-func testPlanCheckLabelsTheVerdict(t *testing.T) {
+func TestPlanCheckLabelsTheVerdict(t *testing.T) {
 	gh := &fakeGH{issues: map[int]fakeIssue{4: {labels: []string{"Plan"}}}}
 	runPlan(gh, 4, "one", map[string]string{"cspell": "a"})
 	assertLabels(t, gh, 4, "a fail", "Plan", "fitness", "fitness-invalid")

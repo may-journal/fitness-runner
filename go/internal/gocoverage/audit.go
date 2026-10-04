@@ -135,30 +135,6 @@ func identicalGroups(group testGroup, previous []testGroup) []string {
 	return findings
 }
 
-func duplicateFailures(groups []testGroup) []string {
-	var failures []string
-	for i, group := range groups {
-		if !comparableCoverage(group) {
-			continue
-		}
-		for _, other := range groups[:i] {
-			if sameCoverage(group, other) {
-				failures = append(failures, fmt.Sprintf("duplicate coverage: %s and %s claim the same %d blocks; combine their assertions into one top-level test", other.Name, group.Name, len(group.Covered)))
-			}
-		}
-	}
-	sort.Strings(failures)
-	return failures
-}
-
-func comparableCoverage(group testGroup) bool {
-	return group.Stable && len(group.Covered) > 0
-}
-
-func sameCoverage(a, b testGroup) bool {
-	return comparableCoverage(b) && maps.Equal(a.Covered, b.Covered)
-}
-
 func (r runner) verifyBaseline(pkg string, baseline Profile, groups []testGroup) ([]testGroup, error) {
 	repeated, err := r.measure(pkg, "^$")
 	if err != nil {

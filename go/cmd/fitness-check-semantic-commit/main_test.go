@@ -79,7 +79,6 @@ func withoutMessage(t *testing.T) {
 }
 
 func TestRunValidatesProvidedMessage(t *testing.T) {
-	t.Run("only first line", testRunValidatesOnlyFirstLine)
 	withMessage(t, "feat(api): add endpoint")
 	res := runClean(t, t.TempDir())
 	if !res.Ok {
@@ -99,7 +98,7 @@ func TestRunValidatesMessageArg(t *testing.T) {
 	}
 }
 
-func testRunValidatesOnlyFirstLine(t *testing.T) {
+func TestRunValidatesOnlyFirstLine(t *testing.T) {
 	withMessage(t, "chore(scope): description\n\nMade-with: Cursor")
 	res := runClean(t, t.TempDir())
 	if !res.Ok {

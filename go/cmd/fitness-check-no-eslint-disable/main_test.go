@@ -68,7 +68,6 @@ func TestRunPassesOnCleanDirectory(t *testing.T) {
 }
 
 func TestRunFailsOncePerDirectiveForm(t *testing.T) {
-	t.Run("judges generated directories", testRunSkipsNoDirectory)
 	dir := t.TempDir()
 	write(t, dir, "file.ts", "/* eslint-disable */\n")
 	write(t, dir, "block.ts", "/* eslint-disable no-console */\n")
@@ -125,7 +124,7 @@ func TestRunSkipsWhenNoSourceFiles(t *testing.T) {
 	}
 }
 
-func testRunSkipsNoDirectory(t *testing.T) {
+func TestRunSkipsNoDirectory(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "node_modules/pkg/index.js", "/* eslint-disable */\n")
 	write(t, dir, "dist/out.js", "/* eslint-disable */\n")

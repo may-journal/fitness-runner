@@ -7,11 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.04.1331
+### 2026.10.04.1403
 
-- Fix: fail Go coverage checks when stable top-level tests claim the same nonempty coverage blocks.
-- Test: consolidate Fitness's duplicate test groups while retaining their assertions as named subtests.
-- Docs: keep partial overlap as a review signal and reserve failure for exact duplicate coverage.
+- Fix: reject named test helpers passed through `t.Run` so wrappers cannot hide independently measured tests.
+- Test: restore separate tests after verifying equal coverage does not prove their assertions or inputs are redundant.
+- Docs: retain exact and partial overlap as review signals instead of treating path equality as source duplication.
 
 ### 2026.10.04.1309
 

@@ -146,8 +146,6 @@ func TestExportRequiresExistingParent(t *testing.T) {
 	}
 }
 func TestSourcePathsAreRelativeToModule(t *testing.T) {
-	t.Run("directory aliases", testSourcePathsResolveDirectoryAliases)
-	t.Run("relative module", testSourcePathsAcceptRelativeModule)
 	root := t.TempDir()
 	write(t, root, "api/api.go", "package api\n")
 	got, err := sourceFiles(root, []Package{{ImportPath: "m", Dir: root, GoFiles: []string{"entry.go"}}, {ImportPath: "m/api", Dir: filepath.Join(root, "api"), GoFiles: []string{"api.go"}}})
@@ -160,7 +158,7 @@ func TestSourcePathsAreRelativeToModule(t *testing.T) {
 	}
 }
 
-func testSourcePathsResolveDirectoryAliases(t *testing.T) {
+func TestSourcePathsResolveDirectoryAliases(t *testing.T) {
 	root := t.TempDir()
 	link := filepath.Join(t.TempDir(), "alias")
 	if err := os.Symlink(root, link); err != nil {
@@ -176,7 +174,7 @@ func testSourcePathsResolveDirectoryAliases(t *testing.T) {
 	}
 }
 
-func testSourcePathsAcceptRelativeModule(t *testing.T) {
+func TestSourcePathsAcceptRelativeModule(t *testing.T) {
 	root := t.TempDir()
 	t.Chdir(root)
 	got, err := sourceFiles(".", []Package{{ImportPath: "m", Dir: root, GoFiles: []string{"main.go"}}})

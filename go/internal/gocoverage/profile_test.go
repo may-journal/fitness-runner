@@ -83,21 +83,6 @@ func TestUnstableAuditIsNotRedundancy(t *testing.T) {
 	}
 }
 
-func TestDuplicateCoverageFailsDeterministically(t *testing.T) {
-	b := Block{File: "m/a.go", Statements: 1}
-	c := Block{File: "m/b.go", Statements: 1}
-	groups := []testGroup{
-		{Name: "second", Stable: true, Covered: map[Block]bool{b: true}},
-		{Name: "first", Stable: true, Covered: map[Block]bool{b: true}},
-		{Name: "partial", Stable: true, Covered: map[Block]bool{b: true, c: true}},
-		{Name: "unstable", Stable: false, Covered: map[Block]bool{b: true}},
-		{Name: "empty", Stable: true, Covered: map[Block]bool{}},
-	}
-	failures := duplicateFailures(groups)
-	if len(failures) != 1 || !strings.Contains(failures[0], "second and first claim the same 1 blocks") {
-		t.Fatal(failures)
-	}
-}
 func TestAuditSubtractsSharedSetup(t *testing.T) {
 	shared := Block{File: "m/a.go", StartLine: 1, Statements: 1}
 	body := Block{File: "m/a.go", StartLine: 2, Statements: 1}

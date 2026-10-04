@@ -42,7 +42,7 @@ The audit runs each top-level test and shared setup twice with fresh profiles. S
 
 Reports show test names, elapsed time including setup, covered blocks, unique blocks, and identical coverage sets. Unstable sets are flagged and excluded from overlap advice. Tests with no measured production coverage get a separate finding and do not count as identical coverage.
 
-The audit always runs. Two stable top-level tests that claim exactly the same nonempty set of Go coverage blocks fail the check. Combine their assertions under one top-level test; named subtests can preserve the individual cases. Partial overlap remains a review signal because distinct paths commonly share setup and control flow; the legacy `--audit` flag remains accepted.
+The audit always runs. Exact and partial overlap remain review signals because different inputs and assertions can legitimately execute the same blocks. A top-level test fails when it passes a named helper to `t.Run`; this prevents hiding an independently measured test behind a parent. The legacy `--audit` flag remains accepted.
 
 ## Source map
 

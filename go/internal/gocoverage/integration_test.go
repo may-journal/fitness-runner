@@ -48,7 +48,6 @@ func execute(t *testing.T, root string, options Options) Report {
 	return report
 }
 func TestEntryCreditsChildrenAndReportsUntested(t *testing.T) {
-	t.Run("concurrent runs do not write to repo", testConcurrentRunsDoNotWriteToRepo)
 	root := fixture(t)
 	write(t, root, "unused/unused.go", "package unused\nfunc Value() int { return 42 }\n")
 	report := execute(t, root, Options{})
@@ -81,7 +80,7 @@ func TestEntryFailureCannotHideInFolderTotal(t *testing.T) {
 		t.Fatal(report.Failures)
 	}
 }
-func TestExactOverlapFailsDespiteDifferentAssertions(t *testing.T) {
+func TestOverlapPreservesDifferentAssertions(t *testing.T) {
 	root := fixture(t)
 	write(t, root, "service/service_test.go", `package service
 import "testing"
@@ -89,7 +88,7 @@ func TestOne(t *testing.T) { if Value(1)!=2 { t.Fatal("one") } }
 func TestTwo(t *testing.T) { if Value(2)!=3 { t.Fatal("two") } }
 `)
 	report := execute(t, root, Options{Audit: true})
-	if len(report.Failures) != 1 || !strings.Contains(report.Failures[0], "duplicate coverage:") {
+	if len(report.Failures) != 0 {
 		t.Fatal(report.Failures)
 	}
 	findings := strings.Join(report.Findings, "\n")
@@ -97,6 +96,7 @@ func TestTwo(t *testing.T) { if Value(2)!=3 { t.Fatal("two") } }
 		t.Fatal(findings)
 	}
 }
+
 func TestCompiledChildCoverage(t *testing.T) {
 	root := fixture(t)
 	write(t, root, "main_test.go", `package main
@@ -137,7 +137,7 @@ func TestTestFailureIsAnError(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func testConcurrentRunsDoNotWriteToRepo(t *testing.T) {
+func TestConcurrentRunsDoNotWriteToRepo(t *testing.T) {
 	root := fixture(t)
 	before := files(t, root)
 	done := make(chan error, 2)

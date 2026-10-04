@@ -100,12 +100,16 @@ func (r *Report) append(other Report) {
 }
 
 func (r runner) addAudit(report *Report, packages []Package, export bool) error {
+	wrapperIssues, err := namedWrapperFailures(packages)
+	if err != nil {
+		return err
+	}
+	report.Failures = append(report.Failures, wrapperIssues...)
 	groups, err := r.audit(packages)
 	if err != nil {
 		return err
 	}
 	report.Findings = overlap(groups)
-	report.Failures = append(report.Failures, duplicateFailures(groups)...)
 	if export {
 		claims := claimMap(groups)
 		claims.Module = r.label
