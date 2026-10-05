@@ -6,7 +6,7 @@ relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
 
 Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need tools such as Go, Node, or SwiftLint.
 
-The examples pin `go/v0.20261004.1140` and run all checks in external mode. The earlier external release requires a check list; this release makes it optional.
+The pinned examples use `go/v0.20261004.1140` and run all checks in external mode. [Install latest](#install-latest) follows the current published release. The earlier external release requires a check list; this release makes it optional.
 
 ## Download the Go installer
 
@@ -29,6 +29,31 @@ For another host, replace `linux-amd64` in the asset URL, filename, and later co
 | Linux, ARM 64-bit | `linux-arm64` |
 | macOS, Intel | `darwin-amd64` |
 | macOS, Apple silicon | `darwin-arm64` |
+
+## Install latest
+
+This setup downloads the current published installer and verifies its checksum before installing it. It needs authenticated `gh` and `shasum`, with no Go compiler. Choose your platform from the table above; the example uses a Mac with Apple silicon.
+
+The default destination is `$HOME/.local/share/fitness/fitness-install`. Set `FITNESS_INSTALL_DIR` before running the block to use another directory. The installer keeps a stable filename as releases change; the second command block runs it from the consumer repo root.
+
+```sh
+(
+set -e
+FITNESS_PLATFORM=darwin-arm64
+FITNESS_RELEASE=$(gh release view --repo may-journal/fitness-runner --json tagName --jq .tagName)
+FITNESS_INSTALL_DIR=${FITNESS_INSTALL_DIR:-"$HOME/.local/share/fitness"}
+FITNESS_SETUP=$(mktemp -d)
+cd "$FITNESS_SETUP"
+gh release download "$FITNESS_RELEASE" --repo may-journal/fitness-runner --pattern "fitness-install-*-$FITNESS_PLATFORM" --pattern checksums.txt
+grep "  fitness-install-.*-$FITNESS_PLATFORM$" checksums.txt | shasum -a 256 -c - && chmod +x fitness-install-*-"$FITNESS_PLATFORM" && mkdir -p "$FITNESS_INSTALL_DIR" && mv fitness-install-*-"$FITNESS_PLATFORM" "$FITNESS_INSTALL_DIR/fitness-install"
+)
+```
+
+```sh
+"${FITNESS_INSTALL_DIR:-$HOME/.local/share/fitness}/fitness-install" --version latest
+```
+
+Each invocation resolves the latest release online, verifies the bundle, and reuses its cache. Failed lookup or verification fails the command. Rerun setup to refresh the installer itself.
 
 ## Run checks
 

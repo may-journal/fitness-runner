@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.04.1955
+
+- Docs: centralize verified latest installer setup so consumer repositories can link to one maintained guide.
+- Docs: support a custom installation directory with a stable executable path across releases.
+- Docs: explain that latest release lookup needs network access even when its bundle is cached.
+
 ## 1.0.1
 
 - Fix: installer: expose verified bundle tools to hooks ([#193](https://github.com/may-journal/fitness-runner/issues/193)) ([fc22abc](https://github.com/may-journal/fitness-runner/commit/fc22abc5ef7cdba5cde213ca1a3a3dca1f54e1ac))
