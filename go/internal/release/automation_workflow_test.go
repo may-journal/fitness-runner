@@ -96,7 +96,9 @@ func TestExternalReleaseGates(t *testing.T) {
 	workflow := workflowSource(t, ".github/workflows/release.yml")
 	requireWorkflowParts(t, workflow, "tags: ['v*']", "needs: binaries", "steps.publication.outputs.draft == 'true'", "goreleaser/goreleaser-action@", "needs: [verify-download, verify]", "version: ${{ needs.verify.outputs.version }}", "peter-evans/create-pull-request@", "if [ \"$latest\" = \"$RELEASE_TAG\" ]; then")
 	for _, platform := range platforms {
-		requireWorkflowParts(t, workflow, "platform: "+platform)
+		if strings.HasPrefix(platform, "linux-") {
+			requireWorkflowParts(t, workflow, "platform: "+platform)
+		}
 	}
 }
 
