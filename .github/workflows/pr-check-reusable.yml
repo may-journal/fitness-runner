@@ -30,6 +30,7 @@ jobs:
     # pull_request path here; other repos (caller or required workflow) run it.
     if: github.repository != 'may-journal/fitness-runner'
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
