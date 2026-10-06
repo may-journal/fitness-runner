@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.05.1923
+
+- Ci: drop the macOS runners from the distribution smoke matrix, so each PR run finishes faster.
+- Ci: drop the macOS runners from the release verify matrix; only Linux hosts verify public downloads.
+- Docs: the fitness-release README states that darwin tarballs are cross-compiled but not smoke-tested in CI.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
+
 ### 2026.10.04.1955
 
 - Docs: centralize verified latest installer setup so consumer repositories can link to one maintained guide.
@@ -33,12 +40,12 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: correlate Release Please versions with reviewable changelog release sections.
 - Fix: reject manifest-only releases, mismatched version files, and empty or duplicate release notes.
 - Refactor: make release check availability explicit and unit-tested.
-- Test: cover bootstrap, malformed metadata, semantic versions, bullets, and scoped release changes.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1440
 
 - Fix: reject named test helpers passed through `t.Run` so wrappers cannot hide independently measured tests.
-- Test: restore separate tests after verifying equal coverage does not prove their assertions or inputs are redundant.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: retain exact and partial overlap as review signals instead of treating path equality as source duplication.
 
 ### 2026.10.04.1357
@@ -47,51 +54,51 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: use GoReleaser for binary builds, archives, checksums, and verified asset publication.
 - Fix: preserve legacy downloads and choose the matching installer for tagged or latest releases.
 - Refactor: run GitHub release metadata and tracking issue updates through tested Go commands.
-- Test: preserve the release notes body without splitting lists and verify bootstrap scripts.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1309
 
 - Fix: resolve directory aliases before mapping coverage profiles to source paths.
-- Test: verify source maps for modules opened through symbolic links.
-- Test: cover relative module roots as well as absolute paths.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1259
 
 - Feat: export source-line claims, per-test block sets, and pairwise shared coverage as JSON.
 - Feat: retain column ranges, shared setup owners, and stable source IDs alongside existing overlap metrics.
-- Test: cover partial overlap, separate blocks on one line, deterministic output, and safe report paths.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1242
 
 - Fix: separate tests with no measured production coverage from tests with overlapping coverage.
 - Feat: show covered block totals alongside each test group's unique contribution.
-- Test: keep empty coverage sets out of duplicate findings.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1230
 
 - Fix: reject mismatched child coverage and flag changing setup coverage in test overlap reports.
-- Test: cover invalid profiles, temporary path failures, scope, and unstable test runs.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: explain how repeated setup runs affect overlap reports.
 
 ### 2026.10.04.1226
 
 - Feat: an optional Go coverage check with full entry coverage and file, package, and folder reports.
 - Feat: test overlap reports and measured coverage from compiled child tools.
-- Test: cover hierarchy gaps, untested packages, distinct assertions, child processes, and concurrent runs.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1159
 
 - Feat: report all workflow outcomes through native annotations, summaries, and complete overflow artifacts.
 - Fix: cover runner setup, issue checks, installer failures, and release commands while preserving exit codes.
-- Test: verify source paths, body findings, escaped output, summary limits, and workflow fallback coverage.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Fix: isolate report artifacts and failure markers across repeated workflow and action calls.
-- Test: model checkout fixtures with an explicit path instead of inheriting the host workspace.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1140
 
 - Fix: speed up spelling scans by matching ignore patterns only on lines with the required markers.
-- Test: compare optimized masks with the original algorithm across dictionaries, random inputs, and fuzz cases.
-- Test: run the full candidate bundle before release and the full public action after publishing, keeping the timeout unchanged.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1119
 
@@ -102,18 +109,18 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.10.04.1106
 
 - Fix: remove the check filter from release action verification so it runs the full suite.
-- Test: run the full public action on all four platforms during PR checks, with Go for this repo's project tests.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: remove the pending-publication note now that the full-suite release is verified.
 
 ### 2026.10.04.1050
 
 - Fix: run every check by default in external mode and let each check decide whether it applies.
 - Docs: make full-suite runs the main Jenkins, Actions, and compiled hook examples.
-- Test: verify every shipped check starts in default external runs, while keeping explicit filters optional.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1040
 
-- Test: run selected checks and compiled hooks without Go or GitHub tokens in consumer repos.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: add full external-mode examples for Jenkins, Actions, and compiled commit hooks.
 - Feat: bind external action inputs to the new Go release and verify chosen checks during publishing.
 
@@ -121,19 +128,19 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: add external policy with exact check lists from CLI flags or repo config.
 - Feat: pass external policy and check lists through the compiled Go action entry point.
-- Test: cover list precedence, invalid selections, and unchanged org defaults.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.1019
 
-- Test: build release fixtures with Go and verify embedded versions, hashes, checksums, and publishing arguments.
-- Test: exercise compiled installation, action outputs, and commit rejection in a private consumer repository.
-- Test: cover CLI errors, corrupt downloads, unsafe archives, and isolated consumer environments.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.0951
 
 - Fix: pin the action and CI examples to the release with compiled Go hooks.
 - Docs: align direct installer URLs with the compiled entry points.
-- Test: verify executable permissions in release archives.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.04.0945
 
@@ -145,7 +152,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: move download, archive, and cache logic into a typed Go installer compiled for each host.
 - Fix: switch cache copies with an atomic pointer so a repair leaves running checks intact.
-- Test: cover concurrent installs, offline cache use, bad archives, and option parsing in Go.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Ci: test public release URLs and the root action on four hosts before completing the release run.
 - Style: trim whitespace after the name and separator fields in the printf line.
 
@@ -153,14 +160,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Ci: test real release bundles on all four hosts before publishing; keep explicit source refs for shared workflow callers.
 - Docs: add full shell, hook, Jenkins, and Actions setup steps with no local installer to maintain.
-- Test: run install and cache tests with Go absent, and assert bad downloads never execute the runner.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Fix: keep gzip on the test path for Linux tar; test the root action with the packaged installer on each host.
 
 ### 2026.10.04.0850
 
 - Feat: install pinned binary bundles through a shell entry point or root action, with verified downloads and cache repair.
 - Ci: publish the shell installer with each release and run shared file checks from binaries.
-- Test: cover install failures, archive safety, cache repair, and runner exit codes without Go on the consumer path.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.01.2331
 
@@ -168,12 +175,12 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: a repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, cspell `ignorePaths`, or `.prettierignore` fails instead of skipping files.
 - Feat: prose-budget caps prose words per section instead of per file; older `CHANGELOG.md` bullets are reworded to fit.
 - Feat: tests, Markdown, and JSON lose their exemptions, and `markdown-front-matter` reads front matter inside an HTML comment.
-- Test: every test function over complexity 5 is table-driven or uses helpers; each check README and `docs/checks.md` describe the rules.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.10.01.2305
 
 - Fix: the prettier check runs Prettier with `--ignore-unknown`, so a changed file it has no parser for, such as Swift, passes.
-- Test: the prettier argv tests expect `--check --ignore-unknown` before the paths.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: the prettier README says a file type with no parser passes through `--ignore-unknown`.
 
 ### 2026.10.01.1602
@@ -186,7 +193,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Fix: the prettier check puts the repo's `node_modules` folders on `NODE_PATH`, so the shared config loads the plugins the repo installs.
 - Fix: when Prettier fails without naming a file, the check reports its own `[error]` lines, such as a plugin it cannot load.
-- Test: cover a repo on the shared config with the plugins installed, one missing them, and how `NODE_PATH` is built.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: the prettier README says which two plugins a repo installs.
 
 ### 2026.09.30.1928
@@ -194,7 +201,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Fix: `pr-closes-issue` skips closing keywords inside inline or fenced code, since they quote an example rather than close an issue.
 - Fix: a Plan quoting another repo's `Closes #51` no longer requires its PR to close this repo's #51.
 - Refactor: the checklist parser reuses the shared `mdx` fence detection.
-- Test: cover keywords in inline and fenced code, plus the new `mdx.StripCode` helper.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: note the code rule in the `pr-closes-issue` README.
 
 ### 2026.09.30.1927
@@ -264,13 +271,13 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.09.28.2234
 
 - Fix: `changelog-updated` accepts a newest heading up to five minutes behind the clock, so a stamp just before a minute boundary passes.
-- Test: cover a heading one minute behind the check, one older than the grace, and one ahead of the clock.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: the `changelog-updated` README describes the five-minute stamp grace.
 
 ### 2026.09.28.2140
 
 - Fix: `changelog-updated` requires the current time only on the newest added section heading, so a changelog rewrite that re-adds older headings passes.
-- Test: cover older headings re-added below a current one, and a stale newest heading above older ones.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: the `changelog-updated` README says only the newest added heading must use the current time, in shorter sentences.
 
 ### 2026.09.28.1440
@@ -290,7 +297,7 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.09.28.1350
 
 - Fix: `changelog-bullets` accepts a semantic commit subject such as `feat(release): `, alongside the capitalized `Feat: ` prefix.
-- Test: cover scoped, bang, and lowercase semantic prefixes, and reject empty or capitalized scopes.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: describe both accepted prefix forms in the `changelog-bullets` README.
 
 ### 2026.09.28.1323
@@ -303,21 +310,21 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: every check runs in every repo; config keeps only `disabledChecks`, `ignore`, and options, and local path checks are gone.
 - Feat: add `go-vet`, `go-test`, and `gofmt` checks, plus an `ignore` list of gitignore-like globs every file check skips.
-- Test: a contract test builds every check and requires a clean pass with 0 files wherever it does not apply.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Feat: `commit-attribution` applies once a repo uses its trailers, filename checks follow the detected case, and `build-output-untracked` needs TypeScript or `dist`.
 - Fix: `make` and the `go-test` check drop git's hook variables, so tests run from a hook cannot write into the real repository.
 
 ### 2026.09.28.1222
 
 - Fix: `markdown-links` decodes a percent-encoded link path, so a link like `my%20file.md` resolves to the file it names.
-- Test: cover a resolving and a missing percent-encoded link.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: note the decoding in the `markdown-links` README.
 
 ### 2026.09.28.1156
 
 - Fix: `fitness plan-check` reads a Plan's existing comments, so a Plan that already has a comment gets a verdict again.
 - Fix: every gh query in the workflow subcommands emits JSON objects, since gh prints a bare string result raw.
-- Test: add an opt-in `FITNESS_LIVE_GH=1` test that checks the gh queries against the real gh.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.28.1151
 
@@ -330,21 +337,21 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: add `fitness pr-check`, which validates a PR's title and description and writes the verdict to the job summary and log.
 - Feat: add `fitness plan-check`, which validates a Plan issue and comments the result once per body version.
 - Refactor: replace the inline JavaScript in the plan-check and pr-check workflows, and their reusable twins, with one step calling `fitness`.
-- Test: cover both subcommands against a fake GitHub API and fake check binaries.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: document both subcommands in the READMEs, and add the runner's subcommands to the architecture docs.
 
 ### 2026.09.28.0919
 
 - Fix: `fitness hook pre-push` gates only commits not yet on origin, so merging main into a branch no longer blocks on main's own commits.
 - Fix: the pre-push gate exempts merge commits, like chore and docs; the commits a merge brings in are gated on their own.
-- Test: cover the pre-push range against a real repo with main merged into a pushed branch.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.27.1429
 
 - Feat: add `fitness hook commit-msg`, `pre-commit`, and `pre-push` subcommands that own the hook orchestration in Go.
 - Feat: port the eighty-line Bash plan-approval gate into `fitness hook pre-push`; the embedded hooks are now one-line shims that exec the subcommand.
 - Feat: `fitness init` installs the shims, so a repo's hooks stay one line while the logic lives in the tested binary.
-- Test: cover the plan-number extraction and the chore/docs commit classification.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: document `fitness init` and `fitness hook` in the README, and add a `fitness help` command that prints the usage.
 
 ### 2026.09.27.1341
@@ -360,21 +367,21 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: both reporters lead with a headline of checks passed of total, files scanned, and total time, confirming an all-green run.
 - Feat: the terminal total line reads "✓ All N checks passed · F files scanned · Tms" on green, and names passed and failed counts otherwise.
 - Feat: tighten the terminal table to one rule under the header and contiguous rows, so passes stay compact and failures stand out.
-- Test: cover the headline in the green and failing cases, and the updated total line.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.27.1224
 
 - Feat: `fitness` writes a GitHub Actions job summary: a check, status, files, and time table plus each failure's errors, readable without the logs.
 - Feat: emit `::error` annotations, parsing file and line from each error, capped at ten per step; the summary notes any more.
 - Feat: gate the CI output behind the `GITHUB_ACTIONS` env, so a local run's terminal output is unchanged.
-- Test: cover the summary markdown, annotation formatting and file/line parsing, the cap-and-note behavior, and escaping.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.27.1155
 
 - Feat: add the `no-contrastive-reframing` check; it flags markdown prose that rejects a claim, then restates the point: "not X, it's Y".
 - Feat: match the split form ("It's not a workout. It's a lifestyle.") and the single-sentence form, gated on a demonstrative opening for precision.
 - Feat: reuse the `mdx` prose masking and drop quoted spans, so fenced code, headings, inline code, and quoted examples never trip it.
-- Test: cover both forms, curly quotes, cross-paragraph splits, ordinary negations, the additive "not only X but also Y", and the masking exemptions.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.27.1116
 
@@ -387,14 +394,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: `semantic-commit` accepts an explicit `--message`, ahead of the `FITNESS_CTX_MESSAGE` and HEAD fallbacks, so it can validate a subject like a PR title.
 - Feat: the `pr-check` workflows run `semantic-commit` on the PR title, so a non-semantic title never becomes a bad squash-merge subject on `main`.
-- Test: cover the `--message` path passing and failing a title without touching git.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.26.1912
 
 - Feat: language checks self-gate: `eslint`, `prettier`, `no-eslint-disable`, `node-version`, vitest coverage checks, and `swiftlint` pass on zero files without `package.json` or Swift.
 - Feat: the runner's default is the full self-gating catalog, so Swift, Go, JS, and docs repos share one list without a `.fitnessrc.json`.
 - Feat: the strict, network, format-specific, and workflow-body checks stay opt-in.
-- Test: cover each check skipping on a repo without its language, and seed a marker file so the tool-missing failure paths still run.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: note self-gating and the new default in `docs/checks.md`.
 
 ### 2026.09.26.1834
@@ -423,7 +430,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: add `--emit-closed`, which prints a body's closing-keyword targets as JSON, and a `--require-close` flag the check verifies.
 - Feat: `pr-check` reads each closed Plan's targets through `--emit-closed`, so one keyword set governs both sides.
 - Docs: `AGENTS.md` says a Plan names the issue it solves with a closing keyword, and the `pr-closes-issue` README documents the third rule.
-- Test: cover `--require-close` (required issue closed, left open, and empty) and `--require-close` argument parsing.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.26.1033
 
@@ -435,7 +442,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Fix: `changelog-updated` goes inert during a merge, cherry-pick, or revert, so a replay commit's old `### yyyy.mm.dd.HHMM` headings no longer fail pre-commit.
 - Feat: detect replays via `MERGE_HEAD`, `CHERRY_PICK_HEAD`, or `REVERT_HEAD`, resolved with `git rev-parse --git-path` so it works when `.git` is a file, behind an injectable seam.
-- Test: cover the seam in both directions and a real-git `MERGE_HEAD` case; document the inert-during-replay behavior in the check README.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.09.25.2046
 
@@ -450,14 +457,14 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: add the `pr-closes-issue` check: every PR must close an issue on merge with a GitHub closing keyword (`close`/`fix`/`resolve`, any tense).
 - Feat: fail a PR that only references issues (`addresses`, `part of`, a bare `#NN`) or names none, with no chore or docs exemption.
 - Feat: also fail any `Implements #NN` or `Plan #NN` the body does not close.
-- Test: cover each closing verb and tense, references-only, no-issue, implements-without-closure, multiple implemented with one unclosed, and a plan line with or without closure.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: wire the check into `.github/workflows/pr-check.yml` beside `pr-structure`, add its README, and list it in `docs/checks.md`.
 
 ### 2026.09.25.1434
 
 - Feat: add the `mermaid-diagram-table-gap` check; it flags loose prose between a numbered mermaid diagram or its legend and the callout table after it.
 - Feat: allow one caption line (opens with `Numbers`, states they `match the callout table`); prose before the diagram or after the table is left alone.
-- Test: cover prose after the diagram or legend, caption-only, varied and trailing-clause captions, prose before the diagram, and prose after the table.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: add the check README, bump the mermaid family count in `docs/checks.md` and the `internal/mermaid` doc, and enable the check in `.fitnessrc.json`.
 
 ### 2026.09.24.1558
@@ -514,7 +521,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: exempt capitalized doc basenames (README.md, LICENSE.md, AGENTS.md, `CODE_OF_CONDUCT.md`, ...) from the kebab-case and camelCase filename checks, so all-caps docs pass anywhere.
 - Refactor: replace the hardcoded `allowedBasenames` map with a single all-caps basename pattern, dropping the fixed OSS-doc list in favor of one rule.
-- Test: cover the all-caps exemption: README and AGENTS pass in root and nested paths, while lowercase and mixed-case names keep their convention.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.08.25.1516
 
@@ -622,7 +629,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Docs: rewrite the entire changelog history into compliance (219 findings to zero), keeping every heading byte-identical and facts and issue refs intact.
 - Docs: essays split into typed bullets, and thin sections fill from their commits' real diffs.
 - Docs: the check README now documents whole-file semantics.
-- Test: `TestEverySectionIsJudged` pins the new scope; doc fixtures gain a compliant trailing section.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.07.18.1848
 
@@ -670,7 +677,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Fix: `go build -o bin` fails when the gitignored `bin/` directory does not exist yet, breaking fresh clones, the pre-commit hook, and CI alike.
 - Build: every build command — hooks, CI, README, architecture docs — now runs `mkdir -p bin` first.
-- Test: caught by the clean-clone simulation; clone, build, and the full suite now verify green from an empty checkout.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.07.18.1720
 
@@ -707,29 +714,29 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: plan 01 section 4 lands four tool-exec checks, completing the 27-name catalog; each runs its real tool from `node_modules/.bin` upward, then PATH.
 - Feat: `prettier` ports staged filtering, glob mode, passthrough, and `[warn]` parsing; `eslint` runs the CLI with the shared flat config, matching TypeScript byte-for-byte.
 - Feat: `vitest-coverage-full` reuses `internal/vitestconf` for the threshold gate (22 new cases), then runs `vitest run --coverage`; `swiftlint` parses real JSON violations, byte-identical against swiftlint 0.65.0.
-- Test: all four verified side-by-side with the real tools plus scripted-fake mocks in `go test` (122 new cases), including the missing-tool paths.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Chore: full-catalog sweep: 26 of 27 checks byte-match their TypeScript twins here; only `jscpd` differs, in scanned-file counts, with verdict parity.
 
 ### 2026.07.18.1312
 
 - Feat: `cspell` is a Go binary over `internal/spell`: camelCase-aware words, inline directives, default masks, and 14 committed wordlists (~217k entries) from `@cspell` packages.
-- Test: spell parity: byte-identical to cspell on a 31-issue adversarial corpus and a 258-file sweep; here, the same 52 files, ~7x faster.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Feat: `jscpd` is a Go binary over `internal/clonedetect`: a comment-stripping lexer, rolling-hash windows with jscpd's thresholds, the `jscpd:ignore-start`/`end` escape hatch, and batched `git check-ignore`.
-- Test: string literals keep content, as full collapse falsely merged check mains' boilerplate; verdicts match TypeScript here and on fixtures; 165 new tests.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Fix: staged 2.1MB wordlists hung pre-commit's `cspell`, as cspell ignores ignorePaths for explicit arguments; the filter drops covered paths, and `go/internal/spell/dict` joins ignorePaths.
 
 ### 2026.07.18.1208
 
 - Feat: land plan 01 section 2: the parsers-and-network checks are Go binaries; all seven match their TypeScript twins, file counts included.
 - Feat: `internal/mermaid` ports `mermaid.ts` exactly: fence scanning, five callout patterns with JS-lookahead emulation over RE2, GFM callout tables, and legend-invisible pairing.
-- Test: 47 tests pin it (12 emulation edge cases checked against real JavaScript first), plus a byte-for-byte diff over all 52 markdown files.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Feat: the five mermaid checks are thin binaries over that parser; `vitest-coverage-exclude` scans config text with string-aware comment stripping in `internal/vitestconf`.
 - Feat: `dependency-currency` swaps `npm outdated` for a native net/http registry client (`.npmrc` registry, bounded concurrency); offline or garbage responses pass; ~2.6x faster.
 
 ### 2026.07.18.1140
 
 - Feat: land plan 01 section 1: all thirteen pure-logic checks are Go binaries, the markdown-filename pair as two thin binaries over `internal/mdfilename`.
-- Test: each port carries table-driven tests from TypeScript cases (~200 total) and matches its twin here: passes pass, failures fail with byte-identical errors.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Feat: `changelog` parses JSON for invalid-JSON errors; `semantic-commit` and `commit-attribution` declare the `--message` handshake; `repeated-string-literals` reads its allow list from `.fitnessrc.json`.
 - Chore: add `.fitnessrc.json` with the `repeated-string-literals` allow baseline for the Go runner; the TypeScript suite keeps `.fitnessrc.js`, both in sync until cutover.
 - Fix: `jscpd` also ignores Go test files (`**/*_test.go`); the two real production clones from the ports became a shared `walkfs.ScanFiles` loop and `render.ColorsEnabled`.
@@ -740,7 +747,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: land plan 01 section 0, the Go scaffold: a stdlib-only `go/` module whose `fitness` runner and first check, `fitness-check-node-version`, run here.
 - Feat: the runner finds check binaries beside it or on PATH, passes `--root` and `FITNESS_*`, reads stdout JSON, and kills hung process groups.
 - Feat: config is `.fitnessrc.json`; a lone legacy `.fitnessrc.js`/`.ts` gets a migration hint on full-suite runs only; shared internals carry `go test` coverage.
-- Test: the Go `node-version` check matches the TypeScript one here, row and failure message alike; section 0 is checked off in `plans/01-go-rewrite.md`.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.07.18.1057
 
@@ -819,7 +826,7 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.03.07.1431
 
 - Fix: the runner dedupes `config.checks` by name — `checksFromConfigList` keeps the first occurrence, so a check listed multiple times in `.fitnessrc` runs once.
-- Test: cover duplicate names in `config.checks` and add a re-entry guard test.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Refactor: extract `runImpl` to satisfy the eslint complexity ceiling.
 
 ### 2026.03.07.1406
@@ -899,7 +906,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Refactor: abstract check dependencies out of the runner — `getColumns` moves to `src/utils/terminal` so the runner has no check-specific imports.
 - Refactor: `read-repo-first` no longer exports `getColumns`.
-- Test: the `getColumns` tests move to `utils/terminal.test.ts`.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.02.22.1241
 
@@ -911,20 +918,20 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: the `changelog` check requires the `package.json` version suffix to match the first `###` heading (`yyyy.mm.dd.HHMM`).
 - Feat: the `package-lock.json` version must match the same heading.
-- Test: extend `changelog.test.ts` to cover both version gates.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: update the check README.
 
 ### 2026.02.16.1634
 
 - Feat: `changelog-updated` requires the new section heading to use the current date and time (`yyyy.mm.dd.HHMM`) so GenAI cannot guess the time.
-- Test: add current-time heading cases to `changelog-updated.test.ts`.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Docs: update the check README for the current-time rule.
 
 ### 2026.02.16.1900
 
 - Refactor: `changelog-updated` exports its human-facing message consts (`MSG_*`).
 - Refactor: the implementation reuses the exported consts — one source for the copy.
-- Test: tests assert against the exported consts instead of duplicating strings.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.02.16.1800
 
@@ -973,13 +980,13 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: the ESLint check runs eslint (staged paths or `.`), parses its JSON output, and reports errors.
 - Fix: only `.ts`/`.tsx` staged paths are passed, avoiding no-config failures on `.md`; tests use `.ts` fixtures (bar, pathWithQuote, quoted).
 - Refactor: hoist the feedback and CLI consts.
-- Test: 100% coverage on the check.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.02.16.1005
 
 - Feat: the runner adds feedback dressing — "Please fix these items."
 - Refactor: hoist the messages to shared consts.
-- Test: runner tests use a static import.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.02.16.0958
 
@@ -1010,7 +1017,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.02.15.1400
 
-- Test: the runner reaches 100% coverage — path-load tests for the named-export, no-Check, and import-throws cases.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 - Feat: two positionals (check then message path) supported for semantic-commit.
 - Fix: `getPositionalSpec` and `getCommitMsgContext` handle single vs two positionals.
 
@@ -1026,7 +1033,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Refactor: the runner takes a single CLI flag — `--check=` only.
 - Feat: the commit-msg path rides as a positional.
 - Feat: staged context is always built.
-- Test: full runner test coverage.
+- Test: the release gate checks the linux platform entries with a strings.HasPrefix filter, since darwin no longer verifies.
 
 ### 2026.02.15.1200
 

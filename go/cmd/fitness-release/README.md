@@ -40,6 +40,6 @@ Invoke helpers with `go -C go run ./cmd/fitness-release COMMAND --root ..`. Late
 
 ## Verification and recovery
 
-`smoke` and `verify-download` exercise the installer and a compiled commit hook without Go on the consumer PATH. The workflow also runs the full suite through the public action. These gates run on Linux and macOS, each with Intel and ARM hosts.
+`smoke` and `verify-download` exercise the installer and a compiled commit hook without Go on the consumer PATH. The workflow also runs the full suite through the public action. These gates run on Linux with Intel and ARM hosts; the darwin binaries are cross-compiled but not smoke-tested in CI.
 
 Publication uses `.goreleaser-publish.yml` only while the Release Please release is a draft. Retries may replace draft assets; public releases skip publication and rerun checks. See [release recovery](../../../docs/ci.md#retry-a-release) for the workflow steps.

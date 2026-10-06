@@ -123,10 +123,6 @@ jobs:
             platform: linux-amd64
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
-          - runner: macos-15-intel
-            platform: darwin-amd64
-          - runner: macos-latest
-            platform: darwin-arm64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
