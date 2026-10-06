@@ -10,7 +10,7 @@ on:
         type: string
         default: ubuntu-latest
       swift:
-        description: Install swiftlint (a Swift repo needs it). Linux runners get the official Linux build.
+        description: Always install swiftlint. It is also installed when the checkout has Swift files. Linux runners get the official Linux build.
         type: boolean
         default: false
       swiftlint-version:
@@ -25,6 +25,7 @@ on:
 jobs:
   fitness:
     runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,7 +66,7 @@ jobs:
       # One pinned SwiftLint everywhere: "latest" let a release add a rule
       # overnight that laptops had never seen.
       - name: Install swiftlint
-        if: ${{ inputs.swift }}
+        if: ${{ inputs.swift || hashFiles('**/*.swift') != '' }}
         env:
           VERSION: ${{ inputs.swiftlint-version }}
           ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}

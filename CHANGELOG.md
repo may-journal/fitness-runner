@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.06.0014
+
+- Ci: fitness-suite drops the detect job and skips fitness-runner with a job condition, saving one billed minute per run.
+- Ci: ci-reusable installs swiftlint when hashFiles finds Swift sources, even without the swift input.
+- Ci: every shared workflow job sets timeout-minutes, so a hung job cannot bill for six hours.
+- Ci: plan-check uses a per-issue concurrency group with cancel-in-progress, so edit bursts run once.
+- Docs: the workflows README describes the fitness-suite job condition and Swift detection.
+
 ### 2026.10.05.1923
 
 - Ci: drop the macOS runners from the distribution smoke matrix, so each PR run finishes faster.

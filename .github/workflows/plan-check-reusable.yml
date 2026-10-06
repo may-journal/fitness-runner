@@ -21,6 +21,11 @@ jobs:
   plan-check:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'Plan')
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Agents edit an Issue in quick bursts; only the newest body needs a verdict.
+    concurrency:
+      group: plan-check-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

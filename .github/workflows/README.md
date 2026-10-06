@@ -92,7 +92,7 @@ There is no label guard: every PR has a description, so every PR is validated, a
 
 ## fitness-suite
 
-A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, with `swift` on when the repo has Swift files. It runs everywhere but fitness-runner, which builds checks from source.
+A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
 
 ## close-check
 

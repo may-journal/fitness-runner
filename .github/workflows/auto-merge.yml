@@ -23,6 +23,7 @@ jobs:
   auto-merge:
     if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Check the App secrets
         id: report-step-1
