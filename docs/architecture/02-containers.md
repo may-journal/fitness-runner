@@ -57,7 +57,7 @@ Numbers on nodes and arrows match the callout table.
 | 3   | `fitness` — argv, spec resolution, describe handshake, parallel pool, results table.             | Single orchestration surface, one static binary.            |
 | 4   | One static binary per check name, found beside the runner then on PATH.                          | Plugin model at the artifact level; no in-process registry. |
 | 5   | Tool configs embedded in the binaries, materialized to a cache dir on demand.                    | Opinionated defaults; consumer local config wins.           |
-| 6   | Optional `.fitnessrc.json` — exceptions only: `disabledChecks` and per-check options.            | Every check runs on every tracked file; no path is ignored. |
+| 6   | Optional `.fitnessrc.json` — exceptions only: per-check options.                                 | Every check runs on every tracked file; no path is ignored. |
 | 7   | Files checks lint, format, spell-check, or scan.                                                 | Staged paths from git when available.                       |
 | 8   | Tool-wrapper checks exec these when installed; native engines (cspell, jscpd souls) need none.   | Peer tools resolved at runtime, never bundled.              |
 | 9   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
@@ -77,7 +77,6 @@ Numbers on nodes and arrows match the callout table.
 | Setup                           | Config         | What runs                                         |
 | ------------------------------- | -------------- | ------------------------------------------------- |
 | Runner + check binaries on PATH | None           | Every check; one that does not apply passes clean |
-| Above + `disabledChecks`        | Exclude names  | Every check minus the disabled ones               |
 | Above + per-check options       | Tune one check | Every check, the tuned one with your options      |
 
 There is no list of checks to keep in sync: each check detects whether its language, tool, config, or input is present. A leftover `checks` key is ignored with a one-line warning. The cspell and jscpd checks are native engines needing no external tool. Prettier, eslint, vitest-coverage-full, and swiftlint exec the real tool and fail clearly when it is missing.

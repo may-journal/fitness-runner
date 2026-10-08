@@ -6,14 +6,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Requires every `.gitignore` ignore pattern to be immediately preceded by a `#` comment explaining why it exists. This keeps ignores explained and easy to audit and onboard. On by default.
 
-## Turn off
-
-To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["gitignore-why"] }
-```
-
 ## What passes
 
 Every pattern has a `#` comment on the line directly above it:

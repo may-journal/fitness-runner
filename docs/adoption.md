@@ -95,7 +95,7 @@ Run `fitness init` to install the shared git hooks and point `core.hooksPath` at
 
 ```json
 {
-  "disabledChecks": ["jscpd"]
+  "repeatedStringLiterals": { "allow": ["dist"] }
 }
 ```
 

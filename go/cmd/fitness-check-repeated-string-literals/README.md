@@ -11,12 +11,6 @@ Fails when the same string literal appears 3+ times across sources — a signal 
 - `jscpd` finds duplicated multi-line blocks (`--min-lines 5`); a single repeated literal is one token on one line, so it never sees it.
 - `sonarjs/no-duplicate-string` (ESLint) only flags strings of 10+ chars containing a separator, which excludes the short, identifier-like tokens (`'active'`, `'GET'`) this check targets.
 
-## Turn off
-
-```json
-{ "disabledChecks": ["repeated-string-literals"] }
-```
-
 ## What passes / fails
 
 A value repeated only twice passes; a value used 3+ times anywhere across the scanned files fails, one error per value, most-repeated first:

@@ -33,12 +33,4 @@ The ceiling defaults to 5. Override per repo in `.fitnessrc.json`:
 }
 ```
 
-## Turn off
-
-On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["go-complexity"] }
-```
-
 Native Go engine (`go/ast` + `go/parser` from the standard library); no external tool required.

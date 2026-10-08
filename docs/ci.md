@@ -77,7 +77,7 @@ To use external mode in both hooks and CI, commit this `.fitnessrc.json` in the 
 
 Then invoke the installer without runner flags to run every check. Each check decides whether it applies; applicable project checks may need their own tools. Use `--checks=name,name` or a config `checks` list only to request a subset. CLI selection replaces the config list; empty, unknown, or duplicate names fail.
 
-A full-suite run includes new checks after an upgrade; an explicit list stays fixed and wins over `disabledChecks`. External mode never infers policy from the Git remote or installs hooks by default. Local file checks need no GitHub token or source upload; remote checks and project tools keep their own prerequisites. The runner preserves existing org behavior when policy is omitted.
+A full-suite run includes new checks after an upgrade; an explicit list stays fixed. External mode never infers policy from the Git remote or installs hooks by default. Local file checks need no GitHub token or source upload; remote checks and project tools keep their own prerequisites. The runner preserves existing org behavior when policy is omitted.
 
 ## Jenkins
 

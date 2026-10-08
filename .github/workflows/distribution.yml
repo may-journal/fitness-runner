@@ -112,6 +112,12 @@ jobs:
         run: |
           chmod +x out/fitness-install-*-${{ matrix.platform }}
           out/fitness-install-*-${{ matrix.platform }} -- --policy=external
+      - name: Run the requirement tests with the candidate Go installer
+        env:
+          FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
+        run: |
+          export FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-${{ matrix.platform }})"
+          go -C go test ./requirements -count=1
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

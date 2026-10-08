@@ -7,13 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.08.1405
+### 2026.10.08.1543
 
 - Feat: requirements check holds docs/requirements to one template with never-reused IDs; Go test Test0001_1 owns acceptance 0001.1.
-- Ci: the distribution smoke checkout fetches full history, so a pull request's smoke run judges only the files it changes.
-- Feat: prose-budget halves list caps per nesting level, and .fitnessrc.json timeoutMs replaces the default check budget.
-- Test: delete the internal package tests, which owned no requirement; only requirement tests prove that code now.
-- Docs: fitness-runner states six requirements; 0003 says a check scans nothing when a repo has no files it can judge.
+- Feat: prose-budget halves list caps per nesting level, and .fitnessrc.json timeoutMs replaces the default budget in external mode too.
+- Feat: disabledChecks is retired; every check runs, and a .fitnessrc.json that still sets it fails.
+- Test: requirement tests run the fitness-install one-liner in tests/examples repos, replacing in-process and internal tests.
+- Ci: the smoke job fetches full history and runs the requirement tests with the candidate installer.
 
 ### 2026.10.06.0014
 

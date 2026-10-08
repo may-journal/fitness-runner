@@ -200,14 +200,14 @@ func loadConfig(root, spec string) (*conf.Config, error) {
 // warnLegacyChecks notes on stderr that a retired checks list is ignored.
 func warnLegacyChecks(cfg *conf.Config) {
 	if cfg != nil && len(cfg.LegacyChecks) > 0 {
-		fmt.Fprintln(os.Stderr, "fitness: the checks list in .fitnessrc.json is ignored; every check runs. Turn one off with disabledChecks.")
+		fmt.Fprintln(os.Stderr, "fitness: the checks list in .fitnessrc.json is ignored; every check runs.")
 	}
 }
 
 // prepareChecks resolves the check list, turning an empty resolution into
 // the Unknown-check error the CLI renders.
 func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
-	checks, err := resolveChecks(cfg, spec)
+	checks, err := resolveChecks(spec)
 	if err != nil {
 		return nil, err
 	}
@@ -390,12 +390,12 @@ func isRunnerArg(a string, i, specIdx int) bool {
 }
 
 // resolveChecks builds the check list: the one named on the CLI, else every
-// check minus the config's disabledChecks.
-func resolveChecks(cfg *conf.Config, spec string) ([]resolved, error) {
+// check. No repo turns a check off; each passes clean where it does not apply.
+func resolveChecks(spec string) ([]resolved, error) {
 	if spec != "" {
 		return resolveSingle(spec)
 	}
-	return resolveList(allChecks, disabledSet(cfg))
+	return resolveList(allChecks)
 }
 
 // resolveSingle resolves a CLI check name into a one-element list; an empty
@@ -408,25 +408,10 @@ func resolveSingle(spec string) ([]resolved, error) {
 	return []resolved{*c}, nil
 }
 
-// disabledSet builds the lookup of config-disabled check names.
-func disabledSet(cfg *conf.Config) map[string]bool {
-	disabled := map[string]bool{}
-	if cfg == nil {
-		return disabled
-	}
-	for _, d := range cfg.DisabledChecks {
-		disabled[d] = true
-	}
-	return disabled
-}
-
-// resolveList resolves each name not disabled, in order.
-func resolveList(names []string, disabled map[string]bool) ([]resolved, error) {
+// resolveList resolves each name, in order.
+func resolveList(names []string) ([]resolved, error) {
 	var out []resolved
 	for _, name := range names {
-		if disabled[name] {
-			continue
-		}
 		c, err := resolveName(name, false)
 		if err != nil {
 			return nil, err

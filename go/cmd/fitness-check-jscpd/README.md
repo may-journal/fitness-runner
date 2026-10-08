@@ -4,7 +4,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # jscpd
 
-Detects duplicated code with a native Go clone-detection engine implementing [jscpd](https://github.com/kucherenko/jscpd) semantics. On by default; turn it off with `disabledChecks` in `.fitnessrc.json`.
+Detects duplicated code with a native Go clone-detection engine implementing [jscpd](https://github.com/kucherenko/jscpd) semantics. On by default.
 
 ## Behavior
 

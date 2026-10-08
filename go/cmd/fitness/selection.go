@@ -35,7 +35,8 @@ func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]
 	}
 	if policy == selection.External {
 		fmt.Fprintln(os.Stderr, "fitness: policy=external checks="+strings.Join(names, ","))
-		return resolveList(names, nil)
+		checks, err := resolveList(names)
+		return withBudgets(cfg, checks), err
 	}
 	warnLegacyChecks(cfg)
 	return prepareChecks(cfg, spec)

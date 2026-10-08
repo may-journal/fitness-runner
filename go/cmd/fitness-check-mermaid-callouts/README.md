@@ -9,12 +9,6 @@ Foundational check of the mermaid diagram + callout table fitness-function set
 numbered mermaid diagram has an associated callout table and that their callout
 numbers are a 1-1 match.
 
-On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["mermaid-callouts"] }
-```
-
 ## Behavior
 
 For each `.md` file, diagrams (` ```mermaid ` blocks) are paired with the

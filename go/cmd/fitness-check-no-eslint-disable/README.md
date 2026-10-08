@@ -6,14 +6,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Fails when any source file contains an ESLint disable directive, keeping lint hygiene on the fix-the-rule path instead of accumulating suppressions. On by default.
 
-## Turn off
-
-To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["no-eslint-disable"] }
-```
-
 ## What passes
 
 A source file with no disable directives:

@@ -7,12 +7,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)). The callout table is the single home for detail. No loose prose may sit between a numbered diagram (or its legend) and its table ([#66](https://github.com/may-journal/fitness-runner/issues/66)).
 
-On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["mermaid-diagram-table-gap"] }
-```
-
 ## Behavior
 
 The C4 doc layout is diagram → legend → one caption line → callout table, with every description in the table. This flags any non-blank markdown line in the gap between the table and the last mermaid block before it. That block is the legend when present, else the diagram. Such a paragraph just duplicates the table.

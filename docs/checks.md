@@ -17,7 +17,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 
 `release-changelog` correlates Release Please metadata with the version file and reviewable release notes.
 
-Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. A repo turns a check off with `disabledChecks` in `.fitnessrc.json`. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md).
+Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md).
 
 ## Every tracked file
 

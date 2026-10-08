@@ -14,9 +14,3 @@ Runs `go vet ./...` in every Go module of the repo, catching suspicious code the
 - A run scoped to changed files skips when no `.go`, `go.mod`, or `go.sum` file changed.
 - A missing Go toolchain fails with a one-line install hint.
 - `filesChecked` counts the modules vetted.
-
-## Turn off
-
-```json
-{ "disabledChecks": ["go-vet"] }
-```
