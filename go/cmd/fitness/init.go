@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/hooks"
 )
@@ -26,9 +28,13 @@ func runInit(_ []string) int {
 	return 0
 }
 
-// installHooks writes every embedded hook into root/.githooks and sets
-// core.hooksPath so git runs them.
+// installHooks sets core.hooksPath so git runs the hooks, then writes every
+// embedded hook into root/.githooks. Setting the path first means a folder
+// that is not a git repo is refused before anything is written.
 func installHooks(root string) error {
+	if out, err := exec.Command("git", "-C", root, "config", "core.hooksPath", ".githooks").CombinedOutput(); err != nil {
+		return errors.New(strings.TrimSpace(string(out)))
+	}
 	dir := filepath.Join(root, ".githooks")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
@@ -38,7 +44,7 @@ func installHooks(root string) error {
 			return err
 		}
 	}
-	return exec.Command("git", "-C", root, "config", "core.hooksPath", ".githooks").Run()
+	return nil
 }
 
 // writeHook writes one embedded hook as an executable file.

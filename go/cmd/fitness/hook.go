@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -33,9 +34,9 @@ func runHook(name string, args []string) int {
 // chdirToplevel moves to the git working-tree root so checks and paths resolve
 // the same way from any hook's working directory.
 func chdirToplevel() error {
-	out, err := exec.Command("git", "rev-parse", "--show-toplevel").Output()
+	out, err := exec.Command("git", "rev-parse", "--show-toplevel").CombinedOutput()
 	if err != nil {
-		return err
+		return errors.New(strings.TrimSpace(string(out)))
 	}
 	return os.Chdir(strings.TrimSpace(string(out)))
 }
