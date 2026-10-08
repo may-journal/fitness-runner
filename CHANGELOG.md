@@ -7,13 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.08.1321
+### 2026.10.08.1334
 
 - Feat: requirements check holds docs/requirements to a Why, Measurement, and Requirements template with unique, never-reused IDs.
 - Feat: requirements check is Go only: Test0001_1 owns acceptance 0001.1, and each judged test must own one.
 - Feat: prose-budget halves the list cap at each nesting level, 8 then 4, 2, and 1.
-- Docs: fitness-runner states seven requirements, each acceptance owned by one test.
-- Test: merge duplicate annotation, headline, and contract tests into the tests that own their acceptance.
+- Feat: timeoutMs in .fitnessrc.json replaces the default check budget; the default lives in cmd/fitness/timeout.go.
+- Docs: fitness-runner states seven requirements, from runner status to the checks themselves.
 
 ### 2026.10.06.0014
 

@@ -77,8 +77,6 @@ var allChecks = []string{
 	"vitest-coverage-full",
 }
 
-const defaultTimeout = 5000 * time.Millisecond
-
 // resolved is one runnable check: its binary and describe metadata.
 type resolved struct {
 	name string
@@ -220,7 +218,7 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 		}
 		return nil, errors.New("Unknown check: " + which)
 	}
-	return checks, nil
+	return withBudgets(cfg, checks), nil
 }
 
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
@@ -557,13 +555,6 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 		return args[i+1], 2
 	}
 	return "", 1
-}
-
-func timeoutFor(c resolved) time.Duration {
-	if c.desc.TimeoutMs > 0 {
-		return time.Duration(c.desc.TimeoutMs) * time.Millisecond
-	}
-	return defaultTimeout
 }
 
 // runPool executes every check with bounded parallelism, dispatching in

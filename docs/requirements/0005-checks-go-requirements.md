@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0005 Promises Stay Proven
+# 0005 Checks Go Requirements
 
 ## Why
 

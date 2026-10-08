@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0006 Requirement Docs Read the Same
+# 0006 Checks Templates
 
 ## Why
 

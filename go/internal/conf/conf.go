@@ -18,6 +18,9 @@ type Config struct {
 	Policy string `json:"policy"`
 	// LegacyChecks optionally selects checks in external mode. Org ignores it.
 	LegacyChecks []string `json:"checks"`
+	// TimeoutMs replaces the default per-check budget for checks that declare
+	// none of their own.
+	TimeoutMs int `json:"timeoutMs"`
 	// DisabledChecks turns off checks by name for this repo.
 	DisabledChecks []string `json:"disabledChecks"`
 	// RepeatedStringLiterals holds options for that check.

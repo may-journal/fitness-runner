@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0007 Docs Stay Quick to Read
+# 0007 Checks Prose Budget
 
 ## Why
 

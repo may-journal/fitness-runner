@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-A hung check cannot freeze my commit, my agent, or my CI job, or leave processes running on the machine.
+A hung check cannot leave processes running on the machine, and each repo can set how long checks may take.
 
 ## Measurement
 
@@ -14,15 +14,15 @@ overrunning checks stopped with every process they started
 -
 checks that overran their time budget
 
-Source: `go/cmd/fitness/main.go:632`
+Source: `go/cmd/fitness/timeout.go:12`
 
 ## Requirements
 
 - 0002.1
-    - Given a check that runs past its time budget
-        - When the runner runs it
-            - Then it is stopped and reported as timed out
-- 0002.2
     - Given a hung check that started a child process
         - When its time budget runs out
             - Then the child process is stopped too
+- 0002.2
+    - Given a repo that sets timeoutMs in its fitness config
+        - When the runner budgets a check that declares none
+            - Then the configured budget replaces the default
