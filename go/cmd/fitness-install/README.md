@@ -9,9 +9,9 @@ Installs a pinned release and runs Fitness without compiling consumer code. Rele
 ## Usage
 
 ```bash
-fitness-install -- --check=markdown-filename-kebab-case --all
+fitness-install -- markdown-filename-kebab-case --all
 fitness-install --install-only
-fitness-install --install-hook -- --check=markdown-filename-kebab-case --all
+fitness-install --install-hook -- markdown-filename-kebab-case --all
 fitness-install --version latest -- --help
 ```
 

@@ -9,18 +9,18 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
-func selectedChecks(root string, argv []string) ([]resolved, int, []string, error) {
+func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 	options, args, err := selection.Parse(argv)
 	if err != nil {
-		return nil, 0, nil, err
+		return nil, nil, err
 	}
-	spec, _, jobs, passthrough := parseArgv(args)
-	cfg, err := loadConfig(root, spec)
+	spec, passthrough := parseArgv(args)
+	cfg, err := loadConfig(root)
 	if err != nil {
-		return nil, 0, nil, err
+		return nil, nil, err
 	}
 	checks, err := resolvePolicy(cfg, options, spec)
-	return checks, jobs, passthrough, err
+	return checks, passthrough, err
 }
 
 func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]resolved, error) {
@@ -35,8 +35,8 @@ func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]
 	}
 	if policy == selection.External {
 		fmt.Fprintln(os.Stderr, "fitness: policy=external checks="+strings.Join(names, ","))
-		return resolveList(names, nil)
+		checks, err := resolveList(names)
+		return withBudgets(cfg, checks), err
 	}
-	warnLegacyChecks(cfg)
 	return prepareChecks(cfg, spec)
 }

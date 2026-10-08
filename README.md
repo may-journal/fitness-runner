@@ -46,7 +46,6 @@ Put `go/bin` on PATH, or copy the binaries onto it. The runner finds check binar
 fitness                      # full configured suite
 fitness --policy=external     # all checks, each decides applicability
 fitness prettier             # one check by name
-fitness --check=eslint
 fitness prettier --write .   # passthrough args reach the check
 fitness init                 # install the shared git hooks into a repo
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
@@ -83,4 +82,4 @@ Release and pin PRs use the normal review and checks. See [release automation an
 
 ## Go coverage
 
-The optional [Go coverage check](go/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage and reports gaps down the source tree. It also rejects wrappers that can hide independently measured tests. Run `fitness --check=go-test-coverage --all`.
+The optional [Go coverage check](go/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage and reports gaps down the source tree. It also rejects wrappers that can hide independently measured tests. Run `fitness go-test-coverage --all`.

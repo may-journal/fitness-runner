@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.08.1619
+
+- Feat: requirements check holds docs/requirements to one template with never-reused IDs; Go test Test0001_1 owns acceptance 0001.1.
+- Feat: retire disabledChecks, --check=, --jobs, legacy JS config detection, and PATH lookup; name a check positionally.
+- Fix: a stopped check's leftover tools are killed, and external mode applies the configured timeoutMs.
+- Test: requirement tests run the fitness-install one-liner in tests/examples repos; the smoke job runs them.
+- Docs: requirements 0001 to 0008 state runner status, errors, annotations, and the two checks they cover.
+
 ### 2026.10.06.0014
 
 - Ci: fitness-suite drops the detect job and skips fitness-runner with a job condition, saving one billed minute per run.

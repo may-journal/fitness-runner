@@ -66,7 +66,7 @@ Numbers on classes and relationships match the callout table.
 | 2   | Metadata a check prints for `--describe`: name, timeout budget, context-inline argument.   | The runner discovers capabilities with a handshake, not a registry. |
 | 3   | Environment the runner exports before dispatch.                                            | Checks stay stateless; context flows one way.                       |
 | 4   | `{Ok, Errors, FilesChecked}` — emitted by the check, parsed by the runner.                 | Aggregated into the results table.                                  |
-| 5   | Builds the ordered check list: the CLI name, else `allChecks` minus `disabledChecks`.      | Single source for which checks run.                                 |
+| 5   | Builds the ordered check list: the CLI name, else every check in `allChecks`.              | Single source for which checks run.                                 |
 | 6   | Runs `binary --describe` with a two-second budget and group kill.                          | A check that ignores the flag cannot hang resolution.               |
 | 7   | Bounded goroutine pool dispatching in order, collecting outcomes by index.                 | Parallel execution with strictly ordered rendering afterwards.      |
 | 8   | Execs one check with `exec.Command` + Setpgid; timeout sends TERM then KILL to the group.  | A hung check's whole child tree dies (5s default budget).           |
@@ -101,7 +101,7 @@ fitness-runner/
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)
-  .fitnessrc.json              optional: disabledChecks, ignore, per-check options
+  .fitnessrc.json              optional: per-check options
 ```
 
 ## Development in this repo

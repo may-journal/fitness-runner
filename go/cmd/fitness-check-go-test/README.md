@@ -14,9 +14,3 @@ Runs `go test ./...` in every Go module of the repo and reports the failing test
 - A run scoped to changed files skips when no `.go`, `go.mod`, or `go.sum` file changed.
 - A missing Go toolchain fails with a one-line install hint.
 - The time budget is 15 minutes, since a test suite can run long.
-
-## Turn off
-
-```json
-{ "disabledChecks": ["go-test"] }
-```

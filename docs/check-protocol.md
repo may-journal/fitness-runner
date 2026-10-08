@@ -27,16 +27,15 @@ Optional `.fitnessrc.json` at repo root:
 
 ```json
 {
-  "disabledChecks": ["cspell"],
   "repeatedStringLiterals": { "allow": ["dist"] }
 }
 ```
 
-Org mode runs every check; each passes clean when it does not apply. `disabledChecks` turns one off by name. A leftover `checks` list is ignored with a warning in org mode.
+Org mode runs every check; each passes clean when it does not apply. `timeoutMs` replaces the 5-second default budget for checks that declare none. A leftover `checks` list is ignored with a warning in org mode.
 
-External mode sets `"policy": "external"` and runs all checks by default; a nonempty `"checks"` list is an optional filter. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list and overrides `disabledChecks`. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
+External mode sets `"policy": "external"` and runs all checks by default; a nonempty `"checks"` list is an optional filter. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
 
 ## Every tracked file
 
-File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A config setting `ignore`, `skipTheseDirectories`, or `proseBudget.exempt` fails.
+File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A config setting `ignore`, `skipTheseDirectories`, `disabledChecks`, or `proseBudget.exempt` fails.
 

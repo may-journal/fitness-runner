@@ -9,7 +9,7 @@ Require full entry coverage and report gaps below it. Select this check by name;
 ## Run
 
 ```sh
-fitness --check=go-test-coverage --all
+fitness go-test-coverage --all
 ```
 
 Every command package is an entry and must reach 100% statement coverage. Declare library entry packages by their full import paths:
@@ -50,7 +50,7 @@ Keep the summary metrics and add line-to-test claims with an explicit export. Th
 
 ```sh
 AUDIT_DIR="$(mktemp -d)"
-fitness --check=go-test-coverage --all --audit-map="$AUDIT_DIR/claims.json"
+fitness go-test-coverage --all --audit-map="$AUDIT_DIR/claims.json"
 ```
 
 The output path must be new, with an existing parent outside the repository. A completed measurement writes the map even when entry coverage fails.

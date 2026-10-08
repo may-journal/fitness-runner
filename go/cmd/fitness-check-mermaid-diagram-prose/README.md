@@ -7,12 +7,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): diagram labels must not duplicate callout table prose.
 
-On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["mermaid-diagram-prose"] }
-```
-
 ## Behavior
 
 When a diagram is paired with a callout table, flags relationship/edge labels with prose beyond a callout number (e.g. `"6 Uses"` instead of `"6"`). Descriptions belong in the table, not the diagram.

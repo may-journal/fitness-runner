@@ -216,9 +216,7 @@ func listErrors(rel string, blocks []block, lim limits) []string {
 // the word limit.
 func listError(rel string, bl block, lim limits) []string {
 	var errs []string
-	if len(bl.items) > lim.listItems {
-		errs = append(errs, fmt.Sprintf("%s: a list has %d items (max %d)", rel, len(bl.items), lim.listItems))
-	}
+	errs = append(errs, nestingErrors(rel, bl, lim.listItems)...)
 	for _, it := range bl.items {
 		if n := mdx.WordCount(mdx.MaskInline(it)); n > lim.listItemWords {
 			errs = append(errs, fmt.Sprintf("%s: a list item has %d words (max %d): %q",
@@ -236,4 +234,31 @@ func snippet(s string) string {
 		return string(r[:max]) + "…"
 	}
 	return s
+}
+
+// nestingErrors caps each level of a list at half the level above, rounding
+// down from the top-level cap: with 8 top-level items, each item holds at
+// most 4 children, each child at most 2, and each of those 1. A level whose
+// cap reaches 0 allows no items.
+func nestingErrors(rel string, bl block, max int) []string {
+	var errs []string
+	counts := map[int]int{}
+	for i, d := range bl.depths {
+		resetDeeper(counts, d)
+		counts[d]++
+		if counts[d] == (max>>d)+1 {
+			errs = append(errs, fmt.Sprintf("%s: a list has more than %d items at level %d: %q", rel, max>>d, d+1, snippet(bl.items[i])))
+		}
+	}
+	return errs
+}
+
+// resetDeeper resets the sibling counts of every level deeper than d, since an
+// item at level d starts a new group of children.
+func resetDeeper(counts map[int]int, d int) {
+	for k := range counts {
+		if k > d {
+			delete(counts, k)
+		}
+	}
 }

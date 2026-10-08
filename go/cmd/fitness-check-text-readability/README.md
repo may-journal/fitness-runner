@@ -44,11 +44,3 @@ Optional bands in `.fitnessrc.json` (any positive value overrides its default):
   "textReadability": { "maxGrade": 18, "maxLix": 60, "minWords": 100 }
 }
 ```
-
-## Turn off
-
-On by default. To turn it off:
-
-```json
-{ "disabledChecks": ["text-readability"] }
-```

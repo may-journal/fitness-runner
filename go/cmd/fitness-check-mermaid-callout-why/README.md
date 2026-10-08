@@ -7,12 +7,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): callout tables must include a Why column.
 
-On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["mermaid-callout-why"] }
-```
-
 ## Behavior
 
 For each numbered callout table, requires a `Why` column (case-insensitive) in the header. It warns when a numbered row leaves its `Why` cell empty.

@@ -7,12 +7,6 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 Part of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)): stacked C4 levels must not restate the parent.
 
-On by default. To turn it off, add it to `disabledChecks` in `.fitnessrc.json`:
-
-```json
-{ "disabledChecks": ["mermaid-level-bleed"] }
-```
-
 ## Behavior
 
 Across numbered `architecture/NN-*.md` files, compares callout descriptions at adjacent levels. It warns when a lower level repeats an upper level verbatim, adding nothing new.
