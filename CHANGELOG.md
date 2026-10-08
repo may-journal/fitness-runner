@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.08.1645
+
+- Docs: requirement 0009 states what the git hooks refuse, from fitness init to the Go pre-commit installer.
+- Test: each 0009 acceptance installs the hooks with the candidate and runs real git commits and pushes.
+- Test: pushes in requirement tests go to a local bare remote, so no test needs GitHub.
+
 ### 2026.10.08.1619
 
 - Feat: requirements check holds docs/requirements to one template with never-reused IDs; Go test Test0001_1 owns acceptance 0001.1.
