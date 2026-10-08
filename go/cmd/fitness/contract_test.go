@@ -64,33 +64,36 @@ func runCheck(t *testing.T, bin, root string) checkkit.Result {
 	return res
 }
 
-// TestCheckContract enforces what every check owes the runner: its
+// Test0003_1 enforces what every check owes the runner: its
 // --describe name matches its binary, and in a repo it does not apply to it
 // passes clean with zero files. That second rule is what lets every repo run
 // every check.
-func TestCheckContract(t *testing.T) {
+func Test0003_1(t *testing.T) {
+	for name := range universalChecks {
+		if !slices.Contains(allChecks, name) {
+			t.Fatalf("universalChecks names %s, which is not in allChecks", name)
+		}
+	}
 	bins := buildChecks(t)
 	empty := t.TempDir()
 	for _, name := range allChecks {
-		t.Run(name, func(t *testing.T) {
-			bin := filepath.Join(bins, "fitness-check-"+name)
-			if got := describe(bin).Name; got != name {
-				t.Errorf("--describe name = %q, want %q", got, name)
-			}
-			if _, universal := universalChecks[name]; universal {
-				return
-			}
-			if res := runCheck(t, bin, empty); !res.Ok || res.FilesChecked != 0 {
-				t.Errorf("in a repo it does not apply to: %+v; want a clean pass with 0 files", res)
-			}
-		})
+		contractCase(t, bins, empty, name)
 	}
 }
 
-func TestUniversalChecksAreRunnable(t *testing.T) {
-	for name := range universalChecks {
-		if !slices.Contains(allChecks, name) {
-			t.Errorf("universalChecks names %s, which is not in allChecks", name)
+// contractCase holds one check to the contract in its own t.Run.
+func contractCase(t *testing.T, bins, empty, name string) {
+	t.Helper()
+	t.Run(name, func(t *testing.T) {
+		bin := filepath.Join(bins, "fitness-check-"+name)
+		if got := describe(bin).Name; got != name {
+			t.Errorf("--describe name = %q, want %q", got, name)
 		}
-	}
+		if _, universal := universalChecks[name]; universal {
+			return
+		}
+		if res := runCheck(t, bin, empty); !res.Ok || res.FilesChecked != 0 {
+			t.Errorf("in a repo it does not apply to: %+v; want a clean pass with 0 files", res)
+		}
+	})
 }

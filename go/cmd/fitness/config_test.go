@@ -19,7 +19,7 @@ func checkDirectories(t *testing.T) []string {
 	return dirs
 }
 
-func TestCatalogHasEveryCheckBinary(t *testing.T) {
+func Test0003_2(t *testing.T) {
 	catalog := append(append([]string{}, allChecks...), "go-test-coverage")
 	for _, d := range checkDirectories(t) {
 		name := filepath.Base(d)[len("fitness-check-"):]
@@ -34,7 +34,7 @@ func TestCatalogHasEveryCheckBinary(t *testing.T) {
 	}
 }
 
-func TestDisabledSet(t *testing.T) {
+func Test0003_3(t *testing.T) {
 	if len(disabledSet(nil)) != 0 {
 		t.Error("no config must disable nothing")
 	}

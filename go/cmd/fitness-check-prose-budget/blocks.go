@@ -14,6 +14,8 @@ type block struct {
 	isList      bool
 	text        string
 	items       []string
+	// depths holds each item's nesting level, 0 for top-level items.
+	depths []int
 }
 
 // words returns the block's masked prose word count.
@@ -47,6 +49,8 @@ type builder struct {
 	blocks      []block
 	para        []string
 	items       []string
+	depths      []int
+	indents     []int
 	inFence     bool
 }
 
@@ -59,7 +63,7 @@ func (b *builder) feed(raw string) {
 	if b.breakLine(t) {
 		return
 	}
-	b.item(t)
+	b.item(raw, t)
 }
 
 // fenceToggle flips fence state and closes the open block on a ``` line,
@@ -93,14 +97,28 @@ func (b *builder) breakLine(t string) bool {
 // item adds one content line: a list marker closes any open paragraph and
 // starts or extends the list; anything else closes any open list and extends
 // the paragraph.
-func (b *builder) item(t string) {
+func (b *builder) item(raw, t string) {
 	if m := listItemRe.FindStringSubmatch(t); m != nil {
 		b.flushPara()
 		b.items = append(b.items, m[1])
+		b.depths = append(b.depths, b.depth(len(raw)-len(strings.TrimLeft(raw, " \t"))))
 		return
 	}
 	b.flushList()
 	b.para = append(b.para, strings.TrimPrefix(t, "> "))
+}
+
+// depth returns the nesting level of an item indented by indent, tracking
+// the open levels' indents: a deeper indent opens a level, a shallower one
+// closes levels back to it.
+func (b *builder) depth(indent int) int {
+	for len(b.indents) > 0 && b.indents[len(b.indents)-1] > indent {
+		b.indents = b.indents[:len(b.indents)-1]
+	}
+	if len(b.indents) == 0 || b.indents[len(b.indents)-1] < indent {
+		b.indents = append(b.indents, indent)
+	}
+	return len(b.indents) - 1
 }
 
 // flush closes both the open paragraph and the open list.
@@ -126,7 +144,7 @@ func (b *builder) flushList() {
 		return
 	}
 	b.blocks = append(b.blocks, block{
-		section: b.section, sectionName: b.sectionName, isList: true, items: b.items,
+		section: b.section, sectionName: b.sectionName, isList: true, items: b.items, depths: b.depths,
 	})
-	b.items = nil
+	b.items, b.depths, b.indents = nil, nil, nil
 }

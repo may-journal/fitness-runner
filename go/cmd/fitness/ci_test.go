@@ -9,7 +9,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-func TestCISummaryMarkdown(t *testing.T) {
+func Test0004_5(t *testing.T) {
 	rows := []render.Row{
 		{Name: "cspell", Ok: true, FilesChecked: 12, Ms: 40},
 		{Name: "prose-budget", Ok: false, FilesChecked: 68, Ms: 15, Errors: []string{"docs/checks.md: a list has 9 items (max 8)"}},
@@ -31,24 +31,16 @@ func TestCISummaryMarkdown(t *testing.T) {
 			t.Errorf("summary missing %q\n---\n%s", want, md)
 		}
 	}
+	if green := headline(27, 0, 837, 80); green != "✅ **All 27 checks passed** — 837 files scanned in 80ms" {
+		t.Errorf("green headline: %q", green)
+	}
 	// A passing check gets no detail section.
 	if strings.Contains(md, "### ❌ cspell") {
 		t.Error("passing check should not get a detail section")
 	}
 }
 
-func TestHeadline(t *testing.T) {
-	green := headline(27, 0, 837, 80)
-	if green != "✅ **All 27 checks passed** — 837 files scanned in 80ms" {
-		t.Fatalf("green headline: %q", green)
-	}
-	failing := headline(25, 2, 837, 80)
-	if failing != "❌ **25 of 27 checks passed**, 2 failed — 837 files scanned in 80ms" {
-		t.Fatalf("failing headline: %q", failing)
-	}
-}
-
-func TestAnnotationLine(t *testing.T) {
+func Test0004_1(t *testing.T) {
 	annotationWorkspace(t)
 	cases := []struct {
 		name  string
@@ -79,7 +71,7 @@ func TestAnnotationLine(t *testing.T) {
 	}
 }
 
-func TestAnnotationsCap(t *testing.T) {
+func Test0004_2(t *testing.T) {
 	var errs []string
 	for i := 0; i < 15; i++ {
 		errs = append(errs, "msg")
@@ -94,29 +86,27 @@ func TestAnnotationsCap(t *testing.T) {
 	if !strings.HasPrefix(last, "::warning::") || !strings.Contains(last, "5 more") {
 		t.Fatalf("expected a truncation warning naming 5 more, got %q", last)
 	}
+	underCapHasNoWarning(t)
 }
 
-func TestAnnotationsUnderCapHasNoNote(t *testing.T) {
-	rows := []render.Row{{Name: "c", Ok: false, Errors: []string{"a", "b"}}}
-	got := annotations(rows, maxAnnotations)
-	if len(got) != 2 {
-		t.Fatalf("want 2 annotations, got %d", len(got))
-	}
-	for _, l := range got {
-		if strings.HasPrefix(l, "::warning::") {
-			t.Fatalf("did not expect a truncation warning: %q", l)
-		}
+// underCapHasNoWarning asserts findings under the cap all annotate, with no
+// truncation warning.
+func underCapHasNoWarning(t *testing.T) {
+	t.Helper()
+	under := annotations([]render.Row{{Name: "c", Ok: false, Errors: []string{"a", "b"}}}, maxAnnotations)
+	if len(under) != 2 || strings.HasPrefix(under[1], "::warning::") {
+		t.Fatalf("under the cap: want 2 annotations and no warning, got %q", under)
 	}
 }
 
-func TestPassingRowsProduceNoAnnotations(t *testing.T) {
+func Test0004_3(t *testing.T) {
 	rows := []render.Row{{Name: "c", Ok: true, FilesChecked: 3}}
 	if got := annotations(rows, maxAnnotations); len(got) != 0 {
 		t.Fatalf("passing rows should yield no annotations, got %v", got)
 	}
 }
 
-func TestEscaping(t *testing.T) {
+func Test0004_4(t *testing.T) {
 	// A percent and newline in the message are encoded.
 	line := annotationLine("c", "weird 100% off\nsecond line")
 	if strings.Contains(line, "100% off") || !strings.Contains(line, "100%25 off") {

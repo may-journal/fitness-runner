@@ -59,6 +59,7 @@ archives:
       - fitness-check-read-repo-first
       - fitness-check-release-changelog
       - fitness-check-repeated-string-literals
+      - fitness-check-requirements
       - fitness-check-semantic-commit
       - fitness-check-swiftlint
       - fitness-check-text-readability

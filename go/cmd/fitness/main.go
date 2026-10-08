@@ -43,6 +43,7 @@ var allChecks = []string{
 	"gitignore-why",
 	"no-plans-dir",
 	"doc-template",
+	"requirements",
 	"no-contrastive-reframing",
 	"repeated-string-literals",
 	"markdown-front-matter",

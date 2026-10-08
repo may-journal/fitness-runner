@@ -25,7 +25,7 @@ func firstErr(errs []string) string {
 	return errs[0]
 }
 
-func TestCheckLimits(t *testing.T) {
+func Test0007_1(t *testing.T) {
 	cases := []struct {
 		name string
 		md   string
@@ -56,7 +56,7 @@ func TestCheckLimits(t *testing.T) {
 	}
 }
 
-func TestSectionWordBudget(t *testing.T) {
+func Test0007_2(t *testing.T) {
 	lim := tight
 	lim.words = 3
 	cases := []struct {
@@ -80,7 +80,7 @@ func TestSectionWordBudget(t *testing.T) {
 	}
 }
 
-func TestRunJudgesChangelog(t *testing.T) {
+func Test0007_3(t *testing.T) {
 	dir := t.TempDir()
 	write(t, dir, "CHANGELOG.md", "## H\n\n"+strings.Repeat("word ", 50)+"way too many words in one sentence indeed.\n")
 	write(t, dir, "README.md", "## H\n\nShort and clean.\n")
@@ -92,7 +92,7 @@ func TestRunJudgesChangelog(t *testing.T) {
 	}
 }
 
-func TestRunBodyMode(t *testing.T) {
+func Test0007_4(t *testing.T) {
 	cases := []struct {
 		name, body string
 		ok         bool
@@ -120,5 +120,28 @@ func write(t *testing.T, dir, name, content string) {
 	}
 	if err := os.WriteFile(full, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func Test0007_5(t *testing.T) {
+	lim := tight
+	lim.listItems = 8
+	nest := func(n int, indent string) string { return strings.Repeat(indent+"- x\n", n) }
+	cases := []struct {
+		name, md, want string
+	}{
+		{"a chain within the halving caps passes", "## H\n\n- a\n" + nest(3, "    ") + "    - b\n" + nest(1, "        ") + "        - c\n" + nest(1, "            "), ""},
+		{"five children of one item fail", "## H\n\n- a\n" + nest(5, "    "), "nests more than 4 items at level 2"},
+		{"three grandchildren fail", "## H\n\n- a\n    - b\n" + nest(3, "        "), "nests more than 2 items at level 3"},
+		{"a fifth level fails", "## H\n\n- a\n    - b\n        - c\n            - d\n                - e\n", "nests more than 0 items at level 5"},
+		{"children of separate parents count apart", "## H\n\n- a\n" + nest(4, "    ") + "- b\n" + nest(4, "    "), ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := strings.Join(check("f.md", tc.md, lim), "\n")
+			if (tc.want == "") != (got == "") || !strings.Contains(got, tc.want) {
+				t.Fatalf("want %q, got %q", tc.want, got)
+			}
+		})
 	}
 }
