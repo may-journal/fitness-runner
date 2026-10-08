@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0005 Checks Go Requirements
+# 0005 Checks Requirements Go
 
 ## Why
 

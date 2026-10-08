@@ -19,6 +19,6 @@ Source: #189
 ## Requirements
 
 - 0003.1
-    - Given a repo a check cannot judge
+    - Given a repo with no files a check can judge
         - When the check runs
-            - Then it passes with zero files
+            - Then it scans nothing and passes with zero files
