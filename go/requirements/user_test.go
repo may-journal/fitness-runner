@@ -76,13 +76,25 @@ func fitness(t *testing.T, repo string, env []string, args ...string) (string, i
 		args = []string{"--policy=external", "--all"}
 	}
 	cmd := exec.Command(installer(t), append([]string{"--"}, args...)...)
-	cmd.Dir, cmd.Env = repo, append(os.Environ(), append([]string{"GITHUB_ACTIONS="}, env...)...)
+	cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
 	out, err := cmd.CombinedOutput()
 	var exit *exec.ExitError
 	if err != nil && !errors.As(err, &exit) {
 		t.Fatalf("running fitness: %v", err)
 	}
 	return ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode()
+}
+
+// userEnv is this process's environment without the CI job's GITHUB_*
+// variables, which a user's own terminal does not have.
+func userEnv() []string {
+	var env []string
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "GITHUB_") {
+			env = append(env, kv)
+		}
+	}
+	return env
 }
 
 // installer returns the candidate fitness-install the environment provides.
