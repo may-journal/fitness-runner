@@ -67,7 +67,7 @@ func Test0001_4(t *testing.T) {
 	}
 }
 
-func Test0002_1(t *testing.T) {
+func Test0001_7(t *testing.T) {
 	pidFile := filepath.Join(t.TempDir(), "child.pid")
 	c := fakeCheck(t, "/bin/sleep 30 >/dev/null 2>&1 &\necho $! > \"$CHILD_PID\"\nwait\n", 200)
 	runOne(t.TempDir(), c, nil, []string{"CHILD_PID=" + pidFile})
@@ -92,7 +92,7 @@ func waitGone(pid int, within time.Duration) bool {
 	return false
 }
 
-func Test0002_2(t *testing.T) {
+func Test0001_8(t *testing.T) {
 	own := resolved{name: "registry", desc: checkkit.Describe{TimeoutMs: 9000}}
 	plain := resolved{name: "plain"}
 	got := withBudgets(&conf.Config{TimeoutMs: 300}, []resolved{own, plain})

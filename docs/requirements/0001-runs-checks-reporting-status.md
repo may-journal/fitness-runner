@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Every check runs and ends green or red, so I always know whether my code meets the bar.
+Every check runs and ends green or red within its time budget, so I always know whether my code meets the bar.
 
 ## Measurement
 
@@ -42,3 +42,11 @@ Source: `go/cmd/fitness/ci.go:22`
     - Given a repo that turns off one check by name
         - When the runner builds its list
             - Then only that check is left out
+- 0001.7
+    - Given a hung check that started a child process
+        - When its time budget runs out
+            - Then the child process is stopped too
+- 0001.8
+    - Given a repo that sets timeoutMs in its fitness config
+        - When the runner budgets a check that declares none
+            - Then the configured budget replaces the default
