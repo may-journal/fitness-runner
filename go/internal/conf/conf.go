@@ -5,7 +5,6 @@ package conf
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -54,26 +53,20 @@ type Config struct {
 // FileName is the config file the runner reads at the repo root.
 const FileName = ".fitnessrc.json"
 
-// legacyNames are configs the Go runner cannot evaluate; finding one (with
-// no .fitnessrc.json beside it) earns a migration hint.
-var legacyNames = []string{".fitnessrc.ts", ".fitnessrc.js", ".fitnessrc.cjs", ".fitnessrc.mjs"}
-
-// ErrLegacyConfig means only a JS/TS config exists at the root.
-var ErrLegacyConfig = errors.New(
-	"JS/TS fitness config is not supported by the Go runner; migrate to " + FileName)
-
 // Load reads root's config. A missing file returns (nil, nil): the caller
-// falls back to the default check list. A legacy JS/TS config with no JSON
-// config returns ErrLegacyConfig. A config that still sets a retired
-// exclusion key returns an error naming each one.
+// falls back to the defaults. A config that still sets a retired exclusion
+// key returns an error naming each one.
 func Load(root string) (*Config, error) {
 	raw, err := os.ReadFile(filepath.Join(root, FileName))
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
 	if err != nil {
-		return nil, missingConfigErr(root, err)
+		return nil, err
 	}
 	var c Config
 	if err := json.Unmarshal(raw, &c); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", FileName, err)
 	}
 	if retired := retiredKeys(raw); len(retired) > 0 {
 		return nil, fmt.Errorf("%s sets %s; every check now judges every tracked file, so remove %s and fix the findings instead",
@@ -118,20 +111,4 @@ func pronoun(n int) string {
 		return "it"
 	}
 	return "them"
-}
-
-// missingConfigErr maps a failed .fitnessrc.json read to Load's error: a
-// non-not-exist error passes through, a legacy JS/TS config beside the
-// missing file earns ErrLegacyConfig, and a plainly absent config is nil
-// (the caller falls back to defaults).
-func missingConfigErr(root string, readErr error) error {
-	if !os.IsNotExist(readErr) {
-		return readErr
-	}
-	for _, name := range legacyNames {
-		if _, statErr := os.Stat(filepath.Join(root, name)); statErr == nil {
-			return ErrLegacyConfig
-		}
-	}
-	return nil
 }

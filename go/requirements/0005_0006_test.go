@@ -73,7 +73,7 @@ func reqs(body string) map[string]string {
 
 func Test0006_1(t *testing.T) {
 	out, code := judged(t, docOf("docs/requirements/0002-adds-numbers.md", requirementDoc("0001.1")))
-	sees(t, out, code, 1, "the title must be `# 0002 Title`")
+	sees(t, out, code, 1, "name the file NNNN-kebab-title.md and title it `# NNNN Title` with the same ID")
 }
 
 func Test0006_2(t *testing.T) {
@@ -93,7 +93,7 @@ func Test0006_4(t *testing.T) {
 
 func Test0006_5(t *testing.T) {
 	out, code := judged(t, docOf("docs/requirements/0001-adds-numbers.md", docWith("Source: `adder.go:5` #12", acceptances("0001.1"))))
-	sees(t, out, code, 1, "Source must cite either one line of code")
+	sees(t, out, code, 1, "Source must cite either one existing line of code")
 }
 
 func Test0006_6(t *testing.T) {
@@ -103,7 +103,7 @@ func Test0006_6(t *testing.T) {
 
 func Test0006_7(t *testing.T) {
 	out, code := judged(t, reqs("- 0001.1\n    - When I add them\n        - Given two numbers\n            - Then I get their sum\n"))
-	sees(t, out, code, 1, "this line must start with `Given `")
+	sees(t, out, code, 1, "each acceptance is one Given, then one When, then one Then, each nested under the line above")
 }
 
 func Test0006_8(t *testing.T) {

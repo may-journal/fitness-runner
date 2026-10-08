@@ -12,7 +12,7 @@ import (
 )
 
 func Test0001_1(t *testing.T) {
-	repo := example(t, "happyRepo", nil)
+	repo := example(t, "happyRepo", goRepo())
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 0, "All 46 checks passed")
 }
@@ -49,8 +49,21 @@ func Test0001_5(t *testing.T) {
 }
 
 func Test0001_7(t *testing.T) {
-	repo := example(t, "happyRepo", hungTool("300"))
+	repo := example(t, "happyRepo", hungTool("300", ""))
 	fitness(t, repo, nil)
+	childStopped(t, repo)
+}
+
+func Test0001_9(t *testing.T) {
+	repo := example(t, "happyRepo", hungTool("300", "trap '' TERM\n"))
+	out, code := fitness(t, repo, nil)
+	sees(t, out, code, 1, "Check timed out after 0.3s")
+	childStopped(t, repo)
+}
+
+// childStopped asserts the hung prettier's child process is gone.
+func childStopped(t *testing.T, repo string) {
+	t.Helper()
 	raw, err := os.ReadFile(filepath.Join(repo, "prettier.pid"))
 	mustDo(t, err)
 	pid, _ := strconv.Atoi(strings.TrimSpace(string(raw)))
@@ -61,7 +74,7 @@ func Test0001_7(t *testing.T) {
 }
 
 func Test0001_8(t *testing.T) {
-	repo := example(t, "happyRepo", hungTool("300"))
+	repo := example(t, "happyRepo", hungTool("300", ""))
 	out, _ := fitness(t, repo, nil)
 	if !strings.Contains(out, "Check timed out after 0.3s") || strings.Contains(row(out, "go-test"), "failed") {
 		t.Errorf("prettier must stop at the configured 0.3s while checks with their own budget keep it:\n%s", out)

@@ -46,3 +46,7 @@ Source: `go/cmd/fitness/ci.go:22`
     - Given a repo that sets timeoutMs in its fitness config
         - When the runner budgets a check that declares none
             - Then the configured budget replaces the default
+- 0001.9
+    - Given a hung check that ignores the stop signal
+        - When its time budget and grace period run out
+            - Then it is killed and reported red as timed out

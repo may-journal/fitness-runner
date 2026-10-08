@@ -48,14 +48,14 @@ func hookCommitMsg(args []string) int {
 		return 1
 	}
 	for _, check := range []string{"semantic-commit", "plan-trailer"} {
-		if code := run([]string{"--check=" + check, "--message=" + msg}); code != 0 {
+		if code := run([]string{check, "--message=" + msg}); code != 0 {
 			return code
 		}
 	}
 	if amending() {
 		_ = os.Setenv("FITNESS_COMMIT_AMEND", "1")
 	}
-	return run([]string{"--check=issue-link-once", "--message=" + msg})
+	return run([]string{"issue-link-once", "--message=" + msg})
 }
 
 // readMessage reads the commit message file named by the hook's first

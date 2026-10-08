@@ -74,3 +74,27 @@ func Test0004_5(t *testing.T) {
 	_, code, summary := inActions(t, example(t, "happyRepo", misspelled(1)))
 	sees(t, summary, code, 1, "## Fitness checks", "| cspell | ❌ fail |", "README.md:9:5 - Unknown word (zorbleflux)", "| prose-budget | ✅ pass |")
 }
+
+func Test0004_6(t *testing.T) {
+	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": "{\n"}))
+	sees(t, out, code, 1, "::error::fitness setup: .fitnessrc.json:")
+	if strings.Contains(out, "::error file=") {
+		t.Errorf("a setup failure must not point at a file line:\n%s", out)
+	}
+}
+
+func Test0004_7(t *testing.T) {
+	repo := example(t, "happyRepo", misspelled(1))
+	summary := filepath.Join(t.TempDir(), "summary.md")
+	mustDo(t, os.WriteFile(summary, []byte(strings.Repeat("Earlier step output.\n", 52000)), 0o644))
+	_, code := fitness(t, repo, []string{"GITHUB_ACTIONS=true", "GITHUB_WORKSPACE=" + repo, "GITHUB_STEP_SUMMARY=" + summary, "RUNNER_TEMP=" + t.TempDir()})
+	written, _ := os.ReadFile(summary)
+	sees(t, string(written), code, 1, "Summary truncated.", "Complete report saved on the runner at")
+	complete, err := os.ReadFile(summary + ".fitness-report.md")
+	if err != nil || !strings.Contains(string(complete), "Unknown word (zorbleflux)") {
+		t.Errorf("the complete report must hold every finding: %v", err)
+	}
+	if len(written) > 1<<20 {
+		t.Errorf("summary is %d bytes, over the 1 MiB limit", len(written))
+	}
+}

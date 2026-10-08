@@ -19,7 +19,7 @@ Scope is required (e.g. `feat(api): add endpoint`). Merge commits are always acc
 - Fail: Subject doesn’t match → error with suggested format and allowed types.
 - Fail (no repo / git error / empty message): Returns a no-message error so commit-msg hook and explicit `--message` runs get a clear signal.
 
-This check declares a context-inline `--message` argument in its `--describe` metadata. From a Git commit-msg hook, pass the message string: `fitness --check=semantic-commit --message="$(cat "$1")"` so the check validates the proposed message instead of HEAD. The `pr-check` workflow passes the PR title the same way, so a squash-merge never lands a non-semantic subject on `main`.
+This check declares a context-inline `--message` argument in its `--describe` metadata. From a Git commit-msg hook, pass the message string: `fitness semantic-commit --message="$(cat "$1")"` so the check validates the proposed message instead of HEAD. The `pr-check` workflow passes the PR title the same way, so a squash-merge never lands a non-semantic subject on `main`.
 
 ## Contributing
 

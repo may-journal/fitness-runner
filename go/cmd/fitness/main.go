@@ -149,7 +149,6 @@ func printUsage() int {
 Usage:
   fitness                  run the full configured suite
   fitness <name>           run one check by name
-  fitness --check=<name>   run one check by name
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
@@ -169,7 +168,7 @@ func run(argv []string) int {
 		report.Error("fitness setup", err)
 		return 1
 	}
-	checks, jobs, passthrough, err := selectedChecks(root, argv)
+	checks, passthrough, err := selectedChecks(root, argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
@@ -178,7 +177,7 @@ func run(argv []string) int {
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
-	outcomes := runPool(root, checks, passthrough, env, jobs)
+	outcomes := runPool(root, checks, passthrough, env)
 
 	rows, success, failure, files := summarize(checks, outcomes)
 	elapsed := time.Since(start).Milliseconds()
@@ -186,22 +185,9 @@ func run(argv []string) int {
 	return finish(rows, success, failure, files, elapsed)
 }
 
-// loadConfig loads the repo config; a legacy JS/TS config (kept while the TS
-// suite coexists) is tolerated in single-check mode, which never consults
-// the config.
-func loadConfig(root, spec string) (*conf.Config, error) {
-	cfg, err := conf.Load(root)
-	if err != nil && (spec == "" || !errors.Is(err, conf.ErrLegacyConfig)) {
-		return nil, err
-	}
-	return cfg, nil
-}
-
-// warnLegacyChecks notes on stderr that a retired checks list is ignored.
-func warnLegacyChecks(cfg *conf.Config) {
-	if cfg != nil && len(cfg.LegacyChecks) > 0 {
-		fmt.Fprintln(os.Stderr, "fitness: the checks list in .fitnessrc.json is ignored; every check runs.")
-	}
+// loadConfig loads the repo config.
+func loadConfig(root string) (*conf.Config, error) {
+	return conf.Load(root)
 }
 
 // prepareChecks resolves the check list, turning an empty resolution into
@@ -291,102 +277,27 @@ func printSummary(rows []render.Row, success, failure, files int, elapsedMs int6
 	fmt.Fprintln(out, total)
 }
 
-// parseArgv extracts the check spec (--check= wins over the first
-// positional; empty values are absent), --jobs, and the passthrough args.
-func parseArgv(argv []string) (spec string, fromFlag bool, jobs int, passthrough []string) {
-	s := scanArgv(argv)
-	var specIdx int
-	spec, specIdx, fromFlag = s.chooseSpec()
-	if spec == "" {
-		return spec, fromFlag, s.jobs, nil
-	}
-	return spec, fromFlag, s.jobs, collectPassthrough(argv, specIdx, fromFlag)
-}
-
-// argScan accumulates the classification pass over argv: the first
-// non-empty --check= value, the first non-empty positional, and --jobs.
-type argScan struct {
-	checkSpec, posSpec string
-	checkIdx, posIdx   int
-	jobs               int
-}
-
-// scanArgv classifies every argument; indices start at -1 (absent).
-func scanArgv(argv []string) argScan {
-	s := argScan{checkIdx: -1, posIdx: -1}
+// parseArgv returns the check named by the first non-flag argument and the
+// args forwarded to it: everything after its name except --all. With no
+// name, the full suite runs and nothing is forwarded.
+func parseArgv(argv []string) (spec string, passthrough []string) {
 	for i, a := range argv {
-		s.visit(i, a)
-	}
-	return s
-}
-
-// visit records one argument: runner flags by prefix, then anything that is
-// not a flag as a positional candidate; unknown flags are ignored.
-func (s *argScan) visit(i int, a string) {
-	switch {
-	case strings.HasPrefix(a, "--check="):
-		s.setCheck(i, strings.TrimPrefix(a, "--check="))
-	case strings.HasPrefix(a, "--jobs="):
-		s.setJobs(strings.TrimPrefix(a, "--jobs="))
-	case !strings.HasPrefix(a, "-"):
-		s.setPositional(i, a)
-	}
-}
-
-// setCheck keeps the first non-empty --check= value.
-func (s *argScan) setCheck(i int, v string) {
-	if v != "" && s.checkIdx < 0 {
-		s.checkSpec, s.checkIdx = v, i
-	}
-}
-
-// setJobs applies a valid --jobs= value (an integer >= 1); anything else is
-// ignored.
-func (s *argScan) setJobs(v string) {
-	if n, err := strconv.Atoi(v); err == nil && n >= 1 {
-		s.jobs = n
-	}
-}
-
-// setPositional keeps the first non-empty positional argument.
-func (s *argScan) setPositional(i int, a string) {
-	if a != "" && s.posIdx < 0 {
-		s.posSpec, s.posIdx = a, i
-	}
-}
-
-// chooseSpec picks the winning spec: --check= beats the positional; specIdx
-// is -1 when no spec was given.
-func (s argScan) chooseSpec() (spec string, specIdx int, fromFlag bool) {
-	if s.checkSpec != "" {
-		return s.checkSpec, s.checkIdx, true
-	}
-	if s.posSpec != "" {
-		return s.posSpec, s.posIdx, false
-	}
-	return "", -1, false
-}
-
-// collectPassthrough gathers the args forwarded to a single check, dropping
-// the spec itself and the runner's own flags. Flag-form keeps args anywhere;
-// positional form keeps only args after the spec.
-func collectPassthrough(argv []string, specIdx int, fromFlag bool) []string {
-	var passthrough []string
-	for i, a := range argv {
-		if isRunnerArg(a, i, specIdx) {
-			continue
-		}
-		if fromFlag || i > specIdx {
-			passthrough = append(passthrough, a)
+		if a != "" && !strings.HasPrefix(a, "-") {
+			return a, withoutAll(argv[i+1:])
 		}
 	}
-	return passthrough
+	return "", nil
 }
 
-// isRunnerArg reports whether argv[i] belongs to the runner itself (the
-// spec or a --check=/--jobs= flag) and must not be forwarded.
-func isRunnerArg(a string, i, specIdx int) bool {
-	return i == specIdx || a == allFlag || strings.HasPrefix(a, "--check=") || strings.HasPrefix(a, "--jobs=")
+// withoutAll drops the runner's own --all flag from args.
+func withoutAll(args []string) []string {
+	var out []string
+	for _, a := range args {
+		if a != allFlag {
+			out = append(out, a)
+		}
+	}
+	return out
 }
 
 // resolveChecks builds the check list: the one named on the CLI, else every
@@ -451,7 +362,7 @@ func findCheckBinary(name string) (string, error) {
 			return sibling, nil
 		}
 	}
-	return exec.LookPath(binName)
+	return "", fmt.Errorf("%s is not installed beside fitness", binName)
 }
 
 // describe asks a check binary for its metadata; zero value on any failure.
@@ -544,13 +455,8 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 
 // runPool executes every check with bounded parallelism, dispatching in
 // order and printing the progress line as each starts.
-func runPool(root string, checks []resolved, passthrough, env []string, jobs int) []outcome {
-	if jobs < 1 {
-		jobs = runtime.NumCPU()
-		if jobs > 8 {
-			jobs = 8
-		}
-	}
+func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
+	jobs := min(runtime.NumCPU(), 8)
 	outcomes := make([]outcome, len(checks))
 	sem := make(chan struct{}, jobs)
 	var wg sync.WaitGroup
@@ -595,7 +501,7 @@ func runOne(root string, c resolved, passthrough, env []string) outcome {
 }
 
 // waitWithBudget waits for cmd within budget; on overrun it TERMs the
-// process group, then KILLs after a grace period. Reports whether the check
+// process group, then KILLs the group after a grace period. Reports whether the check
 // timed out.
 func waitWithBudget(cmd *exec.Cmd, budget time.Duration) bool {
 	done := make(chan error, 1)
@@ -606,13 +512,25 @@ func waitWithBudget(cmd *exec.Cmd, budget time.Duration) bool {
 	case <-time.After(budget):
 	}
 	killGroup(cmd.Process.Pid, syscall.SIGTERM)
+	if exitedWithin(done, 2*time.Second) {
+		// The check is gone, but a tool it started may ignore the stop
+		// signal; kill whatever is left in its group.
+		_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+		return true
+	}
+	killGroup(cmd.Process.Pid, syscall.SIGKILL)
+	<-done
+	return true
+}
+
+// exitedWithin reports whether the check exits within grace.
+func exitedWithin(done <-chan error, grace time.Duration) bool {
 	select {
 	case <-done:
-	case <-time.After(2 * time.Second):
-		killGroup(cmd.Process.Pid, syscall.SIGKILL)
-		<-done
+		return true
+	case <-time.After(grace):
+		return false
 	}
-	return true
 }
 
 // decodeOutcome parses the check's protocol result from stdout; a non-JSON

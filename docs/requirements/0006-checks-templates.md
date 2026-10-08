@@ -19,7 +19,7 @@ Source: `go/cmd/fitness-check-requirements/doc.go:86`
 ## Requirements
 
 - 0006.1
-    - Given a doc whose file name and title carry different IDs
+    - Given a doc whose file name and title do not carry the same ID
         - When fitness runs
             - Then it fails
 - 0006.2
@@ -27,7 +27,7 @@ Source: `go/cmd/fitness-check-requirements/doc.go:86`
         - When fitness runs
             - Then it fails
 - 0006.3
-    - Given a doc with sections other than Why, Measurement, and Requirements
+    - Given a doc whose sections are not Why, Measurement, and Requirements, each with content
         - When fitness runs
             - Then it fails
 - 0006.4

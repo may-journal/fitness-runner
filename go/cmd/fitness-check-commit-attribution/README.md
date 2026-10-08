@@ -14,7 +14,7 @@ Add both trailers to a commit, and every later commit must carry them too. Wire 
 
 ```sh
 # .git/hooks/commit-msg
-fitness --check=commit-attribution --message="$(cat "$1")"
+fitness commit-attribution --message="$(cat "$1")"
 ```
 
 ## What passes

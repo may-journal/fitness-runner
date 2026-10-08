@@ -45,7 +45,7 @@ lint: fmt-check vet ## Run format check + go vet
 
 check: lint test ## Run everything CI runs (lint + tests)
 
-run: build ## Run the fitness suite on this repo, e.g. make run ARGS="--check=cspell"
+run: build ## Run the fitness suite on this repo, e.g. make run ARGS="cspell"
 	./$(GO_DIR)/bin/fitness $(ARGS)
 
 tidy: ## Tidy go.mod / go.sum

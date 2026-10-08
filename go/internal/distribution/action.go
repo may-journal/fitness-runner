@@ -62,15 +62,14 @@ func actionSelection(getenv func(string) string) ([]string, error) {
 	if check != "" && checks != "" {
 		return nil, fmt.Errorf("choose action check or checks, not both")
 	}
-	var args []string
-	for _, input := range []struct{ flag, value string }{
-		{"--policy=", getenv("FITNESS_POLICY")},
-		{"--checks=", checks},
-		{"--check=", check},
-	} {
-		if input.value != "" {
-			args = append(args, input.flag+input.value)
-		}
+	args := append(withValue("--policy=", getenv("FITNESS_POLICY")), withValue("--checks=", checks)...)
+	return append(args, withValue("", check)...), nil
+}
+
+// withValue is the single argument flag+value, or nothing when value is empty.
+func withValue(flag, value string) []string {
+	if value == "" {
+		return nil
 	}
-	return args, nil
+	return []string{flag + value}
 }

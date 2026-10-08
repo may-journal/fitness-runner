@@ -70,12 +70,6 @@ func EnabledChecks() []string {
 	return splitLines(os.Getenv("FITNESS_ENABLED_CHECKS"))
 }
 
-// CheckName returns the name the runner resolved this binary as — flavor
-// packages branch on it. Empty when run standalone.
-func CheckName() string {
-	return os.Getenv("FITNESS_CHECK_NAME")
-}
-
 // CtxMessage returns the context-inline commit message and whether the
 // runner provided one at all (present-but-empty differs from absent).
 func CtxMessage() (string, bool) {

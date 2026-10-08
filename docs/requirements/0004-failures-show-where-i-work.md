@@ -38,3 +38,11 @@ Source: `go/cmd/fitness/ci.go:139`
     - Given a run with failing checks
         - When fitness writes the job summary
             - Then it shows every check and each failure in full
+- 0004.6
+    - Given a run that fails before any check starts
+        - When fitness reports it in GitHub Actions
+            - Then one annotation names the setup failure without a file
+- 0004.7
+    - Given a job summary that earlier steps filled near its limit
+        - When fitness writes the job summary
+            - Then the summary says it was cut and where the complete report is

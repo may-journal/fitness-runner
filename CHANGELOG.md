@@ -7,13 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.08.1550
+### 2026.10.08.1619
 
 - Feat: requirements check holds docs/requirements to one template with never-reused IDs; Go test Test0001_1 owns acceptance 0001.1.
-- Feat: prose-budget halves list caps per nesting level, and .fitnessrc.json timeoutMs replaces the default budget in external mode too.
-- Feat: disabledChecks is retired; every check runs, and a .fitnessrc.json that still sets it fails.
-- Test: requirement tests run the fitness-install one-liner in tests/examples repos, replacing in-process and internal tests.
-- Ci: the smoke job runs the requirement tests with the candidate installer, without the job's GitHub environment.
+- Feat: retire disabledChecks, --check=, --jobs, legacy JS config detection, and PATH lookup; name a check positionally.
+- Fix: a stopped check's leftover tools are killed, and external mode applies the configured timeoutMs.
+- Test: requirement tests run the fitness-install one-liner in tests/examples repos; the smoke job runs them.
+- Docs: requirements 0001 to 0008 state runner status, errors, annotations, and the two checks they cover.
 
 ### 2026.10.06.0014
 

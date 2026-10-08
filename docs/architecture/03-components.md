@@ -87,7 +87,7 @@ Numbers on nodes and arrows match the callout table.
 
 `go/cmd/fitness` produces an ordered name list, then resolves each name to `fitness-check-<name>` beside the runner, then on PATH:
 
-1. A CLI name (`fitness prettier` or `--check=eslint`) — run only that built-in check; an unknown name is an error.
+1. A CLI name (`fitness prettier`) — run only that built-in check; an unknown name is an error.
 2. Otherwise — the embedded `allChecks` list, in order. A missing binary for a listed check fails the run.
 
 Every check runs in every repo and passes clean with zero files when it does not apply. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning.

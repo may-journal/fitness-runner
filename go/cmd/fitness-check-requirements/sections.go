@@ -24,50 +24,38 @@ func checkMeasurement(p *problems, root string, s section) {
 	if len(s.lines) == 0 {
 		return
 	}
-	if len(s.lines) != 4 || strings.TrimSpace(s.lines[1].text) != "-" {
+	if !isRatio(s.lines) {
 		p.add(s.n, "Measurement needs four lines: numerator, `-`, denominator, `Source:`")
 		return
 	}
-	checkSourceLine(p, root, s.lines[3])
-}
-
-// checkSourceLine requires "Source:" and a valid citation after it.
-func checkSourceLine(p *problems, root string, l line) {
-	src, ok := strings.CutPrefix(strings.TrimSpace(l.text), "Source:")
-	if !ok {
-		p.add(l.n, "the last Measurement line must start with `Source:`")
-		return
-	}
-	if msg := checkSource(root, strings.Trim(strings.TrimSpace(src), "`")); msg != "" {
-		p.add(l.n, msg)
+	src := strings.TrimPrefix(strings.TrimSpace(s.lines[3].text), "Source:")
+	if !validSource(root, strings.Trim(strings.TrimSpace(src), "`")) {
+		p.add(s.lines[3].n, "Source must cite either one existing line of code (`path:line`) or one issue (`#123`)")
 	}
 }
 
-// checkSource accepts one issue reference or one existing path:line, and
-// returns the problem otherwise.
-func checkSource(root, src string) string {
+// isRatio reports whether lines are a numerator, a "-" line, a denominator,
+// and a Source line.
+func isRatio(lines []line) bool {
+	return len(lines) == 4 && strings.TrimSpace(lines[1].text) == "-" && strings.HasPrefix(strings.TrimSpace(lines[3].text), "Source:")
+}
+
+// validSource accepts one issue reference or one path:line that exists in
+// the repo.
+func validSource(root, src string) bool {
 	if issueSource.MatchString(src) {
-		return ""
+		return true
 	}
 	m := codeSource.FindStringSubmatch(src)
-	if m == nil {
-		return "Source must cite either one line of code (`path:line`) or one issue (`#123`)"
-	}
-	return checkCodeLine(root, m[1], m[2])
+	return m != nil && codeLineExists(root, m[1], m[2])
 }
 
-// checkCodeLine requires a repo file with at least n lines.
-func checkCodeLine(root, file, n string) string {
+// codeLineExists reports whether file is in the repo with at least n lines.
+func codeLineExists(root, file, n string) bool {
 	clean := path.Clean(file)
 	b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(clean)))
-	if strings.HasPrefix(clean, "../") || err != nil {
-		return "Source cites " + file + ", which is not a file in this repo"
-	}
 	want, _ := strconv.Atoi(n)
-	if strings.Count(string(b), "\n")+1 < want {
-		return "Source cites line " + n + " of " + file + ", which is past its end"
-	}
-	return ""
+	return err == nil && !strings.HasPrefix(clean, "../") && strings.Count(string(b), "\n")+1 >= want
 }
 
 // item is one list line: its indent width and text after "- ".
@@ -84,7 +72,7 @@ func parseRequirements(p *problems, docID string, s section) []idLine {
 	}
 	var out []idLine
 	seen := map[string]bool{}
-	for _, g := range groupItems(p, s.lines) {
+	for _, g := range groupItems(p, docID, s.lines) {
 		a := checkAcceptance(p, docID, g)
 		if seen[a.id] {
 			p.add(a.line, a.id+" appears twice; each acceptance needs its own ID")
@@ -97,10 +85,10 @@ func parseRequirements(p *problems, docID string, s section) []idLine {
 
 // groupItems splits list items into groups, each a top-level item and the
 // items nested under it.
-func groupItems(p *problems, lines []line) [][]item {
+func groupItems(p *problems, docID string, lines []line) [][]item {
 	var groups [][]item
 	for _, l := range lines {
-		it, ok := toItem(p, l)
+		it, ok := toItem(p, docID, l)
 		if !ok {
 			continue
 		}
@@ -112,12 +100,12 @@ func groupItems(p *problems, lines []line) [][]item {
 	return groups
 }
 
-// toItem parses a "- text" line, reporting any other line.
-func toItem(p *problems, l line) (item, bool) {
+// toItem parses a "- text" line. Any other line is not an acceptance.
+func toItem(p *problems, docID string, l line) (item, bool) {
 	trimmed := strings.TrimLeft(l.text, " \t")
 	text, ok := strings.CutPrefix(trimmed, "- ")
 	if !ok {
-		p.add(l.n, "Requirements holds only list items")
+		p.add(l.n, idMessage(docID))
 		return item{}, false
 	}
 	indent := len(strings.ReplaceAll(l.text[:len(l.text)-len(trimmed)], "\t", "    "))
@@ -141,11 +129,8 @@ func checkAcceptance(p *problems, docID string, g []item) idLine {
 
 // checkChainLine requires child to start with kw and sit deeper than parent.
 func checkChainLine(p *problems, kw string, parent, child item) {
-	if !strings.HasPrefix(child.text, kw+" ") {
-		p.add(child.n, "this line must start with `"+kw+" `")
-	}
-	if child.indent <= parent.indent {
-		p.add(child.n, "`"+kw+"` must be nested one level under the line above")
+	if !strings.HasPrefix(child.text, kw+" ") || child.indent <= parent.indent {
+		p.add(child.n, "each acceptance is one Given, then one When, then one Then, each nested under the line above")
 	}
 }
 
@@ -153,6 +138,11 @@ func checkChainLine(p *problems, kw string, parent, child item) {
 func checkAcceptanceID(p *problems, docID string, top item) {
 	m := acceptID.FindStringSubmatch(top.text)
 	if top.indent != 0 || m == nil || m[1] != docID {
-		p.add(top.n, "top-level items must be acceptance IDs `"+docID+".N`")
+		p.add(top.n, idMessage(docID))
 	}
+}
+
+// idMessage says what a top-level Requirements line must be.
+func idMessage(docID string) string {
+	return "top-level items must be acceptance IDs `" + docID + ".N`"
 }

@@ -79,7 +79,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 1   | Developer or AI agent.           | Persona | Agent invokes via hook or script; same CLI as a human — no separate agent-only path.                                 |
 | 2   | Terminal / shell.                | Screen  | Repo root; the working directory is the app under test, not the runner's own source.                                 |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                                                            |
-| 4   | `fitness <name>` / `--check=…`.  | Action  | Single-check mode bypasses list resolution entirely.                                                                 |
+| 4   | `fitness <name>`.               | Action  | Single-check mode bypasses list resolution entirely.                                                                 |
 | 5   | Resolve check list.              | System  | Every built-in check; checks that do not apply pass clean.                                                           |
 | 6   | Passthrough args forwarded.      | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).                                     |
 | 7   | Run loop executes each check.    | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout.                                |

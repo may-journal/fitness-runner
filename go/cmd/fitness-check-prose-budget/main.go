@@ -237,34 +237,20 @@ func snippet(s string) string {
 }
 
 // nestingErrors caps each level of a list at half the level above, rounding
-// down: with 8 top-level items, each item holds at most 4 children, each
-// child at most 2, and each of those 1. A level whose cap reaches 0 allows
-// no items.
+// down from the top-level cap: with 8 top-level items, each item holds at
+// most 4 children, each child at most 2, and each of those 1. A level whose
+// cap reaches 0 allows no items.
 func nestingErrors(rel string, bl block, max int) []string {
 	var errs []string
-	if top := countDepth(bl.depths, 0); top > max {
-		errs = append(errs, fmt.Sprintf("%s: a list has %d items (max %d)", rel, top, max))
-	}
 	counts := map[int]int{}
 	for i, d := range bl.depths {
 		resetDeeper(counts, d)
 		counts[d]++
-		if d > 0 && counts[d] == (max>>d)+1 {
-			errs = append(errs, fmt.Sprintf("%s: a list item nests more than %d items at level %d: %q", rel, max>>d, d+1, snippet(bl.items[i])))
+		if counts[d] == (max>>d)+1 {
+			errs = append(errs, fmt.Sprintf("%s: a list has more than %d items at level %d: %q", rel, max>>d, d+1, snippet(bl.items[i])))
 		}
 	}
 	return errs
-}
-
-// countDepth counts the items at depth d.
-func countDepth(depths []int, d int) int {
-	n := 0
-	for _, x := range depths {
-		if x == d {
-			n++
-		}
-	}
-	return n
 }
 
 // resetDeeper resets the sibling counts of every level deeper than d, since an

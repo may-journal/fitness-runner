@@ -86,8 +86,8 @@ func loadDocs(root string, paths []string) ([]reqDoc, []string, error) {
 func parseDoc(root, file, body string) (reqDoc, []string) {
 	p := &problems{path: file}
 	head, sections := splitSections(contentLines(body))
-	d := reqDoc{path: file, id: checkName(p, file)}
-	d.idLine = checkTitle(p, d.id, head)
+	d := reqDoc{path: file}
+	d.id, d.idLine = checkNameAndTitle(p, file, head)
 	checkSectionNames(p, sections)
 	byName := map[string]section{}
 	for _, s := range sections {
@@ -146,41 +146,39 @@ func splitSections(lines []line) ([]line, []section) {
 	return head, sections
 }
 
-// checkName requires NNNN-kebab-title.md and returns its ID.
-func checkName(p *problems, file string) string {
+// checkNameAndTitle requires NNNN-kebab-title.md with one "# NNNN Title"
+// line carrying the same ID, and returns that ID and the title's line.
+func checkNameAndTitle(p *problems, file string, head []line) (string, int) {
 	m := fileNamePattern.FindStringSubmatch(path.Base(file))
-	if m == nil {
-		p.add(1, "name the file NNNN-kebab-title.md, where NNNN is the requirement ID")
-		return ""
+	n, title := titleLine(head)
+	t := titlePattern.FindStringSubmatch(title)
+	if m == nil || t == nil || t[1] != m[1] {
+		p.add(n, "name the file NNNN-kebab-title.md and title it `# NNNN Title` with the same ID")
 	}
-	return m[1]
+	if m == nil {
+		return "", n
+	}
+	return m[1], n
 }
 
-// checkTitle requires a single "# NNNN Title" line whose ID matches the file
-// name, and returns its line number.
-func checkTitle(p *problems, id string, head []line) int {
+// titleLine returns the one line before the sections, or none.
+func titleLine(head []line) (int, string) {
 	if len(head) != 1 {
-		p.add(1, "start with exactly one title line, `# NNNN Title`, before the sections")
-		return 1
+		return 1, ""
 	}
-	m := titlePattern.FindStringSubmatch(head[0].text)
-	if m == nil || m[1] != id {
-		p.add(head[0].n, "the title must be `# "+id+" Title`, matching the file name's ID")
-	}
-	return head[0].n
+	return head[0].n, head[0].text
 }
 
 // checkSectionNames requires exactly Why, Measurement, and Requirements, in
 // that order, each with content.
 func checkSectionNames(p *problems, sections []section) {
 	var names []string
+	empty := false
 	for _, s := range sections {
 		names = append(names, s.name)
-		if len(s.lines) == 0 {
-			p.add(s.n, "section `## "+s.name+"` is empty")
-		}
+		empty = empty || len(s.lines) == 0
 	}
-	if strings.Join(names, ",") != strings.Join(sectionNames, ",") {
-		p.add(1, "sections must be exactly ## Why, ## Measurement, ## Requirements, in that order")
+	if empty || strings.Join(names, ",") != strings.Join(sectionNames, ",") {
+		p.add(1, "sections must be exactly ## Why, ## Measurement, ## Requirements, in that order, each with content")
 	}
 }
