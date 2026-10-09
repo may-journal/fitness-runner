@@ -44,8 +44,9 @@ func Test0014_4(t *testing.T) {
 	sees(t, out, code, 1, "#"+itoa(bug))
 }
 
+// Test0014_5 sweeps every open sandbox item, so it runs alone, before the
+// parallel tests start.
 func Test0014_5(t *testing.T) {
-	t.Parallel()
 	plan := newIssue(t, planBody("- [x] Write the tests."), "Plan")
 	pr := newPR(t, "test(app): add one file", prBody(plan))
 	listed(t, "pulls?state=open", pr)
