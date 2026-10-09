@@ -8,6 +8,8 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 A requirement doc states what a user can do, in the user's voice. Each acceptance in it is owned by exactly one test. That test runs the built product on a real example and asserts only what the acceptance promises. The outside world is replayed from saved answers, so the suite runs offline and fast.
 
+The canonical copy lives in fitness-runner at `skills/add-requirements`. On the shared Mac, `~/agents/skills/add-requirements` links to it, so every agent finds it.
+
 fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs/requirements), one test package under [go/requirements](../../go/requirements). Read [0061-engine-installer.md](../../docs/requirements/0061-engine-installer.md) and [0061_test.go](../../go/requirements/0061_test.go) side by side before starting.
 
 ## Write one doc per user-facing area
@@ -25,7 +27,7 @@ The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [require
 
 Exactly one test owns each acceptance, and its name carries the ID: in Go, `Test0001_1` owns 0001.1. A test named for an acceptance that no doc defines fails. Delete the test when you delete the acceptance.
 
-The requirements check enforces this naming for Go today. Swift and TypeScript naming is planned and not yet decided, so note that gap for the owner instead of inventing a rule.
+The requirements check enforces this naming for Go today. Swift comes next, piloted on May Photos, and this skill gains a Swift section from that pilot. Until then, note the gap for the owner instead of inventing a Swift or TypeScript rule.
 
 ## Drive the real product
 
@@ -55,7 +57,7 @@ Once an acceptance's real run covers a behavior, the unit test that stitched int
 
 ## Measure the real runs
 
-Coverage of the real runs shows the unstated requirements. For Go, build the product with `go build -cover`, set `GOCOVERDIR` for every child process, and merge the profiles. The [go-test-coverage README](../../go/cmd/fitness-check-go-test-coverage/README.md) describes the compiled-tools path. Read the uncovered lines as a list of questions: which promise reaches this, and is it written down?
+Coverage of the real runs shows the unstated requirements. In this repo, `make requirements-coverage` builds the product with coverage, runs the suite, and prints coverage by package and in total. Elsewhere in Go, build with `go build -cover` and set `GOCOVERDIR` for the runs. Read the uncovered lines as a list of questions: which promise reaches this, and is it written down?
 
 ## Keep the suite fast
 

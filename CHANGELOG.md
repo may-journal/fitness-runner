@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1618
+
+- Chore: make requirements-coverage builds with coverage, runs the suite, and prints coverage by package and in total.
+- Docs: the add-requirements skill points at requirements-coverage and names May Photos as the Swift pilot.
+- Docs: the skill says its canonical copy lives here, linked from ~/agents/skills on the shared Mac.
+
 ### 2026.10.09.1605
 
 - Docs: skills/add-requirements/SKILL.md teaches an agent to add stated requirements proven by real-run tests.
