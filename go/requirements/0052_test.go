@@ -41,7 +41,10 @@ func prettierRun(t *testing.T, files map[string]string, args ...string) (string,
 
 func Test0052_1(t *testing.T) {
 	t.Parallel()
-	out, code := prettierRun(t, prettierJS(map[string]string{".prettierrc.json": `{ "singleQuote": true, "semi": false }` + "\n"}))
+	repo := example(t, "happyRepo", prettierJS(map[string]string{".prettierrc.json": `{ "singleQuote": true, "semi": false }` + "\n"}))
+	withJSTools(t, repo)
+	// FORCE_COLOR makes Prettier color its output, as it does in CI.
+	out, code := fitness(t, repo, []string{"FORCE_COLOR=1"}, "prettier")
 	sees(t, out, code, 1, "✖ app.js")
 }
 

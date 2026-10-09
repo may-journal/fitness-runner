@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -98,6 +99,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 		env = withNodePath(env, root)
 	}
 	exitCode, output := execPrettier(bin, root, env, prettierArgv(configPath, args, paths))
+	output = ansiCodes.ReplaceAllString(output, "")
 	parsed := parsePrettierOutput(output)
 	return buildExecResult(exitCode, parsed, prettierErrors(output), filesChecked(parsed, paths)), nil
 }
@@ -292,6 +294,10 @@ func execPrettier(bin, root string, env, argv []string) (exitCode int, output st
 	}
 	return exitCode, combined.String()
 }
+
+// ansiCodes matches terminal color codes. Prettier colors its output in CI,
+// which would hide the [warn] and [error] prefixes the check reads.
+var ansiCodes = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // parsePrettierOutput extracts file paths from [warn] lines, skipping the
 // "Code style issues" summary line.
