@@ -75,22 +75,16 @@ For a large product, split the work by component and run one agent per component
 
 ## Adopting in a new project
 
-- Pick the first component: the one with the clearest user-facing commands.
-- Write its requirement doc from what the product promises today, with one to eight acceptances.
-- Build the helpers: copy the example, run the real product, assert what the user sees, replay what leaves the machine.
+Convert every component before turning the requirements check on, so the project is never red.
+
+- List the components and assign each a block of requirement IDs.
+- Build the shared helpers first: copy the example, run the real product, assert what the user sees, replay what leaves the machine.
+- For each component, write its doc from what the product promises today, with one to eight acceptances.
 - Write one test per acceptance, named for it, and prove each fails for the right reason.
-- Delete the unit tests the real runs repeat.
-- Measure coverage of the real runs and turn each uncovered promise into an acceptance or a deletion.
-- Turn on the requirements check through the reusable workflows in [docs/adoption.md](../../docs/adoption.md).
-- Repeat per component, or fan out as above.
+- Delete the unit tests the real runs repeat, and fan out across components as above.
+- Measure coverage and turn each uncovered promise into an acceptance or a deletion.
+- With no unit test left unmapped, turn on the requirements check through [docs/adoption.md](../../docs/adoption.md).
 
-## Conventions this repo enforces on docs
+## Doc conventions
 
-Fitness judges every tracked markdown file, including requirement docs and this skill. The [check protocol](../../docs/check-protocol.md) explains how, and each check's README states its rule.
-
-- Prose budget: at most 23 words per sentence or list item, 8 items per list, and 4 sentences per paragraph.
-- Nested lists halve the cap at each level: 8, then 4, 2, and 1.
-- No bold or italic in markdown.
-- Front matter must declare `relatedConfigurations` or `fitnessFunctions`, and every path in it must exist.
-- Markdown file names are kebab-case; capitalized names such as `SKILL.md` and `README.md` are exempt.
-- Every relative link must resolve, and words must pass cspell.
+Fitness judges every tracked markdown file, requirement docs and this skill included. [docs/checks.md](../../docs/checks.md) lists the checks, and each check's README states its limits; the project's own fitness run reports any you miss.
