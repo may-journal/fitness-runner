@@ -17,9 +17,11 @@ import (
 // open issues and pull requests there and read back what the commands did.
 const sandbox = "may-journal/fitness-sandbox"
 
-// gh runs the gh CLI as the test's own user and returns what it printed.
+// gh runs the gh CLI as the test's own user and returns what it printed. It
+// skips the test without a candidate installer, before touching GitHub.
 func gh(t *testing.T, args ...string) string {
 	t.Helper()
+	installer(t)
 	cmd := exec.Command("gh", args...)
 	cmd.Env = userEnv()
 	out, err := cmd.Output()
