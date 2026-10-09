@@ -18,9 +18,11 @@ import (
 var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
 // example copies tests/examples/<name> into a fresh directory, writes the
-// Given's files over it, and commits it as a user's repo would be.
+// Given's files over it, and commits it as a user's repo would be. Each test
+// skips first, before any setup, when no candidate installer is set.
 func example(t *testing.T, name string, files map[string]string) string {
 	t.Helper()
+	installer(t)
 	repo := t.TempDir()
 	if err := os.CopyFS(repo, os.DirFS(filepath.Join("..", "..", "tests", "examples", name))); err != nil {
 		t.Fatal(err)

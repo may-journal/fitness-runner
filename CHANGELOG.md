@@ -7,12 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.09.1321
+### 2026.10.09.1334
 
 - Docs: requirements 0016 to 0063 state every remaining check's rules and the install, release, and stamp tools.
 - Test: each acceptance runs the installed check or tool on a real repo; 226 in-process unit tests are deleted.
 - Test: eslint, prettier, vitest, and swiftlint requirement tests run the real tools, pinned in tests/tools/install.sh.
-- Ci: the smoke job installs those real tools before the requirement tests run.
+- Ci: the smoke job installs those real tools; each test skips first when no candidate installer is set.
 
 ### 2026.10.09.1204
 
