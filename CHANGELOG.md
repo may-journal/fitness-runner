@@ -7,12 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.09.1446
+### 2026.10.09.1453
 
 - Fix: the release workflow passes its secrets to the binaries job, so release smoke tests can reach GitHub.
 - Fix: release smoke jobs read Plans and write to the sandbox with `FITNESS_SANDBOX_TOKEN`, as pull request smoke does.
 - Fix: a release no longer stalls as a draft because smoke tests ran without a token.
-- Fix: changelog-bullets ends an entry at a ## release heading; the duplicate 1.0.1 entry it hid is removed.
+- Fix: changelog-bullets ends an entry at a ## release heading and allows releases up to the prose-budget list limit.
 
 ## 1.1.0
 
@@ -21,7 +21,7 @@ relatedConfigurations: ['.fitnessrc.json']
 - Feat: requirements: own every Go test with a stated requirement ([#204](https://github.com/may-journal/fitness-runner/issues/204)) ([c6ba991](https://github.com/may-journal/fitness-runner/commit/c6ba991cd1e6376aa7644ba3f6b46ea2c5c5c0df))
 - Fix: prettier: name unformatted files in CI, where Prettier colors its output ([#230](https://github.com/may-journal/fitness-runner/issues/230)) ([d4b529e](https://github.com/may-journal/fitness-runner/commit/d4b529e51fba47c6aa77346c317481a4b2261632))
 - Fix: hooks: `fitness init` and `fitness hook` outside a git repo say why ([#221](https://github.com/may-journal/fitness-runner/issues/221)) ([607bf0a](https://github.com/may-journal/fitness-runner/commit/607bf0a9fac7c5dbe8d5b28dfd9d638082e34453))
-- Test: requirements: every check and tool is proven by real runs, in parallel; 226 unit tests removed ([#226](https://github.com/may-journal/fitness-runner/issues/226)) ([6fb1169](https://github.com/may-journal/fitness-runner/commit/6fb1169c0d5a1967d6fd39a3d4a6a64536b65124)) ([#230](https://github.com/may-journal/fitness-runner/issues/230)) ([d4b529e](https://github.com/may-journal/fitness-runner/commit/d4b529e51fba47c6aa77346c317481a4b2261632))
+- Test: requirements: every check and tool is proven by real runs, in parallel; 226 unit tests removed ([#226](https://github.com/may-journal/fitness-runner/issues/226)) ([6fb1169](https://github.com/may-journal/fitness-runner/commit/6fb1169c0d5a1967d6fd39a3d4a6a64536b65124))
 - Ci: workflows: cut billed minutes and drop the macOS runners ([#202](https://github.com/may-journal/fitness-runner/issues/202)) ([2dff043](https://github.com/may-journal/fitness-runner/commit/2dff043d15678652e0efac0e3fb8db57843f6045))
 - Docs: installation: centralize the verified latest setup ([#198](https://github.com/may-journal/fitness-runner/issues/198)) ([fb84ddd](https://github.com/may-journal/fitness-runner/commit/fb84dddca754d21d6cc0f8ad70aa530c668ce37a))
 

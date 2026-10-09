@@ -39,7 +39,7 @@ var defaults = limits{
 	paragraphSentences: 4,
 	sectionParagraphs:  3,
 	listItemWords:      23,
-	listItems:          8,
+	listItems:          conf.DefaultMaxListItems,
 	words:              300,
 }
 

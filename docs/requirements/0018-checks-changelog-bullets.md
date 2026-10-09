@@ -47,6 +47,6 @@ Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
         - When changelog-bullets runs
             - Then it passes with no files checked
 - 0018.8
-    - Given an entry above a release section with more bullets
+    - Given an entry above a release section with more bullets than `proseBudget.maxListItems`
         - When changelog-bullets runs
-            - Then the release notes are not counted as the entry's bullets
+            - Then only the release section fails, naming that limit
