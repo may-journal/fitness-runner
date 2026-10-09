@@ -22,6 +22,7 @@ func closeIssue(t *testing.T, n int, body, reason string) map[string]any {
 const unfinished = "- [x] Write the doc.\n- [ ] Write the tests.\n"
 
 func Test0015_1(t *testing.T) {
+	t.Parallel()
 	n := newIssue(t, unfinished)
 	ev := closeIssue(t, n, unfinished, "completed")
 	out, code := action(t, "close-check", "issues", ev)
@@ -34,6 +35,7 @@ func Test0015_1(t *testing.T) {
 }
 
 func Test0015_2(t *testing.T) {
+	t.Parallel()
 	n := newIssue(t, unfinished)
 	ev := closeIssue(t, n, unfinished, "completed")
 	action(t, "close-check", "issues", ev)
@@ -45,6 +47,7 @@ func Test0015_2(t *testing.T) {
 }
 
 func Test0015_3(t *testing.T) {
+	t.Parallel()
 	n := newIssue(t, unfinished)
 	out, code := action(t, "close-check", "issues", closeIssue(t, n, unfinished, "not_planned"))
 	sees(t, out, code, 0, "closed as not_planned")
@@ -54,6 +57,7 @@ func Test0015_3(t *testing.T) {
 }
 
 func Test0015_4(t *testing.T) {
+	t.Parallel()
 	done := "- [x] Write the doc.\n- [x] Write the tests.\n"
 	n := newIssue(t, done)
 	out, code := action(t, "close-check", "issues", closeIssue(t, n, done, "completed"))

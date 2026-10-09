@@ -80,8 +80,12 @@ jobs:
         include:
           - runner: ubuntu-latest
             platform: linux-amd64
+            skip: ""
+          # The GitHub command tests (0013-0015) prove GitHub behavior, which
+          # no architecture changes, so they run in the amd64 job only.
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
+            skip: Test001[345]_
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
@@ -120,7 +124,7 @@ jobs:
           GH_TOKEN: ${{ secrets.FITNESS_SANDBOX_TOKEN }}
         run: |
           export FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-${{ matrix.platform }})"
-          go -C go test ./requirements -count=1
+          go -C go test ./requirements -count=1 -skip="${{ matrix.skip }}"
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

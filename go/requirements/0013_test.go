@@ -15,6 +15,7 @@ func judgePlan(t *testing.T, n int, body string) (string, int) {
 const brokenPlan = "> One clear pitch for this Plan.\n\n## What needs to happen\n\n- [ ] Write the tests.\n"
 
 func Test0013_1(t *testing.T) {
+	t.Parallel()
 	body := planBody("- [ ] Write the tests.")
 	n := newIssue(t, body, "Plan")
 	out, code := judgePlan(t, n, body)
@@ -26,6 +27,7 @@ func Test0013_1(t *testing.T) {
 }
 
 func Test0013_2(t *testing.T) {
+	t.Parallel()
 	n := newIssue(t, brokenPlan, "Plan")
 	out, code := judgePlan(t, n, brokenPlan)
 	sees(t, out, code, 1, "Background")
@@ -36,6 +38,7 @@ func Test0013_2(t *testing.T) {
 }
 
 func Test0013_3(t *testing.T) {
+	t.Parallel()
 	body := planBody("- [ ] Write the tests.")
 	n := newIssue(t, body, "Plan")
 	judgePlan(t, n, body)
@@ -47,6 +50,7 @@ func Test0013_3(t *testing.T) {
 }
 
 func Test0013_4(t *testing.T) {
+	t.Parallel()
 	n := newIssue(t, brokenPlan, "Plan")
 	judgePlan(t, n, brokenPlan)
 	fixed := planBody("- [ ] Write the tests.")
@@ -60,6 +64,7 @@ func Test0013_4(t *testing.T) {
 }
 
 func Test0013_5(t *testing.T) {
+	t.Parallel()
 	body := planBody("- [ ] Write the tests.")
 	n := newIssue(t, body, "Plan")
 	judgePlan(t, n, body)
@@ -74,6 +79,7 @@ func Test0013_5(t *testing.T) {
 }
 
 func Test0013_6(t *testing.T) {
+	t.Parallel()
 	n := newIssue(t, planBody("- [ ] Write the tests."), "Plan")
 	listed(t, "issues?labels=Plan&state=open", n)
 	out, _ := action(t, "plan-check", "workflow_dispatch", map[string]any{})

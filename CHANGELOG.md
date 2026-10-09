@@ -7,12 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.09.1156
+### 2026.10.09.1204
 
 - Feat: issue-checklist check fails an issue body with unchecked items; close-check and pr-check both run it.
 - Refactor: plan-check, pr-check, and close-check are declared as checks on a GitHub blob plus an after-effect.
 - Refactor: after-effects in internal/aftereffect own every GitHub write: verdicts, labels, hiding, and reopening.
-- Test: requirements 0012 to 0015 run GitHub commands in fitness-sandbox on sandbox branches keyed to source branch and platform.
+- Test: sandbox tests 0013 to 0015 run in parallel, in the amd64 smoke job only, on branches keyed to source and platform.
 - Docs: protocol and catalog describe blob input; engine, git hooks, push plan, and issue requirement files gain prefixes.
 
 ### 2026.10.08.2343

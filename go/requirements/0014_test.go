@@ -16,24 +16,28 @@ func judgePR(t *testing.T, title, body string) (string, int) {
 func itoa(n int) string { return strconv.Itoa(n) }
 
 func Test0014_1(t *testing.T) {
+	t.Parallel()
 	plan := newIssue(t, planBody("- [x] Write the tests."), "Plan")
 	out, code := judgePR(t, "test(app): add one file", prBody(plan))
 	sees(t, out, code, 0, "Passed.")
 }
 
 func Test0014_2(t *testing.T) {
+	t.Parallel()
 	plan := newIssue(t, planBody("- [x] Write the tests."), "Plan")
 	out, code := judgePR(t, "added one file", prBody(plan))
 	sees(t, out, code, 1, `"added one file"`)
 }
 
 func Test0014_3(t *testing.T) {
+	t.Parallel()
 	plan := newIssue(t, planBody("- [ ] Write the tests."), "Plan")
 	out, code := judgePR(t, "test(app): add one file", prBody(plan))
 	sees(t, out, code, 1, itoa(plan)+`, which has an unchecked item: "Write the tests."`)
 }
 
 func Test0014_4(t *testing.T) {
+	t.Parallel()
 	bug := newIssue(t, "A bug the Plan fixes.")
 	plan := newIssue(t, planBody("- [x] Fix the bug.")+fmt.Sprintf("\nCloses #%d\n", bug), "Plan")
 	out, code := judgePR(t, "test(app): add one file", prBody(plan))
@@ -41,6 +45,7 @@ func Test0014_4(t *testing.T) {
 }
 
 func Test0014_5(t *testing.T) {
+	t.Parallel()
 	plan := newIssue(t, planBody("- [x] Write the tests."), "Plan")
 	pr := newPR(t, "test(app): add one file", prBody(plan))
 	listed(t, "pulls?state=open", pr)
