@@ -7,11 +7,17 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.09.1628
+### 2026.10.09.1632
 
 - Chore: make requirements-coverage builds with coverage, runs the suite, and prints coverage by package and in total.
 - Docs: the add-requirements skill points at requirements-coverage and names May Photos as the Swift pilot.
 - Docs: the skill says to convert every component before turning the check on, and links the doc conventions.
+
+### 2026.10.09.1613
+
+- Feat: changelog: a release section may hold Release Please's Features and Bug Fixes subheadings and star bullets.
+- Feat: markdown-no-bold-italic: allows the bold scope Release Please gives each release bullet, and no other bold.
+- Docs: requirement 0064 states how release notes pass the changelog checks untouched.
 
 ### 2026.10.09.1605
 
