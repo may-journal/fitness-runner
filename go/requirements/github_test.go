@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -68,8 +69,8 @@ func setIssue(n int, fields ...string) error {
 // branch deleted when the test ends.
 func newPR(t *testing.T, title, body string) int {
 	t.Helper()
-	// A unique branch, since parallel CI jobs share the sandbox.
-	branch := fmt.Sprintf("test/%s-%d", strings.ToLower(strings.ReplaceAll(t.Name(), "_", "-")), time.Now().UnixNano())
+	branch := sandboxBranch(t)
+	_ = exec.Command("gh", "api", "-X", "DELETE", "repos/"+sandbox+"/git/refs/heads/"+branch).Run()
 	sha := gh(t, "api", "repos/"+sandbox+"/git/ref/heads/main", "-q", ".object.sha")
 	gh(t, "api", "repos/"+sandbox+"/git/refs", "-f", "ref=refs/heads/"+branch, "-f", "sha="+sha)
 	t.Cleanup(func() {
@@ -100,6 +101,23 @@ func listed(t *testing.T, path string, n int) {
 		time.Sleep(time.Second)
 	}
 	t.Fatalf("#%d never appeared in %s", n, path)
+}
+
+// sandboxBranch keys a sandbox branch to the source branch under test, the
+// platform, and the test, so parallel smoke jobs and other PRs never share
+// one. A leftover from a crashed run is replaced.
+func sandboxBranch(t *testing.T) string {
+	t.Helper()
+	source := os.Getenv("GITHUB_HEAD_REF")
+	if source == "" {
+		source = os.Getenv("GITHUB_REF_NAME")
+	}
+	if source == "" {
+		out, _ := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD").Output()
+		source = strings.TrimSpace(string(out))
+	}
+	test := strings.ToLower(strings.ReplaceAll(t.Name(), "_", "-"))
+	return fmt.Sprintf("test/%s/%s-%s/%s", source, runtime.GOOS, runtime.GOARCH, test)
 }
 
 // action runs `fitness-install -- <command>` the way its Actions step does,
