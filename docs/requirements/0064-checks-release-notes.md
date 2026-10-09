@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-changelog/main.go:88`
     - Given a timestamped entry using a star bullet
         - When changelog-bullets runs
             - Then the entry still fails as having too few bullets
+- 0064.7
+    - Given a release section under Release Please's linked version heading
+        - When the release-changelog check runs
+            - Then it finds the section and passes

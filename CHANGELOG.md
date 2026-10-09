@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1635
+
+- Fix: release-changelog: finds the release section under Release Please's linked version heading.
+- Fix: release-changelog: a release PR no longer fails as missing its own release section.
+- Test: acceptance 0064.7 runs the real check on a Release Please heading.
+
 ### 2026.10.09.1613
 
 - Feat: changelog: a release section may hold Release Please's Features and Bug Fixes subheadings and star bullets.
