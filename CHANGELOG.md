@@ -7,13 +7,22 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-## [1.1.0](https://github.com/may-journal/fitness-runner/compare/v1.0.1...v1.1.0) (2026-10-09)
+## 1.1.0
 
+- Feat: checks: new `issue-checklist` check; plan-check, pr-check, and close-check judge bodies with checks ([#222](https://github.com/may-journal/fitness-runner/issues/222)) ([01c64e6](https://github.com/may-journal/fitness-runner/commit/01c64e6603872b9fbfe23cafd4897f5b71971f80))
+- Feat: hooks: trace pushes to branch Plans and prove every hook path ([#221](https://github.com/may-journal/fitness-runner/issues/221)) ([607bf0a](https://github.com/may-journal/fitness-runner/commit/607bf0a9fac7c5dbe8d5b28dfd9d638082e34453))
+- Feat: requirements: own every Go test with a stated requirement ([#204](https://github.com/may-journal/fitness-runner/issues/204)) ([c6ba991](https://github.com/may-journal/fitness-runner/commit/c6ba991cd1e6376aa7644ba3f6b46ea2c5c5c0df))
+- Fix: prettier: name unformatted files in CI, where Prettier colors its output ([#230](https://github.com/may-journal/fitness-runner/issues/230)) ([d4b529e](https://github.com/may-journal/fitness-runner/commit/d4b529e51fba47c6aa77346c317481a4b2261632))
+- Fix: hooks: `fitness init` and `fitness hook` outside a git repo say why ([#221](https://github.com/may-journal/fitness-runner/issues/221)) ([607bf0a](https://github.com/may-journal/fitness-runner/commit/607bf0a9fac7c5dbe8d5b28dfd9d638082e34453))
+- Test: requirements: every check and tool is proven by real runs, in parallel; 226 unit tests removed ([#226](https://github.com/may-journal/fitness-runner/issues/226)) ([6fb1169](https://github.com/may-journal/fitness-runner/commit/6fb1169c0d5a1967d6fd39a3d4a6a64536b65124)) ([#230](https://github.com/may-journal/fitness-runner/issues/230)) ([d4b529e](https://github.com/may-journal/fitness-runner/commit/d4b529e51fba47c6aa77346c317481a4b2261632))
+- Ci: workflows: cut billed minutes and drop the macOS runners ([#202](https://github.com/may-journal/fitness-runner/issues/202)) ([2dff043](https://github.com/may-journal/fitness-runner/commit/2dff043d15678652e0efac0e3fb8db57843f6045))
+- Docs: installation: centralize the verified latest setup ([#198](https://github.com/may-journal/fitness-runner/issues/198)) ([fb84ddd](https://github.com/may-journal/fitness-runner/commit/fb84dddca754d21d6cc0f8ad70aa530c668ce37a))
 
-### Features
+### 2026.10.09.1428
 
-* **hooks:** trace pushes to branch Plans and prove every hook path ([#221](https://github.com/may-journal/fitness-runner/issues/221)) ([607bf0a](https://github.com/may-journal/fitness-runner/commit/607bf0a9fac7c5dbe8d5b28dfd9d638082e34453))
-* **requirements:** own every Go test with a stated requirement ([#204](https://github.com/may-journal/fitness-runner/issues/204)) ([c6ba991](https://github.com/may-journal/fitness-runner/commit/c6ba991cd1e6376aa7644ba3f6b46ea2c5c5c0df))
+- Docs: the 1.1.0 notes list the new issue-checklist check and the GitHub command rebuild.
+- Docs: the 1.1.0 notes list the prettier fix for colored CI output.
+- Docs: the 1.1.0 notes list the test, CI, and docs work since v1.0.1.
 
 ### 2026.10.09.1405
 
