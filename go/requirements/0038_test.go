@@ -25,43 +25,51 @@ const (
 )
 
 func Test0038_1(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"docs/design.md": calloutWhyDoc(calloutWhyNoWhy)})
 	sees(t, out, code, 1, `docs/design.md: callout table at line 10 is missing a "Why" column`)
 }
 
 func Test0038_2(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"docs/design.md": calloutWhyDoc(calloutWhyHead, "| [2] | an edge |  |")})
 	sees(t, out, code, 1, `docs/design.md: callout table row [2] has an empty "Why" cell (line 10)`)
 }
 
 func Test0038_3(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"docs/design.md": calloutWhyDoc(calloutWhyHead, "| 3 | an edge |")})
 	sees(t, out, code, 1, `docs/design.md: callout table row 3 has an empty "Why" cell (line 10)`)
 }
 
 func Test0038_4(t *testing.T) {
+	t.Parallel()
 	doc := calloutWhyDoc("| # | Description | WHY |\n| --- | --- | --- |", "| 1 | an edge | it carries the request |")
 	out, code := calloutWhy(t, map[string]string{"docs/design.md": doc})
 	sees(t, out, code, 0, "All 1 checks passed · 1 files scanned")
 }
 
 func Test0038_5(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"docs/design.md": calloutWhyDoc(calloutWhyHead, "| n/a | an edge |  |")})
 	sees(t, out, code, 0, "All 1 checks passed · 1 files scanned")
 }
 
 func Test0038_6(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"docs/design.md": "# Design\n\n" + calloutWhyNoWhy + "\n"})
 	sees(t, out, code, 1, `docs/design.md: callout table at line 3 is missing a "Why" column`)
 }
 
 func Test0038_7(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"docs/plain.md": "# Plain\n\n| Name | Value |\n| --- | --- |\n| a | b |\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "mermaid-callout-why")
 }
 
 func Test0038_8(t *testing.T) {
+	t.Parallel()
 	out, code := calloutWhy(t, map[string]string{"body.md": "## Design\n\n" + calloutWhyNoWhy + "\n"}, "--body-file", "body.md")
 	sees(t, out, code, 1, `(description): callout table at line 3 is missing a "Why" column`)
 }

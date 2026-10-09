@@ -26,6 +26,7 @@ func commitAttribution(t *testing.T, messages []string, args ...string) (string,
 }
 
 func Test0020_1(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{"feat(api): add endpoint\n\nNo trailers here.\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "commit-attribution")
@@ -38,26 +39,31 @@ func Test0020_1(t *testing.T) {
 }
 
 func Test0020_2(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{commitAttributionTrailers})
 	sees(t, out, code, 0, "All 1 checks passed · 1 files scanned")
 }
 
 func Test0020_3(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{commitAttributionTrailers, "feat(api): add paging\n\nJust a body.\n"})
 	sees(t, out, code, 1, commitAttributionMissing("AI-Models"), commitAttributionMissing("AI-Tools"))
 }
 
 func Test0020_4(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{commitAttributionTrailers}, "--message=feat(api): add paging\n\nJust a body.\n")
 	sees(t, out, code, 1, commitAttributionMissing("AI-Models"), commitAttributionMissing("AI-Tools"))
 }
 
 func Test0020_5(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{commitAttributionTrailers}, "--message=")
 	sees(t, out, code, 1, `No commit message to validate; add "AI-Tools:" and "AI-Models:" trailers to disclose AI usage`)
 }
 
 func Test0020_6(t *testing.T) {
+	t.Parallel()
 	for _, subject := range []string{"Merge branch 'feature' into main", `Revert "feat(api): add endpoint"`} {
 		out, code := commitAttribution(t, []string{commitAttributionTrailers, subject})
 		sees(t, out, code, 0, "All 1 checks passed")
@@ -65,11 +71,13 @@ func Test0020_6(t *testing.T) {
 }
 
 func Test0020_7(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{commitAttributionTrailers, "feat(api): add paging\n\nAI-Tools: Claude Code\nAI-Models:   \n"})
 	sees(t, out, code, 1, commitAttributionMissing("AI-Models"))
 }
 
 func Test0020_8(t *testing.T) {
+	t.Parallel()
 	out, code := commitAttribution(t, []string{commitAttributionTrailers, "feat(api): add paging\n\nAI-Tools: Claude Code\nWe set AI-Models: Opus 4.8 later.\n"})
 	sees(t, out, code, 1, commitAttributionMissing("AI-Models"))
 }

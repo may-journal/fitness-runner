@@ -31,6 +31,7 @@ func changelogNow(minutes int) string {
 const changelogFeature = "Added runner feature for validation.\n"
 
 func Test0019_1(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{
 		"src.txt":      changelogFeature,
 		"CHANGELOG.md": changelogEntry(changelogNow(2), "Feat: added runner feature for validation.\n\n### 2026.01.02.0900\n\n- Docs: an older entry."),
@@ -39,11 +40,13 @@ func Test0019_1(t *testing.T) {
 }
 
 func Test0019_2(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{"src.txt": changelogFeature})
 	sees(t, out, code, 1, "Stage CHANGELOG.md and add an entry that mentions your staged changes")
 }
 
 func Test0019_3(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{
 		"src.txt":      changelogFeature,
 		"CHANGELOG.md": changelogEntry(changelogNow(0), "Fix: minor tweak."),
@@ -54,6 +57,7 @@ func Test0019_3(t *testing.T) {
 }
 
 func Test0019_4(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{
 		"src.txt":      changelogFeature,
 		"CHANGELOG.md": changelogEntry(changelogNow(10), "Feat: added runner feature for validation."),
@@ -62,6 +66,7 @@ func Test0019_4(t *testing.T) {
 }
 
 func Test0019_5(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{
 		"package.json": `{"name": "app", "private": true, "version": "1.0.0-2026.10.08.1500"}` + "\n",
 		"src.txt":      changelogFeature,
@@ -71,6 +76,7 @@ func Test0019_5(t *testing.T) {
 }
 
 func Test0019_6(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"src.txt": "base\n"})
 	git(t, repo, "checkout", "-q", "-b", "side")
 	commit(t, repo, map[string]string{
@@ -79,18 +85,20 @@ func Test0019_6(t *testing.T) {
 	}, "feat: add runner")
 	git(t, repo, "checkout", "-q", "-")
 	commit(t, repo, map[string]string{"README.md": readme + "\nMore.\n"}, "docs: more")
-	git(t, repo, "merge", "-q", "--no-commit", "--no-ff", "side")
+	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "--no-commit", "--no-ff", "side")
 	out, code := fitness(t, repo, nil, "changelog-updated")
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0019_7(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "changelog-updated")
 }
 
 func Test0019_8(t *testing.T) {
+	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{"src.txt": changelogFeature, "CHANGELOG.md": ""})
 	sees(t, out, code, 1, "CHANGELOG.md missing; add it and mention your staged changes")
 }

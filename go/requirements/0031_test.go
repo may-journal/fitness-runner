@@ -69,6 +69,7 @@ func iloPullRequest(t *testing.T, repo string) (string, int) {
 }
 
 func Test0031_1(t *testing.T) {
+	t.Parallel()
 	repo := iloOnSandbox(t, "topic")
 	iloCommit(t, repo, "", "feat(app): start\n\nPlan #12")
 	out, code := iloCheck(t, repo, "fix(app): more\n\nSee https://github.com/"+sandbox+"/issues/12")
@@ -76,6 +77,7 @@ func Test0031_1(t *testing.T) {
 }
 
 func Test0031_2(t *testing.T) {
+	t.Parallel()
 	repo := iloOnSandbox(t, "topic")
 	iloCommit(t, repo, "", "feat(app): start\n\nPlan #12")
 	out, code := iloCheck(t, repo, "fix(app): more\n\nSee may-journal/fitness-runner#12")
@@ -83,6 +85,7 @@ func Test0031_2(t *testing.T) {
 }
 
 func Test0031_3(t *testing.T) {
+	t.Parallel()
 	repo := iloBranch(t, "topic")
 	iloCommit(t, repo, "", "feat(app): start\n\nPlan #12")
 	message := "fix(app): more\n# Plan #12\n# ------------------------ >8 ------------------------\nPlan #12\n"
@@ -91,6 +94,7 @@ func Test0031_3(t *testing.T) {
 }
 
 func Test0031_4(t *testing.T) {
+	t.Parallel()
 	n := newPR(t, "test: link once", "Closes #12")
 	repo := iloOnSandbox(t, sandboxBranch(t))
 	out, code := iloCheck(t, repo, "fix(app): more\n\nFixes #12")
@@ -98,6 +102,7 @@ func Test0031_4(t *testing.T) {
 }
 
 func Test0031_5(t *testing.T) {
+	t.Parallel()
 	repo := iloBranch(t, "topic")
 	iloCommit(t, repo, "2026-09-30T10:00:00Z", "feat(app): start\n\nPlan #12")
 	git(t, repo, "switch", "-q", "main")
@@ -110,6 +115,7 @@ func Test0031_5(t *testing.T) {
 }
 
 func Test0031_6(t *testing.T) {
+	t.Parallel()
 	repo := iloBranch(t, "topic")
 	iloCommit(t, repo, "2026-09-30T10:00:00Z", "feat(app): start\n\nPlan #12")
 	iloCommit(t, repo, "2026-09-30T11:00:00Z", "fix(app): more\n\nPlan #12")
@@ -118,6 +124,7 @@ func Test0031_6(t *testing.T) {
 }
 
 func Test0031_7(t *testing.T) {
+	t.Parallel()
 	repo := iloBranch(t, "topic")
 	iloCommit(t, repo, "2026-09-30T13:00:00Z", "fix(app): more\n\nFixes #12")
 	out, code := iloPullRequest(t, repo)
@@ -125,6 +132,7 @@ func Test0031_7(t *testing.T) {
 }
 
 func Test0031_8(t *testing.T) {
+	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", nil), nil, "issue-link-once")
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "issue-link-once")

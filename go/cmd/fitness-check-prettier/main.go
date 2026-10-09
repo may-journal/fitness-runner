@@ -27,6 +27,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -98,6 +99,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 		env = withNodePath(env, root)
 	}
 	exitCode, output := execPrettier(bin, root, env, prettierArgv(configPath, args, paths))
+	output = ansiCodes.ReplaceAllString(output, "")
 	parsed := parsePrettierOutput(output)
 	return buildExecResult(exitCode, parsed, prettierErrors(output), filesChecked(parsed, paths)), nil
 }
@@ -293,6 +295,10 @@ func execPrettier(bin, root string, env, argv []string) (exitCode int, output st
 	return exitCode, combined.String()
 }
 
+// ansiCodes matches terminal color codes. Prettier colors its output in CI,
+// which would hide the [warn] and [error] prefixes the check reads.
+var ansiCodes = regexp.MustCompile(`\x1b\[[0-9;]*m`)
+
 // parsePrettierOutput extracts file paths from [warn] lines, skipping the
 // "Code style issues" summary line.
 func parsePrettierOutput(output string) []string {
@@ -311,7 +317,8 @@ func parsePrettierOutput(output string) []string {
 const maxPrettierErrors = 5
 
 // prettierErrors returns Prettier's own [error] lines, up to
-// maxPrettierErrors, such as a plugin the shared config cannot load.
+// maxPrettierErrors, such as a plugin the shared config cannot load. When it
+// printed none, its last lines stand in, so a failure always shows its cause.
 func prettierErrors(output string) []string {
 	var errs []string
 	for _, line := range strings.Split(output, "\n") {
@@ -320,7 +327,21 @@ func prettierErrors(output string) []string {
 			errs = append(errs, line)
 		}
 	}
-	return errs
+	if len(errs) > 0 {
+		return errs
+	}
+	return lastLines(output, maxPrettierErrors)
+}
+
+// lastLines returns the last n non-blank lines of output, trimmed.
+func lastLines(output string, n int) []string {
+	var lines []string
+	for _, line := range strings.Split(output, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines[max(0, len(lines)-n):]
 }
 
 // filesChecked mirrors the TS getFilesChecked: error count when files

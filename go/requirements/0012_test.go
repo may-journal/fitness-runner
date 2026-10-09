@@ -10,11 +10,13 @@ func issueChecklist(t *testing.T, body string) (string, int) {
 }
 
 func Test0012_1(t *testing.T) {
+	t.Parallel()
 	out, code := issueChecklist(t, "- [x] Write the doc.\n- [ ] Write the tests.\n")
 	sees(t, out, code, 1, `unchecked item: "Write the tests."`)
 }
 
 func Test0012_2(t *testing.T) {
+	t.Parallel()
 	out, code := issueChecklist(t, "- [x] Write the doc.\n- [x] Write the tests.\n")
 	sees(t, out, code, 0, "issue-checklist")
 }

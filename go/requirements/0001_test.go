@@ -12,18 +12,21 @@ import (
 )
 
 func Test0001_1(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", goRepo())
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 0, "All 47 checks passed")
 }
 
 func Test0001_2(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 1, "README.md: disallowed **bold**", "46 of 47 checks passed, 1 failed")
 }
 
 func Test0001_3(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", with(goRepo(), map[string]string{"broken_test.go": "package adder\n\nfunc Test0001_2(t *testing.T {\n"}))
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 1, "check failed (exit 2)")
@@ -33,12 +36,14 @@ func Test0001_3(t *testing.T) {
 }
 
 func Test0001_4(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"timeoutMs": 1}` + "\n"})
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 1, "Check timed out after 0.001s")
 }
 
 func Test0001_5(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, _ := fitness(t, repo, nil)
 	for _, bin := range bundleChecks(t, installOnly(t)) {
@@ -49,12 +54,14 @@ func Test0001_5(t *testing.T) {
 }
 
 func Test0001_7(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", hungTool("300", ""))
 	fitness(t, repo, nil)
 	childStopped(t, repo)
 }
 
 func Test0001_9(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", hungTool("300", "trap '' TERM\n"))
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 1, "Check timed out after 0.3s")
@@ -74,6 +81,7 @@ func childStopped(t *testing.T, repo string) {
 }
 
 func Test0001_8(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", hungTool("300", ""))
 	out, _ := fitness(t, repo, nil)
 	if !strings.Contains(out, "Check timed out after 0.3s") || strings.Contains(row(out, "go-test"), "failed") {

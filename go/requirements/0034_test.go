@@ -27,11 +27,13 @@ func kebabDocs(t *testing.T, files map[string]string) (string, int) {
 }
 
 func Test0034_1(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, kebabDocsRepo(map[string]string{"docs/releaseNotes.md": "# Notes\n"}))
 	sees(t, out, code, 1, "docs/releaseNotes.md: filename must be kebab-case")
 }
 
 func Test0034_2(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, kebabDocsRepo(map[string]string{
 		"docs/api_notes.md": "# Notes\n",
 		"docs/ApiNotes.md":  "# Notes\n",
@@ -44,6 +46,7 @@ func Test0034_2(t *testing.T) {
 }
 
 func Test0034_3(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, kebabDocsRepo(map[string]string{
 		"architecture/02-containers.md": "# Containers\n",
 		"docs/adr001.md":                "# ADR\n",
@@ -52,6 +55,7 @@ func Test0034_3(t *testing.T) {
 }
 
 func Test0034_4(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, kebabDocsRepo(map[string]string{
 		"CODE_OF_CONDUCT.md": "# Code of conduct\n",
 		"docs/AGENTS.md":     "# Agents\n",
@@ -60,11 +64,13 @@ func Test0034_4(t *testing.T) {
 }
 
 func Test0034_5(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, kebabDocsRepo(map[string]string{"Guides/Api_Docs/api-design.md": "# API\n"}))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0034_6(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, map[string]string{
 		"docs/releaseNotes.md": "# Notes\n",
 		"docs/installGuide.md": "# Guide\n",
@@ -75,6 +81,7 @@ func Test0034_6(t *testing.T) {
 }
 
 func Test0034_7(t *testing.T) {
+	t.Parallel()
 	out, code := kebabDocs(t, map[string]string{
 		"docs/api-design.md":   "# API\n",
 		"docs/releaseNotes.md": "# Notes\n",
@@ -83,6 +90,7 @@ func Test0034_7(t *testing.T) {
 }
 
 func Test0034_8(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", kebabDocsRepo(map[string]string{
 		"docs/oldNotes.md":    "# Old\n",
 		"docs/setup-steps.md": "# Setup\n",

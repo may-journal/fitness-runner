@@ -47,11 +47,13 @@ func dcRepo(manifest string, installs ...string) map[string]string {
 }
 
 func Test0022_1(t *testing.T) {
+	t.Parallel()
 	out, code := dependencyCurrency(t, dcRepo(`{"dependencies": {"left-pad": "^1.3.0"}}`, "", dcLeftPad, "1.3.0"))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0022_2(t *testing.T) {
+	t.Parallel()
 	files := dcRepo(`{"dependencies": {"left-pad": "^1.0.0"}, "devDependencies": {"is-number": "^6.0.0"}, "peerDependencies": {"@types/left-pad": "^1.0.0"}}`,
 		"", dcLeftPad, "1.0.0", "", dcIsNumber, "6.0.0", "", dcTypes, "1.0.0")
 	out, code := dependencyCurrency(t, files)
@@ -59,16 +61,19 @@ func Test0022_2(t *testing.T) {
 }
 
 func Test0022_3(t *testing.T) {
+	t.Parallel()
 	out, code := dependencyCurrency(t, dcRepo(`{"dependencies": {"left-pad": "^1.3.0"}}`))
 	sees(t, out, code, 1, dcLead, "left-pad: missing → 1.3.0")
 }
 
 func Test0022_4(t *testing.T) {
+	t.Parallel()
 	out, code := dependencyCurrency(t, dcRepo(`{"dependencies": {"`+dcInternal+`": "*"}}`))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0022_5(t *testing.T) {
+	t.Parallel()
 	for _, workspaces := range []string{`["packages/*"]`, `{"packages": ["packages/a"]}`} {
 		files := dcRepo(`{"workspaces": `+workspaces+`}`, "", dcLeftPad, "1.0.0")
 		files["packages/a/package.json"] = `{"dependencies": {"left-pad": "^1.0.0"}}` + "\n"
@@ -78,6 +83,7 @@ func Test0022_5(t *testing.T) {
 }
 
 func Test0022_6(t *testing.T) {
+	t.Parallel()
 	files := dcRepo(`{"workspaces": ["packages/*"]}`, "", dcLeftPad, "1.0.0", "packages/a/", dcLeftPad, "1.1.0")
 	for _, ws := range []string{"a", "b", "c"} {
 		files["packages/"+ws+"/package.json"] = `{"devDependencies": {"left-pad": "^1.0.0"}}` + "\n"
@@ -90,6 +96,7 @@ func Test0022_6(t *testing.T) {
 }
 
 func Test0022_7(t *testing.T) {
+	t.Parallel()
 	files := dcRepo(`{"dependencies": {"left-pad": "^1.0.0"}}`, "", dcLeftPad, "1.0.0")
 	files[".npmrc"] = dcUnreachable
 	out, code := dependencyCurrency(t, files)
@@ -103,6 +110,7 @@ func Test0022_7(t *testing.T) {
 }
 
 func Test0022_8(t *testing.T) {
+	t.Parallel()
 	out, code := dependencyCurrency(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "dependency-currency")

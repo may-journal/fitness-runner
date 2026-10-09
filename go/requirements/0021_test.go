@@ -26,11 +26,13 @@ func cspellRun(t *testing.T, files map[string]string, args ...string) (string, i
 const cspellInstalled = "node_modules/@mayjournal/fitness-shared/config/cspell.json"
 
 func Test0021_1(t *testing.T) {
+	t.Parallel()
 	out, code := cspellRun(t, map[string]string{"notes.md": "good words\nthe " + cspellTypo + " fox\n"})
 	sees(t, out, code, 1, "notes.md:2:5 - Unknown word ("+cspellTypo+")")
 }
 
 func Test0021_2(t *testing.T) {
+	t.Parallel()
 	out, code := cspellRun(t, map[string]string{
 		"cspell.json":   `{"words":["fitnessrc","` + cspellRepoWord + `"]}` + "\n",
 		cspellInstalled: `{"words":["fitnessrc","` + cspellSharedWord + `"]}` + "\n",
@@ -43,6 +45,7 @@ func Test0021_2(t *testing.T) {
 }
 
 func Test0021_3(t *testing.T) {
+	t.Parallel()
 	out, code := cspellRun(t, map[string]string{
 		cspellInstalled: `{"words":["fitnessrc","` + cspellSharedWord + `"]}` + "\n",
 		"notes.md":      cspellSharedWord + " is a shared word\n",
@@ -51,16 +54,19 @@ func Test0021_3(t *testing.T) {
 }
 
 func Test0021_4(t *testing.T) {
+	t.Parallel()
 	out, code := cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0021_5(t *testing.T) {
+	t.Parallel()
 	out, code := cspellRun(t, map[string]string{"cspell.json": `{"ignorePaths":["docs"]}` + "\n"})
 	sees(t, out, code, 1, "cspell.json sets ignorePaths; cspell checks every tracked file, so remove ignorePaths and fix the findings instead")
 }
 
 func Test0021_6(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{
 		".gitattributes": "*.lock linguist-generated\n",
 		"deps/pkg.lock":  cspellSharedWord + "\n",
@@ -72,6 +78,7 @@ func Test0021_6(t *testing.T) {
 }
 
 func Test0021_7(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"old.md": "the " + cspellTypo + " fox\n", "gone.md": "clean words\n"})
 	write(t, repo, map[string]string{"new.md": "the " + cspellRepoWord + " fox\n"})
 	git(t, repo, "add", "new.md")
@@ -84,6 +91,7 @@ func Test0021_7(t *testing.T) {
 }
 
 func Test0021_8(t *testing.T) {
+	t.Parallel()
 	out, code := cspellRun(t, map[string]string{"body.md": "a " + cspellBodyTypo + " word\n"}, "--body-file", "body.md")
 	sees(t, out, code, 1, "(description):1:3 - Unknown word ("+cspellBodyTypo+")")
 }

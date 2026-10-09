@@ -30,6 +30,7 @@ func levelBleedRepeat(file, text string, level int) string {
 }
 
 func Test0043_1(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"docs/architecture/01-context.md":    levelBleedDoc("User reads the timeline"),
 		"docs/architecture/02-containers.md": levelBleedDoc("User reads the timeline", "New detail"),
@@ -38,6 +39,7 @@ func Test0043_1(t *testing.T) {
 }
 
 func Test0043_2(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/01-context.md":    levelBleedDoc("The whole system", ""),
 		"architecture/02-containers.md": levelBleedDoc("The macOS app", ""),
@@ -46,6 +48,7 @@ func Test0043_2(t *testing.T) {
 }
 
 func Test0043_3(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/01-context.md": levelBleedDoc("The app"),
 		"architecture/02-app.md":     levelBleedDoc("The  APP", "the app", "New detail"),
@@ -58,6 +61,7 @@ func Test0043_3(t *testing.T) {
 }
 
 func Test0043_4(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/01-context.md":    levelBleedDoc("Shared line"),
 		"architecture/02-containers.md": levelBleedDoc("Something else"),
@@ -67,6 +71,7 @@ func Test0043_4(t *testing.T) {
 }
 
 func Test0043_5(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/2-app.md":   levelBleedDoc("The engine"),
 		"architecture/10-deep.md": levelBleedDoc("The engine"),
@@ -75,6 +80,7 @@ func Test0043_5(t *testing.T) {
 }
 
 func Test0043_6(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/overview.md":    levelBleedDoc("Anything"),
 		"not-architecture/01-x.md":    levelBleedDoc("Anything"),
@@ -88,6 +94,7 @@ func Test0043_6(t *testing.T) {
 }
 
 func Test0043_7(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/01-context.md": "| # | Label | DESCRIPTION |\n| --- | --- | --- |\n| 1 | Same label | The system |\n",
 		"architecture/02-app.md":     "| # | Label | Description |\n| --- | --- | --- |\n| 1 | Same label | The system |\n",
@@ -99,6 +106,7 @@ func Test0043_7(t *testing.T) {
 }
 
 func Test0043_8(t *testing.T) {
+	t.Parallel()
 	out, code := levelBleed(t, map[string]string{
 		"architecture/01-context.md": "| # | Text | Notes |\n| --- | --- | --- |\n| 1 | Same | x |\n",
 		"architecture/02-app.md":     "| # | Text | Notes |\n| --- | --- | --- |\n| 1 | same | x |\n",

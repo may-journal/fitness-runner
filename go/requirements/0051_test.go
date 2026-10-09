@@ -23,36 +23,43 @@ func prStructure(t *testing.T, body string) (string, int) {
 }
 
 func Test0051_1(t *testing.T) {
+	t.Parallel()
 	out, code := prStructure(t, prStructureSummary+prStructureBackground+prStructureChangelog)
 	sees(t, out, code, 0, "pr-structure")
 }
 
 func Test0051_2(t *testing.T) {
+	t.Parallel()
 	out, code := prStructure(t, prStructureBackground+prStructureChangelog)
 	sees(t, out, code, 1, "Missing pitch: add a one-line blockquote (> …) before the first ## section")
 }
 
 func Test0051_3(t *testing.T) {
+	t.Parallel()
 	out, code := prStructure(t, "> REPLACE-ME\n\n"+prStructureBackground+prStructureChangelog)
 	sees(t, out, code, 1, "Pitch is still the template placeholder; write the real one-line value")
 }
 
 func Test0051_4(t *testing.T) {
+	t.Parallel()
 	out, code := prStructure(t, prStructureSummary+prStructureChangelog)
 	sees(t, out, code, 1, "Missing `## Background` section")
 }
 
 func Test0051_5(t *testing.T) {
+	t.Parallel()
 	out, code := prStructure(t, prStructureSummary+prStructureBackground+"## Changelog\n\nNothing yet.\n")
 	sees(t, out, code, 1, "`## Changelog` has no list item (- …)")
 }
 
 func Test0051_6(t *testing.T) {
+	t.Parallel()
 	out, code := prStructure(t, prStructureSummary+prStructureBackground+prStructureChangelog+"\n## Testing\n\nRan it.\n")
 	sees(t, out, code, 1, "Unexpected `## Testing` section — a PR has only Background and Changelog")
 }
 
 func Test0051_7(t *testing.T) {
+	t.Parallel()
 	fence := strings.Repeat("`", 3)
 	sample := "\n" + fence + "markdown\n## Testing\n" + fence + "\n"
 	out, code := prStructure(t, prStructureSummary+prStructureBackground+prStructureChangelog+sample)
@@ -60,6 +67,7 @@ func Test0051_7(t *testing.T) {
 }
 
 func Test0051_8(t *testing.T) {
+	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", nil), nil, "pr-structure")
 	sees(t, out, code, 0, "pr-structure")
 	passedWithNoFiles(t, out, "pr-structure")

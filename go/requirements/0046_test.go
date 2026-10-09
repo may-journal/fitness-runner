@@ -13,16 +13,19 @@ func noPlansDir(t *testing.T, files map[string]string) (string, int) {
 const noPlansDirFix = ": plans live as `Plan`-labeled GitHub Issues, not files — open a Plan Issue instead of adding to docs/plans/"
 
 func Test0046_1(t *testing.T) {
+	t.Parallel()
 	out, code := noPlansDir(t, map[string]string{"docs/plans/03-publish.md": "# Publish\n"})
 	sees(t, out, code, 1, "docs/plans/03-publish.md"+noPlansDirFix)
 }
 
 func Test0046_2(t *testing.T) {
+	t.Parallel()
 	out, code := noPlansDir(t, map[string]string{"docs/plans/archive/old.md": "# Old\n"})
 	sees(t, out, code, 1, "docs/plans/archive/old.md"+noPlansDirFix)
 }
 
 func Test0046_3(t *testing.T) {
+	t.Parallel()
 	out, code := noPlansDir(t, map[string]string{"docs/notes.md": "# Notes\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "no-plans-dir")

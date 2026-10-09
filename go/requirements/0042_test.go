@@ -24,18 +24,21 @@ func mermaidLegendDoc(diagrams ...string) map[string]string {
 }
 
 func Test0042_1(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, mermaidLegendDoc(mermaidLegendDiagram(
 		"flowchart TB", "persona((1 Persona))", "classDef persona fill:#eef")))
 	sees(t, out, code, 1, "README.md: callout 1 (persona) has no style class (diagram at line 9)")
 }
 
 func Test0042_2(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, mermaidLegendDoc(mermaidLegendDiagram(
 		"flowchart TB", "persona((1 Persona)):::persona")))
 	sees(t, out, code, 1, "README.md: diagram at line 9 has numbered callouts but no classDef legend")
 }
 
 func Test0042_3(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, mermaidLegendDoc(mermaidLegendDiagram(
 		"flowchart TB",
 		"persona((1 Persona)):::persona",
@@ -50,18 +53,21 @@ func Test0042_3(t *testing.T) {
 }
 
 func Test0042_4(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, mermaidLegendDoc(mermaidLegendDiagram(
 		"block-beta", "a[1 Store]", "b[2 Screen]")))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0042_5(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, mermaidLegendDoc(mermaidLegendDiagram(
 		"graph LR", "screen[Screen 2]", "persona((1Persona))")))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0042_6(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, mermaidLegendDoc(
 		mermaidLegendDiagram("flowchart TB", "a[1 A]:::x", "classDef x fill:#eef"),
 		mermaidLegendDiagram("flowchart TB", "b[2 B]:::x", "classDef y fill:#eef", "c[3 C]")))
@@ -69,6 +75,7 @@ func Test0042_6(t *testing.T) {
 }
 
 func Test0042_7(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, map[string]string{"body.md": mermaidLegendDiagram(
 		"flowchart TB", "persona((1 Persona))", "classDef persona fill:#eef")},
 		"--body-file", "body.md")
@@ -76,6 +83,7 @@ func Test0042_7(t *testing.T) {
 }
 
 func Test0042_8(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidLegend(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "mermaid-legend")

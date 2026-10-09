@@ -15,6 +15,7 @@ func buildOutputRun(t *testing.T, repo string) (string, int) {
 }
 
 func Test0016_1(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{
 		".gitignore": buildOutputIgnore,
 		"src/app.test.ts": "import ok from './local.js';\n" +
@@ -30,6 +31,7 @@ func Test0016_1(t *testing.T) {
 }
 
 func Test0016_2(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	write(t, repo, map[string]string{"dist/app.js": "built\n"})
 	out, code := buildOutputRun(t, repo)
@@ -37,6 +39,7 @@ func Test0016_2(t *testing.T) {
 }
 
 func Test0016_3(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"sub/dist/b.js": "built\n", "dist/a.js": "built\n"})
 	commit(t, repo, map[string]string{".gitignore": buildOutputIgnore}, "chore: ignore dist")
 	out, code := buildOutputRun(t, repo)
@@ -44,6 +47,7 @@ func Test0016_3(t *testing.T) {
 }
 
 func Test0016_4(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{
 		".gitignore": buildOutputIgnore,
 		"src/a.ts":   "import x from './b.js';\n",
@@ -54,12 +58,14 @@ func Test0016_4(t *testing.T) {
 }
 
 func Test0016_5(t *testing.T) {
+	t.Parallel()
 	out, code := buildOutputRun(t, example(t, "happyRepo", nil))
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, buildOutputCheck)
 }
 
 func Test0016_6(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{
 		".gitignore": buildOutputIgnore,
 		"src/a.ts":   "import x from './b.js';\n",

@@ -19,7 +19,7 @@ Source: `go/cmd/fitness-check-prettier/main.go:339`
 ## Requirements
 
 - 0052.1
-    - Given a file my own Prettier config would reformat
+    - Given a file my own Prettier config would reformat, in a CI job that colors output
         - When prettier checks the repo
             - Then it fails naming that file
 - 0052.2
