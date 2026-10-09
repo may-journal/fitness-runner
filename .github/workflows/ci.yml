@@ -90,6 +90,24 @@ jobs:
           RELEASE_PR: ${{ steps.report-step-1.outputs.pr }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+      # Release Please writes `### Features` subheadings and `*` bullets; the
+      # changelog checks need the house format, so the release branch gets
+      # it after every update. Nothing is pushed when the file is unchanged.
+      - name: Write the release notes in the house format
+        if: ${{ steps.report-step-1.outputs.pr != '' }}
+        id: report-step-3
+        env:
+          RELEASE_BRANCH: ${{ fromJSON(steps.report-step-1.outputs.pr).headBranchName }}
+        run: |
+          git fetch origin "$RELEASE_BRANCH"
+          git checkout -B "$RELEASE_BRANCH" "origin/$RELEASE_BRANCH"
+          go -C go run ./cmd/fitness-release house-changelog --root ..
+          if ! git diff --quiet -- CHANGELOG.md; then
+            git -c user.name='may-journal-automation[bot]' \
+              -c user.email='336305945+may-journal-automation[bot]@users.noreply.github.com' \
+              commit -q -m 'docs(changelog): write the release notes in the house format' -- CHANGELOG.md
+            git push origin "HEAD:$RELEASE_BRANCH"
+          fi
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
@@ -106,7 +124,7 @@ jobs:
         env:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure' || steps.report-step-3.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"

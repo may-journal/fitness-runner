@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1601
+
+- Feat: release: fitness-release house-changelog rewrites Release Please's newest release into the house CHANGELOG format.
+- Ci: the release-please job runs it after every release PR update and pushes only when the file changed.
+- Docs: requirement 0064 states how release notes land in the house format.
+
 ### 2026.10.09.1533
 
 - Perf: install: a cached bundle starts in about 0.1 s instead of 0.75 s; installed files are checked against hashes recorded at install.

@@ -40,7 +40,7 @@ func reportFailure(operation string, err error) {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, tracking-issue, update-pins, version, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, house-changelog, tracking-issue, update-pins, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
@@ -64,6 +64,7 @@ func dispatch(command string, config release.Config, root string) error {
 			return err
 		},
 		"assemble":        config.Assemble,
+		"house-changelog": config.HouseChangelog,
 		"update-pins":     config.PreparePins,
 		"promote":         func() error { return config.Promote(context.Background()) },
 		"release-pr":      func() error { return updateReleasePR(root) },
