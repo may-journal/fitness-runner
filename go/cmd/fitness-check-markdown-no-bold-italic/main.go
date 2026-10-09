@@ -1,8 +1,9 @@
 // Command fitness-check-markdown-no-bold-italic validates that markdown
 // files do not use **bold**, __bold__, *italic*, or _italic_ emphasis — the
 // Go port of the markdown-no-bold-italic check. Emphasis inside fenced code
-// blocks, inline code, and markdown links is allowed; every tracked .md
-// file is checked, CHANGELOG.md included. The italic patterns carry JavaScript look-behind and
+// blocks, inline code, and markdown links is allowed, as is the bold scope
+// Release Please gives release bullets; every tracked .md file is checked,
+// CHANGELOG.md included. The italic patterns carry JavaScript look-behind and
 // look-ahead assertions the TS original relied on, so their scan is
 // hand-rolled here; the flagged snippet is quoted byte-for-byte like
 // JSON.stringify.
@@ -13,6 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -160,12 +162,38 @@ func closesEmphasis(s string, i, j int, delim byte) bool {
 // disallowed bold/italic, verbatim from the TS template.
 func validateFile(relPath, content string) []string {
 	var errors []string
+	if path.Base(relPath) == "CHANGELOG.md" {
+		content = plainReleaseScopes(content)
+	}
 	for _, h := range findDisallowedEmphasis(content) {
 		errors = append(errors, fmt.Sprintf(
 			"%s: disallowed %s (use only when explicitly required): %s",
 			relPath, h.kind, jsonStringify(h.match)))
 	}
 	return errors
+}
+
+// Release Please writes each release bullet as `* **scope:** text`. Inside
+// a CHANGELOG release section, from a ## version heading to the next dated
+// ### entry, that bold scope is its format, so it is allowed.
+var (
+	releaseHeadingRe = regexp.MustCompile(`^## \[?\d`)
+	datedEntryRe     = regexp.MustCompile(`^### \d{4}\.\d{2}\.\d{2}\.\d{4}`)
+	boldScopeRe      = regexp.MustCompile(`^\* \*\*([^*]+):\*\* `)
+)
+
+// plainReleaseScopes drops the bold from release bullets' scopes, leaving
+// every other line, and any other bold, for the check to judge.
+func plainReleaseScopes(content string) string {
+	lines := strings.Split(content, "\n")
+	inRelease := false
+	for i, line := range lines {
+		inRelease = (inRelease || releaseHeadingRe.MatchString(line)) && !datedEntryRe.MatchString(line)
+		if inRelease {
+			lines[i] = boldScopeRe.ReplaceAllString(line, "* $1: ")
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 // jsonStringify quotes s exactly as JavaScript's JSON.stringify does:

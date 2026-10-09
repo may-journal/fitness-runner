@@ -7,11 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.09.1601
+### 2026.10.09.1613
 
-- Feat: release: fitness-release house-changelog rewrites Release Please's newest release into the house CHANGELOG format.
-- Ci: the release-please job runs it after every release PR update and pushes only when the file changed.
-- Docs: requirement 0064 states how release notes land in the house format.
+- Feat: changelog: a release section may hold Release Please's Features and Bug Fixes subheadings and star bullets.
+- Feat: markdown-no-bold-italic: allows the bold scope Release Please gives each release bullet, and no other bold.
+- Docs: requirement 0064 states how release notes pass the changelog checks untouched.
 
 ### 2026.10.09.1533
 

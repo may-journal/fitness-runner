@@ -34,8 +34,9 @@ var (
 	datedSectionRe = regexp.MustCompile(`^###\s+(\d{4}\.\d{2}\.\d{2}\.\d{4})`)
 	// versionSuffixRe IS end-anchored: the timestamp must terminate the
 	// package version string.
-	versionSuffixRe = regexp.MustCompile(`-(\d{4}\.\d{2}\.\d{2}\.\d{4})$`)
-	h3Re            = regexp.MustCompile(`^###\s`)
+	versionSuffixRe  = regexp.MustCompile(`-(\d{4}\.\d{2}\.\d{2}\.\d{4})$`)
+	h3Re             = regexp.MustCompile(`^###\s`)
+	releaseHeadingRe = regexp.MustCompile(`^##\s+\[?\d`)
 )
 
 func main() {
@@ -82,20 +83,39 @@ func h3Lines(content string) []string {
 
 // formatErrors returns the heading-format errors for the CHANGELOG content:
 // at least one ### heading must exist, and every one must carry the
-// yyyy.mm.dd.HHMM timestamp.
+// yyyy.mm.dd.HHMM timestamp, except a subheading such as Release Please's
+// `### Features` inside a release section.
 func formatErrors(content string) []string {
-	h3s := h3Lines(content)
-	if len(h3s) == 0 {
+	if len(h3Lines(content)) == 0 {
 		return []string{"CHANGELOG.md must have at least one ### yyyy.mm.dd.HHMM section"}
 	}
 	var errs []string
-	for _, line := range h3s {
-		if !datedSectionRe.MatchString(line) {
+	inRelease := false
+	for _, line := range strings.Split(content, "\n") {
+		inRelease = releaseScope(inRelease, line)
+		if strayHeading(line, inRelease) {
 			errs = append(errs, fmt.Sprintf(
 				`every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "%s")`, strings.TrimSpace(line)))
 		}
 	}
 	return errs
+}
+
+// strayHeading reports an undated ### heading outside a release section.
+func strayHeading(line string, inRelease bool) bool {
+	return !inRelease && h3Re.MatchString(line) && !datedSectionRe.MatchString(line)
+}
+
+// releaseScope tracks whether a line sits in a release section: a ## version
+// heading opens one and a dated ### entry closes it.
+func releaseScope(in bool, line string) bool {
+	if releaseHeadingRe.MatchString(line) {
+		return true
+	}
+	if datedSectionRe.MatchString(line) {
+		return false
+	}
+	return in
 }
 
 // firstTimestamp extracts the timestamp of the first dated ### heading. Only
