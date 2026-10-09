@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/conf"
 )
 
 const (
@@ -23,6 +24,7 @@ const (
 
 var (
 	headingRe = regexp.MustCompile(`^### `)
+	releaseRe = regexp.MustCompile(`^## \[?\d`)
 	// A bullet opens with a capitalized type (`Feat: `) or a semantic commit
 	// subject (`feat(scope)!: `), lowercase with an optional scope and bang.
 	typeRe = regexp.MustCompile(`^((Feat|Fix|Docs|Style|Refactor|Perf|Test|Build|Ci|Chore|Revert)|(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^()\s]+\))?!?): `)
@@ -40,7 +42,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Pass(0), nil
 	}
-	errs := judge(string(raw))
+	errs := judge(string(raw), conf.MaxListItems(root))
 	if len(errs) > 0 {
 		return checkkit.Fail(1, errs...), nil
 	}
@@ -54,22 +56,28 @@ type bullet struct {
 	text string
 }
 
-// judge validates every section's bullets against all three rules.
-func judge(content string) []string {
+// judge validates every section's bullets against all three rules. A
+// release section gathers many changes, so it may hold from one bullet up to
+// the repo's prose-budget list limit, releaseMax.
+func judge(content string, releaseMax int) []string {
 	var errs []string
 	for _, sec := range sections(content) {
-		errs = append(errs, judgeSection(sec)...)
+		errs = append(errs, judgeSection(sec, releaseMax)...)
 	}
 	return errs
 }
 
 // judgeSection applies the bullet-count rule to one section and the
 // per-bullet rules to each of its bullets.
-func judgeSection(sec section) []string {
+func judgeSection(sec section, releaseMax int) []string {
 	var errs []string
-	if n := len(sec.bullets); n < minBullets || n > maxBullets {
+	lo, hi, kind := minBullets, maxBullets, "entries"
+	if sec.release {
+		lo, hi, kind = 1, releaseMax, "releases"
+	}
+	if n := len(sec.bullets); n < lo || n > hi {
 		errs = append(errs, fmt.Sprintf(
-			"CHANGELOG.md section %q has %d bullets; keep entries to %d-%d bullets", sec.heading, n, minBullets, maxBullets))
+			"CHANGELOG.md section %q has %d bullets; keep %s to %d-%d bullets", sec.heading, n, kind, lo, hi))
 	}
 	for _, b := range sec.bullets {
 		errs = append(errs, judgeBullet(b)...)
@@ -91,10 +99,12 @@ func judgeBullet(b bullet) []string {
 	return errs
 }
 
-// section is one ### entry: its trimmed heading text and logical bullets.
+// section is one ### entry, or a ## release section: its trimmed heading
+// text and logical bullets.
 type section struct {
 	heading string
 	bullets []bullet
+	release bool
 }
 
 // sections splits the document into ### sections, joining indented
@@ -108,10 +118,14 @@ func sections(content string) []section {
 }
 
 // fold accumulates one raw line into the section list: a ### line opens a
-// new section; other lines belong to the current one.
+// new section, a ## release heading opens a release section, and other
+// lines belong to the current one.
 func fold(out []section, line string, lineNo int) []section {
 	if headingRe.MatchString(line) {
 		return append(out, section{heading: strings.TrimSpace(strings.TrimPrefix(line, "### "))})
+	}
+	if releaseRe.MatchString(line) {
+		return append(out, section{heading: strings.TrimSpace(strings.TrimPrefix(line, "## ")), release: true})
 	}
 	if len(out) == 0 {
 		return out

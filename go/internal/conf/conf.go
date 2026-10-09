@@ -56,6 +56,20 @@ const FileName = ".fitnessrc.json"
 // Load reads root's config. A missing file returns (nil, nil): the caller
 // falls back to the defaults. A config that still sets a retired exclusion
 // key returns an error naming each one.
+// DefaultMaxListItems is the longest list prose-budget allows, and the most
+// bullets changelog-bullets allows in a release section, unless
+// proseBudget.maxListItems sets another limit.
+const DefaultMaxListItems = 8
+
+// MaxListItems is the repo's list limit: proseBudget.maxListItems when set,
+// else DefaultMaxListItems.
+func MaxListItems(root string) int {
+	if cfg, err := Load(root); err == nil && cfg != nil && cfg.ProseBudget.MaxListItems > 0 {
+		return cfg.ProseBudget.MaxListItems
+	}
+	return DefaultMaxListItems
+}
+
 func Load(root string) (*Config, error) {
 	raw, err := os.ReadFile(filepath.Join(root, FileName))
 	if os.IsNotExist(err) {
