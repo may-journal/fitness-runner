@@ -17,3 +17,8 @@ go/bin/
 
 # Release archives and installer, rebuilt by the packaging script
 out/
+
+# Real tools the requirement tests run; tests/tools/install.sh reinstalls them
+node_modules/
+# Manifest npm writes while installing those tools; the pinned list lives in install.sh
+tests/tools/package*.json

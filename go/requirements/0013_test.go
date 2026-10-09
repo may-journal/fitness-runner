@@ -78,8 +78,9 @@ func Test0013_5(t *testing.T) {
 	}
 }
 
+// Test0013_6 sweeps every open sandbox item, so it runs alone, before the
+// parallel tests start.
 func Test0013_6(t *testing.T) {
-	t.Parallel()
 	n := newIssue(t, planBody("- [ ] Write the tests."), "Plan")
 	listed(t, "issues?labels=Plan&state=open", n)
 	out, _ := action(t, "plan-check", "workflow_dispatch", map[string]any{})
