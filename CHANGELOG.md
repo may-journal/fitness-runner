@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.1.0](https://github.com/may-journal/fitness-runner/compare/v1.0.1...v1.1.0) (2026-10-09)
+
+
+### Features
+
+* **hooks:** trace pushes to branch Plans and prove every hook path ([#221](https://github.com/may-journal/fitness-runner/issues/221)) ([607bf0a](https://github.com/may-journal/fitness-runner/commit/607bf0a9fac7c5dbe8d5b28dfd9d638082e34453))
+* **requirements:** own every Go test with a stated requirement ([#204](https://github.com/may-journal/fitness-runner/issues/204)) ([c6ba991](https://github.com/may-journal/fitness-runner/commit/c6ba991cd1e6376aa7644ba3f6b46ea2c5c5c0df))
+
 ### 2026.10.09.1405
 
 - Test: requirement tests run in parallel, so the suite takes about 2.5 minutes locally instead of 8.
