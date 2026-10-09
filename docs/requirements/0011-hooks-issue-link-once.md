@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0011 Checks Issue Link Once
+# 0011 Issue Link Once
 
 ## Why
 

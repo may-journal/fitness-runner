@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0015 Checks Closed Issues
+# 0015 Closed Issues
 
 ## Why
 

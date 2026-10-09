@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0014 Checks Pull Requests
+# 0014 Pull Requests
 
 ## Why
 

@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0010 Checks Push Plan
+# 0010 Push Plan
 
 ## Why
 

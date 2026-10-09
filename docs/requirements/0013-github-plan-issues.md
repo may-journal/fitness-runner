@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0013 Checks Plan Issues
+# 0013 Plan Issues
 
 ## Why
 
