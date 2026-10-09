@@ -1,4 +1,4 @@
-package main
+package aftereffect
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 // runnerRepo is where the fitness code lives, for links to the build.
 const runnerRepo = "https://github.com/may-journal/fitness-runner"
 
-// buildInfo reads the running binary's build details; tests pin it.
+// buildInfo reads the running binary's build details.
 var buildInfo = debug.ReadBuildInfo
 
 // attribution is the verdict footer naming the fitness-runner code that

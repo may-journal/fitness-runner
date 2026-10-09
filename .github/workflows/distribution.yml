@@ -115,8 +115,9 @@ jobs:
       - name: Run the requirement tests with the candidate Go installer
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-          # Requirement 0010's pushes read real Plan issues through gh.
-          GH_TOKEN: ${{ github.token }}
+          # Requirement tests read real Plans through gh (0010) and run the
+          # GitHub commands for real in may-journal/fitness-sandbox (0013-0015).
+          GH_TOKEN: ${{ secrets.FITNESS_SANDBOX_TOKEN }}
         run: |
           export FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-${{ matrix.platform }})"
           go -C go test ./requirements -count=1

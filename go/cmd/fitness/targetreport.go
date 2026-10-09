@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -27,7 +28,7 @@ func (r *targetReport) add(number int, errs []string) {
 	if len(errs) == 0 {
 		r.summary.WriteString("Passed.\n\n")
 	}
-	r.summary.WriteString(bulletList(errs))
+	r.summary.WriteString(aftereffect.BulletList(errs))
 	for _, message := range errs {
 		r.diagnostics = append(r.diagnostics, fmt.Sprintf("#%d: %s", number, message))
 	}
@@ -47,6 +48,7 @@ func (r *targetReport) emit() {
 
 func (r *targetReport) finish() {
 	fmt.Fprintf(&r.summary, "\n%d targets checked; %d findings.\n", len(r.targets), len(r.diagnostics))
+	fmt.Print(r.summary.String())
 	report.WriteSummary(r.summary.String() + r.links())
 	r.emit()
 }
@@ -66,13 +68,6 @@ func targetURL(kind string, number int) string {
 		return ""
 	}
 	return strings.NewReplacer("(", "%28", ")", "%29").Replace(link)
-}
-
-func closeOutcome(issue target, message string) {
-	fmt.Printf("#%d %s\n", issue.Number, message)
-	details := fmt.Sprintf("## close-check #%d\n\n%s\n", issue.Number, report.EscapeMarkdown(message))
-	details += targetLink("issues", issue.Number)
-	report.WriteSummary(details)
 }
 
 // targetLink is shared by successful and failed target operations.
