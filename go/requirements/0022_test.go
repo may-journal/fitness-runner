@@ -25,6 +25,7 @@ const dcUnreachable = "registry=http://127.0.0.1:1\n"
 // manifests and ignores the installed node_modules.
 func dependencyCurrency(t *testing.T, files map[string]string, env ...string) (string, int) {
 	t.Helper()
+	offMachine(t)
 	repo := example(t, "happyRepo", with(map[string]string{".gitignore": "node_modules\n"}, files))
 	return fitness(t, repo, env, "dependency-currency")
 }

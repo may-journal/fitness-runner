@@ -13,7 +13,7 @@ import (
 // Run `sh tests/tools/install.sh` once to install them.
 func withJSTools(t *testing.T, repo string) {
 	t.Helper()
-	installer(t)
+	offMachine(t)
 	tools, err := filepath.Abs(filepath.Join("..", "..", "tests", "tools", "node_modules"))
 	mustDo(t, err)
 	if _, err := os.Stat(filepath.Join(tools, ".bin")); err != nil {
@@ -25,7 +25,7 @@ func withJSTools(t *testing.T, repo string) {
 // swiftlintTool fails the test unless the real swiftlint is on PATH.
 func swiftlintTool(t *testing.T) {
 	t.Helper()
-	installer(t)
+	offMachine(t)
 	if _, err := exec.LookPath("swiftlint"); err != nil {
 		t.Fatal("swiftlint is not installed; install it from https://github.com/realm/SwiftLint")
 	}
@@ -53,5 +53,16 @@ func linkTools(dir, src string, names []string) {
 			continue
 		}
 		_ = os.Symlink(filepath.Join(src, e.Name()), link)
+	}
+}
+
+// offMachine skips the test in a quick local run (FITNESS_QUICK set): it
+// reaches GitHub, the npm registry, or a real external tool. Every CI smoke
+// job still runs it.
+func offMachine(t *testing.T) {
+	t.Helper()
+	installer(t)
+	if os.Getenv("FITNESS_QUICK") != "" {
+		t.Skip("quick run: GitHub, network, and real-tool tests run in CI")
 	}
 }

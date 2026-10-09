@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1508
+
+- Test: tests/requirements.sh builds this machine's candidate and runs the suite with one test per core.
+- Test: the test binary stands in for gh, eslint, prettier, vitest, and swiftlint, answering from saved responses.
+- Test: a local server stands in for the npm registry, so no requirement test leaves the machine.
+- Docs: the shared cspell words list goreleaser, the release build tool.
+
 ### 2026.10.09.1453
 
 - Fix: the release workflow passes its secrets to the binaries job, so release smoke tests can reach GitHub.

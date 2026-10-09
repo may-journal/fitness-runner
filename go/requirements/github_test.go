@@ -22,7 +22,7 @@ const sandbox = "may-journal/fitness-sandbox"
 // skips the test without a candidate installer, before touching GitHub.
 func gh(t *testing.T, args ...string) string {
 	t.Helper()
-	installer(t)
+	offMachine(t)
 	cmd := exec.Command("gh", args...)
 	cmd.Env = userEnv()
 	out, err := cmd.Output()
@@ -124,6 +124,7 @@ func sandboxBranch(t *testing.T) string {
 // on the sandbox, with the event payload GitHub would deliver.
 func action(t *testing.T, command, event string, payload any) (string, int) {
 	t.Helper()
+	offMachine(t)
 	path := filepath.Join(t.TempDir(), "event.json")
 	data, err := json.Marshal(payload)
 	mustDo(t, err)

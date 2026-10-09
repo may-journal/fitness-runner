@@ -7,6 +7,7 @@ import "testing"
 // not a Plan. It pushes main, so later pushes start from a shared base.
 func planned(t *testing.T) (string, []string) {
 	t.Helper()
+	offMachine(t)
 	repo, env := hooked(t, nil)
 	env = append(env, "GH_REPO=may-journal/fitness-runner")
 	remote(t, repo)

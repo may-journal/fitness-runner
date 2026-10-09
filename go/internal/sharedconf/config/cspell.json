@@ -6,6 +6,7 @@
     "coverpkg",
     "coverprofile",
     "covdata",
+    "goreleaser",
     "textfmt",
     "GOCOVERDIR",
     "subtests",
