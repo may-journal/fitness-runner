@@ -23,6 +23,7 @@ const (
 
 var (
 	headingRe = regexp.MustCompile(`^### `)
+	releaseRe = regexp.MustCompile(`^## \[?\d`)
 	// A bullet opens with a capitalized type (`Feat: `) or a semantic commit
 	// subject (`feat(scope)!: `), lowercase with an optional scope and bang.
 	typeRe = regexp.MustCompile(`^((Feat|Fix|Docs|Style|Refactor|Perf|Test|Build|Ci|Chore|Revert)|(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^()\s]+\))?!?): `)
@@ -58,7 +59,9 @@ type bullet struct {
 func judge(content string) []string {
 	var errs []string
 	for _, sec := range sections(content) {
-		errs = append(errs, judgeSection(sec)...)
+		if !sec.release {
+			errs = append(errs, judgeSection(sec)...)
+		}
 	}
 	return errs
 }
@@ -92,9 +95,12 @@ func judgeBullet(b bullet) []string {
 }
 
 // section is one ### entry: its trimmed heading text and logical bullets.
+// A release section, opened by a ## heading, holds release notes that the
+// release-changelog check judges, so this check skips it.
 type section struct {
 	heading string
 	bullets []bullet
+	release bool
 }
 
 // sections splits the document into ### sections, joining indented
@@ -108,10 +114,14 @@ func sections(content string) []section {
 }
 
 // fold accumulates one raw line into the section list: a ### line opens a
-// new section; other lines belong to the current one.
+// new section, a ## release heading opens a release section, and other
+// lines belong to the current one.
 func fold(out []section, line string, lineNo int) []section {
 	if headingRe.MatchString(line) {
 		return append(out, section{heading: strings.TrimSpace(strings.TrimPrefix(line, "### "))})
+	}
+	if releaseRe.MatchString(line) {
+		return append(out, section{release: true})
 	}
 	if len(out) == 0 {
 		return out

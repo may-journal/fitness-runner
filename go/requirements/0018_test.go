@@ -68,3 +68,11 @@ func Test0018_7(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "changelog-bullets")
 }
+
+func Test0018_8(t *testing.T) {
+	t.Parallel()
+	doc := changelogBulletsDoc("Docs: add the readme.", "Docs: add the changelog.", "Docs: add the license note.") +
+		"\n## 1.1.0\n\n- Feat: one.\n- Feat: two.\n- Feat: three.\n- Fix: four.\n- Fix: five.\n- Test: six.\n"
+	out, code := changelogBullets(t, doc)
+	sees(t, out, code, 0, "All 1 checks passed")
+}

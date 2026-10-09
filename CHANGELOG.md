@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1446
+
+- Fix: the release workflow passes its secrets to the binaries job, so release smoke tests can reach GitHub.
+- Fix: release smoke jobs read Plans and write to the sandbox with `FITNESS_SANDBOX_TOKEN`, as pull request smoke does.
+- Fix: a release no longer stalls as a draft because smoke tests ran without a token.
+- Fix: changelog-bullets ends an entry at a ## release heading; the duplicate 1.0.1 entry it hid is removed.
+
 ## 1.1.0
 
 - Feat: checks: new `issue-checklist` check; plan-check, pr-check, and close-check judge bodies with checks ([#222](https://github.com/may-journal/fitness-runner/issues/222)) ([01c64e6](https://github.com/may-journal/fitness-runner/commit/01c64e6603872b9fbfe23cafd4897f5b71971f80))
@@ -93,10 +100,6 @@ relatedConfigurations: ['.fitnessrc.json']
 ## 1.0.1
 
 - Fix: installer: expose verified bundle tools to hooks ([#193](https://github.com/may-journal/fitness-runner/issues/193)) ([fc22abc](https://github.com/may-journal/fitness-runner/commit/fc22abc5ef7cdba5cde213ca1a3a3dca1f54e1ac))
-
-### 2026.10.04.1639
-
-- Fix: expose verified bundle tools to installer commands and shared hooks.
 
 
 ## 1.0.0 (2026-10-04)

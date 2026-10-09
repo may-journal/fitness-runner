@@ -46,3 +46,7 @@ Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
     - Given a repo without a `CHANGELOG.md`
         - When changelog-bullets runs
             - Then it passes with no files checked
+- 0018.8
+    - Given an entry above a release section with more bullets
+        - When changelog-bullets runs
+            - Then the release notes are not counted as the entry's bullets
