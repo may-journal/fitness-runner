@@ -37,12 +37,14 @@ func vcfRun(t *testing.T, repo string) (string, int) {
 }
 
 func Test0060_1(t *testing.T) {
+	t.Parallel()
 	out, code := vcfRun(t, example(t, "happyRepo", nil))
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "vitest-coverage-full")
 }
 
 func Test0060_2(t *testing.T) {
+	t.Parallel()
 	repo := vcfRepo(t, map[string]string{"vitest.config.mjs": vcfConfig("90")})
 	withJSTools(t, repo)
 	out, code := vcfRun(t, repo)
@@ -50,12 +52,14 @@ func Test0060_2(t *testing.T) {
 }
 
 func Test0060_3(t *testing.T) {
+	t.Parallel()
 	shared := "node_modules/@mayjournal/fitness-shared/config/vitest.config.mjs"
 	out, code := vcfRun(t, vcfRepo(t, map[string]string{shared: vcfConfig("90")}))
 	sees(t, out, code, 1, "Fitness-runner package must have Vitest coverage thresholds set to 100 for branches, functions, lines, and statements.")
 }
 
 func Test0060_4(t *testing.T) {
+	t.Parallel()
 	repo := vcfRepo(t, nil)
 	withJSTools(t, repo)
 	out, code := vcfRun(t, repo)
@@ -63,6 +67,7 @@ func Test0060_4(t *testing.T) {
 }
 
 func Test0060_5(t *testing.T) {
+	t.Parallel()
 	repo := vcfRepo(t, map[string]string{"src/sub.ts": "export const sub = (a: number, b: number): number => a - b;\n"})
 	withJSTools(t, repo)
 	out, code := vcfRun(t, repo)
@@ -70,6 +75,7 @@ func Test0060_5(t *testing.T) {
 }
 
 func Test0060_6(t *testing.T) {
+	t.Parallel()
 	out, code := vcfRun(t, vcfRepo(t, nil))
 	sees(t, out, code, 1, "vitest not found in node_modules/.bin (walking up from root) or on PATH. Install it (npm install -D vitest)")
 }

@@ -25,21 +25,25 @@ func pushFeature(t *testing.T, trailer string) (string, int) {
 }
 
 func Test0010_1(t *testing.T) {
+	t.Parallel()
 	out, code := pushFeature(t, "Plan #218")
 	sees(t, out, code, 0, "HEAD -> main")
 }
 
 func Test0010_2(t *testing.T) {
+	t.Parallel()
 	out, code := pushFeature(t, "Plan #196")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (196)")
 }
 
 func Test0010_3(t *testing.T) {
+	t.Parallel()
 	out, code := pushFeature(t, "Plan #151")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
 }
 
 func Test0010_4(t *testing.T) {
+	t.Parallel()
 	repo, env := planned(t)
 	user(t, repo, env, "switch", "-q", "-c", "topic")
 	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "feat(app): start\n\nPlan #218")
@@ -52,6 +56,7 @@ func Test0010_4(t *testing.T) {
 }
 
 func Test0010_5(t *testing.T) {
+	t.Parallel()
 	repo, env := planned(t)
 	user(t, repo, env, "switch", "-q", "-c", "topic")
 	user(t, repo, env, "switch", "-q", "main")
@@ -65,6 +70,7 @@ func Test0010_5(t *testing.T) {
 }
 
 func Test0010_6(t *testing.T) {
+	t.Parallel()
 	repo, env := planned(t)
 	user(t, repo, env, "push", "-q", "origin", "HEAD:topic")
 	out, code := user(t, repo, env, "push", "origin", "--delete", "topic")

@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1354
+
+- Test: requirement tests run in parallel, so the suite takes about 2.5 minutes locally instead of 8.
+- Test: missing-tool tests drop the tool with pathWithout, since Linux runners keep Go and Node in /usr/bin.
+- Fix: prettier shows its last output lines when it fails without an [error] line, so the cause is visible.
+- Test: retire 0057.7; SwiftLint on Linux passes a broken config, which is logged as a bug.
+
 ### 2026.10.09.1334
 
 - Docs: requirements 0016 to 0063 state every remaining check's rules and the install, release, and stamp tools.

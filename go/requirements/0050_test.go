@@ -20,6 +20,7 @@ const prClosesNoKeyword = "PR description has no GitHub closing keyword (close/f
 var prClosesKeywords = strings.Fields("close closes closed fix fixes fixed resolve resolves resolved")
 
 func Test0050_1(t *testing.T) {
+	t.Parallel()
 	files := map[string]string{}
 	for _, keyword := range prClosesKeywords {
 		files[keyword+".md"] = "> pitch\n\n" + strings.ToUpper(keyword[:1]) + keyword[1:] + ": #12\n"
@@ -32,11 +33,13 @@ func Test0050_1(t *testing.T) {
 }
 
 func Test0050_2(t *testing.T) {
+	t.Parallel()
 	out, code := prCloses(t, "This addresses #12, is part of #6, and follows #7.\n")
 	sees(t, out, code, 1, prClosesNoKeyword)
 }
 
 func Test0050_3(t *testing.T) {
+	t.Parallel()
 	out, code := prCloses(t, "Implements #5.\n\nPlan #63 for context.\n\nCloses #6.\n")
 	sees(t, out, code, 1,
 		"PR says it implements #5 but no closing keyword (close/fix/resolve + #5) closes it",
@@ -44,21 +47,25 @@ func Test0050_3(t *testing.T) {
 }
 
 func Test0050_4(t *testing.T) {
+	t.Parallel()
 	out, code := prCloses(t, "Merging `Closes #12` closed it.\n\n```\nFixes #12\n```\n")
 	sees(t, out, code, 1, prClosesNoKeyword)
 }
 
 func Test0050_5(t *testing.T) {
+	t.Parallel()
 	out, code := prCloses(t, "Closes #12.\n", "--require-close=12,40")
 	sees(t, out, code, 1, "PR closes a Plan that closes #40, so the PR must also close #40")
 }
 
 func Test0050_6(t *testing.T) {
+	t.Parallel()
 	out, code := prCloses(t, "Closes #12 and closes #40.\n", "--require-close=12,40")
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0050_7(t *testing.T) {
+	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", nil), nil, "pr-closes-issue")
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "pr-closes-issue")

@@ -21,22 +21,26 @@ func goTestModule(dir, body string) map[string]string {
 const goTestBroken = "func TestBroken(t *testing.T) { t.Error(\"boom\") }\n"
 
 func Test0027_1(t *testing.T) {
+	t.Parallel()
 	out, code := goTest(t, goTestModule("", goTestBroken))
 	sees(t, out, code, 1, "--- FAIL: TestBroken", "m_test.go:5: boom")
 }
 
 func Test0027_2(t *testing.T) {
+	t.Parallel()
 	out, code := goTest(t, goTestModule("", "func TestFine(t *testing.T) {}\n"))
 	sees(t, out, code, 0, "All 1 checks passed · 1 files scanned")
 }
 
 func Test0027_3(t *testing.T) {
+	t.Parallel()
 	out, code := goTest(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "go-test")
 }
 
 func Test0027_4(t *testing.T) {
+	t.Parallel()
 	files := with(goTestModule("testdata/a/", goTestBroken), goTestModule("vendor/b/", goTestBroken))
 	out, code := goTest(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
@@ -44,16 +48,19 @@ func Test0027_4(t *testing.T) {
 }
 
 func Test0027_5(t *testing.T) {
+	t.Parallel()
 	out, code := goTest(t, goTestModule("svc/", goTestBroken))
 	sees(t, out, code, 1, "svc: --- FAIL: TestBroken", "svc: m_test.go:5: boom")
 }
 
 func Test0027_6(t *testing.T) {
+	t.Parallel()
 	out, code := goTest(t, goTestModule("", "func TestBroken(t *testing.T) { undefinedThing() }\n"))
 	sees(t, out, code, 1, "m_test.go:5:33: undefined: undefinedThing")
 }
 
 func Test0027_7(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", goTestModule("", goTestBroken))
 	write(t, repo, map[string]string{"README.md": readme + "\nOne more line.\n"})
 	git(t, repo, "add", "README.md")
@@ -63,6 +70,7 @@ func Test0027_7(t *testing.T) {
 }
 
 func Test0027_8(t *testing.T) {
-	out, code := goTest(t, goTestModule("", "func TestFine(t *testing.T) {}\n"), "PATH=/usr/bin:/bin")
+	t.Parallel()
+	out, code := goTest(t, goTestModule("", "func TestFine(t *testing.T) {}\n"), pathWithout(t, "go"))
 	sees(t, out, code, 1, "Go not installed: see https://go.dev/dl")
 }

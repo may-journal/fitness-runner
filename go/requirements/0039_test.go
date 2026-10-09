@@ -33,6 +33,7 @@ func mermaidCalloutsDoc(blocks ...string) map[string]string {
 }
 
 func Test0039_1(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
 		mermaidCalloutsDiagram(`Container(app, "1", "UI")`, `Rel(app, api, "2")`),
 		mermaidCalloutsTable("1", "2"),
@@ -44,6 +45,7 @@ func Test0039_1(t *testing.T) {
 }
 
 func Test0039_2(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
 		mermaidCalloutsDiagram(`Rel(a, b, "1")`, `Rel(b, c, "2")`),
 		mermaidCalloutsTable("1"),
@@ -52,6 +54,7 @@ func Test0039_2(t *testing.T) {
 }
 
 func Test0039_3(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
 		mermaidCalloutsDiagram(`Rel(a, b, "1")`),
 		mermaidCalloutsTable("1", "2"),
@@ -60,6 +63,7 @@ func Test0039_3(t *testing.T) {
 }
 
 func Test0039_4(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
 		mermaidCalloutsDiagram(`Rel(a, b, "1")`, `Rel(a, c, "1")`, `Rel(b, c, "2")`),
 		mermaidCalloutsTable("1", "2", "2"),
@@ -70,16 +74,19 @@ func Test0039_4(t *testing.T) {
 }
 
 func Test0039_5(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(mermaidCalloutsDiagram(`Rel(a, b, "1")`)))
 	sees(t, out, code, 1, "docs/flow.md: mermaid diagram at line 1 has numbered callouts but no associated callout table")
 }
 
 func Test0039_6(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(mermaidCalloutsTable("1")))
 	sees(t, out, code, 1, "docs/flow.md: callout table at line 1 has no preceding mermaid diagram")
 }
 
 func Test0039_7(t *testing.T) {
+	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
 		mermaidCalloutsDiagram(`Container(app, "1", "UI")`, `Rel(app, api, "2")`),
 		mermaidCalloutsDiagram(`Person(p, "Person")`, `System(s, "System")`),
@@ -89,6 +96,7 @@ func Test0039_7(t *testing.T) {
 }
 
 func Test0039_8(t *testing.T) {
+	t.Parallel()
 	body := mermaidCalloutsDoc(
 		mermaidCalloutsDiagram(`Rel(a, b, "1")`, `Rel(b, c, "2")`),
 		mermaidCalloutsTable("1"),

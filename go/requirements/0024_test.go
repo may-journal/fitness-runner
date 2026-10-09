@@ -79,28 +79,33 @@ func eslintFinds(t *testing.T, out string, code int, want string) {
 }
 
 func Test0024_1(t *testing.T) {
+	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", map[string]string{"app.js": eslintUnsorted}), nil, "eslint")
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "eslint")
 }
 
 func Test0024_2(t *testing.T) {
+	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", eslintShared(t, map[string]string{"app.js": eslintUnsorted})), nil, "eslint")
 	sees(t, out, code, 1, eslintMissing)
 }
 
 func Test0024_3(t *testing.T) {
+	t.Parallel()
 	out, code := eslintRun(t, eslintShared(t, map[string]string{"app.js": eslintSorted, "src/b.ts": eslintTyped}))
 	sees(t, out, code, 0, "All 1 checks passed")
 	eslintPassedWith(t, out, "4")
 }
 
 func Test0024_4(t *testing.T) {
+	t.Parallel()
 	out, code := eslintRun(t, eslintShared(t, map[string]string{"app.js": eslintUnsorted}))
 	eslintFinds(t, out, code, "/app.js:1:26 - Expected object keys to be in natural ascending order. 'a' should be before 'z'. (sort-keys)")
 }
 
 func Test0024_5(t *testing.T) {
+	t.Parallel()
 	out, code := eslintRun(t, map[string]string{
 		"package.json":      eslintPackage,
 		"eslint.config.mjs": "export default [{ rules: { 'no-console': 'warn' } }];\n",
@@ -113,6 +118,7 @@ func Test0024_5(t *testing.T) {
 }
 
 func Test0024_6(t *testing.T) {
+	t.Parallel()
 	out, code := eslintRun(t, map[string]string{
 		"package.json":      eslintPackage,
 		"eslint.config.mjs": "export default [{ ignores: ['skip.js'] }];\n",
@@ -122,12 +128,14 @@ func Test0024_6(t *testing.T) {
 }
 
 func Test0024_7(t *testing.T) {
+	t.Parallel()
 	out, code := eslintStaged(t, map[string]string{"src/b.ts": eslintTyped, "README.md": readme + "\nOne more short line.\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 	eslintPassedWith(t, out, "1")
 }
 
 func Test0024_8(t *testing.T) {
+	t.Parallel()
 	out, code := eslintStaged(t, map[string]string{"README.md": readme + "\nOne more short line.\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "eslint")

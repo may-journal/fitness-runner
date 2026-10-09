@@ -44,6 +44,7 @@ func remote(t *testing.T, repo string) {
 }
 
 func Test0009_1(t *testing.T) {
+	t.Parallel()
 	repo, _ := hooked(t, nil)
 	out, _ := exec.Command("git", "-C", repo, "config", "core.hooksPath").Output()
 	if got := strings.TrimSpace(string(out)); got != ".githooks" {
@@ -58,6 +59,7 @@ func Test0009_1(t *testing.T) {
 }
 
 func Test0009_2(t *testing.T) {
+	t.Parallel()
 	repo, env := hooked(t, nil)
 	write(t, repo, map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
 	user(t, repo, env, "add", "-A")
@@ -66,12 +68,14 @@ func Test0009_2(t *testing.T) {
 }
 
 func Test0009_3(t *testing.T) {
+	t.Parallel()
 	repo, env := hooked(t, nil)
 	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "added some stuff")
 	sees(t, out, code, 1, `Commit message: "added some stuff"`)
 }
 
 func Test0009_4(t *testing.T) {
+	t.Parallel()
 	repo, env := hooked(t, nil)
 	write(t, repo, map[string]string{".githooks/pre-commit.local": "#!/bin/sh\necho local build broke\nexit 1\n"})
 	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "docs(readme): touch nothing")
@@ -79,6 +83,7 @@ func Test0009_4(t *testing.T) {
 }
 
 func Test0009_5(t *testing.T) {
+	t.Parallel()
 	repo, env := hooked(t, nil)
 	remote(t, repo)
 	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
@@ -87,6 +92,7 @@ func Test0009_5(t *testing.T) {
 }
 
 func Test0009_6(t *testing.T) {
+	t.Parallel()
 	repo, env := hooked(t, nil)
 	remote(t, repo)
 	user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): tidy up")
@@ -95,6 +101,7 @@ func Test0009_6(t *testing.T) {
 }
 
 func Test0009_7(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	mine := "#!/bin/sh\necho my own hook\n"
 	write(t, repo, map[string]string{".git/hooks/pre-commit": mine})
@@ -108,6 +115,7 @@ func Test0009_7(t *testing.T) {
 }
 
 func Test0009_8(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	cmd := exec.Command(installer(t), "--install-hook")
 	cmd.Dir, cmd.Env = repo, userEnv()

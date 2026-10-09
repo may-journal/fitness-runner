@@ -311,7 +311,8 @@ func parsePrettierOutput(output string) []string {
 const maxPrettierErrors = 5
 
 // prettierErrors returns Prettier's own [error] lines, up to
-// maxPrettierErrors, such as a plugin the shared config cannot load.
+// maxPrettierErrors, such as a plugin the shared config cannot load. When it
+// printed none, its last lines stand in, so a failure always shows its cause.
 func prettierErrors(output string) []string {
 	var errs []string
 	for _, line := range strings.Split(output, "\n") {
@@ -320,7 +321,21 @@ func prettierErrors(output string) []string {
 			errs = append(errs, line)
 		}
 	}
-	return errs
+	if len(errs) > 0 {
+		return errs
+	}
+	return lastLines(output, maxPrettierErrors)
+}
+
+// lastLines returns the last n non-blank lines of output, trimmed.
+func lastLines(output string, n int) []string {
+	var lines []string
+	for _, line := range strings.Split(output, "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines[max(0, len(lines)-n):]
 }
 
 // filesChecked mirrors the TS getFilesChecked: error count when files

@@ -24,39 +24,46 @@ func changelogBulletsDoc(bullets ...string) string {
 }
 
 func Test0018_1(t *testing.T) {
+	t.Parallel()
 	out, code := changelogBullets(t, changelogBulletsDoc("Docs: add the readme.", "Docs: add the changelog."))
 	sees(t, out, code, 1, `CHANGELOG.md section "2026.10.08.1400" has 2 bullets; keep entries to 3-5 bullets`)
 }
 
 func Test0018_2(t *testing.T) {
+	t.Parallel()
 	long := "Feat: " + strings.Repeat("x", 359)
 	out, code := changelogBullets(t, changelogBulletsDoc(long, "Fix: two.", "Docs: three."))
 	sees(t, out, code, 1, "CHANGELOG.md:11: bullet is 365 characters; keep each under 365")
 }
 
 func Test0018_3(t *testing.T) {
+	t.Parallel()
 	wrapped := "Feat: " + strings.Repeat("x", 200) + "\n  " + strings.Repeat("y", 200)
 	out, code := changelogBullets(t, changelogBulletsDoc(wrapped, "Fix: two.", "Docs: three."))
 	sees(t, out, code, 1, "CHANGELOG.md:11: bullet is 407 characters; keep each under 365")
 }
 
 func Test0018_4(t *testing.T) {
+	t.Parallel()
 	out, code := changelogBullets(t, changelogBulletsDoc("Added the readme.", "Fix: two.", "Docs: three."))
 	sees(t, out, code, 1, "CHANGELOG.md:11: bullet must start with a semantic type (Feat:, Fix:, ... or feat(scope):, fix(scope):, ...)")
 }
 
 func Test0018_5(t *testing.T) {
+	t.Parallel()
 	out, code := changelogBullets(t, changelogBulletsDoc("Feat: one.", "fix(release)!: two.", "chore(ci): three.", "docs: four.", "Revert: five."))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0018_6(t *testing.T) {
+	t.Parallel()
 	old := changelogBulletsDoc("Feat: one.", "Fix: two.", "Docs: three.") + "\n### 2026.05.01.0000\n\n- Docs: one old bullet.\n"
 	out, code := changelogBullets(t, old)
 	sees(t, out, code, 1, `CHANGELOG.md section "2026.05.01.0000" has 1 bullets; keep entries to 3-5 bullets`)
 }
 
 func Test0018_7(t *testing.T) {
+	t.Parallel()
 	out, code := changelogBullets(t, "")
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "changelog-bullets")

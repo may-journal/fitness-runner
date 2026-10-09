@@ -42,11 +42,13 @@ func fiFile(t *testing.T, path string) string {
 var fiVersion = regexp.MustCompile(`fitness: version=(\S+) `)
 
 func Test0061_1(t *testing.T) {
+	t.Parallel()
 	out, code := fiRun(t, t.TempDir(), nil, "--help")
 	sees(t, out, code, 0, "Usage of fitness-install", "-github-action", "-install-hook", "-install-only", "-version")
 }
 
 func Test0061_2(t *testing.T) {
+	t.Parallel()
 	cases := map[string][]string{
 		"flag provided but not defined: -unknown":                            {"--unknown"},
 		"install-only does not accept runner arguments":                      {"--install-only", "--", "--all"},
@@ -60,6 +62,7 @@ func Test0061_2(t *testing.T) {
 }
 
 func Test0061_3(t *testing.T) {
+	t.Parallel()
 	first, _ := fiRun(t, t.TempDir(), nil, "--install-only")
 	match := fiVersion.FindStringSubmatch(first)
 	if match == nil {
@@ -91,6 +94,7 @@ func fiPrivateCache(t *testing.T) []string {
 }
 
 func Test0061_4(t *testing.T) {
+	t.Parallel()
 	env := fiPrivateCache(t)
 	first, _ := fiRun(t, t.TempDir(), env, "--install-only")
 	again, _ := fiRun(t, t.TempDir(), env, "--install-only")
@@ -103,11 +107,13 @@ func Test0061_4(t *testing.T) {
 }
 
 func Test0061_5(t *testing.T) {
+	t.Parallel()
 	out, code := fiRun(t, t.TempDir(), nil, "--install-hook")
 	sees(t, out, code, 1, "fitness: find Git hook directory")
 }
 
 func Test0061_6(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"main.go": "package main\nfunc main(){\n}\n"})
 	out, code := fitness(t, repo, nil, "gofmt")
 	sees(t, out, code, 1, "main.go: not gofmt-formatted (run: gofmt -w main.go)")
@@ -124,6 +130,7 @@ func fiAction(dir string, inputs ...string) []string {
 }
 
 func Test0061_7(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	out, code := fiRun(t, t.TempDir(), fiAction(dir, "FITNESS_INSTALL_ONLY=true"), "--github-action")
 	sees(t, out, code, 0)
@@ -134,6 +141,7 @@ func Test0061_7(t *testing.T) {
 }
 
 func Test0061_8(t *testing.T) {
+	t.Parallel()
 	cases := map[string][]string{
 		`parsing "maybe": invalid syntax`:         {"FITNESS_INSTALL_ONLY=maybe"},
 		"choose action check or checks, not both": {"FITNESS_CHECK=gofmt", "FITNESS_CHECKS=gofmt,go-vet"},

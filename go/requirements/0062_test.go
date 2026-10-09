@@ -84,6 +84,7 @@ func releaseToolSummary(t *testing.T, dir string) string {
 }
 
 func Test0062_1(t *testing.T) {
+	t.Parallel()
 	repo := releaseToolRepo(t, nil)
 	out, code := releaseToolRun(t, repo, nil, "version")
 	sees(t, out, code, 0, "1.0.1")
@@ -92,11 +93,13 @@ func Test0062_1(t *testing.T) {
 }
 
 func Test0062_2(t *testing.T) {
+	t.Parallel()
 	out, code := releaseToolRun(t, releaseToolRepo(t, nil), []string{"GITHUB_REF_NAME=v1.0.2"}, "verify-tag")
 	sees(t, out, code, 1, "tag v1.0.2 does not match version.txt v1.0.1")
 }
 
 func Test0062_3(t *testing.T) {
+	t.Parallel()
 	bundles := releaseToolBundles()
 	out, code := releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes")
 	for _, platform := range releaseToolPlatforms {
@@ -106,6 +109,7 @@ func Test0062_3(t *testing.T) {
 }
 
 func Test0062_4(t *testing.T) {
+	t.Parallel()
 	changed := releaseToolBundles()
 	changed["out/bundles/fitness-1.0.1-linux-arm64.tar.gz"] = "changed after the build\n"
 	out, code := releaseToolRun(t, releaseToolRepo(t, changed), nil, "bundle-hashes")
@@ -119,6 +123,7 @@ func Test0062_4(t *testing.T) {
 }
 
 func Test0062_5(t *testing.T) {
+	t.Parallel()
 	repo := releaseToolRepo(t, nil)
 	out, code := releaseToolRun(t, repo, nil)
 	sees(t, out, code, 1, "use bundle-hashes, assemble, smoke, verify-download, verify-tag")
@@ -131,6 +136,7 @@ func Test0062_5(t *testing.T) {
 }
 
 func Test0062_6(t *testing.T) {
+	t.Parallel()
 	repo, job := releaseToolRepo(t, nil), t.TempDir()
 	out, code := releaseToolRun(t, repo, releaseToolActions(job, "v1.0.1"), "verify-tag")
 	sees(t, out, code, 0)
@@ -141,6 +147,7 @@ func Test0062_6(t *testing.T) {
 }
 
 func Test0062_7(t *testing.T) {
+	t.Parallel()
 	job := t.TempDir()
 	env := append(releaseToolActions(job, "v9.9.9"), "GITHUB_ACTIONS=false")
 	out, code := releaseToolRun(t, releaseToolRepo(t, nil), env, "verify-tag")
@@ -154,6 +161,7 @@ func Test0062_7(t *testing.T) {
 }
 
 func Test0062_8(t *testing.T) {
+	t.Parallel()
 	job := t.TempDir()
 	mustDo(t, os.Mkdir(filepath.Join(job, "summary"), 0o755))
 	out, code := releaseToolRun(t, releaseToolRepo(t, nil), releaseToolActions(job, "v9.9.9"), "verify-tag")

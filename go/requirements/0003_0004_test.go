@@ -11,6 +11,7 @@ import (
 )
 
 func Test0003_1(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, _ := fitness(t, repo, nil)
 	for _, check := range []string{"eslint", "prettier", "swiftlint", "gofmt", "go-test", "requirements"} {
@@ -38,11 +39,13 @@ func misspelled(n int) map[string]string {
 }
 
 func Test0004_1(t *testing.T) {
+	t.Parallel()
 	out, code, _ := inActions(t, example(t, "happyRepo", misspelled(1)))
 	sees(t, out, code, 1, "::error file=README.md,line=9::cspell: README.md:9:5 - Unknown word (zorbleflux)")
 }
 
 func Test0004_2(t *testing.T) {
+	t.Parallel()
 	out, code, summary := inActions(t, example(t, "happyRepo", misspelled(13)))
 	annotated := strings.Count(out, "\n::error ")
 	findings := strings.Count(summary, "\n- ")
@@ -54,6 +57,7 @@ func Test0004_2(t *testing.T) {
 }
 
 func Test0004_3(t *testing.T) {
+	t.Parallel()
 	out, code, _ := inActions(t, example(t, "happyRepo", nil))
 	if strings.Contains(out, "::error") || strings.Contains(out, "::warning") || code != 0 {
 		t.Errorf("a green run must add no annotations, got exit %d:\n%s", code, out)
@@ -61,6 +65,7 @@ func Test0004_3(t *testing.T) {
 }
 
 func Test0004_4(t *testing.T) {
+	t.Parallel()
 	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{"README.md": readme + "\nThe zorbleflux is 100% here.\n"}))
 	sees(t, out, code, 1, "::error file=README.md,line=9::cspell: README.md:9:5 - Unknown word (zorbleflux)")
 	for _, line := range strings.Split(out, "\n") {
@@ -71,11 +76,13 @@ func Test0004_4(t *testing.T) {
 }
 
 func Test0004_5(t *testing.T) {
+	t.Parallel()
 	_, code, summary := inActions(t, example(t, "happyRepo", misspelled(1)))
 	sees(t, summary, code, 1, "## Fitness checks", "| cspell | ❌ fail |", "README.md:9:5 - Unknown word (zorbleflux)", "| prose-budget | ✅ pass |")
 }
 
 func Test0004_6(t *testing.T) {
+	t.Parallel()
 	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": "{\n"}))
 	sees(t, out, code, 1, "::error::fitness setup: .fitnessrc.json:")
 	if strings.Contains(out, "::error file=") {
@@ -84,6 +91,7 @@ func Test0004_6(t *testing.T) {
 }
 
 func Test0004_7(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", misspelled(1))
 	summary := filepath.Join(t.TempDir(), "summary.md")
 	mustDo(t, os.WriteFile(summary, []byte(strings.Repeat("Earlier step output.\n", 52000)), 0o644))

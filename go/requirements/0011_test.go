@@ -17,12 +17,14 @@ func linked(t *testing.T) (string, []string) {
 }
 
 func Test0011_1(t *testing.T) {
+	t.Parallel()
 	repo, env := linked(t)
 	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): again\n\nPlan #218")
 	sees(t, out, code, 1, `#218 is already linked by commit`, `("chore(app): start")`)
 }
 
 func Test0011_2(t *testing.T) {
+	t.Parallel()
 	repo, env := linked(t)
 	out, code := user(t, repo, env, "commit", "--amend", "--allow-empty", "-m", "chore(app): start over\n\nPlan #218")
 	sees(t, out, code, 0, "chore(app): start over")

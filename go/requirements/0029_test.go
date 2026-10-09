@@ -26,16 +26,19 @@ func goVet(t *testing.T, repo string, env ...string) (string, int) {
 }
 
 func Test0029_1(t *testing.T) {
+	t.Parallel()
 	out, code := goVet(t, example(t, "happyRepo", goVetModule(".", goVetBad)))
 	sees(t, out, code, 1, "✖ "+goVetFinding)
 }
 
 func Test0029_2(t *testing.T) {
+	t.Parallel()
 	out, code := goVet(t, example(t, "happyRepo", goVetModule("api", goVetBad)))
 	sees(t, out, code, 1, "✖ api: "+goVetFinding)
 }
 
 func Test0029_3(t *testing.T) {
+	t.Parallel()
 	out, code := goVet(t, example(t, "happyRepo", goVetModule("api", "package m\n\nfunc F() int { return 1 }\n")))
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "go-vet")) {
@@ -44,12 +47,14 @@ func Test0029_3(t *testing.T) {
 }
 
 func Test0029_4(t *testing.T) {
+	t.Parallel()
 	out, code := goVet(t, example(t, "happyRepo", map[string]string{"main.go": goVetBad}))
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "go-vet")
 }
 
 func Test0029_5(t *testing.T) {
+	t.Parallel()
 	files := goVetModule("testdata/fixture", goVetBad)
 	for name, body := range goVetModule("vendor/dep", goVetBad) {
 		files[name] = body
@@ -60,6 +65,7 @@ func Test0029_5(t *testing.T) {
 }
 
 func Test0029_6(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", goVetModule("api", goVetBad))
 	write(t, repo, map[string]string{"README.md": readme + "\nMore text.\n"})
 	git(t, repo, "add", "README.md")
@@ -69,6 +75,7 @@ func Test0029_6(t *testing.T) {
 }
 
 func Test0029_7(t *testing.T) {
-	out, code := goVet(t, example(t, "happyRepo", goVetModule("api", goVetBad)), "PATH=/usr/bin:/bin")
+	t.Parallel()
+	out, code := goVet(t, example(t, "happyRepo", goVetModule("api", goVetBad)), pathWithout(t, "go"))
 	sees(t, out, code, 1, "✖ Go not installed: see https://go.dev/dl")
 }

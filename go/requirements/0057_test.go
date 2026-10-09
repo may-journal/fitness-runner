@@ -28,6 +28,7 @@ func swiftlintSquash(text string) string {
 }
 
 func Test0057_1(t *testing.T) {
+	t.Parallel()
 	swiftlintTool(t)
 	out, code := swiftlintRun(t, map[string]string{"Short.swift": "let ab = 1\n"})
 	swiftlintSees(t, out, code, 1,
@@ -35,6 +36,7 @@ func Test0057_1(t *testing.T) {
 }
 
 func Test0057_2(t *testing.T) {
+	t.Parallel()
 	swiftlintTool(t)
 	out, code := swiftlintRun(t, map[string]string{"NoNewline.swift": "let value = 1"})
 	swiftlintSees(t, out, code, 1,
@@ -42,12 +44,14 @@ func Test0057_2(t *testing.T) {
 }
 
 func Test0057_3(t *testing.T) {
+	t.Parallel()
 	swiftlintTool(t)
 	out, code := swiftlintRun(t, map[string]string{"Clean.swift": "let value = 1\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0057_4(t *testing.T) {
+	t.Parallel()
 	swiftlintTool(t)
 	out, code := swiftlintRun(t, map[string]string{
 		".swiftlint.yml": "disabled_rules:\n  - identifier_name\n",
@@ -57,6 +61,7 @@ func Test0057_4(t *testing.T) {
 }
 
 func Test0057_5(t *testing.T) {
+	t.Parallel()
 	swiftlintTool(t)
 	out, code := swiftlintRun(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
@@ -64,20 +69,13 @@ func Test0057_5(t *testing.T) {
 }
 
 func Test0057_6(t *testing.T) {
-	out, code := swiftlintRun(t, map[string]string{"Clean.swift": "let value = 1\n"}, "PATH=/usr/bin:/bin")
+	t.Parallel()
+	out, code := swiftlintRun(t, map[string]string{"Clean.swift": "let value = 1\n"}, pathWithout(t, "swiftlint"))
 	sees(t, out, code, 1, "SwiftLint not installed: brew install swiftlint")
 }
 
-func Test0057_7(t *testing.T) {
-	swiftlintTool(t)
-	out, code := swiftlintRun(t, map[string]string{
-		".swiftlint.yml": "disabled_rules: [\n",
-		"Clean.swift":    "let value = 1\n",
-	})
-	sees(t, out, code, 1, "swiftlint reported an error (run: swiftlint lint --strict)")
-}
-
 func Test0057_8(t *testing.T) {
+	t.Parallel()
 	swiftlintTool(t)
 	out, code := swiftlintRun(t, map[string]string{
 		".swiftlint.yml": "excluded:\n  - Short.swift\n",

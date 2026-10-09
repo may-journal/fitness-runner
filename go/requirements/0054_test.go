@@ -39,22 +39,26 @@ func releaseChangelogFails(t *testing.T, cases []releaseChangelogCase) {
 }
 
 func Test0054_1(t *testing.T) {
+	t.Parallel()
 	out, code := releaseChangelog(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "release-changelog")
 }
 
 func Test0054_2(t *testing.T) {
+	t.Parallel()
 	out, code := releaseChangelog(t, map[string]string{".release-please-manifest.json": "{}\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0054_3(t *testing.T) {
+	t.Parallel()
 	out, code := releaseChangelog(t, releaseChangelogRelease(releaseChangelogNotes))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0054_4(t *testing.T) {
+	t.Parallel()
 	releaseChangelogFails(t, []releaseChangelogCase{
 		{map[string]string{".release-please-manifest.json": "{\n"}, ".release-please-manifest.json is invalid JSON"},
 		{map[string]string{".release-please-manifest.json": "null\n"}, ".release-please-manifest.json must be a JSON object"},
@@ -64,6 +68,7 @@ func Test0054_4(t *testing.T) {
 }
 
 func Test0054_5(t *testing.T) {
+	t.Parallel()
 	files := releaseChangelogRelease(releaseChangelogNotes)
 	files["version.txt"] = "1.2.4\n"
 	out, code := releaseChangelog(t, files)
@@ -71,6 +76,7 @@ func Test0054_5(t *testing.T) {
 }
 
 func Test0054_6(t *testing.T) {
+	t.Parallel()
 	out, code := releaseChangelog(t, map[string]string{
 		".release-please-manifest.json": `{".":"1.2.3"}` + "\n",
 		"CHANGELOG.md":                  "",
@@ -79,6 +85,7 @@ func Test0054_6(t *testing.T) {
 }
 
 func Test0054_7(t *testing.T) {
+	t.Parallel()
 	releaseChangelogFails(t, []releaseChangelogCase{
 		{releaseChangelogRelease("# Changelog\n\n## Changes\n\n- Work.\n"), "CHANGELOG.md must contain a `## 1.2.3` release section"},
 		{releaseChangelogRelease("# Changelog\n\n## 1.2.3\n\nText only.\n"), "CHANGELOG.md release section 1.2.3 must contain at least one list item describing what ships"},
@@ -87,6 +94,7 @@ func Test0054_7(t *testing.T) {
 }
 
 func Test0054_8(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", releaseChangelogRelease(releaseChangelogNotes))
 	write(t, repo, map[string]string{".release-please-manifest.json": `{".": "1.2.3"}` + "\n"})
 	git(t, repo, "add", ".release-please-manifest.json")

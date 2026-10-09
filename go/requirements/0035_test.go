@@ -25,6 +25,7 @@ const frontMatterComment = "<!--\n---\nrelatedConfigurations: ['../.fitnessrc.js
 const frontMatterMissing = "missing front matter with fitnessFunctions or relatedConfigurations"
 
 func Test0035_1(t *testing.T) {
+	t.Parallel()
 	out, code := frontMatterCheck(t, map[string]string{
 		"plain.md":    "# Plain\n\nShort and clean.\n",
 		"title.md":    frontMatterDoc("title: Notes"),
@@ -36,33 +37,39 @@ func Test0035_1(t *testing.T) {
 }
 
 func Test0035_2(t *testing.T) {
+	t.Parallel()
 	out, code := frontMatterCheck(t, map[string]string{"guide.md": frontMatterDoc("fitnessFunctions: []")})
 	sees(t, out, code, 1, "guide.md: fitnessFunctions must not be an empty array")
 }
 
 func Test0035_3(t *testing.T) {
+	t.Parallel()
 	out, code := frontMatterCheck(t, map[string]string{"guide.md": frontMatterDoc("relatedConfigurations: ['./gone.json']")})
 	sees(t, out, code, 1, "guide.md: front matter path missing: ./gone.json")
 }
 
 func Test0035_4(t *testing.T) {
+	t.Parallel()
 	out, code := frontMatterCheck(t, map[string]string{"docs/guide/setup.md": frontMatterDoc("relatedConfigurations: ['../../.fitnessrc.json']")})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0035_5(t *testing.T) {
+	t.Parallel()
 	escape := "../../../../../../../../../../etc/hosts"
 	out, code := frontMatterCheck(t, map[string]string{"guide.md": frontMatterDoc("relatedConfigurations: ['" + escape + "']")})
 	sees(t, out, code, 1, "guide.md: front matter path escapes repo: "+escape)
 }
 
 func Test0035_6(t *testing.T) {
+	t.Parallel()
 	entries := "fitnessFunctions: ['markdown-front-matter', 'https://example.com/missing', '#usage', 'mailto:team@example.com']"
 	out, code := frontMatterCheck(t, map[string]string{"guide.md": frontMatterDoc(entries)})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0035_7(t *testing.T) {
+	t.Parallel()
 	out, code := frontMatterCheck(t, map[string]string{
 		"node_modules/pkg/readme.md": "# Package\n",
 		"dist/notes.md":              "# Notes\n",
@@ -71,6 +78,7 @@ func Test0035_7(t *testing.T) {
 }
 
 func Test0035_8(t *testing.T) {
+	t.Parallel()
 	template := frontMatterComment + "\n> One clear summary.\n"
 	out, code := frontMatterCheck(t, map[string]string{".github/PULL_REQUEST_TEMPLATE.md": template})
 	sees(t, out, code, 0, "All 1 checks passed")

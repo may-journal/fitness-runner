@@ -23,11 +23,13 @@ func goComplexityFile(decl string, n int) string {
 }
 
 func Test0026_1(t *testing.T) {
+	t.Parallel()
 	out, code := goComplexity(t, map[string]string{"a.go": goComplexityFile("func f()", 6)})
 	sees(t, out, code, 1, "a.go:5: func f has a complexity of 7; maximum allowed is 5")
 }
 
 func Test0026_2(t *testing.T) {
+	t.Parallel()
 	body := "package p\n\nfunc f(n int, ch chan int, a, b bool) bool {\n" +
 		"\tswitch n {\n\tcase 1:\n\tcase 2:\n\tdefault:\n\t}\n" +
 		"\tselect {\n\tcase <-ch:\n\tdefault:\n\t}\n" +
@@ -39,6 +41,7 @@ func Test0026_2(t *testing.T) {
 }
 
 func Test0026_3(t *testing.T) {
+	t.Parallel()
 	body := "package p\n\nvar ok bool\n\nfunc outer() {\n\tg := func() {\n" + goComplexityIfs(5) + "\t}\n\tg()\n}\n"
 	out, code := goComplexity(t, map[string]string{"a.go": body})
 	sees(t, out, code, 1, "a.go:6: function literal has a complexity of 6; maximum allowed is 5")
@@ -48,17 +51,20 @@ func Test0026_3(t *testing.T) {
 }
 
 func Test0026_4(t *testing.T) {
+	t.Parallel()
 	file := "package p\n\ntype T struct{}\n\n" + strings.TrimPrefix(goComplexityFile("func (T) m()", 5), "package p\n\n")
 	out, code := goComplexity(t, map[string]string{"a.go": file})
 	sees(t, out, code, 1, "a.go:7: method m has a complexity of 6; maximum allowed is 5")
 }
 
 func Test0026_5(t *testing.T) {
+	t.Parallel()
 	out, code := goComplexity(t, map[string]string{"a_test.go": goComplexityFile("func TestF()", 5)})
 	sees(t, out, code, 1, "a_test.go:5: func TestF has a complexity of 6; maximum allowed is 5")
 }
 
 func Test0026_6(t *testing.T) {
+	t.Parallel()
 	out, code := goComplexity(t, map[string]string{
 		".fitnessrc.json": `{"goComplexity": {"max": 2}}` + "\n",
 		"a.go":            goComplexityFile("func f()", 2),
@@ -67,6 +73,7 @@ func Test0026_6(t *testing.T) {
 }
 
 func Test0026_7(t *testing.T) {
+	t.Parallel()
 	out, code := goComplexity(t, map[string]string{"bad.go": "package p\nfunc {"})
 	sees(t, out, code, 1, "✖ bad.go:")
 	if !strings.Contains(goComplexityJoined(out), goComplexityJoined("bad.go:2:6: expected 'IDENT', found '{'")) {
@@ -75,6 +82,7 @@ func Test0026_7(t *testing.T) {
 }
 
 func Test0026_8(t *testing.T) {
+	t.Parallel()
 	out, code := goComplexity(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "go-complexity")

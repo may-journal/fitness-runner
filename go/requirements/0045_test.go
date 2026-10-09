@@ -21,6 +21,7 @@ const noEslintDisableNext = "// eslint-disable-next-line no-console\n"
 var noEslintDisableExts = []string{".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx"}
 
 func Test0045_1(t *testing.T) {
+	t.Parallel()
 	legacy := "export const x = 1;\n" + noEslintDisableNext + "console.log(x);\n" +
 		"const y = 2; // eslint-disable-line\n/* eslint-disable */\n"
 	out, code := noEslintDisableCheck(t, map[string]string{"src/legacy.ts": legacy})
@@ -31,6 +32,7 @@ func Test0045_1(t *testing.T) {
 }
 
 func Test0045_2(t *testing.T) {
+	t.Parallel()
 	out, code := noEslintDisableCheck(t, map[string]string{
 		"src/a.ts": "export const a = 1;\n",
 		"src/b.js": "export const b = 2;\n",
@@ -39,6 +41,7 @@ func Test0045_2(t *testing.T) {
 }
 
 func Test0045_3(t *testing.T) {
+	t.Parallel()
 	files := map[string]string{}
 	var want []string
 	for _, ext := range noEslintDisableExts {
@@ -50,6 +53,7 @@ func Test0045_3(t *testing.T) {
 }
 
 func Test0045_4(t *testing.T) {
+	t.Parallel()
 	out, code := noEslintDisableCheck(t, map[string]string{
 		"docs/lint.md": "Never write " + noEslintDisableNext,
 		"src/a.ts":     "export const a = 1;\n",
@@ -58,12 +62,14 @@ func Test0045_4(t *testing.T) {
 }
 
 func Test0045_5(t *testing.T) {
+	t.Parallel()
 	out, code := noEslintDisableCheck(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "no-eslint-disable")
 }
 
 func Test0045_6(t *testing.T) {
+	t.Parallel()
 	out, code := noEslintDisableCheck(t, map[string]string{
 		"node_modules/pkg/index.js": "/* eslint-disable */\n",
 		"dist/out.js":               "/* eslint-disable */\n",
@@ -76,6 +82,7 @@ func Test0045_6(t *testing.T) {
 }
 
 func Test0045_7(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"src/a.ts": "export const a = 1;\n"})
 	write(t, repo, map[string]string{"src/scratch.ts": noEslintDisableNext})
 	out, code := noEslintDisableRun(t, repo)
@@ -83,6 +90,7 @@ func Test0045_7(t *testing.T) {
 }
 
 func Test0045_8(t *testing.T) {
+	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"src/old.ts": noEslintDisableNext})
 	write(t, repo, map[string]string{"src/new.ts": "export const a = 1;\n"})
 	git(t, repo, "add", "src/new.ts")

@@ -53,6 +53,7 @@ func stampShows(t *testing.T, label, text string, headings []string) {
 }
 
 func Test0063_1(t *testing.T) {
+	t.Parallel()
 	repo, headings := stampCommit(t, map[string]string{"CHANGELOG.md": stampEntry, "README.md": stampReadme})
 	stampShows(t, "the committed CHANGELOG", stampCommitted(t, repo), headings)
 	mine, _ := os.ReadFile(filepath.Join(repo, "CHANGELOG.md"))
@@ -60,6 +61,7 @@ func Test0063_1(t *testing.T) {
 }
 
 func Test0063_2(t *testing.T) {
+	t.Parallel()
 	repo, headings := stampCommit(t, map[string]string{"CHANGELOG.md": stampEntry, "README.md": stampReadme})
 	got := stampCommitted(t, repo)
 	stampShows(t, "the committed CHANGELOG", got, headings)
@@ -69,6 +71,7 @@ func Test0063_2(t *testing.T) {
 }
 
 func Test0063_3(t *testing.T) {
+	t.Parallel()
 	repo, env := hooked(t, nil)
 	write(t, repo, map[string]string{"CHANGELOG.md": stampEntry})
 	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "docs(readme): touch nothing")

@@ -23,23 +23,27 @@ func readRepoFirstChosen(t *testing.T, checks string) (string, int) {
 }
 
 func Test0053_1(t *testing.T) {
+	t.Parallel()
 	out, code := readRepoFirst(t)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "read-repo-first")
 }
 
 func Test0053_2(t *testing.T) {
+	t.Parallel()
 	out, code := readRepoFirst(t)
 	sees(t, out, code, 0, "Did you familiarize yourself with the decisions logged in the repo, "+
 		`specifically all "Fitness Checks" that are enabled via @mayjournal/fitness?`)
 }
 
 func Test0053_3(t *testing.T) {
+	t.Parallel()
 	out, code := readRepoFirst(t)
 	sees(t, out, code, 0, "NOTE: Do not under any circumstance use `--no-verify`")
 }
 
 func Test0053_4(t *testing.T) {
+	t.Parallel()
 	out, code := readRepoFirstChosen(t, "jscpd")
 	sees(t, out, code, 0, "Check │ Src", "jscpd │ go/cmd/fitness-check-jscpd/README.md")
 	if strings.Contains(out, "fitness-check-gofmt") {
@@ -48,6 +52,7 @@ func Test0053_4(t *testing.T) {
 }
 
 func Test0053_5(t *testing.T) {
+	t.Parallel()
 	out, code := readRepoFirstChosen(t, "markdown-filename-kebab-case")
 	sees(t, out, code, 0, "markdown-filename-kebab-c… │ go/cmd/fitness-check-markdown-file"+"n…")
 }
@@ -65,6 +70,7 @@ func readRepoFirstRaw(t *testing.T, env ...string) string {
 }
 
 func Test0053_6(t *testing.T) {
+	t.Parallel()
 	colored := readRepoFirstRaw(t, "NO_COLOR=")
 	plain := readRepoFirstRaw(t, "NO_COLOR=1")
 	if !ansi.MatchString(colored) {

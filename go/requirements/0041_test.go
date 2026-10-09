@@ -33,17 +33,20 @@ func tableGapError(file, line string) string {
 }
 
 func Test0041_1(t *testing.T) {
+	t.Parallel()
 	out, code := tableGap(t, map[string]string{"doc.md": tableGapDoc(tableGapDiagram, tableGapProse, tableGapTable)})
 	sees(t, out, code, 1, tableGapError("doc.md", "8"))
 }
 
 func Test0041_2(t *testing.T) {
+	t.Parallel()
 	doc := tableGapDoc(tableGapDiagram, tableGapLegend, tableGapProse, tableGapTable)
 	out, code := tableGap(t, map[string]string{"doc.md": doc})
 	sees(t, out, code, 1, tableGapError("doc.md", "13"))
 }
 
 func Test0041_3(t *testing.T) {
+	t.Parallel()
 	out, code := tableGap(t, map[string]string{
 		"a.md": tableGapDoc(tableGapDiagram, tableGapLegend, tableGapCaption, tableGapTable),
 		"b.md": tableGapDoc(tableGapDiagram, "Numbers on classes and relationships match the callout table.", tableGapTable),
@@ -53,6 +56,7 @@ func Test0041_3(t *testing.T) {
 }
 
 func Test0041_4(t *testing.T) {
+	t.Parallel()
 	doc := tableGapDoc(tableGapDiagram, tableGapLegend, tableGapCaption, tableGapProse, tableGapTable)
 	out, code := tableGap(t, map[string]string{"doc.md": doc})
 	sees(t, out, code, 1, tableGapError("doc.md", "15"))
@@ -62,6 +66,7 @@ func Test0041_4(t *testing.T) {
 }
 
 func Test0041_5(t *testing.T) {
+	t.Parallel()
 	out, code := tableGap(t, map[string]string{
 		"a.md": tableGapDoc("Intro prose before the diagram.", tableGapDiagram, tableGapCaption, tableGapTable, "Trailing prose after the table."),
 		"b.md": tableGapDoc("Prose above.", "```mermaid\nContainer(app, \"UI\")\n```", "Prose below."),
@@ -70,12 +75,14 @@ func Test0041_5(t *testing.T) {
 }
 
 func Test0041_6(t *testing.T) {
+	t.Parallel()
 	out, code := tableGap(t, map[string]string{"doc.md": tableGapDoc("Just prose, nothing to see here.")})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "mermaid-diagram-table-gap")
 }
 
 func Test0041_7(t *testing.T) {
+	t.Parallel()
 	body := strings.Join([]string{tableGapDiagram, tableGapProse, tableGapTable}, "\n\n") + "\n"
 	out, code := tableGap(t, map[string]string{"body.md": body}, "--body-file", "body.md")
 	sees(t, out, code, 1, tableGapError("(description)", "6"))
