@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1613
+
+- Feat: changelog: a release section may hold Release Please's Features and Bug Fixes subheadings and star bullets.
+- Feat: markdown-no-bold-italic: allows the bold scope Release Please gives each release bullet, and no other bold.
+- Docs: requirement 0064 states how release notes pass the changelog checks untouched.
+
 ### 2026.10.09.1533
 
 - Perf: install: a cached bundle starts in about 0.1 s instead of 0.75 s; installed files are checked against hashes recorded at install.
