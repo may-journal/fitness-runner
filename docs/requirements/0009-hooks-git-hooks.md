@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0009 Checks Git Hooks
+# 0009 Git Hooks
 
 ## Why
 

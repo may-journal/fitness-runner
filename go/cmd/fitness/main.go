@@ -62,6 +62,7 @@ var allChecks = []string{
 	"plan-structure",
 	"pr-structure",
 	"pr-closes-issue",
+	"issue-checklist",
 	"go-complexity",
 	"go-vet",
 	"gofmt",
@@ -118,9 +119,9 @@ func isHelp(args []string) bool {
 var subcommands = map[string]func(args []string) int{
 	"init":        runInit,
 	"hook":        runHookArgs,
-	"pr-check":    func([]string) int { return runPRCheck() },
-	"plan-check":  func([]string) int { return runPlanCheck() },
-	"close-check": func([]string) int { return runCloseCheck() },
+	"pr-check":    func([]string) int { return runGH("pr-check") },
+	"plan-check":  func([]string) int { return runGH("plan-check") },
+	"close-check": func([]string) int { return runGH("close-check") },
 }
 
 // route dispatches the subcommands, defaulting to the check runner.

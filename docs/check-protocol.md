@@ -13,6 +13,12 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 
 The runner executes checks in a bounded parallel pool with per-check timeouts. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table, and the run exits 1 when any check fails.
 
+## Blob input
+
+A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Given `--body-file`, it reads that body and reports it as one file. Checks never call GitHub themselves.
+
+The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`, which comments, labels, hides old verdicts, or reopens.
+
 ## Applicability
 
 Org mode runs every check, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.

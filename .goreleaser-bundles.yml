@@ -33,6 +33,7 @@ archives:
       - fitness-check-go-test-coverage
       - fitness-check-go-vet
       - fitness-check-gofmt
+      - fitness-check-issue-checklist
       - fitness-check-issue-link-once
       - fitness-check-jscpd
       - fitness-check-markdown-filename-camel-case
