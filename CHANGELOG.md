@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1605
+
+- Docs: skills/add-requirements/SKILL.md teaches an agent to add stated requirements proven by real-run tests.
+- Docs: the skill covers requirement docs, one test per acceptance, saved answers for the outside world, and coverage.
+- Docs: it links this repo's requirement docs and tests as the worked example.
+
 ### 2026.10.09.1533
 
 - Perf: install: a cached bundle starts in about 0.1 s instead of 0.75 s; installed files are checked against hashes recorded at install.
