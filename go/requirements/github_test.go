@@ -68,7 +68,8 @@ func setIssue(n int, fields ...string) error {
 // branch deleted when the test ends.
 func newPR(t *testing.T, title, body string) int {
 	t.Helper()
-	branch := "test/" + strings.ToLower(strings.ReplaceAll(t.Name(), "_", "-"))
+	// A unique branch, since parallel CI jobs share the sandbox.
+	branch := fmt.Sprintf("test/%s-%d", strings.ToLower(strings.ReplaceAll(t.Name(), "_", "-")), time.Now().UnixNano())
 	sha := gh(t, "api", "repos/"+sandbox+"/git/ref/heads/main", "-q", ".object.sha")
 	gh(t, "api", "repos/"+sandbox+"/git/refs", "-f", "ref=refs/heads/"+branch, "-f", "sha="+sha)
 	t.Cleanup(func() {
