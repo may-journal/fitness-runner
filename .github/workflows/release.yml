@@ -59,9 +59,6 @@ jobs:
   binaries:
     needs: verify
     uses: ./.github/workflows/distribution.yml
-    # The smoke jobs' requirement tests read Plans and write to the sandbox
-    # with FITNESS_SANDBOX_TOKEN, which a called workflow only gets this way.
-    secrets: inherit
   release:
     needs: binaries
     runs-on: ubuntu-latest

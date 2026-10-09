@@ -26,9 +26,6 @@ install: ## Install all cmd/ binaries to GOBIN (on your PATH)
 requirements: ## Build the candidate and run every requirement test
 	sh tests/requirements.sh
 
-requirements-quick: ## Same, leaving GitHub, network, and real-tool tests to CI
-	FITNESS_QUICK=1 sh tests/requirements.sh
-
 test: ## Run all tests
 	cd $(GO_DIR) && go test ./...
 

@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1514
+
+- Test: GitHub, npm registry, eslint, prettier, vitest, and swiftlint answers are saved; no requirement test leaves the machine.
+- Test: make requirements builds the candidate and runs the whole suite offline in about a minute.
+- Ci: smoke jobs no longer install real tools or need the sandbox token, and both run every test.
+- Test: dependency-currency now proves registries that answer an error or garbage, not just unreachable ones.
+
 ### 2026.10.09.1508
 
 - Test: tests/requirements.sh builds this machine's candidate and runs the suite with one test per core.

@@ -1,8 +1,7 @@
 #!/bin/sh
 # Builds the candidate installer, as the release build does, and runs the
-# requirement suite against it, one test per core (go test's default). With FITNESS_QUICK
-# set, tests that reach GitHub, the npm registry, or a real external tool
-# skip; every CI smoke job still runs them.
+# requirement suite against it, one test per core (go test's default). No
+# test leaves the machine: GitHub, npm, and tool answers are saved.
 set -eu
 cd "$(dirname "$0")/.."
 platform="$(go env GOOS)-$(go env GOARCH)"
@@ -18,9 +17,6 @@ rm out.log
 FITNESS_CACHE_DIR="$PWD/out/requirements-cache"
 export FITNESS_CACHE_DIR
 "out/fitness-release-$platform" smoke >/dev/null
-if [ -z "${FITNESS_QUICK:-}" ]; then
-  sh tests/tools/install.sh >/dev/null
-fi
 FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-"$platform")"
 export FITNESS_INSTALL
 go -C go test ./requirements -count=1 "$@"

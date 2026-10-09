@@ -43,7 +43,7 @@ Source: `go/cmd/fitness-check-dependency-currency/main.go:227`
         - When dependency-currency runs
             - Then it lists each installed version once
 - 0022.7
-    - Given an unreachable registry in the repo or home `.npmrc`
+    - Given a repo or home `.npmrc` registry that is unreachable, answers an error, or sends garbage
         - When dependency-currency runs
             - Then it passes rather than blocking the commit
 - 0022.8

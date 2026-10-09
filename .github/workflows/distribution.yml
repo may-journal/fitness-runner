@@ -80,12 +80,8 @@ jobs:
         include:
           - runner: ubuntu-latest
             platform: linux-amd64
-            skip: ""
-          # The GitHub command tests (0013-0015) prove GitHub behavior, which
-          # no architecture changes, so they run in the amd64 job only.
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
-            skip: Test001[345]_
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 20
     steps:
@@ -116,28 +112,12 @@ jobs:
         run: |
           chmod +x out/fitness-install-*-${{ matrix.platform }}
           out/fitness-install-*-${{ matrix.platform }} -- --policy=external
-      - uses: actions/setup-node@v4
-        with:
-          node-version: lts/*
-      - name: Install the real tools the requirement tests run
-        env:
-          SWIFTLINT_VERSION: 0.65.1
-        run: |
-          sh tests/tools/install.sh
-          arch="${{ matrix.platform }}"
-          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT_VERSION/swiftlint_linux_${arch#linux-}.zip"
-          unzip -q -o "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
-          chmod +x "$RUNNER_TEMP/swiftlint/swiftlint"
-          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
       - name: Run the requirement tests with the candidate Go installer
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-          # Requirement tests read real Plans through gh (0010) and run the
-          # GitHub commands for real in may-journal/fitness-sandbox (0013-0015).
-          GH_TOKEN: ${{ secrets.FITNESS_SANDBOX_TOKEN }}
         run: |
           export FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-${{ matrix.platform }})"
-          go -C go test ./requirements -count=1 -skip="${{ matrix.skip }}"
+          go -C go test ./requirements -count=1
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

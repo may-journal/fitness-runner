@@ -65,3 +65,8 @@ func hungTool(timeoutMs, prelude string) map[string]string {
 		"node_modules/.bin/prettier": "#!/bin/sh\n" + prelude + "/bin/sleep 30 >/dev/null 2>&1 &\necho $! > \"$PWD/prettier.pid\"\nwait\n",
 	}
 }
+
+// planBody is a Plan that follows the template, with one task.
+func planBody(task string) string {
+	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
+}

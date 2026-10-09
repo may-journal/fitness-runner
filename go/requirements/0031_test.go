@@ -9,8 +9,12 @@ import (
 	"testing"
 )
 
-// iloOrigin is the sandbox's URL, so a bare `#NN` belongs to the sandbox.
-const iloOrigin = "https://github.com/" + sandbox + ".git"
+// iloRepo is the repo on GitHub that origin points at, so a bare `#NN`
+// belongs to it.
+const iloRepo = "may-journal/example"
+
+// iloOrigin is iloRepo's URL.
+const iloOrigin = "https://github.com/" + iloRepo + ".git"
 
 // iloBranch is happyRepo on branch, off a main pushed to a local origin.
 func iloBranch(t *testing.T, branch string) string {
@@ -22,8 +26,8 @@ func iloBranch(t *testing.T, branch string) string {
 	return repo
 }
 
-// iloOnSandbox is iloBranch with origin pointed at the sandbox on GitHub.
-func iloOnSandbox(t *testing.T, branch string) string {
+// iloOnGitHub is iloBranch with origin pointed at iloRepo on GitHub.
+func iloOnGitHub(t *testing.T, branch string) string {
 	t.Helper()
 	repo := iloBranch(t, branch)
 	git(t, repo, "remote", "set-url", "origin", iloOrigin)
@@ -70,15 +74,15 @@ func iloPullRequest(t *testing.T, repo string) (string, int) {
 
 func Test0031_1(t *testing.T) {
 	t.Parallel()
-	repo := iloOnSandbox(t, "topic")
+	repo := iloOnGitHub(t, "topic")
 	iloCommit(t, repo, "", "feat(app): start\n\nPlan #12")
-	out, code := iloCheck(t, repo, "fix(app): more\n\nSee https://github.com/"+sandbox+"/issues/12")
-	sees(t, out, code, 1, sandbox+`#12 is already linked by commit`, `("feat(app): start")`)
+	out, code := iloCheck(t, repo, "fix(app): more\n\nSee https://github.com/"+iloRepo+"/issues/12")
+	sees(t, out, code, 1, iloRepo+`#12 is already linked by commit`, `("feat(app): start")`)
 }
 
 func Test0031_2(t *testing.T) {
 	t.Parallel()
-	repo := iloOnSandbox(t, "topic")
+	repo := iloOnGitHub(t, "topic")
 	iloCommit(t, repo, "", "feat(app): start\n\nPlan #12")
 	out, code := iloCheck(t, repo, "fix(app): more\n\nSee may-journal/fitness-runner#12")
 	sees(t, out, code, 0, "All 1 checks passed")
@@ -95,10 +99,13 @@ func Test0031_3(t *testing.T) {
 
 func Test0031_4(t *testing.T) {
 	t.Parallel()
-	n := newPR(t, "test: link once", "Closes #12")
-	repo := iloOnSandbox(t, sandboxBranch(t))
-	out, code := iloCheck(t, repo, "fix(app): more\n\nFixes #12")
-	sees(t, out, code, 1, sandbox+"#12 is already linked by open PR #"+itoa(n))
+	repo := iloBranch(t, "topic")
+	git(t, repo, "remote", "set-url", "origin", "https://github.com/acme/app.git")
+	rp := standIn(t, map[string][]response{"gh": {
+		{Match: []string{"pr view", "--json number,state,body"}, Stdout: `{"body":"Adds the export screen.\n\nCloses #12","number":7,"state":"OPEN"}` + "\n"},
+	}})
+	out, code := fitness(t, repo, rp.env, "issue-link-once", "--message", "fix(app): more\n\nFixes #12")
+	sees(t, out, code, 1, "acme/app#12 is already linked by open PR #7")
 }
 
 func Test0031_5(t *testing.T) {
