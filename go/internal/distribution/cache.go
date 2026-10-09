@@ -1,6 +1,7 @@
 package distribution
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -94,4 +95,40 @@ func readCacheFile(path string, limit int64) ([]byte, error) {
 	}
 	defer file.Close()
 	return readBounded(file, limit)
+}
+
+// recordHashes saves a bundle generation's file hashes, taken from the
+// verified archive, beside it, so later runs can check the installed files
+// without reading or unpacking the archive again.
+func recordHashes(key, generation string, hashes map[string]string) error {
+	data, err := json.Marshal(hashes)
+	if err != nil {
+		return err
+	}
+	return writeAtomic(filepath.Join(key, generation+".hashes.json"), data)
+}
+
+// recordedBundle returns the current bundle when every installed file still
+// matches the hashes recorded at publish time, or "" so the caller verifies
+// and unpacks the archive. A damaged file fails the match.
+func recordedBundle(key string) string {
+	target, err := os.Readlink(filepath.Join(key, "current"))
+	if err != nil || !generationPattern.MatchString(target) {
+		return ""
+	}
+	path := filepath.Join(key, target)
+	if hashes := recorded(key, target); hashes == nil || !validBundle(path, hashes) {
+		return ""
+	}
+	return path
+}
+
+// recorded reads the hashes saved for a generation, or nil when none are.
+func recorded(key, generation string) map[string]string {
+	var hashes map[string]string
+	data, err := os.ReadFile(filepath.Join(key, generation+".hashes.json"))
+	if err != nil || json.Unmarshal(data, &hashes) != nil {
+		return nil
+	}
+	return hashes
 }

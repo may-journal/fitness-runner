@@ -7,6 +7,26 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1533
+
+- Perf: install: a cached bundle starts in about 0.1 s instead of 0.75 s; installed files are checked against hashes recorded at install.
+- Perf: install: every hook run and fitness-install call skips re-reading and unpacking the cached archive.
+- Test: requirement tests run 32 at once, so the whole suite takes about 15 s locally.
+
+### 2026.10.09.1514
+
+- Test: GitHub, npm registry, eslint, prettier, vitest, and swiftlint answers are saved; no requirement test leaves the machine.
+- Test: make requirements builds the candidate and runs the whole suite offline in about a minute.
+- Ci: smoke jobs no longer install real tools or need the sandbox token, and both run every test.
+- Test: dependency-currency now proves registries that answer an error or garbage, not just unreachable ones.
+
+### 2026.10.09.1508
+
+- Test: tests/requirements.sh builds this machine's candidate and runs the suite with one test per core.
+- Test: the test binary stands in for gh, eslint, prettier, vitest, and swiftlint, answering from saved responses.
+- Test: a local server stands in for the npm registry, so no requirement test leaves the machine.
+- Docs: the shared cspell words list goreleaser, the release build tool.
+
 ### 2026.10.09.1453
 
 - Fix: the release workflow passes its secrets to the binaries job, so release smoke tests can reach GitHub.

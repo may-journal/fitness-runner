@@ -23,6 +23,9 @@ build: ## Compile all cmd/ binaries into go/bin
 install: ## Install all cmd/ binaries to GOBIN (on your PATH)
 	cd $(GO_DIR) && go install ./cmd/...
 
+requirements: ## Build the candidate and run every requirement test
+	sh tests/requirements.sh
+
 test: ## Run all tests
 	cd $(GO_DIR) && go test ./...
 

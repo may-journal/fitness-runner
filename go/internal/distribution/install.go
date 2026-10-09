@@ -47,6 +47,9 @@ func (i *Installer) Install(ctx context.Context, requested string) (string, erro
 
 func (i *Installer) installBundle(ctx context.Context, version, top, digest string) (string, error) {
 	key := filepath.Join(i.Cache, top+"-"+digest)
+	if path := recordedBundle(key); path != "" {
+		return path, nil
+	}
 	if err := os.MkdirAll(key, 0700); err != nil {
 		return "", err
 	}
@@ -93,7 +96,12 @@ func chooseBundle(key, staged, top string, data []byte) (string, error) {
 		return "", err
 	}
 	if cached := currentBundle(key, hashes); cached != "" {
+		// A bundle installed before hashes were recorded gets its record now.
+		_ = recordHashes(key, filepath.Base(cached), hashes)
 		return cached, nil
+	}
+	if err := recordHashes(key, filepath.Base(staged), hashes); err != nil {
+		return "", err
 	}
 	return publishBundle(key, staged)
 }

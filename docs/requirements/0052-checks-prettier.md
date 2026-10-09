@@ -41,7 +41,7 @@ Source: `go/cmd/fitness-check-prettier/main.go:339`
 - 0052.6
     - Given a messy file and the `--write` argument
         - When prettier runs with that argument
-            - Then it rewrites the file and passes
+            - Then it hands that argument to Prettier in place of `--check`, and passes
 - 0052.7
     - Given a `.prettierignore` file, even without `package.json`
         - When prettier checks the repo
