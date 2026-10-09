@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.08.2343
+
+- Feat: pre-push traces a push only to Plan trailers on the branch; it no longer reads the open PR body.
+- Fix: fitness init and fitness hook outside a git repo say why, and init writes no hooks there.
+- Docs: requirements 0010 and 0011 state the push Plan gate and amend rule; 0009 is renamed checks-git-hooks.
+- Test: requirement tests prove hook errors, the Go hook, Plan approval, and amends with real git and gh.
+- Test: delete the pre-push and amend unit tests that requirements 0010 and 0011 now prove.
+
 ### 2026.10.08.1651
 
 - Docs: requirement 0009 states what the git hooks refuse, from fitness init to the Go pre-commit installer.

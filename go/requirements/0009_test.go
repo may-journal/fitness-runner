@@ -106,3 +106,16 @@ func Test0009_7(t *testing.T) {
 		t.Errorf("--install-hook replaced the existing hook:\n%s", data)
 	}
 }
+
+func Test0009_8(t *testing.T) {
+	repo := example(t, "happyRepo", nil)
+	cmd := exec.Command(installer(t), "--install-hook")
+	cmd.Dir, cmd.Env = repo, userEnv()
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("--install-hook: %v\n%s", err, out)
+	}
+	write(t, repo, map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
+	user(t, repo, nil, "add", "-A")
+	out, code := user(t, repo, nil, "commit", "-m", "docs(readme): add bold text")
+	sees(t, out, code, 1, "README.md: disallowed **bold**")
+}
