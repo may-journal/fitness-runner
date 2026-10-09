@@ -117,7 +117,7 @@ jobs:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
         run: |
           export FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-${{ matrix.platform }})"
-          go -C go test ./requirements -count=1
+          go -C go test ./requirements -count=1 -parallel 32
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1533
+
+- Perf: install: a cached bundle starts in about 0.1 s instead of 0.75 s; installed files are checked against hashes recorded at install.
+- Perf: install: every hook run and fitness-install call skips re-reading and unpacking the cached archive.
+- Test: requirement tests run 32 at once, so the whole suite takes about 15 s locally.
+
 ### 2026.10.09.1514
 
 - Test: GitHub, npm registry, eslint, prettier, vitest, and swiftlint answers are saved; no requirement test leaves the machine.

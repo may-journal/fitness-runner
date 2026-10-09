@@ -1,6 +1,7 @@
 #!/bin/sh
 # Builds the candidate installer, as the release build does, and runs the
-# requirement suite against it, one test per core (go test's default). No
+# requirement suite against it, 32 tests at once: they wait on subprocesses,
+# not the CPU, and 32 keeps the process count well under the OS limit. No
 # test leaves the machine: GitHub, npm, and tool answers are saved.
 set -eu
 cd "$(dirname "$0")/.."
@@ -19,4 +20,4 @@ export FITNESS_CACHE_DIR
 "out/fitness-release-$platform" smoke >/dev/null
 FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-"$platform")"
 export FITNESS_INSTALL
-go -C go test ./requirements -count=1 "$@"
+go -C go test ./requirements -count=1 -parallel 32 "$@"
