@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -99,9 +98,7 @@ func eslintStaged(t *testing.T, files map[string]string) string {
 // eslintPassedWith asserts the eslint row shows a pass that judged files.
 func eslintPassedWith(t *testing.T, out, files string) {
 	t.Helper()
-	if !regexp.MustCompile(`│ passed\s+│ ` + files + `\s+│`).MatchString(row(out, "eslint")) {
-		t.Errorf("eslint must pass with %s files, got row %q", files, row(out, "eslint"))
-	}
+	passedWith(t, out, "eslint", files)
 }
 
 // eslintFinds asserts eslint failed and reported want. The table wraps the

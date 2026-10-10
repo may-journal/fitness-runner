@@ -155,3 +155,11 @@ func passedWithNoFiles(t *testing.T, out, check string) {
 		t.Errorf("%s must pass with 0 files, got row %q", check, row(out, check))
 	}
 }
+
+// passedWith asserts check's row shows a pass that judged files.
+func passedWith(t *testing.T, out, check, files string) {
+	t.Helper()
+	if !regexp.MustCompile(`│ passed\s+│ ` + files + `\s+│`).MatchString(row(out, check)) {
+		t.Errorf("%s must pass with %s files, got row %q", check, files, row(out, check))
+	}
+}
