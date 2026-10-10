@@ -21,7 +21,7 @@ For consumers who choose source builds:
 go install github.com/may-journal/fitness-runner/go/cmd/...@latest
 ```
 
-One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Pin a version with `@v0.20260719.852`. Upgrade by rerunning with `@latest`.
+One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@latest`.
 
 ### Prebuilt binaries
 
@@ -68,9 +68,9 @@ Some checks also run as GitHub Actions workflows. They extend the same rules to 
 
 ## Release updates
 
-After main CI passes, Release Please opens or updates a release PR from conventional commits. Merging that PR creates a draft release and a `v1.x` tag. GoReleaser builds and packages four platforms; native and public checks gate promotion to latest. A Go module tag and a pin update PR follow verification.
+After main CI passes, Release Please opens or updates a release PR from conventional commits. Merging that PR creates a draft release and a `v1.x` tag. GoReleaser builds and packages four platforms; native and public checks gate promotion to latest. Verification adds a Go module tag and moves the `v1` major tag.
 
-Release and pin PRs use the normal review and checks. See [release automation and recovery](docs/ci.md#release-automation) for App access and retries. Other repos with fixed tags or commit SHAs need their own update PRs.
+Release PRs use the normal review and checks. See [release automation and recovery](docs/ci.md#release-automation) for App access and retries. Other repos use `@v1` and get each 1.x release without an update PR.
 
 ## Documentation
 

@@ -41,14 +41,14 @@ func (c Config) Promote(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	if !pinVersionPattern.MatchString(metadata.Version) {
+	if !versionPattern.MatchString(metadata.Version) {
 		return fmt.Errorf("invalid release version %q", metadata.Version)
 	}
 	latest, err := c.latestPublishedVersion(ctx)
 	if err != nil {
 		return err
 	}
-	if comparePinVersions(latest, metadata.Version) >= 0 {
+	if compareVersions(latest, metadata.Version) >= 0 {
 		return nil
 	}
 	return c.runPublishCommand(ctx, "release", "edit", "v"+metadata.Version, "--prerelease=false", "--latest")
@@ -64,7 +64,7 @@ func (c Config) latestPublishedVersion(ctx context.Context) (string, error) {
 		return "", err
 	}
 	version := strings.TrimPrefix(strings.TrimPrefix(release.TagName, "go/"), "v")
-	if !pinVersionPattern.MatchString(version) {
+	if !versionPattern.MatchString(version) {
 		return "", fmt.Errorf("invalid latest release tag %q", release.TagName)
 	}
 	return version, nil

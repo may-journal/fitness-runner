@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.1942
+
+- Feat: release: moves the `v1` major tag to each newest verified release.
+- Feat: action: a `v1` ref installs the newest 1.x release; reusable workflows use `@v1`.
+- Chore: release: removes the pin update command and pull request.
+
 ## [1.2.0](https://github.com/may-journal/fitness-runner/compare/v1.1.0...v1.2.0) (2026-10-10)
 
 
