@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.3.1](https://github.com/may-journal/fitness-runner/compare/v1.3.0...v1.3.1) (2026-10-10)
+
+
+### Bug Fixes
+
+* **workflows:** org callers run Fitness from v1 ([#254](https://github.com/may-journal/fitness-runner/issues/254)) ([e171b86](https://github.com/may-journal/fitness-runner/commit/e171b86da0b0346f5fe9feb7f15b8e68bec11c99))
+
 ### 2026.10.09.2036
 
 - Fix: workflows: the org fitness suite calls `ci-reusable.yml@v1` instead of `@main`.
