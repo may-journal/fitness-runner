@@ -20,7 +20,7 @@ on:
   workflow_dispatch:
 jobs:
   pr-check:
-    uses: may-journal/fitness-runner/.github/workflows/pr-check-reusable.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/pr-check-reusable.yml@v1
     permissions:
       contents: read
       pull-requests: read
@@ -37,7 +37,7 @@ on:
   workflow_dispatch:
 jobs:
   plan-check:
-    uses: may-journal/fitness-runner/.github/workflows/plan-check-reusable.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/plan-check-reusable.yml@v1
     permissions:
       contents: read
       issues: write
@@ -54,7 +54,7 @@ on:
     types: [closed]
 jobs:
   close-check:
-    uses: may-journal/fitness-runner/.github/workflows/close-check-reusable.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/close-check-reusable.yml@v1
     permissions:
       contents: read
       issues: write
@@ -78,7 +78,7 @@ on:
   workflow_dispatch:
 jobs:
   fitness:
-    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@v1
     with:
       swift: true
 ```
@@ -87,7 +87,7 @@ A pull request checks only the files it changes, and the push to `main` after me
 
 ## Version policy
 
-The callers track `@main` to stay current. Pin a release tag when a repo needs a frozen check set, then bump on its own schedule.
+The callers pin `@v1`, which each verified 1.x release moves, so repos get fixes with no bump. A new major version needs `@v2`.
 
 ## Per-repo pieces
 
@@ -103,7 +103,7 @@ Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 
-An org ruleset can run `pr-check-reusable.yml@main` in every repo with no caller file, since it carries a `pull_request` trigger. The org `.github` repo supplies the Plan issue template and conventions by default.
+An org ruleset can run `pr-check-reusable.yml` from the `v1` tag in every repo with no caller file, since it carries a `pull_request` trigger. The org `.github` repo supplies the Plan issue template and conventions by default.
 
 The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
 
@@ -118,6 +118,6 @@ permissions:
   contents: read
 jobs:
   auto-merge:
-    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@v1
     secrets: inherit
 ```

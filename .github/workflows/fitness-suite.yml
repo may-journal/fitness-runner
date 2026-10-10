@@ -17,4 +17,4 @@ permissions:
 jobs:
   org-fitness:
     if: github.repository != 'may-journal/fitness-runner'
-    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@v1
