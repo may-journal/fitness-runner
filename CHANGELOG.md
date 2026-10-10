@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.2250
+
+- Docs: add-requirements: size a requirement draft against a sibling project, about five acceptances per doc and 15 words each.
+- Docs: add-requirements: each acceptance states the core promise or guards a shipped bug, in the user's words.
+- Docs: add-requirements: a pro and con review and an owner sign-off come before any test.
+
 ## [1.3.1](https://github.com/may-journal/fitness-runner/compare/v1.3.0...v1.3.1) (2026-10-10)
 
 
