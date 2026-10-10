@@ -26,6 +26,9 @@ install: ## Install all cmd/ binaries to GOBIN (on your PATH)
 requirements: ## Build the candidate and run every requirement test
 	sh tests/requirements.sh
 
+requirements-coverage: ## Same, then print what the real runs cover
+	FITNESS_COVER=1 sh tests/requirements.sh
+
 test: ## Run all tests
 	cd $(GO_DIR) && go test ./...
 

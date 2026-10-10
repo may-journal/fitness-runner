@@ -7,17 +7,30 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.09.1635
+### 2026.10.09.1920
 
 - Fix: release-changelog: finds the release section under Release Please's linked version heading.
 - Fix: release-changelog: a release PR no longer fails as missing its own release section.
 - Test: acceptance 0064.7 runs the real check on a Release Please heading.
+
+### 2026.10.09.1632
+
+- Chore: make requirements-coverage builds with coverage, runs the suite, and prints coverage by package and in total.
+- Docs: the add-requirements skill points at requirements-coverage and names May Photos as the Swift pilot.
+- Docs: the skill says to convert every component before turning the check on, and links the doc conventions.
+
 
 ### 2026.10.09.1613
 
 - Feat: changelog: a release section may hold Release Please's Features and Bug Fixes subheadings and star bullets.
 - Feat: markdown-no-bold-italic: allows the bold scope Release Please gives each release bullet, and no other bold.
 - Docs: requirement 0064 states how release notes pass the changelog checks untouched.
+
+### 2026.10.09.1605
+
+- Docs: skills/add-requirements/SKILL.md teaches an agent to add stated requirements proven by real-run tests.
+- Docs: the skill covers requirement docs, one test per acceptance, saved answers for the outside world, and coverage.
+- Docs: it links this repo's requirement docs and tests as the worked example.
 
 ### 2026.10.09.1533
 
