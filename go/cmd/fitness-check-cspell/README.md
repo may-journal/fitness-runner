@@ -16,5 +16,6 @@ Spell-checks with a native Go engine and dictionaries embedded in the check bina
 - Fail: A resolved `cspell.json` that sets `ignorePaths` fails before any scan; remove it and fix the words instead.
 - Config: A repo-local `cspell.json` wins; otherwise an installed `@mayjournal/fitness-shared` package under `node_modules`; otherwise the copy embedded in the binary, materialized on demand.
 - No copy is required in the consumer repo.
+- Forbidden words: each `flagWords` word or phrase fails wherever it appears whole, in any case, except in a `cspell.json` file.
 
-Errors are reported as one line per issue: `path:line:col - Unknown word (word)`.
+Errors are reported as one line per issue: `path:line:col - Unknown word (word)` or `path:line:col - Forbidden word (entry)`.

@@ -377,3 +377,45 @@ func position(text string, lines []int, offset int) (line, col int) {
 	i := sort.Search(len(lines), func(n int) bool { return lines[n] > offset }) - 1
 	return i + 1, utf8.RuneCountInString(text[lines[i]:offset]) + 1
 }
+
+// FindPhrases returns each case-insensitive, whole-word match of any phrase
+// in text, in phrase order; a space in a phrase matches any whitespace run,
+// and no letter, digit, or underscore may touch either end.
+// Issue.Word is the phrase as listed.
+func FindPhrases(text string, phrases []string) []Issue {
+	lines := lineOffsets(text)
+	var issues []Issue
+	for _, p := range phrases {
+		re := phraseRe(p)
+		if re == nil {
+			continue
+		}
+		for _, m := range re.FindAllStringSubmatchIndex(text, -1) {
+			if wordRuneAt(text, m[3]) {
+				continue
+			}
+			line, col := position(text, lines, m[2])
+			issues = append(issues, Issue{Word: p, Line: line, Col: col})
+		}
+	}
+	return issues
+}
+
+// wordRuneAt reports whether a letter, digit, or underscore starts at byte i.
+func wordRuneAt(text string, i int) bool {
+	r, _ := utf8.DecodeRuneInString(text[i:])
+	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
+}
+
+// phraseRe matches a phrase in any case after a non-word rune or the start,
+// any whitespace run between its words; nil for a blank phrase.
+func phraseRe(phrase string) *regexp.Regexp {
+	words := strings.Fields(phrase)
+	if len(words) == 0 {
+		return nil
+	}
+	for i, w := range words {
+		words[i] = regexp.QuoteMeta(w)
+	}
+	return regexp.MustCompile(`(?i)(?:^|[^\pL\pN_])(` + strings.Join(words, `\s+`) + `)`)
+}
