@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I write a template once, and every doc beside it keeps the same sections. Each template section explains what to write, so authors are never guessing.
+I write a template once per kind of doc, and every doc beside it follows one of them. Each template section explains what to write, so authors are never guessing.
 
 ## Measurement
 
@@ -14,12 +14,12 @@ markdown files that match their template, and templates that guide every section
 -
 markdown files checked
 
-Source: `go/cmd/fitness-check-doc-template/main.go:118`
+Source: `go/cmd/fitness-check-doc-template/main.go:66`
 
 ## Requirements
 
 - 0023.1
-    - Given a doc whose sections match its folder's `template.md`
+    - Given a doc matching one of two templates in its folder's `templates` subfolder
         - When doc-template checks the repo
             - Then it passes
 - 0023.2
@@ -33,11 +33,7 @@ Source: `go/cmd/fitness-check-doc-template/main.go:118`
 - 0023.4
     - Given a doc in a subfolder under nested templates
         - When doc-template checks the repo
-            - Then it is judged against the nearest template above it
-- 0023.5
-    - Given docs with no template above them
-        - When doc-template checks the repo
-            - Then it passes whatever their sections
+            - Then it is judged against the nearest folder's templates above it
 - 0023.6
     - Given a template section without a guiding comment
         - When doc-template checks the repo
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-doc-template/main.go:118`
     - Given a GitHub template and a sibling doc with other sections
         - When doc-template checks the repo
             - Then it passes, since GitHub templates govern bodies, not files
+- 0023.9
+    - Given a folder with two templates and a doc matching neither
+        - When doc-template checks the repo
+            - Then it fails naming both templates

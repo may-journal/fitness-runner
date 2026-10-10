@@ -26,7 +26,7 @@ A template file defines a markdown document's shape, and its neighbors must matc
 
 - Pass: every template guides each section, and every governed file matches. A repo with no templates passes.
 - Fail: a template section lacks a comment, or a governed file matches none of its templates.
-- Each error lists one difference from the file's closest template, the one with the fewest, and names it when there are several.
+- With one template, each difference is its own error. With several, one error names them all.
 
 ## Contributing
 

@@ -9,14 +9,18 @@ func docTemplate(t *testing.T, files map[string]string) (string, int) {
 	return fitness(t, example(t, "happyRepo", files), nil, "doc-template")
 }
 
+// docTemplateNote guides its one section with a comment.
+const docTemplateNote = "# Note\n\n## Summary\n\n<!-- gist -->\n"
+
 // docTemplateADR guides each of its three sections with a comment.
 const docTemplateADR = "# NNNN Title\n\n## Context\n\n<!-- why -->\n\n## Decision\n\n<!-- what -->\n\n## Consequences\n\n<!-- fallout -->\n"
 
 func Test0023_1(t *testing.T) {
 	t.Parallel()
 	out, code := docTemplate(t, map[string]string{
-		"docs/adr/template.md":  docTemplateADR,
-		"docs/adr/0001-good.md": "# 0001 Good\n\n## Context\n\nc\n\n## Decision\n\nd\n\n## Consequences\n\ne\n",
+		"docs/arch/templates/adr.md":  docTemplateADR,
+		"docs/arch/templates/note.md": docTemplateNote,
+		"docs/arch/04-code.md":        "# Code\n\n## Summary\n\ns\n",
 	})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
@@ -42,19 +46,11 @@ func Test0023_3(t *testing.T) {
 func Test0023_4(t *testing.T) {
 	t.Parallel()
 	out, code := docTemplate(t, map[string]string{
-		"docs/template.md":           docTemplateADR,
+		"docs/templates/adr.md":      docTemplateADR,
 		"docs/deep/note.template.md": "# Note\n\n## Summary\n\n<!-- gist -->\n",
 		"docs/deep/sub/0001-note.md": "# 0001 Note\n\n## Context\n\nc\n",
 	})
 	sees(t, out, code, 1, "docs/deep/sub/0001-note.md: Missing `## Summary` section")
-}
-
-func Test0023_5(t *testing.T) {
-	t.Parallel()
-	out, code := docTemplate(t, map[string]string{
-		"docs/notes.md": "# Notes\n\n## Anything\n\ngoes\n",
-	})
-	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0023_6(t *testing.T) {
@@ -83,4 +79,15 @@ func Test0023_8(t *testing.T) {
 		".github/other.md":                 "# Other\n\n## Totally\n\ndifferent\n",
 	})
 	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+func Test0023_9(t *testing.T) {
+	t.Parallel()
+	out, code := docTemplate(t, map[string]string{
+		"docs/adr/adr.template.md":  docTemplateADR,
+		"docs/adr/note.template.md": docTemplateNote,
+		"docs/adr/0001-bad.md":      "# 0001 Bad\n\n## Other\n\no\n",
+	})
+	sees(t, out, code, 1,
+		"docs/adr/0001-bad.md: sections match none of its templates: docs/adr/adr.template.md, docs/adr/note.template.md")
 }
