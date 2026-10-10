@@ -11,5 +11,5 @@ permissions:
 
 jobs:
   auto-merge:
-    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@main
+    uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@v1
     secrets: inherit

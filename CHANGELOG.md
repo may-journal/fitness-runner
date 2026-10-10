@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.2036
+
+- Fix: workflows: the org fitness suite calls `ci-reusable.yml@v1` instead of `@main`.
+- Fix: workflows: auto-merge calls `auto-merge.yml@v1`.
+- Docs: adoption: callers pin `@v1`.
+
 ## [1.3.0](https://github.com/may-journal/fitness-runner/compare/v1.2.0...v1.3.0) (2026-10-10)
 
 
