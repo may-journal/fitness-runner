@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -118,11 +119,11 @@ func checkContent(name, content string, checker *spell.Checker, flags []string) 
 
 // checkFiles scans each file and formats issues exactly like the cspell CLI
 // run from the root: "<path>:<line>:<col> - Unknown word (<word>)". The
-// cspell.json that lists the flagWords is never checked for them.
+// cspell.json files that list the flagWords are never checked for them.
 func checkFiles(root string, files []string, checker *spell.Checker, cfg config) []string {
 	perFile := par.Map(len(files), 0, func(i int) []string {
 		flags := cfg.FlagWords
-		if files[i] == cfg.path {
+		if path.Base(files[i]) == "cspell.json" {
 			flags = nil
 		}
 		return fileIssues(root, files[i], checker, flags)

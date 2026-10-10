@@ -7,10 +7,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.10.1117
+### 2026.10.10.1120
 
 - Feat: cspell: fail each `flagWords` word or phrase in the resolved `cspell.json` as forbidden, in files and bodies.
-- Feat: cspell: match `flagWords` entries as whole words in any case, skipping the `cspell.json` that lists them.
+- Feat: cspell: match `flagWords` entries as whole words in any case or script, skipping every `cspell.json`.
 - Docs: cspell: the README says how `flagWords` entries match.
 - Test: requirement 0021 covers `flagWords`, and folds 0021.3 and 0021.4 into 0021.9.
 
