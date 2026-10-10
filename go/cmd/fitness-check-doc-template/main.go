@@ -1,12 +1,10 @@
-// Command fitness-check-doc-template enforces a convention: a template file
-// defines a markdown document's shape, and its neighbors must match it. A
-// template is a file named template.md or *.template.md, or a GitHub PR or
-// Issue template under .github. Every template's level-2 section must carry a
-// guiding HTML comment. For a template.md-style file, every markdown file in
-// its folder or a descendant folder — the nearest such template winning — must
-// have the same sections, via the shared mdtemplate engine. GitHub templates
-// govern PR and Issue bodies (checked by pr-structure and plan-structure), so
-// they get the comment rule but do not pull sibling files into a match.
+// Command fitness-check-doc-template enforces a convention: template files
+// define a markdown document's shape. A template is template.md,
+// *.template.md, any markdown file in a templates folder (governing its
+// parent), or a GitHub PR or Issue template. Every template's level-2 section
+// needs a guiding HTML comment. Walking up from each markdown file, the first
+// folder with templates governs it, and the file must have the same sections
+// as any one of them. GitHub templates get only the comment rule.
 package main
 
 import (
@@ -61,10 +59,13 @@ func readAll(root string, files []string) ([]doc, error) {
 // validateAll runs the comment rule over every template and the conformance
 // rule over every governed file.
 func validateAll(docs []doc) []string {
-	templates := conformanceTemplates(docs)
-	var errs []string
-	errs = append(errs, commentErrors(docs)...)
-	errs = append(errs, conformanceErrors(docs, templates)...)
+	byDir := templatesByDir(docs)
+	errs := commentErrors(docs)
+	for _, d := range docs {
+		if !isTemplate(d.path) {
+			errs = append(errs, docErrors(d, nearestTemplates(d.path, byDir))...)
+		}
+	}
 	return errs
 }
 
@@ -82,63 +83,64 @@ func commentErrors(docs []doc) []string {
 	return errs
 }
 
-// conformanceTemplates indexes each conformance template by its directory.
-func conformanceTemplates(docs []doc) map[string]doc {
-	m := map[string]doc{}
+// templatesByDir indexes conformance templates by the folder they govern: a
+// templates folder's files govern its parent.
+func templatesByDir(docs []doc) map[string][]doc {
+	m := map[string][]doc{}
 	for _, d := range docs {
+		dir := dirOf(d.path)
+		if inTemplatesFolder(d.path) {
+			dir = dirOf(dir)
+		}
 		if isConformanceTemplate(d.path) {
-			m[dirOf(d.path)] = d
+			m[dir] = append(m[dir], d)
 		}
 	}
 	return m
 }
 
-// conformanceErrors validates every governed file against its nearest
-// conformance template.
-func conformanceErrors(docs []doc, templates map[string]doc) []string {
-	var errs []string
-	for _, d := range docs {
-		errs = append(errs, docConformance(d, templates)...)
+// nearestTemplates walks up from the file's folder and returns the templates
+// of the first folder that has any.
+func nearestTemplates(path string, byDir map[string][]doc) []doc {
+	for dir := dirOf(path); ; dir = dirOf(dir) {
+		if ts, ok := byDir[dir]; ok || dir == "." {
+			return ts
+		}
 	}
-	return errs
 }
 
-// docConformance returns one file's section-match errors, or nil when it is a
-// template or has no governing template above it.
-func docConformance(d doc, templates map[string]doc) []string {
-	if isTemplate(d.path) {
-		return nil
-	}
-	t, ok := nearestTemplate(d.path, templates)
-	if !ok {
-		return nil
-	}
-	var errs []string
-	for _, msg := range mdtemplate.Validate(d.body, mdtemplate.SpecFromTemplate(t.body, "document")) {
-		errs = append(errs, d.path+": "+msg)
-	}
-	return errs
-}
-
-// nearestTemplate walks up from the file's directory to the repo root,
-// returning the first conformance template found.
-func nearestTemplate(path string, templates map[string]doc) (doc, bool) {
-	for dir := dirOf(path); ; {
-		if t, ok := templates[dir]; ok {
-			return t, true
+// docErrors returns nil when the doc matches any one template. Otherwise it
+// lists the differences from a lone template, or names all of several.
+func docErrors(d doc, templates []doc) []string {
+	var diffs, names []string
+	for _, t := range templates {
+		diffs = mdtemplate.Validate(d.body, mdtemplate.SpecFromTemplate(t.body, "document"))
+		if len(diffs) == 0 {
+			return nil
 		}
-		if dir == "." || dir == "" {
-			return doc{}, false
-		}
-		dir = dirOf(dir)
+		names = append(names, t.path)
 	}
+	if len(templates) > 1 {
+		return []string{d.path + ": sections match none of its templates: " + strings.Join(names, ", ")}
+	}
+	for i := range diffs {
+		diffs[i] = d.path + ": " + diffs[i]
+	}
+	return diffs
 }
 
 // isConformanceTemplate reports whether the file names a template that governs
-// its neighbors: template.md or *.template.md.
+// its neighbors: template.md, *.template.md, or any markdown file directly in
+// a templates folder.
 func isConformanceTemplate(path string) bool {
 	base := filepath.Base(path)
-	return base == "template.md" || strings.HasSuffix(base, ".template.md")
+	return inTemplatesFolder(path) || base == "template.md" || strings.HasSuffix(base, ".template.md")
+}
+
+// inTemplatesFolder reports whether the file sits directly in a folder named
+// templates.
+func inTemplatesFolder(path string) bool {
+	return filepath.Base(dirOf(path)) == "templates"
 }
 
 // isGithubTemplate reports whether the file is a GitHub PR or Issue template.
