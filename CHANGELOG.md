@@ -7,6 +7,24 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.2.0](https://github.com/may-journal/fitness-runner/compare/v1.1.0...v1.2.0) (2026-10-10)
+
+
+### Features
+
+* **changelog:** accept Release Please release notes as written ([#242](https://github.com/may-journal/fitness-runner/issues/242)) ([6974a23](https://github.com/may-journal/fitness-runner/commit/6974a238a53c3e16d9551ddf3ce4228ef6aa4b8b))
+
+
+### Bug Fixes
+
+* **release-changelog:** find Release Please's linked version heading ([#246](https://github.com/may-journal/fitness-runner/issues/246)) ([4b7b2d8](https://github.com/may-journal/fitness-runner/commit/4b7b2d8c8e81163717425a5c0cfe12e442b95d2c))
+* **release:** pass secrets to the release smoke jobs ([#235](https://github.com/may-journal/fitness-runner/issues/235)) ([6d8db95](https://github.com/may-journal/fitness-runner/commit/6d8db95a29f5f7699fcdf73f2be785e38879b5ff))
+
+
+### Performance Improvements
+
+* **install:** start cached bundles 7x faster; requirement tests replay saved answers ([#239](https://github.com/may-journal/fitness-runner/issues/239)) ([c9f4729](https://github.com/may-journal/fitness-runner/commit/c9f47293e482e8dd3d499237885a59fda9b3ed07))
+
 ### 2026.10.09.1920
 
 - Fix: release-changelog: finds the release section under Release Please's linked version heading.
