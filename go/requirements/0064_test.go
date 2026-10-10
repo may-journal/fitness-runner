@@ -76,3 +76,12 @@ func Test0064_6(t *testing.T) {
 	out, code := notesChecks(t, notesHead+entry, "changelog-bullets")
 	sees(t, out, code, 1, `"2026.10.09.1500" has 0 bullets`)
 }
+
+func Test0064_7(t *testing.T) {
+	t.Parallel()
+	changelog := "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n" +
+		"## [1.2.3](https://github.com/o/r/compare/v1.2.2...v1.2.3) (2026-10-10)\n\n\n### Bug Fixes\n\n* **release:** fix publishing\n\n" +
+		"### 2026.10.08.1400\n\n- Docs: add the readme.\n"
+	out, code := releaseChangelog(t, releaseChangelogRelease(changelog))
+	sees(t, out, code, 0, "All 1 checks passed")
+}

@@ -156,7 +156,8 @@ func hasListItem(section string) bool {
 
 func releaseSections(changelog, version string) []string {
 	lines := strings.Split(changelog, "\n")
-	heading := regexp.MustCompile(`^##\s+\[?` + regexp.QuoteMeta(version) + `\]?(?:\s|$)`)
+	// Release Please links the version: `## [1.2.0](compare link) (date)`.
+	heading := regexp.MustCompile(`^##\s+\[?` + regexp.QuoteMeta(version) + `\]?(?:\(|\s|$)`)
 	var sections []string
 	for i := 0; i < len(lines); i++ {
 		if !heading.MatchString(lines[i]) {
