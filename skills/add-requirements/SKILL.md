@@ -25,13 +25,13 @@ The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [require
 
 ## Draft small, in the user's words
 
-Before writing, count docs, acceptances, and words per row in the org's other requirement docs. May Photos has 6 docs and 32 acceptances at about 6 words per line. Aim for four or five acceptances per doc and at most 15 words per row. A draft far bigger than its siblings is too big.
+Before writing, count docs, acceptances per doc, and words per acceptance in a sibling project of similar size, merged or in review. A draft far bigger than its siblings is too big. For an app, that usually means four or five acceptances per doc. Keep each acceptance to about 15 words, its Given, When, and Then together.
 
-- Every row states the product's core promise or guards a bug that shipped. Cite that commit or issue while drafting.
-- Formatter, resolver, and wording details are not requirements: countdown text, URL cleanup, default names. Add a row when a bug shows the gap.
+- Every acceptance states the product's core promise or guards a bug that shipped. Cite that commit or issue while drafting.
+- Formatter, resolver, and wording details are not requirements: countdown text, URL cleanup, default names. Add an acceptance when a bug shows the gap.
 - Write it the way the user talks, never in the code's model names such as roster, slot, composer, or cache.
 - Give each word one meaning across the doc set, and make one claim per Then.
-- Check every row against the current app through the CHANGELOG and recent PRs. One draft described a button already removed.
+- Check every acceptance against the current app through the CHANGELOG and recent PRs. One draft described a button already removed.
 
 Before the owner sees it, have three agents argue for the draft and three against, then merge what they find. The pro side checks coverage, bug history, and consistency with sibling repos. The con side checks the core promise, wording and size, and test cost. Verify their claims against the code, since a reviewer can wrongly say a feature is missing.
 
