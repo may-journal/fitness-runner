@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.3.0](https://github.com/may-journal/fitness-runner/compare/v1.2.0...v1.3.0) (2026-10-10)
+
+
+### Features
+
+* **release:** pin Fitness by the v1 major tag ([#249](https://github.com/may-journal/fitness-runner/issues/249)) ([f243d32](https://github.com/may-journal/fitness-runner/commit/f243d328656b93be66ba11b99987c5af7da8bbb0))
+* **requirements:** Swift tests own acceptances ([#253](https://github.com/may-journal/fitness-runner/issues/253)) ([c2e82e3](https://github.com/may-journal/fitness-runner/commit/c2e82e3e084e29c8af58f15cca63265c3ea31957))
+
 ### 2026.10.09.2002
 
 - Feat: requirements: Swift tests named `test0001_1` own acceptances, in XCTest classes or marked `@Test`.
