@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.10.1003
+
+- Feat: doc-template: a folder may hold several templates, and a doc passes by matching any one of them.
+- Feat: doc-template: every file in a folder's `templates` subfolder is a template for that folder, found walking up from each doc.
+- Feat: doc-template: a doc matching none lists its differences from the closest template, named when there are several.
+- Docs: doc-template: the README says how a doc picks among its folder's templates.
+- Test: requirement 0066 proves template choice, the closest-template error, and `templates` subfolder lookup.
+
 ### 2026.10.10.0846
 
 - Docs: add-requirements: post one results comment on the Plan once its rewrite PR is up.

@@ -14,7 +14,7 @@ markdown files that match their template, and templates that guide every section
 -
 markdown files checked
 
-Source: `go/cmd/fitness-check-doc-template/main.go:117`
+Source: `go/cmd/fitness-check-doc-template/main.go:118`
 
 ## Requirements
 
