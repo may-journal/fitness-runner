@@ -377,3 +377,26 @@ func position(text string, lines []int, offset int) (line, col int) {
 	i := sort.Search(len(lines), func(n int) bool { return lines[n] > offset }) - 1
 	return i + 1, utf8.RuneCountInString(text[lines[i]:offset]) + 1
 }
+
+// FindPhrases returns each case-insensitive, whole-word match of any phrase
+// in text, in phrase order; a space in a phrase matches any whitespace run.
+// Issue.Word is the phrase as listed.
+func FindPhrases(text string, phrases []string) []Issue {
+	lines := lineOffsets(text)
+	var issues []Issue
+	for _, p := range phrases {
+		words := strings.Fields(p)
+		if len(words) == 0 {
+			continue
+		}
+		for i, w := range words {
+			words[i] = regexp.QuoteMeta(w)
+		}
+		re := regexp.MustCompile(`(?i)\b` + strings.Join(words, `\s+`) + `\b`)
+		for _, m := range re.FindAllStringIndex(text, -1) {
+			line, col := position(text, lines, m[0])
+			issues = append(issues, Issue{Word: p, Line: line, Col: col})
+		}
+	}
+	return issues
+}

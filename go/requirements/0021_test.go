@@ -44,21 +44,6 @@ func Test0021_2(t *testing.T) {
 	}
 }
 
-func Test0021_3(t *testing.T) {
-	t.Parallel()
-	out, code := cspellRun(t, map[string]string{
-		cspellInstalled: `{"words":["fitnessrc","` + cspellSharedWord + `"]}` + "\n",
-		"notes.md":      cspellSharedWord + " is a shared word\n",
-	})
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
-func Test0021_4(t *testing.T) {
-	t.Parallel()
-	out, code := cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word\n"})
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
 func Test0021_5(t *testing.T) {
 	t.Parallel()
 	out, code := cspellRun(t, map[string]string{"cspell.json": `{"ignorePaths":["docs"]}` + "\n"})
@@ -94,4 +79,31 @@ func Test0021_8(t *testing.T) {
 	t.Parallel()
 	out, code := cspellRun(t, map[string]string{"body.md": "a " + cspellBodyTypo + " word\n"}, "--body-file", "body.md")
 	sees(t, out, code, 1, "(description):1:3 - Unknown word ("+cspellBodyTypo+")")
+}
+
+func Test0021_9(t *testing.T) {
+	t.Parallel()
+	out, code := cspellRun(t, map[string]string{
+		cspellInstalled: `{"words":["fitnessrc","` + cspellSharedWord + `"]}` + "\n",
+		"notes.md":      cspellSharedWord + " is a shared word\n",
+	})
+	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word\n"})
+	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+func Test0021_10(t *testing.T) {
+	t.Parallel()
+	files := map[string]string{
+		"cspell.json": `{"words":["fitnessrc"],"flagWords":["green apple"]}` + "\n",
+		"notes.md":    "a Green  Apple and green" + "apple\n",
+		"body.md":     "no green\napple here\n",
+	}
+	out, code := cspellRun(t, files)
+	sees(t, out, code, 1, "notes.md:1:3 - Forbidden word (green apple)", "body.md:1:4 - Forbidden word (green apple)")
+	if strings.Contains(out, "cspell.json:") {
+		t.Errorf("the cspell.json listing flagWords must not be flagged:\n%s", out)
+	}
+	out, code = cspellRun(t, files, "--body-file", "body.md")
+	sees(t, out, code, 1, "(description):1:4 - Forbidden word (green apple)")
 }

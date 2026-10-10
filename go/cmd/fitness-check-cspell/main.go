@@ -46,7 +46,7 @@ func main() {
 func run(root string, args []string) (checkkit.Result, error) {
 	if res, handled, err := bodycheck.RunDoc(root, args, func(r, content string) []string {
 		cfg := loadConfig(r)
-		return checkContent("(description)", content, newChecker(cfg))
+		return checkContent("(description)", content, newChecker(cfg), cfg.FlagWords)
 	}); handled || err != nil {
 		return res, err
 	}
@@ -64,7 +64,7 @@ func walkFiles(root string) checkkit.Result {
 			cfg.path))
 	}
 	files := targets(root)
-	errs := checkFiles(root, files, newChecker(cfg))
+	errs := checkFiles(root, files, newChecker(cfg), cfg)
 	if len(errs) > 0 {
 		return checkkit.Fail(len(files), errs...)
 	}
@@ -109,16 +109,23 @@ func newChecker(cfg config) *spell.Checker {
 
 // checkContent scans one in-memory document (never reading from disk) with the
 // same per-line/word pass checkFiles applies per file, emitting issues in the
-// identical "<name>:<line>:<col> - Unknown word (<word>)" format.
-func checkContent(name, content string, checker *spell.Checker) []string {
-	return formatIssues(name, checker.CheckText(content))
+// identical "<name>:<line>:<col> - Unknown word (<word>)" format, then each
+// flagWords match as "<name>:<line>:<col> - Forbidden word (<entry>)".
+func checkContent(name, content string, checker *spell.Checker, flags []string) []string {
+	errs := formatIssues(name, "Unknown", checker.CheckText(content))
+	return append(errs, formatIssues(name, "Forbidden", spell.FindPhrases(content, flags))...)
 }
 
 // checkFiles scans each file and formats issues exactly like the cspell CLI
-// run from the root: "<path>:<line>:<col> - Unknown word (<word>)".
-func checkFiles(root string, files []string, checker *spell.Checker) []string {
+// run from the root: "<path>:<line>:<col> - Unknown word (<word>)". The
+// cspell.json that lists the flagWords is never checked for them.
+func checkFiles(root string, files []string, checker *spell.Checker, cfg config) []string {
 	perFile := par.Map(len(files), 0, func(i int) []string {
-		return fileIssues(root, files[i], checker)
+		flags := cfg.FlagWords
+		if files[i] == cfg.path {
+			flags = nil
+		}
+		return fileIssues(root, files[i], checker, flags)
 	})
 	var errs []string
 	for _, fe := range perFile {
@@ -130,7 +137,7 @@ func checkFiles(root string, files []string, checker *spell.Checker) []string {
 // fileIssues scans one file and returns its formatted issue lines: a read
 // failure yields the run-cspell hint, binary files yield nothing (counted as
 // checked, never spelled).
-func fileIssues(root, rel string, checker *spell.Checker) []string {
+func fileIssues(root, rel string, checker *spell.Checker, flags []string) []string {
 	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
 		return []string{fmt.Sprintf("%s: cspell reported issues (run: npx cspell <files>)", rel)}
@@ -138,26 +145,28 @@ func fileIssues(root, rel string, checker *spell.Checker) []string {
 	if bytes.IndexByte(data[:min(len(data), 8192)], 0) >= 0 {
 		return nil
 	}
-	return formatIssues(rel, checker.CheckText(string(data)))
+	return checkContent(rel, string(data), checker, flags)
 }
 
-// formatIssues renders issues for one file, capped at maxIssuesPerFile like
-// cspell's default maxNumberOfProblems.
-func formatIssues(rel string, issues []spell.Issue) []string {
+// formatIssues renders one kind of issue for one file, capped at
+// maxIssuesPerFile like cspell's default maxNumberOfProblems.
+func formatIssues(rel, kind string, issues []spell.Issue) []string {
 	if len(issues) > maxIssuesPerFile {
 		issues = issues[:maxIssuesPerFile]
 	}
 	var errs []string
 	for _, is := range issues {
-		errs = append(errs, fmt.Sprintf("%s:%d:%d - Unknown word (%s)", rel, is.Line, is.Col, is.Word))
+		errs = append(errs, fmt.Sprintf("%s:%d:%d - %s word (%s)", rel, is.Line, is.Col, kind, is.Word))
 	}
 	return errs
 }
 
 // config is the subset of cspell.json this check reads; path is the
 // resolved file it came from. IgnorePaths is read only to reject it.
+// FlagWords are words or phrases no checked text may contain.
 type config struct {
 	Words       []string        `json:"words"`
+	FlagWords   []string        `json:"flagWords"`
 	IgnoreWords []string        `json:"ignoreWords"`
 	IgnorePaths json.RawMessage `json:"ignorePaths"`
 	path        string

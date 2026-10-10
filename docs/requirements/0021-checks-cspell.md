@@ -26,14 +26,6 @@ Source: `go/cmd/fitness-check-cspell/main.go:68`
     - Given a repo `cspell.json` beside an installed shared one
         - When cspell runs
             - Then only the repo's words are accepted
-- 0021.3
-    - Given an installed `@mayjournal/fitness-shared` package and no repo `cspell.json`
-        - When cspell runs
-            - Then the package's words are accepted
-- 0021.4
-    - Given no `cspell.json` anywhere
-        - When cspell runs
-            - Then the shared words built into fitness are accepted
 - 0021.5
     - Given a `cspell.json` that sets `ignorePaths`
         - When cspell runs
@@ -50,3 +42,11 @@ Source: `go/cmd/fitness-check-cspell/main.go:68`
     - Given an issue or PR body with a misspelling
         - When cspell checks it in body mode
             - Then it fails naming the word
+- 0021.9
+    - Given no repo `cspell.json`
+        - When cspell runs
+            - Then an installed `@mayjournal/fitness-shared` package's words are accepted, else the words built into fitness
+- 0021.10
+    - Given a `cspell.json` `flagWords` phrase used in a tracked file, in a body, and in that `cspell.json`
+        - When cspell runs
+            - Then it fails naming each use as a forbidden word, except in `cspell.json`
