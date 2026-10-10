@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.4.0](https://github.com/may-journal/fitness-runner/compare/v1.3.1...v1.4.0) (2026-10-10)
+
+
+### Features
+
+* **doc-template:** match a doc against any one of its folder's templates ([#263](https://github.com/may-journal/fitness-runner/issues/263)) ([612758d](https://github.com/may-journal/fitness-runner/commit/612758da26d513b6283a5f34adbe4af3db33e2b5))
+
 ### 2026.10.10.1029
 
 - Feat: doc-template: a folder may hold several templates, and a doc passes by matching any one of them.
