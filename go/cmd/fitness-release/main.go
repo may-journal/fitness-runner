@@ -8,7 +8,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/may-journal/fitness-runner/go/internal/release"
 	"github.com/may-journal/fitness-runner/go/internal/releasemeta"
@@ -40,7 +39,7 @@ func reportFailure(operation string, err error) {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, tracking-issue, update-pins, version, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
@@ -64,10 +63,8 @@ func dispatch(command string, config release.Config, root string) error {
 			return err
 		},
 		"assemble":        config.Assemble,
-		"update-pins":     config.PreparePins,
 		"promote":         func() error { return config.Promote(context.Background()) },
 		"release-pr":      func() error { return updateReleasePR(root) },
-		"tracking-issue":  func() error { return trackingIssue(root) },
 		"smoke":           func() error { return config.Smoke(context.Background(), false) },
 		"verify-download": func() error { return config.Smoke(context.Background(), true) },
 		"verify-tag":      func() error { return config.VerifyTag(os.Getenv("GITHUB_REF_NAME")) },
@@ -102,20 +99,4 @@ func updateReleasePR(root string) error {
 	}
 	client := releasemeta.Client{Root: root, Repo: os.Getenv("GITHUB_REPOSITORY")}
 	return client.UpdateReleasePR(context.Background(), value.Number)
-}
-
-func trackingIssue(root string) error {
-	version := os.Getenv("RELEASE_VERSION")
-	client := releasemeta.Client{Root: root, Repo: os.Getenv("GITHUB_REPOSITORY")}
-	number, err := client.EnsureTrackingIssue(context.Background(), "pins-"+version, "Update Fitness pins to v"+version, "Use verified Fitness release v"+version+" in the installer, shared workflows, and setup docs.")
-	if err != nil {
-		return err
-	}
-	file, err := os.OpenFile(os.Getenv("GITHUB_OUTPUT"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-	_, err = file.WriteString("number=" + strconv.Itoa(number) + "\n")
-	return err
 }

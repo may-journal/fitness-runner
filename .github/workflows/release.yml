@@ -2,7 +2,8 @@
 name: Release
 on:
   push:
-    tags: ['v*']
+    # Full versions only; the moving major tag (v1) must not start a release.
+    tags: ['v[0-9]+.[0-9]+.[0-9]+']
 concurrency:
   group: fitness-release
   cancel-in-progress: false
@@ -181,7 +182,7 @@ jobs:
             printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  promote-pins:
+  promote:
     needs: [verify-download, verify]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -221,7 +222,9 @@ jobs:
             git tag "$module_tag" "$release_sha"
             git push origin "refs/tags/$module_tag"
           fi
-      - name: Prepare verified release pins
+      # Consumers pin the major version; each verified release that is the
+      # newest moves it, so @v1 always means the newest 1.x.
+      - name: Move the major version tag
         id: report-step-3
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -229,45 +232,10 @@ jobs:
         run: |
           latest="$(gh release view --json tagName --jq .tagName)"
           if [ "$latest" = "$RELEASE_TAG" ]; then
-            out/fitness-release-linux-amd64 update-pins
+            major="${RELEASE_TAG%%.*}"
+            git tag -f "$major" "$(git rev-list -n 1 "$RELEASE_TAG")"
+            git push -f origin "refs/tags/$major"
           fi
-      - name: Track the pin update
-        id: pin-issue
-        if: ${{ steps.report-step-3.outputs.changed == 'true' }}
-        run: out/fitness-release-linux-amd64 tracking-issue
-        env:
-          RELEASE_VERSION: ${{ needs.verify.outputs.version }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-      - name: Open the pin update PR
-        id: pin-pr
-        if: ${{ steps.report-step-3.outputs.changed == 'true' }}
-        uses: peter-evans/create-pull-request@v8.1.1
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-          branch: automation/release-pins
-          commit-message: 'chore(release): update verified Fitness pins'
-          title: 'chore(release): update Fitness pins to v${{ needs.verify.outputs.version }}'
-          add-paths: |
-            action.yml
-            go/cmd/fitness-install/main.go
-            .github/workflows/*-reusable.yml
-            docs/ci.md
-            README.md
-            CHANGELOG.md
-          body: |
-            > Keep Fitness users on the verified release.
-
-            ## Background
-
-            All four public platform checks passed for v${{ needs.verify.outputs.version }}.
-            Closes #${{ steps.pin-issue.outputs.number }}. Agent: Fitness release automation.
-
-            ## Changelog
-
-            - Chore: update Fitness pins to the verified release.
-            - Chore: keep the installer and shared workflows on the same release.
-            - Docs: refresh the pinned release used in setup examples.
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

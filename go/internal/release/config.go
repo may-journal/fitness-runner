@@ -38,7 +38,7 @@ func (c Config) Version() (string, error) {
 		return "", err
 	}
 	version := strings.TrimSpace(string(data))
-	if !pinVersionPattern.MatchString(version) {
+	if !versionPattern.MatchString(version) {
 		return "", fmt.Errorf("invalid version.txt version %q", version)
 	}
 	return version, nil

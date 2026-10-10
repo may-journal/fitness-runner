@@ -2,7 +2,7 @@ name: Fitness
 description: Run a pinned, verified Fitness binary bundle without compiling it.
 inputs:
   version:
-    description: Exact bundle version. Empty uses the installer pin; latest is explicit opt-in.
+    description: Exact bundle version or latest. Empty follows the action's ref; a major ref such as v1 means its newest release.
     default: ''
   check:
     description: Optional single check; empty runs the configured suite.
@@ -28,7 +28,6 @@ runs:
       shell: bash
       working-directory: ${{ runner.temp }}
       env:
-        RELEASE_URL: https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140
         REQUESTED_VERSION: ${{ inputs.version }}
         ACTION_REF: ${{ github.action_ref }}
         PLATFORM: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
@@ -44,6 +43,14 @@ runs:
         elif [ -z "$REQUESTED_VERSION" ]; then
           if [[ "$ACTION_REF" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || [[ "$ACTION_REF" =~ ^go/v0\.[0-9]{8}\.(0|[1-9][0-9]*)$ ]]; then
             REQUESTED_VERSION="$ACTION_REF"
+          else
+            # A major ref such as v1, or a branch, installs the newest release.
+            REQUESTED_VERSION="$(curl -fsSI --retry 3 -o /dev/null -w '%{redirect_url}' https://github.com/may-journal/fitness-runner/releases/latest)"
+            REQUESTED_VERSION="${REQUESTED_VERSION#https://github.com/may-journal/fitness-runner/releases/tag/}"
+            if [[ "$ACTION_REF" =~ ^(v[0-9]+)$ ]] && [[ "$REQUESTED_VERSION" != "${BASH_REMATCH[1]}".* ]]; then
+              printf '::error::The newest Fitness release %s is outside %s.\n' "$REQUESTED_VERSION" "$ACTION_REF"
+              exit 1
+            fi
           fi
         fi
         if [ -n "$REQUESTED_VERSION" ] && [ "$REQUESTED_VERSION" != latest ]; then
