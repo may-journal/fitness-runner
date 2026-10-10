@@ -52,7 +52,7 @@ jobs:
       - name: Install the pinned fitness bundle
         id: report-step-1
         if: ${{ inputs.ref == '' }}
-        uses: may-journal/fitness-runner@go/v0.20261004.951
+        uses: may-journal/fitness-runner@v1.2.0
         with:
           install-only: 'true'
       - name: Build an explicitly requested source ref

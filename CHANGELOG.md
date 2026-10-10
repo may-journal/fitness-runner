@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.10.0037
+
+- Chore: update Fitness pins to verified release v1.2.0.
+- Chore: keep the installer and shared workflows on the same release.
+- Docs: refresh the pinned release used in setup examples.
+
 ## [1.2.0](https://github.com/may-journal/fitness-runner/compare/v1.1.0...v1.2.0) (2026-10-10)
 
 

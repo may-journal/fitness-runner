@@ -6,7 +6,7 @@ relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
 
 Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need tools such as Go, Node, or SwiftLint.
 
-The pinned examples use `go/v0.20261004.1140` and run all checks in external mode. [Install latest](#install-latest) follows the current published release. The earlier external release requires a check list; this release makes it optional.
+The pinned examples use `v1.2.0` and run all checks in external mode. [Install latest](#install-latest) follows the current published release. The earlier external release requires a check list; this release makes it optional.
 
 ## Download the Go installer
 
@@ -15,10 +15,10 @@ This setup is for Linux amd64, from any directory. It installs into a private di
 ```bash
 mkdir -p "$HOME/.local/fitness"
 cd "$HOME/.local/fitness"
-curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140/fitness-install-0.20261004.1140-linux-amd64 -o fitness-install-0.20261004.1140-linux-amd64
-curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140/checksums.txt -o checksums.txt
-grep '  fitness-install-0.20261004.1140-linux-amd64$' checksums.txt | shasum -a 256 -c -
-chmod +x fitness-install-0.20261004.1140-linux-amd64
+curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/v1.2.0/fitness-install-1.2.0-linux-amd64 -o fitness-install-1.2.0-linux-amd64
+curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/v1.2.0/checksums.txt -o checksums.txt
+grep '  fitness-install-1.2.0-linux-amd64$' checksums.txt | shasum -a 256 -c -
+chmod +x fitness-install-1.2.0-linux-amd64
 ```
 
 For another host, replace `linux-amd64` in the asset URL, filename, and later commands with the matching platform below. These are release assets, not paths to files checked into Git.
@@ -60,7 +60,7 @@ Each invocation resolves the latest release online, verifies the bundle, and reu
 From the consumer repository root, run one command:
 
 ```bash
-"$HOME/.local/fitness/fitness-install-0.20261004.1140-linux-amd64" -- --policy=external --all
+"$HOME/.local/fitness/fitness-install-1.2.0-linux-amd64" -- --policy=external --all
 ```
 
 The Go executable fetches a pinned bundle, verifies hashes and archive paths, and caches the binaries. Failed downloads, installs, or checks return a failing exit code. No copied shell installer is involved.
@@ -95,17 +95,17 @@ pipeline {
       steps {
         dir("${env.WORKSPACE}@tmp/fitness") {
           sh '''
-            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140/fitness-install-0.20261004.1140-linux-amd64 -o fitness-install-0.20261004.1140-linux-amd64
-            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/go/v0.20261004.1140/checksums.txt -o checksums.txt
-            grep '  fitness-install-0.20261004.1140-linux-amd64$' checksums.txt | shasum -a 256 -c -
-            chmod +x fitness-install-0.20261004.1140-linux-amd64
+            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/v1.2.0/fitness-install-1.2.0-linux-amd64 -o fitness-install-1.2.0-linux-amd64
+            curl -fsSL https://github.com/may-journal/fitness-runner/releases/download/v1.2.0/checksums.txt -o checksums.txt
+            grep '  fitness-install-1.2.0-linux-amd64$' checksums.txt | shasum -a 256 -c -
+            chmod +x fitness-install-1.2.0-linux-amd64
           '''
         }
       }
     }
     stage('Fitness') {
       steps {
-        sh '"$WORKSPACE@tmp/fitness/fitness-install-0.20261004.1140-linux-amd64" -- --policy=external --all'
+        sh '"$WORKSPACE@tmp/fitness/fitness-install-1.2.0-linux-amd64" -- --policy=external --all'
       }
     }
   }
@@ -128,7 +128,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: may-journal/fitness-runner@go/v0.20261004.1140
+      - uses: may-journal/fitness-runner@v1.2.0
         with:
           policy: external
 ```
@@ -140,7 +140,7 @@ The action downloads the native installer and checks its hash, then invokes it. 
 After downloading the installer, run this once from the consumer repository root:
 
 ```bash
-"$HOME/.local/fitness/fitness-install-0.20261004.1140-linux-amd64" --install-hook -- --policy=external --all
+"$HOME/.local/fitness/fitness-install-1.2.0-linux-amd64" --install-hook -- --policy=external --all
 ```
 
 This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, changelog stamp, or automatic file fix is involved.
