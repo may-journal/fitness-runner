@@ -102,6 +102,27 @@ Convert every component before turning the requirements check on, so the project
 - Measure coverage and turn each uncovered promise into an acceptance or a deletion.
 - With no unit test left unmapped, turn on the requirements check through [docs/adoption.md](../../docs/adoption.md).
 
+## Post the results on the Plan
+
+Once the rewrite PR is up, post one comment on the repo's requirements Plan. It compares main before the rewrite with the PR, measured on the same machine. [may-photos#139](https://github.com/may-journal/may-photos/issues/139) shows the shape.
+
+| | Before (main) | Now (#PR) |
+| --- | --- | --- |
+| Tests that ran | count, split top-level and subtests if relevant | same |
+| Test code | lines in N files | same, with % change |
+| Requirement docs | lines in N docs | same |
+| Product code | non-test lines | same, with % change |
+| Coverage | what it measures, such as app lines or Go statements | same |
+| Full suite time | median of three timed runs | same, with % change |
+
+- Time the command a developer runs, after one warm-up run that is not timed. Note the `uptime` load if it is high.
+- Measure read-only: one detached working copy per commit, removed after. Shut down or delete every simulator you used.
+- Keep it to about 100 words plus the table, with at most two short bullets on surprises.
+- Post one comment and never mark edits as revised. Skip screenshots.
+- Link that Plan whenever you report the results, so the org table of adoption is built from these comments.
+
+What to hope for: in [.github#63](https://github.com/may-journal/.github/issues/63), coverage rose from 65% to 89% with about the same test code.
+
 ## Doc conventions
 
 Fitness judges every tracked markdown file, requirement docs and this skill included. [docs/checks.md](../../docs/checks.md) lists the checks, and each check's README states its limits; the project's own fitness run reports any you miss.

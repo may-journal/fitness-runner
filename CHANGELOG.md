@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.10.0846
+
+- Docs: add-requirements: post one results comment on the Plan once its rewrite PR is up.
+- Docs: add-requirements: the comment's table compares tests, test code, docs, product code, coverage, and suite time.
+- Docs: add-requirements: measure main and the PR on one machine, read-only, timing a median of three runs.
+- Docs: add-requirements: link that Plan when reporting results, and hope for the .github coverage gain.
+
 ### 2026.10.09.2250
 
 - Docs: add-requirements: size a requirement draft against a sibling project, about five acceptances per doc and 15 words each.
