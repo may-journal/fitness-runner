@@ -27,7 +27,11 @@ The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [require
 
 Exactly one test owns each acceptance, and its name carries the ID: in Go, `Test0001_1` owns 0001.1. A test named for an acceptance that no doc defines fails. Delete the test when you delete the acceptance.
 
-The requirements check enforces this naming for Go today. Swift comes next, piloted on May Photos, and this skill gains a Swift section from that pilot. Until then, note the gap for the owner instead of inventing a Swift or TypeScript rule.
+### Swift
+
+In Swift, `test0001_1` owns 0001.1. It is either an XCTest method in an `XCTestCase` class or a Swift Testing `@Test func`. Every other Swift test must be renamed for its acceptance or deleted, as in Go. A UI test that launches the built app is the Swift way to drive the real product.
+
+The check enforces Go and Swift. For TypeScript, note the gap for the owner instead of inventing a rule.
 
 ## Drive the real product
 

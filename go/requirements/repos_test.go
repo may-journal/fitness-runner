@@ -13,6 +13,25 @@ func goRepo() map[string]string {
 	}
 }
 
+// swiftRepo is a Swift package whose XCTest method test0001_1 owns 0001.1.
+func swiftRepo() map[string]string {
+	return map[string]string{
+		"Package.swift":                          "// swift-tools-version:5.9\nimport PackageDescription\n\nlet package = Package(name: \"Adder\")\n",
+		"Sources/Adder/Adder.swift":              "/// Adds numbers.\npublic enum Adder {\n  /// Returns the sum of a and b.\n  public static func add(_ a: Int, _ b: Int) -> Int { a + b }\n}\n",
+		"Tests/AdderTests/AdderTests.swift":      xcTestFile("test0001_1"),
+		"docs/requirements/0001-adds-numbers.md": docWith("Source: `Sources/Adder/Adder.swift:4`", acceptances("0001.1")),
+	}
+}
+
+// xcTestFile is an XCTest case class declaring one empty test per name.
+func xcTestFile(names ...string) string {
+	body := "import XCTest\n\nfinal class AdderTests: XCTestCase {\n"
+	for _, n := range names {
+		body += "  func " + n + "() {}\n"
+	}
+	return body + "}\n"
+}
+
 // testFile is a Go test file in pkg declaring one passing test per name.
 func testFile(pkg string, names ...string) string {
 	body := "package " + pkg + "\n\nimport \"testing\"\n"

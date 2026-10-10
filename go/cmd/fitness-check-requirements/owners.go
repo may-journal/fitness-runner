@@ -12,13 +12,34 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// goTest is one top-level Go test declaration and the acceptance ID its name
-// carries, if any.
+// goTest is one test declaration, Go or Swift, and the acceptance ID its
+// name carries, if any.
 type goTest struct {
-	name string
-	id   string
-	loc  string
-	file string
+	name  string
+	id    string
+	loc   string
+	file  string
+	swift bool
+}
+
+// langs records which languages a repo is written in, to name tests its way.
+type langs struct {
+	goCode bool
+	swift  bool
+}
+
+// testName is the test name that owns id in the repo's languages: Test0001_1
+// in Go, test0001_1 in Swift.
+func (l langs) testName(id string) string {
+	suffix := strings.Replace(id, ".", "_", 1)
+	var names []string
+	if l.goCode || !l.swift {
+		names = append(names, "Test"+suffix)
+	}
+	if l.swift {
+		names = append(names, "test"+suffix)
+	}
+	return strings.Join(names, " or ")
 }
 
 var (
@@ -77,7 +98,7 @@ func idOf(name string) string {
 // ownershipErrors flags acceptances that no test or several tests own, tests
 // named for an acceptance no doc defines, and tests in scope that name no
 // acceptance at all.
-func ownershipErrors(docs []reqDoc, tests []goTest, scope map[string]bool) []string {
+func ownershipErrors(docs []reqDoc, tests []goTest, scope map[string]bool, repo langs) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}
 	for _, t := range tests {
@@ -87,7 +108,7 @@ func ownershipErrors(docs []reqDoc, tests []goTest, scope map[string]bool) []str
 	for _, d := range docs {
 		for _, a := range d.acceptances {
 			current[a.id] = true
-			errs = append(errs, ownerError(d.path, a, owners[a.id])...)
+			errs = append(errs, ownerError(d.path, a, owners[a.id], repo)...)
 		}
 	}
 	for _, t := range tests {
@@ -97,8 +118,8 @@ func ownershipErrors(docs []reqDoc, tests []goTest, scope map[string]bool) []str
 }
 
 // ownerError requires exactly one test to own the acceptance.
-func ownerError(path string, a idLine, owners []string) []string {
-	name := "Test" + strings.Replace(a.id, ".", "_", 1)
+func ownerError(path string, a idLine, owners []string, repo langs) []string {
+	name := repo.testName(a.id)
 	switch len(owners) {
 	case 1:
 		return nil
@@ -115,7 +136,7 @@ func testError(t goTest, current, scope map[string]bool) []string {
 	case t.id != "" && !current[t.id]:
 		return []string{fmt.Sprintf("%s: %s names %s, which no requirement defines; delete the test with its acceptance", t.loc, t.name, t.id)}
 	case t.id == "" && scope[t.file]:
-		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it TestNNNN_N for the acceptance it proves, or delete it if another test covers that", t.loc, t.name)}
+		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.loc, t.name, langs{swift: t.swift}.testName("NNNN.N"))}
 	}
 	return nil
 }

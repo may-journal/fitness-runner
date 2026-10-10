@@ -1,10 +1,11 @@
-// Command fitness-check-requirements enforces docs/requirements in Go repos:
-// each file is one requirement with a unique four-digit ID, a Why, a
-// Measurement ratio with one cited source, and acceptances written as a
-// single Given, When, and Then chain. Every acceptance is owned by exactly
-// one Go test named for it (Test0001_1 owns 0001.1), and every test must own
-// one, so a test that proves no requirement is either a missing requirement
-// or a duplicate. Git history supplies removed IDs, so an ID is never reused.
+// Command fitness-check-requirements enforces docs/requirements in Go and
+// Swift repos: each file is one requirement with a unique four-digit ID, a
+// Why, a Measurement ratio with one cited source, and acceptances written as
+// a single Given, When, and Then chain. Every acceptance is owned by exactly
+// one test named for it (Go Test0001_1 or Swift test0001_1 owns 0001.1), and
+// every test must own one, so a test that proves no requirement is either a
+// missing requirement or a duplicate. Git history supplies removed IDs, so an
+// ID is never reused.
 package main
 
 import (
@@ -27,25 +28,35 @@ const docsDir = "docs/requirements/"
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	paths := docPaths(root)
-	if !available(root, paths) {
-		return checkkit.Pass(0), nil
+	tests, files, repo, err := collectTests(root)
+	if err != nil || !available(paths, repo) {
+		return checkkit.Pass(0), err
 	}
 	docs, errs, err := loadDocs(root, paths)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	files := testFiles(root)
-	tests, err := scanTests(root, files)
-	if err != nil {
-		return checkkit.Result{}, err
-	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
-	errs = append(errs, ownershipErrors(docs, tests, inScope(files))...)
+	errs = append(errs, ownershipErrors(docs, tests, inScope(files), repo)...)
 	if len(errs) > 0 {
 		return checkkit.Fail(len(paths)+len(files), errs...), nil
 	}
 	return checkkit.Pass(len(paths) + len(files)), nil
+}
+
+// collectTests reads every Go and Swift test, the files that hold them, and
+// which languages the repo tests in.
+func collectTests(root string) ([]goTest, []string, langs, error) {
+	goFiles := testFiles(root)
+	tests, err := scanTests(root, goFiles)
+	if err != nil {
+		return nil, nil, langs{}, err
+	}
+	swiftFiles := walkfs.FilesByExt(root, ".swift")
+	swiftTests, err := scanSwift(root, swiftFiles)
+	repo := langs{goCode: len(walkfs.FilesByExt(root, ".go")) > 0, swift: len(swiftFiles) > 0}
+	return append(tests, swiftTests...), append(goFiles, swiftTestFiles(swiftTests)...), repo, err
 }
 
 // docPaths lists every requirement doc. A template.md beside them is the
@@ -60,23 +71,23 @@ func docPaths(root string) []string {
 	return out
 }
 
-// available reports whether the check applies. A repo without Go has no
-// tests this check can read. A Go repo owes requirement docs, so one without
-// any is always judged and fails; one with docs is judged when a scoped run
-// changed a doc or a test file.
-func available(root string, paths []string) bool {
-	if len(walkfs.FilesByExt(root, ".go")) == 0 {
+// available reports whether the check applies. A repo with neither Go nor
+// Swift code has no tests this check can read. Such a repo owes requirement
+// docs, so one without any is always judged and fails; one with docs is
+// judged when a scoped run changed a doc or a test file.
+func available(paths []string, repo langs) bool {
+	if !repo.goCode && !repo.swift {
 		return false
 	}
 	changed := checkkit.ChangedFiles()
 	return len(paths) == 0 || changed == nil || touchesRequirements(changed)
 }
 
-// touchesRequirements reports whether any changed path is a requirement doc
-// or a Go test file.
+// touchesRequirements reports whether any changed path is a requirement doc,
+// a Go test file, or Swift code, which may declare tests.
 func touchesRequirements(changed []string) bool {
 	for _, f := range changed {
-		if strings.HasPrefix(f, docsDir) || strings.HasSuffix(f, "_test.go") {
+		if strings.HasPrefix(f, docsDir) || strings.HasSuffix(f, "_test.go") || strings.HasSuffix(f, ".swift") {
 			return true
 		}
 	}

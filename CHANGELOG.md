@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.09.2002
+
+- Feat: requirements: Swift tests named `test0001_1` own acceptances, in XCTest classes or marked `@Test`.
+- Feat: requirements: a Swift repo without requirement docs fails, as a Go repo does.
+- Docs: add-requirements: explains Swift test naming.
+
 ### 2026.10.09.1942
 
 - Feat: release: moves the `v1` major tag to each newest verified release.

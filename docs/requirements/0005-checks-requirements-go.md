@@ -39,7 +39,7 @@ Source: `go/cmd/fitness-check-requirements/owners.go:100`
         - When fitness runs
             - Then it fails
 - 0005.6
-    - Given a repo without Go
+    - Given a repo with no Go or Swift code
         - When fitness runs
             - Then the check passes with nothing to judge
 - 0005.7
