@@ -7,11 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.11.1410
+### 2026.10.11.1413
 
 - Feat: branch-check: validate the current branch PR and linked Plan issues locally with the shared Actions checks.
 - Fix: pr-check: fail when a closing issue cannot be read, instead of silently ignoring it.
-- Test: requirements: prove local discovery, shared findings, read-only GitHub access, and unchanged hooks.
+- Test: requirements: prove branch trailers, fork discovery, shared findings, read-only GitHub access, and unchanged hooks.
 - Docs: branch-check: describe local full runs, draft checklists, and retry steps.
 
 ## [1.5.1](https://github.com/may-journal/fitness-runner/compare/v1.5.0...v1.5.1) (2026-10-11)

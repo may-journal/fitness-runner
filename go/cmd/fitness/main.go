@@ -140,6 +140,9 @@ func route(args []string) int {
 // directly, and Actions retains its event-based GitHub commands.
 func runLocal(args []string) int {
 	code := run(args)
+	if os.Getenv("FITNESS_INTERNAL_HOOK") == "pre-commit" {
+		return code
+	}
 	if fullLocalMetadata(args) {
 		return max(code, runBranchCheck(nil))
 	}

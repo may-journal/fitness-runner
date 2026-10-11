@@ -86,7 +86,7 @@ func Test0014_6(t *testing.T) {
 	out, code := fitness(t, branchRepo(t, nil), rp.env, "branch-check")
 	sees(t, out, code, 1, "cannot validate linked issue #11", "retry")
 	actions, actionsCode := judge0014(t, "test(app): add one file", pr0014(11), issue)
-	sees(t, actions, actionsCode, 1, "cannot validate linked issue #11")
+	sees(t, actions, actionsCode, 1, `cannot validate linked issue \#11`)
 }
 
 func Test0066_6(t *testing.T) {
