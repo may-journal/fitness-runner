@@ -36,7 +36,7 @@ func checkBranch(ctx context.Context, root string) error {
 	}
 	gh := aftereffect.ReadOnlyClient(ctx, repo)
 	b := blobChecker{root}
-	plans, err := branchPlans(ctx, root, pr.Base)
+	plans, err := branchPlans(ctx, root, repo, pr)
 	if err != nil {
 		return err
 	}
@@ -84,12 +84,15 @@ func judgeBranchPlans(issues []linkedIssue, repo string, b blobChecker) []string
 	return errs
 }
 
-// branchPlans reads only commits after the PR's base, including local work.
-func branchPlans(ctx context.Context, root, base string) ([]int, error) {
-	cmd := exec.CommandContext(ctx, "git", "-C", root, "log", "--format=%B", "origin/"+base+"..HEAD")
+// branchPlans uses the API's base commit, even when origin is a stale fork.
+func branchPlans(ctx context.Context, root, repo string, pr *branchPR) ([]int, error) {
+	if pr.BaseSHA == "" {
+		return nil, fmt.Errorf("GitHub PR response has no base commit; retry fitness branch-check")
+	}
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "log", "--format=%B", pr.BaseSHA+"..HEAD", "--")
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, fmt.Errorf("cannot read branch Plan trailers; fetch origin %s and retry: %w", base, err)
+		return nil, fmt.Errorf("cannot read branch Plan trailers from base commit %s; fetch %s from https://github.com/%s.git and retry: %w", pr.BaseSHA, pr.Base, repo, err)
 	}
 	var nums []int
 	for _, text := range planNumbers(string(out)) {

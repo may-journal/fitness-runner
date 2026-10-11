@@ -138,8 +138,8 @@ func Test0013_6(t *testing.T) {
 func Test0013_7(t *testing.T) {
 	t.Parallel()
 	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
 	commit(t, repo, nil, "feat(app): add one file\n\nPlan #11")
-	pr := branchAnswer(t, "test(app): add one file", pr0014(11))
 	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, brokenPlan, "Plan"))})
 	out, code := fitness(t, repo, rp.env, "branch-check")
 	sees(t, out, code, 1, "plan-check #11", "Background")
@@ -156,9 +156,8 @@ func Test0013_7(t *testing.T) {
 
 func Test0013_8(t *testing.T) {
 	t.Parallel()
-	repo := branchRepo(t, nil)
-	commit(t, repo, nil, "feat(app): add one file\n\nPlan #12")
-	pr := branchAnswer(t, "test(app): add one file", pr0014(11))
+	repo, pr := forkBranch(t, "release")
+	git(t, repo, "update-ref", "-d", "refs/remotes/origin/main")
 	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, "An ordinary issue."), issue0014(t, 12, brokenPlan, "Plan"))})
 	out, code := fitness(t, repo, rp.env, "branch-check")
 	sees(t, out, code, 1, "plan-check #12", "Background")

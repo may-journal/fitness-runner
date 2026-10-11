@@ -43,9 +43,9 @@ Source: `go/cmd/fitness/branch.go:17`
         - When I run branch-check
             - Then it fails the shared closing-link rule
 - 0066.7
-    - Given my fork's PR closes an ordinary issue
+    - Given my fork's stale main lacks an upstream Plan commit and my PR closes an ordinary issue
         - When I run branch-check
-            - Then it checks that PR without requiring a Plan template
+            - Then it checks my branch Plan and ordinary issue without reading the upstream Plan
 - 0066.8
     - Given a branch with a GitHub remote
         - When I run one file check

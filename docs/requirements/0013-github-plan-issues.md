@@ -47,6 +47,6 @@ Source: `go/internal/aftereffect/verdict.go:14`
         - When I run fitness branch-check
             - Then it reports the Plan body violation and reads the Plan once
 - 0013.8
-    - Given a malformed Plan linked only by my branch trailer
+    - Given my fork's trailer names a malformed Plan and its PR base exists only upstream
         - When I run fitness branch-check
             - Then it reports that Plan's body violation

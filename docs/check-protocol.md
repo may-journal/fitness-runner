@@ -21,11 +21,11 @@ The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run 
 
 ## Local branch metadata
 
-`fitness branch-check` uses the same PR and Plan judgments on live metadata for the current branch, without GitHub effects. Full local CLI runs include it when origin points to GitHub. Single checks, commit hooks, push hooks, and Actions keep their existing behavior.
+`fitness branch-check` uses the same PR and Plan judgments on live metadata for the current branch, without GitHub effects. Full local CLI runs include it when origin points to GitHub. Single checks, commit hooks, push hooks, and Actions keep their existing behavior. Discovery includes drafts and matches both the head repository and branch, including forks.
 
-Discovery includes drafts and matches both the head repository and branch, including forks. Closing links and branch `Plan #NN` trailers supply issues; each Plan is read once. Ordinary issues receive the shared PR checklist rules. Unfinished checklists fail locally as they do in Actions, even on a draft PR.
+Closing links and branch `Plan #NN` trailers supply issues; each Plan is read once. Trailer history starts at the API base commit, excluding upstream Plans even when fork refs are stale or missing. Ordinary issues receive the shared PR checklist rules. Unfinished checklists fail locally as they do in Actions, even on a draft PR.
 
-No open PR or detached HEAD produces an explicit skip. Discovery, authentication, network, or linked-issue failures produce a nonzero exit with retry guidance. All remote reads share a 30-second deadline. Run `gh auth status`, restore access, and retry `fitness branch-check`; fetch the PR base from origin if branch history is missing.
+No open PR or detached HEAD produces an explicit skip. Discovery, authentication, network, or linked-issue failures exit nonzero with retry guidance. All remote reads share a 30-second deadline; use `gh auth status` to check credentials. If the API base commit is missing locally, fetch the named branch from the base repository URL in the error.
 
 ## Applicability
 

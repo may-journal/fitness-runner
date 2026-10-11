@@ -58,9 +58,10 @@ func Test0014_1(t *testing.T) {
 	t.Parallel()
 	out, code := judge0014(t, "test(app): add one file", pr0014(11), issue0014(t, 11, plan0014("- [x] Write the tests."), "Plan"))
 	sees(t, out, code, 0, "Passed.")
-	pr := branchAnswer(t, "test(app): add one file", pr0014(11))
+	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
 	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))})
-	local, localCode := fitness(t, branchRepo(t, nil), rp.env, "branch-check")
+	local, localCode := fitness(t, repo, rp.env, "branch-check")
 	sees(t, local, localCode, 0, "pr-check #1", "plan-check #11", "https://github.com/"+repo0014+"/pull/1")
 	if rp.called("gh", "-X") || rp.called("gh", "graphql") {
 		t.Fatalf("local validation wrote GitHub state: %q", rp.calls("gh"))
@@ -77,9 +78,10 @@ func Test0014_3(t *testing.T) {
 	t.Parallel()
 	out, code := judge0014(t, "test(app): add one file", pr0014(11), issue0014(t, 11, plan0014("- [ ] Write the tests."), "Plan"))
 	sees(t, out, code, 1, `11, which has an unchecked item: "Write the tests."`)
-	pr := branchAnswer(t, "test(app): add one file", pr0014(11))
+	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
 	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, planBody("- [ ] Write the tests."), "Plan"))})
-	local, localCode := fitness(t, branchRepo(t, nil), rp.env, "branch-check")
+	local, localCode := fitness(t, repo, rp.env, "branch-check")
 	sees(t, local, localCode, 1, `11, which has an unchecked item: "Write the tests."`)
 }
 

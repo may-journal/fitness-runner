@@ -7,10 +7,11 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.11.1413
+### 2026.10.11.1432
 
 - Feat: branch-check: validate the current branch PR and linked Plan issues locally with the shared Actions checks.
 - Fix: pr-check: fail when a closing issue cannot be read, instead of silently ignoring it.
+- Fix: branch-check: use the API base commit for fork history, excluding unrelated upstream Plans even with stale or missing origin refs.
 - Test: requirements: prove branch trailers, fork discovery, shared findings, read-only GitHub access, and unchanged hooks.
 - Docs: branch-check: describe local full runs, draft checklists, and retry steps.
 

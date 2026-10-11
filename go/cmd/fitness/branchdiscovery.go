@@ -15,10 +15,11 @@ import (
 
 type branchPR struct {
 	aftereffect.Target
-	Head   string `json:"head"`
-	Source string `json:"source"`
-	Base   string `json:"base"`
-	URL    string `json:"url"`
+	Head    string `json:"head"`
+	Source  string `json:"source"`
+	Base    string `json:"base"`
+	BaseSHA string `json:"baseSHA"`
+	URL     string `json:"url"`
 }
 
 func discoverBranchPR(ctx context.Context, root string) (*branchPR, string, error) {
@@ -32,7 +33,7 @@ func discoverBranchPR(ctx context.Context, root string) (*branchPR, string, erro
 	}
 	owner, _, _ := strings.Cut(source, "/")
 	path := "repos/" + repo + "/pulls?state=open&head=" + url.QueryEscape(owner+":"+branch) + "&per_page=100"
-	filter := `.[] | {number, title, body: (.body // ""), head: .head.ref, source: .head.repo.full_name, base: .base.ref, url: .html_url}`
+	filter := `.[] | {number, title, body: (.body // ""), head: .head.ref, source: .head.repo.full_name, base: .base.ref, baseSHA: .base.sha, url: .html_url}`
 	out, err := branchOutput(ctx, root, "api", "--paginate", "--jq", filter, path)
 	if err != nil {
 		return nil, "", err
