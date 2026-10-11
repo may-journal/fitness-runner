@@ -5,10 +5,13 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/swift"
 )
 
-var swiftTarget = regexp.MustCompile(`\.(executableTarget|testTarget|target)\s*\(\s*name:\s*"([^"]+)"`)
+var swiftTarget = regexp.MustCompile(`\.(executableTarget|testTarget|target)\s*\(\s*name:`)
 var yamlTarget = regexp.MustCompile(`^  ([A-Za-z][A-Za-z0-9_-]*):\s*$`)
 
 // manifestTargets reads the supported declarative target forms. Later runtime
@@ -32,14 +35,38 @@ func (m *Model) swiftTargets(root, file string) {
 		m.fail(Location{file, 1}, "cannot read target manifest: %v", err)
 		return
 	}
-	for _, match := range swiftTarget.FindAllStringSubmatchIndex(string(body), -1) {
-		kind, name := string(body[match[2]:match[3]]), string(body[match[4]:match[5]])
-		category := "product"
-		if kind == "testTarget" {
-			category = "test"
-		}
-		m.manifestTarget("swift-package:"+file+":"+name, category, Location{file, strings.Count(string(body[:match[0]]), "\n") + 1})
+	code, literals := swift.Mask(string(body))
+	for _, match := range swiftTarget.FindAllStringSubmatchIndex(code, -1) {
+		at := Location{file, strings.Count(code[:match[0]], "\n") + 1}
+		m.swiftTarget(code, match, literals, at)
 	}
+}
+
+func (m *Model) swiftTarget(code string, match []int, literals []swift.Literal, at Location) {
+	name, ok := swiftTargetName(code, match[1], literals)
+	if !ok {
+		m.fail(at, "SwiftPM target needs a literal name")
+		return
+	}
+	category := "product"
+	if code[match[2]:match[3]] == "testTarget" {
+		category = "test"
+	}
+	m.manifestTarget("swift-package:"+at.Path+":"+name, category, at)
+}
+
+func swiftTargetName(code string, after int, literals []swift.Literal) (string, bool) {
+	for _, literal := range literals {
+		if literal.Start < after {
+			continue
+		}
+		if strings.TrimSpace(code[after:literal.Start]) != "" {
+			return "", false
+		}
+		name, err := strconv.Unquote(literal.Text)
+		return name, err == nil && name != ""
+	}
+	return "", false
 }
 
 func (m *Model) yamlTargets(root, file string) {
@@ -83,8 +110,8 @@ func (m *Model) targetReferences() {
 }
 
 func (m *Model) hasTarget(target string) bool {
-	for _, source := range m.Sources {
-		if source.Path == target {
+	for _, targetEntry := range m.Targets {
+		if targetEntry.ID == target {
 			return true
 		}
 	}

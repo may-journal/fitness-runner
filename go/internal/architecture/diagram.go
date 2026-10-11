@@ -20,7 +20,7 @@ type diagramGraph map[string]*element
 var (
 	macro = regexp.MustCompile(`^([A-Za-z_]+)\((.*)\)\s*\{?$`)
 	node  = regexp.MustCompile(`^(?:class\s+)?([A-Za-z][A-Za-z0-9_-]*)\s*[\[(]`)
-	edge  = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*)\s+(-->|-\.->|==>|--|\.\.>|<\|--|\*--|o--)\s*(?:\|([^|]+)\|\s*)?([A-Za-z][A-Za-z0-9_-]*)(?:\s*:\s*(.*))?\s*$`)
+	edge  = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*)\s+(-->|-\.->|==>|--|\.\.>|<\|--|<\|\.\.|<--|<\.\.|--\|>|\.\.\|>|\*--|o--)\s*(?:\|([^|]+)\|\s*)?([A-Za-z][A-Za-z0-9_-]*)(?:\s*:\s*(.*))?\s*$`)
 )
 
 func (m *Model) readDiagram(file string, diagram *mermaid.DiagramBlock) diagramGraph {
@@ -73,7 +73,7 @@ func (m *Model) diagramLine(graph diagramGraph, line string, at Location, c4 boo
 		return
 	}
 	if match := edge.FindStringSubmatch(line); match != nil {
-		m.addElement(graph, line, element{from: match[1], to: match[4], at: at})
+		m.addElement(graph, line, relationshipElement(match, at))
 		return
 	}
 	if match := node.FindStringSubmatch(line); match != nil {
@@ -81,6 +81,14 @@ func (m *Model) diagramLine(graph diagramGraph, line string, at Location, c4 boo
 		return
 	}
 	m.fail(at, "unsupported Mermaid statement %q", line)
+}
+
+func relationshipElement(match []string, at Location) element {
+	from, to := match[1], match[4]
+	if strings.HasPrefix(match[2], "<") {
+		from, to = to, from
+	}
+	return element{from: from, to: to, at: at}
 }
 
 func (m *Model) c4Statement(graph diagramGraph, line string, at Location) {
@@ -111,11 +119,16 @@ func (m *Model) macroLine(graph diagramGraph, call []string, at Location) {
 }
 
 func (m *Model) c4Node(graph diagramGraph, call, args []string, at Location) {
-	if !contains([]string{"Person", "Person_Ext", "System", "System_Ext", "Container", "ContainerDb", "ContainerQueue", "Component", "ComponentDb", "ComponentQueue"}, call[1]) {
+	if !c4NodeMacro(call[1]) {
 		m.fail(at, "unsupported C4 macro %q", call[1])
 		return
 	}
 	m.addElement(graph, call[0], element{local: args[0], at: at})
+}
+
+func c4NodeMacro(name string) bool {
+	base := strings.TrimSuffix(name, "_Ext")
+	return contains([]string{"Person", "System", "SystemDb", "SystemQueue", "Container", "ContainerDb", "ContainerQueue", "Component", "ComponentDb", "ComponentQueue"}, base)
 }
 
 func (m *Model) addElement(graph diagramGraph, line string, value element) {
@@ -141,12 +154,9 @@ func (m *Model) matchCallout(number string, d Declaration, graph diagramGraph) {
 		m.fail(d.At, "duplicate table callout %s; first at %s", number, e.declaration.At)
 	}
 	e.declaration = &d
-	if (e.from != "") != (d.Type == "relationship") {
-		m.fail(d.At, "callout type disagrees with diagram at %s", e.at)
-	}
 }
 
-func (m *Model) unclaimed(graph diagramGraph) {
+func (m *Model) unclaimed(graph diagramGraph, ids map[string]Declaration) {
 	locals := map[string]string{}
 	for _, key := range sortedKeys(graph) {
 		e := graph[key]
@@ -157,7 +167,7 @@ func (m *Model) unclaimed(graph diagramGraph) {
 		locals[e.local] = declarationID(*e.declaration)
 	}
 	for _, key := range sortedKeys(graph) {
-		m.edgeEndpoints(graph[key], locals)
+		m.elementContract(graph[key], locals, ids)
 	}
 }
 
@@ -168,12 +178,26 @@ func declarationID(d Declaration) string {
 	return d.ID
 }
 
-func (m *Model) edgeEndpoints(e *element, locals map[string]string) {
-	if e.from == "" || e.declaration == nil {
+func (m *Model) elementContract(e *element, locals map[string]string, ids map[string]Declaration) {
+	if e.declaration == nil {
 		return
 	}
-	d := e.declaration
+	d, exists := ids[declarationID(*e.declaration)]
+	if !exists {
+		return
+	}
+	if (e.from != "") != (d.Type == "relationship") {
+		m.fail(e.declaration.At, "callout type disagrees with diagram at %s; declaration at %s", e.at, d.At)
+		return
+	}
+	m.edgeEndpoints(e, locals, d)
+}
+
+func (m *Model) edgeEndpoints(e *element, locals map[string]string, d Declaration) {
+	if e.from == "" {
+		return
+	}
 	if locals[e.from] != d.From || locals[e.to] != d.To {
-		m.fail(d.At, "relationship endpoints disagree with diagram at %s (%s to %s)", e.at, e.from, e.to)
+		m.fail(e.declaration.At, "relationship endpoints disagree with diagram at %s (%s to %s); declaration at %s", e.at, e.from, e.to, d.At)
 	}
 }

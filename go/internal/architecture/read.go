@@ -156,5 +156,5 @@ func (m *Model) readTable(file, view string, diagram *mermaid.DiagramBlock, tabl
 		m.matchCallout(row[0], d, graph)
 		m.Declarations = append(m.Declarations, d)
 	}
-	m.unclaimed(graph)
+	m.diagrams = append(m.diagrams, graph)
 }

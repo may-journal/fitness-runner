@@ -28,7 +28,7 @@ Add a `Contract` column to the existing numbered table. Each cell holds `key=val
 | Field | Meaning |
 | --- | --- |
 | `id` | Stable semantic ID, beginning with a letter; letters, digits, underscores, and hyphens follow |
-| `ref` | Reuse an existing ID in another diagram, without declaring it again |
+| `ref` | Reuse a node or relationship ID, including a declaration in a later view |
 | `type` | `actor`, `system`, `external`, `runtime`, `component`, `symbol`, `behavior`, or `relationship` |
 | `parent` | Parent ID; required for runtime, component, and symbol declarations |
 | `name`, `aliases` | Actor name and unique alternative names |
@@ -49,7 +49,7 @@ Each node or edge has one numbered callout. Its row binds that display number to
 
 C4 context, container, and component diagrams support Person, System, Container, and Component macros, including external, database, and queue variants. Boundaries group nodes.
 
-Directed `Rel` and its `_U`, `_D`, `_L`, and `_R` forms bind to relationship rows. Flowcharts and class diagrams support separate node declarations and directed relationships.
+Directed `Rel` and its `_U`, `_D`, `_L`, and `_R` forms bind to relationship rows. Flowcharts and classes support separate node declarations. Arrowheads set semantic direction, including class inheritance arrows that point left.
 
 An explicit `%% architecture:legend` line marks a legend fence. Its examples, including numbered examples, do not enter the model. Existing form checks still apply.
 
@@ -60,13 +60,13 @@ Every tracked source is retained with an owner and category. Overlapping claims 
 | Category | Source |
 | --- | --- |
 | product | Supported source extensions, unless classified below |
-| test | `_test.go` files and test folders, without regard to case |
+| test | `_test.go` files and complete `test` or `tests` folder names, without regard to case |
 | tool | Shell and Python files outside test folders |
 | generated | Files marked `linguist-generated` by git attributes |
 
-Go main packages and literal SwiftPM target declarations enter the target inventory. XcodeGen accepts target names under a top-level `targets` key, indented two spaces.
+Go main packages and literal SwiftPM target declarations enter the target inventory. Swift comments and strings do not declare targets. XcodeGen accepts target names under a top-level `targets` key, indented two spaces.
 
-An explicit target reference must resolve. Source classification does not assert which targets deploy. Later checks resolve language-specific product and dependency facts.
+Target IDs resolve only in the build-target inventory. Later checks resolve language-specific product and dependency facts.
 
 ## Evidence
 

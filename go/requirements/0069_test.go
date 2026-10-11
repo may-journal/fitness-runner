@@ -58,6 +58,9 @@ func Test0069_1(t *testing.T) {
 
 func Test0069_2(t *testing.T) {
 	t.Parallel()
+	acTargetCases(t)
+	acC4Variants(t)
+	acRelationships(t, false)
 	for _, root := range []string{"architecture/", "docs/architecture/"} {
 		files := acFixture(root)
 		files["src/project.yml"] = "name: Example\ntargets:\n  App:\n    type: application\n    sources: [.]\n"
@@ -84,6 +87,9 @@ func Test0069_3(t *testing.T) {
 
 func Test0069_4(t *testing.T) {
 	t.Parallel()
+	acBadTargets(t)
+	acRelationships(t, true)
+	acBadRefType(t)
 	cases := map[string]string{
 		"id=host; type=symbol; parent=core":                      "duplicate ID host; first declared at architecture/01-system-context.md:10",
 		"id=result; type=symbol; parent=lost":                    "unresolved ID lost",

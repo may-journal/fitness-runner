@@ -36,14 +36,22 @@ type Source struct {
 	At                    Location
 }
 
+// Target is a build target identity, separate from ordinary source paths.
+type Target struct {
+	ID, Category, Owner string
+	At                  Location
+}
+
 // Model is the shared input to architecture checks. Evidence is deliberately
 // not a boolean proof; child checks must resolve its meaning themselves.
 type Model struct {
 	Declarations []Declaration
 	Sources      []Source
+	Targets      []Target
 	Requirements []requirement.Document
 	Files        []string
 	Errors       []string
+	diagrams     []diagramGraph
 }
 
 func (m *Model) fail(at Location, format string, args ...any) {

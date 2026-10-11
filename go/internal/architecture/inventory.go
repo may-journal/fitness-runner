@@ -22,13 +22,22 @@ func positiveNumber(text string) int {
 
 func sourceCategory(file string) string {
 	lower := strings.ToLower(file)
-	if strings.Contains(lower, "/test") || strings.HasSuffix(lower, "_test.go") || strings.HasPrefix(lower, "tests/") {
+	if testDirectory(path.Dir(lower)) || strings.HasSuffix(lower, "_test.go") {
 		return "test"
 	}
 	if contains([]string{".sh", ".bash", ".zsh", ".py"}, path.Ext(file)) {
 		return "tool"
 	}
 	return "product"
+}
+
+func testDirectory(directory string) bool {
+	for _, segment := range strings.Split(directory, "/") {
+		if contains([]string{"test", "tests"}, segment) {
+			return true
+		}
+	}
+	return false
 }
 
 func generatedFiles(root string, files []string) map[string]bool {
@@ -124,10 +133,10 @@ func (m *Model) goTarget(root string, source Source) {
 }
 
 func (m *Model) addTarget(target string, source Source) {
-	for _, entry := range m.Sources {
-		if entry.Path == target {
+	for _, entry := range m.Targets {
+		if entry.ID == target {
 			return
 		}
 	}
-	m.Sources = append(m.Sources, Source{Path: target, Category: source.Category, Owner: source.Owner, At: source.At})
+	m.Targets = append(m.Targets, Target{ID: target, Category: source.Category, Owner: source.Owner, At: source.At})
 }

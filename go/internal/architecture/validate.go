@@ -8,6 +8,9 @@ import (
 
 func (m *Model) validate(root string, files []string) {
 	ids := m.index()
+	for _, graph := range m.diagrams {
+		m.unclaimed(graph, ids)
+	}
 	for _, d := range m.Declarations {
 		m.references(d, ids)
 		m.nodeFields(d)
