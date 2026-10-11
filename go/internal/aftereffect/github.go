@@ -6,6 +6,7 @@ package aftereffect
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -48,7 +49,23 @@ type Verdict struct {
 type Effect func(gh Client, t Target, errs []string) error
 
 // Client reaches one repository through the gh CLI.
-type Client struct{ repo string }
+type Client struct {
+	repo   string
+	ctx    context.Context
+	issues map[int]issueResult
+}
+
+type issueResult struct {
+	body   string
+	labels []string
+	err    error
+}
+
+// ReadOnlyClient shares a bounded context and caches issue reads for local
+// judgments. Workflow clients retain their existing effects.
+func ReadOnlyClient(ctx context.Context, repo string) Client {
+	return Client{repo: repo, ctx: ctx, issues: map[int]issueResult{}}
+}
 
 // NewClient targets the repository the workflow runs in.
 func NewClient() (Client, error) {
@@ -62,9 +79,17 @@ func NewClient() (Client, error) {
 // api runs `gh api` against a path under the repository.
 func (g Client) api(args ...string) ([]byte, error) {
 	args[len(args)-1] = "repos/" + g.repo + "/" + args[len(args)-1]
-	cmd := exec.Command("gh", append([]string{"api"}, args...)...)
+	ctx := g.ctx
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	cmd := exec.CommandContext(ctx, "gh", append([]string{"api"}, args...)...)
 	cmd.Stderr = os.Stderr
-	return cmd.Output()
+	out, err := cmd.Output()
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	return out, err
 }
 
 // decodeLines decodes the --jq output of gh: one JSON object per line.
@@ -82,6 +107,17 @@ func decodeLines[T any](out []byte) ([]T, error) {
 }
 
 func (g Client) Issue(n int) (string, []string, error) {
+	if prior, ok := g.issues[n]; ok {
+		return prior.body, prior.labels, prior.err
+	}
+	body, labels, err := g.readIssue(n)
+	if g.issues != nil {
+		g.issues[n] = issueResult{body, labels, err}
+	}
+	return body, labels, err
+}
+
+func (g Client) readIssue(n int) (string, []string, error) {
 	out, err := g.api("--jq", "{body: (.body // \"\"), labels: [.labels[].name]}", "issues/"+strconv.Itoa(n))
 	if err != nil {
 		return "", nil, err

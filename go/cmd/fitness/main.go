@@ -23,6 +23,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
 // allChecks is the org default and the catalog for explicit external lists.
@@ -117,11 +118,12 @@ func isHelp(args []string) bool {
 // subcommands maps each subcommand name to its handler, which gets the
 // arguments after the name.
 var subcommands = map[string]func(args []string) int{
-	"init":        runInit,
-	"hook":        runHookArgs,
-	"pr-check":    func([]string) int { return runGH("pr-check") },
-	"plan-check":  func([]string) int { return runGH("plan-check") },
-	"close-check": func([]string) int { return runGH("close-check") },
+	"init":         runInit,
+	"hook":         runHookArgs,
+	"pr-check":     func([]string) int { return runGH("pr-check") },
+	"plan-check":   func([]string) int { return runGH("plan-check") },
+	"close-check":  func([]string) int { return runGH("close-check") },
+	"branch-check": runBranchCheck,
 }
 
 // route dispatches the subcommands, defaulting to the check runner.
@@ -131,7 +133,28 @@ func route(args []string) int {
 			return handler(args[1:])
 		}
 	}
-	return run(args)
+	return runLocal(args)
+}
+
+// runLocal adds live branch metadata to a full terminal run. Hooks call run
+// directly, and Actions retains its event-based GitHub commands.
+func runLocal(args []string) int {
+	code := run(args)
+	if fullLocalMetadata(args) {
+		return max(code, runBranchCheck(nil))
+	}
+	return code
+}
+
+// fullLocalMetadata distinguishes terminal suite runs from selected checks
+// and from Actions, which already runs its event-specific metadata checks.
+func fullLocalMetadata(args []string) bool {
+	options, remaining, err := selection.Parse(args)
+	if err != nil {
+		return false
+	}
+	spec, _ := parseArgv(remaining)
+	return spec == "" && len(options.Checks) == 0 && os.Getenv("GITHUB_ACTIONS") != "true" && gitx.OriginSlug(".") != ""
 }
 
 // runHookArgs runs `fitness hook <name> [args]`; a bare `hook` with no name
@@ -156,6 +179,7 @@ Usage:
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
+  fitness branch-check     validate this branch's PR and linked issues locally
   fitness plan-check       validate Plan issues and comment the result (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
 

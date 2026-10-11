@@ -19,6 +19,14 @@ A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Gi
 
 The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`, which comments, labels, hides old verdicts, or reopens.
 
+## Local branch metadata
+
+`fitness branch-check` uses the same PR and Plan judgments on live metadata for the current branch, without GitHub effects. Full local CLI runs include it when origin points to GitHub. Single checks, commit hooks, push hooks, and Actions keep their existing behavior.
+
+Discovery includes drafts and matches both the head repository and branch, including forks. Closing links and branch `Plan #NN` trailers supply issues; each Plan is read once. Ordinary issues receive the shared PR checklist rules. Unfinished checklists fail locally as they do in Actions, even on a draft PR.
+
+No open PR or detached HEAD produces an explicit skip. Discovery, authentication, network, or linked-issue failures produce a nonzero exit with retry guidance. All remote reads share a 30-second deadline. Run `gh auth status`, restore access, and retry `fitness branch-check`; fetch the PR base from origin if branch history is missing.
+
 ## Applicability
 
 Org mode runs every check, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
