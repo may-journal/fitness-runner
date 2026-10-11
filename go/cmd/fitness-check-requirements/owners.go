@@ -96,9 +96,9 @@ func idOf(name string) string {
 }
 
 // ownershipErrors flags acceptances that no test or several tests own, tests
-// named for an acceptance no doc defines, and tests in scope that name no
+// named for an acceptance no doc defines, and tests that name no
 // acceptance at all.
-func ownershipErrors(docs []reqDoc, tests []goTest, scope map[string]bool, repo langs) []string {
+func ownershipErrors(docs []reqDoc, tests []goTest, repo langs) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}
 	for _, t := range tests {
@@ -112,7 +112,7 @@ func ownershipErrors(docs []reqDoc, tests []goTest, scope map[string]bool, repo 
 		}
 	}
 	for _, t := range tests {
-		errs = append(errs, testError(t, current, scope)...)
+		errs = append(errs, testError(t, current)...)
 	}
 	return errs
 }
@@ -129,13 +129,13 @@ func ownerError(path string, a idLine, owners []string, repo langs) []string {
 	return []string{at(path, a.line, fmt.Sprintf("%s is owned by %d tests (%s); keep exactly one", a.id, len(owners), strings.Join(owners, ", ")))}
 }
 
-// testError flags a test named for an undefined acceptance, and an in-scope
+// testError flags a test named for an undefined acceptance, and a
 // test that names none.
-func testError(t goTest, current, scope map[string]bool) []string {
+func testError(t goTest, current map[string]bool) []string {
 	switch {
 	case t.id != "" && !current[t.id]:
 		return []string{fmt.Sprintf("%s: %s names %s, which no requirement defines; delete the test with its acceptance", t.loc, t.name, t.id)}
-	case t.id == "" && scope[t.file]:
+	case t.id == "":
 		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.loc, t.name, langs{swift: t.swift}.testName("NNNN.N"))}
 	}
 	return nil

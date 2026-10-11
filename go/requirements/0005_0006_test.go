@@ -49,11 +49,8 @@ func Test0005_6(t *testing.T) {
 
 func Test0005_7(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "TestAddsAgain")}))
-	write(t, repo, map[string]string{"README.md": readme + "\nOne more short line.\n"})
-	git(t, repo, "add", "README.md")
-	out, _ := fitness(t, repo, nil, "--policy=external")
-	passedWithNoFiles(t, out, "requirements")
+	files := with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "TestAddsAgain")})
+	unchangedTestFails(t, files, "TestAddsAgain proves no requirement")
 }
 
 func Test0005_8(t *testing.T) {

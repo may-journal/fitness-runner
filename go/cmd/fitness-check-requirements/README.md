@@ -48,7 +48,7 @@ Source: #123
 - Measurement: numerator, `-`, denominator, then `Source:` citing one `path:line` that exists or one `#123` issue.
 - Acceptance: one Given, one When, and one Then, each nested under the line above. A branch is a new ID.
 - Ownership: exactly one Go `func TestNNNN_N` or Swift `func testNNNN_N` owns each acceptance. A test named for an undefined acceptance fails.
-- Every test: each top-level test in a judged file must be named for an acceptance. `TestMain` and helpers are not tests.
+- Every test: each top-level test in the repository must be named for an acceptance. `TestMain` and helpers are not tests.
 
 Go tests are read with `go/ast`, so only real top-level test functions count.
 
@@ -58,9 +58,8 @@ A Swift test is an XCTest method named `test…` with no parameters, in a class 
 
 - No code: a repo without Go or Swift files passes with `filesChecked: 0`.
 - Missing docs: a Go or Swift repo with none in `docs/requirements` fails.
-- Scoped runs skip when no doc, Go test file, or Swift file changed.
-- Otherwise a scoped run judges every doc, but only changed test files must be fully named.
-- Full runs judge every test file, so an unmapped repo stays red until every test owns a requirement.
+- Full and scoped runs judge every doc and test file, including unchanged files in pull requests that change only unrelated files.
+- Ownership is a repository-wide invariant: an unmapped repo stays red until every test owns a requirement.
 
 ## Contributing
 
