@@ -1,6 +1,9 @@
 package requirements
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // noBoldItalic runs `fitness-install -- markdown-no-bold-italic <args>` on
 // happyRepo with files written over it.
@@ -63,4 +66,11 @@ func Test0037_7(t *testing.T) {
 	t.Parallel()
 	out, code := noBoldItalic(t, map[string]string{"body.md": "Hello _there_.\n"}, "--body-file", "body.md")
 	sees(t, out, code, 1, `(description): disallowed _italic_`+noBoldItalicRule+`"_there_"`)
+}
+
+func Test0037_8(t *testing.T) {
+	t.Parallel()
+	release := strings.Replace(notesRelease(notesTwo), "change it", "change **everything**", 1)
+	out, code := notesChecks(t, notesHead+release+notesEntry, "markdown-no-bold-italic")
+	sees(t, out, code, 1, `"**everything**"`)
 }

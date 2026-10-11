@@ -38,15 +38,15 @@ Source: `go/cmd/fitness-check-requirements/doc.go:86`
     - Given a Source citing neither one existing code line nor one issue
         - When fitness runs
             - Then it fails
-- 0006.6
-    - Given an acceptance with a second Given, When, or Then
-        - When fitness runs
-            - Then it fails
-- 0006.7
-    - Given an acceptance chain out of order or not nested
-        - When fitness runs
-            - Then it fails
 - 0006.8
     - Given an acceptance ID that is repeated or names another requirement
+        - When fitness runs
+            - Then it fails
+- 0006.9
+    - Given two docs whose acceptances share a When and a similar Given
+        - When fitness runs
+            - Then it fails naming both docs
+- 0006.10
+    - Given an acceptance that is not one Given, When, and Then, in order and nested
         - When fitness runs
             - Then it fails

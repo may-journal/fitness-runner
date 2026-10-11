@@ -10,9 +10,11 @@ A requirement doc states what a user can do, in the user's voice. Each acceptanc
 
 The canonical copy lives in fitness-runner at `skills/add-requirements`. On the shared Mac, `~/agents/skills/add-requirements` links to it, so every agent finds it.
 
-fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs/requirements), one test package under [go/requirements](../../go/requirements). Read [0061-engine-installer.md](../../docs/requirements/0061-engine-installer.md) and [0061_test.go](../../go/requirements/0061_test.go) side by side before starting.
+fitness-runner did this for itself: 61 docs under [docs/requirements](../../docs/requirements), one test package under [go/requirements](../../go/requirements). Read [0061-engine-installer.md](../../docs/requirements/0061-engine-installer.md) and [0061_test.go](../../go/requirements/0061_test.go) side by side before starting.
 
 ## Write one doc per user-facing area
+
+[ADR 0004](../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) says when to extend an existing doc instead of adding one.
 
 The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [requirements check README](../../go/cmd/fitness-check-requirements/README.md) holds the template and every rule the check enforces. Read it first and link to it, do not restate it.
 

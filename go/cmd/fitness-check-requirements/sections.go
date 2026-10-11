@@ -65,12 +65,14 @@ type item struct {
 }
 
 // parseRequirements groups list items under top-level acceptance IDs and
-// checks each one's Given, When, Then chain.
-func parseRequirements(p *problems, docID string, s section) []idLine {
+// checks each one's Given, When, Then chain. It also returns each
+// well-formed chain's Given and When.
+func parseRequirements(p *problems, docID string, s section) ([]idLine, []scenario) {
 	if len(s.lines) == 0 {
-		return nil
+		return nil, nil
 	}
 	var out []idLine
+	var scenarios []scenario
 	seen := map[string]bool{}
 	for _, g := range groupItems(p, docID, s.lines) {
 		a := checkAcceptance(p, docID, g)
@@ -79,8 +81,11 @@ func parseRequirements(p *problems, docID string, s section) []idLine {
 		}
 		seen[a.id] = true
 		out = append(out, a)
+		if len(g) == len(chainKeywords)+1 {
+			scenarios = append(scenarios, scenario{a, strings.TrimPrefix(g[1].text, "Given "), strings.TrimPrefix(g[2].text, "When ")})
+		}
 	}
-	return out
+	return out, scenarios
 }
 
 // groupItems splits list items into groups, each a top-level item and the

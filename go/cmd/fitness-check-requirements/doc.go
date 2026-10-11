@@ -21,6 +21,7 @@ type reqDoc struct {
 	id          string
 	idLine      int
 	acceptances []idLine
+	scenarios   []scenario
 }
 
 // ids lists the doc's own ID followed by its acceptance IDs.
@@ -94,7 +95,7 @@ func parseDoc(root, file, body string) (reqDoc, []string) {
 		byName[s.name] = s
 	}
 	checkMeasurement(p, root, byName["Measurement"])
-	d.acceptances = parseRequirements(p, d.id, byName["Requirements"])
+	d.acceptances, d.scenarios = parseRequirements(p, d.id, byName["Requirements"])
 	return d, p.errs
 }
 

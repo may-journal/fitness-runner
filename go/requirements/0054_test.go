@@ -51,12 +51,6 @@ func Test0054_2(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0054_3(t *testing.T) {
-	t.Parallel()
-	out, code := releaseChangelog(t, releaseChangelogRelease(releaseChangelogNotes))
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
 func Test0054_4(t *testing.T) {
 	t.Parallel()
 	releaseChangelogFails(t, []releaseChangelogCase{
@@ -100,4 +94,15 @@ func Test0054_8(t *testing.T) {
 	git(t, repo, "add", ".release-please-manifest.json")
 	out, code := fitness(t, repo, nil, "release-changelog")
 	sees(t, out, code, 1, ".release-please-manifest.json changed without CHANGELOG.md; add the release section reviewers will approve")
+}
+
+func Test0054_10(t *testing.T) {
+	t.Parallel()
+	out, code := releaseChangelog(t, releaseChangelogRelease(releaseChangelogNotes))
+	sees(t, out, code, 0, "All 1 checks passed")
+	linked := "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n" +
+		"## [1.2.3](https://github.com/o/r/compare/v1.2.2...v1.2.3) (2026-10-10)\n\n\n### Bug Fixes\n\n* **release:** fix publishing\n\n" +
+		"### 2026.10.08.1400\n\n- Docs: add the readme.\n"
+	out, code = releaseChangelog(t, releaseChangelogRelease(linked))
+	sees(t, out, code, 0, "All 1 checks passed")
 }

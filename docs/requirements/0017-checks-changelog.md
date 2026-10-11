@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I can tell which release each change shipped in, because every changelog section is dated and matches the package version.
+I can tell which release each change shipped in, because every changelog section is dated and matches the package version. Release notes written by Release Please pass as they are.
 
 ## Measurement
 
@@ -26,14 +26,6 @@ Source: `go/cmd/fitness-check-changelog/main.go:63`
     - Given a changelog with no `###` section
         - When changelog runs
             - Then it fails asking for a dated section
-- 0017.3
-    - Given a `###` heading without a `yyyy.mm.dd.HHMM` timestamp
-        - When changelog runs
-            - Then it fails quoting that heading
-- 0017.4
-    - Given every `###` heading starts with a timestamp, some with trailing notes
-        - When changelog runs
-            - Then it passes
 - 0017.5
     - Given a `package.json` version suffix that differs from the first heading
         - When changelog runs
@@ -50,3 +42,11 @@ Source: `go/cmd/fitness-check-changelog/main.go:63`
     - Given package files whose versions match the first heading
         - When changelog runs
             - Then it passes
+- 0017.11
+    - Given dated `###` headings, some with notes, and a release section's Features and Bug Fixes
+        - When changelog runs
+            - Then it passes
+- 0017.12
+    - Given an undated `###` heading, among the changes or outside any release section
+        - When changelog runs
+            - Then it fails quoting that heading

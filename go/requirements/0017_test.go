@@ -42,18 +42,6 @@ func Test0017_2(t *testing.T) {
 	sees(t, out, code, 1, "CHANGELOG.md must have at least one ### yyyy.mm.dd.HHMM section")
 }
 
-func Test0017_3(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400", "### 2026.10.07")})
-	sees(t, out, code, 1, `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "### 2026.10.07")`)
-}
-
-func Test0017_4(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400 hotfix", "### 2026.10.07.0900")})
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
 func Test0017_5(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, changelogPackages(`{"version": "0.1.0-2026.10.08.1500"}`+"\n", ""))
@@ -78,4 +66,53 @@ func Test0017_8(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, changelogPackages(changelogVersion, changelogVersion))
 	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+// notesHead opens a changelog in the house layout.
+const notesHead = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n"
+
+// notesEntry is a timestamped entry that follows the house rules.
+const notesEntry = "### 2026.10.09.1500\n\n- Fix: one.\n- Fix: two.\n- Fix: three.\n\n"
+
+// notesRelease is a 1.1.1 release as Release Please writes it: a linked
+// version heading, then each subheading with one bullet per scope given.
+func notesRelease(subheadings map[string][]string) string {
+	s := "## [1.1.1](https://github.com/o/r/compare/v1.1.0...v1.1.1) (2026-10-10)\n\n"
+	for _, h := range []string{"Features", "Bug Fixes"} {
+		if len(subheadings[h]) == 0 {
+			continue
+		}
+		s += "\n### " + h + "\n\n"
+		for _, scope := range subheadings[h] {
+			s += "* **" + scope + ":** change it ([#239](https://github.com/o/r/issues/239)) ([c9f4729](https://github.com/o/r/commit/c9f4729))\n"
+		}
+		s += "\n"
+	}
+	return s
+}
+
+// notesChecks runs the named checks on happyRepo with changelog.
+func notesChecks(t *testing.T, changelog, checks string) (string, int) {
+	t.Helper()
+	repo := example(t, "happyRepo", map[string]string{"CHANGELOG.md": changelog})
+	return fitness(t, repo, nil, "--policy=external", "--checks="+checks, "--all")
+}
+
+// notesTwo is a release with one feature and one fix.
+var notesTwo = map[string][]string{"Features": {"install"}, "Bug Fixes": {"release"}}
+
+func Test0017_11(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400 hotfix", "### 2026.10.07.0900")})
+	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = notesChecks(t, notesHead+notesRelease(notesTwo)+notesEntry, "changelog")
+	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+func Test0017_12(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400", "### 2026.10.07")})
+	sees(t, out, code, 1, `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "### 2026.10.07")`)
+	out, code = notesChecks(t, notesHead+"### Features\n\n- Feat: stray.\n\n"+notesEntry, "changelog")
+	sees(t, out, code, 1, `invalid: "### Features"`)
 }

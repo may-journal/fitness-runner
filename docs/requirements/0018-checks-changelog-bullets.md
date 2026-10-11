@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I can skim every changelog release, because each entry is a few short bullets, each starting with its kind of change.
+I can skim every changelog release, because each entry is a few short bullets, each starting with its kind of change. Release notes written by Release Please pass as they are.
 
 ## Measurement
 
@@ -22,22 +22,6 @@ Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
     - Given a changelog section with fewer than 3 or more than 5 bullets
         - When changelog-bullets runs
             - Then it fails naming the section and its bullet count
-- 0018.2
-    - Given a bullet of 365 characters or more
-        - When changelog-bullets runs
-            - Then it fails naming the bullet's line and length
-- 0018.3
-    - Given a long bullet wrapped across several lines
-        - When changelog-bullets runs
-            - Then it counts the whole bullet and names its first line
-- 0018.4
-    - Given a bullet without a semantic type prefix
-        - When changelog-bullets runs
-            - Then it fails asking for a type such as `Feat:`
-- 0018.5
-    - Given bullets starting with `Feat:` or a commit subject like `fix(release)!:`
-        - When changelog-bullets runs
-            - Then it passes
 - 0018.6
     - Given an older section that breaks the rules
         - When changelog-bullets runs
@@ -46,7 +30,23 @@ Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
     - Given a repo without a `CHANGELOG.md`
         - When changelog-bullets runs
             - Then it passes with no files checked
-- 0018.8
-    - Given an entry above a release section with more bullets than `proseBudget.maxListItems`
+- 0018.9
+    - Given Release Please bullets with a bold scope and no type prefix
+        - When changelog-bullets and markdown-no-bold-italic run
+            - Then they pass
+- 0018.11
+    - Given a timestamped entry using a star bullet
         - When changelog-bullets runs
-            - Then only the release section fails, naming that limit
+            - Then the entry still fails as having too few bullets
+- 0018.12
+    - Given a bullet of 365 characters or more, even wrapped across lines
+        - When changelog-bullets runs
+            - Then it fails naming the bullet's first line and whole length
+- 0018.13
+    - Given bullets starting with `Feat:`, a subject like `fix(release)!:`, or no type
+        - When changelog-bullets runs
+            - Then only the untyped bullet fails, asking for a type
+- 0018.14
+    - Given a valid entry above a release over the configured list limit, even across subheadings
+        - When changelog-bullets runs
+            - Then only the release fails, naming that limit

@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I approve a release only when its version file and changelog section match the version Release Please will tag.
+I approve a release only when its version file and changelog section match the version Release Please will tag. The section may sit under the linked version heading Release Please writes.
 
 ## Measurement
 
@@ -24,10 +24,6 @@ Source: `go/cmd/fitness-check-release-changelog/main.go:79`
             - Then it passes judging 0 files
 - 0054.2
     - Given an empty manifest during bootstrap
-        - When fitness runs release-changelog
-            - Then it passes
-- 0054.3
-    - Given a matching `version.txt` and a `## [1.2.3] (date)` section with a list item
         - When fitness runs release-changelog
             - Then it passes
 - 0054.4
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-release-changelog/main.go:79`
     - Given a staged manifest change without a CHANGELOG change
         - When fitness runs release-changelog
             - Then it fails asking for the release section
+- 0054.10
+    - Given a matching `version.txt` and a listed release section under a plain or linked heading
+        - When fitness runs release-changelog
+            - Then it passes

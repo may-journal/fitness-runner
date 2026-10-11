@@ -41,7 +41,7 @@ Source: #123
 
 ## Rules
 
-- IDs: the file name's `NNNN` matches the title, and no two docs share it.
+- IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md).
 - Acceptance IDs: the title ID plus `.N`, unique in its doc.
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.

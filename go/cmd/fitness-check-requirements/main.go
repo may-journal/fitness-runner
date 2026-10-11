@@ -38,6 +38,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
+	errs = append(errs, overlapErrors(docs)...)
 	errs = append(errs, ownershipErrors(docs, tests, inScope(files), repo)...)
 	if len(errs) > 0 {
 		return checkkit.Fail(len(paths)+len(files), errs...), nil

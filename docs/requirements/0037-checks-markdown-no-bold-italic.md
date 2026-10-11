@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I keep docs plain, so emphasis never stands in for clear words. Any bold or italic text gets flagged before it lands.
+I keep docs plain, so emphasis never stands in for clear words. Any bold or italic text gets flagged before it lands. Release Please notes pass, since only their scope is bold.
 
 ## Measurement
 
@@ -46,3 +46,7 @@ Source: `go/cmd/fitness-check-markdown-no-bold-italic/main.go:163`
     - Given an issue or PR body with italic text
         - When markdown-no-bold-italic checks it in body mode
             - Then it fails naming the description
+- 0037.8
+    - Given bold text in a release section that is not a bullet's scope
+        - When markdown-no-bold-italic runs
+            - Then it fails quoting that bold
