@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.6.0](https://github.com/may-journal/fitness-runner/compare/v1.5.1...v1.6.0) (2026-10-11)
+
+
+### Features
+
+* **fitness:** check local branch metadata before push ([#280](https://github.com/may-journal/fitness-runner/issues/280)) ([4383f81](https://github.com/may-journal/fitness-runner/commit/4383f81f4f1699f31350192936b75aca5c0da43b))
+
 ### 2026.10.11.1540
 
 - Feat: local-branch: run shared PR and Plan checks locally and in pre-push; retain branch-check and exclude metadata from pre-commit.
