@@ -44,6 +44,7 @@ var allChecks = []string{
 	"no-plans-dir",
 	"doc-template",
 	"requirements",
+	"architecture-contract",
 	"no-contrastive-reframing",
 	"repeated-string-literals",
 	"markdown-front-matter",

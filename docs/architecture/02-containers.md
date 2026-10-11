@@ -38,6 +38,7 @@ C4Container
 ```
 
 ```mermaid
+%% architecture:legend
 C4Container
     title Legend
 
@@ -50,27 +51,27 @@ C4Container
 
 Numbers on nodes and arrows match the callout table.
 
-| #   | Description                                                                                      | Why                                                         |
-| --- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
-| 1   | Same actor as system context.                                                                    | All runs start at the runner binary.                        |
-| 2   | Same agent actor as system context.                                                              | Agents never link checks — they invoke the CLI.             |
-| 3   | `fitness` — argv, spec resolution, describe handshake, parallel pool, results table.             | Single orchestration surface, one static binary.            |
-| 4   | One static binary per check name, found beside the runner then on PATH.                          | Plugin model at the artifact level; no in-process registry. |
-| 5   | Tool configs embedded in the binaries, materialized to a cache dir on demand.                    | Opinionated defaults; consumer local config wins.           |
-| 6   | Optional `.fitnessrc.json` — exceptions only: per-check options.                                 | Every check runs on every tracked file; no path is ignored. |
-| 7   | Files checks lint, format, spell-check, or scan.                                                 | Staged paths from git when available.                       |
-| 8   | Tool-wrapper checks exec these when installed; native engines (cspell, jscpd souls) need none.   | Peer tools resolved at runtime, never bundled.              |
-| 9   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
-| 10  | Developer runs the binary from the consumer root.                                                | One front door.                                             |
-| 11  | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
-| 12  | Runner loads `.fitnessrc.json` from the consumer root.                                           | Config lives with the app, not the runner source.           |
-| 13  | Runner execs `fitness-check-name --root dir` per resolved name.                                  | Runtime resolution — no static registry in the runner.      |
-| 14  | Tool-wrapper checks fall back to the shared configs when the repo has none.                      | Turnkey defaults without local config copies.               |
-| 15  | Checks resolve peer binaries from `node_modules/.bin` walking up, then PATH, never npx.          | Missing tools fail with one-line install hints.             |
-| 16  | Checks read the consumer tree (staged or full).                                                  | Validation target is always the app repo.                   |
-| 17  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
-| 18  | The `plan-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.         | Descriptions held to the same bar as files.                 |
-| 19  | `fitness pr-check` and `plan-check` exec each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
+| #   | Description                                                                                      | Why                                                         | Contract |
+| --- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- | --- |
+| 1   | Same actor as system context.                                                                    | All runs start at the runner binary.                        | ref=developer |
+| 2   | Same agent actor as system context.                                                              | Agents never link checks — they invoke the CLI.             | ref=agent |
+| 3   | `fitness` — argv, spec resolution, describe handshake, parallel pool, results table.             | Single orchestration surface, one static binary.            | id=cli; type=runtime; parent=fitness; target=go:go/cmd/fitness |
+| 4   | One static binary per check name, found beside the runner then on PATH.                          | Plugin model at the artifact level; no in-process registry. | id=checks; type=runtime; parent=fitness |
+| 5   | Tool configs embedded in the binaries, materialized to a cache dir on demand.                    | Opinionated defaults; consumer local config wins.           | id=shared; type=component; parent=checks |
+| 6   | Optional `.fitnessrc.json` — exceptions only: per-check options.                                 | Every check runs on every tracked file; no path is ignored. | id=consumer-config; type=external |
+| 7   | Files checks lint, format, spell-check, or scan.                                                 | Staged paths from git when available.                       | id=consumer-code; type=external |
+| 8   | Tool-wrapper checks exec these when installed; native engines (cspell, jscpd souls) need none.   | Peer tools resolved at runtime, never bundled.              | ref=tools |
+| 9   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             | id=registry; type=external |
+| 10  | Developer runs the binary from the consumer root.                                                | One front door.                                             | id=view-02-developer-cli; type=relationship; from=developer; to=cli; kind=uses; mode=allowed; evidence=declared |
+| 11  | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   | id=view-02-agent-cli; type=relationship; from=agent; to=cli; kind=uses; mode=allowed; evidence=declared |
+| 12  | Runner loads `.fitnessrc.json` from the consumer root.                                           | Config lives with the app, not the runner source.           | id=view-02-cli-consumer-config; type=relationship; from=cli; to=consumer-config; kind=uses; mode=allowed; evidence=declared |
+| 13  | Runner execs `fitness-check-name --root dir` per resolved name.                                  | Runtime resolution — no static registry in the runner.      | id=view-02-cli-checks; type=relationship; from=cli; to=checks; kind=uses; mode=allowed; evidence=declared |
+| 14  | Tool-wrapper checks fall back to the shared configs when the repo has none.                      | Turnkey defaults without local config copies.               | id=view-02-checks-shared; type=relationship; from=checks; to=shared; kind=uses; mode=allowed; evidence=declared |
+| 15  | Checks resolve peer binaries from `node_modules/.bin` walking up, then PATH, never npx.          | Missing tools fail with one-line install hints.             | id=view-02-checks-tools; type=relationship; from=checks; to=tools; kind=uses; mode=allowed; evidence=declared |
+| 16  | Checks read the consumer tree (staged or full).                                                  | Validation target is always the app repo.                   | id=view-02-checks-consumer-code; type=relationship; from=checks; to=consumer-code; kind=uses; mode=allowed; evidence=declared |
+| 17  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  | id=view-02-checks-registry; type=relationship; from=checks; to=registry; kind=uses; mode=allowed; evidence=declared |
+| 18  | The `plan-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.         | Descriptions held to the same bar as files.                 | ref=ci |
+| 19  | `fitness pr-check` and `plan-check` exec each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 | id=view-02-ci-checks; type=relationship; from=ci; to=checks; kind=uses; mode=allowed; evidence=declared |
 
 ## Consumer setup
 

@@ -9,6 +9,7 @@
 package main
 
 import (
+	"github.com/may-journal/fitness-runner/go/internal/requirement"
 	"sort"
 	"strings"
 
@@ -32,7 +33,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil || repo == (langs{}) {
 		return checkkit.Pass(0), err
 	}
-	docs, errs, err := loadDocs(root, paths)
+	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
@@ -81,11 +82,11 @@ func missingDocs(paths []string) []string {
 
 // idErrors flags a requirement ID that two docs share, and any doc or
 // acceptance ID that history shows was removed before.
-func idErrors(docs []reqDoc, hist history) []string {
+func idErrors(docs []requirement.Document, hist history) []string {
 	var errs []string
 	owners := map[string][]string{}
 	for _, d := range docs {
-		owners[d.id] = append(owners[d.id], d.path)
+		owners[d.ID] = append(owners[d.ID], d.Path)
 		errs = append(errs, reusedErrors(d, hist)...)
 	}
 	for _, id := range sortedKeys(owners) {
@@ -97,11 +98,11 @@ func idErrors(docs []reqDoc, hist history) []string {
 }
 
 // reusedErrors flags the doc's IDs that a past commit deleted.
-func reusedErrors(d reqDoc, hist history) []string {
+func reusedErrors(d requirement.Document, hist history) []string {
 	var errs []string
-	for _, id := range d.ids() {
-		if hist.removed[id.id] {
-			errs = append(errs, at(d.path, id.line, id.id+" was deleted before; IDs are never reused, so take the next free number"))
+	for _, id := range d.IDs() {
+		if hist.removed[id.ID] {
+			errs = append(errs, requirement.At(d.Path, id.Line, id.ID+" was deleted before; IDs are never reused, so take the next free number"))
 		}
 	}
 	return errs

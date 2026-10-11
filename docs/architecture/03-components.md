@@ -46,6 +46,7 @@ C4Component
 ```
 
 ```mermaid
+%% architecture:legend
 C4Component
     title Legend
 
@@ -60,28 +61,28 @@ C4Component
 
 Numbers on nodes and arrows match the callout table.
 
-| #   | Description                                                                                             | Why                                                         |
-| --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
-| 2   | `go/cmd/fitness/main.go` — routes the subcommands, else argv, resolve, execute, render.                 | No build step, no interpreter startup.                      |
-| 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
-| 4   | Ordered check list: the CLI name, else the embedded `allChecks` list.                                   | One place for check resolution (single name or full list).  |
-| 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
-| 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass/fail summary.                             |
-| 7   | One static binary per check name, discovered beside the runner then on PATH.                            | Plugin model at the artifact level; no registry.            |
-| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
-| 9   | Tool-wrapper checks exec the real peer tool from `node_modules/.bin` (walking up) then PATH, never npx. | Orchestration, not reimplementation.                        |
-| 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
-| 11  | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
-| 12  | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
-| 13  | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
-| 14  | Resolver maps a name to the `fitness-check-<name>` binary and collects its `--describe` metadata.       | Timeout and context-inline metadata without header parsing. |
-| 15  | Check binaries build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
-| 16  | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                |
-| 17  | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          |
-| 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
-| 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        |
-| 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
+| #   | Description                                                                                             | Why                                                         | Contract |
+| --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --- |
+| 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               | ref=developer |
+| 2   | `go/cmd/fitness/main.go` — routes the subcommands, else argv, resolve, execute, render.                 | No build step, no interpreter startup.                      | id=entry; type=component; parent=cli; owns=go/cmd/fitness/,go/cmd/fitness-install/,go/cmd/fitness-release/,go/cmd/fitness-stamp-changelog/,tests/; path=go/cmd/fitness/main.go |
+| 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                | id=config; type=component; parent=cli; path=go/internal/conf/conf.go |
+| 4   | Ordered check list: the CLI name, else the embedded `allChecks` list.                                   | One place for check resolution (single name or full list).  | id=resolve; type=component; parent=cli; path=go/cmd/fitness/main.go |
+| 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         | id=execute; type=component; parent=cli; path=go/cmd/fitness/main.go |
+| 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass/fail summary.                             | id=output; type=component; parent=cli; path=go/internal/render/render.go |
+| 7   | One static binary per check name, discovered beside the runner then on PATH.                            | Plugin model at the artifact level; no registry.            | id=check; type=component; parent=checks; owns=go/cmd/fitness-check-*/ |
+| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            | id=kit; type=component; parent=checks; owns=go/internal/,go/requirements/ |
+| 9   | Tool-wrapper checks exec the real peer tool from `node_modules/.bin` (walking up) then PATH, never npx. | Orchestration, not reimplementation.                        | ref=tools |
+| 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                | id=git; type=external |
+| 11  | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        | id=view-03-developer-entry; type=relationship; from=developer; to=entry; kind=uses; mode=allowed; evidence=declared |
+| 12  | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        | id=view-03-entry-config; type=relationship; from=entry; to=config; kind=uses; mode=allowed; evidence=declared |
+| 13  | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     | id=view-03-entry-resolve; type=relationship; from=entry; to=resolve; kind=uses; mode=allowed; evidence=declared |
+| 14  | Resolver maps a name to the `fitness-check-<name>` binary and collects its `--describe` metadata.       | Timeout and context-inline metadata without header parsing. | id=view-03-resolve-check; type=relationship; from=resolve; to=check; kind=uses; mode=allowed; evidence=declared |
+| 15  | Check binaries build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             | id=view-03-check-kit; type=relationship; from=check; to=kit; kind=uses; mode=allowed; evidence=declared |
+| 16  | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                | id=view-03-check-tools; type=relationship; from=check; to=tools; kind=uses; mode=allowed; evidence=declared |
+| 17  | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          | id=view-03-entry-git; type=relationship; from=entry; to=git; kind=uses; mode=allowed; evidence=declared |
+| 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 | id=view-03-entry-execute; type=relationship; from=entry; to=execute; kind=uses; mode=allowed; evidence=declared |
+| 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        | id=view-03-execute-check; type=relationship; from=execute; to=check; kind=uses; mode=allowed; evidence=declared |
+| 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              | id=view-03-entry-output; type=relationship; from=entry; to=output; kind=uses; mode=allowed; evidence=declared |
 
 ## Resolve check specs (priority)
 

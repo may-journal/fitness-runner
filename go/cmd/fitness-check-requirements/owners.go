@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/may-journal/fitness-runner/go/internal/requirement"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -98,7 +99,7 @@ func idOf(name string) string {
 // ownershipErrors flags acceptances that no test or several tests own, tests
 // named for an acceptance no doc defines, and tests that name no
 // acceptance at all.
-func ownershipErrors(docs []reqDoc, tests []goTest, repo langs) []string {
+func ownershipErrors(docs []requirement.Document, tests []goTest, repo langs) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}
 	for _, t := range tests {
@@ -106,9 +107,9 @@ func ownershipErrors(docs []reqDoc, tests []goTest, repo langs) []string {
 	}
 	var errs []string
 	for _, d := range docs {
-		for _, a := range d.acceptances {
-			current[a.id] = true
-			errs = append(errs, ownerError(d.path, a, owners[a.id], repo)...)
+		for _, a := range d.Acceptances {
+			current[a.ID] = true
+			errs = append(errs, ownerError(d.Path, a, owners[a.ID], repo)...)
 		}
 	}
 	for _, t := range tests {
@@ -118,15 +119,15 @@ func ownershipErrors(docs []reqDoc, tests []goTest, repo langs) []string {
 }
 
 // ownerError requires exactly one test to own the acceptance.
-func ownerError(path string, a idLine, owners []string, repo langs) []string {
-	name := repo.testName(a.id)
+func ownerError(path string, a requirement.IDLine, owners []string, repo langs) []string {
+	name := repo.testName(a.ID)
 	switch len(owners) {
 	case 1:
 		return nil
 	case 0:
-		return []string{at(path, a.line, fmt.Sprintf("%s has no test; name exactly one test %s", a.id, name))}
+		return []string{requirement.At(path, a.Line, fmt.Sprintf("%s has no test; name exactly one test %s", a.ID, name))}
 	}
-	return []string{at(path, a.line, fmt.Sprintf("%s is owned by %d tests (%s); keep exactly one", a.id, len(owners), strings.Join(owners, ", ")))}
+	return []string{requirement.At(path, a.Line, fmt.Sprintf("%s is owned by %d tests (%s); keep exactly one", a.ID, len(owners), strings.Join(owners, ", ")))}
 }
 
 // testError flags a test named for an undefined acceptance, and a

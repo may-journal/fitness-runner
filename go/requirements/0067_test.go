@@ -108,7 +108,7 @@ func Test0067_6(t *testing.T) {
 	t.Parallel()
 	rp := standIn(t, map[string][]response{"gh": nil})
 	out, code := fitness(t, branchRepo(t, nil), append(rp.env, "GITHUB_ACTIONS=true"))
-	sees(t, out, code, 0, "All 48 checks passed")
+	sees(t, out, code, 0, "All 49 checks passed")
 	if len(rp.calls("gh")) != 0 {
 		t.Fatalf("Actions ran local discovery: %q", rp.calls("gh"))
 	}

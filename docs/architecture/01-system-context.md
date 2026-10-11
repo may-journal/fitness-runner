@@ -24,6 +24,7 @@ C4Context
 ```
 
 ```mermaid
+%% architecture:legend
 C4Context
     title Legend
 
@@ -34,17 +35,17 @@ C4Context
 
 Numbers on nodes and arrows match the callout table.
 
-| #   | Description                                                                                           | Why                                                                 |
-| --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 1   | Runs `fitness`, git hooks, or single checks locally.                                          | Primary operator; same bar as CI.                                   |
-| 2   | Cursor, Claude Code, or other agents triggered to run fitness before/after edits.                     | GenAI workflows share the runner — see [wardley.md](../wardley.md). |
-| 3   | Static Go binaries: the runner plus one binary per check, tool configs embedded.                                 | The product boundary — self-contained executables.                  |
-| 4   | Any repo with the binaries on PATH; every check runs and skips what does not apply.                   | Runner always executes in the consumer's working directory.         |
-| 5   | Commodity linters, formatters, test runners, and git.                                                 | Checks wrap these; runner does not replace them.                    |
-| 6   | Pipeline that runs fitness on push or PR.                                                             | Cloud enforcement of the same check list.                           |
-| 7   | Local dev and optional git hooks.                                                                     | Fast feedback before commit.                                        |
-| 8   | Agent skills, rules, or hooks invoke the same CLI.                                                    | Closes local vs agent drift when wired.                             |
-| 9   | Reads staged files, source tree, and config exceptions from the consumer repo.                        | The working directory is the app root, not the runner repo.         |
-| 10  | Tool-wrapper checks exec the underlying CLIs; native engines need none.                               | Orchestration, not reimplementation.                                |
-| 11  | CI builds or downloads the binaries and runs `fitness`.                                               | Same command as local.                                              |
-| 12  | Non-zero exit fails the pipeline.                                                                     | Pass/fail is deterministic, not LLM-judged.                         |
+| #   | Description                                                                                           | Why                                                                 | Contract |
+| --- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | --- |
+| 1   | Runs `fitness`, git hooks, or single checks locally.                                          | Primary operator; same bar as CI.                                   | id=developer; type=actor; name=Developer |
+| 2   | Cursor, Claude Code, or other agents triggered to run fitness before/after edits.                     | GenAI workflows share the runner — see [wardley.md](../wardley.md). | id=agent; type=actor; name=AI agent; aliases=Agent |
+| 3   | Static Go binaries: the runner plus one binary per check, tool configs embedded.                                 | The product boundary — self-contained executables.                  | id=fitness; type=system |
+| 4   | Any repo with the binaries on PATH; every check runs and skips what does not apply.                   | Runner always executes in the consumer's working directory.         | id=consumer; type=external |
+| 5   | Commodity linters, formatters, test runners, and git.                                                 | Checks wrap these; runner does not replace them.                    | id=tools; type=external |
+| 6   | Pipeline that runs fitness on push or PR.                                                             | Cloud enforcement of the same check list.                           | id=ci; type=external |
+| 7   | Local dev and optional git hooks.                                                                     | Fast feedback before commit.                                        | id=view-01-developer-fitness; type=relationship; from=developer; to=fitness; kind=uses; mode=allowed; evidence=declared |
+| 8   | Agent skills, rules, or hooks invoke the same CLI.                                                    | Closes local vs agent drift when wired.                             | id=view-01-agent-fitness; type=relationship; from=agent; to=fitness; kind=uses; mode=allowed; evidence=declared |
+| 9   | Reads staged files, source tree, and config exceptions from the consumer repo.                        | The working directory is the app root, not the runner repo.         | id=view-01-fitness-consumer; type=relationship; from=fitness; to=consumer; kind=uses; mode=allowed; evidence=declared |
+| 10  | Tool-wrapper checks exec the underlying CLIs; native engines need none.                               | Orchestration, not reimplementation.                                | id=view-01-fitness-tools; type=relationship; from=fitness; to=tools; kind=uses; mode=allowed; evidence=declared |
+| 11  | CI builds or downloads the binaries and runs `fitness`.                                               | Same command as local.                                              | id=view-01-ci-fitness; type=relationship; from=ci; to=fitness; kind=uses; mode=allowed; evidence=declared |
+| 12  | Non-zero exit fails the pipeline.                                                                     | Pass/fail is deterministic, not LLM-judged.                         | id=view-01-fitness-ci; type=relationship; from=fitness; to=ci; kind=uses; mode=allowed; evidence=declared |
