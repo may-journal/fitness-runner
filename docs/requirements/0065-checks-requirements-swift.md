@@ -32,7 +32,7 @@ Source: `go/cmd/fitness-check-requirements/swift.go:57`
             - Then it fails and names `test0001_1`
 - 0065.4
     - Given a Swift test that proves no requirement
-        - When fitness judges its file
+        - When fitness runs
             - Then it fails and asks for a `testNNNN_N` name
 - 0065.5
     - Given `test0001_1` only inside a comment or a string
@@ -46,3 +46,7 @@ Source: `go/cmd/fitness-check-requirements/swift.go:57`
     - Given a Swift repo with tests and no requirement docs
         - When fitness runs
             - Then it fails
+- 0065.8
+    - Given an unchanged Swift test without a requirement
+        - When fitness runs on staged or pull request changes
+            - Then it fails even for unrelated changes

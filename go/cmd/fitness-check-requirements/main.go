@@ -29,7 +29,7 @@ const docsDir = "docs/requirements/"
 func run(root string, _ []string) (checkkit.Result, error) {
 	paths := docPaths(root)
 	tests, files, repo, err := collectTests(root)
-	if err != nil || !available(paths, repo) {
+	if err != nil || repo == (langs{}) {
 		return checkkit.Pass(0), err
 	}
 	docs, errs, err := loadDocs(root, paths)
@@ -38,7 +38,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
-	errs = append(errs, ownershipErrors(docs, tests, inScope(files), repo)...)
+	errs = append(errs, ownershipErrors(docs, tests, repo)...)
 	if len(errs) > 0 {
 		return checkkit.Fail(len(paths)+len(files), errs...), nil
 	}
@@ -69,40 +69,6 @@ func docPaths(root string) []string {
 		}
 	}
 	return out
-}
-
-// available reports whether the check applies. A repo with neither Go nor
-// Swift code has no tests this check can read. Such a repo owes requirement
-// docs, so one without any is always judged and fails; one with docs is
-// judged when a scoped run changed a doc or a test file.
-func available(paths []string, repo langs) bool {
-	if !repo.goCode && !repo.swift {
-		return false
-	}
-	changed := checkkit.ChangedFiles()
-	return len(paths) == 0 || changed == nil || touchesRequirements(changed)
-}
-
-// touchesRequirements reports whether any changed path is a requirement doc,
-// a Go test file, or Swift code, which may declare tests.
-func touchesRequirements(changed []string) bool {
-	for _, f := range changed {
-		if strings.HasPrefix(f, docsDir) || strings.HasSuffix(f, "_test.go") || strings.HasSuffix(f, ".swift") {
-			return true
-		}
-	}
-	return false
-}
-
-// inScope marks the test files whose every test must own an acceptance: all
-// of them in a full run, only the changed ones in a scoped run. Each test
-// file is judged on its own, so the audit can land one package at a time.
-func inScope(files []string) map[string]bool {
-	scope := map[string]bool{}
-	for _, f := range walkfs.InScope(files) {
-		scope[f] = true
-	}
-	return scope
 }
 
 // missingDocs fails a Go repo that has no requirement docs.

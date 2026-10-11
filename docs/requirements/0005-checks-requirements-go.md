@@ -32,7 +32,7 @@ Source: `go/cmd/fitness-check-requirements/owners.go:100`
             - Then it fails
 - 0005.4
     - Given a test that proves no requirement
-        - When fitness judges its file
+        - When fitness runs
             - Then it fails
 - 0005.5
     - Given a Go repo with no requirement docs
@@ -43,9 +43,9 @@ Source: `go/cmd/fitness-check-requirements/owners.go:100`
         - When fitness runs
             - Then the check passes with nothing to judge
 - 0005.7
-    - Given a scoped run that changes no doc or test
-        - When fitness runs
-            - Then the check skips
+    - Given an unchanged Go test without a requirement
+        - When fitness runs on staged or pull request changes
+            - Then it fails even for unrelated changes
 - 0005.8
     - Given an ID that an earlier commit deleted
         - When a doc brings it back

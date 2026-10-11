@@ -55,3 +55,11 @@ func Test0065_7(t *testing.T) {
 	out, code := swiftJudged(t, map[string]string{"docs/requirements/0001-adds-numbers.md": ""})
 	sees(t, out, code, 1, "docs/requirements/ has no requirement docs")
 }
+
+func Test0065_8(t *testing.T) {
+	t.Parallel()
+	for _, body := range []string{xcTestFile("testAddsAgain"), "import Testing\n@Test func addsAgain() {}\n"} {
+		files := with(swiftRepo(), map[string]string{"Tests/ExtraTests.swift": body})
+		unchangedTestFails(t, files, "proves no requirement; rename it testNNNN_N")
+	}
+}

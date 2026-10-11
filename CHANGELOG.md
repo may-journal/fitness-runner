@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.11.0944
+
+- Fix: requirements: remove changed-file filtering from Go and Swift test ownership checks.
+- Test: requirements: reject unchanged unmapped tests in staged and pull request runs with related or unrelated changes.
+- Docs: requirements: describe repository-wide ownership in the requirements and check README.
+
 ## [1.5.0](https://github.com/may-journal/fitness-runner/compare/v1.4.0...v1.5.0) (2026-10-10)
 
 
