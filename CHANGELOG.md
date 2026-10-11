@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.5.1](https://github.com/may-journal/fitness-runner/compare/v1.5.0...v1.5.1) (2026-10-11)
+
+
+### Bug Fixes
+
+* **requirements:** enforce repository-wide test ownership in scoped runs ([#276](https://github.com/may-journal/fitness-runner/issues/276)) ([f801ac6](https://github.com/may-journal/fitness-runner/commit/f801ac60d2cb6cea9ddfb4b28dd24731cb067c1e))
+
 ### 2026.10.11.0944
 
 - Fix: requirements: remove changed-file filtering from Go and Swift test ownership checks.
