@@ -21,11 +21,9 @@ The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run 
 
 ## Local branch metadata
 
-`fitness branch-check` uses the same PR and Plan judgments on live metadata for the current branch, without GitHub effects. Full local CLI runs include it when origin points to GitHub. Single checks, commit hooks, push hooks, and Actions keep their existing behavior. Discovery includes drafts and matches both the head repository and branch, including forks.
+`local-branch` runs PR and Plan checks locally. Full Fitness and pre-push include it; pre-commit excludes it. `fitness branch-check` is its alias. Actions keeps its existing metadata commands.
 
-Closing links and branch `Plan #NN` trailers supply issues; each Plan is read once. Trailer history starts at the API base commit, excluding upstream Plans even when fork refs are stale or missing. Ordinary issues receive the shared PR checklist rules. Unfinished checklists fail locally as they do in Actions, even on a draft PR.
-
-No open PR or detached HEAD produces an explicit skip. Discovery, authentication, network, or linked-issue failures exit nonzero with retry guidance. All remote reads share a 30-second deadline; use `gh auth status` to check credentials. If the API base commit is missing locally, fetch the named branch from the base repository URL in the error.
+No PR skips; invalid or unreadable metadata fails, including unfinished draft checklists. Reads are bounded and never change GitHub state. See [local-branch](../go/cmd/fitness-check-local-branch/README.md) for discovery, forks, selection, and retry behavior.
 
 ## Applicability
 

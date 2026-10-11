@@ -1,4 +1,4 @@
-package main
+package metadata
 
 import (
 	"context"
@@ -10,57 +10,61 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-// runBranchCheck judges live metadata without invoking any GitHub effects.
-func runBranchCheck(args []string) int {
+// LocalBranch judges live metadata through the normal check result protocol.
+func LocalBranch(root string, args []string) (checkkit.Result, error) {
 	if len(args) != 0 {
-		return ghFailure("branch-check", fmt.Errorf("usage: fitness branch-check"))
+		return checkkit.Fail(0, "usage: fitness branch-check"), nil
 	}
-	root, err := os.Getwd()
-	if err != nil {
-		return ghFailure("branch-check", err)
+	if report.Enabled() || os.Getenv("FITNESS_INTERNAL_HOOK") == "pre-commit" || gitx.OriginSlug(root) == "" {
+		fmt.Fprintln(os.Stderr, "local-branch: no local GitHub branch context; skipped.")
+		return checkkit.Pass(0), nil
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	if err := checkBranch(ctx, root); err != nil {
-		return ghFailure("branch-check", fmt.Errorf("%w; check gh authentication and network access, then retry fitness branch-check", err))
-	}
-	return 0
+	return checkBranch(ctx, root), nil
 }
 
-func checkBranch(ctx context.Context, root string) error {
+func checkBranch(ctx context.Context, root string) checkkit.Result {
 	pr, repo, err := discoverBranchPR(ctx, root)
 	if err != nil || pr == nil {
-		return err
+		return branchReadResult(err)
 	}
 	gh := aftereffect.ReadOnlyClient(ctx, repo)
 	b := blobChecker{root}
 	plans, err := branchPlans(ctx, root, repo, pr)
 	if err != nil {
-		return err
+		return branchReadResult(err)
 	}
 	nums := b.closedIssues(pr.Body)
 	nums = append(nums, plans...)
 	errs := judgeBranchPR(pr, gh, b)
 	issues, readErrs := readIssues(uniqueIssues(nums), gh)
 	errs = append(errs, readErrs...)
-	fmt.Fprint(os.Stderr, strings.Join(readErrs, "\n"))
 	errs = append(errs, judgeBranchPlans(issues, repo, b)...)
-	if len(errs) > 0 {
-		return fmt.Errorf("branch metadata validation failed")
+	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: 1 + len(issues)}
+}
+
+func branchReadResult(err error) checkkit.Result {
+	if err == nil {
+		return checkkit.Pass(0)
 	}
-	return nil
+	return checkkit.Fail(0, fmt.Sprintf("%v; check gh authentication and network access, then retry fitness branch-check", err))
 }
 
 func judgeBranchPR(pr *branchPR, gh aftereffect.Client, b blobChecker) []string {
-	fmt.Printf("PR: %s\n", pr.URL)
+	fmt.Fprintf(os.Stderr, "PR: %s\n", pr.URL)
 	rep := newTargetReport("pr-check", "pull")
+	rep.output = os.Stderr
 	errs := ghCommands["pr-check"].judge(pr.Target, gh, b)
 	rep.add(pr.Number, errs)
 	rep.finish()
 	if len(b.closedIssues(pr.Body)) == 0 {
-		fmt.Println("branch-check: no closing issue links; PR closing-link rules still apply.")
+		fmt.Fprintln(os.Stderr, "branch-check: no closing issue links; PR closing-link rules still apply.")
 	}
 	return errs
 }
@@ -68,9 +72,10 @@ func judgeBranchPR(pr *branchPR, gh aftereffect.Client, b blobChecker) []string 
 // judgeBranchPlans leaves ordinary issues to the PR's checklist rules.
 func judgeBranchPlans(issues []linkedIssue, repo string, b blobChecker) []string {
 	rep := newTargetReport("plan-check", "issues")
+	rep.output = os.Stderr
 	var errs []string
 	for _, issue := range issues {
-		fmt.Printf("Issue: https://github.com/%s/issues/%d\n", repo, issue.number)
+		fmt.Fprintf(os.Stderr, "Issue: https://github.com/%s/issues/%d\n", repo, issue.number)
 		if !aftereffect.HasLabel(issue.labels, "Plan") {
 			continue
 		}
@@ -95,7 +100,7 @@ func branchPlans(ctx context.Context, root, repo string, pr *branchPR) ([]int, e
 		return nil, fmt.Errorf("cannot read branch Plan trailers from base commit %s; fetch %s from https://github.com/%s.git and retry: %w", pr.BaseSHA, pr.Base, repo, err)
 	}
 	var nums []int
-	for _, text := range planNumbers(string(out)) {
+	for _, text := range gitx.PlanNumbers(string(out)) {
 		n, _ := strconv.Atoi(text)
 		nums = append(nums, n)
 	}

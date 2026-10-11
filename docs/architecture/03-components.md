@@ -123,4 +123,4 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 | `fitness plan-check`  | Judges a Plan's body with checks; its after-effect comments and labels the verdict.   | The plan check workflows run one step.                |
 | `fitness close-check` | Judges a closed issue with `issue-checklist`; its after-effect reopens it once.       | The close check workflows run one step.               |
 
-`go/cmd/fitness/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. Only after-effects write to GitHub, through the `gh` CLI.
+`go/internal/metadata/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. The local-branch check shares their judgments. Only after-effects write to GitHub, through the `gh` CLI.

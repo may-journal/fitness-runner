@@ -14,7 +14,7 @@ branch runs with current metadata feedback
 -
 branch runs
 
-Source: `go/cmd/fitness/branch.go:17`
+Source: `go/internal/metadata/branch.go:20`
 
 ## Requirements
 

@@ -14,7 +14,7 @@ pull requests merged with a clean pr-check
 -
 pull requests merged
 
-Source: `go/cmd/fitness/blobs.go:110`
+Source: `go/internal/metadata/blobs.go:110`
 
 ## Requirements
 

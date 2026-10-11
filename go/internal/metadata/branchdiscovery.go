@@ -1,4 +1,4 @@
-package main
+package metadata
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -59,7 +60,7 @@ func currentBranch(ctx context.Context, root string) (string, error) {
 		return strings.TrimSpace(string(out)), nil
 	}
 	if cmd.ProcessState != nil && cmd.ProcessState.ExitCode() == 1 {
-		fmt.Println("branch-check: detached HEAD; skipped.")
+		fmt.Fprintln(os.Stderr, "branch-check: detached HEAD; skipped.")
 		return "", nil
 	}
 	return "", fmt.Errorf("cannot read the current git branch: %w", err)
@@ -84,7 +85,7 @@ func matchingPR(out []byte, source, branch string) (*branchPR, error) {
 func selectBranchPR(matches []*branchPR, source, branch string) (*branchPR, error) {
 	switch len(matches) {
 	case 0:
-		fmt.Printf("branch-check: no open PR for %s:%s; skipped.\n", source, branch)
+		fmt.Fprintf(os.Stderr, "branch-check: no open PR for %s:%s; skipped.\n", source, branch)
 		return nil, nil
 	case 1:
 		return matches[0], nil

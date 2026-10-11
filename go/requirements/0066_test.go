@@ -43,6 +43,10 @@ func Test0066_1(t *testing.T) {
 	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))})
 	out, code := fitness(t, repo, rp.env)
 	sees(t, out, code, 1, "README.md: disallowed **bold**", `"added one file"`, "pr-check #1")
+	if !strings.Contains(row(out, "local-branch"), "failed") {
+		t.Fatalf("full suite omitted the metadata result: %s", out)
+	}
+	branchReadOnce(t, rp)
 }
 
 func Test0066_2(t *testing.T) {

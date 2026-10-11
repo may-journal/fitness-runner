@@ -1,4 +1,4 @@
-package main
+package metadata
 
 import (
 	"bytes"
@@ -53,7 +53,7 @@ func (b blobChecker) judge(checks []string, body string) []string {
 // result fails closed with an error naming it.
 func (b blobChecker) errorsOf(name string, args ...string) []string {
 	var res checkkit.Result
-	if err := json.Unmarshal(lastJSONLine(execCheck(name, args)), &res); err != nil {
+	if err := json.Unmarshal(checkkit.LastJSONLine(execCheck(name, args)), &res); err != nil {
 		return []string{fmt.Sprintf("%s: no result from the check", name)}
 	}
 	return res.Errors
@@ -68,14 +68,14 @@ func (b blobChecker) closedIssues(body string) []int {
 	}
 	defer os.Remove(file)
 	var nums []int
-	_ = json.Unmarshal(lastJSONLine(execCheck("pr-closes-issue", []string{"--emit-closed", "--body-file", file})), &nums)
+	_ = json.Unmarshal(checkkit.LastJSONLine(execCheck("pr-closes-issue", []string{"--emit-closed", "--body-file", file})), &nums)
 	return nums
 }
 
 // execCheck runs fitness-check-<name> and returns its stdout. A failing check
 // still prints its JSON result, so a non-zero exit is not an error here.
 func execCheck(name string, args []string) []byte {
-	bin, err := findCheckBinary(name)
+	bin, err := checkkit.Binary(name)
 	if err != nil {
 		return nil
 	}

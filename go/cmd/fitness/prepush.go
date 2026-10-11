@@ -13,10 +13,7 @@ import (
 
 const zeroSha = "0000000000000000000000000000000000000000"
 
-var (
-	planRe    = regexp.MustCompile(`(?i)plan #\s*(\d+)`)
-	approveRe = regexp.MustCompile(`(?i)approve`)
-)
+var approveRe = regexp.MustCompile(`(?i)approve`)
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
@@ -24,12 +21,32 @@ var (
 // earlier branch commit instead of a pushed commit.
 func hookPrePush() int {
 	s := bufio.NewScanner(os.Stdin)
+	var updates []string
 	for s.Scan() {
+		updates = append(updates, s.Text())
 		if code := checkRefUpdate(s.Text()); code != 0 {
 			return code
 		}
 	}
+	if err := s.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "pre-push: cannot read push updates:", err)
+		return 1
+	}
+	if hasBranchUpdate(updates) {
+		return run([]string{"local-branch"})
+	}
 	return 0
+}
+
+// hasBranchUpdate excludes deletions and tag-only pushes from metadata reads.
+func hasBranchUpdate(updates []string) bool {
+	for _, line := range updates {
+		f := strings.Fields(line)
+		if len(f) >= 4 && f[1] != zeroSha && strings.HasPrefix(f[2], "refs/heads/") {
+			return true
+		}
+	}
+	return false
 }
 
 // checkRefUpdate gates one "local_ref local_sha remote_ref remote_sha" line: a
@@ -124,21 +141,7 @@ func planRefs(commits []string) []string {
 	}
 	args := append([]string{"log", "--no-walk=unsorted", "--format=%B"}, commits...)
 	out, _ := exec.Command("git", args...).Output()
-	return planNumbers(string(out))
-}
-
-// planNumbers is the pure extractor: the distinct `Plan #NN` numbers in text,
-// in first-seen order.
-func planNumbers(text string) []string {
-	seen := map[string]bool{}
-	var nums []string
-	for _, m := range planRe.FindAllStringSubmatch(text, -1) {
-		if !seen[m[1]] {
-			seen[m[1]] = true
-			nums = append(nums, m[1])
-		}
-	}
-	return nums
+	return gitx.PlanNumbers(string(out))
 }
 
 // approvedPlan reports whether issue n is Plan-labeled and carries an approval

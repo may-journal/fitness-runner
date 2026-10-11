@@ -1,0 +1,52 @@
+---
+relatedConfigurations: ['../../.fitnessrc.json']
+---
+
+# 0067 Local Branch Contexts
+
+## Why
+
+My push checks its PR and Plans before Actions, while commits remain available offline.
+
+## Measurement
+
+entry points that run metadata only in their intended context
+-
+entry points exercised
+
+Source: `go/cmd/fitness-check-local-branch/main.go:10`
+
+## Requirements
+
+- 0067.1
+    - Given an invalid PR and an explicit local-branch selection
+        - When I run the selected checks
+            - Then one metadata execution reports findings in the shared results table
+- 0067.2
+    - Given the installed local-branch binary
+        - When I request its describe metadata
+            - Then it names the check and declares its timeout without GitHub reads
+- 0067.3
+    - Given an approved feature Plan and invalid linked PR
+        - When I push with the shared hook
+            - Then local-branch runs once and refuses the push
+- 0067.4
+    - Given an approved feature Plan and valid linked PR
+        - When I push with the shared hook
+            - Then local-branch runs once and the push succeeds
+- 0067.5
+    - Given the shared hooks and a GitHub branch
+        - When I commit a valid change
+            - Then the commit succeeds without local-branch or GitHub reads
+- 0067.6
+    - Given an Actions run in a GitHub checkout
+        - When I run the full Fitness suite
+            - Then local-branch makes no GitHub reads
+- 0067.7
+    - Given a repo without a GitHub origin
+        - When I run local-branch
+            - Then it passes without targets or GitHub reads
+- 0067.8
+    - Given a fork PR whose API base commit is missing locally
+        - When I run local-branch
+            - Then it fails with fetch guidance naming the base repository
