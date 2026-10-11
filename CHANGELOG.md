@@ -7,9 +7,9 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.11.1529
+### 2026.10.11.1532
 
-- Feat: local-branch: run shared PR and Plan checks locally and in pre-push; retain branch-check and keep pre-commit offline.
+- Feat: local-branch: run shared PR and Plan checks locally and in pre-push; retain branch-check and exclude metadata from pre-commit.
 - Fix: pr-check: fail when a closing issue cannot be read, instead of silently ignoring it.
 - Fix: branch-check: use the API base commit for fork history, excluding unrelated upstream Plans even with stale or missing origin refs.
 - Test: requirements: prove branch trailers, fork discovery, shared findings, read-only GitHub access, and unchanged hooks.

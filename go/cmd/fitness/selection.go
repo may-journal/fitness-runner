@@ -23,7 +23,7 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 	return commitChecks(checks), passthrough, err
 }
 
-// commitChecks keeps pre-commit entirely local, including installer hooks.
+// commitChecks excludes branch metadata from pre-commit, including installer hooks.
 func commitChecks(checks []resolved) []resolved {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
 		return checks
