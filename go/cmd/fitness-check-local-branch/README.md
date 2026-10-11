@@ -15,7 +15,7 @@ fitness branch-check
 fitness --policy=external --checks=local-branch
 ```
 
-Full local Fitness and pre-push include this meta-check once. Pre-commit excludes it. In Actions or a repo without a GitHub origin, it passes without network reads.
+Full local Fitness checks the current branch. Pre-push runs one meta-check over each live pushed destination branch and local tip, including branches outside the checkout. Deletions and tags skip; pre-commit excludes it. In Actions or a repo without a GitHub origin, it passes without network reads.
 
 ## Behavior
 

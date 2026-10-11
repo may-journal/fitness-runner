@@ -23,11 +23,7 @@ type branchPR struct {
 	URL     string `json:"url"`
 }
 
-func discoverBranchPR(ctx context.Context, root string) (*branchPR, string, error) {
-	branch, err := currentBranch(ctx, root)
-	if err != nil || branch == "" {
-		return nil, "", err
-	}
+func discoverBranchPR(ctx context.Context, root, branch string) (*branchPR, string, error) {
 	source, repo, err := branchRepository(ctx, root)
 	if err != nil {
 		return nil, "", err

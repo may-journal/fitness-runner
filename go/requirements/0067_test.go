@@ -51,7 +51,7 @@ func Test0067_2(t *testing.T) {
 }
 
 // metadataPush runs real git hooks against a bare push destination and saved PR.
-func metadataPush(t *testing.T, title string) (string, int, replays) {
+func metadataPushRepo(t *testing.T, title string) (string, []string, replays) {
 	t.Helper()
 	repo := branchRepo(t, nil)
 	pr := branchAnswer(t, repo, title, pr0014(11))
@@ -66,7 +66,13 @@ func metadataPush(t *testing.T, title string) (string, int, replays) {
 	git(t, repo, "remote", "set-url", "--push", "origin", bare)
 	out, code = user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add one file\n\nPlan #11")
 	sees(t, out, code, 0, "feat(app): add one file")
-	out, code = user(t, repo, env, "push", "origin", "HEAD:main")
+	return repo, env, rp
+}
+
+func metadataPush(t *testing.T, title string) (string, int, replays) {
+	t.Helper()
+	repo, env, rp := metadataPushRepo(t, title)
+	out, code := user(t, repo, env, "push", "origin", "HEAD:work")
 	return out, code, rp
 }
 
@@ -81,7 +87,7 @@ func Test0067_3(t *testing.T) {
 func Test0067_4(t *testing.T) {
 	t.Parallel()
 	out, code, rp := metadataPush(t, "test(app): add one file")
-	sees(t, out, code, 0, "local-branch", "All 1 checks passed", "HEAD -> main")
+	sees(t, out, code, 0, "local-branch", "All 1 checks passed", "HEAD -> work")
 	branchReadOnce(t, rp)
 	pushAsked(t, rp, "11", "comments")
 }

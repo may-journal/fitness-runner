@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -32,21 +33,23 @@ func hookPrePush() int {
 		fmt.Fprintln(os.Stderr, "pre-push: cannot read push updates:", err)
 		return 1
 	}
-	if hasBranchUpdate(updates) {
-		return run([]string{"local-branch"})
-	}
-	return 0
+	return checkPushedBranches(updates)
 }
 
-// hasBranchUpdate excludes deletions and tag-only pushes from metadata reads.
-func hasBranchUpdate(updates []string) bool {
-	for _, line := range updates {
-		f := strings.Fields(line)
-		if len(f) >= 4 && f[1] != zeroSha && strings.HasPrefix(f[2], "refs/heads/") {
-			return true
-		}
+// checkPushedBranches runs one meta-check over the actual pushed destinations.
+func checkPushedBranches(updates []string) int {
+	branches := gitx.PushedBranches(updates)
+	if len(branches) == 0 {
+		return 0
 	}
-	return false
+	data, err := json.Marshal(branches)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "pre-push:", err)
+		return 1
+	}
+	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
+	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
+	return run([]string{"local-branch"})
 }
 
 // checkRefUpdate gates one "local_ref local_sha remote_ref remote_sha" line: a
