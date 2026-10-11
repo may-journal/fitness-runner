@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -21,6 +20,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -63,6 +63,7 @@ var allChecks = []string{
 	"pr-structure",
 	"pr-closes-issue",
 	"issue-checklist",
+	"local-branch",
 	"go-complexity",
 	"go-vet",
 	"gofmt",
@@ -117,11 +118,12 @@ func isHelp(args []string) bool {
 // subcommands maps each subcommand name to its handler, which gets the
 // arguments after the name.
 var subcommands = map[string]func(args []string) int{
-	"init":        runInit,
-	"hook":        runHookArgs,
-	"pr-check":    func([]string) int { return runGH("pr-check") },
-	"plan-check":  func([]string) int { return runGH("plan-check") },
-	"close-check": func([]string) int { return runGH("close-check") },
+	"init":         runInit,
+	"hook":         runHookArgs,
+	"pr-check":     func([]string) int { return metadata.RunGH("pr-check") },
+	"plan-check":   func([]string) int { return metadata.RunGH("plan-check") },
+	"close-check":  func([]string) int { return metadata.RunGH("close-check") },
+	"branch-check": func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
 }
 
 // route dispatches the subcommands, defaulting to the check runner.
@@ -156,6 +158,7 @@ Usage:
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
+  fitness branch-check     validate this branch's PR and linked issues locally
   fitness plan-check       validate Plan issues and comment the result (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
 
@@ -337,7 +340,7 @@ func resolveList(names []string) ([]resolved, error) {
 // a CLI name (the caller renders Unknown check) and an error for the list,
 // since every check ships together.
 func resolveName(name string, cli bool) (*resolved, error) {
-	bin, err := findCheckBinary(name)
+	bin, err := checkkit.Binary(name)
 	if err == nil {
 		return &resolved{name: name, bin: bin, desc: describe(bin)}, nil
 	}
@@ -345,25 +348,6 @@ func resolveName(name string, cli bool) (*resolved, error) {
 		return nil, nil
 	}
 	return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", name)
-}
-
-// isExecutableFile reports whether path is a non-directory with any execute
-// bit set.
-func isExecutableFile(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
-}
-
-// findCheckBinary locates fitness-check-<name> beside this executable, then
-// on PATH.
-func findCheckBinary(name string) (string, error) {
-	binName := "fitness-check-" + name
-	if self, err := os.Executable(); err == nil {
-		if sibling := filepath.Join(filepath.Dir(self), binName); isExecutableFile(sibling) {
-			return sibling, nil
-		}
-	}
-	return "", fmt.Errorf("%s is not installed beside fitness", binName)
 }
 
 // describe asks a check binary for its metadata; zero value on any failure.
@@ -382,7 +366,7 @@ func describe(bin string) checkkit.Describe {
 		return checkkit.Describe{}
 	}
 	var d checkkit.Describe
-	if json.Unmarshal(lastJSONLine(stdout.Bytes()), &d) != nil {
+	if json.Unmarshal(checkkit.LastJSONLine(stdout.Bytes()), &d) != nil {
 		return checkkit.Describe{}
 	}
 	return d
@@ -539,7 +523,7 @@ func exitedWithin(done <-chan error, grace time.Duration) bool {
 // process exited 0).
 func decodeOutcome(o outcome, cmd *exec.Cmd, stdout []byte) outcome {
 	var res checkkit.Result
-	if err := json.Unmarshal(lastJSONLine(stdout), &res); err != nil {
+	if err := json.Unmarshal(checkkit.LastJSONLine(stdout), &res); err != nil {
 		o.crashed = cmd.ProcessState.ExitCode()
 		if o.crashed == 0 {
 			o.crashed = 1
@@ -555,18 +539,6 @@ func killGroup(pid int, sig syscall.Signal) {
 	if err := syscall.Kill(-pid, sig); err != nil {
 		_ = syscall.Kill(pid, sig)
 	}
-}
-
-// lastJSONLine returns the last non-empty stdout line (the protocol allows
-// stray tool noise ahead of the result object).
-func lastJSONLine(out []byte) []byte {
-	lines := bytes.Split(bytes.TrimSpace(out), []byte("\n"))
-	for i := len(lines) - 1; i >= 0; i-- {
-		if line := bytes.TrimSpace(lines[i]); len(line) > 0 {
-			return line
-		}
-	}
-	return nil
 }
 
 // trimFloat renders seconds without trailing zeros (5, 0.2, 1.5).

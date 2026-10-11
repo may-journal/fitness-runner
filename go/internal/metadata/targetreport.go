@@ -1,7 +1,8 @@
-package main
+package metadata
 
 import (
 	"fmt"
+	"io"
 	"net/url"
 	"os"
 	"strings"
@@ -16,10 +17,11 @@ type targetReport struct {
 	summary         strings.Builder
 	diagnostics     []string
 	targets         []int
+	output          io.Writer
 }
 
 func newTargetReport(operation, kind string) *targetReport {
-	return &targetReport{operation: operation, kind: kind}
+	return &targetReport{operation: operation, kind: kind, output: os.Stdout}
 }
 
 func (r *targetReport) add(number int, errs []string) {
@@ -48,7 +50,7 @@ func (r *targetReport) emit() {
 
 func (r *targetReport) finish() {
 	fmt.Fprintf(&r.summary, "\n%d targets checked; %d findings.\n", len(r.targets), len(r.diagnostics))
-	fmt.Print(r.summary.String())
+	fmt.Fprint(r.output, r.summary.String())
 	report.WriteSummary(r.summary.String() + r.links())
 	r.emit()
 }

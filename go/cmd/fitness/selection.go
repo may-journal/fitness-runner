@@ -20,7 +20,21 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 		return nil, nil, err
 	}
 	checks, err := resolvePolicy(cfg, options, spec)
-	return checks, passthrough, err
+	return commitChecks(checks), passthrough, err
+}
+
+// commitChecks excludes branch metadata from pre-commit, including installer hooks.
+func commitChecks(checks []resolved) []resolved {
+	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
+		return checks
+	}
+	var local []resolved
+	for _, check := range checks {
+		if check.name != "local-branch" {
+			local = append(local, check)
+		}
+	}
+	return local
 }
 
 func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]resolved, error) {

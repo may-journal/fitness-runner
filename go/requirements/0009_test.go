@@ -117,13 +117,18 @@ func Test0009_7(t *testing.T) {
 func Test0009_8(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
+	git(t, repo, "remote", "add", "origin", "https://github.com/"+repo0014+".git")
+	rp := standIn(t, map[string][]response{"gh": nil})
 	cmd := exec.Command(installer(t), "--install-hook")
 	cmd.Dir, cmd.Env = repo, userEnv()
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("--install-hook: %v\n%s", err, out)
 	}
 	write(t, repo, map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
-	user(t, repo, nil, "add", "-A")
-	out, code := user(t, repo, nil, "commit", "-m", "docs(readme): add bold text")
+	user(t, repo, rp.env, "add", "-A")
+	out, code := user(t, repo, rp.env, "commit", "-m", "docs(readme): add bold text")
 	sees(t, out, code, 1, "README.md: disallowed **bold**")
+	if len(rp.calls("gh")) != 0 {
+		t.Fatalf("commit hook queried PR metadata: %q", rp.calls("gh"))
+	}
 }

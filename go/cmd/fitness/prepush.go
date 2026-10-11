@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -13,10 +14,7 @@ import (
 
 const zeroSha = "0000000000000000000000000000000000000000"
 
-var (
-	planRe    = regexp.MustCompile(`(?i)plan #\s*(\d+)`)
-	approveRe = regexp.MustCompile(`(?i)approve`)
-)
+var approveRe = regexp.MustCompile(`(?i)approve`)
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
@@ -24,12 +22,34 @@ var (
 // earlier branch commit instead of a pushed commit.
 func hookPrePush() int {
 	s := bufio.NewScanner(os.Stdin)
+	var updates []string
 	for s.Scan() {
+		updates = append(updates, s.Text())
 		if code := checkRefUpdate(s.Text()); code != 0 {
 			return code
 		}
 	}
-	return 0
+	if err := s.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "pre-push: cannot read push updates:", err)
+		return 1
+	}
+	return checkPushedBranches(updates)
+}
+
+// checkPushedBranches runs one meta-check over the actual pushed destinations.
+func checkPushedBranches(updates []string) int {
+	branches := gitx.PushedBranches(updates)
+	if len(branches) == 0 {
+		return 0
+	}
+	data, err := json.Marshal(branches)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "pre-push:", err)
+		return 1
+	}
+	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
+	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
+	return run([]string{"local-branch"})
 }
 
 // checkRefUpdate gates one "local_ref local_sha remote_ref remote_sha" line: a
@@ -124,21 +144,7 @@ func planRefs(commits []string) []string {
 	}
 	args := append([]string{"log", "--no-walk=unsorted", "--format=%B"}, commits...)
 	out, _ := exec.Command("git", args...).Output()
-	return planNumbers(string(out))
-}
-
-// planNumbers is the pure extractor: the distinct `Plan #NN` numbers in text,
-// in first-seen order.
-func planNumbers(text string) []string {
-	seen := map[string]bool{}
-	var nums []string
-	for _, m := range planRe.FindAllStringSubmatch(text, -1) {
-		if !seen[m[1]] {
-			seen[m[1]] = true
-			nums = append(nums, m[1])
-		}
-	}
-	return nums
+	return gitx.PlanNumbers(string(out))
 }
 
 // approvedPlan reports whether issue n is Plan-labeled and carries an approval

@@ -1,4 +1,4 @@
-package main
+package metadata
 
 import (
 	"bytes"
@@ -53,7 +53,7 @@ func (b blobChecker) judge(checks []string, body string) []string {
 // result fails closed with an error naming it.
 func (b blobChecker) errorsOf(name string, args ...string) []string {
 	var res checkkit.Result
-	if err := json.Unmarshal(lastJSONLine(execCheck(name, args)), &res); err != nil {
+	if err := json.Unmarshal(checkkit.LastJSONLine(execCheck(name, args)), &res); err != nil {
 		return []string{fmt.Sprintf("%s: no result from the check", name)}
 	}
 	return res.Errors
@@ -68,14 +68,14 @@ func (b blobChecker) closedIssues(body string) []int {
 	}
 	defer os.Remove(file)
 	var nums []int
-	_ = json.Unmarshal(lastJSONLine(execCheck("pr-closes-issue", []string{"--emit-closed", "--body-file", file})), &nums)
+	_ = json.Unmarshal(checkkit.LastJSONLine(execCheck("pr-closes-issue", []string{"--emit-closed", "--body-file", file})), &nums)
 	return nums
 }
 
 // execCheck runs fitness-check-<name> and returns its stdout. A failing check
 // still prints its JSON result, so a non-zero exit is not an error here.
 func execCheck(name string, args []string) []byte {
-	bin, err := findCheckBinary(name)
+	bin, err := checkkit.Binary(name)
 	if err != nil {
 		return nil
 	}
@@ -109,7 +109,8 @@ type linkedIssue struct {
 // subject, its closing keywords, and the checklist of each issue it closes.
 func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 	errs := b.errorsOf("semantic-commit", "--message", t.Title)
-	closed := readIssues(b.closedIssues(t.Body), gh)
+	closed, readErrs := readIssues(b.closedIssues(t.Body), gh)
+	errs = append(errs, readErrs...)
 	errs = append(errs, closesErrors(t.Body, requiredClosures(closed, b), b)...)
 	for _, i := range closed {
 		for _, e := range b.judge([]string{"issue-checklist"}, i.body) {
@@ -119,16 +120,20 @@ func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 	return errs
 }
 
-// readIssues reads each issue once; an unreadable issue is skipped.
-func readIssues(nums []int, gh aftereffect.Client) []linkedIssue {
+// readIssues reports incomplete validation rather than silently accepting
+// an inaccessible issue.
+func readIssues(nums []int, gh aftereffect.Client) ([]linkedIssue, []string) {
 	var issues []linkedIssue
+	var errs []string
 	for _, n := range nums {
 		body, labels, err := gh.Issue(n)
 		if err == nil {
 			issues = append(issues, linkedIssue{n, body, labels})
+		} else {
+			errs = append(errs, fmt.Sprintf("cannot validate linked issue #%d: %v; check gh authentication and network access, then retry", n, err))
 		}
 	}
-	return issues
+	return issues, errs
 }
 
 // requiredClosures returns the issues a PR must also close: for each Plan it

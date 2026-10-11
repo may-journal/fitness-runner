@@ -36,6 +36,7 @@ archives:
       - fitness-check-issue-checklist
       - fitness-check-issue-link-once
       - fitness-check-jscpd
+      - fitness-check-local-branch
       - fitness-check-markdown-filename-camel-case
       - fitness-check-markdown-filename-kebab-case
       - fitness-check-markdown-front-matter

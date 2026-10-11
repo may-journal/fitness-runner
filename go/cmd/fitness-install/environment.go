@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -14,6 +15,9 @@ func runnerEnvironment(bin string) []string {
 		entry += string(os.PathListSeparator) + path
 	}
 	env := os.Environ()
+	if filepath.Base(os.Args[0]) == "pre-commit" {
+		env = append(env, "FITNESS_INTERNAL_HOOK=pre-commit")
+	}
 	for i, value := range env {
 		if strings.HasPrefix(value, key) {
 			env[i] = entry

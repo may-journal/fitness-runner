@@ -42,3 +42,11 @@ Source: `go/internal/aftereffect/verdict.go:14`
     - Given a manual workflow run
         - When plan-check runs
             - Then it judges every open Plan
+- 0013.7
+    - Given a malformed Plan linked in both my PR and branch trailer
+        - When I run fitness branch-check
+            - Then it reports the Plan body violation and reads the Plan once
+- 0013.8
+    - Given my fork's trailer names a malformed Plan and its PR base exists only upstream
+        - When I run fitness branch-check
+            - Then it reports that Plan's body violation

@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.11.1540
+
+- Feat: local-branch: run shared PR and Plan checks locally and in pre-push; retain branch-check and exclude metadata from pre-commit.
+- Fix: pr-check: fail when a closing issue cannot be read, instead of silently ignoring it.
+- Fix: local-branch: use each pushed destination and tip, plus the API base commit, for non-current branches, multiple refs, and forks.
+- Test: requirements: prove branch trailers, fork discovery, shared findings, read-only GitHub access, and unchanged hooks.
+- Docs: branch-check: describe local full runs, draft checklists, and retry steps.
+
 ## [1.5.1](https://github.com/may-journal/fitness-runner/compare/v1.5.0...v1.5.1) (2026-10-11)
 
 

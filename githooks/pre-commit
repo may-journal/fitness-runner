@@ -7,4 +7,4 @@ cd "$(git rev-parse --show-toplevel)"
 # go-test checks cover the CI gate, so `make check` is not run twice.
 make build
 go/bin/fitness-stamp-changelog
-go/bin/fitness
+go/bin/fitness hook pre-commit

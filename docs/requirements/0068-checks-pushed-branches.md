@@ -1,0 +1,40 @@
+---
+relatedConfigurations: ['../../.fitnessrc.json']
+---
+
+# 0068 Pushed Branches
+
+## Why
+
+Every branch I push gets its own metadata checked, regardless of which branch is checked out.
+
+## Measurement
+
+pushed branches validated against their destination name and local tip
+-
+live branch updates pushed
+
+Source: `go/internal/gitx/push.go:14`
+
+## Requirements
+
+- 0068.1
+    - Given an invalid PR on a branch that is not checked out
+        - When I push that branch
+            - Then the push fails with that PR's finding
+- 0068.2
+    - Given a valid pushed branch and an invalid checked-out branch
+        - When I push only the valid branch
+            - Then the push succeeds without checking the checkout's PR
+- 0068.3
+    - Given two pushed branches and one invalid PR
+        - When I push both branches together
+            - Then one meta-check validates both branches once and refuses the push
+- 0068.4
+    - Given an existing remote branch
+        - When I delete it
+            - Then the push succeeds without reading branch metadata
+- 0068.5
+    - Given a renamed push whose local tip names a malformed Plan
+        - When I push from another checkout branch
+            - Then it finds the destination PR and fails the pushed tip's Plan

@@ -47,6 +47,6 @@ Source: `go/cmd/fitness/hook.go:15`
         - When I install the Go hook with --install-hook
             - Then the existing hook is kept and fitness reports red
 - 0009.8
-    - Given the Go hook installed with --install-hook
+    - Given the Go hook installed with --install-hook and a GitHub remote
         - When I commit a change that breaks a check
-            - Then the commit is refused with that check's errors
+            - Then the commit is refused with that check's errors without reading PR metadata

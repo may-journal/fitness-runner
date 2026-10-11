@@ -1,4 +1,5 @@
-package main
+// Package metadata shares GitHub judgments between local checks and Actions.
+package metadata
 
 import (
 	"encoding/json"
@@ -45,8 +46,8 @@ var ghCommands = map[string]ghCommand{
 	},
 }
 
-// runGH runs the named GitHub command against the Actions event.
-func runGH(name string) int {
+// RunGH runs the named GitHub command against the Actions event.
+func RunGH(name string) int {
 	root, err := os.Getwd()
 	if err != nil {
 		return ghFailure(name, err)

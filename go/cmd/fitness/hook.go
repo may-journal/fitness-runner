@@ -86,9 +86,10 @@ func amendArgs(args string) bool {
 	return slices.Contains(strings.Fields(args), "--amend")
 }
 
-// hookPreCommit stamps a staged CHANGELOG entry, runs the full suite, then the
+// hookPreCommit stamps a staged CHANGELOG entry, runs file checks, then the
 // repo's own build and tests via an optional .githooks/pre-commit.local.
 func hookPreCommit() int {
+	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-commit")
 	_ = exec.Command("fitness-stamp-changelog").Run()
 	if code := run(nil); code != 0 {
 		return code

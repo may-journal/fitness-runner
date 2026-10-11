@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -132,4 +133,32 @@ func Test0013_6(t *testing.T) {
 	if !labeled(rp, "fitness-valid") {
 		t.Errorf("open Plan #%s was not judged, got gh calls %q", planIssue, rp.calls("gh"))
 	}
+}
+
+func Test0013_7(t *testing.T) {
+	t.Parallel()
+	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
+	commit(t, repo, nil, "feat(app): add one file\n\nPlan #11")
+	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, brokenPlan, "Plan"))})
+	out, code := fitness(t, repo, rp.env, "branch-check")
+	sees(t, out, code, 1, "plan-check #11", "Background")
+	count := 0
+	for _, call := range rp.calls("gh") {
+		if strings.Contains(call, "issues/11") {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("linked Plan fetched %d times: %q", count, rp.calls("gh"))
+	}
+}
+
+func Test0013_8(t *testing.T) {
+	t.Parallel()
+	repo, pr := forkBranch(t, "release")
+	git(t, repo, "update-ref", "-d", "refs/remotes/origin/main")
+	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, "An ordinary issue."), issue0014(t, 12, brokenPlan, "Plan"))})
+	out, code := fitness(t, repo, rp.env, "branch-check")
+	sees(t, out, code, 1, "plan-check #12", "Background")
 }
