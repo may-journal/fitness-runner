@@ -117,7 +117,14 @@ func Test0069_5(t *testing.T) {
 	t.Parallel()
 	repo, _ := entryBranch(t, changelogEntry(entryLater, "Feat: add one file."))
 	out, code := entryActions(t, repo, pr0014(11))
-	sees(t, out, code, 1, entryMarkdown("PR description links CHANGELOG.md#202610100900; link the entry this PR adds, CHANGELOG.md#202610101000"))
+	sees(t, out, code, 1, entryMarkdown("PR description links CHANGELOG.md#202610100900; link the entry this PR adds"), entryMarkdown("CHANGELOG.md#202610101000"))
+}
+
+func Test0069_8(t *testing.T) {
+	t.Parallel()
+	repo, _ := entryBranch(t, changelogEntry(entryFirst, "Feat: add one file."))
+	out, code := entryActions(t, repo, prBody0014("- The entry covers the change.", 11))
+	sees(t, out, code, 1, entryMarkdown("PR description has no CHANGELOG.md link; link the entry this PR adds"), entryMarkdown("CHANGELOG.md#202610100900"))
 }
 
 func Test0069_6(t *testing.T) {

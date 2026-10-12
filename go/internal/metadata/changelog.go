@@ -49,11 +49,11 @@ func countErrors(diff changelog.Diff) []string {
 		len(added), added[0], strings.Join(added[1:], ", ### "))}
 }
 
-// linkErrors fails a description whose CHANGELOG.md links all miss the
-// heading the PR adds. A description with no such link is pr-structure's.
+// linkErrors fails a description that does not link the heading the PR adds
+// to CHANGELOG.md, naming that heading's anchor.
 func linkErrors(diff changelog.Diff, body string) []string {
 	want, links := diff.Anchors(), changelog.Links(body)
-	if len(want) == 0 || len(links) == 0 {
+	if len(want) == 0 {
 		return nil
 	}
 	for _, link := range links {
@@ -61,7 +61,11 @@ func linkErrors(diff changelog.Diff, body string) []string {
 			return nil
 		}
 	}
-	return []string{fmt.Sprintf("PR description links %s#%s; link the entry this PR adds, %s#%s", changelog.File, links[0], changelog.File, want[0])}
+	fix := fmt.Sprintf("link the entry this PR adds in ## Changelog: [CHANGELOG entry](…/%s#%s)", changelog.File, want[0])
+	if len(links) == 0 {
+		return []string{"PR description has no " + changelog.File + " link; " + fix}
+	}
+	return []string{fmt.Sprintf("PR description links %s#%s; %s", changelog.File, links[0], fix)}
 }
 
 // copyErrors fails a description that repeats a bullet the PR adds to

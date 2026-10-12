@@ -46,3 +46,7 @@ Source: `go/internal/metadata/changelog.go:17`
     - Given a release PR description that copies its release notes
         - When the release tool rewrites it
             - Then it links the changelog section and compare view instead
+- 0069.8
+    - Given a PR description with no link to the changelog entry it adds
+        - When pr-check judges its changelog entry
+            - Then it fails naming the entry to link

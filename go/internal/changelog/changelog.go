@@ -150,10 +150,10 @@ var (
 	mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
 	// bulletRe is a list item and its text.
 	bulletRe = regexp.MustCompile(`^\s*[-*]\s+(\S.*)$`)
-	// LinkPattern matches a markdown link to a CHANGELOG.md heading and
+	// linkRe matches a markdown link to a CHANGELOG.md heading and
 	// captures the heading's anchor. GitHub anchors are lowercase, so a
 	// template placeholder such as #REPLACE-WITH-STAMP never matches.
-	LinkPattern = regexp.MustCompile(`\]\([^)\s]*` + regexp.QuoteMeta(File) + `#([a-z0-9_-]+)\)`)
+	linkRe = regexp.MustCompile(`\]\([^)\s]*` + regexp.QuoteMeta(File) + `#([a-z0-9_-]+)\)`)
 )
 
 // Anchor is the fragment GitHub gives a CHANGELOG.md heading: its text with
@@ -179,7 +179,7 @@ func anchorRune(r rune) rune {
 // Links returns the anchor of every CHANGELOG.md heading link in text.
 func Links(text string) []string {
 	var anchors []string
-	for _, m := range LinkPattern.FindAllStringSubmatch(text, -1) {
+	for _, m := range linkRe.FindAllStringSubmatch(text, -1) {
 		anchors = append(anchors, m[1])
 	}
 	return anchors
