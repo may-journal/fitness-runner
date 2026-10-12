@@ -52,15 +52,30 @@ var (
 func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram {
 	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}}
 	lines := strings.Split(b.Body, "\n")
-	d.form = diagramForm(lines)
+	start := frontMatterEnd(lines)
+	d.form = diagramForm(lines[start:])
 	if !supportedForm(d.form) {
 		m.fail(Location{file, b.Line}, "unsupported Mermaid form %q; use C4Context, C4Container, C4Component, flowchart, or classDiagram", d.form)
 		return d
 	}
-	for i, line := range lines {
-		d.statement(strings.TrimSpace(line), Location{file, b.Line + i + 1})
+	for i, line := range lines[start:] {
+		d.statement(strings.TrimSpace(line), Location{file, b.Line + start + i + 1})
 	}
 	return d
+}
+
+// frontMatterEnd skips a leading "---" block that holds a diagram's title
+// or config.
+func frontMatterEnd(lines []string) int {
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return 0
+	}
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			return i + 1
+		}
+	}
+	return 0
 }
 
 func diagramForm(lines []string) string {
@@ -87,7 +102,7 @@ func contains(values []string, want string) bool {
 	return false
 }
 
-var decorations = []string{"%%", "title ", "direction ", "classDef ", "style ", "linkStyle ", "click ", "note ", "<<", "Update"}
+var decorations = []string{"%%", "title ", "direction ", "classDef ", "style ", "linkStyle ", "click ", "note ", "<<"}
 
 // accessibility matches Mermaid's accessible title and description lines.
 var accessibility = regexp.MustCompile(`^acc[A-Z][a-z]+\s*[:{]`)

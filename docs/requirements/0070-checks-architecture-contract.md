@@ -43,9 +43,9 @@ Source: #285
         - When I check evidence
             - Then errors name its row and source
 - 0070.7
-    - Given invalid requirement links or clauses
+    - Given invalid requirement links
         - When I check the contract
-            - Then errors name the broken reference
+            - Then errors name only the broken reference
 - 0070.8
     - Given unchanged broken evidence
         - When I check unrelated changes

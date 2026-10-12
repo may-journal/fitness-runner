@@ -1,7 +1,6 @@
 package architecture
 
 import (
-	"encoding/csv"
 	"regexp"
 	"strings"
 )
@@ -29,14 +28,42 @@ func (d *diagram) c4(line string, at Location) {
 		d.unsupported(line, at)
 		return
 	}
-	r := csv.NewReader(strings.NewReader(call[2]))
-	r.TrimLeadingSpace = true
-	args, err := r.Read()
-	if err != nil || len(args) < 2 {
+	if strings.HasPrefix(call[1], "Update") {
+		return
+	}
+	args := c4Args(call[2])
+	if len(args) < 2 {
 		d.m.fail(at, "malformed C4 statement %q", line)
 		return
 	}
 	d.c4Call(call[1], args, line, at, call[3] == "{")
+}
+
+// c4Args splits positional C4 arguments on commas outside quotes. Named
+// arguments such as $tags="v1" style a diagram and stay out of the model.
+func c4Args(text string) []string {
+	var args []string
+	for _, arg := range splitOutsideQuotes(text) {
+		arg = strings.TrimSpace(arg)
+		if !strings.HasPrefix(arg, "$") {
+			args = append(args, strings.Trim(arg, `"`))
+		}
+	}
+	return args
+}
+
+func splitOutsideQuotes(text string) []string {
+	var parts []string
+	quoted, start := false, 0
+	for i, r := range text {
+		if r == '"' {
+			quoted = !quoted
+		}
+		if r == ',' && !quoted {
+			parts, start = append(parts, text[start:i]), i+1
+		}
+	}
+	return append(parts, text[start:])
 }
 
 func (d *diagram) c4Call(name string, args []string, line string, at Location, opens bool) {

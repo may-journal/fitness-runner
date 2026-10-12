@@ -78,9 +78,10 @@ func (m *Model) readRequirements(root string, files []string) error {
 			paths = append(paths, file)
 		}
 	}
-	docs, errs, err := requirement.Load(root, paths)
+	// The requirements check owns doc shape errors; this check only resolves
+	// references against the parsed docs.
+	docs, _, err := requirement.Load(root, paths)
 	m.Requirements = docs
-	m.Errors = append(m.Errors, errs...)
 	return err
 }
 

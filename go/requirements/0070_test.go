@@ -36,7 +36,7 @@ func acFixture(root string) map[string]string {
 		root + acContext: acView("C4Context\nPerson(user, \"1 User\")\nSystem(app, \"2 App\")\nRel(user, app, \"3\")",
 			"A person who uses the app.", "The system.", "Uses it.") +
 			"\n```mermaid\nC4Context\ntitle Legend\nPerson(p, \"Person\")\n```\n",
-		root + acContainer: acView("C4Container\nPerson(user, \"1 User\")\nSystem_Boundary(app, \"2 App\") {\nContainer(service, \"3 Service\", \"Go\", \"src/cmd/service\")\n}\nRel(user, service, \"4\")",
+		root + acContainer: acView("C4Container\nPerson(user, \"1 User\")\nSystem_Boundary(app, \"2 App\") {\nContainer(service, \"3 Service\", \"Go\", \"src/cmd/service\", $tags=\"v1\")\n}\nRel(user, service, \"4\")\nUpdateElementStyle(user, $fontColor=\"red\")",
 			"Same person.", "The system.", "Runs requests.", "Calls it."),
 		root + acComponent: acView("C4Component\nContainer_Boundary(service, \"1 Service (src/cmd/service)\") {\nComponent(entry, \"2 Entry\", \"Go\")\nComponent(store, \"3 Store\", \"Go\", \"src/store\")\n}\nRel(entry, store, \"4\")",
 			"The service.", "`src/cmd/service/main.go` starts it.", "Keeps records.", "Saves through the store, see [source]("+up+"src/cmd/service/main.go"+acEvidence+"."),
@@ -83,7 +83,7 @@ func Test0070_2(t *testing.T) {
 		files[root+acContext] = strings.NewReplacer("\"1 User\"", "\"21 User\"", "\"2 App\"", "\"22 App\"", "\"3\"", "\"23\"", "| 1 |", "| 21 |", "| 2 |", "| 22 |", "| 3 |", "| 23 |").Replace(files[root+acContext])
 		out, code = acRun(t, files)
 		sees(t, out, code, 0)
-		files[root+acContext] = acView("flowchart LR\naccTitle: Context\nuser((1 User)):::persona\napp[2 App]:::system\nuser -->|3| app\nclassDef persona fill:#fff", "A person.", "The system.", "Uses it.")
+		files[root+acContext] = acView("---\ntitle: Context\n---\nflowchart LR\naccTitle: Context\nuser((1 User)):::persona\nUpdateApp[2 App]:::system\nuser -->|3| UpdateApp\nclassDef persona fill:#fff", "A person.", "The system.", "Uses it.")
 		out, code = acRun(t, files)
 		sees(t, out, code, 0)
 	}
@@ -146,9 +146,12 @@ func Test0070_7(t *testing.T) {
 	sees(t, out, code, 1, "architecture/05-user-journey.md:29: unresolved requirement 0002 in docs/requirements")
 	files := acFixture(acRoot)
 	file := "docs/requirements/0001-open.md"
-	files[file] = strings.ReplaceAll(files[file], "Given a user", "Because a user")
+	files[file] = strings.ReplaceAll(files[file], "Source: #1\n", "")
 	out, code = acRun(t, files)
-	sees(t, out, code, 1, file+":18: each acceptance is one Given")
+	sees(t, out, code, 0)
+	if strings.Contains(out, file) {
+		t.Errorf("doc shape belongs to the requirements check, got:\n%s", out)
+	}
 }
 
 func Test0070_8(t *testing.T) {

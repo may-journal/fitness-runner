@@ -7,11 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.12.1319
+### 2026.10.12.1347
 
 - Feat: architecture-contract: read Mermaid IDs, boundaries, edges, and callout rows already in both architecture roots as one model.
 - Feat: architecture-contract: fail duplicate or unresolved IDs, overlapping source claims, unreadable evidence links, and actor name drift.
 - Refactor: requirements: share clause parsing and retain Given text with source lines.
+- Fix: architecture-contract: accept diagram front matter, named C4 arguments, and Update-prefixed IDs; leave doc shape errors to requirements.
 - Test: architecture-contract: prove each requirement 0070 acceptance through the installed command.
 
 ### 2026.10.12.0958
