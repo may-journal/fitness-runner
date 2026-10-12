@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1508
+
+- Feat: architecture-journey: a journey view's requirement table maps every requirement doc to the Mermaid nodes that fulfil it.
+- Feat: architecture-journey: fail docs without a row, rows naming acceptance IDs, unknown docs, unknown nodes, or duplicates, and behavior nodes no row lists.
+- Docs: the Fitness journey maps all its requirements; the check README documents the table and ID scope.
+- Test: architecture-journey: prove each requirement 0071 acceptance through the installed command; the suite output says all 50 checks passed.
+
 ### 2026.10.12.1347
 
 - Feat: architecture-contract: read Mermaid IDs, boundaries, edges, and callout rows already in both architecture roots as one model.

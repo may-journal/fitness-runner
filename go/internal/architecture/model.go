@@ -63,10 +63,14 @@ type Model struct {
 	Claims        []Claim
 	Evidence      []Evidence
 	Sources       []Source
+	Mappings      []Mapping
 	Requirements  []requirement.Document
 	Files         []string
 	Errors        []string
 	repo          repository
+	// journeyAt is the first requirement table's header line, or the
+	// journey view's first line when it has none.
+	journeyAt Location
 }
 
 func (m *Model) fail(at Location, format string, args ...any) {

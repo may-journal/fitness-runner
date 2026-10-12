@@ -45,6 +45,7 @@ var allChecks = []string{
 	"doc-template",
 	"requirements",
 	"architecture-contract",
+	"architecture-journey",
 	"no-contrastive-reframing",
 	"repeated-string-literals",
 	"markdown-front-matter",
