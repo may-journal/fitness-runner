@@ -171,9 +171,11 @@ func (c *containers) services(services []runtimes.Service) {
 	}
 }
 
+// external reports an external system whose name, technology, or
+// description names the service.
 func (c *containers) external(name string) bool {
 	for _, e := range c.externals {
-		if containsFold(e.Name, name) || containsFold(e.Technology, name) {
+		if containsFold(e.Name+" "+e.Technology+" "+e.Description, name) {
 			return true
 		}
 	}

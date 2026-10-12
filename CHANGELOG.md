@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1533
+
+- Fix: architecture-containers: read XcodeGen `targetTemplates`, and skip nested `excludes` items and trailing comments in `project.yml`.
+- Fix: architecture-containers: a `go:build ignore` file or a null `bin` entry proves no runtime.
+- Fix: architecture-containers: a platform service may be named in an external system's description.
+- Test: architecture-containers: the native fixture uses templates, excludes, a comment, a generator file, and a described service.
+
 ### 2026.10.12.1519
 
 - Feat: architecture-actors: require each requirement Given to start with a system context actor, by name or Mermaid ID, or several joined by and.

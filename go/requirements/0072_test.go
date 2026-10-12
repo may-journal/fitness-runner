@@ -11,19 +11,20 @@ const (
 	accProject  = "project.yml"
 	accPackage  = "package.json"
 	accPbxproj  = "App.xcodeproj/project.pbxproj"
-	accDevTools = "{\n  \"name\": \"portal\",\n  \"private\": true,\n  \"devDependencies\": {\n    \"prettier\": \"3.0.0\"\n  }\n}\n"
+	accDevTools = "{\n  \"name\": \"portal\",\n  \"private\": true,\n  \"bin\": null,\n  \"devDependencies\": {\n    \"prettier\": \"3.0.0\"\n  }\n}\n"
 	accService  = "{\n  \"name\": \"portal\",\n  \"scripts\": {\n    \"start\": \"node server.js\"\n  }\n}\n"
 )
 
 // accNative is a native app with Node development tools: XcodeGen declares
-// an app, two extensions, and a test bundle, and the view declares the
-// three runtimes by path or by name.
+// an app, two extensions through a template, and a test bundle, and the
+// view declares the three runtimes by path or by name. The Notify target
+// starts on line 17 of project.yml.
 func accNative() map[string]string {
 	files := acFixture(acRoot)
 	files["src/cmd/service/main.go"] = "package service\n\n// Service is a library.\n"
 	files[acRoot+acContainer] = acView("C4Container\nPerson(user, \"1 User\")\nSystem_Boundary(app, \"2 App\") {\nContainer(main, \"3 App\", \"Swift 6, SwiftUI\", \"App/\")\nContainer(widget, \"4 Widget\", \"Swift\")\nContainer(notify, \"5 Notify\", \"Swift\")\n}\nRel(user, main, \"6\")",
 		"Same person.", "The app.", "The app target.", "The widget target.", "The notification target.", "Opens it.")
-	files[accProject] = "name: App\ntargets:\n  App:\n    type: application\n    platform: iOS\n    sources: [App]\n  Widget:\n    type: app-extension\n    platform: iOS\n    sources:\n      - path: Widget\n  Notify:\n    type: app-extension\n    platform: iOS\n    sources: Notify\n  AppTests:\n    type: bundle.unit-test\n    platform: iOS\n    sources: [Tests]\n"
+	files[accProject] = "name: App\ntargetTemplates:\n  Extension:\n    type: app-extension\n    platform: iOS\ntargets:\n  App:\n    type: application # the app\n    platform: iOS\n    sources: [App]\n  Widget:\n    templates: [Extension]\n    sources:\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n  Notify:\n    templates: [Extension]\n    sources: Notify\n  AppTests:\n    type: bundle.unit-test\n    platform: iOS\n    sources: [Tests]\n"
 	files["App/App.swift"] = "import SwiftUI\n"
 	files["Widget/Widget.swift"] = "import WidgetKit\n"
 	files["Notify/Notify.swift"] = "import UserNotifications\n"
@@ -75,7 +76,7 @@ func Test0072_1(t *testing.T) {
 	out, code = accRun(t, acFixture(acRoot))
 	sees(t, out, code, 0)
 	out, code = accRun(t, accEdit(accNative(), "Container(notify, \"5 Notify\", \"Swift\")\n", ""))
-	sees(t, out, code, 1, "project.yml:12: extension target Notify"+accNoOwner)
+	sees(t, out, code, 1, "project.yml:17: extension target Notify"+accNoOwner)
 }
 
 func Test0072_2(t *testing.T) {
@@ -93,7 +94,7 @@ func Test0072_2(t *testing.T) {
 		out, code := accRun(t, with(acFixture(acRoot), c.files))
 		sees(t, out, code, 1, c.want)
 	}
-	out, code := accRun(t, with(acFixture(acRoot), map[string]string{accPackage: accDevTools}))
+	out, code := accRun(t, with(acFixture(acRoot), map[string]string{accPackage: accDevTools, "src/gen/gen.go": "//go:build ignore\n\npackage main\n"}))
 	sees(t, out, code, 0)
 }
 
@@ -105,7 +106,7 @@ func Test0072_3(t *testing.T) {
 	out, code = accRun(t, accXcode([2]string{"App", "application"}))
 	sees(t, out, code, 1, want)
 	files := accNative()
-	files[accProject] = strings.Replace(files[accProject], "  Widget:\n    type: app-extension\n    platform: iOS\n    sources:\n      - path: Widget\n", "", 1)
+	files[accProject] = strings.Replace(files[accProject], "  Widget:\n    templates: [Extension]\n    sources:\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n", "", 1)
 	out, code = accRun(t, files)
 	sees(t, out, code, 1, want)
 }
@@ -138,7 +139,7 @@ func Test0072_6(t *testing.T) {
 	files = with(accNative(), map[string]string{"App/Sync.swift": "import CloudKit\n"})
 	out, code = accRun(t, files)
 	sees(t, out, code, 1, "App/Sync.swift:1: CloudKit is used here but no external system in the containers view names it")
-	out, code = accRun(t, accEdit(files, "}\nRel", "}\nSystem_Ext(icloud, \"7 CloudKit\", \"Apple service\")\nRel"))
+	out, code = accRun(t, accEdit(files, "}\nRel", "}\nSystem_Ext(icloud, \"7 Sync\", \"Apple\", \"CloudKit records\")\nRel"))
 	sees(t, out, code, 0)
 }
 
@@ -147,13 +148,13 @@ func Test0072_7(t *testing.T) {
 	out, code := accRun(t, with(acFixture(acRoot), map[string]string{accPackage: "{\n  \"name\": \"portal\",\n"}))
 	sees(t, out, code, 1, "package.json:1: cannot read package.json")
 	files := accNative()
-	files[accProject] = strings.Replace(files[accProject], "    type: app-extension\n    platform: iOS\n    sources: Notify\n", "    sources: Notify\n", 1)
+	files[accProject] = strings.Replace(files[accProject], "    templates: [Extension]\n    sources: Notify\n", "    sources: Notify\n", 1)
 	out, code = accRun(t, files)
-	sees(t, out, code, 1, "project.yml:12: target Notify has no type")
+	sees(t, out, code, 1, "project.yml:17: target Notify has no type")
 	files = accNative()
 	files[accProject] = strings.Replace(files[accProject], "sources: Notify", "sources: Missing", 1)
 	out, code = accRun(t, files)
-	sees(t, out, code, 1, "project.yml:12: target Notify names a source Missing that does not exist")
+	sees(t, out, code, 1, "project.yml:17: target Notify names a source Missing that does not exist")
 	out, code = accRun(t, accXcode([2]string{"App", "application"}, [2]string{"Widget", ""}))
 	sees(t, out, code, 1, "App.xcodeproj/project.pbxproj:11: target Widget has no type")
 }
