@@ -19,34 +19,34 @@ Source: `go/cmd/fitness-check-doc-template/main.go:66`
 ## Requirements
 
 - 0023.1
-    - Given a doc matching one of two templates in its folder's `templates` subfolder
+    - Given Developer has a doc matching one of two templates in its folder's `templates` subfolder
         - When doc-template checks the repo
             - Then it passes
 - 0023.2
-    - Given a doc with a section its template lacks
+    - Given Developer has a doc with a section its template lacks
         - When doc-template checks the repo
             - Then it fails naming the unexpected section
 - 0023.3
-    - Given a doc missing a section its template has
+    - Given Developer has a doc missing a section its template has
         - When doc-template checks the repo
             - Then it fails naming the missing section
 - 0023.4
-    - Given a doc in a subfolder under nested templates
+    - Given Developer has a doc in a subfolder under nested templates
         - When doc-template checks the repo
             - Then it is judged against the nearest folder's templates above it
 - 0023.6
-    - Given a template section without a guiding comment
+    - Given Developer has a template section without a guiding comment
         - When doc-template checks the repo
             - Then it fails naming the section
 - 0023.7
-    - Given a GitHub pull request or issue template section without a guiding comment
+    - Given Developer has a GitHub pull request or issue template section without a guiding comment
         - When doc-template checks the repo
             - Then it fails naming the section
 - 0023.8
-    - Given a GitHub template and a sibling doc with other sections
+    - Given Developer has a GitHub template and a sibling doc with other sections
         - When doc-template checks the repo
             - Then it passes, since GitHub templates govern bodies, not files
 - 0023.9
-    - Given a folder with two templates and a doc matching neither
+    - Given Developer has a folder with two templates and a doc matching neither
         - When doc-template checks the repo
             - Then it fails naming both templates

@@ -19,34 +19,34 @@ Source: `go/cmd/fitness-check-requirements/swift.go:57`
 ## Requirements
 
 - 0065.1
-    - Given an XCTest method `test0001_1` in an `XCTestCase` class
+    - Given Developer has an XCTest method `test0001_1` in an `XCTestCase` class
         - When fitness runs
             - Then it owns 0001.1 and the check passes
 - 0065.2
-    - Given a Swift Testing `@Test func test0001_1`
+    - Given Developer has a Swift Testing `@Test func test0001_1`
         - When fitness runs
             - Then it owns 0001.1 and the check passes
 - 0065.3
-    - Given a Swift repo where no test owns 0001.1
+    - Given Developer has a Swift repo where no test owns 0001.1
         - When fitness runs
             - Then it fails and names `test0001_1`
 - 0065.4
-    - Given a Swift test that proves no requirement
+    - Given Developer has a Swift test that proves no requirement
         - When fitness runs
             - Then it fails and asks for a `testNNNN_N` name
 - 0065.5
-    - Given `test0001_1` only inside a comment or a string
+    - Given Developer has `test0001_1` only inside a comment or a string
         - When fitness runs
             - Then it is no test and 0001.1 fails
 - 0065.6
-    - Given a `test0001_1` method outside any `XCTestCase` class and without `@Test`
+    - Given Developer has a `test0001_1` method outside any `XCTestCase` class and without `@Test`
         - When fitness runs
             - Then it is no test and 0001.1 fails
 - 0065.7
-    - Given a Swift repo with tests and no requirement docs
+    - Given Developer has a Swift repo with tests and no requirement docs
         - When fitness runs
             - Then it fails
 - 0065.8
-    - Given an unchanged Swift test without a requirement
+    - Given Developer has an unchanged Swift test without a requirement
         - When fitness runs on staged or pull request changes
             - Then it fails even for unrelated changes

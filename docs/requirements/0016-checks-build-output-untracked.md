@@ -19,26 +19,26 @@ Source: `go/cmd/fitness-check-build-output-untracked/main.go:65`
 ## Requirements
 
 - 0016.1
-    - Given a tracked TypeScript test file importing from `dist` three ways
+    - Given Developer has a tracked TypeScript test file importing from `dist` three ways
         - When fitness runs build-output-untracked
             - Then it fails naming each import's file, line, and path
 - 0016.2
-    - Given a `dist` folder that `.gitignore` does not ignore
+    - Given Developer has a `dist` folder that `.gitignore` does not ignore
         - When fitness runs build-output-untracked
             - Then it fails asking to add `dist/` to `.gitignore`
 - 0016.3
-    - Given ignored `dist` folders that still have tracked files
+    - Given Developer has ignored `dist` folders that still have tracked files
         - When fitness runs build-output-untracked
             - Then it fails listing them with a `git rm --cached` hint
 - 0016.4
-    - Given an ignored `dist` and TypeScript with only local imports
+    - Given Developer has an ignored `dist` and TypeScript with only local imports
         - When fitness runs build-output-untracked
             - Then it passes, counting each source file plus one
 - 0016.5
-    - Given a repo with no TypeScript and no `dist`
+    - Given Developer has a repo with no TypeScript and no `dist`
         - When fitness runs build-output-untracked
             - Then it passes with 0 files checked
 - 0016.6
-    - Given an untracked TypeScript file importing from `dist`
+    - Given Developer has an untracked TypeScript file importing from `dist`
         - When fitness runs build-output-untracked
             - Then it passes, since only tracked source is judged

@@ -18,6 +18,7 @@ archives:
   - id: bundle
     ids:
       - fitness
+      - fitness-check-architecture-actors
       - fitness-check-architecture-containers
       - fitness-check-architecture-contract
       - fitness-check-architecture-journey

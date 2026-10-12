@@ -51,6 +51,9 @@ var (
 
 func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram {
 	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}}
+	if view == "context" && m.contextAt.Path == "" {
+		m.contextAt = Location{file, b.Line}
+	}
 	lines := strings.Split(b.Body, "\n")
 	start := frontMatterEnd(lines)
 	d.form = diagramForm(lines[start:])

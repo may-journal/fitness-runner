@@ -19,34 +19,34 @@ Source: `go/cmd/fitness-check-prettier/main.go:339`
 ## Requirements
 
 - 0052.1
-    - Given a file my own Prettier config would reformat, in a CI job that colors output
+    - Given Developer has a file the repo's own Prettier config would reformat, in a CI job that colors output
         - When prettier checks the repo
             - Then it fails naming that file
 - 0052.2
-    - Given a formatted project with its config in `package.json`
+    - Given Developer has a formatted project with its config in `package.json`
         - When prettier checks the repo
             - Then it passes
 - 0052.3
-    - Given a repo with no `package.json`
+    - Given Developer has a repo with no `package.json`
         - When prettier checks the repo
             - Then it passes without needing Prettier
 - 0052.4
-    - Given a project with no config, formatted with single quotes
+    - Given Developer has a project with no config, formatted with single quotes
         - When prettier checks the repo
             - Then it passes under the shared config, not Prettier defaults
 - 0052.5
-    - Given a formatted file staged beside an unstaged messy one
+    - Given Developer has a formatted file staged beside an unstaged messy one
         - When prettier checks the staged change
             - Then it passes, judging only the staged file
 - 0052.6
-    - Given a messy file and the `--write` argument
+    - Given Developer has a messy file and the `--write` argument
         - When prettier runs with that argument
             - Then it hands that argument to Prettier in place of `--check`, and passes
 - 0052.7
-    - Given a `.prettierignore` file, even without `package.json`
+    - Given Developer has a `.prettierignore` file, even without `package.json`
         - When prettier checks the repo
             - Then it fails telling me to delete it
 - 0052.8
-    - Given a project without Prettier installed
+    - Given Developer has a project without Prettier installed
         - When prettier checks the repo
             - Then it fails with an install hint

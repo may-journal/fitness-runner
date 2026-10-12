@@ -19,34 +19,34 @@ Source: `go/internal/requirement/doc.go:88`
 ## Requirements
 
 - 0006.1
-    - Given a doc whose file name and title do not carry the same ID
+    - Given Developer has a doc whose file name and title do not carry the same ID
         - When fitness runs
             - Then it fails
 - 0006.2
-    - Given two docs with the same ID
+    - Given Developer has two docs with the same ID
         - When fitness runs
             - Then it fails
 - 0006.3
-    - Given a doc whose sections are not Why, Measurement, and Requirements, each with content
+    - Given Developer has a doc whose sections are not Why, Measurement, and Requirements, each with content
         - When fitness runs
             - Then it fails
 - 0006.4
-    - Given a Measurement that is not a ratio with a Source
+    - Given Developer has a Measurement that is not a ratio with a Source
         - When fitness runs
             - Then it fails
 - 0006.5
-    - Given a Source citing neither one existing code line nor one issue
+    - Given Developer has a Source citing neither one existing code line nor one issue
         - When fitness runs
             - Then it fails
 - 0006.6
-    - Given an acceptance with a second Given, When, or Then
+    - Given Developer has an acceptance with a second Given, When, or Then
         - When fitness runs
             - Then it fails
 - 0006.7
-    - Given an acceptance chain out of order or not nested
+    - Given Developer has an acceptance chain out of order or not nested
         - When fitness runs
             - Then it fails
 - 0006.8
-    - Given an acceptance ID that is repeated or names another requirement
+    - Given Developer has an acceptance ID that is repeated or names another requirement
         - When fitness runs
             - Then it fails

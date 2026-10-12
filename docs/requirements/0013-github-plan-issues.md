@@ -19,34 +19,34 @@ Source: `go/internal/aftereffect/verdict.go:14`
 ## Requirements
 
 - 0013.1
-    - Given a Plan that follows the template
+    - Given Developer has a Plan that follows the template
         - When plan-check judges it
             - Then it comments that the Plan looks good and labels it fitness-valid
 - 0013.2
-    - Given a Plan that breaks the template
+    - Given Developer has a Plan that breaks the template
         - When plan-check judges it
             - Then it comments the errors, labels it fitness-invalid, and exits 1
 - 0013.3
-    - Given a Plan that plan-check already judged
+    - Given Developer has a Plan that plan-check already judged
         - When it judges the same body again
             - Then it adds no comment
 - 0013.4
-    - Given a failed Plan that is then fixed
+    - Given Developer has a failed Plan that is then fixed
         - When plan-check judges it
             - Then it comments a pass and hides the failed verdict
 - 0013.5
-    - Given a passing Plan edited so it still passes
+    - Given Developer has a passing Plan edited so it still passes
         - When plan-check judges it
             - Then it updates its passing verdict in place
 - 0013.6
-    - Given a manual workflow run
+    - Given Developer has a manual workflow run
         - When plan-check runs
             - Then it judges every open Plan
 - 0013.7
-    - Given a malformed Plan linked in both my PR and branch trailer
+    - Given Developer has a malformed Plan linked in both the PR and the branch trailer
         - When I run fitness branch-check
             - Then it reports the Plan body violation and reads the Plan once
 - 0013.8
-    - Given my fork's trailer names a malformed Plan and its PR base exists only upstream
+    - Given Developer has a fork whose trailer names a malformed Plan and whose PR base exists only upstream
         - When I run fitness branch-check
             - Then it reports that Plan's body violation

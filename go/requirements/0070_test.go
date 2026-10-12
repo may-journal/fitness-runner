@@ -46,11 +46,11 @@ func acFixture(root string) map[string]string {
 		root + acJourney: "## Legend\n\n```mermaid\nflowchart TB\nperson((1 Person)):::persona\nclassDef persona fill:#fff\n```\n\n| # | Description | Why |\n| --- | --- | --- |\n| 1 | Persona | A legend row. |\n\n" +
 			acView("flowchart TB\nuser((1 User)):::persona\nopen(2 Open the app):::action\ndone[3 Record saved]:::screen\nuser --> open\nopen -->|saves| done\nclassDef persona fill:#fff",
 				"Same person.", "Opens it, `0001.1`.", "Shows the record, see [0001]("+up+"docs/requirements/0001-open.md)."),
-		"src/cmd/service/main.go":        "package main\n\nfunc main() {}\n",
-		"src/store/store.go":             "package store\n",
-		"src/store/store_test.go":        "package store\n",
-		"tools/check.sh":                 "#!/bin/sh\nexit 0\n",
-		"docs/requirements/0001-open.md": "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\nSource: #1\n\n## Requirements\n\n- 0001.1\n    - Given a user opens the app\n        - When it starts\n            - Then it opens\n",
+		"src/cmd/service/main.go": "package main\n\nfunc main() {}\n",
+		"src/store/store.go":      "package store\n",
+		"src/store/store_test.go": "package store\n",
+		"tools/check.sh":          "#!/bin/sh\nexit 0\n",
+		acDoc:                     acDocWith("User opens the app"),
 	}
 }
 
@@ -145,11 +145,10 @@ func Test0070_7(t *testing.T) {
 	out, code = acRun(t, acEdit(acJourney, "0001-open.md", "0002-open.md"))
 	sees(t, out, code, 1, "architecture/05-user-journey.md:29: unresolved requirement 0002 in docs/requirements")
 	files := acFixture(acRoot)
-	file := "docs/requirements/0001-open.md"
-	files[file] = strings.ReplaceAll(files[file], "Source: #1\n", "")
+	files[acDoc] = strings.ReplaceAll(files[acDoc], "Source: #1\n", "")
 	out, code = acRun(t, files)
 	sees(t, out, code, 0)
-	if strings.Contains(out, file) {
+	if strings.Contains(out, acDoc) {
 		t.Errorf("doc shape belongs to the requirements check, got:\n%s", out)
 	}
 }

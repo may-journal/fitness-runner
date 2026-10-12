@@ -72,6 +72,17 @@ type Model struct {
 	// journeyAt is the first requirement table's header line, or the
 	// journey view's first line when it has none.
 	journeyAt Location
+	// contextAt is the first context diagram's fence line.
+	contextAt Location
+}
+
+// contextLocation is the first context diagram, or the first view when no
+// context view exists, for errors about undeclared actors.
+func (m *Model) contextLocation() Location {
+	if m.contextAt.Path == "" && len(m.Files) > 0 {
+		return Location{m.Files[0], 1}
+	}
+	return m.contextAt
 }
 
 func (m *Model) fail(at Location, format string, args ...any) {
