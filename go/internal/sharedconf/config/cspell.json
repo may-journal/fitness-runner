@@ -102,6 +102,15 @@
     "nodedir",
     "noprofile",
     "norc",
-    "rcfile"
+    "rcfile",
+    "pbxproj",
+    "xcodegen",
+    "xcodeproj",
+    "swiftui",
+    "watchos",
+    "tvos",
+    "visionos",
+    "Procfile",
+    "preconcurrency"
   ]
 }
