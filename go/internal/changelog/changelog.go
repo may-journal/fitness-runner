@@ -72,11 +72,11 @@ func forkPoint(root string) (string, bool) {
 	if branch == "" || "origin/"+branch == base || gitOut(root, "rev-parse", "-q", "--verify", base) == "" {
 		return "", false
 	}
-	own := strings.Fields(gitOut(root, "rev-list", "--reverse", "HEAD", "--not", "--exclude=origin/"+branch, "--remotes=origin"))
+	own := gitx.OwnCommits(root, "HEAD", branch)
 	if len(own) == 0 {
 		return "", false
 	}
-	parent := gitOut(root, "rev-parse", "-q", "--verify", own[0]+"^")
+	parent := gitOut(root, "rev-parse", "-q", "--verify", own[len(own)-1]+"^")
 	return parent, parent != ""
 }
 

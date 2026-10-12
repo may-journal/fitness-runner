@@ -58,6 +58,34 @@ func DefaultBase(root string) string {
 	return "origin/main"
 }
 
+// OwnCommits returns the commits reachable from tip that no origin branch
+// other than origin/<branch> holds, newest first, so a branch stacked on a
+// pushed branch, such as an epic branch, starts where that branch ends.
+// Branch is the branch's name on origin. Without a branch or a pushed
+// default branch it falls back to BranchCommits.
+func OwnCommits(root, tip, branch string) []string {
+	branch = strings.TrimPrefix(branch, "refs/heads/")
+	if branch == "" || !exists(root, DefaultBase(root)) {
+		return BranchCommits(root, tip, DefaultBase(root))
+	}
+	out, err := exec.Command("git", "-C", root, "rev-list", tip, "--not", "--exclude=origin/"+branch, "--remotes=origin").Output()
+	if err != nil {
+		return nil
+	}
+	return strings.Fields(string(out))
+}
+
+// CurrentBranch returns the checked-out branch's short name; empty when
+// HEAD is detached or git fails.
+func CurrentBranch(root string) string {
+	out, _ := exec.Command("git", "-C", root, "symbolic-ref", "--short", "-q", "HEAD").Output()
+	return strings.TrimSpace(string(out))
+}
+
+func exists(root, ref string) bool {
+	return exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", ref).Run() == nil
+}
+
 // BranchCommits returns the commits reachable from tip but not from base,
 // newest first; nil on any git failure, such as a base the clone lacks.
 func BranchCommits(root, tip, base string) []string {

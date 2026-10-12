@@ -10,10 +10,10 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.10.12.1605
 
 - Feat: architecture-components: give every product source one component owner; fail sources no component names or two components name.
-- Feat: architecture-components: read Go imports and Swift symbol references, fail edges the view does not draw, and name build conditions in errors.
-- Feat: architecture-components: prove linked evidence rows and keep each runtime to the components under its own container boundary.
+- Feat: architecture-components: fail Go imports and Swift references the view does not draw, prove linked evidence, keep runtimes in their containers.
+- Fix: hooks: judge a branch by its own commits, those no other pushed branch holds, so an epic child names its Plan once.
 - Fix: components view: name the check binaries, the tool binaries, and the runner folder; draw the entry and tool edges to checkkit.
-- Test: architecture-components: prove each requirement 0074 acceptance through the installed command on Go and Swift fixtures.
+- Test: architecture-components and hooks: prove requirement 0074 and the new 0011 acceptance through the installed command.
 
 ### 2026.10.12.1539
 
