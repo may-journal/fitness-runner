@@ -134,9 +134,17 @@ func Test0074_5(t *testing.T) {
 	files[aoMain] = aoImports + "\nfunc send() string { return \"\" } // smtp relay\n"
 	out, code := aoRun(t, files)
 	sees(t, out, code, 1, aoView+":21: evidence src/cmd/service/main.go#L7 does not name Mailer outside comments")
-	files[aoMain] = aoImports + "\nfunc send() string { return \"smtp://mail\" }\n"
+	files[aoMain] = aoImports + "\nfunc send() string { return \"https://smtp\" }\n"
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
+	renamed := aoEdit(aoFixture(), "#L3)", "#L5)")
+	renamed[aoStore] = "package records\n\nfunc Save() {}\n"
+	renamed[aoMain] = strings.Replace(aoImports, "store.Save()", "records.Save()", 1)
+	out, code = aoRun(t, renamed)
+	sees(t, out, code, 0)
+	renamed[aoMain] = strings.Replace(aoImports, "store.Save()", "_ = 1", 1)
+	out, code = aoRun(t, renamed)
+	sees(t, out, code, 1, row+"evidence src/cmd/service/main.go#L5 names nothing store owns")
 }
 
 // aoWorker adds a worker command whose job reads the store to the Go
@@ -183,9 +191,12 @@ func Test0074_7(t *testing.T) {
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
 	native := aoEdit(aoNative(), "Rel(ui, model, \"8\")", "")
-	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG\n    let store = Store()\n#endif\n}\n"
+	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG // tools\n    let store = Store()\n#endif\n}\n"
 	out, code = aoRun(t, native)
 	sees(t, out, code, 1, aoHome+":5: ui names Store under #if DEBUG, owned by model"+aoNotDrawn+"ui -> model edge")
+	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG\n    let debug = true\n#endif // DEBUG\n    let store = Store()\n}\n"
+	out, code = aoRun(t, native)
+	sees(t, out, code, 1, aoHome+":7: ui names Store, owned by model"+aoNotDrawn+"ui -> model edge")
 	native[aoView] = aoNative()[aoView]
 	out, code = aoRun(t, native)
 	sees(t, out, code, 0)

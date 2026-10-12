@@ -11,27 +11,58 @@ import (
 // goFolders maps the import path of every folder holding product Go files
 // to that folder, through the nearest tracked go.mod.
 type goFolders struct {
-	m       *Model
-	modules map[string]string
-	folders map[string]string
+	m        *Model
+	modules  map[string]string
+	folders  map[string]string
+	packages map[string]string
+}
+
+// goSource is one parsed product Go file.
+type goSource struct {
+	file   string
+	lines  []string
+	fset   *token.FileSet
+	parsed *ast.File
 }
 
 // goReferences reads each product Go file's imports of folders in this
 // repository and every use of their names, so each line that reaches
 // another folder is known. A file that does not parse is an error.
 func (m *Model) goReferences() ([]reference, []string) {
-	g := &goFolders{m: m, modules: map[string]string{}, folders: map[string]string{}}
+	g := &goFolders{m: m, modules: map[string]string{}, folders: map[string]string{}, packages: map[string]string{}}
 	g.readModules()
 	files := m.productSources(".go")
 	for _, file := range files {
 		g.folder(path.Dir(file))
 	}
+	sources, errs := g.parse(files)
 	var refs []reference
-	var errs []string
-	for _, file := range files {
-		refs, errs = g.file(file, refs, errs)
+	for _, src := range sources {
+		r := &goFile{fset: src.fset, file: src.file, condition: buildCondition(src.lines), names: map[string]string{}}
+		refs = append(refs, r.references(g, src.parsed)...)
 	}
 	return refs, errs
+}
+
+// parse reads every file and records each folder's package name, which an
+// import uses unless it renames the package.
+func (g *goFolders) parse(files []string) ([]goSource, []string) {
+	var sources []goSource
+	var errs []string
+	for _, file := range files {
+		lines := g.m.repo.read(file)
+		fset := token.NewFileSet()
+		parsed, err := parser.ParseFile(fset, file, strings.Join(lines, "\n"), parser.SkipObjectResolution)
+		if err != nil {
+			errs = append(errs, Location{file, 1}.String()+": cannot parse "+err.Error())
+			continue
+		}
+		if name := parsed.Name.Name; !strings.HasSuffix(name, "_test") {
+			g.packages[path.Dir(file)] = name
+		}
+		sources = append(sources, goSource{file, lines, fset, parsed})
+	}
+	return sources, errs
 }
 
 func (g *goFolders) readModules() {
@@ -71,17 +102,6 @@ func importPath(module, dir, folder string) string {
 	return module + "/" + strings.TrimPrefix(folder, dir+"/")
 }
 
-func (g *goFolders) file(file string, refs []reference, errs []string) ([]reference, []string) {
-	lines := g.m.repo.read(file)
-	fset := token.NewFileSet()
-	parsed, err := parser.ParseFile(fset, file, strings.Join(lines, "\n"), parser.SkipObjectResolution)
-	if err != nil {
-		return refs, append(errs, Location{file, 1}.String()+": cannot parse "+err.Error())
-	}
-	r := &goFile{fset: fset, file: file, condition: buildCondition(lines), names: map[string]string{}}
-	return append(refs, r.references(g.folders, parsed)...), errs
-}
-
 // buildCondition reads a file's go:build line, which sits before its
 // package clause.
 func buildCondition(lines []string) string {
@@ -105,10 +125,10 @@ type goFile struct {
 
 // references lists the import of each repository folder and each use of
 // the name it was imported as.
-func (f *goFile) references(folders map[string]string, parsed *ast.File) []reference {
+func (f *goFile) references(g *goFolders, parsed *ast.File) []reference {
 	var refs []reference
 	for _, spec := range parsed.Imports {
-		refs = f.importSpec(folders, spec, refs)
+		refs = f.importSpec(g, spec, refs)
 	}
 	ast.Inspect(parsed, func(n ast.Node) bool {
 		refs = f.selector(n, refs)
@@ -117,18 +137,23 @@ func (f *goFile) references(folders map[string]string, parsed *ast.File) []refer
 	return refs
 }
 
-func (f *goFile) importSpec(folders map[string]string, spec *ast.ImportSpec, refs []reference) []reference {
-	folder, ok := folders[strings.Trim(spec.Path.Value, `"`)]
+func (f *goFile) importSpec(g *goFolders, spec *ast.ImportSpec, refs []reference) []reference {
+	folder, ok := g.folders[strings.Trim(spec.Path.Value, `"`)]
 	if !ok {
 		return refs
 	}
-	f.names[importName(spec, folder)] = folder
+	f.names[g.importName(spec, folder)] = folder
 	return append(refs, f.reference(spec.Pos(), folder))
 }
 
-func importName(spec *ast.ImportSpec, folder string) string {
+// importName is the name a file uses for an import: its rename, else the
+// folder's package name.
+func (g *goFolders) importName(spec *ast.ImportSpec, folder string) string {
 	if spec.Name != nil {
 		return spec.Name.Name
+	}
+	if name := g.packages[folder]; name != "" {
+		return name
 	}
 	return path.Base(folder)
 }

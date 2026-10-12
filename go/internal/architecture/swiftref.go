@@ -56,10 +56,11 @@ func (s *swiftIndex) references(file string) []reference {
 	var refs []reference
 	sc, cond := &scanner{literals: true}, &conditions{}
 	for i, line := range s.m.repo.read(file) {
-		if cond.directive(line) {
+		code := sc.line(line)
+		if cond.directive(code) {
 			continue
 		}
-		refs = s.line(file, i+1, sc.line(line), cond.String(), refs)
+		refs = s.line(file, i+1, code, cond.String(), refs)
 	}
 	return refs
 }
