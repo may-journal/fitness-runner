@@ -6,7 +6,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 When the runner provides staged file context, it runs three checks. The added lines in `CHANGELOG.md` must share at least three words with the rest of the staged diff. A branch keeps one dated `### yyyy.mm.dd.HHMM` entry, so later commits add bullets to the entry its first commit wrote. The newest added heading must use the check run time, or up to five minutes before it.
 
-Older headings further down the diff are history, such as sections a changelog rewrite splits, and keep their times. The branch is everything since the merge base with `origin`'s default branch. Without that ref, each commit is judged alone. `fitness pr-check` holds the whole pull request to one entry.
+Older headings further down the diff are history, such as sections a changelog rewrite splits, and keep their times. A branch's own commits are those no other `origin` branch holds, so a stacked branch starts where its base ends. On the default branch, or without `origin` refs, each commit is judged alone. `fitness pr-check` holds the whole pull request to one entry.
 
 ## Behavior
 

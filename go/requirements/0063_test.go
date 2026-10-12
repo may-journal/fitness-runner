@@ -84,21 +84,25 @@ func Test0063_3(t *testing.T) {
 	}
 }
 
+// stampFirst is the time a branch's earlier commit stamped its entry.
+const stampFirst = "2026.10.09.0900"
+
 func Test0063_4(t *testing.T) {
 	t.Parallel()
 	repo, env := hooked(t, nil)
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
 	git(t, repo, "checkout", "-q", "-b", "work")
-	write(t, repo, map[string]string{"CHANGELOG.md": stampEntry, "README.md": stampReadme})
+	first := strings.Replace(stampEntry, "2000.01.01.0000", stampFirst, 1)
+	write(t, repo, map[string]string{"CHANGELOG.md": first, "README.md": stampReadme})
 	user(t, repo, env, "add", "README.md", "CHANGELOG.md")
 	out, code := user(t, repo, env, "commit", "--no-verify", "-m", "docs(readme): add the usage note")
 	sees(t, out, code, 0)
-	more := strings.Replace(stampEntry, "- Docs: link the usage note.\n", "- Docs: link the usage note.\n- Docs: show the usage example to run.\n", 1)
+	more := strings.Replace(first, "- Docs: link the usage note.\n", "- Docs: link the usage note.\n- Docs: show the usage example to run.\n", 1)
 	write(t, repo, map[string]string{"CHANGELOG.md": more, "README.md": stampReadme + "\nRun the usage example to show it.\n"})
 	user(t, repo, env, "add", "README.md", "CHANGELOG.md")
 	out, code = user(t, repo, env, "commit", "-m", "docs(readme): add the usage example")
 	sees(t, out, code, 0)
-	if got := stampCommitted(t, repo); !strings.Contains(got, "### 2000.01.01.0000") || !strings.Contains(got, "usage example") {
+	if got := stampCommitted(t, repo); !strings.Contains(got, "### "+stampFirst) || !strings.Contains(got, "usage example") {
 		t.Errorf("the second commit did not keep the first commit's heading:\n%s", got)
 	}
 }

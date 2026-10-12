@@ -18,7 +18,7 @@ const File = "CHANGELOG.md"
 var (
 	headingRe = regexp.MustCompile(`(?m)^### (\d{4}\.\d{2}\.\d{2}\.\d{4})`)
 	// releaseRe is a Release Please version section, such as "## [1.6.0]".
-	releaseRe = regexp.MustCompile(`^## \[`)
+	releaseRe = regexp.MustCompile(`^## \[(\d[^\]]*)\]`)
 )
 
 // Headings returns every dated heading's stamp in text, top to bottom.
@@ -45,21 +45,46 @@ func New(before, after []string) []string {
 	return added
 }
 
-// BranchEntries returns the dated entries HEAD's CHANGELOG.md adds over its
-// merge base with origin's default branch. It is nil when no base is known,
-// such as a repo without that remote ref, or when HEAD adds none.
+// BranchEntries returns the dated entries the current branch's own commits
+// add to CHANGELOG.md. It is nil on the default branch, on a detached HEAD,
+// without origin refs, or when the branch's own commits add none.
 func BranchEntries(root string) []string {
-	out, err := exec.Command("git", "-C", root, "merge-base", "HEAD", gitx.DefaultBase(root)).Output()
-	base := strings.TrimSpace(string(out))
-	if err != nil || base == "" {
+	fork, ok := forkPoint(root)
+	if !ok {
 		return nil
 	}
 	head, ok := show(root, "HEAD:"+File)
 	if !ok {
 		return nil
 	}
-	old, _ := show(root, base+":"+File)
+	old, _ := show(root, fork+":"+File)
 	return New(Headings(old), Headings(head))
+}
+
+// forkPoint is the commit the current branch's own commits start from: the
+// parent of the oldest commit no other origin branch holds. A branch stacked
+// on another pushed branch so starts where that branch ends.
+func forkPoint(root string) (string, bool) {
+	branch := gitOut(root, "symbolic-ref", "--short", "-q", "HEAD")
+	base := gitx.DefaultBase(root)
+	if branch == "" || "origin/"+branch == base || gitOut(root, "rev-parse", "-q", "--verify", base) == "" {
+		return "", false
+	}
+	own := strings.Fields(gitOut(root, "rev-list", "--reverse", "HEAD", "--not", "--exclude=origin/"+branch, "--remotes=origin"))
+	if len(own) == 0 {
+		return "", false
+	}
+	parent := gitOut(root, "rev-parse", "-q", "--verify", own[0]+"^")
+	return parent, parent != ""
+}
+
+// gitOut returns git's trimmed output in root, empty on failure.
+func gitOut(root string, args ...string) string {
+	out, err := exec.Command("git", append([]string{"-C", root}, args...)...).Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // StagedNew returns the dated entries the staged CHANGELOG.md adds over
@@ -82,19 +107,41 @@ func show(root, spec string) (string, bool) {
 
 // DiffEntries reads a unified diff of CHANGELOG.md, as git or GitHub prints
 // it. It returns the dated headings the diff adds and does not also remove,
-// and whether it adds a Release Please version section.
+// and whether it adds a new Release Please version section.
 func DiffEntries(patch string) (added []string, release bool) {
-	var plus, minus []string
+	var entries, versions diffSides
 	for _, line := range strings.Split(patch, "\n") {
-		switch sign, text := diffLine(line); sign {
-		case '+':
-			plus = append(plus, Headings(text)...)
-			release = release || releaseRe.MatchString(text)
-		case '-':
-			minus = append(minus, Headings(text)...)
-		}
+		sign, text := diffLine(line)
+		entries.add(sign, Headings(text))
+		versions.add(sign, releaseVersions(text))
 	}
-	return New(minus, plus), release
+	return entries.added(), len(versions.added()) > 0
+}
+
+// diffSides collects what a diff's added and removed lines hold.
+type diffSides struct{ plus, minus []string }
+
+// add files items under the side sign names; other signs are context.
+func (d *diffSides) add(sign byte, items []string) {
+	switch sign {
+	case '+':
+		d.plus = append(d.plus, items...)
+	case '-':
+		d.minus = append(d.minus, items...)
+	}
+}
+
+// added is what the diff adds and does not also remove, such as a moved line.
+func (d diffSides) added() []string {
+	return New(d.minus, d.plus)
+}
+
+// releaseVersions is the version a Release Please section heading names.
+func releaseVersions(text string) []string {
+	if m := releaseRe.FindStringSubmatch(text); m != nil {
+		return []string{m[1]}
+	}
+	return nil
 }
 
 // diffLine splits a diff line into its sign and text. File headers and

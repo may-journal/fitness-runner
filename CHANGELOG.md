@@ -9,8 +9,8 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.10.12.0919
 
-- Feat: changelog-updated: once a branch's first commit adds its dated entry, fail a later commit that adds another `###` section, naming both headings.
-- Feat: pr-check: require a PR that changes `CHANGELOG.md` to add exactly one dated entry, naming extra headings, in Actions and branch-check alike.
+- Feat: changelog-updated: fail a later commit that adds a second `###` section to a branch; stacked branches start where their base ends.
+- Feat: pr-check: require exactly one new dated `CHANGELOG.md` entry, naming extra headings; a new release section is exempt.
 - Fix: stamp-changelog: keep the branch's first entry time when later commits amend its bullets.
 - Test: requirements: prove one entry per branch and PR with real multi-commit sandbox runs (0019.9, 0063.4, 0069).
 - Docs: AGENTS.md and the check READMEs say later commits amend the branch's one entry.
