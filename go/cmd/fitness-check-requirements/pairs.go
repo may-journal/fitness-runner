@@ -119,7 +119,7 @@ func unpaired(file string, numbers []string, partners map[string][]string, half 
 		return nil
 	}
 	return []string{fmt.Sprintf("%s changed without its %s %s; change both together, or add the commit trailer `%s: %s <reason>`",
-		file, half, strings.Join(missing, " or "), trailerKey, strings.Join(numbers, " "))}
+		file, half, strings.Join(missing, " or "), trailerKey, strings.Join(numbers, ", "))}
 }
 
 // unchangedPartners lists the partner files of numbers when none of them
@@ -164,12 +164,17 @@ func pairErrors(root string, docPaths, testFiles []string, tests []goTest, chang
 var replayHeads = []string{"MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"}
 
 // replaying reports whether a local commit replays changes judged where they
-// were first made. A pull request run still judges its whole diff.
+// were first made, including an amend of a merge commit, whose second parent
+// brought them. A pull request run still judges its whole diff.
 func replaying(root string) bool {
 	if os.Getenv("GITHUB_BASE_REF") != "" {
 		return false
 	}
-	for _, ref := range replayHeads {
+	refs := replayHeads
+	if os.Getenv("FITNESS_COMMIT_AMEND") == "1" {
+		refs = append(slices.Clone(refs), "HEAD^2")
+	}
+	for _, ref := range refs {
 		if exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", ref).Run() == nil {
 			return true
 		}

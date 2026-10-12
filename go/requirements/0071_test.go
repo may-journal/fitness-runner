@@ -54,12 +54,12 @@ func Test0071_6(t *testing.T) {
 func Test0071_7(t *testing.T) {
 	t.Parallel()
 	keep := []string{"--no-edit"}
-	for _, r := range [][2][]string{
-		{{"merge", "--no-edit", "side"}, keep},
+	for _, r := range [][][]string{
+		{{"merge", "--no-edit", "side"}, keep, {"--amend", "-m", "chore(reqs): merge the reword"}},
 		{{"cherry-pick", "side"}, keep},
 		{{"revert", "--no-edit", "side"}, {"-m", "revert(reqs): undo the reword"}},
 	} {
-		out, code := replayed(t, r[0], r[1])
+		out, code := replayed(t, r[0], r[1:]...)
 		sees(t, out, code, 0)
 	}
 }

@@ -82,9 +82,9 @@ func prEnv(t *testing.T, body string) []string {
 // replayed runs one replay of an exempted test change in a repo with the
 // hooks committed: a side branch rewords the test under a trailer while the
 // first branch changes the same line with its doc. The replay conflicts,
-// takes the replayed side, and commits with finish. It returns what that
-// commit printed.
-func replayed(t *testing.T, replay, finish []string) (string, int) {
+// takes the replayed side, and commits with each finish in turn. It returns
+// what the first failing commit, or else the last one, printed.
+func replayed(t *testing.T, replay []string, finish ...[]string) (out string, code int) {
 	t.Helper()
 	repo, env := hooked(t, pairedRepo())
 	base := testFile("reqs", "Test0001_1")
@@ -98,7 +98,12 @@ func replayed(t *testing.T, replay, finish []string) (string, int) {
 		t.Fatalf("git %v did not conflict", replay)
 	}
 	userSteps(t, repo, env, []string{"checkout", "--theirs", pairedTest}, []string{"add", "-A"})
-	return user(t, repo, env, append([]string{"commit"}, finish...)...)
+	for _, args := range finish {
+		if out, code = user(t, repo, env, append([]string{"commit"}, args...)...); code != 0 {
+			break
+		}
+	}
+	return out, code
 }
 
 // userSteps runs each git command as a user, failing the test on the first

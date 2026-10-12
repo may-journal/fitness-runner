@@ -10,7 +10,7 @@ relatedConfigurations: ['.fitnessrc.json']
 ### 2026.10.12.1457
 
 - Feat: requirements: fail a changed requirement test whose doc is unchanged, or a changed doc whose test is unchanged, naming both files.
-- Feat: requirements: the commit-msg hook judges staged pairs; pull requests judge their diff against the current merge base.
+- Feat: requirements: the commit-msg hook judges staged pairs, skipping replays and amended merges; pull requests judge their merge-base diff.
 - Feat: requirements: an `Unpaired-Requirement` commit trailer exempts a pair once the pull request body lists it.
 - Test: requirements: prove pairs, helpers, replays, and exemptions with real hook and pull request runs in new doc 0071.
 - Docs: the requirements check README describes pairs and links ADR 0004.

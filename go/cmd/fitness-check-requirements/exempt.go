@@ -16,8 +16,13 @@ import (
 // pairing, with the reason after them.
 const trailerKey = "Unpaired-Requirement"
 
-// trailerValue is one or more requirement numbers, then a reason.
-var trailerValue = regexp.MustCompile(`^((?:\d{4}[\s,]+)+)(\S.*)$`)
+var (
+	// trailerValue is one requirement number or a comma-separated list, then
+	// a reason, so a reason may start with a four-digit word.
+	trailerValue = regexp.MustCompile(`^(\d{4}(?:\s*,\s*\d{4})*)\s+(\S.*)$`)
+	// wordy holds a letter, so a bare second number is no reason.
+	wordy = regexp.MustCompile(`\pL`)
+)
 
 // exemption is one trailer: its line as written, and the numbers it exempts.
 type exemption struct {
@@ -56,17 +61,22 @@ func trailers(root, message string) ([]exemption, []string) {
 	var errs []string
 	for _, line := range strings.Split(string(out), "\n") {
 		key, value, ok := strings.Cut(line, ":")
-		if !ok || !strings.EqualFold(strings.TrimSpace(key), trailerKey) {
-			continue
+		if ok && strings.EqualFold(strings.TrimSpace(key), trailerKey) {
+			e, err := parseExemption(line, strings.TrimSpace(value))
+			found, errs = append(found, e...), append(errs, err...)
 		}
-		m := trailerValue.FindStringSubmatch(strings.TrimSpace(value))
-		if m == nil {
-			errs = append(errs, fmt.Sprintf("%q needs requirement numbers, then the reason they change alone: `%s: NNNN <reason>`", line, trailerKey))
-			continue
-		}
-		found = append(found, exemption{line: trailerKey + ": " + strings.TrimSpace(value), numbers: strings.FieldsFunc(m[1], notDigit)})
 	}
 	return found, errs
+}
+
+// parseExemption reads one trailer's value: numbers, then a reason with at
+// least one word.
+func parseExemption(line, value string) ([]exemption, []string) {
+	m := trailerValue.FindStringSubmatch(value)
+	if m == nil || !wordy.MatchString(m[2]) {
+		return nil, []string{fmt.Sprintf("%q needs requirement numbers, then the reason they change alone: `%s: NNNN, NNNN <reason>`", line, trailerKey)}
+	}
+	return []exemption{{line: trailerKey + ": " + value, numbers: strings.FieldsFunc(m[1], notDigit)}}, nil
 }
 
 // notDigit separates the numbers in a trailer.
@@ -85,7 +95,7 @@ func splitListed(found []exemption, body string) ([]exemption, []string) {
 			listed = append(listed, e)
 			continue
 		}
-		errs = append(errs, fmt.Sprintf("%q is not listed in the pull request body; list each exemption there so reviewers see it", e.line))
+		errs = append(errs, fmt.Sprintf("%q is not listed in the pull request body; list each exemption there so reviewers see it, then push or reopen the pull request to run CI on the new body", e.line))
 	}
 	return listed, errs
 }

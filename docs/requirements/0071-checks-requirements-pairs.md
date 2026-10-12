@@ -44,7 +44,7 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:99`
             - Then it fails until the pull request body lists the trailer
 - 0071.7
     - Given a merge, cherry-pick, or revert that replays an unpaired change
-        - When I commit it with the hooks
+        - When I commit or amend it with the hooks
             - Then the commit goes through
 - 0071.8
     - Given a branch that merged an unpaired change from its moved base
