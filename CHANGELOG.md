@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1629
+
+- Fix: architecture-components: a Go raw string that spans lines stays open until its closing backtick.
+- Fix: architecture-components: a comment after a raw string's closing backtick is stripped, so it proves no external system.
+- Test: architecture-components: prove a raw string across lines in external evidence through requirement 0074.
+
 ### 2026.10.12.1626
 
 - Fix: architecture-components: a folder's package name is its first importable one, so a main-package generator hides no uses.
