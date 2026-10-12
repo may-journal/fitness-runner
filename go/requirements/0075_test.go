@@ -72,9 +72,14 @@ func Test0075_1(t *testing.T) {
 
 func Test0075_2(t *testing.T) {
 	t.Parallel()
-	out, code := cvRun(t, cvFixture())
+	broken := with(cvFixture(), map[string]string{"src/store/testdata/broken.go": "package broken\n\nfunc {\n"})
+	out, code := cvRun(t, broken)
 	sees(t, out, code, 0)
 	passedWith(t, out, cvCheck, "1")
+	apart := with(cvFixture(), map[string]string{"src/store/load.go": "package store\n\n// Load reads the record back.\nfunc (r Record) Load() Record { return r }\n"})
+	apart[cvView] = cvCode("\nclass load[\"4 store.Record.Load() Record\"]\nload --> Record : 5", "Reads it back, in [load.go](../src/store/load.go).", "Load returns the record.")
+	out, code = cvRun(t, apart)
+	sees(t, out, code, 0)
 	moved := with(cvFixture(), map[string]string{cvStore: cvRecord, "src/store/save.go": "package store\n\n" + cvSaves})
 	out, code = cvRun(t, moved)
 	sees(t, out, code, 1, cvView+":8: save: store.Save(id string) Record is declared at src/store/save.go:4, not in the linked src/store/store.go")
@@ -99,8 +104,8 @@ func Test0075_3(t *testing.T) {
 		out, code := cvRun(t, cvEdit(cvFixture(), c.file, c.old, c.new))
 		sees(t, out, code, 1, cvView+c.want)
 	}
-	files := cvEdit(cvFixture(), cvView, "+ID\n", "+ID: string\n+Load() Record\n")
-	files = cvEdit(files, cvStore, cvSaves, cvSaves+"\n// Load reads the record back.\nfunc (r Record) Load() Record { return r }\n")
+	files := cvEdit(cvFixture(), cvView, "+ID\n", "+ID: string\n+Load() (Record, error)\n")
+	files = cvEdit(files, cvStore, cvSaves, cvSaves+"\n// Load reads the record back.\nfunc (r Record) Load() (Record, error) { return r, nil }\n")
 	out, code := cvRun(t, files)
 	sees(t, out, code, 0)
 }
@@ -160,6 +165,11 @@ func Test0075_6(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = cvRun(t, cvSink("Write"))
 	sees(t, out, code, 1, cvView+":12: "+cvView+" draws realization Disk -> Sink, but no source shows Disk conforms to Sink")
+	sink := cvEdit(cvSink("Put"), cvView, "Disk is a sink.", "Disk is a sink, see [source](../src/store/store.go#L22).")
+	out, code = cvRun(t, sink)
+	sees(t, out, code, 0)
+	out, code = cvRun(t, cvEdit(sink, cvView, "store.go#L22)", "store.go#L1)"))
+	sees(t, out, code, 1, cvView+":22: evidence src/store/store.go#L1 shows no Disk -> Sink relation")
 	out, code = cvRun(t, cvEdit(cvNative(), cvModel, "final class Store: Saving {", "final class Store {"))
 	sees(t, out, code, 1, cvView+":10: "+cvView+" draws realization Store -> Saving, but no source shows Store conforms to Saving")
 	base := cvEdit(cvNative(), cvModel, "final class Store: Saving {", "class Base {}\n\nfinal class Store: Base, Saving {")
@@ -205,7 +215,7 @@ func Test0075_8(t *testing.T) {
 	out, code = cvRun(t, files)
 	sees(t, out, code, 0)
 	native := cvNative()
-	native[cvModel] = strings.Replace(native[cvModel], "    func save(_ id: String) -> Bool { true }\n", "#if DEBUG\n    func save(_ id: String) -> Bool { true }\n#else\n    func save(_ id: String) -> Bool { false }\n#endif\n    func save(_ ids: [String]) -> Bool { true }\n", 1)
+	native[cvModel] = strings.Replace(native[cvModel], "    func save(_ id: String) -> Bool { true }\n", "#if DEBUG\n    func save(_ id: String) -> Bool { true }\n#else\n    func save(_ id: String) -> Bool { false }\n#endif\n    @available(iOS 17, *) func save(_ ids: [String]) -> Bool { true }\n", 1)
 	native[cvView] = strings.Replace(native[cvView], "HomeScreen --> Store : 5", "HomeScreen --> Store : 5\nclass saveOne[\"6 Store.save(String) Bool\"]\nclass saveAll[\"7 Store.save([String]) Bool\"]", 1)
 	native[cvView] += "| 6 | Saves one, in [Store.swift](../App/Model/Store.swift#L7-L12). | Shared. |\n| 7 | Saves many, in [Store.swift](../App/Model/Store.swift). | Shared. |\n"
 	out, code = cvRun(t, native)

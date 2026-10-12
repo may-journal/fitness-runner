@@ -127,7 +127,7 @@ func (c *code) sourceLinks(n *codeNode) []string {
 // pick narrows the declarations by linked file and lines, qualifier, kind,
 // and signature, failing when none or several remain.
 func (c *code) pick(n *codeNode, s stated, files []string) *decl {
-	owner, pkg := c.qualifier(s, files)
+	owner, pkg := c.qualifier(s)
 	found := c.linked(n, c.candidates(s.name, owner, pkg, files))
 	if len(found) == 0 {
 		c.missing(n, s, owner, pkg, files)
@@ -137,17 +137,18 @@ func (c *code) pick(n *codeNode, s stated, files []string) *decl {
 }
 
 // qualifier splits a label's qualifier into a type that owns the member
-// and a Go package name.
-func (c *code) qualifier(s stated, files []string) (owner, pkg string) {
+// and a Go package name. The type may be declared in any file, since a
+// Go method or a Swift extension can sit apart from its type.
+func (c *code) qualifier(s stated) (owner, pkg string) {
 	qual := s.qual
-	if len(qual) > 0 && c.declaresType(qual[len(qual)-1], files) {
+	if len(qual) > 0 && c.declaresType(qual[len(qual)-1]) {
 		owner, qual = qual[len(qual)-1], qual[:len(qual)-1]
 	}
 	return owner, strings.Join(qual, ".")
 }
 
-func (c *code) declaresType(name string, files []string) bool {
-	for _, d := range c.x.named(name, "", files) {
+func (c *code) declaresType(name string) bool {
+	for _, d := range c.x.named(name, "", nil) {
 		if d.typeLike() {
 			return true
 		}

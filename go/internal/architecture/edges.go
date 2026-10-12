@@ -81,10 +81,11 @@ func (r *relations) required(e Relationship, class string, from, to *codeNode) {
 
 // proved finds a relation the edge class allows, within the linked lines
 // when evidence is given. Go satisfies an interface implicitly, so a Go
-// realization is proved by go/types instead of a line.
+// realization is proved by go/types, and its evidence must hold the
+// type or one of its methods.
 func (r *relations) proved(class string, from, to *codeNode, ev *Evidence) bool {
-	if goRealization(class, from, ev) {
-		return r.c.g.implements(from.d, to.d)
+	if goRealization(class, from) {
+		return r.goProved(from, to, ev)
 	}
 	for _, o := range r.seen {
 		if r.matches(o, class, from, to) && within(ev, o.at) {
@@ -94,10 +95,26 @@ func (r *relations) proved(class string, from, to *codeNode, ev *Evidence) bool 
 	return false
 }
 
-// goRealization reports a Go realization edge without evidence, which
-// go/types decides.
-func goRealization(class string, from *codeNode, ev *Evidence) bool {
-	return class == edgeRealization && from.d.Package != "" && ev == nil
+// goProved asks go/types whether the type satisfies the interface, with
+// any evidence on the type's own lines.
+func (r *relations) goProved(from, to *codeNode, ev *Evidence) bool {
+	return r.c.g.implements(from.d, to.d) && r.declares(from, ev)
+}
+
+// goRealization reports a Go realization edge, which go/types decides.
+func goRealization(class string, from *codeNode) bool {
+	return class == edgeRealization && from.d.Package != ""
+}
+
+// declares reports evidence lines holding the type or one of its methods,
+// or no evidence at all.
+func (r *relations) declares(n *codeNode, ev *Evidence) bool {
+	for _, d := range append(r.c.x.members(n.d), n.d) {
+		if within(ev, d.at()) {
+			return true
+		}
+	}
+	return false
 }
 
 // within reports a line inside the evidence, or any line without one.

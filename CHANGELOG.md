@@ -9,7 +9,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.10.12.1658
 
-- Feat: architecture-code: resolve each code view class to one Go or Swift declaration by linked file, name, kind, signature, and members.
+- Feat: architecture-code: resolve each code view class to one Go or Swift declaration by linked file, name, kind, signature, and members, attributes aside.
 - Feat: architecture-code: fail exported types the view omits, calls or references it does not draw, and drawn edges no source shows.
 - Feat: architecture-code: read `<<abstract>>` classes as allowed contracts; keep build conditions and overloads apart until a link or signature picks one.
 - Fix: code view: name real symbols and signatures, link their files, mark the check contract abstract, and draw the edges the source shows.

@@ -142,7 +142,7 @@ func (r *swiftDecls) newDecl(match []string, i int) *decl {
 func (r *swiftDecls) shape(d *decl, rest string, i int) {
 	switch {
 	case d.callable():
-		d.Params, d.Results = swiftSignature(r.header(i))
+		d.Params, d.Results = swiftSignature(r.header(rest, i))
 		d.Kind = memberKind(d, kindMethod)
 	case d.Kind == kindValue:
 		d.Type = swiftValueType(rest)
@@ -159,10 +159,11 @@ func memberKind(d *decl, member string) string {
 	return d.Kind
 }
 
-// header joins a declaration's lines until its parentheses balance, so a
+// header joins what follows a declaration's name, which leaves out its
+// attributes, with the next lines until its parentheses balance, so a
 // signature split over lines still reads whole.
-func (r *swiftDecls) header(i int) string {
-	text := r.code[i]
+func (r *swiftDecls) header(rest string, i int) string {
+	text := rest
 	for j := i + 1; j < len(r.code) && strings.Count(text, "(") > strings.Count(text, ")"); j++ {
 		text += " " + r.code[j]
 	}

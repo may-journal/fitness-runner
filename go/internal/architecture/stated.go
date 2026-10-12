@@ -8,7 +8,7 @@ import (
 // statedName reads a class label or member as the code view states it: a
 // qualified name, and for a function its parameters and an optional
 // result, such as render.Table([]Row, int, Palette) string.
-var statedName = regexp.MustCompile(`^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*(?:\((.*)\)\s*(.*))?$`)
+var statedName = regexp.MustCompile(`^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*(.*)$`)
 
 // stated is what one label or member says about a declaration.
 type stated struct {
@@ -24,8 +24,22 @@ func parseStated(text string) (stated, bool) {
 		return stated{}, false
 	}
 	parts := strings.Split(match[1], ".")
-	s := stated{text: text, name: parts[len(parts)-1], qual: parts[:len(parts)-1], params: match[2], result: match[3]}
-	s.call = strings.Contains(text, "(")
+	s := stated{text: text, name: parts[len(parts)-1], qual: parts[:len(parts)-1]}
+	return s.parameters(match[2])
+}
+
+// parameters reads what follows the name: nothing for a type, else the
+// parenthesized parameters, then the result. The closing parenthesis is
+// the one matching the first, so a result list in parentheses stays out.
+func (s stated) parameters(rest string) (stated, bool) {
+	if rest == "" {
+		return s, true
+	}
+	close := matching(rest, 0)
+	if rest[0] != '(' || rest[close] != ')' {
+		return stated{}, false
+	}
+	s.call, s.params, s.result = true, rest[1:close], strings.TrimSpace(rest[close+1:])
 	return s, true
 }
 

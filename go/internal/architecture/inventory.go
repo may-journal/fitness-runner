@@ -53,7 +53,7 @@ func category(file string, kept bool) string {
 
 func testFolder(dir string) bool {
 	for _, segment := range strings.Split(dir, "/") {
-		if segment == "test" || segment == "tests" {
+		if contains([]string{"test", "tests", "testdata"}, segment) {
 			return true
 		}
 	}

@@ -18,7 +18,7 @@ A class is concrete unless it carries `<<abstract>>`. A concrete class resolves 
 | Kind | Parentheses mean a function or method; none mean a type. `<<interface>>` requires a Go interface or Swift protocol |
 | Signature | The parameter types in parentheses, each as `type` or `name type`, then an optional result |
 
-`()` states no parameters. Class body lines are members: `+Name`, `+Name: Type`, or `+Type Name` is a field; `+Run(string) error` is a method. A Swift type's extensions add members too.
+`()` states no parameters, and a result may be a list such as `(Record, error)`. A method may sit in another file than its type. Class body lines are members: `+Name`, `+Name: Type`, or `+Type Name` is a field; `+Run(string) error` is a method. A Swift type's extensions add members too.
 
 - A class whose linked lines lack the symbol fails, naming where the symbol is declared now, or that it is declared nowhere.
 - A kind, signature, member, or field type that differs fails, naming the class line and the source line.
@@ -52,6 +52,7 @@ A use belongs to the smallest class whose lines hold it: a method's own class, e
 - A relation no drawn edge allows fails at its source line, naming the view.
 - A drawn edge between two concrete classes is required: no source relation of its kind fails at the edge.
 - An edge row that links a source must hold such a relation within its lines.
+- A Go realization's link must hold the type or one of its methods.
 - An edge touching an abstract class is allowed and needs no use. A link on it is unsupported evidence.
 - Any other arrow is unsupported.
 
