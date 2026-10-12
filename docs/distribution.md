@@ -18,6 +18,6 @@ Existing `go/v0.date.time` tags and their asset URLs remain valid. The installer
 
 GoReleaser OSS 2.18.2 owns builds, archives, checksums, and publication. The [bundle config](../.goreleaser-bundles.yml) builds the runner and checks first. The [tools config](../.goreleaser-tools.yml) then builds installers with those bundle hashes embedded. Pull requests use snapshots and test all four platforms on native hosts without Go on the consumer PATH.
 
-After main CI passes, Release Please maintains a release PR. Its merge creates a draft with notes and an explicit root version tag. The release workflow repeats native checks, then the [publish config](../.goreleaser-publish.yml) adds assets to that draft and publishes a prerelease. Public installer and action checks must pass before promotion to latest.
+After main CI passes, Release Please maintains a release PR. Its merge creates a draft whose notes link the changelog section and compare view, and an explicit root version tag. The release workflow repeats native checks, then the [publish config](../.goreleaser-publish.yml) adds assets to that draft and publishes a prerelease. Public installer and action checks must pass before promotion to latest.
 
 A verified release gains its Go module alias and a pin update PR through create-pull-request. Release Please ignores those `chore` pin commits for release decisions. See [CI setup](ci.md#release-automation) for App access, review, recovery, and consumer upgrades.

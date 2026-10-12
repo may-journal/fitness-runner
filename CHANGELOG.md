@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.0958
+
+- Feat: PR template: `## Changelog` links the PR's `CHANGELOG.md` entry instead of copying its bullets.
+- Feat: pr-check: fail a PR that adds an entry without linking it, links another heading, or copies a bullet it adds.
+- Feat: release-pr: the release PR and GitHub release link the changelog section and compare view instead of pasting notes.
+- Test: requirements: prove link, copy and release rules (0069.4-0069.8); 0014 states its PR links the changelog entry.
+- Docs: the PR template, AGENTS.md, and release docs say descriptions link the changelog.
+
 ### 2026.10.12.0919
 
 - Feat: changelog-updated: fail a later commit that adds a second `###` section to a branch; stacked branches start where their base ends.

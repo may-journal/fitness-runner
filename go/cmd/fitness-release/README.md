@@ -34,6 +34,7 @@ The bundle pass creates four archives. The tools pass embeds their hashes in fou
 | `verify-download` | Test published assets on the current host. |
 | `verify-tag` | Match `GITHUB_REF_NAME` to the version file. |
 | `promote` | Mark a verified release stable and latest without a downgrade. |
+| `release-pr` | Rewrite the release PR to link its changelog section and compare view. |
 
 Invoke helpers with `go -C go run ./cmd/fitness-release COMMAND --root ..`. Later workflow jobs use the compiled verifier from `out` instead.
 
