@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1605
+
+- Feat: architecture-components: give every product source one component owner; fail sources no component names or two components name.
+- Feat: architecture-components: fail Go imports and Swift references the view does not draw, prove linked evidence, keep runtimes in their containers.
+- Fix: hooks: judge a branch by its own commits, those no other pushed branch holds, so an epic child names its Plan once.
+- Fix: components view: name the check binaries, the tool binaries, and the runner folder; draw the entry and tool edges to checkkit.
+- Test: architecture-components and hooks: prove requirement 0074 and the new 0011 acceptance through the installed command.
+
 ### 2026.10.12.1539
 
 - Fix: architecture-containers: replace `${target_name}` in XcodeGen template sources with the target's name.

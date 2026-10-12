@@ -29,3 +29,14 @@ func Test0011_2(t *testing.T) {
 	out, code := user(t, repo, env, "commit", "--amend", "--allow-empty", "-m", "chore(app): start over\n\nPlan #218")
 	sees(t, out, code, 0, "chore(app): start over")
 }
+
+func Test0011_3(t *testing.T) {
+	t.Parallel()
+	repo, env := linked(t)
+	user(t, repo, env, "push", "-q", "origin", "HEAD:epic")
+	user(t, repo, env, "switch", "-q", "-c", "child")
+	out, code := user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "chore(app): child\n\nPlan #218")
+	sees(t, out, code, 0)
+	out, code = user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): again\n\nPlan #218")
+	sees(t, out, code, 1, `#218 is already linked by commit`, `("chore(app): child")`)
+}

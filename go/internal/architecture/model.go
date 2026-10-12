@@ -44,11 +44,28 @@ type Claim struct {
 }
 
 // Evidence is a callout row link to a tracked source file, with an optional
-// line. Subject is the element ID, or "from->to" for a relationship.
+// line range. Subject is the element ID, or "from->to" for a relationship.
 type Evidence struct {
 	Subject, Path string
-	Line          int
+	Line, End     int
 	At            Location
+}
+
+// String is the link as the row wrote it: the path and its line anchor.
+func (e Evidence) String() string {
+	switch {
+	case e.Line == 0:
+		return e.Path
+	case e.End > e.Line:
+		return fmt.Sprintf("%s#L%d-L%d", e.Path, e.Line, e.End)
+	}
+	return fmt.Sprintf("%s#L%d", e.Path, e.Line)
+}
+
+// holds reports whether line is in the linked range; no anchor holds
+// every line.
+func (e Evidence) holds(line int) bool {
+	return e.Line == 0 || (line >= e.Line && line <= e.End)
 }
 
 // Source is one tracked source file, its category, and the elements whose

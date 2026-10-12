@@ -30,7 +30,11 @@ C4Component
         Component(kit, "8 checkkit protocol", "go/internal")
     }
 
-    System_Ext(tools, "9 Peer tools", "prettier, eslint, vitest, swiftlint")
+    System_Boundary(tools, "Install and release tools") {
+        Component(tool, "21 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release, go/cmd/fitness-stamp-changelog")
+    }
+
+    System_Ext(peers, "9 Peer tools", "prettier, eslint, vitest, swiftlint")
     System_Ext(git, "10 git")
 
     Rel(developer, main, "11")
@@ -42,7 +46,9 @@ C4Component
     Rel(execute, check, "19")
     Rel(main, output, "20")
     Rel(check, kit, "15")
-    Rel(check, tools, "16")
+    Rel(check, peers, "16")
+    Rel(main, kit, "22")
+    Rel(tool, kit, "23")
 ```
 
 ```mermaid
@@ -63,12 +69,12 @@ Numbers on nodes and arrows match the callout table.
 | #   | Description                                                                                             | Why                                                         |
 | --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
-| 2   | `go/cmd/fitness/main.go` — routes the subcommands, else argv, resolve, execute, render.                 | No build step, no interpreter startup.                      |
+| 2   | `go/cmd/fitness` — `main.go` routes the subcommands, else argv, resolve, execute, render.               | No build step, no interpreter startup.                      |
 | 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
 | 4   | Ordered check list: the CLI name, else the embedded `allChecks` list.                                   | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass/fail summary.                             |
-| 7   | One static binary per check name, discovered beside the runner then on PATH.                            | Plugin model at the artifact level; no registry.            |
+| 7   | One static binary per check name (`go/cmd/fitness-check-*`), discovered beside the runner then on PATH. | Plugin model at the artifact level; no registry.            |
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
 | 9   | Tool-wrapper checks exec the real peer tool from `node_modules/.bin` (walking up) then PATH, never npx. | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
@@ -82,6 +88,9 @@ Numbers on nodes and arrows match the callout table.
 | 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
 | 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        |
 | 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
+| 21  | The installer, the release tool, and the changelog stamp, one static binary each.                       | Shipped beside the checks; not part of any run.             |
+| 22  | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
+| 23  | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
 
 ## Resolve check specs (priority)
 

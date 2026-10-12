@@ -168,3 +168,4 @@ Each requirement has a row that lists the journey nodes fulfilling it, by Mermai
 | [0071](../requirements/0071-checks-architecture-journey.md)           | `executeChecks`                                              |
 | [0072](../requirements/0072-checks-architecture-containers.md)        | `executeChecks`                                              |
 | [0073](../requirements/0073-checks-architecture-actors.md)            | `executeChecks`                                              |
+| [0074](../requirements/0074-checks-architecture-components.md)        | `executeChecks`                                              |
