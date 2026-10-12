@@ -19,7 +19,7 @@ Source: `go/internal/metadata/blobs.go:110`
 ## Requirements
 
 - 0014.1
-    - Given a draft PR that closes a finished Plan
+    - Given a draft PR that follows the template, linking its changelog entry, and closes a finished Plan
         - When Actions and branch-check judge it
             - Then both report green, and local validation links targets without writing GitHub state
 - 0014.2
