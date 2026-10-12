@@ -14,7 +14,7 @@ requirement docs with no shape errors
 -
 requirement docs
 
-Source: `go/cmd/fitness-check-requirements/doc.go:86`
+Source: `go/internal/requirement/doc.go:88`
 
 ## Requirements
 

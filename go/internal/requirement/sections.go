@@ -1,4 +1,4 @@
-package main
+package requirement
 
 import (
 	"os"
@@ -66,18 +66,18 @@ type item struct {
 
 // parseRequirements groups list items under top-level acceptance IDs and
 // checks each one's Given, When, Then chain.
-func parseRequirements(p *problems, docID string, s section) []idLine {
+func parseRequirements(p *problems, docID string, s section) []IDLine {
 	if len(s.lines) == 0 {
 		return nil
 	}
-	var out []idLine
+	var out []IDLine
 	seen := map[string]bool{}
 	for _, g := range groupItems(p, docID, s.lines) {
 		a := checkAcceptance(p, docID, g)
-		if seen[a.id] {
-			p.add(a.line, a.id+" appears twice; each acceptance needs its own ID")
+		if seen[a.ID] {
+			p.add(a.Line, a.ID+" appears twice; each acceptance needs its own ID")
 		}
-		seen[a.id] = true
+		seen[a.ID] = true
 		out = append(out, a)
 	}
 	return out
@@ -114,17 +114,17 @@ func toItem(p *problems, docID string, l line) (item, bool) {
 
 // checkAcceptance requires a top-level NNNN.N ID with the doc's prefix,
 // nesting exactly one Given, one When, and one Then.
-func checkAcceptance(p *problems, docID string, g []item) idLine {
+func checkAcceptance(p *problems, docID string, g []item) IDLine {
 	top := g[0]
 	checkAcceptanceID(p, docID, top)
 	if len(g) != len(chainKeywords)+1 {
 		p.add(top.n, top.text+" needs exactly one Given, one When, and one Then; a branch is a new ID")
-		return idLine{top.text, top.n}
+		return IDLine{ID: top.text, Line: top.n}
 	}
 	for i, kw := range chainKeywords {
 		checkChainLine(p, kw, g[i], g[i+1])
 	}
-	return idLine{top.text, top.n}
+	return IDLine{ID: top.text, Line: top.n, Given: strings.TrimPrefix(g[1].text, "Given "), GivenLine: g[1].n}
 }
 
 // checkChainLine requires child to start with kw and sit deeper than parent.

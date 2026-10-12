@@ -1,4 +1,4 @@
-package main
+package requirement
 
 import (
 	"fmt"
@@ -9,23 +9,25 @@ import (
 	"strings"
 )
 
-// idLine is an ID and the line that declares it.
-type idLine struct {
-	id   string
-	line int
+// IDLine is an ID and the line that declares it.
+type IDLine struct {
+	ID        string
+	Line      int
+	Given     string
+	GivenLine int
 }
 
-// reqDoc is one parsed requirement doc.
-type reqDoc struct {
-	path        string
-	id          string
-	idLine      int
-	acceptances []idLine
+// Document is one parsed requirement doc.
+type Document struct {
+	Path        string
+	ID          string
+	TitleLine   int
+	Acceptances []IDLine
 }
 
 // ids lists the doc's own ID followed by its acceptance IDs.
-func (d reqDoc) ids() []idLine {
-	return append([]idLine{{d.id, d.idLine}}, d.acceptances...)
+func (d Document) IDs() []IDLine {
+	return append([]IDLine{{ID: d.ID, Line: d.TitleLine}}, d.Acceptances...)
 }
 
 // line is a non-blank source line with its 1-based number.
@@ -57,44 +59,44 @@ type problems struct {
 }
 
 func (p *problems) add(n int, msg string) {
-	p.errs = append(p.errs, at(p.path, n, msg))
+	p.errs = append(p.errs, At(p.path, n, msg))
 }
 
 // at formats a path:line message.
-func at(file string, n int, msg string) string {
+func At(file string, n int, msg string) string {
 	return fmt.Sprintf("%s:%d: %s", file, n, msg)
 }
 
-// loadDocs reads and parses every requirement doc.
-func loadDocs(root string, paths []string) ([]reqDoc, []string, error) {
-	var docs []reqDoc
+// Load reads and parses every requirement doc.
+func Load(root string, paths []string) ([]Document, []string, error) {
+	var docs []Document
 	var errs []string
 	for _, p := range paths {
 		b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
 		if err != nil {
 			return nil, nil, err
 		}
-		d, docErrs := parseDoc(root, p, string(b))
+		d, docErrs := Parse(root, p, string(b))
 		docs = append(docs, d)
 		errs = append(errs, docErrs...)
 	}
 	return docs, errs, nil
 }
 
-// parseDoc validates one doc's name, title, sections, measurement, and
-// acceptances.
-func parseDoc(root, file, body string) (reqDoc, []string) {
+// Parse validates one doc's name, title, sections, measurement, and
+// Acceptances.
+func Parse(root, file, body string) (Document, []string) {
 	p := &problems{path: file}
 	head, sections := splitSections(contentLines(body))
-	d := reqDoc{path: file}
-	d.id, d.idLine = checkNameAndTitle(p, file, head)
+	d := Document{Path: file}
+	d.ID, d.TitleLine = checkNameAndTitle(p, file, head)
 	checkSectionNames(p, sections)
 	byName := map[string]section{}
 	for _, s := range sections {
 		byName[s.name] = s
 	}
 	checkMeasurement(p, root, byName["Measurement"])
-	d.acceptances = parseRequirements(p, d.id, byName["Requirements"])
+	d.Acceptances = parseRequirements(p, d.ID, byName["Requirements"])
 	return d, p.errs
 }
 
