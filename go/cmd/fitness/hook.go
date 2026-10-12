@@ -42,21 +42,23 @@ func chdirToplevel() error {
 }
 
 // hookCommitMsg validates the proposed commit message with semantic-commit,
-// plan-trailer, and issue-link-once — the message file is the first argument.
+// plan-trailer, requirements, and issue-link-once — the message file is the
+// first argument. Requirements pairs tests with docs here, where an
+// exemption trailer is readable.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)
 	if !ok {
 		return 1
 	}
-	for _, check := range []string{"semantic-commit", "plan-trailer"} {
+	if amending() {
+		_ = os.Setenv("FITNESS_COMMIT_AMEND", "1")
+	}
+	for _, check := range []string{"semantic-commit", "plan-trailer", "requirements", "issue-link-once"} {
 		if code := run([]string{check, "--message=" + msg}); code != 0 {
 			return code
 		}
 	}
-	if amending() {
-		_ = os.Setenv("FITNESS_COMMIT_AMEND", "1")
-	}
-	return run([]string{"issue-link-once", "--message=" + msg})
+	return 0
 }
 
 // readMessage reads the commit message file named by the hook's first

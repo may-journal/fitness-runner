@@ -61,6 +61,24 @@ A Swift test is an XCTest method named `test…` with no parameters, in a class 
 - Full and scoped runs judge every doc and test file, including unchanged files in pull requests that change only unrelated files.
 - Ownership is a repository-wide invariant: an unmapped repo stays red until every test owns a requirement.
 
+## Pairs
+
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](https://github.com/may-journal/fitness-runner/issues/264) sets out.
+
+- Pairing: a test file pairs with each doc whose number its name or its tests carry, so `0003_0004_test.go` pairs with both docs.
+- Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
+- Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
+- Helpers: a test file that names and holds no requirement, such as `tools_test.go`, pairs with nothing.
+- Exemptions: a commit trailer `Unpaired-Requirement: NNNN <reason>` exempts that number. A pull request fails until its body lists each such trailer.
+
+Which changes are judged depends on the run:
+
+- Commits: the `commit-msg` hook judges the staged files, since only it can read the message. The `pre-commit` run leaves pairs to it.
+- Amends: an amended commit is judged on everything it changes since its parent.
+- Pull requests: CI judges the diff against the current merge base with the base branch, so merged base changes are not judged.
+- Replays: a local merge, cherry-pick, or revert is not judged again. Its pull request diff still is.
+- Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
+
 ## Contributing
 
 This README is the canonical description for this check, a self-contained `fitness-check-requirements` binary. Extend the check and its tests here and keep this README in sync.

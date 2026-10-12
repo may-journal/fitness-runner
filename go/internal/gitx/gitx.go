@@ -16,6 +16,16 @@ func StagedFiles(root string) []string {
 	return nameList(string(out))
 }
 
+// StagedSince returns what the index changes since rev (`git diff --cached
+// --name-only rev`); nil on any git failure.
+func StagedSince(root, rev string) []string {
+	out, err := exec.Command("git", "-C", root, "diff", "--cached", "--name-only", rev).Output()
+	if err != nil {
+		return nil
+	}
+	return nameList(string(out))
+}
+
 // ChangedSince returns the paths HEAD changes since its merge base with base
 // (`git diff --name-only base...HEAD`); nil
 // on any git failure, such as a base ref the clone never fetched.
