@@ -21,6 +21,7 @@ The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [require
 - Measurement: a numerator line, a `-` line, a denominator line, then `Source:` naming one real code line or one issue.
 - Requirements: `- NNNN.N`, then exactly one Given, When, and Then, each nested four spaces deeper.
 - Hold a doc to one to eight acceptances. A second Given, When, or Then is a new acceptance.
+- Start each Given with an actor the system context declares, by name or Mermaid ID; the [architecture-actors](../../go/cmd/fitness-check-architecture-actors/README.md) check states the grammar.
 - Never reuse an ID. Retiring one leaves a gap, and the check reads git history to enforce that.
 
 ## Draft small, in the user's words

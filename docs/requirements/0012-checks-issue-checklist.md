@@ -19,10 +19,10 @@ Source: `go/cmd/fitness-check-issue-checklist/main.go:28`
 ## Requirements
 
 - 0012.1
-    - Given an issue body with an unchecked item
+    - Given Developer has an issue body with an unchecked item
         - When fitness runs issue-checklist on it
             - Then it reports red quoting the item
 - 0012.2
-    - Given an issue body with every item ticked
+    - Given Developer has an issue body with every item ticked
         - When fitness runs issue-checklist on it
             - Then it reports green

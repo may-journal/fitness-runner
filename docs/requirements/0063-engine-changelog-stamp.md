@@ -19,18 +19,18 @@ Source: `go/cmd/fitness-stamp-changelog/main.go:44`
 ## Requirements
 
 - 0063.1
-    - Given the hooks and a staged CHANGELOG entry under an old heading
+    - Given Developer has the hooks and a staged CHANGELOG entry under an old heading
         - When I commit it
             - Then the committed heading and my file show the commit time
 - 0063.2
-    - Given the hooks and a staged CHANGELOG with several headings
+    - Given Developer has the hooks and a staged CHANGELOG with several headings
         - When I commit it
             - Then only the newest heading is restamped
 - 0063.3
-    - Given the hooks and a CHANGELOG edit I did not stage
+    - Given Developer has the hooks and an unstaged CHANGELOG edit
         - When I commit without staging it
             - Then the CHANGELOG keeps its heading and stays out of the commit
 - 0063.4
-    - Given the hooks and a branch whose earlier commit added its dated entry
+    - Given Developer has the hooks and a branch whose earlier commit added its dated entry
         - When I commit more bullets under that entry
             - Then the committed heading keeps the first commit's time

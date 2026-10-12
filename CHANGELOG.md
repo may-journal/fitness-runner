@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1519
+
+- Feat: architecture-actors: require each requirement Given to start with a system context actor, by name or Mermaid ID, or several joined by and.
+- Feat: architecture-actors: fail undeclared, removed, partial, or ambiguous actors and a bare and on every run, naming both lines.
+- Docs: requirements: all Fitness Given clauses, journey and container docs included, name the Developer actor; the README and skill state the grammar.
+- Test: architecture-actors: prove each requirement 0073 acceptance through the installed command; malformed acceptances stay with the requirements check.
+
 ### 2026.10.12.1516
 
 - Feat: architecture-containers: match owned containers to Go commands, Xcode app and extension targets, Node services, and deploy files.
