@@ -38,7 +38,7 @@ func (m *Model) Containers() Containers {
 	c.containersWithoutRuntime()
 	c.services(report.Services)
 	c.Errors = append(c.Errors, report.Errors...)
-	c.Files = m.containerViews()
+	c.Files = m.viewCount("containers")
 	return c.Containers
 }
 
@@ -184,14 +184,4 @@ func (c *containers) external(name string) bool {
 
 func containsFold(text, name string) bool {
 	return strings.Contains(strings.ToLower(text), strings.ToLower(name))
-}
-
-func (m *Model) containerViews() int {
-	count := 0
-	for _, file := range m.Files {
-		if viewFile(file) == "containers" {
-			count++
-		}
-	}
-	return count
 }

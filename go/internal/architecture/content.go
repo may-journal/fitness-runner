@@ -75,28 +75,28 @@ func requirementDoc(p string) string {
 // evidence records a static proof location. Runtime proof has no form in
 // the diagrams, so nothing here proves runtime behavior.
 func (d *diagram) evidence(s subject, p, anchor string, at Location) {
-	line, ok := d.anchorLine(p, anchor)
+	first, last, ok := d.anchorLines(p, anchor)
 	if !ok || !d.m.repo.files[p] {
 		d.m.fail(at, "unresolved evidence %s", strings.TrimSuffix(p+"#"+anchor, "#"))
 		return
 	}
-	d.m.Evidence = append(d.m.Evidence, Evidence{Subject: s.name(), Path: p, Line: line, At: at})
+	d.m.Evidence = append(d.m.Evidence, Evidence{Subject: s.name(), Path: p, Line: first, End: last, At: at})
 }
 
-func (d *diagram) anchorLine(p, anchor string) (int, bool) {
+func (d *diagram) anchorLines(p, anchor string) (int, int, bool) {
 	if anchor == "" {
-		return 0, true
+		return 0, 0, true
 	}
 	match := lineAnchor.FindStringSubmatch(anchor)
 	if match == nil {
-		return 0, false
+		return 0, 0, false
 	}
 	first, _ := strconv.Atoi(match[1])
 	last := first
 	if match[2] != "" {
 		last, _ = strconv.Atoi(match[2])
 	}
-	return first, inRange(first, last, d.m.repo.lines(p))
+	return first, last, inRange(first, last, d.m.repo.lines(p))
 }
 
 func inRange(first, last, size int) bool {

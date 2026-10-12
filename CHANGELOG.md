@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1605
+
+- Feat: architecture-components: give every product source one component owner; fail sources no component names or two components name.
+- Feat: architecture-components: read Go imports and Swift symbol references, fail edges the view does not draw, and name build conditions in errors.
+- Feat: architecture-components: prove linked evidence rows and keep each runtime to the components under its own container boundary.
+- Fix: components view: name the check binaries, the tool binaries, and the runner folder; draw the entry and tool edges to checkkit.
+- Test: architecture-components: prove each requirement 0074 acceptance through the installed command on Go and Swift fixtures.
+
 ### 2026.10.12.1539
 
 - Fix: architecture-containers: replace `${target_name}` in XcodeGen template sources with the target's name.

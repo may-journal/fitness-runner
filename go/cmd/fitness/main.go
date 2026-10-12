@@ -47,6 +47,7 @@ var allChecks = []string{
 	"architecture-contract",
 	"architecture-actors",
 	"architecture-containers",
+	"architecture-components",
 	"architecture-journey",
 	"no-contrastive-reframing",
 	"repeated-string-literals",
