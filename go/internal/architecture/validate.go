@@ -4,6 +4,7 @@ import "strings"
 
 // addDiagram checks a finished diagram and adds it to the model.
 func (m *Model) addDiagram(d *diagram) {
+	d.annotated()
 	for _, r := range d.edges {
 		d.endpoint(r.From, r.At)
 		d.endpoint(r.To, r.At)

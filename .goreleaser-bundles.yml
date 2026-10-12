@@ -19,6 +19,7 @@ archives:
     ids:
       - fitness
       - fitness-check-architecture-actors
+      - fitness-check-architecture-code
       - fitness-check-architecture-components
       - fitness-check-architecture-containers
       - fitness-check-architecture-contract

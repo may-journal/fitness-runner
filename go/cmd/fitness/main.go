@@ -48,6 +48,7 @@ var allChecks = []string{
 	"architecture-actors",
 	"architecture-containers",
 	"architecture-components",
+	"architecture-code",
 	"architecture-journey",
 	"no-contrastive-reframing",
 	"repeated-string-literals",

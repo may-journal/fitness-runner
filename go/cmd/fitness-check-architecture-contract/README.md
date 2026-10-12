@@ -30,6 +30,9 @@ No views means a pass with zero files. Any view requires all five, and each view
 | Label without its callout number | Name |
 | Enclosing C4 boundary, subgraph, or namespace | Parent |
 | `Rel(...)` or an arrow | Directed relationship; left-facing class arrows and `Rel_Back` are reversed |
+| The arrow itself, such as `-->` or `..>` | Relationship kind, kept for the code check |
+| A class body line, such as `+Ok` or `+Run(string) error` | Member of that class |
+| A class annotation, such as `<<abstract>>` | Annotation of that class |
 | Callout number | Display reference that binds a table row; renumbering keeps identity |
 
 Legends stay out of the model: unnumbered diagrams, C4 diagrams titled `Legend`, and diagrams under a `Legend` heading with their tables.

@@ -27,13 +27,22 @@ type Element struct {
 	ID, Kind, Name, Technology, Description, Parent, View string
 	Callout                                               int
 	At                                                    Location
+	// Members are a class body's lines; Annotations its <<name>> lines.
+	Members, Annotations []Member
+}
+
+// Member is one line a class diagram states about a class.
+type Member struct {
+	Text string
+	At   Location
 }
 
 // Relationship is a directed diagram edge between two element IDs.
 type Relationship struct {
-	From, To, Label, View string
-	Callout               int
-	At                    Location
+	// Arrow is the Mermaid arrow or C4 macro that drew the edge.
+	From, To, Arrow, Label, View string
+	Callout                      int
+	At                           Location
 }
 
 // Claim is a repository path named by an element's diagram text or callout
