@@ -10,10 +10,12 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/changelog"
 )
 
-var versionHeading = regexp.MustCompile(`(?m)^#{2,} \[?\d+\.\d+\.\d+`)
-var bold = regexp.MustCompile(`\*\*([^*\n]+)\*\*`)
+var versionHeading = regexp.MustCompile(`(?m)^#{2,} \[?\d+\.\d+\.\d+.*$`)
+var compareLink = regexp.MustCompile(`\]\((https://[^)\s]+/compare/[^)\s]+)\)`)
 var issueMarker = regexp.MustCompile(`<!-- fitness-release-issue:(\d+) -->`)
 
 type Client struct{ Root, Repo string }
@@ -27,6 +29,7 @@ type pullRequest struct {
 	} `json:"base"`
 	Head struct {
 		Ref  string `json:"ref"`
+		SHA  string `json:"sha"`
 		Repo struct {
 			FullName string `json:"full_name"`
 		} `json:"repo"`
@@ -42,26 +45,37 @@ type issue struct {
 	PullRequest any    `json:"pull_request"`
 }
 
-func ReleaseNotes(body string) (string, error) {
+// releaseHeading is the version heading line between Release Please's note
+// delimiters, such as "## [1.6.0](compare link) (2026-10-11)".
+func releaseHeading(body string) (string, error) {
 	lines := strings.Split(strings.ReplaceAll(body, "\r\n", "\n"), "\n")
 	first, last := lineIndex(lines, "---"), lineLastIndex(lines, "---")
 	if first < 0 || last <= first {
 		return "", fmt.Errorf("missing Release Please note delimiters")
 	}
-	notes := strings.TrimSpace(strings.Join(lines[first+1:last], "\n"))
-	if !versionHeading.MatchString(notes) {
+	heading := versionHeading.FindString(strings.Join(lines[first+1:last], "\n"))
+	if heading == "" {
 		return "", fmt.Errorf("missing Release Please version heading")
 	}
-	notes = regexp.MustCompile(`(?m)^## `).ReplaceAllString(notes, "### ")
-	return bold.ReplaceAllString(notes, "$1"), nil
+	return strings.TrimSpace(heading), nil
 }
 
-func FormatBody(body string, issueNumber int) (string, error) {
-	notes, err := ReleaseNotes(body)
+// FormatBody rewrites a release PR body to the PR template. Between Release
+// Please's delimiters it keeps only the version heading, which Release Please
+// reads back at merge, and links the CHANGELOG.md section at commit sha and
+// the compare view. The notes themselves stay in CHANGELOG.md.
+func FormatBody(body string, issueNumber int, repo, sha string) (string, error) {
+	heading, err := releaseHeading(body)
 	if err != nil {
 		return "", err
 	}
-	return fmt.Sprintf("> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release. Binary builds and public checks run after this PR merges.\n\nCloses #%d. Agent: Release Please.\n\n<!-- fitness-release-issue:%d -->\n\n## Changelog\n\n---\n\n%s\n\n---\nRelease Please manages this release PR.\n", issueNumber, issueNumber, notes), nil
+	section := fmt.Sprintf("https://github.com/%s/blob/%s/%s#%s", repo, sha, changelog.File, changelog.Anchor(heading))
+	links := fmt.Sprintf("[CHANGELOG section](%s)", section)
+	if m := compareLink.FindStringSubmatch(heading); m != nil {
+		links += fmt.Sprintf(" and [compare view](%s)", m[1])
+	}
+	heading = "### " + strings.TrimLeft(heading, "# ")
+	return fmt.Sprintf("> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release. Binary builds and public checks run after this PR merges.\n\nCloses #%d. Agent: Release Please.\n\n<!-- fitness-release-issue:%d -->\n\n## Changelog\n\n---\n\n%s\n\n- What ships: the %s.\n\n---\nRelease Please manages this release PR.\n", issueNumber, issueNumber, heading, links), nil
 }
 
 func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
@@ -73,7 +87,7 @@ func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
 	if err != nil {
 		return err
 	}
-	body, err := FormatBody(pr.Body, tracking)
+	body, err := FormatBody(pr.Body, tracking, c.Repo, pr.Head.SHA)
 	if err != nil {
 		return err
 	}
@@ -144,7 +158,7 @@ func validatePR(pr pullRequest, repo string) error {
 	if !hasPendingLabel(pr) {
 		return fmt.Errorf("missing release lifecycle label")
 	}
-	_, err := ReleaseNotes(pr.Body)
+	_, err := releaseHeading(pr.Body)
 	return err
 }
 

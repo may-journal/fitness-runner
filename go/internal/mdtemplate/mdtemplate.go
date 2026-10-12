@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/changelog"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
@@ -20,8 +21,9 @@ const (
 	Prose Content = iota
 	// Checklist requires at least one "- [ ]" / "1. [ ]" item.
 	Checklist
-	// Bullet requires at least one "-" / "*" / "+" list item.
-	Bullet
+	// ChangelogLink requires a link to a CHANGELOG.md heading, such as
+	// [CHANGELOG entry](…/CHANGELOG.md#202610121100).
+	ChangelogLink
 )
 
 // Section is one required level-2 heading and the content it must carry.
@@ -52,7 +54,6 @@ const (
 
 var (
 	checkboxRe      = regexp.MustCompile(`^\s*(?:[-*+]|\d+\.)\s+\[[ xX]\]`)
-	bulletRe        = regexp.MustCompile(`^\s*[-*+]\s+\S`)
 	openQuestionsRe = regexp.MustCompile(`(?i)open\s+questions`)
 )
 
@@ -63,10 +64,10 @@ type contentRule struct {
 	msg string
 }
 
-// contentRules maps each list-bearing Content to its rule; Prose has no entry.
+// contentRules maps each Content that needs a matching line to its rule; Prose has no entry.
 var contentRules = map[Content]contentRule{
-	Checklist: {checkboxRe, "has no checklist item (- [ ] …)"},
-	Bullet:    {bulletRe, "has no list item (- …)"},
+	Checklist:     {checkboxRe, "has no checklist item (- [ ] …)"},
+	ChangelogLink: {changelog.LinkPattern, "has no link to its CHANGELOG.md entry ([CHANGELOG entry](…/CHANGELOG.md#202610121100))"},
 }
 
 // commentRe matches the opening of an HTML comment, the guidance a template

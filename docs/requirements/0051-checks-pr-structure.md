@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I want every PR description to give a summary, the reason, and changelog entries. The diff already shows what changed.
+I want every PR description to give a summary, the reason, and a link to its changelog entry. The entry and the diff already show what changed.
 
 ## Measurement
 
@@ -19,7 +19,7 @@ Source: `go/cmd/fitness-check-pr-structure/main.go:36`
 ## Requirements
 
 - 0051.1
-    - Given a PR body with a summary, a reason, and a changelog bullet
+    - Given a PR body with a summary, a reason, and a link to its changelog entry
         - When fitness runs pr-structure on it
             - Then it reports green
 - 0051.2
@@ -35,9 +35,9 @@ Source: `go/cmd/fitness-check-pr-structure/main.go:36`
         - When fitness runs pr-structure on it
             - Then it reports red naming the missing section
 - 0051.5
-    - Given a PR body whose `## Changelog` has no bullet
+    - Given a PR body whose `## Changelog` copies bullets instead of linking the entry
         - When fitness runs pr-structure on it
-            - Then it reports red asking for a list item
+            - Then it reports red asking for the link
 - 0051.6
     - Given a PR body with an extra `## Testing` section
         - When fitness runs pr-structure on it

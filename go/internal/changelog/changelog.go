@@ -1,13 +1,15 @@
 // Package changelog finds the dated "### yyyy.mm.dd.HHMM" entries a
 // branch, a staged commit, or a pull request adds to CHANGELOG.md. The commit
 // gate, the pre-commit stamp, and pr-check share it, so all three agree that
-// a pull request carries one entry, which later commits amend.
+// a pull request carries one entry, which later commits amend. It also names
+// the anchor GitHub gives each heading, so a description links its entry.
 package changelog
 
 import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"unicode"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
@@ -105,17 +107,98 @@ func show(root, spec string) (string, bool) {
 	return string(out), err == nil
 }
 
-// DiffEntries reads a unified diff of CHANGELOG.md, as git or GitHub prints
-// it. It returns the dated headings the diff adds and does not also remove,
-// and whether it adds a new Release Please version section.
-func DiffEntries(patch string) (added []string, release bool) {
-	var entries, versions diffSides
+// Diff is what a unified diff of CHANGELOG.md adds and does not also remove.
+type Diff struct {
+	// Entries are the stamps of new dated headings.
+	Entries []string
+	// Releases are new Release Please version heading lines.
+	Releases []string
+	// Bullets are the text of new list items, without their markers.
+	Bullets []string
+}
+
+// ReadDiff reads a unified diff of CHANGELOG.md, as git or GitHub prints it.
+// A line both removed and added, such as a moved one, counts as unchanged.
+func ReadDiff(patch string) Diff {
+	var entries, releases, bullets diffSides
 	for _, line := range strings.Split(patch, "\n") {
 		sign, text := diffLine(line)
 		entries.add(sign, Headings(text))
-		versions.add(sign, releaseVersions(text))
+		releases.add(sign, matching(releaseRe, text))
+		bullets.add(sign, bulletText(text))
 	}
-	return entries.added(), len(versions.added()) > 0
+	return Diff{Entries: entries.added(), Releases: releases.added(), Bullets: bullets.added()}
+}
+
+// Anchors are the fragments GitHub gives the headings d adds: every new
+// release section, else its one dated entry. They are nil when d adds no
+// heading or more than one dated entry.
+func (d Diff) Anchors() []string {
+	headings := d.Releases
+	if len(headings) == 0 && len(d.Entries) == 1 {
+		headings = d.Entries
+	}
+	var anchors []string
+	for _, h := range headings {
+		anchors = append(anchors, Anchor(h))
+	}
+	return anchors
+}
+
+var (
+	// mdLinkRe is a markdown link; Anchor keeps only its text.
+	mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
+	// bulletRe is a list item and its text.
+	bulletRe = regexp.MustCompile(`^\s*[-*]\s+(\S.*)$`)
+	// LinkPattern matches a markdown link to a CHANGELOG.md heading and
+	// captures the heading's anchor. GitHub anchors are lowercase, so a
+	// template placeholder such as #REPLACE-WITH-STAMP never matches.
+	LinkPattern = regexp.MustCompile(`\]\([^)\s]*` + regexp.QuoteMeta(File) + `#([a-z0-9_-]+)\)`)
+)
+
+// Anchor is the fragment GitHub gives a CHANGELOG.md heading: its text with
+// links reduced to their text, lowercased, punctuation dropped, and spaces
+// made hyphens. The entry "### 2026.10.12.0919" anchors at 202610120919.
+func Anchor(heading string) string {
+	text := mdLinkRe.ReplaceAllString(strings.TrimLeft(heading, "# "), "$1")
+	return strings.Map(anchorRune, strings.ToLower(strings.TrimSpace(text)))
+}
+
+// anchorRune is how r reads in an anchor: a space becomes a hyphen, a
+// letter, digit, hyphen, or underscore stays, and anything else drops.
+func anchorRune(r rune) rune {
+	if r == ' ' {
+		return '-'
+	}
+	if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune("-_", r) {
+		return r
+	}
+	return -1
+}
+
+// Links returns the anchor of every CHANGELOG.md heading link in text.
+func Links(text string) []string {
+	var anchors []string
+	for _, m := range LinkPattern.FindAllStringSubmatch(text, -1) {
+		anchors = append(anchors, m[1])
+	}
+	return anchors
+}
+
+// matching is text when re matches it, else nothing.
+func matching(re *regexp.Regexp, text string) []string {
+	if re.MatchString(text) {
+		return []string{text}
+	}
+	return nil
+}
+
+// bulletText is a list item's text without its marker.
+func bulletText(text string) []string {
+	if m := bulletRe.FindStringSubmatch(text); m != nil {
+		return []string{strings.TrimSpace(m[1])}
+	}
+	return nil
 }
 
 // diffSides collects what a diff's added and removed lines hold.
@@ -134,14 +217,6 @@ func (d *diffSides) add(sign byte, items []string) {
 // added is what the diff adds and does not also remove, such as a moved line.
 func (d diffSides) added() []string {
 	return New(d.minus, d.plus)
-}
-
-// releaseVersions is the version a Release Please section heading names.
-func releaseVersions(text string) []string {
-	if m := releaseRe.FindStringSubmatch(text); m != nil {
-		return []string{m[1]}
-	}
-	return nil
 }
 
 // diffLine splits a diff line into its sign and text. File headers and

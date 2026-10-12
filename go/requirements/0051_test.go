@@ -11,8 +11,8 @@ const prStructureSummary = "> Ship the thing so a reader gets the value.\n\n"
 // prStructureBackground is a filled `## Background` section.
 const prStructureBackground = "## Background\n\nWhy this exists.\n\n"
 
-// prStructureChangelog is a `## Changelog` section with one bullet.
-const prStructureChangelog = "## Changelog\n\n- Feat: the new behavior\n"
+// prStructureChangelog is a `## Changelog` section linking its entry.
+const prStructureChangelog = "## Changelog\n\n- [CHANGELOG entry](https://github.com/o/r/blob/feature/CHANGELOG.md#202610100900)\n"
 
 // prStructure runs `fitness-install -- pr-structure --body-file pr.md` on
 // happyRepo with body as the PR description.
@@ -48,8 +48,8 @@ func Test0051_4(t *testing.T) {
 
 func Test0051_5(t *testing.T) {
 	t.Parallel()
-	out, code := prStructure(t, prStructureSummary+prStructureBackground+"## Changelog\n\nNothing yet.\n")
-	sees(t, out, code, 1, "`## Changelog` has no list item (- …)")
+	out, code := prStructure(t, prStructureSummary+prStructureBackground+"## Changelog\n\n- Feat: the new behavior.\n")
+	sees(t, out, code, 1, "`## Changelog` has no link to its CHANGELOG.md entry")
 }
 
 func Test0051_6(t *testing.T) {

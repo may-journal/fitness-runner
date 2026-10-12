@@ -3,6 +3,7 @@ package requirements
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -37,9 +38,14 @@ type response struct {
 
 // replay answers one call from $FITNESS_REPLAY/<name>.json, the first
 // response that matches, and logs the call to $FITNESS_REPLAY/<name>.log.
+// A call that reads its input from stdin logs that input after its arguments.
 func replay(name string, args []string) int {
 	dir := os.Getenv("FITNESS_REPLAY")
 	call := strings.Join(args, " ")
+	if strings.Contains(call, "--input -") {
+		sent, _ := io.ReadAll(os.Stdin)
+		call += " " + string(sent)
+	}
 	logCall(filepath.Join(dir, name+".log"), call)
 	var saved []response
 	raw, _ := os.ReadFile(filepath.Join(dir, name+".json"))
