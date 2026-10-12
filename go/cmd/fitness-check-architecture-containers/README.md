@@ -13,8 +13,8 @@ Each product is proved by a build target, an entry point, or a deploy file. A de
 
 | Evidence | Product | Technology |
 | --- | --- | --- |
-| A product `.go` file declaring `package main` | Go command, one per folder | Go |
-| An XcodeGen `project.yml` target of type `application`, `*extension`, or `tool` | App, extension, or tool target | Swift |
+| A product `.go` file declaring `package main` without a `go:build ignore` constraint | Go command, one per folder | Go |
+| An XcodeGen `project.yml` target of type `application`, `*extension`, or `tool`, its own or from `targetTemplates` | App, extension, or tool target | Swift |
 | A `project.pbxproj` native target with the same product types | App, extension, or tool target | Swift |
 | A `package.json` with a `start` script or `bin`, or a deploy file beside it | Node service | Node |
 
@@ -26,7 +26,7 @@ A product `.swift` file importing CloudKit, StoreKit, HealthKit, or WeatherKit u
 
 An owned container is a `Container`, `ContainerDb`, or `ContainerQueue` inside a boundary. A container owns a product when a path it names covers the product's folder, or when its name is the product's name. A trailing `*` in a path, such as `go/cmd/fitness-check-*`, names every sibling folder it matches.
 
-External systems, `System_Ext` and `Container_Ext`, need no evidence. A platform service the code uses needs an external system whose name or technology names it.
+External systems, `System_Ext` and `Container_Ext`, need no evidence. A platform service the code uses needs an external system whose name, technology, or description names it.
 
 ## Failures
 

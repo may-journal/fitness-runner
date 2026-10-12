@@ -87,7 +87,7 @@ func (d *diagram) c4Relation(name string, args []string, line string, at Locatio
 
 func (d *diagram) c4Element(name string, args []string, line string, at Location, opens bool) {
 	if e := d.add(args[0], name, args[1], line, at); e != nil {
-		e.Technology = technology(args)
+		e.Technology, e.Description = c4Strings(name, args)
 		d.textClaims(e.ID, strings.Join(args[1:], " "), at)
 	}
 	if opens {
@@ -95,13 +95,20 @@ func (d *diagram) c4Element(name string, args []string, line string, at Location
 	}
 }
 
-// technology is a C4 element's third argument, such as "Go" in
-// Container(cli, "Runner", "Go", "go/cmd/fitness").
-func technology(args []string) string {
-	if len(args) > 2 {
-		return args[2]
+// c4Strings reads the technology and description after a label. Container
+// and component macros take a technology first, as in Container(cli,
+// "Runner", "Go", "go/cmd/fitness"); persons, systems, and boundaries
+// take only a description.
+func c4Strings(name string, args []string) (technology, description string) {
+	rest := args[2:]
+	if technical(name) && len(rest) > 0 {
+		technology, rest = rest[0], rest[1:]
 	}
-	return ""
+	return technology, strings.Join(rest, " ")
+}
+
+func technical(name string) bool {
+	return (strings.HasPrefix(name, "Container") || strings.HasPrefix(name, "Component")) && !strings.HasSuffix(name, "Boundary")
 }
 
 // textClaims reads repository paths from diagram strings, such as a

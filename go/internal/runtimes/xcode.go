@@ -7,10 +7,10 @@ import (
 
 // target is one XcodeGen or Xcode target while its manifest is read.
 type target struct {
-	name, kind string
-	sources    []string
-	at         Location
-	typed      bool
+	name, kind         string
+	sources, templates []string
+	at                 Location
+	typed              bool
 }
 
 // targetKind maps a target type to the runtime it ships. Frameworks,
@@ -31,9 +31,6 @@ func targetKind(t string) string {
 // emit records a finished target as a product when its type ships a
 // runtime. A target without a type cannot be resolved.
 func (f *finder) emit(file string, t *target) {
-	if t == nil {
-		return
-	}
 	if !t.typed {
 		f.fail(t.at, "target %s has no type", t.name)
 		return
@@ -64,37 +61,48 @@ var (
 )
 
 // xcodegen reads the targets of an XcodeGen project.yml: each target's
-// type and sources, which are a list, a flow sequence, or one path.
+// type, sources, and templates. A target takes the type and sources of
+// the templates it names.
 func (f *finder) xcodegen(file string) {
 	lines, ok := f.lines(file)
 	if !ok {
 		return
 	}
-	r := &yamlTargets{f: f, file: file}
+	r := &yamlTargets{f: f, file: file, templates: map[string]*target{}}
 	for i, line := range lines {
 		r.line(line, i+1)
 	}
-	f.emit(file, r.current)
+	r.finish()
+	for _, t := range r.targets {
+		r.resolve(t)
+		f.emit(file, t)
+	}
 }
 
+// yamlTargets reads the targets and targetTemplates sections by
+// indentation: section keys at 0, target names at 2, fields at 4, and
+// list items at the first item's indent.
 type yamlTargets struct {
-	f         *finder
-	file      string
-	current   *target
-	inTargets bool
-	inSources bool
+	f          *finder
+	file       string
+	section    string
+	current    *target
+	list       *[]string
+	listIndent int
+	targets    []*target
+	templates  map[string]*target
 }
 
 func (r *yamlTargets) line(line string, n int) {
 	if comment(line) {
 		return
 	}
-	if item := yamlItem.FindStringSubmatch(line); item != nil && r.inSources {
-		r.current.sources = append(r.current.sources, item[2])
+	if item := yamlItem.FindStringSubmatch(line); item != nil && r.list != nil {
+		r.item(len(item[1]), item[2])
 		return
 	}
 	if key := yamlKey.FindStringSubmatch(line); key != nil {
-		r.key(len(key[1]), key[2], key[3], n)
+		r.key(len(key[1]), key[2], uncommented(key[3]), n)
 	}
 }
 
@@ -103,15 +111,31 @@ func comment(line string) bool {
 	return line == "" || strings.HasPrefix(line, "#")
 }
 
-// key reads a top-level key, a target name under targets, or a target
-// field, by its indentation.
+// uncommented drops a trailing "# comment" and surrounding quotes.
+func uncommented(value string) string {
+	value, _, _ = strings.Cut(value, " #")
+	return strings.Trim(strings.TrimSpace(value), `"'`)
+}
+
+// item adds a list entry at the list's own indent; deeper entries, such
+// as a source's excludes, belong to it and are skipped.
+func (r *yamlTargets) item(indent int, value string) {
+	if r.listIndent < 0 {
+		r.listIndent = indent
+	}
+	if indent == r.listIndent {
+		*r.list = append(*r.list, uncommented(value))
+	}
+}
+
 func (r *yamlTargets) key(indent int, name, value string, n int) {
 	if indent <= 4 {
-		r.inSources = false
+		r.list, r.listIndent = nil, -1
 	}
 	switch indent {
 	case 0:
-		r.top(name)
+		r.finish()
+		r.section = name
 	case 2:
 		r.target(name, n)
 	case 4:
@@ -119,16 +143,24 @@ func (r *yamlTargets) key(indent int, name, value string, n int) {
 	}
 }
 
-func (r *yamlTargets) top(name string) {
-	r.f.emit(r.file, r.current)
-	r.current, r.inTargets = nil, name == "targets"
+// finish files the current target under its section.
+func (r *yamlTargets) finish() {
+	if r.current == nil {
+		return
+	}
+	if r.section == "targetTemplates" {
+		r.templates[r.current.name] = r.current
+	} else {
+		r.targets = append(r.targets, r.current)
+	}
+	r.current = nil
 }
 
 func (r *yamlTargets) target(name string, n int) {
-	if !r.inTargets {
+	if r.section != "targets" && r.section != "targetTemplates" {
 		return
 	}
-	r.f.emit(r.file, r.current)
+	r.finish()
 	r.current = &target{name: name, at: Location{r.file, n}}
 }
 
@@ -140,8 +172,18 @@ func (r *yamlTargets) field(name, value string) {
 	case "type":
 		r.current.kind, r.current.typed = targetKind(value), true
 	case "sources":
-		r.inSources = value == ""
-		r.current.sources = append(r.current.sources, flowSequence(value)...)
+		r.listOf(&r.current.sources, value)
+	case "templates":
+		r.listOf(&r.current.templates, value)
+	}
+}
+
+// listOf reads a flow sequence or one bare value now, or opens a block
+// list for the items that follow.
+func (r *yamlTargets) listOf(into *[]string, value string) {
+	*into = append(*into, flowSequence(value)...)
+	if value == "" {
+		r.list, r.listIndent = into, -1
 	}
 }
 
@@ -158,6 +200,20 @@ func flowSequence(value string) []string {
 		}
 	}
 	return paths
+}
+
+// resolve gives a target the type and sources of the templates it names.
+func (r *yamlTargets) resolve(t *target) {
+	for _, name := range t.templates {
+		tmpl := r.templates[name]
+		if tmpl == nil {
+			continue
+		}
+		if !t.typed {
+			t.kind, t.typed = tmpl.kind, tmpl.typed
+		}
+		t.sources = append(t.sources, tmpl.sources...)
+	}
 }
 
 // pbxproj reads the native targets of an Xcode project: a block holding

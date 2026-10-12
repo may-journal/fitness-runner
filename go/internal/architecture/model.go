@@ -20,12 +20,13 @@ type Location struct {
 func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) }
 
 // Element is a node or boundary. ID is its Mermaid ID, Kind its C4 macro,
-// flowchart class, or "class", Parent the enclosing boundary's ID, and
-// Technology the C4 technology string.
+// flowchart class, or "class", and Parent the enclosing boundary's ID.
+// Technology and Description are the C4 strings after the label; only
+// containers and components carry a technology.
 type Element struct {
-	ID, Kind, Name, Technology, Parent, View string
-	Callout                                  int
-	At                                       Location
+	ID, Kind, Name, Technology, Description, Parent, View string
+	Callout                                               int
+	At                                                    Location
 }
 
 // Relationship is a directed diagram edge between two element IDs.

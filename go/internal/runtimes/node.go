@@ -11,10 +11,12 @@ import (
 // deployFiles beside a package.json prove it is deployed as a service.
 var deployFiles = []string{"Dockerfile", "Procfile", "fly.toml", "app.yaml", "serverless.yml", "vercel.json", "wrangler.toml"}
 
+// nodePackage is the part of package.json that proves a runtime. Bin is
+// a string or a map; a JSON null leaves it nil.
 type nodePackage struct {
 	Name    string            `json:"name"`
 	Scripts map[string]string `json:"scripts"`
-	Bin     json.RawMessage   `json:"bin"`
+	Bin     any               `json:"bin"`
 }
 
 // node records a package.json folder as a Node service when it has a
@@ -40,7 +42,7 @@ func (f *finder) nodeEvidence(file string, pkg nodePackage, lines []string) (Loc
 	if _, ok := pkg.Scripts["start"]; ok {
 		return Location{file, lineOf(lines, `"start"`)}, true
 	}
-	if len(pkg.Bin) > 0 {
+	if pkg.Bin != nil {
 		return Location{file, lineOf(lines, `"bin"`)}, true
 	}
 	for _, name := range deployFiles {
