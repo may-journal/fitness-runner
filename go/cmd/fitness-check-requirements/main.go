@@ -5,7 +5,8 @@
 // one test named for it (Go Test0001_1 or Swift test0001_1 owns 0001.1), and
 // every test must own one, so a test that proves no requirement is either a
 // missing requirement or a duplicate. Git history supplies removed IDs, so an
-// ID is never reused.
+// ID is never reused. A staged or pull request change to a requirement test
+// must change its doc too, and the reverse, unless a commit trailer exempts it.
 package main
 
 import (
@@ -19,7 +20,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "requirements"},
+		Describe: checkkit.Describe{Name: "requirements", ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }
@@ -33,17 +34,34 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil || repo == (langs{}) {
 		return checkkit.Pass(0), err
 	}
-	docs, errs, err := requirement.Load(root, paths)
+	if _, ok := checkkit.CtxMessage(); ok {
+		return result(len(paths)+len(files), pairErrors(root, paths, files, tests, commitChanges(root))), nil
+	}
+	errs, err := docErrors(root, paths, tests, repo)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
+	return result(len(paths)+len(files), append(errs, scopedPairs(root, paths, files, tests)...)), nil
+}
+
+// docErrors judges every doc's shape, its IDs against history, and which
+// tests own its acceptances.
+func docErrors(root string, paths []string, tests []goTest, repo langs) ([]string, error) {
+	docs, errs, err := requirement.Load(root, paths)
+	if err != nil {
+		return nil, err
+	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
-	errs = append(errs, ownershipErrors(docs, tests, repo)...)
+	return append(errs, ownershipErrors(docs, tests, repo)...), nil
+}
+
+// result passes with no errors and fails with any.
+func result(files int, errs []string) checkkit.Result {
 	if len(errs) > 0 {
-		return checkkit.Fail(len(paths)+len(files), errs...), nil
+		return checkkit.Fail(files, errs...)
 	}
-	return checkkit.Pass(len(paths) + len(files)), nil
+	return checkkit.Pass(files)
 }
 
 // collectTests reads every Go and Swift test, the files that hold them, and

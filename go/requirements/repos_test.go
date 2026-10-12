@@ -1,5 +1,7 @@
 package requirements
 
+import "strings"
+
 // The Given files a user's repo adds to happyRepo. They live here, not as
 // tracked example repos, so this repo's own checks never judge them.
 
@@ -11,6 +13,27 @@ func goRepo() map[string]string {
 		"adder_test.go":                          testFile("adder", "Test0001_1"),
 		"docs/requirements/0001-adds-numbers.md": requirementDoc("0001.1"),
 	}
+}
+
+// pairedRepo is goRepo with requirement 0001's test in reqs/0001_test.go,
+// named for it, beside a shared helper that proves no requirement. Only the
+// requirements check runs, so commits meet no other check.
+func pairedRepo() map[string]string {
+	return with(goRepo(), map[string]string{
+		".fitnessrc.json":    `{"policy": "external", "checks": ["requirements"]}` + "\n",
+		"adder_test.go":      "",
+		"reqs/0001_test.go":  testFile("reqs", "Test0001_1"),
+		"reqs/tools_test.go": "package reqs\n\n// two is a helper the tests share.\nfunc two() int { return 2 }\n",
+	})
+}
+
+// twoRepo is pairedRepo whose one test file proves requirements 0001 and 0002.
+func twoRepo() map[string]string {
+	return with(pairedRepo(), map[string]string{
+		"reqs/0001_test.go":                    "",
+		"reqs/0001_0002_test.go":               testFile("reqs", "Test0001_1", "Test0002_1"),
+		"docs/requirements/0002-adds-again.md": strings.Replace(requirementDoc("0002.1"), "0001 Adds Numbers", "0002 Adds Again", 1),
+	})
 }
 
 // swiftRepo is a Swift package whose XCTest method test0001_1 owns 0001.1.
