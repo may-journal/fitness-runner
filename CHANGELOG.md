@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1539
+
+- Fix: architecture-containers: replace `${target_name}` in XcodeGen template sources with the target's name.
+- Fix: architecture-containers: a `project.yml` value holding only a comment opens the block list below it.
+- Test: architecture-containers: the native fixture's template names `${target_name}` and uses a comment-only `sources` value.
+
 ### 2026.10.12.1533
 
 - Fix: architecture-containers: read XcodeGen `targetTemplates`, and skip nested `excludes` items and trailing comments in `project.yml`.

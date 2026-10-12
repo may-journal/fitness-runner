@@ -111,8 +111,12 @@ func comment(line string) bool {
 	return line == "" || strings.HasPrefix(line, "#")
 }
 
-// uncommented drops a trailing "# comment" and surrounding quotes.
+// uncommented drops a trailing "# comment" and surrounding quotes; a value
+// that is only a comment is empty.
 func uncommented(value string) string {
+	if strings.HasPrefix(value, "#") {
+		return ""
+	}
 	value, _, _ = strings.Cut(value, " #")
 	return strings.Trim(strings.TrimSpace(value), `"'`)
 }
@@ -202,7 +206,8 @@ func flowSequence(value string) []string {
 	return paths
 }
 
-// resolve gives a target the type and sources of the templates it names.
+// resolve gives a target the type and sources of the templates it names,
+// with ${target_name} in a template source replaced by the target's name.
 func (r *yamlTargets) resolve(t *target) {
 	for _, name := range t.templates {
 		tmpl := r.templates[name]
@@ -212,7 +217,9 @@ func (r *yamlTargets) resolve(t *target) {
 		if !t.typed {
 			t.kind, t.typed = tmpl.kind, tmpl.typed
 		}
-		t.sources = append(t.sources, tmpl.sources...)
+		for _, source := range tmpl.sources {
+			t.sources = append(t.sources, strings.ReplaceAll(source, "${target_name}", t.name))
+		}
 	}
 }
 

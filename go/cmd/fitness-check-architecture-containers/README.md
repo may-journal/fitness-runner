@@ -18,7 +18,7 @@ Each product is proved by a build target, an entry point, or a deploy file. A de
 | A `project.pbxproj` native target with the same product types | App, extension, or tool target | Swift |
 | A `package.json` with a `start` script or `bin`, or a deploy file beside it | Node service | Node |
 
-Deploy files are `Dockerfile`, `Procfile`, `fly.toml`, `app.yaml`, `serverless.yml`, `vercel.json`, and `wrangler.toml`. Frameworks, libraries, test bundles, and files under test or tool folders are source types, never products.
+A template source may name `${target_name}`; other template attributes are not substituted. Deploy files are `Dockerfile`, `Procfile`, `fly.toml`, `app.yaml`, `serverless.yml`, `vercel.json`, and `wrangler.toml`. Frameworks, libraries, test bundles, and files under test or tool folders are source types, never products.
 
 A product `.swift` file importing CloudKit, StoreKit, HealthKit, or WeatherKit uses a platform service.
 

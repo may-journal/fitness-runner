@@ -24,7 +24,7 @@ func accNative() map[string]string {
 	files["src/cmd/service/main.go"] = "package service\n\n// Service is a library.\n"
 	files[acRoot+acContainer] = acView("C4Container\nPerson(user, \"1 User\")\nSystem_Boundary(app, \"2 App\") {\nContainer(main, \"3 App\", \"Swift 6, SwiftUI\", \"App/\")\nContainer(widget, \"4 Widget\", \"Swift\")\nContainer(notify, \"5 Notify\", \"Swift\")\n}\nRel(user, main, \"6\")",
 		"Same person.", "The app.", "The app target.", "The widget target.", "The notification target.", "Opens it.")
-	files[accProject] = "name: App\ntargetTemplates:\n  Extension:\n    type: app-extension\n    platform: iOS\ntargets:\n  App:\n    type: application # the app\n    platform: iOS\n    sources: [App]\n  Widget:\n    templates: [Extension]\n    sources:\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n  Notify:\n    templates: [Extension]\n    sources: Notify\n  AppTests:\n    type: bundle.unit-test\n    platform: iOS\n    sources: [Tests]\n"
+	files[accProject] = "name: App\ntargetTemplates:\n  Extension:\n    type: app-extension\n    sources: [\"${target_name}\"]\ntargets:\n  App:\n    type: application # the app\n    platform: iOS\n    sources: [App]\n  Widget:\n    templates: [Extension]\n    sources: # folders\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n  Notify:\n    templates: [Extension]\n    sources: Notify\n  AppTests:\n    type: bundle.unit-test\n    platform: iOS\n    sources: [Tests]\n"
 	files["App/App.swift"] = "import SwiftUI\n"
 	files["Widget/Widget.swift"] = "import WidgetKit\n"
 	files["Notify/Notify.swift"] = "import UserNotifications\n"
@@ -106,7 +106,7 @@ func Test0072_3(t *testing.T) {
 	out, code = accRun(t, accXcode([2]string{"App", "application"}))
 	sees(t, out, code, 1, want)
 	files := accNative()
-	files[accProject] = strings.Replace(files[accProject], "  Widget:\n    templates: [Extension]\n    sources:\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n", "", 1)
+	files[accProject] = strings.Replace(files[accProject], "  Widget:\n    templates: [Extension]\n    sources: # folders\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n", "", 1)
 	out, code = accRun(t, files)
 	sees(t, out, code, 1, want)
 }
