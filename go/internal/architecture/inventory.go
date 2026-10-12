@@ -23,13 +23,19 @@ func (m *Model) inventory(root string, files []string) {
 			sources = append(sources, file)
 		}
 	}
-	kept := map[string]bool{}
-	for _, file := range walkfs.WithoutGenerated(root, sources) {
-		kept[file] = true
+	m.repo.kept = map[string]bool{}
+	for _, file := range walkfs.WithoutGenerated(root, files) {
+		m.repo.kept[file] = true
 	}
 	for _, file := range sources {
-		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, kept[file]), Owners: m.owners(file)})
+		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, m.repo.kept[file]), Owners: m.owners(file)})
 	}
+}
+
+// product reports a tracked file that is neither test, tool, nor
+// generated, so manifests and sources alike can prove a runtime.
+func (m *Model) product(file string) bool {
+	return category(file, m.repo.kept[file]) == "product"
 }
 
 func category(file string, kept bool) string {
@@ -47,7 +53,7 @@ func category(file string, kept bool) string {
 
 func testFolder(dir string) bool {
 	for _, segment := range strings.Split(dir, "/") {
-		if segment == "test" || segment == "tests" {
+		if contains([]string{"test", "tests", "testdata"}, segment) {
 			return true
 		}
 	}

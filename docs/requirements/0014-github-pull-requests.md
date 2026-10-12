@@ -19,26 +19,26 @@ Source: `go/internal/metadata/blobs.go:110`
 ## Requirements
 
 - 0014.1
-    - Given a draft PR that follows the template, linking its changelog entry, and closes a finished Plan
+    - Given Developer has a draft PR that follows the template, linking its changelog entry, and closes a finished Plan
         - When Actions and branch-check judge it
             - Then both report green, and local validation links targets without writing GitHub state
 - 0014.2
-    - Given a PR whose title is not a semantic commit
+    - Given Developer has a PR whose title is not a semantic commit
         - When pr-check judges it
             - Then it reports red quoting the title
 - 0014.3
-    - Given a PR that closes a Plan with an unchecked item
+    - Given Developer has a PR that closes a Plan with an unchecked item
         - When Actions and branch-check judge it
             - Then it reports red naming the item
 - 0014.4
-    - Given a PR that leaves open an issue its Plan closes
+    - Given Developer has a PR that leaves open an issue its Plan closes
         - When pr-check judges it
             - Then it reports red naming that issue
 - 0014.5
-    - Given a manual workflow run
+    - Given Developer has a manual workflow run
         - When pr-check runs
             - Then it judges every open PR
 - 0014.6
-    - Given a PR closes an inaccessible issue
+    - Given Developer has a PR closing an inaccessible issue
         - When I check it locally and through Actions
             - Then both fail naming that issue

@@ -30,6 +30,9 @@ No views means a pass with zero files. Any view requires all five, and each view
 | Label without its callout number | Name |
 | Enclosing C4 boundary, subgraph, or namespace | Parent |
 | `Rel(...)` or an arrow | Directed relationship; left-facing class arrows and `Rel_Back` are reversed |
+| The arrow itself, such as `-->` or `..>` | Relationship kind, kept for the code check |
+| A class body line, such as `+Ok` or `+Run(string) error` | Member of that class |
+| A class annotation, such as `<<abstract>>` | Annotation of that class |
 | Callout number | Display reference that binds a table row; renumbering keeps identity |
 
 Legends stay out of the model: unnumbered diagrams, C4 diagrams titled `Legend`, and diagrams under a `Legend` heading with their tables.
@@ -39,6 +42,7 @@ Legends stay out of the model: unnumbered diagrams, C4 diagrams titled `Legend`,
 | Row content | Model fact |
 | --- | --- |
 | Code span or diagram text naming a path under a tracked top-level folder | Source claim by the element |
+| A trailing `*` in such a path, as in `go/cmd/fitness-check-*` | One claim on every sibling the pattern matches |
 | Link to a tracked source file, optionally `#L3` or `#L3-L9` | Static evidence for the element or edge |
 | Link to `docs/requirements/NNNN-*.md`, or a code span such as `0001.1` | Requirement reference |
 

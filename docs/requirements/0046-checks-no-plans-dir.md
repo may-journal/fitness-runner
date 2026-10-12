@@ -19,14 +19,14 @@ Source: `go/cmd/fitness-check-no-plans-dir/main.go:27`
 ## Requirements
 
 - 0046.1
-    - Given a plan file in `docs/plans/`
+    - Given Developer has a plan file in `docs/plans/`
         - When fitness runs no-plans-dir
             - Then it fails naming the file and telling me to open a Plan Issue
 - 0046.2
-    - Given a plan file in a folder below `docs/plans/`
+    - Given Developer has a plan file in a folder below `docs/plans/`
         - When fitness runs no-plans-dir
             - Then it fails naming that nested file too
 - 0046.3
-    - Given a repo with no `docs/plans/` folder
+    - Given Developer has a repo with no `docs/plans/` folder
         - When fitness runs no-plans-dir
             - Then it passes with no files judged

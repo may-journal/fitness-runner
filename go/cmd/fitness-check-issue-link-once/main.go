@@ -195,7 +195,7 @@ func contains(list []string, s string) bool {
 // branchCommits lists the commits already on the branch, leaving out HEAD
 // when the new commit amends it.
 func branchCommits(root string) []earlier {
-	shas := gitx.BranchCommits(root, "HEAD", gitx.DefaultBase(root))
+	shas := gitx.OwnCommits(root, "HEAD", gitx.CurrentBranch(root))
 	if os.Getenv(amendEnv) == "1" && len(shas) > 0 {
 		shas = shas[1:]
 	}

@@ -9,7 +9,8 @@ Keeps Issue timelines readable ([#153](https://github.com/may-journal/fitness-ru
 ## Behavior
 
 - A link is `#NN`, `owner/repo#NN`, or an Issue or PR URL on github.com. A bare `#NN` belongs to origin's repo.
-- Fail: an earlier commit on the branch, since the base branch, links the same Issue.
+- Fail: an earlier commit of the branch's own, one no other pushed branch holds, links the same Issue.
+- A branch stacked on a pushed epic branch so starts where that branch ends.
 - Fail: the open PR body links the Issue, and the commit is newer than the PR.
 - Comment lines and anything below the scissors line are ignored, as git drops them.
 
