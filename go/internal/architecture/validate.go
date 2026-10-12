@@ -1,183 +1,98 @@
 package architecture
 
-import (
-	"os"
-	"path/filepath"
-	"strings"
-)
+import "strings"
 
-func (m *Model) validate(root string, files []string) {
-	ids := m.index()
-	for _, graph := range m.diagrams {
-		m.unclaimed(graph, ids)
+// addDiagram checks a finished diagram and adds it to the model.
+func (m *Model) addDiagram(d *diagram) {
+	for _, r := range d.edges {
+		d.endpoint(r.From, r.At)
+		d.endpoint(r.To, r.At)
+		m.Relationships = append(m.Relationships, *r)
 	}
-	for _, d := range m.Declarations {
-		m.references(d, ids)
-		m.nodeFields(d)
-		m.evidence(root, d, files)
+	for _, e := range d.order {
+		d.enclosed(e)
+		m.Elements = append(m.Elements, *e)
 	}
-	m.aliases()
-	m.requirementLinks()
-	m.inventory(root, files)
-	m.manifestTargets(root, files)
+	d.overlaps()
+	m.Claims = append(m.Claims, d.claims...)
 }
 
-func (m *Model) index() map[string]Declaration {
-	ids := map[string]Declaration{}
-	for _, d := range m.Declarations {
-		if d.ID == "" {
-			continue
-		}
-		if first, exists := ids[d.ID]; exists {
-			m.fail(d.At, "duplicate ID %s; first declared at %s", d.ID, first.At)
-		}
-		ids[d.ID] = d
-	}
-	return ids
-}
-
-func (m *Model) references(d Declaration, ids map[string]Declaration) {
-	for _, ref := range []string{d.Ref, d.Parent, d.From, d.To} {
-		if ref == "" {
-			continue
-		}
-		if _, exists := ids[ref]; !exists {
-			m.fail(d.At, "unresolved ID %s (diagram %s)", ref, d.Diagram)
-		}
-	}
-	m.parentCycle(d, ids)
-}
-
-func (m *Model) parentCycle(d Declaration, ids map[string]Declaration) {
-	seen := map[string]bool{d.ID: true}
-	for parent := d.Parent; parent != ""; parent = ids[parent].Parent {
-		if seen[parent] {
-			m.fail(d.At, "parent cycle through %s at %s", parent, ids[parent].At)
-			return
-		}
-		seen[parent] = true
+func (d *diagram) endpoint(id string, at Location) {
+	if d.elements[id] == nil {
+		d.m.fail(at, "unresolved ID %s; declare it in this diagram", id)
 	}
 }
 
-func (m *Model) nodeFields(d Declaration) {
-	if d.Ref != "" {
+// enclosed requires a boundary around each container of a container view
+// and each component of a component view.
+func (d *diagram) enclosed(e *Element) {
+	level := map[string]string{"C4Container": "Container", "C4Component": "Component"}[d.form]
+	if e.Parent == "" && level != "" && internal(e.Kind, level) {
+		d.m.fail(e.At, "%s %s needs an enclosing boundary", strings.ToLower(level), e.ID)
+	}
+}
+
+// internal reports a view's own unit: not external and not a boundary.
+func internal(kind, level string) bool {
+	return strings.HasPrefix(kind, level) && !strings.HasSuffix(kind, "_Ext") && !strings.HasSuffix(kind, "Boundary")
+}
+
+// overlaps fails two elements that claim the same source when neither
+// encloses the other.
+func (d *diagram) overlaps() {
+	for i, a := range d.claims {
+		for _, b := range d.claims[i+1:] {
+			d.overlap(a, b)
+		}
+	}
+}
+
+func (d *diagram) overlap(a, b Claim) {
+	if d.nested(a.Owner, b.Owner) {
 		return
 	}
-	if !contains(strings.Fields("actor system external runtime component symbol behavior relationship"), d.Type) {
-		m.fail(d.At, "unsupported node type %q", d.Type)
-	}
-	m.requiredFields(d)
-}
-
-func (m *Model) requiredFields(d Declaration) {
-	if contains([]string{"runtime", "component", "symbol"}, d.Type) && d.Parent == "" {
-		m.fail(d.At, "%s needs a parent ID", d.Type)
-	}
-	if d.Type == "actor" && d.Name == "" {
-		m.fail(d.At, "actor needs a name")
-	}
-	m.symbolFields(d)
-	m.relationshipFields(d)
-}
-
-func (m *Model) symbolFields(d Declaration) {
-	if d.Type == "symbol" && (d.Path == "" || d.Symbol == "") {
-		m.fail(d.At, "symbol needs path and symbol fields")
+	if covers(a.Path, b.Path) || covers(b.Path, a.Path) {
+		d.m.fail(b.At, "overlapping source claims: %s claims %s and %s claims %s at %s", b.Owner, b.Path, a.Owner, a.Path, a.At)
 	}
 }
 
-func (m *Model) relationshipFields(d Declaration) {
-	if d.Type != "relationship" {
-		return
-	}
-	if d.From == "" || d.To == "" {
-		m.fail(d.At, "relationship needs directed from and to IDs")
-	}
-	if !contains(strings.Fields("uses calls imports inherits implements contains reads writes sends navigates"), d.Kind) {
-		m.fail(d.At, "unsupported relationship kind %q", d.Kind)
-	}
-	m.relationshipProof(d)
+func (d *diagram) nested(a, b string) bool {
+	return a == b || d.encloses(a, b) || d.encloses(b, a)
 }
 
-func (m *Model) relationshipProof(d Declaration) {
-	if !contains([]string{"allowed", "required"}, d.Mode) {
-		m.fail(d.At, "relationship mode must be allowed or required")
+func (d *diagram) encloses(outer, inner string) bool {
+	for e := d.elements[inner]; e != nil && e.Parent != ""; e = d.elements[e.Parent] {
+		if e.Parent == outer {
+			return true
+		}
 	}
-	if d.Evidence == "" {
-		m.fail(d.At, "relationship needs evidence; use declared for an unproved constraint")
-	}
+	return false
 }
 
-func (m *Model) aliases() {
-	seen := map[string]Declaration{}
-	for _, d := range m.Declarations {
-		if d.Type == "actor" {
-			m.actorNames(d, seen)
+// actors keeps each person's ID and name one-to-one across all views, so
+// later checks can match requirement Given text to one actor.
+func (m *Model) actors() {
+	names, ids := map[string]Element{}, map[string]Element{}
+	for _, e := range m.Elements {
+		if strings.HasPrefix(e.Kind, "Person") {
+			m.actor(e, names, ids)
 		}
 	}
 }
 
-func (m *Model) actorNames(d Declaration, seen map[string]Declaration) {
-	for _, name := range append([]string{d.Name}, d.Aliases...) {
-		if first, exists := seen[name]; exists {
-			m.fail(d.At, "actor name or alias %q is ambiguous; first at %s", name, first.At)
-		}
-		seen[name] = d
+func (m *Model) actor(e Element, names, ids map[string]Element) {
+	if first, seen := ids[e.ID]; seen && first.Name != e.Name {
+		m.fail(e.At, "actor %s is named %q here and %q at %s", e.ID, e.Name, first.Name, first.At)
 	}
+	if first, seen := names[e.Name]; seen && first.ID != e.ID {
+		m.fail(e.At, "actor name %q is ambiguous: %s here and %s at %s", e.Name, e.ID, first.ID, first.At)
+	}
+	keepFirst(ids, e.ID, e)
+	keepFirst(names, e.Name, e)
 }
 
-func (m *Model) requirementLinks() {
-	ids := map[string]Location{}
-	for _, doc := range m.Requirements {
-		for _, id := range doc.IDs() {
-			ids[id.ID] = Location{doc.Path, id.Line}
-		}
+func keepFirst(seen map[string]Element, key string, e Element) {
+	if _, ok := seen[key]; !ok {
+		seen[key] = e
 	}
-	for _, d := range m.Declarations {
-		m.requirementRefs(d, ids)
-	}
-}
-
-func (m *Model) requirementRefs(d Declaration, ids map[string]Location) {
-	for _, id := range d.Requirements {
-		if _, exists := ids[id]; !exists {
-			m.fail(d.At, "unresolved requirement %s in docs/requirements (diagram %s)", id, d.Diagram)
-		}
-	}
-}
-
-func (m *Model) evidence(root string, d Declaration, files []string) {
-	m.sourcePath(d, files)
-	if d.Evidence == "" || d.Evidence == "declared" {
-		return
-	}
-	kind, location, _ := strings.Cut(d.Evidence, ":")
-	if kind != "static" {
-		m.fail(d.At, "unsupported evidence %s (kind %q); runtime proof needs a resolver", d.Evidence, kind)
-		return
-	}
-	m.staticEvidence(root, d, location, files)
-}
-
-func (m *Model) sourcePath(d Declaration, files []string) {
-	if d.Path != "" && !contains(files, d.Path) {
-		m.fail(d.At, "source path %s is not a tracked file (diagram %s)", d.Path, d.Diagram)
-	}
-}
-
-func (m *Model) staticEvidence(root string, d Declaration, location string, files []string) {
-	file, number, ok := strings.Cut(location, ":")
-	line := positiveNumber(number)
-	if !ok || line == 0 || !contains(files, file) {
-		m.fail(d.At, "unresolved static evidence %s", location)
-		return
-	}
-	if !sourceLine(root, file, line) {
-		m.fail(d.At, "unresolved static evidence %s", location)
-	}
-}
-
-func sourceLine(root, file string, line int) bool {
-	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
-	return err == nil && line <= len(strings.Split(string(body), "\n"))
 }

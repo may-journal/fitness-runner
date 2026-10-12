@@ -9,10 +9,10 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.10.12.1319
 
-- Feat: architecture-contract: read stable diagram declarations, source ownership, and evidence locations across both architecture roots.
-- Fix: architecture-contract: separate targets from files, resolve relationship refs, keep arrow direction, and accept C4 database variants.
+- Feat: architecture-contract: read Mermaid IDs, boundaries, edges, and callout rows already in both architecture roots as one model.
+- Feat: architecture-contract: fail duplicate or unresolved IDs, overlapping source claims, unreadable evidence links, and actor name drift.
 - Refactor: requirements: share clause parsing and retain Given text with source lines.
-- Test: architecture-contract: prove contract failures and scoped runs through the installed command.
+- Test: architecture-contract: prove each requirement 0070 acceptance through the installed command.
 
 ### 2026.10.12.0958
 

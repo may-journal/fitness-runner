@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
@@ -16,35 +17,40 @@ var views = map[string]string{
 	"03-components.md": "components", "04-code.md": "code", "05-user-journey.md": "journey",
 }
 
-// Load reads all connected files, including in scoped runs. Architecture roots
-// contain the five conventional view files; ADRs are not architecture views.
+var heading = regexp.MustCompile(`^#{1,6}\s+(.*?)\s*#*$`)
+
+// Load reads every view and its connected sources, including in scoped runs,
+// so a change on one side still meets the unchanged other side.
 func Load(root string) (Model, error) {
-	m := Model{}
 	files := walkfs.FilesByExt(root, "")
-	present, err := m.readViews(root, files)
-	if err != nil {
-		return m, err
-	}
-	if len(m.Files) == 0 {
-		return m, nil
-	}
-	m.missingViews(present)
+	m := Model{repo: newRepository(root, files)}
 	if err := m.readRequirements(root, files); err != nil {
 		return m, err
 	}
-	m.validate(root, files)
+	present, err := m.readViews(root, files)
+	if err != nil || len(m.Files) == 0 {
+		return Model{}, err
+	}
+	m.missingViews(present)
+	m.actors()
+	m.inventory(root, files)
 	return m, nil
 }
 
 func (m *Model) readViews(root string, files []string) (map[string]bool, error) {
 	present := map[string]bool{}
 	for _, file := range files {
-		if view := viewFile(file); view != "" {
-			present[view] = true
-			if err := m.readView(root, file, view); err != nil {
-				return present, err
-			}
+		view := viewFile(file)
+		if view == "" {
+			continue
 		}
+		present[view] = true
+		body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+		if err != nil {
+			return present, err
+		}
+		m.Files = append(m.Files, file)
+		m.readView(file, view, string(body))
 	}
 	return present, nil
 }
@@ -78,83 +84,84 @@ func (m *Model) readRequirements(root string, files []string) error {
 	return err
 }
 
-func (m *Model) readView(root, file, view string) error {
-	b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
-	if err != nil {
-		return err
-	}
-	m.Files = append(m.Files, file)
-	m.parseView(file, view, string(b))
-	return nil
+// viewReader pairs each model diagram with the callout table after it.
+// Unnumbered legends are invisible, as in the mermaid checks; a numbered
+// legend keeps its own table out of the model.
+type viewReader struct {
+	m             *Model
+	file, view    string
+	lines         []string
+	pending       *diagram
+	skipTable     bool
+	diagramsCount int
 }
 
-func (m *Model) parseView(file, view, body string) {
-	blocks := mermaid.ParseDoc(body)
-	var pending *mermaid.DiagramBlock
-	count := 0
-	for _, block := range blocks {
-		switch b := block.(type) {
-		case *mermaid.DiagramBlock:
-			pending = m.nextDiagram(file, pending, b)
-		case *mermaid.CalloutTableBlock:
-			count += m.pairedTable(file, view, pending, b)
-			pending = nil
-		}
+func (m *Model) readView(file, view, body string) {
+	r := &viewReader{m: m, file: file, view: view, lines: strings.Split(body, "\n")}
+	for _, block := range mermaid.ParseDoc(body) {
+		r.block(block)
 	}
-	m.unpaired(file, pending)
-	if count == 0 {
-		m.fail(Location{file, 1}, "view has no contracted diagram")
+	r.flush()
+	if r.diagramsCount == 0 {
+		m.fail(Location{file, 1}, "view has no diagram outside its legends")
 	}
 }
 
-func (m *Model) pairedTable(file, view string, diagram *mermaid.DiagramBlock, table *mermaid.CalloutTableBlock) int {
-	if diagram == nil {
-		return 0
-	}
-	m.readTable(file, view, diagram, table)
-	return 1
-}
-
-func (m *Model) nextDiagram(file string, pending, next *mermaid.DiagramBlock) *mermaid.DiagramBlock {
-	if strings.Contains(next.Body, "%% architecture:legend") {
-		return pending
-	}
-	m.unpaired(file, pending)
-	return next
-}
-
-func (m *Model) unpaired(file string, diagram *mermaid.DiagramBlock) {
-	if diagram != nil {
-		m.fail(Location{file, diagram.Line}, "diagram needs a Contract column; mark legends with %% architecture:legend")
+func (r *viewReader) block(block mermaid.DocBlock) {
+	switch b := block.(type) {
+	case *mermaid.DiagramBlock:
+		r.diagram(b)
+	case *mermaid.CalloutTableBlock:
+		r.table(b)
 	}
 }
 
-func contractColumn(header []string) int {
-	for i, cell := range header {
-		if cell == "Contract" {
-			return i
-		}
-	}
-	return -1
-}
-
-func (m *Model) readTable(file, view string, diagram *mermaid.DiagramBlock, table *mermaid.CalloutTableBlock) {
-	column := contractColumn(table.Header)
-	if column < 0 {
-		m.fail(Location{file, table.Line}, "callout table needs a Contract column for diagram %s:%d", file, diagram.Line)
+func (r *viewReader) diagram(b *mermaid.DiagramBlock) {
+	if len(b.Numbers) == 0 {
 		return
 	}
-	graph := m.readDiagram(file, diagram)
-	for i, row := range table.Rows {
-		at := Location{file, table.Line + 2 + i}
-		if column >= len(row) {
-			m.fail(at, "missing Contract cell")
-			continue
-		}
-		d := m.declaration(row[column], at)
-		d.View, d.Diagram = view, Location{file, diagram.Line}
-		m.matchCallout(row[0], d, graph)
-		m.Declarations = append(m.Declarations, d)
+	r.flush()
+	if r.legend(b) {
+		r.skipTable = true
+		return
 	}
-	m.diagrams = append(m.diagrams, graph)
+	r.pending = r.m.readDiagram(r.file, r.view, b)
+	r.diagramsCount++
+}
+
+func (r *viewReader) table(b *mermaid.CalloutTableBlock) {
+	if r.skipTable {
+		r.skipTable = false
+		return
+	}
+	if r.pending != nil {
+		r.pending.bindRows(b)
+		r.flush()
+	}
+}
+
+func (r *viewReader) flush() {
+	if r.pending != nil {
+		r.m.addDiagram(r.pending)
+	}
+	r.pending, r.skipTable = nil, false
+}
+
+// legend reports a diagram titled Legend or placed under a Legend heading.
+func (r *viewReader) legend(b *mermaid.DiagramBlock) bool {
+	for _, line := range strings.Split(b.Body, "\n") {
+		if strings.EqualFold(strings.TrimSpace(line), "title Legend") {
+			return true
+		}
+	}
+	return strings.EqualFold(r.headingBefore(b.Line), "Legend")
+}
+
+func (r *viewReader) headingBefore(line int) string {
+	for i := line - 2; i >= 0; i-- {
+		if match := heading.FindStringSubmatch(r.lines[i]); match != nil {
+			return match[1]
+		}
+	}
+	return ""
 }

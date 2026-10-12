@@ -1,52 +1,69 @@
 package requirements
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 )
 
-const acCheck = "architecture-contract"
-const acContext = "01-system-context.md"
-const acCode = "04-code.md"
-const acJourney = "05-user-journey.md"
+const (
+	acCheck     = "architecture-contract"
+	acRoot      = "architecture/"
+	acContext   = "01-system-context.md"
+	acContainer = "02-containers.md"
+	acComponent = "03-components.md"
+	acCode      = "04-code.md"
+	acJourney   = "05-user-journey.md"
+	acEvidence  = "#L3)"
+)
 
-// acView keeps the fixture's contract beside the actual diagram. Fixtures
-// are committed by example before the installed command reads them.
-func acView(diagram string, contracts ...string) string {
-	body := "```mermaid\n" + diagram + "\n```\n\n| # | Contract |\n| --- | --- |\n"
-	for _, contract := range contracts {
-		body += "| " + contract + " |\n"
+// acView writes a view as people already do: a heading, a diagram, and its
+// callout table. Nothing is added for the check. The diagram starts on line
+// 4, so its Nth line is line N+3; the first row sits on line count+8.
+func acView(diagram string, rows ...string) string {
+	body := "# View\n\n```mermaid\n" + diagram + "\n```\n\n| # | Description | Why |\n| --- | --- | --- |\n"
+	for i, row := range rows {
+		body += "| " + strconv.Itoa(i+1) + " | " + row + " | Shared by later checks. |\n"
 	}
 	return body
 }
 
+// acFixture is a small complete architecture under root. up leads from the
+// root back to the repository, for links.
 func acFixture(root string) map[string]string {
+	up := strings.Repeat("../", strings.Count(root, "/"))
 	return map[string]string{
-		root + acContext: acView("C4Context\nPerson(host, \"1 Host\")\nSystem(app, \"2 App\")\nRel(host, app, \"3\")",
-			"1 | id=host; type=actor; name=Host; aliases=Owner", "2 | id=app; type=system",
-			"3 | id=uses-app; type=relationship; from=host; to=app; kind=uses; mode=allowed; evidence=declared"),
-		root + "02-containers.md": acView("C4Container\nContainer(run, \"1 App\", \"Go\")",
-			"1 | id=run; type=runtime; parent=app; target=go:src"),
-		root + "03-components.md": acView("C4Component\nComponent(core, \"1 Core\", \"Go\")",
-			"1 | id=core; type=component; parent=run; owns=src/,Tests/,tools/,generated/"),
-		root + acCode: acView("classDiagram\nclass Result[\"1 Result\"]",
-			"1 | id=result; type=symbol; parent=core; path=src/main.go; symbol=Result; evidence=static:src/main.go:2"),
-		root + acJourney: acView("flowchart TB\nhost((1 Host))\nopen[2 Open]\nhost -->|3| open",
-			"1 | ref=host", "2 | id=open; type=behavior; requirements=0001,0001.1",
-			"3 | id=opens; type=relationship; from=host; to=open; kind=navigates; mode=required; evidence=declared"),
-		"src/main.go":                    "package main\ntype Result struct {}\nfunc main() {}\n",
-		"src/App.swift":                  "struct App {}\n",
-		"Tests/AppTests.swift":           "import Foundation\n",
+		root + acContext: acView("C4Context\nPerson(user, \"1 User\")\nSystem(app, \"2 App\")\nRel(user, app, \"3\")",
+			"A person who uses the app.", "The system.", "Uses it.") +
+			"\n```mermaid\nC4Context\ntitle Legend\nPerson(p, \"Person\")\n```\n",
+		root + acContainer: acView("C4Container\nPerson(user, \"1 User\")\nSystem_Boundary(app, \"2 App\") {\nContainer(service, \"3 Service\", \"Go\", \"src/cmd/service\")\n}\nRel(user, service, \"4\")",
+			"Same person.", "The system.", "Runs requests.", "Calls it."),
+		root + acComponent: acView("C4Component\nContainer_Boundary(service, \"1 Service (src/cmd/service)\") {\nComponent(entry, \"2 Entry\", \"Go\")\nComponent(store, \"3 Store\", \"Go\", \"src/store\")\n}\nRel(entry, store, \"4\")",
+			"The service.", "`src/cmd/service/main.go` starts it.", "Keeps records.", "Saves through the store, see [source]("+up+"src/cmd/service/main.go"+acEvidence+"."),
+		root + acCode: acView("classDiagram\nclass Record[\"1 Record\"] {\n+ID\n}\nclass save[\"2 save()\"]\nsave --> Record : 3",
+			"A saved record.", "Writes one record.", "Save returns the record.") +
+			"\n```mermaid\nclassDiagram\nclass Example\nParent <|-- Child : inherits\n```\n",
+		root + acJourney: "## Legend\n\n```mermaid\nflowchart TB\nperson((1 Person)):::persona\nclassDef persona fill:#fff\n```\n\n| # | Description | Why |\n| --- | --- | --- |\n| 1 | Persona | A legend row. |\n\n" +
+			acView("flowchart TB\nuser((1 User)):::persona\nopen(2 Open the app):::action\ndone[3 Record saved]:::screen\nuser --> open\nopen -->|saves| done\nclassDef persona fill:#fff",
+				"Same person.", "Opens it, `0001.1`.", "Shows the record, see [0001]("+up+"docs/requirements/0001-open.md)."),
+		"src/cmd/service/main.go":        "package main\n\nfunc main() {}\n",
+		"src/store/store.go":             "package store\n",
+		"src/store/store_test.go":        "package store\n",
 		"tools/check.sh":                 "#!/bin/sh\nexit 0\n",
-		"generated/data.go":              "package generated\n",
-		".gitattributes":                 "generated/* linguist-generated=true\n",
-		"docs/requirements/0001-open.md": "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\nSource: #1\n\n## Requirements\n\n- 0001.1\n    - Given Host opens the app\n        - When it starts\n            - Then it opens\n",
+		"docs/requirements/0001-open.md": "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\nSource: #1\n\n## Requirements\n\n- 0001.1\n    - Given a user opens the app\n        - When it starts\n            - Then it opens\n",
 	}
 }
 
-func acRun(t *testing.T, files map[string]string) (string, int) {
+func acRun(t *testing.T, files map[string]string, env ...string) (string, int) {
 	t.Helper()
-	return fitness(t, example(t, "happyRepo", files), nil, acCheck)
+	return fitness(t, example(t, "happyRepo", files), env, acCheck)
+}
+
+// acEdit replaces old with new in one view of the default fixture.
+func acEdit(view, old, new string) map[string]string {
+	files := acFixture(acRoot)
+	files[acRoot+view] = strings.Replace(files[acRoot+view], old, new, 1)
+	return files
 }
 
 func Test0070_1(t *testing.T) {
@@ -58,105 +75,87 @@ func Test0070_1(t *testing.T) {
 
 func Test0070_2(t *testing.T) {
 	t.Parallel()
-	acTargetCases(t)
-	acC4Variants(t)
-	acRelationships(t, false)
-	for _, root := range []string{"architecture/", "docs/architecture/"} {
+	for _, root := range []string{acRoot, "docs/architecture/"} {
 		files := acFixture(root)
-		files["src/project.yml"] = "name: Example\ntargets:\n  App:\n    type: application\n    sources: [.]\n"
-		files[root+"02-containers.md"] = strings.ReplaceAll(files[root+"02-containers.md"], "target=go:src", "target=xcode-project:src/project.yml:App")
 		out, code := acRun(t, files)
 		sees(t, out, code, 0)
-		files[root+acContext] = acView("flowchart TB\nhost((21 Host))\napp[22 App]\nhost -->|23| app",
-			"21 | id=host; type=actor; name=Host; aliases=Owner", "22 | id=app; type=system",
-			"23 | id=uses-app; type=relationship; from=host; to=app; kind=uses; mode=allowed; evidence=declared")
-		files[root+acCode] += "\n```mermaid\n%% architecture:legend\nclassDiagram\nclass Example[\"1 Example\"]\n```\n"
+		passedWith(t, out, acCheck, "5")
+		files[root+acContext] = strings.NewReplacer("\"1 User\"", "\"21 User\"", "\"2 App\"", "\"22 App\"", "\"3\"", "\"23\"", "| 1 |", "| 21 |", "| 2 |", "| 22 |", "| 3 |", "| 23 |").Replace(files[root+acContext])
 		out, code = acRun(t, files)
 		sees(t, out, code, 0)
-		passedWith(t, out, acCheck, "5")
+		files[root+acContext] = acView("flowchart LR\naccTitle: Context\nuser((1 User)):::persona\napp[2 App]:::system\nuser -->|3| app\nclassDef persona fill:#fff", "A person.", "The system.", "Uses it.")
+		out, code = acRun(t, files)
+		sees(t, out, code, 0)
 	}
 }
 
 func Test0070_3(t *testing.T) {
 	t.Parallel()
-	files := acFixture("architecture/")
-	delete(files, "architecture/"+acJourney)
+	files := acFixture(acRoot)
+	delete(files, acRoot+acJourney)
 	out, code := acRun(t, files)
 	sees(t, out, code, 1, "architecture/01-system-context.md:1: missing architecture view 05-user-journey.md")
+	files = acFixture(acRoot)
+	files[acRoot+acCode] = "# View\n\nNo diagram yet.\n"
+	out, code = acRun(t, files)
+	sees(t, out, code, 1, "architecture/04-code.md:1: view has no diagram outside its legends")
 }
 
 func Test0070_4(t *testing.T) {
 	t.Parallel()
-	acBadTargets(t)
-	acRelationships(t, true)
-	acBadRefType(t)
-	cases := map[string]string{
-		"id=host; type=symbol; parent=core":                      "duplicate ID host; first declared at architecture/01-system-context.md:10",
-		"id=result; type=symbol; parent=lost":                    "unresolved ID lost",
-		"id=result; type=unknown; parent=core":                   "unsupported node type",
-		"id=result; type=symbol; parent=core; mystery=yes":       "unsupported contract field",
-		"id=result; type=symbol; parent=core; name":              "malformed contract field",
-		"id=result; type=symbol; parent=result":                  "parent cycle",
-		"id=result; type=symbol; parent=core; target=go:missing": "unresolved target go:missing",
-		"id=result; type=symbol; parent=core; type=actor":        "duplicate contract field",
+	cases := []struct{ view, old, new, want string }{
+		{acContext, "System(app, \"2 App\")", "System(user, \"2 App\")", "architecture/01-system-context.md:6: duplicate ID user; first at architecture/01-system-context.md:5"},
+		{acContext, "System(app,", "System(2app,", "architecture/01-system-context.md:6: invalid ID \"2app\""},
+		{acContext, "Rel(user, app,", "Rel(user, ghost,", "architecture/01-system-context.md:7: unresolved ID ghost"},
+		{acCode, "save --> Record", "save --> Missing", "architecture/04-code.md:9: unresolved ID Missing"},
+		{acComponent, "Container_Boundary(service, \"1 Service (src/cmd/service)\") {\n", "", "architecture/03-components.md:5: component entry needs an enclosing boundary"},
+		{acCode, "classDiagram", "sequenceDiagram", "architecture/04-code.md:3: unsupported Mermaid form \"sequenceDiagram\""},
+		{acContext, "Rel(user, app, \"3\")", "Rel(user, app, \"3\")\nShape(user, \"9\")", "architecture/01-system-context.md:8: unsupported C4 macro \"Shape\""},
+		{acContainer, "Person(user, \"1 User\")", "Person(user, \"1 Customer\")", "architecture/02-containers.md:5: actor user is named \"Customer\" here and \"User\" at architecture/01-system-context.md:5"},
+		{acContainer, "System_Boundary", "Person(member, \"5 User\")\nSystem_Boundary", "architecture/02-containers.md:6: actor name \"User\" is ambiguous: member here and user at architecture/01-system-context.md:5"},
 	}
-	for replacement, want := range cases {
-		files := acFixture("architecture/")
-		files["architecture/"+acCode] = strings.ReplaceAll(files["architecture/"+acCode], "id=result; type=symbol; parent=core", replacement)
-		out, code := acRun(t, files)
-		sees(t, out, code, 1, "architecture/04-code.md:8:", want)
+	for _, c := range cases {
+		out, code := acRun(t, acEdit(c.view, c.old, c.new))
+		sees(t, out, code, 1, c.want)
 	}
-	files := acFixture("architecture/")
-	files["architecture/"+acCode] = strings.ReplaceAll(files["architecture/"+acCode], "classDiagram", "sequenceDiagram")
-	out, code := acRun(t, files)
-	sees(t, out, code, 1, "architecture/04-code.md:1: unsupported Mermaid form")
 }
 
 func Test0070_5(t *testing.T) {
 	t.Parallel()
-	for _, claim := range []string{"", "; owns=src/"} {
-		files := acFixture("architecture/")
-		files["architecture/"+acCode] = strings.ReplaceAll(files["architecture/"+acCode], "id=result", "id=result"+claim)
-		want := "overlapping ownership of src/main.go:1; first claimed at architecture/03-components.md:8"
-		if claim == "" {
-			files["extra.go"] = "package extra\n"
-			want = "unowned product source extra.go:1"
-		}
-		out, code := acRun(t, files)
-		sees(t, out, code, 1, "architecture/", want)
-	}
+	out, code := acRun(t, acEdit(acComponent, "Component(entry, \"2 Entry\", \"Go\")", "Component(entry, \"2 Entry\", \"Go\", \"src/store/store.go\")"))
+	sees(t, out, code, 1, "architecture/03-components.md:7: overlapping source claims: store claims src/store and entry claims src/store/store.go at architecture/03-components.md:6")
+	out, code = acRun(t, acEdit(acComponent, "\"src/store\"", "\"src/stores\""))
+	sees(t, out, code, 1, "architecture/03-components.md:7: unresolved source path src/stores")
 }
 
 func Test0070_6(t *testing.T) {
 	t.Parallel()
-	for _, proof := range []string{"static:src/main.go:900", "runtime:trace.json:1", "magic:src/main.go:1"} {
-		files := acFixture("architecture/")
-		files["architecture/"+acCode] = strings.ReplaceAll(files["architecture/"+acCode], "static:src/main.go:2", proof)
-		out, code := acRun(t, files)
-		sees(t, out, code, 1, "architecture/04-code.md:8:", "evidence")
+	for anchor, want := range map[string]string{"#L900)": "src/cmd/service/main.go#L900", "#line3)": "src/cmd/service/main.go#line3", "#L3-L1)": "src/cmd/service/main.go#L3-L1"} {
+		out, code := acRun(t, acEdit(acComponent, acEvidence, anchor))
+		sees(t, out, code, 1, "architecture/03-components.md:17: unresolved evidence "+want)
 	}
+	out, code := acRun(t, acEdit(acComponent, "service/main.go"+acEvidence, "service/gone.go"+acEvidence))
+	sees(t, out, code, 1, "architecture/03-components.md:17: unresolved evidence src/cmd/service/gone.go#L3")
 }
 
 func Test0070_7(t *testing.T) {
 	t.Parallel()
-	files := acFixture("architecture/")
-	files["architecture/"+acJourney] = strings.ReplaceAll(files["architecture/"+acJourney], "0001.1", "0001.9")
-	out, code := acRun(t, files)
-	sees(t, out, code, 1, "architecture/05-user-journey.md:11: unresolved requirement 0001.9")
-	files = acFixture("architecture/")
+	out, code := acRun(t, acEdit(acJourney, "`0001.1`", "`0001.9`"))
+	sees(t, out, code, 1, "architecture/05-user-journey.md:28: unresolved requirement 0001.9 in docs/requirements")
+	out, code = acRun(t, acEdit(acJourney, "0001-open.md", "0002-open.md"))
+	sees(t, out, code, 1, "architecture/05-user-journey.md:29: unresolved requirement 0002 in docs/requirements")
+	files := acFixture(acRoot)
 	file := "docs/requirements/0001-open.md"
-	files[file] = strings.ReplaceAll(files[file], "Given Host", "Because Host")
+	files[file] = strings.ReplaceAll(files[file], "Given a user", "Because a user")
 	out, code = acRun(t, files)
 	sees(t, out, code, 1, file+":18: each acceptance is one Given")
 }
 
 func Test0070_8(t *testing.T) {
 	t.Parallel()
-	files := acFixture("architecture/")
-	files["architecture/"+acCode] = strings.ReplaceAll(files["architecture/"+acCode], "static:src/main.go:2", "static:src/main.go:900")
-	repo := example(t, "happyRepo", files)
-	for _, changed := range []string{"README.md", "src/App.swift", "architecture/" + acContext} {
+	repo := example(t, "happyRepo", acEdit(acComponent, acEvidence, "#L900)"))
+	for _, changed := range []string{"README.md", "src/store/store.go", acRoot + acContext} {
 		out, code := fitness(t, repo, []string{"FITNESS_CHANGED_FILES=" + changed}, acCheck)
-		sees(t, out, code, 1, "architecture/04-code.md:8: unresolved static evidence src/main.go:900")
+		sees(t, out, code, 1, "architecture/03-components.md:17: unresolved evidence src/cmd/service/main.go#L900")
 	}
 }

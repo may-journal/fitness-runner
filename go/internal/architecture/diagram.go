@@ -1,7 +1,6 @@
 package architecture
 
 import (
-	"encoding/csv"
 	"regexp"
 	"strconv"
 	"strings"
@@ -9,32 +8,59 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-type element struct {
-	local, from, to string
-	at              Location
-	declaration     *Declaration
+// subject is the element or relationship a callout number marks.
+type subject struct {
+	element *Element
+	edge    *Relationship
 }
 
-type diagramGraph map[string]*element
+func (s subject) owner() string {
+	if s.element != nil {
+		return s.element.ID
+	}
+	return ""
+}
+
+func (s subject) name() string {
+	if s.element != nil {
+		return s.element.ID
+	}
+	return s.edge.From + "->" + s.edge.To
+}
+
+// diagram is one model diagram while it is read: its declared elements, its
+// edges, and the callout numbers that bind table rows to them.
+type diagram struct {
+	m           *Model
+	file, view  string
+	form        string
+	elements    map[string]*Element
+	order       []*Element
+	edges       []*Relationship
+	callouts    map[int]subject
+	claims      []Claim
+	parents     []string
+	inClassBody bool
+}
 
 var (
-	macro = regexp.MustCompile(`^([A-Za-z_]+)\((.*)\)\s*\{?$`)
-	node  = regexp.MustCompile(`^(?:class\s+)?([A-Za-z][A-Za-z0-9_-]*)\s*[\[(]`)
-	edge  = regexp.MustCompile(`^([A-Za-z][A-Za-z0-9_-]*)\s+(-->|-\.->|==>|--|\.\.>|<\|--|<\|\.\.|<--|<\.\.|--\|>|\.\.\|>|\*--|o--)\s*(?:\|([^|]+)\|\s*)?([A-Za-z][A-Za-z0-9_-]*)(?:\s*:\s*(.*))?\s*$`)
+	semanticID   = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*$`)
+	leadingCount = regexp.MustCompile(`^\d+\s+`)
+	rowNumber    = regexp.MustCompile(`^\[?(\d+)\]?$`)
 )
 
-func (m *Model) readDiagram(file string, diagram *mermaid.DiagramBlock) diagramGraph {
-	graph := diagramGraph{}
-	lines := strings.Split(diagram.Body, "\n")
-	form := diagramForm(lines)
-	if !syntaxLine(form) {
-		m.fail(Location{file, diagram.Line}, "unsupported Mermaid form; use C4, flowchart, or classDiagram")
-		return graph
+func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram {
+	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}}
+	lines := strings.Split(b.Body, "\n")
+	d.form = diagramForm(lines)
+	if !supportedForm(d.form) {
+		m.fail(Location{file, b.Line}, "unsupported Mermaid form %q; use C4Context, C4Container, C4Component, flowchart, or classDiagram", d.form)
+		return d
 	}
 	for i, line := range lines {
-		m.diagramLine(graph, strings.TrimSpace(line), Location{file, diagram.Line + i + 1}, strings.HasPrefix(form, "C4"))
+		d.statement(strings.TrimSpace(line), Location{file, b.Line + i + 1})
 	}
-	return graph
+	return d
 }
 
 func diagramForm(lines []string) string {
@@ -47,16 +73,50 @@ func diagramForm(lines []string) string {
 	return ""
 }
 
-func syntaxLine(line string) bool {
-	return contains([]string{"C4Context", "C4Container", "C4Component", "classDiagram"}, line) ||
-		strings.HasPrefix(line, "flowchart ") || strings.HasPrefix(line, "graph ")
+func supportedForm(form string) bool {
+	first, _, _ := strings.Cut(form, " ")
+	return contains([]string{"C4Context", "C4Container", "C4Component", "classDiagram", "flowchart", "graph"}, first)
 }
 
-func decoration(line string) bool {
-	if contains([]string{"", "}", "end"}, line) || syntaxLine(line) {
-		return true
+func contains(values []string, want string) bool {
+	for _, value := range values {
+		if value == want {
+			return true
+		}
 	}
-	for _, prefix := range []string{"%%", "title ", "direction ", "classDef ", "style ", "linkStyle ", "subgraph ", "+", "-", "#", "~"} {
+	return false
+}
+
+var decorations = []string{"%%", "title ", "direction ", "classDef ", "style ", "linkStyle ", "click ", "note ", "<<", "Update"}
+
+// accessibility matches Mermaid's accessible title and description lines.
+var accessibility = regexp.MustCompile(`^acc[A-Z][a-z]+\s*[:{]`)
+
+func (d *diagram) statement(line string, at Location) {
+	if d.decoration(line) || d.closes(line) {
+		return
+	}
+	switch {
+	case strings.HasPrefix(d.form, "C4"):
+		d.c4(line, at)
+	case d.form == "classDiagram":
+		d.class(line, at)
+	default:
+		d.flow(line, at)
+	}
+}
+
+func (d *diagram) decoration(line string) bool {
+	return d.skipped(line) || hasPrefix(line, decorations) || accessibility.MatchString(line)
+}
+
+// skipped reports blank lines, the form line, and class body members.
+func (d *diagram) skipped(line string) bool {
+	return line == "" || line == d.form || (d.inClassBody && line != "}")
+}
+
+func hasPrefix(line string, prefixes []string) bool {
+	for _, prefix := range prefixes {
 		if strings.HasPrefix(line, prefix) {
 			return true
 		}
@@ -64,140 +124,79 @@ func decoration(line string) bool {
 	return false
 }
 
-func (m *Model) diagramLine(graph diagramGraph, line string, at Location, c4 bool) {
-	if decoration(line) {
-		return
+func (d *diagram) closes(line string) bool {
+	if line != "}" && line != "end" {
+		return false
 	}
-	if c4 {
-		m.c4Statement(graph, line, at)
-		return
+	if d.inClassBody {
+		d.inClassBody = false
+		return true
 	}
-	if match := edge.FindStringSubmatch(line); match != nil {
-		m.addElement(graph, line, relationshipElement(match, at))
-		return
-	}
-	if match := node.FindStringSubmatch(line); match != nil {
-		m.addElement(graph, line, element{local: match[1], at: at})
-		return
-	}
-	m.fail(at, "unsupported Mermaid statement %q", line)
+	d.parents = d.parents[:max(len(d.parents)-1, 0)]
+	return true
 }
 
-func relationshipElement(match []string, at Location) element {
-	from, to := match[1], match[4]
-	if strings.HasPrefix(match[2], "<") {
-		from, to = to, from
-	}
-	return element{from: from, to: to, at: at}
+func (d *diagram) unsupported(line string, at Location) {
+	d.m.fail(at, "unsupported Mermaid statement %q", line)
 }
 
-func (m *Model) c4Statement(graph diagramGraph, line string, at Location) {
-	call := macro.FindStringSubmatch(line)
-	if call == nil {
-		m.fail(at, "unsupported C4 statement %q", line)
-		return
+// add declares an element under the innermost open boundary.
+func (d *diagram) add(id, kind, label, line string, at Location) *Element {
+	if !semanticID.MatchString(id) {
+		d.m.fail(at, "invalid ID %q", id)
+		return nil
 	}
-	m.macroLine(graph, call, at)
+	if first := d.elements[id]; first != nil {
+		d.m.fail(at, "duplicate ID %s; first at %s", id, first.At)
+		return nil
+	}
+	e := &Element{ID: id, Kind: kind, Name: displayName(label), Parent: d.parent(), View: d.view, Callout: callout(line), At: at}
+	d.elements[id] = e
+	d.order = append(d.order, e)
+	d.mark(e.Callout, subject{element: e})
+	return e
 }
 
-func (m *Model) macroLine(graph diagramGraph, call []string, at Location) {
-	r := csv.NewReader(strings.NewReader(call[2]))
-	r.TrimLeadingSpace = true
-	args, err := r.Read()
-	if err != nil || len(args) < 2 {
-		m.fail(at, "malformed C4 declaration %q", call[0])
-		return
+func (d *diagram) parent() string {
+	if len(d.parents) == 0 {
+		return ""
 	}
-	if contains([]string{"System_Boundary", "Container_Boundary", "Boundary"}, call[1]) {
-		return
-	}
-	if contains([]string{"Rel", "Rel_U", "Rel_D", "Rel_L", "Rel_R"}, call[1]) {
-		m.addElement(graph, call[0], element{from: args[0], to: args[1], at: at})
-		return
-	}
-	m.c4Node(graph, call, args, at)
+	return d.parents[len(d.parents)-1]
 }
 
-func (m *Model) c4Node(graph diagramGraph, call, args []string, at Location) {
-	if !c4NodeMacro(call[1]) {
-		m.fail(at, "unsupported C4 macro %q", call[1])
-		return
-	}
-	m.addElement(graph, call[0], element{local: args[0], at: at})
+func (d *diagram) relate(from, to, label, line string, at Location) {
+	r := &Relationship{From: from, To: to, Label: label, View: d.view, Callout: callout(line), At: at}
+	d.edges = append(d.edges, r)
+	d.mark(r.Callout, subject{edge: r})
 }
 
-func c4NodeMacro(name string) bool {
-	base := strings.TrimSuffix(name, "_Ext")
-	return contains([]string{"Person", "System", "SystemDb", "SystemQueue", "Container", "ContainerDb", "ContainerQueue", "Component", "ComponentDb", "ComponentQueue"}, base)
+func (d *diagram) mark(number int, s subject) {
+	if _, taken := d.callouts[number]; number > 0 && !taken {
+		d.callouts[number] = s
+	}
 }
 
-func (m *Model) addElement(graph diagramGraph, line string, value element) {
-	numbers := mermaid.ExtractDiagramNumbers(line)
-	if len(numbers) != 1 {
-		m.fail(value.at, "contracted node or relationship needs exactly one display callout")
-		return
-	}
-	key := strconv.Itoa(numbers[0])
-	if previous := graph[key]; previous != nil {
-		m.fail(value.at, "duplicate callout %s; first at %s", key, previous.at)
-	}
-	graph[key] = &value
+func displayName(label string) string {
+	return leadingCount.ReplaceAllString(strings.Trim(strings.TrimSpace(label), `"`), "")
 }
 
-func (m *Model) matchCallout(number string, d Declaration, graph diagramGraph) {
-	e := graph[number]
-	if e == nil {
-		m.fail(d.At, "callout %s has no node or relationship at %s", number, d.Diagram)
-		return
+func callout(line string) int {
+	if numbers := mermaid.ExtractDiagramNumbers(line); len(numbers) > 0 {
+		return numbers[0]
 	}
-	if e.declaration != nil {
-		m.fail(d.At, "duplicate table callout %s; first at %s", number, e.declaration.At)
-	}
-	e.declaration = &d
+	return 0
 }
 
-func (m *Model) unclaimed(graph diagramGraph, ids map[string]Declaration) {
-	locals := map[string]string{}
-	for _, key := range sortedKeys(graph) {
-		e := graph[key]
-		if e.declaration == nil {
-			m.fail(e.at, "callout %s has no contract declaration", key)
+// bindRows reads each callout row's text for the element or edge it marks.
+func (d *diagram) bindRows(table *mermaid.CalloutTableBlock) {
+	for i, row := range table.Rows {
+		match := rowNumber.FindStringSubmatch(row[0])
+		if match == nil {
 			continue
 		}
-		locals[e.local] = declarationID(*e.declaration)
-	}
-	for _, key := range sortedKeys(graph) {
-		m.elementContract(graph[key], locals, ids)
-	}
-}
-
-func declarationID(d Declaration) string {
-	if d.Ref != "" {
-		return d.Ref
-	}
-	return d.ID
-}
-
-func (m *Model) elementContract(e *element, locals map[string]string, ids map[string]Declaration) {
-	if e.declaration == nil {
-		return
-	}
-	d, exists := ids[declarationID(*e.declaration)]
-	if !exists {
-		return
-	}
-	if (e.from != "") != (d.Type == "relationship") {
-		m.fail(e.declaration.At, "callout type disagrees with diagram at %s; declaration at %s", e.at, d.At)
-		return
-	}
-	m.edgeEndpoints(e, locals, d)
-}
-
-func (m *Model) edgeEndpoints(e *element, locals map[string]string, d Declaration) {
-	if e.from == "" {
-		return
-	}
-	if locals[e.from] != d.From || locals[e.to] != d.To {
-		m.fail(e.declaration.At, "relationship endpoints disagree with diagram at %s (%s to %s); declaration at %s", e.at, e.from, e.to, d.At)
+		n, _ := strconv.Atoi(match[1])
+		if s, ok := d.callouts[n]; ok {
+			d.rowContent(s, strings.Join(row[1:], " | "), Location{d.file, table.Line + 2 + i})
+		}
 	}
 }

@@ -1,142 +1,65 @@
 package architecture
 
 import (
-	"go/parser"
-	"go/token"
-	"os/exec"
 	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 var sourceExtensions = strings.Fields(".go .swift .js .jsx .ts .tsx .mjs .cjs .py .sh .bash .zsh .c .h .cc .cpp .rs .java .kt .m .mm")
 
-func positiveNumber(text string) int {
-	n, err := strconv.Atoi(text)
-	if err != nil || n < 1 {
-		return 0
-	}
-	return n
+func sourceFile(file string) bool {
+	return contains(sourceExtensions, path.Ext(file))
 }
 
-func sourceCategory(file string) string {
-	lower := strings.ToLower(file)
-	if testDirectory(path.Dir(lower)) || strings.HasSuffix(lower, "_test.go") {
-		return "test"
+// inventory lists every tracked source with its category and the elements
+// whose claims cover it. Unowned sources stay listed; the component check
+// decides which must have an owner.
+func (m *Model) inventory(root string, files []string) {
+	var sources []string
+	for _, file := range files {
+		if sourceFile(file) {
+			sources = append(sources, file)
+		}
 	}
-	if contains([]string{".sh", ".bash", ".zsh", ".py"}, path.Ext(file)) {
+	kept := map[string]bool{}
+	for _, file := range walkfs.WithoutGenerated(root, sources) {
+		kept[file] = true
+	}
+	for _, file := range sources {
+		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, kept[file]), Owners: m.owners(file)})
+	}
+}
+
+func category(file string, kept bool) string {
+	lower := strings.ToLower(file)
+	switch {
+	case !kept:
+		return "generated"
+	case testFolder(path.Dir(lower)) || strings.HasSuffix(lower, "_test.go"):
+		return "test"
+	case contains([]string{".sh", ".bash", ".zsh", ".py"}, path.Ext(lower)):
 		return "tool"
 	}
 	return "product"
 }
 
-func testDirectory(directory string) bool {
-	for _, segment := range strings.Split(directory, "/") {
-		if contains([]string{"test", "tests"}, segment) {
+func testFolder(dir string) bool {
+	for _, segment := range strings.Split(dir, "/") {
+		if segment == "test" || segment == "tests" {
 			return true
 		}
 	}
 	return false
 }
 
-func generatedFiles(root string, files []string) map[string]bool {
-	cmd := exec.Command("git", "-C", root, "check-attr", "-z", "--stdin", "linguist-generated")
-	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
-	out, _ := cmd.Output()
-	parts := strings.Split(string(out), "\x00")
-	generated := map[string]bool{}
-	for i := 0; i+2 < len(parts); i += 3 {
-		generated[parts[i]] = contains([]string{"set", "true"}, parts[i+2])
-	}
-	return generated
-}
-
-func (m *Model) inventory(root string, files []string) {
-	generated := generatedFiles(root, files)
-	claims := map[string]int{}
-	for _, file := range files {
-		if !sourceFile(file) {
-			continue
-		}
-		source := Source{Path: file, Category: sourceCategory(file), At: Location{file, 1}}
-		if generated[file] {
-			source.Category = "generated"
-		}
-		m.ownSource(&source, claims)
-		m.Sources = append(m.Sources, source)
-		m.goTarget(root, source)
-	}
-	m.unresolvedClaims(claims)
-}
-
-func sourceFile(file string) bool {
-	return contains(sourceExtensions, path.Ext(file)) || contains([]string{"project.yml", "project.yaml"}, path.Base(file))
-}
-
-func owns(pattern, file string) bool {
-	if !strings.HasSuffix(pattern, "/") {
-		match, _ := path.Match(pattern, file)
-		return match
-	}
-	for dir := path.Dir(file); dir != "."; dir = path.Dir(dir) {
-		if match, _ := path.Match(strings.TrimSuffix(pattern, "/"), dir); match {
-			return true
+func (m *Model) owners(file string) []string {
+	var owners []string
+	for _, claim := range m.Claims {
+		if covers(claim.Path, file) && !contains(owners, claim.Owner) {
+			owners = append(owners, claim.Owner)
 		}
 	}
-	return false
-}
-
-func (m *Model) ownSource(source *Source, claims map[string]int) {
-	var owner *Declaration
-	for _, d := range m.Declarations {
-		for _, pattern := range d.Owns {
-			if owns(pattern, source.Path) {
-				m.claim(source, &owner, d)
-				claims[d.ID+":"+pattern]++
-			}
-		}
-	}
-	if owner == nil {
-		m.fail(Location{m.Files[0], 1}, "unowned %s source %s", source.Category, source.At)
-	}
-}
-
-func (m *Model) claim(source *Source, owner **Declaration, d Declaration) {
-	if *owner != nil {
-		m.fail(d.At, "overlapping ownership of %s; first claimed at %s", source.At, (*owner).At)
-	}
-	copy := d
-	*owner = &copy
-	source.Owner = d.ID
-}
-
-func (m *Model) unresolvedClaims(claims map[string]int) {
-	for _, d := range m.Declarations {
-		for _, pattern := range d.Owns {
-			if claims[d.ID+":"+pattern] == 0 {
-				m.fail(d.At, "ownership claim %q matches no tracked source", pattern)
-			}
-		}
-	}
-}
-
-func (m *Model) goTarget(root string, source Source) {
-	if !strings.HasSuffix(source.Path, ".go") || source.Category != "product" {
-		return
-	}
-	f, err := parser.ParseFile(token.NewFileSet(), filepath.Join(root, source.Path), nil, parser.PackageClauseOnly)
-	if err != nil || f.Name.Name != "main" {
-		return
-	}
-	m.addTarget("go:"+path.Dir(source.Path), source)
-}
-
-func (m *Model) addTarget(target string, source Source) {
-	for _, entry := range m.Targets {
-		if entry.ID == target {
-			return
-		}
-	}
-	m.Targets = append(m.Targets, Target{ID: target, Category: source.Category, Owner: source.Owner, At: source.At})
+	return owners
 }
