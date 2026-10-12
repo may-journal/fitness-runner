@@ -53,9 +53,11 @@ func (m *Model) productSources(ext string) []string {
 // scanner strips comments, and string literals when asked, from Go and
 // Swift source, which share that syntax. Neither can create a dependency.
 // Literals are always read, so a // or /* inside one starts no comment.
+// A Go raw string, which may span lines, or a Swift escaped identifier is
+// kept whole.
 type scanner struct {
-	literals    bool
-	block, text bool
+	literals         bool
+	block, text, raw bool
 }
 
 // keep writes a span of string literal to out unless literals are stripped.
@@ -80,6 +82,10 @@ func (s *scanner) step(text string, i int, out *strings.Builder) int {
 		return s.skipTo(text, i, "*/", &s.block)
 	case s.text:
 		return s.keep(text, i, s.skipTo(text, i, `"""`, &s.text), out)
+	case s.raw:
+		next := s.skipTo(text, i, "`", &s.raw)
+		out.WriteString(text[i:next])
+		return next
 	}
 	return s.code(text, i, out)
 }
@@ -101,26 +107,26 @@ func (s *scanner) code(text string, i int, out *strings.Builder) int {
 	if next, ok := s.quote(text, i); ok {
 		return s.keep(text, i, next, out)
 	}
-	if text[i] == '\'' || text[i] == '`' {
-		next := enclosed(text, i)
+	switch text[i] {
+	case '\'':
+		next := runeEnd(text, i)
 		out.WriteString(text[i:next])
 		return next
+	case '`':
+		s.raw = true
 	}
 	out.WriteByte(text[i])
 	return i + 1
 }
 
-// enclosed moves past a Go rune literal, a one-line raw string, or a
-// Swift escaped identifier, kept whole so a quote or // inside one starts
-// neither a string nor a comment.
-func enclosed(text string, i int) int {
+// runeEnd moves past a Go rune literal, kept whole so a quote or // inside
+// one starts neither a string nor a comment.
+func runeEnd(text string, i int) int {
 	for j := i + 1; j < len(text); j++ {
 		switch text[j] {
 		case '\\':
-			if text[i] == '\'' {
-				j++
-			}
-		case text[i]:
+			j++
+		case '\'':
 			return j + 1
 		}
 	}

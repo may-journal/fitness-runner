@@ -134,6 +134,9 @@ func Test0074_5(t *testing.T) {
 	files[aoMain] = aoImports + "\nfunc send(c rune) bool { return c == '\"' } // smtp relay\n"
 	out, code := aoRun(t, files)
 	sees(t, out, code, 1, aoView+":21: evidence src/cmd/service/main.go#L7 does not name Mailer outside comments")
+	files[aoMain] = aoImports + "var body = `raw\n` // smtp relay\n"
+	out, code = aoRun(t, files)
+	sees(t, out, code, 1, aoView+":21: evidence src/cmd/service/main.go#L7 does not name Mailer outside comments")
 	files[aoMain] = aoImports + "\nfunc send() string { return \"https://smtp\" }\n"
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
