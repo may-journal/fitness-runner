@@ -19,7 +19,7 @@ An agent may work an Issue as it sees fit — implement it, branch, commit, and 
 
 ## Once approved
 
-Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and keep each change paired with a `CHANGELOG.md` entry.
+Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and pair each change with a `CHANGELOG.md` entry. A pull request adds one dated entry in its first commit; later commits edit its bullets, never adding a `###` section. The PR description's `## Changelog` links that entry, as the [PR template](.github/PULL_REQUEST_TEMPLATE.md) shows, and never copies its bullets.
 
 Name the approved Issue with a `Plan #NN` trailer on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
 

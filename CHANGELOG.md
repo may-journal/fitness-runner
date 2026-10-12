@@ -7,12 +7,28 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-- Fix: architecture-contract: separate targets from files, ignore Swift comments and strings, resolve relationship refs, and preserve arrow direction.
-- Fix: architecture-contract: accept C4 external and database variants and classify test folders by full path segments.
+### 2026.10.12.1319
 
 - Feat: architecture-contract: read stable diagram declarations, source ownership, and evidence locations across both architecture roots.
+- Fix: architecture-contract: separate targets from files, resolve relationship refs, keep arrow direction, and accept C4 database variants.
 - Refactor: requirements: share clause parsing and retain Given text with source lines.
 - Test: architecture-contract: prove contract failures and scoped runs through the installed command.
+
+### 2026.10.12.0958
+
+- Feat: PR template: `## Changelog` links the PR's `CHANGELOG.md` entry instead of copying its bullets.
+- Feat: pr-check: fail a PR that adds an entry without linking it, links another heading, or copies a bullet it adds.
+- Feat: release-pr: the release PR and GitHub release link the changelog section and compare view instead of pasting notes.
+- Test: requirements: prove link, copy and release rules (0069.4-0069.8); 0014 states its PR links the changelog entry.
+- Docs: the PR template, AGENTS.md, and release docs say descriptions link the changelog.
+
+### 2026.10.12.0919
+
+- Feat: changelog-updated: fail a later commit that adds a second `###` section to a branch; stacked branches start where their base ends.
+- Feat: pr-check: require exactly one new dated `CHANGELOG.md` entry, naming extra headings; a new release section is exempt.
+- Fix: stamp-changelog: keep the branch's first entry time when later commits amend its bullets.
+- Test: requirements: prove one entry per branch and PR with real multi-commit sandbox runs (0019.9, 0063.4, 0069).
+- Docs: AGENTS.md and the check READMEs say later commits amend the branch's one entry.
 
 ## [1.6.0](https://github.com/may-journal/fitness-runner/compare/v1.5.1...v1.6.0) (2026-10-11)
 
@@ -21,7 +37,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 * **fitness:** check local branch metadata before push ([#280](https://github.com/may-journal/fitness-runner/issues/280)) ([4383f81](https://github.com/may-journal/fitness-runner/commit/4383f81f4f1699f31350192936b75aca5c0da43b))
 
-### 2026.10.11.1742
+### 2026.10.11.1540
 
 - Feat: local-branch: run shared PR and Plan checks locally and in pre-push; retain branch-check and exclude metadata from pre-commit.
 - Fix: pr-check: fail when a closing issue cannot be read, instead of silently ignoring it.

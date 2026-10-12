@@ -1,6 +1,7 @@
 // Command fitness-check-changelog-updated gates staged commits on the
 // changelog: CHANGELOG.md additions must share at least three distinct words
-// with the rest of the staged diff, and the newest added "### yyyy.mm.dd.HHMM"
+// with the rest of the staged diff, a branch that already added its dated
+// entry amends it rather than adding a section, and the newest added "### yyyy.mm.dd.HHMM"
 // section heading must carry the expected stamp (the root package.json
 // version suffix, else a minute of the last five on the local wall clock) —
 // the Go port of the changelog-updated check. One deviation from the
@@ -18,6 +19,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/changelog"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
@@ -40,6 +42,8 @@ const (
 	msgOverlapTail      = " words from your staged changes (found "
 	msgSuggestPrefix    = "e.g. use words like: "
 	msgChangelogTime    = "CHANGELOG.md new section heading must use current date and time (yyyy.mm.dd.HHMM), not a guessed time"
+	msgAmendHead        = "CHANGELOG.md: this branch already has its entry "
+	msgAmendTail        = "; add your bullets to it instead of a new section: "
 )
 
 var (
@@ -108,7 +112,26 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if _, err := os.Stat(filepath.Join(root, changelogMD)); err != nil {
 		return checkkit.Fail(1, msgChangelogMissing), nil
 	}
+	if msg, ok := checkOneEntry(root); !ok {
+		return checkkit.Fail(1, msg), nil
+	}
 	return judge(root, parseStagedDiff(stagedDiff(root)), now()), nil
+}
+
+// checkOneEntry keeps a branch to one dated entry: once an earlier commit on
+// the branch added one, a later commit amends it and adds no section. The
+// message names the branch's first entry and every section the commit adds.
+func checkOneEntry(root string) (msg string, ok bool) {
+	entries := changelog.BranchEntries(root)
+	if len(entries) == 0 {
+		return "", true
+	}
+	extra := changelog.StagedNew(root)
+	if len(extra) == 0 {
+		return "", true
+	}
+	return fmt.Sprintf("%s### %s%s### %s", msgAmendHead, entries[len(entries)-1], msgAmendTail,
+		strings.Join(extra, ", ### ")), false
 }
 
 // resolveStagedFiles prefers the runner-provided FITNESS_STAGED_FILES (even

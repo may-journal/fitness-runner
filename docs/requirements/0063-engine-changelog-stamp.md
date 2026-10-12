@@ -6,15 +6,15 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I write a changelog entry under any placeholder heading, and my commit stamps it with the real time.
+I write a changelog entry under any placeholder heading, and my first commit on a branch stamps it with the real time.
 
 ## Measurement
 
-commits whose newest changelog heading shows the commit time
+commits whose newest changelog heading shows the time of the first commit adding it
 -
 commits that stage CHANGELOG.md
 
-Source: `go/cmd/fitness-stamp-changelog/main.go:50`
+Source: `go/cmd/fitness-stamp-changelog/main.go:44`
 
 ## Requirements
 
@@ -30,3 +30,7 @@ Source: `go/cmd/fitness-stamp-changelog/main.go:50`
     - Given the hooks and a CHANGELOG edit I did not stage
         - When I commit without staging it
             - Then the CHANGELOG keeps its heading and stays out of the commit
+- 0063.4
+    - Given the hooks and a branch whose earlier commit added its dated entry
+        - When I commit more bullets under that entry
+            - Then the committed heading keeps the first commit's time

@@ -55,6 +55,11 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) ch
 	if err != nil {
 		return branchReadResult(err)
 	}
+	patch, err := branchChangelogPatch(ctx, root, branch.Tip, pr)
+	if err != nil {
+		return branchReadResult(err)
+	}
+	pr.ChangelogPatch = &patch
 	nums := b.closedIssues(pr.Body)
 	nums = append(nums, plans...)
 	errs := judgeBranchPR(pr, gh, b)

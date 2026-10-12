@@ -15,6 +15,8 @@ A PR description is not a file in the tree, so this check reads its target from 
 
 Fenced code is skipped, so a `##` or bullet inside a code sample never counts.
 
+The bullet links the PR's `CHANGELOG.md` entry rather than copying it. This check sees only the body, so `pr-check` enforces the link with the PR's diff. It fails a PR that adds an entry without linking it, links another heading, or copies a bullet the PR adds.
+
 ## Contributing
 
 This README is the canonical description for this check. This check is a self-contained binary (`fitness-check-pr-structure`) that shares its template-validation logic with `plan-structure` through `internal/mdtemplate`. To change the rules, extend that package and the check's tests here and keep this README in sync.

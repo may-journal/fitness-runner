@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -30,9 +31,24 @@ func plan0014(task string) string {
 	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
 }
 
-// pr0014 is a PR description that follows the template and closes issue n.
+// stamp0014 is the dated changelog entry a fixture PR adds and links.
+const stamp0014 = "2026.10.10.0900"
+
+// pr0014 is a PR description that follows the template, links the entry
+// stamped stamp0014, and closes issue n.
 func pr0014(n int) string {
-	return fmt.Sprintf("> One clear summary of the change.\n\n## Background\n\nThis change is a test fixture.\n\n## Changelog\n\n- Test: add one file.\n\nCloses #%d\n", n)
+	return prBody0014(link0014("CHANGELOG.md#"+strings.ReplaceAll(stamp0014, ".", "")), n)
+}
+
+// link0014 is a `## Changelog` item linking target on the PR's branch.
+func link0014(target string) string {
+	return "- [CHANGELOG entry](https://github.com/" + repo0014 + "/blob/feature/" + target + ")"
+}
+
+// prBody0014 is a PR description with changelog as its `## Changelog`
+// section, closing issue n.
+func prBody0014(changelog string, n int) string {
+	return fmt.Sprintf("> One clear summary of the change.\n\n## Background\n\nThis change is a test fixture.\n\n## Changelog\n\n%s\n\nCloses #%d\n", changelog, n)
 }
 
 // issue0014 is what gh prints for issue n read through fitness's filter:
@@ -44,11 +60,14 @@ func issue0014(t *testing.T, n int, body string, labels ...string) response {
 	return response{Match: []string{"repos/" + repo0014 + "/issues/" + itoa(n)}, Stdout: string(out) + "\n"}
 }
 
+// noChangelog0014 is GitHub listing no CHANGELOG.md change in a PR.
+var noChangelog0014 = response{Match: []string{"/files"}}
+
 // judge0014 runs pr-check on a pull_request event with title and body,
-// GitHub answering from issues.
+// GitHub answering from issues and the PR leaving the changelog alone.
 func judge0014(t *testing.T, title, body string, issues ...response) (string, int) {
 	t.Helper()
-	rp := standIn(t, map[string][]response{"gh": issues})
+	rp := standIn(t, map[string][]response{"gh": append(issues, noChangelog0014)})
 	pr := map[string]any{"number": 1, "title": title, "body": body}
 	env := event0014(t, "pull_request", map[string]any{"action": "edited", "pull_request": pr})
 	return fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")
@@ -105,6 +124,7 @@ func Test0014_5(t *testing.T) {
 		{Match: []string{"--paginate", "repos/" + repo0014 + "/pulls?state=open"}, Stdout: open},
 		issue0014(t, 15, done, "Plan"),
 		issue0014(t, 16, done, "Plan"),
+		noChangelog0014,
 	}})
 	env := event0014(t, "workflow_dispatch", map[string]any{})
 	out, code := fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")

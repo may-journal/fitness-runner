@@ -106,9 +106,11 @@ type linkedIssue struct {
 }
 
 // prLinks judges what a PR points at: its title as a semantic-commit
-// subject, its closing keywords, and the checklist of each issue it closes.
+// subject, its one changelog entry, its closing keywords, and the checklist
+// of each issue it closes.
 func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 	errs := b.errorsOf("semantic-commit", "--message", t.Title)
+	errs = append(errs, changelogErrors(t, gh)...)
 	closed, readErrs := readIssues(b.closedIssues(t.Body), gh)
 	errs = append(errs, readErrs...)
 	errs = append(errs, closesErrors(t.Body, requiredClosures(closed, b), b)...)

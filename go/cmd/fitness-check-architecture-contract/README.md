@@ -82,4 +82,4 @@ This foundation validates the contract, references, and ownership. Actor equalit
 
 ## Requirements
 
-[Requirement 0069](../../../docs/requirements/0069-checks-architecture-contract.md) has one installed-command test per acceptance, using committed Go and Swift fixtures.
+[Requirement 0070](../../../docs/requirements/0070-checks-architecture-contract.md) has one installed-command test per acceptance, using committed Go and Swift fixtures.

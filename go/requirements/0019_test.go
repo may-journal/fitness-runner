@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -15,11 +16,19 @@ func changelogStaged(t *testing.T, staged map[string]string) (string, int) {
 	return fitness(t, repo, nil, "changelog-updated")
 }
 
+// changelogBase is happyRepo's changelog.
+const changelogBase = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n" +
+	"### 2026.10.08.1400\n\n- Docs: add the readme.\n- Docs: add the changelog.\n- Docs: add the license note.\n"
+
 // changelogEntry is happyRepo's changelog with a new section on top.
 func changelogEntry(stamp, item string) string {
-	return "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n### " +
-		stamp + "\n\n- " + item + "\n\n### 2026.10.08.1400\n\n- Docs: add the readme.\n" +
-		"- Docs: add the changelog.\n- Docs: add the license note.\n"
+	return changelogOnTop(changelogBase, stamp, item)
+}
+
+// changelogOnTop puts a dated section with one bullet above changelog's
+// first section.
+func changelogOnTop(changelog, stamp, item string) string {
+	return strings.Replace(changelog, "## Changes\n\n", "## Changes\n\n### "+stamp+"\n\n- "+item+"\n\n", 1)
 }
 
 // changelogNow is the stamp for a section written minutes ago.
@@ -90,15 +99,40 @@ func Test0019_6(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0019_7(t *testing.T) {
-	t.Parallel()
-	out, code := changelogStaged(t, nil)
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "changelog-updated")
-}
-
 func Test0019_8(t *testing.T) {
 	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{"src.txt": changelogFeature, "CHANGELOG.md": ""})
 	sees(t, out, code, 1, "CHANGELOG.md missing; add it and mention your staged changes")
+}
+
+// changelogBranch is happyRepo on a branch off origin/main whose first
+// commit added a dated entry for the staged feature.
+func changelogBranch(t *testing.T) string {
+	t.Helper()
+	repo := example(t, "happyRepo", nil)
+	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+	git(t, repo, "checkout", "-q", "-b", "work")
+	commit(t, repo, map[string]string{
+		"src.txt":      changelogFeature,
+		"CHANGELOG.md": changelogEntry(changelogFirst, "Feat: added runner feature for validation."),
+	}, "feat: add runner")
+	return repo
+}
+
+// changelogFirst is the stamp of the branch's first entry.
+const changelogFirst = "2026.01.02.0900"
+
+func Test0019_9(t *testing.T) {
+	t.Parallel()
+	repo := changelogBranch(t)
+	stamp := changelogNow(0)
+	entry := changelogEntry(changelogFirst, "Feat: added runner feature for validation.")
+	write(t, repo, map[string]string{
+		"src.txt":      changelogFeature + "Added runner option for validation.\n",
+		"CHANGELOG.md": changelogOnTop(entry, stamp, "Feat: added runner option for validation."),
+	})
+	git(t, repo, "add", "-A")
+	out, code := fitness(t, repo, nil, "changelog-updated")
+	sees(t, out, code, 1, "this branch already has its entry ### "+changelogFirst,
+		"instead of a new section: ### "+stamp)
 }

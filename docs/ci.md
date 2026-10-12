@@ -163,7 +163,7 @@ Upgrade or roll back with `--version VERSION`; `--version latest` is explicit op
 
 ## Release automation
 
-After main CI passes, Release Please groups conventional commits in a release PR and owns its version and GitHub notes. Once merged, it creates a draft release and an explicit root `v` tag. The root changelog remains the development audit; generated release notes stay on GitHub.
+After main CI passes, Release Please groups conventional commits in a release PR and owns its version and GitHub notes. Once merged, it creates a draft release and an explicit root `v` tag. The root changelog holds the notes. `fitness-release release-pr` rewrites the release PR to link that changelog section and the compare view, and the GitHub release carries the same links.
 
 GoReleaser OSS 2.18.2 builds, archives, checksums, and publishes the assets after native checks on four platforms. It reuses the draft and publishes a prerelease for public download checks. Passing checks promote the release to latest and add its `go/v` module tag at the same commit. When that release is the newest, the workflow moves its major tag, such as `v1`, to the same commit.
 

@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0069 Architecture Contract
+# 0070 Architecture Contract
 
 ## Why
 
@@ -18,35 +18,35 @@ Source: #285
 
 ## Requirements
 
-- 0069.1
+- 0070.1
     - Given no architecture
         - When I check its contract
             - Then it passes with zero files
-- 0069.2
+- 0070.2
     - Given complete diagrams in either root
         - When I renumber callouts
             - Then the contract still passes
-- 0069.3
+- 0070.3
     - Given a partial architecture
         - When I check it
             - Then missing views fail
-- 0069.4
+- 0070.4
     - Given bad declarations
         - When I check them
             - Then errors name their locations
-- 0069.5
+- 0070.5
     - Given unowned or multiply owned sources
         - When I check ownership
             - Then errors name both sides
-- 0069.6
+- 0070.6
     - Given unreadable proof
         - When I check evidence
             - Then errors name its declaration and source
-- 0069.7
+- 0070.7
     - Given invalid requirement links or clauses
         - When I check the contract
             - Then errors name the broken reference
-- 0069.8
+- 0070.8
     - Given unchanged broken evidence
         - When I check unrelated changes
             - Then the same findings remain
