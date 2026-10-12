@@ -131,7 +131,7 @@ func Test0074_5(t *testing.T) {
 	}
 	files := aoFixture()
 	files[aoView] = aoComponents("", "\nSystem_Ext(mailer, \"5 Mailer\", \"SMTP relay\")\nRel(entry, mailer, \"6\")", "Relays mail.", "Sends through the relay, see [source](../src/cmd/service/main.go#L7).")
-	files[aoMain] = aoImports + "\nfunc send() string { return \"\" } // smtp relay\n"
+	files[aoMain] = aoImports + "\nfunc send(c rune) bool { return c == '\"' } // smtp relay\n"
 	out, code := aoRun(t, files)
 	sees(t, out, code, 1, aoView+":21: evidence src/cmd/service/main.go#L7 does not name Mailer outside comments")
 	files[aoMain] = aoImports + "\nfunc send() string { return \"https://smtp\" }\n"
@@ -139,6 +139,7 @@ func Test0074_5(t *testing.T) {
 	sees(t, out, code, 0)
 	renamed := aoEdit(aoFixture(), "#L3)", "#L5)")
 	renamed[aoStore] = "package records\n\nfunc Save() {}\n"
+	renamed["src/store/tools.go"] = "//go:build ignore\n\npackage main\n"
 	renamed[aoMain] = strings.Replace(aoImports, "store.Save()", "records.Save()", 1)
 	out, code = aoRun(t, renamed)
 	sees(t, out, code, 0)

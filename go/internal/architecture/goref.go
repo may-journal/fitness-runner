@@ -57,9 +57,7 @@ func (g *goFolders) parse(files []string) ([]goSource, []string) {
 			errs = append(errs, Location{file, 1}.String()+": cannot parse "+err.Error())
 			continue
 		}
-		if name := parsed.Name.Name; !strings.HasSuffix(name, "_test") {
-			g.packages[path.Dir(file)] = name
-		}
+		g.packageName(path.Dir(file), parsed.Name.Name)
 		sources = append(sources, goSource{file, lines, fset, parsed})
 	}
 	return sources, errs
@@ -144,6 +142,16 @@ func (f *goFile) importSpec(g *goFolders, spec *ast.ImportSpec, refs []reference
 	}
 	f.names[g.importName(spec, folder)] = folder
 	return append(refs, f.reference(spec.Pos(), folder))
+}
+
+// packageName keeps the first importable package name a folder declares.
+// A main package, such as a generator under a build tag, or an external
+// test package names nothing an import can use.
+func (g *goFolders) packageName(folder, name string) {
+	if name == "main" || strings.HasSuffix(name, "_test") || g.packages[folder] != "" {
+		return
+	}
+	g.packages[folder] = name
 }
 
 // importName is the name a file uses for an import: its rename, else the
