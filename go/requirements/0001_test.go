@@ -15,14 +15,14 @@ func Test0001_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", goRepo())
 	out, code := fitness(t, repo, nil)
-	sees(t, out, code, 0, "All 49 checks passed")
+	sees(t, out, code, 0, "All 50 checks passed")
 }
 
 func Test0001_2(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
 	out, code := fitness(t, repo, nil)
-	sees(t, out, code, 1, "README.md: disallowed **bold**", "48 of 49 checks passed, 1 failed")
+	sees(t, out, code, 1, "README.md: disallowed **bold**", "49 of 50 checks passed, 1 failed")
 }
 
 func Test0001_3(t *testing.T) {
