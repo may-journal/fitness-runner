@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1623
+
+- Fix: architecture-components: a Go import without a rename uses the folder's package name, so each use is recorded.
+- Fix: architecture-components: external evidence keeps string literals, so a double slash inside one starts no comment.
+- Fix: architecture-components: a Swift directive followed by a comment, such as an endif with a note, closes its condition.
+- Test: architecture-components: prove package names, string literals, and directive comments through requirement 0074 acceptances.
+
 ### 2026.10.12.1605
 
 - Feat: architecture-components: give every product source one component owner; fail sources no component names or two components name.

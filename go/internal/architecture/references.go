@@ -52,9 +52,18 @@ func (m *Model) productSources(ext string) []string {
 
 // scanner strips comments, and string literals when asked, from Go and
 // Swift source, which share that syntax. Neither can create a dependency.
+// Literals are always read, so a // or /* inside one starts no comment.
 type scanner struct {
 	literals    bool
 	block, text bool
+}
+
+// keep writes a span of string literal to out unless literals are stripped.
+func (s *scanner) keep(text string, from, to int, out *strings.Builder) int {
+	if !s.literals {
+		out.WriteString(text[from:to])
+	}
+	return to
 }
 
 func (s *scanner) line(text string) string {
@@ -70,7 +79,7 @@ func (s *scanner) step(text string, i int, out *strings.Builder) int {
 	case s.block:
 		return s.skipTo(text, i, "*/", &s.block)
 	case s.text:
-		return s.skipTo(text, i, `"""`, &s.text)
+		return s.keep(text, i, s.skipTo(text, i, `"""`, &s.text), out)
 	}
 	return s.code(text, i, out)
 }
@@ -90,7 +99,7 @@ func (s *scanner) code(text string, i int, out *strings.Builder) int {
 		return next
 	}
 	if next, ok := s.quote(text, i); ok {
-		return next
+		return s.keep(text, i, next, out)
 	}
 	out.WriteByte(text[i])
 	return i + 1
@@ -109,7 +118,7 @@ func (s *scanner) comment(text string, i int) (int, bool) {
 
 func (s *scanner) quote(text string, i int) (int, bool) {
 	switch {
-	case !s.literals || text[i] != '"':
+	case text[i] != '"':
 		return 0, false
 	case strings.HasPrefix(text[i:], `"""`):
 		s.text = true
@@ -136,8 +145,8 @@ type conditions struct {
 	stack []string
 }
 
-// directive reads a conditional compilation line, reporting whether the
-// line was one.
+// directive reads a conditional compilation line, comments already
+// stripped, reporting whether the line was one.
 func (c *conditions) directive(line string) bool {
 	line = strings.TrimSpace(line)
 	switch {

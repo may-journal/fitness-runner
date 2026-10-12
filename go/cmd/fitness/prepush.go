@@ -64,7 +64,7 @@ func checkRefUpdate(line string) int {
 	if len(commits) == 0 || allChoreDocs(commits) {
 		return 0
 	}
-	return checkPlanApproval(planCandidates(commits, f[1], f[2]))
+	return checkPlanApproval(planCandidates(commits, f[1]))
 }
 
 // commitsOf lists the commits a ref update pushes: those not already on origin.
@@ -110,13 +110,12 @@ func commitSubject(c string) string {
 }
 
 // planCandidates returns the Plan numbers a push may trace to: those in the
-// pushed commits, else those anywhere among the own commits of the branch
-// the push updates on origin.
-func planCandidates(commits []string, local, remoteRef string) []string {
+// pushed commits, else those anywhere on the branch.
+func planCandidates(commits []string, local string) []string {
 	if plans := planRefs(commits); len(plans) > 0 {
 		return plans
 	}
-	return planRefs(gitx.OwnCommits(".", local, remoteRef))
+	return planRefs(gitx.BranchCommits(".", local, gitx.DefaultBase(".")))
 }
 
 // checkPlanApproval passes when any candidate names an approved Plan Issue.
