@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1516
+
+- Feat: architecture-containers: match owned containers to Go commands, Xcode app and extension targets, Node services, and deploy files.
+- Feat: architecture-contract: a trailing `*` in a claimed path names every sibling folder it matches.
+- Fix: containers view: name the Go commands each shipped container is built from; the consumer repo and releases are external.
+- Test: architecture-containers: prove each requirement 0072 acceptance through the installed command; the suite says 51 checks passed.
+- Docs: architecture-containers README states the evidence rules; docs/checks.md and the release bundle list the check.
+
 ### 2026.10.12.1508
 
 - Feat: architecture-journey: a journey view's requirement table maps every requirement doc to the Mermaid nodes that fulfil it.

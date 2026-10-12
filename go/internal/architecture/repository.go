@@ -7,12 +7,16 @@ import (
 	"strings"
 )
 
-// repository answers path questions about tracked files.
+// repository answers path questions about tracked files. kept holds the
+// files .gitattributes does not mark generated.
 type repository struct {
-	root          string
-	files, folder map[string]bool
-	top           map[string]bool
+	root                string
+	files, folder, kept map[string]bool
+	top                 map[string]bool
 }
+
+// sorted lists every tracked file in path order.
+func (r repository) sorted() []string { return sortedKeys(r.files) }
 
 func newRepository(root string, files []string) repository {
 	r := repository{root: root, files: map[string]bool{}, folder: map[string]bool{}, top: map[string]bool{}}
@@ -45,7 +49,23 @@ func (r repository) candidate(text string) (string, bool) {
 	return path.Clean(text), r.top[first]
 }
 
-func (r repository) exists(p string) bool { return r.files[p] || r.folder[p] }
+// exists reports a tracked file or folder; a pattern such as
+// go/cmd/fitness-check-* exists when it matches any of them.
+func (r repository) exists(p string) bool {
+	if !strings.Contains(p, "*") {
+		return r.files[p] || r.folder[p]
+	}
+	return anyCovered(p, r.folder) || anyCovered(p, r.files)
+}
+
+func anyCovered(pattern string, paths map[string]bool) bool {
+	for p := range paths {
+		if covers(pattern, p) {
+			return true
+		}
+	}
+	return false
+}
 
 // lines counts a tracked file's lines; zero when it cannot be read.
 func (r repository) lines(file string) int {
@@ -56,7 +76,18 @@ func (r repository) lines(file string) int {
 	return len(strings.Split(strings.TrimSuffix(string(body), "\n"), "\n"))
 }
 
-// covers reports whether claim names p or a folder holding it.
+// covers reports whether claim names p or a folder holding it. A claim
+// with a pattern, such as go/cmd/fitness-check-*, names every sibling it
+// matches; a star never crosses a slash.
 func covers(claim, p string) bool {
-	return claim == p || strings.HasPrefix(p, claim+"/")
+	if !strings.Contains(claim, "*") {
+		return claim == p || strings.HasPrefix(p, claim+"/")
+	}
+	depth := strings.Count(claim, "/") + 1
+	parts := strings.SplitN(p, "/", depth+1)
+	if len(parts) < depth {
+		return false
+	}
+	matched, _ := path.Match(claim, strings.Join(parts[:depth], "/"))
+	return matched
 }
