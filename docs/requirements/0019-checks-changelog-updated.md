@@ -6,15 +6,15 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Every commit I make carries a dated changelog entry that names what changed. I can trust each heading time, because no one guesses it.
+My branch carries one dated changelog entry, and each commit adds bullets to it that name what changed. I can trust its heading time, because no one guesses it.
 
 ## Measurement
 
-staged commits whose changelog entry is current and names the change
+staged commits whose changelog bullets name the change under the branch's one current entry
 -
 staged commits with changes
 
-Source: `go/cmd/fitness-check-changelog-updated/main.go:284`
+Source: `go/cmd/fitness-check-changelog-updated/main.go:105`
 
 ## Requirements
 
@@ -42,11 +42,11 @@ Source: `go/cmd/fitness-check-changelog-updated/main.go:284`
     - Given a merge in progress that replays an old entry
         - When changelog-updated checks the staged commit
             - Then it passes without judging the old heading
-- 0019.7
-    - Given nothing staged
-        - When changelog-updated runs
-            - Then it passes with no files checked
 - 0019.8
     - Given staged changes and no `CHANGELOG.md` on disk
         - When changelog-updated checks the staged commit
             - Then it fails asking me to add it
+- 0019.9
+    - Given a branch whose earlier commit added its dated entry
+        - When changelog-updated checks a commit that adds another section
+            - Then it fails naming the branch's entry and the new heading

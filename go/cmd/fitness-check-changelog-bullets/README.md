@@ -10,6 +10,7 @@ Keeps changelog entries tight. Every `###` section of `CHANGELOG.md` must be 3 t
 ## Behavior
 
 - Every `###` section is judged — history has to meet the bar too, and count errors name their section.
+- A pull request adds one dated entry, and later commits amend it, so its 3 to 5 bullets cover the whole PR.
 - Bullet count must be 3 to 5; continuation lines join their bullet for the length count.
 - Every bullet must start with one of: `Feat:`, `Fix:`, `Docs:`, `Style:`, `Refactor:`, `Perf:`, `Test:`, `Build:`, `Ci:`, `Chore:`, `Revert:`.
 - A semantic commit subject works too: a lowercase type with an optional scope and `!`, such as `feat(release): ` or `fix!: `.

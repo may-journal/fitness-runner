@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.0919
+
+- Feat: changelog-updated: once a branch's first commit adds its dated entry, fail a later commit that adds another `###` section, naming both headings.
+- Feat: pr-check: require a PR that changes `CHANGELOG.md` to add exactly one dated entry, naming extra headings, in Actions and branch-check alike.
+- Fix: stamp-changelog: keep the branch's first entry time when later commits amend its bullets.
+- Test: requirements: prove one entry per branch and PR with real multi-commit sandbox runs (0019.9, 0063.4, 0069).
+- Docs: AGENTS.md and the check READMEs say later commits amend the branch's one entry.
+
 ## [1.6.0](https://github.com/may-journal/fitness-runner/compare/v1.5.1...v1.6.0) (2026-10-11)
 
 

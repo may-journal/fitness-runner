@@ -44,11 +44,14 @@ func issue0014(t *testing.T, n int, body string, labels ...string) response {
 	return response{Match: []string{"repos/" + repo0014 + "/issues/" + itoa(n)}, Stdout: string(out) + "\n"}
 }
 
+// noChangelog0014 is GitHub listing no CHANGELOG.md change in a PR.
+var noChangelog0014 = response{Match: []string{"/files"}}
+
 // judge0014 runs pr-check on a pull_request event with title and body,
-// GitHub answering from issues.
+// GitHub answering from issues and the PR leaving the changelog alone.
 func judge0014(t *testing.T, title, body string, issues ...response) (string, int) {
 	t.Helper()
-	rp := standIn(t, map[string][]response{"gh": issues})
+	rp := standIn(t, map[string][]response{"gh": append(issues, noChangelog0014)})
 	pr := map[string]any{"number": 1, "title": title, "body": body}
 	env := event0014(t, "pull_request", map[string]any{"action": "edited", "pull_request": pr})
 	return fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")
@@ -105,6 +108,7 @@ func Test0014_5(t *testing.T) {
 		{Match: []string{"--paginate", "repos/" + repo0014 + "/pulls?state=open"}, Stdout: open},
 		issue0014(t, 15, done, "Plan"),
 		issue0014(t, 16, done, "Plan"),
+		noChangelog0014,
 	}})
 	env := event0014(t, "workflow_dispatch", map[string]any{})
 	out, code := fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")

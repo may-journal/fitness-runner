@@ -1,7 +1,8 @@
 // Command fitness-stamp-changelog is the pre-commit stamping tool: when
 // CHANGELOG.md is staged, it restamps the first "### yyyy.mm.dd.HHMM"
 // heading to the current local time and re-stages the file, so entries are
-// written with any placeholder stamp and the hook makes them current. The
+// written with any placeholder stamp and the hook makes them current. A
+// branch whose earlier commit added its entry keeps that entry's time. The
 // npm-era version bumping is gone with the npm packages: the changelog
 // timestamp is the version now.
 package main
@@ -14,6 +15,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/changelog"
 )
 
 const changelogName = "CHANGELOG.md"
@@ -39,7 +42,7 @@ func main() {
 // stamp restamps and re-stages when CHANGELOG.md is staged; reports whether
 // it wrote anything.
 func stamp(root string, now time.Time) (bool, error) {
-	if !changelogStaged(root) {
+	if !newEntryStaged(root) {
 		return false, nil
 	}
 	path := filepath.Join(root, changelogName)
@@ -67,6 +70,13 @@ func writeAndRestage(root, path, next string) error {
 		return fmt.Errorf("git add: %v: %s", err, out)
 	}
 	return nil
+}
+
+// newEntryStaged reports whether CHANGELOG.md is staged on a branch that has
+// no dated entry yet. Once an earlier commit on the branch added its entry,
+// later commits amend that entry, which keeps the first commit's time.
+func newEntryStaged(root string) bool {
+	return changelogStaged(root) && len(changelog.BranchEntries(root)) == 0
 }
 
 // changelogStaged reports whether CHANGELOG.md is in the staged file list.
