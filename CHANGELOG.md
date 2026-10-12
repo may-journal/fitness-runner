@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1626
+
+- Fix: architecture-components: a folder's package name is its first importable one, so a main-package generator hides no uses.
+- Fix: architecture-components: Go rune literals and raw strings are read whole, so a quote inside one starts no string.
+- Test: architecture-components: prove package names beside a generator and rune literals in evidence through requirement 0074.
+
 ### 2026.10.12.1623
 
 - Fix: architecture-components: a Go import without a rename uses the folder's package name, so each use is recorded.

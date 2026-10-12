@@ -101,8 +101,30 @@ func (s *scanner) code(text string, i int, out *strings.Builder) int {
 	if next, ok := s.quote(text, i); ok {
 		return s.keep(text, i, next, out)
 	}
+	if text[i] == '\'' || text[i] == '`' {
+		next := enclosed(text, i)
+		out.WriteString(text[i:next])
+		return next
+	}
 	out.WriteByte(text[i])
 	return i + 1
+}
+
+// enclosed moves past a Go rune literal, a one-line raw string, or a
+// Swift escaped identifier, kept whole so a quote or // inside one starts
+// neither a string nor a comment.
+func enclosed(text string, i int) int {
+	for j := i + 1; j < len(text); j++ {
+		switch text[j] {
+		case '\\':
+			if text[i] == '\'' {
+				j++
+			}
+		case text[i]:
+			return j + 1
+		}
+	}
+	return len(text)
 }
 
 func (s *scanner) comment(text string, i int) (int, bool) {
