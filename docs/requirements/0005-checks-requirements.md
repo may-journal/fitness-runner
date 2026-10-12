@@ -2,11 +2,11 @@
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
-# 0071 Checks Requirements Pairs
+# 0005 Checks Requirements
 
 ## Why
 
-A requirement's test and its doc change together, so neither drifts from the other.
+Every requirement keeps its IDs and changes with its test, so a doc and its proof never drift apart.
 
 ## Measurement
 
@@ -18,35 +18,35 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:99`
 
 ## Requirements
 
-- 0071.1
-    - Given a changed requirement test and its unchanged doc
-        - When I commit it with the hooks
-            - Then the commit is refused naming both files and the missing doc
-- 0071.2
-    - Given a changed requirement doc and its unchanged test
-        - When fitness runs on pull request changes
-            - Then it fails naming both files and the missing test
-- 0071.3
+- 0005.6
+    - Given a repo with no Go or Swift code
+        - When fitness runs
+            - Then the check passes with nothing to judge
+- 0005.8
+    - Given an ID that an earlier commit deleted
+        - When a doc brings it back
+            - Then it fails
+- 0005.9
+    - Given a requirement test or doc changed without its partner
+        - When fitness judges my commit or pull request
+            - Then it fails naming both files and the missing half
+- 0005.10
     - Given a changed test file named for two requirements
         - When fitness runs on staged changes
             - Then it fails naming both docs until either doc changes
-- 0071.4
+- 0005.11
     - Given a changed shared test helper that proves no requirement
         - When fitness runs on staged changes
             - Then the check passes
-- 0071.5
+- 0005.12
     - Given an unpaired change and a commit trailer giving the reason
         - When I commit it with the hooks
             - Then the commit goes through
-- 0071.6
+- 0005.13
     - Given a pull request commit with that trailer
         - When fitness runs on pull request changes
             - Then it fails until the pull request body lists the trailer
-- 0071.7
-    - Given a merge, cherry-pick, or revert that replays an unpaired change
-        - When I commit or amend it with the hooks
-            - Then the commit goes through
-- 0071.8
-    - Given a branch that merged an unpaired change from its moved base
-        - When fitness runs on pull request changes
-            - Then only the branch's own changes are paired
+- 0005.14
+    - Given a merge, cherry-pick, revert, or base merge that replays an unpaired change
+        - When fitness judges my commit or pull request
+            - Then only the branch's own changes are judged

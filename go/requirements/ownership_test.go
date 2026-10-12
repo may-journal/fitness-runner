@@ -106,6 +106,21 @@ func replayed(t *testing.T, replay []string, finish ...[]string) (out string, co
 	return out, code
 }
 
+// mergedBase is a branch that merged its moved base, whose new commit
+// changes a requirement doc alone. It returns the repo, with origin/main at
+// the base's new tip.
+func mergedBase(t *testing.T) string {
+	t.Helper()
+	repo := example(t, "happyRepo", pairedRepo())
+	git(t, repo, "checkout", "-q", "-b", "base")
+	commit(t, repo, map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"}, "docs(requirements): reword 0001")
+	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+	git(t, repo, "checkout", "-q", "-b", "work", "HEAD~1")
+	commit(t, repo, map[string]string{"README.md": readme + "\nMore words.\n"}, "docs(readme): add words")
+	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "merge", "-q", "--no-edit", "base")
+	return repo
+}
+
 // userSteps runs each git command as a user, failing the test on the first
 // one that fails.
 func userSteps(t *testing.T, repo string, env []string, steps ...[]string) {
