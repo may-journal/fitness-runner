@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.2237
+
+- Feat: architecture-contract: Go, Swift, TypeScript, or JavaScript product code without views fails, naming each missing view at its first product source.
+- Docs: architecture-contract README and requirement 0070: product code requires all five views; tools, configuration, tests, or generated code alone pass with zero files.
+- Test: requirements 0070.1 and 0070.3 prove both cases through the installed command; 0001.1 runs a Go repository with all five views.
+
 ## [1.9.0](https://github.com/may-journal/fitness-runner/compare/v1.8.0...v1.9.0) (2026-10-13)
 
 

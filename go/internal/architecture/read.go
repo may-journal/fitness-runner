@@ -28,8 +28,11 @@ func Load(root string) (Model, error) {
 		return m, err
 	}
 	present, err := m.readViews(root, files)
-	if err != nil || len(m.Files) == 0 {
+	if err != nil {
 		return Model{}, err
+	}
+	if len(m.Files) == 0 {
+		return withoutViews(root, files), nil
 	}
 	m.missingViews(present)
 	m.actors()
@@ -69,6 +72,35 @@ func (m *Model) missingViews(present map[string]bool) {
 			m.fail(Location{m.Files[0], 1}, "missing architecture view %s", file)
 		}
 	}
+}
+
+// viewLanguages are the product languages whose code needs views. Tools,
+// tests, and generated files never do.
+var viewLanguages = strings.Fields(".go .swift .ts .tsx .js .jsx .mjs .cjs")
+
+// withoutViews is the model of a repo with no views: empty when it has no
+// product code, otherwise one error per view, at its first product source.
+func withoutViews(root string, files []string) Model {
+	m := Model{repo: newRepository(root, files)}
+	m.keep(root, files)
+	for _, file := range files {
+		if viewLanguage(file) && m.product(file) {
+			for _, view := range sortedKeys(views) {
+				m.fail(Location{file, 1}, "product code needs architecture view %s", view)
+			}
+			return Model{Errors: m.Errors}
+		}
+	}
+	return Model{}
+}
+
+// viewLanguage reports a source in a view language that neither configures
+// tools nor only declares types, as eslint.config.mjs, .prettierrc.cjs,
+// and index.d.ts do.
+func viewLanguage(file string) bool {
+	base := path.Base(file)
+	config := strings.HasPrefix(base, ".") || strings.Contains(base, ".config.") || strings.HasSuffix(base, ".d.ts")
+	return contains(viewLanguages, path.Ext(file)) && !config
 }
 
 func (m *Model) readRequirements(root string, files []string) error {

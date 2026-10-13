@@ -19,7 +19,9 @@ The roots are `architecture/` and `docs/architecture/`. Both roots add to one mo
 | `04-code.md` | Classes and functions |
 | `05-user-journey.md` | Journey steps and the requirement IDs they fulfil |
 
-No views means a pass with zero files. Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
+Go, Swift, TypeScript, or JavaScript product code requires all five views; without them, each missing view fails at the first product source. A repo with only tools, tool configuration such as `eslint.config.mjs`, type declarations, tests, or generated code and no views passes with zero files.
+
+Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
 
 ## What the diagrams already say
 
