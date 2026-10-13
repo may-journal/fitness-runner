@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1829
+
+- Fix: hooks: pre-push skips its Plan gate when external `disabledChecks` turns plan-trailer off, since the gate enforces that trailer.
+- Docs: the check protocol says pre-push drops its Plan gate with plan-trailer off.
+- Test: requirement 0010.11 pushes a feature without a Plan past disabled plan-trailer and local-branch.
+
 ### 2026.10.13.1825
 
 - Fix: hooks: commit-msg and pre-push skip a check that external `disabledChecks` turns off, instead of failing on an empty selection.

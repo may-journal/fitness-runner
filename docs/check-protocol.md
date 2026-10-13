@@ -55,7 +55,7 @@ A new name runs after the bundled checks under either policy. A bundled name rep
 
 ## Disabled checks
 
-External mode turns checks off with `"disabledChecks": ["name"]`, after any `checks` filter. Each name must be a known check, listed once, and at least one check must remain. The git hooks skip a disabled check too. Org mode refuses the key under the same ADR, so its repos fix the findings instead.
+External mode turns checks off with `"disabledChecks": ["name"]`, after any `checks` filter. Each name must be a known check, listed once, and at least one check must remain. The git hooks skip a disabled check too, and pre-push drops its Plan gate when `plan-trailer` is off. Org mode refuses the key under the same ADR, so its repos fix the findings instead.
 
 ## Every tracked file
 

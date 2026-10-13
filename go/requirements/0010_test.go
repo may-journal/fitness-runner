@@ -124,3 +124,12 @@ func Test0010_9(t *testing.T) {
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
 	pushAsked(t, rp, "151", "comments")
 }
+
+func Test0010_11(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["plan-trailer", "local-branch"]}` + "\n"})
+	remote(t, repo)
+	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
+	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
+	sees(t, out, code, 0)
+}
