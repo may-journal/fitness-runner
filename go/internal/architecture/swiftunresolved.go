@@ -3,6 +3,7 @@ package architecture
 import (
 	"fmt"
 	"strings"
+	"unicode"
 )
 
 // Reasons a Swift name the module may declare stays unresolved, in the
@@ -84,10 +85,24 @@ func (m *swiftModule) external(u *swiftUse, hops int) bool {
 		return false
 	}
 	found := m.meaning(u, hops)
-	if len(found) == 0 {
-		return !u.member || m.external(u.base, hops+1)
+	switch {
+	case len(found) > 0:
+		return m.externalInit(found[0], hops)
+	case u.member:
+		return !m.ambiguous[u] && m.external(u.base, hops+1)
 	}
-	return m.externalInit(found[0], hops)
+	return m.foreign(u)
+}
+
+// foreign reports a type name no file declares, such as JSONDecoder. A
+// lowercase name the parser left unbound, such as $0, newValue, or a case
+// pattern's binding, and a name whose overloads tied, stay unknown.
+func (m *swiftModule) foreign(u *swiftUse) bool {
+	return !m.ambiguous[u] && len(m.top[u.name]) == 0 && len(m.memberFiles[u.name]) == 0 && capitalized(u.name)
+}
+
+func capitalized(name string) bool {
+	return name != "" && unicode.IsUpper(rune(name[0]))
 }
 
 // namesValue reports a use, within the hop limit, that names a value
