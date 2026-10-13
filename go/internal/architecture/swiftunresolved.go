@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Reasons a Swift name the module may declare stays unresolved, in the
@@ -102,7 +103,8 @@ func (m *swiftModule) foreign(u *swiftUse) bool {
 }
 
 func capitalized(name string) bool {
-	return name != "" && unicode.IsUpper(rune(name[0]))
+	first, _ := utf8.DecodeRuneInString(name)
+	return unicode.IsUpper(first)
 }
 
 // namesValue reports a use, within the hop limit, that names a value
