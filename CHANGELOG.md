@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.8.0](https://github.com/may-journal/fitness-runner/compare/v1.7.0...v1.8.0) (2026-10-13)
+
+
+### Features
+
+* **requirements:** fail when two docs cover one area ([#313](https://github.com/may-journal/fitness-runner/issues/313)) ([168c088](https://github.com/may-journal/fitness-runner/commit/168c088a0d59d5f59abc4f5055c21746e1474a4c))
+
 ### 2026.10.12.1946
 
 - Feat: requirements: fail when two docs' acceptances share a When and Givens sharing two words, naming both docs; only well-ordered chains are compared.
