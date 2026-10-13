@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1821
+
+- Fix: changelog: a `package.json` version may end in `+yyyy.mm.dd.HHMM` build metadata, which npm accepts, as well as a `-` prerelease.
+- Docs: the changelog README explains why `+` is the semver-valid stamp.
+- Test: requirement 0017.13 replaces 0017.8 and proves both separators pass.
+
 ### 2026.10.12.2216
 
 - Feat: requirements: TypeScript and JavaScript repos need requirement docs; each vitest test owns the acceptance its title opens with.
