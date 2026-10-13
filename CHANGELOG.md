@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1840
+
+- Fix: eslint and prettier: Biome runs with `--max-diagnostics=none`, so a repo with more than 20 findings sees every one.
+- Docs: the biome package comment says why the cap is lifted.
+- Test: requirements 0024.11 and 0052.11 replace 0024.10 and 0052.10, replaying 25 Biome findings and expecting all of them.
+
 ### 2026.10.13.1832
 
 - Feat: eslint and prettier: a repo with a `biome.json` or `biome.jsonc` and `@biomejs/biome` runs `biome lint` and `biome format` instead, needing neither tool.

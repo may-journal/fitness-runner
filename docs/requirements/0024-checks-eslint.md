@@ -46,7 +46,7 @@ Source: `go/cmd/fitness-check-eslint/main.go:95`
     - Given Developer has a committed file with findings and a clean staged TypeScript file
         - When fitness runs eslint scoped to staged files
             - Then it passes after linting only the staged file
-- 0024.10
-    - Given Developer has a `biome.json` and `@biomejs/biome` in `devDependencies`, without eslint
+- 0024.11
+    - Given Developer has a `biome.json`, `@biomejs/biome` in `devDependencies`, no eslint, and more than 20 Biome findings
         - When fitness runs eslint
-            - Then it lints with Biome instead, failing with `path:line:col - message (rule)` for each Biome finding
+            - Then it lints with Biome instead, failing with `path:line:col - message (rule)` for every finding

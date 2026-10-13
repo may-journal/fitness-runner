@@ -121,11 +121,12 @@ func Check(root, command string, paths []string, fallback string, show func(Find
 	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: len(paths)}
 }
 
-// run execs bin in root as `biome <command>` with the GitHub reporter,
-// tolerating paths Biome does not handle, then args. It returns every error
+// run execs bin in root as `biome <command>` with the GitHub reporter and
+// no cap on diagnostics, whose default of 20 would hide the rest, tolerating
+// paths Biome does not handle, then args. It returns every error
 // and warning finding, the exit code, and the last lines of output.
 func run(root, bin, command string, args []string) (findings []Finding, exitCode int, tail []string) {
-	argv := append([]string{command, "--reporter=github", "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
+	argv := append([]string{command, "--reporter=github", "--max-diagnostics=none", "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	var out bytes.Buffer

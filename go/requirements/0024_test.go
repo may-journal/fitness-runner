@@ -138,22 +138,31 @@ func Test0024_9(t *testing.T) {
 const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\": {\"@biomejs/biome\": \"2.4.15\"}}\n"
 
 // biomeFlags are the flags fitness passes Biome before the paths.
-const biomeFlags = "--reporter=github --no-errors-on-unmatched --files-ignore-unknown=true"
+const biomeFlags = "--reporter=github --max-diagnostics=none --no-errors-on-unmatched --files-ignore-unknown=true"
 
 // biomeUseConst is real `biome lint --reporter=github` output for a `let`
-// never reassigned; Biome exits 0 on a warning.
-const biomeUseConst = "::warning title=lint/style/useConst,file=app.js,line=1,endLine=1,col=1,endColumn=4::This let declares a variable that is only assigned once.\n"
+// never reassigned on line %d; Biome exits 0 on a warning.
+const biomeUseConst = "::warning title=lint/style/useConst,file=app.js,line=%d,endLine=%[1]d,col=1,endColumn=4::This let declares a variable that is only assigned once.\n"
 
-func Test0024_10(t *testing.T) {
+// biomeMany is more findings than Biome's default cap of 20 diagnostics.
+const biomeMany = 25
+
+func Test0024_11(t *testing.T) {
 	t.Parallel()
+	var source, report strings.Builder
+	for i := 1; i <= biomeMany; i++ {
+		fmt.Fprintf(&source, "let v%d = %[1]d;\nexport { v%[1]d };\n", i)
+		fmt.Fprintf(&report, biomeUseConst, 2*i-1)
+	}
 	repo := example(t, "happyRepo", map[string]string{
 		"package.json": biomePackage,
 		"biome.json":   "{ \"linter\": { \"enabled\": true } }\n",
-		"app.js":       "let answer = { value: 42 };\nexport default answer;\n",
+		"app.js":       source.String(),
 	})
-	rp := standIn(t, map[string][]response{"biome": {{Match: []string{"lint " + biomeFlags + " app.js"}, Stdout: biomeUseConst}}})
+	rp := standIn(t, map[string][]response{"biome": {{Match: []string{"lint " + biomeFlags + " app.js"}, Stdout: report.String()}}})
 	out, code := fitness(t, repo, rp.env, "eslint")
 	eslintFinds(t, out, code, "app.js:1:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
+	eslintFinds(t, out, code, "app.js:49:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
 	if strings.Contains(out, eslintMissing) {
 		t.Errorf("a repo that chose Biome needs no eslint:\n%s", out)
 	}
