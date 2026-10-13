@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/changelog"
@@ -46,7 +47,7 @@ func (c Client) pendingEntries() bool {
 // branchEntries reads the entry files on the release branch at sha, newest
 // first.
 func (c Client) branchEntries(ctx context.Context, sha string) ([]changelog.Entry, error) {
-	paths, err := c.lines(ctx, "--jq", `.[] | select(.type == "file") | .path`, c.contents(changelog.EntryDir, sha))
+	paths, err := c.entryPaths(ctx, sha)
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +92,17 @@ func (c Client) commitFold(ctx context.Context, pr pullRequest, text string, ent
 		return "", err
 	}
 	return strings.TrimSpace(string(out)), nil
+}
+
+// entryPaths lists the files in the release branch's entry folder at sha.
+// It first reads the root listing, so a branch without the folder lists
+// nothing instead of failing on GitHub's not-found answer.
+func (c Client) entryPaths(ctx context.Context, sha string) ([]string, error) {
+	dirs, err := c.lines(ctx, "--jq", `.[] | select(.type == "dir") | .name`, "repos/"+c.Repo+"/contents?ref="+sha)
+	if err != nil || !slices.Contains(dirs, changelog.EntryDir) {
+		return nil, err
+	}
+	return c.lines(ctx, "--jq", `.[] | select(.type == "file") | .path`, c.contents(changelog.EntryDir, sha))
 }
 
 // contents is the REST path of a file or folder at ref.

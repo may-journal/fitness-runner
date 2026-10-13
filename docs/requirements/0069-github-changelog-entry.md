@@ -35,7 +35,7 @@ Source: `go/internal/metadata/changelog.go:17`
         - When pr-check judges its changelog entry
             - Then it fails naming the entry to link
 - 0069.10
-    - Given Developer has a PR whose later commits amend its one entry, a `CHANGELOG.md` section or an entry file
+    - Given Developer has a PR that amends one entry, its own section or entry file, or an entry file already pending
         - When pr-check and branch-check count its changelog entries
             - Then both pass
 - 0069.11
@@ -43,10 +43,10 @@ Source: `go/internal/metadata/changelog.go:17`
         - When pr-check and branch-check count its changelog entries
             - Then both fail naming the extra one
 - 0069.12
-    - Given Developer has a PR that changes the changelog without adding an entry
+    - Given Developer has a PR that edits `CHANGELOG.md` without adding an entry
         - When pr-check counts its changelog entries
             - Then it fails asking for one, suggesting an entry file
 - 0069.13
-    - Given Developer has entry files waiting for the open release PR
+    - Given Developer has entry files on main, and the open release PR's branch holds them or no entry folder
         - When the release tool rewrites it
-            - Then it commits them under the version section and deletes the files
+            - Then it commits the ones the branch holds under the version section and deletes those files

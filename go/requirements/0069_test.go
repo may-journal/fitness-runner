@@ -150,6 +150,12 @@ func Test0069_10(t *testing.T) {
 	sees(t, out, code, 0, "Passed.")
 	local, localCode = entryLocal(t, repo, pr)
 	sees(t, local, localCode, 0, "pr-check #1")
+	repo, pr = entryCommits(t, withEntries(map[string]string{"one-file": entry}), pr0014(11),
+		map[string]string{"changelog/one-file.md": entry + "- Fix: name the file.\n"})
+	out, code = entryActions(t, repo, pr0014(11))
+	sees(t, out, code, 0, "Passed.")
+	local, localCode = entryLocal(t, repo, pr)
+	sees(t, local, localCode, 0, "pr-check #1")
 }
 
 func Test0069_11(t *testing.T) {
@@ -182,11 +188,6 @@ func Test0069_12(t *testing.T) {
 	out, code := entryActions(t, repo, pr0014(11))
 	// The Actions summary escapes the angle brackets of changelog/<name>.md.
 	want := ".md entry file, or one ### yyyy.mm.dd.HHMM section in CHANGELOG.md, that describes the whole PR"
-	sees(t, out, code, 1, "this PR adds no dated changelog entry", entryMarkdown(want))
-	old := entryFileText(entryFirst, "Feat: add one file.")
-	repo, _ = entryCommits(t, withEntries(map[string]string{"old-change": old}), pr0014(11),
-		map[string]string{"changelog/old-change.md": old + "- Fix: name the file.\n"})
-	out, code = entryActions(t, repo, pr0014(11))
 	sees(t, out, code, 1, "this PR adds no dated changelog entry", entryMarkdown(want))
 }
 
@@ -278,16 +279,20 @@ func entryFoldedUnderRelease(t *testing.T, calls []string) {
 	}
 }
 
-func Test0069_13(t *testing.T) {
-	t.Parallel()
+// entryReleaseTool runs release-pr for PR 7 in a repo whose main holds an
+// entry file, with GitHub answering that the release branch's root holds
+// rootDirs, one folder name per line, and the entry file under changelog/.
+func entryReleaseTool(t *testing.T, rootDirs string) replays {
+	t.Helper()
 	entry := entryFileText(entryLater, "Feat: add one file.")
 	repo := releaseToolRepo(t, withEntries(map[string]string{"one-file": entry}))
-	contents := "repos/" + repo0014 + "/contents/"
+	contents := "repos/" + repo0014 + "/contents"
 	gh := []response{
 		{Match: []string{"--method PATCH", "repos/" + repo0014 + "/pulls/7"}, Stdout: "{}\n"},
-		{Match: []string{contents + "changelog?ref=abc1234"}, Stdout: "changelog/one-file.md\n"},
-		{Match: []string{contents + "changelog/one-file.md?ref=abc1234"}, Stdout: entry},
-		{Match: []string{contents + "CHANGELOG.md?ref=abc1234"}, Stdout: strings.Replace(changelogBase, "### 2026.10.08.1400", entryRelease+"### 2026.10.08.1400", 1)},
+		{Match: []string{contents + "?ref=abc1234"}, Stdout: rootDirs},
+		{Match: []string{contents + "/changelog?ref=abc1234"}, Stdout: "changelog/one-file.md\n"},
+		{Match: []string{contents + "/changelog/one-file.md?ref=abc1234"}, Stdout: entry},
+		{Match: []string{contents + "/CHANGELOG.md?ref=abc1234"}, Stdout: strings.Replace(changelogBase, "### 2026.10.08.1400", entryRelease+"### 2026.10.08.1400", 1)},
 		{Match: []string{"graphql", "createCommitOnBranch"}, Stdout: "def5678\n"},
 		entryReleasePR(t, entryCopiedNotes),
 	}
@@ -295,8 +300,18 @@ func Test0069_13(t *testing.T) {
 	env := append(rp.env, "RELEASE_PR={\"number\":7}", "GITHUB_REPOSITORY="+repo0014)
 	out, code := releaseToolRun(t, repo, env, "release-pr")
 	sees(t, out, code, 0)
+	return rp
+}
+
+func Test0069_13(t *testing.T) {
+	t.Parallel()
+	rp := entryReleaseTool(t, "changelog\ngo\n")
 	entryFoldedUnderRelease(t, rp.calls("gh"))
 	if !rp.called("gh", "--method PATCH", "/blob/def5678/CHANGELOG.md#110-2026-10-11") {
 		t.Errorf("release PR body does not link the folded commit:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	}
+	rp = entryReleaseTool(t, "go\n")
+	if rp.called("gh", "createCommitOnBranch") || !rp.called("gh", "--method PATCH", "/blob/abc1234/CHANGELOG.md#110-2026-10-11") {
+		t.Errorf("a release branch without entry files was folded or left unlinked:\n%s", strings.Join(rp.calls("gh"), "\n"))
 	}
 }
