@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1941
+
+- Feat: cspell: package managers' lockfiles, such as `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Package.resolved`, and `go.sum`, are left out in any folder.
+- Docs: cspell README lists the skipped lockfiles.
+- Test: requirement 0021.11 replaces 0021.6 and proves lockfiles pass beside binary, generated, and untracked files.
+
 ### 2026.10.13.1934
 
 - Fix: local-branch: a branch rebased onto a moved base counts only its own changelog entries and Plan trailers.

@@ -5,8 +5,8 @@
 // Scoped mode (a changed-file list in the environment) checks the changed
 // files that still exist on disk; with none left it passes without scanning.
 // With no scope it checks every tracked file (internal/walkfs). Files the
-// repo's .gitattributes marks linguist-generated, such as lock files, are
-// left out. Binary files are counted but never spelled. No path is ever ignored: a resolved
+// repo's .gitattributes marks linguist-generated, and package managers'
+// lockfiles, are left out. Binary files are counted but never spelled. No path is ever ignored: a resolved
 // cspell.json that sets ignorePaths fails the check instead.
 //
 // cspell.json resolves through internal/sharedconf: the repo's own file
@@ -72,15 +72,33 @@ func walkFiles(root string) checkkit.Result {
 	return checkkit.Pass(len(files))
 }
 
+// lockfiles names the files package managers write and rewrite on every
+// install. Their words are package names and hashes no one can fix.
+var lockfiles = map[string]bool{
+	"package-lock.json": true, "npm-shrinkwrap.json": true, "yarn.lock": true,
+	"pnpm-lock.yaml": true, "bun.lock": true, "bun.lockb": true, "deno.lock": true,
+	"Package.resolved": true, "go.sum": true, "Cargo.lock": true,
+	"Gemfile.lock": true, "Podfile.lock": true, "composer.lock": true,
+	"poetry.lock": true, "Pipfile.lock": true, "uv.lock": true,
+	"pubspec.lock": true, "mix.lock": true, "flake.lock": true,
+	"packages.lock.json": true,
+}
+
 // targets lists the files to spell-check: the changed files, or every
-// tracked file when the run is unscoped, minus those .gitattributes marks
-// linguist-generated, such as lock files.
+// tracked file when the run is unscoped, minus lockfiles and those
+// .gitattributes marks linguist-generated.
 func targets(root string) []string {
 	files, scanned := stagedPaths(root)
 	if !scanned {
 		files = walkfs.FilesByExt(root, "")
 	}
-	return walkfs.WithoutGenerated(root, files)
+	var kept []string
+	for _, f := range files {
+		if !lockfiles[path.Base(f)] {
+			kept = append(kept, f)
+		}
+	}
+	return walkfs.WithoutGenerated(root, kept)
 }
 
 // stagedPaths returns the changed files to check and whether a scope exists
