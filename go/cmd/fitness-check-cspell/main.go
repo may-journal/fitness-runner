@@ -78,9 +78,8 @@ var lockfiles = map[string]bool{
 	"package-lock.json": true, "npm-shrinkwrap.json": true, "yarn.lock": true,
 	"pnpm-lock.yaml": true, "bun.lock": true, "bun.lockb": true, "deno.lock": true,
 	"Package.resolved": true, "go.sum": true, "Cargo.lock": true,
-	"Gemfile.lock": true, "Podfile.lock": true, "composer.lock": true,
-	"poetry.lock": true, "Pipfile.lock": true, "uv.lock": true,
-	"pubspec.lock": true, "mix.lock": true, "flake.lock": true,
+	"Gemfile.lock": true, "composer.lock": true, "poetry.lock": true,
+	"uv.lock": true, "mix.lock": true, "flake.lock": true,
 	"packages.lock.json": true,
 }
 
