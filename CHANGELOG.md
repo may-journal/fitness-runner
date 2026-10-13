@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.9.0](https://github.com/may-journal/fitness-runner/compare/v1.8.0...v1.9.0) (2026-10-13)
+
+
+### Features
+
+* **architecture:** resolve Swift component edges with a parser ([#316](https://github.com/may-journal/fitness-runner/issues/316)) ([de20fd9](https://github.com/may-journal/fitness-runner/commit/de20fd99cd97a1ef5835ba06c0aae7c381ea715f))
+
 ### 2026.10.12.2215
 
 - Feat: architecture-components: a Swift parser resolves names through locals, enclosing type members, extensions, base types, and overload labels.
