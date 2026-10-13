@@ -205,12 +205,3 @@ func Test0075_7(t *testing.T) {
 	out, code = aoRun(t, native)
 	sees(t, out, code, 0)
 }
-
-func Test0075_8(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", with(aoFixture(), map[string]string{"src/api/api.go": "package api\n"}))
-	for _, changed := range []string{"README.md", aoStore, aoView} {
-		out, code := fitness(t, repo, []string{"FITNESS_CHANGED_FILES=" + changed}, aoCheck)
-		sees(t, out, code, 1, "src/api/api.go"+aoNoOwner)
-	}
-}

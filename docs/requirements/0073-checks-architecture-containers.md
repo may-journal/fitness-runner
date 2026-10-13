@@ -46,7 +46,3 @@ Source: #287
     - Given Developer has a target or package manifest the check cannot read
         - When I check its containers
             - Then the error names the manifest
-- 0073.8
-    - Given Developer has unchanged container drift
-        - When I check unrelated changes
-            - Then the same findings remain

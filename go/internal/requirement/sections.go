@@ -121,17 +121,25 @@ func checkAcceptance(p *problems, docID string, g []item) IDLine {
 		p.add(top.n, top.text+" needs exactly one Given, one When, and one Then; a branch is a new ID")
 		return IDLine{ID: top.text, Line: top.n}
 	}
+	ordered := true
 	for i, kw := range chainKeywords {
-		checkChainLine(p, kw, g[i], g[i+1])
+		ordered = checkChainLine(p, kw, g[i], g[i+1]) && ordered
 	}
-	return IDLine{ID: top.text, Line: top.n, Given: strings.TrimPrefix(g[1].text, "Given "), GivenLine: g[1].n}
+	a := IDLine{ID: top.text, Line: top.n, Given: strings.TrimPrefix(g[1].text, "Given "), GivenLine: g[1].n}
+	if ordered {
+		a.When = strings.TrimPrefix(g[2].text, "When ")
+	}
+	return a
 }
 
-// checkChainLine requires child to start with kw and sit deeper than parent.
-func checkChainLine(p *problems, kw string, parent, child item) {
+// checkChainLine requires child to start with kw and sit deeper than parent,
+// and reports whether it does.
+func checkChainLine(p *problems, kw string, parent, child item) bool {
 	if !strings.HasPrefix(child.text, kw+" ") || child.indent <= parent.indent {
 		p.add(child.n, "each acceptance is one Given, then one When, then one Then, each nested under the line above")
+		return false
 	}
+	return true
 }
 
 // checkAcceptanceID requires a top-level `NNNN.N` with the doc's ID.

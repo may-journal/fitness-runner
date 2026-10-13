@@ -16,6 +16,8 @@ fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs
 
 The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [requirements check README](../../go/cmd/fitness-check-requirements/README.md) holds the template and every rule the check enforces. Read it first and link to it, do not restate it.
 
+Before adding a doc, find the one that already states the area. [ADR 0004](../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) says when to extend it.
+
 - Pick a prefix per kind of area. This repo uses `checks-`, `engine-`, `hooks-`, and `github-`; a project chooses its own.
 - Why: one or two sentences in the user's voice, saying what holds once the requirement is met.
 - Measurement: a numerator line, a `-` line, a denominator line, then `Source:` naming one real code line or one issue.

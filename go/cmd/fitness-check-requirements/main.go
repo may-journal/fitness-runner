@@ -5,7 +5,7 @@
 // one test named for it (Go Test0001_1 or Swift test0001_1 owns 0001.1), and
 // every test must own one, so a test that proves no requirement is either a
 // missing requirement or a duplicate. Git history supplies removed IDs, so an
-// ID is never reused. A staged or pull request change to a requirement test
+// ID is never reused. Two docs that cover one area fail, per ADR 0004. A staged or pull request change to a requirement test
 // must change its doc too, and the reverse, unless a commit trailer exempts it.
 package main
 
@@ -44,8 +44,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return result(len(paths)+len(files), append(errs, scopedPairs(root, paths, files, tests)...)), nil
 }
 
-// docErrors judges every doc's shape, its IDs against history, and which
-// tests own its acceptances.
+// docErrors judges every doc's shape, its IDs against history, docs that
+// share an area, and which tests own its acceptances.
 func docErrors(root string, paths []string, tests []goTest, repo langs) ([]string, error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
@@ -53,6 +53,7 @@ func docErrors(root string, paths []string, tests []goTest, repo langs) ([]strin
 	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
+	errs = append(errs, overlapErrors(docs)...)
 	return append(errs, ownershipErrors(docs, tests, repo)...), nil
 }
 

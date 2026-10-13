@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1946
+
+- Feat: requirements: fail when two docs' acceptances share a When and Givens sharing two words, naming both docs; only well-ordered chains are compared.
+- Docs: ADR 0004 keeps one requirement doc per user-facing area; add-requirements and the requirements README link it.
+- Docs: requirements: merge duplicate acceptances when folding 0064, 0071 into 0065, pushes into 0010, and architecture drift into 0070.
+- Test: requirement 0006.10 proves two docs covering one area fail; each merged acceptance gets a new ID and one test proving every case.
+
 ## [1.7.0](https://github.com/may-journal/fitness-runner/compare/v1.6.0...v1.7.0) (2026-10-13)
 
 

@@ -28,11 +28,13 @@ func pairedRepo() map[string]string {
 }
 
 // twoRepo is pairedRepo whose one test file proves requirements 0001 and 0002.
+// Requirement 0002 covers its own area, so the two docs never overlap.
 func twoRepo() map[string]string {
+	doubles := "- 0002.1\n    - Given one number\n        - When I double it\n            - Then I get twice that number\n"
 	return with(pairedRepo(), map[string]string{
 		"reqs/0001_test.go":                    "",
 		"reqs/0001_0002_test.go":               testFile("reqs", "Test0001_1", "Test0002_1"),
-		"docs/requirements/0002-adds-again.md": strings.Replace(requirementDoc("0002.1"), "0001 Adds Numbers", "0002 Adds Again", 1),
+		"docs/requirements/0002-adds-again.md": strings.Replace(docWith("Source: `adder.go:5`", doubles), "0001 Adds Numbers", "0002 Adds Again", 1),
 	})
 }
 

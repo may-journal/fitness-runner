@@ -169,12 +169,3 @@ func Test0073_7(t *testing.T) {
 	out, code = accRun(t, accXcode([2]string{"App", "application"}, [2]string{"Widget", ""}))
 	sees(t, out, code, 1, "App.xcodeproj/project.pbxproj:11: target Widget has no type")
 }
-
-func Test0073_8(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", with(acFixture(acRoot), map[string]string{"src/cmd/api/main.go": "package main\n"}))
-	for _, changed := range []string{"README.md", "src/store/store.go", acRoot + acContainer} {
-		out, code := fitness(t, repo, []string{"FITNESS_CHANGED_FILES=" + changed}, accCheck)
-		sees(t, out, code, 1, "src/cmd/api/main.go:1: Go command api"+accNoOwner)
-	}
-}

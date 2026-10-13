@@ -153,11 +153,22 @@ func Test0070_7(t *testing.T) {
 	}
 }
 
-func Test0070_8(t *testing.T) {
+func Test0070_9(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", acEdit(acComponent, acEvidence, "#L900)"))
-	for _, changed := range []string{"README.md", "src/store/store.go", acRoot + acContext} {
-		out, code := fitness(t, repo, []string{"FITNESS_CHANGED_FILES=" + changed}, acCheck)
-		sees(t, out, code, 1, "architecture/03-components.md:17: unresolved evidence src/cmd/service/main.go#L900")
+	drifts := []struct {
+		check, want string
+		files       map[string]string
+		changed     []string
+	}{
+		{acCheck, "architecture/03-components.md:17: unresolved evidence src/cmd/service/main.go#L900", acEdit(acComponent, acEvidence, "#L900)"), []string{"README.md", "src/store/store.go", acRoot + acContext}},
+		{accCheck, "src/cmd/api/main.go:1: Go command api" + accNoOwner, with(acFixture(acRoot), map[string]string{"src/cmd/api/main.go": "package main\n"}), []string{"README.md", "src/store/store.go", acRoot + acContainer}},
+		{aoCheck, "src/api/api.go" + aoNoOwner, with(aoFixture(), map[string]string{"src/api/api.go": "package api\n"}), []string{"README.md", aoStore, aoView}},
+	}
+	for _, d := range drifts {
+		repo := example(t, "happyRepo", d.files)
+		for _, changed := range d.changed {
+			out, code := fitness(t, repo, []string{"FITNESS_CHANGED_FILES=" + changed}, d.check)
+			sees(t, out, code, 1, d.want)
+		}
 	}
 }
