@@ -82,16 +82,33 @@ func (d *diagram) c4Relation(name string, args []string, line string, at Locatio
 	if name == "Rel_Back" {
 		from, to = to, from
 	}
-	d.relate(from, to, strings.Join(args[2:], ", "), line, at)
+	d.relate(from, to, name, strings.Join(args[2:], ", "), line, at)
 }
 
 func (d *diagram) c4Element(name string, args []string, line string, at Location, opens bool) {
 	if e := d.add(args[0], name, args[1], line, at); e != nil {
+		e.Technology, e.Description = c4Strings(name, args)
 		d.textClaims(e.ID, strings.Join(args[1:], " "), at)
 	}
 	if opens {
 		d.parents = append(d.parents, args[0])
 	}
+}
+
+// c4Strings reads the technology and description after a label. Container
+// and component macros take a technology first, as in Container(cli,
+// "Runner", "Go", "go/cmd/fitness"); persons, systems, and boundaries
+// take only a description.
+func c4Strings(name string, args []string) (technology, description string) {
+	rest := args[2:]
+	if technical(name) && len(rest) > 0 {
+		technology, rest = rest[0], rest[1:]
+	}
+	return technology, strings.Join(rest, " ")
+}
+
+func technical(name string) bool {
+	return (strings.HasPrefix(name, "Container") || strings.HasPrefix(name, "Component")) && !strings.HasSuffix(name, "Boundary")
 }
 
 // textClaims reads repository paths from diagram strings, such as a
@@ -121,8 +138,14 @@ func (d *diagram) classNode(match []string, line string, at Location) {
 	if label == "" {
 		label = match[1]
 	}
-	d.add(match[1], "class", label, line, at)
-	d.inClassBody = match[3] == "{"
+	e := d.add(match[1], "class", label, line, at)
+	if match[3] != "{" {
+		return
+	}
+	if e == nil {
+		e = &Element{}
+	}
+	d.body = e
 }
 
 // flow reads a flowchart statement. The node's ":::class" is its kind.
@@ -163,7 +186,7 @@ func (d *diagram) edge(match []string, line string, at Location) {
 	if strings.HasPrefix(match[2], "<") && match[2] != "<-->" {
 		from, to = to, from
 	}
-	d.relate(from, to, match[3]+match[5], line, at)
+	d.relate(from, to, match[2], match[3]+match[5], line, at)
 }
 
 func (d *diagram) flowNode(line string, at Location) {

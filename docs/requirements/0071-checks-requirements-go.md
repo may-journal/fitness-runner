@@ -19,26 +19,26 @@ Source: `go/cmd/fitness-check-requirements/owners.go:100`
 ## Requirements
 
 - 0071.1
-    - Given an acceptance that no Go test owns
+    - Given Developer has an acceptance that no Go test owns
         - When fitness runs
             - Then it fails
 - 0071.2
-    - Given an acceptance that two Go tests own
+    - Given Developer has an acceptance that two Go tests own
         - When fitness runs
             - Then it fails
 - 0071.3
-    - Given a Go test named for a removed acceptance
+    - Given Developer has a Go test named for a removed acceptance
         - When fitness runs
             - Then it fails
 - 0071.4
-    - Given a Go test that proves no requirement
+    - Given Developer has a Go test that proves no requirement
         - When fitness runs
             - Then it fails
 - 0071.5
-    - Given a Go repo with no requirement docs
+    - Given Developer has a Go repo with no requirement docs
         - When fitness runs
             - Then it fails
 - 0071.6
-    - Given an unchanged Go test without a requirement
+    - Given Developer has an unchanged Go test without a requirement
         - When fitness runs on staged or pull request changes
             - Then it fails even for unrelated changes

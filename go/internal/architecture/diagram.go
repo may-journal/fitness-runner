@@ -40,7 +40,9 @@ type diagram struct {
 	callouts    map[int]subject
 	claims      []Claim
 	parents     []string
-	inClassBody bool
+	annotations map[string][]Member
+	// body is the class whose member block is open.
+	body *Element
 }
 
 var (
@@ -50,7 +52,8 @@ var (
 )
 
 func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram {
-	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}}
+	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}, annotations: map[string][]Member{}}
+	m.diagramStart(view, Location{file, b.Line})
 	lines := strings.Split(b.Body, "\n")
 	start := frontMatterEnd(lines)
 	d.form = diagramForm(lines[start:])
@@ -62,6 +65,17 @@ func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram
 		d.statement(strings.TrimSpace(line), Location{file, b.Line + start + i + 1})
 	}
 	return d
+}
+
+// diagramStart records the first context and journey diagrams, where errors
+// about the whole view point.
+func (m *Model) diagramStart(view string, at Location) {
+	if view == "context" && m.contextAt.Path == "" {
+		m.contextAt = at
+	}
+	if view == journeyView {
+		m.journeyStart(at)
+	}
 }
 
 // frontMatterEnd skips a leading "---" block that holds a diagram's title
@@ -108,7 +122,7 @@ var decorations = []string{"%%", "title ", "direction ", "classDef ", "style ", 
 var accessibility = regexp.MustCompile(`^acc[A-Z][a-z]+\s*[:{]`)
 
 func (d *diagram) statement(line string, at Location) {
-	if d.decoration(line) || d.closes(line) {
+	if d.consumed(line, at) {
 		return
 	}
 	switch {
@@ -121,13 +135,19 @@ func (d *diagram) statement(line string, at Location) {
 	}
 }
 
+// consumed reports a line that declares nothing: a class member or
+// annotation, a decoration, or a closing brace.
+func (d *diagram) consumed(line string, at Location) bool {
+	return d.classPart(line, at) || d.decoration(line) || d.closes(line)
+}
+
 func (d *diagram) decoration(line string) bool {
 	return d.skipped(line) || hasPrefix(line, decorations) || accessibility.MatchString(line)
 }
 
 // skipped reports blank lines, the form line, and class body members.
 func (d *diagram) skipped(line string) bool {
-	return line == "" || line == d.form || (d.inClassBody && line != "}")
+	return line == "" || line == d.form || (d.body != nil && line != "}")
 }
 
 func hasPrefix(line string, prefixes []string) bool {
@@ -143,8 +163,8 @@ func (d *diagram) closes(line string) bool {
 	if line != "}" && line != "end" {
 		return false
 	}
-	if d.inClassBody {
-		d.inClassBody = false
+	if d.body != nil {
+		d.body = nil
 		return true
 	}
 	d.parents = d.parents[:max(len(d.parents)-1, 0)]
@@ -179,8 +199,8 @@ func (d *diagram) parent() string {
 	return d.parents[len(d.parents)-1]
 }
 
-func (d *diagram) relate(from, to, label, line string, at Location) {
-	r := &Relationship{From: from, To: to, Label: label, View: d.view, Callout: callout(line), At: at}
+func (d *diagram) relate(from, to, arrow, label, line string, at Location) {
+	r := &Relationship{From: from, To: to, Arrow: arrow, Label: label, View: d.view, Callout: callout(line), At: at}
 	d.edges = append(d.edges, r)
 	d.mark(r.Callout, subject{edge: r})
 }
@@ -213,5 +233,54 @@ func (d *diagram) bindRows(table *mermaid.CalloutTableBlock) {
 		if s, ok := d.callouts[n]; ok {
 			d.rowContent(s, strings.Join(row[1:], " | "), Location{d.file, table.Line + 2 + i})
 		}
+	}
+}
+
+// annotation matches a Mermaid class annotation, alone in a class body or
+// before the class ID it marks, such as <<abstract>> Contract.
+var annotation = regexp.MustCompile(`^<<\s*([^>]+?)\s*>>\s*([A-Za-z_][\w-]*)?$`)
+
+// classPart keeps each class body line and annotation on its class, so the
+// code check can compare them with source.
+func (d *diagram) classPart(line string, at Location) bool {
+	if !d.classLine(line) {
+		return false
+	}
+	if match := annotation.FindStringSubmatch(line); match != nil {
+		d.annotate(match, at)
+		return true
+	}
+	if d.body == nil {
+		return false
+	}
+	d.body.Members = append(d.body.Members, Member{line, at})
+	return true
+}
+
+// classLine reports a class diagram line that may be a member or an
+// annotation: not blank, a closing brace, or a comment.
+func (d *diagram) classLine(line string) bool {
+	return d.form == "classDiagram" && line != "" && line != "}" && !strings.HasPrefix(line, "%%")
+}
+
+func (d *diagram) annotate(match []string, at Location) {
+	id := match[2]
+	if id == "" && d.body != nil {
+		id = d.body.ID
+	}
+	if id != "" {
+		d.annotations[id] = append(d.annotations[id], Member{match[1], at})
+	}
+}
+
+// annotated puts each annotation on its class once the diagram is read.
+func (d *diagram) annotated() {
+	for _, id := range sortedKeys(d.annotations) {
+		marks := d.annotations[id]
+		if e := d.elements[id]; e != nil {
+			e.Annotations = marks
+			continue
+		}
+		d.m.fail(marks[0].At, "unresolved ID %s; declare it in this diagram", id)
 	}
 }

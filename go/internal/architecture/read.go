@@ -106,6 +106,9 @@ func (m *Model) readView(file, view, body string) {
 	if r.diagramsCount == 0 {
 		m.fail(Location{file, 1}, "view has no diagram outside its legends")
 	}
+	if view == journeyView {
+		m.journeyStart(Location{file, 1})
+	}
 }
 
 func (r *viewReader) block(block mermaid.DocBlock) {

@@ -18,7 +18,12 @@ archives:
   - id: bundle
     ids:
       - fitness
+      - fitness-check-architecture-actors
+      - fitness-check-architecture-code
+      - fitness-check-architecture-components
+      - fitness-check-architecture-containers
       - fitness-check-architecture-contract
+      - fitness-check-architecture-journey
       - fitness-check-build-output-untracked
       - fitness-check-changelog
       - fitness-check-changelog-bullets

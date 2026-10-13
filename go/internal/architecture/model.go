@@ -21,17 +21,28 @@ func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) 
 
 // Element is a node or boundary. ID is its Mermaid ID, Kind its C4 macro,
 // flowchart class, or "class", and Parent the enclosing boundary's ID.
+// Technology and Description are the C4 strings after the label; only
+// containers and components carry a technology.
 type Element struct {
-	ID, Kind, Name, Parent, View string
-	Callout                      int
-	At                           Location
+	ID, Kind, Name, Technology, Description, Parent, View string
+	Callout                                               int
+	At                                                    Location
+	// Members are a class body's lines; Annotations its <<name>> lines.
+	Members, Annotations []Member
+}
+
+// Member is one line a class diagram states about a class.
+type Member struct {
+	Text string
+	At   Location
 }
 
 // Relationship is a directed diagram edge between two element IDs.
 type Relationship struct {
-	From, To, Label, View string
-	Callout               int
-	At                    Location
+	// Arrow is the Mermaid arrow or C4 macro that drew the edge.
+	From, To, Arrow, Label, View string
+	Callout                      int
+	At                           Location
 }
 
 // Claim is a repository path named by an element's diagram text or callout
@@ -42,11 +53,28 @@ type Claim struct {
 }
 
 // Evidence is a callout row link to a tracked source file, with an optional
-// line. Subject is the element ID, or "from->to" for a relationship.
+// line range. Subject is the element ID, or "from->to" for a relationship.
 type Evidence struct {
 	Subject, Path string
-	Line          int
+	Line, End     int
 	At            Location
+}
+
+// String is the link as the row wrote it: the path and its line anchor.
+func (e Evidence) String() string {
+	switch {
+	case e.Line == 0:
+		return e.Path
+	case e.End > e.Line:
+		return fmt.Sprintf("%s#L%d-L%d", e.Path, e.Line, e.End)
+	}
+	return fmt.Sprintf("%s#L%d", e.Path, e.Line)
+}
+
+// holds reports whether line is in the linked range; no anchor holds
+// every line.
+func (e Evidence) holds(line int) bool {
+	return e.Line == 0 || (line >= e.Line && line <= e.End)
 }
 
 // Source is one tracked source file, its category, and the elements whose
@@ -67,6 +95,20 @@ type Model struct {
 	Files         []string
 	Errors        []string
 	repo          repository
+	// journeyAt is the first journey diagram's fence line, or the journey
+	// view's first line when it has no diagram.
+	journeyAt Location
+	// contextAt is the first context diagram's fence line.
+	contextAt Location
+}
+
+// contextLocation is the first context diagram, or the first view when no
+// context view exists, for errors about undeclared actors.
+func (m *Model) contextLocation() Location {
+	if m.contextAt.Path == "" && len(m.Files) > 0 {
+		return Location{m.Files[0], 1}
+	}
+	return m.contextAt
 }
 
 func (m *Model) fail(at Location, format string, args ...any) {

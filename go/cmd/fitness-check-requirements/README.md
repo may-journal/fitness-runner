@@ -32,9 +32,10 @@ Source: #123
 ## Requirements
 <!-- Top-level bullets are IDs: title ID + ".N", unique, never reused. -->
 <!-- Each ID nests exactly one Given, one When, one Then, one level deeper each, each line starting with its keyword. A second Given, When, or Then is a new ID. -->
+<!-- A Given starts with an actor the system context declares, by name or Mermaid ID; see the architecture-actors check. -->
 <!-- Exactly one test is named for each ID: Go func Test0001_1(t *testing.T) or Swift func test0001_1() owns 0001.1. Delete the test when you delete the ID. -->
 - 0001.1
-    - Given no network
+    - Given Writer has no network
         - When I edit an entry
             - Then it is saved locally
 ```
@@ -46,7 +47,7 @@ Source: #123
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
 - Measurement: numerator, `-`, denominator, then `Source:` citing one `path:line` that exists or one `#123` issue.
-- Acceptance: one Given, one When, and one Then, each nested under the line above. A branch is a new ID.
+- Acceptance: one Given, one When, and one Then, nested in order; the Given starts with an [actor](../fitness-check-architecture-actors/README.md).
 - Ownership: exactly one Go `func TestNNNN_N` or Swift `func testNNNN_N` owns each acceptance. A test named for an undefined acceptance fails.
 - Every test: each top-level test in the repository must be named for an acceptance. `TestMain` and helpers are not tests.
 

@@ -19,30 +19,30 @@ Source: `go/cmd/fitness-check-changelog/main.go:88`
 ## Requirements
 
 - 0064.1
-    - Given a release section with Features and Bug Fixes subheadings
+    - Given Developer has a release section with Features and Bug Fixes subheadings
         - When the changelog check runs
             - Then it passes
 - 0064.2
-    - Given an undated ### heading outside any release section
+    - Given Developer has an undated ### heading outside any release section
         - When the changelog check runs
             - Then it fails naming that heading
 - 0064.3
-    - Given Release Please bullets with a bold scope and no type prefix
+    - Given Developer has Release Please bullets with a bold scope and no type prefix
         - When changelog-bullets and markdown-no-bold-italic run
             - Then they pass
 - 0064.4
-    - Given bold text in a release section that is not a bullet's scope
+    - Given Developer has bold text in a release section that is not a bullet's scope
         - When markdown-no-bold-italic runs
             - Then it fails quoting that bold
 - 0064.5
-    - Given a release with more bullets across its subheadings than the list limit
+    - Given Developer has a release with more bullets across its subheadings than the list limit
         - When changelog-bullets runs
             - Then it fails naming the release and the limit
 - 0064.6
-    - Given a timestamped entry using a star bullet
+    - Given Developer has a timestamped entry using a star bullet
         - When changelog-bullets runs
             - Then the entry still fails as having too few bullets
 - 0064.7
-    - Given a release section under Release Please's linked version heading
+    - Given Developer has a release section under Release Please's linked version heading
         - When the release-changelog check runs
             - Then it finds the section and passes
