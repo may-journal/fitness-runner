@@ -7,8 +7,9 @@ import (
 
 const codeView = "code"
 
-// Code is the code view compared with Go and Swift declarations and the
-// relations between them. Files counts the code views read.
+// Code is the code view compared with Go, Swift, and TypeScript
+// declarations and the relations between them. Files counts the code views
+// read.
 type Code struct {
 	Errors []string
 	Files  int
@@ -52,6 +53,7 @@ func newCode(m *Model) *code {
 	x := &declIndex{}
 	c := &code{m: m, x: x, g: m.goIndex(x), nodes: map[string]*codeNode{}}
 	m.swiftDecls(x)
+	m.tsDecls(x)
 	c.Errors = append(c.Errors, x.errors...)
 	for _, e := range m.Elements {
 		c.element(e)
@@ -98,25 +100,25 @@ func (c *code) resolve(n *codeNode) {
 	}
 	s, ok := parseStated(n.e.Name)
 	if !ok {
-		c.fail(n.e.At, "%s %q names no declaration; name a Go or Swift symbol, or mark it <<abstract>>", n.e.ID, n.e.Name)
+		c.fail(n.e.At, "%s %q names no declaration; name a Go, Swift, or TypeScript symbol, or mark it <<abstract>>", n.e.ID, n.e.Name)
 		return
 	}
 	files := c.sourceLinks(n)
 	if len(files) == 0 {
-		c.fail(n.e.At, "%s links no Go or Swift source; link the file declaring %s in its callout row, or mark it <<abstract>>", n.e.ID, s.text)
+		c.fail(n.e.At, "%s links no Go, Swift, or TypeScript source; link the file declaring %s in its callout row, or mark it <<abstract>>", n.e.ID, s.text)
 		return
 	}
 	n.d = c.pick(n, s, files)
 	c.check(n)
 }
 
-// sourceLinks lists the Go and Swift files a node's row links, failing
-// any other link.
+// sourceLinks lists the Go, Swift, and TypeScript files a node's row
+// links, failing any other link.
 func (c *code) sourceLinks(n *codeNode) []string {
 	var files []string
 	for _, ev := range n.links {
-		if !supportedEvidence(ev.Path) {
-			c.fail(ev.At, "unsupported evidence %s; Go and Swift sources only", ev)
+		if !codeEvidence(ev.Path) {
+			c.fail(ev.At, "unsupported evidence %s; Go, Swift, and TypeScript sources only", ev)
 			continue
 		}
 		files = append(files, ev.Path)
@@ -337,4 +339,9 @@ func (c *code) viewFile() string {
 		}
 	}
 	return ""
+}
+
+// codeEvidence reports a source the code view reads declarations from.
+func codeEvidence(p string) bool {
+	return supportedEvidence(p) || typeScript(p)
 }
