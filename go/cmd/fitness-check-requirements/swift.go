@@ -54,7 +54,7 @@ func swiftFileTests(file, code string) []goTest {
 		name := code[m[2]:m[3]]
 		if isSwiftTest(code, m, bodies[owner] && strings.HasPrefix(name, "test")) {
 			loc := fmt.Sprintf("%s:%d", file, strings.Count(code[:m[0]], "\n")+1)
-			tests = append(tests, goTest{name: name, id: swiftIDOf(name), loc: loc, file: file, swift: true})
+			tests = append(tests, goTest{name: name, id: swiftIDOf(name), loc: loc, file: file, lang: langSwift})
 		}
 	}
 	return tests

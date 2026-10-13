@@ -2,6 +2,7 @@ package architecture
 
 import (
 	"path"
+	"sort"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -68,4 +69,19 @@ func (m *Model) owners(file string) []string {
 		}
 	}
 	return owners
+}
+
+// ProductCode lists the Go, Swift, TypeScript, and JavaScript product files
+// that need architecture views: tracked, not generated, not tests, and not a
+// tool's config file such as vite.config.ts.
+func ProductCode(root string) []string {
+	code := walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, ".go", ".swift"))
+	var out []string
+	for _, file := range append(code, walkfs.Scripts(root)...) {
+		if category(file, true) == "product" && !walkfs.ScriptTest(file) {
+			out = append(out, file)
+		}
+	}
+	sort.Strings(out)
+	return out
 }

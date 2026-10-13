@@ -66,11 +66,19 @@ func acEdit(view, old, new string) map[string]string {
 	return files
 }
 
-func Test0070_1(t *testing.T) {
+func Test0070_11(t *testing.T) {
 	t.Parallel()
-	out, code := acRun(t, map[string]string{"src/main.go": "package main\n"})
-	sees(t, out, code, 0)
-	passedWithNoFiles(t, out, acCheck)
+	for _, files := range []map[string]string{nil, {
+		"vite.config.ts":          "export default {};\n",
+		"tools/check.sh":          "#!/bin/sh\nexit 0\n",
+		"src/store/store_test.go": "package store\n",
+		"src/app.test.ts":         "export {};\n",
+		"src/__tests__/app.ts":    "export {};\n",
+	}} {
+		out, code := acRun(t, files)
+		sees(t, out, code, 0)
+		passedWithNoFiles(t, out, acCheck)
+	}
 }
 
 func Test0070_2(t *testing.T) {
@@ -89,8 +97,13 @@ func Test0070_2(t *testing.T) {
 	}
 }
 
-func Test0070_3(t *testing.T) {
+func Test0070_10(t *testing.T) {
 	t.Parallel()
+	for _, file := range []string{"src/main.go", "Sources/App/App.swift", "src/app.ts", "src/app.js"} {
+		out, code := acRun(t, map[string]string{file: "// The app.\n"})
+		sees(t, out, code, 1, "docs/architecture/ has no views, but product code such as "+file+" needs them; add the five views",
+			"actors (01-system-context.md), containers (02-containers.md), components (03-components.md), code (04-code.md), and journey (05-user-journey.md)")
+	}
 	files := acFixture(acRoot)
 	delete(files, acRoot+acJourney)
 	out, code := acRun(t, files)

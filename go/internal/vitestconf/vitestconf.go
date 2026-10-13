@@ -17,6 +17,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+
+	"github.com/may-journal/fitness-runner/go/internal/javascript"
 )
 
 // ConfigNames are the Vitest config filenames probed in this exact order —
@@ -207,7 +209,7 @@ func outermostCspellAncestor(start string) string {
 // object literal carrying a direct exclude array and returns the array's
 // clean string literals; found reports whether such an array exists.
 func CoverageExclude(src string) (exclude []string, found bool) {
-	tokens := lex(src)
+	tokens := javascript.Lex(src)
 	for i := 0; i+2 < len(tokens); i++ {
 		if !isCoverageOpener(tokens, i) {
 			continue
@@ -222,13 +224,13 @@ func CoverageExclude(src string) (exclude []string, found bool) {
 // isCoverageOpener reports whether tokens[i:] opens a coverage object
 // literal: the key "coverage", a colon, and an opening brace. The caller
 // guarantees tokens i+1 and i+2 exist.
-func isCoverageOpener(tokens []token, i int) bool {
+func isCoverageOpener(tokens []javascript.Token, i int) bool {
 	return isKey(tokens, i, "coverage") && isPunct(tokens[i+1], ":") && isPunct(tokens[i+2], "{")
 }
 
 // excludeInObject scans an object literal's tokens (start is the index just
 // past its opening brace) for a direct exclude key holding an array.
-func excludeInObject(tokens []token, start int) ([]string, bool) {
+func excludeInObject(tokens []javascript.Token, start int) ([]string, bool) {
 	depth := 1
 	for i := start; i < len(tokens); i++ {
 		depth += tokenDepthDelta(tokens[i])
@@ -245,18 +247,18 @@ func excludeInObject(tokens []token, start int) ([]string, bool) {
 // isExcludeOpener reports whether tokens[i:] opens an exclude array: the key
 // "exclude", a colon, and an opening bracket, with both punctuation tokens
 // in range.
-func isExcludeOpener(tokens []token, i int) bool {
+func isExcludeOpener(tokens []javascript.Token, i int) bool {
 	return i+2 < len(tokens) && isKey(tokens, i, "exclude") &&
 		isPunct(tokens[i+1], ":") && isPunct(tokens[i+2], "[")
 }
 
 // tokenDepthDelta returns the nesting-depth change a token causes: +1 for
 // opening punctuation, -1 for closing, 0 for everything else.
-func tokenDepthDelta(t token) int {
-	if t.kind != tokPunct {
+func tokenDepthDelta(t javascript.Token) int {
+	if t.Kind != javascript.Punct {
 		return 0
 	}
-	switch t.text {
+	switch t.Text {
 	case "{", "[", "(":
 		return 1
 	case "}", "]", ")":
@@ -269,7 +271,7 @@ func tokenDepthDelta(t token) int {
 // is the index just past its opening bracket): a literal counts only when it
 // sits directly between element delimiters — anything wrapped in a call,
 // spread, or operator expression is unresolvable and skipped.
-func arrayStrings(tokens []token, start int) []string {
+func arrayStrings(tokens []javascript.Token, start int) []string {
 	var out []string
 	depth := 1
 	for i := start; i < len(tokens); i++ {
@@ -278,7 +280,7 @@ func arrayStrings(tokens []token, start int) []string {
 			return out
 		}
 		if depth == 1 && isArrayElement(tokens, i) {
-			out = append(out, tokens[i].text)
+			out = append(out, tokens[i].Text)
 		}
 	}
 	return out
@@ -287,9 +289,9 @@ func arrayStrings(tokens []token, start int) []string {
 // isArrayElement reports whether tokens[i] is a clean string literal sitting
 // directly between array element delimiters: the opening bracket or a comma
 // before it, a comma or the closing bracket after it.
-func isArrayElement(tokens []token, i int) bool {
+func isArrayElement(tokens []javascript.Token, i int) bool {
 	t := tokens[i]
-	if t.kind != tokString || !t.lit || i+1 >= len(tokens) {
+	if t.Kind != javascript.String || !t.Lit || i+1 >= len(tokens) {
 		return false
 	}
 	return isPunctEither(tokens[i-1], "[", ",") && isPunctEither(tokens[i+1], ",", "]")
@@ -298,28 +300,28 @@ func isArrayElement(tokens []token, i int) bool {
 // isKey reports whether token i is an object key named name: an identifier
 // or plain string literal in key position (start of input, or right after an
 // opening brace or comma).
-func isKey(tokens []token, i int, name string) bool {
+func isKey(tokens []javascript.Token, i int, name string) bool {
 	t := tokens[i]
-	return isKeyToken(t) && t.text == name && inKeyPosition(tokens, i)
+	return isKeyToken(t) && t.Text == name && inKeyPosition(tokens, i)
 }
 
 // isKeyToken reports whether t can serve as an object key: an identifier or
 // a plain (fully literal) string.
-func isKeyToken(t token) bool {
-	return t.kind == tokIdent || (t.kind == tokString && t.lit)
+func isKeyToken(t javascript.Token) bool {
+	return t.Kind == javascript.Ident || (t.Kind == javascript.String && t.Lit)
 }
 
 // inKeyPosition reports whether index i is object-key position: the start of
 // input, or right after an opening brace or comma.
-func inKeyPosition(tokens []token, i int) bool {
+func inKeyPosition(tokens []javascript.Token, i int) bool {
 	return i == 0 || isPunctEither(tokens[i-1], "{", ",")
 }
 
 // isPunctEither reports whether t is a punctuation token whose text is a or b.
-func isPunctEither(t token, a, b string) bool {
-	return t.kind == tokPunct && (t.text == a || t.text == b)
+func isPunctEither(t javascript.Token, a, b string) bool {
+	return t.Kind == javascript.Punct && (t.Text == a || t.Text == b)
 }
 
-func isPunct(t token, s string) bool {
-	return t.kind == tokPunct && t.text == s
+func isPunct(t javascript.Token, s string) bool {
+	return t.Kind == javascript.Punct && t.Text == s
 }

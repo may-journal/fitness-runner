@@ -114,3 +114,54 @@ func hungTool(timeoutMs, prelude string) map[string]string {
 func planBody(task string) string {
 	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
 }
+
+// scriptRepo is a TypeScript project whose vitest test titled "0001.1 …"
+// owns 0001.1.
+func scriptRepo() map[string]string {
+	return map[string]string{
+		"src/adder.ts":                           "/** Adds numbers. */\nexport const add = (a: number, b: number): number => a + b;\n",
+		"tests/adder.test.ts":                    vitestFile(`test("0001.1 adds two numbers", () => {});`),
+		"docs/requirements/0001-adds-numbers.md": docWith("Source: `src/adder.ts:2`", acceptances("0001.1")),
+	}
+}
+
+// vitestFile is a vitest test file holding the given statements.
+func vitestFile(statements ...string) string {
+	return "import { describe, expect, it, test } from \"vitest\";\n\n" + strings.Join(statements, "\n") + "\n"
+}
+
+// architectedRepo is a Go service whose requirement, owning test, and five
+// architecture views keep every check green.
+func architectedRepo() map[string]string {
+	views := acFixture("docs/architecture/")
+	files := map[string]string{
+		"go.mod":                  "module example.com/service\n\ngo 1.22\n",
+		"src/cmd/service/main.go": "// Command service saves one record.\npackage main\n\nimport \"example.com/service/src/store\"\n\nfunc main() { store.Save() }\n",
+		"src/store/store.go":      "// Package store keeps records.\npackage store\n\n// Record is one saved record.\ntype Record struct{ ID int }\n\n// Save keeps one record and returns it.\nfunc Save() Record { return Record{} }\n",
+		"src/store/store_test.go": testFile("store", "Test0001_1"),
+		acDoc:                     front("../../") + acDocWith("User opens the app"),
+	}
+	edits := map[string][]string{
+		acContainer: {"| 2 | The system. |", "| 2 | The app that holds the service. |"},
+		acComponent: {"main.go#L3", "main.go#L6"},
+		acCode: {"class save[\"2 save()\"]\nsave --> Record : 3", "class Save[\"2 Save()\"]\nSave --> Record : 3",
+			"A saved record.", "A saved record, in [store.go](../../src/store/store.go#L5).",
+			"Writes one record.", "Writes one record, in [store.go](../../src/store/store.go#L8)."},
+		acJourney: {"open(2 Open the app):::action\ndone[3 Record saved]:::screen\nuser --> open\nopen -->|saves| done",
+			"open(2 Open the app, Req 0001):::action\nuser --> open", "| 3 | Shows the record, see [0001](../../docs/requirements/0001-open.md). | Shared by later checks. |\n", ""},
+	}
+	for view, pairs := range edits {
+		body := views["docs/architecture/"+view]
+		for i := 0; i < len(pairs); i += 2 {
+			body = strings.Replace(body, pairs[i], pairs[i+1], 1)
+		}
+		files["docs/architecture/"+view] = front("../../") + body
+	}
+	files["docs/architecture/"+acContext] = front("../../") + views["docs/architecture/"+acContext]
+	return with(views, files)
+}
+
+// front is the front matter a Markdown doc at depth up carries.
+func front(up string) string {
+	return "---\nrelatedConfigurations: ['" + up + ".fitnessrc.json']\n---\n\n"
+}

@@ -119,8 +119,8 @@ fitness-runner/
     cmd/fitness-stamp-changelog/   pre-commit changelog stamper
     cmd/fitness-check-name/    one main + README per check
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
-                               clonedetect, vitestconf, mdfilename, render,
-                               conf, sharedconf (embedded tool configs)
+                               clonedetect, vitestconf, javascript, mdfilename,
+                               render, conf, sharedconf (embedded tool configs)
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)

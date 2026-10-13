@@ -6,24 +6,24 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-A Go or Swift repo's tests prove its requirements, so each acceptance has exactly one test and nothing is untested or tested twice.
+Each test proves one requirement in Go, Swift, TypeScript, or JavaScript, so no acceptance is untested or tested twice.
 
 ## Measurement
 
-acceptances owned by exactly one Go or Swift test
+acceptances owned by exactly one Go, Swift, or vitest test
 -
 acceptances
 
-Source: `go/cmd/fitness-check-requirements/owners.go:100`
+Source: `go/cmd/fitness-check-requirements/owners.go:131`
 
 ## Requirements
 
-- 0065.19
-    - Given Developer has `test0001_1` as an XCTest method, a `@Test func`, or only in a comment, string, or plain method
+- 0065.20
+    - Given Developer has 0001.1 in an XCTest, `@Test`, or vitest test name, or only in a comment, string, method, or `describe` title
         - When fitness runs
-            - Then only the XCTest method or `@Test func` owns 0001.1
-- 0065.11
-    - Given Developer has an acceptance that no Go or Swift test owns
+            - Then only the test the runner runs owns 0001.1
+- 0065.21
+    - Given Developer has an acceptance that no Go, Swift, or vitest test owns
         - When fitness runs
             - Then it fails naming the test it needs
 - 0065.17
@@ -34,19 +34,19 @@ Source: `go/cmd/fitness-check-requirements/owners.go:100`
     - Given Developer has a Go test named for a removed acceptance
         - When fitness runs
             - Then it fails
-- 0065.13
-    - Given Developer has a Go or Swift test that proves no requirement
+- 0065.22
+    - Given Developer has a Go, Swift, or vitest test that proves no requirement
         - When fitness runs
             - Then it fails and asks for a name carrying an acceptance ID
-- 0065.14
-    - Given Developer has an unchanged Go or Swift test without a requirement
+- 0065.23
+    - Given Developer has an unchanged Go, Swift, or vitest test without a requirement
         - When fitness runs on staged or pull request changes
             - Then it fails even for unrelated changes
-- 0065.15
-    - Given Developer has a Go or Swift repo with tests and no requirement docs
+- 0065.24
+    - Given Developer has a Go, Swift, TypeScript, or JavaScript repo with no requirement docs
         - When fitness runs
             - Then it fails
-- 0065.16
-    - Given Developer has a repo with no Go or Swift code
+- 0065.25
+    - Given Developer has a repo with no Go, Swift, TypeScript, or JavaScript code, or only a tool config such as `vite.config.ts`
         - When fitness runs
             - Then the check passes with nothing to judge
