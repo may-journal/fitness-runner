@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1825
+
+- Fix: architecture-components: a script tool config such as `rollup.config.mjs` is a tool source and needs no component owner.
+- Feat: architecture-contract: a code span or label claims a tracked root-level file by its bare name, such as `index.ts`.
+- Test: requirement 0075.12 replaces 0075.2, adding root-file claims and tool configs, with one test.
+
 ### 2026.10.13.1821
 
 - Fix: changelog: a `package.json` version may end in `+yyyy.mm.dd.HHMM` build metadata, which npm accepts, as well as a `-` prerelease.

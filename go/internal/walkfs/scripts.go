@@ -25,11 +25,17 @@ var (
 func Scripts(root string) []string {
 	var out []string
 	for _, f := range WithoutGenerated(root, FilesByExt(root, ScriptExts...)) {
-		if !toolConfig.MatchString(path.Base(f)) {
+		if !ToolConfig(f) {
 			out = append(out, f)
 		}
 	}
 	return out
+}
+
+// ToolConfig reports whether file is a tool's config file by its name,
+// such as vite.config.ts, rollup.config.mjs, or .eslintrc.cjs.
+func ToolConfig(file string) bool {
+	return toolConfig.MatchString(path.Base(file))
 }
 
 // ScriptTest reports whether file is a test file vitest or jest runs by
