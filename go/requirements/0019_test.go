@@ -48,10 +48,20 @@ func Test0019_1(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0019_2(t *testing.T) {
+func Test0019_10(t *testing.T) {
 	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{"src.txt": changelogFeature})
-	sees(t, out, code, 1, "Stage CHANGELOG.md and add an entry that mentions your staged changes")
+	sees(t, out, code, 1, "Stage a changelog/<name>.md entry file, or a CHANGELOG.md section, that mentions your staged changes")
+	out, code = changelogStaged(t, map[string]string{"src.txt": changelogFeature, "CHANGELOG.md": ""})
+	sees(t, out, code, 1, "CHANGELOG.md missing; add it and mention your staged changes")
+}
+
+func Test0019_11(t *testing.T) {
+	t.Parallel()
+	files := withEntries(map[string]string{"runner-feature": entryFileText(changelogNow(1), "Feat: added runner feature for validation.")})
+	files["src.txt"] = changelogFeature
+	out, code := changelogStaged(t, files)
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0019_3(t *testing.T) {
@@ -99,40 +109,43 @@ func Test0019_6(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0019_8(t *testing.T) {
-	t.Parallel()
-	out, code := changelogStaged(t, map[string]string{"src.txt": changelogFeature, "CHANGELOG.md": ""})
-	sees(t, out, code, 1, "CHANGELOG.md missing; add it and mention your staged changes")
-}
-
-// changelogBranch is happyRepo on a branch off origin/main whose first
-// commit added a dated entry for the staged feature.
-func changelogBranch(t *testing.T) string {
+// changelogBranch is happyRepo, with files over it, on a branch off
+// origin/main whose first commit added first for the staged feature.
+func changelogBranch(t *testing.T, files, first map[string]string) string {
 	t.Helper()
-	repo := example(t, "happyRepo", nil)
+	repo := example(t, "happyRepo", files)
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
 	git(t, repo, "checkout", "-q", "-b", "work")
-	commit(t, repo, map[string]string{
-		"src.txt":      changelogFeature,
-		"CHANGELOG.md": changelogEntry(changelogFirst, "Feat: added runner feature for validation."),
-	}, "feat: add runner")
+	first["src.txt"] = changelogFeature
+	commit(t, repo, first, "feat: add runner")
 	return repo
 }
 
 // changelogFirst is the stamp of the branch's first entry.
 const changelogFirst = "2026.01.02.0900"
 
-func Test0019_9(t *testing.T) {
-	t.Parallel()
-	repo := changelogBranch(t)
-	stamp := changelogNow(0)
-	entry := changelogEntry(changelogFirst, "Feat: added runner feature for validation.")
-	write(t, repo, map[string]string{
-		"src.txt":      changelogFeature + "Added runner option for validation.\n",
-		"CHANGELOG.md": changelogOnTop(entry, stamp, "Feat: added runner option for validation."),
-	})
+// changelogSecond stages a second change in repo, with entry, and runs
+// changelog-updated on it.
+func changelogSecond(t *testing.T, repo string, entry map[string]string) (string, int) {
+	t.Helper()
+	entry["src.txt"] = changelogFeature + "Added runner option for validation.\n"
+	write(t, repo, entry)
 	git(t, repo, "add", "-A")
-	out, code := fitness(t, repo, nil, "changelog-updated")
+	return fitness(t, repo, nil, "changelog-updated")
+}
+
+func Test0019_12(t *testing.T) {
+	t.Parallel()
+	entry := changelogEntry(changelogFirst, "Feat: added runner feature for validation.")
+	repo := changelogBranch(t, nil, map[string]string{"CHANGELOG.md": entry})
+	stamp := changelogNow(0)
+	out, code := changelogSecond(t, repo, map[string]string{"CHANGELOG.md": changelogOnTop(entry, stamp, "Feat: added runner option for validation.")})
 	sees(t, out, code, 1, "this branch already has its entry ### "+changelogFirst,
-		"instead of a new section: ### "+stamp)
+		"instead of a new entry: ### "+stamp)
+	first := entryFileText(changelogFirst, "Feat: added runner feature for validation.")
+	repo = changelogBranch(t, nil, map[string]string{"changelog/runner-feature.md": first})
+	second := map[string]string{"CHANGELOG.md": changelogEntry(stamp, "Feat: added runner option for validation.")}
+	out, code = changelogSecond(t, repo, second)
+	sees(t, out, code, 1, "this branch already has its entry changelog/runner-feature.md",
+		"instead of a new entry: ### "+stamp)
 }

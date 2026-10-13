@@ -176,6 +176,20 @@ func anchorRune(r rune) rune {
 	return -1
 }
 
+// entryLinkRe matches a markdown link to an entry file and captures its
+// path from the entry folder on.
+var entryLinkRe = regexp.MustCompile(`\]\((?:[^)\s]*?/)?(` + EntryDir + `/[^)\s#?/]+\.md)[^)\s]*\)`)
+
+// EntryLinks returns the path of every entry file link in text, such as
+// changelog/fast-checks.md.
+func EntryLinks(text string) []string {
+	var paths []string
+	for _, m := range entryLinkRe.FindAllStringSubmatch(text, -1) {
+		paths = append(paths, m[1])
+	}
+	return paths
+}
+
 // Links returns the anchor of every CHANGELOG.md heading link in text.
 func Links(text string) []string {
 	var anchors []string

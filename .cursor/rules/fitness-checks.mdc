@@ -1,6 +1,6 @@
 ---
 description: Read all fitness checks and craft solutions with them in mind
-globs: go/cmd/**, go/internal/**, CHANGELOG.md, .fitnessrc*
+globs: go/cmd/**, go/internal/**, CHANGELOG.md, changelog/**, .fitnessrc*
 alwaysApply: false
 ---
 

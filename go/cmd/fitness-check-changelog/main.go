@@ -4,7 +4,8 @@
 // heading's timestamp, and package-lock.json (when present) must carry the
 // same version as package.json. Version files that fail to parse report
 // "<file> is invalid JSON", exactly like the TypeScript original's
-// JSON.parse path.
+// JSON.parse path. Every changelog/*.md entry file is folded into
+// CHANGELOG.md before judging, and each must hold one dated heading.
 package main
 
 import (
@@ -15,6 +16,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/changelog"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
@@ -54,7 +56,29 @@ func run(root string, _ []string) (checkkit.Result, error) {
 		}
 		return checkkit.Result{}, err
 	}
-	return judge(root, string(raw)), nil
+	return judgeEntries(root, string(raw))
+}
+
+// judgeEntries judges CHANGELOG.md with any entry files: each must hold one
+// dated heading, and CHANGELOG.md with every entry folded in must pass as a
+// whole. filesChecked counts CHANGELOG.md and each entry file.
+func judgeEntries(root, content string) (checkkit.Result, error) {
+	entries, err := changelog.ReadEntries(root)
+	if err != nil {
+		return checkkit.Result{}, err
+	}
+	var errs []string
+	for _, e := range entries {
+		if !e.Shaped() {
+			errs = append(errs, e.Path+" must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
+		}
+	}
+	if len(errs) > 0 {
+		return checkkit.Fail(1+len(entries), errs...), nil
+	}
+	res := judge(root, changelog.Fold(content, entries))
+	res.FilesChecked += len(entries)
+	return res, nil
 }
 
 // judge applies the gates in the TS order: heading format first (its errors

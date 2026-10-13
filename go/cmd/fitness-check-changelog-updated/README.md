@@ -19,7 +19,9 @@ Older headings further down the diff are history, such as sections a changelog r
 - Fail: Changelog additions share fewer than three words with rest of diff → error with count.
   - A second line lists up to 10 words from the staged diff (e.g. use words like: …) to help fix the entry.
 
-Only the added parts of `CHANGELOG.md` in the diff count, with words lowercased and at least 3 long. Time is taken at check run (e.g. pre-commit). A `package.json` version ending in `yyyy.mm.dd.HHMM` must match the heading exactly.
+The branch's entry may be an [entry file](../fitness-check-changelog/README.md#entry-files), the preferred style, or a `CHANGELOG.md` section; every rule above reads both. A commit that adds a second entry of either style fails naming the branch's first. A passing commit whose entry went into `CHANGELOG.md` prints a tip suggesting an entry file.
+
+Only the added parts of the changelog in the diff count, with words lowercased and at least 3 long. Time is taken at check run (e.g. pre-commit). A `package.json` version ending in `yyyy.mm.dd.HHMM` must match the heading exactly.
 
 ## Contributing
 

@@ -15,6 +15,18 @@ The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated se
 - Fail: package.json version suffix ≠ first CHANGELOG heading → `package.json version suffix must match CHANGELOG.md first ### heading (yyyy.mm.dd.HHMM)`.
 - Fail: package-lock.json version ≠ package.json version → `package-lock.json version must match package.json version`.
 
+## Entry files
+
+Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So the preferred way to add an entry is its own `changelog/<name>.md` file, named for the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above.
+
+- Every repo accepts both styles: a pull request adds exactly one entry, an entry file or a dated `CHANGELOG.md` section, never both.
+- This check folds every entry file into `CHANGELOG.md`, newest first, and judges the result, so the newest entry is the first heading.
+- Fail: an entry file holding other than one dated `###` heading → `changelog/<name>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
+- `changelog-bullets`, `changelog-updated`, the pre-commit stamp, and `pr-check` read entry files and sections alike.
+- On the release PR, `fitness-release release-pr` commits the entry files into `CHANGELOG.md` below the Release Please version section and deletes them.
+
+Dated sections already in `CHANGELOG.md` stay valid history.
+
 ## Contributing
 
 This README is the canonical description for this check. This check is a self-contained sub-project (the `fitness-check-changelog` binary). To add options (e.g. custom filename, required format), extend the check and its tests here and keep the README in sync.

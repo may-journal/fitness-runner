@@ -15,6 +15,7 @@ Keeps changelog entries tight. Every `###` section of `CHANGELOG.md` must be 3 t
 - Every bullet must start with one of: `Feat:`, `Fix:`, `Docs:`, `Style:`, `Refactor:`, `Perf:`, `Test:`, `Build:`, `Ci:`, `Chore:`, `Revert:`.
 - A semantic commit subject works too: a lowercase type with an optional scope and `!`, such as `feat(release): ` or `fix!: `.
 - A repo without `CHANGELOG.md` passes with zero files checked.
+- Each [entry file](../fitness-check-changelog/README.md#entry-files) is judged the same way, and errors name that file.
 
 ## Errors
 
