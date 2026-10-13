@@ -14,6 +14,17 @@ relatedConfigurations: ['.fitnessrc.json']
 - Docs: requirements: merge duplicate acceptances when folding 0064, 0071 into 0065, pushes into 0010, and architecture drift into 0070.
 - Test: requirement 0006.10 proves two docs covering one area fail; each merged acceptance gets a new ID and one test proving every case.
 
+## [1.7.0](https://github.com/may-journal/fitness-runner/compare/v1.6.0...v1.7.0) (2026-10-13)
+
+
+### Features
+
+* **architecture:** constrain diagrams, code and requirements together ([#311](https://github.com/may-journal/fitness-runner/issues/311)) ([63b2bff](https://github.com/may-journal/fitness-runner/commit/63b2bff955c53b598b3cc3b46bf524dd5aa56037))
+* **architecture:** read one model from existing diagrams ([#291](https://github.com/may-journal/fitness-runner/issues/291)) ([8ac2bdb](https://github.com/may-journal/fitness-runner/commit/8ac2bdb02d069c1e009ab10e2fc8d50a4e55b21b))
+* **changelog:** keep one changelog entry per pull request ([#293](https://github.com/may-journal/fitness-runner/issues/293)) ([d992d28](https://github.com/may-journal/fitness-runner/commit/d992d28147e75f5d43b220ee1098d5893d958619))
+* **changelog:** link PR and release descriptions to the changelog ([#296](https://github.com/may-journal/fitness-runner/issues/296)) ([9af8483](https://github.com/may-journal/fitness-runner/commit/9af848351e3d5ca26c612a1cdd5f6fc525c3fbfa))
+* **requirements:** pair requirement tests with their docs ([#298](https://github.com/may-journal/fitness-runner/issues/298)) ([2e7e45f](https://github.com/may-journal/fitness-runner/commit/2e7e45f0760995e674c4abe250dcdfbea8a7fdca))
+
 ### 2026.10.12.1917
 
 - Feat: architecture checks: journey diagram labels name every requirement ID; actor, container, component, and code views match Givens, runtimes, folders, and symbols.
