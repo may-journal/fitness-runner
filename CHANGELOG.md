@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1814
+
+- Feat: fitness: `--json=<file>` writes each check's time, budget, files judged, binary size, and result.
+- Feat: fitness: the GitHub Actions job summary adds a check timing table, slowest first, with each check's share of its budget.
+- Feat: fitness-release: `record` prints every release asset's size and the install time from an empty cache as JSON.
+- Docs: shared CI and distribution smoke keep these records as `fitness-performance-*` artifacts for 90 days, the history the CI guide documents.
+- Test: requirements 0077.1 to 0077.5 prove the report, the timing table, and the release record through the installed commands.
+
 ### 2026.10.12.2216
 
 - Feat: requirements: TypeScript and JavaScript repos need requirement docs; each vitest test owns the acceptance its title opens with.

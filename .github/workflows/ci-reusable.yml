@@ -79,7 +79,16 @@ jobs:
           "$RUNNER_TEMP/swiftlint/swiftlint" version
       - name: Run fitness
         id: report-step-2
-        run: fitness
+        run: fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
+      # The performance trail: see docs/ci.md#performance-record.
+      - name: Retain the performance record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-performance-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/fitness-performance/
+          if-no-files-found: ignore
+          retention-days: 90
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

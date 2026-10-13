@@ -161,6 +161,7 @@ Usage:
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
+  fitness --json=<file>    also write each check's time, budget, files, and binary size as JSON
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
@@ -174,6 +175,11 @@ Docs: https://github.com/may-journal/fitness-runner#usage`)
 
 func run(argv []string) int {
 	root, err := os.Getwd()
+	if err != nil {
+		report.Error("fitness setup", err)
+		return 1
+	}
+	perfPath, argv, err := jsonPath(argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
@@ -192,7 +198,22 @@ func run(argv []string) int {
 	rows, success, failure, files := summarize(checks, outcomes)
 	elapsed := time.Since(start).Milliseconds()
 	printSummary(rows, success, failure, files, elapsed)
-	return finish(rows, success, failure, files, elapsed)
+	perf := buildPerfReport(checks, outcomes, rows, elapsed)
+	code := finish(rows, perf, success, failure, files)
+	return withPerfReport(perfPath, perf, code)
+}
+
+// withPerfReport writes the `--json` report when one was asked for; a report
+// that cannot be written fails the run, since the caller relies on it.
+func withPerfReport(path string, perf perfReport, code int) int {
+	if path == "" {
+		return code
+	}
+	if err := writePerfReport(path, perf); err != nil {
+		report.Error("fitness --json", err)
+		return 1
+	}
+	return code
 }
 
 // loadConfig loads the repo config.

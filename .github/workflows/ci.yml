@@ -22,8 +22,17 @@ jobs:
       - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       # A pull request checks the files it changes; a push to main checks
       # every file. The gofmt, go-vet, and go-test checks cover the Go gate.
-      - run: go/bin/fitness
+      - run: go/bin/fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
         id: report-step-1
+      # The performance trail: see docs/ci.md#performance-record.
+      - name: Retain the performance record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-performance-${{ github.job }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/fitness-performance/
+          if-no-files-found: ignore
+          retention-days: 90
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

@@ -70,6 +70,7 @@ flowchart TB
     ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069)]:::system
     release[(28 Release build<br/>Req 0062)]:::system
+    perfRecord[(29 Performance record<br/>Req 0077)]:::system
 
     dev --> install
     install --> terminal
@@ -93,6 +94,8 @@ flowchart TB
     ciRun --> resolveConfig
     ciRun --> prCheck
     ciRun --> release
+    resultsTable --> perfRecord
+    release --> perfRecord
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
     classDef screen fill:#f8fafc,stroke:#64748b,color:#1e293b,stroke-width:2px
@@ -135,3 +138,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 26  | Repo hygiene checks.                | System  | No build output, plan files, unexplained ignores, or copied code.                     |
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI.            |
 | 28  | Release build.                      | System  | The release tool builds bundles and publishes notes that link the changelog.          |
+| 29  | Performance record.                 | System  | Each run and release records check times, budgets, binary sizes, and install time.   |
