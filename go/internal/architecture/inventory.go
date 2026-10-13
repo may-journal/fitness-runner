@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -34,9 +35,10 @@ func (m *Model) inventory(root string, files []string) {
 }
 
 // product reports a tracked file that is neither test, tool, nor
-// generated, so manifests and sources alike can prove a runtime.
+// generated, so manifests and sources alike can prove a runtime. A build
+// manifest counts whatever its linguist attribute says.
 func (m *Model) product(file string) bool {
-	return category(file, m.repo.kept[file]) == "product"
+	return category(file, m.repo.kept[file] || runtimes.Manifest(file)) == "product"
 }
 
 func category(file string, kept bool) string {

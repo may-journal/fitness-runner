@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1813
+
+- Fix: architecture-containers: a `project.pbxproj`, `project.yml`, or `package.json` marked `linguist-generated` still proves its targets.
+- Test: requirement 0073.9 proves a generated-marked Xcode project or XcodeGen spec matches containers by name.
+- Docs: the architecture-containers README says build manifests are read whatever their linguist attribute.
+
 ### 2026.10.12.2216
 
 - Feat: requirements: TypeScript and JavaScript repos need requirement docs; each vitest test owns the acceptance its title opens with.

@@ -169,3 +169,15 @@ func Test0073_7(t *testing.T) {
 	out, code = accRun(t, accXcode([2]string{"App", "application"}, [2]string{"Widget", ""}))
 	sees(t, out, code, 1, "App.xcodeproj/project.pbxproj:11: target Widget has no type")
 }
+
+func Test0073_9(t *testing.T) {
+	t.Parallel()
+	files := accXcode([2]string{"App", "application"}, [2]string{"Widget", "app-extension"})
+	files[".gitattributes"] = "*.pbxproj linguist-generated\n"
+	out, code := accRun(t, files)
+	sees(t, out, code, 0)
+	files = accNative()
+	files[".gitattributes"] = "project.yml linguist-generated\n"
+	out, code = accRun(t, files)
+	sees(t, out, code, 0)
+}
