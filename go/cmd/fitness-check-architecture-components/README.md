@@ -19,12 +19,24 @@ A component owns the product sources its claims cover: a path in its diagram str
 
 Every reference between two owners is an observed edge. The view must draw it, from the component or a boundary enclosing it to the other component or a boundary enclosing that one. An edge the view does not draw fails at the reference, naming the view and any drawn edge in the other direction. A drawn edge no reference uses is allowed.
 
-| Language | Reference                                                                                | Line reported                   |
-| -------- | ---------------------------------------------------------------------------------------- | ------------------------------- |
-| Go       | An import of a folder in this repository, resolved through the nearest tracked `go.mod`  | The import and each `pkg.X` use |
-| Swift    | An identifier a top-level type, protocol, type alias, or function in another file declares | The line naming it              |
+| Language | Reference                                                                               | Line reported                   |
+| -------- | --------------------------------------------------------------------------------------- | ------------------------------- |
+| Go       | An import of a folder in this repository, resolved through the nearest tracked `go.mod` | The import and each `pkg.X` use |
+| Swift    | A name the Swift parser resolves to a declaration in another file                       | The line naming it              |
 
-Comments and string literals create no reference. A symbol two Swift files declare resolves to neither. Member access after a dot is not a reference. A Go file that does not parse fails.
+Comments and string literals create no reference; a name inside a string interpolation does. A Go file that does not parse fails.
+
+## Swift names
+
+[ADR 0005](../../../docs/architecture/adr/0005-swift-references-from-a-go-parser.md) explains the Swift parser. It reads every product Swift file as one module and resolves a name the way the compiler would:
+
+- A local name, such as a parameter or a binding in a body, hides any declaration and reaches nothing.
+- In a type or extension body, that type's members, from any file, come before file-level declarations.
+- A member after a dot is looked up on its base's type, with members from extensions and inherited protocols.
+- The base's type is known for a type name, `self`, a literal, or a value whose type is stated or initialized.
+- A base of unknown type, or an implicit member such as `.loaded`, reaches nothing.
+- A call keeps the overloads its argument labels fit; candidates left in two files reach none.
+- A call of a type also reaches the initializer its labels pick.
 
 A reference under `//go:build` or `#if` keeps its condition: the error says `under go:build linux` or `under #if DEBUG`. Generated sources stay in the inventory but are not read.
 

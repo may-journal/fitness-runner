@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.2117
+
+- Feat: architecture-components: a Swift parser resolves names through locals, enclosing type members, extensions, base types, and overload labels.
+- Fix: architecture-components: Swift names inside string interpolations reach their declarations; overloads in two files that labels cannot split reach none.
+- Docs: ADR 0005 records the Swift parser choice; the components README lists how each Swift name resolves.
+- Test: requirement 0075.8 proves overloads, extension members, and local names in Swift bodies through the installed command.
+
 ## [1.8.0](https://github.com/may-journal/fitness-runner/compare/v1.7.0...v1.8.0) (2026-10-13)
 
 
