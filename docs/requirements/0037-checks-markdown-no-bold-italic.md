@@ -38,15 +38,11 @@ Source: `go/cmd/fitness-check-markdown-no-bold-italic/main.go:163`
     - Given Developer has a list with `*` item markers
         - When markdown-no-bold-italic checks the doc
             - Then it passes
-- 0037.6
-    - Given Developer has a CHANGELOG with bold text
-        - When markdown-no-bold-italic runs
-            - Then it fails naming `CHANGELOG.md`
 - 0037.7
     - Given Developer has an issue or PR body with italic text
         - When markdown-no-bold-italic checks it in body mode
             - Then it fails naming the description
-- 0037.8
-    - Given Developer has bold text in a release section that is not a bullet's scope
+- 0037.9
+    - Given Developer has a CHANGELOG with bold text beside Release Please bullets' bold scopes
         - When markdown-no-bold-italic runs
-            - Then it fails quoting that bold
+            - Then only that bold fails, naming `CHANGELOG.md`

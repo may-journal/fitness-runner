@@ -15,7 +15,7 @@ func swiftOwnsNothing(t *testing.T, body string) {
 	sees(t, out, code, 1, "0001.1 has no test; name exactly one test test0001_1")
 }
 
-func Test0065_9(t *testing.T) {
+func Test0065_19(t *testing.T) {
 	t.Parallel()
 	out, _ := swiftJudged(t, nil)
 	passedWith(t, out, "requirements", "2")
@@ -23,10 +23,6 @@ func Test0065_9(t *testing.T) {
 		"Tests/AdderTests/AdderTests.swift": "import Testing\n\nstruct AdderSpec {\n  @Test(\"adds\") func test0001_1() {}\n}\n",
 	})
 	passedWith(t, out, "requirements", "2")
-}
-
-func Test0065_10(t *testing.T) {
-	t.Parallel()
 	swiftOwnsNothing(t, xcTestFile()+"// func test0001_1() {}\n/* nested /* func test0001_1() {} */ */\nlet note = \"\\(\"func test0001_1() {}\")\"\nlet raw = #\"\"\"\n\" func test0001_1() {}\n\"\"\"#\n")
 	swiftOwnsNothing(t, xcTestFile()+"\nstruct Helper {\n  func test0001_1() {}\n}\n")
 }
@@ -38,11 +34,15 @@ func Test0065_11(t *testing.T) {
 	swiftOwnsNothing(t, xcTestFile())
 }
 
-func Test0065_12(t *testing.T) {
+func Test0065_17(t *testing.T) {
 	t.Parallel()
 	out, code := judged(t, with(goRepo(), map[string]string{"more/more_test.go": testFile("more", "Test0001_1")}))
 	sees(t, out, code, 1, "0001.1 is owned by 2 tests")
-	out, code = judged(t, with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "Test0001_2")}))
+}
+
+func Test0065_18(t *testing.T) {
+	t.Parallel()
+	out, code := judged(t, with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "Test0001_2")}))
 	sees(t, out, code, 1, "Test0001_2 names 0001.2, which no requirement defines")
 }
 

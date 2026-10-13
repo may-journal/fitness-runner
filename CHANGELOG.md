@@ -11,8 +11,8 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: requirements: fail when two docs' acceptances share a When and similar Givens with two shared words, naming both docs.
 - Docs: ADR 0004 keeps one requirement doc per user-facing area; add-requirements and the requirements README link it.
-- Docs: requirements: fold 0064 into its checks' docs, 0071 into 0065, push acceptances into 0010, and architecture drift into 0070.
-- Test: requirement 0006.10 proves two docs covering one area fail; folded acceptances get new IDs and renamed tests.
+- Docs: requirements: merge duplicate acceptances when folding 0064, 0071 into 0065, pushes into 0010, and architecture drift into 0070.
+- Test: requirement 0006.10 proves two docs covering one area fail; each merged acceptance gets a new ID and one test proving every case.
 
 ### 2026.10.12.1917
 

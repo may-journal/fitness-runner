@@ -69,20 +69,6 @@ func Test0010_1(t *testing.T) {
 	pushAsked(t, rp, "218", "comments")
 }
 
-func Test0010_2(t *testing.T) {
-	t.Parallel()
-	out, code, rp := pushFeature(t, "Plan #196")
-	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (196)")
-	pushAsked(t, rp, "196", "labels")
-}
-
-func Test0010_3(t *testing.T) {
-	t.Parallel()
-	out, code, rp := pushFeature(t, "Plan #151")
-	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
-	pushAsked(t, rp, "151", "comments")
-}
-
 func Test0010_4(t *testing.T) {
 	t.Parallel()
 	repo, env, rp := pushRepo(t)
@@ -97,9 +83,14 @@ func Test0010_4(t *testing.T) {
 	pushAsked(t, rp, "218", "comments")
 }
 
-func Test0010_5(t *testing.T) {
+func Test0010_10(t *testing.T) {
 	t.Parallel()
-	repo, env, _ := pushRepo(t)
+	repo, env := hooked(t, nil)
+	remote(t, repo)
+	user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): tidy up")
+	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
+	sees(t, out, code, 0, "HEAD -> main")
+	repo, env, _ = pushRepo(t)
 	user(t, repo, env, "switch", "-q", "-c", "topic")
 	user(t, repo, env, "switch", "-q", "main")
 	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "feat(app): merged by review (#12)")
@@ -107,7 +98,7 @@ func Test0010_5(t *testing.T) {
 	user(t, repo, env, "switch", "-q", "topic")
 	user(t, repo, env, "merge", "-q", "--no-edit", "main")
 	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "chore(app): tidy up")
-	out, code := user(t, repo, env, "push", "origin", "topic")
+	out, code = user(t, repo, env, "push", "origin", "topic")
 	sees(t, out, code, 0, "topic -> topic")
 }
 
@@ -119,20 +110,17 @@ func Test0010_6(t *testing.T) {
 	sees(t, out, code, 0, "[deleted]", "topic")
 }
 
-func Test0010_7(t *testing.T) {
+func Test0010_9(t *testing.T) {
 	t.Parallel()
 	repo, env := hooked(t, nil)
 	remote(t, repo)
 	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
 	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
 	sees(t, out, code, 1, "pre-push: no 'Plan #NN' trailer")
-}
-
-func Test0010_8(t *testing.T) {
-	t.Parallel()
-	repo, env := hooked(t, nil)
-	remote(t, repo)
-	user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): tidy up")
-	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
-	sees(t, out, code, 0, "HEAD -> main")
+	out, code, rp := pushFeature(t, "Plan #196")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (196)")
+	pushAsked(t, rp, "196", "labels")
+	out, code, rp = pushFeature(t, "Plan #151")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
+	pushAsked(t, rp, "151", "comments")
 }

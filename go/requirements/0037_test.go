@@ -55,22 +55,18 @@ func Test0037_5(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0037_6(t *testing.T) {
-	t.Parallel()
-	changelog := "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n### 2026.10.08.1400\n\n- Docs: a **loud** note.\n"
-	out, code := noBoldItalic(t, map[string]string{"CHANGELOG.md": changelog})
-	sees(t, out, code, 1, `CHANGELOG.md: disallowed **bold**`+noBoldItalicRule+`"**loud**"`)
-}
-
 func Test0037_7(t *testing.T) {
 	t.Parallel()
 	out, code := noBoldItalic(t, map[string]string{"body.md": "Hello _there_.\n"}, "--body-file", "body.md")
 	sees(t, out, code, 1, `(description): disallowed _italic_`+noBoldItalicRule+`"_there_"`)
 }
 
-func Test0037_8(t *testing.T) {
+func Test0037_9(t *testing.T) {
 	t.Parallel()
 	release := strings.Replace(notesRelease(notesTwo), "change it", "change **everything**", 1)
 	out, code := notesChecks(t, notesHead+release+notesEntry, "markdown-no-bold-italic")
-	sees(t, out, code, 1, `"**everything**"`)
+	sees(t, out, code, 1, `CHANGELOG.md: disallowed **bold**`+noBoldItalicRule+`"**everything**"`)
+	if n := strings.Count(out, "disallowed"); n != 1 {
+		t.Errorf("only the bold outside a scope must fail, got %d findings:\n%s", n, out)
+	}
 }

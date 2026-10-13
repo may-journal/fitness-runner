@@ -22,31 +22,19 @@ Source: `go/cmd/fitness/hook.go:26`
     - Given Developer has a feature commit whose trailer names an approved Plan
         - When I push it
             - Then the push goes through
-- 0010.2
-    - Given Developer has a feature commit whose trailer names an issue that is not a Plan
-        - When I push it
-            - Then the push is refused naming that issue
-- 0010.3
-    - Given Developer has a feature commit whose trailer names a Plan nobody approved
-        - When I push it
-            - Then the push is refused naming that Plan
 - 0010.4
     - Given Developer has a branch whose first pushed commit names an approved Plan
         - When I push a later feature commit with no trailer
-            - Then the push goes through
-- 0010.5
-    - Given Developer has feature commits from main merged into the chore branch
-        - When I push it
             - Then the push goes through
 - 0010.6
     - Given Developer has pushed a branch
         - When I delete it from the remote
             - Then the deletion goes through
-- 0010.7
-    - Given Developer has the hooks and a feature commit with no Plan
+- 0010.9
+    - Given Developer has a feature commit with no Plan trailer, or one naming a non-Plan issue or an unapproved Plan
         - When I push it
-            - Then the push is refused asking for a Plan trailer
-- 0010.8
-    - Given Developer has the hooks and only chore or docs commits
+            - Then the push is refused naming the missing trailer or that issue
+- 0010.10
+    - Given Developer has only chore or docs commits, even with feature commits merged in from main
         - When I push them
             - Then the push goes through

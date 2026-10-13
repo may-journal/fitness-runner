@@ -18,20 +18,20 @@ Source: `go/cmd/fitness-check-requirements/owners.go:100`
 
 ## Requirements
 
-- 0065.9
-    - Given Developer has an XCTest method or a Swift Testing `@Test func` named `test0001_1`
+- 0065.19
+    - Given Developer has `test0001_1` as an XCTest method, a `@Test func`, or only in a comment, string, or plain method
         - When fitness runs
-            - Then it owns 0001.1 and the check passes
-- 0065.10
-    - Given Developer has `test0001_1` only in a comment, a string, or a plain method outside `XCTestCase`
-        - When fitness runs
-            - Then it is no test and 0001.1 fails
+            - Then only the XCTest method or `@Test func` owns 0001.1
 - 0065.11
     - Given Developer has an acceptance that no Go or Swift test owns
         - When fitness runs
             - Then it fails naming the test it needs
-- 0065.12
-    - Given Developer has a second Go test for one acceptance, or one named for a removed acceptance
+- 0065.17
+    - Given Developer has an acceptance that two Go tests own
+        - When fitness runs
+            - Then it fails
+- 0065.18
+    - Given Developer has a Go test named for a removed acceptance
         - When fitness runs
             - Then it fails
 - 0065.13
