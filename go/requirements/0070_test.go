@@ -73,6 +73,7 @@ func Test0070_11(t *testing.T) {
 		"tools/check.sh":          "#!/bin/sh\nexit 0\n",
 		"src/store/store_test.go": "package store\n",
 		"src/app.test.ts":         "export {};\n",
+		"src/__tests__/app.ts":    "export {};\n",
 	}} {
 		out, code := acRun(t, files)
 		sees(t, out, code, 0)

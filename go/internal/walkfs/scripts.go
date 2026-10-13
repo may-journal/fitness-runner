@@ -14,8 +14,9 @@ var (
 	// rollup.config.analyze.mjs, or a dotfile such as .eslintrc.cjs.
 	toolConfig = regexp.MustCompile(`^\.|\.config\.`)
 	// scriptTest matches the test files vitest and jest find by default,
-	// such as adder.test.ts or adder.spec.jsx.
-	scriptTest = regexp.MustCompile(`\.(?:test|spec)\.[cm]?[jt]sx?$`)
+	// such as adder.test.ts, adder.spec.jsx, or any script in a __tests__
+	// folder.
+	scriptTest = regexp.MustCompile(`\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|/)__tests__/`)
 )
 
 // Scripts lists the TypeScript and JavaScript files a project writes: every
@@ -32,7 +33,8 @@ func Scripts(root string) []string {
 }
 
 // ScriptTest reports whether file is a test file vitest or jest runs by
-// default: its name ends in .test or .spec before a script extension.
+// default: its name ends in .test or .spec before a script extension, or it
+// sits in a __tests__ folder.
 func ScriptTest(file string) bool {
-	return scriptTest.MatchString(path.Base(file))
+	return scriptTest.MatchString(file)
 }

@@ -55,11 +55,11 @@ Go tests are read with `go/ast`, so only real top-level test functions count.
 
 A Swift test is an XCTest method named `test…` with no parameters, in a class that inherits `XCTestCase`, or any function marked `@Test`. Comments and string literals are skipped, so a name inside them is no test.
 
-A vitest or jest test is one `it` or `test` call in a `*.test.*` or `*.spec.*` TypeScript or JavaScript file. Its title opens with the acceptance ID, as in `test("0001.1 saves offline", …)`.
+A vitest or jest test is one `it` or `test` call in a `*.test.*`, `*.spec.*`, or `__tests__/` TypeScript or JavaScript file. Its first argument is a title string that opens with the acceptance ID, as in `test("0001.1 saves offline", …)`.
 
 - Nesting: a `describe` title never names a test, so each `it` or `test` inside one owns its own ID.
 - Modifiers: `.skip`, `.only`, and `.todo` keep a test, and `it.each(rows)("0001.1 …")` is one test, like a Go table test.
-- Not tests: a computed title carries no ID, and comments, strings, `re.test(…)`, and methods named `test` are no test.
+- Not tests: a call without a leading title string, such as Playwright's `test.skip(condition, "reason")`, or a comment, string, `re.test(…)`, or `test` method.
 
 ## Behavior
 

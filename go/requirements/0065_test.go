@@ -35,6 +35,8 @@ var notTests = []string{
 	`const note = "test('0001.1 in a string', () => {})";`,
 	`describe("0001.1 a describe title", () => {});`,
 	`class Matcher { test(value: string) { return /0001\.1/.test(value); } }`,
+	`class Typed { test(value: string): boolean { return value === "0001.1"; } }`,
+	`interface Check { test(value: string): boolean; }`,
 }
 
 func Test0065_20(t *testing.T) {
@@ -51,12 +53,17 @@ func Test0065_20(t *testing.T) {
 		`test("0001.1 adds two numbers", () => {});`,
 		`describe("adder", () => { it.each([1, 2])("0001.1 adds %i", (n) => { expect(n).toBeTruthy(); }); });`,
 		"test.skip(`0001.1 adds two numbers`, () => {});",
+		`test("0001.1 adds two numbers", () => { test.skip(process.env.CI === undefined, "0001.1 runs in CI"); });`,
 	} {
 		out, code := scriptChecked(t, append([]string{owner}, notTests...)...)
 		sees(t, out, code, 0)
 		passedWith(t, out, "requirements", "2")
 	}
-	out, code := scriptChecked(t, notTests...)
+	jestFolder := map[string]string{"tests/adder.test.ts": "", "src/__tests__/adder.ts": vitestFile(`test("0001.1 adds two numbers", () => {});`)}
+	out, code := checked(t, with(scriptRepo(), jestFolder))
+	sees(t, out, code, 0)
+	passedWith(t, out, "requirements", "2")
+	out, code = scriptChecked(t, notTests...)
 	sees(t, out, code, 1, `0001.1 has no test; name exactly one test test("0001.1 …")`)
 }
 
@@ -87,9 +94,8 @@ func Test0065_22(t *testing.T) {
 	sees(t, out, code, 1, "TestAddsAgain proves no requirement")
 	out, code = swiftJudged(t, map[string]string{"Tests/AdderTests/AdderTests.swift": xcTestFile("test0001_1", "testAddsAgain")})
 	sees(t, out, code, 1, "testAddsAgain proves no requirement; rename it testNNNN_N")
-	out, code = scriptChecked(t, `test("0001.1 adds two numbers", () => {});`, `it("adds again", () => {});`, `test(title, () => {});`)
-	sees(t, out, code, 1, `tests/adder.test.ts:4: it("adds again") proves no requirement; rename it test("NNNN.N …")`,
-		`tests/adder.test.ts:5: test(<expression>) proves no requirement`)
+	out, code = scriptChecked(t, `test("0001.1 adds two numbers", () => {});`, `it("adds again", () => {});`)
+	sees(t, out, code, 1, `tests/adder.test.ts:4: it("adds again") proves no requirement; rename it test("NNNN.N …")`)
 }
 
 func Test0065_23(t *testing.T) {

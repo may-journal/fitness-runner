@@ -19,7 +19,7 @@ The roots are `architecture/` and `docs/architecture/`. Both roots add to one mo
 | `04-code.md` | Classes and functions |
 | `05-user-journey.md` | Journey steps and the requirement IDs they fulfil |
 
-No views means a pass with zero files, unless the repo has Go, Swift, TypeScript, or JavaScript product code. Then the check fails and asks for all five. Product code is any such tracked file that is not a test, not a tool config such as `vite.config.ts`, and not marked `linguist-generated`.
+No views means a pass with zero files, unless the repo has Go, Swift, TypeScript, or JavaScript product code. Then the check fails and asks for all five. Product code is any such tracked file except tests, tool configs, and files marked `linguist-generated`. Tests include `__tests__/` files, and tool configs include `vite.config.ts`.
 
 Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
 

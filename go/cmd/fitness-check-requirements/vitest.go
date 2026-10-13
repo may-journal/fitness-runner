@@ -66,7 +66,9 @@ func scriptFileTests(file, src string) []goTest {
 
 // testCall reports whether tokens[i] starts a call that declares one test,
 // such as it("…"), test.skip("…"), or it.each(rows)("…"), and returns its
-// title token, which is no string when the title is computed.
+// title. Only a call whose first argument is a title string declares a test,
+// so Playwright's test.skip(condition, "reason") and a typed method
+// test(value: string) declare none.
 func testCall(tokens []javascript.Token, i int) (javascript.Token, bool) {
 	if !namesTest(tokens, i) {
 		return javascript.Token{}, false
@@ -75,7 +77,7 @@ func testCall(tokens []javascript.Token, i int) (javascript.Token, bool) {
 	if !ok || !takesArguments(tokens, open) {
 		return javascript.Token{}, false
 	}
-	return titleAt(tokens, open+1), true
+	return titleAt(tokens, open+1)
 }
 
 // namesTest reports whether tokens[i] is it or test as a name of its own,
@@ -91,13 +93,9 @@ func takesArguments(tokens []javascript.Token, open int) bool {
 	return open+1 < len(tokens) && !isPunct(tokens[open+1], ")") && !definesMethod(tokens, open)
 }
 
-// titleAt returns the first argument when it is a whole string, or a
-// punctuation token for a computed title.
-func titleAt(tokens []javascript.Token, i int) javascript.Token {
-	if tokens[i].Kind == javascript.String && isArgEnd(tokens, i+1) {
-		return tokens[i]
-	}
-	return javascript.Token{Kind: javascript.Punct}
+// titleAt returns the first argument when it is a whole title string.
+func titleAt(tokens []javascript.Token, i int) (javascript.Token, bool) {
+	return tokens[i], tokens[i].Kind == javascript.String && isArgEnd(tokens, i+1)
 }
 
 // isMemberOrDecl reports a token that makes the next name a property, as in
@@ -162,11 +160,12 @@ func closing(tokens []javascript.Token, open int) int {
 	return len(tokens) - 1
 }
 
-// definesMethod reports a parameter list followed by a body, as in a class
-// method named test(value) { … }, which declares no test.
+// definesMethod reports a parameter list followed by a body or a return
+// type, as in a method test(value) { … } or an interface member
+// test(value): boolean;, which declares no test.
 func definesMethod(tokens []javascript.Token, open int) bool {
 	end := closing(tokens, open)
-	return end+1 < len(tokens) && isPunct(tokens[end+1], "{")
+	return end+1 < len(tokens) && (isPunct(tokens[end+1], "{") || isPunct(tokens[end+1], ":"))
 }
 
 // isArgEnd reports whether the argument ends at tokens[i]: a comma or the
@@ -180,20 +179,15 @@ func isPunct(t javascript.Token, s string) bool {
 	return t.Kind == javascript.Punct && t.Text == s
 }
 
-// shownTitle is a title as an error shows it: quoted, or <expression> when
-// it is computed.
+// shownTitle is a title as an error shows it, quoted.
 func shownTitle(title javascript.Token) string {
-	if title.Kind != javascript.String {
-		return "<expression>"
-	}
 	return fmt.Sprintf("%q", title.Text)
 }
 
-// scriptIDOf returns the acceptance ID a literal vitest title opens with, or
-// "".
+// scriptIDOf returns the acceptance ID a vitest title opens with, or "".
 func scriptIDOf(title javascript.Token) string {
 	m := scriptTestID.FindStringSubmatch(title.Text)
-	if title.Kind != javascript.String || m == nil {
+	if m == nil {
 		return ""
 	}
 	return m[1] + "." + m[2]

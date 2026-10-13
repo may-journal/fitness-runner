@@ -11,6 +11,7 @@ relatedConfigurations: ['.fitnessrc.json']
 
 - Feat: requirements: TypeScript and JavaScript repos need requirement docs; each vitest test owns the acceptance its title opens with.
 - Feat: architecture-contract: a repo with Go, Swift, TypeScript, or JavaScript product code and no views fails, asking for all five.
+- Fix: requirements: only a call whose first argument is a title string is a test; scripts in `__tests__/` are tests, not product code.
 - Refactor: the JavaScript lexer moves from vitestconf to its own javascript package, shared by both readers.
 - Test: requirements 0065.20 to 0065.25 and 0070.10 and 0070.11 replace the acceptances they extend, each with one test.
 
