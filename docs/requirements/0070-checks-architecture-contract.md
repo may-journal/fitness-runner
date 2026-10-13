@@ -19,7 +19,7 @@ Source: #285
 ## Requirements
 
 - 0070.1
-    - Given Developer has no architecture and only tools, tests, or generated code
+    - Given Developer has no architecture and only tools, tool configuration, tests, or generated code
         - When I check its contract
             - Then it passes with zero files
 - 0070.2

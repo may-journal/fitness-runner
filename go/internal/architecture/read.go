@@ -84,7 +84,7 @@ func withoutViews(root string, files []string) Model {
 	m := Model{repo: newRepository(root, files)}
 	m.keep(root, files)
 	for _, file := range files {
-		if contains(viewLanguages, path.Ext(file)) && m.product(file) {
+		if viewLanguage(file) && m.product(file) {
 			for _, view := range sortedKeys(views) {
 				m.fail(Location{file, 1}, "product code needs architecture view %s", view)
 			}
@@ -92,6 +92,15 @@ func withoutViews(root string, files []string) Model {
 		}
 	}
 	return Model{}
+}
+
+// viewLanguage reports a source in a view language that neither configures
+// tools nor only declares types, as eslint.config.mjs, .prettierrc.cjs,
+// and index.d.ts do.
+func viewLanguage(file string) bool {
+	base := path.Base(file)
+	config := strings.HasPrefix(base, ".") || strings.Contains(base, ".config.") || strings.HasSuffix(base, ".d.ts")
+	return contains(viewLanguages, path.Ext(file)) && !config
 }
 
 func (m *Model) readRequirements(root string, files []string) error {

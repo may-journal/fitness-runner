@@ -74,6 +74,9 @@ func Test0070_1(t *testing.T) {
 		"src/store/store_test.go": "package store\n",
 		"test/app.ts":             "export {};\n",
 		"gen/api.go":              "package gen\n",
+		"eslint.config.mjs":       "export default [];\n",
+		".prettierrc.cjs":         "module.exports = {};\n",
+		"types/index.d.ts":        "export {};\n",
 		".gitattributes":          "gen/** linguist-generated\n",
 	})
 	sees(t, out, code, 0)
