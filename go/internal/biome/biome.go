@@ -32,7 +32,8 @@ var configNames = []string{"biome.json", "biome.jsonc"}
 // Biome config at the root and @biomejs/biome among its package.json
 // dependencies or devDependencies.
 func Chosen(root string) bool {
-	return hasConfig(root) && declared(root)
+	_, ok := declared(root)
+	return hasConfig(root) && ok
 }
 
 func hasConfig(root string) bool {
@@ -44,19 +45,35 @@ func hasConfig(root string) bool {
 	return false
 }
 
-func declared(root string) bool {
+// declared returns the version range package.json gives @biomejs/biome, in
+// devDependencies or dependencies, and whether it names the package at all.
+func declared(root string) (string, bool) {
 	raw, err := os.ReadFile(filepath.Join(root, "package.json"))
 	if err != nil {
-		return false
+		return "", false
 	}
 	var pkg struct {
-		Dependencies    map[string]any `json:"dependencies"`
-		DevDependencies map[string]any `json:"devDependencies"`
+		Dependencies    map[string]string `json:"dependencies"`
+		DevDependencies map[string]string `json:"devDependencies"`
 	}
 	_ = json.Unmarshal(raw, &pkg)
-	_, dev := pkg.DevDependencies[packageName]
-	_, dep := pkg.Dependencies[packageName]
-	return dev || dep
+	if v, ok := pkg.DevDependencies[packageName]; ok {
+		return v, true
+	}
+	v, ok := pkg.Dependencies[packageName]
+	return v, ok
+}
+
+// maxDiagnostics lifts Biome's default cap of 20 diagnostics, which would
+// hide the rest. Biome 2 and 1.9 take `none`; earlier 1.x rejects it and
+// takes at most 65535, which every 1.x accepts.
+func maxDiagnostics(root string) string {
+	version, _ := declared(root)
+	major, _, _ := strings.Cut(strings.TrimLeft(version, "^~>=v "), ".")
+	if major == "1" {
+		return "--max-diagnostics=65535"
+	}
+	return "--max-diagnostics=none"
 }
 
 // Bin resolves the biome binary: node_modules/.bin walking up from root,
@@ -122,11 +139,11 @@ func Check(root, command string, paths []string, fallback string, show func(Find
 }
 
 // run execs bin in root as `biome <command>` with the GitHub reporter and
-// no cap on diagnostics, whose default of 20 would hide the rest, tolerating
-// paths Biome does not handle, then args. It returns every error
+// the diagnostics cap lifted for the declared major (maxDiagnostics),
+// tolerating paths Biome does not handle, then args. It returns every error
 // and warning finding, the exit code, and the last lines of output.
 func run(root, bin, command string, args []string) (findings []Finding, exitCode int, tail []string) {
-	argv := append([]string{command, "--reporter=github", "--max-diagnostics=none", "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
+	argv := append([]string{command, "--reporter=github", maxDiagnostics(root), "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	var out bytes.Buffer

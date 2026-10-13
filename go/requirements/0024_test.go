@@ -134,11 +134,16 @@ func Test0024_9(t *testing.T) {
 	}
 }
 
-// biomePackage is a JavaScript project that installs Biome.
-const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\": {\"@biomejs/biome\": \"2.4.15\"}}\n"
+// biomePackage is a JavaScript project that installs Biome at version %s.
+const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\": {\"@biomejs/biome\": \"%s\"}}\n"
 
-// biomeFlags are the flags fitness passes Biome before the paths.
-const biomeFlags = "--reporter=github --max-diagnostics=none --no-errors-on-unmatched --files-ignore-unknown=true"
+// biomeFlags are the flags fitness passes Biome before the paths, with %s
+// the cap that lifts its default of 20 diagnostics.
+const biomeFlags = "--reporter=github --max-diagnostics=%s --no-errors-on-unmatched --files-ignore-unknown=true"
+
+// biomeMajors pairs a declared Biome version with the cap its major takes:
+// Biome before 1.9 rejects `none`, and 1.x takes at most 65535.
+var biomeMajors = [][2]string{{"2.4.15", "none"}, {"^1.8.3", "65535"}}
 
 // biomeUseConst is real `biome lint --reporter=github` output for a `let`
 // never reassigned on line %d; Biome exits 0 on a warning.
@@ -154,17 +159,20 @@ func Test0024_11(t *testing.T) {
 		fmt.Fprintf(&source, "let v%d = %[1]d;\nexport { v%[1]d };\n", i)
 		fmt.Fprintf(&report, biomeUseConst, 2*i-1)
 	}
-	repo := example(t, "happyRepo", map[string]string{
-		"package.json": biomePackage,
-		"biome.json":   "{ \"linter\": { \"enabled\": true } }\n",
-		"app.js":       source.String(),
-	})
-	rp := standIn(t, map[string][]response{"biome": {{Match: []string{"lint " + biomeFlags + " app.js"}, Stdout: report.String()}}})
-	out, code := fitness(t, repo, rp.env, "eslint")
-	eslintFinds(t, out, code, "app.js:1:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
-	eslintFinds(t, out, code, "app.js:49:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
-	if strings.Contains(out, eslintMissing) {
-		t.Errorf("a repo that chose Biome needs no eslint:\n%s", out)
+	for _, major := range biomeMajors {
+		repo := example(t, "happyRepo", map[string]string{
+			"package.json": fmt.Sprintf(biomePackage, major[0]),
+			"biome.json":   "{ \"linter\": { \"enabled\": true } }\n",
+			"app.js":       source.String(),
+		})
+		match := "lint " + fmt.Sprintf(biomeFlags, major[1]) + " app.js"
+		rp := standIn(t, map[string][]response{"biome": {{Match: []string{match}, Stdout: report.String()}}})
+		out, code := fitness(t, repo, rp.env, "eslint")
+		eslintFinds(t, out, code, "app.js:1:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
+		eslintFinds(t, out, code, "app.js:49:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
+		if strings.Contains(out, eslintMissing) {
+			t.Errorf("a repo that chose Biome needs no eslint:\n%s", out)
+		}
 	}
 }
 
