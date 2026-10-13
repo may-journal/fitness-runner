@@ -56,7 +56,7 @@ flowchart TB
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0035, 0036, 0037)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043)]:::system
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
-        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0071)]:::system
+        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055)]:::system
@@ -69,7 +69,7 @@ flowchart TB
     configError[(12 Config error<br/>Req 0008)]:::blocked
     ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069)]:::system
-    release[(28 Release build<br/>Req 0062, 0064)]:::system
+    release[(28 Release build<br/>Req 0062)]:::system
 
     dev --> install
     install --> terminal

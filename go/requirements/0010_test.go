@@ -118,3 +118,21 @@ func Test0010_6(t *testing.T) {
 	out, code := user(t, repo, env, "push", "origin", "--delete", "topic")
 	sees(t, out, code, 0, "[deleted]", "topic")
 }
+
+func Test0010_7(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, nil)
+	remote(t, repo)
+	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
+	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
+	sees(t, out, code, 1, "pre-push: no 'Plan #NN' trailer")
+}
+
+func Test0010_8(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, nil)
+	remote(t, repo)
+	user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): tidy up")
+	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
+	sees(t, out, code, 0, "HEAD -> main")
+}

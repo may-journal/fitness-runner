@@ -42,3 +42,11 @@ Source: `go/cmd/fitness/hook.go:26`
     - Given Developer has pushed a branch
         - When I delete it from the remote
             - Then the deletion goes through
+- 0010.7
+    - Given Developer has the hooks and a feature commit with no Plan
+        - When I push it
+            - Then the push is refused asking for a Plan trailer
+- 0010.8
+    - Given Developer has the hooks and only chore or docs commits
+        - When I push them
+            - Then the push goes through

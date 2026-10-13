@@ -11,12 +11,6 @@ func judged(t *testing.T, files map[string]string) (string, int) {
 	return fitness(t, example(t, "happyRepo", files), nil)
 }
 
-func Test0005_6(t *testing.T) {
-	t.Parallel()
-	out, _ := judged(t, nil)
-	passedWithNoFiles(t, out, "requirements")
-}
-
 func Test0005_8(t *testing.T) {
 	t.Parallel()
 	two := with(goRepo(), map[string]string{
@@ -130,20 +124,27 @@ func Test0006_5(t *testing.T) {
 	sees(t, out, code, 1, "Source must cite either one existing line of code")
 }
 
-func Test0006_6(t *testing.T) {
-	t.Parallel()
-	out, code := judged(t, reqs(acceptances("0001.1")+"        - When I add them again\n"))
-	sees(t, out, code, 1, "needs exactly one Given, one When, and one Then")
-}
-
-func Test0006_7(t *testing.T) {
-	t.Parallel()
-	out, code := judged(t, reqs("- 0001.1\n    - When I add them\n        - Given two numbers\n            - Then I get their sum\n"))
-	sees(t, out, code, 1, "each acceptance is one Given, then one When, then one Then, each nested under the line above")
-}
-
 func Test0006_8(t *testing.T) {
 	t.Parallel()
 	out, code := judged(t, reqs(acceptances("0001.1", "0001.1")))
 	sees(t, out, code, 1, "0001.1 appears twice")
+}
+
+func Test0006_9(t *testing.T) {
+	t.Parallel()
+	out, code := judged(t, reqs(acceptances("0001.1")+"        - When I add them again\n"))
+	sees(t, out, code, 1, "needs exactly one Given, one When, and one Then")
+	out, code = judged(t, reqs("- 0001.1\n    - When I add them\n        - Given two numbers\n            - Then I get their sum\n"))
+	sees(t, out, code, 1, "each acceptance is one Given, then one When, then one Then, each nested under the line above")
+}
+
+func Test0006_10(t *testing.T) {
+	t.Parallel()
+	other := "docs/requirements/0002-adds-again.md"
+	again := "- 0002.1\n    - Given two whole numbers\n        - When I add them\n            - Then I get their sum\n"
+	out, code := judged(t, with(goRepo(), map[string]string{
+		"adder_test.go": testFile("adder", "Test0001_1", "Test0002_1"),
+		other:           strings.Replace(docWith("Source: `adder.go:5`", again), "0001 Adds Numbers", "0002 Adds Again", 1),
+	}))
+	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "0004-one-requirement-doc-per-area")
 }

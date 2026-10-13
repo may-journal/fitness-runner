@@ -42,7 +42,7 @@ Source: #123
 
 ## Rules
 
-- IDs: the file name's `NNNN` matches the title, and no two docs share it.
+- IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md).
 - Acceptance IDs: the title ID plus `.N`, unique in its doc.
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
@@ -64,7 +64,7 @@ A Swift test is an XCTest method named `test…` with no parameters, in a class 
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](https://github.com/may-journal/fitness-runner/issues/264) sets out.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, so `0003_0004_test.go` pairs with both docs.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.

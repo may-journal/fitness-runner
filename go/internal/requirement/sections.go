@@ -124,7 +124,7 @@ func checkAcceptance(p *problems, docID string, g []item) IDLine {
 	for i, kw := range chainKeywords {
 		checkChainLine(p, kw, g[i], g[i+1])
 	}
-	return IDLine{ID: top.text, Line: top.n, Given: strings.TrimPrefix(g[1].text, "Given "), GivenLine: g[1].n}
+	return IDLine{ID: top.text, Line: top.n, Given: strings.TrimPrefix(g[1].text, "Given "), GivenLine: g[1].n, When: strings.TrimPrefix(g[2].text, "When ")}
 }
 
 // checkChainLine requires child to start with kw and sit deeper than parent.

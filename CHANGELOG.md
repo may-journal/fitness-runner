@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.12.1946
+
+- Feat: requirements: fail when two docs' acceptances share a When and similar Givens, naming both docs and linking ADR 0004.
+- Docs: ADR 0004 keeps one requirement doc per user-facing area; add-requirements and the requirements README link it.
+- Docs: requirements: fold 0064 into its checks' docs, 0071 into 0065, push acceptances into 0010, and architecture drift into 0070.
+- Test: requirement 0006.10 proves two docs covering one area fail; folded acceptances get new IDs and renamed tests.
+
 ### 2026.10.12.1917
 
 - Feat: architecture checks: journey diagram labels name every requirement ID; actor, container, component, and code views match Givens, runtimes, folders, and symbols.

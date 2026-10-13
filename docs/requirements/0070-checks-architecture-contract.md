@@ -46,7 +46,7 @@ Source: #285
     - Given Developer has invalid requirement links
         - When I check the contract
             - Then errors name only the broken reference
-- 0070.8
-    - Given Developer has unchanged broken evidence
+- 0070.9
+    - Given Developer has unchanged broken evidence, container drift, or component drift
         - When I check unrelated changes
             - Then the same findings remain

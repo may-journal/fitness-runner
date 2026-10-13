@@ -82,24 +82,6 @@ func Test0009_4(t *testing.T) {
 	sees(t, out, code, 1, "local build broke")
 }
 
-func Test0009_5(t *testing.T) {
-	t.Parallel()
-	repo, env := hooked(t, nil)
-	remote(t, repo)
-	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
-	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
-	sees(t, out, code, 1, "pre-push: no 'Plan #NN' trailer")
-}
-
-func Test0009_6(t *testing.T) {
-	t.Parallel()
-	repo, env := hooked(t, nil)
-	remote(t, repo)
-	user(t, repo, env, "commit", "--allow-empty", "-m", "chore(app): tidy up")
-	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
-	sees(t, out, code, 0, "HEAD -> main")
-}
-
 func Test0009_7(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)

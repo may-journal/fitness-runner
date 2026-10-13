@@ -46,7 +46,3 @@ Source: #288
     - Given Developer has a reference under a build condition
         - When I check its components
             - Then a missing edge fails naming the condition, and a drawn edge passes
-- 0075.8
-    - Given Developer has unchanged component drift
-        - When I check unrelated changes
-            - Then the same findings remain

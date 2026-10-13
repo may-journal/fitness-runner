@@ -9,12 +9,14 @@ import (
 	"strings"
 )
 
-// IDLine is an ID and the line that declares it.
+// IDLine is an ID and the line that declares it. An acceptance with a
+// well-formed chain also carries its Given and When.
 type IDLine struct {
 	ID        string
 	Line      int
 	Given     string
 	GivenLine int
+	When      string
 }
 
 // Document is one parsed requirement doc.

@@ -18,10 +18,6 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:99`
 
 ## Requirements
 
-- 0005.6
-    - Given Developer has a repo with no Go or Swift code
-        - When fitness runs
-            - Then the check passes with nothing to judge
 - 0005.8
     - Given Developer has an ID that an earlier commit deleted
         - When a doc brings it back

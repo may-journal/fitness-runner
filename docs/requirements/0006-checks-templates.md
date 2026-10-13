@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Anyone can open any requirement and find its reason, its measure, and its proof in the same place.
+Anyone can open any requirement and find its reason, its measure, and its proof in the same place. Every rule for one area sits in one doc.
 
 ## Measurement
 
@@ -14,7 +14,7 @@ requirement docs with no shape errors
 -
 requirement docs
 
-Source: `go/internal/requirement/doc.go:88`
+Source: `go/internal/requirement/doc.go:90`
 
 ## Requirements
 
@@ -38,15 +38,15 @@ Source: `go/internal/requirement/doc.go:88`
     - Given Developer has a Source citing neither one existing code line nor one issue
         - When fitness runs
             - Then it fails
-- 0006.6
-    - Given Developer has an acceptance with a second Given, When, or Then
-        - When fitness runs
-            - Then it fails
-- 0006.7
-    - Given Developer has an acceptance chain out of order or not nested
-        - When fitness runs
-            - Then it fails
 - 0006.8
     - Given Developer has an acceptance ID that is repeated or names another requirement
         - When fitness runs
             - Then it fails
+- 0006.9
+    - Given Developer has an acceptance with a second Given, When, or Then, or a chain out of order
+        - When fitness runs
+            - Then it fails
+- 0006.10
+    - Given Developer has two docs with acceptances sharing a When and similar Givens
+        - When fitness runs
+            - Then it fails naming both docs and linking ADR 0004
