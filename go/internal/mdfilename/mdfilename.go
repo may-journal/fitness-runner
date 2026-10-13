@@ -42,11 +42,29 @@ var Camel = Convention{
 // AGENTS.md, CODE_OF_CONDUCT.md, ...), which are exempt from the convention.
 var capsDoc = regexp.MustCompile(`^[A-Z0-9_]+\.md$`)
 
+// githubName reports whether a markdown path is a lowercase template name
+// GitHub requires, in a folder where GitHub looks for it: the root, docs, or
+// .github. A repo cannot rename these files, so the convention exempts them.
+func githubName(relPath string) bool {
+	switch path.Dir(relPath) {
+	case ".", "docs", ".github":
+	default:
+		return false
+	}
+	base := path.Base(relPath)
+	return base == "pull_request_template.md" || base == "issue_template.md"
+}
+
+// exempt reports whether a markdown path is a capitalized doc or a name
+// GitHub requires, neither of which the convention judges.
+func exempt(relPath string) bool {
+	return capsDoc.MatchString(path.Base(relPath)) || githubName(relPath)
+}
+
 // Validate returns the error for a non-conforming markdown path under the
 // convention, or "" when the basename is valid or exempt.
 func Validate(relPath string, c Convention) string {
-	base := path.Base(relPath)
-	if capsDoc.MatchString(base) || c.Pattern.MatchString(base) {
+	if exempt(relPath) || c.Pattern.MatchString(path.Base(relPath)) {
 		return ""
 	}
 	return fmt.Sprintf("%s: filename must be %s", relPath, c.Label)
