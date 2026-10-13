@@ -1,7 +1,8 @@
 // Command fitness-check-changelog validates the root CHANGELOG.md — the Go
 // port of the changelog check. Every ### heading must be
 // ### yyyy.mm.dd.HHMM, the package.json version suffix must match the first
-// heading's timestamp, and package-lock.json (when present) must carry the
+// heading's timestamp, after either a - prerelease or a + build-metadata
+// separator, and package-lock.json (when present) must carry the
 // same version as package.json. Version files that fail to parse report
 // "<file> is invalid JSON", exactly like the TypeScript original's
 // JSON.parse path.
@@ -33,8 +34,9 @@ var (
 	// the timestamp is allowed, matching the TS regex.
 	datedSectionRe = regexp.MustCompile(`^###\s+(\d{4}\.\d{2}\.\d{2}\.\d{4})`)
 	// versionSuffixRe IS end-anchored: the timestamp must terminate the
-	// package version string.
-	versionSuffixRe  = regexp.MustCompile(`-(\d{4}\.\d{2}\.\d{2}\.\d{4})$`)
+	// package version string. It follows - as a prerelease or + as build
+	// metadata; only + keeps leading zeros semver-valid.
+	versionSuffixRe  = regexp.MustCompile(`[-+](\d{4}\.\d{2}\.\d{2}\.\d{4})$`)
 	h3Re             = regexp.MustCompile(`^###\s`)
 	releaseHeadingRe = regexp.MustCompile(`^##\s+\[?\d`)
 )
@@ -193,9 +195,10 @@ func packageChangelogMismatch(pkgVersion jsonVersion, changelogTS string) string
 }
 
 // versionTimestamp extracts yyyy.mm.dd.HHMM from a version like
-// "0.1.0-2026.02.16.1900". Only strings are inspected: no other JSON value
-// can stringify to something the end-anchored suffix regex matches, so this
-// is outcome-equivalent to the TS String() coercion.
+// "0.1.0-2026.02.16.1900" or "0.1.0+2026.02.16.1900". Only strings are
+// inspected: no other JSON value can stringify to something the end-anchored
+// suffix regex matches, so this is outcome-equivalent to the TS String()
+// coercion.
 func versionTimestamp(v jsonVersion) string {
 	s, isString := v.value.(string)
 	if !isString {

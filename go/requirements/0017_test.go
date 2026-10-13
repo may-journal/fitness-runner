@@ -30,6 +30,10 @@ func changelogPackages(pkg, lock string) map[string]string {
 
 const changelogVersion = `{"name": "app", "private": true, "version": "0.1.0-2026.10.08.1400"}` + "\n"
 
+// changelogBuild is changelogVersion with the timestamp as semver build
+// metadata, which keeps its leading zeros valid.
+const changelogBuild = `{"name": "app", "private": true, "version": "0.1.0+2026.10.08.1400"}` + "\n"
+
 func Test0017_1(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": ""})
@@ -60,12 +64,6 @@ func Test0017_7(t *testing.T) {
 	sees(t, out, code, 1, "package.json is invalid JSON")
 	out, code = changelogRun(t, changelogPackages(changelogVersion, "not json\n"))
 	sees(t, out, code, 1, "package-lock.json is invalid JSON")
-}
-
-func Test0017_8(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, changelogPackages(changelogVersion, changelogVersion))
-	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 // notesHead opens a changelog in the house layout.
@@ -115,4 +113,12 @@ func Test0017_12(t *testing.T) {
 	sees(t, out, code, 1, `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "### 2026.10.07")`)
 	out, code = notesChecks(t, notesHead+"### Features\n\n- Feat: stray.\n\n"+notesEntry, "changelog")
 	sees(t, out, code, 1, `invalid: "### Features"`)
+}
+
+func Test0017_13(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, changelogPackages(changelogVersion, changelogVersion))
+	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = changelogRun(t, changelogPackages(changelogBuild, changelogBuild))
+	sees(t, out, code, 0, "All 1 checks passed")
 }
