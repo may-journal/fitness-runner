@@ -9,9 +9,9 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ### 2026.10.13.1825
 
-- Fix: hooks: commit-msg and pre-push skip a check that external `disabledChecks` turns off, instead of failing on an empty selection.
+- Fix: hooks: commit-msg and pre-push skip a check external `disabledChecks` turns off; with plan-trailer off, pre-push skips the Plan gate.
 - Docs: the check protocol says the hooks skip disabled checks.
-- Test: requirement 0009.9 commits a non-semantic message past a disabled semantic-commit through the installed hooks.
+- Test: requirements 0009.9 and 0010.11 commit and push past disabled checks through the installed hooks.
 
 ### 2026.10.13.1818
 
