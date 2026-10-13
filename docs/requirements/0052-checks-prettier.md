@@ -14,18 +14,14 @@ tracked files Prettier reports as formatted
 -
 tracked files checked
 
-Source: `go/cmd/fitness-check-prettier/main.go:339`
+Source: `go/cmd/fitness-check-prettier/main.go:363`
 
 ## Requirements
 
-- 0052.1
-    - Given Developer has a file the repo's own Prettier config would reformat, in a CI job that colors output
+- 0052.9
+    - Given Developer has the repo's own Prettier config, in a file or in `package.json`, in a CI job that colors output
         - When prettier checks the repo
-            - Then it fails naming that file
-- 0052.2
-    - Given Developer has a formatted project with its config in `package.json`
-        - When prettier checks the repo
-            - Then it passes
+            - Then it passes formatted files and fails naming each file that config would reformat
 - 0052.3
     - Given Developer has a repo with no `package.json`
         - When prettier checks the repo
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-prettier/main.go:339`
     - Given Developer has a project without Prettier installed
         - When prettier checks the repo
             - Then it fails with an install hint
+- 0052.10
+    - Given Developer has a `biome.jsonc` and `@biomejs/biome` in `devDependencies`, without Prettier
+        - When prettier checks the repo
+            - Then it checks formatting with Biome instead, failing naming each file Biome would reformat

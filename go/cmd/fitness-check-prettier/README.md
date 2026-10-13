@@ -23,6 +23,12 @@ Run `fitness prettier` from your app root to check formatting. Pass through args
 
 Errors list file paths that need formatting.
 
+## Biome
+
+A repo that chose Biome formats with it instead, as [ADR 0006](../../../docs/architecture/adr/0006-biome-stands-in-for-eslint-and-prettier.md) records. Such a repo has a `biome.json` or `biome.jsonc` at its root and `@biomejs/biome` in its `package.json` dependencies. The check runs `biome format --reporter=github` on the same paths, and needs no Prettier.
+
+Biome resolves like Prettier, and a missing binary fails with an install hint. Each file Biome would reformat fails by name. Passthrough args such as `--write .` replace the paths.
+
 ## Every tracked file
 
 - `--ignore-unknown` lets a file type Prettier cannot parse pass, instead of skipping it by name.
