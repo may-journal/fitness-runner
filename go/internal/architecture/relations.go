@@ -2,8 +2,16 @@ package architecture
 
 import (
 	"path"
+	"regexp"
 	"strings"
 )
+
+// identifier matches a name in a line of Swift code.
+var identifier = regexp.MustCompile(`[A-Za-z_]\w*`)
+
+func afterDot(code string, start int) bool {
+	return start > 0 && code[start-1] == '.'
+}
 
 // span is a line range whose references belong to a node. The smallest
 // weight wins, and a declaration's own node beats the type that owns it.
