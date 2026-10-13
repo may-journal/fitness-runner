@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// IDLine is an ID and the line that declares it. An acceptance with a
-// well-formed chain also carries its Given and When.
+// IDLine is an ID and the line that declares it. An acceptance with three
+// chain lines carries its Given, and only a well-ordered chain its When.
 type IDLine struct {
 	ID        string
 	Line      int
