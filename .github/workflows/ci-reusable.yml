@@ -79,7 +79,29 @@ jobs:
           "$RUNNER_TEMP/swiftlint/swiftlint" version
       - name: Run fitness
         id: report-step-2
-        run: fitness
+        # A caller may run this workflow from several jobs, which all share
+        # one job name here, so a random id keeps each artifact name unique.
+        run: |
+          printf 'FITNESS_PERFORMANCE_ID=%s\n' "$RANDOM$RANDOM$RANDOM" >> "$GITHUB_ENV"
+          fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
+      # The box diagram rides in the same artifact: see docs/ci.md#box-diagram.
+      - name: Draw the box diagram
+        if: ${{ !cancelled() && steps.report-step-2.outcome != 'skipped' }}
+        # Fitness may have died before it wrote the report.
+        run: |
+          report="$RUNNER_TEMP/fitness-performance/fitness.json"
+          if [ -f "$report" ]; then
+            fitness boxes "$report" "$RUNNER_TEMP/fitness-performance/fitness.html"
+          fi
+      # The performance trail: see docs/ci.md#performance-record.
+      - name: Retain the performance record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-performance-${{ github.job }}-${{ github.run_attempt }}-${{ env.FITNESS_PERFORMANCE_ID }}
+          path: ${{ runner.temp }}/fitness-performance/
+          if-no-files-found: ignore
+          retention-days: 90
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

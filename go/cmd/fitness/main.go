@@ -73,7 +73,7 @@ func main() {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `plan-check`, `close-check`) before falling through to the check runner, so the
+// `pr-check`, `plan-check`, `close-check`, `boxes`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -96,6 +96,7 @@ var subcommands = map[string]func(args []string) int{
 	"plan-check":   func([]string) int { return metadata.RunGH("plan-check") },
 	"close-check":  func([]string) int { return metadata.RunGH("close-check") },
 	"branch-check": func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
+	"boxes":        runBoxes,
 }
 
 // route dispatches the subcommands, defaulting to the check runner.
@@ -128,6 +129,9 @@ Usage:
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
   fitness --blob <text>    run every blob-capable check on text (- reads stdin)
+  fitness --json=<file>    also write each check's time, budget, files, binary size, and error lines as JSON
+  fitness boxes <report.json> <page.html>
+                           draw a --json report as an HTML box diagram
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
@@ -152,6 +156,11 @@ func run(argv []string) int {
 		report.Error("fitness setup", err)
 		return 1
 	}
+	perfPath, argv, err := jsonPath(argv)
+	if err != nil {
+		report.Error("fitness setup", err)
+		return 1
+	}
 	checks, passthrough, err := selectedChecks(root, argv)
 	if err != nil {
 		report.Error("fitness setup", err)
@@ -167,7 +176,22 @@ func run(argv []string) int {
 	rows, totals := summarize(checks, outcomes)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
-	return finish(rows, totals)
+	perf := buildPerfReport(checks, outcomes, rows, totals.Ms)
+	code := finish(rows, perf, totals)
+	return withPerfReport(perfPath, perf, code)
+}
+
+// withPerfReport writes the `--json` report when one was asked for; a report
+// that cannot be written fails the run, since the caller relies on it.
+func withPerfReport(path string, perf perfReport, code int) int {
+	if path == "" {
+		return code
+	}
+	if err := writePerfReport(path, perf); err != nil {
+		report.Error("fitness --json", err)
+		return 1
+	}
+	return code
 }
 
 // loadConfig loads the repo config.
@@ -320,7 +344,7 @@ func resolveChecks(spec string) ([]resolved, error) {
 	if spec != "" {
 		return resolveSingle(spec)
 	}
-	return resolveList(allChecks)
+	return resolveList(checkCatalog())
 }
 
 // resolveSingle resolves a CLI check name into a one-element list; an empty
@@ -350,7 +374,7 @@ func resolveList(names []string) ([]resolved, error) {
 // a CLI name (the caller renders Unknown check) and an error for the list,
 // since every check ships together.
 func resolveName(name string, cli bool) (*resolved, error) {
-	bin, err := checkkit.Binary(name)
+	bin, err := findCheckBinary(name)
 	if err == nil {
 		desc, describeErr := describe(bin)
 		return &resolved{name: name, bin: bin, desc: desc, describeErr: describeErr}, nil

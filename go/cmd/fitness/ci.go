@@ -1,7 +1,9 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/render"
@@ -15,9 +17,9 @@ const maxAnnotations = 10
 
 // finish emits the CI report when running under GitHub Actions, then maps the
 // failure count to the process exit code. Info rows never change it.
-func finish(rows []render.Row, t render.Totals) int {
+func finish(rows []render.Row, perf perfReport, t render.Totals) int {
 	if isGitHubActions() {
-		emitCIReport(rows, t)
+		emitCIReport(rows, perf, t)
 	}
 	if t.Failure > 0 {
 		return 1
@@ -35,8 +37,8 @@ func isGitHubActions() bool {
 // running under GitHub Actions. It never changes the process result — the
 // exit code still comes from the check outcomes — so it is additive to the
 // terminal table a local run prints.
-func emitCIReport(rows []render.Row, t render.Totals) {
-	writeStepSummary(ciSummaryMarkdown(rows, t))
+func emitCIReport(rows []render.Row, perf perfReport, t render.Totals) {
+	writeStepSummary(ciSummaryMarkdown(rows, t) + timingMarkdown(perf))
 	if t.Failure > 0 {
 		report.MarkFailure()
 	}
@@ -69,6 +71,27 @@ func ciSummaryMarkdown(rows []render.Row, t render.Totals) string {
 	}
 	b.WriteString(infoSection(rows))
 	return b.String()
+}
+
+// timingMarkdown renders each check's time against its budget, slowest
+// first, so the check nearest its limit tops the table.
+func timingMarkdown(perf perfReport) string {
+	checks := slices.Clone(perf.Checks)
+	slices.SortStableFunc(checks, func(a, b perfCheck) int { return cmp.Compare(b.Ms, a.Ms) })
+	var b strings.Builder
+	b.WriteString("\n### Check timing\n\n| Check | Time | Budget | Used |\n| --- | --- | --- | --- |\n")
+	for _, c := range checks {
+		fmt.Fprintf(&b, "| %s | %dms | %dms | %d%% |\n", report.EscapeMarkdown(c.Name), c.Ms, c.TimeoutMs, budgetShare(c))
+	}
+	return b.String()
+}
+
+// budgetShare is the percent of its budget a check spent.
+func budgetShare(c perfCheck) int64 {
+	if c.TimeoutMs <= 0 {
+		return 0
+	}
+	return c.Ms * 100 / c.TimeoutMs
 }
 
 // headline is the one-line aggregate atop the summary: a positive line when

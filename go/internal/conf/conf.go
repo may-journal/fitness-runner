@@ -20,6 +20,12 @@ type Config struct {
 	// TimeoutMs replaces the default per-check budget for checks that declare
 	// none of their own.
 	TimeoutMs int `json:"timeoutMs"`
+	// LocalChecks names a repo directory of the repo's own check programs,
+	// searched before the bundled ones. See ADR 0008.
+	LocalChecks string `json:"localChecks"`
+	// DisabledChecks names checks external policy leaves out; org policy
+	// refuses it. See ADR 0008.
+	DisabledChecks []string `json:"disabledChecks"`
 	// RepeatedStringLiterals holds options for that check.
 	RepeatedStringLiterals struct {
 		Allow []string `json:"allow"`
@@ -89,13 +95,11 @@ func LoadAs[T any](root string) (*T, error) {
 }
 
 // retiredKeys names the exclusion keys raw still sets, in a fixed order:
-// top-level ignore, skipTheseDirectories, and disabledChecks, then
-// proseBudget.exempt.
+// top-level ignore and skipTheseDirectories, then proseBudget.exempt.
 func retiredKeys(raw []byte) []string {
 	var top struct {
 		Ignore      json.RawMessage `json:"ignore"`
 		SkipDirs    json.RawMessage `json:"skipTheseDirectories"`
-		Disabled    json.RawMessage `json:"disabledChecks"`
 		ProseBudget struct {
 			Exempt json.RawMessage `json:"exempt"`
 		} `json:"proseBudget"`
@@ -108,7 +112,6 @@ func retiredKeys(raw []byte) []string {
 	}{
 		{"ignore", top.Ignore},
 		{"skipTheseDirectories", top.SkipDirs},
-		{"disabledChecks", top.Disabled},
 		{"proseBudget.exempt", top.ProseBudget.Exempt},
 	} {
 		if k.val != nil {

@@ -39,7 +39,7 @@ func reportFailure(operation string, err error) {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, version, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
@@ -66,6 +66,7 @@ func dispatch(command string, config release.Config, root string) error {
 		"promote":         func() error { return config.Promote(context.Background()) },
 		"release-pr":      func() error { return updateReleasePR(root) },
 		"release-notes":   func() error { return publishNotes(root) },
+		"record":          func() error { return config.Record(context.Background(), os.Stdout) },
 		"smoke":           func() error { return config.Smoke(context.Background(), false) },
 		"verify-download": func() error { return config.Smoke(context.Background(), true) },
 		"verify-tag":      func() error { return config.VerifyTag(os.Getenv("GITHUB_REF_NAME")) },
