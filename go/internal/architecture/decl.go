@@ -22,9 +22,9 @@ type param struct {
 	name, typ string
 }
 
-// decl is one Go or Swift declaration: a type, function, method, field, or
+// decl is one Go, Swift, or TypeScript declaration: a type, function, method, field, or
 // top-level value. Owner is the enclosing or receiver type of a member.
-// Package is the Go package name, empty for Swift. Condition is the build
+// Package is the Go package name, empty otherwise. Condition is the build
 // condition it sits under. Line and End bound it in its file.
 type decl struct {
 	File, Name, Owner, Kind, Package, Condition string
@@ -32,10 +32,17 @@ type decl struct {
 	Params                                      []param
 	Results                                     []string
 	Type                                        string
-	// Exported marks a Go exported type or a Swift public or open one.
+	// Exported marks a type the code view must show: a Go exported type,
+	// a Swift public or open one, or an exported TypeScript class.
 	Exported bool
-	// Supers lists a Swift type's inheritance clause, in order.
+	// Supers lists a Swift type's inheritance clause, or what a TypeScript
+	// type extends, in order.
 	Supers []string
+	// Implements lists the interfaces a TypeScript class implements.
+	Implements []string
+	// Open is the line a TypeScript type's body opens on, which ends a
+	// header split over lines.
+	Open int
 }
 
 // full is the declaration's qualified name, such as checkkit.Result or
@@ -80,7 +87,8 @@ func (d *decl) signature() string {
 	return strings.TrimSpace(fmt.Sprintf("(%s) %s", strings.Join(types, ", "), strings.Join(d.Results, ", ")))
 }
 
-// declIndex holds every declaration read from Go and Swift sources.
+// declIndex holds every declaration read from Go, Swift, and TypeScript
+// sources.
 type declIndex struct {
 	decls  []*decl
 	errors []string
@@ -103,8 +111,9 @@ func (x *declIndex) named(name, owner string, files []string) []*decl {
 	return found
 }
 
-// members lists the members of a type declared in one Go package folder,
-// or anywhere for a Swift type, which extensions may add to elsewhere.
+// members lists the members of a type declared in one Go package folder or
+// TypeScript file, or anywhere for a Swift type, which extensions may add
+// to elsewhere.
 func (x *declIndex) members(t *decl) []*decl {
 	var found []*decl
 	for _, d := range x.decls {
@@ -119,9 +128,13 @@ func inFiles(files []string, file string) bool {
 	return len(files) == 0 || contains(files, file)
 }
 
-// samePackage reports two Go declarations in one package folder, or two
-// Swift ones.
+// samePackage reports two Go declarations in one package folder, two
+// Swift ones, or two TypeScript ones in one file, since a TypeScript class
+// has no extensions.
 func samePackage(d, t *decl) bool {
+	if typeScript(d.File) || typeScript(t.File) {
+		return d.File == t.File
+	}
 	return d.Package == t.Package && (t.Package == "" || d.folder() == t.folder())
 }
 

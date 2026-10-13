@@ -32,19 +32,20 @@ type relations struct {
 	c       *code
 	spans   []span
 	seen    []observed
-	swift   map[string][]*codeNode
+	named   map[string][]*codeNode
 	headers map[Location]*decl
 }
 
-// relate reads the relations between concrete nodes from Go type data and
-// Swift declarations, then compares them with the drawn edges both ways.
+// relate reads the relations between concrete nodes from Go type data,
+// Swift declarations, and TypeScript tokens, then compares them with the drawn edges both ways.
 func (c *code) relate() {
-	r := &relations{c: c, swift: map[string][]*codeNode{}, headers: map[Location]*decl{}}
+	r := &relations{c: c, named: map[string][]*codeNode{}, headers: map[Location]*decl{}}
 	for _, n := range c.order {
 		r.node(n)
 	}
 	r.goUses()
 	r.swiftUses()
+	r.scriptUses()
 	for _, e := range c.m.Relationships {
 		r.drawn(e)
 	}
@@ -52,7 +53,7 @@ func (c *code) relate() {
 }
 
 // node adds a concrete node's own lines and, for a type, its methods and
-// extensions, then indexes a Swift node by name.
+// extensions, then indexes a Swift or TypeScript node by name.
 func (r *relations) node(n *codeNode) {
 	if n.d == nil {
 		return
@@ -62,12 +63,15 @@ func (r *relations) node(n *codeNode) {
 		r.typeSpans(n)
 	}
 	if n.d.Package == "" {
-		r.swift[swiftKey(n.d)] = append(r.swift[swiftKey(n.d)], n)
+		key := nodeKey(n.d.File, memberKey(n.d))
+		r.named[key] = append(r.named[key], n)
 	}
 }
 
 func (r *relations) typeSpans(n *codeNode) {
-	r.headers[n.d.at()] = n.d
+	for line := n.d.Line; line <= max(n.d.Line, n.d.Open); line++ {
+		r.headers[Location{n.d.File, line}] = n.d
+	}
 	for _, d := range filter(r.c.x.members(n.d), (*decl).callable) {
 		r.add(n, d, 1)
 	}
@@ -89,7 +93,7 @@ func (r *relations) add(n *codeNode, d *decl, inherited int) {
 	r.spans = append(r.spans, span{n: n, file: d.File, from: d.Line, to: d.End, weight: 2*(d.End-d.Line) + inherited})
 }
 
-func swiftKey(d *decl) string {
+func memberKey(d *decl) string {
 	if d.Owner == "" {
 		return d.Name
 	}
@@ -168,15 +172,20 @@ func (r *relations) follow(n *codeNode, u use, at Location, visited map[*decl]bo
 // swiftUses reads each Swift node file with comments and literals
 // stripped: inheritance clauses, then names of other Swift nodes.
 func (r *relations) swiftUses() {
+	for _, file := range r.files(func(file string) bool { return path.Ext(file) == ".swift" }) {
+		r.swiftFile(file)
+	}
+}
+
+// files lists the files of node spans that keep accepts, sorted.
+func (r *relations) files(keep func(string) bool) []string {
 	files := map[string]bool{}
 	for _, s := range r.spans {
-		if path.Ext(s.file) == ".swift" {
+		if keep(s.file) {
 			files[s.file] = true
 		}
 	}
-	for _, file := range sortedKeys(files) {
-		r.swiftFile(file)
-	}
+	return sortedKeys(files)
 }
 
 func (r *relations) swiftFile(file string) {
@@ -203,19 +212,39 @@ func (r *relations) swiftLine(from *codeNode, code string, at Location) {
 }
 
 // supers relates a type to each node its inheritance clause names: a
-// protocol a type adopts is conformance; anything else is inheritance.
+// protocol a type adopts, or an interface a TypeScript class implements, is
+// conformance; anything else is inheritance.
 func (r *relations) supers(from *codeNode, d *decl, at Location) {
-	for _, name := range r.headerSupers(d, at) {
-		if to := r.unique(name); to != nil {
-			r.observe(from, to, superKind(from.d, to.d), at)
-		}
+	x := r.headerDecl(d, at)
+	if x == nil {
+		return
+	}
+	for _, name := range x.Supers {
+		r.super(from, name, at, "")
+	}
+	for _, name := range x.Implements {
+		r.super(from, name, at, relConforms)
 	}
 }
 
-func (r *relations) headerSupers(d *decl, at Location) []string {
+// super relates a type to the node a clause names, by kind, or by the
+// kinds of both types when kind is empty.
+func (r *relations) super(from *codeNode, name string, at Location, kind string) {
+	to := r.unique(at.Path, name)
+	if to == nil {
+		return
+	}
+	if kind == "" {
+		kind = superKind(from.d, to.d)
+	}
+	r.observe(from, to, kind, at)
+}
+
+// headerDecl is the type or extension whose header starts on the line.
+func (r *relations) headerDecl(d *decl, at Location) *decl {
 	for _, x := range r.c.x.named(d.Name, "", []string{at.Path}) {
 		if x.Line == at.Line {
-			return x.Supers
+			return x
 		}
 	}
 	return nil
@@ -233,17 +262,19 @@ func superKind(from, to *decl) string {
 func (r *relations) swiftTarget(code string, span []int) *codeNode {
 	name := code[span[0]:span[1]]
 	if !afterDot(code, span[0]) {
-		return r.unique(name)
+		return r.unique(".swift", name)
 	}
 	owner := identifier.FindAllString(code[:span[0]-1], -1)
 	if len(owner) == 0 || !strings.HasSuffix(code[:span[0]-1], owner[len(owner)-1]) {
 		return nil
 	}
-	return r.unique(owner[len(owner)-1] + "." + name)
+	return r.unique(".swift", owner[len(owner)-1]+"."+name)
 }
 
-func (r *relations) unique(key string) *codeNode {
-	if nodes := r.swift[key]; len(nodes) == 1 {
+// unique is the one node a name in file reaches among the nodes of its
+// language, or nil.
+func (r *relations) unique(file, key string) *codeNode {
+	if nodes := r.named[nodeKey(file, key)]; len(nodes) == 1 {
 		return nodes[0]
 	}
 	return nil
@@ -254,4 +285,13 @@ func swiftKind(code string, end int) string {
 		return relCalls
 	}
 	return relReferences
+}
+
+// nodeKey scopes a node name to its language, so a Swift name never
+// reaches a TypeScript node.
+func nodeKey(file, key string) string {
+	if typeScript(file) {
+		return "ts:" + key
+	}
+	return path.Ext(file) + ":" + key
 }

@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1844
+
+- Feat: architecture-code: a class resolves to a TypeScript class, interface, function, or member through its `.ts` link, label, kind, and signature.
+- Feat: architecture-code: TypeScript `extends`, `implements`, calls, and references relate classes, and each exported TypeScript class in a shown folder needs a node.
+- Fix: architecture-code: Mermaid `~` generics read as angle brackets, and spaces beside brackets or colons no longer fail a signature.
+- Test: requirement 0076.9 folds 0076.2 and 0076.3; 0076.10 proves TypeScript views, each with one test.
+
 ### 2026.10.13.1840
 
 - Fix: eslint and prettier: Biome runs with `--max-diagnostics=none`, so a repo with more than 20 findings sees every one.
