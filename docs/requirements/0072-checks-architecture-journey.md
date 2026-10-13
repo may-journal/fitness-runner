@@ -6,11 +6,11 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Every requirement has a place in the user journey, and every journey step that promises behavior names a real requirement. Neither side drifts while the checks stay green.
+Every requirement appears in the user journey diagram at the step that fulfils it, and every step that promises behavior names one. Neither side drifts while the checks stay green.
 
 ## Measurement
 
-requirement docs with one journey row
+requirement docs named in a journey diagram label
 -
 requirement docs
 
@@ -19,33 +19,33 @@ Source: #290
 ## Requirements
 
 - 0072.1
-    - Given Developer has a journey table with one row per requirement doc
+    - Given Developer has a journey diagram whose labels name every requirement doc ID
         - When I check it
-            - Then it passes, with several nodes per doc and several docs per node
+            - Then it passes, with several IDs per label and one ID on several steps or edges
 - 0072.2
-    - Given Developer has a requirement doc with no journey row
+    - Given Developer has a requirement doc that no journey label names
         - When I check the journey
-            - Then the error names the table line and the doc ID
+            - Then the error names the diagram line and the doc ID
 - 0072.3
-    - Given Developer has a row naming an acceptance ID, a deleted doc, or an unknown doc
+    - Given Developer has a label naming an acceptance ID, a deleted doc, or an unknown doc
         - When I check the journey
-            - Then the error names the row line and that ID
+            - Then the error names the label line and that ID
 - 0072.4
-    - Given Developer has two rows for one requirement doc
+    - Given Developer has a label naming more than eight requirement IDs
         - When I check the journey
-            - Then the error names both row lines and the doc ID
+            - Then the error names the label line and asks to split the step
 - 0072.5
-    - Given Developer has a row listing no node or a node the journey does not declare
+    - Given Developer has requirement IDs only in a table or prose outside the diagram
         - When I check the journey
-            - Then the error names the row line, the doc ID, and the node
+            - Then they cover nothing, and each doc is still missing from the diagram
 - 0072.6
-    - Given Developer has a screen, action, or system node in no row
+    - Given Developer has a screen, action, or system step with no ID in its label or its subgraph label
         - When I check the journey
-            - Then the error names its diagram line, while personas, subgraphs, and legends need no row
+            - Then the error names its diagram line, while personas, subgraphs, and legends need no ID
 - 0072.7
-    - Given Developer has a renamed node label or a renamed node ID
+    - Given Developer has a renamed node ID or label text that keeps its IDs
         - When I check the journey
-            - Then the label passes and the ID fails its stale row and its unlisted node
+            - Then it passes, and a label edit that drops an ID fails for that doc
 - 0072.8
     - Given Developer has drift on one side only
         - When I check changes on the other side

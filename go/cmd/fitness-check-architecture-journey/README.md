@@ -5,36 +5,38 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # architecture-journey
 
-Keeps the user journey and the requirement docs covering each other. It reads the shared model from `internal/architecture.Load`. Scoped runs still read the whole journey view and every requirement doc.
+Keeps the user journey diagram and the requirement docs covering each other. It reads the shared model from `internal/architecture.Load`. Scoped runs still read the whole journey view and every requirement doc.
 
-## The requirement table
+## Requirement IDs in the diagram
 
-The journey view (`05-user-journey.md` under `architecture/` or `docs/architecture/`) holds a table whose first header cell is `Requirement`. Each row names one requirement doc and the journey nodes that fulfil it:
+The journey view (`05-user-journey.md` under `architecture/` or `docs/architecture/`) names each requirement doc in its Mermaid diagram, on the step that fulfils it:
 
-```markdown
-| Requirement                             | Journey                     |
-| --------------------------------------- | --------------------------- |
-| [0001](../requirements/0001-open.md)    | `open`, `done`              |
-| [0002](../requirements/0002-offline.md) | `open`                      |
+```text
+flowchart TB
+    user((1 User)):::persona
+    open(2 Open the app<br/>Req 0001, 0002):::action
+    subgraph saving["Saving<br/>Req 0003"]
+        done[3 Record saved]:::screen
+    end
+    user --> open
+    open -->|saves 0004| done
 ```
 
-- The requirement cell links the doc, or states its four-digit ID such as `0001`.
+- Any four-digit number in a node, subgraph, or edge label is a requirement ID. Write it after the callout number, never first.
 - An acceptance such as `0001.1` is not a doc ID. Acceptances keep their one owning test under the `requirements` check.
-- The journey cell lists Mermaid node IDs from the journey diagrams, comma-separated.
-- IDs are stable, so renaming a label keeps its rows. Renaming an ID exposes the stale row.
-- One row may list several nodes, and one node may appear in several rows.
+- One label names at most eight IDs. A step that fulfils more splits into steps, such as one node per check family.
+- One ID may sit on several steps. Tables and prose outside the diagram cover nothing.
 
-Personas and layout subgraphs promise no behavior and need no row. Legends stay out of the model. Every other journey node, such as a screen, action, or system step, needs a row.
+Personas and layout subgraphs promise no behavior and need no ID. Legends stay out of the model. Every other node, such as a screen, action, or system step, names an ID in its own label or an enclosing subgraph label. An edge label covers its IDs but no node.
 
 ## Failures
 
 Every error names the view line it concerns and the requirement ID.
 
-- A requirement doc with no row, named at the table's header line.
-- A row naming an acceptance ID, a doc that does not exist, or no doc ID at all.
-- A second row for one requirement, naming the first.
-- A row listing no node, or a node the journey diagrams do not declare.
-- A behavior node no row lists, named at its diagram line.
+- A requirement doc no label names, at the diagram's fence line.
+- A label naming an acceptance ID or a doc that does not exist.
+- A label naming more than eight IDs.
+- A behavior node with no ID, at its diagram line.
 
 A repo without architecture views passes with zero files. A missing journey view belongs to `architecture-contract`.
 

@@ -7,12 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.12.1746
+### 2026.10.12.1913
 
-- Feat: architecture checks: journey, actors, containers, components, and code views must match requirement IDs, Givens, runtimes, folders, and symbols.
+- Feat: architecture checks: journey diagram labels name every requirement ID; actor, container, component, and code views match Givens, runtimes, folders, and symbols.
 - Feat: architecture-components and architecture-code: fail Go imports, Swift references, and calls the view omits, and drawn edges no source shows.
 - Fix: architecture checks: name a root Go command by its module, read XcodeGen projects once, and skip hand-run Go generators.
-- Fix: hooks and views: an epic child names its Plan once; Fitness' own diagrams and Givens name real actors, commands, and symbols.
+- Fix: hooks and views: an epic child names its Plan once; Fitness' journey names each requirement on the step that fulfils it.
 - Test: architecture checks: prove requirements 0072 to 0076 through the installed command on Go, Swift, Xcode, and Node sources.
 
 ### 2026.10.12.1457

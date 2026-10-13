@@ -91,13 +91,12 @@ type Model struct {
 	Claims        []Claim
 	Evidence      []Evidence
 	Sources       []Source
-	Mappings      []Mapping
 	Requirements  []requirement.Document
 	Files         []string
 	Errors        []string
 	repo          repository
-	// journeyAt is the first requirement table's header line, or the
-	// journey view's first line when it has none.
+	// journeyAt is the first journey diagram's fence line, or the journey
+	// view's first line when it has no diagram.
 	journeyAt Location
 	// contextAt is the first context diagram's fence line.
 	contextAt Location

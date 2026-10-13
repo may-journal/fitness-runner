@@ -1,7 +1,7 @@
-// Command fitness-check-architecture-journey keeps the user journey and the
-// requirement docs covering each other: every requirement doc has one row in
-// the journey's requirement table, and every journey node that promises
-// behavior is listed in one.
+// Command fitness-check-architecture-journey keeps the user journey diagram
+// and the requirement docs covering each other: every requirement doc ID
+// appears in a journey diagram label, and every journey node that promises
+// behavior names one.
 package main
 
 import (

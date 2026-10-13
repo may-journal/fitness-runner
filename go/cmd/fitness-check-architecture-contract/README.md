@@ -17,7 +17,7 @@ The roots are `architecture/` and `docs/architecture/`. Both roots add to one mo
 | `02-containers.md` | Runtime units |
 | `03-components.md` | Components and their sources |
 | `04-code.md` | Classes and functions |
-| `05-user-journey.md` | Journey steps and requirement links |
+| `05-user-journey.md` | Journey steps and the requirement IDs they fulfil |
 
 No views means a pass with zero files. Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
 

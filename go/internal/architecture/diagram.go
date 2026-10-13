@@ -53,9 +53,7 @@ var (
 
 func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram {
 	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}, annotations: map[string][]Member{}}
-	if view == "context" && m.contextAt.Path == "" {
-		m.contextAt = Location{file, b.Line}
-	}
+	m.diagramStart(view, Location{file, b.Line})
 	lines := strings.Split(b.Body, "\n")
 	start := frontMatterEnd(lines)
 	d.form = diagramForm(lines[start:])
@@ -67,6 +65,17 @@ func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram
 		d.statement(strings.TrimSpace(line), Location{file, b.Line + start + i + 1})
 	}
 	return d
+}
+
+// diagramStart records the first context and journey diagrams, where errors
+// about the whole view point.
+func (m *Model) diagramStart(view string, at Location) {
+	if view == "context" && m.contextAt.Path == "" {
+		m.contextAt = at
+	}
+	if view == journeyView {
+		m.journeyStart(at)
+	}
 }
 
 // frontMatterEnd skips a leading "---" block that holds a diagram's title
