@@ -48,6 +48,7 @@ fitness --policy=external     # all checks, each decides applicability
 fitness prettier             # one check by name
 fitness prettier --write .   # passthrough args reach the check
 fitness --json=perf.json     # also save each check's cost (see docs/ci.md#performance-record)
+fitness boxes perf.json perf.html  # draw that record as a box diagram (see docs/ci.md#box-diagram)
 fitness init                 # install the shared git hooks into a repo
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
 fitness pr-check             # validate PR titles and descriptions (in GitHub Actions)

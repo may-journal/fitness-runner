@@ -21,7 +21,7 @@ Source: `go/cmd/fitness/main.go:208`
 - 0077.1
     - Given Developer has a repo with passing and failing checks
         - When fitness runs with `--json=<file>`
-            - Then the file lists every check's time, budget, files, binary size, and result
+            - Then the file lists every check's time, budget, files, binary size, errors, and result
 - 0077.2
     - Given Developer has a check that runs past its time budget
         - When fitness runs with `--json=<file>`
@@ -38,3 +38,11 @@ Source: `go/cmd/fitness/main.go:208`
     - Given Developer has built release assets
         - When `fitness-release record` runs
             - Then it prints each asset's size and the install time as JSON
+- 0077.6
+    - Given Developer has a `--json` report from a run with passing and failing checks
+        - When `fitness boxes <report> <page>` runs
+            - Then the page draws one box per check, sized by runtime, binary size, or errors, each naming its result
+- 0077.7
+    - Given Developer has a report file that is missing or not a `--json` report
+        - When `fitness boxes` runs with it
+            - Then it names the problem, writes no page, and exits 1

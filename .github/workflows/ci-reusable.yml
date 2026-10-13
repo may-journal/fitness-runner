@@ -84,6 +84,10 @@ jobs:
         run: |
           printf 'FITNESS_PERFORMANCE_ID=%s\n' "$RANDOM$RANDOM$RANDOM" >> "$GITHUB_ENV"
           fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
+      # The box diagram rides in the same artifact: see docs/ci.md#box-diagram.
+      - name: Draw the box diagram
+        if: ${{ !cancelled() && steps.report-step-2.outcome != 'skipped' }}
+        run: fitness boxes "$RUNNER_TEMP/fitness-performance/fitness.json" "$RUNNER_TEMP/fitness-performance/fitness.html"
       # The performance trail: see docs/ci.md#performance-record.
       - name: Retain the performance record
         if: ${{ always() }}

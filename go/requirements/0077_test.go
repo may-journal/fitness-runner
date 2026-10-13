@@ -23,6 +23,7 @@ type perfCheck struct {
 	TimedOut     bool   `json:"timedOut"`
 	FilesChecked int    `json:"filesChecked"`
 	BinaryBytes  int64  `json:"binaryBytes"`
+	Errors       int    `json:"errors"`
 }
 
 // perfReport is the `--json` report file.
@@ -74,12 +75,23 @@ func Test0077_1(t *testing.T) {
 // verdicts asserts the misspelling failed cspell while prose-budget passed.
 func verdicts(t *testing.T, report perfReport) {
 	t.Helper()
-	if cspell := reported(t, report, "cspell"); cspell.Ok || cspell.FilesChecked < 1 {
-		t.Errorf("cspell must fail having judged files, got %+v", cspell)
+	if cspell := reported(t, report, "cspell"); verdictOf(cspell) != (verdict{ok: false, judged: true, errors: 1}) {
+		t.Errorf("cspell must fail with one error having judged files, got %+v", cspell)
 	}
-	if prose := reported(t, report, "prose-budget"); !prose.Ok {
-		t.Errorf("prose-budget must pass, got %+v", prose)
+	if prose := reported(t, report, "prose-budget"); verdictOf(prose) != (verdict{ok: true, judged: prose.FilesChecked > 0, errors: 0}) {
+		t.Errorf("prose-budget must pass with no errors, got %+v", prose)
 	}
+}
+
+// verdict is what a reader takes from one report entry: the result, whether
+// files were judged, and how many errors it found.
+type verdict struct {
+	ok, judged bool
+	errors     int
+}
+
+func verdictOf(c perfCheck) verdict {
+	return verdict{ok: c.Ok, judged: c.FilesChecked > 0, errors: c.Errors}
 }
 
 // fullEntry asserts a report entry matches a table row and carries its
@@ -143,6 +155,107 @@ func timings(summary string) []int64 {
 		}
 	}
 	return times
+}
+
+// diagramBox matches one check's box in the page: its result class, then its
+// tooltip naming the check, its value, and its result.
+var diagramBox = regexp.MustCompile(`<li class="([a-z-]*)"[^>]*><div class="cell" tabindex="0" title="([^:"]+): ([^,"]+), ([a-z ]+)">`)
+
+// outsideRequest matches anything that would make the page run code or load
+// another file.
+var outsideRequest = regexp.MustCompile(`<script|http|src=`)
+
+// diagramViews are the page's three ways to size the boxes.
+var diagramViews = []string{"time", "size", "errors"}
+
+func Test0077_6(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", misspelled(2))
+	_, report := withReport(t, repo)
+	page := drawn(t, repo, report)
+	if outsideRequest.MatchString(page) {
+		t.Error("the page must be self-contained, with no scripts or outside requests")
+	}
+	views := strings.Split(page, `<section class="view view-`)[1:]
+	if len(views) != len(diagramViews) {
+		t.Fatalf("the page must offer %v views, got %d", diagramViews, len(views))
+	}
+	for i, view := range views {
+		oneBoxEach(t, diagramViews[i], view, report)
+	}
+	if !strings.Contains(views[2], `title="cspell: 2 errors, failed"`) {
+		t.Error("the errors view must size cspell by its 2 errors and mark it failed")
+	}
+}
+
+// drawn writes the report to a file, runs `fitness boxes` on it the way a
+// user does, and returns the page.
+func drawn(t *testing.T, repo string, report perfReport) string {
+	t.Helper()
+	dir := t.TempDir()
+	in, out := filepath.Join(dir, "fitness.json"), filepath.Join(dir, "page", "fitness.html")
+	raw, err := json.Marshal(report)
+	mustDo(t, err)
+	mustDo(t, os.WriteFile(in, raw, 0o644))
+	said, code := fitness(t, repo, nil, "boxes", in, out)
+	sees(t, said, code, 0)
+	page, err := os.ReadFile(out)
+	mustDo(t, err)
+	return string(page)
+}
+
+// oneBoxEach asserts a view draws every reported check once, with its result
+// in words and a matching class.
+func oneBoxEach(t *testing.T, name, view string, report perfReport) {
+	t.Helper()
+	seen := map[string]int{}
+	for _, m := range diagramBox.FindAllStringSubmatch(view, -1) {
+		seen[m[2]]++
+		saysResult(t, name, m[1], m[4], reported(t, report, m[2]))
+	}
+	for _, c := range report.Checks {
+		if seen[c.Name] != 1 {
+			t.Errorf("%s view draws %s %d times, want once", name, c.Name, seen[c.Name])
+		}
+	}
+}
+
+// saysResult asserts a box names its check's result in words, and carries a
+// failure class exactly when the check did not pass.
+func saysResult(t *testing.T, view, class, words string, c perfCheck) {
+	t.Helper()
+	if got, want := [2]any{words, class == ""}, [2]any{resultWords(c), c.Ok}; got != want {
+		t.Errorf("%s view: %s box says %q with class %q, want %q", view, c.Name, words, class, want[0])
+	}
+}
+
+// resultWords is how the page names a check's result.
+func resultWords(c perfCheck) string {
+	switch {
+	case c.TimedOut:
+		return "timed out"
+	case c.Ok:
+		return "passed"
+	}
+	return "failed"
+}
+
+func Test0077_7(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	dir := t.TempDir()
+	page := filepath.Join(dir, "fitness.html")
+	out, code := fitness(t, repo, nil, "boxes", filepath.Join(dir, "missing.json"), page)
+	sees(t, out, code, 1, "fitness boxes", "missing.json")
+	notReport := filepath.Join(dir, "other.json")
+	mustDo(t, os.WriteFile(notReport, []byte(`{"name": "app"}`), 0o644))
+	out, code = fitness(t, repo, nil, "boxes", notReport, page)
+	sees(t, out, code, 1, "not a fitness --json report")
+	out, code = fitness(t, repo, nil, "boxes", notReport)
+	sees(t, out, code, 1, "use fitness boxes <report.json> <page.html>")
+	if _, err := os.Stat(page); err == nil {
+		t.Error("a failed run must not write a page")
+	}
 }
 
 // releaseRecord is what `fitness-release record` prints.
