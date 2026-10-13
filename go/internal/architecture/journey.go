@@ -14,6 +14,10 @@ const maxLabelIDs = 8
 // journey label after its callout number.
 var labelID = regexp.MustCompile(`\b\d{4}(?:\.\d+)?\b`)
 
+// entityCode is a Mermaid character code such as #9829; in a label, which
+// names no requirement.
+var entityCode = regexp.MustCompile(`#\w+;`)
+
 const journeyView = "journey"
 
 // journeyStart records where the journey begins: its first diagram's fence
@@ -80,19 +84,18 @@ func (j *journey) fail(at Location, format string, args ...any) {
 }
 
 // label reads the requirement IDs one label names. owner is the element the
-// label belongs to; an edge label has none.
+// label belongs to; an edge label has none. A label that names any ID
+// covers its node, so a mistyped ID fails once, as unknown.
 func (j *journey) label(owner, text string, at Location) {
-	ids := uniqueIDs(labelID.FindAllString(text, -1))
+	ids := uniqueIDs(labelID.FindAllString(entityCode.ReplaceAllString(text, ""), -1))
 	if len(ids) > maxLabelIDs {
 		j.fail(at, "label names %d requirements; split the step so each names at most %d", len(ids), maxLabelIDs)
 	}
 	for _, id := range ids {
-		if j.valid(id, at) {
-			j.named[id] = true
-			if owner != "" {
-				j.nodes[owner] = true
-			}
-		}
+		j.named[id] = j.valid(id, at)
+	}
+	if owner != "" && len(ids) > 0 {
+		j.nodes[owner] = true
 	}
 }
 

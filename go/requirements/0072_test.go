@@ -58,6 +58,8 @@ func Test0072_1(t *testing.T) {
 	out, code = ajRun(t, ajEdit(files, "-->|saves| done", "-->|saves 0002| done"))
 	sees(t, out, code, 0)
 	passedWith(t, out, ajCheck, "3")
+	out, code = ajRun(t, ajEdit(ajFixture(), ajTagOpen, "open(2 Open #9829; the app<br/>Req 0001)"))
+	sees(t, out, code, 0)
 }
 
 func Test0072_2(t *testing.T) {
@@ -79,9 +81,14 @@ func Test0072_3(t *testing.T) {
 		out, code := ajRun(t, ajEdit(ajFixture(), ajTagOpen, label))
 		sees(t, out, code, 1, want)
 	}
+	out, code := ajRun(t, ajEdit(ajFixture(), ajTagOpen, "open(2 Open the app<br/>Req 0009)"))
+	sees(t, out, code, 1, "architecture/05-user-journey.md:18: no requirement doc 0009 in docs/requirements")
+	if strings.Contains(out, "journey node open names no requirement") {
+		t.Errorf("a mistyped ID also reported its step as naming none:\n%s", out)
+	}
 	repo := example(t, "happyRepo", ajEdit(ajSecondDoc(ajFixture()), ajTagDone, "done[3 Record saved<br/>Req 0001, 0002]"))
 	write(t, repo, map[string]string{ajDoc2: ""})
-	out, code := fitness(t, repo, nil, ajCheck)
+	out, code = fitness(t, repo, nil, ajCheck)
 	sees(t, out, code, 1, "architecture/05-user-journey.md:19: no requirement doc 0002 in docs/requirements")
 }
 

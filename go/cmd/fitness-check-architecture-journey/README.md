@@ -23,6 +23,7 @@ flowchart TB
 ```
 
 - Any four-digit number in a node, subgraph, or edge label is a requirement ID. Write it after the callout number, never first.
+- A Mermaid character code such as `#9829;` is not an ID.
 - An acceptance such as `0001.1` is not a doc ID. Acceptances keep their one owning test under the `requirements` check.
 - One label names at most eight IDs. A step that fulfils more splits into steps, such as one node per check family.
 - One ID may sit on several steps. Tables and prose outside the diagram cover nothing.
