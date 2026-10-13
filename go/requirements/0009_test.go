@@ -114,3 +114,10 @@ func Test0009_8(t *testing.T) {
 		t.Fatalf("commit hook queried PR metadata: %q", rp.calls("gh"))
 	}
 }
+
+func Test0009_9(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["semantic-commit"]}` + "\n"})
+	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "added some stuff")
+	sees(t, out, code, 0)
+}

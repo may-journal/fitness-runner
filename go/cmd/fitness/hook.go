@@ -50,12 +50,23 @@ func hookCommitMsg(args []string) int {
 		return 1
 	}
 	markAmend()
-	for _, check := range []string{"semantic-commit", "plan-trailer", "issue-link-once"} {
+	for _, check := range commitMsgChecks() {
 		if code := run([]string{check, "--message=" + msg}); code != 0 {
 			return code
 		}
 	}
 	return 0
+}
+
+// commitMsgChecks lists the checks the commit-msg hook runs, without any
+// that an external policy's disabledChecks turns off.
+func commitMsgChecks() []string {
+	checks := []string{"semantic-commit", "plan-trailer", "issue-link-once"}
+	cfg, err := loadConfig(".")
+	if err != nil {
+		return checks
+	}
+	return slices.DeleteFunc(checks, func(c string) bool { return turnedOff(cfg, c) })
 }
 
 // readMessage reads the commit message file named by the hook's first

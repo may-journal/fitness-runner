@@ -42,3 +42,7 @@ Source: `go/cmd/fitness/hook.go:15`
     - Given Developer has the Go hook installed with --install-hook and a GitHub remote
         - When I commit a change that breaks a check
             - Then the commit is refused with that check's errors without reading PR metadata
+- 0009.9
+    - Given Developer has the hooks, external policy, and disabledChecks naming semantic-commit
+        - When I commit a message that is not a semantic commit
+            - Then the commit goes through, since the hook skips the disabled check

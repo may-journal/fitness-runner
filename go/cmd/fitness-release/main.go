@@ -52,6 +52,7 @@ var commands = map[string]subcommand{
 	"promote":         {[]string{"root"}, func(c release.Config, _ string) error { return c.Promote(context.Background()) }},
 	"release-pr":      {[]string{"root"}, func(_ release.Config, root string) error { return updateReleasePR(root) }},
 	"release-notes":   {[]string{"root"}, func(_ release.Config, root string) error { return publishNotes(root) }},
+	"record":          {[]string{"root"}, func(c release.Config, _ string) error { return c.Record(context.Background(), os.Stdout) }},
 	"smoke":           {[]string{"root"}, func(c release.Config, _ string) error { return c.Smoke(context.Background(), false) }},
 	"verify-download": {[]string{"root"}, func(c release.Config, _ string) error { return c.Smoke(context.Background(), true) }},
 	"verify-tag":      {[]string{"root"}, func(c release.Config, _ string) error { return c.VerifyTag(os.Getenv("GITHUB_REF_NAME")) }},
@@ -61,7 +62,7 @@ var commands = map[string]subcommand{
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, version, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
