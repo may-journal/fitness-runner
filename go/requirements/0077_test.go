@@ -23,7 +23,7 @@ type perfCheck struct {
 	TimedOut     bool   `json:"timedOut"`
 	FilesChecked int    `json:"filesChecked"`
 	BinaryBytes  int64  `json:"binaryBytes"`
-	Errors       int    `json:"errors"`
+	ErrorLines   int    `json:"errorLines"`
 }
 
 // perfReport is the `--json` report file.
@@ -91,7 +91,7 @@ type verdict struct {
 }
 
 func verdictOf(c perfCheck) verdict {
-	return verdict{ok: c.Ok, judged: c.FilesChecked > 0, errors: c.Errors}
+	return verdict{ok: c.Ok, judged: c.FilesChecked > 0, errors: c.ErrorLines}
 }
 
 // fullEntry asserts a report entry matches a table row and carries its
@@ -183,8 +183,8 @@ func Test0077_6(t *testing.T) {
 	for i, view := range views {
 		oneBoxEach(t, diagramViews[i], view, report)
 	}
-	if !strings.Contains(views[2], `title="cspell: 2 errors, failed"`) {
-		t.Error("the errors view must size cspell by its 2 errors and mark it failed")
+	if !strings.Contains(views[2], `title="cspell: 2 error lines, failed"`) {
+		t.Error("the error-lines view must size cspell by its 2 error lines and mark it failed")
 	}
 }
 

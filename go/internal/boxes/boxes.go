@@ -1,6 +1,6 @@
 // Package boxes draws a run's `fitness --json` report as a static HTML box
 // diagram: one box per check, sized by its runtime, binary size, or error
-// count. See docs/ci.md#box-diagram.
+// lines. See docs/ci.md#box-diagram.
 package boxes
 
 import (
@@ -27,7 +27,7 @@ type Check struct {
 	TimedOut     bool   `json:"timedOut"`
 	FilesChecked int    `json:"filesChecked"`
 	BinaryBytes  int64  `json:"binaryBytes"`
-	Errors       int    `json:"errors"`
+	ErrorLines   int    `json:"errorLines"`
 }
 
 // Parse decodes a report, refusing JSON that holds no checks, since a
@@ -54,7 +54,7 @@ type measure struct {
 var measures = []measure{
 	{ID: "time", Label: "Runtime", Empty: "took no measurable time", value: func(c Check) int64 { return c.Ms }, format: formatMs},
 	{ID: "size", Label: "Binary size", Empty: "have no binary on disk", value: func(c Check) int64 { return c.BinaryBytes }, format: formatBytes},
-	{ID: "errors", Label: "Errors", Empty: "reported no errors", value: func(c Check) int64 { return int64(c.Errors) }, format: formatErrors},
+	{ID: "errors", Label: "Error lines", Empty: "reported no error lines", value: func(c Check) int64 { return int64(c.ErrorLines) }, format: formatErrors},
 }
 
 // diagramWidth and diagramHeight give the layout the page's 16:10 shape, so
@@ -128,9 +128,9 @@ func formatBytes(n int64) string {
 
 func formatErrors(n int64) string {
 	if n == 1 {
-		return "1 error"
+		return "1 error line"
 	}
-	return fmt.Sprintf("%d errors", n)
+	return fmt.Sprintf("%d error lines", n)
 }
 
 // Result names a check's outcome in words, so color never carries it alone.

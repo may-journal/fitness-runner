@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1841
+
+- Fix: fitness: the `--json` report names its count `errorLines`, since a check may print several lines for one problem.
+- Fix: fitness: the box diagram sizes and labels its last view by error lines.
+- Docs: the CI guide and requirement 0077 name the measure error lines.
+
 ### 2026.10.13.1834
 
 - Feat: fitness: `boxes <report> <page>` draws `--json` reports as HTML pages, one box per check sized by runtime, binary size, or errors.

@@ -90,9 +90,9 @@ td.n, th.n { text-align: right; }
 {{end}}<details>
 <summary>Table of every check</summary>
 <table>
-<thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col" class="n">Runtime</th><th scope="col" class="n">Budget</th><th scope="col" class="n">Binary size</th><th scope="col" class="n">Errors</th><th scope="col" class="n">Files</th></tr></thead>
+<thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col" class="n">Runtime</th><th scope="col" class="n">Budget</th><th scope="col" class="n">Binary size</th><th scope="col" class="n">Error lines</th><th scope="col" class="n">Files</th></tr></thead>
 <tbody>
-{{range .Checks}}<tr><th scope="row">{{.Name}}</th><td>{{.Result}}</td><td class="n">{{ms .Ms}}</td><td class="n">{{ms .TimeoutMs}}</td><td class="n">{{bytes .BinaryBytes}}</td><td class="n">{{.Errors}}</td><td class="n">{{if lt .FilesChecked 0}}-{{else}}{{.FilesChecked}}{{end}}</td></tr>
+{{range .Checks}}<tr><th scope="row">{{.Name}}</th><td>{{.Result}}</td><td class="n">{{ms .Ms}}</td><td class="n">{{ms .TimeoutMs}}</td><td class="n">{{bytes .BinaryBytes}}</td><td class="n">{{.ErrorLines}}</td><td class="n">{{if lt .FilesChecked 0}}-{{else}}{{.FilesChecked}}{{end}}</td></tr>
 {{end}}</tbody>
 </table>
 </details>

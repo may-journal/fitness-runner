@@ -177,7 +177,7 @@ GoReleaser can replace incomplete assets only while the release is a draft. Once
 
 ## Performance record
 
-`fitness --json=<file>` also writes the run as JSON: total `elapsedMs`, the runner's `runnerBytes`, and per check `ms`, `timeoutMs`, `timedOut`, `filesChecked`, `binaryBytes`, `errors`. A file it cannot write fails the run. In GitHub Actions, the job summary adds a check timing table, slowest first, with each check's share of its budget.
+`fitness --json=<file>` also writes the run as JSON: total `elapsedMs`, the runner's `runnerBytes`, and per check `ms`, `timeoutMs`, `timedOut`, `filesChecked`, `binaryBytes`, `errorLines`. A file it cannot write fails the run. In GitHub Actions, the job summary adds a check timing table, slowest first, with each check's share of its budget.
 
 The shared CI writes this file and the Binary distribution smoke job adds `fitness-release record`. That command prints each release asset's size and the time to install from an empty cache. Release builds run the same job, so each release gets a record per Linux platform.
 
@@ -187,9 +187,9 @@ History is the trail of `fitness-performance-*` workflow artifacts, kept 90 days
 
 `fitness boxes <report.json> <page.html>` draws a `--json` report as one HTML page. The shared CI writes it as `fitness.html` beside `fitness.json`, so each `fitness-performance-*` artifact holds both. To open it, download the artifact from the run's Summary page, or run `gh run download <run-id> --pattern 'fitness-performance-*'`. Then open `fitness.html` in any browser; it needs no network.
 
-Each box is one check, and its area is that check's share of the chosen measure: runtime, binary size, or errors. The biggest box sits top left. A green edge means passed and a red edge failed or timed out, and the box says so in words.
+Each box is one check, and its area is that check's share of the chosen measure: runtime, binary size, or error lines. A check may print several lines for one problem, so the last counts lines. A green edge means passed and a red edge failed or timed out, and the box says so in words.
 
-Checks with nothing to measure, such as no errors, sit in a row of equal small boxes below. Hover or focus a box for its numbers, or open the table under the diagram for every value.
+Checks with nothing to measure, such as no error lines, sit in a row of equal small boxes below. Hover or focus a box for its numbers, or open the table under the diagram for every value.
 
 ## Consumer updates
 

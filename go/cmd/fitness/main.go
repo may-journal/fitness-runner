@@ -162,7 +162,7 @@ Usage:
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
-  fitness --json=<file>    also write each check's time, budget, files, binary size, and errors as JSON
+  fitness --json=<file>    also write each check's time, budget, files, binary size, and error lines as JSON
   fitness boxes <report.json> <page.html>
                            draw a --json report as an HTML box diagram
   fitness init             install the shared git hooks into this repo

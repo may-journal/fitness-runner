@@ -23,7 +23,8 @@ type perfReport struct {
 }
 
 // perfCheck is one check's cost: wall time against its budget, files judged,
-// the size of its binary, and how many errors it reported.
+// the size of its binary, and how many lines of errors it reported. A check
+// may spend several lines on one problem, so this counts lines, not problems.
 type perfCheck struct {
 	Name         string `json:"name"`
 	Ok           bool   `json:"ok"`
@@ -32,7 +33,7 @@ type perfCheck struct {
 	TimedOut     bool   `json:"timedOut"`
 	FilesChecked int    `json:"filesChecked"`
 	BinaryBytes  int64  `json:"binaryBytes"`
-	Errors       int    `json:"errors"`
+	ErrorLines   int    `json:"errorLines"`
 }
 
 // jsonPath pulls `--json=<file>` out of argv, so neither check selection nor
@@ -74,7 +75,7 @@ func buildPerfReport(checks []resolved, outcomes []outcome, rows []render.Row, e
 			TimedOut:     outcomes[i].timedOut,
 			FilesChecked: rows[i].FilesChecked,
 			BinaryBytes:  fileBytes(c.bin),
-			Errors:       len(rows[i].Errors),
+			ErrorLines:   len(rows[i].Errors),
 		}
 	}
 	return r
