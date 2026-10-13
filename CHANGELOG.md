@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1825
+
+- Fix: hooks: commit-msg and pre-push skip a check that external `disabledChecks` turns off, instead of failing on an empty selection.
+- Docs: the check protocol says the hooks skip disabled checks.
+- Test: requirement 0009.9 commits a non-semantic message past a disabled semantic-commit through the installed hooks.
+
 ### 2026.10.13.1818
 
 - Feat: fitness: `localChecks` in `.fitnessrc.json` names a repo directory of checks, searched first; a bad entry fails with its fix.
