@@ -9,7 +9,7 @@ The containers view matches what the repository ships. A new server, a missing n
 
 ## What ships
 
-Each product is proved by a build target, an entry point, or a deploy file. A dependency manifest alone proves nothing, so a native app may keep Node packages for lint and build tools.
+Each product is proved by a build target, an entry point, or a deploy file. A dependency manifest alone proves nothing, so a native app may keep Node packages for lint and build tools. Build manifests such as `project.pbxproj` are read even when `.gitattributes` marks them `linguist-generated`.
 
 | Evidence | Product | Technology |
 | --- | --- | --- |

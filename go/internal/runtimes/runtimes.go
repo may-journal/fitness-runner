@@ -80,6 +80,13 @@ var manifests = map[string]func(*finder, string){
 	"package.json":    (*finder).node,
 }
 
+// Manifest reports a build or package file read by name, such as
+// project.pbxproj. A manifest proves runtimes even when .gitattributes marks
+// it linguist-generated, since Xcode writes the project file itself.
+func Manifest(file string) bool {
+	return manifests[path.Base(file)] != nil
+}
+
 func (f *finder) read(file string) {
 	if manifest := manifests[path.Base(file)]; manifest != nil {
 		manifest(f, file)
