@@ -32,6 +32,7 @@ The bundle pass creates four archives. The tools pass embeds their hashes in fou
 | `assemble` | Gather GoReleaser outputs for native checks. |
 | `smoke` | Test built assets without public downloads. |
 | `verify-download` | Test published assets on the current host. |
+| `record` | Print asset sizes and install time as JSON; see [performance record](../../../docs/ci.md#performance-record). |
 | `verify-tag` | Match `GITHUB_REF_NAME` to the version file. |
 | `promote` | Mark a verified release stable and latest without a downgrade. |
 | `release-pr` | Rewrite the release PR to link its changelog section and compare view. |

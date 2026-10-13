@@ -1,7 +1,9 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/render"
@@ -15,9 +17,9 @@ const maxAnnotations = 10
 
 // finish emits the CI report when running under GitHub Actions, then maps the
 // failure count to the process exit code.
-func finish(rows []render.Row, success, failure, files int, elapsedMs int64) int {
+func finish(rows []render.Row, perf perfReport, success, failure, files int) int {
 	if isGitHubActions() {
-		emitCIReport(rows, success, failure, files, elapsedMs)
+		emitCIReport(rows, perf, success, failure, files)
 	}
 	if failure > 0 {
 		return 1
@@ -35,8 +37,8 @@ func isGitHubActions() bool {
 // running under GitHub Actions. It never changes the process result — the
 // exit code still comes from the check outcomes — so it is additive to the
 // terminal table a local run prints.
-func emitCIReport(rows []render.Row, success, failure, files int, elapsedMs int64) {
-	writeStepSummary(ciSummaryMarkdown(rows, success, failure, files, elapsedMs))
+func emitCIReport(rows []render.Row, perf perfReport, success, failure, files int) {
+	writeStepSummary(ciSummaryMarkdown(rows, success, failure, files, perf.ElapsedMs) + timingMarkdown(perf))
 	if failure > 0 {
 		report.MarkFailure()
 	}
@@ -56,14 +58,35 @@ func ciSummaryMarkdown(rows []render.Row, success, failure, files int, elapsedMs
 	var b strings.Builder
 	b.WriteString("## Fitness checks\n\n")
 	b.WriteString(headline(success, failure, files, elapsedMs) + "\n\n")
-	b.WriteString("| Check | Status | Files | Time |\n| --- | --- | --- | --- |\n")
+	b.WriteString("| Check | Status | Files |\n| --- | --- | --- |\n")
 	for _, r := range rows {
-		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", report.EscapeMarkdown(r.Name), statusMark(r.Ok), filesCell(r.FilesChecked), r.Ms)
+		fmt.Fprintf(&b, "| %s | %s | %s |\n", report.EscapeMarkdown(r.Name), statusMark(r.Ok), filesCell(r.FilesChecked))
 	}
 	for _, r := range rows {
 		b.WriteString(rowDetail(r))
 	}
 	return b.String()
+}
+
+// timingMarkdown renders each check's time against its budget, slowest
+// first, so the check nearest its limit tops the table.
+func timingMarkdown(perf perfReport) string {
+	checks := slices.Clone(perf.Checks)
+	slices.SortStableFunc(checks, func(a, b perfCheck) int { return cmp.Compare(b.Ms, a.Ms) })
+	var b strings.Builder
+	b.WriteString("\n### Check timing\n\n| Check | Time | Budget | Used |\n| --- | --- | --- | --- |\n")
+	for _, c := range checks {
+		fmt.Fprintf(&b, "| %s | %dms | %dms | %d%% |\n", report.EscapeMarkdown(c.Name), c.Ms, c.TimeoutMs, budgetShare(c))
+	}
+	return b.String()
+}
+
+// budgetShare is the percent of its budget a check spent.
+func budgetShare(c perfCheck) int64 {
+	if c.TimeoutMs <= 0 {
+		return 0
+	}
+	return c.Ms * 100 / c.TimeoutMs
 }
 
 // headline is the one-line aggregate atop the summary: a positive line when

@@ -102,6 +102,22 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" smoke
+      # Release builds run this job too; see docs/ci.md#performance-record.
+      - name: Record binary sizes and install time
+        env:
+          VERIFIER: out/fitness-release-${{ matrix.platform }}
+          PLATFORM: ${{ matrix.platform }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/fitness-performance"
+          "$VERIFIER" record > "$RUNNER_TEMP/fitness-performance/release-$PLATFORM.json"
+      - name: Retain the performance record
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-performance-${{ github.job }}-${{ matrix.platform }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/fitness-performance/
+          if-no-files-found: ignore
+          retention-days: 90
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
