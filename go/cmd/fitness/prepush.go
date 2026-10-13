@@ -39,7 +39,7 @@ func hookPrePush() int {
 // checkPushedBranches runs one meta-check over the actual pushed destinations.
 func checkPushedBranches(updates []string) int {
 	branches := gitx.PushedBranches(updates)
-	if len(branches) == 0 {
+	if cfg, err := loadConfig("."); len(branches) == 0 || err == nil && turnedOff(cfg, "local-branch") {
 		return 0
 	}
 	data, err := json.Marshal(branches)

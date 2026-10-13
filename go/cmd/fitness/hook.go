@@ -66,14 +66,23 @@ func hookCommitMsg(args []string) int {
 
 // commitMsgChecks lists the checks the commit-msg hook runs. Requirements
 // runs only when the repo's suite does, so an external policy that leaves
-// it out never meets it at commit time.
+// it out never meets it at commit time. A check external disabledChecks
+// turns off never runs.
 func commitMsgChecks() []string {
 	checks := []string{"semantic-commit", "plan-trailer", "requirements", "issue-link-once"}
 	cfg, err := loadConfig(".")
-	if err != nil || !leavesOut(cfg, "requirements") {
+	if err != nil {
 		return checks
 	}
-	return slices.DeleteFunc(checks, func(c string) bool { return c == "requirements" })
+	return slices.DeleteFunc(checks, func(c string) bool {
+		return turnedOff(cfg, c) || c == "requirements" && leavesOut(cfg, c)
+	})
+}
+
+// turnedOff reports whether an external policy's disabledChecks names name,
+// so a hook skips it rather than fail on an empty selection.
+func turnedOff(cfg *conf.Config, name string) bool {
+	return cfg != nil && cfg.Policy == selection.External && slices.Contains(cfg.DisabledChecks, name)
 }
 
 // leavesOut reports whether an external policy's check list omits name.
