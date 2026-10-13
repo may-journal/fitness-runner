@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1825
+
+- Fix: markdown-filename: GitHub's lowercase `pull_request_template.md` and `issue_template.md` pass in the root, `docs`, or `.github`.
+- Docs: the markdown filename README lists the names GitHub requires.
+- Test: requirements 0033.9 and 0034.9 replace 0033.4 and 0034.4 and prove both exemptions.
+
 ### 2026.10.13.1821
 
 - Fix: changelog: a `package.json` version may end in `+yyyy.mm.dd.HHMM` build metadata, which npm accepts, as well as a `-` prerelease.

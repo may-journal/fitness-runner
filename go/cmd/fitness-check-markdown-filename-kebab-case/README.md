@@ -43,12 +43,14 @@ docs/Api_Design.md: filename must be kebab-case
 
 ## Advanced
 
-Only the basename is validated, so directory casing is ignored — `SomeDir/api-design.md` is judged solely by `api-design.md`. On case-insensitive filesystems (macOS default), two camelCase names that differ only in letter case resolve to the same file. Prefer `markdown-filename-kebab-case` when that collision risk matters. To keep a non-conforming legacy filename, rename it or add its basename to the allowed set in `go/internal/mdfilename`.
+Names GitHub requires are exempt too. GitHub reads `pull_request_template.md` and `issue_template.md` in lowercase from the root, `docs`, or `.github`, so a repo cannot rename them. In any other folder, those names are judged like any doc.
+
+Only the basename is validated, so directory casing is ignored — `SomeDir/api-design.md` is judged solely by `api-design.md`. On case-insensitive filesystems (macOS default), two camelCase names that differ only in letter case resolve to the same file. Prefer `markdown-filename-kebab-case` when that collision risk matters. To keep a non-conforming legacy filename, rename it or add it to the exempt names in `go/internal/mdfilename`.
 
 ## Behavior
 
 - Discovers every tracked `.md` file; no directory is skipped.
-- Pass: every basename is a standard root doc or matches the enabled flavor's convention.
+- Pass: every basename is a standard root doc, a name GitHub requires, or matches the enabled flavor's convention.
 - Fail: `path: filename must be <kebab-case|camelCase>` per non-conforming file.
 - `filesChecked` counts every `.md` file scanned.
 
