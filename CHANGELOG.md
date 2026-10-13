@@ -7,6 +7,18 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.10.0](https://github.com/may-journal/fitness-runner/compare/v1.9.0...v1.10.0) (2026-10-13)
+
+
+### Features
+
+* **requirements:** cover TypeScript repos and require architecture views for code ([#325](https://github.com/may-journal/fitness-runner/issues/325)) ([17219f7](https://github.com/may-journal/fitness-runner/commit/17219f73b9107f3849022ae080bc7ef5f841303d))
+
+
+### Bug Fixes
+
+* **architecture-containers:** read build manifests marked linguist-generated ([#339](https://github.com/may-journal/fitness-runner/issues/339)) ([224a7d4](https://github.com/may-journal/fitness-runner/commit/224a7d48a26d54c3d50ed4ca59104edb82a1a496))
+
 ### 2026.10.13.1813
 
 - Fix: architecture-containers: a `project.pbxproj`, `project.yml`, or `package.json` marked `linguist-generated` still proves its targets.
