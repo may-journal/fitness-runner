@@ -15,6 +15,30 @@ func goRepo() map[string]string {
 	}
 }
 
+// viewedGoRepo is goRepo's adder in its own folder with all five
+// architecture views, since product code needs them. A library ships no
+// runtime, so the containers view draws only the system.
+func viewedGoRepo() map[string]string {
+	front := "---\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n\n"
+	adds := "- 0001.1\n    - Given User has two numbers\n        - When I add them\n            - Then I get their sum\n"
+	return map[string]string{
+		"go.mod":                                 goRepo()["go.mod"],
+		"adder/adder.go":                         goRepo()["adder.go"],
+		"adder/adder_test.go":                    goRepo()["adder_test.go"],
+		"docs/requirements/0001-adds-numbers.md": docWith("Source: `adder/adder.go:5`", adds),
+		acRoot + acContext: front + acView("C4Context\nPerson(user, \"1 User\")\nSystem(adder, \"2 Adder\")\nRel(user, adder, \"3\")",
+			"A person adding numbers.", "The library.", "Adds two numbers."),
+		acRoot + acContainer: front + acView("C4Container\nPerson(user, \"1 User\")\nSystem(adder, \"2 Adder\")\nRel(user, adder, \"3\")",
+			"Same person.", "The library, which ships no runtime.", "Calls it."),
+		acRoot + acComponent: front + acView("C4Component\nContainer_Boundary(adder, \"1 Adder\") {\nComponent(add, \"2 Add\", \"Go\", \"adder/\")\n}",
+			"The library.", "Adds numbers."),
+		acRoot + acCode: front + acView("classDiagram\nclass Add[\"1 adder.Add(int, int) int\"]",
+			"Returns the sum, in [adder.go](../adder/adder.go)."),
+		acRoot + acJourney: front + acView("flowchart TB\nuser((1 User)):::persona\nadd(2 Add two numbers<br/>Req 0001):::action\nuser --> add\nclassDef persona fill:#fff",
+			"Same person.", "Adds them, `0001.1`."),
+	}
+}
+
 // pairedRepo is goRepo with requirement 0001's test in reqs/0001_test.go,
 // named for it, beside a shared helper that proves no requirement. Only the
 // requirements check runs, so commits meet no other check.

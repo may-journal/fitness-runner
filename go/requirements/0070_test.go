@@ -68,7 +68,14 @@ func acEdit(view, old, new string) map[string]string {
 
 func Test0070_1(t *testing.T) {
 	t.Parallel()
-	out, code := acRun(t, map[string]string{"src/main.go": "package main\n"})
+	out, code := acRun(t, map[string]string{
+		"tools/check.sh":          "#!/bin/sh\nexit 0\n",
+		"tools/report.py":         "print('ok')\n",
+		"src/store/store_test.go": "package store\n",
+		"test/app.ts":             "export {};\n",
+		"gen/api.go":              "package gen\n",
+		".gitattributes":          "gen/** linguist-generated\n",
+	})
 	sees(t, out, code, 0)
 	passedWithNoFiles(t, out, acCheck)
 }
@@ -99,6 +106,14 @@ func Test0070_3(t *testing.T) {
 	files[acRoot+acCode] = "# View\n\nNo diagram yet.\n"
 	out, code = acRun(t, files)
 	sees(t, out, code, 1, "architecture/04-code.md:1: view has no diagram outside its legends")
+	for _, source := range []string{"src/main.go", "app/App.swift", "src/index.ts", "lib/index.js"} {
+		out, code = acRun(t, map[string]string{source: "\n"})
+		want := []string{}
+		for _, view := range []string{acContext, acContainer, acComponent, acCode, acJourney} {
+			want = append(want, source+":1: product code needs architecture view "+view)
+		}
+		sees(t, out, code, 1, want...)
+	}
 }
 
 func Test0070_4(t *testing.T) {

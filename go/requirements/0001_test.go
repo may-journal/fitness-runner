@@ -13,7 +13,7 @@ import (
 
 func Test0001_1(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", goRepo())
+	repo := example(t, "happyRepo", viewedGoRepo())
 	out, code := fitness(t, repo, nil)
 	sees(t, out, code, 0, "All 54 checks passed")
 }

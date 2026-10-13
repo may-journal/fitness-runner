@@ -23,12 +23,17 @@ func (m *Model) inventory(root string, files []string) {
 			sources = append(sources, file)
 		}
 	}
+	m.keep(root, files)
+	for _, file := range sources {
+		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, m.repo.kept[file]), Owners: m.owners(file)})
+	}
+}
+
+// keep records the files .gitattributes does not mark generated.
+func (m *Model) keep(root string, files []string) {
 	m.repo.kept = map[string]bool{}
 	for _, file := range walkfs.WithoutGenerated(root, files) {
 		m.repo.kept[file] = true
-	}
-	for _, file := range sources {
-		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, m.repo.kept[file]), Owners: m.owners(file)})
 	}
 }
 
