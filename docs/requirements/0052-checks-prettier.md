@@ -46,7 +46,7 @@ Source: `go/cmd/fitness-check-prettier/main.go:363`
     - Given Developer has a project without Prettier installed
         - When prettier checks the repo
             - Then it fails with an install hint
-- 0052.10
-    - Given Developer has a `biome.jsonc` and `@biomejs/biome` in `devDependencies`, without Prettier
+- 0052.11
+    - Given Developer has a `biome.jsonc`, `@biomejs/biome` in `devDependencies`, no Prettier, and more than 20 files Biome would reformat
         - When prettier checks the repo
-            - Then it checks formatting with Biome instead, failing naming each file Biome would reformat
+            - Then it checks formatting with Biome instead, failing naming every one of those files

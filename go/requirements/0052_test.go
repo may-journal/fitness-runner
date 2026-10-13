@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -89,23 +90,30 @@ func Test0052_9(t *testing.T) {
 
 // biomeReformat is real `biome format --reporter=github` output naming a
 // file it would reformat.
-var biomeReformat = response{
-	Stdout: "::error title=format,file=app.js,line=1,endLine=1,col=2,endColumn=2::Formatter would have printed the following content:\n",
-	Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
-	Exit:   1,
-}
+const biomeReformat = "::error title=format,file=%s,line=1,endLine=1,col=2,endColumn=2::Formatter would have printed the following content:\n"
 
-func Test0052_10(t *testing.T) {
+func Test0052_11(t *testing.T) {
 	t.Parallel()
 	files := map[string]string{
 		"package.json": "{\"devDependencies\": {\"@biomejs/biome\": \"2.4.15\"}}\n",
 		"biome.jsonc":  "{ \"formatter\": { \"enabled\": true } }\n",
-		"app.js":       prettierMessy,
+	}
+	var report strings.Builder
+	for i := 1; i <= biomeMany; i++ {
+		name := fmt.Sprintf("app%d.js", i)
+		files[name] = prettierMessy
+		fmt.Fprintf(&report, biomeReformat, name)
 	}
 	repo := example(t, "happyRepo", files)
-	rp := standIn(t, map[string][]response{"biome": {prettierAnswers(biomeReformat, "format --reporter=github --no-errors-on-unmatched --files-ignore-unknown=true", "app.js")}})
+	reformat := response{
+		Match:  []string{"format " + biomeFlags, "app1.js"},
+		Stdout: report.String(),
+		Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
+		Exit:   1,
+	}
+	rp := standIn(t, map[string][]response{"biome": {reformat}})
 	out, code := fitness(t, repo, rp.env, "prettier")
-	sees(t, out, code, 1, "✖ app.js")
+	sees(t, out, code, 1, "✖ app1.js", "✖ app25.js")
 	if !rp.called("biome", "format", "README.md") || strings.Contains(out, "Prettier not installed") {
 		t.Errorf("Biome must check every tracked file in place of Prettier; calls %q:\n%s", rp.calls("biome"), out)
 	}
