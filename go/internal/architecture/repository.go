@@ -38,12 +38,16 @@ func (r repository) addFolders(file string) {
 }
 
 // candidate reports whether text names a repository path: no spaces or
-// scheme, a slash, and a first segment that is a tracked top-level folder.
+// scheme, and either a tracked root-level file such as rollup.config.mjs,
+// or a slash after a first segment that is a tracked top-level folder.
 // Other text, such as a consumer's node_modules/.bin, is prose.
 func (r repository) candidate(text string) (string, bool) {
 	text = strings.Trim(text, "()[]{},;:'\"")
-	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") || !strings.Contains(text, "/") {
+	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") {
 		return "", false
+	}
+	if !strings.Contains(text, "/") {
+		return text, r.files[text]
 	}
 	first, _, _ := strings.Cut(text, "/")
 	return path.Clean(text), r.top[first]

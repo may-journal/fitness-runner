@@ -73,12 +73,21 @@ func Test0075_1(t *testing.T) {
 	passedWithNoFiles(t, out, aoCheck)
 }
 
-func Test0075_2(t *testing.T) {
+func Test0075_12(t *testing.T) {
 	t.Parallel()
-	files := with(aoFixture(), map[string]string{"src/api/api.go": "package api\n"})
+	files := with(aoFixture(), map[string]string{
+		"src/api/api.go":    "package api\n",
+		"index.mjs":         "export const ready = true;\n",
+		"rollup.config.mjs": "export default { input: \"index.mjs\" };\n",
+		".eslintrc.cjs":     "module.exports = {};\n",
+	})
 	out, code := aoRun(t, files)
-	sees(t, out, code, 1, "src/api/api.go"+aoNoOwner)
+	sees(t, out, code, 1, "src/api/api.go"+aoNoOwner, "index.mjs"+aoNoOwner)
+	if strings.Contains(out, "config.mjs") || strings.Contains(out, ".eslintrc") {
+		t.Errorf("a tool config needs no owner:\n%s", out)
+	}
 	files = aoEdit(files, "\"src/store\")", "\"src/store\", \"and src/api\")")
+	files = aoEdit(files, "| Keeps records. |", "| Keeps records, `index.mjs` and `missing.mjs` export them. |")
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
 	passedWith(t, out, aoCheck, "1")

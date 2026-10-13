@@ -9,9 +9,10 @@ Gives every product source one owner among the components the components view dr
 
 ## Owners
 
-A component owns the product sources its claims cover: a path in its diagram strings or its callout row. Boundaries, people, and external systems own nothing; their claims only scope the components inside them. Product sources are the product category of the `architecture-contract` inventory, so tests, tools, and generated files need no owner.
+A component owns the product sources its claims cover: a path in its diagram strings or its callout row. Boundaries, people, and external systems own nothing; their claims only scope the components inside them. Product sources are the product category of the `architecture-contract` inventory, so tests, tools, and generated files need no owner. A tool config such as `rollup.config.mjs` or `.eslintrc.cjs` is a tool.
 
 - A product source no component names fails, naming the source.
+- A tracked root-level source is claimed by its bare name, such as `index.ts` in a row; an untracked name stays prose.
 - A source two components name, in two diagrams of one view, fails naming both claims. Two claims in one diagram fail in `architecture-contract`.
 - A claimed path that no longer exists fails in `architecture-contract`.
 
