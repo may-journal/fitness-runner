@@ -337,7 +337,7 @@ func resolveChecks(spec string) ([]resolved, error) {
 	if spec != "" {
 		return resolveSingle(spec)
 	}
-	return resolveList(allChecks)
+	return resolveList(catalog())
 }
 
 // resolveSingle resolves a CLI check name into a one-element list; an empty
@@ -367,7 +367,7 @@ func resolveList(names []string) ([]resolved, error) {
 // a CLI name (the caller renders Unknown check) and an error for the list,
 // since every check ships together.
 func resolveName(name string, cli bool) (*resolved, error) {
-	bin, err := checkkit.Binary(name)
+	bin, err := findCheckBinary(name)
 	if err == nil {
 		return &resolved{name: name, bin: bin, desc: describe(bin)}, nil
 	}
