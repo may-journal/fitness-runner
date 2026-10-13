@@ -19,6 +19,9 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	if err := loadLocalChecks(cfg, root); err != nil {
+		return nil, nil, err
+	}
 	checks, err := resolvePolicy(cfg, options, spec)
 	return commitChecks(checks), passthrough, err
 }
@@ -43,7 +46,10 @@ func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]
 	if cfg != nil {
 		policy, configured = cfg.Policy, cfg.LegacyChecks
 	}
-	policy, names, err := options.Resolve(policy, configured, spec, allChecks, "go-test-coverage")
+	policy, names, err := options.Resolve(policy, configured, spec, catalog(), optionalChecks...)
+	if err == nil {
+		names, err = repoChecks(cfg, policy, names)
+	}
 	if err != nil {
 		return nil, err
 	}

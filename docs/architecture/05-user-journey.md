@@ -45,7 +45,7 @@ flowchart TB
     runSingle(4 Run single check<br/>Req 0001):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0063):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0003, 0078)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001)]:::system
 
@@ -114,7 +114,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 2   | Terminal / shell.                   | Screen  | Repo root; the working directory is the app under test, not the runner's own source.  |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
 | 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
-| 5   | Resolve check list.                 | System  | Every built-in check; checks that do not apply pass clean.                            |
+| 5   | Resolve check list.                 | System  | Every built-in check, then the repo's local checks; checks that do not apply pass.    |
 | 6   | Passthrough args forwarded.         | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).      |
 | 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
 | 8   | Results table printed.              | Screen  | Pass/fail per check, totals, ANSI formatting.                                         |

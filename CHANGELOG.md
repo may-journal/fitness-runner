@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1818
+
+- Feat: fitness: `localChecks` in `.fitnessrc.json` names a repo directory of checks, searched first; a bad entry fails with its fix.
+- Feat: fitness: under external policy, a local check with a bundled name replaces it and `disabledChecks` turns checks off; org policy refuses both.
+- Docs: ADR 0006 records the org rule; the check protocol documents local and disabled checks, and competition lists them.
+- Test: requirements 0078.1 to 0078.8 prove local and disabled checks through the installed command.
+
 ### 2026.10.13.1814
 
 - Feat: fitness: `--json=<file>` writes each check's time, budget, files judged, binary size, and result.

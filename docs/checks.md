@@ -17,7 +17,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 
 `release-changelog` correlates Release Please metadata with the version file and reviewable release notes. `pr-check` fails a PR whose `CHANGELOG.md` diff adds other than one dated `###` entry and names the extras. A PR adding a new `## [x.y.z]` release section is exempt. The description must link the heading the PR adds and never copy a bullet it adds.
 
-Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md).
+Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md). A repo can add its own [local checks](check-protocol.md#local-checks), and an external repo can [disable checks](check-protocol.md#disabled-checks).
 
 ## Every tracked file
 
