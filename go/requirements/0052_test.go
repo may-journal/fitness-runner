@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -75,19 +76,39 @@ func prettierCalledWith(t *testing.T, rp replays, want []string, not ...string) 
 	}
 }
 
-func Test0052_1(t *testing.T) {
+func Test0052_9(t *testing.T) {
 	t.Parallel()
 	out, code, rp := prettierRun(t, prettierJS(map[string]string{".prettierrc.json": `{ "singleQuote": true, "semi": false }` + "\n"}), []response{prettierWarnColored})
 	sees(t, out, code, 1, "✖ app.js")
 	prettierCalledWith(t, rp, []string{"--check", "app.js"}, "--config")
-}
-
-func Test0052_2(t *testing.T) {
-	t.Parallel()
 	files := prettierJS(map[string]string{".prettierrc.json": "", "package.json": prettierPackageField})
-	out, code, rp := prettierRun(t, files, []response{prettierAnswers(prettierWarn, "--config"), prettierClean})
+	out, code, rp = prettierRun(t, files, []response{prettierAnswers(prettierWarn, "--config"), prettierClean})
 	sees(t, out, code, 0, "All 1 checks passed")
 	prettierCalledWith(t, rp, []string{"--check", "package.json"}, "--config")
+}
+
+// biomeReformat is real `biome format --reporter=github` output naming a
+// file it would reformat.
+var biomeReformat = response{
+	Stdout: "::error title=format,file=app.js,line=1,endLine=1,col=2,endColumn=2::Formatter would have printed the following content:\n",
+	Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
+	Exit:   1,
+}
+
+func Test0052_10(t *testing.T) {
+	t.Parallel()
+	files := map[string]string{
+		"package.json": "{\"devDependencies\": {\"@biomejs/biome\": \"2.4.15\"}}\n",
+		"biome.jsonc":  "{ \"formatter\": { \"enabled\": true } }\n",
+		"app.js":       prettierMessy,
+	}
+	repo := example(t, "happyRepo", files)
+	rp := standIn(t, map[string][]response{"biome": {prettierAnswers(biomeReformat, "format --reporter=github --no-errors-on-unmatched --files-ignore-unknown=true", "app.js")}})
+	out, code := fitness(t, repo, rp.env, "prettier")
+	sees(t, out, code, 1, "✖ app.js")
+	if !rp.called("biome", "format", "README.md") || strings.Contains(out, "Prettier not installed") {
+		t.Errorf("Biome must check every tracked file in place of Prettier; calls %q:\n%s", rp.calls("biome"), out)
+	}
 }
 
 func Test0052_3(t *testing.T) {

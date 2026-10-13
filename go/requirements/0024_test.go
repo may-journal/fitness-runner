@@ -120,14 +120,43 @@ func eslintUncalled(t *testing.T, rp replays) {
 	}
 }
 
-func Test0024_1(t *testing.T) {
+func Test0024_9(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", map[string]string{"app.js": eslintUnsorted})
-	rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})
+	for _, repo := range []string{
+		example(t, "happyRepo", map[string]string{"app.js": eslintUnsorted}),
+		eslintStaged(t, map[string]string{"README.md": readme + "\nOne more short line.\n"}),
+	} {
+		rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})
+		out, code := fitness(t, repo, rp.env, "eslint")
+		sees(t, out, code, 0, "All 1 checks passed")
+		passedWithNoFiles(t, out, "eslint")
+		eslintUncalled(t, rp)
+	}
+}
+
+// biomePackage is a JavaScript project that installs Biome.
+const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\": {\"@biomejs/biome\": \"2.4.15\"}}\n"
+
+// biomeFlags are the flags fitness passes Biome before the paths.
+const biomeFlags = "--reporter=github --no-errors-on-unmatched --files-ignore-unknown=true"
+
+// biomeUseConst is real `biome lint --reporter=github` output for a `let`
+// never reassigned; Biome exits 0 on a warning.
+const biomeUseConst = "::warning title=lint/style/useConst,file=app.js,line=1,endLine=1,col=1,endColumn=4::This let declares a variable that is only assigned once.\n"
+
+func Test0024_10(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{
+		"package.json": biomePackage,
+		"biome.json":   "{ \"linter\": { \"enabled\": true } }\n",
+		"app.js":       "let answer = { value: 42 };\nexport default answer;\n",
+	})
+	rp := standIn(t, map[string][]response{"biome": {{Match: []string{"lint " + biomeFlags + " app.js"}, Stdout: biomeUseConst}}})
 	out, code := fitness(t, repo, rp.env, "eslint")
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "eslint")
-	eslintUncalled(t, rp)
+	eslintFinds(t, out, code, "app.js:1:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
+	if strings.Contains(out, eslintMissing) {
+		t.Errorf("a repo that chose Biome needs no eslint:\n%s", out)
+	}
 }
 
 func Test0024_2(t *testing.T) {
@@ -191,14 +220,4 @@ func Test0024_7(t *testing.T) {
 	if rp.called("eslint", "app.js") {
 		t.Errorf("eslint must lint only the staged file, got calls %q", rp.calls("eslint"))
 	}
-}
-
-func Test0024_8(t *testing.T) {
-	t.Parallel()
-	repo := eslintStaged(t, map[string]string{"README.md": readme + "\nOne more short line.\n"})
-	rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})
-	out, code := fitness(t, repo, rp.env, "eslint")
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "eslint")
-	eslintUncalled(t, rp)
 }

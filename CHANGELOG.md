@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1832
+
+- Feat: eslint and prettier: a repo with a `biome.json` or `biome.jsonc` and `@biomejs/biome` runs `biome lint` and `biome format` instead, needing neither tool.
+- Docs: ADR 0006 records Biome standing in; the eslint and prettier READMEs explain it.
+- Test: requirements 0024.10 and 0052.10 prove both checks through a Biome stand-in; 0024.9 and 0052.9 merge 0024.1 with 0024.8 and 0052.1 with 0052.2.
+
 ### 2026.10.13.1825
 
 - Fix: markdown-filename: GitHub's lowercase `pull_request_template.md` and `issue_template.md` pass in the root, `docs`, or `.github`.

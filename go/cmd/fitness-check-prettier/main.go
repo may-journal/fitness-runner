@@ -18,6 +18,9 @@
 // Installing the plugins stays the check's peer contract, unchanged from the
 // npm era. When Prettier fails without parsing a file, its own [error] lines
 // are reported, so a missing plugin names itself.
+//
+// A repo that chose Biome (internal/biome) is checked by `biome format` on
+// the same paths instead, and needs no Prettier (ADR 0006).
 package main
 
 import (
@@ -30,6 +33,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -85,7 +89,7 @@ func main() {
 }
 
 func run(root string, args []string) (checkkit.Result, error) {
-	bin, res, done := preflight(root)
+	bin, res, done := preflight(root, args)
 	if done {
 		return res, nil
 	}
@@ -106,18 +110,38 @@ func run(root string, args []string) (checkkit.Result, error) {
 
 // preflight resolves the Prettier binary, or the verdict that ends the run
 // first: a failure for any repo with a .prettierignore, then a pass for a
-// repo with no package.json, then a failure without Prettier installed.
-func preflight(root string) (bin string, res checkkit.Result, done bool) {
+// repo with no package.json, then Biome's verdict in a repo that chose it,
+// then a failure without Prettier installed.
+func preflight(root string, args []string) (bin string, res checkkit.Result, done bool) {
 	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
 		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
 	}
 	if len(walkfs.FilesByExt(root, packageJSONName)) == 0 {
 		return "", checkkit.Pass(0), true
 	}
+	if biome.Chosen(root) {
+		return "", formatWithBiome(root, args), true
+	}
 	if bin = resolvePrettierBin(root); bin == "" {
 		return "", checkkit.Fail(0, notInstalled), true
 	}
 	return bin, checkkit.Result{}, false
+}
+
+// formatWithBiome checks the same paths with `biome format` in a repo that
+// chose Biome (ADR 0006), naming each file Biome would reformat. Passthrough
+// args, such as --write, replace the paths.
+func formatWithBiome(root string, args []string) checkkit.Result {
+	paths, ok := scopedPaths(root, args)
+	if !ok {
+		return checkkit.Pass(0)
+	}
+	if len(args) > 0 {
+		paths = args
+	}
+	return biome.Check(root, "format", paths, "Biome reported issues. Run: npx biome format --write .", func(f biome.Finding) string {
+		return f.File
+	})
 }
 
 // walkUp calls fn on root (absolute) and each ancestor, returning fn's first
