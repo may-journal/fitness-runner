@@ -22,17 +22,26 @@ func (p *swiftParser) expr(s *swiftScope) {
 	}
 }
 
-var swiftClosers = map[string]string{"(": ")", "[": "]"}
-
-// group reads a parenthesized or bracketed group.
+// group reads a parenthesized group, or an array or dictionary.
 func (p *swiftParser) group(s *swiftScope) bool {
-	close := swiftClosers[p.peek().text]
-	if close == "" || p.peek().kind != swiftPunct {
+	switch {
+	case p.accept("("):
+		p.args(s, ")")
+	case p.accept("["):
+		p.elements(s)
+	default:
 		return false
 	}
-	p.i++
-	p.args(s, close)
 	return true
+}
+
+// elements reads up to and past a closing bracket. A dictionary key is a
+// name like any other, not a label.
+func (p *swiftParser) elements(s *swiftScope) {
+	saved := p.condition
+	p.condition = false
+	p.block(s, "]")
+	p.condition = saved
 }
 
 // primary reports a token that starts a postfix chain.
@@ -106,7 +115,7 @@ func (p *swiftParser) apply(s *swiftScope, u **swiftUse) bool {
 	case p.accept("("):
 		(*u).called(p.args(s, ")"))
 	case p.accept("["):
-		p.args(s, "]")
+		p.elements(s)
 		*u = &swiftUse{}
 	case p.trails(*u):
 		p.i++
@@ -124,8 +133,11 @@ func (p *swiftParser) trails(u *swiftUse) bool {
 }
 
 // args reads a call's arguments up to and past close, returning their
-// labels, "_" where an argument has none.
+// labels, "_" where an argument has none. A brace inside them opens a
+// closure even within a condition, which resumes after them.
 func (p *swiftParser) args(s *swiftScope, close string) []string {
+	saved := p.condition
+	p.condition = false
 	labels := []string{}
 	for p.inside(close) {
 		labels = append(labels, p.label())
@@ -135,6 +147,7 @@ func (p *swiftParser) args(s *swiftScope, close string) []string {
 		p.accept(",")
 	}
 	p.accept(close)
+	p.condition = saved
 	return labels
 }
 

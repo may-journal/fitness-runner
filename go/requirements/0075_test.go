@@ -184,13 +184,15 @@ func Test0075_6(t *testing.T) {
 // aoResolved is the native app with a sync component beside the model:
 // each declares a load overload and a save extension member on the
 // model's store. The screen loads through the model's overload, saves
-// through both extensions, and the model's save calls the sync one.
+// through both extensions. The model's save, past alternative #if headers
+// and a < operator, calls the sync one from an if body after a closure.
 func aoResolved(line7 string) map[string]string {
 	files := aoEdit(aoNative(), aoModel+"}", aoModel+"Component(sync, \"9 Sync\", \"Swift\", \"App/Sync\")\n}")
 	files = aoEdit(files, "Rel(ui, model, \"8\")", "Rel(ui, model, \"8\")\nRel(sync, model, \"10\")")
 	files[aoView] += "| 9 | Syncs records. | Shared by later checks. |\n| 10 | Sync fills the store. | Shared by later checks. |\n"
 	files["App/Model/Load.swift"] = "func load(from path: String) -> Store {\n    Store()\n}\n"
-	files["App/Model/Saving.swift"] = "extension Store {\n    func save(_ record: String) { save(all: [record]) }\n}\n"
+	files["App/Model/Saving.swift"] = "#if os(iOS)\nextension Store {\n#else\nextension Store: Sendable {\n#endif\n    static func < (lhs: Store, rhs: Store) -> Bool { true }\n" +
+		"    func save(_ record: String) {\n        if let kept = [record].first(where: { !$0.isEmpty }) { save(all: [kept]) }\n    }\n}\n"
 	files["App/Sync/Load.swift"] = "func load(into store: Store) {\n    store.records = []\n}\n"
 	files["App/Sync/Saving.swift"] = "extension Store {\n    func save(all records: [String]) {}\n}\n"
 	files[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n    func refresh(save: Bool) {\n        let store = load(from: \"records\")\n        store.save(\"first\")\n" + line7 + "    }\n}\n"
@@ -201,7 +203,7 @@ func Test0075_9(t *testing.T) {
 	t.Parallel()
 	out, code := aoRun(t, aoResolved("        if save { store.save(all: []) }\n"))
 	sees(t, out, code, 1, aoHome+":7: ui names Store.save(all:), owned by sync"+aoNotDrawn+"ui -> sync edge",
-		"App/Model/Saving.swift:2: model names Store.save(all:), owned by sync"+aoNotDrawn+"model -> sync edge")
+		"App/Model/Saving.swift:8: model names Store.save(all:), owned by sync"+aoNotDrawn+"model -> sync edge")
 	out, code = aoRun(t, aoResolved("        if save { load(into: store) }\n"))
 	sees(t, out, code, 1, aoHome+":7: ui names load(into:), owned by sync"+aoNotDrawn+"ui -> sync edge")
 	files := aoResolved("        func load(into store: Store) {}\n        if save { load(into: store) }\n")

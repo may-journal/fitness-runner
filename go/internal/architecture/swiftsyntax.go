@@ -13,7 +13,7 @@ func (p *swiftParser) typeDecl(s *swiftScope) {
 	sym := p.declare(s, &swiftSymbol{name: p.next().text, kind: swiftType})
 	body := s.child(qualify(s.owner, sym.name), true)
 	p.generics(body)
-	p.m.conform(body.owner, p.inherits(body))
+	p.m.declareType(body.owner, p.inherits(body))
 	p.where(body)
 	p.body(body)
 }
@@ -43,13 +43,14 @@ func (p *swiftParser) funcDecl(s *swiftScope) {
 	p.body(fn)
 }
 
-// funcName reads a function's name, or an operator's punctuation.
+// funcName reads a function's name, or an operator's punctuation up to
+// its parameters, so < and <= are names, not generic brackets.
 func (p *swiftParser) funcName() string {
 	if name := p.word(); name != "" {
 		return name
 	}
 	name := ""
-	for p.more() && !p.is("(") && !p.is("<") {
+	for p.peek().kind == swiftPunct && !p.is("(") {
 		name += p.next().text
 	}
 	return name
@@ -247,6 +248,7 @@ func (p *swiftParser) params(fn *swiftScope) ([]string, []bool) {
 // label and whether it has a default.
 func (p *swiftParser) param(fn *swiftScope) (string, bool) {
 	start := p.i
+	p.attributes(fn)
 	label, name, ok := p.paramNames()
 	if !ok {
 		p.typeRef(fn)
@@ -261,6 +263,16 @@ func (p *swiftParser) param(fn *swiftScope) (string, bool) {
 		p.item(fn)
 	}
 	return label, true
+}
+
+// attributes reads the attributes before a parameter, such as
+// @ViewBuilder, recording each as a use.
+func (p *swiftParser) attributes(fn *swiftScope) {
+	for p.is("@") && isAnyWord(p.peekAt(1)) {
+		p.i++
+		u := p.use(fn, p.next())
+		p.apply(fn, &u)
+	}
 }
 
 // paramNames reads "label name:" or "name:".

@@ -37,6 +37,7 @@ Comments and string literals create no reference; a name inside a string interpo
 - A base of unknown type, or an implicit member such as `.loaded`, reaches nothing.
 - A call keeps the overloads its argument labels fit; candidates left in two files reach none.
 - A call of a type also reaches the initializer its labels pick.
+- In an `#if` group whose branches leave a brace open, as alternative headers do, only the first branch is read.
 
 A reference under `//go:build` or `#if` keeps its condition: the error says `under go:build linux` or `under #if DEBUG`. Generated sources stay in the inventory but are not read.
 

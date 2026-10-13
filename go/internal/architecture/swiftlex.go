@@ -25,13 +25,15 @@ type swiftToken struct {
 
 // swiftLexer splits Swift source into tokens. Comments, which may nest,
 // make none. A string literal makes one token after the tokens of its
-// interpolations, so a name inside \( ) is still read.
+// interpolations, so a name inside \( ) is still read. Groups holds the
+// token index each branch of the open #if groups starts at.
 type swiftLexer struct {
-	src  string
-	i    int
-	line int
-	cond conditions
-	out  []swiftToken
+	src    string
+	i      int
+	line   int
+	cond   conditions
+	out    []swiftToken
+	groups [][]int
 }
 
 // swiftRule lexes one kind of text where it matches.
@@ -161,7 +163,58 @@ func (l *swiftLexer) directive() {
 	text, _, _ := strings.Cut(l.src[start:l.i], "//")
 	text, _, _ = strings.Cut(text, "/*")
 	l.cond.directive(text)
+	l.branch(strings.TrimSpace(text))
 }
+
+// branch tracks where each branch of an #if group starts.
+func (l *swiftLexer) branch(text string) {
+	last := len(l.groups) - 1
+	switch {
+	case strings.HasPrefix(text, "#if"):
+		l.groups = append(l.groups, []int{len(l.out)})
+	case strings.HasPrefix(text, "#endif"):
+		l.endGroup()
+	case last >= 0:
+		l.groups[last] = append(l.groups[last], len(l.out))
+	}
+}
+
+// endGroup closes an #if group. When a branch leaves a brace open, as
+// alternative declaration headers do, only the first branch is kept, so
+// the braces still pair up as the compiler sees them.
+func (l *swiftLexer) endGroup() {
+	if len(l.groups) == 0 {
+		return
+	}
+	starts := l.groups[len(l.groups)-1]
+	l.groups = l.groups[:len(l.groups)-1]
+	ends := append(append([]int{}, starts[1:]...), len(l.out))
+	if !l.balanced(starts, ends) {
+		l.out = l.out[:ends[0]]
+	}
+}
+
+func (l *swiftLexer) balanced(starts, ends []int) bool {
+	for i := range starts {
+		if l.braces(starts[i], ends[i]) != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// braces counts the braces a token range opens, less those it closes.
+func (l *swiftLexer) braces(from, to int) int {
+	n := 0
+	for _, t := range l.out[from:to] {
+		if t.kind == swiftPunct {
+			n += swiftBrace[t.text]
+		}
+	}
+	return n
+}
+
+var swiftBrace = map[string]int{"{": 1, "}": -1}
 
 // atString reports a string literal, raw ones included: #"..."#.
 func (l *swiftLexer) atString() bool {
@@ -204,11 +257,20 @@ func (l *swiftLexer) literalStep(escape string) {
 		l.i += len(escape) + 1
 		l.code(true)
 	case l.at(escape):
-		l.i += len(escape) + 1
+		l.i += len(escape)
+		l.escaped()
 	case l.at("\n"):
 		l.line++
 		l.i++
 	default:
+		l.i++
+	}
+}
+
+// escaped moves past an escaped character; a line break, which continues
+// a multiline literal's line, is left for the line count.
+func (l *swiftLexer) escaped() {
+	if l.i < len(l.src) && !l.at("\n") {
 		l.i++
 	}
 }

@@ -4,11 +4,13 @@ import "strings"
 
 // swiftModule is every product Swift file parsed as one module: the
 // declarations at file level by name, the members of each type by owner,
-// each type's inheritance from its declaration and extensions, and the
-// names the code uses.
+// each type's inheritance from its declaration and extensions, the first
+// type its own declaration inherits, which super names, and the names the
+// code uses.
 type swiftModule struct {
 	top, members map[string][]*swiftSymbol
 	supers       map[string][]string
+	bases        map[string]string
 	uses         []*swiftUse
 }
 
@@ -20,16 +22,22 @@ const maxTypeHops = 16
 // the code uses to the declarations it means, as the compiler's index
 // would, and reports the ones in another file. Comments name nothing.
 func (m *Model) swiftReferences() []reference {
-	mod := &swiftModule{top: map[string][]*swiftSymbol{}, members: map[string][]*swiftSymbol{}, supers: map[string][]string{}}
+	mod := &swiftModule{top: map[string][]*swiftSymbol{}, members: map[string][]*swiftSymbol{}, supers: map[string][]string{}, bases: map[string]string{}}
 	for _, file := range m.productSources(".swift") {
 		mod.parse(file, strings.Join(m.repo.read(file), "\n"))
 	}
 	return mod.references()
 }
 
+// parse reads one file; a stray closing brace at file level is passed
+// over, so the rest of the file is still read.
 func (m *swiftModule) parse(file, src string) {
 	p := &swiftParser{m: m, file: file, tokens: lexSwift(src)}
-	p.block(&swiftScope{names: map[string][]*swiftSymbol{}}, "")
+	scope := &swiftScope{names: map[string][]*swiftSymbol{}}
+	for p.more() {
+		p.block(scope, "")
+		p.accept("}")
+	}
 }
 
 func (m *swiftModule) add(sym *swiftSymbol) {
@@ -42,6 +50,13 @@ func (m *swiftModule) add(sym *swiftSymbol) {
 
 func (m *swiftModule) conform(owner string, supers []string) {
 	m.supers[owner] = append(m.supers[owner], supers...)
+}
+
+// declareType records a type's own inheritance clause, whose first entry
+// is the superclass when it has one.
+func (m *swiftModule) declareType(owner string, supers []string) {
+	m.conform(owner, supers)
+	m.bases[owner] = first(supers)
 }
 
 // references lists one reference per line, symbol, and declaring file.
@@ -206,7 +221,7 @@ func (m *swiftModule) knownType(u *swiftUse) (string, bool) {
 	case u.literal != "":
 		return u.literal, true
 	case u.name == "super":
-		return first(m.supers[u.scope.owner]), true
+		return m.bases[u.scope.owner], true
 	case swiftSelf[u.name]:
 		return u.scope.owner, true
 	}
