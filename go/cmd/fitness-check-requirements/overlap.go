@@ -16,6 +16,11 @@ const adr0004 = "https://github.com/may-journal/fitness-runner/blob/main/docs/ar
 // reworded Given still counts.
 const minOverlap = 0.3
 
+// minShared is the fewest words two similar Givens share. Short Givens meet
+// minOverlap with one word, and one word, such as the rest of a multi-word
+// actor, says too little about an area.
+const minShared = 2
+
 // overlapErrors flags each pair of docs holding acceptances with the same
 // When and similar Givens, since one area belongs in one doc.
 func overlapErrors(docs []requirement.Document) []string {
@@ -49,9 +54,9 @@ func sameArea(x, y requirement.IDLine) bool {
 	return x.When != "" && strings.EqualFold(x.When, y.When) && similar(x.Given, y.Given)
 }
 
-// similar reports whether the two Givens share at least minOverlap of their
-// distinct words. The actor that opens every Given says nothing about the
-// area, so it is left out.
+// similar reports whether the two Givens share at least minShared words and
+// minOverlap of their distinct words. The actor that opens every Given says
+// nothing about the area, so its first word is left out.
 func similar(a, b string) bool {
 	wa, wb := words(withoutActor(a)), words(withoutActor(b))
 	shared := 0
@@ -61,7 +66,7 @@ func similar(a, b string) bool {
 		}
 	}
 	union := len(wa) + len(wb) - shared
-	return union > 0 && float64(shared)/float64(union) >= minOverlap
+	return shared >= minShared && float64(shared)/float64(union) >= minOverlap
 }
 
 // withoutActor drops a Given's first word, the actor it starts with.

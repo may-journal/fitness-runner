@@ -141,9 +141,11 @@ func Test0006_9(t *testing.T) {
 func Test0006_10(t *testing.T) {
 	t.Parallel()
 	other := "docs/requirements/0002-adds-again.md"
-	again := "- 0002.1\n    - Given two whole numbers\n        - When I add them\n            - Then I get their sum\n"
+	adds := "- 0001.1\n    - Given Writer has two whole numbers\n        - When I add them\n            - Then I get their sum\n"
+	again := "- 0002.1\n    - Given Writer has two whole numbers that carry\n        - When I add them\n            - Then I get their sum\n"
 	out, code := judged(t, with(goRepo(), map[string]string{
 		"adder_test.go": testFile("adder", "Test0001_1", "Test0002_1"),
+		pairedDoc:       docWith("Source: `adder.go:5`", adds),
 		other:           strings.Replace(docWith("Source: `adder.go:5`", again), "0001 Adds Numbers", "0002 Adds Again", 1),
 	}))
 	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "0004-one-requirement-doc-per-area")
