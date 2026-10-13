@@ -4,6 +4,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/may-journal/fitness-runner/go/internal/architecture"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
@@ -23,6 +26,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 		return checkkit.Pass(0), err
 	}
 	c := model.Components()
+	if c.Note != "" {
+		fmt.Fprintln(os.Stderr, "architecture-components: "+c.Note)
+	}
 	if len(c.Errors) > 0 {
 		return checkkit.Fail(c.Files, c.Errors...), nil
 	}

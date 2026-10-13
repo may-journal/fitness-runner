@@ -10,9 +10,12 @@ const componentsView = "components"
 
 // Components is the components view compared with the product sources and
 // the references between them. Files counts the component views read.
+// Note counts the Swift names the parser could not resolve; it fails
+// nothing.
 type Components struct {
 	Errors []string
 	Files  int
+	Note   string
 }
 
 // Components gives every product source one owner among the view's
@@ -137,7 +140,8 @@ func (c *components) pathOwners(p string) []string {
 // components the view does not draw an edge between.
 func (c *components) observe() {
 	refs, errs := c.m.goReferences()
-	c.refs = append(refs, c.m.swiftReferences()...)
+	swift, missed := c.m.swiftReferences()
+	c.refs, c.Note = append(refs, swift...), missed.note()
 	c.Errors = append(c.Errors, errs...)
 	for _, r := range c.refs {
 		c.reference(r)

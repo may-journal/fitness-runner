@@ -46,7 +46,7 @@ Source: #288
     - Given Developer has a reference under a build condition
         - When I check its components
             - Then a missing edge fails naming the condition, and a drawn edge passes
-- 0075.9
-    - Given Developer has Swift overloads, extension members, and local names in function bodies
+- 0075.10
+    - Given Developer has Swift overloads, extension members, local names in bodies, and members of unknown type
         - When I check its components
-            - Then each name reaches the declaration its labels and base type pick, and a local name reaches nothing
+            - Then each name reaches the declaration its labels and base type pick, a local reaches nothing, and a passing note counts the unknown

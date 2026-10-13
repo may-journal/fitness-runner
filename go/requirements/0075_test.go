@@ -199,17 +199,28 @@ func aoResolved(line7 string) map[string]string {
 	return files
 }
 
-func Test0075_9(t *testing.T) {
+// aoQuiet is aoResolved with line7 and a model save that calls nothing.
+func aoQuiet(line7 string) map[string]string {
+	files := aoResolved(line7)
+	files["App/Model/Saving.swift"] = "extension Store {\n    func save(_ record: String) {}\n}\n"
+	return files
+}
+
+func Test0075_10(t *testing.T) {
 	t.Parallel()
 	out, code := aoRun(t, aoResolved("        if save { store.save(all: []) }\n"))
 	sees(t, out, code, 1, aoHome+":7: ui names Store.save(all:), owned by sync"+aoNotDrawn+"ui -> sync edge",
 		"App/Model/Saving.swift:8: model names Store.save(all:), owned by sync"+aoNotDrawn+"model -> sync edge")
 	out, code = aoRun(t, aoResolved("        if save { load(into: store) }\n"))
 	sees(t, out, code, 1, aoHome+":7: ui names load(into:), owned by sync"+aoNotDrawn+"ui -> sync edge")
-	files := aoResolved("        func load(into store: Store) {}\n        if save { load(into: store) }\n")
-	files["App/Model/Saving.swift"] = "extension Store {\n    func save(_ record: String) {}\n}\n"
-	out, code = aoRun(t, files)
+	out, code = aoRun(t, aoQuiet("        if save {\n            func load(into kept: Store) {}\n            load(into: store)\n        }\n"))
 	sees(t, out, code, 0)
+	passedWith(t, out, aoCheck, "1")
+	if strings.Contains(out, "unresolved") {
+		t.Errorf("a fully resolved app must print no unresolved count:\n%s", out)
+	}
+	out, code = aoRun(t, aoQuiet("        let all = [store]\n        all.first?.save(all: [])\n"))
+	sees(t, out, code, 0, "architecture-components: 1 Swift reference unresolved (1 type unknown)")
 	passedWith(t, out, aoCheck, "1")
 }
 
