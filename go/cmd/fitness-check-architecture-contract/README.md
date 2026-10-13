@@ -44,6 +44,7 @@ Legends stay out of the model: unnumbered diagrams, C4 diagrams titled `Legend`,
 | Row content | Model fact |
 | --- | --- |
 | Code span or diagram text naming a path under a tracked top-level folder | Source claim by the element |
+| Code span or diagram text naming a tracked root-level file, such as `index.ts` | Source claim by the element |
 | A trailing `*` in such a path, as in `go/cmd/fitness-check-*` | One claim on every sibling the pattern matches |
 | Link to a tracked source file, optionally `#L3` or `#L3-L9` | Static evidence for the element or edge |
 | Link to `docs/requirements/NNNN-*.md`, or a code span such as `0001.1` | Requirement reference |
@@ -66,7 +67,7 @@ Every error names the view line. An error about two places names both.
 
 ## Sources and proof
 
-Every tracked source stays in the inventory as product, test, tool, or generated, with the elements whose claims cover it. Unowned sources are listed, not failed; the component check decides ownership.
+Every tracked source stays in the inventory as product, test, tool, or generated, with the elements whose claims cover it. Tool sources are scripts and script tool configs such as `rollup.config.mjs`. Unowned sources are listed, not failed; the component check decides ownership.
 
 Static evidence only locates a line; later checks resolve what it proves. Runtime proof has no form in the diagrams, so no edge counts as proved at runtime.
 

@@ -22,10 +22,6 @@ Source: #288
     - Given Developer has no architecture
         - When I check its components
             - Then it passes with zero files
-- 0075.2
-    - Given Developer has a product source no component names
-        - When I check its components
-            - Then the error names the source, and naming its folder passes
 - 0075.3
     - Given Developer has one source two components in different diagrams name
         - When I check its components
@@ -50,3 +46,7 @@ Source: #288
     - Given Developer has Swift overloads, extension members, and local names in function bodies
         - When I check its components
             - Then each name reaches the declaration its labels and base type pick, and a local name reaches nothing
+- 0075.12
+    - Given Developer has a product source no component names
+        - When I check its components
+            - Then the error names the source, naming its folder or root file passes, and tool configs need no owner
