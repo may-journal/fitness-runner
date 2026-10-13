@@ -48,8 +48,7 @@ func setOf(words ...string) map[string]bool {
 // callable's argument labels, "_" where it has none. Typ is a value's
 // stated type, a function's result, or a type alias's target; a value
 // with none takes the type of its initializer. A local symbol lives in a
-// body and is seen only by the names after it. A static member, like an
-// enum case, can be an implicit member such as .shared.
+// body and is seen only by the names after it.
 type swiftSymbol struct {
 	file, name, owner, kind, typ string
 	labels                       []string
@@ -57,7 +56,7 @@ type swiftSymbol struct {
 	init                         *swiftUse
 	scope                        *swiftScope
 	at                           int
-	local, static                bool
+	local                        bool
 }
 
 // callable reports a symbol a call's argument labels must fit.
@@ -135,15 +134,13 @@ func (u *swiftUse) called(labels []string) {
 // swiftParser reads one file's tokens into the module: declarations, the
 // scopes they sit in, and every name the code uses. Condition marks an
 // if, guard, while, for, switch, or catch head, where a brace opens the
-// body, not a trailing closure. Static marks a static or class modifier
-// waiting for its declaration.
+// body, not a trailing closure.
 type swiftParser struct {
 	m         *swiftModule
 	file      string
 	tokens    []swiftToken
 	i         int
 	condition bool
-	static    bool
 }
 
 var swiftItems map[string]func(*swiftParser, *swiftScope)
@@ -239,7 +236,6 @@ func (p *swiftParser) item(s *swiftScope) {
 // A local value is seen from here on; functions and types from anywhere.
 func (p *swiftParser) declare(s *swiftScope, sym *swiftSymbol) *swiftSymbol {
 	sym.file, sym.owner, sym.scope, sym.at = p.file, s.owner, s, -1
-	sym.static = sym.static || p.takeStatic()
 	if sym.kind == swiftValue {
 		sym.at = p.i
 	}
@@ -266,7 +262,6 @@ func (p *swiftParser) use(s *swiftScope, t swiftToken) *swiftUse {
 }
 
 func (p *swiftParser) modifier(s *swiftScope) {
-	p.markStatic()
 	next := p.peekAt(1)
 	switch {
 	case isAnyWord(next):
@@ -276,21 +271,6 @@ func (p *swiftParser) modifier(s *swiftScope) {
 	default:
 		p.expr(s)
 	}
-}
-
-// markStatic notes a static or class modifier for the next declaration.
-func (p *swiftParser) markStatic() {
-	if t := p.peek().text; t == "static" || t == "class" {
-		p.static = true
-	}
-}
-
-// takeStatic claims the waiting static mark for the declaration starting
-// here, before its initializer or parameters declare locals of their own.
-func (p *swiftParser) takeStatic() bool {
-	static := p.static
-	p.static = false
-	return static
 }
 
 func (p *swiftParser) skipLine(*swiftScope) {

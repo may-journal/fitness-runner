@@ -39,8 +39,6 @@ Comments and string literals create no reference; a name inside a string interpo
 - A call of a type also reaches the initializer its labels pick.
 - In an `#if` group whose branches leave a brace open, as alternative headers do, only the first branch is read.
 
-Some names match a member in another file, but the parser cannot pin them down. An implicit member only counts against static members and cases. The base type is unknown, the name is an implicit member, or overloads stay ambiguous. They add no edge and fail nothing, but the check counts them on stderr, as in `architecture-components: 3 Swift references unresolved (2 type unknown, 1 ambiguous overload)`; with none, it prints no count.
-
 A reference under `//go:build` or `#if` keeps its condition: the error says `under go:build linux` or `under #if DEBUG`. Generated sources stay in the inventory but are not read.
 
 ## Evidence

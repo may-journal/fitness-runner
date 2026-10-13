@@ -6,16 +6,12 @@ import "strings"
 // declarations at file level by name, the members of each type by owner,
 // each type's inheritance from its declaration and extensions, the first
 // type its own declaration inherits, which super names, and the names the
-// code uses. MemberFiles lists the files declaring a member of each name,
-// staticFiles those declaring a static member or enum case, and ambiguous
-// marks the uses whose candidates sat in two files.
+// code uses.
 type swiftModule struct {
-	top, members             map[string][]*swiftSymbol
-	supers                   map[string][]string
-	bases                    map[string]string
-	memberFiles, staticFiles map[string][]string
-	ambiguous                map[*swiftUse]bool
-	uses                     []*swiftUse
+	top, members map[string][]*swiftSymbol
+	supers       map[string][]string
+	bases        map[string]string
+	uses         []*swiftUse
 }
 
 // maxTypeHops bounds how far a value's type is followed through
@@ -24,11 +20,9 @@ const maxTypeHops = 16
 
 // swiftReferences parses every product Swift file, then resolves each name
 // the code uses to the declarations it means, as the compiler's index
-// would, and reports the ones in another file, with a count of the names
-// it could not resolve. Comments name nothing.
-func (m *Model) swiftReferences() ([]reference, unresolved) {
-	mod := &swiftModule{top: map[string][]*swiftSymbol{}, members: map[string][]*swiftSymbol{}, supers: map[string][]string{}, bases: map[string]string{},
-		memberFiles: map[string][]string{}, staticFiles: map[string][]string{}, ambiguous: map[*swiftUse]bool{}}
+// would, and reports the ones in another file. Comments name nothing.
+func (m *Model) swiftReferences() []reference {
+	mod := &swiftModule{top: map[string][]*swiftSymbol{}, members: map[string][]*swiftSymbol{}, supers: map[string][]string{}, bases: map[string]string{}}
 	for _, file := range m.productSources(".swift") {
 		mod.parse(file, strings.Join(m.repo.read(file), "\n"))
 	}
@@ -52,10 +46,6 @@ func (m *swiftModule) add(sym *swiftSymbol) {
 		return
 	}
 	m.members[sym.owner] = append(m.members[sym.owner], sym)
-	m.memberFiles[sym.name] = append(m.memberFiles[sym.name], sym.file)
-	if sym.static || sym.kind == swiftCase {
-		m.staticFiles[sym.name] = append(m.staticFiles[sym.name], sym.file)
-	}
 }
 
 func (m *swiftModule) conform(owner string, supers []string) {
@@ -69,37 +59,29 @@ func (m *swiftModule) declareType(owner string, supers []string) {
 	m.bases[owner] = first(supers)
 }
 
-// references lists one reference per line, symbol, and declaring file,
-// and counts the uses it could not resolve.
-func (m *swiftModule) references() ([]reference, unresolved) {
+// references lists one reference per line, symbol, and declaring file.
+func (m *swiftModule) references() []reference {
 	var refs []reference
-	seen, missed := map[reference]bool{}, unresolved{}
+	seen := map[reference]bool{}
 	for _, u := range m.uses {
-		found := m.meaning(u, 0)
-		missed.add(m.unresolvedKind(u, found))
-		refs = m.collect(refs, seen, u, found)
-	}
-	return refs, missed
-}
-
-func isLocal(found []*swiftSymbol) bool {
-	return len(found) == 1 && found[0].local
-}
-
-// collect adds the references a use makes to declarations in other files;
-// a local makes none.
-func (m *swiftModule) collect(refs []reference, seen map[reference]bool, u *swiftUse, found []*swiftSymbol) []reference {
-	if isLocal(found) {
-		return refs
-	}
-	for _, sym := range found {
-		r := reference{At: Location{u.file, u.line}, To: sym.file, Symbol: sym.display(), Condition: u.under}
-		if sym.file != u.file && !seen[r] {
-			seen[r] = true
-			refs = append(refs, r)
+		for _, sym := range m.resolve(u) {
+			r := reference{At: Location{u.file, u.line}, To: sym.file, Symbol: sym.display(), Condition: u.under}
+			if sym.file != u.file && !seen[r] {
+				seen[r] = true
+				refs = append(refs, r)
+			}
 		}
 	}
 	return refs
+}
+
+// resolve finds the module declarations a use means; a local means none.
+func (m *swiftModule) resolve(u *swiftUse) []*swiftSymbol {
+	found := m.meaning(u, 0)
+	if len(found) == 1 && found[0].local {
+		return nil
+	}
+	return found
 }
 
 // meaning finds what a use names. A member is looked up on its base's
@@ -154,7 +136,7 @@ func (m *swiftModule) inherited(owner string, u *swiftUse, seen map[string]bool)
 	for _, super := range m.supers[owner] {
 		found = append(found, m.inherited(super, u, seen)...)
 	}
-	return m.oneFile(found, u)
+	return oneFile(found)
 }
 
 func named(symbols []*swiftSymbol, name string) []*swiftSymbol {
@@ -185,15 +167,12 @@ func (m *swiftModule) pick(symbols []*swiftSymbol, u *swiftUse) []*swiftSymbol {
 			fit = append(fit, sym)
 		}
 	}
-	return m.oneFile(fit, u)
+	return oneFile(fit)
 }
 
-// oneFile keeps candidates that sit in one file; candidates in two files
-// mark the use ambiguous and resolve to none.
-func (m *swiftModule) oneFile(symbols []*swiftSymbol, u *swiftUse) []*swiftSymbol {
+func oneFile(symbols []*swiftSymbol) []*swiftSymbol {
 	for _, sym := range symbols {
 		if sym.file != symbols[0].file {
-			m.ambiguous[u] = true
 			return nil
 		}
 	}

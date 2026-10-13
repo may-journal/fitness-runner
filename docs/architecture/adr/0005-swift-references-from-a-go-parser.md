@@ -22,6 +22,6 @@ The components check scanned top-level Swift declarations. It missed members, ex
 ## Consequences
 
 1. Results match on Linux x64, Linux arm, and macOS, with nothing to install.
-2. An edge through a value of unknown type, such as an array element or implicit member, goes unseen; the check prints how many.
+2. An edge through a value of unknown type, such as an array element or implicit member, goes unseen, and nothing reports it.
 3. Overloads that differ only by parameter types resolve to none.
 4. The code view still reads Swift with its own declaration scan; moving it onto this parser is separate work.
