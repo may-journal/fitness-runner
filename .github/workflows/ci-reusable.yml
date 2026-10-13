@@ -79,13 +79,17 @@ jobs:
           "$RUNNER_TEMP/swiftlint/swiftlint" version
       - name: Run fitness
         id: report-step-2
-        run: fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
+        # A caller may run this workflow from several jobs, which all share
+        # one job name here, so a random id keeps each artifact name unique.
+        run: |
+          printf 'FITNESS_PERFORMANCE_ID=%s\n' "$RANDOM$RANDOM$RANDOM" >> "$GITHUB_ENV"
+          fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
       # The performance trail: see docs/ci.md#performance-record.
       - name: Retain the performance record
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: fitness-performance-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}
+          name: fitness-performance-${{ github.job }}-${{ github.run_attempt }}-${{ env.FITNESS_PERFORMANCE_ID }}
           path: ${{ runner.temp }}/fitness-performance/
           if-no-files-found: ignore
           retention-days: 90
