@@ -18,18 +18,18 @@ Source: #285
 
 ## Requirements
 
-- 0070.1
-    - Given Developer has no architecture
+- 0070.11
+    - Given Developer has no product code and no architecture
         - When I check its contract
             - Then it passes with zero files
 - 0070.2
     - Given Developer has complete diagrams in either root
         - When I renumber their callouts
             - Then the same diagram IDs pass
-- 0070.3
-    - Given Developer has a partial architecture
+- 0070.10
+    - Given Developer has a partial architecture, or Go, Swift, TypeScript, or JavaScript product code and no architecture
         - When I check it
-            - Then missing views fail
+            - Then it fails asking for each missing view
 - 0070.4
     - Given Developer has duplicate, invalid, or unresolved diagram IDs or actor names
         - When I check them

@@ -1,28 +1,35 @@
-package vitestconf
+// Package javascript tokenizes JavaScript and TypeScript source without running
+// it, so checks can read config literals and test calls the way the
+// language would.
+package javascript
 
 import (
 	"strconv"
 	"strings"
 )
 
-// tokKind classifies a lexed token.
-type tokKind int
+// Kind classifies a lexed token.
+type Kind int
 
+// The token kinds: punctuation, identifier, string or template literal,
+// number, and regex literal.
 const (
-	tokPunct tokKind = iota
-	tokIdent
-	tokString
-	tokNumber
-	tokRegex
+	Punct Kind = iota
+	Ident
+	String
+	Number
+	Regex
 )
 
-// token is one lexed unit of JS/TS source. For strings, text is the decoded
-// value and lit is false when a template literal held a ${…} expression —
-// present but unresolvable. Comments never become tokens.
-type token struct {
-	kind tokKind
-	text string
-	lit  bool
+// Token is one lexed unit of JS/TS source. For strings, Text is the decoded
+// value and Lit is false when a template literal held a ${…} expression —
+// present but unresolvable. Pos is the byte offset where the token starts.
+// Comments never become tokens.
+type Token struct {
+	Kind Kind
+	Text string
+	Lit  bool
+	Pos  int
 }
 
 // regexKeywords are identifiers after which a slash starts a regex literal,
@@ -33,18 +40,22 @@ var regexKeywords = map[string]bool{
 	"throw": true, "typeof": true, "void": true, "yield": true,
 }
 
-// lex tokenizes JS/TS source, dropping whitespace and comments while keeping
+// Lex tokenizes JS/TS source, dropping whitespace and comments while keeping
 // string contents intact — the string-aware comment stripping the TS
 // evaluation got for free from the JavaScript engine.
-func lex(src string) []token {
-	var tokens []token
+func Lex(src string) []Token {
+	var tokens []Token
 	i := 0
 	for i < len(src) {
 		if isSpace(src[i]) {
 			i++
 			continue
 		}
+		start, n := i, len(tokens)
 		tokens, i = lexAt(src, i, tokens)
+		if len(tokens) > n {
+			tokens[n].Pos = start
+		}
 	}
 	return tokens
 }
@@ -56,16 +67,16 @@ func isSpace(c byte) bool {
 
 // lexAt lexes the comment or token starting at the non-whitespace byte at i,
 // returning the extended token slice and the index just past it.
-func lexAt(src string, i int, tokens []token) ([]token, int) {
+func lexAt(src string, i int, tokens []Token) ([]Token, int) {
 	switch c := src[i]; {
 	case c == '/':
 		return lexSlash(src, i, tokens)
 	case c == '\'' || c == '"':
 		value, next := scanQuoted(src, i)
-		return append(tokens, token{kind: tokString, text: value, lit: true}), next
+		return append(tokens, Token{Kind: String, Text: value, Lit: true}), next
 	case c == '`':
 		value, hasExpr, next := scanTemplate(src, i)
-		return append(tokens, token{kind: tokString, text: value, lit: !hasExpr}), next
+		return append(tokens, Token{Kind: String, Text: value, Lit: !hasExpr}), next
 	default:
 		return lexWord(src, i, tokens)
 	}
@@ -73,14 +84,14 @@ func lexAt(src string, i int, tokens []token) ([]token, int) {
 
 // lexSlash handles a slash: a line or block comment, a regex literal when
 // one can follow the tokens so far, or a plain punctuation token (division).
-func lexSlash(src string, i int, tokens []token) ([]token, int) {
+func lexSlash(src string, i int, tokens []Token) ([]Token, int) {
 	switch {
 	case i+1 < len(src) && (src[i+1] == '/' || src[i+1] == '*'):
 		return tokens, skipComment(src, i)
 	case regexCanFollow(tokens):
-		return append(tokens, token{kind: tokRegex}), skipRegex(src, i)
+		return append(tokens, Token{Kind: Regex}), skipRegex(src, i)
 	default:
-		return append(tokens, token{kind: tokPunct, text: src[i : i+1]}), i + 1
+		return append(tokens, Token{Kind: Punct, Text: src[i : i+1]}), i + 1
 	}
 }
 
@@ -102,16 +113,16 @@ func skipComment(src string, i int) int {
 }
 
 // lexWord lexes an identifier, number, or single-character punctuation token.
-func lexWord(src string, i int, tokens []token) ([]token, int) {
+func lexWord(src string, i int, tokens []Token) ([]Token, int) {
 	c := src[i]
 	switch {
 	case isIdentStart(c):
 		end := scanIdent(src, i)
-		return append(tokens, token{kind: tokIdent, text: src[i:end]}), end
+		return append(tokens, Token{Kind: Ident, Text: src[i:end]}), end
 	case c >= '0' && c <= '9':
-		return append(tokens, token{kind: tokNumber}), scanNumber(src, i)
+		return append(tokens, Token{Kind: Number}), scanNumber(src, i)
 	default:
-		return append(tokens, token{kind: tokPunct, text: src[i : i+1]}), i + 1
+		return append(tokens, Token{Kind: Punct, Text: src[i : i+1]}), i + 1
 	}
 }
 
@@ -137,18 +148,18 @@ func scanNumber(src string, i int) int {
 // regex literal: yes at the start of input and after operators or opening
 // punctuation; no after a value (identifier, string, number, regex, or
 // closing punctuation) — the standard division heuristic.
-func regexCanFollow(tokens []token) bool {
+func regexCanFollow(tokens []Token) bool {
 	if len(tokens) == 0 {
 		return true
 	}
 	last := tokens[len(tokens)-1]
-	switch last.kind {
-	case tokIdent:
-		return regexKeywords[last.text]
-	case tokString, tokNumber, tokRegex:
+	switch last.Kind {
+	case Ident:
+		return regexKeywords[last.Text]
+	case String, Number, Regex:
 		return false
 	}
-	return !closesValue(last.text)
+	return !closesValue(last.Text)
 }
 
 // closesValue reports whether punctuation text ends a value expression — a

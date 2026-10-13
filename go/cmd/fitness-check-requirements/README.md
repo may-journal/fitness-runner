@@ -5,7 +5,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # requirements
 
-In a Go or Swift repo, each file in `docs/requirements` is one requirement. It says why the requirement matters, how to measure it, and which acceptances prove it. Each acceptance is owned by exactly one test named for it, and each test owns exactly one acceptance. A test that proves no requirement is either a requirement nobody wrote down or a duplicate to delete.
+In a Go, Swift, TypeScript, or JavaScript repo, each file in `docs/requirements` is one requirement. It says why the requirement matters, how to measure it, and which acceptances prove it. Each acceptance is owned by exactly one test named for it, and each test owns exactly one acceptance. A test that proves no requirement is either a requirement nobody wrote down or a duplicate to delete.
 
 ## Template
 
@@ -33,7 +33,7 @@ Source: #123
 <!-- Top-level bullets are IDs: title ID + ".N", unique, never reused. -->
 <!-- Each ID nests exactly one Given, one When, one Then, one level deeper each, each line starting with its keyword. A second Given, When, or Then is a new ID. -->
 <!-- A Given starts with an actor the system context declares, by name or Mermaid ID; see the architecture-actors check. -->
-<!-- Exactly one test is named for each ID: Go func Test0001_1(t *testing.T) or Swift func test0001_1() owns 0001.1. Delete the test when you delete the ID. -->
+<!-- Exactly one test is named for each ID: Go func Test0001_1(t *testing.T), Swift func test0001_1(), or vitest test("0001.1 saves offline", …) owns 0001.1. Delete the test when you delete the ID. -->
 - 0001.1
     - Given Writer has no network
         - When I edit an entry
@@ -48,17 +48,24 @@ Source: #123
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
 - Measurement: numerator, `-`, denominator, then `Source:` citing one `path:line` that exists or one `#123` issue.
 - Acceptance: one Given, one When, and one Then, nested in order; the Given starts with an [actor](../fitness-check-architecture-actors/README.md).
-- Ownership: exactly one Go `func TestNNNN_N` or Swift `func testNNNN_N` owns each acceptance. A test named for an undefined acceptance fails.
+- Ownership: exactly one Go `func TestNNNN_N`, Swift `func testNNNN_N`, or vitest test titled `NNNN.N …` owns each acceptance. A test named for an undefined acceptance fails.
 - Every test: each top-level test in the repository must be named for an acceptance. `TestMain` and helpers are not tests.
 
 Go tests are read with `go/ast`, so only real top-level test functions count.
 
 A Swift test is an XCTest method named `test…` with no parameters, in a class that inherits `XCTestCase`, or any function marked `@Test`. Comments and string literals are skipped, so a name inside them is no test.
 
+A vitest or jest test is one `it` or `test` call in a `*.test.*` or `*.spec.*` TypeScript or JavaScript file. Its title opens with the acceptance ID, as in `test("0001.1 saves offline", …)`.
+
+- Nesting: a `describe` title never names a test, so each `it` or `test` inside one owns its own ID.
+- Modifiers: `.skip`, `.only`, and `.todo` keep a test, and `it.each(rows)("0001.1 …")` is one test, like a Go table test.
+- Not tests: a computed title carries no ID, and comments, strings, `re.test(…)`, and methods named `test` are no test.
+
 ## Behavior
 
-- No code: a repo without Go or Swift files passes with `filesChecked: 0`.
-- Missing docs: a Go or Swift repo with none in `docs/requirements` fails.
+- No code: a repo without Go, Swift, TypeScript, or JavaScript files passes with `filesChecked: 0`.
+- Not code: a tool config such as `vite.config.ts` or `.eslintrc.cjs`, or a file `.gitattributes` marks `linguist-generated`.
+- Missing docs: a repo with such code and none in `docs/requirements` fails.
 - Full and scoped runs judge every doc and test file, including unchanged files in pull requests that change only unrelated files.
 - Ownership is a repository-wide invariant: an unmapped repo stays red until every test owns a requirement.
 

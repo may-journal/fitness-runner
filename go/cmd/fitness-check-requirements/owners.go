@@ -13,32 +13,51 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// goTest is one test declaration, Go or Swift, and the acceptance ID its
-// name carries, if any.
+// goTest is one test declaration, Go, Swift, or vitest, and the acceptance
+// ID its name carries, if any.
 type goTest struct {
-	name  string
-	id    string
-	loc   string
-	file  string
-	swift bool
+	name string
+	id   string
+	loc  string
+	file string
+	lang lang
+}
+
+// lang is the language a test is written in.
+type lang int
+
+// The languages a test can be written in.
+const (
+	langGo lang = iota
+	langSwift
+	langScript
+)
+
+// only is the langs of a repo that tests in l alone.
+func (l lang) only() langs {
+	return langs{goCode: l == langGo, swift: l == langSwift, script: l == langScript}
 }
 
 // langs records which languages a repo is written in, to name tests its way.
 type langs struct {
 	goCode bool
 	swift  bool
+	script bool
 }
 
 // testName is the test name that owns id in the repo's languages: Test0001_1
-// in Go, test0001_1 in Swift.
+// in Go, test0001_1 in Swift, test("0001.1 …") in TypeScript or JavaScript.
 func (l langs) testName(id string) string {
 	suffix := strings.Replace(id, ".", "_", 1)
 	var names []string
-	if l.goCode || !l.swift {
+	if l.goCode || l == (langs{}) {
 		names = append(names, "Test"+suffix)
 	}
 	if l.swift {
 		names = append(names, "test"+suffix)
+	}
+	if l.script {
+		names = append(names, `test("`+id+` …")`)
 	}
 	return strings.Join(names, " or ")
 }
@@ -137,7 +156,7 @@ func testError(t goTest, current map[string]bool) []string {
 	case t.id != "" && !current[t.id]:
 		return []string{fmt.Sprintf("%s: %s names %s, which no requirement defines; delete the test with its acceptance", t.loc, t.name, t.id)}
 	case t.id == "":
-		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.loc, t.name, langs{swift: t.swift}.testName("NNNN.N"))}
+		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.loc, t.name, t.lang.only().testName("NNNN.N"))}
 	}
 	return nil
 }

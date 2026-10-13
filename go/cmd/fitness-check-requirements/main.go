@@ -1,12 +1,14 @@
-// Command fitness-check-requirements enforces docs/requirements in Go and
-// Swift repos: each file is one requirement with a unique four-digit ID, a
-// Why, a Measurement ratio with one cited source, and acceptances written as
-// a single Given, When, and Then chain. Every acceptance is owned by exactly
-// one test named for it (Go Test0001_1 or Swift test0001_1 owns 0001.1), and
-// every test must own one, so a test that proves no requirement is either a
-// missing requirement or a duplicate. Git history supplies removed IDs, so an
-// ID is never reused. Two docs that cover one area fail, per ADR 0004. A staged or pull request change to a requirement test
-// must change its doc too, and the reverse, unless a commit trailer exempts it.
+// Command fitness-check-requirements enforces docs/requirements in Go, Swift,
+// TypeScript, and JavaScript repos: each file is one requirement with a
+// unique four-digit ID, a Why, a Measurement ratio with one cited source,
+// and acceptances written as a single Given, When, and Then chain. Every
+// acceptance is owned by exactly one test named for it (Go Test0001_1, Swift
+// test0001_1, or vitest test("0001.1 …") owns 0001.1), and every test must
+// own one, so a test that proves no requirement is either a missing
+// requirement or a duplicate. Git history supplies removed IDs, so an ID is
+// never reused. Two docs that cover one area fail, per ADR 0004. A staged or
+// pull request change to a requirement test must change its doc too, and the
+// reverse, unless a commit trailer exempts it.
 package main
 
 import (
@@ -65,8 +67,8 @@ func result(files int, errs []string) checkkit.Result {
 	return checkkit.Pass(files)
 }
 
-// collectTests reads every Go and Swift test, the files that hold them, and
-// which languages the repo tests in.
+// collectTests reads every Go, Swift, and vitest test, the files that hold
+// them, and which languages the repo is written in.
 func collectTests(root string) ([]goTest, []string, langs, error) {
 	goFiles := testFiles(root)
 	tests, err := scanTests(root, goFiles)
@@ -75,8 +77,15 @@ func collectTests(root string) ([]goTest, []string, langs, error) {
 	}
 	swiftFiles := walkfs.FilesByExt(root, ".swift")
 	swiftTests, err := scanSwift(root, swiftFiles)
-	repo := langs{goCode: len(walkfs.FilesByExt(root, ".go")) > 0, swift: len(swiftFiles) > 0}
-	return append(tests, swiftTests...), append(goFiles, swiftTestFiles(swiftTests)...), repo, err
+	if err != nil {
+		return nil, nil, langs{}, err
+	}
+	scripts := walkfs.Scripts(root)
+	scriptFiles := scriptTestFiles(scripts)
+	scriptTests, err := scanScripts(root, scriptFiles)
+	repo := langs{goCode: len(walkfs.FilesByExt(root, ".go")) > 0, swift: len(swiftFiles) > 0, script: len(scripts) > 0}
+	tests = append(append(tests, swiftTests...), scriptTests...)
+	return tests, append(append(goFiles, swiftTestFiles(swiftTests)...), scriptFiles...), repo, err
 }
 
 // docPaths lists every requirement doc. A template.md beside them is the
@@ -91,7 +100,7 @@ func docPaths(root string) []string {
 	return out
 }
 
-// missingDocs fails a Go repo that has no requirement docs.
+// missingDocs fails a repo with code that has no requirement docs.
 func missingDocs(paths []string) []string {
 	if len(paths) > 0 {
 		return nil
