@@ -138,4 +138,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 26  | Repo hygiene checks.                | System  | No build output, plan files, unexplained ignores, or copied code.                     |
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI.            |
 | 28  | Release build.                      | System  | The release tool builds bundles and publishes notes that link the changelog.          |
-| 29  | Performance record.                 | System  | Each run and release records check times, budgets, binary sizes, and install time.   |
+| 29  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |

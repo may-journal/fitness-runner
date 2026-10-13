@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1834
+
+- Feat: fitness: `boxes <report> <page>` draws `--json` reports as HTML pages, one box per check sized by runtime, binary size, or errors.
+- Feat: fitness: the `--json` report counts each check's errors.
+- Docs: shared CI keeps the diagram beside the report in each performance artifact; the CI guide says how to open and read it.
+- Test: requirements 0077.6 and 0077.7 prove the diagram and its errors through the installed command.
+
 ### 2026.10.13.1829
 
 - Fix: hooks: pre-push skips its Plan gate when external `disabledChecks` turns plan-trailer off, since the gate enforces that trailer.

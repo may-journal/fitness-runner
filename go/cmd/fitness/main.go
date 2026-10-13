@@ -107,7 +107,7 @@ func main() {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `plan-check`, `close-check`) before falling through to the check runner, so the
+// `pr-check`, `plan-check`, `close-check`, `boxes`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -130,6 +130,7 @@ var subcommands = map[string]func(args []string) int{
 	"plan-check":   func([]string) int { return metadata.RunGH("plan-check") },
 	"close-check":  func([]string) int { return metadata.RunGH("close-check") },
 	"branch-check": func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
+	"boxes":        runBoxes,
 }
 
 // route dispatches the subcommands, defaulting to the check runner.
@@ -161,7 +162,9 @@ Usage:
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
-  fitness --json=<file>    also write each check's time, budget, files, and binary size as JSON
+  fitness --json=<file>    also write each check's time, budget, files, binary size, and errors as JSON
+  fitness boxes <report.json> <page.html>
+                           draw a --json report as an HTML box diagram
   fitness init             install the shared git hooks into this repo
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)

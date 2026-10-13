@@ -24,6 +24,10 @@ jobs:
       # every file. The gofmt, go-vet, and go-test checks cover the Go gate.
       - run: go/bin/fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
         id: report-step-1
+      # The box diagram rides in the same artifact: see docs/ci.md#box-diagram.
+      - name: Draw the box diagram
+        if: ${{ !cancelled() && steps.report-step-1.outcome != 'skipped' }}
+        run: go/bin/fitness boxes "$RUNNER_TEMP/fitness-performance/fitness.json" "$RUNNER_TEMP/fitness-performance/fitness.html"
       # The performance trail: see docs/ci.md#performance-record.
       - name: Retain the performance record
         if: ${{ always() }}
