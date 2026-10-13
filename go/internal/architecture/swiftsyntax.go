@@ -31,13 +31,14 @@ func (p *swiftParser) extension(s *swiftScope) {
 // funcDecl reads a function, operator, or subscript: its labels, defaults,
 // result type, and body, whose parameters are its first locals.
 func (p *swiftParser) funcDecl(s *swiftScope) {
+	static := p.takeStatic()
 	name := p.next().text
 	if name == "func" {
 		name = p.funcName()
 	}
 	fn := s.child(s.owner, false)
 	p.generics(fn)
-	sym := p.callable(s, fn, &swiftSymbol{name: name, kind: swiftFunc})
+	sym := p.callable(s, fn, &swiftSymbol{name: name, kind: swiftFunc, static: static})
 	sym.typ = p.result(fn)
 	p.where(fn)
 	p.body(fn)
@@ -91,6 +92,7 @@ func (p *swiftParser) body(s *swiftScope) {
 // the start of their initializer. A property's braces hold accessors; in
 // a body, braces after a name open the if let body that follows.
 func (p *swiftParser) binding(s *swiftScope) {
+	static := p.takeStatic()
 	p.i++
 	names := p.pattern()
 	typ := ""
@@ -99,7 +101,7 @@ func (p *swiftParser) binding(s *swiftScope) {
 	}
 	init := p.initializer(s)
 	for _, name := range names {
-		p.declare(s, &swiftSymbol{name: name, kind: swiftValue, typ: typ, init: init})
+		p.declare(s, &swiftSymbol{name: name, kind: swiftValue, typ: typ, init: init, static: static})
 	}
 	if !s.local {
 		p.body(s.child(s.owner, false))

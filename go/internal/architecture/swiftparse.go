@@ -239,7 +239,7 @@ func (p *swiftParser) item(s *swiftScope) {
 // A local value is seen from here on; functions and types from anywhere.
 func (p *swiftParser) declare(s *swiftScope, sym *swiftSymbol) *swiftSymbol {
 	sym.file, sym.owner, sym.scope, sym.at = p.file, s.owner, s, -1
-	sym.static, p.static = p.static, false
+	sym.static = sym.static || p.takeStatic()
 	if sym.kind == swiftValue {
 		sym.at = p.i
 	}
@@ -283,6 +283,14 @@ func (p *swiftParser) markStatic() {
 	if t := p.peek().text; t == "static" || t == "class" {
 		p.static = true
 	}
+}
+
+// takeStatic claims the waiting static mark for the declaration starting
+// here, before its initializer or parameters declare locals of their own.
+func (p *swiftParser) takeStatic() bool {
+	static := p.static
+	p.static = false
+	return static
 }
 
 func (p *swiftParser) skipLine(*swiftScope) {

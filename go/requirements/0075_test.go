@@ -219,7 +219,7 @@ func Test0075_10(t *testing.T) {
 	if strings.Contains(out, "unresolved") {
 		t.Errorf("a fully resolved app must print no unresolved count:\n%s", out)
 	}
-	out, code = aoRun(t, aoQuiet("        let all = [store]\n        all.first?.save(all: [])\n"))
+	out, code = aoRun(t, aoQuiet("        let all = [store]\n        all.first?.save(all: [])\n        let decoder = JSONDecoder()\n        decoder.save(all: [])\n"))
 	sees(t, out, code, 0, "architecture-components: 1 Swift reference unresolved (1 type unknown)")
 	passedWith(t, out, aoCheck, "1")
 }

@@ -67,11 +67,39 @@ func (m *swiftModule) unresolvedKind(u *swiftUse, found []*swiftSymbol) string {
 	return m.unknownBase(u)
 }
 
+// unknownBase reports a member whose base type the parser cannot infer,
+// unless the base comes from a type no file declares, such as a
+// framework's, whose members are never the module's.
 func (m *swiftModule) unknownBase(u *swiftUse) string {
-	if u.member && m.typeOf(u.base, 1) == "" {
+	if u.member && m.typeOf(u.base, 1) == "" && !m.external(u.base, 1) {
 		return unresolvedType
 	}
 	return ""
+}
+
+// external reports a value that comes from a name no file declares: the
+// name itself, a member or call on it, or a value it initializes.
+func (m *swiftModule) external(u *swiftUse, hops int) bool {
+	if !namesValue(u, hops) {
+		return false
+	}
+	found := m.meaning(u, hops)
+	if len(found) == 0 {
+		return !u.member || m.external(u.base, hops+1)
+	}
+	return m.externalInit(found[0], hops)
+}
+
+// namesValue reports a use, within the hop limit, that names a value
+// rather than a literal, self, or a contextual implicit member.
+func namesValue(u *swiftUse, hops int) bool {
+	return u != nil && hops <= maxTypeHops && u.literal == "" && !swiftSelf[u.name] && !u.implicit
+}
+
+// externalInit reports a value with no stated type whose initializer is
+// external, as JSONDecoder() makes a local.
+func (m *swiftModule) externalInit(sym *swiftSymbol, hops int) bool {
+	return sym.kind == swiftValue && sym.typ == "" && m.external(sym.init, hops+1)
 }
 
 // memberElsewhere reports a member whose name a type in another file
