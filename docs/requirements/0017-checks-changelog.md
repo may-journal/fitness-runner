@@ -14,7 +14,7 @@ changelogs with dated sections that match the package version
 -
 changelogs checked
 
-Source: `go/cmd/fitness-check-changelog/main.go:63`
+Source: `go/cmd/fitness-check-changelog/main.go:65`
 
 ## Requirements
 
@@ -34,10 +34,6 @@ Source: `go/cmd/fitness-check-changelog/main.go:63`
     - Given Developer has a `package-lock.json` version that differs from `package.json`, or a package file that is not valid JSON
         - When changelog runs
             - Then it fails naming the lock mismatch or the invalid file
-- 0017.8
-    - Given Developer has package files whose versions match the first heading
-        - When changelog runs
-            - Then it passes
 - 0017.15
     - Given Developer has dated `###` sections and a release section in `CHANGELOG.md`, with or without entry files
         - When changelog runs
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-changelog/main.go:63`
     - Given Developer has an entry file whose name lacks its heading's date or carries another
         - When changelog runs
             - Then it fails naming the file and the dated name it expects
+- 0017.13
+    - Given Developer has package files whose versions end in the first heading after `-` or `+`
+        - When changelog runs
+            - Then it passes

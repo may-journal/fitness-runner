@@ -1,4 +1,5 @@
 ---
+fitnessFunctions: ['architecture-contract', 'architecture-code']
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 

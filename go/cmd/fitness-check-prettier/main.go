@@ -18,6 +18,10 @@
 // Installing the plugins stays the check's peer contract, unchanged from the
 // npm era. When Prettier fails without parsing a file, its own [error] lines
 // are reported, so a missing plugin names itself.
+//
+// A repo that chose Biome (internal/biome) is checked by `biome format` on
+// the same paths instead, and needs no Prettier (ADR 0006). Its passthrough
+// args are translated to Biome's, never handed over as paths.
 package main
 
 import (
@@ -28,8 +32,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -85,7 +91,7 @@ func main() {
 }
 
 func run(root string, args []string) (checkkit.Result, error) {
-	bin, res, done := preflight(root)
+	bin, res, done := preflight(root, args)
 	if done {
 		return res, nil
 	}
@@ -106,18 +112,74 @@ func run(root string, args []string) (checkkit.Result, error) {
 
 // preflight resolves the Prettier binary, or the verdict that ends the run
 // first: a failure for any repo with a .prettierignore, then a pass for a
-// repo with no package.json, then a failure without Prettier installed.
-func preflight(root string) (bin string, res checkkit.Result, done bool) {
+// repo with no package.json, then Biome's verdict in a repo that chose it,
+// then a failure without Prettier installed.
+func preflight(root string, args []string) (bin string, res checkkit.Result, done bool) {
 	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
 		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
 	}
 	if len(walkfs.FilesByExt(root, packageJSONName)) == 0 {
 		return "", checkkit.Pass(0), true
 	}
+	if biome.Chosen(root) {
+		return "", formatWithBiome(root, args), true
+	}
 	if bin = resolvePrettierBin(root); bin == "" {
 		return "", checkkit.Fail(0, notInstalled), true
 	}
 	return bin, checkkit.Result{}, false
+}
+
+// formatWithBiome checks the same paths with `biome format` in a repo that
+// chose Biome (ADR 0006), naming each file Biome would reformat. Passthrough
+// args are Prettier's, so biomeFormatArgs translates them: the paths among
+// them replace the checked paths, and a flag Biome has no counterpart for
+// fails by name instead of reaching Biome as a path.
+func formatWithBiome(root string, args []string) checkkit.Result {
+	flags, given, unknown := biomeFormatArgs(args)
+	if len(unknown) > 0 {
+		return checkkit.Fail(0, "Biome formats this repo and has no counterpart for Prettier's "+strings.Join(unknown, ", ")+"; pass paths, --write, --check, or --ignore-unknown")
+	}
+	paths, ok := scopedPaths(root, args)
+	if !ok {
+		return checkkit.Pass(0)
+	}
+	if len(given) > 0 {
+		paths = given
+	}
+	return biome.Check(root, "format", flags, paths, "Biome reported issues. Run: npx biome format --write .", func(f biome.Finding) string {
+		return f.File
+	})
+}
+
+// biomeFormatArgs splits Prettier passthrough args into `biome format` flags,
+// paths, and the flags Biome has no counterpart for. Everything after "--",
+// and every arg not starting with "-", is a path.
+func biomeFormatArgs(args []string) (flags, paths, unknown []string) {
+	if i := slices.Index(args, "--"); i >= 0 {
+		flags, paths, unknown = biomeFormatArgs(args[:i])
+		return flags, append(paths, args[i+1:]...), unknown
+	}
+	for _, a := range args {
+		if biomeFlags, ok := prettierToBiome[a]; ok {
+			flags = append(flags, biomeFlags...)
+		} else if strings.HasPrefix(a, "-") {
+			unknown = append(unknown, a)
+		} else {
+			paths = append(paths, a)
+		}
+	}
+	return flags, paths, unknown
+}
+
+// prettierToBiome maps the Prettier flags Biome can honor to Biome's own.
+// --write writes in place. --check and --list-different are Biome's default,
+// and --ignore-unknown is always on, so they map to nothing.
+var prettierToBiome = map[string][]string{
+	"--write": {"--write"}, "-w": {"--write"},
+	"--check": nil, "-c": nil,
+	"--list-different": nil, "-l": nil,
+	"--ignore-unknown": nil, "-u": nil,
 }
 
 // walkUp calls fn on root (absolute) and each ancestor, returning fn's first

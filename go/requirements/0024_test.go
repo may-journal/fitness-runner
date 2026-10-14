@@ -120,14 +120,85 @@ func eslintUncalled(t *testing.T, rp replays) {
 	}
 }
 
-func Test0024_1(t *testing.T) {
+func Test0024_9(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", map[string]string{"app.js": eslintUnsorted})
-	rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})
-	out, code := fitness(t, repo, rp.env, "eslint")
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "eslint")
-	eslintUncalled(t, rp)
+	for _, repo := range []string{
+		example(t, "happyRepo", map[string]string{"app.js": eslintUnsorted}),
+		eslintStaged(t, map[string]string{"README.md": readme + "\nOne more short line.\n"}),
+	} {
+		rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})
+		out, code := fitness(t, repo, rp.env, "eslint")
+		sees(t, out, code, 0, "All 1 checks passed")
+		passedWithNoFiles(t, out, "eslint")
+		eslintUncalled(t, rp)
+	}
+}
+
+// biomePackage is a JavaScript project that installs Biome at version %s.
+const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\": {\"@biomejs/biome\": \"%s\"}}\n"
+
+// biomeFlags are the flags fitness passes Biome before the paths, with %s
+// the cap that lifts its default of 20 diagnostics.
+const biomeFlags = "--reporter=github --max-diagnostics=%s --no-errors-on-unmatched --files-ignore-unknown=true"
+
+// biomeMajors pairs the version package.json declares, the version the
+// installed binary reports, and the cap that version takes: 1.8 rejects
+// `none` and takes at most 65535. A spec such as `latest` says nothing of the
+// version, so only the binary's answer counts.
+var biomeMajors = [][3]string{{"2.4.15", "2.4.15", "none"}, {"^1.9.4", "1.9.4", "none"}, {"latest", "1.8.3", "65535"}}
+
+// biomeTooOld is a Biome before 1.8, whose CLI rejects `--reporter=github`,
+// declared under a spec that hides its version.
+const biomeTooOld = "1.7.3"
+
+// biomeRejects runs check on files with Biome 1.7.3 installed under
+// `latest`, and expects it to fail naming that version without running Biome.
+func biomeRejects(t *testing.T, files map[string]string, check string) {
+	t.Helper()
+	files["package.json"] = fmt.Sprintf(biomePackage, "latest")
+	rp := standIn(t, map[string][]response{"biome": {biomeVersion(biomeTooOld)}})
+	out, code := fitness(t, example(t, "happyRepo", files), rp.env, check)
+	sees(t, out, code, 1, "Biome "+biomeTooOld+" found; Biome 1.8 or later is required")
+	if rp.called("biome", "--reporter=github") {
+		t.Errorf("Biome %s cannot take --reporter=github, yet it ran: %q", biomeTooOld, rp.calls("biome"))
+	}
+}
+
+// biomeVersion is real `biome --version` output for version v.
+func biomeVersion(v string) response {
+	return response{Match: []string{"--version"}, Stdout: "Version: " + v + "\n"}
+}
+
+// biomeUseConst is real `biome lint --reporter=github` output for a `let`
+// never reassigned on line %d; Biome exits 0 on a warning.
+const biomeUseConst = "::warning title=lint/style/useConst,file=app.js,line=%d,endLine=%[1]d,col=1,endColumn=4::This let declares a variable that is only assigned once.\n"
+
+// biomeMany is more findings than Biome's default cap of 20 diagnostics.
+const biomeMany = 25
+
+func Test0024_11(t *testing.T) {
+	t.Parallel()
+	var source, report strings.Builder
+	for i := 1; i <= biomeMany; i++ {
+		fmt.Fprintf(&source, "let v%d = %[1]d;\nexport { v%[1]d };\n", i)
+		fmt.Fprintf(&report, biomeUseConst, 2*i-1)
+	}
+	for _, major := range biomeMajors {
+		repo := example(t, "happyRepo", map[string]string{
+			"package.json": fmt.Sprintf(biomePackage, major[0]),
+			"biome.json":   "{ \"linter\": { \"enabled\": true } }\n",
+			"app.js":       source.String(),
+		})
+		match := "lint " + fmt.Sprintf(biomeFlags, major[2]) + " app.js"
+		rp := standIn(t, map[string][]response{"biome": {biomeVersion(major[1]), {Match: []string{match}, Stdout: report.String()}}})
+		out, code := fitness(t, repo, rp.env, "eslint")
+		eslintFinds(t, out, code, "app.js:1:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
+		eslintFinds(t, out, code, "app.js:49:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
+		if strings.Contains(out, eslintMissing) {
+			t.Errorf("a repo that chose Biome needs no eslint:\n%s", out)
+		}
+	}
+	biomeRejects(t, map[string]string{"biome.json": "{ \"linter\": { \"enabled\": true } }\n", "app.js": source.String()}, "eslint")
 }
 
 func Test0024_2(t *testing.T) {
@@ -191,14 +262,4 @@ func Test0024_7(t *testing.T) {
 	if rp.called("eslint", "app.js") {
 		t.Errorf("eslint must lint only the staged file, got calls %q", rp.calls("eslint"))
 	}
-}
-
-func Test0024_8(t *testing.T) {
-	t.Parallel()
-	repo := eslintStaged(t, map[string]string{"README.md": readme + "\nOne more short line.\n"})
-	rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})
-	out, code := fitness(t, repo, rp.env, "eslint")
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "eslint")
-	eslintUncalled(t, rp)
 }

@@ -17,10 +17,23 @@ A template file defines a markdown document's shape, and its neighbors must matc
 
 - Every `##` section of a template must carry a guiding `<!-- comment -->`.
 - A folder's templates are its own `template.md`-style files plus every file in its `templates` subfolder.
-- Walking up from each file's own folder, the first folder with any template governs it.
+- Walking up from each file's own folder, the first folder with a template that governs it decides.
 - The file must have the same `##` sections as any one of that folder's templates.
 - So `docs/arch/adr/0001-x.md` follows `docs/arch/adr/template.md`, while `docs/arch/04-code.md` follows `docs/arch/templates/*.md`.
 - A GitHub template gets the comment rule only; its body is checked by `pr-structure` and `plan-structure`.
+
+## Named templates
+
+A file in a `templates` folder governs alone the neighbor that shares its name, so `docs/architecture/templates/04-code.md` judges `docs/architecture/04-code.md`. It governs no other doc, so the other neighbors match the folder's other templates. A neighbor in a folder of only named templates follows the nearest folder above with others, so `docs/architecture/notes.md` follows `docs/template.md`. A named template holds its namesake to its whole shape:
+
+- Front matter: every top-level key the template has, and every item in its list, flow or block.
+- Sections: the template's `##` sections open the doc, in order. Sections of the doc's own may follow.
+- Legends: a section with a legend in the template needs a legend of the same Mermaid type.
+- Legend kinds: a diagram with no callout numbers, one titled `Legend`, or one under a `Legend` heading.
+- Callout tables: a section with one in the template needs one, and each has the template's columns.
+- Captions: the paragraph above each callout table starts with the first sentence of the template's caption.
+
+The five architecture view templates ship this way; the [architecture-contract README](../fitness-check-architecture-contract/README.md#templates) says how to copy them.
 
 ## Behavior
 

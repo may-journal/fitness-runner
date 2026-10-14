@@ -30,10 +30,6 @@ Source: `go/cmd/fitness-check-markdown-filename-kebab-case/main.go:21`
     - Given Developer has a repo whose doc names are all kebab-case, digits included
         - When markdown-filename-kebab-case runs
             - Then it passes
-- 0034.4
-    - Given Developer has capitalized docs such as `CODE_OF_CONDUCT.md` in a kebab-case repo
-        - When markdown-filename-kebab-case runs
-            - Then it passes, since standard docs are exempt
 - 0034.5
     - Given Developer has a kebab-case doc inside a capitalized folder
         - When markdown-filename-kebab-case runs
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-markdown-filename-kebab-case/main.go:21`
     - Given Developer has a staged camelCase doc in a kebab-case repo with an older camelCase doc
         - When markdown-filename-kebab-case runs on staged files
             - Then it fails naming only the staged file
+- 0034.9
+    - Given Developer has capitalized docs such as `CODE_OF_CONDUCT.md` and GitHub's `.github/pull_request_template.md` in a kebab-case repo
+        - When markdown-filename-kebab-case runs
+            - Then it passes, since standard docs and names GitHub requires are exempt

@@ -19,7 +19,7 @@ Full local Fitness checks the current branch. Pre-push runs one meta-check over 
 
 ## Behavior
 
-The check matches the current branch's open PR, including drafts and forks, then validates its closing issues and branch Plan trailers. History uses the API base commit, excluding unrelated upstream Plans. Ordinary issues receive PR checklist rules.
+The check matches the current branch's open PR, including drafts and forks, then validates its closing issues and branch Plan trailers. History starts at the fetched base branch when it contains the API base commit, else at that commit. Upstream Plans and entries merged since never count. Ordinary issues receive PR checklist rules.
 
 No PR or detached HEAD skips. Ambiguous PRs, unfinished checklists, inaccessible metadata, and missing base history fail with retry guidance. GitHub reads share a 30-second deadline; the runner allows 35 seconds for cancellation and reporting.
 

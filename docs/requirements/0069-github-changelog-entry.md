@@ -35,7 +35,7 @@ Source: `go/internal/metadata/changelog.go:17`
         - When the release tool rewrites it
             - Then it commits the ones the branch holds under the version section, newest file name first, and deletes those files
 - 0069.14
-    - Given Developer has a PR that amends its own entry file or one already pending, or adds the first `CHANGELOG.md`
+    - Given Developer has a PR that amends its own or a pending entry, or adds the first `CHANGELOG.md`, even when rebased
         - When pr-check and branch-check count its changelog entries
             - Then both pass
 - 0069.15

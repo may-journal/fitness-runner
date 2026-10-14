@@ -4,7 +4,9 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # changelog
 
-The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated section matching the package version style: `### yyyy.mm.dd.HHMM` (e.g. `### 2026.02.15.1100`). When `package.json` exists, the first (latest) CHANGELOG heading timestamp must match its version suffix (e.g. `0.1.0-2026.02.15.1100`). The `package-lock.json` version must match the `package.json` version.
+The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated section matching the package version style: `### yyyy.mm.dd.HHMM` (e.g. `### 2026.02.15.1100`). When `package.json` exists, its version must end in the first (latest) heading's timestamp. The `package-lock.json` version must match the `package.json` version.
+
+The timestamp follows `+` as build metadata (`0.1.0+2026.02.15.1100`) or `-` as a prerelease (`0.1.0-2026.02.15.1100`). Prefer `+`. Semver forbids leading zeros in prerelease numbers, so npm rejects `0.1.0-2026.02.15.0900` but accepts the build metadata form.
 
 ## Behavior
 
