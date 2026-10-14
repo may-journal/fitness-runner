@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.2210
+
+- Fix: architecture-contract: only a code span or label claims a root-level file by its bare name, and only a source such as `index.ts`.
+- Fix: architecture-components: only a root-level config such as `rollup.config.mjs` is a tool, so `src/app/app.config.ts` needs an owner.
+- Docs: the contract and components READMEs say which bare names claim and which configs are tools.
+- Test: requirement 0075.12 adds a nested config module and `package.json` named by two components.
+
 ### 2026.10.13.2206
 
 - Fix: architecture-code: a one-line TypeScript type relates the names on its first line, and `List~Item~[]` reads as `List<Item>[]`.

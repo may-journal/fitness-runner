@@ -52,14 +52,15 @@ func category(file string, kept bool) string {
 	return "product"
 }
 
-// tool reports a script or a script tool's config file, such as
-// rollup.config.mjs.
+// tool reports a script or a root-level script tool's config file, such
+// as rollup.config.mjs. A config module deeper down, such as
+// src/app/app.config.ts, is product code.
 func tool(file string) bool {
 	ext := path.Ext(file)
 	if contains([]string{".sh", ".bash", ".zsh", ".py"}, ext) {
 		return true
 	}
-	return contains(walkfs.ScriptExts, ext) && walkfs.ToolConfig(file)
+	return contains(walkfs.ScriptExts, ext) && walkfs.ToolConfig(file) && !strings.Contains(file, "/")
 }
 
 func testFolder(dir string) bool {

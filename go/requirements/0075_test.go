@@ -76,22 +76,28 @@ func Test0075_1(t *testing.T) {
 func Test0075_12(t *testing.T) {
 	t.Parallel()
 	files := with(aoFixture(), map[string]string{
-		"src/api/api.go":    "package api\n",
-		"index.mjs":         "export const ready = true;\n",
-		"rollup.config.mjs": "export default { input: \"index.mjs\" };\n",
-		".eslintrc.cjs":     "module.exports = {};\n",
+		"src/api/api.go":        "package api\n",
+		"src/api/api.config.ts": "export const port = 8080;\n",
+		"index.mjs":             "export const ready = true;\n",
+		"rollup.config.mjs":     "export default { input: \"index.mjs\" };\n",
+		".eslintrc.cjs":         "module.exports = {};\n",
+		"package.json":          "{}\n",
 	})
 	out, code := aoRun(t, files)
-	sees(t, out, code, 1, "src/api/api.go"+aoNoOwner, "index.mjs"+aoNoOwner)
-	if strings.Contains(out, "config.mjs") || strings.Contains(out, ".eslintrc") {
-		t.Errorf("a tool config needs no owner:\n%s", out)
+	sees(t, out, code, 1, "src/api/api.go"+aoNoOwner, "src/api/api.config.ts"+aoNoOwner, "index.mjs"+aoNoOwner)
+	if strings.Contains(out, "rollup.config.mjs") || strings.Contains(out, ".eslintrc") {
+		t.Errorf("a root tool config needs no owner:\n%s", out)
 	}
 	files = aoEdit(files, "\"src/store\")", "\"src/store\", \"and src/api\")")
-	files = aoEdit(files, "| Keeps records. |", "| Keeps records, `index.mjs` and `missing.mjs` export them. |")
+	files = aoEdit(files, aoEntry, "Component(entry, \"2 Entry\", \"Go\", \"Loads index.mjs, per package.json\")\n")
+	files = aoEdit(files, "| `src/cmd/service` starts it. |", "| `src/cmd/service` starts it, per `package.json`. |")
+	files = aoEdit(files, "| Keeps records. |", "| Keeps records, `index.mjs` and `missing.mjs` export them, per `package.json`. |")
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
 	passedWith(t, out, aoCheck, "1")
-	files["src/api/api.go"] = ""
+	out, code = fitness(t, example(t, "happyRepo", files), nil, acCheck)
+	sees(t, out, code, 0)
+	files["src/api/api.go"], files["src/api/api.config.ts"] = "", ""
 	out, code = fitness(t, example(t, "happyRepo", files), nil, acCheck)
 	sees(t, out, code, 1, aoView+":7: unresolved source path src/api")
 }

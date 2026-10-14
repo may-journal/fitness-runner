@@ -49,4 +49,4 @@ Source: #288
 - 0075.12
     - Given Developer has a product source no component names
         - When I check its components
-            - Then the error names the source, naming its folder or root file passes, and tool configs need no owner
+            - Then the error names the source, naming its folder or root source passes, and root tool configs need no owner
