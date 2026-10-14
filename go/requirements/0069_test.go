@@ -150,6 +150,12 @@ func Test0069_14(t *testing.T) {
 	sees(t, out, code, 0, "Passed.")
 	local, localCode = entryLocal(t, repo, pr)
 	sees(t, local, localCode, 0, "pr-check #1")
+	repo, pr = entryCommits(t, map[string]string{"CHANGELOG.md": ""}, entryFileBody("changelog/one-file.md"),
+		map[string]string{"changelog/one-file.md": entry, "CHANGELOG.md": changelogBase})
+	out, code = entryActions(t, repo, entryFileBody("changelog/one-file.md"))
+	sees(t, out, code, 0, "Passed.")
+	local, localCode = entryLocal(t, repo, pr)
+	sees(t, local, localCode, 0, "pr-check #1")
 }
 
 func Test0069_15(t *testing.T) {

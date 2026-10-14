@@ -32,7 +32,7 @@ const (
 	changelogMD = "CHANGELOG.md"
 	packageJSON = "package.json"
 
-	msgChangelogMissing = "CHANGELOG.md missing; add it and mention your staged changes"
+	msgChangelogMissing = "CHANGELOG.md missing; add it, and record your staged changes in a changelog/<name>.md entry file"
 	msgStageEntry       = "Stage a changelog/<name>.md entry file that mentions your staged changes"
 	msgSectionEdit      = "CHANGELOG.md is staged; only the release PR writes it, so record this change in a changelog/<name>.md entry file instead"
 	msgOverlapHead      = " additions should mention at least "
@@ -119,16 +119,22 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return judge(root, parseStagedDiff(stagedDiff(root)), now()), nil
 }
 
-// checkHistory requires CHANGELOG.md on disk and out of the commit: it is
-// history that only the release PR writes.
+// checkHistory requires CHANGELOG.md on disk, and keeps a commit from
+// changing the one HEAD holds: it is history that only the release PR
+// writes. A commit may add the file to a repo that lacks it.
 func checkHistory(root string, staged []string) (msg string, ok bool) {
 	if _, err := os.Stat(filepath.Join(root, changelogMD)); err != nil {
 		return msgChangelogMissing, false
 	}
-	if slices.Contains(staged, changelogMD) {
+	if slices.Contains(staged, changelogMD) && inHead(root, changelogMD) {
 		return msgSectionEdit, false
 	}
 	return "", true
+}
+
+// inHead reports whether HEAD holds path.
+func inHead(root, path string) bool {
+	return exec.Command("git", "-C", root, "cat-file", "-e", "HEAD:"+path).Run() == nil
 }
 
 // checkOneEntry keeps a branch to one entry file: once an earlier commit on

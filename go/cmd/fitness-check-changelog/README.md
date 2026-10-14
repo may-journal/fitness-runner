@@ -19,7 +19,7 @@ The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated se
 
 Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So a pull request adds its entry as its own `changelog/<name>.md` file, named for the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above.
 
-- A pull request adds exactly one entry file. Adding or editing a `CHANGELOG.md` section fails, pointing to `changelog/`.
+- A pull request adds exactly one entry file. Adding or editing a section in an existing `CHANGELOG.md` fails, pointing to `changelog/`.
 - A repo with no `changelog/` folder needs no setting: its first pull request creates it.
 - This check folds every entry file into `CHANGELOG.md`, newest first, and judges the result, so the newest entry is the first heading.
 - Fail: an entry file holding other than one dated `###` heading → `changelog/<name>.md must hold one ### yyyy.mm.dd.HHMM heading...`.

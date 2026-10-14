@@ -94,6 +94,13 @@ func ReadDiff(patch string) Diff {
 	return Diff{Releases: releases.added(), Bullets: bullets.added()}
 }
 
+// CreatesFile reports whether a unified diff, as git or GitHub prints it,
+// creates its file: its first hunk starts from nothing.
+func CreatesFile(patch string) bool {
+	_, hunk, ok := strings.Cut("\n"+patch, "\n@@ ")
+	return ok && strings.HasPrefix(hunk, "-0,0 ")
+}
+
 // Anchors are the fragments GitHub gives the release sections d adds.
 func (d Diff) Anchors() []string {
 	var anchors []string

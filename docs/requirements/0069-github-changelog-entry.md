@@ -39,7 +39,7 @@ Source: `go/internal/metadata/changelog.go:17`
         - When the release tool rewrites it
             - Then it commits the ones the branch holds under the version section and deletes those files
 - 0069.14
-    - Given Developer has a PR that amends its own entry file or one already pending
+    - Given Developer has a PR that amends its own entry file or one already pending, or adds the first `CHANGELOG.md`
         - When pr-check and branch-check count its changelog entries
             - Then both pass
 - 0069.15
@@ -47,6 +47,6 @@ Source: `go/internal/metadata/changelog.go:17`
         - When pr-check and branch-check count its changelog entries
             - Then both fail naming the extra one
 - 0069.16
-    - Given Developer has a PR that adds or edits a `CHANGELOG.md` section
+    - Given Developer has a PR that adds or edits a section in an existing `CHANGELOG.md`
         - When pr-check and branch-check judge its changelog entry
             - Then both fail pointing to an entry file in `changelog/`

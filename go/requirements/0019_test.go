@@ -49,12 +49,19 @@ func Test0019_13(t *testing.T) {
 	files := changelogStagedEntry(changelogNow(1), "Feat: added runner feature for validation.")
 	files["CHANGELOG.md"] = ""
 	out, code = changelogStaged(t, files)
-	sees(t, out, code, 1, "CHANGELOG.md missing; add it and mention your staged changes")
+	sees(t, out, code, 1, "CHANGELOG.md missing; add it, and record your staged changes in a changelog/<name>.md entry file")
 }
 
-func Test0019_11(t *testing.T) {
+func Test0019_16(t *testing.T) {
 	t.Parallel()
-	out, code := changelogStaged(t, changelogStagedEntry(changelogNow(1), "Feat: added runner feature for validation."))
+	files := changelogStagedEntry(changelogNow(1), "Feat: added runner feature for validation.")
+	out, code := changelogStaged(t, files)
+	sees(t, out, code, 0, "All 1 checks passed")
+	repo := example(t, "happyRepo", map[string]string{"CHANGELOG.md": ""})
+	files["CHANGELOG.md"] = changelogBase
+	write(t, repo, files)
+	git(t, repo, "add", "-A")
+	out, code = fitness(t, repo, nil, "changelog-updated")
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 

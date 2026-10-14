@@ -38,15 +38,15 @@ Source: `go/cmd/fitness-check-changelog-updated/main.go:105`
     - Given Developer has staged changes without a staged entry file, or no `CHANGELOG.md`
         - When changelog-updated checks the staged commit
             - Then it fails asking me to add an entry file
-- 0019.11
-    - Given Developer has staged a new entry file naming the change
-        - When changelog-updated checks the staged commit
-            - Then it passes without a `CHANGELOG.md` change
 - 0019.14
     - Given Developer has a branch whose earlier commit added its entry file
         - When changelog-updated checks a commit that adds another entry file
             - Then it fails naming the branch's entry file and the new one
 - 0019.15
-    - Given Developer has staged a new or edited `CHANGELOG.md` section
+    - Given Developer has staged a new or edited section in a committed `CHANGELOG.md`
         - When changelog-updated checks the staged commit
             - Then it fails pointing me to an entry file in `changelog/`
+- 0019.16
+    - Given Developer has staged a new entry file naming the change, and a first `CHANGELOG.md` or none
+        - When changelog-updated checks the staged commit
+            - Then it passes

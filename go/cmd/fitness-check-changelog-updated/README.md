@@ -6,7 +6,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 When the runner provides staged file context, it runs three checks. The added lines in the branch's [entry file](../fitness-check-changelog/README.md#entry-files) must share at least three words with the rest of the staged diff. A branch keeps one entry file, so later commits add bullets to the file its first commit wrote. Its added `### yyyy.mm.dd.HHMM` heading must use the check run time, or up to five minutes before it.
 
-`CHANGELOG.md` is history that only the release PR writes. A commit that stages it, such as a new or edited section, fails pointing to an entry file in `changelog/`.
+`CHANGELOG.md` is history that only the release PR writes. A commit that changes a committed one, such as a new or edited section, fails pointing to an entry file in `changelog/`. A commit may add the first one.
 
 A branch's own commits are those no other `origin` branch holds, so a stacked branch starts where its base ends. On the default branch, or without `origin` refs, each commit is judged alone. `fitness pr-check` holds the whole pull request to one entry.
 

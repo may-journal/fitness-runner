@@ -29,16 +29,16 @@ func changelogErrors(t target, gh aftereffect.Client) []string {
 
 // entryErrors judges a PR's CHANGELOG.md diff, its entry files, and its
 // description. A release PR adds a version section and links it. Any other
-// CHANGELOG.md change fails, since entries live in entry files. Editing or
-// deleting an entry file already pending on the base amends that entry, so
-// it needs no new one.
+// change to an existing CHANGELOG.md fails, since entries live in entry
+// files; a PR may create the file. Editing or deleting an entry file already
+// pending on the base amends that entry, so it needs no new one.
 func entryErrors(patch string, files []aftereffect.FileChange, body string) []string {
 	diff := changelog.ReadDiff(patch)
 	if len(diff.Releases) > 0 {
 		return sectionErrors(diff, body)
 	}
 	var errs []string
-	if patch != "" {
+	if patch != "" && !changelog.CreatesFile(patch) {
 		errs = append(errs, msgSectionEdit)
 	}
 	return append(errs, oneEntryErrors(addedEntries(files), body)...)
