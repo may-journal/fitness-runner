@@ -7,20 +7,22 @@ import "strings"
 // TypeScript nodes.
 func (r *relations) scriptUses() {
 	for _, file := range r.files(typeScript) {
-		t := newTSReader(strings.Join(r.c.m.repo.read(file), "\n"))
+		t := newTSReader(file, strings.Join(r.c.m.repo.read(file), "\n"))
 		for j := range t.tokens {
 			r.scriptToken(t, j, Location{file, t.line(j)})
 		}
 	}
 }
 
-// scriptToken relates the node holding token j. A header line reads its
-// heritage clause once, at its first token, and relates nothing else.
+// scriptToken relates the node holding token j. A class or interface
+// header reads its heritage clause once, at the line's first token, and
+// relates nothing else. Tokens after the body's brace, or in a type alias
+// or enum, relate as names, even on a declaration's first line.
 func (r *relations) scriptToken(t *tsReader, j int, at Location) {
 	from := r.owner(at)
 	switch d := r.headers[at]; {
 	case from == nil:
-	case d != nil:
+	case d != nil && t.at(j).Pos < d.Body:
 		r.scriptHeader(t, j, from, d, at)
 	case t.ident(j):
 		r.scriptName(t, j, from, at)

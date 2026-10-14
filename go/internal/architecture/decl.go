@@ -43,6 +43,10 @@ type decl struct {
 	// Open is the line a TypeScript type's body opens on, which ends a
 	// header split over lines.
 	Open int
+	// Body is the byte offset of a TypeScript class or interface's opening
+	// brace. Only tokens before it read as the header; a type alias or
+	// enum has none.
+	Body int
 }
 
 // full is the declaration's qualified name, such as checkkit.Result or

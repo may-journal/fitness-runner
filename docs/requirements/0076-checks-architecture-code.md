@@ -49,4 +49,4 @@ Source: #289
 - 0076.10
     - Given Developer has a TypeScript code view
         - When I check its code
-            - Then each class resolves to its declaration, members, and edges, and an unnamed exported class fails
+            - Then each class resolves to its declaration, members, and edges, in TSX and without semicolons too, and an unnamed exported class fails

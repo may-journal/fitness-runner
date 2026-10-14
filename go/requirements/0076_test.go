@@ -244,13 +244,15 @@ func Test0076_8(t *testing.T) {
 const (
 	cvTSStore = "src/store/store.ts"
 	cvTSDisk  = "src/store/disk.ts"
+	cvTSView  = "src/store/panel.tsx"
 )
 
 // cvScript is a TypeScript repository whose code view matches its source:
 // an interface, the class implementing it, a subclass with a header over
-// two lines, the function it calls, and a class exported by an export
-// list. The diagram starts on line 4, so the store's members sit on lines
-// 10 and 11, the subclass on 13, and the edges on lines 18 to 20.
+// two lines, the function it calls, a class exported by an export list,
+// and the TSX panel. The diagram starts on line 4, so the store's members
+// sit on lines 10 and 11, the subclass on 13, and the edges on lines 18 to
+// 20.
 func cvScript() map[string]string {
 	files := acFixture(acRoot)
 	files[cvTSStore] = "import { Sink } from './sink';\n\n// Saving writes records.\nexport interface Saving {\n  save(id: string): boolean;\n}\n\n" +
@@ -259,14 +261,25 @@ func cvScript() map[string]string {
 	files[cvTSDisk] = "import { Store } from './store';\n\nexport class DiskStore\n  extends Store {\n  flush(force?: boolean): Promise<void> {\n    return write(this.records);\n  }\n}\n\n" +
 		"export function write(records: Map<string, number>): Promise<void> {\n  return Promise.resolve();\n}\n"
 	files["src/store/sink.ts"] = "class Sink {}\n\nexport { Sink };\n"
+	files[cvTSView] = cvPanel
 	files[cvView] = acView("classDiagram\nclass Saving[\"1 Saving\"] {\n<<interface>>\n+save(id: string) boolean\n}\nclass Store[\"2 Store\"] {\n+records: Map~string, number~\n+save(string) boolean\n}\n"+
 		"class DiskStore[\"3 DiskStore\"] {\n+flush(force: boolean) Promise~void~\n}\nclass write[\"4 write(Map~string, number~) Promise~void~\"]\nclass Sink[\"5 Sink\"]\n"+
-		"Store ..|> Saving : 6\nStore <|-- DiskStore : 7\nDiskStore --> write : 8",
+		"Store ..|> Saving : 6\nStore <|-- DiskStore : 7\nDiskStore --> write : 8\n"+
+		"class Handler[\"9 Handler\"]\nclass Panel[\"10 Panel\"] {\n+host\n+rows: Array~string~[]\n+open(number, string) void\n}\nHandler --> Store : 11",
 		"Saves records, in [store.ts](../src/store/store.ts).", "Keeps records, in [store.ts](../src/store/store.ts).",
 		"Writes to disk, in [disk.ts](../src/store/disk.ts).", "Writes records, in [disk.ts](../src/store/disk.ts).",
-		"Takes records, in [sink.ts](../src/store/sink.ts).", "The store saves.", "A disk store is a store.", "Flushing writes.")
+		"Takes records, in [sink.ts](../src/store/sink.ts).", "The store saves.", "A disk store is a store.", "Flushing writes.",
+		"Takes a store, in [panel.tsx](../src/store/panel.tsx).", "Shows records, in [panel.tsx](../src/store/panel.tsx).", "A handler reads the store.")
 	return files
 }
+
+// cvPanel is TSX without semicolons: a one-line alias that names Store, a
+// component whose closing tags hold braces, and a class after statements
+// and a field that end in ! or ++, with a < in a parameter default.
+const cvPanel = "import { Store } from './store'\n\nexport type Handler = (s: Store) => void\n\nlet renders = 0\n\n" +
+	"export function Title(props: { show: boolean }) {\n  return <h1>{props.show && <b>Records</b>}</h1>\n}\n\n" +
+	"const root = document.getElementById('root')!\nrenders++\nexport class Panel {\n  host = root!\n  rows: Array<string>[] = []\n\n" +
+	"  open(limit: number = renders < 10 ? 1 : 2, label: string): void {\n    renders += limit\n  }\n}\n"
 
 func Test0076_10(t *testing.T) {
 	t.Parallel()
@@ -280,6 +293,7 @@ func Test0076_10(t *testing.T) {
 		{cvView, "disk, in [disk.ts](../src/store/disk.ts)", "disk, in [store.ts](../src/store/store.ts)", cvView + ":13: DiskStore: DiskStore is declared at " + cvTSDisk + ":3, not in the linked " + cvTSStore},
 		{cvView, "DiskStore --> write : 8", "", cvTSDisk + ":6: DiskStore calls write, but " + cvView + " " + cvNoEdge + "DiskStore -> write" + cvAllowIt},
 		{cvTSStore, "Store implements Saving", "Store", cvView + ":18: " + cvView + " draws realization Store -> Saving, but no source shows Store conforms to Saving"},
+		{cvView, "\nHandler --> Store : 11", "", cvTSView + ":3: Handler references Store, but " + cvView + " " + cvNoEdge + "Handler -> Store" + cvAllowIt},
 	}
 	for _, c := range cases {
 		out, code := cvRun(t, cvEdit(cvScript(), c.file, c.old, c.new))

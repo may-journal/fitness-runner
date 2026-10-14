@@ -60,16 +60,25 @@ type tsReader struct {
 	exports map[string]bool
 }
 
-func newTSReader(src string) *tsReader {
-	return &tsReader{src: src, tokens: javascript.Lex(src), starts: lineStarts(src), exports: map[string]bool{}}
+func newTSReader(file, src string) *tsReader {
+	return &tsReader{file: file, src: src, tokens: tsLex(file, src), starts: lineStarts(src), exports: map[string]bool{}}
+}
+
+// tsLex reads a .tsx file's closing tags as tags, so their slashes never
+// start a regex that swallows the line's braces.
+func tsLex(file, src string) []javascript.Token {
+	if path.Ext(file) == ".tsx" {
+		return javascript.LexJSX(src)
+	}
+	return javascript.Lex(src)
 }
 
 // tsDecls reads every TypeScript source that is not a test.
 func (m *Model) tsDecls(x *declIndex) {
 	for _, s := range m.Sources {
 		if typeScript(s.Path) && s.Category != "test" && !walkfs.ScriptTest(s.Path) {
-			r := newTSReader(strings.Join(m.repo.read(s.Path), "\n"))
-			r.x, r.file = x, s.Path
+			r := newTSReader(s.Path, strings.Join(m.repo.read(s.Path), "\n"))
+			r.x = x
 			r.read()
 		}
 	}
@@ -128,7 +137,7 @@ func (r *tsReader) container(start, i int, kind string, exported bool) int {
 		return close + 1
 	}
 	d := r.add(name, "", kind, start, close)
-	d.Supers, d.Implements, d.Open = h.supers, h.implements, r.line(h.open)
+	d.Supers, d.Implements, d.Open, d.Body = h.supers, h.implements, r.line(h.open), r.at(h.open).Pos
 	if kind == kindType {
 		d.Exported, r.classes = exported, append(r.classes, d)
 	}
@@ -306,16 +315,25 @@ func (r *tsReader) finish(i int) int {
 // params reads the parameters between the parentheses at open and close.
 func (r *tsReader) params(open, close int) []param {
 	var params []param
-	start := open + 1
-	for j := start; j < close; j = r.typeGroup(j) + 1 {
-		if r.is(j, ",") {
-			params, start = append(params, r.param(start, j)), j+1
-		}
-	}
-	if start < close {
-		params = append(params, r.param(start, close))
+	for start := open + 1; start < close; {
+		end := r.paramEnd(start, close)
+		params, start = append(params, r.param(start, end)), end+1
 	}
 	return params
+}
+
+// paramEnd returns the comma or closing parenthesis after the parameter
+// at token from. Its type steps over type parameters, but its default is
+// an expression, where a < compares.
+func (r *tsReader) paramEnd(from, close int) int {
+	step := r.typeGroup
+	j := from
+	for ; j < close && !r.is(j, ","); j = step(j) + 1 {
+		if r.is(j, "=") && !r.arrow(j+1) {
+			step = r.group
+		}
+	}
+	return min(j, close)
 }
 
 // param reads one parameter: modifiers and a rest marker, the name or
