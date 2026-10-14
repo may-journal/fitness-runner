@@ -1,9 +1,9 @@
 // Package changelog finds the changelog/ entry files a branch, a staged
 // commit, or a pull request adds, and reads CHANGELOG.md's dated
-// "### yyyy.mm.dd.HHMM" history. The commit gate, the pre-commit stamp, and
-// pr-check share it, so all three agree that a pull request carries one
-// entry file, which later commits amend. It also names the anchor GitHub
-// gives a release heading, so a release PR links its section.
+// "### yyyy.mm.dd.HHMM" history. The commit gate and pr-check share it, so
+// both agree that a pull request carries one entry file, which later commits
+// amend. It also names the anchor GitHub gives a release heading, so a
+// release PR links its section.
 package changelog
 
 import (

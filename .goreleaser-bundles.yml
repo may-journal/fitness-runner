@@ -73,7 +73,6 @@ archives:
       - fitness-check-text-readability
       - fitness-check-vitest-coverage-exclude
       - fitness-check-vitest-coverage-full
-      - fitness-stamp-changelog
     formats: [tar.gz]
     name_template: 'fitness-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     wrap_in_directory: true

@@ -6,7 +6,7 @@ relatedConfigurations: ['../release-please-config.json', '../.goreleaser-bundles
 
 # Distribution
 
-Consumers install source with `go install` or download verified static binaries from GitHub Releases. Each binary bundle contains the runner, checks, and changelog stamper.
+Consumers install source with `go install` or download verified static binaries from GitHub Releases. Each binary bundle contains the runner and checks.
 
 ## Versioning
 

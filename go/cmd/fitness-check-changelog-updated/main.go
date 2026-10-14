@@ -1,19 +1,16 @@
 // Command fitness-check-changelog-updated checks that each staged commit
-// writes a changelog entry about its change. A branch keeps one entry file,
-// and its heading shows the commit time. CHANGELOG.md is history that only
-// the release PR writes. The README holds the full rules.
+// writes a changelog entry about its change. A branch keeps one entry file.
+// CHANGELOG.md is history that only the release PR writes. The README holds
+// the full rules.
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"strings"
-	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/changelog"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -25,12 +22,7 @@ const (
 	minWordLen   = 3
 	suggestWords = 10
 
-	// stampGrace is how far behind the clock the newest heading may be.
-	stampGrace  = 5 * time.Minute
-	stampLayout = "2006.01.02.1504"
-
 	changelogMD = "CHANGELOG.md"
-	packageJSON = "package.json"
 
 	msgChangelogMissing = "CHANGELOG.md missing; add it, and record your staged changes in a changelog/<name>.md entry file"
 	msgStageEntry       = "Stage a changelog/<name>.md entry file that mentions your staged changes"
@@ -38,21 +30,12 @@ const (
 	msgOverlapHead      = " additions should mention at least "
 	msgOverlapTail      = " words from your staged changes (found "
 	msgSuggestPrefix    = "e.g. use words like: "
-	msgChangelogTime    = " new section heading must use current date and time (yyyy.mm.dd.HHMM), not a guessed time"
 	msgAmendHead        = "this branch already has its entry "
 	msgAmendTail        = "; add your bullets to it instead of a new entry: "
 
 	// labelEntryFile names an entry file in messages.
 	labelEntryFile = "Changelog entry file"
 )
-
-var (
-	headingRe   = regexp.MustCompile(`### (\d{4}\.\d{2}\.\d{2}\.\d{4})`)
-	versionTSRe = regexp.MustCompile(`(\d{4}\.\d{2}\.\d{2}\.\d{4})$`)
-)
-
-// now returns the current wall-clock time; a variable so tests can pin it.
-var now = time.Now
 
 // stagedDiff returns raw `git diff --cached` output for root; a variable so
 // tests can inject fixed diffs. Failures degrade to whatever stdout produced,
@@ -116,7 +99,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if msg, ok := checkOneEntry(root); !ok {
 		return checkkit.Fail(1, msg), nil
 	}
-	return judge(root, parseStagedDiff(stagedDiff(root)), now()), nil
+	return judge(parseStagedDiff(stagedDiff(root))), nil
 }
 
 // checkHistory requires CHANGELOG.md on disk, and keeps a commit from
@@ -230,11 +213,10 @@ func extractWords(text string) []string {
 	return words
 }
 
-// judge applies the check's gates in TS order: changelog additions present,
-// rest-of-diff words present, timestamp agreement, then word overlap.
-func judge(root string, files []diffFile, at time.Time) checkkit.Result {
+// judge applies the check's gates in order: changelog additions present,
+// rest-of-diff words present, then word overlap.
+func judge(files []diffFile) checkkit.Result {
 	changelogAdded, restParts := splitDiff(files)
-	label := labelEntryFile
 	changelogWords := extractWords(changelogAdded)
 	if len(changelogWords) == 0 {
 		return checkkit.Fail(1, msgStageEntry)
@@ -243,10 +225,7 @@ func judge(root string, files []diffFile, at time.Time) checkkit.Result {
 	if len(restWords) == 0 {
 		return checkkit.Pass(1)
 	}
-	if msg, ok := checkChangelogTime(root, label, changelogAdded, at); !ok {
-		return checkkit.Fail(1, msg)
-	}
-	return judgeOverlap(label, changelogWords, restWords)
+	return judgeOverlap(changelogWords, restWords)
 }
 
 // splitDiff separates the entry files' added content from every other
@@ -263,66 +242,11 @@ func splitDiff(files []diffFile) (changelogAdded string, restParts []string) {
 	return strings.Join(entryParts, " "), restParts
 }
 
-// checkChangelogTime requires the first "### yyyy.mm.dd.HHMM" heading in the
-// added changelog content, the newest section, to carry the expected stamp.
-// Later added headings are history a rewrite re-adds, so they keep their
-// times. ok is true when there are no headings or the newest agrees.
-func checkChangelogTime(root, label, added string, at time.Time) (msg string, ok bool) {
-	m := headingRe.FindStringSubmatch(added)
-	if m == nil {
-		return "", true
-	}
-	if version, found := versionTimestamp(root); found {
-		return timeMismatch(label, m[1] == version, version)
-	}
-	return timeMismatch(label, withinStampGrace(m[1], at), at.Format(stampLayout))
-}
-
-// timeMismatch turns a heading verdict into checkChangelogTime's result,
-// naming the expected stamp on failure.
-func timeMismatch(label string, ok bool, expected string) (string, bool) {
-	if ok {
-		return "", true
-	}
-	return label + msgChangelogTime + " (expected ### " + expected + ")", false
-}
-
-// withinStampGrace reports whether stamp names a minute from stampGrace
-// before at up to at's own minute. The pre-commit hook stamps the heading
-// before the suite runs, so the clock may pass a minute boundary in between.
-func withinStampGrace(stamp string, at time.Time) bool {
-	t, err := time.ParseInLocation(stampLayout, stamp, at.Location())
-	if err != nil {
-		return false
-	}
-	minute := at.Truncate(time.Minute)
-	return !t.After(minute) && !t.Before(minute.Add(-stampGrace))
-}
-
-// versionTimestamp returns the end-anchored yyyy.mm.dd.HHMM suffix of the
-// root package.json version, which overrides the clock when present.
-func versionTimestamp(root string) (string, bool) {
-	raw, err := os.ReadFile(filepath.Join(root, packageJSON))
-	if err != nil {
-		return "", false
-	}
-	var pkg struct {
-		Version string `json:"version"`
-	}
-	if json.Unmarshal(raw, &pkg) != nil {
-		return "", false
-	}
-	if m := versionTSRe.FindStringSubmatch(pkg.Version); m != nil {
-		return m[1], true
-	}
-	return "", false
-}
-
 // judgeOverlap passes when the changelog additions share at least minOverlap
 // distinct words with the rest of the staged diff; otherwise it reports the
 // shortfall (first five overlapping words) and suggests the first
 // suggestWords rest-diff words.
-func judgeOverlap(label string, changelogWords, restWords []string) checkkit.Result {
+func judgeOverlap(changelogWords, restWords []string) checkkit.Result {
 	overlap := overlapWords(changelogWords, restWords)
 	if len(overlap) >= minOverlap {
 		return checkkit.Pass(1)
@@ -336,7 +260,7 @@ func judgeOverlap(label string, changelogWords, restWords []string) checkkit.Res
 		suggested = suggested[:suggestWords]
 	}
 	return checkkit.Fail(1,
-		fmt.Sprintf("%s%s%d%s%d: %s)", label,
+		fmt.Sprintf("%s%s%d%s%d: %s)", labelEntryFile,
 			msgOverlapHead, minOverlap, msgOverlapTail, len(overlap), strings.Join(shown, ", ")),
 		msgSuggestPrefix+strings.Join(suggested, ", "))
 }

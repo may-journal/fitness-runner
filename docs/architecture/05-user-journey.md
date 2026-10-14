@@ -43,7 +43,7 @@ flowchart TB
     terminal[2 Terminal<br/>Req 0001]:::screen
     runFull(3 Run fitness<br/>Req 0001):::action
     runSingle(4 Run single check<br/>Req 0001):::action
-    commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0063):::action
+    commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
@@ -121,7 +121,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 12  | Bad config or missing binary.       | System  | Fails loud — every check ships together, so a missing binary is a broken install.     |
 | 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, and Plan issues are judged there too.      |
 | 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives every check; nothing else to install.                     |
-| 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite, stamp the changelog, and keep each issue linked once.            |
+| 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite and keep each issue linked once.                                  |
 | 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |
 | 17  | Commit message checks.              | System  | Semantic subject, attribution, Plan trailer, and one link per issue.                  |
 | 18  | Changelog checks.                   | System  | Each change has one dated entry file whose bullets match the change.                  |

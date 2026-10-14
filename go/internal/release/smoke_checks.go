@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+const externalConfig = `{"policy":"external"}`
 const externalChecks = "markdown-filename-kebab-case,markdown-links"
 const externalPolicy = "--policy=external"
 const checksFlag = "--checks=" + externalChecks
@@ -33,7 +34,7 @@ func (s smoke) check(ctx context.Context) error {
 		func(ctx context.Context) error {
 			return s.run(ctx, s.installer, "--", externalPolicy, checksFlag, "--all")
 		},
-		s.checkHookTools, s.checkAction, s.installHook, s.rejectInvalid,
+		s.checkAction, s.installHook, s.rejectInvalid,
 	}
 	for _, step := range steps {
 		if err := step(ctx); err != nil {

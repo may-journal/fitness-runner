@@ -23,7 +23,8 @@ Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts
 - A repo with no `changelog/` folder needs no setting: its first pull request creates it.
 - This check folds every entry file into `CHANGELOG.md`, newest first, and judges the result, so the newest entry is the first heading.
 - Fail: an entry file holding other than one dated `###` heading → `changelog/<name>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
-- `changelog-updated`, the pre-commit stamp, `pr-check`, and `branch-check` accept only entry files.
+- `changelog-updated`, `pr-check`, and `branch-check` accept only entry files.
+- You write the heading's time by hand; no hook rewrites it.
 - On the release PR, `fitness-release release-pr` commits the entry files into `CHANGELOG.md` below the Release Please version section and deletes them.
 
 Dated sections already in `CHANGELOG.md` stay valid history, which this check and `changelog-bullets` still judge.

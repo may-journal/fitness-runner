@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-My branch carries one dated changelog entry, in its own entry file. Each commit adds bullets to it that name what changed. I can trust its heading time, because no one guesses it.
+My branch carries one dated changelog entry, in its own entry file. Each commit adds bullets to it that name what changed.
 
 ## Measurement
 
@@ -14,7 +14,7 @@ staged commits whose changelog bullets name the change under the branch's one cu
 -
 staged commits with changes
 
-Source: `go/cmd/fitness-check-changelog-updated/main.go:105`
+Source: `go/cmd/fitness-check-changelog-updated/main.go:88`
 
 ## Requirements
 
@@ -22,14 +22,6 @@ Source: `go/cmd/fitness-check-changelog-updated/main.go:105`
     - Given Developer has an entry sharing fewer than three words with the change
         - When changelog-updated checks the staged commit
             - Then it fails with the count and suggested words
-- 0019.4
-    - Given Developer has a newest heading older than five minutes
-        - When changelog-updated checks the staged commit
-            - Then it fails naming the expected heading time
-- 0019.5
-    - Given Developer has a `package.json` version ending in a different time
-        - When changelog-updated checks the staged commit
-            - Then it fails expecting the version's time
 - 0019.6
     - Given Developer has a merge in progress that replays an old entry
         - When changelog-updated checks the staged commit
