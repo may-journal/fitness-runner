@@ -103,21 +103,22 @@ func run(root string, _ []string) (checkkit.Result, error) {
 }
 
 // checkHistory requires CHANGELOG.md on disk, and keeps a commit from
-// changing the one HEAD holds: it is history that only the release PR
-// writes. A commit may add the file to a repo that lacks it.
+// changing the one the branch started from: it is history that only the
+// release PR writes. A branch may add the file to a repo that lacks it, as
+// pr-check allows.
 func checkHistory(root string, staged []string) (msg string, ok bool) {
 	if _, err := os.Stat(filepath.Join(root, changelogMD)); err != nil {
 		return msgChangelogMissing, false
 	}
-	if slices.Contains(staged, changelogMD) && inHead(root, changelogMD) {
+	if slices.Contains(staged, changelogMD) && heldAt(root, changelog.BranchBase(root), changelogMD) {
 		return msgSectionEdit, false
 	}
 	return "", true
 }
 
-// inHead reports whether HEAD holds path.
-func inHead(root, path string) bool {
-	return exec.Command("git", "-C", root, "cat-file", "-e", "HEAD:"+path).Run() == nil
+// heldAt reports whether commit holds path.
+func heldAt(root, commit, path string) bool {
+	return exec.Command("git", "-C", root, "cat-file", "-e", commit+":"+path).Run() == nil
 }
 
 // checkOneEntry keeps a branch to one entry file: once an earlier commit on

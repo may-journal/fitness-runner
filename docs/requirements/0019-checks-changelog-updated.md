@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-changelog-updated/main.go:88`
     - Given Developer has staged a new entry file naming the change, and a first `CHANGELOG.md` or none
         - When changelog-updated checks the staged commit
             - Then it passes
+- 0019.17
+    - Given Developer has a branch whose earlier commit added the first `CHANGELOG.md`
+        - When changelog-updated checks a commit that edits it
+            - Then it passes

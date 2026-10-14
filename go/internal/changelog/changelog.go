@@ -48,6 +48,15 @@ func New(before, after []string) []string {
 	return added
 }
 
+// BranchBase is the commit the current branch's own commits start from, or
+// HEAD on the default branch, on a detached HEAD, or without origin refs.
+func BranchBase(root string) string {
+	if fork, ok := forkPoint(root); ok {
+		return fork
+	}
+	return "HEAD"
+}
+
 // forkPoint is the commit the current branch's own commits start from: the
 // parent of the oldest commit no other origin branch holds. A branch stacked
 // on another pushed branch so starts where that branch ends.

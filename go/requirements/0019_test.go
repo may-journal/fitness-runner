@@ -124,6 +124,17 @@ func changelogSecond(t *testing.T, repo string, entry map[string]string) (string
 	return fitness(t, repo, nil, "changelog-updated")
 }
 
+func Test0019_17(t *testing.T) {
+	t.Parallel()
+	first := entryFileText(changelogFirst, "Feat: added runner feature for validation.")
+	repo := changelogBranch(t, map[string]string{"CHANGELOG.md": ""}, map[string]string{"changelog/runner-feature.md": first, "CHANGELOG.md": changelogBase})
+	out, code := changelogSecond(t, repo, map[string]string{
+		"changelog/runner-feature.md": first + "- Feat: added runner option for validation.\n",
+		"CHANGELOG.md":                strings.Replace(changelogBase, "- Docs: add the readme.", "- Docs: add the readme file.", 1),
+	})
+	sees(t, out, code, 0, "All 1 checks passed")
+}
+
 func Test0019_14(t *testing.T) {
 	t.Parallel()
 	first := entryFileText(changelogFirst, "Feat: added runner feature for validation.")
