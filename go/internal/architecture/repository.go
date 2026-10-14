@@ -38,15 +38,25 @@ func (r repository) addFolders(file string) {
 }
 
 // candidate reports whether text names a repository path: no spaces or
-// scheme, a slash, and a first segment that is a tracked top-level folder.
-// Other text, such as a consumer's node_modules/.bin, is prose.
-func (r repository) candidate(text string) (string, bool) {
+// scheme, and either a slash after a first segment that is a tracked
+// top-level folder, or, when bare names count, a tracked root-level source
+// such as index.ts. Other text, such as a consumer's node_modules/.bin or
+// package.json, is prose.
+func (r repository) candidate(text string, bare bool) (string, bool) {
 	text = strings.Trim(text, "()[]{},;:'\"")
-	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") || !strings.Contains(text, "/") {
+	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") {
 		return "", false
+	}
+	if !strings.Contains(text, "/") {
+		return text, bare && r.rootSource(text)
 	}
 	first, _, _ := strings.Cut(text, "/")
 	return path.Clean(text), r.top[first]
+}
+
+// rootSource reports a tracked root-level source file named bare.
+func (r repository) rootSource(name string) bool {
+	return sourceFile(name) && r.files[name]
 }
 
 // exists reports a tracked file or folder; a pattern such as

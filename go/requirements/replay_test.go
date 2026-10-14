@@ -15,7 +15,7 @@ import (
 
 // standIns are the external programs fitness calls that tests replace with
 // saved responses: GitHub's CLI and the JavaScript and Swift tools.
-var standIns = []string{"gh", "eslint", "prettier", "vitest", "swiftlint"}
+var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint"}
 
 // TestMain lets this test binary stand in for those programs. Run under one
 // of their names, it answers from saved responses instead of running tests.

@@ -88,7 +88,8 @@ func (d *diagram) c4Relation(name string, args []string, line string, at Locatio
 func (d *diagram) c4Element(name string, args []string, line string, at Location, opens bool) {
 	if e := d.add(args[0], name, args[1], line, at); e != nil {
 		e.Technology, e.Description = c4Strings(name, args)
-		d.textClaims(e.ID, strings.Join(args[1:], " "), at)
+		d.textClaims(e.ID, args[1], true, at)
+		d.textClaims(e.ID, strings.Join(args[2:], " "), false, at)
 	}
 	if opens {
 		d.parents = append(d.parents, args[0])
@@ -112,10 +113,11 @@ func technical(name string) bool {
 }
 
 // textClaims reads repository paths from diagram strings, such as a
-// boundary label "Runner binary (go/cmd/runner)".
-func (d *diagram) textClaims(owner, text string, at Location) {
+// boundary label "Runner binary (go/cmd/runner)". A label may also name a
+// root-level source by its bare name; a technology or description may not.
+func (d *diagram) textClaims(owner, text string, bare bool, at Location) {
 	for _, word := range strings.Fields(text) {
-		d.claim(owner, word, at)
+		d.claim(owner, word, bare, at)
 	}
 }
 

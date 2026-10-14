@@ -31,13 +31,14 @@ func (d *diagram) span(s subject, text string, at Location) {
 		d.m.requirementRef(text, at)
 		return
 	}
-	d.claim(s.owner(), text, at)
+	d.claim(s.owner(), text, true, at)
 }
 
 // claim records a path an element names. A named path must exist; an edge
-// row's path is checked but owns nothing.
-func (d *diagram) claim(owner, text string, at Location) {
-	p, ok := d.m.repo.candidate(text)
+// row's path is checked but owns nothing. Only a code span or label may name
+// a root-level source by its bare name.
+func (d *diagram) claim(owner, text string, bare bool, at Location) {
+	p, ok := d.m.repo.candidate(text, bare)
 	if !ok {
 		return
 	}

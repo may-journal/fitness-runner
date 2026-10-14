@@ -3,6 +3,7 @@ package architecture
 import (
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 // statedName reads a class label or member as the code view states it: a
@@ -18,7 +19,7 @@ type stated struct {
 }
 
 func parseStated(text string) (stated, bool) {
-	text = strings.TrimSpace(text)
+	text = generics(strings.TrimSpace(text))
 	match := statedName.FindStringSubmatch(text)
 	if match == nil {
 		return stated{}, false
@@ -75,8 +76,13 @@ func (s stated) matches(d *decl) bool {
 
 // sameParam accepts a parameter stated by its type, or by name and type.
 func sameParam(item string, p param) bool {
-	item = normalSpace(item)
-	return contains([]string{p.typ, p.name + " " + p.typ, p.name + ": " + p.typ}, item)
+	item = typeText(item)
+	for _, form := range []string{p.typ, p.name + " " + p.typ, p.name + ": " + p.typ} {
+		if typeText(form) == item {
+			return true
+		}
+	}
+	return false
 }
 
 // results splits a stated result list, with or without parentheses.
@@ -93,7 +99,7 @@ func sameTypes(a, b []string) bool {
 		return false
 	}
 	for i := range a {
-		if normalSpace(a[i]) != normalSpace(b[i]) {
+		if typeText(a[i]) != typeText(b[i]) {
 			return false
 		}
 	}
@@ -103,7 +109,7 @@ func sameTypes(a, b []string) bool {
 // statedMember reads a class body line: a visibility mark, then a method such as
 // Run(string) error, or a field as name, name: Type, or Type name.
 func statedMember(text string) (stated, string, bool) {
-	text = strings.TrimRight(strings.TrimLeft(strings.TrimSpace(text), "+-#~"), "$* ")
+	text = generics(strings.TrimRight(strings.TrimLeft(strings.TrimSpace(text), "+-#~"), "$* "))
 	if strings.Contains(text, "(") {
 		s, ok := parseStated(text)
 		return s, "", ok
@@ -116,4 +122,52 @@ func statedMember(text string) (stated, string, bool) {
 		return stated{text: text, name: fields[1]}, fields[0], true
 	}
 	return stated{text: text, name: text}, "", len(fields) == 1
+}
+
+// typeText spells a type with a space only between two words and after
+// each comma, so Map< K,V > and Map<K, V> compare equal.
+func typeText(text string) string {
+	var b strings.Builder
+	words := strings.Fields(text)
+	for i, word := range words {
+		if i > 0 && wordByte(words[i-1][len(words[i-1])-1]) && wordByte(word[0]) {
+			b.WriteByte(' ')
+		}
+		b.WriteString(word)
+	}
+	return strings.ReplaceAll(b.String(), ",", ", ")
+}
+
+func wordByte(c byte) bool {
+	return c == '_' || c == '$' || unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c))
+}
+
+// generics reads Mermaid's tilde generics as angle brackets, so
+// Promise~boolean~ states Promise<boolean>. A tilde before a name opens a
+// list. A tilde before an opening bracket opens one only outside a list,
+// so List~Item~[] states List<Item>[]. Any other tilde closes one.
+func generics(text string) string {
+	b := []byte(text)
+	depth := 0
+	for i, c := range b {
+		if c == '~' {
+			b[i] = tildeBracket(text, i, depth)
+			depth += tildeDepth[b[i]]
+		}
+	}
+	return string(b)
+}
+
+// tildeDepth is how a tilde read as a bracket changes the list depth.
+var tildeDepth = map[byte]int{'<': 1, '>': -1}
+
+func tildeBracket(text string, i, depth int) byte {
+	next := byte(' ')
+	if i+1 < len(text) {
+		next = text[i+1]
+	}
+	if wordByte(next) || (depth == 0 && strings.IndexByte("([{", next) >= 0) {
+		return '<'
+	}
+	return '>'
 }

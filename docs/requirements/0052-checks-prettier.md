@@ -14,18 +14,14 @@ tracked files Prettier reports as formatted
 -
 tracked files checked
 
-Source: `go/cmd/fitness-check-prettier/main.go:339`
+Source: `go/cmd/fitness-check-prettier/main.go:363`
 
 ## Requirements
 
-- 0052.1
-    - Given Developer has a file the repo's own Prettier config would reformat, in a CI job that colors output
+- 0052.9
+    - Given Developer has the repo's own Prettier config, in a file or in `package.json`, in a CI job that colors output
         - When prettier checks the repo
-            - Then it fails naming that file
-- 0052.2
-    - Given Developer has a formatted project with its config in `package.json`
-        - When prettier checks the repo
-            - Then it passes
+            - Then it passes formatted files and fails naming each file that config would reformat
 - 0052.3
     - Given Developer has a repo with no `package.json`
         - When prettier checks the repo
@@ -39,9 +35,9 @@ Source: `go/cmd/fitness-check-prettier/main.go:339`
         - When prettier checks the staged change
             - Then it passes, judging only the staged file
 - 0052.6
-    - Given Developer has a messy file and the `--write` argument
+    - Given Developer has a messy file and the `--write` argument, with Prettier or Biome
         - When prettier runs with that argument
-            - Then it hands that argument to Prettier in place of `--check`, and passes
+            - Then the tool gets its own `--write` and the paths, in place of `--check`, and passes; a flag Biome lacks fails by name
 - 0052.7
     - Given Developer has a `.prettierignore` file, even without `package.json`
         - When prettier checks the repo
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-prettier/main.go:339`
     - Given Developer has a project without Prettier installed
         - When prettier checks the repo
             - Then it fails with an install hint
+- 0052.11
+    - Given Developer has a `biome.jsonc`, `@biomejs/biome` at any version under any spec, no Prettier, and more than 20 files Biome would reformat
+        - When prettier checks the repo
+            - Then Biome 1.8 or later checks formatting, failing naming each of those files; older Biome fails naming its version

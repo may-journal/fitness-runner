@@ -14,12 +14,12 @@ files ESLint reports clean
 -
 files linted
 
-Source: `go/cmd/fitness-check-eslint/main.go:83`
+Source: `go/cmd/fitness-check-eslint/main.go:95`
 
 ## Requirements
 
-- 0024.1
-    - Given Developer has a repo without a `package.json`
+- 0024.9
+    - Given Developer has a repo without a `package.json`, or a scoped run that stages no JavaScript or TypeScript file
         - When fitness runs eslint
             - Then it passes with nothing to judge
 - 0024.2
@@ -46,7 +46,7 @@ Source: `go/cmd/fitness-check-eslint/main.go:83`
     - Given Developer has a committed file with findings and a clean staged TypeScript file
         - When fitness runs eslint scoped to staged files
             - Then it passes after linting only the staged file
-- 0024.8
-    - Given Developer has a scoped run that stages no JavaScript or TypeScript file
+- 0024.11
+    - Given Developer has a `biome.json`, `@biomejs/biome` at any version under any spec, no eslint, and more than 20 Biome findings
         - When fitness runs eslint
-            - Then it passes with nothing to judge
+            - Then Biome 1.8 or later lints, failing with `path:line:col - message (rule)` per finding; older Biome fails naming its version

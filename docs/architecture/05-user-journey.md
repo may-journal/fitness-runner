@@ -1,4 +1,5 @@
 ---
+fitnessFunctions: ['architecture-contract', 'architecture-journey']
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
@@ -32,7 +33,7 @@ Numbers match the callout table. "Screen" is a terminal output state, not a GUI 
 | 3   | Action      | A command, flag, or file edit the invoker performs.        |
 | 4   | System      | Runner-internal step: resolve, load, execute, exit.        |
 
-## Developer/agent journey
+## Journey
 
 Each step's label ends with the requirement docs it fulfils, by ID. The `architecture-journey` check requires every doc in some label and an ID on every step.
 

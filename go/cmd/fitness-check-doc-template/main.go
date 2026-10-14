@@ -3,14 +3,18 @@
 // *.template.md, any markdown file in a templates folder (governing its
 // parent), or a GitHub PR or Issue template. Every template's level-2 section
 // needs a guiding HTML comment. Walking up from each markdown file, the first
-// folder with templates governs it, and the file must have the same sections
-// as any one of them. GitHub templates get only the comment rule.
+// folder with a template that governs it decides, and the file must have the
+// same sections as any one of them. A template in a templates folder that
+// shares the file's name governs it alone, with its whole shape, and no other
+// file. GitHub templates get only the comment rule.
 package main
 
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -59,11 +63,11 @@ func readAll(root string, files []string) ([]doc, error) {
 // validateAll runs the comment rule over every template and the conformance
 // rule over every governed file.
 func validateAll(docs []doc) []string {
-	byDir := templatesByDir(docs)
+	byDir, named := templatesByDir(docs), namedTemplates(docs)
 	errs := commentErrors(docs)
 	for _, d := range docs {
 		if !isTemplate(d.path) {
-			errs = append(errs, docErrors(d, nearestTemplates(d.path, byDir))...)
+			errs = append(errs, judge(d, byDir, named)...)
 		}
 	}
 	return errs
@@ -99,14 +103,34 @@ func templatesByDir(docs []doc) map[string][]doc {
 	return m
 }
 
-// nearestTemplates walks up from the file's folder and returns the templates
-// of the first folder that has any.
-func nearestTemplates(path string, byDir map[string][]doc) []doc {
-	for dir := dirOf(path); ; dir = dirOf(dir) {
-		if ts, ok := byDir[dir]; ok || dir == "." {
-			return ts
+// judge walks up from the doc's folder to the first folder with a template
+// that governs it, and judges it there. A doc no template governs passes, as
+// in a repo with no templates.
+func judge(d doc, byDir map[string][]doc, named map[string]bool) []string {
+	for dir := dirOf(d.path); ; dir = dirOf(dir) {
+		if errs, governed := judgeAt(d, byDir[dir], named); governed || dir == "." {
+			return errs
 		}
 	}
+}
+
+// judgeAt holds a doc to the named template whose namesake it is, else to any
+// one of the folder's other templates. A named template governs only its
+// namesake, so false means none of templates governs the doc, as when all
+// are named for other docs.
+func judgeAt(d doc, templates []doc, named map[string]bool) ([]string, bool) {
+	var rest []doc
+	for _, t := range templates {
+		if !named[t.path] {
+			rest = append(rest, t)
+		} else if namesake(t.path) == d.path {
+			return shapeErrors(d, t), true
+		}
+	}
+	if len(rest) == 0 {
+		return nil, false
+	}
+	return docErrors(d, rest), true
 }
 
 // docErrors returns nil when the doc matches any one template. Otherwise it
@@ -127,6 +151,43 @@ func docErrors(d doc, templates []doc) []string {
 		diffs[i] = d.path + ": " + diffs[i]
 	}
 	return diffs
+}
+
+// namedTemplates marks each file in a templates folder whose namesake, the
+// file of the same name in the folder it governs, exists.
+func namedTemplates(docs []doc) map[string]bool {
+	paths := map[string]bool{}
+	for _, d := range docs {
+		paths[d.path] = true
+	}
+	named := map[string]bool{}
+	for _, d := range docs {
+		if inTemplatesFolder(d.path) && paths[namesake(d.path)] {
+			named[d.path] = true
+		}
+	}
+	return named
+}
+
+// namesake is the path a templates-folder file would govern alone: its own
+// name in the folder above.
+func namesake(template string) string {
+	return path.Join(dirOf(dirOf(template)), filepath.Base(template))
+}
+
+// shapeErrors judges a doc against the template that shares its file name:
+// its front matter, opening sections, legends, callout table columns, and
+// captions.
+func shapeErrors(d doc, t doc) []string {
+	var errs []string
+	for _, f := range mdtemplate.ShapeFromTemplate(t.path, t.body).Validate(d.body) {
+		at := d.path
+		if f.Line > 0 {
+			at += ":" + strconv.Itoa(f.Line)
+		}
+		errs = append(errs, at+": "+f.Text)
+	}
+	return errs
 }
 
 // isConformanceTemplate reports whether the file names a template that governs

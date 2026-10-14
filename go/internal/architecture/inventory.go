@@ -48,10 +48,21 @@ func category(file string, kept bool) string {
 		return "generated"
 	case testFolder(path.Dir(lower)) || strings.HasSuffix(lower, "_test.go"):
 		return "test"
-	case contains([]string{".sh", ".bash", ".zsh", ".py"}, path.Ext(lower)):
+	case tool(lower):
 		return "tool"
 	}
 	return "product"
+}
+
+// tool reports a script or a root-level script tool's config file, such
+// as rollup.config.mjs. A config module deeper down, such as
+// src/app/app.config.ts, is product code.
+func tool(file string) bool {
+	ext := path.Ext(file)
+	if contains([]string{".sh", ".bash", ".zsh", ".py"}, ext) {
+		return true
+	}
+	return contains(walkfs.ScriptExts, ext) && walkfs.ToolConfig(file) && !strings.Contains(file, "/")
 }
 
 func testFolder(dir string) bool {

@@ -30,6 +30,10 @@ func changelogPackages(pkg, lock string) map[string]string {
 
 const changelogVersion = `{"name": "app", "private": true, "version": "0.1.0-2026.10.08.1400"}` + "\n"
 
+// changelogBuild is changelogVersion with the timestamp as semver build
+// metadata, which keeps its leading zeros valid.
+const changelogBuild = `{"name": "app", "private": true, "version": "0.1.0+2026.10.08.1400"}` + "\n"
+
 func Test0017_1(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": ""})
@@ -93,12 +97,6 @@ func Test0017_15(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0017_8(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, changelogPackages(changelogVersion, changelogVersion))
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
 // notesHead opens a changelog in the house layout.
 const notesHead = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n"
 
@@ -143,4 +141,12 @@ func Test0017_17(t *testing.T) {
 		"two-headings": entryFileText("2026.10.11.1000", "Fix: one.") + "\n" + entryFileText("2026.10.11.1100", "Fix: two."),
 	}))
 	sees(t, out, code, 1, "changelog/two-headings.md must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
+}
+
+func Test0017_13(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, changelogPackages(changelogVersion, changelogVersion))
+	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = changelogRun(t, changelogPackages(changelogBuild, changelogBuild))
+	sees(t, out, code, 0, "All 1 checks passed")
 }

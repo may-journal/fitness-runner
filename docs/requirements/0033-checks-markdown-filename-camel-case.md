@@ -30,10 +30,6 @@ Source: `go/cmd/fitness-check-markdown-filename-camel-case/main.go:21`
     - Given Developer has a repo whose doc names are all camelCase
         - When markdown-filename-camel-case runs
             - Then it passes
-- 0033.4
-    - Given Developer has capitalized docs such as `CODE_OF_CONDUCT.md` in a camelCase repo
-        - When markdown-filename-camel-case runs
-            - Then it passes, since standard docs are exempt
 - 0033.5
     - Given Developer has a camelCase doc inside a capitalized folder
         - When markdown-filename-camel-case runs
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-markdown-filename-camel-case/main.go:21`
     - Given Developer has a staged hyphenated doc in a camelCase repo with an older hyphenated doc
         - When markdown-filename-camel-case runs on staged files
             - Then it fails naming only the staged file
+- 0033.9
+    - Given Developer has capitalized docs such as `CODE_OF_CONDUCT.md` and GitHub's `.github/pull_request_template.md` in a camelCase repo
+        - When markdown-filename-camel-case runs
+            - Then it passes, since standard docs and names GitHub requires are exempt

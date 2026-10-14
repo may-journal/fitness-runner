@@ -23,6 +23,21 @@ No views means a pass with zero files, unless the repo has Go, Swift, TypeScript
 
 Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
 
+## Templates
+
+Each view has a template in [docs/architecture/templates](../../../docs/architecture/templates). Copy all five into the repo's own `docs/architecture/templates`, then start each view as a copy of its template:
+
+```bash
+mkdir -p docs/architecture/templates
+for view in 01-system-context 02-containers 03-components 04-code 05-user-journey; do
+  curl -fsSL "https://raw.githubusercontent.com/may-journal/fitness-runner/v1/docs/architecture/templates/$view.md" \
+    -o "docs/architecture/templates/$view.md"
+  cp -n "docs/architecture/templates/$view.md" "docs/architecture/$view.md"
+done
+```
+
+Views under `architecture/` keep their templates in `architecture/templates`. The `doc-template` check then fails a view that drifts from its template's front matter, sections, legend, callout columns, or caption; see [named templates](../fitness-check-doc-template/README.md#named-templates). Each template's comments say what to write.
+
 ## What the diagrams already say
 
 | Content | Model fact |
@@ -44,6 +59,7 @@ Legends stay out of the model: unnumbered diagrams, C4 diagrams titled `Legend`,
 | Row content | Model fact |
 | --- | --- |
 | Code span or diagram text naming a path under a tracked top-level folder | Source claim by the element |
+| Code span or label naming a tracked root-level source, such as `index.ts` | Source claim by the element |
 | A trailing `*` in such a path, as in `go/cmd/fitness-check-*` | One claim on every sibling the pattern matches |
 | Link to a tracked source file, optionally `#L3` or `#L3-L9` | Static evidence for the element or edge |
 | Link to `docs/requirements/NNNN-*.md`, or a code span such as `0001.1` | Requirement reference |
@@ -66,7 +82,7 @@ Every error names the view line. An error about two places names both.
 
 ## Sources and proof
 
-Every tracked source stays in the inventory as product, test, tool, or generated, with the elements whose claims cover it. Unowned sources are listed, not failed; the component check decides ownership.
+Every tracked source stays in the inventory as product, test, tool, or generated, with the elements whose claims cover it. Tool sources are scripts and root-level script tool configs such as `rollup.config.mjs`. Unowned sources are listed, not failed; the component check decides ownership.
 
 Static evidence only locates a line; later checks resolve what it proves. Runtime proof has no form in the diagrams, so no edge counts as proved at runtime.
 

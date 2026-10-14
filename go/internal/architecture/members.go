@@ -44,7 +44,7 @@ func (c *code) field(n *codeNode, mem Member, name, typ string, all []*decl) {
 	switch {
 	case len(found) == 0:
 		c.fail(mem.At, "%s: %s at %s declares no field %s", n.e.ID, n.d.full(), n.d.where(), name)
-	case typ != "" && normalSpace(found[0].Type) != typ:
+	case typ != "" && typeText(found[0].Type) != typeText(typ):
 		c.fail(mem.At, "%s: field %s at %s is %s, not %s", n.e.ID, found[0].full(), found[0].where(), orNone(found[0].Type), typ)
 	}
 }

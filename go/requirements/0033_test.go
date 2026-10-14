@@ -44,15 +44,6 @@ func Test0033_3(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0033_4(t *testing.T) {
-	t.Parallel()
-	out, code := camelDocs(t, camelDocsRepo(map[string]string{
-		"CODE_OF_CONDUCT.md": "# Code of conduct\n",
-		"docs/AGENTS.md":     "# Agents\n",
-	}))
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
 func Test0033_5(t *testing.T) {
 	t.Parallel()
 	out, code := camelDocs(t, camelDocsRepo(map[string]string{"Guides/Api_Docs/apiDesign.md": "# API\n"}))
@@ -93,4 +84,15 @@ func Test0033_8(t *testing.T) {
 	if strings.Contains(out, "old-notes.md") {
 		t.Errorf("only the staged file may be judged:\n%s", out)
 	}
+}
+
+func Test0033_9(t *testing.T) {
+	t.Parallel()
+	out, code := camelDocs(t, camelDocsRepo(map[string]string{
+		"CODE_OF_CONDUCT.md":               "# Code of conduct\n",
+		"docs/AGENTS.md":                   "# Agents\n",
+		".github/pull_request_template.md": "# Pull request\n",
+		"docs/issue_template.md":           "# Issue\n",
+	}))
+	sees(t, out, code, 0, "All 1 checks passed")
 }

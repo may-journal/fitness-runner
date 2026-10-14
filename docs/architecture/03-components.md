@@ -1,4 +1,5 @@
 ---
+fitnessFunctions: ['architecture-contract', 'architecture-components']
 relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
@@ -34,7 +35,7 @@ C4Component
         Component(tool, "21 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
-    System_Ext(peers, "9 Peer tools", "prettier, eslint, vitest, swiftlint")
+    System_Ext(peers, "9 Peer tools", "prettier, eslint, biome, vitest, swiftlint")
     System_Ext(git, "10 git")
 
     Rel(developer, main, "11")
