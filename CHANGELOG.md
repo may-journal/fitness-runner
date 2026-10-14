@@ -7,6 +7,21 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.12.0](https://github.com/may-journal/fitness-runner/compare/v1.11.0...v1.12.0) (2026-10-14)
+
+
+### Features
+
+* **changelog:** name each entry file for its heading's date ([#374](https://github.com/may-journal/fitness-runner/issues/374)) ([987dcdc](https://github.com/may-journal/fitness-runner/commit/987dcdc66ef2fdfb6a342464db7bf2e6fcc00654))
+
+### 2026.10.13.2233
+
+- Feat: changelog fails an entry file whose name lacks its heading's date, naming the expected `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file.
+- Feat: changelog-updated, pr-check and branch-check fail an added entry file with that bad name.
+- Feat: the release fold orders entry files by name, newest first, and still deletes them.
+- Fix: the fold sorts an entry whose file name has no date by its heading's date, keeping release order.
+- Docs: the changelog README, AGENTS.md, the PR template and requirements 0017, 0019 and 0069 show the dated name.
+
 ## [1.11.0](https://github.com/may-journal/fitness-runner/compare/v1.10.0...v1.11.0) (2026-10-14)
 
 
