@@ -10,7 +10,7 @@ Consumers install source with `go install` or download verified static binaries 
 
 ## Versioning
 
-Release Please owns semantic versions in `version.txt`, starting at `1.0.0`. Root tags such as `v1.0.0` identify binary releases. After verification, a `go/v1.0.0` alias points at the same commit for the module in `go/`. Go consumers use `@v1.0.0` or `@latest`; version 2 would require a module path migration to `/v2`.
+Release Please owns semantic versions in `version.txt`, starting at `1.0.0`. Root tags such as `v1.0.0` identify binary releases. After verification, a `go/v1.0.0` alias points at the same commit for the module in `go/`. Go consumers pin the major with `@v1`, the newest v1.x.y; version 2 would require a module path migration to `/v2`.
 
 Existing `go/v0.date.time` tags and their asset URLs remain valid. The installer and root action select legacy URLs for version 0 and root release tags for version 1. The root timestamp changelog records development changes and no longer sets release versions.
 
