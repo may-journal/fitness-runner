@@ -101,12 +101,29 @@ func readEntry(root string, f os.DirEntry) (*Entry, error) {
 	return &Entry{Path: p, Text: string(raw)}, nil
 }
 
-// SortEntries orders entries newest first by file name, which starts with
-// the entry's date.
+// SortEntries orders entries newest first by the date their file name
+// starts with, then by name. A name without a date, which the checks fail,
+// sorts by its heading's date, so a fold keeps release order.
 func SortEntries(entries []Entry) {
 	sort.SliceStable(entries, func(i, j int) bool {
+		a, b := sortDate(entries[i]), sortDate(entries[j])
+		if a != b {
+			return a > b
+		}
 		return entries[i].Path > entries[j].Path
 	})
+}
+
+// sortDate is the date an entry's file name starts with, else its first
+// heading's date with dots read as hyphens, else "".
+func sortDate(e Entry) string {
+	if m := entryNameRe.FindStringSubmatch(path.Base(e.Path)); m != nil {
+		return m[1]
+	}
+	if stamps := Headings(e.Text); len(stamps) > 0 {
+		return strings.ReplaceAll(stamps[0], ".", "-")
+	}
+	return ""
 }
 
 var (
