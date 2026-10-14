@@ -117,6 +117,7 @@ func Test0052_11(t *testing.T) {
 			t.Errorf("Biome must check every tracked file in place of Prettier; calls %q:\n%s", rp.calls("biome"), out)
 		}
 	}
+	biomeRejects(t, files, "prettier")
 }
 
 func Test0052_3(t *testing.T) {

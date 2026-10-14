@@ -142,10 +142,27 @@ const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\"
 const biomeFlags = "--reporter=github --max-diagnostics=%s --no-errors-on-unmatched --files-ignore-unknown=true"
 
 // biomeMajors pairs the version package.json declares, the version the
-// installed binary reports, and the cap that version takes: Biome before 1.9
-// rejects `none`, and 1.x takes at most 65535. A spec such as `latest` says
-// nothing of the major, so only the binary's answer counts.
-var biomeMajors = [][3]string{{"2.4.15", "2.4.15", "none"}, {"latest", "1.8.3", "65535"}}
+// installed binary reports, and the cap that version takes: 1.8 rejects
+// `none` and takes at most 65535. A spec such as `latest` says nothing of the
+// version, so only the binary's answer counts.
+var biomeMajors = [][3]string{{"2.4.15", "2.4.15", "none"}, {"^1.9.4", "1.9.4", "none"}, {"latest", "1.8.3", "65535"}}
+
+// biomeTooOld is a Biome before 1.8, whose CLI rejects `--reporter=github`,
+// declared under a spec that hides its version.
+const biomeTooOld = "1.7.3"
+
+// biomeRejects runs check on files with Biome 1.7.3 installed under
+// `latest`, and expects it to fail naming that version without running Biome.
+func biomeRejects(t *testing.T, files map[string]string, check string) {
+	t.Helper()
+	files["package.json"] = fmt.Sprintf(biomePackage, "latest")
+	rp := standIn(t, map[string][]response{"biome": {biomeVersion(biomeTooOld)}})
+	out, code := fitness(t, example(t, "happyRepo", files), rp.env, check)
+	sees(t, out, code, 1, "Biome "+biomeTooOld+" found; Biome 1.8 or later is required")
+	if rp.called("biome", "--reporter=github") {
+		t.Errorf("Biome %s cannot take --reporter=github, yet it ran: %q", biomeTooOld, rp.calls("biome"))
+	}
+}
 
 // biomeVersion is real `biome --version` output for version v.
 func biomeVersion(v string) response {
@@ -181,6 +198,7 @@ func Test0024_11(t *testing.T) {
 			t.Errorf("a repo that chose Biome needs no eslint:\n%s", out)
 		}
 	}
+	biomeRejects(t, map[string]string{"biome.json": "{ \"linter\": { \"enabled\": true } }\n", "app.js": source.String()}, "eslint")
 }
 
 func Test0024_2(t *testing.T) {

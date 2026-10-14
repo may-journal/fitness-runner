@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1921
+
+- Fix: eslint and prettier: Biome before 1.8 fails naming its version, since its CLI rejects `--reporter=github`.
+- Fix: eslint and prettier: only Biome 1.8 gets `--max-diagnostics=65535`; 1.9 and later get `none`.
+- Docs: eslint and prettier READMEs and ADR 0006 name Biome 1.8 as the oldest supported.
+- Test: requirements 0024.11 and 0052.11 add Biome 1.9.4 and reject 1.7.3 under `latest`.
+
 ### 2026.10.13.1914
 
 - Fix: doc-template: a named template governs only its namesake, so other docs beside or below it match the folder's other templates.
