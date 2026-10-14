@@ -134,21 +134,15 @@ const entryCopiedNotes = "> Prepare a reviewed Fitness release.\n\n## Background
 	"Closes #5. Agent: Release Please.\n\n<!-- fitness-release-issue:5 -->\n\n## Changelog\n\n---\n\n" +
 	"### [1.1.0](" + entryCompare + ") (2026-10-11)\n\n\n### Features\n\n* **app:** add one file\n\n---\nRelease Please manages this release PR.\n"
 
-func Test0069_10(t *testing.T) {
+func Test0069_14(t *testing.T) {
 	t.Parallel()
-	first := changelogEntry(entryFirst, "Feat: add one file.")
-	repo, pr := entryBranch(t, first, strings.Replace(first, "- Feat: add one file.\n", "- Feat: add one file.\n- Test: cover the file.\n", 1))
-	out, code := entryActions(t, repo, pr0014(11))
-	sees(t, out, code, 0, "Passed.")
-	local, localCode := entryLocal(t, repo, pr)
-	sees(t, local, localCode, 0, "pr-check #1")
 	entry := entryFileText(entryFirst, "Feat: add one file.")
-	repo, pr = entryCommits(t, nil, entryFileBody("changelog/one-file.md"),
+	repo, pr := entryCommits(t, nil, entryFileBody("changelog/one-file.md"),
 		map[string]string{"changelog/one-file.md": entry},
 		map[string]string{"changelog/one-file.md": entry + "- Fix: name the file.\n"})
-	out, code = entryActions(t, repo, entryFileBody("changelog/one-file.md"))
+	out, code := entryActions(t, repo, entryFileBody("changelog/one-file.md"))
 	sees(t, out, code, 0, "Passed.")
-	local, localCode = entryLocal(t, repo, pr)
+	local, localCode := entryLocal(t, repo, pr)
 	sees(t, local, localCode, 0, "pr-check #1")
 	repo, pr = entryCommits(t, withEntries(map[string]string{"one-file": entry}), pr0014(11),
 		map[string]string{"changelog/one-file.md": entry + "- Fix: name the file.\n"})
@@ -156,39 +150,45 @@ func Test0069_10(t *testing.T) {
 	sees(t, out, code, 0, "Passed.")
 	local, localCode = entryLocal(t, repo, pr)
 	sees(t, local, localCode, 0, "pr-check #1")
+	repo, pr = entryCommits(t, map[string]string{"CHANGELOG.md": ""}, entryFileBody("changelog/one-file.md"),
+		map[string]string{"changelog/one-file.md": entry, "CHANGELOG.md": changelogBase})
+	out, code = entryActions(t, repo, entryFileBody("changelog/one-file.md"))
+	sees(t, out, code, 0, "Passed.")
+	local, localCode = entryLocal(t, repo, pr)
+	sees(t, local, localCode, 0, "pr-check #1")
 }
 
-func Test0069_11(t *testing.T) {
+func Test0069_15(t *testing.T) {
 	t.Parallel()
-	first := changelogEntry(entryFirst, "Feat: add one file.")
-	repo, pr := entryBranch(t, first, changelogOnTop(first, entryLater, "Test: cover the file."))
-	want := "this PR adds 2 changelog entries; keep ### " + entryFirst + " and move the bullets of ### " + entryLater + " into it"
-	out, code := entryActions(t, repo, pr0014(11))
-	sees(t, out, code, 1, entryMarkdown(want))
-	local, localCode := entryLocal(t, repo, pr)
-	sees(t, local, localCode, 1, want)
-	repo, pr = entryCommits(t, nil, entryFileBody("changelog/a-file.md"),
+	repo, pr := entryCommits(t, nil, entryFileBody("changelog/a-file.md"),
 		map[string]string{"changelog/a-file.md": entryFileText(entryFirst, "Feat: add one file.")},
 		map[string]string{"changelog/b-file.md": entryFileText(entryLater, "Test: cover the file.")})
-	want = "this PR adds 2 changelog entries; keep changelog/a-file.md and move the bullets of changelog/b-file.md into it"
-	out, code = entryActions(t, repo, entryFileBody("changelog/a-file.md"))
+	want := "this PR adds 2 changelog entries; keep changelog/a-file.md and move the bullets of changelog/b-file.md into it"
+	out, code := entryActions(t, repo, entryFileBody("changelog/a-file.md"))
 	sees(t, out, code, 1, want)
-	local, localCode = entryLocal(t, repo, pr)
+	local, localCode := entryLocal(t, repo, pr)
 	sees(t, local, localCode, 1, want)
-	repo, _ = entryCommits(t, nil, entryFileBody("changelog/a-file.md"),
-		map[string]string{"changelog/a-file.md": entryFileText(entryFirst, "Feat: add one file.")},
-		map[string]string{"CHANGELOG.md": changelogEntry(entryLater, "Test: cover the file.")})
-	out, code = entryActions(t, repo, entryFileBody("changelog/a-file.md"))
-	sees(t, out, code, 1, entryMarkdown("keep changelog/a-file.md and move the bullets of ### "+entryLater+" into it"))
 }
 
-func Test0069_12(t *testing.T) {
+// entrySectionEdit is pr-check's finding on a PR that changes CHANGELOG.md,
+// cut before the angle brackets the Actions summary escapes.
+const entrySectionEdit = "this PR changes CHANGELOG.md; only the release PR writes it, so record this PR's change in one changelog/"
+
+func Test0069_16(t *testing.T) {
 	t.Parallel()
-	repo, _ := entryBranch(t, strings.Replace(changelogBase, "- Docs: add the readme.", "- Docs: add the readme file.", 1))
+	repo, pr := entryBranch(t, changelogEntry(entryFirst, "Feat: add one file."))
 	out, code := entryActions(t, repo, pr0014(11))
-	// The Actions summary escapes the angle brackets of changelog/<name>.md.
-	want := ".md entry file, or one ### yyyy.mm.dd.HHMM section in CHANGELOG.md, that describes the whole PR"
-	sees(t, out, code, 1, "this PR adds no dated changelog entry", entryMarkdown(want))
+	sees(t, out, code, 1, entrySectionEdit)
+	local, localCode := entryLocal(t, repo, pr)
+	sees(t, local, localCode, 1, entrySectionEdit)
+	repo, pr = entryCommits(t, nil, entryFileBody("changelog/one-file.md"), map[string]string{
+		"changelog/one-file.md": entryFileText(entryFirst, "Feat: add one file."),
+		"CHANGELOG.md":          strings.Replace(changelogBase, "- Docs: add the readme.", "- Docs: add the readme file.", 1),
+	})
+	out, code = entryActions(t, repo, entryFileBody("changelog/one-file.md"))
+	sees(t, out, code, 1, entrySectionEdit)
+	local, localCode = entryLocal(t, repo, pr)
+	sees(t, local, localCode, 1, entrySectionEdit)
 }
 
 func Test0069_4(t *testing.T) {
@@ -201,23 +201,21 @@ func Test0069_4(t *testing.T) {
 
 func Test0069_9(t *testing.T) {
 	t.Parallel()
-	repo, _ := entryBranch(t, changelogEntry(entryLater, "Feat: add one file."))
-	out, code := entryActions(t, repo, pr0014(11))
-	sees(t, out, code, 1, entryMarkdown("PR description links CHANGELOG.md#202610100900; link the entry this PR adds"), entryMarkdown("CHANGELOG.md#202610101000"))
-	repo, _ = entryBranch(t, changelogEntry(entryFirst, "Feat: add one file."))
-	out, code = entryActions(t, repo, prBody0014("- The entry covers the change.", 11))
-	sees(t, out, code, 1, entryMarkdown("PR description has no CHANGELOG.md link; link the entry this PR adds"), entryMarkdown("CHANGELOG.md#202610100900"))
-	repo, _ = entryCommits(t, nil, entryFileBody("changelog/other-file.md"), map[string]string{"changelog/one-file.md": entryFileText(entryFirst, "Feat: add one file.")})
-	out, code = entryActions(t, repo, entryFileBody("changelog/other-file.md"))
+	added := map[string]string{"changelog/one-file.md": entryFileText(entryFirst, "Feat: add one file.")}
+	repo, _ := entryCommits(t, nil, entryFileBody("changelog/other-file.md"), added)
+	out, code := entryActions(t, repo, entryFileBody("changelog/other-file.md"))
 	sees(t, out, code, 1, "PR description links changelog/other-file.md; link the entry this PR adds", "changelog/one-file.md")
+	out, code = entryActions(t, repo, prBody0014("- The entry covers the change.", 11))
+	sees(t, out, code, 1, "PR description has no changelog/ entry link; link the entry this PR adds", "changelog/one-file.md")
 }
 
 func Test0069_6(t *testing.T) {
 	t.Parallel()
-	repo, _ := entryBranch(t, changelogEntry(entryFirst, "Feat: add one file to the app."))
-	body := strings.Replace(pr0014(11), "\n\nCloses", "\n- Feat: add one file to the app.\n\nCloses", 1)
+	body := entryFileBody("changelog/one-file.md")
+	repo, _ := entryCommits(t, nil, body, map[string]string{"changelog/one-file.md": entryFileText(entryFirst, "Feat: add one file to the app.")})
+	body = strings.Replace(body, "\n\nCloses", "\n- Feat: add one file to the app.\n\nCloses", 1)
 	out, code := entryActions(t, repo, body)
-	sees(t, out, code, 1, "PR description copies the CHANGELOG.md line", "Feat: add one file to the app.", "link the entry instead")
+	sees(t, out, code, 1, "PR description copies the changelog/one-file.md line", "Feat: add one file to the app.", "link the entry instead")
 }
 
 func Test0069_7(t *testing.T) {

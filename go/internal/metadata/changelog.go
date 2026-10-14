@@ -11,10 +11,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/changelog"
 )
 
-// changelogErrors holds a PR to one dated changelog entry, a changelog/
-// entry file or a CHANGELOG.md section, which its description links instead
-// of copying. A PR that leaves the changelog alone is not judged here; a
-// Release Please PR may add its version section.
+// changelogErrors holds a PR to one changelog/ entry file, which its
+// description links instead of copying. A PR that leaves the changelog alone
+// is not judged here; only a Release Please PR may change CHANGELOG.md, by
+// adding its version section.
 func changelogErrors(t target, gh aftereffect.Client) []string {
 	patch, err := changelogPatch(t, gh)
 	if err != nil {
@@ -28,55 +28,49 @@ func changelogErrors(t target, gh aftereffect.Client) []string {
 }
 
 // entryErrors judges a PR's CHANGELOG.md diff, its entry files, and its
-// description. A release PR adds a version section and links it. Editing or
-// deleting an entry file already pending on the base amends that entry, so
-// it needs no new one; editing CHANGELOG.md without a section still does.
+// description. A release PR adds a version section and links it. Any other
+// change to an existing CHANGELOG.md fails, since entries live in entry
+// files; a PR may create the file. Editing or deleting an entry file already
+// pending on the base amends that entry, so it needs no new one.
 func entryErrors(patch string, files []aftereffect.FileChange, body string) []string {
 	diff := changelog.ReadDiff(patch)
 	if len(diff.Releases) > 0 {
 		return sectionErrors(diff, body)
 	}
-	return oneEntryErrors(addedEntries(files), diff, body, patch != "")
+	var errs []string
+	if patch != "" && !changelog.CreatesFile(patch) {
+		errs = append(errs, msgSectionEdit)
+	}
+	return append(errs, oneEntryErrors(addedEntries(files), body)...)
 }
 
-// oneEntryErrors passes exactly one new entry, file or section, that the
-// description links and does not copy. It names the extras, and asks for an
-// entry when the PR edits CHANGELOG.md without one.
-func oneEntryErrors(added []aftereffect.FileChange, diff changelog.Diff, body string, changed bool) []string {
+// oneEntryErrors passes at most one new entry file, which the description
+// links and does not copy, and names the extras.
+func oneEntryErrors(added []aftereffect.FileChange, body string) []string {
 	switch {
-	case len(added)+len(diff.Entries) > 1:
-		return []string{extraEntriesError(added, diff.Entries)}
+	case len(added) > 1:
+		return []string{extraEntriesError(added)}
 	case len(added) == 1:
 		return addedEntryErrors(added[0], body)
-	case len(diff.Entries) == 1:
-		return sectionErrors(diff, body)
-	case changed:
-		return []string{msgNoEntry}
 	}
 	return nil
 }
 
-// msgNoEntry asks a PR that changes the changelog for its one entry.
-const msgNoEntry = "this PR adds no dated changelog entry; add one changelog/<name>.md entry file, or one ### yyyy.mm.dd.HHMM section in CHANGELOG.md, that describes the whole PR"
+// msgSectionEdit fails a PR that adds or edits a CHANGELOG.md section.
+const msgSectionEdit = "this PR changes " + changelog.File + "; only the release PR writes it, so record this PR's change in one " + changelog.EntryDir + "/<name>.md entry file instead"
 
-// extraEntriesError names the entry to keep and the ones to fold into it:
-// entry files first, then sections oldest first.
-func extraEntriesError(added []aftereffect.FileChange, stamps []string) string {
+// extraEntriesError names the entry file to keep and the ones to fold into it.
+func extraEntriesError(added []aftereffect.FileChange) string {
 	var names []string
 	for _, f := range added {
 		names = append(names, f.Filename)
-	}
-	sorted := slices.Clone(stamps)
-	slices.Sort(sorted)
-	for _, s := range sorted {
-		names = append(names, "### "+s)
 	}
 	return fmt.Sprintf("this PR adds %d changelog entries; keep %s and move the bullets of %s into it",
 		len(names), names[0], strings.Join(names[1:], ", "))
 }
 
-// sectionErrors judges a PR that adds one dated CHANGELOG.md section or a
-// release: the description links its heading and copies no bullet.
+// sectionErrors judges a release PR: the description links the version
+// section it adds and copies no bullet.
 func sectionErrors(diff changelog.Diff, body string) []string {
 	return append(linkErrors(diff, body), copyErrors(changelog.File, diff.Bullets, body)...)
 }
@@ -124,8 +118,8 @@ func entryFiles(t target, gh aftereffect.Client) ([]aftereffect.FileChange, erro
 	}), nil
 }
 
-// linkErrors fails a description that does not link the heading the PR adds
-// to CHANGELOG.md, naming that heading's anchor.
+// linkErrors fails a description that does not link the release section the
+// PR adds to CHANGELOG.md, naming that section's anchor.
 func linkErrors(diff changelog.Diff, body string) []string {
 	want, links := diff.Anchors(), changelog.Links(body)
 	if len(want) == 0 {

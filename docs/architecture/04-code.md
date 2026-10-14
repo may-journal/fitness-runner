@@ -116,7 +116,6 @@ fitness-runner/
   go/
     go.mod                     single module, stdlib-only
     cmd/fitness/               runner binary
-    cmd/fitness-stamp-changelog/   pre-commit changelog stamper
     cmd/fitness-check-name/    one main + README per check
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
                                clonedetect, vitestconf, javascript, mdfilename,
@@ -129,4 +128,4 @@ consumer-repo/                 (not in this monorepo)
 
 ## Development in this repo
 
-`mkdir -p bin && go build -o bin ./cmd/...` from `go/` is the whole toolchain (about 300ms warm). `go/bin/fitness` runs the suite this repo gates its own commits on, driven by `.fitnessrc.json`. The pre-commit hook builds, restamps a staged CHANGELOG entry via `fitness-stamp-changelog`, and runs the suite. `go test ./...` covers everything — there are no node scripts left.
+`mkdir -p bin && go build -o bin ./cmd/...` from `go/` is the whole toolchain (about 300ms warm). `go/bin/fitness` runs the suite this repo gates its own commits on, driven by `.fitnessrc.json`. The pre-commit hook builds and runs the suite. `go test ./...` covers everything — there are no node scripts left.
