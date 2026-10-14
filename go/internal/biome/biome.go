@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -61,16 +62,43 @@ func declared(root string) bool {
 	return dev || dep
 }
 
-// maxDiagnostics lifts Biome's default cap of 20 diagnostics, which would
-// hide the rest. It asks the resolved binary its version, since package.json
-// may say `latest`, `catalog:`, or an alias. Biome 2 and 1.9 take `none`;
-// earlier 1.x rejects it and takes at most 65535, which every 1.x accepts.
-func maxDiagnostics(root, bin string) string {
+// tooOld is the failure for a Biome before 1.8, whose CLI rejects
+// `--reporter=github`, naming the version found.
+const tooOld = "Biome %s found; Biome 1.8 or later is required: npm install --save-dev @biomejs/biome@latest"
+
+// version is the resolved binary's answer to `biome --version`, asked
+// because package.json may say `latest`, `catalog:`, or an alias. Known is
+// false when the answer names no major.minor.
+type version struct {
+	text         string
+	major, minor int
+	known        bool
+}
+
+func installed(root, bin string) version {
 	cmd := exec.Command(bin, "--version")
 	cmd.Dir = root
 	out, _ := cmd.Output()
-	version := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(out)), "Version:"))
-	if strings.HasPrefix(version, "1.") {
+	text := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(out)), "Version:"))
+	parts := strings.SplitN(text, ".", 3)
+	if len(parts) < 2 {
+		return version{text: text}
+	}
+	major, errMajor := strconv.Atoi(parts[0])
+	minor, errMinor := strconv.Atoi(parts[1])
+	return version{text: text, major: major, minor: minor, known: errMajor == nil && errMinor == nil}
+}
+
+// before reports whether v is a known version older than major.minor.
+func (v version) before(major, minor int) bool {
+	return v.known && (v.major < major || v.major == major && v.minor < minor)
+}
+
+// maxDiagnostics lifts Biome's default cap of 20 diagnostics, which would
+// hide the rest. Biome 1.9 and later take `none`; 1.8 rejects it and takes
+// at most 65535.
+func (v version) maxDiagnostics() string {
+	if v.before(1, 9) {
 		return "--max-diagnostics=65535"
 	}
 	return "--max-diagnostics=none"
@@ -121,13 +149,13 @@ type Finding struct {
 // Check runs `biome <command>` on paths in root and turns its findings into
 // the check's result: each finding rendered by show fails. A failure that
 // names no finding fails with fallback and Biome's last lines. A missing
-// binary fails with the install hint.
+// binary fails with the install hint, and a Biome before 1.8 with its version.
 func Check(root, command string, paths []string, fallback string, show func(Finding) string) checkkit.Result {
-	bin := Bin(root)
-	if bin == "" {
-		return checkkit.Fail(0, NotInstalled)
+	bin, capFlag, failure := usable(root)
+	if failure != "" {
+		return checkkit.Fail(0, failure)
 	}
-	findings, exitCode, tail := run(root, bin, command, paths)
+	findings, exitCode, tail := run(root, bin, capFlag, command, paths)
 	errs := make([]string, 0, len(findings))
 	for _, f := range findings {
 		errs = append(errs, show(f))
@@ -138,12 +166,26 @@ func Check(root, command string, paths []string, fallback string, show func(Find
 	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: len(paths)}
 }
 
+// usable resolves the biome binary and the diagnostics cap its version takes,
+// or the failure when none resolves or it is older than 1.8.
+func usable(root string) (bin, capFlag, failure string) {
+	bin = Bin(root)
+	if bin == "" {
+		return "", "", NotInstalled
+	}
+	v := installed(root, bin)
+	if v.before(1, 8) {
+		return "", "", fmt.Sprintf(tooOld, v.text)
+	}
+	return bin, v.maxDiagnostics(), ""
+}
+
 // run execs bin in root as `biome <command>` with the GitHub reporter and
-// the diagnostics cap lifted for its version (maxDiagnostics),
+// capFlag, which lifts the diagnostics cap for its version,
 // tolerating paths Biome does not handle, then args. It returns every error
 // and warning finding, the exit code, and the last lines of output.
-func run(root, bin, command string, args []string) (findings []Finding, exitCode int, tail []string) {
-	argv := append([]string{command, "--reporter=github", maxDiagnostics(root, bin), "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
+func run(root, bin, capFlag, command string, args []string) (findings []Finding, exitCode int, tail []string) {
+	argv := append([]string{command, "--reporter=github", capFlag, "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	var out bytes.Buffer

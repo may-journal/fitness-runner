@@ -47,6 +47,6 @@ Source: `go/cmd/fitness-check-eslint/main.go:95`
         - When fitness runs eslint scoped to staged files
             - Then it passes after linting only the staged file
 - 0024.11
-    - Given Developer has a `biome.json`, `@biomejs/biome` 1.x or 2.x under any spec, no eslint, and more than 20 Biome findings
+    - Given Developer has a `biome.json`, `@biomejs/biome` at any version under any spec, no eslint, and more than 20 Biome findings
         - When fitness runs eslint
-            - Then it lints with Biome instead, failing with `path:line:col - message (rule)` for every finding
+            - Then Biome 1.8 or later lints, failing with `path:line:col - message (rule)` per finding; older Biome fails naming its version
