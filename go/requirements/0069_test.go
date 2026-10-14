@@ -28,10 +28,16 @@ func entryBranch(t *testing.T, changelogs ...string) (string, response) {
 	t.Helper()
 	repo := branchRepo(t, nil)
 	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
+	entryCommits(t, repo, changelogs)
+	return repo, pr
+}
+
+// entryCommits commits each changelog to repo as one of a PR's commits.
+func entryCommits(t *testing.T, repo string, changelogs []string) {
+	t.Helper()
 	for i, changelog := range changelogs {
 		commit(t, repo, map[string]string{"CHANGELOG.md": changelog, "src.txt": "change " + strconv.Itoa(i) + "\n"}, "test(app): add one file")
 	}
-	return repo, pr
 }
 
 // entryActions runs pr-check in Actions on repo's branch, its PR described
@@ -79,12 +85,25 @@ func entryReleasePR(t *testing.T, body string) response {
 
 func Test0069_1(t *testing.T) {
 	t.Parallel()
-	first := changelogEntry(entryFirst, "Feat: add one file.")
-	repo, pr := entryBranch(t, first, strings.Replace(first, "- Feat: add one file.\n", "- Feat: add one file.\n- Test: cover the file.\n", 1))
+	merged := changelogEntry("2026.10.09.1200", "Fix: merged from another PR.")
+	first := changelogOnTop(merged, entryFirst, "Feat: add one file.")
+	repo, pr := entryRebased(t, merged, first, strings.Replace(first, "- Feat: add one file.\n", "- Feat: add one file.\n- Test: cover the file.\n", 1))
 	out, code := entryActions(t, repo, pr0014(11))
 	sees(t, out, code, 0, "Passed.")
 	local, localCode := entryLocal(t, repo, pr)
 	sees(t, local, localCode, 0, "pr-check #1")
+}
+
+// entryRebased is entryBranch after the base branch gained merged, another
+// PR's changelog, past the base commit GitHub recorded for the open PR.
+func entryRebased(t *testing.T, merged string, changelogs ...string) (string, response) {
+	t.Helper()
+	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
+	commit(t, repo, map[string]string{"CHANGELOG.md": merged}, "fix(app): merged from another PR")
+	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+	entryCommits(t, repo, changelogs)
+	return repo, pr
 }
 
 func Test0069_2(t *testing.T) {

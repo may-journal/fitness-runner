@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1934
+
+- Fix: local-branch: a branch rebased onto a moved base counts only its own changelog entries and Plan trailers.
+- Docs: local-branch README says where branch history starts.
+- Test: requirement 0069.1 now runs on a branch rebased past an entry GitHub has not seen.
+
 ### 2026.10.13.1921
 
 - Fix: eslint and prettier: Biome before 1.8 fails naming its version, since its CLI rejects `--reporter=github`.
