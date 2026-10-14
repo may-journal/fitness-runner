@@ -94,28 +94,28 @@ const biomeReformat = "::error title=format,file=%s,line=1,endLine=1,col=2,endCo
 
 func Test0052_11(t *testing.T) {
 	t.Parallel()
-	files := map[string]string{
-		"package.json": "{\"devDependencies\": {\"@biomejs/biome\": \"2.4.15\"}}\n",
-		"biome.jsonc":  "{ \"formatter\": { \"enabled\": true } }\n",
-	}
+	files := map[string]string{"biome.jsonc": "{ \"formatter\": { \"enabled\": true } }\n"}
 	var report strings.Builder
 	for i := 1; i <= biomeMany; i++ {
 		name := fmt.Sprintf("app%d.js", i)
 		files[name] = prettierMessy
 		fmt.Fprintf(&report, biomeReformat, name)
 	}
-	repo := example(t, "happyRepo", files)
-	reformat := response{
-		Match:  []string{"format " + biomeFlags, "app1.js"},
-		Stdout: report.String(),
-		Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
-		Exit:   1,
-	}
-	rp := standIn(t, map[string][]response{"biome": {reformat}})
-	out, code := fitness(t, repo, rp.env, "prettier")
-	sees(t, out, code, 1, "✖ app1.js", "✖ app25.js")
-	if !rp.called("biome", "format", "README.md") || strings.Contains(out, "Prettier not installed") {
-		t.Errorf("Biome must check every tracked file in place of Prettier; calls %q:\n%s", rp.calls("biome"), out)
+	for _, major := range biomeMajors {
+		files["package.json"] = fmt.Sprintf(biomePackage, major[0])
+		repo := example(t, "happyRepo", files)
+		reformat := response{
+			Match:  []string{"format " + fmt.Sprintf(biomeFlags, major[2]), "app1.js"},
+			Stdout: report.String(),
+			Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
+			Exit:   1,
+		}
+		rp := standIn(t, map[string][]response{"biome": {biomeVersion(major[1]), reformat}})
+		out, code := fitness(t, repo, rp.env, "prettier")
+		sees(t, out, code, 1, "✖ app1.js", "✖ app25.js")
+		if !rp.called("biome", "format", "README.md") || strings.Contains(out, "Prettier not installed") {
+			t.Errorf("Biome must check every tracked file in place of Prettier; calls %q:\n%s", rp.calls("biome"), out)
+		}
 	}
 }
 

@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1849
+
+- Fix: eslint and prettier: an installed Biome 1.x, read from `biome --version`, gets `--max-diagnostics=65535`, since Biome before 1.9 rejects `none`.
+- Docs: requirements 0024.11 and 0052.11 name Biome 1.x or 2.x under any spec in their Givens.
+- Test: requirements 0024.11 and 0052.11 now run on Biome 2.x and on `latest` resolving to 1.x, expecting every finding on both.
+
 ### 2026.10.13.1847
 
 - Fix: architecture-components: a script tool config such as `rollup.config.mjs` is a tool source and needs no component owner.

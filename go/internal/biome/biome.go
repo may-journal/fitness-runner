@@ -44,6 +44,8 @@ func hasConfig(root string) bool {
 	return false
 }
 
+// declared reports whether package.json names @biomejs/biome in its
+// dependencies or devDependencies.
 func declared(root string) bool {
 	raw, err := os.ReadFile(filepath.Join(root, "package.json"))
 	if err != nil {
@@ -57,6 +59,21 @@ func declared(root string) bool {
 	_, dev := pkg.DevDependencies[packageName]
 	_, dep := pkg.Dependencies[packageName]
 	return dev || dep
+}
+
+// maxDiagnostics lifts Biome's default cap of 20 diagnostics, which would
+// hide the rest. It asks the resolved binary its version, since package.json
+// may say `latest`, `catalog:`, or an alias. Biome 2 and 1.9 take `none`;
+// earlier 1.x rejects it and takes at most 65535, which every 1.x accepts.
+func maxDiagnostics(root, bin string) string {
+	cmd := exec.Command(bin, "--version")
+	cmd.Dir = root
+	out, _ := cmd.Output()
+	version := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(out)), "Version:"))
+	if strings.HasPrefix(version, "1.") {
+		return "--max-diagnostics=65535"
+	}
+	return "--max-diagnostics=none"
 }
 
 // Bin resolves the biome binary: node_modules/.bin walking up from root,
@@ -122,11 +139,11 @@ func Check(root, command string, paths []string, fallback string, show func(Find
 }
 
 // run execs bin in root as `biome <command>` with the GitHub reporter and
-// no cap on diagnostics, whose default of 20 would hide the rest, tolerating
-// paths Biome does not handle, then args. It returns every error
+// the diagnostics cap lifted for its version (maxDiagnostics),
+// tolerating paths Biome does not handle, then args. It returns every error
 // and warning finding, the exit code, and the last lines of output.
 func run(root, bin, command string, args []string) (findings []Finding, exitCode int, tail []string) {
-	argv := append([]string{command, "--reporter=github", "--max-diagnostics=none", "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
+	argv := append([]string{command, "--reporter=github", maxDiagnostics(root, bin), "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	var out bytes.Buffer
