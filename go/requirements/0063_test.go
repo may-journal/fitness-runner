@@ -84,6 +84,19 @@ func Test0063_3(t *testing.T) {
 	}
 }
 
+func Test0063_5(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, nil)
+	write(t, repo, map[string]string{"changelog/usage-note.md": entryFileText("2000.01.01.0000", "Docs: add the usage note."), "README.md": stampReadme})
+	user(t, repo, env, "add", "README.md", "changelog/usage-note.md")
+	before := time.Now()
+	out, code := user(t, repo, env, "commit", "-m", "docs(readme): add the usage note")
+	sees(t, out, code, 0)
+	got, err := exec.Command("git", "-C", repo, "show", "HEAD:changelog/usage-note.md").Output()
+	mustDo(t, err)
+	stampShows(t, "the committed entry file", string(got), []string{stampHeading(before), stampHeading(time.Now())})
+}
+
 // stampFirst is the time a branch's earlier commit stamped its entry.
 const stampFirst = "2026.10.09.0900"
 

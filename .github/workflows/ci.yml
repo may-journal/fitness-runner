@@ -81,7 +81,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      - name: Apply the repository PR template
+      - name: Fold changelog entries and apply the repository PR template
         if: ${{ steps.report-step-1.outputs.pr != '' }}
         id: report-step-2
         run: go run ./cmd/fitness-release release-pr --root ..

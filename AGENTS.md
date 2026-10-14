@@ -19,8 +19,12 @@ An agent may work an Issue as it sees fit — implement it, branch, commit, and 
 
 ## Once approved
 
-Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and pair each change with a `CHANGELOG.md` entry. A pull request adds one dated entry in its first commit; later commits edit its bullets, never adding a `###` section. The PR description's `## Changelog` links that entry, as the [PR template](.github/PULL_REQUEST_TEMPLATE.md) shows, and never copies its bullets.
+Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and pair each change with an [entry file](go/cmd/fitness-check-changelog/README.md#entry-files). A pull request adds one `changelog/<name>.md` in its first commit, rather than a `CHANGELOG.md` section, and later commits edit its bullets. The PR description's `## Changelog` links that file, as the [PR template](.github/PULL_REQUEST_TEMPLATE.md) shows, and never copies its bullets.
 
 Name the approved Issue with a `Plan #NN` trailer on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
 
 The `pre-push` hook blocks a push that does not trace to an approved Plan Issue through the branch or its open PR. Chore and docs-only pushes are exempt.
+
+## Working with checks
+
+Read the checks under `go/cmd/fitness-check-*/`, each with a README, and the shared logic in `go/internal/` before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.

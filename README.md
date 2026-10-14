@@ -61,7 +61,7 @@ fitness close-check          # reopen an issue closed with unchecked items (in G
 In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
 
 - commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message.
-- pre-commit: stamps a staged `CHANGELOG` entry on a branch's first commit, checks the staged files, then a repo's own `.githooks/pre-commit.local`.
+- pre-commit: stamps a staged changelog entry on a branch's first commit, checks the staged files, then a repo's own `.githooks/pre-commit.local`.
 - pre-push: blocks the push unless the branch or its PR names an approved `Plan` Issue, via `gh`; chore/docs pushes are exempt.
 
 ## GitHub Actions

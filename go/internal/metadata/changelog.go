@@ -11,42 +11,117 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/changelog"
 )
 
-// changelogErrors holds a PR to one dated CHANGELOG.md entry, which its
-// description links instead of copying. A PR that leaves the changelog alone
-// is not judged here; a Release Please PR may add its version section.
+// changelogErrors holds a PR to one dated changelog entry, a changelog/
+// entry file or a CHANGELOG.md section, which its description links instead
+// of copying. A PR that leaves the changelog alone is not judged here; a
+// Release Please PR may add its version section.
 func changelogErrors(t target, gh aftereffect.Client) []string {
 	patch, err := changelogPatch(t, gh)
 	if err != nil {
 		return []string{fmt.Sprintf("cannot read the %s diff of PR #%d: %v; check gh authentication and network access, then retry", changelog.File, t.Number, err)}
 	}
-	return entryErrors(patch, t.Body)
+	files, err := entryFiles(t, gh)
+	if err != nil {
+		return []string{fmt.Sprintf("cannot read the %s/ files of PR #%d: %v; check gh authentication and network access, then retry", changelog.EntryDir, t.Number, err)}
+	}
+	return entryErrors(patch, files, t.Body)
 }
 
-// entryErrors judges a PR's CHANGELOG.md diff and its description: one new
-// dated entry or a release, a link to that heading, and no copied bullet.
-func entryErrors(patch, body string) []string {
-	if patch == "" {
-		return nil
-	}
+// entryErrors judges a PR's CHANGELOG.md diff, its entry files, and its
+// description. A release PR adds a version section and links it. Editing or
+// deleting an entry file already pending on the base amends that entry, so
+// it needs no new one; editing CHANGELOG.md without a section still does.
+func entryErrors(patch string, files []aftereffect.FileChange, body string) []string {
 	diff := changelog.ReadDiff(patch)
-	errs := countErrors(diff)
-	errs = append(errs, linkErrors(diff, body)...)
-	return append(errs, copyErrors(diff, body)...)
+	if len(diff.Releases) > 0 {
+		return sectionErrors(diff, body)
+	}
+	return oneEntryErrors(addedEntries(files), diff, body, patch != "")
 }
 
-// countErrors passes a release or exactly one new dated entry, and names the
-// extras otherwise.
-func countErrors(diff changelog.Diff) []string {
-	added := slices.Clone(diff.Entries)
-	if len(diff.Releases) > 0 || len(added) == 1 {
-		return nil
+// oneEntryErrors passes exactly one new entry, file or section, that the
+// description links and does not copy. It names the extras, and asks for an
+// entry when the PR edits CHANGELOG.md without one.
+func oneEntryErrors(added []aftereffect.FileChange, diff changelog.Diff, body string, changed bool) []string {
+	switch {
+	case len(added)+len(diff.Entries) > 1:
+		return []string{extraEntriesError(added, diff.Entries)}
+	case len(added) == 1:
+		return addedEntryErrors(added[0], body)
+	case len(diff.Entries) == 1:
+		return sectionErrors(diff, body)
+	case changed:
+		return []string{msgNoEntry}
 	}
-	if len(added) == 0 {
-		return []string{"CHANGELOG.md: this PR adds no dated ### yyyy.mm.dd.HHMM entry; add one entry that describes the whole PR"}
+	return nil
+}
+
+// msgNoEntry asks a PR that changes the changelog for its one entry.
+const msgNoEntry = "this PR adds no dated changelog entry; add one changelog/<name>.md entry file, or one ### yyyy.mm.dd.HHMM section in CHANGELOG.md, that describes the whole PR"
+
+// extraEntriesError names the entry to keep and the ones to fold into it:
+// entry files first, then sections oldest first.
+func extraEntriesError(added []aftereffect.FileChange, stamps []string) string {
+	var names []string
+	for _, f := range added {
+		names = append(names, f.Filename)
 	}
-	slices.Sort(added)
-	return []string{fmt.Sprintf("CHANGELOG.md: this PR adds %d dated entries; keep ### %s and move the bullets of ### %s into it",
-		len(added), added[0], strings.Join(added[1:], ", ### "))}
+	sorted := slices.Clone(stamps)
+	slices.Sort(sorted)
+	for _, s := range sorted {
+		names = append(names, "### "+s)
+	}
+	return fmt.Sprintf("this PR adds %d changelog entries; keep %s and move the bullets of %s into it",
+		len(names), names[0], strings.Join(names[1:], ", "))
+}
+
+// sectionErrors judges a PR that adds one dated CHANGELOG.md section or a
+// release: the description links its heading and copies no bullet.
+func sectionErrors(diff changelog.Diff, body string) []string {
+	return append(linkErrors(diff, body), copyErrors(changelog.File, diff.Bullets, body)...)
+}
+
+// addedEntries are the entry files among a PR's changed files that it adds.
+func addedEntries(files []aftereffect.FileChange) []aftereffect.FileChange {
+	var added []aftereffect.FileChange
+	for _, f := range files {
+		if f.Status == "added" {
+			added = append(added, f)
+		}
+	}
+	return added
+}
+
+// addedEntryErrors fails a description that does not link the PR's entry
+// file, or that copies one of its bullets.
+func addedEntryErrors(f aftereffect.FileChange, body string) []string {
+	var errs []string
+	links := changelog.EntryLinks(body)
+	if !slices.Contains(links, f.Filename) {
+		fix := fmt.Sprintf("link the entry this PR adds in ## Changelog: [Changelog entry](…/%s)", f.Filename)
+		if len(links) == 0 {
+			errs = append(errs, "PR description has no "+changelog.EntryDir+"/ entry link; "+fix)
+		} else {
+			errs = append(errs, fmt.Sprintf("PR description links %s; %s", links[0], fix))
+		}
+	}
+	return append(errs, copyErrors(f.Filename, changelog.ReadDiff(f.Patch).Bullets, body)...)
+}
+
+// entryFiles is the local branch's entry files when branch-check supplied
+// them, else the PR's as GitHub holds them, keeping only entry files.
+func entryFiles(t target, gh aftereffect.Client) ([]aftereffect.FileChange, error) {
+	files := t.EntryFiles
+	if files == nil {
+		read, err := gh.DirFiles(t.Number, changelog.EntryDir)
+		if err != nil {
+			return nil, err
+		}
+		files = &read
+	}
+	return slices.DeleteFunc(slices.Clone(*files), func(f aftereffect.FileChange) bool {
+		return !changelog.IsEntryPath(f.Filename)
+	}), nil
 }
 
 // linkErrors fails a description that does not link the heading the PR adds
@@ -68,14 +143,14 @@ func linkErrors(diff changelog.Diff, body string) []string {
 	return []string{fmt.Sprintf("PR description links %s#%s; %s", changelog.File, links[0], fix)}
 }
 
-// copyErrors fails a description that repeats a bullet the PR adds to
-// CHANGELOG.md; the description links the entry instead.
-func copyErrors(diff changelog.Diff, body string) []string {
+// copyErrors fails a description that repeats a bullet the PR adds to file;
+// the description links the entry instead.
+func copyErrors(file string, bullets []string, body string) []string {
 	text := strings.Join(strings.Fields(body), " ")
 	var errs []string
-	for _, bullet := range diff.Bullets {
+	for _, bullet := range bullets {
 		if line := strings.Join(strings.Fields(bullet), " "); strings.Contains(text, line) {
-			errs = append(errs, fmt.Sprintf("PR description copies the %s line %q; link the entry instead", changelog.File, line))
+			errs = append(errs, fmt.Sprintf("PR description copies the %s line %q; link the entry instead", file, line))
 		}
 	}
 	return errs
@@ -88,6 +163,49 @@ func changelogPatch(t target, gh aftereffect.Client) (string, error) {
 		return *t.ChangelogPatch, nil
 	}
 	return gh.FilePatch(t.Number, changelog.File)
+}
+
+// branchEntryFiles are the entry files the local tip changes against the
+// PR's base commit, with the status and diff GitHub will show once pushed.
+func branchEntryFiles(ctx context.Context, root, tip string, pr *branchPR) ([]aftereffect.FileChange, error) {
+	span := pr.BaseSHA + "..." + tip
+	out, err := exec.CommandContext(ctx, "git", "-C", root, "diff", "--name-status", "--no-renames", span, "--", changelog.EntryDir).Output()
+	if err != nil {
+		return nil, fmt.Errorf("cannot list %s/ changes from base commit %s: %w", changelog.EntryDir, pr.BaseSHA, err)
+	}
+	var files []aftereffect.FileChange
+	for _, line := range strings.Split(strings.TrimSpace(string(out)), "\n") {
+		f, err := entryChange(ctx, root, span, line)
+		if err != nil {
+			return nil, err
+		}
+		if f != nil {
+			files = append(files, *f)
+		}
+	}
+	return files, nil
+}
+
+// entryChange is the entry file one --name-status line names, with its
+// diff over span, or nil when the line names no entry file.
+func entryChange(ctx context.Context, root, span, line string) (*aftereffect.FileChange, error) {
+	code, name, ok := strings.Cut(line, "\t")
+	if !ok || !changelog.IsEntryPath(name) {
+		return nil, nil
+	}
+	patch, err := exec.CommandContext(ctx, "git", "-C", root, "diff", span, "--", name).Output()
+	if err != nil {
+		return nil, fmt.Errorf("cannot diff %s over %s: %w", name, span, err)
+	}
+	return &aftereffect.FileChange{Filename: name, Status: gitStatus(code), Patch: string(patch)}, nil
+}
+
+// gitStatus is the GitHub file status for git's --name-status code.
+func gitStatus(code string) string {
+	if status, ok := map[string]string{"A": "added", "D": "removed"}[code]; ok {
+		return status
+	}
+	return "modified"
 }
 
 // branchChangelogPatch is the CHANGELOG.md diff from the PR's base commit to

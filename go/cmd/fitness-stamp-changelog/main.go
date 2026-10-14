@@ -1,10 +1,10 @@
-// Command fitness-stamp-changelog is the pre-commit stamping tool: when
-// CHANGELOG.md is staged, it restamps the first "### yyyy.mm.dd.HHMM"
-// heading to the current local time and re-stages the file, so entries are
-// written with any placeholder stamp and the hook makes them current. A
-// branch whose earlier commit added its entry keeps that entry's time. The
-// npm-era version bumping is gone with the npm packages: the changelog
-// timestamp is the version now.
+// Command fitness-stamp-changelog is the pre-commit stamping tool: when a
+// new changelog/*.md entry file is staged, or else CHANGELOG.md, it
+// restamps the first "### yyyy.mm.dd.HHMM" heading to the current local
+// time and re-stages the file, so entries are written with any placeholder
+// stamp and the hook makes them current. A branch whose earlier commit added
+// its entry keeps that entry's time. The npm-era version bumping is gone with the npm packages: the
+// changelog timestamp is the version now.
 package main
 
 import (
@@ -35,48 +35,65 @@ func main() {
 		os.Exit(1)
 	}
 	if changed {
-		fmt.Fprintln(os.Stderr, "fitness-stamp-changelog: restamped CHANGELOG.md heading")
+		fmt.Fprintln(os.Stderr, "fitness-stamp-changelog: restamped the changelog entry heading")
 	}
 }
 
 // stamp restamps and re-stages when CHANGELOG.md is staged; reports whether
 // it wrote anything.
 func stamp(root string, now time.Time) (bool, error) {
-	if !newEntryStaged(root) {
-		return false, nil
+	changed := false
+	for _, name := range stampTargets(root) {
+		wrote, err := stampFile(root, name, formatTimestamp(now))
+		if err != nil {
+			return changed, err
+		}
+		changed = changed || wrote
 	}
-	path := filepath.Join(root, changelogName)
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		return false, err
-	}
-	next := restamp(string(raw), formatTimestamp(now))
-	if next == string(raw) {
-		return false, nil
-	}
-	if err := writeAndRestage(root, path, next); err != nil {
-		return false, err
-	}
-	return true, nil
+	return changed, nil
 }
 
-// writeAndRestage writes the restamped changelog and re-stages it so the
-// in-flight commit picks up the new heading.
-func writeAndRestage(root, path, next string) error {
-	if err := os.WriteFile(path, []byte(next), 0o644); err != nil {
-		return err
+// stampTargets are the files whose newest heading this commit stamps: each
+// new entry file, else a staged CHANGELOG.md, and none when the branch
+// already has its entry of either kind.
+func stampTargets(root string) []string {
+	if len(changelog.BranchEntryFiles(root)) > 0 || len(changelog.BranchEntries(root)) > 0 {
+		return nil
 	}
-	if out, err := exec.Command("git", "-C", root, "add", changelogName).CombinedOutput(); err != nil {
-		return fmt.Errorf("git add: %v: %s", err, out)
+	if files := changelog.StagedEntryFiles(root); len(files) > 0 {
+		return files
+	}
+	if changelogStaged(root) {
+		return []string{changelogName}
 	}
 	return nil
 }
 
-// newEntryStaged reports whether CHANGELOG.md is staged on a branch that has
-// no dated entry yet. Once an earlier commit on the branch added its entry,
-// later commits amend that entry, which keeps the first commit's time.
-func newEntryStaged(root string) bool {
-	return changelogStaged(root) && len(changelog.BranchEntries(root)) == 0
+// stampFile restamps name's first heading to ts and re-stages it; reports
+// whether it wrote anything.
+func stampFile(root, name, ts string) (bool, error) {
+	path := filepath.Join(root, filepath.FromSlash(name))
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return false, err
+	}
+	next := restamp(string(raw), ts)
+	if next == string(raw) {
+		return false, nil
+	}
+	return true, writeAndRestage(root, path, name, next)
+}
+
+// writeAndRestage writes the restamped file and re-stages it so the
+// in-flight commit picks up the new heading.
+func writeAndRestage(root, path, name, next string) error {
+	if err := os.WriteFile(path, []byte(next), 0o644); err != nil {
+		return err
+	}
+	if out, err := exec.Command("git", "-C", root, "add", name).CombinedOutput(); err != nil {
+		return fmt.Errorf("git add: %v: %s", err, out)
+	}
+	return nil
 }
 
 // changelogStaged reports whether CHANGELOG.md is in the staged file list.

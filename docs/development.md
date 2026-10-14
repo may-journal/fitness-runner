@@ -11,7 +11,7 @@ go test ./...
 cd .. && go/bin/fitness     # run the suite on this repo
 ```
 
-One-time setup after cloning — point Git at this repo's hooks. Pre-commit restamps a staged CHANGELOG entry on a branch's first commit, keeps that time on later commits, and runs the suite. Commit-msg validates through the `semantic-commit` check:
+One-time setup after cloning — point Git at this repo's hooks. Pre-commit restamps a staged changelog entry file on a branch's first commit, keeps that time on later commits, and runs the suite. Commit-msg validates through the `semantic-commit` check:
 
 ```bash
 git config core.hooksPath githooks

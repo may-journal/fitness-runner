@@ -32,6 +32,17 @@ func Test0018_16(t *testing.T) {
 	sees(t, out, code, 1, `"2026.10.09.1500" has 0 bullets`)
 }
 
+func Test0018_17(t *testing.T) {
+	t.Parallel()
+	files := withEntries(map[string]string{
+		"short-entry":   "### 2026.10.11.0900\n\n- Feat: one.\n- Fix: two.\n",
+		"untyped-entry": "### 2026.10.11.1000\n\n- Feat: one.\n- Fix: two.\n- no type here.\n",
+	})
+	out, code := fitness(t, example(t, "happyRepo", files), nil, "changelog-bullets")
+	sees(t, out, code, 1, `changelog/short-entry.md section "2026.10.11.0900" has 2 bullets`,
+		"changelog/untyped-entry.md:5: bullet must start with a semantic type")
+}
+
 func Test0018_6(t *testing.T) {
 	t.Parallel()
 	old := changelogBulletsDoc("Feat: one.", "Fix: two.", "Docs: three.") + "\n### 2026.05.01.0000\n\n- Docs: one old bullet.\n"

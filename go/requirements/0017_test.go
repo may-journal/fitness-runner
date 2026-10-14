@@ -48,18 +48,49 @@ func Test0017_5(t *testing.T) {
 	sees(t, out, code, 1, "package.json version suffix must match CHANGELOG.md first ### heading (yyyy.mm.dd.HHMM)")
 }
 
-func Test0017_6(t *testing.T) {
+func Test0017_18(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, changelogPackages(changelogVersion, `{"version": "0.1.0-2026.10.07.0900"}`+"\n"))
 	sees(t, out, code, 1, "package-lock.json version must match package.json version")
 }
 
-func Test0017_7(t *testing.T) {
+func Test0017_19(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, changelogPackages("not json\n", ""))
 	sees(t, out, code, 1, "package.json is invalid JSON")
 	out, code = changelogRun(t, changelogPackages(changelogVersion, "not json\n"))
 	sees(t, out, code, 1, "package-lock.json is invalid JSON")
+}
+
+// entryFileText is an entry file under stamp with three typed bullets, the
+// first one item.
+func entryFileText(stamp, item string) string {
+	return "---\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n\n### " + stamp + "\n\n- " + item + "\n- Test: cover it.\n- Docs: describe it.\n"
+}
+
+// withEntries is files over happyRepo holding each named entry file.
+func withEntries(entries map[string]string) map[string]string {
+	files := map[string]string{}
+	for name, body := range entries {
+		files["changelog/"+name+".md"] = body
+	}
+	return files
+}
+
+func Test0017_15(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400 hotfix", "### 2026.10.07.0900")})
+	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = notesChecks(t, notesHead+notesRelease(notesTwo)+notesEntry, "changelog")
+	sees(t, out, code, 0, "All 1 checks passed")
+	files := withEntries(map[string]string{
+		"older-change": entryFileText("2026.10.10.0900", "Fix: older change."),
+		"newer-change": entryFileText("2026.10.11.0900", "Feat: newer change."),
+	})
+	files["CHANGELOG.md"] = notesHead + notesRelease(notesTwo) + notesEntry
+	files["package.json"] = `{"name": "app", "private": true, "version": "0.1.0-2026.10.11.0900"}` + "\n"
+	out, code = changelogRun(t, files)
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0017_8(t *testing.T) {
@@ -101,18 +132,15 @@ func notesChecks(t *testing.T, changelog, checks string) (string, int) {
 // notesTwo is a release with one feature and one fix.
 var notesTwo = map[string][]string{"Features": {"install"}, "Bug Fixes": {"release"}}
 
-func Test0017_11(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400 hotfix", "### 2026.10.07.0900")})
-	sees(t, out, code, 0, "All 1 checks passed")
-	out, code = notesChecks(t, notesHead+notesRelease(notesTwo)+notesEntry, "changelog")
-	sees(t, out, code, 0, "All 1 checks passed")
-}
-
-func Test0017_12(t *testing.T) {
+func Test0017_17(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400", "### 2026.10.07")})
 	sees(t, out, code, 1, `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "### 2026.10.07")`)
 	out, code = notesChecks(t, notesHead+"### Features\n\n- Feat: stray.\n\n"+notesEntry, "changelog")
 	sees(t, out, code, 1, `invalid: "### Features"`)
+	out, code = changelogRun(t, withEntries(map[string]string{
+		"good-change":  entryFileText("2026.10.11.0900", "Feat: good change."),
+		"two-headings": entryFileText("2026.10.11.1000", "Fix: one.") + "\n" + entryFileText("2026.10.11.1100", "Fix: two."),
+	}))
+	sees(t, out, code, 1, "changelog/two-headings.md must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
 }

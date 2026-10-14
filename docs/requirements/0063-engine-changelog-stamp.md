@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I write a changelog entry under any placeholder heading, and my first commit on a branch stamps it with the real time.
+I write a changelog entry under any placeholder heading, in `CHANGELOG.md` or its own entry file. My first commit on a branch stamps it with the real time.
 
 ## Measurement
 
@@ -34,3 +34,7 @@ Source: `go/cmd/fitness-stamp-changelog/main.go:44`
     - Given Developer has the hooks and a branch whose earlier commit added its dated entry
         - When I commit more bullets under that entry
             - Then the committed heading keeps the first commit's time
+- 0063.5
+    - Given Developer has the hooks and stages a new entry file under an old heading
+        - When I commit it
+            - Then the committed entry file shows the commit time
