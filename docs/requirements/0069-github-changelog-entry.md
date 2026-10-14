@@ -19,7 +19,7 @@ Source: `go/internal/metadata/changelog.go:17`
 ## Requirements
 
 - 0069.1
-    - Given Developer has a PR whose later commits amend its one dated entry
+    - Given Developer has a PR whose later commits amend its one dated entry, rebased past another PR's entry GitHub has not seen
         - When pr-check and branch-check count its changelog entries
             - Then both pass
 - 0069.2

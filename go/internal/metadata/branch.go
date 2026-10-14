@@ -49,6 +49,7 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) ch
 	if err != nil || pr == nil {
 		return branchReadResult(err)
 	}
+	pr.BaseSHA = currentBase(ctx, root, repo, pr)
 	gh := aftereffect.ReadOnlyClient(ctx, repo)
 	b := blobChecker{root}
 	plans, err := branchPlans(ctx, root, repo, branch.Tip, pr)
@@ -109,7 +110,38 @@ func judgeBranchPlans(issues []linkedIssue, repo string, b blobChecker) []string
 	return errs
 }
 
-// branchPlans uses the API's base commit, even when origin is a stale fork.
+// currentBase is the base commit GitHub will diff from once the tip is
+// pushed. The API's base commit only moves when the PR's head is pushed, so
+// after the base branch advances and the branch rebases, it would count other
+// PRs' commits as this branch's. The fetched base branch replaces it when it
+// already contains that commit. A fork's origin is not the base repository,
+// so a fork PR keeps the API's commit.
+func currentBase(ctx context.Context, root, repo string, pr *branchPR) string {
+	if pr.BaseSHA == "" || !strings.EqualFold(pr.Source, repo) {
+		return pr.BaseSHA
+	}
+	if fetched := fetchedBase(ctx, root, pr.Base); fetched != "" && contains(ctx, root, fetched, pr.BaseSHA) {
+		return fetched
+	}
+	return pr.BaseSHA
+}
+
+// fetchedBase is the commit origin's base branch points to locally, or empty.
+func fetchedBase(ctx context.Context, root, base string) string {
+	if base == "" {
+		return ""
+	}
+	out, _ := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+base+"^{commit}").Output()
+	return strings.TrimSpace(string(out))
+}
+
+// contains reports whether commit is in the history of tip.
+func contains(ctx context.Context, root, tip, commit string) bool {
+	return exec.CommandContext(ctx, "git", "-C", root, "merge-base", "--is-ancestor", commit, tip).Run() == nil
+}
+
+// branchPlans uses the base commit from currentBase, even when origin is a
+// stale fork.
 func branchPlans(ctx context.Context, root, repo, tip string, pr *branchPR) ([]int, error) {
 	if pr.BaseSHA == "" {
 		return nil, fmt.Errorf("GitHub PR response has no base commit; retry fitness branch-check")
