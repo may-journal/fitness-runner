@@ -7,5 +7,5 @@ relatedConfigurations: ['../.fitnessrc.json']
 - Feat: changelog: a pull request may add its one entry as a `changelog/<name>.md` file, so open pull requests never conflict.
 - Feat: release-pr: the release tool commits pending entry files into the release PR's changelog below the version section and deletes them.
 - Feat: changelog checks, the stamp, pr-check, and branch-check accept entry files and sections alike; editing a pending entry file amends it.
-- Fix: release-pr skips the fold when the release branch holds no changelog folder.
-- Test: requirements 0017.14 to 0017.16, 0018.17, 0019.10 to 0019.12, 0063.5, and 0069.9 to 0069.13 prove both styles; docs prefer entry files.
+- Fix: release-pr skips the fold when the release branch holds no changelog folder; AGENTS.md replaces the .cursor rules folder.
+- Test: requirements 0017.15, 0017.17 to 0017.19, 0018.17, 0019.10 to 0019.12, 0063.5, and 0069.9 to 0069.13 prove both styles; docs prefer entry files.

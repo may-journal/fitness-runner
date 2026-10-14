@@ -24,3 +24,7 @@ Follow the repo's normal flow. Commit straight to `main`, run the full `fitness`
 Name the approved Issue with a `Plan #NN` trailer on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
 
 The `pre-push` hook blocks a push that does not trace to an approved Plan Issue through the branch or its open PR. Chore and docs-only pushes are exempt.
+
+## Working with checks
+
+Read the checks under `go/cmd/fitness-check-*/`, each with a README, and the shared logic in `go/internal/` before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.

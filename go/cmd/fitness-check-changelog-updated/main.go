@@ -1,13 +1,7 @@
-// Command fitness-check-changelog-updated gates staged commits on the
-// changelog: CHANGELOG.md additions must share at least three distinct words
-// with the rest of the staged diff, a branch that already added its dated
-// entry amends it rather than adding a section, and the newest added "### yyyy.mm.dd.HHMM"
-// section heading must carry the expected stamp (the root package.json
-// version suffix, else a minute of the last five on the local wall clock) —
-// the Go port of the changelog-updated check. One deviation from the
-// TypeScript original: the suggestion line lists the first ten rest-diff
-// words deterministically where TS sampled ten at random. The entry may be
-// a changelog/*.md file, the preferred way, or a CHANGELOG.md section.
+// Command fitness-check-changelog-updated checks that each staged commit
+// writes a changelog entry about its change. A branch keeps one entry, an
+// entry file or a CHANGELOG.md section, and its heading shows the commit
+// time. The README holds the full rules.
 package main
 
 import (

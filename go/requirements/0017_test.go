@@ -48,11 +48,15 @@ func Test0017_5(t *testing.T) {
 	sees(t, out, code, 1, "package.json version suffix must match CHANGELOG.md first ### heading (yyyy.mm.dd.HHMM)")
 }
 
-func Test0017_14(t *testing.T) {
+func Test0017_18(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, changelogPackages(changelogVersion, `{"version": "0.1.0-2026.10.07.0900"}`+"\n"))
 	sees(t, out, code, 1, "package-lock.json version must match package.json version")
-	out, code = changelogRun(t, changelogPackages("not json\n", ""))
+}
+
+func Test0017_19(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, changelogPackages("not json\n", ""))
 	sees(t, out, code, 1, "package.json is invalid JSON")
 	out, code = changelogRun(t, changelogPackages(changelogVersion, "not json\n"))
 	sees(t, out, code, 1, "package-lock.json is invalid JSON")
@@ -87,15 +91,6 @@ func Test0017_15(t *testing.T) {
 	files["package.json"] = `{"name": "app", "private": true, "version": "0.1.0-2026.10.11.0900"}` + "\n"
 	out, code = changelogRun(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
-}
-
-func Test0017_16(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, withEntries(map[string]string{
-		"good-change":  entryFileText("2026.10.11.0900", "Feat: good change."),
-		"two-headings": entryFileText("2026.10.11.1000", "Fix: one.") + "\n" + entryFileText("2026.10.11.1100", "Fix: two."),
-	}))
-	sees(t, out, code, 1, "changelog/two-headings.md must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
 }
 
 func Test0017_8(t *testing.T) {
@@ -137,10 +132,15 @@ func notesChecks(t *testing.T, changelog, checks string) (string, int) {
 // notesTwo is a release with one feature and one fix.
 var notesTwo = map[string][]string{"Features": {"install"}, "Bug Fixes": {"release"}}
 
-func Test0017_12(t *testing.T) {
+func Test0017_17(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, map[string]string{"CHANGELOG.md": changelogWith("### 2026.10.08.1400", "### 2026.10.07")})
 	sees(t, out, code, 1, `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "### 2026.10.07")`)
 	out, code = notesChecks(t, notesHead+"### Features\n\n- Feat: stray.\n\n"+notesEntry, "changelog")
 	sees(t, out, code, 1, `invalid: "### Features"`)
+	out, code = changelogRun(t, withEntries(map[string]string{
+		"good-change":  entryFileText("2026.10.11.0900", "Feat: good change."),
+		"two-headings": entryFileText("2026.10.11.1000", "Fix: one.") + "\n" + entryFileText("2026.10.11.1100", "Fix: two."),
+	}))
+	sees(t, out, code, 1, "changelog/two-headings.md must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
 }

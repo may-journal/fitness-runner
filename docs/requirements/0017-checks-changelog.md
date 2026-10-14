@@ -30,23 +30,23 @@ Source: `go/cmd/fitness-check-changelog/main.go:63`
     - Given Developer has a `package.json` version suffix that differs from the first heading
         - When changelog runs
             - Then it fails naming the mismatch
+- 0017.18
+    - Given Developer has a `package-lock.json` version that differs from `package.json`
+        - When changelog runs
+            - Then it fails naming the lock mismatch
+- 0017.19
+    - Given Developer has a `package.json` or `package-lock.json` that is not valid JSON
+        - When changelog runs
+            - Then it fails naming the invalid file
 - 0017.8
     - Given Developer has package files whose versions match the first heading
         - When changelog runs
             - Then it passes
-- 0017.12
-    - Given Developer has an undated `###` heading, among the changes or outside any release section
-        - When changelog runs
-            - Then it fails quoting that heading
-- 0017.14
-    - Given Developer has a `package-lock.json` version that differs from `package.json`, or a package file that is not valid JSON
-        - When changelog runs
-            - Then it fails naming that file
 - 0017.15
     - Given Developer has dated `###` sections and a release section in `CHANGELOG.md`, with or without entry files
         - When changelog runs
             - Then it passes, reading the newest entry of either style first
-- 0017.16
-    - Given Developer has an entry file without exactly one dated `###` heading
+- 0017.17
+    - Given Developer has an undated `###` heading in `CHANGELOG.md`, or an entry file without one dated heading
         - When changelog runs
-            - Then it fails naming that file
+            - Then it fails quoting that heading or naming that file
