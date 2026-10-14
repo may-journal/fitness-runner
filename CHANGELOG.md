@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.13.0](https://github.com/may-journal/fitness-runner/compare/v1.12.0...v1.13.0) (2026-10-14)
+
+
+### Features
+
+* **typescript:** fitness supports published TypeScript libraries ([#376](https://github.com/may-journal/fitness-runner/issues/376)) ([a196ee7](https://github.com/may-journal/fitness-runner/commit/a196ee7e7099c0cd52b70d6fbc680409a2861de8))
+
 ## [1.12.0](https://github.com/may-journal/fitness-runner/compare/v1.11.0...v1.12.0) (2026-10-14)
 
 
