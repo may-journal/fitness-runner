@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.11.0](https://github.com/may-journal/fitness-runner/compare/v1.10.0...v1.11.0) (2026-10-14)
+
+
+### Features
+
+* **changelog:** accept each pull request's entry as its own file ([#358](https://github.com/may-journal/fitness-runner/issues/358)) ([33b2718](https://github.com/may-journal/fitness-runner/commit/33b2718bb4ec2aee7b4054157e5caebfbca69c02))
+* **changelog:** accept only entry files for a pull request's change ([#368](https://github.com/may-journal/fitness-runner/issues/368)) ([de81fa5](https://github.com/may-journal/fitness-runner/commit/de81fa5f52b9dabacb5ae751abaf0861431386bf))
+
 ## [1.10.0](https://github.com/may-journal/fitness-runner/compare/v1.9.0...v1.10.0) (2026-10-13)
 
 
