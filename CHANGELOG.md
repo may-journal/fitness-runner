@@ -15,6 +15,28 @@ relatedConfigurations: ['.fitnessrc.json']
 * **changelog:** accept each pull request's entry as its own file ([#358](https://github.com/may-journal/fitness-runner/issues/358)) ([33b2718](https://github.com/may-journal/fitness-runner/commit/33b2718bb4ec2aee7b4054157e5caebfbca69c02))
 * **changelog:** accept only entry files for a pull request's change ([#368](https://github.com/may-journal/fitness-runner/issues/368)) ([de81fa5](https://github.com/may-journal/fitness-runner/commit/de81fa5f52b9dabacb5ae751abaf0861431386bf))
 
+### 2026.10.13.2048
+
+- Docs: the README installs the Go runner with `@v1`, the major version, in place of `@latest`.
+- Docs: the README upgrade note says to rerun the same `@v1` command.
+- Docs: the distribution guide tells Go consumers to pin `@v1`, never a full release tag.
+- Docs: the pin major version entry file name starts with its date, 2026-10-13-2048.
+
+### 2026.10.13.1937
+
+- Feat: changelog-updated, pr-check, and branch-check accept only a changelog/ entry file; adding or editing a CHANGELOG.md section fails.
+- Feat: drop the changelog stamp hook and changelog-updated's heading time rules; entry headings are written by hand.
+- Docs: README, AGENTS.md, and the PR template describe entry files as the only way to record a change.
+- Test: requirements 0019.13 to 0019.17 and 0069.14 to 0069.16 replace retired section-style and stamp acceptances; 0063 is retired.
+
+### 2026.10.13.1837
+
+- Feat: changelog: a pull request may add its one entry as a `changelog/<name>.md` file, so open pull requests never conflict.
+- Feat: release-pr: the release tool commits pending entry files into the release PR's changelog below the version section and deletes them.
+- Feat: changelog checks, the stamp, pr-check, and branch-check accept entry files and sections alike; editing a pending entry file amends it.
+- Fix: release-pr skips the fold when the release branch holds no changelog folder; AGENTS.md replaces the .cursor rules folder.
+- Test: requirements 0017.15, 0017.17 to 0017.19, 0018.17, 0019.10 to 0019.12, 0063.5, and 0069.9 to 0069.13 prove both styles; docs prefer entry files.
+
 ## [1.10.0](https://github.com/may-journal/fitness-runner/compare/v1.9.0...v1.10.0) (2026-10-13)
 
 
