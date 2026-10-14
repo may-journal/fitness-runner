@@ -24,9 +24,9 @@ A template file defines a markdown document's shape, and its neighbors must matc
 
 ## Named templates
 
-A file in a `templates` folder governs alone the neighbor that shares its name, so `docs/architecture/templates/04-code.md` judges `docs/architecture/04-code.md`. It holds that doc to its whole shape:
+A file in a `templates` folder governs alone the neighbor that shares its name, so `docs/architecture/templates/04-code.md` judges `docs/architecture/04-code.md`. It governs no other doc, so the other neighbors match the folder's other templates, if any. It holds its namesake to its whole shape:
 
-- Front matter: every key the template has, and every quoted item in its list.
+- Front matter: every top-level key the template has, and every item in its list, flow or block.
 - Sections: the template's `##` sections open the doc, in order. Sections of the doc's own may follow.
 - Legends: a section with a legend in the template needs a legend of the same Mermaid type.
 - Legend kinds: a diagram with no callout numbers, one titled `Legend`, or one under a `Legend` heading.

@@ -243,37 +243,46 @@ func captionAbove(lines []string, header int) string {
 	for ; i >= 0 && inParagraph(lines[i]); i-- {
 		para = append([]string{strings.TrimSpace(lines[i])}, para...)
 	}
-	return strings.Join(para, " ")
+	return strings.TrimSpace(htmlComment.ReplaceAllString(strings.Join(para, " "), ""))
 }
+
+var htmlComment = regexp.MustCompile(`<!--.*?-->`)
 
 // inParagraph reports whether a line is prose: not blank, and no heading,
-// fence, table row, or comment end.
+// fence, table row, or line of its own opening or closing a comment.
 func inParagraph(line string) bool {
 	t := strings.TrimSpace(line)
-	return t != "" && !strings.HasPrefix(t, "#") && !strings.HasPrefix(t, "```") && !strings.HasPrefix(t, "|") && !strings.HasSuffix(t, "-->")
+	return t != "" && t != "-->" && !slices.ContainsFunc(notProse, func(p string) bool { return strings.HasPrefix(t, p) })
 }
 
-// skippable steps i past one blank line or one whole HTML comment above it,
-// reporting whether it moved.
+// notProse are the line openings that end a paragraph.
+var notProse = []string{"#", "```", "|", "<!--"}
+
+// skippable steps i past one blank line, or one HTML comment that fills its
+// own lines, reporting whether it moved.
 func skippable(lines []string, i *int) bool {
-	t := strings.TrimSpace(lines[*i])
-	if t != "" && !strings.HasSuffix(t, "-->") {
-		return false
+	start, ok := blankOrComment(lines, *i)
+	if ok {
+		*i = start - 1
 	}
-	*i = commentStart(lines, *i, t) - 1
-	return true
+	return ok
 }
 
-// commentStart is the line opening the HTML comment that ends on line i, or
-// i itself for a blank line t.
-func commentStart(lines []string, i int, t string) int {
+// blankOrComment reports whether line i is blank or closes a comment that
+// opens a line of its own, and the line that comment opens on.
+func blankOrComment(lines []string, i int) (int, bool) {
+	t := strings.TrimSpace(lines[i])
 	if t == "" {
-		return i
+		return i, true
 	}
-	for i > 0 && !strings.Contains(lines[i], "<!--") {
-		i--
+	if !strings.HasSuffix(t, "-->") {
+		return i, false
 	}
-	return i
+	start := i
+	for start > 0 && !strings.Contains(lines[start], "<!--") {
+		start--
+	}
+	return start, strings.HasPrefix(strings.TrimSpace(lines[start]), "<!--")
 }
 
 func firstSentence(text string) string {
@@ -284,32 +293,47 @@ func firstSentence(text string) string {
 }
 
 var (
-	frontLine = regexp.MustCompile(`^([A-Za-z][\w-]*):\s*(.*)$`)
-	listItem  = regexp.MustCompile(`['"]([^'"]+)['"]`)
+	frontKey  = regexp.MustCompile(`^([A-Za-z][\w-]*):\s*(.*?)\s*$`)
+	blockItem = regexp.MustCompile(`^\s*-\s+(.+?)\s*$`)
 )
 
-// readFront fills into with each front matter key and the quoted items of
-// its list value, and returns the keys in order.
+// readFront fills into with each top-level front matter key and the items of
+// its list, flow or block, and returns the keys in order. Indented keys
+// belong to a value and are not keys of their own.
 func readFront(body string, into map[string][]string) []string {
 	fm, _ := mdx.FrontMatter(body)
 	var keys []string
 	for _, line := range strings.Split(fm, "\n") {
-		if m := frontLine.FindStringSubmatch(strings.TrimSpace(line)); m != nil {
+		if m := frontKey.FindStringSubmatch(line); m != nil {
 			keys = append(keys, m[1])
-			into[m[1]] = listItems(m[2])
+			into[m[1]] = flowItems(m[2])
+		} else if item := blockItem.FindStringSubmatch(line); item != nil && len(keys) > 0 {
+			last := keys[len(keys)-1]
+			into[last] = append(into[last], unquote(item[1]))
 		}
 	}
 	return keys
 }
 
-// listItems returns the quoted items of a front matter value, never nil, so
-// a key with a scalar value still reads as present.
-func listItems(value string) []string {
+// flowItems returns the items of a `[a, 'b']` value, never nil, so a key
+// with a scalar value still reads as present.
+func flowItems(value string) []string {
 	items := []string{}
-	for _, m := range listItem.FindAllStringSubmatch(value, -1) {
-		items = append(items, m[1])
+	inner, open := strings.CutPrefix(value, "[")
+	inner, closed := strings.CutSuffix(inner, "]")
+	if !open || !closed {
+		return items
+	}
+	for _, part := range strings.Split(inner, ",") {
+		if item := unquote(part); item != "" {
+			items = append(items, item)
+		}
 	}
 	return items
+}
+
+func unquote(s string) string {
+	return strings.Trim(strings.TrimSpace(s), `'"`)
 }
 
 func sectionName(name string) string {

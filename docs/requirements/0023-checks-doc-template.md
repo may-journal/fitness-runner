@@ -14,7 +14,7 @@ markdown files that match their template, and templates that guide every section
 -
 markdown files checked
 
-Source: `go/cmd/fitness-check-doc-template/main.go:69`
+Source: `go/cmd/fitness-check-doc-template/main.go:70`
 
 ## Requirements
 
@@ -39,7 +39,7 @@ Source: `go/cmd/fitness-check-doc-template/main.go:69`
         - When doc-template checks the repo
             - Then it fails naming both templates
 - 0023.13
-    - Given Developer has views copied from the shipped architecture templates, with sections of their own after the template's
+    - Given Developer has views copied from the shipped architecture templates, with sections of their own, beside other docs
         - When doc-template checks the repo
             - Then it passes
 - 0023.14

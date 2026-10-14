@@ -12,6 +12,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -62,11 +63,11 @@ func readAll(root string, files []string) ([]doc, error) {
 // validateAll runs the comment rule over every template and the conformance
 // rule over every governed file.
 func validateAll(docs []doc) []string {
-	byDir := templatesByDir(docs)
+	byDir, named := templatesByDir(docs), namedTemplates(docs)
 	errs := commentErrors(docs)
 	for _, d := range docs {
 		if !isTemplate(d.path) {
-			errs = append(errs, judge(d, nearestTemplates(d.path, byDir))...)
+			errs = append(errs, judge(d, nearestTemplates(d.path, byDir), named)...)
 		}
 	}
 	return errs
@@ -112,13 +113,19 @@ func nearestTemplates(path string, byDir map[string][]doc) []doc {
 	}
 }
 
-// judge holds a doc to the template that shares its name, else to any one of
-// its folder's templates.
-func judge(d doc, templates []doc) []string {
-	if t, ok := namedTemplate(d, templates); ok {
-		return shapeErrors(d, t)
+// judge holds a doc to the named template whose namesake it is, else to any
+// one of its folder's other templates. A named template governs only its
+// namesake.
+func judge(d doc, templates []doc, named map[string]bool) []string {
+	var rest []doc
+	for _, t := range templates {
+		if !named[t.path] {
+			rest = append(rest, t)
+		} else if namesake(t.path) == d.path {
+			return shapeErrors(d, t)
+		}
 	}
-	return docErrors(d, templates)
+	return docErrors(d, rest)
 }
 
 // docErrors returns nil when the doc matches any one template. Otherwise it
@@ -141,15 +148,26 @@ func docErrors(d doc, templates []doc) []string {
 	return diffs
 }
 
-// namedTemplate finds the template in a templates folder that shares the
-// doc's file name.
-func namedTemplate(d doc, templates []doc) (doc, bool) {
-	for _, t := range templates {
-		if inTemplatesFolder(t.path) && filepath.Base(t.path) == filepath.Base(d.path) {
-			return t, true
+// namedTemplates marks each file in a templates folder whose namesake, the
+// file of the same name in the folder it governs, exists.
+func namedTemplates(docs []doc) map[string]bool {
+	paths := map[string]bool{}
+	for _, d := range docs {
+		paths[d.path] = true
+	}
+	named := map[string]bool{}
+	for _, d := range docs {
+		if inTemplatesFolder(d.path) && paths[namesake(d.path)] {
+			named[d.path] = true
 		}
 	}
-	return doc{}, false
+	return named
+}
+
+// namesake is the path a templates-folder file would govern alone: its own
+// name in the folder above.
+func namesake(template string) string {
+	return path.Join(dirOf(dirOf(template)), filepath.Base(template))
 }
 
 // shapeErrors judges a doc against the template that shares its file name:

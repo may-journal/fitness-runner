@@ -7,6 +7,12 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1914
+
+- Fix: doc-template: a named template governs only its namesake, so other docs beside or below it match the folder's other templates.
+- Fix: doc-template: front matter lists read in flow or block form, and a caption may end in a comment.
+- Test: requirement 0023.13 adds both list forms, a commented caption, and docs beside the views.
+
 ### 2026.10.13.1905
 
 - Feat: doc-template: a `templates` file governs the neighbor sharing its name, judging front matter, opening sections, legends, callout columns, and captions.
