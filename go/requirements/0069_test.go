@@ -40,11 +40,30 @@ func entryCommits(t *testing.T, files map[string]string, body string, commits ..
 	t.Helper()
 	repo := branchRepo(t, files)
 	pr := branchAnswer(t, repo, "test(app): add one file", body)
+	entryApply(t, repo, commits)
+	return repo, pr
+}
+
+// entryRebased is entryCommits after the base branch gained merged, another
+// PR's files, past the base commit GitHub recorded for the open PR.
+func entryRebased(t *testing.T, merged map[string]string, body string, commits ...map[string]string) (string, response) {
+	t.Helper()
+	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", body)
+	commit(t, repo, merged, "fix(app): merged from another PR")
+	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+	entryApply(t, repo, commits)
+	return repo, pr
+}
+
+// entryApply commits each set of changelog files to repo as one of a PR's
+// commits.
+func entryApply(t *testing.T, repo string, commits []map[string]string) {
+	t.Helper()
 	for i, changed := range commits {
 		changed["src.txt"] = "change " + strconv.Itoa(i) + "\n"
 		commit(t, repo, changed, "test(app): add one file")
 	}
-	return repo, pr
 }
 
 // entryActions runs pr-check in Actions on repo's branch, its PR described
@@ -152,6 +171,14 @@ func Test0069_14(t *testing.T) {
 	sees(t, local, localCode, 0, "pr-check #1")
 	repo, pr = entryCommits(t, map[string]string{"CHANGELOG.md": ""}, entryFileBody(entryFirstFile),
 		map[string]string{entryFirstFile: entry, "CHANGELOG.md": changelogBase})
+	out, code = entryActions(t, repo, entryFileBody(entryFirstFile))
+	sees(t, out, code, 0, "Passed.")
+	local, localCode = entryLocal(t, repo, pr)
+	sees(t, local, localCode, 0, "pr-check #1")
+	repo, pr = entryRebased(t, withEntries(map[string]string{"2026-10-10-1000-merged-file": entryFileText(entryLater, "Fix: merged from another PR.")}),
+		entryFileBody(entryFirstFile),
+		map[string]string{entryFirstFile: entry},
+		map[string]string{entryFirstFile: entry + "- Fix: name the file.\n"})
 	out, code = entryActions(t, repo, entryFileBody(entryFirstFile))
 	sees(t, out, code, 0, "Passed.")
 	local, localCode = entryLocal(t, repo, pr)

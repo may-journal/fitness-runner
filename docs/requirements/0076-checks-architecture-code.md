@@ -22,14 +22,6 @@ Source: #289
     - Given Developer has no architecture
         - When I check its code
             - Then it passes with zero files
-- 0076.2
-    - Given Developer has a class whose linked file no longer declares it
-        - When I check its code
-            - Then the error names the class and where the symbol now is, and a matching link passes
-- 0076.3
-    - Given Developer has a class whose kind, signature, or member differs from its source
-        - When I check its code
-            - Then the error names the class line and the source line
 - 0076.4
     - Given Developer has an exported type the view omits, or two classes for one symbol
         - When I check its code
@@ -50,3 +42,11 @@ Source: #289
     - Given Developer has one name declared twice, under build conditions or as overloads
         - When I check its code
             - Then the error lists each declaration, and a signature or line link picks one
+- 0076.9
+    - Given Developer has a class whose link, kind, signature, or member differs from its source
+        - When I check its code
+            - Then the error names the class line and where the symbol is declared, and a matching row passes
+- 0076.10
+    - Given Developer has a TypeScript code view
+        - When I check its code
+            - Then each class resolves to its declaration, members, and edges, in TSX and without semicolons too, and an unnamed exported class fails

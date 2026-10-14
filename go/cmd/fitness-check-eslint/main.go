@@ -17,6 +17,9 @@
 // the materialized copy only loads in repos where Node can resolve those
 // packages — installing them alongside eslint stays the check's peer
 // contract, exactly as it was in the npm era.
+//
+// A repo that chose Biome (internal/biome) is linted by `biome lint` on the
+// same paths instead, and needs no eslint (ADR 0006).
 package main
 
 import (
@@ -30,6 +33,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -65,16 +69,24 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if abs, err := filepath.Abs(root); err == nil {
 		root = abs
 	}
+	if biome.Chosen(root) {
+		return lintWithBiome(root), nil
+	}
+	return lintWithEslint(root), nil
+}
+
+// lintWithEslint lints the paths with the resolved eslint binary.
+func lintWithEslint(root string) checkkit.Result {
 	bin, found := findEslint(root)
 	if !found {
-		return checkkit.Fail(0, missingEslintMessage), nil
+		return checkkit.Fail(0, missingEslintMessage)
 	}
 	paths := pathsToLint(root, checkkit.ChangedFiles())
 	if len(paths) == 0 {
-		return checkkit.Pass(0), nil
+		return checkkit.Pass(0)
 	}
 	errs, exitCode, filesChecked := runEslint(root, bin, paths)
-	return buildExecCheckResult(exitCode, errs, filesChecked), nil
+	return buildExecCheckResult(exitCode, errs, filesChecked)
 }
 
 // buildExecCheckResult ports the shared TS helper: ok when exit 0 and no
@@ -258,6 +270,21 @@ func findEslint(root string) (string, bool) {
 		return bin, true
 	}
 	return "", false
+}
+
+// biomeFallbackMessage stands in when Biome fails without a finding.
+const biomeFallbackMessage = "Biome reported issues. Run: npx biome lint ."
+
+// lintWithBiome lints the same paths with `biome lint` in a repo that chose
+// Biome (ADR 0006), reporting each finding as path:line:col - message (rule).
+func lintWithBiome(root string) checkkit.Result {
+	paths := pathsToLint(root, checkkit.ChangedFiles())
+	if len(paths) == 0 {
+		return checkkit.Pass(0)
+	}
+	return biome.Check(root, "lint", nil, paths, biomeFallbackMessage, func(f biome.Finding) string {
+		return fmt.Sprintf("%s:%d:%d - %s (%s)", f.File, f.Line, f.Col, f.Message, f.Rule)
+	})
 }
 
 func isExecutable(path string) bool {

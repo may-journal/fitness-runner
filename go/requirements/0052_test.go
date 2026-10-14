@@ -1,6 +1,8 @@
 package requirements
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 )
 
@@ -75,19 +77,47 @@ func prettierCalledWith(t *testing.T, rp replays, want []string, not ...string) 
 	}
 }
 
-func Test0052_1(t *testing.T) {
+func Test0052_9(t *testing.T) {
 	t.Parallel()
 	out, code, rp := prettierRun(t, prettierJS(map[string]string{".prettierrc.json": `{ "singleQuote": true, "semi": false }` + "\n"}), []response{prettierWarnColored})
 	sees(t, out, code, 1, "✖ app.js")
 	prettierCalledWith(t, rp, []string{"--check", "app.js"}, "--config")
-}
-
-func Test0052_2(t *testing.T) {
-	t.Parallel()
 	files := prettierJS(map[string]string{".prettierrc.json": "", "package.json": prettierPackageField})
-	out, code, rp := prettierRun(t, files, []response{prettierAnswers(prettierWarn, "--config"), prettierClean})
+	out, code, rp = prettierRun(t, files, []response{prettierAnswers(prettierWarn, "--config"), prettierClean})
 	sees(t, out, code, 0, "All 1 checks passed")
 	prettierCalledWith(t, rp, []string{"--check", "package.json"}, "--config")
+}
+
+// biomeReformat is real `biome format --reporter=github` output naming a
+// file it would reformat.
+const biomeReformat = "::error title=format,file=%s,line=1,endLine=1,col=2,endColumn=2::Formatter would have printed the following content:\n"
+
+func Test0052_11(t *testing.T) {
+	t.Parallel()
+	files := map[string]string{"biome.jsonc": "{ \"formatter\": { \"enabled\": true } }\n"}
+	var report strings.Builder
+	for i := 1; i <= biomeMany; i++ {
+		name := fmt.Sprintf("app%d.js", i)
+		files[name] = prettierMessy
+		fmt.Fprintf(&report, biomeReformat, name)
+	}
+	for _, major := range biomeMajors {
+		files["package.json"] = fmt.Sprintf(biomePackage, major[0])
+		repo := example(t, "happyRepo", files)
+		reformat := response{
+			Match:  []string{"format " + fmt.Sprintf(biomeFlags, major[2]), "app1.js"},
+			Stdout: report.String(),
+			Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
+			Exit:   1,
+		}
+		rp := standIn(t, map[string][]response{"biome": {biomeVersion(major[1]), reformat}})
+		out, code := fitness(t, repo, rp.env, "prettier")
+		sees(t, out, code, 1, "✖ app1.js", "✖ app25.js")
+		if !rp.called("biome", "format", "README.md") || strings.Contains(out, "Prettier not installed") {
+			t.Errorf("Biome must check every tracked file in place of Prettier; calls %q:\n%s", rp.calls("biome"), out)
+		}
+	}
+	biomeRejects(t, files, "prettier")
 }
 
 func Test0052_3(t *testing.T) {
@@ -123,6 +153,18 @@ func Test0052_6(t *testing.T) {
 	out, code, rp := prettierRun(t, prettierJS(map[string]string{"app.js": prettierMessy}), []response{prettierAnswers(prettierWritten, "--write ."), prettierWarn}, "--write", ".")
 	sees(t, out, code, 0, "All 1 checks passed")
 	prettierCalledWith(t, rp, []string{"--write ."}, "--check")
+	files := prettierJS(map[string]string{".prettierrc.json": "", "biome.jsonc": "{}\n", "package.json": fmt.Sprintf(biomePackage, "2.4.15")})
+	written := response{Match: []string{"format " + fmt.Sprintf(biomeFlags, "none") + " --write app.js"}, Stdout: "Formatted 1 file in 2ms. Fixed 1 file.\n"}
+	biomeRun := standIn(t, map[string][]response{"biome": {biomeVersion("2.4.15"), written}})
+	out, code = fitness(t, example(t, "happyRepo", files), biomeRun.env, "prettier", "--write", "--ignore-unknown", "app.js")
+	sees(t, out, code, 0, "All 1 checks passed")
+	for _, call := range biomeRun.calls("biome") {
+		if strings.Contains(call, "--ignore-unknown") || strings.Contains(call, "README.md") {
+			t.Errorf("Biome must get only its own flags and the given path; got %q", call)
+		}
+	}
+	out, code = fitness(t, example(t, "happyRepo", files), biomeRun.env, "prettier", "--write", "--print-width", "100", "app.js")
+	sees(t, out, code, 1, "Biome formats this repo and has no counterpart for Prettier's --print-width")
 }
 
 func Test0052_7(t *testing.T) {

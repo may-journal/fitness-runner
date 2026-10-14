@@ -21,3 +21,9 @@ The shared config imports its plugins (typescript-eslint, jsdoc, perfectionist, 
 - Enforces `sort-keys` (natural ascending) and other rules from `eslint.config.mjs`.
 
 Errors are reported as `path:line:col - message (ruleId)`.
+
+## Biome
+
+A repo that chose Biome lints with it instead, as [ADR 0006](../../../docs/architecture/adr/0006-biome-stands-in-for-eslint-and-prettier.md) records. Such a repo has a `biome.json` or `biome.jsonc` at its root and `@biomejs/biome` in its `package.json` dependencies. The check runs `biome lint --reporter=github` on the same paths, and needs no eslint.
+
+Biome resolves like eslint, and a missing binary fails with an install hint. Biome before 1.8 fails naming its version, since its CLI rejects the GitHub reporter. Each Biome error or warning fails as `path:line:col - message (rule)`.
