@@ -17,15 +17,16 @@ The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated se
 
 ## Entry files
 
-Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So a pull request adds its entry as its own `changelog/<name>.md` file, named for the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above.
+Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So a pull request adds its entry as its own `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file, with the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above. The name's date is that heading's, dots read as hyphens, so the folder lists in release order.
 
 - A pull request adds exactly one entry file. Adding or editing a section in an existing `CHANGELOG.md` fails, pointing to `changelog/`.
 - A repo with no `changelog/` folder needs no setting: its first pull request creates it.
 - This check folds every entry file into `CHANGELOG.md`, newest first, and judges the result, so the newest entry is the first heading.
-- Fail: an entry file holding other than one dated `###` heading → `changelog/<name>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
-- `changelog-updated`, `pr-check`, and `branch-check` accept only entry files.
+- Fail: an entry file holding other than one dated `###` heading → `changelog/<file>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
+- Fail: an entry file whose name lacks its heading's date, or carries another → `changelog/<file>.md must be named changelog/<yyyy-mm-dd-HHMM>-<change>.md...`.
+- `changelog-updated`, `pr-check`, and `branch-check` accept only entry files, and fail an added one with that bad name.
 - You write the heading's time by hand; no hook rewrites it.
-- On the release PR, `fitness-release release-pr` commits the entry files into `CHANGELOG.md` below the Release Please version section and deletes them.
+- On the release PR, `fitness-release release-pr` commits the entry files into `CHANGELOG.md` below the Release Please version section, newest name first, and deletes them.
 
 Dated sections already in `CHANGELOG.md` stay valid history, which this check and `changelog-bullets` still judge.
 

@@ -46,3 +46,7 @@ Source: `go/cmd/fitness-check-changelog-updated/main.go:88`
     - Given Developer has a branch whose earlier commit added the first `CHANGELOG.md`
         - When changelog-updated checks a commit that edits it
             - Then it passes
+- 0019.18
+    - Given Developer has staged a new entry file whose name lacks its heading's date
+        - When changelog-updated checks the staged commit
+            - Then it fails naming the dated file name it expects

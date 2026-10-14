@@ -48,15 +48,11 @@ func Test0017_5(t *testing.T) {
 	sees(t, out, code, 1, "package.json version suffix must match CHANGELOG.md first ### heading (yyyy.mm.dd.HHMM)")
 }
 
-func Test0017_18(t *testing.T) {
+func Test0017_20(t *testing.T) {
 	t.Parallel()
 	out, code := changelogRun(t, changelogPackages(changelogVersion, `{"version": "0.1.0-2026.10.07.0900"}`+"\n"))
 	sees(t, out, code, 1, "package-lock.json version must match package.json version")
-}
-
-func Test0017_19(t *testing.T) {
-	t.Parallel()
-	out, code := changelogRun(t, changelogPackages("not json\n", ""))
+	out, code = changelogRun(t, changelogPackages("not json\n", ""))
 	sees(t, out, code, 1, "package.json is invalid JSON")
 	out, code = changelogRun(t, changelogPackages(changelogVersion, "not json\n"))
 	sees(t, out, code, 1, "package-lock.json is invalid JSON")
@@ -84,8 +80,8 @@ func Test0017_15(t *testing.T) {
 	out, code = notesChecks(t, notesHead+notesRelease(notesTwo)+notesEntry, "changelog")
 	sees(t, out, code, 0, "All 1 checks passed")
 	files := withEntries(map[string]string{
-		"older-change": entryFileText("2026.10.10.0900", "Fix: older change."),
-		"newer-change": entryFileText("2026.10.11.0900", "Feat: newer change."),
+		"2026-10-10-0900-older-change": entryFileText("2026.10.10.0900", "Fix: older change."),
+		"2026-10-11-0900-newer-change": entryFileText("2026.10.11.0900", "Feat: newer change."),
 	})
 	files["CHANGELOG.md"] = notesHead + notesRelease(notesTwo) + notesEntry
 	files["package.json"] = `{"name": "app", "private": true, "version": "0.1.0-2026.10.11.0900"}` + "\n"
@@ -139,8 +135,19 @@ func Test0017_17(t *testing.T) {
 	out, code = notesChecks(t, notesHead+"### Features\n\n- Feat: stray.\n\n"+notesEntry, "changelog")
 	sees(t, out, code, 1, `invalid: "### Features"`)
 	out, code = changelogRun(t, withEntries(map[string]string{
-		"good-change":  entryFileText("2026.10.11.0900", "Feat: good change."),
-		"two-headings": entryFileText("2026.10.11.1000", "Fix: one.") + "\n" + entryFileText("2026.10.11.1100", "Fix: two."),
+		"2026-10-11-0900-good-change":  entryFileText("2026.10.11.0900", "Feat: good change."),
+		"2026-10-11-1000-two-headings": entryFileText("2026.10.11.1000", "Fix: one.") + "\n" + entryFileText("2026.10.11.1100", "Fix: two."),
 	}))
-	sees(t, out, code, 1, "changelog/two-headings.md must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
+	sees(t, out, code, 1, "changelog/2026-10-11-1000-two-headings.md must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
+}
+
+func Test0017_21(t *testing.T) {
+	t.Parallel()
+	out, code := changelogRun(t, withEntries(map[string]string{
+		"undated-change":               entryFileText("2026.10.11.0900", "Feat: undated change."),
+		"2026-10-11-0800-moved-change": entryFileText("2026.10.11.1000", "Fix: moved change."),
+	}))
+	sees(t, out, code, 1,
+		"changelog/undated-change.md must be named changelog/2026-10-11-0900-undated-change.md: its heading's date, then the change",
+		"changelog/2026-10-11-0800-moved-change.md must be named changelog/2026-10-11-1000-moved-change.md")
 }
