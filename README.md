@@ -18,10 +18,10 @@ Every check is its own static binary (`fitness-check-<name>`), orchestrated by a
 For consumers who choose source builds:
 
 ```bash
-go install github.com/may-journal/fitness-runner/go/cmd/...@latest
+go install github.com/may-journal/fitness-runner/go/cmd/...@v1
 ```
 
-One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@latest`.
+One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@v1`.
 
 ### Prebuilt binaries
 
