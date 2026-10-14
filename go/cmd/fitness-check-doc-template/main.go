@@ -4,13 +4,16 @@
 // parent), or a GitHub PR or Issue template. Every template's level-2 section
 // needs a guiding HTML comment. Walking up from each markdown file, the first
 // folder with templates governs it, and the file must have the same sections
-// as any one of them. GitHub templates get only the comment rule.
+// as any one of them. A template in a templates folder that shares the file's
+// name governs it alone, with its whole shape. GitHub templates get only the
+// comment rule.
 package main
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -63,7 +66,7 @@ func validateAll(docs []doc) []string {
 	errs := commentErrors(docs)
 	for _, d := range docs {
 		if !isTemplate(d.path) {
-			errs = append(errs, docErrors(d, nearestTemplates(d.path, byDir))...)
+			errs = append(errs, judge(d, nearestTemplates(d.path, byDir))...)
 		}
 	}
 	return errs
@@ -109,6 +112,15 @@ func nearestTemplates(path string, byDir map[string][]doc) []doc {
 	}
 }
 
+// judge holds a doc to the template that shares its name, else to any one of
+// its folder's templates.
+func judge(d doc, templates []doc) []string {
+	if t, ok := namedTemplate(d, templates); ok {
+		return shapeErrors(d, t)
+	}
+	return docErrors(d, templates)
+}
+
 // docErrors returns nil when the doc matches any one template. Otherwise it
 // lists the differences from a lone template, or names all of several.
 func docErrors(d doc, templates []doc) []string {
@@ -127,6 +139,32 @@ func docErrors(d doc, templates []doc) []string {
 		diffs[i] = d.path + ": " + diffs[i]
 	}
 	return diffs
+}
+
+// namedTemplate finds the template in a templates folder that shares the
+// doc's file name.
+func namedTemplate(d doc, templates []doc) (doc, bool) {
+	for _, t := range templates {
+		if inTemplatesFolder(t.path) && filepath.Base(t.path) == filepath.Base(d.path) {
+			return t, true
+		}
+	}
+	return doc{}, false
+}
+
+// shapeErrors judges a doc against the template that shares its file name:
+// its front matter, opening sections, legends, callout table columns, and
+// captions.
+func shapeErrors(d doc, t doc) []string {
+	var errs []string
+	for _, f := range mdtemplate.ShapeFromTemplate(t.path, t.body).Validate(d.body) {
+		at := d.path
+		if f.Line > 0 {
+			at += ":" + strconv.Itoa(f.Line)
+		}
+		errs = append(errs, at+": "+f.Text)
+	}
+	return errs
 }
 
 // isConformanceTemplate reports whether the file names a template that governs
