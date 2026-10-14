@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.12.0](https://github.com/may-journal/fitness-runner/compare/v1.11.0...v1.12.0) (2026-10-14)
+
+
+### Features
+
+* **changelog:** name each entry file for its heading's date ([#374](https://github.com/may-journal/fitness-runner/issues/374)) ([987dcdc](https://github.com/may-journal/fitness-runner/commit/987dcdc66ef2fdfb6a342464db7bf2e6fcc00654))
+
 ## [1.11.0](https://github.com/may-journal/fitness-runner/compare/v1.10.0...v1.11.0) (2026-10-14)
 
 
