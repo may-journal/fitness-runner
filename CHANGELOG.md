@@ -7,6 +7,13 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.1905
+
+- Feat: doc-template: a `templates` file governs the neighbor sharing its name, judging front matter, opening sections, legends, callout columns, and captions.
+- Feat: architecture: each of the five views ships a template in `docs/architecture/templates`, and this repo's views follow them.
+- Docs: the architecture-contract README says how a repo copies the templates, and the doc-template README sets out named templates.
+- Test: requirement 0023 folds 0023.1 to 0023.3 and 0023.6 to 0023.8 into 0023.10 to 0023.12, and 0023.13 to 0023.15 prove the view templates, each with one test.
+
 ### 2026.10.13.1849
 
 - Fix: eslint and prettier: an installed Biome 1.x, read from `biome --version`, gets `--max-diagnostics=65535`, since Biome before 1.9 rejects `none`.

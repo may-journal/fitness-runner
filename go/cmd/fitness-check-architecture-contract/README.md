@@ -23,6 +23,21 @@ No views means a pass with zero files, unless the repo has Go, Swift, TypeScript
 
 Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
 
+## Templates
+
+Each view has a template in [docs/architecture/templates](../../../docs/architecture/templates). Copy all five into the repo's own `docs/architecture/templates`, then start each view as a copy of its template:
+
+```bash
+mkdir -p docs/architecture/templates
+for view in 01-system-context 02-containers 03-components 04-code 05-user-journey; do
+  curl -fsSL "https://raw.githubusercontent.com/may-journal/fitness-runner/v1/docs/architecture/templates/$view.md" \
+    -o "docs/architecture/templates/$view.md"
+  cp -n "docs/architecture/templates/$view.md" "docs/architecture/$view.md"
+done
+```
+
+Views under `architecture/` keep their templates in `architecture/templates`. The `doc-template` check then fails a view that drifts from its template's front matter, sections, legend, callout columns, or caption; see [named templates](../fitness-check-doc-template/README.md#named-templates). Each template's comments say what to write.
+
 ## What the diagrams already say
 
 | Content | Model fact |
