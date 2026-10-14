@@ -105,12 +105,12 @@ func Test0052_11(t *testing.T) {
 		files["package.json"] = fmt.Sprintf(biomePackage, major[0])
 		repo := example(t, "happyRepo", files)
 		reformat := response{
-			Match:  []string{"format " + fmt.Sprintf(biomeFlags, major[1]), "app1.js"},
+			Match:  []string{"format " + fmt.Sprintf(biomeFlags, major[2]), "app1.js"},
 			Stdout: report.String(),
 			Stderr: "format ━━━━━━━━━━\n\n  × Some errors were emitted while running checks.\n",
 			Exit:   1,
 		}
-		rp := standIn(t, map[string][]response{"biome": {reformat}})
+		rp := standIn(t, map[string][]response{"biome": {biomeVersion(major[1]), reformat}})
 		out, code := fitness(t, repo, rp.env, "prettier")
 		sees(t, out, code, 1, "✖ app1.js", "✖ app25.js")
 		if !rp.called("biome", "format", "README.md") || strings.Contains(out, "Prettier not installed") {

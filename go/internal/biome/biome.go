@@ -32,8 +32,7 @@ var configNames = []string{"biome.json", "biome.jsonc"}
 // Biome config at the root and @biomejs/biome among its package.json
 // dependencies or devDependencies.
 func Chosen(root string) bool {
-	_, ok := declared(root)
-	return hasConfig(root) && ok
+	return hasConfig(root) && declared(root)
 }
 
 func hasConfig(root string) bool {
@@ -45,32 +44,33 @@ func hasConfig(root string) bool {
 	return false
 }
 
-// declared returns the version range package.json gives @biomejs/biome, in
-// devDependencies or dependencies, and whether it names the package at all.
-func declared(root string) (string, bool) {
+// declared reports whether package.json names @biomejs/biome in its
+// dependencies or devDependencies.
+func declared(root string) bool {
 	raw, err := os.ReadFile(filepath.Join(root, "package.json"))
 	if err != nil {
-		return "", false
+		return false
 	}
 	var pkg struct {
-		Dependencies    map[string]string `json:"dependencies"`
-		DevDependencies map[string]string `json:"devDependencies"`
+		Dependencies    map[string]any `json:"dependencies"`
+		DevDependencies map[string]any `json:"devDependencies"`
 	}
 	_ = json.Unmarshal(raw, &pkg)
-	if v, ok := pkg.DevDependencies[packageName]; ok {
-		return v, true
-	}
-	v, ok := pkg.Dependencies[packageName]
-	return v, ok
+	_, dev := pkg.DevDependencies[packageName]
+	_, dep := pkg.Dependencies[packageName]
+	return dev || dep
 }
 
 // maxDiagnostics lifts Biome's default cap of 20 diagnostics, which would
-// hide the rest. Biome 2 and 1.9 take `none`; earlier 1.x rejects it and
-// takes at most 65535, which every 1.x accepts.
-func maxDiagnostics(root string) string {
-	version, _ := declared(root)
-	major, _, _ := strings.Cut(strings.TrimLeft(version, "^~>=v "), ".")
-	if major == "1" {
+// hide the rest. It asks the resolved binary its version, since package.json
+// may say `latest`, `catalog:`, or an alias. Biome 2 and 1.9 take `none`;
+// earlier 1.x rejects it and takes at most 65535, which every 1.x accepts.
+func maxDiagnostics(root, bin string) string {
+	cmd := exec.Command(bin, "--version")
+	cmd.Dir = root
+	out, _ := cmd.Output()
+	version := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(string(out)), "Version:"))
+	if strings.HasPrefix(version, "1.") {
 		return "--max-diagnostics=65535"
 	}
 	return "--max-diagnostics=none"
@@ -139,11 +139,11 @@ func Check(root, command string, paths []string, fallback string, show func(Find
 }
 
 // run execs bin in root as `biome <command>` with the GitHub reporter and
-// the diagnostics cap lifted for the declared major (maxDiagnostics),
+// the diagnostics cap lifted for its version (maxDiagnostics),
 // tolerating paths Biome does not handle, then args. It returns every error
 // and warning finding, the exit code, and the last lines of output.
 func run(root, bin, command string, args []string) (findings []Finding, exitCode int, tail []string) {
-	argv := append([]string{command, "--reporter=github", maxDiagnostics(root), "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
+	argv := append([]string{command, "--reporter=github", maxDiagnostics(root, bin), "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	var out bytes.Buffer

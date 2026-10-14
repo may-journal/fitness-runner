@@ -47,6 +47,6 @@ Source: `go/cmd/fitness-check-prettier/main.go:363`
         - When prettier checks the repo
             - Then it fails with an install hint
 - 0052.11
-    - Given Developer has a `biome.jsonc`, `@biomejs/biome` 1.x or 2.x in `devDependencies`, no Prettier, and more than 20 files Biome would reformat
+    - Given Developer has a `biome.jsonc`, `@biomejs/biome` 1.x or 2.x under any spec, no Prettier, and more than 20 files Biome would reformat
         - When prettier checks the repo
             - Then it checks formatting with Biome instead, failing naming every one of those files

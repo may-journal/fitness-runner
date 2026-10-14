@@ -141,9 +141,16 @@ const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\"
 // the cap that lifts its default of 20 diagnostics.
 const biomeFlags = "--reporter=github --max-diagnostics=%s --no-errors-on-unmatched --files-ignore-unknown=true"
 
-// biomeMajors pairs a declared Biome version with the cap its major takes:
-// Biome before 1.9 rejects `none`, and 1.x takes at most 65535.
-var biomeMajors = [][2]string{{"2.4.15", "none"}, {"^1.8.3", "65535"}}
+// biomeMajors pairs the version package.json declares, the version the
+// installed binary reports, and the cap that version takes: Biome before 1.9
+// rejects `none`, and 1.x takes at most 65535. A spec such as `latest` says
+// nothing of the major, so only the binary's answer counts.
+var biomeMajors = [][3]string{{"2.4.15", "2.4.15", "none"}, {"latest", "1.8.3", "65535"}}
+
+// biomeVersion is real `biome --version` output for version v.
+func biomeVersion(v string) response {
+	return response{Match: []string{"--version"}, Stdout: "Version: " + v + "\n"}
+}
 
 // biomeUseConst is real `biome lint --reporter=github` output for a `let`
 // never reassigned on line %d; Biome exits 0 on a warning.
@@ -165,8 +172,8 @@ func Test0024_11(t *testing.T) {
 			"biome.json":   "{ \"linter\": { \"enabled\": true } }\n",
 			"app.js":       source.String(),
 		})
-		match := "lint " + fmt.Sprintf(biomeFlags, major[1]) + " app.js"
-		rp := standIn(t, map[string][]response{"biome": {{Match: []string{match}, Stdout: report.String()}}})
+		match := "lint " + fmt.Sprintf(biomeFlags, major[2]) + " app.js"
+		rp := standIn(t, map[string][]response{"biome": {biomeVersion(major[1]), {Match: []string{match}, Stdout: report.String()}}})
 		out, code := fitness(t, repo, rp.env, "eslint")
 		eslintFinds(t, out, code, "app.js:1:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
 		eslintFinds(t, out, code, "app.js:49:1 - This let declares a variable that is only assigned once. (lint/style/useConst)")
