@@ -50,12 +50,17 @@ func Test0021_5(t *testing.T) {
 	sees(t, out, code, 1, "cspell.json sets ignorePaths; cspell checks every tracked file, so remove ignorePaths and fix the findings instead")
 }
 
-func Test0021_6(t *testing.T) {
+func Test0021_11(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{
-		".gitattributes": "*.lock linguist-generated\n",
-		"deps/pkg.lock":  cspellSharedWord + "\n",
-		"blob.bin":       cspellBinaryWord + "\x00" + cspellBinaryOther,
+		".gitattributes":       "*.gen linguist-generated\n",
+		"deps/pkg.gen":         cspellSharedWord + "\n",
+		"blob.bin":             cspellBinaryWord + "\x00" + cspellBinaryOther,
+		"package-lock.json":    `{"packages":{"node_modules/` + cspellTypo + `":{}}}` + "\n",
+		"web/yarn.lock":        cspellRepoWord + "@1.0.0\n",
+		"pnpm-lock.yaml":       cspellBodyTypo + ": 1.0.0\n",
+		"go.sum":               "example.com/" + cspellBinaryOther + " v1.0.0 h1:abc=\n",
+		"App/Package.resolved": `{"identity":"` + cspellBinaryWord + `"}` + "\n",
 	})
 	write(t, repo, map[string]string{"untracked.md": "the " + cspellRepoWord + " fox\n"})
 	out, code := fitness(t, repo, nil, "cspell")
