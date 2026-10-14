@@ -2,7 +2,8 @@
 // EVERY section of CHANGELOG.md must have 3 to 5 bullets, every bullet
 // must be under 365 characters, and every bullet must start with a
 // capitalized semantic type prefix (Feat:, Fix:, …). A repo without a
-// CHANGELOG.md has nothing to judge and passes with zero files.
+// CHANGELOG.md has nothing to judge and passes with zero files. Each
+// changelog/*.md entry file is judged the same way.
 package main
 
 import (
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/changelog"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 )
@@ -39,15 +41,29 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	raw, err := os.ReadFile(filepath.Join(root, "CHANGELOG.md"))
+	docs, err := changelogDocs(root)
 	if err != nil {
-		return checkkit.Pass(0), nil
+		return checkkit.Result{}, err
 	}
-	errs := judge(string(raw), conf.MaxListItems(root))
+	var errs []string
+	for _, doc := range docs {
+		errs = append(errs, judge(doc.Path, doc.Text, conf.MaxListItems(root))...)
+	}
 	if len(errs) > 0 {
-		return checkkit.Fail(1, errs...), nil
+		return checkkit.Fail(len(docs), errs...), nil
 	}
-	return checkkit.Pass(1), nil
+	return checkkit.Pass(len(docs)), nil
+}
+
+// changelogDocs are the files this check judges: CHANGELOG.md when present,
+// then each entry file.
+func changelogDocs(root string) ([]changelog.Entry, error) {
+	var docs []changelog.Entry
+	if raw, err := os.ReadFile(filepath.Join(root, changelog.File)); err == nil {
+		docs = append(docs, changelog.Entry{Path: changelog.File, Text: string(raw)})
+	}
+	entries, err := changelog.ReadEntries(root)
+	return append(docs, entries...), err
 }
 
 // bullet is one logical changelog bullet: its 1-based start line and its
@@ -60,17 +76,17 @@ type bullet struct {
 // judge validates every section's bullets against all three rules. A
 // release section gathers many changes, so it may hold from one bullet up to
 // the repo's prose-budget list limit, releaseMax.
-func judge(content string, releaseMax int) []string {
+func judge(file, content string, releaseMax int) []string {
 	var errs []string
 	for _, sec := range sections(content) {
-		errs = append(errs, judgeSection(sec, releaseMax)...)
+		errs = append(errs, judgeSection(file, sec, releaseMax)...)
 	}
 	return errs
 }
 
-// judgeSection applies the bullet-count rule to one section and the
+// judgeSection applies the bullet-count rule to one section of file and the
 // per-bullet rules to each of its bullets.
-func judgeSection(sec section, releaseMax int) []string {
+func judgeSection(file string, sec section, releaseMax int) []string {
 	var errs []string
 	lo, hi, kind := minBullets, maxBullets, "entries"
 	if sec.release {
@@ -78,10 +94,10 @@ func judgeSection(sec section, releaseMax int) []string {
 	}
 	if n := len(sec.bullets); n < lo || n > hi {
 		errs = append(errs, fmt.Sprintf(
-			"CHANGELOG.md section %q has %d bullets; keep %s to %d-%d bullets", sec.heading, n, kind, lo, hi))
+			"%s section %q has %d bullets; keep %s to %d-%d bullets", file, sec.heading, n, kind, lo, hi))
 	}
 	for _, b := range sec.bullets {
-		errs = append(errs, judgeBullet(b, sec.release)...)
+		errs = append(errs, judgeBullet(file, b, sec.release)...)
 	}
 	return errs
 }
@@ -99,16 +115,16 @@ func bulletText(line string, release bool) (string, bool) {
 
 // judgeBullet applies the length rule to one bullet, and the type-prefix
 // rule to an entry's bullet.
-func judgeBullet(b bullet, release bool) []string {
+func judgeBullet(file string, b bullet, release bool) []string {
 	var errs []string
 	if n := len([]rune(b.text)); n >= maxRunes {
 		errs = append(errs, fmt.Sprintf(
-			"CHANGELOG.md:%d: bullet is %d characters; keep each under %d", b.line, n, maxRunes))
+			"%s:%d: bullet is %d characters; keep each under %d", file, b.line, n, maxRunes))
 	}
 	// A release bullet takes its type from the subheading above it.
 	if !release && !typeRe.MatchString(b.text) {
 		errs = append(errs, fmt.Sprintf(
-			"CHANGELOG.md:%d: bullet must start with a semantic type (Feat:, Fix:, ... or feat(scope):, fix(scope):, ...)", b.line))
+			"%s:%d: bullet must start with a semantic type (Feat:, Fix:, ... or feat(scope):, fix(scope):, ...)", file, b.line))
 	}
 	return errs
 }

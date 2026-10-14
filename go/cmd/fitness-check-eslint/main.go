@@ -282,7 +282,7 @@ func lintWithBiome(root string) checkkit.Result {
 	if len(paths) == 0 {
 		return checkkit.Pass(0)
 	}
-	return biome.Check(root, "lint", paths, biomeFallbackMessage, func(f biome.Finding) string {
+	return biome.Check(root, "lint", nil, paths, biomeFallbackMessage, func(f biome.Finding) string {
 		return fmt.Sprintf("%s:%d:%d - %s (%s)", f.File, f.Line, f.Col, f.Message, f.Rule)
 	})
 }

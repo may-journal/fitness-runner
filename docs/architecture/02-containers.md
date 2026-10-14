@@ -15,7 +15,7 @@ C4Container
     System_Boundary(ship, "Shipped artifacts") {
         Container(cli, "3 Runner binary", "Go", "go/cmd/fitness")
         Container(checks, "4 Check binaries", "Go", "go/cmd/fitness-check-*, one per check")
-        Container(tools, "5 Install and release tools", "Go", "go/cmd/fitness-install, go/cmd/fitness-release, go/cmd/fitness-stamp-changelog")
+        Container(tools, "5 Install and release tools", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
     System_Ext(consumer, "6 Consumer repo", ".fitnessrc.json and the sources under test")
@@ -55,7 +55,7 @@ Numbers on nodes and arrows match the callout table. Each container names the Go
 | 2   | Same agent actor as system context.                                                              | Agents never link checks — they invoke the CLI.             |
 | 3   | `fitness` — argv, spec resolution, describe handshake, parallel pool, results table.             | Single orchestration surface, one static binary.            |
 | 4   | One static binary per check name, found beside the runner then on PATH.                          | Plugin model at the artifact level; no in-process registry. |
-| 5   | The installer, the release tool, and the changelog stamp the hooks run.                          | Shipped beside the checks; not part of any run.             |
+| 5   | The installer and the release tool.                                                              | Shipped beside the checks; not part of any run.             |
 | 6   | Optional `.fitnessrc.json` with per-check options, and the files checks lint, format, or scan.   | Every check runs on every tracked file; no path is ignored. |
 | 7   | Tool-wrapper checks exec these when installed; native engines (cspell, jscpd souls) need none.   | Peer tools resolved at runtime, never bundled.              |
 | 8   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
@@ -69,7 +69,7 @@ Numbers on nodes and arrows match the callout table. Each container names the Go
 | 16  | Checks resolve peer binaries from `node_modules/.bin` walking up, then PATH, never npx.          | Missing tools fail with one-line install hints.             |
 | 17  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
 | 18  | `fitness pr-check` and `plan-check` exec each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
-| 19  | Developer runs `fitness-install`; the pre-commit hook runs `fitness-stamp-changelog`.           | One documented one-liner installs or runs the suite.        |
+| 19  | Developer runs `fitness-install`; the pre-commit hook runs the suite.                           | One documented one-liner installs or runs the suite.        |
 | 20  | `fitness-release` builds and publishes the bundles.                                              | Release and install share one versioned artifact set.       |
 
 ## Consumer setup

@@ -46,3 +46,7 @@ Source: #287
     - Given Developer has a target or package manifest the check cannot read
         - When I check its containers
             - Then the error names the manifest
+- 0073.9
+    - Given Developer has a target manifest `.gitattributes` marks `linguist-generated`
+        - When I check its containers
+            - Then its targets still match containers by name

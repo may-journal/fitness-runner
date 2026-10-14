@@ -143,15 +143,13 @@ After downloading the installer, run this once from the consumer repository root
 "$HOME/.local/fitness/fitness-install-1.2.0-linux-amd64" --install-hook -- --policy=external --all
 ```
 
-This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, changelog stamp, or automatic file fix is involved.
+This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, or automatic file fix is involved.
 
 The hook checks working-tree files, not an isolated staged snapshot. A failed check blocks the commit; CI runs independently of local hooks. Teams with an existing hook manager can invoke the installer through that manager instead.
 
 ## Calling shared Go hooks
 
-Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook commit-msg` followed by the message file. The installer puts verified bundle tools on the child process PATH while preserving project tools. The shared pre-commit hook stamps the staged changelog; the external check-only hook above does not.
-
-This behavior requires a release containing the bundled-tool PATH fix. Earlier installers need manual PATH setup for the shared pre-commit stamper.
+Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook commit-msg` followed by the message file. The installer puts verified bundle tools on the child process PATH while preserving project tools.
 
 ## Cache and versions
 
@@ -163,7 +161,7 @@ Upgrade or roll back with `--version VERSION`; `--version latest` is explicit op
 
 ## Release automation
 
-After main CI passes, Release Please groups conventional commits in a release PR and owns its version and GitHub notes. Once merged, it creates a draft release and an explicit root `v` tag. The root changelog holds the notes. `fitness-release release-pr` rewrites the release PR to link that changelog section and the compare view, and the GitHub release carries the same links.
+After main CI passes, Release Please groups conventional commits in a release PR and owns its version and GitHub notes. Once merged, it creates a draft release and an explicit root `v` tag. `fitness-release release-pr` commits any [entry files](../go/cmd/fitness-check-changelog/README.md#entry-files) into the release PR's changelog under the version section, which holds the notes. It then links that section and the compare view from the PR, and the GitHub release carries the same links.
 
 GoReleaser OSS 2.18.2 builds, archives, checksums, and publishes the assets after native checks on four platforms. It reuses the draft and publishes a prerelease for public download checks. Passing checks promote the release to latest and add its `go/v` module tag at the same commit. When that release is the newest, the workflow moves its major tag, such as `v1`, to the same commit.
 

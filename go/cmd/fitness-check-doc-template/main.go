@@ -3,10 +3,10 @@
 // *.template.md, any markdown file in a templates folder (governing its
 // parent), or a GitHub PR or Issue template. Every template's level-2 section
 // needs a guiding HTML comment. Walking up from each markdown file, the first
-// folder with templates governs it, and the file must have the same sections
-// as any one of them. A template in a templates folder that shares the file's
-// name governs it alone, with its whole shape. GitHub templates get only the
-// comment rule.
+// folder with a template that governs it decides, and the file must have the
+// same sections as any one of them. A template in a templates folder that
+// shares the file's name governs it alone, with its whole shape, and no other
+// file. GitHub templates get only the comment rule.
 package main
 
 import (
@@ -67,7 +67,7 @@ func validateAll(docs []doc) []string {
 	errs := commentErrors(docs)
 	for _, d := range docs {
 		if !isTemplate(d.path) {
-			errs = append(errs, judge(d, nearestTemplates(d.path, byDir), named)...)
+			errs = append(errs, judge(d, byDir, named)...)
 		}
 	}
 	return errs
@@ -103,29 +103,34 @@ func templatesByDir(docs []doc) map[string][]doc {
 	return m
 }
 
-// nearestTemplates walks up from the file's folder and returns the templates
-// of the first folder that has any.
-func nearestTemplates(path string, byDir map[string][]doc) []doc {
-	for dir := dirOf(path); ; dir = dirOf(dir) {
-		if ts, ok := byDir[dir]; ok || dir == "." {
-			return ts
+// judge walks up from the doc's folder to the first folder with a template
+// that governs it, and judges it there. A doc no template governs passes, as
+// in a repo with no templates.
+func judge(d doc, byDir map[string][]doc, named map[string]bool) []string {
+	for dir := dirOf(d.path); ; dir = dirOf(dir) {
+		if errs, governed := judgeAt(d, byDir[dir], named); governed || dir == "." {
+			return errs
 		}
 	}
 }
 
-// judge holds a doc to the named template whose namesake it is, else to any
-// one of its folder's other templates. A named template governs only its
-// namesake.
-func judge(d doc, templates []doc, named map[string]bool) []string {
+// judgeAt holds a doc to the named template whose namesake it is, else to any
+// one of the folder's other templates. A named template governs only its
+// namesake, so false means none of templates governs the doc, as when all
+// are named for other docs.
+func judgeAt(d doc, templates []doc, named map[string]bool) ([]string, bool) {
 	var rest []doc
 	for _, t := range templates {
 		if !named[t.path] {
 			rest = append(rest, t)
 		} else if namesake(t.path) == d.path {
-			return shapeErrors(d, t)
+			return shapeErrors(d, t), true
 		}
 	}
-	return docErrors(d, rest)
+	if len(rest) == 0 {
+		return nil, false
+	}
+	return docErrors(d, rest), true
 }
 
 // docErrors returns nil when the doc matches any one template. Otherwise it

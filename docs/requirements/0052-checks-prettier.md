@@ -35,9 +35,9 @@ Source: `go/cmd/fitness-check-prettier/main.go:363`
         - When prettier checks the staged change
             - Then it passes, judging only the staged file
 - 0052.6
-    - Given Developer has a messy file and the `--write` argument
+    - Given Developer has a messy file and the `--write` argument, with Prettier or Biome
         - When prettier runs with that argument
-            - Then it hands that argument to Prettier in place of `--check`, and passes
+            - Then the tool gets its own `--write` and the paths, in place of `--check`, and passes; a flag Biome lacks fails by name
 - 0052.7
     - Given Developer has a `.prettierignore` file, even without `package.json`
         - When prettier checks the repo

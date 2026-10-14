@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
     - Given Developer has an entry with fewer than 3 or more than 5 bullets, counting only dash bullets
         - When changelog-bullets runs
             - Then it fails naming the section and its bullet count
+- 0018.17
+    - Given Developer has an entry file with two bullets or an untyped one
+        - When changelog-bullets runs
+            - Then it fails naming that file

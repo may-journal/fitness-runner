@@ -56,11 +56,9 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) ch
 	if err != nil {
 		return branchReadResult(err)
 	}
-	patch, err := branchChangelogPatch(ctx, root, branch.Tip, pr)
-	if err != nil {
+	if err := readBranchChangelog(ctx, root, branch.Tip, pr); err != nil {
 		return branchReadResult(err)
 	}
-	pr.ChangelogPatch = &patch
 	nums := b.closedIssues(pr.Body)
 	nums = append(nums, plans...)
 	errs := judgeBranchPR(pr, gh, b)
@@ -68,6 +66,19 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) ch
 	errs = append(errs, readErrs...)
 	errs = append(errs, judgeBranchPlans(issues, repo, b)...)
 	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: 1 + len(issues)}
+}
+
+// readBranchChangelog gives pr the local tip's changelog diff, and its entry
+// files, so pr-check judges them before the push.
+func readBranchChangelog(ctx context.Context, root, tip string, pr *branchPR) error {
+	patch, err := branchChangelogPatch(ctx, root, tip, pr)
+	if err != nil {
+		return err
+	}
+	pr.ChangelogPatch = &patch
+	files, err := branchEntryFiles(ctx, root, tip, pr)
+	pr.EntryFiles = &files
+	return err
 }
 
 func branchReadResult(err error) checkkit.Result {

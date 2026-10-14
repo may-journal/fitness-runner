@@ -20,7 +20,8 @@
 // are reported, so a missing plugin names itself.
 //
 // A repo that chose Biome (internal/biome) is checked by `biome format` on
-// the same paths instead, and needs no Prettier (ADR 0006).
+// the same paths instead, and needs no Prettier (ADR 0006). Its passthrough
+// args are translated to Biome's, never handed over as paths.
 package main
 
 import (
@@ -31,6 +32,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/biome"
@@ -130,18 +132,54 @@ func preflight(root string, args []string) (bin string, res checkkit.Result, don
 
 // formatWithBiome checks the same paths with `biome format` in a repo that
 // chose Biome (ADR 0006), naming each file Biome would reformat. Passthrough
-// args, such as --write, replace the paths.
+// args are Prettier's, so biomeFormatArgs translates them: the paths among
+// them replace the checked paths, and a flag Biome has no counterpart for
+// fails by name instead of reaching Biome as a path.
 func formatWithBiome(root string, args []string) checkkit.Result {
+	flags, given, unknown := biomeFormatArgs(args)
+	if len(unknown) > 0 {
+		return checkkit.Fail(0, "Biome formats this repo and has no counterpart for Prettier's "+strings.Join(unknown, ", ")+"; pass paths, --write, --check, or --ignore-unknown")
+	}
 	paths, ok := scopedPaths(root, args)
 	if !ok {
 		return checkkit.Pass(0)
 	}
-	if len(args) > 0 {
-		paths = args
+	if len(given) > 0 {
+		paths = given
 	}
-	return biome.Check(root, "format", paths, "Biome reported issues. Run: npx biome format --write .", func(f biome.Finding) string {
+	return biome.Check(root, "format", flags, paths, "Biome reported issues. Run: npx biome format --write .", func(f biome.Finding) string {
 		return f.File
 	})
+}
+
+// biomeFormatArgs splits Prettier passthrough args into `biome format` flags,
+// paths, and the flags Biome has no counterpart for. Everything after "--",
+// and every arg not starting with "-", is a path.
+func biomeFormatArgs(args []string) (flags, paths, unknown []string) {
+	if i := slices.Index(args, "--"); i >= 0 {
+		flags, paths, unknown = biomeFormatArgs(args[:i])
+		return flags, append(paths, args[i+1:]...), unknown
+	}
+	for _, a := range args {
+		if biomeFlags, ok := prettierToBiome[a]; ok {
+			flags = append(flags, biomeFlags...)
+		} else if strings.HasPrefix(a, "-") {
+			unknown = append(unknown, a)
+		} else {
+			paths = append(paths, a)
+		}
+	}
+	return flags, paths, unknown
+}
+
+// prettierToBiome maps the Prettier flags Biome can honor to Biome's own.
+// --write writes in place. --check and --list-different are Biome's default,
+// and --ignore-unknown is always on, so they map to nothing.
+var prettierToBiome = map[string][]string{
+	"--write": {"--write"}, "-w": {"--write"},
+	"--check": nil, "-c": nil,
+	"--list-different": nil, "-l": nil,
+	"--ignore-unknown": nil, "-u": nil,
 }
 
 // walkUp calls fn on root (absolute) and each ancestor, returning fn's first

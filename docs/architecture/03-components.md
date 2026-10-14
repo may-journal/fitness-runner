@@ -32,7 +32,7 @@ C4Component
     }
 
     System_Boundary(tools, "Install and release tools") {
-        Component(tool, "21 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release, go/cmd/fitness-stamp-changelog")
+        Component(tool, "21 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
     System_Ext(peers, "9 Peer tools", "prettier, eslint, biome, vitest, swiftlint")
@@ -89,7 +89,7 @@ Numbers on nodes and arrows match the callout table.
 | 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
 | 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        |
 | 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
-| 21  | The installer, the release tool, and the changelog stamp, one static binary each.                       | Shipped beside the checks; not part of any run.             |
+| 21  | The installer and the release tool, one static binary each.                                             | Shipped beside the checks; not part of any run.             |
 | 22  | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | 23  | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
 

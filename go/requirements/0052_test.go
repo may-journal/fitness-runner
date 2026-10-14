@@ -153,6 +153,18 @@ func Test0052_6(t *testing.T) {
 	out, code, rp := prettierRun(t, prettierJS(map[string]string{"app.js": prettierMessy}), []response{prettierAnswers(prettierWritten, "--write ."), prettierWarn}, "--write", ".")
 	sees(t, out, code, 0, "All 1 checks passed")
 	prettierCalledWith(t, rp, []string{"--write ."}, "--check")
+	files := prettierJS(map[string]string{".prettierrc.json": "", "biome.jsonc": "{}\n", "package.json": fmt.Sprintf(biomePackage, "2.4.15")})
+	written := response{Match: []string{"format " + fmt.Sprintf(biomeFlags, "none") + " --write app.js"}, Stdout: "Formatted 1 file in 2ms. Fixed 1 file.\n"}
+	biomeRun := standIn(t, map[string][]response{"biome": {biomeVersion("2.4.15"), written}})
+	out, code = fitness(t, example(t, "happyRepo", files), biomeRun.env, "prettier", "--write", "--ignore-unknown", "app.js")
+	sees(t, out, code, 0, "All 1 checks passed")
+	for _, call := range biomeRun.calls("biome") {
+		if strings.Contains(call, "--ignore-unknown") || strings.Contains(call, "README.md") {
+			t.Errorf("Biome must get only its own flags and the given path; got %q", call)
+		}
+	}
+	out, code = fitness(t, example(t, "happyRepo", files), biomeRun.env, "prettier", "--write", "--print-width", "100", "app.js")
+	sees(t, out, code, 1, "Biome formats this repo and has no counterpart for Prettier's --print-width")
 }
 
 func Test0052_7(t *testing.T) {

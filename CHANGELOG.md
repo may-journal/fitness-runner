@@ -7,95 +7,53 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
-### 2026.10.13.2210
+## [1.11.0](https://github.com/may-journal/fitness-runner/compare/v1.10.0...v1.11.0) (2026-10-14)
 
-- Fix: architecture-contract: only a code span or label claims a root-level file by its bare name, and only a source such as `index.ts`.
-- Fix: architecture-components: only a root-level config such as `rollup.config.mjs` is a tool, so `src/app/app.config.ts` needs an owner.
-- Docs: the contract and components READMEs say which bare names claim and which configs are tools.
-- Test: requirement 0075.12 adds a nested config module and `package.json` named by two components.
 
-### 2026.10.13.2206
+### Features
 
-- Fix: architecture-code: a one-line TypeScript type relates the names on its first line, and `List~Item~[]` reads as `List<Item>[]`.
-- Fix: architecture-code: a `.tsx` closing tag such as `</b>` keeps the braces after it on its line.
-- Fix: architecture-code: a postfix `!` or `++` ends a line without semicolons, and a `<` in a default value keeps parameters apart.
-- Docs: the architecture-code README says how TSX tags and postfix operators read.
-- Test: requirement 0076.10 adds a TSX panel without semicolons that holds each case.
+* **changelog:** accept each pull request's entry as its own file ([#358](https://github.com/may-journal/fitness-runner/issues/358)) ([33b2718](https://github.com/may-journal/fitness-runner/commit/33b2718bb4ec2aee7b4054157e5caebfbca69c02))
+* **changelog:** accept only entry files for a pull request's change ([#368](https://github.com/may-journal/fitness-runner/issues/368)) ([de81fa5](https://github.com/may-journal/fitness-runner/commit/de81fa5f52b9dabacb5ae751abaf0861431386bf))
 
-### 2026.10.13.1941
+### 2026.10.13.2048
 
-- Feat: cspell: package managers' lockfiles, such as `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Package.resolved`, `go.sum`, `Gemfile.lock`, `composer.lock`, and `poetry.lock`, are left out in any folder.
-- Docs: cspell README lists the skipped lockfiles.
-- Test: requirement 0021.11 replaces 0021.6 and proves lockfiles pass beside binary, generated, and untracked files.
+- Docs: the README installs the Go runner with `@v1`, the major version, in place of `@latest`.
+- Docs: the README upgrade note says to rerun the same `@v1` command.
+- Docs: the distribution guide tells Go consumers to pin `@v1`, never a full release tag.
+- Docs: the pin major version entry file name starts with its date, 2026-10-13-2048.
 
-### 2026.10.13.1934
+### 2026.10.13.1937
 
-- Fix: local-branch: a branch rebased onto a moved base counts only its own changelog entries and Plan trailers.
-- Docs: local-branch README says where branch history starts.
-- Test: requirement 0069.1 now runs on a branch rebased past an entry GitHub has not seen.
+- Feat: changelog-updated, pr-check, and branch-check accept only a changelog/ entry file; adding or editing a CHANGELOG.md section fails.
+- Feat: drop the changelog stamp hook and changelog-updated's heading time rules; entry headings are written by hand.
+- Docs: README, AGENTS.md, and the PR template describe entry files as the only way to record a change.
+- Test: requirements 0019.13 to 0019.17 and 0069.14 to 0069.16 replace retired section-style and stamp acceptances; 0063 is retired.
 
-### 2026.10.13.1921
+### 2026.10.13.1837
 
-- Fix: eslint and prettier: Biome before 1.8 fails naming its version, since its CLI rejects `--reporter=github`.
-- Fix: eslint and prettier: only Biome 1.8 gets `--max-diagnostics=65535`; 1.9 and later get `none`.
-- Docs: eslint and prettier READMEs and ADR 0006 name Biome 1.8 as the oldest supported.
-- Test: requirements 0024.11 and 0052.11 add Biome 1.9.4 and reject 1.7.3 under `latest`.
+- Feat: changelog: a pull request may add its one entry as a `changelog/<name>.md` file, so open pull requests never conflict.
+- Feat: release-pr: the release tool commits pending entry files into the release PR's changelog below the version section and deletes them.
+- Feat: changelog checks, the stamp, pr-check, and branch-check accept entry files and sections alike; editing a pending entry file amends it.
+- Fix: release-pr skips the fold when the release branch holds no changelog folder; AGENTS.md replaces the .cursor rules folder.
+- Test: requirements 0017.15, 0017.17 to 0017.19, 0018.17, 0019.10 to 0019.12, 0063.5, and 0069.9 to 0069.13 prove both styles; docs prefer entry files.
 
-### 2026.10.13.1914
+## [1.10.0](https://github.com/may-journal/fitness-runner/compare/v1.9.0...v1.10.0) (2026-10-13)
 
-- Fix: doc-template: a named template governs only its namesake, so other docs beside or below it match the folder's other templates.
-- Fix: doc-template: front matter lists read in flow or block form, and a caption may end in a comment.
-- Test: requirement 0023.13 adds both list forms, a commented caption, and docs beside the views.
 
-### 2026.10.13.1905
+### Features
 
-- Feat: doc-template: a `templates` file governs the neighbor sharing its name, judging front matter, opening sections, legends, callout columns, and captions.
-- Feat: architecture: each of the five views ships a template in `docs/architecture/templates`, and this repo's views follow them.
-- Docs: the architecture-contract README says how a repo copies the templates, and the doc-template README sets out named templates.
-- Test: requirement 0023 folds 0023.1 to 0023.3 and 0023.6 to 0023.8 into 0023.10 to 0023.12, and 0023.13 to 0023.15 prove the view templates, each with one test.
+* **requirements:** cover TypeScript repos and require architecture views for code ([#325](https://github.com/may-journal/fitness-runner/issues/325)) ([17219f7](https://github.com/may-journal/fitness-runner/commit/17219f73b9107f3849022ae080bc7ef5f841303d))
 
-### 2026.10.13.1849
 
-- Fix: eslint and prettier: an installed Biome 1.x, read from `biome --version`, gets `--max-diagnostics=65535`, since Biome before 1.9 rejects `none`.
-- Docs: requirements 0024.11 and 0052.11 name Biome 1.x or 2.x under any spec in their Givens.
-- Test: requirements 0024.11 and 0052.11 now run on Biome 2.x and on `latest` resolving to 1.x, expecting every finding on both.
+### Bug Fixes
 
-### 2026.10.13.1847
+* **architecture-containers:** read build manifests marked linguist-generated ([#339](https://github.com/may-journal/fitness-runner/issues/339)) ([224a7d4](https://github.com/may-journal/fitness-runner/commit/224a7d48a26d54c3d50ed4ca59104edb82a1a496))
 
-- Fix: architecture-components: a script tool config such as `rollup.config.mjs` is a tool source and needs no component owner.
-- Feat: architecture-contract: a code span or label claims a tracked root-level file by its bare name, such as `index.ts`.
-- Test: requirement 0075.12 replaces 0075.2, adding root-file claims and tool configs, with one test.
+### 2026.10.13.1813
 
-### 2026.10.13.1844
-
-- Feat: architecture-code: a class resolves to a TypeScript class, interface, function, or member through its `.ts` link, label, kind, and signature.
-- Feat: architecture-code: TypeScript `extends`, `implements`, calls, and references relate classes, and each exported TypeScript class in a shown folder needs a node.
-- Fix: architecture-code: Mermaid `~` generics read as angle brackets, and spaces beside brackets or colons no longer fail a signature.
-- Test: requirement 0076.9 folds 0076.2 and 0076.3; 0076.10 proves TypeScript views, each with one test.
-
-### 2026.10.13.1840
-
-- Fix: eslint and prettier: Biome runs with `--max-diagnostics=none`, so a repo with more than 20 findings sees every one.
-- Docs: the biome package comment says why the cap is lifted.
-- Test: requirements 0024.11 and 0052.11 replace 0024.10 and 0052.10, replaying 25 Biome findings and expecting all of them.
-
-### 2026.10.13.1832
-
-- Feat: eslint and prettier: a repo with a `biome.json` or `biome.jsonc` and `@biomejs/biome` runs `biome lint` and `biome format` instead, needing neither tool.
-- Docs: ADR 0006 records Biome standing in; the eslint and prettier READMEs explain it.
-- Test: requirements 0024.10 and 0052.10 prove both checks through a Biome stand-in; 0024.9 and 0052.9 merge 0024.1 with 0024.8 and 0052.1 with 0052.2.
-
-### 2026.10.13.1825
-
-- Fix: markdown-filename: GitHub's lowercase `pull_request_template.md` and `issue_template.md` pass in the root, `docs`, or `.github`.
-- Docs: the markdown filename README lists the names GitHub requires.
-- Test: requirements 0033.9 and 0034.9 replace 0033.4 and 0034.4 and prove both exemptions.
-
-### 2026.10.13.1821
-
-- Fix: changelog: a `package.json` version may end in `+yyyy.mm.dd.HHMM` build metadata, which npm accepts, as well as a `-` prerelease.
-- Docs: the changelog README explains why `+` is the semver-valid stamp.
-- Test: requirement 0017.13 replaces 0017.8 and proves both separators pass.
+- Fix: architecture-containers: a `project.pbxproj`, `project.yml`, or `package.json` marked `linguist-generated` still proves its targets.
+- Test: requirement 0073.9 proves a generated-marked Xcode project or XcodeGen spec matches containers by name.
+- Docs: the architecture-containers README says build manifests are read whatever their linguist attribute.
 
 ### 2026.10.12.2216
 

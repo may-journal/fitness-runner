@@ -79,7 +79,7 @@ func FormatBody(body string, issueNumber int, repo, sha string) (string, error) 
 }
 
 func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
-	pr, err := c.loadValidPR(ctx, number)
+	pr, err := c.loadFoldedPR(ctx, number)
 	if err != nil {
 		return err
 	}
@@ -95,6 +95,17 @@ func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
 		return nil
 	}
 	return c.updatePRBody(ctx, number, body)
+}
+
+// loadFoldedPR loads the release PR and folds pending entry files into its
+// changelog, so its head is the commit the body links.
+func (c Client) loadFoldedPR(ctx context.Context, number int) (pullRequest, error) {
+	pr, err := c.loadValidPR(ctx, number)
+	if err != nil {
+		return pr, err
+	}
+	pr.Head.SHA, err = c.foldEntries(ctx, pr)
+	return pr, err
 }
 
 func (c Client) loadValidPR(ctx context.Context, number int) (pullRequest, error) {

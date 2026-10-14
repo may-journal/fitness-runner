@@ -27,9 +27,9 @@ Source: `go/cmd/fitness-check-doc-template/main.go:70`
         - When doc-template checks the repo
             - Then it fails naming each such section
 - 0023.4
-    - Given Developer has a doc in a subfolder under nested templates
+    - Given Developer has a doc in a subfolder under nested templates, or beside named templates that are not its namesake
         - When doc-template checks the repo
-            - Then it is judged against the nearest folder's templates above it
+            - Then it is judged against the nearest folder's templates above it that govern it
 - 0023.11
     - Given Developer has a template, or a GitHub pull request or issue template, with a section lacking a guiding comment
         - When doc-template checks the repo

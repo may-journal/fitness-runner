@@ -29,6 +29,17 @@ type Target struct {
 	// ChangelogPatch is a local branch's CHANGELOG.md diff against its PR
 	// base, read from git before the push; nil reads the PR's diff from GitHub.
 	ChangelogPatch *string `json:"-"`
+	// EntryFiles are a local branch's changed changelog entry files against
+	// its PR base; nil reads them from GitHub.
+	EntryFiles *[]FileChange `json:"-"`
+}
+
+// FileChange is one file a pull request changes: its path, GitHub's status
+// for it (added, modified, removed, renamed), and its unified diff.
+type FileChange struct {
+	Filename string `json:"filename"`
+	Status   string `json:"status"`
+	Patch    string `json:"patch"`
 }
 
 // Closer is the pull request whose merge closed an issue; both fields are
@@ -160,6 +171,17 @@ func (g Client) FilePatch(n int, path string) (string, error) {
 		return "", fmt.Errorf("GitHub sent no diff for %s", path)
 	}
 	return files[0].Patch, nil
+}
+
+// DirFiles returns the files pull request n changes directly under dir,
+// with each one's status and diff.
+func (g Client) DirFiles(n int, dir string) ([]FileChange, error) {
+	jq := fmt.Sprintf(`.[] | select(.filename | startswith(%q)) | {filename, status, patch: (.patch // "")}`, dir+"/")
+	out, err := g.api("--paginate", "--jq", jq, "pulls/"+strconv.Itoa(n)+"/files?per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	return decodeLines[FileChange](out)
 }
 
 func (g Client) OpenPlans() ([]Target, error) {

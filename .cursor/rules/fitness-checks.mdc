@@ -1,7 +1,0 @@
----
-description: Read all fitness checks and craft solutions with them in mind
-globs: go/cmd/**, go/internal/**, CHANGELOG.md, .fitnessrc*
-alwaysApply: false
----
-
-Read all checks under `go/cmd/fitness-check-*/` — each directory is a check binary, most with a README describing its behavior and conventions. The shared logic they build on lives in `go/internal/`. Craft solutions with these checks in mind.

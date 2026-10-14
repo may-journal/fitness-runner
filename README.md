@@ -18,10 +18,10 @@ Every check is its own static binary (`fitness-check-<name>`), orchestrated by a
 For consumers who choose source builds:
 
 ```bash
-go install github.com/may-journal/fitness-runner/go/cmd/...@latest
+go install github.com/may-journal/fitness-runner/go/cmd/...@v1
 ```
 
-One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@latest`.
+One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@v1`.
 
 ### Prebuilt binaries
 
@@ -61,7 +61,7 @@ fitness close-check          # reopen an issue closed with unchecked items (in G
 In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
 
 - commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message.
-- pre-commit: stamps a staged `CHANGELOG` entry on a branch's first commit, checks the staged files, then a repo's own `.githooks/pre-commit.local`.
+- pre-commit: checks the staged files, then a repo's own `.githooks/pre-commit.local`.
 - pre-push: blocks the push unless the branch or its PR names an approved `Plan` Issue, via `gh`; chore/docs pushes are exempt.
 
 ## GitHub Actions

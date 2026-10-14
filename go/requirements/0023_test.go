@@ -90,11 +90,17 @@ func Test0023_10(t *testing.T) {
 func Test0023_4(t *testing.T) {
 	t.Parallel()
 	out, code := docTemplate(t, map[string]string{
-		"docs/templates/adr.md":      docTemplateADR,
-		"docs/deep/note.template.md": "# Note\n\n## Summary\n\n<!-- gist -->\n",
-		"docs/deep/sub/0001-note.md": "# 0001 Note\n\n## Context\n\nc\n",
+		"docs/templates/adr.md":           docTemplateADR,
+		"docs/deep/note.template.md":      "# Note\n\n## Summary\n\n<!-- gist -->\n",
+		"docs/deep/sub/0001-note.md":      "# 0001 Note\n\n## Context\n\nc\n",
+		"docs/views/templates/04-code.md": docTemplateNote,
+		"docs/views/04-code.md":           "# Code\n\n## Summary\n\ns\n",
+		"docs/views/notes.md":             "# Notes\n\n## Open threads\n\no\n",
 	})
-	sees(t, out, code, 1, "docs/deep/sub/0001-note.md: Missing `## Summary` section")
+	sees(t, out, code, 1,
+		"docs/deep/sub/0001-note.md: Missing `## Summary` section",
+		"docs/views/notes.md: Missing `## Context` section",
+		"docs/views/notes.md: Unexpected `## Open threads` section")
 }
 
 func Test0023_11(t *testing.T) {

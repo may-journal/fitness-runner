@@ -16,4 +16,4 @@ Correlates a Release Please version with the repository content a reviewer can i
 - Fail a scoped manifest change when `CHANGELOG.md` is absent from the same change.
 - Reject malformed JSON, unsupported manifests without the root `.` package, mismatched versions, missing sections, empty sections, and duplicate sections.
 
-Timestamped `### yyyy.mm.dd.HHMM` development entries remain under the existing changelog checks.
+Timestamped `### yyyy.mm.dd.HHMM` development entries remain under the existing changelog checks. The release tool folds pending [entry files](../fitness-check-changelog/README.md#entry-files) under the release section on the release PR.
