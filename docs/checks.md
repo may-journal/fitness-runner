@@ -15,7 +15,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 - Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
-`release-changelog` correlates Release Please metadata with the version file and reviewable release notes. `pr-check` holds a PR to one dated entry, preferably an [entry file](../go/cmd/fitness-check-changelog/README.md#entry-files), else a `###` section in `CHANGELOG.md`, naming the extras. A PR adding a new `## [x.y.z]` release section is exempt. The description must link the entry the PR adds and never copy a bullet it adds.
+`release-changelog` correlates Release Please metadata with the version file and reviewable release notes. `pr-check` holds a PR to one [entry file](../go/cmd/fitness-check-changelog/README.md#entry-files), naming the extras, and fails a PR that adds or edits a `CHANGELOG.md` section. A PR adding a new `## [x.y.z]` release section is exempt. The description must link the entry the PR adds and never copy a bullet it adds.
 
 Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md).
 

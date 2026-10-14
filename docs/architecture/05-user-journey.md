@@ -124,7 +124,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite, stamp the changelog, and keep each issue linked once.            |
 | 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |
 | 17  | Commit message checks.              | System  | Semantic subject, attribution, Plan trailer, and one link per issue.                  |
-| 18  | Changelog checks.                   | System  | Each change has one dated entry whose bullets match the change.                       |
+| 18  | Changelog checks.                   | System  | Each change has one dated entry file whose bullets match the change.                  |
 | 19  | Prose and template checks.          | System  | Docs stay short, readable, spelled right, and shaped by their templates.              |
 | 20  | Markdown file checks.               | System  | File names, front matter, links, and emphasis follow one convention.                  |
 | 21  | Mermaid diagram checks.             | System  | Diagrams carry legends, callouts, and tables that explain each number.                |

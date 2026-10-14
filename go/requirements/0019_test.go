@@ -20,15 +20,10 @@ func changelogStaged(t *testing.T, staged map[string]string) (string, int) {
 const changelogBase = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n" +
 	"### 2026.10.08.1400\n\n- Docs: add the readme.\n- Docs: add the changelog.\n- Docs: add the license note.\n"
 
-// changelogEntry is happyRepo's changelog with a new section on top.
+// changelogEntry is happyRepo's changelog with a new section, holding one
+// bullet item, on top.
 func changelogEntry(stamp, item string) string {
-	return changelogOnTop(changelogBase, stamp, item)
-}
-
-// changelogOnTop puts a dated section with one bullet above changelog's
-// first section.
-func changelogOnTop(changelog, stamp, item string) string {
-	return strings.Replace(changelog, "## Changes\n\n", "## Changes\n\n### "+stamp+"\n\n- "+item+"\n\n", 1)
+	return strings.Replace(changelogBase, "## Changes\n\n", "## Changes\n\n### "+stamp+"\n\n- "+item+"\n\n", 1)
 }
 
 // changelogNow is the stamp for a section written minutes ago.
@@ -39,58 +34,63 @@ func changelogNow(minutes int) string {
 // changelogFeature is a staged source change the entry should mention.
 const changelogFeature = "Added runner feature for validation.\n"
 
-func Test0019_1(t *testing.T) {
-	t.Parallel()
-	out, code := changelogStaged(t, map[string]string{
-		"src.txt":      changelogFeature,
-		"CHANGELOG.md": changelogEntry(changelogNow(2), "Feat: added runner feature for validation.\n\n### 2026.01.02.0900\n\n- Docs: an older entry."),
-	})
-	sees(t, out, code, 0, "All 1 checks passed")
+// changelogStagedEntry is happyRepo's staged feature with its entry file
+// under stamp, its first bullet item.
+func changelogStagedEntry(stamp, item string) map[string]string {
+	files := withEntries(map[string]string{"runner-feature": entryFileText(stamp, item)})
+	files["src.txt"] = changelogFeature
+	return files
 }
 
-func Test0019_10(t *testing.T) {
+func Test0019_13(t *testing.T) {
 	t.Parallel()
 	out, code := changelogStaged(t, map[string]string{"src.txt": changelogFeature})
-	sees(t, out, code, 1, "Stage a changelog/<name>.md entry file, or a CHANGELOG.md section, that mentions your staged changes")
-	out, code = changelogStaged(t, map[string]string{"src.txt": changelogFeature, "CHANGELOG.md": ""})
+	sees(t, out, code, 1, "Stage a changelog/<name>.md entry file that mentions your staged changes")
+	files := changelogStagedEntry(changelogNow(1), "Feat: added runner feature for validation.")
+	files["CHANGELOG.md"] = ""
+	out, code = changelogStaged(t, files)
 	sees(t, out, code, 1, "CHANGELOG.md missing; add it and mention your staged changes")
 }
 
 func Test0019_11(t *testing.T) {
 	t.Parallel()
-	files := withEntries(map[string]string{"runner-feature": entryFileText(changelogNow(1), "Feat: added runner feature for validation.")})
-	files["src.txt"] = changelogFeature
-	out, code := changelogStaged(t, files)
+	out, code := changelogStaged(t, changelogStagedEntry(changelogNow(1), "Feat: added runner feature for validation."))
 	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+func Test0019_15(t *testing.T) {
+	t.Parallel()
+	want := "CHANGELOG.md is staged; only the release PR writes it, so record this change in a changelog/<name>.md entry file instead"
+	out, code := changelogStaged(t, map[string]string{
+		"src.txt":      changelogFeature,
+		"CHANGELOG.md": changelogEntry(changelogNow(0), "Feat: added runner feature for validation."),
+	})
+	sees(t, out, code, 1, want)
+	files := changelogStagedEntry(changelogNow(1), "Feat: added runner feature for validation.")
+	files["CHANGELOG.md"] = strings.Replace(changelogBase, "- Docs: add the readme.", "- Docs: add the readme file.", 1)
+	out, code = changelogStaged(t, files)
+	sees(t, out, code, 1, want)
 }
 
 func Test0019_3(t *testing.T) {
 	t.Parallel()
-	out, code := changelogStaged(t, map[string]string{
-		"src.txt":      changelogFeature,
-		"CHANGELOG.md": changelogEntry(changelogNow(0), "Fix: minor tweak."),
-	})
+	out, code := changelogStaged(t, changelogStagedEntry(changelogNow(0), "Fix: minor tweak."))
 	sees(t, out, code, 1,
-		"CHANGELOG.md additions should mention at least 3 words from your staged changes (found 0: )",
+		"Changelog entry file additions should mention at least 3 words from your staged changes (found 0: )",
 		"e.g. use words like: added, runner, feature, for, validation")
 }
 
 func Test0019_4(t *testing.T) {
 	t.Parallel()
-	out, code := changelogStaged(t, map[string]string{
-		"src.txt":      changelogFeature,
-		"CHANGELOG.md": changelogEntry(changelogNow(10), "Feat: added runner feature for validation."),
-	})
-	sees(t, out, code, 1, "CHANGELOG.md new section heading must use current date and time (yyyy.mm.dd.HHMM), not a guessed time (expected ### ")
+	out, code := changelogStaged(t, changelogStagedEntry(changelogNow(10), "Feat: added runner feature for validation."))
+	sees(t, out, code, 1, "Changelog entry file new section heading must use current date and time (yyyy.mm.dd.HHMM), not a guessed time (expected ### ")
 }
 
 func Test0019_5(t *testing.T) {
 	t.Parallel()
-	out, code := changelogStaged(t, map[string]string{
-		"package.json": `{"name": "app", "private": true, "version": "1.0.0-2026.10.08.1500"}` + "\n",
-		"src.txt":      changelogFeature,
-		"CHANGELOG.md": changelogEntry(changelogNow(0), "Feat: added runner feature for validation."),
-	})
+	files := changelogStagedEntry(changelogNow(0), "Feat: added runner feature for validation.")
+	files["package.json"] = `{"name": "app", "private": true, "version": "1.0.0-2026.10.08.1500"}` + "\n"
+	out, code := changelogStaged(t, files)
 	sees(t, out, code, 1, "not a guessed time (expected ### 2026.10.08.1500)")
 }
 
@@ -134,18 +134,12 @@ func changelogSecond(t *testing.T, repo string, entry map[string]string) (string
 	return fitness(t, repo, nil, "changelog-updated")
 }
 
-func Test0019_12(t *testing.T) {
+func Test0019_14(t *testing.T) {
 	t.Parallel()
-	entry := changelogEntry(changelogFirst, "Feat: added runner feature for validation.")
-	repo := changelogBranch(t, nil, map[string]string{"CHANGELOG.md": entry})
-	stamp := changelogNow(0)
-	out, code := changelogSecond(t, repo, map[string]string{"CHANGELOG.md": changelogOnTop(entry, stamp, "Feat: added runner option for validation.")})
-	sees(t, out, code, 1, "this branch already has its entry ### "+changelogFirst,
-		"instead of a new entry: ### "+stamp)
 	first := entryFileText(changelogFirst, "Feat: added runner feature for validation.")
-	repo = changelogBranch(t, nil, map[string]string{"changelog/runner-feature.md": first})
-	second := map[string]string{"CHANGELOG.md": changelogEntry(stamp, "Feat: added runner option for validation.")}
-	out, code = changelogSecond(t, repo, second)
+	repo := changelogBranch(t, nil, map[string]string{"changelog/runner-feature.md": first})
+	second := withEntries(map[string]string{"runner-option": entryFileText(changelogNow(0), "Feat: added runner option for validation.")})
+	out, code := changelogSecond(t, repo, second)
 	sees(t, out, code, 1, "this branch already has its entry changelog/runner-feature.md",
-		"instead of a new entry: ### "+stamp)
+		"instead of a new entry: changelog/runner-option.md")
 }

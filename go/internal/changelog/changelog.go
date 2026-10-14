@@ -1,8 +1,9 @@
-// Package changelog finds the dated "### yyyy.mm.dd.HHMM" entries a
-// branch, a staged commit, or a pull request adds to CHANGELOG.md. The commit
-// gate, the pre-commit stamp, and pr-check share it, so all three agree that
-// a pull request carries one entry, which later commits amend. It also names
-// the anchor GitHub gives each heading, so a description links its entry.
+// Package changelog finds the changelog/ entry files a branch, a staged
+// commit, or a pull request adds, and reads CHANGELOG.md's dated
+// "### yyyy.mm.dd.HHMM" history. The commit gate, the pre-commit stamp, and
+// pr-check share it, so all three agree that a pull request carries one
+// entry file, which later commits amend. It also names the anchor GitHub
+// gives a release heading, so a release PR links its section.
 package changelog
 
 import (
@@ -47,22 +48,6 @@ func New(before, after []string) []string {
 	return added
 }
 
-// BranchEntries returns the dated entries the current branch's own commits
-// add to CHANGELOG.md. It is nil on the default branch, on a detached HEAD,
-// without origin refs, or when the branch's own commits add none.
-func BranchEntries(root string) []string {
-	fork, ok := forkPoint(root)
-	if !ok {
-		return nil
-	}
-	head, ok := show(root, "HEAD:"+File)
-	if !ok {
-		return nil
-	}
-	old, _ := show(root, fork+":"+File)
-	return New(Headings(old), Headings(head))
-}
-
 // forkPoint is the commit the current branch's own commits start from: the
 // parent of the oldest commit no other origin branch holds. A branch stacked
 // on another pushed branch so starts where that branch ends.
@@ -89,28 +74,8 @@ func gitOut(root string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// StagedNew returns the dated entries the staged CHANGELOG.md adds over
-// HEAD's, in file order.
-func StagedNew(root string) []string {
-	staged, ok := show(root, ":"+File)
-	if !ok {
-		return nil
-	}
-	head, _ := show(root, "HEAD:"+File)
-	return New(Headings(head), Headings(staged))
-}
-
-// show returns a file as git holds it at spec, such as HEAD:CHANGELOG.md,
-// and false when git cannot read it there.
-func show(root, spec string) (string, bool) {
-	out, err := exec.Command("git", "-C", root, "show", spec).Output()
-	return string(out), err == nil
-}
-
 // Diff is what a unified diff of CHANGELOG.md adds and does not also remove.
 type Diff struct {
-	// Entries are the stamps of new dated headings.
-	Entries []string
 	// Releases are new Release Please version heading lines.
 	Releases []string
 	// Bullets are the text of new list items, without their markers.
@@ -120,26 +85,19 @@ type Diff struct {
 // ReadDiff reads a unified diff of CHANGELOG.md, as git or GitHub prints it.
 // A line both removed and added, such as a moved one, counts as unchanged.
 func ReadDiff(patch string) Diff {
-	var entries, releases, bullets diffSides
+	var releases, bullets diffSides
 	for _, line := range strings.Split(patch, "\n") {
 		sign, text := diffLine(line)
-		entries.add(sign, Headings(text))
 		releases.add(sign, matching(releaseRe, text))
 		bullets.add(sign, bulletText(text))
 	}
-	return Diff{Entries: entries.added(), Releases: releases.added(), Bullets: bullets.added()}
+	return Diff{Releases: releases.added(), Bullets: bullets.added()}
 }
 
-// Anchors are the fragments GitHub gives the headings d adds: every new
-// release section, else its one dated entry. They are nil when d adds no
-// heading or more than one dated entry.
+// Anchors are the fragments GitHub gives the release sections d adds.
 func (d Diff) Anchors() []string {
-	headings := d.Releases
-	if len(headings) == 0 && len(d.Entries) == 1 {
-		headings = d.Entries
-	}
 	var anchors []string
-	for _, h := range headings {
+	for _, h := range d.Releases {
 		anchors = append(anchors, Anchor(h))
 	}
 	return anchors

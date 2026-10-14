@@ -17,15 +17,16 @@ The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated se
 
 ## Entry files
 
-Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So the preferred way to add an entry is its own `changelog/<name>.md` file, named for the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above.
+Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So a pull request adds its entry as its own `changelog/<name>.md` file, named for the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above.
 
-- Every repo accepts both styles: a pull request adds exactly one entry, an entry file or a dated `CHANGELOG.md` section, never both.
+- A pull request adds exactly one entry file. Adding or editing a `CHANGELOG.md` section fails, pointing to `changelog/`.
+- A repo with no `changelog/` folder needs no setting: its first pull request creates it.
 - This check folds every entry file into `CHANGELOG.md`, newest first, and judges the result, so the newest entry is the first heading.
 - Fail: an entry file holding other than one dated `###` heading → `changelog/<name>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
-- `changelog-bullets`, `changelog-updated`, the pre-commit stamp, and `pr-check` read entry files and sections alike.
+- `changelog-updated`, the pre-commit stamp, `pr-check`, and `branch-check` accept only entry files.
 - On the release PR, `fitness-release release-pr` commits the entry files into `CHANGELOG.md` below the Release Please version section and deletes them.
 
-Dated sections already in `CHANGELOG.md` stay valid history.
+Dated sections already in `CHANGELOG.md` stay valid history, which this check and `changelog-bullets` still judge.
 
 ## Contributing
 

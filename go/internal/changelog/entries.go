@@ -10,8 +10,8 @@ import (
 )
 
 // EntryDir is the folder that holds one entry file per pull request, the
-// preferred way to add an entry, so two open pull requests never edit the
-// same lines.
+// only way to add an entry, so two open pull requests never edit the same
+// lines.
 const EntryDir = "changelog"
 
 // Entry is one entry file: its slash path from the repo root and its text.
@@ -150,7 +150,8 @@ func foldsBefore(line string, inRelease bool) bool {
 }
 
 // BranchEntryFiles returns the entry files the current branch's own commits
-// add. Like BranchEntries, it is nil off a feature branch.
+// add. It is nil on the default branch, on a detached HEAD, without origin
+// refs, or when the branch's own commits add none.
 func BranchEntryFiles(root string) []string {
 	fork, ok := forkPoint(root)
 	if !ok {
