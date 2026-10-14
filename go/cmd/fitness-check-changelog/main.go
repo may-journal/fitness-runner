@@ -5,7 +5,8 @@
 // same version as package.json. Version files that fail to parse report
 // "<file> is invalid JSON", exactly like the TypeScript original's
 // JSON.parse path. Every changelog/*.md entry file is folded into
-// CHANGELOG.md before judging, and each must hold one dated heading.
+// CHANGELOG.md before judging. Each must hold one dated heading, and its
+// name must start with that heading's date.
 package main
 
 import (
@@ -60,25 +61,33 @@ func run(root string, _ []string) (checkkit.Result, error) {
 }
 
 // judgeEntries judges CHANGELOG.md with any entry files: each must hold one
-// dated heading, and CHANGELOG.md with every entry folded in must pass as a
+// dated heading and carry its date in its name, and CHANGELOG.md with every entry folded in must pass as a
 // whole. filesChecked counts CHANGELOG.md and each entry file.
 func judgeEntries(root, content string) (checkkit.Result, error) {
 	entries, err := changelog.ReadEntries(root)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	var errs []string
-	for _, e := range entries {
-		if !e.Shaped() {
-			errs = append(errs, e.Path+" must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
-		}
-	}
-	if len(errs) > 0 {
+	if errs := entryErrors(entries); len(errs) > 0 {
 		return checkkit.Fail(1+len(entries), errs...), nil
 	}
 	res := judge(root, changelog.Fold(content, entries))
 	res.FilesChecked += len(entries)
 	return res, nil
+}
+
+// entryErrors names each entry file that holds other than one dated heading,
+// or whose name does not start with that heading's date.
+func entryErrors(entries []changelog.Entry) []string {
+	var errs []string
+	for _, e := range entries {
+		if !e.Shaped() {
+			errs = append(errs, e.Path+" must hold one ### yyyy.mm.dd.HHMM heading and its bullets, nothing else")
+		} else if msg := changelog.NameError(e.Path, e.Text); msg != "" {
+			errs = append(errs, msg)
+		}
+	}
+	return errs
 }
 
 // judge applies the gates in the TS order: heading format first (its errors

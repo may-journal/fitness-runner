@@ -22,22 +22,18 @@ Source: `go/internal/metadata/changelog.go:17`
     - Given Developer has a release PR that adds a version section and links it
         - When pr-check judges its changelog entry
             - Then it passes
-- 0069.6
-    - Given Developer has a PR description that copies a bullet of its changelog entry
-        - When pr-check judges its changelog entry
-            - Then it fails quoting the copied line
 - 0069.7
     - Given Developer has a release PR description that copies its release notes
         - When the release tool rewrites it
             - Then it links the changelog section and compare view instead
-- 0069.9
-    - Given Developer has a PR description that links a different changelog entry, or none
+- 0069.17
+    - Given Developer has a PR description that links a different changelog entry or none, or copies one of its bullets
         - When pr-check judges its changelog entry
-            - Then it fails naming the entry to link
-- 0069.13
+            - Then it fails naming the entry to link or quoting the copied line
+- 0069.18
     - Given Developer has entry files on main, and the open release PR's branch holds them or no entry folder
         - When the release tool rewrites it
-            - Then it commits the ones the branch holds under the version section and deletes those files
+            - Then it commits the ones the branch holds under the version section, newest file name first, and deletes those files
 - 0069.14
     - Given Developer has a PR that amends its own entry file or one already pending, or adds the first `CHANGELOG.md`
         - When pr-check and branch-check count its changelog entries
@@ -50,3 +46,7 @@ Source: `go/internal/metadata/changelog.go:17`
     - Given Developer has a PR that adds or edits a section in an existing `CHANGELOG.md`
         - When pr-check and branch-check judge its changelog entry
             - Then both fail pointing to an entry file in `changelog/`
+- 0069.19
+    - Given Developer has a PR that adds an entry file whose name lacks its heading's date
+        - When pr-check and branch-check judge its changelog entry
+            - Then both fail naming the dated file name they expect

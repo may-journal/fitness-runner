@@ -57,7 +57,7 @@ func oneEntryErrors(added []aftereffect.FileChange, body string) []string {
 }
 
 // msgSectionEdit fails a PR that adds or edits a CHANGELOG.md section.
-const msgSectionEdit = "this PR changes " + changelog.File + "; only the release PR writes it, so record this PR's change in one " + changelog.EntryDir + "/<name>.md entry file instead"
+const msgSectionEdit = "this PR changes " + changelog.File + "; only the release PR writes it, so record this PR's change in one " + changelog.EntryDir + "/<yyyy-mm-dd-HHMM>-<change>.md entry file instead"
 
 // extraEntriesError names the entry file to keep and the ones to fold into it.
 func extraEntriesError(added []aftereffect.FileChange) string {
@@ -86,10 +86,13 @@ func addedEntries(files []aftereffect.FileChange) []aftereffect.FileChange {
 	return added
 }
 
-// addedEntryErrors fails a description that does not link the PR's entry
-// file, or that copies one of its bullets.
+// addedEntryErrors fails an entry file whose name lacks its heading's date,
+// and a description that does not link it or copies one of its bullets.
 func addedEntryErrors(f aftereffect.FileChange, body string) []string {
 	var errs []string
+	if msg := changelog.NameError(f.Filename, changelog.AddedText(f.Patch)); msg != "" {
+		errs = append(errs, msg)
+	}
 	links := changelog.EntryLinks(body)
 	if !slices.Contains(links, f.Filename) {
 		fix := fmt.Sprintf("link the entry this PR adds in ## Changelog: [Changelog entry](…/%s)", f.Filename)

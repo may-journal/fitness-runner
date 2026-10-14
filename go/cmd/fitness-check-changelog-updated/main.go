@@ -24,9 +24,9 @@ const (
 
 	changelogMD = "CHANGELOG.md"
 
-	msgChangelogMissing = "CHANGELOG.md missing; add it, and record your staged changes in a changelog/<name>.md entry file"
-	msgStageEntry       = "Stage a changelog/<name>.md entry file that mentions your staged changes"
-	msgSectionEdit      = "CHANGELOG.md is staged; only the release PR writes it, so record this change in a changelog/<name>.md entry file instead"
+	msgChangelogMissing = "CHANGELOG.md missing; add it, and record your staged changes in a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file"
+	msgStageEntry       = "Stage a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file that mentions your staged changes"
+	msgSectionEdit      = "CHANGELOG.md is staged; only the release PR writes it, so record this change in a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file instead"
 	msgOverlapHead      = " additions should mention at least "
 	msgOverlapTail      = " words from your staged changes (found "
 	msgSuggestPrefix    = "e.g. use words like: "
@@ -96,8 +96,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if msg, ok := checkHistory(root, staged); !ok {
 		return checkkit.Fail(1, msg), nil
 	}
-	if msg, ok := checkOneEntry(root); !ok {
-		return checkkit.Fail(1, msg), nil
+	if errs := entryErrors(root); len(errs) > 0 {
+		return checkkit.Fail(1, errs...), nil
 	}
 	return judge(parseStagedDiff(stagedDiff(root))), nil
 }
@@ -119,6 +119,15 @@ func checkHistory(root string, staged []string) (msg string, ok bool) {
 // heldAt reports whether commit holds path.
 func heldAt(root, commit, path string) bool {
 	return exec.Command("git", "-C", root, "cat-file", "-e", commit+":"+path).Run() == nil
+}
+
+// entryErrors fails a commit that adds a second entry file to its branch,
+// then one that adds an entry file not named for its heading's date.
+func entryErrors(root string) []string {
+	if msg, ok := checkOneEntry(root); !ok {
+		return []string{msg}
+	}
+	return changelog.StagedNameErrors(root)
 }
 
 // checkOneEntry keeps a branch to one entry file: once an earlier commit on
