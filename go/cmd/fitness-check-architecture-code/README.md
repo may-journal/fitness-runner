@@ -37,6 +37,8 @@ The reader takes `.ts` and `.tsx` product files, leaving out tests and tool conf
 - A result is the stated return annotation; an inferred result states none.
 - A `get` accessor is a field of its result type.
 - A class's members are those its own file declares.
+- In `.tsx`, a slash right after `<` closes a tag rather than starting a regex.
+- Without semicolons, a line ending in a postfix `!`, `++`, or `--` ends its statement.
 
 ## Coverage
 

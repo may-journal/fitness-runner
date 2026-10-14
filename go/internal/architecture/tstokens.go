@@ -137,7 +137,8 @@ func (r *tsReader) ends(j int) bool {
 
 // continues reports a line ending at token j that the next line goes on.
 func (r *tsReader) continues(j int) bool {
-	return (r.at(j).Kind == javascript.Punct && contains(tsJoiners, r.word(j))) || contains(tsLeaders, r.word(j+1))
+	joins := r.at(j).Kind == javascript.Punct && contains(tsJoiners, r.word(j)) && !r.postfix(j)
+	return joins || contains(tsLeaders, r.word(j+1))
 }
 
 // typeEnd returns the token after the type starting at token i.
@@ -207,4 +208,42 @@ func (r *tsReader) literal(pos int) string {
 		end++
 	}
 	return r.src[pos:end]
+}
+
+// tsPostfix read a sign that can close a value, by its text.
+var tsPostfix = map[string]func(r *tsReader, j int) bool{
+	"!": (*tsReader).assertion,
+	"+": (*tsReader).step,
+	"-": (*tsReader).step,
+}
+
+// postfix reports token j closing a value, so a line ending on it ends.
+func (r *tsReader) postfix(j int) bool {
+	read := tsPostfix[r.word(j)]
+	return read != nil && read(r, j)
+}
+
+// assertion reports the ! of a non-null assertion such as el!.
+func (r *tsReader) assertion(j int) bool {
+	return r.attached(j) && r.value(j-1)
+}
+
+// step reports the second sign of i++ or i--.
+func (r *tsReader) step(j int) bool {
+	return r.is(j-1, r.word(j)) && r.attached(j) && r.value(j-2)
+}
+
+// attached reports token j written with no space before it.
+func (r *tsReader) attached(j int) bool {
+	pos := r.at(j).Pos
+	return pos > 0 && !strings.ContainsRune(" \t\r\n", rune(r.src[pos-1]))
+}
+
+// value reports a token that ends a value: a name, a literal, or a closing
+// parenthesis or bracket.
+func (r *tsReader) value(j int) bool {
+	if r.at(j).Kind != javascript.Punct {
+		return true
+	}
+	return r.is(j, ")") || r.is(j, "]")
 }

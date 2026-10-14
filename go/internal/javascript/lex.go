@@ -44,6 +44,16 @@ var regexKeywords = map[string]bool{
 // string contents intact — the string-aware comment stripping the TS
 // evaluation got for free from the JavaScript engine.
 func Lex(src string) []Token {
+	return lex(src, false)
+}
+
+// LexJSX tokenizes TSX or JSX source as Lex does, except that a slash
+// right after a < closes a tag, as in </b>, and never starts a regex.
+func LexJSX(src string) []Token {
+	return lex(src, true)
+}
+
+func lex(src string, jsx bool) []Token {
 	var tokens []Token
 	i := 0
 	for i < len(src) {
@@ -52,7 +62,7 @@ func Lex(src string) []Token {
 			continue
 		}
 		start, n := i, len(tokens)
-		tokens, i = lexAt(src, i, tokens)
+		tokens, i = lexAt(src, i, tokens, jsx)
 		if len(tokens) > n {
 			tokens[n].Pos = start
 		}
@@ -67,10 +77,10 @@ func isSpace(c byte) bool {
 
 // lexAt lexes the comment or token starting at the non-whitespace byte at i,
 // returning the extended token slice and the index just past it.
-func lexAt(src string, i int, tokens []Token) ([]Token, int) {
+func lexAt(src string, i int, tokens []Token, jsx bool) ([]Token, int) {
 	switch c := src[i]; {
 	case c == '/':
-		return lexSlash(src, i, tokens)
+		return lexSlash(src, i, tokens, jsx)
 	case c == '\'' || c == '"':
 		value, next := scanQuoted(src, i)
 		return append(tokens, Token{Kind: String, Text: value, Lit: true}), next
@@ -83,16 +93,33 @@ func lexAt(src string, i int, tokens []Token) ([]Token, int) {
 }
 
 // lexSlash handles a slash: a line or block comment, a regex literal when
-// one can follow the tokens so far, or a plain punctuation token (division).
-func lexSlash(src string, i int, tokens []Token) ([]Token, int) {
+// one can follow the tokens so far, or a plain punctuation token (division
+// or, in JSX, a closing tag's slash).
+func lexSlash(src string, i int, tokens []Token, jsx bool) ([]Token, int) {
 	switch {
 	case i+1 < len(src) && (src[i+1] == '/' || src[i+1] == '*'):
 		return tokens, skipComment(src, i)
-	case regexCanFollow(tokens):
+	case regexStarts(i, tokens, jsx):
 		return append(tokens, Token{Kind: Regex}), skipRegex(src, i)
 	default:
 		return append(tokens, Token{Kind: Punct, Text: src[i : i+1]}), i + 1
 	}
+}
+
+// regexStarts reports a slash at i that starts a regex: one can follow
+// the tokens so far, and in JSX the slash does not close a tag.
+func regexStarts(i int, tokens []Token, jsx bool) bool {
+	return regexCanFollow(tokens) && !(jsx && closingTag(i, tokens))
+}
+
+// closingTag reports the slash at i written right after a < token, as a
+// JSX closing tag such as </b> starts.
+func closingTag(i int, tokens []Token) bool {
+	if len(tokens) == 0 {
+		return false
+	}
+	last := tokens[len(tokens)-1]
+	return last.Kind == Punct && last.Text == "<" && last.Pos == i-1
 }
 
 // skipComment advances past the comment starting at i (which points at the

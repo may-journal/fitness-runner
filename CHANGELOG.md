@@ -7,6 +7,14 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+### 2026.10.13.2206
+
+- Fix: architecture-code: a one-line TypeScript type relates the names on its first line, and `List~Item~[]` reads as `List<Item>[]`.
+- Fix: architecture-code: a `.tsx` closing tag such as `</b>` keeps the braces after it on its line.
+- Fix: architecture-code: a postfix `!` or `++` ends a line without semicolons, and a `<` in a default value keeps parameters apart.
+- Docs: the architecture-code README says how TSX tags and postfix operators read.
+- Test: requirement 0076.10 adds a TSX panel without semicolons that holds each case.
+
 ### 2026.10.13.1941
 
 - Feat: cspell: package managers' lockfiles, such as `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Package.resolved`, `go.sum`, `Gemfile.lock`, `composer.lock`, and `poetry.lock`, are left out in any folder.

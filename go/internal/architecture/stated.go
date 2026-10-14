@@ -143,20 +143,30 @@ func wordByte(c byte) bool {
 }
 
 // generics reads Mermaid's tilde generics as angle brackets, so
-// Promise~boolean~ states Promise<boolean>. A tilde before a name or an
-// opening bracket opens a list; any other tilde closes one.
+// Promise~boolean~ states Promise<boolean>. A tilde before a name opens a
+// list. A tilde before an opening bracket opens one only outside a list,
+// so List~Item~[] states List<Item>[]. Any other tilde closes one.
 func generics(text string) string {
 	b := []byte(text)
+	depth := 0
 	for i, c := range b {
 		if c == '~' {
-			b[i] = tildeBracket(text, i)
+			b[i] = tildeBracket(text, i, depth)
+			depth += tildeDepth[b[i]]
 		}
 	}
 	return string(b)
 }
 
-func tildeBracket(text string, i int) byte {
-	if i+1 < len(text) && (wordByte(text[i+1]) || strings.ContainsRune("([{", rune(text[i+1]))) {
+// tildeDepth is how a tilde read as a bracket changes the list depth.
+var tildeDepth = map[byte]int{'<': 1, '>': -1}
+
+func tildeBracket(text string, i, depth int) byte {
+	next := byte(' ')
+	if i+1 < len(text) {
+		next = text[i+1]
+	}
+	if wordByte(next) || (depth == 0 && strings.IndexByte("([{", next) >= 0) {
 		return '<'
 	}
 	return '>'
