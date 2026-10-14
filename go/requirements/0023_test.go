@@ -126,9 +126,14 @@ func Test0023_13(t *testing.T) {
 	files := dtCopied(t)
 	files[dtViews+acContainer] += "\n## Setup\n\nHow a consumer runs the app.\n"
 	files[dtViews+acJourney] += "\n## Notes\n\nWhat the journey leaves out.\n"
+	dtEdit(t, files, acContext, "fitnessFunctions: ['architecture-contract', 'architecture-actors']", "fitnessFunctions:\n  - architecture-actors\n  - \"architecture-contract\"")
+	dtEdit(t, files, acCode, "fitnessFunctions: ['architecture-contract', 'architecture-code']", "fitnessFunctions: [architecture-code, architecture-contract]")
+	dtEdit(t, files, acComponent, "match the callout table.", "match the callout table. <!-- kept in step with the diagram -->")
+	files[dtViews+"notes.md"] = "# Notes\n\n## Open threads\n\nWhat the views leave out.\n"
+	files[dtViews+"archive/"+acCode] = "# Old code\n\n## Before\n\nThe first layout.\n"
 	out, code := docTemplate(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
-	passedWith(t, out, "doc-template", "12")
+	passedWith(t, out, "doc-template", "14")
 }
 
 func Test0023_14(t *testing.T) {
