@@ -102,23 +102,27 @@ func (c *containers) owners(p runtimes.Product) []Element {
 	return owners
 }
 
-// names reports whether owner's text names an npm package: its name, or
-// a path covering one of its entry points, such as dist/esm for
-// dist/esm/index.js. Entry points are often build output nobody tracks.
+// names reports whether owner's text names an npm package. A code span
+// or label may name the package or a path covering an entry point, such
+// as dist/esm for dist/esm/index.js; a description word must be an
+// entry point itself. Entry points are often build output nobody tracks.
 func (c *containers) names(owner string, p runtimes.Product) bool {
 	if p.Technology != "Node" {
 		return false
 	}
 	for _, mention := range c.m.Mentions {
-		if mention.Owner == owner && namesPackage(mention.Path, p) {
+		if mention.Owner == owner && namesPackage(mention, p) {
 			return true
 		}
 	}
 	return false
 }
 
-func namesPackage(word string, p runtimes.Product) bool {
-	return strings.EqualFold(word, p.Name) || coversAny(word, p.Entries)
+func namesPackage(m Mention, p runtimes.Product) bool {
+	if !m.Named {
+		return contains(p.Entries, m.Text)
+	}
+	return strings.EqualFold(m.Text, p.Name) || coversAny(m.Text, p.Entries)
 }
 
 // claims reports whether owner's claimed paths cover any of paths.

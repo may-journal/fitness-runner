@@ -249,30 +249,37 @@ func Test0075_11(t *testing.T) {
 	passedWith(t, out, aoCheck, "1")
 }
 
-// aoScripts is a package whose scripts run development tools by several
-// runners, a start script, and a published entry the build also runs.
-const aoScripts = "{\n  \"main\": \"tools/build.mjs\",\n  \"scripts\": {\n    \"analyze\": \"node scripts/analyze.mjs\",\n    \"gen\": \"npx tsx tools/gen.ts && echo done\",\n    \"seed\": \"MODE=dev node --env-file=.env seed.mjs\",\n    \"build\": \"node tools/build.mjs\",\n    \"start\": \"node server.mjs\",\n    \"dev\": \"node server.mjs --watch\"\n  }\n}\n"
+// aoScripts is a package whose scripts run development tools past runner
+// flags, beside a start script, a published entry, a published folder,
+// and an exports pattern, which dev scripts also run.
+const aoScripts = "{\n  \"main\": \"tools/build.mjs\",\n  \"files\": [\"lib\"],\n  \"exports\": {\n    \"./x/*\": \"./pub/*.mjs\"\n  },\n  \"scripts\": {\n" +
+	"    \"analyze\": \"node scripts/analyze.mjs\",\n    \"gen\": \"npx tsx tools/gen.ts && echo done\",\n    \"seed\": \"MODE=dev node -r dotenv/config seed.mjs\",\n" +
+	"    \"build\": \"node tools/build.mjs\",\n    \"start\": \"node --require dotenv/config scripts/server.mjs\",\n    \"dev\": \"node --watch scripts/server.mjs\",\n" +
+	"    \"check\": \"node lib/index.js --check\",\n    \"pub\": \"node pub/a.mjs\"\n  }\n}\n"
 
 func Test0075_14(t *testing.T) {
 	t.Parallel()
+	product := []string{"tools/build.mjs", "scripts/server.mjs", "lib/index.js", "pub/a.mjs"}
 	files := with(aoFixture(), map[string]string{
 		"package.json":         aoScripts,
 		"scripts/analyze.mjs":  "export const size = 1;\n",
 		"scripts/lib/stats.ts": "export const mean = 0;\n",
 		"tools/gen.ts":         "export const gen = 1;\n",
 		"seed.mjs":             "export const rows = [];\n",
-		"tools/build.mjs":      "export const build = 1;\n",
-		"server.mjs":           "export const port = 8080;\n",
 	})
+	var want []string
+	for _, file := range product {
+		files[file] = "export const run = 1;\n"
+		want = append(want, file+aoNoOwner)
+	}
 	out, code := aoRun(t, files)
-	sees(t, out, code, 1, "tools/build.mjs"+aoNoOwner, "server.mjs"+aoNoOwner)
-	for _, tool := range []string{"scripts/", "tools/gen.ts", "seed.mjs"} {
+	sees(t, out, code, 1, want...)
+	for _, tool := range []string{"scripts/analyze", "scripts/lib", "tools/gen.ts", "seed.mjs"} {
 		if strings.Contains(out, tool) {
 			t.Errorf("%s needs no owner:\n%s", tool, out)
 		}
 	}
-	files = aoEdit(files, "\"src/store\")", "\"src/store\", \"and tools/build.mjs\")")
-	files = aoEdit(files, aoEntry, "Component(entry, \"2 Entry (server.mjs)\", \"Go\")\n")
+	files = aoEdit(files, "\"src/store\")", "\"src/store\", \"and "+strings.Join(product, " ")+"\")")
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
 	passedWith(t, out, aoCheck, "1")

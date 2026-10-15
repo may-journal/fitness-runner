@@ -47,6 +47,6 @@ Source: #287
         - When I check its containers
             - Then the error names the container line and says to show source layers in the component view
 - 0073.11
-    - Given Developer has an npm library that publishes `main`, `module`, `exports`, `types`, or `files`
+    - Given Developer has a published npm library whose entry points are tracked or built, beside a private or npm init package
         - When I check its containers
-            - Then a container naming its package or an entry point passes, and naming neither fails
+            - Then a span or label naming the package or an entry passes, a description needs the exact entry, and the others need none

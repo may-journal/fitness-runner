@@ -43,7 +43,7 @@ func (m *Model) product(file string) bool {
 }
 
 // category sorts a tracked source: generated, test, tool, or product. dev
-// marks a file only package.json scripts run.
+// marks a file DevScripts finds, under scripts/ or only scripts run.
 func category(file string, kept, dev bool) string {
 	lower := strings.ToLower(file)
 	switch {
@@ -57,13 +57,12 @@ func category(file string, kept, dev bool) string {
 	return "product"
 }
 
-// tool reports a shell or Python script, a source under the top-level
-// scripts folder, or a root-level script tool's config file, such as
-// rollup.config.mjs. A config module deeper down, such as
+// tool reports a shell or Python script, or a root-level script tool's
+// config file, such as rollup.config.mjs. A config module deeper down, such as
 // src/app/app.config.ts, is product code.
 func tool(file string) bool {
 	ext := path.Ext(file)
-	if contains([]string{".sh", ".bash", ".zsh", ".py"}, ext) || strings.HasPrefix(file, "scripts/") {
+	if contains([]string{".sh", ".bash", ".zsh", ".py"}, ext) {
 		return true
 	}
 	return contains(walkfs.ScriptExts, ext) && walkfs.ToolConfig(file) && !strings.Contains(file, "/")

@@ -39,7 +39,7 @@ type diagram struct {
 	edges       []*Relationship
 	callouts    map[int]subject
 	claims      []Claim
-	mentions    []Claim
+	mentions    []Mention
 	parents     []string
 	annotations map[string][]Member
 	// body is the class whose member block is open.

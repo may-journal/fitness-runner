@@ -47,6 +47,6 @@ Source: #288
         - When I check its components
             - Then the error names the reference line, the view, a reversed edge, and the condition, and a drawn edge passes
 - 0075.14
-    - Given Developer has a script only package.json scripts run, or one under `scripts/`
+    - Given Developer has a script only package.json scripts run past flags, or one under `scripts/`, beside started or published files
         - When I check its components
-            - Then it needs no owner, and a file the start script runs or the package publishes still does
+            - Then the scripts need no owner, and the started or published files still do

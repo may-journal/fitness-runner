@@ -38,7 +38,7 @@ func (d *diagram) span(s subject, text string, at Location) {
 // row's path is checked but owns nothing. Only a code span or label may name
 // a root-level source by its bare name.
 func (d *diagram) claim(owner, text string, bare bool, at Location) {
-	d.mention(owner, text, at)
+	d.mention(owner, text, bare, at)
 	p, ok := d.m.repo.candidate(text, bare)
 	if !ok {
 		return
@@ -52,12 +52,12 @@ func (d *diagram) claim(owner, text string, bare bool, at Location) {
 	}
 }
 
-// mention records a word an element names, tracked or not, such as a
-// build output dist/esm or a package name, for the containers check.
-func (d *diagram) mention(owner, text string, at Location) {
-	text = strings.Trim(text, "()[]{},;:'\"")
+// mention records a word an element names for the containers check,
+// without the punctuation that ends a sentence, as in "builds dist/esm.".
+func (d *diagram) mention(owner, text string, named bool, at Location) {
+	text = strings.TrimLeft(strings.TrimRight(text, ".,;:)]}'\""), "([{'\"")
 	if owner != "" && text != "" {
-		d.mentions = append(d.mentions, Claim{Owner: owner, Path: path.Clean(text), At: at})
+		d.mentions = append(d.mentions, Mention{Owner: owner, Text: path.Clean(text), Named: named, At: at})
 	}
 }
 

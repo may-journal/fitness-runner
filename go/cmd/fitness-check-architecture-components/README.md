@@ -15,7 +15,8 @@ Product sources are the product category of the `architecture-contract` inventor
 
 - A root-level tool config such as `rollup.config.mjs` or `.eslintrc.cjs`; `src/app/app.config.ts` is product code.
 - A source under the top-level `scripts/` folder.
-- A file only `package.json` scripts run, as in `node tools/gen.mjs`. A file the `start` script runs or the package publishes stays product code.
+- A file only `package.json` scripts run, past flags and their values, as in `node -r dotenv/config tools/gen.mjs`.
+- Neither of the last two when `start` runs it or the package publishes it, even in a `files` folder or `exports` pattern.
 
 Ownership fails or holds as follows:
 

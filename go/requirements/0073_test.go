@@ -179,23 +179,36 @@ func Test0073_9(t *testing.T) {
 }
 
 // accLibrary is an npm library that ships only built files: main on line
-// 3, module, exports with types, and files.
-const accLibrary = "{\n  \"name\": \"@acme/kit\",\n  \"main\": \"dist/cjs/index.js\",\n  \"module\": \"dist/esm/index.js\",\n  \"exports\": {\n    \".\": {\n      \"types\": \"./dist/types/index.d.ts\",\n      \"import\": \"./dist/esm/index.js\"\n    }\n  },\n  \"files\": [\"dist\"]\n}\n"
+// 3, module, exports with types, files, and the build script that makes
+// them.
+const accLibrary = "{\n  \"name\": \"@acme/kit\",\n  \"main\": \"dist/cjs/index.js\",\n  \"module\": \"dist/esm/index.js\",\n  \"exports\": {\n    \".\": {\n      \"types\": \"./dist/types/index.d.ts\",\n      \"import\": \"./dist/esm/index.js\"\n    }\n  },\n  \"files\": [\"dist\"],\n  \"scripts\": {\n    \"build\": \"rollup -c\"\n  }\n}\n"
+
+// accKit adds a kit container with label and description to the library.
+func accKit(files map[string]string, label, description string) map[string]string {
+	return accEdit(with(files, nil), "}\nRel", "Container(kit, \"5 "+label+"\", \"TypeScript\", \""+description+"\")\n}\nRel")
+}
 
 func Test0073_11(t *testing.T) {
 	t.Parallel()
 	library := with(acFixture(acRoot), map[string]string{accPackage: accLibrary, "lib/index.ts": "export const kit = 1;\n"})
 	out, code := accRun(t, library)
 	sees(t, out, code, 1, "package.json:3: Node library @acme/kit"+accNoOwner)
-	for _, names := range []string{"Rollup builds dist/esm", "Publishes @acme/kit", "Ships ./dist/types/"} {
-		out, code = accRun(t, accEdit(with(library, nil), "}\nRel", "Container(kit, \"5 Kit\", \"TypeScript\", \""+names+"\")\n}\nRel"))
+	for _, kit := range [][2]string{{"Kit dist/esm", "Bundles"}, {"@acme/kit", "Bundles"}, {"Kit", "Builds dist/esm/index.js."}} {
+		out, code = accRun(t, accKit(library, kit[0], kit[1]))
 		sees(t, out, code, 0)
 	}
-	out, code = accRun(t, accEdit(with(library, nil), "}\nRel", "Container(kit, \"5 Kit\", \"TypeScript\", \"Publishes a kit\")\n}\nRel"))
+	out, code = accRun(t, accKit(library, "Kit", "Wraps @acme/kit in dist/esm"))
 	sees(t, out, code, 1, "package.json:3: Node library @acme/kit"+accNoOwner, "architecture/02-containers.md:8: container kit matches no build target, entry point, or deploy file by name")
-	exports := with(acFixture(acRoot), map[string]string{accPackage: "{\n  \"name\": \"kit\",\n  \"exports\": \"./out/index.js\"\n}\n"})
-	out, code = accRun(t, exports)
+	for _, tools := range []string{
+		"{\n  \"name\": \"tools\",\n  \"private\": true,\n  \"main\": \"lib/index.ts\"\n}\n",
+		"{\n  \"name\": \"tools\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"test\": \"vitest\"\n  }\n}\n",
+	} {
+		out, code = accRun(t, with(library, map[string]string{accPackage: tools}))
+		sees(t, out, code, 0)
+	}
+	tracked := with(library, map[string]string{accPackage: "{\n  \"name\": \"kit\",\n  \"exports\": \"./lib/index.ts\"\n}\n"})
+	out, code = accRun(t, tracked)
 	sees(t, out, code, 1, "package.json:3: Node library kit"+accNoOwner)
-	out, code = accRun(t, accEdit(exports, "}\nRel", "Container(kit, \"5 Kit\", \"Node\", \"Loads out/index.js\")\n}\nRel"))
+	out, code = accRun(t, accKit(tracked, "Kit", "Loads lib/index.ts"))
 	sees(t, out, code, 0)
 }

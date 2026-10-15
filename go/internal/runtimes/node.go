@@ -13,15 +13,16 @@ import (
 // deployFiles beside a package.json prove it is deployed as a service.
 var deployFiles = []string{"Dockerfile", "Procfile", "fly.toml", "app.yaml", "serverless.yml", "vercel.json", "wrangler.toml"}
 
-// libraryFields are the package.json fields that publish a library, in
-// the order the first one present is reported.
-var libraryFields = []string{"main", "module", "exports", "types", "files"}
+// libraryFields are the package.json fields that point at a library's
+// code, in the order the first one present is reported.
+var libraryFields = []string{"main", "module", "exports", "types"}
 
 // nodePackage is the part of package.json that proves a runtime. Bin and
 // Exports are a string or a map, Files a list; a JSON null leaves them
 // nil.
 type nodePackage struct {
 	Name    string            `json:"name"`
+	Private bool              `json:"private"`
 	Scripts map[string]string `json:"scripts"`
 	Bin     any               `json:"bin"`
 	Main    string            `json:"main"`
@@ -81,8 +82,8 @@ func items(value any) []any {
 
 // node records a package.json folder as a Node service when it has a
 // start script, a bin entry, or a deploy file beside it, and as a Node
-// library when it publishes main, module, exports, types, or files. A
-// package that only holds development tools proves no runtime.
+// library when it publishes code. A package that only holds development
+// tools proves no runtime.
 func (f *finder) node(file string) {
 	pkg, body, err := readPackage(f.root, file)
 	if err != nil {
@@ -94,7 +95,7 @@ func (f *finder) node(file string) {
 	at, ok := f.nodeEvidence(file, pkg, lines)
 	if !ok {
 		kind = "Node library"
-		at, ok = libraryEvidence(file, pkg, lines)
+		at, ok = f.libraryEvidence(file, pkg, lines)
 	}
 	if ok {
 		f.Products = append(f.Products, Product{Kind: kind, Name: nodeName(file, pkg), Technology: "Node", Paths: []string{path.Dir(file)}, Entries: pkg.entries(file), At: at})
@@ -116,15 +117,35 @@ func (f *finder) nodeEvidence(file string, pkg nodePackage, lines []string) (Loc
 	return Location{}, false
 }
 
-// libraryEvidence is the first library field the package sets.
-func libraryEvidence(file string, pkg nodePackage, lines []string) (Location, bool) {
-	set := map[string]bool{"main": pkg.Main != "", "module": pkg.Module != "", "exports": pkg.Exports != nil, "types": pkg.Types != "", "files": len(pkg.Files) > 0}
+// libraryEvidence is the first library field a published package sets.
+// A private package publishes nothing, and an entry nobody tracks needs a
+// build script to make it, so npm init's unused "main": "index.js" proves
+// no library.
+func (f *finder) libraryEvidence(file string, pkg nodePackage, lines []string) (Location, bool) {
+	if pkg.Private || !f.built(file, pkg) {
+		return Location{}, false
+	}
+	set := map[string]bool{"main": pkg.Main != "", "module": pkg.Module != "", "exports": pkg.Exports != nil, "types": pkg.Types != ""}
 	for _, field := range libraryFields {
 		if set[field] {
 			return Location{file, lineOf(lines, `"`+field+`"`)}, true
 		}
 	}
 	return Location{}, false
+}
+
+// built reports a package whose build script makes its code, or one of
+// whose main, module, types, or exports paths is tracked.
+func (f *finder) built(file string, pkg nodePackage) bool {
+	if _, ok := pkg.Scripts["build"]; ok {
+		return true
+	}
+	for _, entry := range leaves(pkg.Exports, []string{pkg.Main, pkg.Module, pkg.Types}) {
+		if entry != "" && f.exists[beside(file, entry)] {
+			return true
+		}
+	}
+	return false
 }
 
 func nodeName(file string, pkg nodePackage) string {
