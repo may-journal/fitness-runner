@@ -271,7 +271,7 @@ func (c *code) check(n *codeNode) {
 		c.fail(n.e.At, "%s: %s at %s is a %s, not an interface", n.e.ID, n.d.full(), n.d.where(), n.d.Kind)
 	}
 	if !c.m.product(n.d.File) {
-		c.fail(n.e.At, "%s: %s is a %s source; the code view shows product code", n.e.ID, n.d.File, category(n.d.File, c.m.repo.kept[n.d.File]))
+		c.fail(n.e.At, "%s: %s is a %s source; the code view shows product code", n.e.ID, n.d.File, category(n.d.File, c.m.repo.kept[n.d.File], c.m.repo.dev[n.d.File]))
 	}
 	c.members(n)
 }

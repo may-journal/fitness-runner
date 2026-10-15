@@ -12,7 +12,9 @@ import (
 type repository struct {
 	root                string
 	files, folder, kept map[string]bool
-	top                 map[string]bool
+	// dev holds the files only package.json scripts run.
+	dev map[string]bool
+	top map[string]bool
 }
 
 // sorted lists every tracked file in path order.

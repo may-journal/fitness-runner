@@ -116,7 +116,7 @@ func Test0075_3(t *testing.T) {
 	passedWith(t, out, aoCheck, "1")
 }
 
-func Test0075_4(t *testing.T) {
+func Test0075_13(t *testing.T) {
 	t.Parallel()
 	out, code := aoRun(t, aoFixture())
 	sees(t, out, code, 0)
@@ -130,6 +130,27 @@ func Test0075_4(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = aoRun(t, aoEdit(aoNative(), "Rel(ui, model, \"8\")", ""))
 	sees(t, out, code, 1, aoHome+":4: ui names Store, owned by model"+aoNotDrawn+"ui -> model edge")
+	files := with(aoFixture(), map[string]string{
+		"src/api/api.go":           "package api\n\nfunc Ping() {}\n",
+		"src/cmd/service/linux.go": "//go:build linux\n\npackage main\n\nimport \"example.com/app/src/api\"\n\nfunc ping() { api.Ping() }\n",
+	})
+	api := "Component(api, \"5 API\", \"Go\", \"src/api\")\n"
+	files[aoView] = aoComponents(api, "", "Answers pings.")
+	out, code = aoRun(t, files)
+	sees(t, out, code, 1, "src/cmd/service/linux.go:5: entry imports src/api under go:build linux, owned by api"+aoNotDrawn+"entry -> api edge")
+	files[aoView] = aoComponents(api, "\nRel(entry, api, \"6\")", "Answers pings.", "Pings the API.")
+	out, code = aoRun(t, files)
+	sees(t, out, code, 0)
+	native := aoEdit(aoNative(), "Rel(ui, model, \"8\")", "")
+	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG // tools\n    let store = Store()\n#endif\n}\n"
+	out, code = aoRun(t, native)
+	sees(t, out, code, 1, aoHome+":5: ui names Store under #if DEBUG, owned by model"+aoNotDrawn+"ui -> model edge")
+	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG\n    let debug = true\n#endif // DEBUG\n    let store = Store()\n}\n"
+	out, code = aoRun(t, native)
+	sees(t, out, code, 1, aoHome+":7: ui names Store, owned by model"+aoNotDrawn+"ui -> model edge")
+	native[aoView] = aoNative()[aoView]
+	out, code = aoRun(t, native)
+	sees(t, out, code, 0)
 }
 
 func Test0075_5(t *testing.T) {
@@ -228,27 +249,31 @@ func Test0075_11(t *testing.T) {
 	passedWith(t, out, aoCheck, "1")
 }
 
-func Test0075_7(t *testing.T) {
+// aoScripts is a package whose scripts run development tools by several
+// runners, a start script, and a published entry the build also runs.
+const aoScripts = "{\n  \"main\": \"tools/build.mjs\",\n  \"scripts\": {\n    \"analyze\": \"node scripts/analyze.mjs\",\n    \"gen\": \"npx tsx tools/gen.ts && echo done\",\n    \"seed\": \"MODE=dev node --env-file=.env seed.mjs\",\n    \"build\": \"node tools/build.mjs\",\n    \"start\": \"node server.mjs\",\n    \"dev\": \"node server.mjs --watch\"\n  }\n}\n"
+
+func Test0075_14(t *testing.T) {
 	t.Parallel()
 	files := with(aoFixture(), map[string]string{
-		"src/api/api.go":           "package api\n\nfunc Ping() {}\n",
-		"src/cmd/service/linux.go": "//go:build linux\n\npackage main\n\nimport \"example.com/app/src/api\"\n\nfunc ping() { api.Ping() }\n",
+		"package.json":         aoScripts,
+		"scripts/analyze.mjs":  "export const size = 1;\n",
+		"scripts/lib/stats.ts": "export const mean = 0;\n",
+		"tools/gen.ts":         "export const gen = 1;\n",
+		"seed.mjs":             "export const rows = [];\n",
+		"tools/build.mjs":      "export const build = 1;\n",
+		"server.mjs":           "export const port = 8080;\n",
 	})
-	api := "Component(api, \"5 API\", \"Go\", \"src/api\")\n"
-	files[aoView] = aoComponents(api, "", "Answers pings.")
 	out, code := aoRun(t, files)
-	sees(t, out, code, 1, "src/cmd/service/linux.go:5: entry imports src/api under go:build linux, owned by api"+aoNotDrawn+"entry -> api edge")
-	files[aoView] = aoComponents(api, "\nRel(entry, api, \"6\")", "Answers pings.", "Pings the API.")
+	sees(t, out, code, 1, "tools/build.mjs"+aoNoOwner, "server.mjs"+aoNoOwner)
+	for _, tool := range []string{"scripts/", "tools/gen.ts", "seed.mjs"} {
+		if strings.Contains(out, tool) {
+			t.Errorf("%s needs no owner:\n%s", tool, out)
+		}
+	}
+	files = aoEdit(files, "\"src/store\")", "\"src/store\", \"and tools/build.mjs\")")
+	files = aoEdit(files, aoEntry, "Component(entry, \"2 Entry (server.mjs)\", \"Go\")\n")
 	out, code = aoRun(t, files)
 	sees(t, out, code, 0)
-	native := aoEdit(aoNative(), "Rel(ui, model, \"8\")", "")
-	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG // tools\n    let store = Store()\n#endif\n}\n"
-	out, code = aoRun(t, native)
-	sees(t, out, code, 1, aoHome+":5: ui names Store under #if DEBUG, owned by model"+aoNotDrawn+"ui -> model edge")
-	native[aoHome] = "import SwiftUI\n\nstruct HomeScreen {\n#if DEBUG\n    let debug = true\n#endif // DEBUG\n    let store = Store()\n}\n"
-	out, code = aoRun(t, native)
-	sees(t, out, code, 1, aoHome+":7: ui names Store, owned by model"+aoNotDrawn+"ui -> model edge")
-	native[aoView] = aoNative()[aoView]
-	out, code = aoRun(t, native)
-	sees(t, out, code, 0)
+	passedWith(t, out, aoCheck, "1")
 }

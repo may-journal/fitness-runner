@@ -109,7 +109,7 @@ func Test0073_2(t *testing.T) {
 	sees(t, out, code, 0)
 }
 
-func Test0073_3(t *testing.T) {
+func Test0073_10(t *testing.T) {
 	t.Parallel()
 	want := "architecture/02-containers.md:8: container widget matches no build target, entry point, or deploy file by name"
 	out, code := accRun(t, accXcode([2]string{"App", "application"}, [2]string{"Widget", "app-extension"}))
@@ -120,6 +120,12 @@ func Test0073_3(t *testing.T) {
 	files[accProject] = strings.Replace(files[accProject], "  Widget:\n    templates: [Extension]\n    sources: # folders\n      - path: Widget\n        excludes:\n          - \"**/*.md\"\n", "", 1)
 	out, code = accRun(t, files)
 	sees(t, out, code, 1, want)
+	files = accEdit(acFixture(acRoot), "}\nRel", "Container(store, \"5 Store\", \"Go\", \"src/store\")\n}\nRel")
+	out, code = accRun(t, files)
+	sees(t, out, code, 1, "architecture/02-containers.md:8: container store claims only source layers (src/store): no build target, entry point, or deploy file is under them; show them in the component view")
+	files["src/store/store.go"] = "package main\n"
+	out, code = accRun(t, files)
+	sees(t, out, code, 0)
 }
 
 func Test0073_4(t *testing.T) {
@@ -127,16 +133,6 @@ func Test0073_4(t *testing.T) {
 	out, code := accRun(t, acEdit(acContainer, "\"Go\", \"src/cmd/service\"", "\"Node\", \"src/cmd/service\""))
 	sees(t, out, code, 1, "architecture/02-containers.md:7: container service says \"Node\" but Go command service at src/cmd/service/main.go:1 is Go")
 	out, code = accRun(t, acEdit(acContainer, "\"Go\", \"src/cmd/service\"", "\"Go 1.26\", \"src/cmd/service\""))
-	sees(t, out, code, 0)
-}
-
-func Test0073_5(t *testing.T) {
-	t.Parallel()
-	files := accEdit(acFixture(acRoot), "}\nRel", "Container(store, \"5 Store\", \"Go\", \"src/store\")\n}\nRel")
-	out, code := accRun(t, files)
-	sees(t, out, code, 1, "architecture/02-containers.md:8: container store claims only source layers (src/store): no build target, entry point, or deploy file is under them; show them in the component view")
-	files["src/store/store.go"] = "package main\n"
-	out, code = accRun(t, files)
 	sees(t, out, code, 0)
 }
 
@@ -179,5 +175,27 @@ func Test0073_9(t *testing.T) {
 	files = accNative()
 	files[".gitattributes"] = "project.yml linguist-generated\n"
 	out, code = accRun(t, files)
+	sees(t, out, code, 0)
+}
+
+// accLibrary is an npm library that ships only built files: main on line
+// 3, module, exports with types, and files.
+const accLibrary = "{\n  \"name\": \"@acme/kit\",\n  \"main\": \"dist/cjs/index.js\",\n  \"module\": \"dist/esm/index.js\",\n  \"exports\": {\n    \".\": {\n      \"types\": \"./dist/types/index.d.ts\",\n      \"import\": \"./dist/esm/index.js\"\n    }\n  },\n  \"files\": [\"dist\"]\n}\n"
+
+func Test0073_11(t *testing.T) {
+	t.Parallel()
+	library := with(acFixture(acRoot), map[string]string{accPackage: accLibrary, "lib/index.ts": "export const kit = 1;\n"})
+	out, code := accRun(t, library)
+	sees(t, out, code, 1, "package.json:3: Node library @acme/kit"+accNoOwner)
+	for _, names := range []string{"Rollup builds dist/esm", "Publishes @acme/kit", "Ships ./dist/types/"} {
+		out, code = accRun(t, accEdit(with(library, nil), "}\nRel", "Container(kit, \"5 Kit\", \"TypeScript\", \""+names+"\")\n}\nRel"))
+		sees(t, out, code, 0)
+	}
+	out, code = accRun(t, accEdit(with(library, nil), "}\nRel", "Container(kit, \"5 Kit\", \"TypeScript\", \"Publishes a kit\")\n}\nRel"))
+	sees(t, out, code, 1, "package.json:3: Node library @acme/kit"+accNoOwner, "architecture/02-containers.md:8: container kit matches no build target, entry point, or deploy file by name")
+	exports := with(acFixture(acRoot), map[string]string{accPackage: "{\n  \"name\": \"kit\",\n  \"exports\": \"./out/index.js\"\n}\n"})
+	out, code = accRun(t, exports)
+	sees(t, out, code, 1, "package.json:3: Node library kit"+accNoOwner)
+	out, code = accRun(t, accEdit(exports, "}\nRel", "Container(kit, \"5 Kit\", \"Node\", \"Loads out/index.js\")\n}\nRel"))
 	sees(t, out, code, 0)
 }

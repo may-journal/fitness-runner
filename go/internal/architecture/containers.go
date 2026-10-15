@@ -95,11 +95,30 @@ func (c *containers) own(owner Element, p runtimes.Product) {
 func (c *containers) owners(p runtimes.Product) []Element {
 	var owners []Element
 	for _, e := range c.owned {
-		if strings.EqualFold(e.Name, p.Name) || c.claims(e.ID, p.Paths) {
+		if strings.EqualFold(e.Name, p.Name) || c.claims(e.ID, p.Paths) || c.names(e.ID, p) {
 			owners = append(owners, e)
 		}
 	}
 	return owners
+}
+
+// names reports whether owner's text names an npm package: its name, or
+// a path covering one of its entry points, such as dist/esm for
+// dist/esm/index.js. Entry points are often build output nobody tracks.
+func (c *containers) names(owner string, p runtimes.Product) bool {
+	if p.Technology != "Node" {
+		return false
+	}
+	for _, mention := range c.m.Mentions {
+		if mention.Owner == owner && namesPackage(mention.Path, p) {
+			return true
+		}
+	}
+	return false
+}
+
+func namesPackage(word string, p runtimes.Product) bool {
+	return strings.EqualFold(word, p.Name) || coversAny(word, p.Entries)
 }
 
 // claims reports whether owner's claimed paths cover any of paths.

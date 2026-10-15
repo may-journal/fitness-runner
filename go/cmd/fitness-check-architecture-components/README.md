@@ -9,7 +9,15 @@ Gives every product source one owner among the components the components view dr
 
 ## Owners
 
-A component owns the product sources its claims cover: a path in its diagram strings or its callout row. Boundaries, people, and external systems own nothing; their claims only scope the components inside them. Product sources are the product category of the `architecture-contract` inventory, so tests, tools, and generated files need no owner. A root-level tool config such as `rollup.config.mjs` or `.eslintrc.cjs` is a tool; `src/app/app.config.ts` is product code.
+A component owns the product sources its claims cover: a path in its diagram strings or its callout row. Boundaries, people, and external systems own nothing; their claims only scope the components inside them.
+
+Product sources are the product category of the `architecture-contract` inventory, so tests, tools, and generated files need no owner. These sources are tools:
+
+- A root-level tool config such as `rollup.config.mjs` or `.eslintrc.cjs`; `src/app/app.config.ts` is product code.
+- A source under the top-level `scripts/` folder.
+- A file only `package.json` scripts run, as in `node tools/gen.mjs`. A file the `start` script runs or the package publishes stays product code.
+
+Ownership fails or holds as follows:
 
 - A product source no component names fails, naming the source.
 - A code span or label claims a root-level source by its bare name, such as `index.ts`; `package.json` stays prose.

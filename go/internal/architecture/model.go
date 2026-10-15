@@ -89,12 +89,14 @@ type Model struct {
 	Elements      []Element
 	Relationships []Relationship
 	Claims        []Claim
-	Evidence      []Evidence
-	Sources       []Source
-	Requirements  []requirement.Document
-	Files         []string
-	Errors        []string
-	repo          repository
+	// Mentions are every word an element's text names, tracked or not.
+	Mentions     []Claim
+	Evidence     []Evidence
+	Sources      []Source
+	Requirements []requirement.Document
+	Files        []string
+	Errors       []string
+	repo         repository
 	// journeyAt is the first journey diagram's fence line, or the journey
 	// view's first line when it has no diagram.
 	journeyAt Location

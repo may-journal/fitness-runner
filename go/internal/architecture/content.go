@@ -38,6 +38,7 @@ func (d *diagram) span(s subject, text string, at Location) {
 // row's path is checked but owns nothing. Only a code span or label may name
 // a root-level source by its bare name.
 func (d *diagram) claim(owner, text string, bare bool, at Location) {
+	d.mention(owner, text, at)
 	p, ok := d.m.repo.candidate(text, bare)
 	if !ok {
 		return
@@ -48,6 +49,15 @@ func (d *diagram) claim(owner, text string, bare bool, at Location) {
 	}
 	if owner != "" {
 		d.claims = append(d.claims, Claim{Owner: owner, Path: p, At: at})
+	}
+}
+
+// mention records a word an element names, tracked or not, such as a
+// build output dist/esm or a package name, for the containers check.
+func (d *diagram) mention(owner, text string, at Location) {
+	text = strings.Trim(text, "()[]{},;:'\"")
+	if owner != "" && text != "" {
+		d.mentions = append(d.mentions, Claim{Owner: owner, Path: path.Clean(text), At: at})
 	}
 }
 

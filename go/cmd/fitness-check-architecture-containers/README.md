@@ -17,14 +17,17 @@ Each product is proved by a build target, an entry point, or a deploy file. A de
 | An XcodeGen `project.yml` target of type `application`, `*extension`, or `tool`, its own or from `targetTemplates` | App, extension, or tool target | Swift |
 | A `project.pbxproj` native target with the same product types | App, extension, or tool target | Swift |
 | A `package.json` with a `start` script or `bin`, or a deploy file beside it | Node service | Node |
+| Any other `package.json` with `main`, `module`, `exports`, `types`, or `files` | Node library | Node |
 
-A template source may name `${target_name}`; other template attributes are not substituted. Deploy files are `Dockerfile`, `Procfile`, `fly.toml`, `app.yaml`, `serverless.yml`, `vercel.json`, and `wrangler.toml`. Frameworks, libraries, test bundles, and files under test or tool folders are source types, never products.
+A template source may name `${target_name}`; other template attributes are not substituted. Deploy files are `Dockerfile`, `Procfile`, `fly.toml`, `app.yaml`, `serverless.yml`, `vercel.json`, and `wrangler.toml`. Xcode frameworks, libraries, and test bundles, and files under test or tool folders, are source types, never products.
 
 A product `.swift` file importing CloudKit, StoreKit, HealthKit, or WeatherKit uses a platform service.
 
 ## What the view says
 
 An owned container is a `Container`, `ContainerDb`, or `ContainerQueue` inside a boundary. A container owns a product when a path it names covers the product's folder, or when its name is the product's name. A trailing `*` in a path, such as `go/cmd/fitness-check-*`, names every sibling folder it matches.
+
+A container also owns an npm package when its text names the package or a path covering an entry point. Entry points are `main`, `module`, `types`, `files`, each `bin`, and each `exports` path, so `dist/esm` names `dist/esm/index.js` though nobody tracks it.
 
 External systems, `System_Ext` and `Container_Ext`, need no evidence. A platform service the code uses needs an external system whose name, technology, or description names it.
 
