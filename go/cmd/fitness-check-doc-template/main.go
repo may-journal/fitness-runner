@@ -66,7 +66,7 @@ func validateAll(docs []doc) []string {
 	byDir, named := templatesByDir(docs), namedTemplates(docs)
 	errs := commentErrors(docs)
 	for _, d := range docs {
-		if !isTemplate(d.path) {
+		if !mdtemplate.IsTemplate(d.path) {
 			errs = append(errs, judge(d, byDir, named)...)
 		}
 	}
@@ -77,7 +77,7 @@ func validateAll(docs []doc) []string {
 func commentErrors(docs []doc) []string {
 	var errs []string
 	for _, d := range docs {
-		if !isTemplate(d.path) {
+		if !mdtemplate.IsTemplate(d.path) {
 			continue
 		}
 		for _, h := range mdtemplate.MissingCommentSections(d.body) {
@@ -93,10 +93,10 @@ func templatesByDir(docs []doc) map[string][]doc {
 	m := map[string][]doc{}
 	for _, d := range docs {
 		dir := dirOf(d.path)
-		if inTemplatesFolder(d.path) {
+		if mdtemplate.InTemplatesFolder(d.path) {
 			dir = dirOf(dir)
 		}
-		if isConformanceTemplate(d.path) {
+		if mdtemplate.IsConformanceTemplate(d.path) {
 			m[dir] = append(m[dir], d)
 		}
 	}
@@ -162,7 +162,7 @@ func namedTemplates(docs []doc) map[string]bool {
 	}
 	named := map[string]bool{}
 	for _, d := range docs {
-		if inTemplatesFolder(d.path) && paths[namesake(d.path)] {
+		if mdtemplate.InTemplatesFolder(d.path) && paths[namesake(d.path)] {
 			named[d.path] = true
 		}
 	}
@@ -188,33 +188,6 @@ func shapeErrors(d doc, t doc) []string {
 		errs = append(errs, at+": "+f.Text)
 	}
 	return errs
-}
-
-// isConformanceTemplate reports whether the file names a template that governs
-// its neighbors: template.md, *.template.md, or any markdown file directly in
-// a templates folder.
-func isConformanceTemplate(path string) bool {
-	base := filepath.Base(path)
-	return inTemplatesFolder(path) || base == "template.md" || strings.HasSuffix(base, ".template.md")
-}
-
-// inTemplatesFolder reports whether the file sits directly in a folder named
-// templates.
-func inTemplatesFolder(path string) bool {
-	return filepath.Base(dirOf(path)) == "templates"
-}
-
-// isGithubTemplate reports whether the file is a GitHub PR or Issue template.
-func isGithubTemplate(path string) bool {
-	if filepath.Base(path) == "PULL_REQUEST_TEMPLATE.md" {
-		return true
-	}
-	return strings.Contains(path, ".github/ISSUE_TEMPLATE/") && strings.HasSuffix(path, ".md")
-}
-
-// isTemplate reports whether the file is any kind of template.
-func isTemplate(path string) bool {
-	return isConformanceTemplate(path) || isGithubTemplate(path)
 }
 
 // dirOf returns the slash directory of a slash path; the repo root is ".".

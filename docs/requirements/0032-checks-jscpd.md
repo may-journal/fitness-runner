@@ -14,7 +14,7 @@ repos with duplicated lines at or under 1% of scanned lines
 -
 repos scanned
 
-Source: `go/cmd/fitness-check-jscpd/main.go:41`
+Source: `go/cmd/fitness-check-jscpd/main.go:43`
 
 ## Requirements
 
@@ -30,8 +30,8 @@ Source: `go/cmd/fitness-check-jscpd/main.go:41`
     - Given Developer has two files sharing a block under 50 tokens
         - When `jscpd` runs
             - Then it passes
-- 0032.4
-    - Given Developer has a Markdown doc and a JSON file sharing a block
+- 0032.9
+    - Given Developer has a Markdown doc and a gitignored but still tracked JSON file sharing a block
         - When `jscpd` runs
             - Then it fails, since every tracked text file is compared
 - 0032.5
@@ -46,7 +46,7 @@ Source: `go/cmd/fitness-check-jscpd/main.go:41`
     - Given Developer has untracked files sharing a block
         - When `jscpd` runs
             - Then it passes, since only tracked files are scanned
-- 0032.8
-    - Given Developer has a gitignored file that is still tracked and shares a block
+- 0032.10
+    - Given Developer has a doc template, a doc built from it, and a copy of that doc
         - When `jscpd` runs
-            - Then it fails, since tracked files are compared
+            - Then it fails counting only the two docs, since a doc must repeat its template
