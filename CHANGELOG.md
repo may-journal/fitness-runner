@@ -7,6 +7,18 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.14.0](https://github.com/may-journal/fitness-runner/compare/v1.13.0...v1.14.0) (2026-10-15)
+
+
+### Features
+
+* **architecture:** read npm library entry points and dev scripts ([#384](https://github.com/may-journal/fitness-runner/issues/384)) ([820100c](https://github.com/may-journal/fitness-runner/commit/820100c71b26ef5c9d7dcdc8e87092472051afff))
+
+
+### Bug Fixes
+
+* **jscpd:** skip every doc template ([#383](https://github.com/may-journal/fitness-runner/issues/383)) ([8267a70](https://github.com/may-journal/fitness-runner/commit/8267a706cedfe813bf53e452750c5dd9978e03df))
+
 ## [1.13.0](https://github.com/may-journal/fitness-runner/compare/v1.12.0...v1.13.0) (2026-10-14)
 
 
