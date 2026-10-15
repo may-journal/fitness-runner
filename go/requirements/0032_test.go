@@ -55,9 +55,12 @@ func Test0032_3(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0032_4(t *testing.T) {
+func Test0032_9(t *testing.T) {
 	t.Parallel()
-	out, code := jscpdRun(t, jscpdPair("docs/a.md", "conf/b.json", jscpdClone))
+	repo := example(t, "happyRepo", map[string]string{".gitignore": "conf/\n"})
+	write(t, repo, jscpdPair("docs/a.md", "conf/b.json", jscpdClone))
+	git(t, repo, "add", "-f", "docs", "conf")
+	out, code := fitness(t, repo, nil, "jscpd")
 	sees(t, out, code, 1, "ERROR: jscpd found too many duplicates (")
 }
 
@@ -83,11 +86,12 @@ func Test0032_7(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0032_8(t *testing.T) {
+// Test0032_10 adds a template to Test0032_1's two copies. The share stays
+// 7.4%, so only the two docs count: the template is not scanned.
+func Test0032_10(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", map[string]string{".gitignore": "vendor/\n"})
-	write(t, repo, jscpdPair("vendor/a.js", "src/b.js", jscpdClone))
-	git(t, repo, "add", "-f", "vendor", "src")
-	out, code := fitness(t, repo, nil, "jscpd")
-	sees(t, out, code, 1, "ERROR: jscpd found too many duplicates (")
+	files := jscpdPair("docs/guide.md", "docs/notes.md", jscpdClone)
+	files["docs/templates/guide.md"] = jscpdClone + jscpdBlock("ft", 24, 3)
+	out, code := jscpdRun(t, files)
+	sees(t, out, code, 1, "ERROR: jscpd found too many duplicates (7.4%) over threshold (1.0%)")
 }

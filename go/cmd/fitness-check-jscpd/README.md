@@ -10,10 +10,14 @@ Detects duplicated code with a native Go clone-detection engine implementing [js
 
 - Scans every tracked file with min-lines 5, min-tokens 50, tests, Markdown, JSON, and lock files included.
 - Binary files are skipped, since they have no lines to compare.
-- Files the repo's `.gitattributes` marks `linguist-generated`, such as lock files, are left out; that mark is the only skip.
+- Files the repo's `.gitattributes` marks `linguist-generated`, such as lock files, are left out.
 - Pass: Duplicated lines stay under 1% of the codebase (jscpd's threshold semantics).
 - Fail: Over threshold — the check reports `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)`.
 - The engine is built into the check binary — no external jscpd tool to install.
+
+## Templates
+
+A doc must repeat its template, so templates are left out. Any file [`doc-template`](../fitness-check-doc-template/README.md#what-is-a-template) treats as a template is skipped, in any folder. Docs built from one template are still compared with each other and with every other file.
 
 ## Escape hatch
 

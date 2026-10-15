@@ -4,9 +4,10 @@
 // rolling-hash detector with jscpd's min-lines/min-tokens semantics and
 // the jscpd:ignore-start/-end escape hatch. Scan scope: every tracked file
 // (internal/walkfs), minus files .gitattributes marks linguist-generated
-// and binary files, which have no lines to compare. Verdict and error format
-// match the TS check; exact percentage parity with jscpd's per-language
-// tokenizers is explicitly not the goal.
+// and binary files, which have no lines to compare, and doc templates
+// (internal/mdtemplate), which docs must repeat by design. Verdict and
+// error format match the TS check; exact percentage parity with jscpd's
+// per-language tokenizers is explicitly not the goal.
 package main
 
 import (
@@ -16,6 +17,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/clonedetect"
+	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -48,9 +50,15 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // scanTargets lists every tracked file under root (the empty suffix
 // matches all), minus those .gitattributes marks linguist-generated, such
-// as lock files.
+// as lock files, and the templates doc-template makes docs repeat.
 func scanTargets(root string) []string {
-	return walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, ""))
+	var out []string
+	for _, p := range walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, "")) {
+		if !mdtemplate.IsTemplate(p) {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 // lexTargets reads and lexes each path, skipping binary files and files
