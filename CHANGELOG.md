@@ -7,6 +7,32 @@ relatedConfigurations: ['.fitnessrc.json']
 
 ## Changes
 
+## [1.14.0](https://github.com/may-journal/fitness-runner/compare/v1.13.0...v1.14.0) (2026-10-15)
+
+
+### Features
+
+* **architecture:** read npm library entry points and dev scripts ([#384](https://github.com/may-journal/fitness-runner/issues/384)) ([820100c](https://github.com/may-journal/fitness-runner/commit/820100c71b26ef5c9d7dcdc8e87092472051afff))
+
+
+### Bug Fixes
+
+* **jscpd:** skip every doc template ([#383](https://github.com/may-journal/fitness-runner/issues/383)) ([8267a70](https://github.com/may-journal/fitness-runner/commit/8267a706cedfe813bf53e452750c5dd9978e03df))
+
+### 2026.10.14.1945
+
+- Feat: `architecture-containers` matches a public, built npm library to the container whose code span or label names its package or an entry point.
+- Feat: `architecture-components` treats a file only package.json scripts run, or one under `scripts/`, as a tool.
+- Feat: a file the start script runs or the package publishes stays product code.
+- Test: requirements 0073.11 and 0075.14 prove each change; 0073.10 and 0075.13 merge older acceptances.
+
+### 2026.10.14.1938
+
+- Fix: `jscpd` skips every file `doc-template` treats as a template, so a doc that repeats its template is no clone.
+- Fix: docs built from one template are still compared with each other and with every other file.
+- Refactor: `jscpd` and `doc-template` share one template detection, so the two checks never drift apart.
+- Test: requirement 0032 proves a template is skipped while two copied docs still fail.
+
 ## [1.13.0](https://github.com/may-journal/fitness-runner/compare/v1.12.0...v1.13.0) (2026-10-14)
 
 
