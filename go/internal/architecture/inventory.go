@@ -26,11 +26,12 @@ func (m *Model) inventory(root string, files []string) {
 		}
 	}
 	m.repo.kept = map[string]bool{}
+	m.repo.dev = runtimes.DevScripts(root, files)
 	for _, file := range walkfs.WithoutGenerated(root, files) {
 		m.repo.kept[file] = true
 	}
 	for _, file := range sources {
-		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, m.repo.kept[file]), Owners: m.owners(file)})
+		m.Sources = append(m.Sources, Source{Path: file, Category: category(file, m.repo.kept[file], m.repo.dev[file]), Owners: m.owners(file)})
 	}
 }
 
@@ -38,24 +39,26 @@ func (m *Model) inventory(root string, files []string) {
 // generated, so manifests and sources alike can prove a runtime. A build
 // manifest counts whatever its linguist attribute says.
 func (m *Model) product(file string) bool {
-	return category(file, m.repo.kept[file] || runtimes.Manifest(file)) == "product"
+	return category(file, m.repo.kept[file] || runtimes.Manifest(file), m.repo.dev[file]) == "product"
 }
 
-func category(file string, kept bool) string {
+// category sorts a tracked source: generated, test, tool, or product. dev
+// marks a file DevScripts finds, under scripts/ or only scripts run.
+func category(file string, kept, dev bool) string {
 	lower := strings.ToLower(file)
 	switch {
 	case !kept:
 		return "generated"
-	case testFolder(path.Dir(lower)) || strings.HasSuffix(lower, "_test.go"):
+	case testFile(lower):
 		return "test"
-	case tool(lower):
+	case dev || tool(lower):
 		return "tool"
 	}
 	return "product"
 }
 
-// tool reports a script or a root-level script tool's config file, such
-// as rollup.config.mjs. A config module deeper down, such as
+// tool reports a shell or Python script, or a root-level script tool's
+// config file, such as rollup.config.mjs. A config module deeper down, such as
 // src/app/app.config.ts, is product code.
 func tool(file string) bool {
 	ext := path.Ext(file)
@@ -63,6 +66,10 @@ func tool(file string) bool {
 		return true
 	}
 	return contains(walkfs.ScriptExts, ext) && walkfs.ToolConfig(file) && !strings.Contains(file, "/")
+}
+
+func testFile(lower string) bool {
+	return testFolder(path.Dir(lower)) || strings.HasSuffix(lower, "_test.go")
 }
 
 func testFolder(dir string) bool {
@@ -85,13 +92,14 @@ func (m *Model) owners(file string) []string {
 }
 
 // ProductCode lists the Go, Swift, TypeScript, and JavaScript product files
-// that need architecture views: tracked, not generated, not tests, and not a
-// tool's config file such as vite.config.ts.
+// that need architecture views: tracked, not generated, not tests, and not
+// tools such as vite.config.ts or a file only package.json scripts run.
 func ProductCode(root string) []string {
 	code := walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, ".go", ".swift"))
+	dev := runtimes.DevScripts(root, walkfs.FilesByExt(root, ""))
 	var out []string
 	for _, file := range append(code, walkfs.Scripts(root)...) {
-		if category(file, true) == "product" && !walkfs.ScriptTest(file) {
+		if category(file, true, dev[file]) == "product" && !walkfs.ScriptTest(file) {
 			out = append(out, file)
 		}
 	}

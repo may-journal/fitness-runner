@@ -16,6 +16,7 @@ func (m *Model) addDiagram(d *diagram) {
 	}
 	d.overlaps()
 	m.Claims = append(m.Claims, d.claims...)
+	m.Mentions = append(m.Mentions, d.mentions...)
 }
 
 func (d *diagram) endpoint(id string, at Location) {

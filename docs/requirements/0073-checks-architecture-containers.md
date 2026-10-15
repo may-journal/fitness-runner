@@ -26,18 +26,10 @@ Source: #287
     - Given Developer has a Go command, Node service, or deploy file the view does not declare
         - When I check its containers
             - Then the error names the entry point
-- 0073.3
-    - Given Developer has a container whose build target no longer exists
-        - When I check its containers
-            - Then the error names the container line
 - 0073.4
     - Given Developer has a container whose technology is not its product's language
         - When I check its containers
             - Then the error names the container and the evidence
-- 0073.5
-    - Given Developer has a container whose paths hold only source layers
-        - When I check its containers
-            - Then the error says to show them in the component view
 - 0073.6
     - Given Developer has an owned store naming no path, or a platform service no external system names
         - When I check its containers
@@ -50,3 +42,11 @@ Source: #287
     - Given Developer has a target manifest `.gitattributes` marks `linguist-generated`
         - When I check its containers
             - Then its targets still match containers by name
+- 0073.10
+    - Given Developer has a container whose build target no longer exists, or whose paths hold only source layers
+        - When I check its containers
+            - Then the error names the container line and says to show source layers in the component view
+- 0073.11
+    - Given Developer has a published npm library whose entry points are tracked or built, beside a private or npm init package
+        - When I check its containers
+            - Then a span or label naming the package or an entry passes, a description needs the exact entry, and the others need none

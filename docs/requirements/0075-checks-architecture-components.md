@@ -26,10 +26,6 @@ Source: #288
     - Given Developer has one source two components in different diagrams name
         - When I check its components
             - Then the error names both claims
-- 0075.4
-    - Given Developer has a Go import or Swift reference the view does not draw
-        - When I check its components
-            - Then the error names the reference line, the view, and a reversed edge
 - 0075.5
     - Given Developer has an edge row that links evidence
         - When I check its components
@@ -38,10 +34,6 @@ Source: #288
     - Given Developer has a component under one container that another runtime reaches
         - When I check its components
             - Then the error names the reference and the container, and a component outside every container passes
-- 0075.7
-    - Given Developer has a reference under a build condition
-        - When I check its components
-            - Then a missing edge fails naming the condition, and a drawn edge passes
 - 0075.11
     - Given Developer has Swift overloads, extension members, and local names in function bodies
         - When I check its components
@@ -50,3 +42,11 @@ Source: #288
     - Given Developer has a product source no component names
         - When I check its components
             - Then the error names the source, naming its folder or root source passes, and root tool configs need no owner
+- 0075.13
+    - Given Developer has a Go import or Swift reference the view does not draw, also under a build condition
+        - When I check its components
+            - Then the error names the reference line, the view, a reversed edge, and the condition, and a drawn edge passes
+- 0075.14
+    - Given Developer has a script only package.json scripts run past flags, or one under `scripts/`, beside started or published files
+        - When I check its components
+            - Then the scripts need no owner, and the started or published files still do

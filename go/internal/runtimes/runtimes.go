@@ -21,11 +21,12 @@ type Location struct {
 func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) }
 
 // Product is one runtime the repository builds: a Go command, an Xcode app
-// or extension target, or a Node service. Paths are the folders it is built
-// from; Technology is the language its container must name.
+// or extension target, or a Node service or library. Paths are the folders
+// it is built from; Technology is the language its container must name.
+// Entries are the paths a package.json publishes, built or not.
 type Product struct {
 	Kind, Name, Technology string
-	Paths                  []string
+	Paths, Entries         []string
 	At                     Location
 }
 

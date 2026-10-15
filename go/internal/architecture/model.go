@@ -52,6 +52,15 @@ type Claim struct {
 	At          Location
 }
 
+// Mention is a word an element's text names, tracked or not, such as
+// the build output dist/esm or a package name. Named marks a code span or
+// label; a technology or description word is only prose.
+type Mention struct {
+	Owner, Text string
+	Named       bool
+	At          Location
+}
+
 // Evidence is a callout row link to a tracked source file, with an optional
 // line range. Subject is the element ID, or "from->to" for a relationship.
 type Evidence struct {
@@ -89,6 +98,7 @@ type Model struct {
 	Elements      []Element
 	Relationships []Relationship
 	Claims        []Claim
+	Mentions      []Mention
 	Evidence      []Evidence
 	Sources       []Source
 	Requirements  []requirement.Document
