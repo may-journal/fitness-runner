@@ -2,6 +2,8 @@
 package gitx
 
 import (
+	"context"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -83,6 +85,38 @@ func OwnCommits(root, tip, branch string) []string {
 		return nil
 	}
 	return strings.Fields(string(out))
+}
+
+// BranchOwnCommits returns the commits the checked-out work adds over its
+// base, newest first, and whether a base was found. A pull request run in
+// GitHub Actions starts from the fetched GITHUB_BASE_REF branch, as the
+// local-branch check does. Locally, a branch starts where OwnCommits says,
+// and the default branch or a detached HEAD from the fetched default branch,
+// so only commits origin lacks count. Without that fetched branch, ok is
+// false.
+func BranchOwnCommits(root string) (commits []string, ok bool) {
+	if ref := os.Getenv("GITHUB_BASE_REF"); ref != "" {
+		base := FetchedBase(context.Background(), root, ref)
+		return BranchCommits(root, "HEAD", base), base != ""
+	}
+	base := DefaultBase(root)
+	if !exists(root, base) {
+		return nil, false
+	}
+	branch := CurrentBranch(root)
+	if branch == "" || "origin/"+branch == base {
+		return BranchCommits(root, "HEAD", base), true
+	}
+	return OwnCommits(root, "HEAD", branch), true
+}
+
+// FetchedBase is the commit origin's branch points to locally, or empty.
+func FetchedBase(ctx context.Context, root, branch string) string {
+	if branch == "" {
+		return ""
+	}
+	out, _ := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+branch+"^{commit}").Output()
+	return strings.TrimSpace(string(out))
 }
 
 // CurrentBranch returns the checked-out branch's short name; empty when

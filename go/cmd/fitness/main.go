@@ -184,6 +184,7 @@ func run(argv []string) int {
 		return 1
 	}
 	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
+	checks = commitChecks(checks)
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")

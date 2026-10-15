@@ -131,19 +131,10 @@ func currentBase(ctx context.Context, root, repo string, pr *branchPR) string {
 	if pr.BaseSHA == "" || !strings.EqualFold(pr.Source, repo) {
 		return pr.BaseSHA
 	}
-	if fetched := fetchedBase(ctx, root, pr.Base); fetched != "" && contains(ctx, root, fetched, pr.BaseSHA) {
+	if fetched := gitx.FetchedBase(ctx, root, pr.Base); fetched != "" && contains(ctx, root, fetched, pr.BaseSHA) {
 		return fetched
 	}
 	return pr.BaseSHA
-}
-
-// fetchedBase is the commit origin's base branch points to locally, or empty.
-func fetchedBase(ctx context.Context, root, base string) string {
-	if base == "" {
-		return ""
-	}
-	out, _ := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+base+"^{commit}").Output()
-	return strings.TrimSpace(string(out))
 }
 
 // contains reports whether commit is in the history of tip.

@@ -27,10 +27,24 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if !provided {
 		msg, provided = checkkit.CtxMessage()
 	}
-	if !provided {
-		msg = gitx.HeadMessage(root)
+	if provided {
+		return judge(firstLine(msg)), nil
 	}
-	return judge(firstLine(msg)), nil
+	if commits, ok := gitx.BranchOwnCommits(root); ok {
+		return judgeCommits(root, commits), nil
+	}
+	return judge(firstLine(gitx.HeadMessage(root))), nil
+}
+
+// judgeCommits judges each of the branch's own commits, so history the
+// branch inherits from its base never fails it. No own commits pass.
+func judgeCommits(root string, commits []string) checkkit.Result {
+	result := checkkit.Pass(len(commits))
+	for _, sha := range commits {
+		result.Errors = append(result.Errors, judge(firstLine(gitx.Message(root, sha))).Errors...)
+	}
+	result.Ok = len(result.Errors) == 0
+	return result
 }
 
 // messageArg extracts an explicit --message value (either form) from args, so

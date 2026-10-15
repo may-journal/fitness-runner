@@ -20,17 +20,20 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 		return nil, nil, err
 	}
 	checks, err := resolvePolicy(cfg, options, spec)
-	return commitChecks(checks), passthrough, err
+	return checks, passthrough, err
 }
 
-// commitChecks excludes branch metadata from pre-commit, including installer hooks.
+// commitChecks excludes branch metadata and semantic-commit from a
+// pre-commit run, including installer hooks. No commit message exists yet,
+// so commit-msg judges it instead of the parent at HEAD. Both stay enabled,
+// so docs may still name them.
 func commitChecks(checks []resolved) []resolved {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
 		return checks
 	}
 	var local []resolved
 	for _, check := range checks {
-		if check.name != "local-branch" {
+		if check.name != "local-branch" && check.name != "semantic-commit" {
 			local = append(local, check)
 		}
 	}
