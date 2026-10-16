@@ -28,9 +28,9 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/vitestconf"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // Error strings ported verbatim from the TS check's enUS.
@@ -59,7 +59,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+	if !nodejs.Applies(root) {
 		return checkkit.Pass(0), nil
 	}
 	return runVitest(root), nil
@@ -75,7 +75,7 @@ func runVitest(root string) checkkit.Result {
 	if !vitestconf.HasFullThresholds(frRoot, "") {
 		return checkkit.Fail(1, fitnessRunnerThresholdsNot100)
 	}
-	bin, found := resolveVitest(root)
+	bin, found := nodejs.FindTool(root, "vitest")
 	if !found {
 		return checkkit.Fail(1, missingVitestHint)
 	}
@@ -104,46 +104,6 @@ func vitestArgs(root, frRoot string) []string {
 		configPath = filepath.Join(frRoot, fitnessVitestConfig)
 	}
 	return append(args, "--config", configPath)
-}
-
-// isFile reports whether p exists and is not a directory.
-func isFile(p string) bool {
-	info, err := os.Stat(p)
-	return err == nil && !info.IsDir()
-}
-
-// vitestFromNodeModules walks node_modules/.bin up from the absolute root
-// looking for the vitest binary; empty when no ancestor has one or root
-// cannot be made absolute.
-func vitestFromNodeModules(root string) string {
-	dir, err := filepath.Abs(root)
-	if err != nil {
-		return ""
-	}
-	for {
-		candidate := filepath.Join(dir, "node_modules", ".bin", "vitest")
-		if isFile(candidate) {
-			return candidate
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
-		}
-		dir = parent
-	}
-}
-
-// resolveVitest finds the vitest binary the way npx would have, without npx:
-// node_modules/.bin/vitest walking up from root, then PATH.
-func resolveVitest(root string) (string, bool) {
-	if bin := vitestFromNodeModules(root); bin != "" {
-		return bin, true
-	}
-	path, err := exec.LookPath("vitest")
-	if err != nil {
-		return "", false
-	}
-	return path, true
 }
 
 // execVitest runs the vitest binary in root, mirroring the TS

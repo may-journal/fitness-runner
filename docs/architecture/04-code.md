@@ -119,7 +119,7 @@ fitness-runner/
     cmd/fitness/               runner binary
     cmd/fitness-check-name/    one main + README per check
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
-                               clonedetect, vitestconf, javascript, mdfilename,
+                               clonedetect, vitestconf, javascript, nodejs, mdfilename,
                                render, conf, sharedconf (embedded tool configs)
     bin/                       build output (gitignored)
 

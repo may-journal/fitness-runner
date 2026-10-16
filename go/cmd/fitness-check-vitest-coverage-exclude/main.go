@@ -19,9 +19,9 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/vitestconf"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+	if !nodejs.Applies(root) {
 		return checkkit.Pass(0), nil
 	}
 	return judge(loadExclude(root)), nil

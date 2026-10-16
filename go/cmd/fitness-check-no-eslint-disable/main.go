@@ -10,12 +10,9 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
-
-// sourceExtensions are the source file extensions scanned for eslint disable
-// directives (test files included) — the TS SOURCE_FILE_EXTENSIONS set.
-var sourceExtensions = []string{".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx"}
 
 // eslintDisableRe matches any eslint disable directive form (file, block,
 // `-line`, and `-next-line`); the alternation order makes the match token
@@ -30,7 +27,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	errs, fileCount, err := walkfs.ScanFiles(root, sourceExtensions, func(file, content string) []string {
+	errs, fileCount, err := walkfs.ScanFiles(root, nodejs.SourceExts, func(file, content string) []string {
 		return scanContent(file, content)
 	})
 	if err != nil {

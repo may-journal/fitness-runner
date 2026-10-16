@@ -23,12 +23,9 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
-
-// sourceExtensions are the source file extensions scanned — the TS
-// SOURCE_FILE_EXTENSIONS set. Test, spec, and bench files are scanned too.
-var sourceExtensions = []string{".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx"}
 
 // minLength: string literals shorter than this many runes are ignored as
 // noise (single chars, tiny tokens).
@@ -107,7 +104,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 // findSourceFiles returns sorted relative paths of every tracked source
 // file.
 func findSourceFiles(root string) []string {
-	return walkfs.FilesByExt(root, sourceExtensions...)
+	return walkfs.FilesByExt(root, nodejs.SourceExts...)
 }
 
 // allowedValues returns the exact values allowed via .fitnessrc.json

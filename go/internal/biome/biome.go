@@ -17,6 +17,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 )
 
 // NotInstalled is the failure a check reports when the repo chose Biome but
@@ -48,7 +49,7 @@ func hasConfig(root string) bool {
 // declared reports whether package.json names @biomejs/biome in its
 // dependencies or devDependencies.
 func declared(root string) bool {
-	raw, err := os.ReadFile(filepath.Join(root, "package.json"))
+	raw, err := os.ReadFile(filepath.Join(root, nodejs.Manifest))
 	if err != nil {
 		return false
 	}
@@ -104,38 +105,6 @@ func (v version) maxDiagnostics() string {
 	return "--max-diagnostics=none"
 }
 
-// Bin resolves the biome binary: node_modules/.bin walking up from root,
-// then PATH, never npx. Empty when none resolves.
-func Bin(root string) string {
-	for dir := absolute(root); ; {
-		if p := filepath.Join(dir, "node_modules", ".bin", "biome"); executable(p) {
-			return p
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			break
-		}
-		dir = parent
-	}
-	p, err := exec.LookPath("biome")
-	if err != nil {
-		return ""
-	}
-	return p
-}
-
-func absolute(root string) string {
-	if abs, err := filepath.Abs(root); err == nil {
-		return abs
-	}
-	return root
-}
-
-func executable(p string) bool {
-	info, err := os.Stat(p)
-	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
-}
-
 // Finding is one diagnostic from Biome's GitHub reporter: the rule (or
 // "format"), the file, its position, and the message.
 type Finding struct {
@@ -170,8 +139,8 @@ func Check(root, command string, flags, paths []string, fallback string, show fu
 // usable resolves the biome binary and the diagnostics cap its version takes,
 // or the failure when none resolves or it is older than 1.8.
 func usable(root string) (bin, capFlag, failure string) {
-	bin = Bin(root)
-	if bin == "" {
+	bin, found := nodejs.FindTool(root, "biome")
+	if !found {
 		return "", "", NotInstalled
 	}
 	v := installed(root, bin)

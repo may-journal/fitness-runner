@@ -37,6 +37,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -118,13 +119,14 @@ func preflight(root string, args []string) (bin string, res checkkit.Result, don
 	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
 		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
 	}
-	if len(walkfs.FilesByExt(root, packageJSONName)) == 0 {
+	if !nodejs.Applies(root) {
 		return "", checkkit.Pass(0), true
 	}
 	if biome.Chosen(root) {
 		return "", formatWithBiome(root, args), true
 	}
-	if bin = resolvePrettierBin(root); bin == "" {
+	bin, found := nodejs.FindTool(root, "prettier")
+	if !found {
 		return "", checkkit.Fail(0, notInstalled), true
 	}
 	return bin, checkkit.Result{}, false
@@ -182,36 +184,16 @@ var prettierToBiome = map[string][]string{
 	"--ignore-unknown": nil, "-u": nil,
 }
 
-// walkUp calls fn on root (absolute) and each ancestor, returning fn's first
-// non-empty answer; "" when the filesystem root is passed without a hit.
-func walkUp(root string, fn func(dir string) string) string {
-	dir := root
-	if abs, err := filepath.Abs(root); err == nil {
-		dir = abs
-	}
-	for {
-		if p := fn(dir); p != "" {
-			return p
-		}
-		parent := filepath.Dir(dir)
-		if parent == dir {
-			return ""
-		}
-		dir = parent
-	}
-}
-
 // nodeModulesDirs lists every node_modules folder from root up to the
 // filesystem root, nearest first, the same walk that finds the binary.
 func nodeModulesDirs(root string) []string {
 	var dirs []string
-	walkUp(root, func(dir string) string {
+	for _, dir := range nodejs.Ancestors(root) {
 		p := filepath.Join(dir, "node_modules")
 		if info, err := os.Stat(p); err == nil && info.IsDir() {
 			dirs = append(dirs, p)
 		}
-		return ""
-	})
+	}
 	return dirs
 }
 
@@ -236,25 +218,6 @@ func withNodePath(env []string, root string) []string {
 		dirs = append(dirs, existing)
 	}
 	return append(out, "NODE_PATH="+strings.Join(dirs, string(os.PathListSeparator)))
-}
-
-// resolvePrettierBin finds the Prettier executable: node_modules/.bin walking
-// up from root, then PATH. Empty when not installed anywhere.
-func resolvePrettierBin(root string) string {
-	if bin := walkUp(root, func(dir string) string {
-		p := filepath.Join(dir, "node_modules", ".bin", "prettier")
-		if info, err := os.Stat(p); err == nil && !info.IsDir() && info.Mode()&0o111 != 0 {
-			return p
-		}
-		return ""
-	}); bin != "" {
-		return bin
-	}
-	bin, err := exec.LookPath("prettier")
-	if err != nil {
-		return ""
-	}
-	return bin
 }
 
 // hasPrettierInPackageJSON reports a non-null "prettier" field in
