@@ -32,7 +32,7 @@ var prSpec = mdtemplate.Spec{
 }
 
 func run(_ string, args []string) (checkkit.Result, error) {
-	return bodycheck.Run(args, func(body string) []string {
+	return bodycheck.RunIf(args, bodycheck.PRBody, func(body string) []string {
 		return mdtemplate.Validate(body, prSpec)
 	})
 }

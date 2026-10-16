@@ -19,7 +19,11 @@ A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Gi
 
 The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`, which comments, labels, hides old verdicts, or reopens.
 
-A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). `--checks=name,name` narrows the set. It exits 0 when all pass, 1 on a finding, and 2 on an empty text, `--all`, or a check name.
+### Judging a draft
+
+A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). It sets `FITNESS_BLOB`, so a body check passes inert on text of another kind and is listed as not applying.
+
+`--checks=name,name` narrows the set. It exits 0 when all pass and 1 on a finding. A missing or empty text, no blob check selected, `--all`, or a check name exits 2.
 
 ## Local branch metadata
 
