@@ -19,6 +19,49 @@ func Test0003_1(t *testing.T) {
 	}
 }
 
+func Test0003_2(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	out, _ := fitness(t, repo, nil)
+	cells := rowCells(out)
+	want := strings.Fields(catalogRows)
+	if len(cells) != len(want) {
+		t.Fatalf("fitness printed %d rows, want %d:\n%s", len(cells), len(want), out)
+	}
+	for i, check := range want {
+		if !names(cells[i], check) {
+			t.Errorf("row %d is %q, want %s", i+1, cells[i], check)
+		}
+	}
+}
+
+// catalogRows is the order the result rows have always printed in.
+const catalogRows = `
+read-repo-first semantic-commit plan-trailer issue-link-once commit-attribution
+changelog changelog-updated changelog-bullets release-changelog cspell jscpd
+gitignore-why no-plans-dir doc-template requirements architecture-contract
+architecture-actors architecture-containers architecture-components
+architecture-code architecture-journey no-contrastive-reframing
+repeated-string-literals markdown-front-matter markdown-filename-kebab-case
+markdown-filename-camel-case markdown-links markdown-no-bold-italic
+text-readability prose-budget mermaid-callouts mermaid-callout-why
+mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
+mermaid-level-bleed plan-structure pr-structure pr-closes-issue issue-checklist
+local-branch go-complexity go-vet gofmt go-test build-output-untracked swiftlint
+eslint prettier no-eslint-disable node-version dependency-currency
+vitest-coverage-exclude vitest-coverage-full`
+
+// rowCells returns the check cell of each results-table row, top to bottom.
+func rowCells(out string) []string {
+	var cells []string
+	for _, line := range strings.Split(out, "\n") {
+		if m := resultRow.FindStringSubmatch(line); m != nil {
+			cells = append(cells, m[1])
+		}
+	}
+	return cells
+}
+
 // inActions runs the one-liner in repo as a GitHub Actions job does, and
 // returns what it printed, its exit code, and the job summary it wrote.
 func inActions(t *testing.T, repo string) (string, int, string) {

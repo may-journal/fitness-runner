@@ -20,6 +20,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -28,62 +29,8 @@ import (
 // allChecks is the org default and the catalog for explicit external lists.
 // Org checks self-gate when their language, tool, config, or input is absent.
 // External policy also defaults to the full catalog, with optional selection.
-var allChecks = []string{
-	"read-repo-first",
-	"semantic-commit",
-	"plan-trailer",
-	"issue-link-once",
-	"commit-attribution",
-	"changelog",
-	"changelog-updated",
-	"changelog-bullets",
-	"release-changelog",
-	"cspell",
-	"jscpd",
-	"gitignore-why",
-	"no-plans-dir",
-	"doc-template",
-	"requirements",
-	"architecture-contract",
-	"architecture-actors",
-	"architecture-containers",
-	"architecture-components",
-	"architecture-code",
-	"architecture-journey",
-	"no-contrastive-reframing",
-	"repeated-string-literals",
-	"markdown-front-matter",
-	"markdown-filename-kebab-case",
-	"markdown-filename-camel-case",
-	"markdown-links",
-	"markdown-no-bold-italic",
-	"text-readability",
-	"prose-budget",
-	"mermaid-callouts",
-	"mermaid-callout-why",
-	"mermaid-diagram-prose",
-	"mermaid-diagram-table-gap",
-	"mermaid-legend",
-	"mermaid-level-bleed",
-	"plan-structure",
-	"pr-structure",
-	"pr-closes-issue",
-	"issue-checklist",
-	"local-branch",
-	"go-complexity",
-	"go-vet",
-	"gofmt",
-	"go-test",
-	"build-output-untracked",
-	"swiftlint",
-	"eslint",
-	"prettier",
-	"no-eslint-disable",
-	"node-version",
-	"dependency-currency",
-	"vitest-coverage-exclude",
-	"vitest-coverage-full",
-}
+// The language registry in internal/lang lists it, module by module.
+var allChecks = lang.Checks()
 
 // resolved is one runnable check: its binary and describe metadata.
 type resolved struct {

@@ -17,7 +17,7 @@ C4Component
         }
         Container_Boundary(runner, "Run loop") {
             Component(config, "3 Config loader", ".fitnessrc.json")
-            Component(resolve, "4 Check resolver", "allChecks minus disabled")
+            Component(resolve, "4 Check resolver", "allChecks from the module registry")
             Component(execute, "5 Execution pool", "goroutines + group kill")
             Component(output, "6 Results renderer", "internal/render")
         }
@@ -72,7 +72,7 @@ Numbers on nodes and arrows match the callout table.
 | 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
 | 2   | `go/cmd/fitness` — `main.go` routes the subcommands, else argv, resolve, execute, render.               | No build step, no interpreter startup.                      |
 | 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
-| 4   | Ordered check list: the CLI name, else the embedded `allChecks` list.                                   | One place for check resolution (single name or full list).  |
+| 4   | Ordered check list: the CLI name, else `allChecks`, which the language module registry lists.           | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
 | 7   | One static binary per check name (`go/cmd/fitness-check-*`), discovered beside the runner then on PATH. | Plugin model at the artifact level; no registry.            |
@@ -98,7 +98,7 @@ Numbers on nodes and arrows match the callout table.
 `go/cmd/fitness` produces an ordered name list, then resolves each name to `fitness-check-<name>` beside the runner, then on PATH:
 
 1. A CLI name (`fitness prettier`) — run only that built-in check; an unknown name is an error.
-2. Otherwise — the embedded `allChecks` list, in order. A missing binary for a listed check fails the run.
+2. Otherwise — the `allChecks` list, in order: each module's checks in [registry](../../go/internal/lang/lang.go) order. A missing binary for a listed check fails the run.
 
 Every check runs in every repo and passes clean with zero files when it does not apply. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning.
 

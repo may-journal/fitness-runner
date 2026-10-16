@@ -26,6 +26,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
@@ -73,14 +74,19 @@ func walkFiles(root string) checkkit.Result {
 }
 
 // lockfiles names the files package managers write and rewrite on every
-// install. Their words are package names and hashes no one can fix.
-var lockfiles = map[string]bool{
-	"package-lock.json": true, "npm-shrinkwrap.json": true, "yarn.lock": true,
-	"pnpm-lock.yaml": true, "bun.lock": true, "bun.lockb": true, "deno.lock": true,
-	"Package.resolved": true, "go.sum": true, "Cargo.lock": true,
-	"Gemfile.lock": true, "composer.lock": true, "poetry.lock": true,
-	"uv.lock": true, "mix.lock": true, "flake.lock": true,
-	"packages.lock.json": true,
+// install. Their words are package names and hashes no one can fix. Each
+// language module names its own; ecosystems with no module are listed here.
+var lockfiles = lockfileSet(lang.Lockfiles(),
+	"Cargo.lock", "Gemfile.lock", "composer.lock", "poetry.lock",
+	"uv.lock", "mix.lock", "flake.lock", "packages.lock.json")
+
+// lockfileSet joins the module lockfiles and the others into one lookup.
+func lockfileSet(modules []string, others ...string) map[string]bool {
+	set := map[string]bool{}
+	for _, name := range append(modules, others...) {
+		set[name] = true
+	}
+	return set
 }
 
 // targets lists the files to spell-check: the changed files, or every

@@ -6,6 +6,8 @@ import (
 	_ "embed"
 	"strings"
 	"sync"
+
+	"github.com/may-journal/fitness-runner/go/internal/lang"
 )
 
 // The embedded base dictionaries are committed plain-text wordlists derived
@@ -63,25 +65,48 @@ var dictShell string
 //go:embed dict/git.txt
 var dictGit string
 
-// embeddedDicts lists every embedded wordlist, biggest hit rates first
-// (en-us resolves most natural-language lookups). TestEmbeddedDictNames pins
-// this table to dict/*.txt on disk so a newly generated list cannot be
-// silently left out.
-var embeddedDicts = []struct{ name, data string }{
-	{"en-us.txt", dictEnUS},
-	{"software-terms.txt", dictSoftwareTerms},
-	{"golang.txt", dictGolang},
-	{"node.txt", dictNode},
-	{"npm.txt", dictNpm},
-	{"typescript.txt", dictTypescript},
-	{"html.txt", dictHTML},
-	{"companies.txt", dictCompanies},
-	{"aws.txt", dictAWS},
-	{"css.txt", dictCSS},
-	{"fullstack.txt", dictFullstack},
-	{"filetypes.txt", dictFiletypes},
-	{"shell.txt", dictShell},
-	{"git.txt", dictGit},
+// dictData maps each embedded wordlist's file name to its words.
+var dictData = map[string]string{
+	"en-us.txt":          dictEnUS,
+	"software-terms.txt": dictSoftwareTerms,
+	"golang.txt":         dictGolang,
+	"node.txt":           dictNode,
+	"npm.txt":            dictNpm,
+	"typescript.txt":     dictTypescript,
+	"html.txt":           dictHTML,
+	"companies.txt":      dictCompanies,
+	"aws.txt":            dictAWS,
+	"css.txt":            dictCSS,
+	"fullstack.txt":      dictFullstack,
+	"filetypes.txt":      dictFiletypes,
+	"shell.txt":          dictShell,
+	"git.txt":            dictGit,
+}
+
+// embeddedDicts lists the wordlists the language modules name, in registry
+// order: the repo-wide lists first (en-us resolves most natural-language
+// lookups), then each language's. A word found in any list is known, so the
+// order changes speed, never a verdict.
+var embeddedDicts = moduleDicts(lang.Dicts())
+
+// moduleDicts pairs each named wordlist with its embedded words. It panics at
+// start-up when a module names a file that is not embedded, or when an
+// embedded file is named by no module or by two, so no list drops out.
+func moduleDicts(names []string) []string {
+	out := make([]string, 0, len(names))
+	seen := map[string]bool{}
+	for _, name := range names {
+		data, ok := dictData[name]
+		if !ok || seen[name] {
+			panic("spell: " + name + " is not embedded once")
+		}
+		seen[name] = true
+		out = append(out, data)
+	}
+	if len(out) != len(dictData) {
+		panic("spell: an embedded dictionary is in no language module")
+	}
+	return out
 }
 
 // embeddedDict looks words up directly in the embedded wordlists, memoizing
@@ -118,8 +143,8 @@ func (d *embeddedDict) Lookup(word string) bool {
 
 // searchEmbedded binary-searches every embedded wordlist for word.
 func searchEmbedded(word string) bool {
-	for _, ed := range embeddedDicts {
-		if searchLines(ed.data, word) {
+	for _, data := range embeddedDicts {
+		if searchLines(data, word) {
 			return true
 		}
 	}
