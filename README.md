@@ -47,6 +47,7 @@ fitness                      # full configured suite
 fitness --policy=external     # all checks, each decides applicability
 fitness prettier             # one check by name
 fitness prettier --write .   # passthrough args reach the check
+fitness --blob - < draft.md  # run every blob-capable check on a text, here stdin
 fitness init                 # install the shared git hooks into a repo
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
 fitness pr-check             # validate PR titles and descriptions (in GitHub Actions)

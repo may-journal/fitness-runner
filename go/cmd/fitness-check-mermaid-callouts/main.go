@@ -15,7 +15,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-callouts"},
+		Describe: checkkit.Describe{Name: "mermaid-callouts", Blob: true},
 		Run:      run,
 	})
 }

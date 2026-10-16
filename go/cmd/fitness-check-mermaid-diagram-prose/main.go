@@ -21,7 +21,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-diagram-prose"},
+		Describe: checkkit.Describe{Name: "mermaid-diagram-prose", Blob: true},
 		Run:      run,
 	})
 }

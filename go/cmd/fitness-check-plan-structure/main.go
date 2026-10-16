@@ -16,7 +16,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "plan-structure", ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "plan-structure", Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

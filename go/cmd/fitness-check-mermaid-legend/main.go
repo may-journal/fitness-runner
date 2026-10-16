@@ -18,7 +18,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-legend"},
+		Describe: checkkit.Describe{Name: "mermaid-legend", Blob: true},
 		Run:      run,
 	})
 }

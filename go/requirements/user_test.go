@@ -74,11 +74,21 @@ func mustDo(t *testing.T, err error) {
 // no args it runs the full suite.
 func fitness(t *testing.T, repo string, env []string, args ...string) (string, int) {
 	t.Helper()
+	return piped(t, repo, "", env, args...)
+}
+
+// piped runs the one-liner like fitness, with stdin as the text a user pipes
+// in; empty stdin means none.
+func piped(t *testing.T, repo, stdin string, env []string, args ...string) (string, int) {
+	t.Helper()
 	if len(args) == 0 {
 		args = []string{"--policy=external", "--all"}
 	}
 	cmd := exec.Command(installer(t), append([]string{"--"}, args...)...)
 	cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
+	}
 	out, err := cmd.CombinedOutput()
 	var exit *exec.ExitError
 	if err != nil && !errors.As(err, &exit) {
