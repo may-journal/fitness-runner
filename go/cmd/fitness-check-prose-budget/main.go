@@ -54,7 +54,7 @@ var (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "prose-budget"},
+		Describe: checkkit.Describe{Name: "prose-budget", Blob: true},
 		Run:      run,
 	})
 }

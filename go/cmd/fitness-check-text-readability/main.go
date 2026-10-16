@@ -43,7 +43,7 @@ type thresholds struct {
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "text-readability"},
+		Describe: checkkit.Describe{Name: "text-readability", Blob: true},
 		Run:      run,
 	})
 }

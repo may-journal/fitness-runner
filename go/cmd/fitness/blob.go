@@ -1,0 +1,199 @@
+package main
+
+import (
+	"errors"
+	"fmt"
+	"io"
+	"os"
+	"slices"
+	"strings"
+	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/internal/report"
+)
+
+// blobFlag runs every blob-capable check on a text instead of the repo.
+const blobFlag = "--blob"
+
+// usageExit is the exit code for a command line the runner cannot run.
+const usageExit = 2
+
+// blobRequest is a parsed `fitness --blob` command line.
+type blobRequest struct {
+	text   string
+	checks []string
+	// values holds each --blob value seen; exactly one is valid.
+	values []string
+}
+
+// hasBlobFlag reports whether argv asks for blob mode.
+func hasBlobFlag(argv []string) bool {
+	for _, a := range argv {
+		if a == blobFlag || strings.HasPrefix(a, blobFlag+"=") {
+			return true
+		}
+	}
+	return false
+}
+
+// runBlob runs the blob-capable checks on the text argv names, listing the
+// checks that need files as skipped. It never reads repo files, the staged
+// diff, or a PR, so its result depends on the text alone.
+func runBlob(argv []string) int {
+	req, err := parseBlob(argv, os.Stdin)
+	if err != nil {
+		report.Error("fitness --blob", err)
+		return usageExit
+	}
+	root, err := os.Getwd()
+	if err != nil {
+		report.Error("fitness --blob", err)
+		return 1
+	}
+	run, skipped, err := blobChecks(req.checks)
+	if err != nil {
+		report.Error("fitness --blob", err)
+		return usageExit
+	}
+	return judgeBlob(root, req.text, run, skipped)
+}
+
+// judgeBlob saves text where the checks read it with --body-file, runs them,
+// and prints the usual summary with the skipped checks named.
+func judgeBlob(root, text string, checks []resolved, skipped []string) int {
+	file, err := metadata.WriteBody(text)
+	if err != nil {
+		report.Error("fitness --blob", err)
+		return 1
+	}
+	defer os.Remove(file)
+	start := time.Now()
+	fmt.Fprintln(os.Stderr, "Running checks:")
+	outcomes := runPool(root, checks, []string{"--body-file", file}, blobEnv(checks))
+	rows, success, failure, files := summarize(checks, outcomes)
+	elapsed := time.Since(start).Milliseconds()
+	printSummary(rows, success, failure, files, elapsed)
+	if len(skipped) > 0 {
+		out := os.Stdout
+		if failure > 0 {
+			out = os.Stderr
+		}
+		fmt.Fprintf(out, "Skipped (needs files): %s\n", strings.Join(skipped, ", "))
+	}
+	return finish(rows, success, failure, files, elapsed)
+}
+
+// parseBlob reads `--blob <text>`, `--blob=<text>`, or `--blob -` (stdin),
+// plus an optional `--checks=a,b`. Anything else, such as --all or a check
+// name, is a usage error, and so is an empty text.
+func parseBlob(argv []string, stdin io.Reader) (blobRequest, error) {
+	var req blobRequest
+	for i := 0; i < len(argv); i++ {
+		consumed, err := req.take(argv, i)
+		if err != nil {
+			return req, err
+		}
+		i += consumed - 1
+	}
+	if len(req.values) != 1 {
+		return req, errors.New("use --blob once")
+	}
+	return withText(req, req.values[0], stdin)
+}
+
+// take consumes argv[i], a --blob value or a --checks list, and returns how
+// many tokens it used; anything else is a usage error.
+func (r *blobRequest) take(argv []string, i int) (int, error) {
+	if v, consumed, ok := blobValue(argv, i); ok {
+		r.values = append(r.values, v)
+		return consumed, nil
+	}
+	if list, ok := strings.CutPrefix(argv[i], "--checks="); ok && r.checks == nil {
+		r.checks = strings.Split(list, ",")
+		return 1, nil
+	}
+	if argv[i] == blobFlag {
+		return 0, errors.New("--blob needs a text, or - to read stdin")
+	}
+	return 0, fmt.Errorf("--blob runs alone or with --checks=name,name; remove %q", argv[i])
+}
+
+// blobValue reads `--blob=<text>` or `--blob <text>` at argv[i], with how
+// many tokens it spans.
+func blobValue(argv []string, i int) (string, int, bool) {
+	if v, ok := strings.CutPrefix(argv[i], blobFlag+"="); ok {
+		return v, 1, true
+	}
+	if argv[i] == blobFlag && i+1 < len(argv) {
+		return argv[i+1], 2, true
+	}
+	return "", 0, false
+}
+
+// withText fills in the text, reading stdin for "-", and rejects an empty
+// one.
+func withText(req blobRequest, value string, stdin io.Reader) (blobRequest, error) {
+	if value == "-" {
+		raw, err := io.ReadAll(stdin)
+		if err != nil {
+			return req, err
+		}
+		value = string(raw)
+	}
+	if strings.TrimSpace(value) == "" {
+		return req, errors.New("--blob needs a nonempty text")
+	}
+	req.text = value
+	return req, nil
+}
+
+// blobChecks resolves the catalog, or the --checks selection, and splits it
+// into the checks that declare blob input and the names of those that need
+// files.
+func blobChecks(selected []string) (run []resolved, skipped []string, err error) {
+	names, err := blobSelection(selected)
+	if err != nil {
+		return nil, nil, err
+	}
+	checks, err := resolveList(names)
+	if err != nil {
+		return nil, nil, err
+	}
+	for _, c := range checks {
+		if c.desc.Blob {
+			run = append(run, c)
+		} else {
+			skipped = append(skipped, c.name)
+		}
+	}
+	return run, skipped, nil
+}
+
+// blobSelection returns the names to consider: every check, or the
+// --checks list when it names only known checks, each once.
+func blobSelection(selected []string) ([]string, error) {
+	if selected == nil {
+		return allChecks, nil
+	}
+	for i, name := range selected {
+		if !slices.Contains(allChecks, name) || slices.Contains(selected[:i], name) {
+			return nil, fmt.Errorf("--checks names an unknown, empty, or repeated check %q", name)
+		}
+	}
+	return selected, nil
+}
+
+// blobEnv is the environment blob checks get: no changed or staged files and
+// no commit message, so nothing but the text reaches them.
+func blobEnv(checks []resolved) []string {
+	env := os.Environ()
+	for _, name := range []string{"FITNESS_CHANGED_FILES", "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE"} {
+		env = withoutVar(env, name)
+	}
+	names := make([]string, len(checks))
+	for i, c := range checks {
+		names[i] = c.name
+	}
+	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"))
+}

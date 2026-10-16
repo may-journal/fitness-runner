@@ -44,6 +44,7 @@ flowchart TB
     terminal[2 Terminal<br/>Req 0001]:::screen
     runFull(3 Run fitness<br/>Req 0001):::action
     runSingle(4 Run single check<br/>Req 0001):::action
+    runBlob(29 Check a draft text<br/>Req 0077):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003)]:::system
@@ -78,11 +79,13 @@ flowchart TB
     terminal --> runSingle
     terminal --> commitHook
     terminal --> pushHook
+    terminal --> runBlob
     commitHook --> runFull
     pushHook --> runFull
     runFull --> resolveConfig
     runSingle --> executeChecks
     runSingle --> passArgs
+    runBlob --> executeChecks
     resolveConfig --> executeChecks
     resolveConfig --> configError
     executeChecks --> checks
@@ -136,3 +139,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 26  | Repo hygiene checks.                | System  | No build output, plan files, unexplained ignores, or copied code.                     |
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI.            |
 | 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |
+| 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |

@@ -9,7 +9,7 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 - stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n}`
 - stderr — human display output (banners, tool passthrough)
 - exit code — 0 when the check ran and passed, 1 ran and failed, other values mean it crashed
-- `--describe` — prints check metadata (name, timeout budget, context-inline arg) so the runner needs no registry
+- `--describe` — prints check metadata (name, timeout budget, context-inline arg, blob flag) so the runner needs no registry
 
 The runner executes checks in a bounded parallel pool with per-check timeouts. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table, and the run exits 1 when any check fails.
 
@@ -18,6 +18,8 @@ The runner executes checks in a bounded parallel pool with per-check timeouts. A
 A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Given `--body-file`, it reads that body and reports it as one file. Checks never call GitHub themselves.
 
 The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`, which comments, labels, hides old verdicts, or reopens.
+
+A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). `--checks=name,name` narrows the set. It exits 0 when all pass, 1 on a finding, and 2 on an empty text, `--all`, or a check name.
 
 ## Local branch metadata
 

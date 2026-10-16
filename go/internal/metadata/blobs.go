@@ -37,7 +37,7 @@ type blobChecker struct{ root string }
 
 // judge runs each check on body and returns their findings.
 func (b blobChecker) judge(checks []string, body string) []string {
-	file, err := writeBody(body)
+	file, err := WriteBody(body)
 	if err != nil {
 		return []string{err.Error()}
 	}
@@ -62,7 +62,7 @@ func (b blobChecker) errorsOf(name string, args ...string) []string {
 // closedIssues lists the issues body closes, parsed by pr-closes-issue so the
 // Plan side and PR side share one keyword set.
 func (b blobChecker) closedIssues(body string) []int {
-	file, err := writeBody(body)
+	file, err := WriteBody(body)
 	if err != nil {
 		return nil
 	}
@@ -86,9 +86,9 @@ func execCheck(name string, args []string) []byte {
 	return stdout.Bytes()
 }
 
-// writeBody saves body to a temp file for the --body-file checks; the caller
+// WriteBody saves body to a temp file for the --body-file checks; the caller
 // removes it.
-func writeBody(body string) (string, error) {
+func WriteBody(body string) (string, error) {
 	f, err := os.CreateTemp("", "fitness-body-*.md")
 	if err != nil {
 		return "", err
@@ -160,7 +160,7 @@ func requiredClosures(closed []linkedIssue, b blobChecker) []int {
 // closesErrors runs pr-closes-issue on body, requiring each of required to
 // be closed too.
 func closesErrors(body string, required []int, b blobChecker) []string {
-	file, err := writeBody(body)
+	file, err := WriteBody(body)
 	if err != nil {
 		return []string{err.Error()}
 	}

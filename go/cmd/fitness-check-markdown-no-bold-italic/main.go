@@ -26,7 +26,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "markdown-no-bold-italic"},
+		Describe: checkkit.Describe{Name: "markdown-no-bold-italic", Blob: true},
 		Run:      run,
 	})
 }

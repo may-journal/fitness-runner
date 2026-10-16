@@ -17,7 +17,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "issue-checklist", ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "issue-checklist", Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

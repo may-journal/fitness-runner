@@ -33,6 +33,9 @@ type Describe struct {
 	// extracts from single-check argv into FITNESS_CTX_MESSAGE and strips
 	// from passthrough. Empty when the check takes no inline context.
 	ContextInlineArg string `json:"contextInlineArg,omitempty"`
+	// Blob marks a check that judges a text given with `--body-file`, so
+	// `fitness --blob` runs it; the rest need files and are skipped there.
+	Blob bool `json:"blob,omitempty"`
 }
 
 // Check is one check implementation: its metadata and run function.
