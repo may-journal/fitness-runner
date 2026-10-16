@@ -143,7 +143,7 @@ After downloading the installer, run this once from the consumer repository root
 "$HOME/.local/fitness/fitness-install-1.2.0-linux-amd64" --install-hook -- --policy=external --all
 ```
 
-This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, or automatic file fix is involved.
+This installs a compiled Go `pre-commit` executable and its check settings into Git's active hook directory. With no commit-msg hook, its `semantic-commit` judges the branch's earlier commits, so a bad subject fails the next commit. It refuses to replace existing hooks or their settings. No shell wrapper, Go toolchain, or automatic file fix is involved.
 
 The hook checks working-tree files, not an isolated staged snapshot. A failed check blocks the commit; CI runs independently of local hooks. Teams with an existing hook manager can invoke the installer through that manager instead.
 

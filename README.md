@@ -60,9 +60,11 @@ fitness close-check          # reopen an issue closed with unchecked items (in G
 
 In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
 
-- commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message.
-- pre-commit: checks the staged files, then a repo's own `.githooks/pre-commit.local`.
+- commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message being written.
+- pre-commit: checks the staged files, then a repo's own `.githooks/pre-commit.local`. It skips `semantic-commit` when a commit-msg hook will judge the new message.
 - pre-push: blocks the push unless the branch or its PR names an approved `Plan` Issue, via `gh`; chore/docs pushes are exempt.
+
+A full run, such as `fitness --all`, has `semantic-commit` judge only the branch's own commits. See [its README](go/cmd/fitness-check-semantic-commit/README.md#which-message-it-judges) for how it finds the base.
 
 ## GitHub Actions
 

@@ -2,6 +2,8 @@
 package gitx
 
 import (
+	"context"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -59,13 +61,27 @@ func HeadMessage(root string) string {
 }
 
 // DefaultBase returns origin's default branch as a ref, such as origin/main,
-// falling back to origin/main when origin/HEAD is unset.
+// falling back to origin/main when it is unknown.
 func DefaultBase(root string) string {
+	if base := knownDefaultBase(root); base != "" {
+		return base
+	}
+	return "origin/main"
+}
+
+// knownDefaultBase is origin/HEAD's target, else a fetched origin/main or
+// origin/master; empty when none is known.
+func knownDefaultBase(root string) string {
 	out, err := exec.Command("git", "-C", root, "symbolic-ref", "--short", "refs/remotes/origin/HEAD").Output()
 	if ref := strings.TrimSpace(string(out)); err == nil && ref != "" {
 		return ref
 	}
-	return "origin/main"
+	for _, ref := range []string{"origin/main", "origin/master"} {
+		if exists(root, ref) {
+			return ref
+		}
+	}
+	return ""
 }
 
 // OwnCommits returns the commits reachable from tip that no origin branch
@@ -78,11 +94,59 @@ func OwnCommits(root, tip, branch string) []string {
 	if branch == "" || !exists(root, DefaultBase(root)) {
 		return BranchCommits(root, tip, DefaultBase(root))
 	}
-	out, err := exec.Command("git", "-C", root, "rev-list", tip, "--not", "--exclude=origin/"+branch, "--remotes=origin").Output()
+	return notOnOrigin(root, tip, branch)
+}
+
+// notOnOrigin returns the commits reachable from tip that no origin branch
+// holds, newest first, leaving origin/<keep> out of that set when keep is
+// set; nil on any git failure.
+func notOnOrigin(root, tip, keep string) []string {
+	args := []string{"-C", root, "rev-list", tip, "--not"}
+	if keep != "" {
+		args = append(args, "--exclude=origin/"+keep)
+	}
+	out, err := exec.Command("git", append(args, "--remotes=origin")...).Output()
 	if err != nil {
 		return nil
 	}
 	return strings.Fields(string(out))
+}
+
+// BranchOwnCommits returns the commits the checked-out work adds over its
+// base, newest first, and whether a base was found. A pull request run in
+// GitHub Actions starts from the fetched GITHUB_BASE_REF branch, as the
+// local-branch check does. Locally, a branch counts the commits no other
+// origin branch holds, whatever the default branch is called. The default
+// branch, a detached HEAD, or any branch while the default is unknown
+// counts only the commits origin lacks. Without origin refs, ok is false.
+func BranchOwnCommits(root string) (commits []string, ok bool) {
+	if base := FetchedBase(context.Background(), root, os.Getenv("GITHUB_BASE_REF")); base != "" {
+		return BranchCommits(root, "HEAD", base), true
+	}
+	out, _ := exec.Command("git", "-C", root, "for-each-ref", "--count=1", "refs/remotes/origin/").Output()
+	if len(strings.TrimSpace(string(out))) == 0 {
+		return nil, false
+	}
+	return notOnOrigin(root, "HEAD", featureBranch(root)), true
+}
+
+// featureBranch is the checked-out branch, or empty on the default branch, on
+// a detached HEAD, or while the default branch is unknown.
+func featureBranch(root string) string {
+	branch, base := CurrentBranch(root), knownDefaultBase(root)
+	if base == "" || "origin/"+branch == base {
+		return ""
+	}
+	return branch
+}
+
+// FetchedBase is the commit origin's branch points to locally, or empty.
+func FetchedBase(ctx context.Context, root, branch string) string {
+	if branch == "" {
+		return ""
+	}
+	out, _ := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+branch+"^{commit}").Output()
+	return strings.TrimSpace(string(out))
 }
 
 // CurrentBranch returns the checked-out branch's short name; empty when
