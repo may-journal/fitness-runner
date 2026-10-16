@@ -36,7 +36,10 @@ func (c Client) PublishNotes(ctx context.Context, tag string) error {
 	if tag == "" {
 		return fmt.Errorf("GITHUB_REF_NAME is empty; run release-notes for a release tag")
 	}
-	since := changelog.PreviousTag(c.Root, tag)
+	since, err := changelog.PreviousTag(c.Root, tag)
+	if err != nil {
+		return err
+	}
 	entries, err := changelog.AddedSince(c.Root, since, tag)
 	if err != nil {
 		return err

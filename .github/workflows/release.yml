@@ -81,23 +81,25 @@ jobs:
           draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
           case "$draft" in true|false) ;; *) exit 1 ;; esac
           printf 'draft=%s\n' "$draft" >> "$GITHUB_OUTPUT"
-      - name: Publish tested assets with GoReleaser
+      # The notes go on while the release is a draft, so a failure here leaves
+      # it unpublished, and GoReleaser keeps them when it publishes.
+      - name: Write the release notes from changelog entry files
         if: ${{ steps.publication.outputs.draft == 'true' }}
         id: report-step-1
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          chmod +x out/fitness-release-linux-amd64
+          out/fitness-release-linux-amd64 release-notes
+      - name: Publish tested assets with GoReleaser
+        if: ${{ steps.publication.outputs.draft == 'true' }}
+        id: report-step-2
         uses: goreleaser/goreleaser-action@v7.2.3
         with:
           version: v2.18.2
           args: release --clean --skip=archive --config .goreleaser-publish.yml
         env:
           GITHUB_TOKEN: ${{ github.token }}
-      # Runs on every retry too: the notes depend only on the tag's history.
-      - name: Write the release notes from changelog entry files
-        id: report-step-2
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x out/fitness-release-linux-amd64
-          out/fitness-release-linux-amd64 release-notes
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

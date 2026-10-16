@@ -54,11 +54,13 @@ func entryApply(t *testing.T, repo string, commits []map[string]string) {
 // entryActions runs pr-check in Actions on repo's branch, its PR described
 // by body. GitHub answers the PR's files with the branch's changed entry
 // files, as its files API sends them, and nothing for any other files read.
-func entryActions(t *testing.T, repo, body string) (string, int) {
+// It answers released first, then that the repo has no release.
+func entryActions(t *testing.T, repo, body string, released ...response) (string, int) {
 	t.Helper()
 	files := response{Match: []string{"repos/" + repo0014 + "/pulls/1/files"}}
 	entries := response{Match: []string{"repos/" + repo0014 + "/pulls/1/files", "startswith"}, Stdout: entryFilesAnswer(t, repo)}
-	rp := standIn(t, map[string][]response{"gh": {entries, files, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan")}})
+	saved := append(released, entries, files, entryNoRelease, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
+	rp := standIn(t, map[string][]response{"gh": saved})
 	pr := map[string]any{"number": 1, "title": "test(app): add one file", "body": body}
 	env := event0014(t, "pull_request", map[string]any{"action": "synchronize", "pull_request": pr})
 	return fitness(t, repo, append(rp.env, env...), "pr-check")
@@ -96,10 +98,12 @@ func entryFilesAnswer(t *testing.T, repo string) string {
 	return answer.String()
 }
 
-// entryLocal runs branch-check on repo's branch before it is pushed.
-func entryLocal(t *testing.T, repo string, pr response) (string, int) {
+// entryLocal runs branch-check on repo's branch before it is pushed, with
+// GitHub answering released first, then that the repo has no release.
+func entryLocal(t *testing.T, repo string, pr response, released ...response) (string, int) {
 	t.Helper()
-	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))})
+	saved := append(released, branchGitHub(pr, entryNoRelease, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))...)
+	rp := standIn(t, map[string][]response{"gh": saved})
 	return fitness(t, repo, rp.env, "branch-check")
 }
 
@@ -165,7 +169,7 @@ func Test0069_14(t *testing.T) {
 	sees(t, local, localCode, 0, "pr-check #1")
 }
 
-func Test0069_15(t *testing.T) {
+func Test0069_24(t *testing.T) {
 	t.Parallel()
 	repo, pr := entryCommits(t, nil, entryFileBody("changelog/2026-10-10-0900-a-file.md"),
 		map[string]string{"changelog/2026-10-10-0900-a-file.md": entryFileText(entryFirst, "Feat: add one file.")},
@@ -175,6 +179,7 @@ func Test0069_15(t *testing.T) {
 	sees(t, out, code, 1, want)
 	local, localCode := entryLocal(t, repo, pr)
 	sees(t, local, localCode, 1, want)
+	entryUndated(t)
 }
 
 func Test0069_17(t *testing.T) {
@@ -190,8 +195,10 @@ func Test0069_17(t *testing.T) {
 	sees(t, out, code, 1, "PR description copies the "+entryFirstFile+" line", "Feat: add one file to the app.", "link the entry instead")
 }
 
-func Test0069_19(t *testing.T) {
-	t.Parallel()
+// entryUndated asserts pr-check and branch-check fail a PR adding an entry
+// file whose name lacks its heading's date, naming the dated name.
+func entryUndated(t *testing.T) {
+	t.Helper()
 	const undated = "changelog/one-file.md"
 	repo, pr := entryCommits(t, nil, entryFileBody(undated), map[string]string{undated: entryFileText(entryFirst, "Feat: add one file.")})
 	want := undated + " must be named " + entryFirstFile + ": its heading's date, then the change"
@@ -258,24 +265,49 @@ func Test0069_21(t *testing.T) {
 	}
 }
 
-// entryNotes runs release-notes for v1.1.0 in a repo whose v1.0.0 tag holds
-// one entry file and whose v1.1.0 tag adds two more, with GitHub answering
-// that release 42 carries the tag. It returns the notes the tool sent.
-func entryNotes(t *testing.T) string {
+// entryOldFile is an entry file release v1.0.0 shipped.
+const entryOldFile = "changelog/2026-10-01-0900-old-file.md"
+
+// entryNoRelease is GitHub's answer for a repo with no release yet.
+var entryNoRelease = response{Match: []string{"releases?per_page=1"}}
+
+// entryReleased is GitHub's answer that release v1.0.0 is the newest and
+// its tag holds entryOldFile.
+func entryReleased() []response {
+	contents := "repos/" + repo0014 + "/contents"
+	return []response{
+		{Match: []string{"releases?per_page=1"}, Stdout: "v1.0.0\n"},
+		{Match: []string{contents + "?ref=v1.0.0"}, Stdout: "changelog\ngo\n"},
+		{Match: []string{contents + "/changelog?ref=v1.0.0"}, Stdout: entryOldFile + "\n"},
+	}
+}
+
+// entryShipped is the finding on an edit to entryOldFile, cut before the
+// angle brackets the Actions summary escapes.
+const entryShipped = entryOldFile + " shipped in v1.0.0, so its notes are published; leave it as it is and add a new changelog/"
+
+func Test0069_23(t *testing.T) {
+	t.Parallel()
+	old := entryFileText("2026.10.01.0900", "Feat: ship the old file.")
+	for _, edit := range []string{old + "- Fix: a late bullet.\n", ""} {
+		repo, pr := entryCommits(t, map[string]string{entryOldFile: old}, pr0014(11), map[string]string{entryOldFile: edit})
+		out, code := entryActions(t, repo, pr0014(11), entryReleased()...)
+		sees(t, out, code, 1, entryShipped)
+		local, localCode := entryLocal(t, repo, pr, entryReleased()...)
+		sees(t, local, localCode, 1, entryShipped)
+	}
+}
+
+// entryNotes runs release-notes for tag in repo, with GitHub answering that
+// release 42 carries it. It returns the notes the tool sent.
+func entryNotes(t *testing.T, repo, tag string) string {
 	t.Helper()
-	repo := releaseToolRepo(t, withEntries(map[string]string{"2026-10-01-0900-old-file": entryFileText("2026.10.01.0900", "Feat: ship the old file.")}))
-	git(t, repo, "tag", "v1.0.0")
-	commit(t, repo, map[string]string{
-		entryFirstFile: entryFileText(entryFirst, "Feat: add one file."),
-		entryLaterFile: entryFileText(entryLater, "Fix: tidy the file."),
-	}, "feat(app): add one file")
-	git(t, repo, "tag", "v1.1.0")
 	gh := []response{
-		{Match: []string{"repos/" + repo0014 + "/releases?per_page=100", `"v1.1.0"`}, Stdout: "42\n"},
+		{Match: []string{"repos/" + repo0014 + "/releases?per_page=100", `"` + tag + `"`}, Stdout: "42\n"},
 		{Match: []string{"--method PATCH", "repos/" + repo0014 + "/releases/42"}, Stdout: "{}\n"},
 	}
 	rp := standIn(t, map[string][]response{"gh": gh})
-	env := append(rp.env, "GITHUB_REF_NAME=v1.1.0", "GITHUB_REPOSITORY="+repo0014)
+	env := append(rp.env, "GITHUB_REF_NAME="+tag, "GITHUB_REPOSITORY="+repo0014)
 	out, code := releaseToolRun(t, repo, env, "release-notes")
 	sees(t, out, code, 0)
 	for _, c := range rp.calls("gh") {
@@ -287,13 +319,54 @@ func entryNotes(t *testing.T) string {
 	return ""
 }
 
+// entryTagged is a repo whose v1.0.0 tag, when old is set, holds one entry
+// file, and whose v1.1.0 tag adds two more.
+func entryTagged(t *testing.T, old bool) string {
+	t.Helper()
+	repo := releaseToolRepo(t, nil)
+	if old {
+		commit(t, repo, withEntries(map[string]string{"2026-10-01-0900-old-file": entryFileText("2026.10.01.0900", "Feat: ship the old file.")}), "feat(app): ship the old file")
+		git(t, repo, "tag", "v1.0.0")
+	}
+	commit(t, repo, map[string]string{
+		entryFirstFile: entryFileText(entryFirst, "Feat: add one file."),
+		entryLaterFile: entryFileText(entryLater, "Fix: tidy the file."),
+	}, "feat(app): add one file")
+	git(t, repo, "tag", "v1.1.0")
+	return repo
+}
+
 func Test0069_22(t *testing.T) {
 	t.Parallel()
-	notes := entryNotes(t)
-	if !entryOrdered(notes, "### "+entryLater, "Fix: tidy the file.", "### "+entryFirst, "Feat: add one file.", "[Compare view]("+entryCompare+")") {
+	newest := []string{"### " + entryLater, "Fix: tidy the file.", "### " + entryFirst, "Feat: add one file."}
+	notes := entryNotes(t, entryTagged(t, true), "v1.1.0")
+	if !entryOrdered(notes, append(newest, "[Compare view]("+entryCompare+")")...) {
 		t.Errorf("the notes do not list the new entries newest first, then the compare view:\n%s", notes)
 	}
 	if strings.Contains(notes, "ship the old file") || strings.Contains(notes, "relatedConfigurations") {
 		t.Errorf("the notes list an entry from an earlier release, or front matter:\n%s", notes)
+	}
+	first := entryNotes(t, entryTagged(t, false), "v1.1.0")
+	if !entryOrdered(first, append(newest, "[Commits](https://github.com/"+repo0014+"/commits/v1.1.0)")...) {
+		t.Errorf("a first release does not list every entry, then its commits:\n%s", first)
+	}
+}
+
+func Test0069_25(t *testing.T) {
+	t.Parallel()
+	repo := entryTagged(t, true)
+	shallow := t.TempDir()
+	git(t, shallow, "clone", "-q", "--depth", "1", "--branch", "v1.1.0", "file://"+repo, ".")
+	for _, c := range []struct{ repo, tag, want string }{
+		{shallow, "v1.1.0", "the clone is shallow, so the previous release tag is unknown"},
+		{repo, "v9.9.9", "v9.9.9"},
+	} {
+		rp := standIn(t, map[string][]response{"gh": {{Stdout: "{}\n"}}})
+		env := append(rp.env, "GITHUB_REF_NAME="+c.tag, "GITHUB_REPOSITORY="+repo0014)
+		out, code := releaseToolRun(t, c.repo, env, "release-notes")
+		sees(t, out, code, 1, c.want)
+		if len(rp.calls("gh")) > 0 {
+			t.Errorf("the release tool reached GitHub after failing:\n%s", strings.Join(rp.calls("gh"), "\n"))
+		}
 	}
 }

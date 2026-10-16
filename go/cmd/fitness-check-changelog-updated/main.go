@@ -87,19 +87,23 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if len(staged) == 0 {
 		return checkkit.Pass(0), nil
 	}
-	if errs := entryErrors(root); len(errs) > 0 {
-		return checkkit.Fail(1, errs...), nil
+	if errs, err := entryErrors(root); err != nil || len(errs) > 0 {
+		return checkkit.Fail(1, errs...), err
 	}
 	return judge(parseStagedDiff(stagedDiff(root))), nil
 }
 
-// entryErrors fails a commit that adds a second entry file to its branch,
-// then one that adds an entry file not named for its heading's date.
-func entryErrors(root string) []string {
-	if msg, ok := checkOneEntry(root); !ok {
-		return []string{msg}
+// entryErrors fails a commit that edits an entry file a release holds, then
+// one that adds a second entry file to its branch, then one that adds an
+// entry file not named for its heading's date.
+func entryErrors(root string) ([]string, error) {
+	if released, err := changelog.StagedReleasedEdits(root); err != nil || len(released) > 0 {
+		return released, err
 	}
-	return changelog.StagedNameErrors(root)
+	if msg, ok := checkOneEntry(root); !ok {
+		return []string{msg}, nil
+	}
+	return changelog.StagedNameErrors(root), nil
 }
 
 // checkOneEntry keeps a branch to one entry file: once an earlier commit on

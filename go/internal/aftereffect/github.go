@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -158,6 +159,23 @@ func (g Client) DirFiles(n int, dir string) ([]FileChange, error) {
 		return nil, err
 	}
 	return decodeLines[FileChange](out)
+}
+
+// ReleasedFiles returns the newest GitHub release's tag and the files
+// directly under dir at that tag. The tag is empty when the repo has no
+// release, and the files are none when the tag has no such folder.
+func (g Client) ReleasedFiles(dir string) (string, []string, error) {
+	out, err := g.api("--jq", ".[0].tag_name // empty", "releases?per_page=1")
+	tag := strings.TrimSpace(string(out))
+	if err != nil || tag == "" {
+		return "", nil, err
+	}
+	out, err = g.api("--jq", `.[] | select(.type == "dir") | .name`, "contents?ref="+tag)
+	if err != nil || !slices.Contains(strings.Fields(string(out)), dir) {
+		return tag, nil, err
+	}
+	out, err = g.api("--jq", `.[] | select(.type == "file") | .path`, "contents/"+dir+"?ref="+tag)
+	return tag, strings.Fields(string(out)), err
 }
 
 func (g Client) OpenPlans() ([]Target, error) {

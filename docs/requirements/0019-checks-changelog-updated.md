@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-changelog-updated/main.go:82`
     - Given Developer has staged a new entry file naming the change, beside an edited, deleted, or absent `CHANGELOG.md`
         - When changelog-updated checks the staged commit
             - Then it passes
+- 0019.21
+    - Given Developer has staged an edit to an entry file the newest release tag already holds
+        - When changelog-updated checks the staged commit
+            - Then it fails naming the file and asking for a new entry file

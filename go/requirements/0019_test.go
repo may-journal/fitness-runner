@@ -129,3 +129,18 @@ func Test0019_18(t *testing.T) {
 	out, code := changelogStaged(t, files)
 	sees(t, out, code, 1, "changelog/runner-feature.md must be named changelog/2026-10-12-0900-runner-feature.md: its heading's date, then the change")
 }
+
+func Test0019_21(t *testing.T) {
+	t.Parallel()
+	const released = "changelog/2026-10-01-0900-runner-feature.md"
+	old := entryFileText("2026.10.01.0900", "Feat: added runner feature for validation.")
+	repo := example(t, "happyRepo", map[string]string{released: old})
+	git(t, repo, "tag", "v1.0.0")
+	write(t, repo, map[string]string{
+		released:  old + "- Feat: added runner option for validation.\n",
+		"src.txt": changelogFeature + "Added runner option for validation.\n",
+	})
+	git(t, repo, "add", "-A")
+	out, code := fitness(t, repo, nil, "changelog-updated")
+	sees(t, out, code, 1, released+" shipped in v1.0.0, so its notes are published; leave it as it is and add a new changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file instead")
+}

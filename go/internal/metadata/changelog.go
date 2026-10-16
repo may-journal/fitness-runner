@@ -19,12 +19,52 @@ func changelogErrors(t target, gh aftereffect.Client) []string {
 	if err != nil {
 		return []string{fmt.Sprintf("cannot read the %s/ files of PR #%d: %v; check gh authentication and network access, then retry", changelog.EntryDir, t.Number, err)}
 	}
-	return oneEntryErrors(addedEntries(files), t.Body)
+	errs := releasedErrors(files, gh)
+	return append(errs, oneEntryErrors(addedEntries(files), t.Body)...)
+}
+
+// releasedErrors fails each entry file the PR edits or deletes that the
+// newest release's tag already holds: its notes are published, so a new
+// entry file carries the change. It reads GitHub only when the PR edits or
+// deletes an entry file.
+func releasedErrors(files []aftereffect.FileChange, gh aftereffect.Client) []string {
+	changed := editedEntries(files)
+	if len(changed) == 0 {
+		return nil
+	}
+	tag, released, err := gh.ReleasedFiles(changelog.EntryDir)
+	if err != nil {
+		return []string{fmt.Sprintf("cannot read the newest release's %s/ files: %v; check gh authentication and network access, then retry", changelog.EntryDir, err)}
+	}
+	return shippedErrors(changed, released, tag)
+}
+
+// shippedErrors names each changed entry file that release tag holds.
+func shippedErrors(changed, released []string, tag string) []string {
+	var errs []string
+	for _, p := range changed {
+		if slices.Contains(released, p) {
+			errs = append(errs, changelog.ReleasedEditError(p, tag))
+		}
+	}
+	return errs
+}
+
+// editedEntries are the entry files among files that the PR edits or
+// deletes rather than adds.
+func editedEntries(files []aftereffect.FileChange) []string {
+	var changed []string
+	for _, f := range files {
+		if f.Status != "added" {
+			changed = append(changed, f.Filename)
+		}
+	}
+	return changed
 }
 
 // oneEntryErrors passes at most one new entry file, which the description
 // links and does not copy, and names the extras. Editing or deleting an
-// entry file already pending on the base amends that entry, so it needs no
+// entry file still pending on the base amends that entry, so it needs no
 // new one.
 func oneEntryErrors(added []aftereffect.FileChange, body string) []string {
 	switch {

@@ -22,6 +22,7 @@ A pull request adds its entry as its own `changelog/<yyyy-mm-dd-HHMM>-<change>.m
 - `changelog-updated`, `pr-check`, and `branch-check` accept only entry files, and fail an added one with a bad name.
 - You write the heading's time by hand; no hook rewrites it.
 - Entry files stay in the folder after a release.
+- An entry file a release tag holds is final. Checks fail an edit or deletion of it, asking for a new entry file.
 - Each release tag's GitHub description lists the entry files added since the previous tag, newest first, as `fitness-release release-notes` writes it.
 
 ## Contributing
