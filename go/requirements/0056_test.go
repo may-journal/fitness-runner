@@ -33,7 +33,7 @@ func forkedRepo(t *testing.T) string {
 // running hooks, records it as origin/main, and checks out a fresh branch.
 func fork(t *testing.T, repo string) {
 	t.Helper()
-	out, err := exec.Command("git", "-C", repo, "commit-tree", "HEAD^{tree}", "-p", "HEAD", "-m", inherited).Output()
+	out, err := exec.Command("git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit-tree", "HEAD^{tree}", "-p", "HEAD", "-m", inherited).Output()
 	mustDo(t, err)
 	git(t, repo, "reset", "-q", "--hard", strings.TrimSpace(string(out)))
 	remote(t, repo)
