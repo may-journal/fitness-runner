@@ -135,6 +135,8 @@ jobs:
 
 The action downloads the native installer and checks its hash, then invokes it. Go handles action inputs, outputs, caching, and check execution. Use a full action commit SHA if your team requires a fixed source ref.
 
+Findings fail the job with error annotations. A check that cannot run, such as one missing its tool, adds a `::notice` and a line in the job summary's Info section. Info never fails the job.
+
 ## Commit hook
 
 After downloading the installer, run this once from the consumer repository root:
