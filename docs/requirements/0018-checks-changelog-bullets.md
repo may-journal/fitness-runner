@@ -6,38 +6,22 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I can skim every changelog release, because each entry is a few short bullets, each starting with its kind of change. Release notes written by Release Please pass as they are.
+I can skim every release's notes, because each entry file is a few short bullets, each starting with its kind of change. My `CHANGELOG.md` is not judged, so an upstream fork's history passes as it is.
 
 ## Measurement
 
-changelog sections within every bullet rule
+entry files within every bullet rule
 -
-changelog sections checked
+entry files checked
 
-Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
+Source: `go/cmd/fitness-check-changelog-bullets/main.go:37`
 
 ## Requirements
 
-- 0018.6
-    - Given Developer has an older section that breaks the rules
-        - When changelog-bullets runs
-            - Then it fails, since history meets the bar too
-- 0018.7
-    - Given Developer has a repo without a `CHANGELOG.md`
-        - When changelog-bullets runs
-            - Then it passes with no files checked
 - 0018.12
     - Given Developer has a bullet of 365 characters or more, even wrapped across lines
         - When changelog-bullets runs
             - Then it fails naming the bullet's first line and whole length
-- 0018.14
-    - Given Developer has a valid entry above a release over the configured list limit, even across subheadings
-        - When changelog-bullets runs
-            - Then only the release fails, naming that limit
-- 0018.15
-    - Given Developer has bullets starting with `Feat:`, a subject like `fix(release)!:`, a Release Please bold scope, or no type
-        - When changelog-bullets runs
-            - Then only the untyped bullet fails, asking for a type
 - 0018.16
     - Given Developer has an entry with fewer than 3 or more than 5 bullets, counting only dash bullets
         - When changelog-bullets runs
@@ -46,3 +30,11 @@ Source: `go/cmd/fitness-check-changelog-bullets/main.go:70`
     - Given Developer has an entry file with two bullets or an untyped one
         - When changelog-bullets runs
             - Then it fails naming that file
+- 0018.18
+    - Given Developer has a `CHANGELOG.md` of upstream numbered `### Added` lists and no entry files
+        - When changelog-bullets runs
+            - Then it passes with no files checked
+- 0018.19
+    - Given Developer has an entry file with bullets starting with `Feat:`, a subject like `fix(release)!:`, or no type
+        - When changelog-bullets runs
+            - Then only the untyped bullet fails, asking for a type

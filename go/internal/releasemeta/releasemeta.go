@@ -62,24 +62,32 @@ func releaseHeading(body string) (string, error) {
 
 // FormatBody rewrites a release PR body to the PR template. Between Release
 // Please's delimiters it keeps only the version heading, which Release Please
-// reads back at merge, and links the CHANGELOG.md section at commit sha and
-// the compare view. The notes themselves stay in CHANGELOG.md.
+// reads back at merge. It links the entry files at commit sha and the
+// compare view; the tagged release lists their notes.
 func FormatBody(body string, issueNumber int, repo, sha string) (string, error) {
 	heading, err := releaseHeading(body)
 	if err != nil {
 		return "", err
 	}
-	section := fmt.Sprintf("https://github.com/%s/blob/%s/%s#%s", repo, sha, changelog.File, changelog.Anchor(heading))
-	links := fmt.Sprintf("[CHANGELOG section](%s)", section)
+	entries := fmt.Sprintf("[entry files](https://github.com/%s/tree/%s/%s)", repo, sha, changelog.EntryDir)
+	ships := "the " + entries + " at this commit"
 	if m := compareLink.FindStringSubmatch(heading); m != nil {
-		links += fmt.Sprintf(" and [compare view](%s)", m[1])
+		ships = fmt.Sprintf("the %s added since %s, and the [compare view](%s)", entries, previousTag(m[1]), m[1])
 	}
 	heading = "### " + strings.TrimLeft(heading, "# ")
-	return fmt.Sprintf("> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release. Binary builds and public checks run after this PR merges.\n\nCloses #%d. Agent: Release Please.\n\n<!-- fitness-release-issue:%d -->\n\n## Changelog\n\n---\n\n%s\n\n- What ships: the %s.\n\n---\nRelease Please manages this release PR.\n", issueNumber, issueNumber, heading, links), nil
+	return fmt.Sprintf("> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release. Binary builds and public checks run after this PR merges, and the tagged release lists the notes of its entry files.\n\nCloses #%d. Agent: Release Please.\n\n<!-- fitness-release-issue:%d -->\n\n## Changelog\n\n---\n\n%s\n\n- What ships: %s.\n\n---\nRelease Please manages this release PR.\n", issueNumber, issueNumber, heading, ships), nil
+}
+
+// previousTag is the tag a compare view starts from, such as v1.0.0 in
+// .../compare/v1.0.0...v1.1.0.
+func previousTag(compare string) string {
+	_, span, _ := strings.Cut(compare, "/compare/")
+	from, _, _ := strings.Cut(span, "...")
+	return from
 }
 
 func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
-	pr, err := c.loadFoldedPR(ctx, number)
+	pr, err := c.loadValidPR(ctx, number)
 	if err != nil {
 		return err
 	}
@@ -95,17 +103,6 @@ func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
 		return nil
 	}
 	return c.updatePRBody(ctx, number, body)
-}
-
-// loadFoldedPR loads the release PR and folds pending entry files into its
-// changelog, so its head is the commit the body links.
-func (c Client) loadFoldedPR(ctx context.Context, number int) (pullRequest, error) {
-	pr, err := c.loadValidPR(ctx, number)
-	if err != nil {
-		return pr, err
-	}
-	pr.Head.SHA, err = c.foldEntries(ctx, pr)
-	return pr, err
 }
 
 func (c Client) loadValidPR(ctx context.Context, number int) (pullRequest, error) {

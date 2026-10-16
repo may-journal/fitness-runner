@@ -1,28 +1,20 @@
 // Package changelog finds the changelog/ entry files a branch, a staged
-// commit, or a pull request adds, and reads CHANGELOG.md's dated
-// "### yyyy.mm.dd.HHMM" history. The commit gate and pr-check share it, so
+// commit, a pull request, or a release adds, and reads their dated
+// "### yyyy.mm.dd.HHMM" headings. The commit gate and pr-check share it, so
 // both agree that a pull request carries one entry file, which later commits
-// amend. It also names the anchor GitHub gives a release heading, so a
-// release PR links its section.
+// amend. The release tool reads the entry files a tag adds to write that
+// release's notes. CHANGELOG.md is no part of it.
 package changelog
 
 import (
 	"os/exec"
 	"regexp"
 	"strings"
-	"unicode"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-// File is the changelog every rule here reads.
-const File = "CHANGELOG.md"
-
-var (
-	headingRe = regexp.MustCompile(`(?m)^### (\d{4}\.\d{2}\.\d{2}\.\d{4})`)
-	// releaseRe is a Release Please version section, such as "## [1.6.0]".
-	releaseRe = regexp.MustCompile(`^## \[(\d[^\]]*)\]`)
-)
+var headingRe = regexp.MustCompile(`(?m)^### (\d{4}\.\d{2}\.\d{2}\.\d{4})`)
 
 // Headings returns every dated heading's stamp in text, top to bottom.
 func Headings(text string) []string {
@@ -33,7 +25,7 @@ func Headings(text string) []string {
 	return stamps
 }
 
-// New returns the stamps in after that before lacks, in after's order.
+// New returns the items in after that before lacks, in after's order.
 func New(before, after []string) []string {
 	had := map[string]bool{}
 	for _, s := range before {
@@ -48,18 +40,10 @@ func New(before, after []string) []string {
 	return added
 }
 
-// BranchBase is the commit the current branch's own commits start from, or
-// HEAD on the default branch, on a detached HEAD, or without origin refs.
-func BranchBase(root string) string {
-	if fork, ok := forkPoint(root); ok {
-		return fork
-	}
-	return "HEAD"
-}
-
 // forkPoint is the commit the current branch's own commits start from: the
 // parent of the oldest commit no other origin branch holds. A branch stacked
-// on another pushed branch so starts where that branch ends.
+// on another pushed branch so starts where that branch ends. It is not found
+// on the default branch, on a detached HEAD, or without origin refs.
 func forkPoint(root string) (string, bool) {
 	branch := gitOut(root, "symbolic-ref", "--short", "-q", "HEAD")
 	base := gitx.DefaultBase(root)
@@ -83,72 +67,25 @@ func gitOut(root string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// Diff is what a unified diff of CHANGELOG.md adds and does not also remove.
+// Diff is what a unified diff of an entry file adds and does not also remove.
 type Diff struct {
-	// Releases are new Release Please version heading lines.
-	Releases []string
 	// Bullets are the text of new list items, without their markers.
 	Bullets []string
 }
 
-// ReadDiff reads a unified diff of CHANGELOG.md, as git or GitHub prints it.
-// A line both removed and added, such as a moved one, counts as unchanged.
+// ReadDiff reads a unified diff, as git or GitHub prints it. A line both
+// removed and added, such as a moved one, counts as unchanged.
 func ReadDiff(patch string) Diff {
-	var releases, bullets diffSides
+	var bullets diffSides
 	for _, line := range strings.Split(patch, "\n") {
 		sign, text := diffLine(line)
-		releases.add(sign, matching(releaseRe, text))
 		bullets.add(sign, bulletText(text))
 	}
-	return Diff{Releases: releases.added(), Bullets: bullets.added()}
+	return Diff{Bullets: bullets.added()}
 }
 
-// CreatesFile reports whether a unified diff, as git or GitHub prints it,
-// creates its file: its first hunk starts from nothing.
-func CreatesFile(patch string) bool {
-	_, hunk, ok := strings.Cut("\n"+patch, "\n@@ ")
-	return ok && strings.HasPrefix(hunk, "-0,0 ")
-}
-
-// Anchors are the fragments GitHub gives the release sections d adds.
-func (d Diff) Anchors() []string {
-	var anchors []string
-	for _, h := range d.Releases {
-		anchors = append(anchors, Anchor(h))
-	}
-	return anchors
-}
-
-var (
-	// mdLinkRe is a markdown link; Anchor keeps only its text.
-	mdLinkRe = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
-	// bulletRe is a list item and its text.
-	bulletRe = regexp.MustCompile(`^\s*[-*]\s+(\S.*)$`)
-	// linkRe matches a markdown link to a CHANGELOG.md heading and
-	// captures the heading's anchor. GitHub anchors are lowercase, so a
-	// template placeholder such as #REPLACE-WITH-STAMP never matches.
-	linkRe = regexp.MustCompile(`\]\([^)\s]*` + regexp.QuoteMeta(File) + `#([a-z0-9_-]+)\)`)
-)
-
-// Anchor is the fragment GitHub gives a CHANGELOG.md heading: its text with
-// links reduced to their text, lowercased, punctuation dropped, and spaces
-// made hyphens. The entry "### 2026.10.12.0919" anchors at 202610120919.
-func Anchor(heading string) string {
-	text := mdLinkRe.ReplaceAllString(strings.TrimLeft(heading, "# "), "$1")
-	return strings.Map(anchorRune, strings.ToLower(strings.TrimSpace(text)))
-}
-
-// anchorRune is how r reads in an anchor: a space becomes a hyphen, a
-// letter, digit, hyphen, or underscore stays, and anything else drops.
-func anchorRune(r rune) rune {
-	if r == ' ' {
-		return '-'
-	}
-	if unicode.IsLetter(r) || unicode.IsDigit(r) || strings.ContainsRune("-_", r) {
-		return r
-	}
-	return -1
-}
+// bulletRe is a list item and its text.
+var bulletRe = regexp.MustCompile(`^\s*[-*]\s+(\S.*)$`)
 
 // entryLinkRe matches a markdown link to an entry file and captures its
 // path from the entry folder on.
@@ -162,23 +99,6 @@ func EntryLinks(text string) []string {
 		paths = append(paths, m[1])
 	}
 	return paths
-}
-
-// Links returns the anchor of every CHANGELOG.md heading link in text.
-func Links(text string) []string {
-	var anchors []string
-	for _, m := range linkRe.FindAllStringSubmatch(text, -1) {
-		anchors = append(anchors, m[1])
-	}
-	return anchors
-}
-
-// matching is text when re matches it, else nothing.
-func matching(re *regexp.Regexp, text string) []string {
-	if re.MatchString(text) {
-		return []string{text}
-	}
-	return nil
 }
 
 // bulletText is a list item's text without its marker.

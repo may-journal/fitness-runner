@@ -1,6 +1,9 @@
 package requirements
 
-import "strings"
+import (
+	"strings"
+	"testing"
+)
 
 // The Given files a user's repo adds to happyRepo. They live here, not as
 // tracked example repos, so this repo's own checks never judge them.
@@ -165,3 +168,36 @@ func architectedRepo() map[string]string {
 func front(up string) string {
 	return "---\nrelatedConfigurations: ['" + up + ".fitnessrc.json']\n---\n\n"
 }
+
+// notesHead opens a changelog in the house layout.
+const notesHead = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n"
+
+// notesEntry is a timestamped entry that follows the house rules.
+const notesEntry = "### 2026.10.09.1500\n\n- Fix: one.\n- Fix: two.\n- Fix: three.\n\n"
+
+// notesRelease is a 1.1.1 release as Release Please writes it: a linked
+// version heading, then each subheading with one bullet per scope given.
+func notesRelease(subheadings map[string][]string) string {
+	s := "## [1.1.1](https://github.com/o/r/compare/v1.1.0...v1.1.1) (2026-10-10)\n\n"
+	for _, h := range []string{"Features", "Bug Fixes"} {
+		if len(subheadings[h]) == 0 {
+			continue
+		}
+		s += "\n### " + h + "\n\n"
+		for _, scope := range subheadings[h] {
+			s += "* **" + scope + ":** change it ([#239](https://github.com/o/r/issues/239)) ([c9f4729](https://github.com/o/r/commit/c9f4729))\n"
+		}
+		s += "\n"
+	}
+	return s
+}
+
+// notesChecks runs the named checks on happyRepo with changelog.
+func notesChecks(t *testing.T, changelog, checks string) (string, int) {
+	t.Helper()
+	repo := example(t, "happyRepo", map[string]string{"CHANGELOG.md": changelog})
+	return fitness(t, repo, nil, "--policy=external", "--checks="+checks, "--all")
+}
+
+// notesTwo is a release with one feature and one fix.
+var notesTwo = map[string][]string{"Features": {"install"}, "Bug Fixes": {"release"}}

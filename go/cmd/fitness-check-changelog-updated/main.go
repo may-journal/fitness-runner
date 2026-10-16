@@ -1,7 +1,6 @@
 // Command fitness-check-changelog-updated checks that each staged commit
 // writes a changelog entry about its change. A branch keeps one entry file.
-// CHANGELOG.md is history that only the release PR writes. The README holds
-// the full rules.
+// CHANGELOG.md is no part of it. The README holds the full rules.
 package main
 
 import (
@@ -9,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/changelog"
@@ -22,16 +20,12 @@ const (
 	minWordLen   = 3
 	suggestWords = 10
 
-	changelogMD = "CHANGELOG.md"
-
-	msgChangelogMissing = "CHANGELOG.md missing; add it, and record your staged changes in a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file"
-	msgStageEntry       = "Stage a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file that mentions your staged changes"
-	msgSectionEdit      = "CHANGELOG.md is staged; only the release PR writes it, so record this change in a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file instead"
-	msgOverlapHead      = " additions should mention at least "
-	msgOverlapTail      = " words from your staged changes (found "
-	msgSuggestPrefix    = "e.g. use words like: "
-	msgAmendHead        = "this branch already has its entry "
-	msgAmendTail        = "; add your bullets to it instead of a new entry: "
+	msgStageEntry    = "Stage a changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file that mentions your staged changes"
+	msgOverlapHead   = " additions should mention at least "
+	msgOverlapTail   = " words from your staged changes (found "
+	msgSuggestPrefix = "e.g. use words like: "
+	msgAmendHead     = "this branch already has its entry "
+	msgAmendTail     = "; add your bullets to it instead of a new entry: "
 
 	// labelEntryFile names an entry file in messages.
 	labelEntryFile = "Changelog entry file"
@@ -48,7 +42,7 @@ var stagedDiff = func(root string) string {
 }
 
 // replayInProgress reports whether Git is mid-merge, mid-cherry-pick, or
-// mid-revert. Such a commit replays historical CHANGELOG additions rather than
+// mid-revert. Such a commit replays historical entry additions rather than
 // authoring a new entry, so the freshness gates must not apply. A variable so
 // tests can pin it.
 var replayInProgress = func(root string) bool {
@@ -93,32 +87,10 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if len(staged) == 0 {
 		return checkkit.Pass(0), nil
 	}
-	if msg, ok := checkHistory(root, staged); !ok {
-		return checkkit.Fail(1, msg), nil
-	}
 	if errs := entryErrors(root); len(errs) > 0 {
 		return checkkit.Fail(1, errs...), nil
 	}
 	return judge(parseStagedDiff(stagedDiff(root))), nil
-}
-
-// checkHistory requires CHANGELOG.md on disk, and keeps a commit from
-// changing the one the branch started from: it is history that only the
-// release PR writes. A branch may add the file to a repo that lacks it, as
-// pr-check allows.
-func checkHistory(root string, staged []string) (msg string, ok bool) {
-	if _, err := os.Stat(filepath.Join(root, changelogMD)); err != nil {
-		return msgChangelogMissing, false
-	}
-	if slices.Contains(staged, changelogMD) && heldAt(root, changelog.BranchBase(root), changelogMD) {
-		return msgSectionEdit, false
-	}
-	return "", true
-}
-
-// heldAt reports whether commit holds path.
-func heldAt(root, commit, path string) bool {
-	return exec.Command("git", "-C", root, "cat-file", "-e", commit+":"+path).Run() == nil
 }
 
 // entryErrors fails a commit that adds a second entry file to its branch,

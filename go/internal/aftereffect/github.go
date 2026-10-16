@@ -26,9 +26,6 @@ type Target struct {
 	ClosedAt    string `json:"closed_at"`
 	// ClosedBy is the event sender who closed the issue.
 	ClosedBy string `json:"-"`
-	// ChangelogPatch is a local branch's CHANGELOG.md diff against its PR
-	// base, read from git before the push; nil reads the PR's diff from GitHub.
-	ChangelogPatch *string `json:"-"`
 	// EntryFiles are a local branch's changed changelog entry files against
 	// its PR base; nil reads them from GitHub.
 	EntryFiles *[]FileChange `json:"-"`
@@ -150,27 +147,6 @@ func (g Client) OpenPRs() ([]Target, error) {
 		return nil, err
 	}
 	return decodeLines[Target](out)
-}
-
-// FilePatch returns pull request n's unified diff of path against its base,
-// empty when the PR leaves path alone. GitHub omits the patch of a very large
-// diff; that fails here rather than reading as no change.
-func (g Client) FilePatch(n int, path string) (string, error) {
-	jq := fmt.Sprintf(".[] | select(.filename == %q) | {patch: (.patch // \"\")}", path)
-	out, err := g.api("--paginate", "--jq", jq, "pulls/"+strconv.Itoa(n)+"/files?per_page=100")
-	if err != nil {
-		return "", err
-	}
-	files, err := decodeLines[struct {
-		Patch string `json:"patch"`
-	}](out)
-	if err != nil || len(files) == 0 {
-		return "", err
-	}
-	if files[0].Patch == "" {
-		return "", fmt.Errorf("GitHub sent no diff for %s", path)
-	}
-	return files[0].Patch, nil
 }
 
 // DirFiles returns the files pull request n changes directly under dir,

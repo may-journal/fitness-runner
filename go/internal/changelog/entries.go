@@ -103,7 +103,7 @@ func readEntry(root string, f os.DirEntry) (*Entry, error) {
 
 // SortEntries orders entries newest first by the date their file name
 // starts with, then by name. A name without a date, which the checks fail,
-// sorts by its heading's date, so a fold keeps release order.
+// sorts by its heading's date, so release notes keep release order.
 func SortEntries(entries []Entry) {
 	sort.SliceStable(entries, func(i, j int) bool {
 		a, b := sortDate(entries[i]), sortDate(entries[j])
@@ -131,60 +131,21 @@ var (
 	h3Re = regexp.MustCompile(`(?m)^###\s`)
 	// otherHeadingRe is a heading of any level but three.
 	otherHeadingRe = regexp.MustCompile(`(?m)^(#{1,2}|#{4,})\s`)
-	// datedLineRe is a dated entry heading line.
-	datedLineRe = regexp.MustCompile(`^### \d{4}\.\d{2}\.\d{2}\.\d{4}`)
-	// foldStopRe is a level-2 heading, where a release section ends.
-	foldStopRe = regexp.MustCompile(`^## `)
 	// frontMatterRe is a leading YAML front matter block.
 	frontMatterRe = regexp.MustCompile(`\A---\n(?s:.*?)\n---\n`)
 )
 
 // Shaped reports whether an entry holds exactly one heading, a dated ###
-// one, so it folds into CHANGELOG.md as one section.
+// one, so a release's notes show it as one section.
 func (e Entry) Shaped() bool {
 	body := frontMatterRe.ReplaceAllString(e.Text, "")
 	return len(h3Re.FindAllString(body, -1)) == 1 && len(Headings(body)) == 1 && !otherHeadingRe.MatchString(body)
 }
 
-// Fold places entries, newest first, into a CHANGELOG.md text. They go
-// above the first dated section, or right below the release notes of the
-// newest Release Please section when one comes first, else at the end. So
-// a release PR lists the entries it ships under its version heading.
-func Fold(text string, entries []Entry) string {
-	if len(entries) == 0 {
-		return text
-	}
-	var block strings.Builder
-	for _, e := range entries {
-		block.WriteString(strings.TrimSpace(frontMatterRe.ReplaceAllString(e.Text, "")) + "\n\n")
-	}
-	lines := strings.SplitAfter(text, "\n")
-	at := foldIndex(lines)
-	head := strings.Join(lines[:at], "")
-	if at == len(lines) && head != "" {
-		head = strings.TrimRight(head, "\n") + "\n\n"
-	}
-	return head + block.String() + strings.Join(lines[at:], "")
-}
-
-// foldIndex is the line entries go before: the first dated heading, or the
-// first level-2 heading after a release heading, else the end.
-func foldIndex(lines []string) int {
-	inRelease := false
-	for i, line := range lines {
-		line = strings.TrimRight(line, "\n")
-		if foldsBefore(line, inRelease) {
-			return i
-		}
-		inRelease = inRelease || releaseRe.MatchString(line)
-	}
-	return len(lines)
-}
-
-// foldsBefore reports whether entries go above line: a dated heading, or a
-// level-2 heading that ends the release section entries follow.
-func foldsBefore(line string, inRelease bool) bool {
-	return datedLineRe.MatchString(line) || (inRelease && foldStopRe.MatchString(line))
+// Body is the entry's text without its front matter, trimmed: the heading
+// and bullets a release's notes show.
+func (e Entry) Body() string {
+	return strings.TrimSpace(frontMatterRe.ReplaceAllString(e.Text, ""))
 }
 
 // BranchEntryFiles returns the entry files the current branch's own commits
