@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 )
 
-const packageJSON = "package.json"
+const packageJSON = nodejs.Manifest
 
 // defaultRegistry is the npm registry queried when no .npmrc overrides it.
 const defaultRegistry = "https://registry.npmjs.org"
@@ -58,7 +58,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	filesChecked := len(walkfs.FilesByExt(root, packageJSON))
+	filesChecked := len(nodejs.Manifests(root))
 	manifests := collectManifests(root)
 	latest := fetchLatest(registryFrom(root), uniqueDeps(manifests))
 	errs := outdatedErrors(manifests, latest)

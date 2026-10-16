@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-vitest-coverage-full/main.go:83`
     - Given Developer has a JavaScript project without Vitest installed
         - When vitest-coverage-full runs
             - Then it fails with a hint to install Vitest
+- 0060.7
+    - Given Developer has a non-executable `node_modules/.bin/vitest` and Vitest on `PATH`
+        - When vitest-coverage-full runs
+            - Then it runs the Vitest on `PATH` and passes

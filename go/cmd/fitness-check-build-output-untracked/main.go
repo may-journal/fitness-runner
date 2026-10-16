@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -29,9 +30,6 @@ const (
 	msgNotIgnored   = "Add dist/ to .gitignore (git check-ignore reports dist is not git-ignored)"
 	msgRemovePrefix = "Remove tracked files:"
 )
-
-// sourceExtensions are the TypeScript source extensions the import scan covers.
-var sourceExtensions = []string{".cts", ".mts", ".ts"}
 
 // importSpecifierRe matches the specifier of `from '…'`, `import('…')`, and
 // `require('…')`.
@@ -145,7 +143,7 @@ func dedupeSorted(lists ...[]string) []string {
 // collectSourceFiles returns the sorted, deduped source files (.ts/.mts/.cts)
 // under root, tests included.
 func collectSourceFiles(root string) []string {
-	return walkfs.FilesByExt(root, sourceExtensions...)
+	return walkfs.FilesByExt(root, nodejs.TypeScriptExts...)
 }
 
 // scanFileForDistImports reports rule B: a `path:line imports build output`

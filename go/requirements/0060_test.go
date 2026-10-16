@@ -1,6 +1,10 @@
 package requirements
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 // vcfConfig is a local Vitest config holding the given coverage thresholds
 // over src/**/*.ts, the way a consumer repo writes one.
@@ -118,4 +122,14 @@ func Test0060_6(t *testing.T) {
 	t.Parallel()
 	out, code := vcfRun(t, vcfRepo(t, nil), nil)
 	sees(t, out, code, 1, "vitest not found in node_modules/.bin (walking up from root) or on PATH. Install it (npm install -D vitest)")
+}
+
+func Test0060_7(t *testing.T) {
+	t.Parallel()
+	rp := standIn(t, map[string][]response{"vitest": {vcfFullRun}})
+	repo := vcfRepo(t, map[string]string{"node_modules/.bin/vitest": "#!/bin/sh\nexit 1\n"})
+	mustDo(t, os.Chmod(filepath.Join(repo, "node_modules", ".bin", "vitest"), 0o644))
+	out, code := vcfRun(t, repo, rp.env)
+	sees(t, out, code, 0, "All 1 checks passed")
+	vcfRanWithLocalConfig(t, rp)
 }

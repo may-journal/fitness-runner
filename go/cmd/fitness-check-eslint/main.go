@@ -30,11 +30,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/nodejs"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -51,9 +51,6 @@ const eslintConfigMjs = "eslint.config.mjs"
 // ignoredFileNotice marks results for explicitly-passed ignored files; each
 // one fails, since the check judges every tracked file.
 const ignoredFileNotice = "File ignored because of a matching ignore pattern"
-
-// lintableExts are the file endings ESLint lints.
-var lintableExts = []string{".cjs", ".js", ".mjs", ".ts", ".tsx"}
 
 func main() {
 	checkkit.Main(checkkit.Check{
@@ -77,7 +74,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // lintWithEslint lints the paths with the resolved eslint binary.
 func lintWithEslint(root string) checkkit.Result {
-	bin, found := findEslint(root)
+	bin, found := nodejs.FindTool(root, "eslint")
 	if !found {
 		return checkkit.Fail(0, missingEslintMessage)
 	}
@@ -101,13 +98,11 @@ func buildExecCheckResult(exitCode int, errs []string, filesChecked int) checkki
 	return checkkit.Fail(filesChecked, errs...)
 }
 
-var lintableExt = regexp.MustCompile(`\.(cjs|js|mjs|tsx?)$`)
-
 // applies reports whether ESLint has anything to judge: a JS project, and in
 // a scoped run at least one changed file it lints, so a run with none skips
 // ESLint instead of linting the whole repo.
 func applies(root string) bool {
-	if len(walkfs.FilesByExt(root, "package.json")) == 0 {
+	if !nodejs.Applies(root) {
 		return false
 	}
 	changed := checkkit.ChangedFiles()
@@ -128,7 +123,7 @@ func anyLintable(root string, changed []string) bool {
 // tracked lintable file when the run is unscoped.
 func pathsToLint(root string, changed []string) []string {
 	if changed == nil {
-		return walkfs.FilesByExt(root, lintableExts...)
+		return walkfs.FilesByExt(root, nodejs.LintableExts...)
 	}
 	var out []string
 	for _, p := range changed {
@@ -142,7 +137,17 @@ func pathsToLint(root string, changed []string) []string {
 // lintableStaged reports whether a changed path should be linted: a lintable
 // extension, still existing under root.
 func lintableStaged(root, p string) bool {
-	return lintableExt.MatchString(p) && exists(filepath.Join(root, p))
+	return hasLintableExt(p) && exists(filepath.Join(root, p))
+}
+
+// hasLintableExt reports whether p ends in one of the endings ESLint lints.
+func hasLintableExt(p string) bool {
+	for _, ext := range nodejs.LintableExts {
+		if strings.HasSuffix(p, ext) {
+			return true
+		}
+	}
+	return false
 }
 
 // runEslint execs the CLI twin of the TS Node-API invocation: cwd root, the
@@ -252,26 +257,6 @@ func snippet(stdout, stderr *bytes.Buffer, runErr error) string {
 	return strings.Join(parts, "\n")
 }
 
-// findEslint resolves the eslint binary: node_modules/.bin walking up from
-// root, then PATH — never npx.
-func findEslint(root string) (string, bool) {
-	for d := root; ; {
-		bin := filepath.Join(d, "node_modules", ".bin", "eslint")
-		if isExecutable(bin) {
-			return bin, true
-		}
-		parent := filepath.Dir(d)
-		if parent == d {
-			break
-		}
-		d = parent
-	}
-	if bin, err := exec.LookPath("eslint"); err == nil {
-		return bin, true
-	}
-	return "", false
-}
-
 // biomeFallbackMessage stands in when Biome fails without a finding.
 const biomeFallbackMessage = "Biome reported issues. Run: npx biome lint ."
 
@@ -285,11 +270,6 @@ func lintWithBiome(root string) checkkit.Result {
 	return biome.Check(root, "lint", nil, paths, biomeFallbackMessage, func(f biome.Finding) string {
 		return fmt.Sprintf("%s:%d:%d - %s (%s)", f.File, f.Line, f.Col, f.Message, f.Rule)
 	})
-}
-
-func isExecutable(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
 }
 
 func exists(path string) bool {
