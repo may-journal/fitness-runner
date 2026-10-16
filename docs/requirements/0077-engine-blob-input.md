@@ -14,7 +14,7 @@ blob runs that judge only the text and name every skipped check
 -
 blob runs
 
-Source: `go/cmd/fitness/blob.go:40`
+Source: `go/cmd/fitness/blob.go:43`
 
 ## Requirements
 
@@ -34,3 +34,7 @@ Source: `go/cmd/fitness/blob.go:40`
     - Given Developer has an empty text, or adds `--all` or a check name
         - When I run fitness `--blob`
             - Then it names the usage error, runs no check, and exits 2
+- 0077.5
+    - Given Developer has a repo config that sets a check time budget
+        - When I run fitness `--blob` on a draft text
+            - Then each blob check runs within that budget, as in a normal run

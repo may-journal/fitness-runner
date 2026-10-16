@@ -45,6 +45,13 @@ func Test0077_3(t *testing.T) {
 	sees(t, out, code, 1, "[markdown-no-bold-italic] Please fix these items:", "disallowed **bold**", "0 of 1 checks passed, 1 failed")
 }
 
+func Test0077_5(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"timeoutMs": 1}` + "\n"})
+	out, code := fitness(t, repo, nil, "--blob", cleanText, "--checks=cspell")
+	sees(t, out, code, 1, "Check timed out after 0.001s")
+}
+
 func Test0077_4(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)

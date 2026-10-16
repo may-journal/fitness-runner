@@ -38,8 +38,8 @@ func hasBlobFlag(argv []string) bool {
 }
 
 // runBlob runs the blob-capable checks on the text argv names, listing the
-// checks that need files as skipped. It never reads repo files, the staged
-// diff, or a PR, so its result depends on the text alone.
+// checks that need files as skipped. Beyond the repo's config, it never
+// reads repo files, the staged diff, or a PR, so findings come from the text.
 func runBlob(argv []string) int {
 	req, err := parseBlob(argv, os.Stdin)
 	if err != nil {
@@ -56,7 +56,12 @@ func runBlob(argv []string) int {
 		report.Error("fitness --blob", err)
 		return usageExit
 	}
-	return judgeBlob(root, req.text, run, skipped)
+	cfg, err := loadConfig(root)
+	if err != nil {
+		report.Error("fitness --blob", err)
+		return 1
+	}
+	return judgeBlob(root, req.text, withBudgets(cfg, run), skipped)
 }
 
 // judgeBlob saves text where the checks read it with --body-file, runs them,
