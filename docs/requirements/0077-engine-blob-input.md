@@ -47,6 +47,6 @@ Source: `go/cmd/fitness/blob.go:43`
         - When I run fitness `--blob` on it with no `--checks`
             - Then the PR checks pass, the Plan checks are listed as not applying, and it exits 0
 - 0077.8
-    - Given Developer has a PR description text whose changelog section is empty
+    - Given Developer has a PR description text whose changelog section is empty or its heading misnamed
         - When I run fitness `--blob` on it with no `--checks`
             - Then pr-structure fails naming the section and it exits 1

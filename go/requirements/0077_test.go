@@ -69,8 +69,11 @@ func Test0077_7(t *testing.T) {
 func Test0077_8(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	out, code := piped(t, repo, prBody0014("", 11), nil, "--blob", "-")
-	sees(t, out, code, 1, "[pr-structure] Please fix these items:", "Changelog")
+	misnamed := strings.Replace(pr0014(11), "## Changelog", "### Changelog:", 1)
+	for _, text := range []string{prBody0014("", 11), misnamed} {
+		out, code := piped(t, repo, text, nil, "--blob", "-")
+		sees(t, out, code, 1, "[pr-structure] Please fix these items:", "Changelog")
+	}
 }
 
 func Test0077_4(t *testing.T) {

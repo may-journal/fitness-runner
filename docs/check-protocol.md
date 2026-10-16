@@ -21,7 +21,7 @@ The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run 
 
 ### Judging a draft
 
-A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). It sets `FITNESS_BLOB`, so a body check passes inert on text of another kind and is listed as not applying.
+A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). It sets `FITNESS_BLOB`, so a body check passes inert on text of another kind and is listed as not applying. A check named in `--checks` always judges the text.
 
 `--checks=name,name` narrows the set. It exits 0 when all pass and 1 on a finding. A missing or empty text, no blob check selected, `--all`, or a check name exits 2.
 

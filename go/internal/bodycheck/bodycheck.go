@@ -50,13 +50,13 @@ func inert(ok bool, body string, applies func(string) bool) bool {
 // PlanBody reports whether body is a Plan issue: it has the Plan template's
 // checklist section.
 func PlanBody(body string) bool {
-	return hasHeading(body, "## What needs to happen")
+	return hasHeading(body, "What needs to happen")
 }
 
 // PRBody reports whether body is a pull request description: it has the PR
-// template's changelog section.
+// template's changelog heading, at any level.
 func PRBody(body string) bool {
-	return hasHeading(body, "## Changelog")
+	return hasHeading(body, "Changelog")
 }
 
 // Closing reports whether body is an issue being closed. A draft never is:
@@ -65,10 +65,13 @@ func Closing(string) bool {
 	return false
 }
 
-// hasHeading reports whether a line of body is exactly heading.
-func hasHeading(body, heading string) bool {
+// hasHeading reports whether body has a heading naming title at any level,
+// in any case, with or without a trailing colon. The match is loose so a
+// misspelt heading still counts, and the structure check names the fault.
+func hasHeading(body, title string) bool {
 	for _, line := range strings.Split(body, "\n") {
-		if strings.TrimSpace(line) == heading {
+		text, isHeading := strings.CutPrefix(strings.TrimSpace(line), "#")
+		if isHeading && strings.EqualFold(strings.Trim(text, "# :"), title) {
 			return true
 		}
 	}
