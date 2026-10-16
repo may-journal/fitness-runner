@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
@@ -23,21 +24,40 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 	return checks, passthrough, err
 }
 
-// commitChecks excludes branch metadata and semantic-commit from a
-// pre-commit run, including installer hooks. No commit message exists yet,
-// so commit-msg judges it instead of the parent at HEAD. Both stay enabled,
+// commitChecks excludes branch metadata from a pre-commit run, including
+// installer hooks. It also excludes semantic-commit when a commit-msg hook
+// will judge the new message. Without one, as with the installer's hook,
+// semantic-commit judges the branch's earlier commits. Both stay enabled,
 // so docs may still name them.
 func commitChecks(checks []resolved) []resolved {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
 		return checks
 	}
+	messageHook := commitMsgHook()
 	var local []resolved
 	for _, check := range checks {
-		if check.name != "local-branch" && check.name != "semantic-commit" {
+		if !skipsAtCommit(check.name, messageHook) {
 			local = append(local, check)
 		}
 	}
 	return local
+}
+
+// skipsAtCommit reports whether pre-commit leaves check out, given whether a
+// commit-msg hook judges the new message.
+func skipsAtCommit(check string, messageHook bool) bool {
+	return check == "local-branch" || messageHook && check == "semantic-commit"
+}
+
+// commitMsgHook reports whether the repository has an executable commit-msg
+// hook, in core.hooksPath or the git directory.
+func commitMsgHook() bool {
+	out, err := exec.Command("git", "rev-parse", "--path-format=absolute", "--git-path", "hooks/commit-msg").Output()
+	if err != nil {
+		return false
+	}
+	info, err := os.Stat(strings.TrimSpace(string(out)))
+	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
 }
 
 func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]resolved, error) {

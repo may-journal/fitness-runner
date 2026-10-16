@@ -34,19 +34,19 @@ Source: `go/cmd/fitness-check-semantic-commit/main.go:86`
     - Given Developer has a type outside the list, such as `Revert`, or a breaking mark such as `feat(api)!:`
         - When semantic-commit checks the message
             - Then it fails quoting the subject
-- 0056.11
-    - Given Developer has the shared hooks on a fresh branch whose parent subject has no scope
-        - When I commit with a valid subject
-            - Then the commit succeeds
-- 0056.12
-    - Given Developer has the shared hooks
-        - When I commit with a subject that has no scope
-            - Then commit-msg refuses the commit quoting that subject
-- 0056.13
-    - Given Developer has a branch, or local main, with a bad commit above bad history origin already holds
-        - When I run the full Fitness suite
-            - Then semantic-commit fails quoting only the commit origin lacks
 - 0056.14
     - Given Developer has no fetched origin branch to start from
         - When semantic-commit runs with no message
             - Then it judges the HEAD commit subject
+- 0056.15
+    - Given Developer has a branch, or the default branch under any name, with a bad commit above bad history origin holds
+        - When I run the full Fitness suite
+            - Then semantic-commit fails quoting only the commit origin lacks
+- 0056.16
+    - Given Developer has the shared hooks, or only the installer's pre-commit hook, on a fresh branch whose parent subject has no scope
+        - When I commit with a valid subject
+            - Then the commit succeeds
+- 0056.17
+    - Given Developer has the shared hooks, or only the installer's pre-commit hook
+        - When I commit with a subject that has no scope
+            - Then commit-msg refuses it, or the installer's hook refuses the next commit, quoting that subject
