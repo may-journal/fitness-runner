@@ -4,34 +4,27 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # changelog
 
-The repo root must have a `CHANGELOG.md`. Every `###` heading must be a dated section matching the package version style: `### yyyy.mm.dd.HHMM` (e.g. `### 2026.02.15.1100`). When `package.json` exists, its version must end in the first (latest) heading's timestamp. The `package-lock.json` version must match the `package.json` version.
-
-The timestamp follows `+` as build metadata (`0.1.0+2026.02.15.1100`) or `-` as a prerelease (`0.1.0-2026.02.15.1100`). Prefer `+`. Semver forbids leading zeros in prerelease numbers, so npm rejects `0.1.0-2026.02.15.0900` but accepts the build metadata form.
+Judges the `changelog/` entry files, the only changelog source. Each must hold one dated `### yyyy.mm.dd.HHMM` heading and its bullets, and its name must start with that heading's date. `CHANGELOG.md` is not judged, so a repo may keep, freeze, or drop it, and an upstream fork's `### Added` history passes as it is. The package version is not judged either.
 
 ## Behavior
 
-- Pass: `CHANGELOG.md` exists, every `###` line matches `### yyyy.mm.dd.HHMM`, and (if present) package.json version suffix and package-lock version match the first heading.
-- Fail: File missing → `missing root CHANGELOG.md`.
-- Fail: No `###` heading → must have at least one `### yyyy.mm.dd.HHMM` section.
-- Fail: Any `###` heading not in that format → `every ### heading must be ### yyyy.mm.dd.HHMM (invalid: "...")`.
-- Fail: package.json version suffix ≠ first CHANGELOG heading → `package.json version suffix must match CHANGELOG.md first ### heading (yyyy.mm.dd.HHMM)`.
-- Fail: package-lock.json version ≠ package.json version → `package-lock.json version must match package.json version`.
+- Pass: every entry file holds one dated heading and carries its date in its name.
+- Pass with zero files: a repo with no entry files, with or without `CHANGELOG.md`.
+- Fail: an entry file holding other than one dated `###` heading → `changelog/<file>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
+- Fail: an entry file whose name lacks its heading's date, or carries another → `changelog/<file>.md must be named changelog/<yyyy-mm-dd-HHMM>-<change>.md...`.
 
 ## Entry files
 
-Every pull request that inserts its entry at the top of `CHANGELOG.md` conflicts with every other open one. So a pull request adds its entry as its own `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file, with the change in kebab-case. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above. The name's date is that heading's, dots read as hyphens, so the folder lists in release order.
+A pull request adds its entry as its own `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file, with the change in kebab-case. So two open pull requests never edit the same lines. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above. The name's date is that heading's, dots read as hyphens, so the folder lists in release order.
 
-- A pull request adds exactly one entry file. Adding or editing a section in an existing `CHANGELOG.md` fails, pointing to `changelog/`.
+- A pull request adds exactly one entry file, and later commits add bullets to it.
 - A repo with no `changelog/` folder needs no setting: its first pull request creates it.
-- This check folds every entry file into `CHANGELOG.md`, newest first, and judges the result, so the newest entry is the first heading.
-- Fail: an entry file holding other than one dated `###` heading → `changelog/<file>.md must hold one ### yyyy.mm.dd.HHMM heading...`.
-- Fail: an entry file whose name lacks its heading's date, or carries another → `changelog/<file>.md must be named changelog/<yyyy-mm-dd-HHMM>-<change>.md...`.
-- `changelog-updated`, `pr-check`, and `branch-check` accept only entry files, and fail an added one with that bad name.
+- `changelog-updated`, `pr-check`, and `branch-check` accept only entry files, and fail an added one with a bad name.
 - You write the heading's time by hand; no hook rewrites it.
-- On the release PR, `fitness-release release-pr` commits the entry files into `CHANGELOG.md` below the Release Please version section, newest name first, and deletes them.
-
-Dated sections already in `CHANGELOG.md` stay valid history, which this check and `changelog-bullets` still judge.
+- Entry files stay in the folder after a release.
+- An entry file a release tag holds is final. Checks fail an edit or deletion of it, asking for a new entry file.
+- Each release tag's GitHub description lists the entry files added since the previous tag, newest first, as `fitness-release release-notes` writes it.
 
 ## Contributing
 
-This README is the canonical description for this check. This check is a self-contained sub-project (the `fitness-check-changelog` binary). To add options (e.g. custom filename, required format), extend the check and its tests here and keep the README in sync.
+This README is the canonical description for this check. This check is a self-contained sub-project (the `fitness-check-changelog` binary). To add options (e.g. custom folder, required format), extend the check and its tests here and keep the README in sync.

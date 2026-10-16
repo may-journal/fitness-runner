@@ -6,15 +6,15 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I approve a release only when its version file and changelog section match the version Release Please will tag. The section may sit under the linked version heading Release Please writes.
+I approve a release only when its version file matches the version Release Please will tag. Its notes come from entry files, so my `CHANGELOG.md` needs no release section.
 
 ## Measurement
 
-release versions whose version file and changelog section agree
+release versions whose version file agrees
 -
 release versions in a manifest
 
-Source: `go/cmd/fitness-check-release-changelog/main.go:79`
+Source: `go/cmd/fitness-check-release-changelog/main.go:74`
 
 ## Requirements
 
@@ -34,19 +34,11 @@ Source: `go/cmd/fitness-check-release-changelog/main.go:79`
     - Given Developer has a `version.txt` that differs from the manifest
         - When fitness runs release-changelog
             - Then it fails naming both versions
-- 0054.6
-    - Given Developer has a release with no `version.txt` and no CHANGELOG
+- 0054.11
+    - Given Developer has a release with no `version.txt`
         - When fitness runs release-changelog
-            - Then it fails naming each missing file
-- 0054.7
-    - Given Developer has a release section that is missing, empty, or duplicated
-        - When fitness runs release-changelog
-            - Then it fails naming the section problem
-- 0054.8
-    - Given Developer has a staged manifest change without a CHANGELOG change
-        - When fitness runs release-changelog
-            - Then it fails asking for the release section
-- 0054.10
-    - Given Developer has a matching `version.txt` and a listed release section under a plain or linked heading
+            - Then it fails naming the missing file
+- 0054.12
+    - Given Developer has a matching `version.txt`, a staged manifest change, and a `CHANGELOG.md` with no release section, or none
         - When fitness runs release-changelog
             - Then it passes

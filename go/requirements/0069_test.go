@@ -2,7 +2,6 @@
 package requirements
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"os/exec"
 	"strconv"
@@ -19,20 +18,6 @@ const (
 
 // entryCompare is the compare view of release 1.1.0.
 const entryCompare = "https://github.com/" + repo0014 + "/compare/v1.0.0...v1.1.0"
-
-// entryRelease is release 1.1.0 as Release Please writes it in CHANGELOG.md.
-const entryRelease = "## [1.1.0](" + entryCompare + ") (2026-10-11)\n\n\n### Features\n\n* **app:** add one file\n\n"
-
-// entryBranch is a branch off main with one commit per changelog, as a PR's
-// commits write it, and GitHub's saved answer for that branch's open PR.
-func entryBranch(t *testing.T, changelogs ...string) (string, response) {
-	t.Helper()
-	commits := make([]map[string]string, len(changelogs))
-	for i, changelog := range changelogs {
-		commits[i] = map[string]string{"CHANGELOG.md": changelog}
-	}
-	return entryCommits(t, nil, pr0014(11), commits...)
-}
 
 // entryCommits is a branch off main, with files over it, with one commit
 // per set of changelog files, and GitHub's saved answer for its open PR.
@@ -67,18 +52,15 @@ func entryApply(t *testing.T, repo string, commits []map[string]string) {
 }
 
 // entryActions runs pr-check in Actions on repo's branch, its PR described
-// by body. GitHub answers the PR's files with the branch's CHANGELOG.md diff
-// and changed entry files, as its files API sends them.
-func entryActions(t *testing.T, repo, body string) (string, int) {
+// by body. GitHub answers the PR's files with the branch's changed entry
+// files, as its files API sends them, and nothing for any other files read.
+// It answers released first, then that the repo has no release.
+func entryActions(t *testing.T, repo, body string, released ...response) (string, int) {
 	t.Helper()
-	files := response{Match: []string{"repos/" + repo0014 + "/pulls/1/files"}, Stdout: entryPatch(t, repo, "CHANGELOG.md")}
-	if patch := files.Stdout; patch != "" {
-		data, err := json.Marshal(map[string]string{"patch": patch})
-		mustDo(t, err)
-		files.Stdout = string(data) + "\n"
-	}
+	files := response{Match: []string{"repos/" + repo0014 + "/pulls/1/files"}}
 	entries := response{Match: []string{"repos/" + repo0014 + "/pulls/1/files", "startswith"}, Stdout: entryFilesAnswer(t, repo)}
-	rp := standIn(t, map[string][]response{"gh": {entries, files, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan")}})
+	saved := append(released, entries, files, entryNoRelease, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
+	rp := standIn(t, map[string][]response{"gh": saved})
 	pr := map[string]any{"number": 1, "title": "test(app): add one file", "body": body}
 	env := event0014(t, "pull_request", map[string]any{"action": "synchronize", "pull_request": pr})
 	return fitness(t, repo, append(rp.env, env...), "pr-check")
@@ -116,10 +98,12 @@ func entryFilesAnswer(t *testing.T, repo string) string {
 	return answer.String()
 }
 
-// entryLocal runs branch-check on repo's branch before it is pushed.
-func entryLocal(t *testing.T, repo string, pr response) (string, int) {
+// entryLocal runs branch-check on repo's branch before it is pushed, with
+// GitHub answering released first, then that the repo has no release.
+func entryLocal(t *testing.T, repo string, pr response, released ...response) (string, int) {
 	t.Helper()
-	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))})
+	saved := append(released, branchGitHub(pr, entryNoRelease, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))...)
+	rp := standIn(t, map[string][]response{"gh": saved})
 	return fitness(t, repo, rp.env, "branch-check")
 }
 
@@ -185,7 +169,7 @@ func Test0069_14(t *testing.T) {
 	sees(t, local, localCode, 0, "pr-check #1")
 }
 
-func Test0069_15(t *testing.T) {
+func Test0069_24(t *testing.T) {
 	t.Parallel()
 	repo, pr := entryCommits(t, nil, entryFileBody("changelog/2026-10-10-0900-a-file.md"),
 		map[string]string{"changelog/2026-10-10-0900-a-file.md": entryFileText(entryFirst, "Feat: add one file.")},
@@ -195,35 +179,7 @@ func Test0069_15(t *testing.T) {
 	sees(t, out, code, 1, want)
 	local, localCode := entryLocal(t, repo, pr)
 	sees(t, local, localCode, 1, want)
-}
-
-// entrySectionEdit is pr-check's finding on a PR that changes CHANGELOG.md,
-// cut before the angle brackets the Actions summary escapes.
-const entrySectionEdit = "this PR changes CHANGELOG.md; only the release PR writes it, so record this PR's change in one changelog/"
-
-func Test0069_16(t *testing.T) {
-	t.Parallel()
-	repo, pr := entryBranch(t, changelogEntry(entryFirst, "Feat: add one file."))
-	out, code := entryActions(t, repo, pr0014(11))
-	sees(t, out, code, 1, entrySectionEdit)
-	local, localCode := entryLocal(t, repo, pr)
-	sees(t, local, localCode, 1, entrySectionEdit)
-	repo, pr = entryCommits(t, nil, entryFileBody(entryFirstFile), map[string]string{
-		entryFirstFile: entryFileText(entryFirst, "Feat: add one file."),
-		"CHANGELOG.md": strings.Replace(changelogBase, "- Docs: add the readme.", "- Docs: add the readme file.", 1),
-	})
-	out, code = entryActions(t, repo, entryFileBody(entryFirstFile))
-	sees(t, out, code, 1, entrySectionEdit)
-	local, localCode = entryLocal(t, repo, pr)
-	sees(t, local, localCode, 1, entrySectionEdit)
-}
-
-func Test0069_4(t *testing.T) {
-	t.Parallel()
-	repo, _ := entryBranch(t, strings.Replace(changelogBase, "### 2026.10.08.1400", entryRelease+"### 2026.10.08.1400", 1))
-	body := prBody0014("- What ships: the [CHANGELOG section](https://github.com/"+repo0014+"/blob/abc1234/CHANGELOG.md#110-2026-10-11) and [compare view]("+entryCompare+").", 11)
-	out, code := entryActions(t, repo, body)
-	sees(t, out, code, 0, "Passed.")
+	entryUndated(t)
 }
 
 func Test0069_17(t *testing.T) {
@@ -239,8 +195,10 @@ func Test0069_17(t *testing.T) {
 	sees(t, out, code, 1, "PR description copies the "+entryFirstFile+" line", "Feat: add one file to the app.", "link the entry instead")
 }
 
-func Test0069_19(t *testing.T) {
-	t.Parallel()
+// entryUndated asserts pr-check and branch-check fail a PR adding an entry
+// file whose name lacks its heading's date, naming the dated name.
+func entryUndated(t *testing.T) {
+	t.Helper()
 	const undated = "changelog/one-file.md"
 	repo, pr := entryCommits(t, nil, entryFileBody(undated), map[string]string{undated: entryFileText(entryFirst, "Feat: add one file.")})
 	want := undated + " must be named " + entryFirstFile + ": its heading's date, then the change"
@@ -250,71 +208,12 @@ func Test0069_19(t *testing.T) {
 	sees(t, local, localCode, 1, want)
 }
 
-func Test0069_7(t *testing.T) {
-	t.Parallel()
-	patch := response{Match: []string{"--method PATCH", "repos/" + repo0014 + "/pulls/7"}, Stdout: "{}\n"}
-	rp := standIn(t, map[string][]response{"gh": {patch, entryReleasePR(t, entryCopiedNotes)}})
-	env := append(rp.env, "RELEASE_PR={\"number\":7}", "GITHUB_REPOSITORY="+repo0014)
-	out, code := releaseToolRun(t, releaseToolRepo(t, nil), env, "release-pr")
-	sees(t, out, code, 0)
-	section := "[CHANGELOG section](https://github.com/" + repo0014 + "/blob/abc1234/CHANGELOG.md#110-2026-10-11)"
-	if !rp.called("gh", "--method PATCH", section, "[compare view]("+entryCompare+")") {
-		t.Errorf("release PR body does not link its changelog section and compare view:\n%s", strings.Join(rp.calls("gh"), "\n"))
-	}
-	if rp.called("gh", "--method PATCH", "add one file") {
-		t.Errorf("release PR body still copies its notes:\n%s", strings.Join(rp.calls("gh"), "\n"))
-	}
-}
-
-// entryFolded is the CHANGELOG.md the release tool committed, decoded from
-// its one commit call, and that call's input; both are "" when it made none.
-func entryFolded(t *testing.T, calls []string) (string, string) {
-	t.Helper()
-	for _, c := range calls {
-		_, input, ok := strings.Cut(c, "--input - ")
-		if !ok || !strings.Contains(c, "createCommitOnBranch") {
-			continue
-		}
-		var sent struct {
-			Variables struct {
-				Input struct {
-					FileChanges struct {
-						Additions []struct{ Contents string } `json:"additions"`
-					} `json:"fileChanges"`
-				} `json:"input"`
-			} `json:"variables"`
-		}
-		mustDo(t, json.Unmarshal([]byte(input), &sent))
-		raw, err := base64.StdEncoding.DecodeString(sent.Variables.Input.FileChanges.Additions[0].Contents)
-		mustDo(t, err)
-		return string(raw), input
-	}
-	return "", ""
-}
-
 // entryFirstFile and entryLaterFile are the release branch's entry files,
 // dated entryFirst and entryLater.
 const (
 	entryFirstFile = "changelog/2026-10-10-0900-one-file.md"
 	entryLaterFile = "changelog/2026-10-10-1000-later-file.md"
 )
-
-// entryFoldedUnderRelease asserts the release tool's one commit put both
-// entries, newest file name first, between the release notes and the older
-// section, and deleted their files on the release branch it read.
-func entryFoldedUnderRelease(t *testing.T, calls []string) {
-	t.Helper()
-	folded, input := entryFolded(t, calls)
-	if !entryOrdered(folded, "* **app:** add one file", "### "+entryLater, "### "+entryFirst, "### 2026.10.08.1400") {
-		t.Errorf("the entries are not committed newest first under the version section:\n%s", folded)
-	}
-	deletions := `"deletions":[{"path":"` + entryLaterFile + `"},{"path":"` + entryFirstFile + `"}]`
-	for _, want := range []string{deletions, `"expectedHeadOid":"abc1234"`} {
-		if !strings.Contains(input, want) {
-			t.Errorf("the commit does not delete the entry files on the release branch:\n%s", input)
-		}
-	}
-}
 
 // entryOrdered reports whether text holds each part, in the order given.
 func entryOrdered(text string, parts ...string) bool {
@@ -329,42 +228,145 @@ func entryOrdered(text string, parts ...string) bool {
 	return true
 }
 
-// entryReleaseTool runs release-pr for PR 7 in a repo whose main holds two
-// entry files, with GitHub answering that the release branch's root holds
-// rootDirs, one folder name per line, and both files under changelog/,
-// oldest first.
-func entryReleaseTool(t *testing.T, rootDirs string) replays {
-	t.Helper()
-	first := entryFileText(entryFirst, "Feat: add one file.")
-	later := entryFileText(entryLater, "Fix: tidy the file.")
-	repo := releaseToolRepo(t, withEntries(map[string]string{"2026-10-10-0900-one-file": first, "2026-10-10-1000-later-file": later}))
-	contents := "repos/" + repo0014 + "/contents"
-	gh := []response{
-		{Match: []string{"--method PATCH", "repos/" + repo0014 + "/pulls/7"}, Stdout: "{}\n"},
-		{Match: []string{contents + "?ref=abc1234"}, Stdout: rootDirs},
-		{Match: []string{contents + "/changelog?ref=abc1234"}, Stdout: entryFirstFile + "\n" + entryLaterFile + "\n"},
-		{Match: []string{contents + "/" + entryFirstFile + "?ref=abc1234"}, Stdout: first},
-		{Match: []string{contents + "/" + entryLaterFile + "?ref=abc1234"}, Stdout: later},
-		{Match: []string{contents + "/CHANGELOG.md?ref=abc1234"}, Stdout: strings.Replace(changelogBase, "### 2026.10.08.1400", entryRelease+"### 2026.10.08.1400", 1)},
-		{Match: []string{"graphql", "createCommitOnBranch"}, Stdout: "def5678\n"},
-		entryReleasePR(t, entryCopiedNotes),
-	}
-	rp := standIn(t, map[string][]response{"gh": gh})
-	env := append(rp.env, "RELEASE_PR={\"number\":7}", "GITHUB_REPOSITORY="+repo0014)
-	out, code := releaseToolRun(t, repo, env, "release-pr")
-	sees(t, out, code, 0)
-	return rp
+// entryShips is the `## Changelog` item the release tool writes for release
+// PR 7 at commit abc1234.
+const entryShips = "- What ships: the [entry files](https://github.com/" + repo0014 + "/tree/abc1234/changelog) added since v1.0.0, and the [compare view](" + entryCompare + ")."
+
+func Test0069_20(t *testing.T) {
+	t.Parallel()
+	release := prBody0014(entryShips, 11)
+	repo, pr := entryCommits(t, nil, release, map[string]string{"version.txt": "1.1.0\n"})
+	out, code := entryActions(t, repo, release)
+	sees(t, out, code, 0, "Passed.")
+	local, localCode := entryLocal(t, repo, pr)
+	sees(t, local, localCode, 0, "pr-check #1")
+	repo, pr = entryCommits(t, nil, entryFileBody(entryFirstFile), map[string]string{
+		entryFirstFile: entryFileText(entryFirst, "Feat: add one file."),
+		"CHANGELOG.md": changelogEntry(entryFirst, "Feat: add one file."),
+	})
+	out, code = entryActions(t, repo, entryFileBody(entryFirstFile))
+	sees(t, out, code, 0, "Passed.")
+	local, localCode = entryLocal(t, repo, pr)
+	sees(t, local, localCode, 0, "pr-check #1")
 }
 
-func Test0069_18(t *testing.T) {
+func Test0069_21(t *testing.T) {
 	t.Parallel()
-	rp := entryReleaseTool(t, "changelog\ngo\n")
-	entryFoldedUnderRelease(t, rp.calls("gh"))
-	if !rp.called("gh", "--method PATCH", "/blob/def5678/CHANGELOG.md#110-2026-10-11") {
-		t.Errorf("release PR body does not link the folded commit:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	patch := response{Match: []string{"--method PATCH", "repos/" + repo0014 + "/pulls/7"}, Stdout: "{}\n"}
+	rp := standIn(t, map[string][]response{"gh": {patch, entryReleasePR(t, entryCopiedNotes)}})
+	env := append(rp.env, "RELEASE_PR={\"number\":7}", "GITHUB_REPOSITORY="+repo0014)
+	out, code := releaseToolRun(t, releaseToolRepo(t, nil), env, "release-pr")
+	sees(t, out, code, 0)
+	if !rp.called("gh", "--method PATCH", strings.TrimPrefix(entryShips, "- ")) {
+		t.Errorf("release PR body does not link its entry files and compare view:\n%s", strings.Join(rp.calls("gh"), "\n"))
 	}
-	rp = entryReleaseTool(t, "go\n")
-	if rp.called("gh", "createCommitOnBranch") || !rp.called("gh", "--method PATCH", "/blob/abc1234/CHANGELOG.md#110-2026-10-11") {
-		t.Errorf("a release branch without entry files was folded or left unlinked:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	if rp.called("gh", "--method PATCH", "add one file") || rp.called("gh", "graphql") {
+		t.Errorf("release PR body still copies its notes, or the tool committed:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	}
+}
+
+// entryOldFile is an entry file release v1.0.0 shipped.
+const entryOldFile = "changelog/2026-10-01-0900-old-file.md"
+
+// entryNoRelease is GitHub's answer for a repo with no release yet.
+var entryNoRelease = response{Match: []string{"releases?per_page=1"}}
+
+// entryReleased is GitHub's answer that release v1.0.0 is the newest and
+// its tag holds entryOldFile.
+func entryReleased() []response {
+	contents := "repos/" + repo0014 + "/contents"
+	return []response{
+		{Match: []string{"releases?per_page=1"}, Stdout: "v1.0.0\n"},
+		{Match: []string{contents + "?ref=v1.0.0"}, Stdout: "changelog\ngo\n"},
+		{Match: []string{contents + "/changelog?ref=v1.0.0"}, Stdout: entryOldFile + "\n"},
+	}
+}
+
+// entryShipped is the finding on an edit to entryOldFile, cut before the
+// angle brackets the Actions summary escapes.
+const entryShipped = entryOldFile + " shipped in v1.0.0, so its notes are published; leave it as it is and add a new changelog/"
+
+func Test0069_23(t *testing.T) {
+	t.Parallel()
+	old := entryFileText("2026.10.01.0900", "Feat: ship the old file.")
+	for _, edit := range []string{old + "- Fix: a late bullet.\n", ""} {
+		repo, pr := entryCommits(t, map[string]string{entryOldFile: old}, pr0014(11), map[string]string{entryOldFile: edit})
+		out, code := entryActions(t, repo, pr0014(11), entryReleased()...)
+		sees(t, out, code, 1, entryShipped)
+		local, localCode := entryLocal(t, repo, pr, entryReleased()...)
+		sees(t, local, localCode, 1, entryShipped)
+	}
+}
+
+// entryNotes runs release-notes for tag in repo, with GitHub answering that
+// release 42 carries it. It returns the notes the tool sent.
+func entryNotes(t *testing.T, repo, tag string) string {
+	t.Helper()
+	gh := []response{
+		{Match: []string{"repos/" + repo0014 + "/releases?per_page=100", `"` + tag + `"`}, Stdout: "42\n"},
+		{Match: []string{"--method PATCH", "repos/" + repo0014 + "/releases/42"}, Stdout: "{}\n"},
+	}
+	rp := standIn(t, map[string][]response{"gh": gh})
+	env := append(rp.env, "GITHUB_REF_NAME="+tag, "GITHUB_REPOSITORY="+repo0014)
+	out, code := releaseToolRun(t, repo, env, "release-notes")
+	sees(t, out, code, 0)
+	for _, c := range rp.calls("gh") {
+		if strings.Contains(c, "releases/42") {
+			return c
+		}
+	}
+	t.Fatalf("the release tool sent no notes:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	return ""
+}
+
+// entryTagged is a repo whose v1.0.0 tag, when old is set, holds one entry
+// file, and whose v1.1.0 tag adds two more.
+func entryTagged(t *testing.T, old bool) string {
+	t.Helper()
+	repo := releaseToolRepo(t, nil)
+	if old {
+		commit(t, repo, withEntries(map[string]string{"2026-10-01-0900-old-file": entryFileText("2026.10.01.0900", "Feat: ship the old file.")}), "feat(app): ship the old file")
+		git(t, repo, "tag", "v1.0.0")
+	}
+	commit(t, repo, map[string]string{
+		entryFirstFile: entryFileText(entryFirst, "Feat: add one file."),
+		entryLaterFile: entryFileText(entryLater, "Fix: tidy the file."),
+	}, "feat(app): add one file")
+	git(t, repo, "tag", "v1.1.0")
+	return repo
+}
+
+func Test0069_22(t *testing.T) {
+	t.Parallel()
+	newest := []string{"### " + entryLater, "Fix: tidy the file.", "### " + entryFirst, "Feat: add one file."}
+	notes := entryNotes(t, entryTagged(t, true), "v1.1.0")
+	if !entryOrdered(notes, append(newest, "[Compare view]("+entryCompare+")")...) {
+		t.Errorf("the notes do not list the new entries newest first, then the compare view:\n%s", notes)
+	}
+	if strings.Contains(notes, "ship the old file") || strings.Contains(notes, "relatedConfigurations") {
+		t.Errorf("the notes list an entry from an earlier release, or front matter:\n%s", notes)
+	}
+	first := entryNotes(t, entryTagged(t, false), "v1.1.0")
+	if !entryOrdered(first, append(newest, "[Commits](https://github.com/"+repo0014+"/commits/v1.1.0)")...) {
+		t.Errorf("a first release does not list every entry, then its commits:\n%s", first)
+	}
+}
+
+func Test0069_25(t *testing.T) {
+	t.Parallel()
+	repo := entryTagged(t, true)
+	shallow := t.TempDir()
+	git(t, shallow, "clone", "-q", "--depth", "1", "--branch", "v1.1.0", "file://"+repo, ".")
+	for _, c := range []struct{ repo, tag, want string }{
+		{shallow, "v1.1.0", "the clone is shallow, so the previous release tag is unknown"},
+		{repo, "v9.9.9", "v9.9.9"},
+	} {
+		rp := standIn(t, map[string][]response{"gh": {{Stdout: "{}\n"}}})
+		env := append(rp.env, "GITHUB_REF_NAME="+c.tag, "GITHUB_REPOSITORY="+repo0014)
+		out, code := releaseToolRun(t, c.repo, env, "release-notes")
+		sees(t, out, code, 1, c.want)
+		if len(rp.calls("gh")) > 0 {
+			t.Errorf("the release tool reached GitHub after failing:\n%s", strings.Join(rp.calls("gh"), "\n"))
+		}
 	}
 }

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -26,9 +27,6 @@ type Target struct {
 	ClosedAt    string `json:"closed_at"`
 	// ClosedBy is the event sender who closed the issue.
 	ClosedBy string `json:"-"`
-	// ChangelogPatch is a local branch's CHANGELOG.md diff against its PR
-	// base, read from git before the push; nil reads the PR's diff from GitHub.
-	ChangelogPatch *string `json:"-"`
 	// EntryFiles are a local branch's changed changelog entry files against
 	// its PR base; nil reads them from GitHub.
 	EntryFiles *[]FileChange `json:"-"`
@@ -152,27 +150,6 @@ func (g Client) OpenPRs() ([]Target, error) {
 	return decodeLines[Target](out)
 }
 
-// FilePatch returns pull request n's unified diff of path against its base,
-// empty when the PR leaves path alone. GitHub omits the patch of a very large
-// diff; that fails here rather than reading as no change.
-func (g Client) FilePatch(n int, path string) (string, error) {
-	jq := fmt.Sprintf(".[] | select(.filename == %q) | {patch: (.patch // \"\")}", path)
-	out, err := g.api("--paginate", "--jq", jq, "pulls/"+strconv.Itoa(n)+"/files?per_page=100")
-	if err != nil {
-		return "", err
-	}
-	files, err := decodeLines[struct {
-		Patch string `json:"patch"`
-	}](out)
-	if err != nil || len(files) == 0 {
-		return "", err
-	}
-	if files[0].Patch == "" {
-		return "", fmt.Errorf("GitHub sent no diff for %s", path)
-	}
-	return files[0].Patch, nil
-}
-
 // DirFiles returns the files pull request n changes directly under dir,
 // with each one's status and diff.
 func (g Client) DirFiles(n int, dir string) ([]FileChange, error) {
@@ -182,6 +159,23 @@ func (g Client) DirFiles(n int, dir string) ([]FileChange, error) {
 		return nil, err
 	}
 	return decodeLines[FileChange](out)
+}
+
+// ReleasedFiles returns the newest GitHub release's tag and the files
+// directly under dir at that tag. The tag is empty when the repo has no
+// release, and the files are none when the tag has no such folder.
+func (g Client) ReleasedFiles(dir string) (string, []string, error) {
+	out, err := g.api("--jq", ".[0].tag_name // empty", "releases?per_page=1")
+	tag := strings.TrimSpace(string(out))
+	if err != nil || tag == "" {
+		return "", nil, err
+	}
+	out, err = g.api("--jq", `.[] | select(.type == "dir") | .name`, "contents?ref="+tag)
+	if err != nil || !slices.Contains(strings.Fields(string(out)), dir) {
+		return tag, nil, err
+	}
+	out, err = g.api("--jq", `.[] | select(.type == "file") | .path`, "contents/"+dir+"?ref="+tag)
+	return tag, strings.Fields(string(out)), err
 }
 
 func (g Client) OpenPlans() ([]Target, error) {

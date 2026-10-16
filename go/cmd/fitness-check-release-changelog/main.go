@@ -1,5 +1,6 @@
 // Command fitness-check-release-changelog binds Release Please's manifest to
-// the version file and the human-readable release section in CHANGELOG.md.
+// the version file. Release notes come from changelog/ entry files, so
+// CHANGELOG.md is not judged.
 package main
 
 import (
@@ -14,9 +15,8 @@ import (
 )
 
 const (
-	manifestPath  = ".release-please-manifest.json"
-	versionPath   = "version.txt"
-	changelogPath = "CHANGELOG.md"
+	manifestPath = ".release-please-manifest.json"
+	versionPath  = "version.txt"
 )
 
 var semverPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$`)
@@ -43,7 +43,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if !ready {
 		return result, nil
 	}
-	return judgeRelease(root, version, checkkit.ChangedFiles()), nil
+	return judgeRelease(root, version), nil
 }
 
 func isAvailable(root string) (bool, error) {
@@ -70,16 +70,12 @@ func manifestResult(root string) (checkkit.Result, string, bool, error) {
 	return checkkit.Result{}, version, true, nil
 }
 
-func judgeRelease(root, version string, changed []string) checkkit.Result {
-	filesChecked := 3
-	errs := correlatedFileErrors(root, version)
-	if manifestChanged(changed) && !contains(changed, changelogPath) {
-		errs = append(errs, manifestPath+" changed without "+changelogPath+"; add the release section reviewers will approve")
+// judgeRelease checks the manifest and version.txt agree on version.
+func judgeRelease(root, version string) checkkit.Result {
+	if errs := versionFileErrors(root, version); len(errs) > 0 {
+		return checkkit.Fail(2, errs...)
 	}
-	if len(errs) > 0 {
-		return checkkit.Fail(filesChecked, errs...)
-	}
-	return checkkit.Pass(filesChecked)
+	return checkkit.Pass(2)
 }
 
 func releaseVersion(raw []byte) (string, []string) {
@@ -111,79 +107,15 @@ func validRootVersion(value any) (string, []string) {
 	return version, nil
 }
 
-func correlatedFileErrors(root, version string) []string {
-	var errs []string
+// versionFileErrors names a missing version.txt, or one whose version
+// differs from the manifest's.
+func versionFileErrors(root, version string) []string {
 	versionText, err := os.ReadFile(filepath.Join(root, versionPath))
 	if err != nil {
-		errs = append(errs, versionPath+" is missing; it must match release "+version)
-	} else if got := strings.TrimSpace(string(versionText)); got != version {
-		errs = append(errs, fmt.Sprintf("%s version %q must match %s version %q", versionPath, got, manifestPath, version))
+		return []string{versionPath + " is missing; it must match release " + version}
 	}
-
-	changelog, err := os.ReadFile(filepath.Join(root, changelogPath))
-	if err != nil {
-		return append(errs, changelogPath+" is missing; add a release section for "+version)
+	if got := strings.TrimSpace(string(versionText)); got != version {
+		return []string{fmt.Sprintf("%s version %q must match %s version %q", versionPath, got, manifestPath, version)}
 	}
-	return append(errs, releaseSectionErrors(string(changelog), version)...)
-}
-
-func releaseSectionErrors(changelog, version string) []string {
-	sections := releaseSections(changelog, version)
-	if len(sections) == 0 {
-		return []string{changelogPath + " must contain a `## " + version + "` release section"}
-	}
-	if len(sections) > 1 {
-		return []string{changelogPath + " contains duplicate release sections for " + version}
-	}
-	if hasListItem(sections[0]) {
-		return nil
-	}
-	return []string{changelogPath + " release section " + version + " must contain at least one list item describing what ships"}
-}
-
-func hasListItem(section string) bool {
-	for _, line := range strings.Split(section, "\n") {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "- ") {
-			return true
-		}
-		if strings.HasPrefix(trimmed, "* ") {
-			return true
-		}
-	}
-	return false
-}
-
-func releaseSections(changelog, version string) []string {
-	lines := strings.Split(changelog, "\n")
-	// Release Please links the version: `## [1.2.0](compare link) (date)`.
-	heading := regexp.MustCompile(`^##\s+\[?` + regexp.QuoteMeta(version) + `\]?(?:\(|\s|$)`)
-	var sections []string
-	for i := 0; i < len(lines); i++ {
-		if !heading.MatchString(lines[i]) {
-			continue
-		}
-		end := len(lines)
-		for j := i + 1; j < len(lines); j++ {
-			if strings.HasPrefix(lines[j], "## ") {
-				end = j
-				break
-			}
-		}
-		sections = append(sections, strings.Join(lines[i:end], "\n"))
-	}
-	return sections
-}
-
-func manifestChanged(files []string) bool {
-	return contains(files, manifestPath)
-}
-
-func contains(files []string, target string) bool {
-	for _, file := range files {
-		if filepath.ToSlash(file) == target {
-			return true
-		}
-	}
-	return false
+	return nil
 }

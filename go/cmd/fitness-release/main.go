@@ -39,7 +39,7 @@ func reportFailure(operation string, err error) {
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, version, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
@@ -65,6 +65,7 @@ func dispatch(command string, config release.Config, root string) error {
 		"assemble":        config.Assemble,
 		"promote":         func() error { return config.Promote(context.Background()) },
 		"release-pr":      func() error { return updateReleasePR(root) },
+		"release-notes":   func() error { return publishNotes(root) },
 		"smoke":           func() error { return config.Smoke(context.Background(), false) },
 		"verify-download": func() error { return config.Smoke(context.Background(), true) },
 		"verify-tag":      func() error { return config.VerifyTag(os.Getenv("GITHUB_REF_NAME")) },
@@ -99,4 +100,11 @@ func updateReleasePR(root string) error {
 	}
 	client := releasemeta.Client{Root: root, Repo: os.Getenv("GITHUB_REPOSITORY")}
 	return client.UpdateReleasePR(context.Background(), value.Number)
+}
+
+// publishNotes writes the description of the release GITHUB_REF_NAME tags
+// from the entry files added since the previous release tag.
+func publishNotes(root string) error {
+	client := releasemeta.Client{Root: root, Repo: os.Getenv("GITHUB_REPOSITORY")}
+	return client.PublishNotes(context.Background(), os.Getenv("GITHUB_REF_NAME"))
 }

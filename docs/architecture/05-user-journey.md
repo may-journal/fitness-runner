@@ -135,4 +135,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 25  | Node package and test checks.       | System  | Lint, format, Node version, dependencies, and test coverage stay current.             |
 | 26  | Repo hygiene checks.                | System  | No build output, plan files, unexplained ignores, or copied code.                     |
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI.            |
-| 28  | Release build.                      | System  | The release tool builds bundles and publishes notes that link the changelog.          |
+| 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |

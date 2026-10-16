@@ -68,14 +68,9 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) ch
 	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: 1 + len(issues)}
 }
 
-// readBranchChangelog gives pr the local tip's changelog diff, and its entry
-// files, so pr-check judges them before the push.
+// readBranchChangelog gives pr the local tip's entry files, so pr-check
+// judges them before the push.
 func readBranchChangelog(ctx context.Context, root, tip string, pr *branchPR) error {
-	patch, err := branchChangelogPatch(ctx, root, tip, pr)
-	if err != nil {
-		return err
-	}
-	pr.ChangelogPatch = &patch
 	files, err := branchEntryFiles(ctx, root, tip, pr)
 	pr.EntryFiles = &files
 	return err
