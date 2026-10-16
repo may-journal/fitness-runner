@@ -17,17 +17,62 @@ import (
 // zero files checked, so the check stays inert under the file runner;
 // otherwise it reports one file whose errors are validate's messages.
 func Run(args []string, validate func(body string) []string) (checkkit.Result, error) {
+	return RunIf(args, func(string) bool { return true }, validate)
+}
+
+// BlobEnv is set by `fitness --blob`, which judges a draft text of any kind.
+const BlobEnv = "FITNESS_BLOB"
+
+// RunIf is Run for a check that judges one kind of body. Under `fitness
+// --blob`, a text applies rejects passes inert with zero files, so the runner
+// lists the check as not applying. Every other caller names the body's kind
+// itself, so the check always judges it.
+func RunIf(args []string, applies func(body string) bool, validate func(body string) []string) (checkkit.Result, error) {
 	body, ok, err := resolveBody(args)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	if !ok {
+	if inert(ok, body, applies) {
 		return checkkit.Pass(0), nil
 	}
 	if errs := validate(body); len(errs) > 0 {
 		return checkkit.Fail(1, errs...), nil
 	}
 	return checkkit.Pass(1), nil
+}
+
+// inert reports whether there is no body to judge, or a blob the check does
+// not apply to.
+func inert(ok bool, body string, applies func(string) bool) bool {
+	return !ok || os.Getenv(BlobEnv) != "" && !applies(body)
+}
+
+// PlanBody reports whether body is a Plan issue: it has the Plan template's
+// checklist section.
+func PlanBody(body string) bool {
+	return hasHeading(body, "## What needs to happen")
+}
+
+// PRBody reports whether body is a pull request description: it has the PR
+// template's changelog section.
+func PRBody(body string) bool {
+	return hasHeading(body, "## Changelog")
+}
+
+// Closing reports whether body is an issue being closed. A draft never is:
+// only close-check and pr-check judge an issue at close time.
+func Closing(string) bool {
+	return false
+}
+
+// hasHeading reports whether a line of body is exactly heading.
+func hasHeading(body, heading string) bool {
+	for _, line := range strings.Split(body, "\n") {
+		if strings.TrimSpace(line) == heading {
+			return true
+		}
+	}
+	return false
 }
 
 // RunDoc runs a file-walking doc check in body mode when an explicit

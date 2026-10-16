@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -76,17 +77,45 @@ func judgeBlob(root, text string, checks []resolved, skipped []string) int {
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
 	outcomes := runPool(root, checks, []string{"--body-file", file}, blobEnv(checks))
+	checks, outcomes, notApplying := applying(checks, outcomes)
 	rows, success, failure, files := summarize(checks, outcomes)
 	elapsed := time.Since(start).Milliseconds()
 	printSummary(rows, success, failure, files, elapsed)
-	if len(skipped) > 0 {
-		out := os.Stdout
-		if failure > 0 {
-			out = os.Stderr
-		}
-		fmt.Fprintf(out, "Skipped (needs files): %s\n", strings.Join(skipped, ", "))
+	out := os.Stdout
+	if failure > 0 {
+		out = os.Stderr
 	}
+	listSkipped(out, "needs files", skipped)
+	listSkipped(out, "does not apply to this text", notApplying)
 	return finish(rows, success, failure, files, elapsed)
+}
+
+// applying drops the checks that passed inert with zero files, such as
+// plan-structure on a PR description, and returns their names.
+func applying(checks []resolved, outcomes []outcome) ([]resolved, []outcome, []string) {
+	var ran []resolved
+	var results []outcome
+	var inert []string
+	for i, c := range checks {
+		if inertOutcome(outcomes[i]) {
+			inert = append(inert, c.name)
+			continue
+		}
+		ran, results = append(ran, c), append(results, outcomes[i])
+	}
+	return ran, results, inert
+}
+
+// inertOutcome reports a clean pass that judged no file.
+func inertOutcome(o outcome) bool {
+	return o.res.Ok && o.res.FilesChecked == 0 && !o.timedOut && o.crashed == 0
+}
+
+// listSkipped names the skipped checks and why, when there are any.
+func listSkipped(out *os.File, why string, names []string) {
+	if len(names) > 0 {
+		fmt.Fprintf(out, "Skipped (%s): %s\n", why, strings.Join(names, ", "))
+	}
 }
 
 // parseBlob reads `--blob <text>`, `--blob=<text>`, or `--blob -` (stdin),
@@ -200,5 +229,5 @@ func blobEnv(checks []resolved) []string {
 	for i, c := range checks {
 		names[i] = c.name
 	}
-	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"))
+	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"), bodycheck.BlobEnv+"=1")
 }

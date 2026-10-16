@@ -21,7 +21,7 @@ Source: `go/cmd/fitness/blob.go:43`
 - 0077.1
     - Given Developer has a draft text and a repo with a file finding
         - When I run fitness with the text after `--blob`
-            - Then every blob-capable check judges only the text, and each check that needs files is listed as skipped
+            - Then the blob checks that apply judge only the text and pass, and each check that needs files is listed as skipped
 - 0077.2
     - Given Developer has a draft text the chosen checks accept
         - When I run fitness `--blob` with `--checks` naming them and a check that needs files
@@ -38,3 +38,15 @@ Source: `go/cmd/fitness/blob.go:43`
     - Given Developer has a repo config that sets a check time budget
         - When I run fitness `--blob` on a draft text
             - Then each blob check runs within that budget, as in a normal run
+- 0077.6
+    - Given Developer has a Plan issue text that follows the Plan template
+        - When I run fitness `--blob` on it with no `--checks`
+            - Then the Plan checks pass, the PR and closing checks are listed as not applying, and it exits 0
+- 0077.7
+    - Given Developer has a PR description text that follows the PR template
+        - When I run fitness `--blob` on it with no `--checks`
+            - Then the PR checks pass, the Plan and closing checks are listed as not applying, and it exits 0
+- 0077.8
+    - Given Developer has a PR description text whose changelog section is empty
+        - When I run fitness `--blob` on it with no `--checks`
+            - Then pr-structure fails naming the section and it exits 1
