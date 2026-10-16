@@ -79,16 +79,16 @@ func judgeBlob(root, text string, checks []resolved, skipped, env []string) int 
 	fmt.Fprintln(os.Stderr, "Running checks:")
 	outcomes := runPool(root, checks, []string{"--body-file", file}, env)
 	checks, outcomes, notApplying := applying(checks, outcomes)
-	rows, success, failure, files := summarize(checks, outcomes)
-	elapsed := time.Since(start).Milliseconds()
-	printSummary(rows, success, failure, files, elapsed)
+	rows, totals := summarize(checks, outcomes)
+	totals.Ms = time.Since(start).Milliseconds()
+	printSummary(rows, totals)
 	out := os.Stdout
-	if failure > 0 {
+	if totals.Failure > 0 {
 		out = os.Stderr
 	}
 	listSkipped(out, "needs files", skipped)
 	listSkipped(out, "does not apply to this text", notApplying)
-	return finish(rows, success, failure, files, elapsed)
+	return finish(rows, totals)
 }
 
 // applying drops the checks that passed inert with zero files, such as
@@ -109,7 +109,7 @@ func applying(checks []resolved, outcomes []outcome) ([]resolved, []outcome, []s
 
 // inertOutcome reports a clean pass that judged no file.
 func inertOutcome(o outcome) bool {
-	return o.res.Ok && o.res.FilesChecked == 0 && !o.timedOut && o.crashed == 0
+	return o.res.Ok && o.res.FilesChecked == 0 && len(o.res.Info) == 0 && !o.timedOut && o.crashed == 0
 }
 
 // listSkipped names the skipped checks and why, when there are any.

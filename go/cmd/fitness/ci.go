@@ -14,12 +14,12 @@ import (
 const maxAnnotations = 10
 
 // finish emits the CI report when running under GitHub Actions, then maps the
-// failure count to the process exit code.
-func finish(rows []render.Row, success, failure, files int, elapsedMs int64) int {
+// failure count to the process exit code. Info rows never change it.
+func finish(rows []render.Row, t render.Totals) int {
 	if isGitHubActions() {
-		emitCIReport(rows, success, failure, files, elapsedMs)
+		emitCIReport(rows, t)
 	}
-	if failure > 0 {
+	if t.Failure > 0 {
 		return 1
 	}
 	return 0
@@ -35,12 +35,15 @@ func isGitHubActions() bool {
 // running under GitHub Actions. It never changes the process result — the
 // exit code still comes from the check outcomes — so it is additive to the
 // terminal table a local run prints.
-func emitCIReport(rows []render.Row, success, failure, files int, elapsedMs int64) {
-	writeStepSummary(ciSummaryMarkdown(rows, success, failure, files, elapsedMs))
-	if failure > 0 {
+func emitCIReport(rows []render.Row, t render.Totals) {
+	writeStepSummary(ciSummaryMarkdown(rows, t))
+	if t.Failure > 0 {
 		report.MarkFailure()
 	}
 	for _, line := range annotations(rows, maxAnnotations) {
+		fmt.Println(line)
+	}
+	for _, line := range notices(rows, maxAnnotations) {
 		fmt.Println(line)
 	}
 }
@@ -51,39 +54,79 @@ func writeStepSummary(md string) {
 }
 
 // ciSummaryMarkdown renders the results as a markdown job summary: a
-// status table, then a section per failing check listing its errors.
-func ciSummaryMarkdown(rows []render.Row, success, failure, files int, elapsedMs int64) string {
+// status table, then a section per failing check listing its errors and an
+// Info section for checks that could not judge.
+func ciSummaryMarkdown(rows []render.Row, t render.Totals) string {
 	var b strings.Builder
 	b.WriteString("## Fitness checks\n\n")
-	b.WriteString(headline(success, failure, files, elapsedMs) + "\n\n")
+	b.WriteString(headline(t) + "\n\n")
 	b.WriteString("| Check | Status | Files | Time |\n| --- | --- | --- | --- |\n")
 	for _, r := range rows {
-		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", report.EscapeMarkdown(r.Name), statusMark(r.Ok), filesCell(r.FilesChecked), r.Ms)
+		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", report.EscapeMarkdown(r.Name), statusMark(r), filesCell(r.FilesChecked), r.Ms)
 	}
 	for _, r := range rows {
 		b.WriteString(rowDetail(r))
 	}
+	b.WriteString(infoSection(rows))
 	return b.String()
 }
 
 // headline is the one-line aggregate atop the summary: a positive line when
-// every check passed, otherwise a count of what passed and what failed. Both
-// forms name the files scanned and total time.
-func headline(success, failure, files int, elapsedMs int64) string {
-	total := success + failure
-	if failure == 0 {
-		return fmt.Sprintf("✅ **All %d checks passed** — %d files scanned in %dms", total, files, elapsedMs)
+// every check passed, otherwise a count of what passed with the failures and
+// info rows named. Both forms name the files scanned and total time.
+func headline(t render.Totals) string {
+	total := t.Success + t.Failure + t.Info
+	if t.Failure == 0 && t.Info == 0 {
+		return fmt.Sprintf("✅ **All %d checks passed** — %d files scanned in %dms", total, t.Files, t.Ms)
 	}
-	return fmt.Sprintf("❌ **%d of %d checks passed**, %d failed — %d files scanned in %dms",
-		success, total, failure, files, elapsedMs)
+	mark := "✅"
+	if t.Failure > 0 {
+		mark = "❌"
+	}
+	return fmt.Sprintf("%s **%d of %d checks passed**%s — %d files scanned in %dms",
+		mark, t.Success, total, render.Counts(t), t.Files, t.Ms)
 }
 
-// statusMark renders a row's ok flag as a marked word.
-func statusMark(ok bool) string {
-	if ok {
-		return "✅ pass"
+// statusMark renders a row's status as a marked word.
+func statusMark(r render.Row) string {
+	if !r.Ok {
+		return "❌ fail"
 	}
-	return "❌ fail"
+	if r.IsInfo() {
+		return "ℹ️ info"
+	}
+	return "✅ pass"
+}
+
+// infoSection lists every info note under one heading, or "" when there is
+// none. Info never fails the run.
+func infoSection(rows []render.Row) string {
+	var b strings.Builder
+	for _, r := range rows {
+		for _, note := range r.Info {
+			fmt.Fprintf(&b, "- %s: %s\n", report.EscapeMarkdown(r.Name), report.EscapeMarkdown(note))
+		}
+	}
+	if b.Len() == 0 {
+		return ""
+	}
+	return "\n### ℹ️ Info\n\n" + b.String()
+}
+
+// notices returns one notice per info note, capped at limit, with a final
+// notice naming how many more the job summary lists.
+func notices(rows []render.Row, limit int) []string {
+	var all []string
+	for _, r := range rows {
+		for _, note := range r.Info {
+			all = append(all, report.Notice(r.Name, note))
+		}
+	}
+	if len(all) <= limit {
+		return all
+	}
+	more := fmt.Sprintf("::notice::%d more info note(s); see the job summary", len(all)-limit)
+	return append(all[:limit], more)
 }
 
 // filesCell renders the files count; a negative count (a crash or timeout)

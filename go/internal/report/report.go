@@ -60,6 +60,12 @@ func Annotation(check, message string, locate bool) string {
 	return "::error" + properties + "::" + escapeData(check+": "+message)
 }
 
+// Notice returns a safely escaped info workflow command titled by the check.
+// It never marks the job failed.
+func Notice(check, message string) string {
+	return "::notice title=" + escapeProperty(check) + "::" + escapeData(message)
+}
+
 func escapeData(s string) string {
 	return strings.NewReplacer("%", "%25", "\r", "%0D", "\n", "%0A").Replace(s)
 }
