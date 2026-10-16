@@ -65,17 +65,32 @@ func Closing(string) bool {
 	return false
 }
 
-// hasHeading reports whether body has a heading naming title at any level,
-// in any case, with or without a trailing colon. The match is loose so a
-// misspelt heading still counts, and the structure check names the fault.
+// hasHeading reports whether body has a heading naming title outside a
+// fenced code block, at any level, in any case, with or without a trailing
+// colon, so the structure check names a wrong level or colon. A text with no
+// such heading is of another kind, and the check does not apply.
 func hasHeading(body, title string) bool {
+	fenced := false
 	for _, line := range strings.Split(body, "\n") {
-		text, isHeading := strings.CutPrefix(strings.TrimSpace(line), "#")
-		if isHeading && strings.EqualFold(strings.Trim(text, "# :"), title) {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "```") {
+			fenced = !fenced
+		}
+		if !fenced && strings.EqualFold(headingText(line), title) {
 			return true
 		}
 	}
 	return false
+}
+
+// headingText returns a heading line's text without its # marks and a
+// trailing colon, or "" for any other line.
+func headingText(line string) string {
+	text, isHeading := strings.CutPrefix(line, "#")
+	if !isHeading {
+		return ""
+	}
+	return strings.Trim(text, "# :")
 }
 
 // RunDoc runs a file-walking doc check in body mode when an explicit
