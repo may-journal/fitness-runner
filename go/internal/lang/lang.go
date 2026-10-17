@@ -33,6 +33,9 @@ type Module struct {
 	// Lockfiles are the file names its package managers write on install,
 	// each a name or a path.Match pattern for one.
 	Lockfiles []string
+	// Wrappers are the names of the files its build tools' wrappers write,
+	// and a repo commits as written, to pin the tool's version.
+	Wrappers []string
 	// BuildOutput, when set, lists the tracked files in a repo that are
 	// build output the language's projects write, which git must not track.
 	BuildOutput func(root string) []string
@@ -313,6 +316,20 @@ func IsLockfile(modules []Module) func(file string) bool {
 			matched, err := path.Match(pattern, base)
 			return err == nil && matched
 		})
+	}
+}
+
+// IsToolWritten returns a test, built once, of whether a file is one a
+// tool writes and a repo commits as written: a lockfile, or a build
+// wrapper file any module names. Its words and repeats are the tool's.
+func IsToolWritten(modules []Module) func(file string) bool {
+	lockfile := IsLockfile(modules)
+	var wrappers []string
+	for _, m := range modules {
+		wrappers = append(wrappers, m.Wrappers...)
+	}
+	return func(file string) bool {
+		return lockfile(file) || slices.Contains(wrappers, path.Base(file))
 	}
 }
 

@@ -15,7 +15,7 @@ Each [language module](../../internal/lang/langs/langs.go) brings a runtime read
 
 ## What the view says
 
-An owned container is a `Container`, `ContainerDb`, or `ContainerQueue` inside a boundary. A container owns a product when a path it names covers the product's folder, or when its name is the product's name. A trailing `*` in a path, such as `go/cmd/fitness-check-*`, names every sibling folder it matches.
+An owned container is a `Container`, `ContainerDb`, or `ContainerQueue` inside a boundary. A container owns a product when a path it names covers the product's folder, or when its name is the product's name. A trailing `*` in a path, such as `go/cmd/fitness-check-*`, names every sibling folder it matches. A path of `.` names the repo root, so it covers a product built from the root folder.
 
 A container also owns a package a code span or label names, or a path covering an entry point its reader lists. A description word counts only as the exact entry point, and trailing punctuation never counts.
 

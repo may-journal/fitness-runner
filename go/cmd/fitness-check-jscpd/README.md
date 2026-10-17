@@ -11,9 +11,9 @@ Detects duplicated code with a native Go clone-detection engine implementing [js
 - Scans every tracked file with min-lines 5, min-tokens 50, tests, Markdown, and JSON included.
 - Binary files are skipped, since they have no lines to compare.
 - Files the repo's `.gitattributes` marks `linguist-generated` are left out.
-- Lockfiles are left out, as each [language module](../../internal/lang/langs/langs.go) or the [lockfiles](../../internal/lang/lockfiles) folder names them.
+- Lockfiles and build wrapper files are left out, as each [language module](../../internal/lang/langs/langs.go) or the [lockfiles](../../internal/lang/lockfiles) folder names them.
 - Pass: Duplicated lines stay under 1% of the codebase (jscpd's threshold semantics).
-- Fail: Over threshold — the check reports `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)`.
+- Fail: Over threshold — the check reports `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)`, then `path: N duplicated lines` for each file holding them.
 - The engine is built into the check binary — no external jscpd tool to install.
 
 ## Templates

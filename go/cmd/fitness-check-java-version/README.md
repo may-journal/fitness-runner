@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../../.fitnessrc.json']
 ---
 
-<!-- cspell:ignore sdkmanrc -->
+<!-- cspell:ignore sdkmanrc foojay -->
 
 # java-version
 
@@ -13,6 +13,12 @@ Checks that a Java repo pins the JDK release it builds with, and that the runnin
 - Version files at the repo root, the ones `actions/setup-java` reads: `.java-version`, `.sdkmanrc` (`java=`) and `.tool-versions` (`java`).
 - Maven's `maven.compiler.release` or compiler `release`, one `${property}` deep.
 - A Gradle toolchain's `JavaLanguageVersion.of(N)`.
+
+A pom that names no release takes one from its parents outside the repo, read from the local Maven repository at `~/.m2/repository`. The pom's own properties come first, so a parent may map a property the pom sets. A parent the local repository lacks fails, when nothing else pins a release, asking to run the build once.
+
+## Toolchains
+
+A Gradle toolchain asks for its exact release, not a newer one. Unless the build configures a toolchain resolver, such as the foojay resolver plugin, the check runs Gradle's `javaToolchains` task from the build root. A release no listed JDK provides fails, naming the JDK to install.
 
 ## Behavior
 

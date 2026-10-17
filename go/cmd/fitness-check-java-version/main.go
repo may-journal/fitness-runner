@@ -1,5 +1,7 @@
 // Command fitness-check-java-version checks a Java repo pins its JDK and
-// that the running JDK satisfies the pin, through the Java language module.
+// that the machine's JDKs satisfy the pin, through the Java language
+// module. Listing the JDKs a Gradle toolchain may use runs Gradle, so the
+// check gets a build's time budget.
 package main
 
 import (
@@ -9,7 +11,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "java-version"},
+		Describe: checkkit.Describe{Name: "java-version", TimeoutMs: 300000},
 		Run:      version.Run,
 	})
 }

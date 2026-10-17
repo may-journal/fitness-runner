@@ -40,14 +40,17 @@ func (r repository) addFolders(file string) {
 }
 
 // candidate reports whether text names a repository path: no spaces or
-// scheme, and either a slash after a first segment that is a tracked
-// top-level folder, or, when bare names count, a tracked root-level
-// source. Other text, such as a path in a consumer's install folder or an
-// untracked file name, is prose.
+// scheme, and either . for the repo root, a slash after a first segment
+// that is a tracked top-level folder, or, when bare names count, a
+// tracked root-level source. Other text, such as a path in a consumer's
+// install folder or an untracked file name, is prose.
 func (r repository) candidate(text string, bare bool) (string, bool) {
 	text = strings.Trim(text, "()[]{},;:'\"")
-	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") {
+	if prose(text) {
 		return "", false
+	}
+	if text == "." {
+		return text, true
 	}
 	if !strings.Contains(text, "/") {
 		return text, bare && r.rootSource(text)
@@ -56,16 +59,22 @@ func (r repository) candidate(text string, bare bool) (string, bool) {
 	return path.Clean(text), r.top[first]
 }
 
+// prose reports text no path can be: it holds spaces or a scheme.
+func prose(text string) bool {
+	return strings.ContainsAny(text, " \t") || strings.Contains(text, "://")
+}
+
 // rootSource reports a tracked root-level source file named bare.
 func (r repository) rootSource(name string) bool {
 	return sourceFile(name) && r.files[name]
 }
 
-// exists reports a tracked file or folder; a pattern such as
-// go/cmd/fitness-check-* exists when it matches any of them.
+// exists reports a tracked file or folder, the root . included; a
+// pattern such as go/cmd/fitness-check-* exists when it matches any of
+// them.
 func (r repository) exists(p string) bool {
 	if !strings.Contains(p, "*") {
-		return r.files[p] || r.folder[p]
+		return p == "." || r.files[p] || r.folder[p]
 	}
 	return anyCovered(p, r.folder) || anyCovered(p, r.files)
 }
@@ -97,12 +106,13 @@ func (r repository) lines(file string) int {
 	return len(strings.Split(strings.TrimSuffix(string(body), "\n"), "\n"))
 }
 
-// covers reports whether claim names p or a folder holding it. A claim
-// with a pattern, such as go/cmd/fitness-check-*, names every sibling it
-// matches; a star never crosses a slash.
+// covers reports whether claim names p or a folder holding it, the root
+// . holding every path. A claim with a pattern, such as
+// go/cmd/fitness-check-*, names every sibling it matches; a star never
+// crosses a slash.
 func covers(claim, p string) bool {
 	if !strings.Contains(claim, "*") {
-		return claim == p || strings.HasPrefix(p, claim+"/")
+		return claim == p || claim == "." || strings.HasPrefix(p, claim+"/")
 	}
 	depth := strings.Count(claim, "/") + 1
 	parts := strings.SplitN(p, "/", depth+1)

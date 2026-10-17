@@ -13,6 +13,9 @@
 // up to date. Gradle runs only the test task, so another test task counts
 // when the test or report task depends on it. A failing test is reported before coverage, since a failed
 // run's coverage says little.
+//
+// Requirements finds the tests named for requirement acceptances, which
+// the requirements check reads.
 package tests
 
 // cspell:ignore jacoco

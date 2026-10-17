@@ -51,6 +51,14 @@ type Options struct {
 type Stats struct {
 	TotalLines      int
 	DuplicatedLines int
+	// Files lists each file holding duplicated lines, in file order.
+	Files []FileLines
+}
+
+// FileLines is how many duplicated lines one file holds.
+type FileLines struct {
+	Path  string
+	Lines int
 }
 
 // Percentage returns duplicated lines as a percentage of total lines.
@@ -84,7 +92,10 @@ func Detect(files []File, opt Options) Stats {
 	seen := make(map[uint64]bool)
 	for fi, f := range files {
 		dup := dupWindows(hashes[fi], counts, seen)
-		stats.DuplicatedLines += dupLineCount(f.Tokens, dup, k, opt.MinLines)
+		if lines := dupLineCount(f.Tokens, dup, k, opt.MinLines); lines > 0 {
+			stats.DuplicatedLines += lines
+			stats.Files = append(stats.Files, FileLines{Path: f.Path, Lines: lines})
+		}
 	}
 	return stats
 }

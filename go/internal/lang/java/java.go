@@ -14,8 +14,10 @@
 // packages in this folder hold each check's own logic: spotless, checkstyle,
 // version and tests, and views reads sources for the architecture views. A
 // product source's main method proves an application runtime. The module
-// brings no spell dictionary: a Java repo adds the Java words it uses to its
-// own cspell config.
+// brings no spell dictionary: a Java repo adds the Java and framework words
+// it uses, such as a framework's package names, to its own cspell config.
+// The spell and duplicate checks skip each build tool's wrapper files,
+// which the tool writes.
 package java
 
 // cspell:ignore mvnw gradlew jacoco junitreports
@@ -46,8 +48,10 @@ type Build struct {
 	// Scripts are the endings of every file that may apply a plugin to
 	// the build, convention scripts included.
 	Scripts []string
-	// Wrapper is the script a repo commits to pin the tool's version.
-	Wrapper string
+	// Wrappers are the files the tool's wrapper writes, and a repo commits
+	// as written, to pin the tool's version: first the script checks run,
+	// then its Windows twin and the properties naming the version.
+	Wrappers []string
 	// Command is the tool's name on PATH.
 	Command string
 	// Flags run the tool without prompts, color, or a background daemon.
@@ -73,13 +77,13 @@ type Build struct {
 // Maven runs once from each root pom.xml in batch mode, without download
 // progress.
 var Maven = &Build{
-	Name:    "Maven",
-	Files:   []string{"pom.xml"},
-	Scripts: []string{"pom.xml"},
-	Wrapper: "mvnw",
-	Command: "mvn",
-	Flags:   []string{"--batch-mode", "--no-transfer-progress"},
-	Output:  []string{"target"},
+	Name:     "Maven",
+	Files:    []string{"pom.xml"},
+	Scripts:  []string{"pom.xml"},
+	Wrappers: []string{"mvnw", "mvnw.cmd", "maven-wrapper.properties"},
+	Command:  "mvn",
+	Flags:    []string{"--batch-mode", "--no-transfer-progress"},
+	Output:   []string{"target"},
 	// Surefire writes unit test reports, and Failsafe integration test
 	// reports, each named TEST-<class>.xml. A TestNG run also writes
 	// copies under a junitreports folder, which the patterns leave out.
@@ -93,13 +97,13 @@ var Maven = &Build{
 // Gradle runs once from each root build with the daemon off and plain
 // console output.
 var Gradle = &Build{
-	Name:    "Gradle",
-	Files:   []string{"settings.gradle", "settings.gradle.kts", "build.gradle", "build.gradle.kts"},
-	Scripts: []string{".gradle", ".gradle.kts"},
-	Wrapper: "gradlew",
-	Command: "gradle",
-	Flags:   []string{"--no-daemon", "--console=plain"},
-	Output:  []string{"build", ".gradle"},
+	Name:     "Gradle",
+	Files:    []string{"settings.gradle", "settings.gradle.kts", "build.gradle", "build.gradle.kts"},
+	Scripts:  []string{".gradle", ".gradle.kts"},
+	Wrappers: []string{"gradlew", "gradlew.bat", "gradle-wrapper.properties"},
+	Command:  "gradle",
+	Flags:    []string{"--no-daemon", "--console=plain"},
+	Output:   []string{"build", ".gradle"},
 	// Each test task writes its reports in a folder named for the task.
 	TestReports: []string{"build/test-results/*/TEST-*.xml"},
 	Coverage:    []string{"build/reports/jacoco/test/jacocoTestReport.xml"},
@@ -152,6 +156,15 @@ func Manifests() []string {
 	var out []string
 	for _, b := range Builds {
 		out = append(out, b.Files...)
+	}
+	return out
+}
+
+// Wrappers are every build tool's wrapper files.
+func Wrappers() []string {
+	var out []string
+	for _, b := range Builds {
+		out = append(out, b.Wrappers...)
 	}
 	return out
 }
@@ -343,7 +356,7 @@ func Tool(root string, p Project) (bin string, ok bool) {
 // above it, up to root.
 func wrapper(root string, p Project) (string, bool) {
 	for dir := p.Dir; ; dir = path.Dir(dir) {
-		if w := filepath.Join(root, filepath.FromSlash(dir), p.Build.Wrapper); executable(w) {
+		if w := filepath.Join(root, filepath.FromSlash(dir), p.Build.Wrappers[0]); executable(w) {
 			return w, true
 		}
 		if dir == "." || dir == "/" {
@@ -367,28 +380,34 @@ func Run(root, bin string, p Project, args ...string) checkkit.Outcome {
 }
 
 // ToolErrors lists the lines a failed build gave as its reason: Maven's
-// [ERROR] lines, or what Gradle printed under "What went wrong".
+// [ERROR] lines, or every line Gradle printed under "What went wrong", up
+// to the blank line that ends it, so the causes it nests under the
+// failure stay.
 func ToolErrors(output string) []string {
 	var out []string
-	lines := strings.Split(output, "\n")
-	for i := range lines {
-		if text := reason(lines, i); text != "" {
+	cause := false
+	for _, line := range strings.Split(output, "\n") {
+		var text string
+		if text, cause = reason(strings.TrimSpace(line), cause); text != "" {
 			out = append(out, text)
 		}
 	}
 	return out
 }
 
-// reason reads the failure reason line i gives, or empty for none.
-func reason(lines []string, i int) string {
-	trimmed := strings.TrimSpace(lines[i])
-	if text, ok := strings.CutPrefix(trimmed, "[ERROR]"); ok {
-		return strings.TrimSpace(text)
+// reason reads the failure reason a trimmed line gives, or empty for
+// none, and whether the next line still sits under "What went wrong".
+func reason(line string, cause bool) (string, bool) {
+	switch {
+	case line == "* What went wrong:":
+		return "", true
+	case cause:
+		return line, line != ""
 	}
-	if trimmed == "* What went wrong:" && i+1 < len(lines) {
-		return strings.TrimSpace(lines[i+1])
+	if text, ok := strings.CutPrefix(line, "[ERROR]"); ok {
+		return strings.TrimSpace(text), false
 	}
-	return ""
+	return "", false
 }
 
 // Relative returns file, as a build tool printed it, relative to root when

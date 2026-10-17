@@ -5,6 +5,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
+	javaTests "github.com/may-journal/fitness-runner/go/internal/lang/java/tests"
 	javaViews "github.com/may-journal/fitness-runner/go/internal/lang/java/views"
 )
 
@@ -18,12 +19,13 @@ var Java = lang.Module{
 	Manifests:       java.Manifests(),
 	Lockfiles:       []string{"*.lockfile"},
 	BuildOutput:     java.BuildOutput,
-	Tools:           []string{"java", java.Maven.Wrapper, java.Maven.Command, java.Gradle.Wrapper, java.Gradle.Command},
+	Wrappers:        java.Wrappers(),
+	Tools:           []string{"java", java.Maven.Wrappers[0], java.Maven.Command, java.Gradle.Wrappers[0], java.Gradle.Command},
 	Checks:          []string{"spotless", "checkstyle", "java-version", "java-test"},
 	Technology:      java.Technology,
 	TechnologyWords: strings.Fields("java jvm"),
 	Runtime:         java.Runtime,
 	Views:           javaViews.Reader,
 	Inventory:       []string{java.Ext},
-	Tests:           lang.Tests{Source: java.Fixture},
+	Tests:           javaTests.Requirements,
 }

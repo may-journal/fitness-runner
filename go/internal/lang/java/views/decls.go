@@ -68,6 +68,8 @@ type reader struct {
 	size   int
 	tokens []token
 	lines  codemodel.LineIndex
+	// marks, when set, records the annotations on each method read.
+	marks map[*codemodel.Decl][]string
 }
 
 func newReader(file, src string) *reader {

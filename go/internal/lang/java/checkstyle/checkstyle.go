@@ -27,6 +27,10 @@ const ceiling = `<module name="CyclomaticComplexity"><property name="max" value=
 // asks a repo without one to put it.
 const defaultConfig = "config/checkstyle/checkstyle.xml"
 
+// doctype opens the config the hint asks for. Maven's plugin reads no
+// config without it.
+const doctype = `<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN" "https://checkstyle.org/dtds/configuration_1_3.dtd">`
+
 var (
 	// checkerRe marks an XML file as a Checkstyle config.
 	checkerRe = regexp.MustCompile(`<module\s+name\s*=\s*"(?:[\w.]+\.)?Checker"`)
@@ -115,7 +119,7 @@ func configs(root string) []string {
 // for a config when the repo has none.
 func ceilingErrors(root string, found []string) []string {
 	if len(found) == 0 {
-		return []string{"no Checkstyle config sets a complexity ceiling; add " + defaultConfig + " holding <module name=\"Checker\"><module name=\"TreeWalker\">" + ceiling + "</module></module>"}
+		return []string{"no Checkstyle config sets a complexity ceiling; add " + defaultConfig + " holding " + doctype + "<module name=\"Checker\"><module name=\"TreeWalker\">" + ceiling + "</module></module>"}
 	}
 	var out []string
 	for _, f := range found {
