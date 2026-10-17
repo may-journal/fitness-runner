@@ -86,6 +86,33 @@ func read(repo codemodel.Repo, x *codemodel.Index) codemodel.Code {
 	return codemodel.Code{Relate: func(g *codemodel.Graph) { relate(g, repo) }}
 }
 
+// Package is the package the Java source src declares, slash-separated
+// as compiled classes name it, or "" for the default package. It lexes
+// only up to the first semicolon outside comments and literals, which
+// ends the package declaration or shows there is none.
+func Package(src string) string {
+	end := 0
+	for {
+		next := strings.IndexByte(src[end:], ';')
+		if next < 0 {
+			return declaredPackage(&reader{tokens: lex(src)})
+		}
+		end += next + 1
+		if r := (&reader{tokens: lex(src[:end])}); r.is(len(r.tokens)-1, ";") {
+			return declaredPackage(r)
+		}
+	}
+}
+
+// declaredPackage reads the package statement r's tokens start with.
+func declaredPackage(r *reader) string {
+	_, j := r.modifiers(0)
+	if !r.is(j, "package") {
+		return ""
+	}
+	return strings.ReplaceAll(r.render(j+1, r.statementEnd(j)), ".", "/")
+}
+
 // relate reads each Java node file's tokens, so comments and literals
 // relate nothing.
 func relate(g *codemodel.Graph, repo codemodel.Repo) {
