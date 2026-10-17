@@ -3,7 +3,8 @@ package architecture
 import (
 	"regexp"
 	"strings"
-	"unicode"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 )
 
 // statedName reads a class label or member as the code view states it: a
@@ -36,7 +37,7 @@ func (s stated) parameters(rest string) (stated, bool) {
 	if rest == "" {
 		return s, true
 	}
-	close := matching(rest, 0)
+	close := codemodel.Matching(rest, 0)
 	if rest[0] != '(' || rest[close] != ')' {
 		return stated{}, false
 	}
@@ -46,23 +47,23 @@ func (s stated) parameters(rest string) (stated, bool) {
 
 func (s stated) kind() string {
 	if s.call {
-		return kindFunc
+		return codemodel.KindFunc
 	}
-	return kindType
+	return codemodel.KindType
 }
 
 // accepts reports whether a declaration has the kind the label states.
-func (s stated) accepts(d *decl) bool {
+func (s stated) accepts(d *codemodel.Decl) bool {
 	if s.call {
-		return d.callable()
+		return d.Callable()
 	}
-	return d.typeLike()
+	return d.TypeLike()
 }
 
 // matches compares the stated parameters, and the result when stated,
 // with the declaration's.
-func (s stated) matches(d *decl) bool {
-	items := splitTop(s.params)
+func (s stated) matches(d *codemodel.Decl) bool {
+	items := codemodel.SplitTop(s.params)
 	if len(items) != len(d.Params) {
 		return false
 	}
@@ -75,10 +76,10 @@ func (s stated) matches(d *decl) bool {
 }
 
 // sameParam accepts a parameter stated by its type, or by name and type.
-func sameParam(item string, p param) bool {
-	item = typeText(item)
-	for _, form := range []string{p.typ, p.name + " " + p.typ, p.name + ": " + p.typ} {
-		if typeText(form) == item {
+func sameParam(item string, p codemodel.Param) bool {
+	item = codemodel.TypeText(item)
+	for _, form := range []string{p.Type, p.Name + " " + p.Type, p.Name + ": " + p.Type} {
+		if codemodel.TypeText(form) == item {
 			return true
 		}
 	}
@@ -88,10 +89,10 @@ func sameParam(item string, p param) bool {
 // results splits a stated result list, with or without parentheses.
 func results(text string) []string {
 	text = strings.TrimSpace(text)
-	if strings.HasPrefix(text, "(") && matching(text, 0) == len(text)-1 {
+	if strings.HasPrefix(text, "(") && codemodel.Matching(text, 0) == len(text)-1 {
 		text = text[1 : len(text)-1]
 	}
-	return splitTop(text)
+	return codemodel.SplitTop(text)
 }
 
 func sameTypes(a, b []string) bool {
@@ -99,7 +100,7 @@ func sameTypes(a, b []string) bool {
 		return false
 	}
 	for i := range a {
-		if typeText(a[i]) != typeText(b[i]) {
+		if codemodel.TypeText(a[i]) != codemodel.TypeText(b[i]) {
 			return false
 		}
 	}
@@ -115,31 +116,13 @@ func statedMember(text string) (stated, string, bool) {
 		return s, "", ok
 	}
 	if name, typ, ok := strings.Cut(text, ":"); ok {
-		return stated{text: text, name: strings.TrimSpace(name)}, normalSpace(typ), true
+		return stated{text: text, name: strings.TrimSpace(name)}, codemodel.NormalSpace(typ), true
 	}
 	fields := strings.Fields(text)
 	if len(fields) == 2 {
 		return stated{text: text, name: fields[1]}, fields[0], true
 	}
 	return stated{text: text, name: text}, "", len(fields) == 1
-}
-
-// typeText spells a type with a space only between two words and after
-// each comma, so Map< K,V > and Map<K, V> compare equal.
-func typeText(text string) string {
-	var b strings.Builder
-	words := strings.Fields(text)
-	for i, word := range words {
-		if i > 0 && wordByte(words[i-1][len(words[i-1])-1]) && wordByte(word[0]) {
-			b.WriteByte(' ')
-		}
-		b.WriteString(word)
-	}
-	return strings.ReplaceAll(b.String(), ",", ", ")
-}
-
-func wordByte(c byte) bool {
-	return c == '_' || c == '$' || unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c))
 }
 
 // generics reads Mermaid's tilde generics as angle brackets, so
@@ -166,7 +149,7 @@ func tildeBracket(text string, i, depth int) byte {
 	if i+1 < len(text) {
 		next = text[i+1]
 	}
-	if wordByte(next) || (depth == 0 && strings.IndexByte("([{", next) >= 0) {
+	if codemodel.WordByte(next) || (depth == 0 && strings.IndexByte("([{", next) >= 0) {
 		return '<'
 	}
 	return '>'

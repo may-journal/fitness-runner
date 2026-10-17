@@ -1,4 +1,4 @@
-package architecture
+package views
 
 import (
 	"go/ast"
@@ -6,12 +6,15 @@ import (
 	"go/token"
 	"path"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
 )
 
 // goFolders maps the import path of every folder holding product Go files
 // to that folder, through the nearest tracked go.mod.
 type goFolders struct {
-	m        *Model
+	repo     codemodel.Repo
 	modules  map[string]string
 	folders  map[string]string
 	packages map[string]string
@@ -25,18 +28,23 @@ type goSource struct {
 	parsed *ast.File
 }
 
-// goReferences reads each product Go file's imports of folders in this
+func newFolders(repo codemodel.Repo) *goFolders {
+	g := &goFolders{repo: repo, modules: map[string]string{}, folders: map[string]string{}, packages: map[string]string{}}
+	g.readModules()
+	return g
+}
+
+// references reads each product Go file's imports of folders in this
 // repository and every use of their names, so each line that reaches
 // another folder is known. A file that does not parse is an error.
-func (m *Model) goReferences() ([]reference, []string) {
-	g := &goFolders{m: m, modules: map[string]string{}, folders: map[string]string{}, packages: map[string]string{}}
-	g.readModules()
-	files := m.productSources(".go")
+func references(repo codemodel.Repo) ([]codemodel.Reference, []string) {
+	g := newFolders(repo)
+	files := codemodel.FilesWith(repo.Product, golang.Ext)
 	for _, file := range files {
 		g.folder(path.Dir(file))
 	}
 	sources, errs := g.parse(files)
-	var refs []reference
+	var refs []codemodel.Reference
 	for _, src := range sources {
 		r := &goFile{fset: src.fset, file: src.file, condition: buildCondition(src.lines), names: map[string]string{}}
 		refs = append(refs, r.references(g, src.parsed)...)
@@ -50,11 +58,11 @@ func (g *goFolders) parse(files []string) ([]goSource, []string) {
 	var sources []goSource
 	var errs []string
 	for _, file := range files {
-		lines := g.m.repo.read(file)
+		lines := g.repo.Read(file)
 		fset := token.NewFileSet()
 		parsed, err := parser.ParseFile(fset, file, strings.Join(lines, "\n"), parser.SkipObjectResolution)
 		if err != nil {
-			errs = append(errs, Location{file, 1}.String()+": cannot parse "+err.Error())
+			errs = append(errs, codemodel.Location{Path: file, Line: 1}.String()+": cannot parse "+err.Error())
 			continue
 		}
 		g.packageName(path.Dir(file), parsed.Name.Name)
@@ -64,15 +72,15 @@ func (g *goFolders) parse(files []string) ([]goSource, []string) {
 }
 
 func (g *goFolders) readModules() {
-	for _, file := range g.m.repo.sorted() {
-		if path.Base(file) == "go.mod" {
+	for _, file := range g.repo.Files {
+		if path.Base(file) == golang.Manifest {
 			g.module(file)
 		}
 	}
 }
 
 func (g *goFolders) module(file string) {
-	for _, line := range g.m.repo.read(file) {
+	for _, line := range g.repo.Read(file) {
 		if name, ok := strings.CutPrefix(strings.TrimSpace(line), "module "); ok {
 			g.modules[path.Dir(file)] = strings.TrimSpace(name)
 			return
@@ -123,8 +131,8 @@ type goFile struct {
 
 // references lists the import of each repository folder and each use of
 // the name it was imported as.
-func (f *goFile) references(g *goFolders, parsed *ast.File) []reference {
-	var refs []reference
+func (f *goFile) references(g *goFolders, parsed *ast.File) []codemodel.Reference {
+	var refs []codemodel.Reference
 	for _, spec := range parsed.Imports {
 		refs = f.importSpec(g, spec, refs)
 	}
@@ -135,7 +143,7 @@ func (f *goFile) references(g *goFolders, parsed *ast.File) []reference {
 	return refs
 }
 
-func (f *goFile) importSpec(g *goFolders, spec *ast.ImportSpec, refs []reference) []reference {
+func (f *goFile) importSpec(g *goFolders, spec *ast.ImportSpec, refs []codemodel.Reference) []codemodel.Reference {
 	folder, ok := g.folders[strings.Trim(spec.Path.Value, `"`)]
 	if !ok {
 		return refs
@@ -166,7 +174,7 @@ func (g *goFolders) importName(spec *ast.ImportSpec, folder string) string {
 	return path.Base(folder)
 }
 
-func (f *goFile) selector(n ast.Node, refs []reference) []reference {
+func (f *goFile) selector(n ast.Node, refs []codemodel.Reference) []codemodel.Reference {
 	sel, ok := n.(*ast.SelectorExpr)
 	if !ok {
 		return refs
@@ -177,6 +185,6 @@ func (f *goFile) selector(n ast.Node, refs []reference) []reference {
 	return refs
 }
 
-func (f *goFile) reference(pos token.Pos, folder string) reference {
-	return reference{At: Location{f.file, f.fset.Position(pos).Line}, To: folder, Condition: f.condition}
+func (f *goFile) reference(pos token.Pos, folder string) codemodel.Reference {
+	return codemodel.Reference{At: codemodel.Location{Path: f.file, Line: f.fset.Position(pos).Line}, To: folder, Condition: f.condition}
 }

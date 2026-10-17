@@ -5,6 +5,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
+	swiftViews "github.com/may-journal/fitness-runner/go/internal/lang/swift/views"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -20,5 +21,7 @@ var Swift = lang.Module{
 	Technology:      swift.Technology,
 	TechnologyWords: strings.Fields("swift swiftui objective-c ios macos watchos tvos visionos xcode"),
 	Runtime:         swift.Runtime,
+	Views:           swiftViews.Reader,
+	Inventory:       []string{swift.Ext},
 	Tests:           swift.Tests,
 }

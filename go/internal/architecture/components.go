@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 )
 
 const componentsView = "components"
@@ -38,13 +40,13 @@ type components struct {
 	elements   map[string]Element
 	containers map[string]bool
 	owners     map[string]string
-	refs       []reference
-	edges      map[[2]string]reference
+	refs       []codemodel.Reference
+	edges      map[[2]string]codemodel.Reference
 	order      [][2]string
 }
 
 func newComponents(m *Model) *components {
-	c := &components{m: m, elements: map[string]Element{}, containers: map[string]bool{}, owners: map[string]string{}, edges: map[[2]string]reference{}}
+	c := &components{m: m, elements: map[string]Element{}, containers: map[string]bool{}, owners: map[string]string{}, edges: map[[2]string]codemodel.Reference{}}
 	for _, e := range m.Elements {
 		c.element(e)
 	}
@@ -133,18 +135,21 @@ func (c *components) pathOwners(p string) []string {
 	return owners
 }
 
-// observe reads every Go and Swift reference and fails each pair of
-// components the view does not draw an edge between.
+// observe reads every module's references, in registry order, and fails
+// each pair of components the view does not draw an edge between.
 func (c *components) observe() {
-	refs, errs := c.m.goReferences()
-	c.refs = append(refs, c.m.swiftReferences()...)
-	c.Errors = append(c.Errors, errs...)
+	repo := c.m.codeRepo()
+	for _, reader := range referenceReaders {
+		refs, errs := reader.References(repo)
+		c.refs = append(c.refs, refs...)
+		c.Errors = append(c.Errors, errs...)
+	}
 	for _, r := range c.refs {
 		c.reference(r)
 	}
 }
 
-func (c *components) reference(r reference) {
+func (c *components) reference(r codemodel.Reference) {
 	from, ok := c.owners[r.At.Path]
 	if !ok {
 		return
@@ -156,7 +161,7 @@ func (c *components) reference(r reference) {
 	}
 }
 
-func (c *components) edge(from, to string, r reference) {
+func (c *components) edge(from, to string, r codemodel.Reference) {
 	key := [2]string{from, to}
 	if _, seen := c.edges[key]; seen {
 		return
@@ -164,7 +169,7 @@ func (c *components) edge(from, to string, r reference) {
 	c.edges[key] = r
 	c.order = append(c.order, key)
 	if c.relation(from, to) == nil {
-		c.fail(r.At, "%s %s%s, owned by %s, but %s draws no %s -> %s edge%s", from, r.what(), r.under(), to, c.view, from, to, c.reversed(from, to))
+		c.fail(Location(r.At), "%s %s%s, owned by %s, but %s draws no %s -> %s edge%s", from, r.What(), r.Under(), to, c.view, from, to, c.reversed(from, to))
 	}
 }
 

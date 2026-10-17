@@ -1,0 +1,3 @@
+# Python scripts automate work around the product, so the architecture
+# views list them as tools that need no component.
+tool .py

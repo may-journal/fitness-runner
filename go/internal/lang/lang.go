@@ -13,7 +13,9 @@ import (
 	"io/fs"
 	"path"
 	"slices"
+	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 )
 
@@ -36,7 +38,7 @@ type Module struct {
 	// Dicts are the embedded spell dictionary files the module claims.
 	Dicts []string
 	// Technology is the name the language's runtime products give their
-	// technology, such as "Node".
+	// technology.
 	Technology string
 	// TechnologyWords are the lowercase words an architecture container's
 	// technology string may use to name the language.
@@ -44,6 +46,13 @@ type Module struct {
 	// Runtime reads the language's manifests and sources for the runtimes
 	// a repo ships.
 	Runtime runtimes.Reader
+	// Views reads the language's sources for the architecture views:
+	// declarations and relations for the code view, and, when set, the
+	// references that prove the components view's edges.
+	Views codemodel.Reader
+	// Inventory are the source endings the architecture views list as the
+	// language's sources.
+	Inventory []string
 	// Tests finds the language's requirement tests.
 	Tests Tests
 	// Scans are the source endings a repo-wide check reads in the
@@ -139,6 +148,27 @@ func Runtimes(modules []Module) []runtimes.Reader {
 	return out
 }
 
+// Views returns every module's architecture view reader, in registry
+// order, leaving out modules that read none.
+func Views(modules []Module) []codemodel.Reader {
+	var out []codemodel.Reader
+	for _, m := range modules {
+		if m.Views.Read != nil {
+			out = append(out, m.Views)
+		}
+	}
+	return out
+}
+
+// Inventory returns every module's inventory endings, in registry order.
+func Inventory(modules []Module) []string {
+	var out []string
+	for _, m := range modules {
+		out = append(out, m.Inventory...)
+	}
+	return out
+}
+
 // TechnologyWords maps each module's technology name to its words.
 func TechnologyWords(modules []Module) map[string][]string {
 	out := map[string][]string{}
@@ -165,6 +195,43 @@ func Ignored() []string {
 		names = append(names, e.Name())
 	}
 	return names
+}
+
+// sources holds one file per language no module covers whose files the
+// architecture views still list. Each says why in comments, then names a
+// role, tool or product, and the language's source endings.
+//
+//go:embed sources
+var sources embed.FS
+
+// Sources maps each role to the endings of the languages no module covers
+// that play it, in file name order.
+func Sources() map[string][]string {
+	entries, err := fs.ReadDir(sources, "sources")
+	if err != nil {
+		panic("lang: " + err.Error())
+	}
+	out := map[string][]string{}
+	for _, e := range entries {
+		body, err := fs.ReadFile(sources, path.Join("sources", e.Name()))
+		if err != nil {
+			panic("lang: " + err.Error())
+		}
+		role, exts := sourceLine(string(body))
+		out[role] = append(out[role], exts...)
+	}
+	return out
+}
+
+// sourceLine reads the role and endings from a sources file's first line
+// that is not a comment.
+func sourceLine(body string) (string, []string) {
+	for _, line := range strings.Split(body, "\n") {
+		if fields := strings.Fields(line); len(fields) > 0 && !strings.HasPrefix(fields[0], "#") {
+			return fields[0], fields[1:]
+		}
+	}
+	return "", nil
 }
 
 // Catalog orders the default checks: the installed checks no module claims

@@ -5,7 +5,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # requirements
 
-In a Go, Swift, TypeScript, or JavaScript repo, each file in `docs/requirements` is one requirement. It says why the requirement matters, how to measure it, and which acceptances prove it. Each acceptance is owned by exactly one test named for it, and each test owns exactly one acceptance. A test that proves no requirement is either a requirement nobody wrote down or a duplicate to delete.
+In a repo written in any language of the [module registry](../../internal/lang/langs/langs.go), each file in `docs/requirements` is one requirement. It says why the requirement matters, how to measure it, and which acceptances prove it. Each acceptance is owned by exactly one test named for it, and each test owns exactly one acceptance. A test that proves no requirement is either a requirement nobody wrote down or a duplicate to delete.
 
 ## Template
 
@@ -33,7 +33,7 @@ Source: #123
 <!-- Top-level bullets are IDs: title ID + ".N", unique, never reused. -->
 <!-- Each ID nests exactly one Given, one When, one Then, one level deeper each, each line starting with its keyword. A second Given, When, or Then is a new ID. -->
 <!-- A Given starts with an actor the system context declares, by name or Mermaid ID; see the architecture-actors check. -->
-<!-- Exactly one test is named for each ID: Go func Test0001_1(t *testing.T), Swift func test0001_1(), or vitest test("0001.1 saves offline", …) owns 0001.1. Delete the test when you delete the ID. -->
+<!-- Exactly one test is named for each ID, the way its language module names tests; the check's error names the test it expects. Delete the test when you delete the ID. -->
 - 0001.1
     - Given Writer has no network
         - When I edit an entry
@@ -48,23 +48,15 @@ Source: #123
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
 - Measurement: numerator, `-`, denominator, then `Source:` citing one `path:line` that exists or one `#123` issue.
 - Acceptance: one Given, one When, and one Then, nested in order; the Given starts with an [actor](../fitness-check-architecture-actors/README.md).
-- Ownership: exactly one Go `func TestNNNN_N`, Swift `func testNNNN_N`, or vitest test titled `NNNN.N …` owns each acceptance. A test named for an undefined acceptance fails.
-- Every test: each top-level test in the repository must be named for an acceptance. `TestMain` and helpers are not tests.
+- Ownership: exactly one test named for each acceptance owns it. A test named for an undefined acceptance fails.
+- Every test: each top-level test in the repository must be named for an acceptance. Setup functions and helpers are not tests.
 
-Go tests are read with `go/ast`, so only real top-level test functions count.
-
-A Swift test is an XCTest method named `test…` with no parameters, in a class that inherits `XCTestCase`, or any function marked `@Test`. Comments and string literals are skipped, so a name inside them is no test.
-
-A vitest or jest test is one `it` or `test` call in a `*.test.*`, `*.spec.*`, or `__tests__/` TypeScript or JavaScript file. Its first argument is a title string that opens with the acceptance ID, as in `test("0001.1 saves offline", …)`.
-
-- Nesting: a `describe` title never names a test, so each `it` or `test` inside one owns its own ID.
-- Modifiers: `.skip`, `.only`, and `.todo` keep a test, and `it.each(rows)("0001.1 …")` is one test, like a Go table test.
-- Not tests: a call without a leading title string, such as Playwright's `test.skip(condition, "reason")`, or a comment, string, `re.test(…)`, or `test` method.
+Each language module finds its tests and names the test that owns an ID, as its package documents. A comment or string never counts as a test.
 
 ## Behavior
 
-- No code: a repo without Go, Swift, TypeScript, or JavaScript files passes with `filesChecked: 0`.
-- Not code: a tool config such as `vite.config.ts` or `.eslintrc.cjs`, or a file `.gitattributes` marks `linguist-generated`.
+- No code: a repo with no file in a module's language passes with `filesChecked: 0`.
+- Not code: a file a module names a tool config, or a file `.gitattributes` marks `linguist-generated`.
 - Missing docs: a repo with such code and none in `docs/requirements` fails.
 - Full and scoped runs judge every doc and test file, including unchanged files in pull requests that change only unrelated files.
 - Ownership is a repository-wide invariant: an unmapped repo stays red until every test owns a requirement.
@@ -73,10 +65,10 @@ A vitest or jest test is one `it` or `test` call in a `*.test.*`, `*.spec.*`, or
 
 A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out.
 
-- Pairing: a test file pairs with each doc whose number its name or its tests carry, so `0003_0004_test.go` pairs with both docs.
+- Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
 - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
-- Helpers: a test file that names and holds no requirement, such as `tools_test.go`, pairs with nothing.
+- Helpers: a test file that names and holds no requirement pairs with nothing.
 - Exemptions: a commit trailer `Unpaired-Requirement: NNNN, NNNN <reason>` exempts those numbers. A pull request fails until its body lists each such trailer.
 
 Which changes are judged depends on the run:

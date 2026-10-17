@@ -4,7 +4,7 @@ relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
 
 # Run prebuilt Fitness in CI
 
-Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need tools such as Go, Node, or SwiftLint.
+Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need the tools their language module runs.
 
 The GitHub Actions example uses the `v1` major tag, which always points at the newest verified 1.x release. Download examples name `v1.2.0` and run all checks in external mode. [Install latest](#install-latest) follows the current published release.
 

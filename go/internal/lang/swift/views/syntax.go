@@ -1,4 +1,4 @@
-package architecture
+package views
 
 // typeDecl reads a class, struct, enum, protocol, or actor: its name,
 // generic parameters, inheritance, and body. Class before func or var is

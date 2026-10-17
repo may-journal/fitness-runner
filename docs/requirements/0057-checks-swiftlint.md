@@ -14,7 +14,7 @@ Swift repos with a clean strict SwiftLint run reported green
 -
 Swift repos checked
 
-Source: `go/cmd/fitness-check-swiftlint/main.go:99`
+Source: `go/internal/lang/swift/swiftlint/swiftlint.go:94`
 
 ## Requirements
 

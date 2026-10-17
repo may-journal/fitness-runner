@@ -5,6 +5,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node"
+	nodeViews "github.com/may-journal/fitness-runner/go/internal/lang/node/views"
 )
 
 // Node is JavaScript and TypeScript: a repo with a tracked package.json.
@@ -26,6 +27,8 @@ var Node = lang.Module{
 	Technology:      node.Technology,
 	TechnologyWords: strings.Fields("node node.js nodejs javascript typescript bun deno"),
 	Runtime:         node.Runtime,
+	Views:           nodeViews.Reader,
+	Inventory:       node.InventoryExts,
 	Tests:           node.Tests,
 	Scans: map[string][]string{
 		"build-output-untracked":   node.TypeScriptExts,

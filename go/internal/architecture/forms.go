@@ -98,8 +98,8 @@ func (d *diagram) c4Element(name string, args []string, line string, at Location
 
 // c4Strings reads the technology and description after a label. Container
 // and component macros take a technology first, as in Container(cli,
-// "Runner", "Go", "go/cmd/fitness"); persons, systems, and boundaries
-// take only a description.
+// "Runner", "Technology", "Description"); persons, systems, and
+// boundaries take only a description.
 func c4Strings(name string, args []string) (technology, description string) {
 	rest := args[2:]
 	if technical(name) && len(rest) > 0 {

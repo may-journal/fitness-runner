@@ -33,7 +33,9 @@ var (
 
 const goCommand = "Go command"
 
-// Runtime reads Go product sources for commands.
+// Runtime reads Go product sources for commands: a product .go file
+// declaring package main without a go:build ignore constraint proves a Go
+// command, one per folder, whose container names Go.
 var Runtime = runtimes.Reader{Sources: map[string]func(*runtimes.Finder, string){Ext: command}}
 
 // command records a Go folder as one command the first time a product

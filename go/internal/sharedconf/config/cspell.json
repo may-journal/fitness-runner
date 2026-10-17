@@ -86,6 +86,7 @@
     "wordlists",
     "gofmt",
     "sharedconf",
+    "codemodel",
     "fset",
     "wordlist",
     "flaggable",

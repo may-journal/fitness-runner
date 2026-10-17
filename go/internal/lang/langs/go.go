@@ -6,6 +6,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
+	goViews "github.com/may-journal/fitness-runner/go/internal/lang/golang/views"
 )
 
 // Go is the Go language: a repo with a go.mod outside test fixtures.
@@ -21,5 +22,7 @@ var Go = lang.Module{
 	Technology:      golang.Technology,
 	TechnologyWords: strings.Fields("go golang"),
 	Runtime:         golang.Runtime,
+	Views:           goViews.Reader,
+	Inventory:       []string{golang.Ext},
 	Tests:           golang.Tests,
 }

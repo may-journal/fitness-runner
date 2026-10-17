@@ -1,4 +1,4 @@
-package architecture
+package views
 
 import (
 	"strings"

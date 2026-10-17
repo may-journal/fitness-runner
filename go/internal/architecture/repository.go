@@ -41,9 +41,9 @@ func (r repository) addFolders(file string) {
 
 // candidate reports whether text names a repository path: no spaces or
 // scheme, and either a slash after a first segment that is a tracked
-// top-level folder, or, when bare names count, a tracked root-level source
-// such as index.ts. Other text, such as a consumer's node_modules/.bin or
-// package.json, is prose.
+// top-level folder, or, when bare names count, a tracked root-level
+// source. Other text, such as a path in a consumer's install folder or an
+// untracked file name, is prose.
 func (r repository) candidate(text string, bare bool) (string, bool) {
 	text = strings.Trim(text, "()[]{},;:'\"")
 	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") {
@@ -77,6 +77,15 @@ func anyCovered(pattern string, paths map[string]bool) bool {
 		}
 	}
 	return false
+}
+
+// read returns a tracked file's lines; nil when it cannot be read.
+func (r repository) read(file string) []string {
+	body, err := os.ReadFile(filepath.Join(r.root, filepath.FromSlash(file)))
+	if err != nil {
+		return nil
+	}
+	return strings.Split(string(body), "\n")
 }
 
 // lines counts a tracked file's lines; zero when it cannot be read.
