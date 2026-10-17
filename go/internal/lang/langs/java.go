@@ -16,5 +16,4 @@ var Java = lang.Module{
 	BuildOutput: java.BuildOutput,
 	Tools:       []string{"java", java.Maven.Wrapper, java.Maven.Command, java.Gradle.Wrapper, java.Gradle.Command},
 	Checks:      []string{"spotless", "checkstyle", "java-version"},
-	Dicts:       []string{"java.txt"},
 }

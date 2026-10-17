@@ -94,7 +94,7 @@ func Test0021_12(t *testing.T) {
 		"notes.md":      cspellSharedWord + " is a shared word\n",
 	})
 	sees(t, out, code, 0, "All 1 checks passed")
-	out, code = cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word, and invokevirtual a Java one\n"})
+	out, code = cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word, and addrinfo a language one\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
