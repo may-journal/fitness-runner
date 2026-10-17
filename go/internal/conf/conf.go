@@ -24,14 +24,6 @@ type Config struct {
 	RepeatedStringLiterals struct {
 		Allow []string `json:"allow"`
 	} `json:"repeatedStringLiterals"`
-	// GoTestCoverage declares library entry packages for the optional coverage check.
-	GoTestCoverage struct {
-		Entries []string `json:"entries"`
-	} `json:"goTestCoverage"`
-	// GoComplexity holds options for the go-complexity check.
-	GoComplexity struct {
-		Max int `json:"max"`
-	} `json:"goComplexity"`
 	// TextReadability holds alarm bands for the text-readability check.
 	TextReadability struct {
 		MaxGrade float64 `json:"maxGrade"`
@@ -71,6 +63,13 @@ func MaxListItems(root string) int {
 }
 
 func Load(root string) (*Config, error) {
+	return LoadAs[Config](root)
+}
+
+// LoadAs reads root's config into a T, which holds the keys a caller owns,
+// such as a language module's options. It returns (nil, nil) without a
+// config file and fails as Load does.
+func LoadAs[T any](root string) (*T, error) {
 	raw, err := os.ReadFile(filepath.Join(root, FileName))
 	if os.IsNotExist(err) {
 		return nil, nil
@@ -78,15 +77,15 @@ func Load(root string) (*Config, error) {
 	if err != nil {
 		return nil, err
 	}
-	var c Config
-	if err := json.Unmarshal(raw, &c); err != nil {
+	var v T
+	if err := json.Unmarshal(raw, &v); err != nil {
 		return nil, fmt.Errorf("%s: %w", FileName, err)
 	}
 	if retired := retiredKeys(raw); len(retired) > 0 {
 		return nil, fmt.Errorf("%s sets %s; every check now judges every tracked file, so remove %s and fix the findings instead",
 			FileName, strings.Join(retired, ", "), pronoun(len(retired)))
 	}
-	return &c, nil
+	return &v, nil
 }
 
 // retiredKeys names the exclusion keys raw still sets, in a fixed order:

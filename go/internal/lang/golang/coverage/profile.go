@@ -1,5 +1,6 @@
-// Package gocoverage measures entry coverage and reports test overlap.
-package gocoverage
+// Package coverage measures Go entry coverage and reports test overlap for
+// the go-test-coverage check.
+package coverage
 
 import (
 	"bufio"

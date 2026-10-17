@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/gocoverage"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang/coverage"
 )
 
 func main() {
@@ -25,13 +25,13 @@ func run(root string, args []string) (checkkit.Result, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 14*time.Minute)
 	defer cancel()
-	report, err := gocoverage.Run(ctx, root, options)
+	report, err := coverage.Run(ctx, root, options)
 	if err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}
 	return finish(root, options.AuditMap, report)
 }
-func finish(root, name string, report gocoverage.Report) (checkkit.Result, error) {
+func finish(root, name string, report coverage.Report) (checkkit.Result, error) {
 	if err := report.WriteAudit(root, name); err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}
@@ -43,18 +43,18 @@ func finish(root, name string, report gocoverage.Report) (checkkit.Result, error
 	}
 	return checkkit.Pass(report.FileCount()), nil
 }
-func parse(root string, args []string) (gocoverage.Options, error) {
-	var options gocoverage.Options
-	config, err := conf.Load(root)
+func parse(root string, args []string) (coverage.Options, error) {
+	var options coverage.Options
+	config, err := golang.LoadConfig(root)
 	if err != nil {
 		return options, err
 	}
 	if config != nil {
-		options.Entries = config.GoTestCoverage.Entries
+		options.Entries = config.TestCoverage.Entries
 	}
 	return parseFlags(options, args)
 }
-func parseFlags(options gocoverage.Options, args []string) (gocoverage.Options, error) {
+func parseFlags(options coverage.Options, args []string) (coverage.Options, error) {
 	flags := flag.NewFlagSet("go-test-coverage", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	entries := flags.String("entry", strings.Join(options.Entries, ","), "comma-separated library entry import paths")

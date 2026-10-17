@@ -1,4 +1,4 @@
-package gocoverage
+package coverage
 
 import (
 	"fmt"

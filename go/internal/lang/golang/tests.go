@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -15,15 +16,19 @@ import (
 
 // Tests finds go test requirement tests: Test0001_1 owns 0001.1.
 var Tests = lang.Tests{
-	Scan:   scan,
-	Name:   func(id string) string { return "Test" + strings.Replace(id, ".", "_", 1) },
-	Source: func(lower string) bool { return strings.HasSuffix(lower, testSuffix) },
+	Scan:    scan,
+	Name:    func(id string) string { return "Test" + strings.Replace(id, ".", "_", 1) },
+	Source:  func(lower string) bool { return strings.HasSuffix(lower, testSuffix) },
+	Numbers: numbers,
 }
 
 // testSuffix ends every file go test builds only for tests.
 const testSuffix = "_test" + Ext
 
 var (
+	// numberedTest matches a test file named for its requirements:
+	// 0014_test.go, or 0003_0004_test.go for two.
+	numberedTest = regexp.MustCompile(`^(\d{4}(?:_\d{4})*)` + regexp.QuoteMeta(testSuffix) + `$`)
 	// testFunc matches the names go test runs: Test, then no lowercase letter.
 	testFunc = regexp.MustCompile(`^Test($|[^a-z])`)
 	// testID matches a test named for an acceptance: Test0001_1 is 0001.1.
@@ -65,6 +70,15 @@ func fileTests(fset *token.FileSet, file string, parsed *ast.File) []lang.Test {
 		}
 	}
 	return tests
+}
+
+// numbers returns the requirement numbers a test file's name carries.
+func numbers(file string) []string {
+	m := numberedTest.FindStringSubmatch(path.Base(file))
+	if m == nil {
+		return nil
+	}
+	return strings.Split(m[1], "_")
 }
 
 // isTest reports whether fn is a function go test runs as a test.

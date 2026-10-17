@@ -1,5 +1,7 @@
 // Package golang is the Go language module's home: how a Go repo proves a
-// runtime and names its requirement tests.
+// runtime, names its requirement tests and sets the Go checks' options.
+// The toolchain package beside it finds modules and runs the go command
+// for the Go checks, and the coverage package measures entry coverage.
 package golang
 
 import (
@@ -19,6 +21,10 @@ const Ext = ".go"
 
 // Manifest is the file that marks a Go module.
 const Manifest = "go.mod"
+
+// Sum is the checksum file the go command writes beside a module's
+// manifest.
+const Sum = "go.sum"
 
 var (
 	packageMain = regexp.MustCompile(`^package\s+main\b`)

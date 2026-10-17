@@ -100,7 +100,7 @@ Numbers on nodes and arrows match the callout table.
 1. A CLI name (`fitness prettier`) — run only that built-in check; an unknown name is an error.
 2. Otherwise — every installed check minus [ignores](../../go/internal/lang/ignores): unclaimed ones sorted, then each [language module](../../go/internal/lang/langs/langs.go)'s, sorted.
 
-Every check runs in every repo and passes clean with zero files when it does not apply. A missing binary for a module's check fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning.
+Every check runs in every repo and passes clean with zero files when it does not apply. A missing binary for a module's check fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
 
 Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 

@@ -73,6 +73,23 @@ type Tests struct {
 	// Source, when set, reports a lowercase source path only tests build,
 	// which the architecture views class as a test.
 	Source func(lower string) bool
+	// Numbers, when set, lists the requirement numbers a test file's name
+	// carries, or none for a file not named for requirements.
+	Numbers func(file string) []string
+}
+
+// TestFileNumbers lists the requirement numbers a test file's name
+// carries, from the first module that reads any.
+func TestFileNumbers(modules []Module, file string) []string {
+	for _, m := range modules {
+		if m.Tests.Numbers == nil {
+			continue
+		}
+		if numbers := m.Tests.Numbers(file); numbers != nil {
+			return numbers
+		}
+	}
+	return nil
 }
 
 // ScanExts returns every module's source endings for the check, in

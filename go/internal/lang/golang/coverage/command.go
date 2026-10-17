@@ -1,4 +1,4 @@
-package gocoverage
+package coverage
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/toolchain"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
 )
 
 type runner struct {

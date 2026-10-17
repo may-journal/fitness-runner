@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -24,13 +25,16 @@ const NotInstalled = "Go not installed: see https://go.dev/dl"
 // are fixtures, not the repo's own code, and are left out.
 func Modules(root string) []string {
 	var mods []string
-	for _, f := range walkfs.FilesByExt(root, "go.mod") {
-		if path.Base(f) == "go.mod" && !Fixture(f) {
+	for _, f := range walkfs.FilesByExt(root, golang.Manifest) {
+		if path.Base(f) == golang.Manifest && !Fixture(f) {
 			mods = append(mods, path.Dir(f))
 		}
 	}
 	return mods
 }
+
+// Applies reports whether the repo at root holds a Go module of its own.
+func Applies(root string) bool { return len(Modules(root)) > 0 }
 
 // Unchanged reports whether a scoped run changes no Go file (.go, go.mod, or
 // go.sum), so go-test and go-vet, which work on whole packages, can skip it.
@@ -51,7 +55,7 @@ func Unchanged() bool {
 // isGoFile reports whether a path is Go source or module metadata.
 func isGoFile(p string) bool {
 	base := path.Base(p)
-	return strings.HasSuffix(base, ".go") || base == "go.mod" || base == "go.sum"
+	return strings.HasSuffix(base, golang.Ext) || base == golang.Manifest || base == golang.Sum
 }
 
 // ScopedModules returns the repo's modules for go-test and go-vet, or none

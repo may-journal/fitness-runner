@@ -17,7 +17,7 @@ import (
 	"sort"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -33,7 +33,7 @@ func main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	max := maxComplexity(root)
-	sources := walkfs.InScope(walkfs.FilesByExt(root, ".go"))
+	sources := walkfs.InScope(walkfs.FilesByExt(root, golang.Ext))
 	count := len(sources)
 	perFile := par.Map(count, 0, func(i int) []string {
 		fileErrs, err := scanFile(root, sources[i], max)
@@ -55,8 +55,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 // maxComplexity resolves the ceiling: the .fitnessrc.json goComplexity.max
 // value when positive, else defaultMax.
 func maxComplexity(root string) int {
-	if cfg, err := conf.Load(root); err == nil && cfg != nil && cfg.GoComplexity.Max > 0 {
-		return cfg.GoComplexity.Max
+	if cfg, err := golang.LoadConfig(root); err == nil && cfg != nil && cfg.Complexity.Max > 0 {
+		return cfg.Complexity.Max
 	}
 	return defaultMax
 }

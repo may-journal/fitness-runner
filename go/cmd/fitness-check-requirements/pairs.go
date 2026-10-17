@@ -12,15 +12,12 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 )
 
-var (
-	// numberedTest matches a test file named for its requirements:
-	// 0014_test.go, or 0003_0004_test.go for two.
-	numberedTest = regexp.MustCompile(`^(\d{4}(?:_\d{4})*)_test\.go$`)
-	// numberedDoc matches a requirement doc file: 0014-kebab-title.md.
-	numberedDoc = regexp.MustCompile(`^(\d{4})-.+\.md$`)
-)
+// numberedDoc matches a requirement doc file: 0014-kebab-title.md.
+var numberedDoc = regexp.MustCompile(`^(\d{4})-.+\.md$`)
 
 // pairs maps each requirement number to its doc and test files, and each
 // requirement test file to the numbers it proves.
@@ -48,7 +45,7 @@ func newPairs(docPaths, testFiles []string, tests []reqTest, changed []string) p
 // named for an acceptance by its number.
 func (p pairs) addTestFiles(files []string, tests []reqTest) {
 	for _, f := range files {
-		for _, n := range nameNumbers(f) {
+		for _, n := range lang.TestFileNumbers(langs.All, f) {
 			p.addTest(n, f)
 		}
 	}
@@ -82,15 +79,6 @@ func docNumber(f string) string {
 		return m[1]
 	}
 	return ""
-}
-
-// nameNumbers returns the requirement numbers a test file's name carries.
-func nameNumbers(f string) []string {
-	m := numberedTest.FindStringSubmatch(path.Base(f))
-	if m == nil {
-		return nil
-	}
-	return strings.Split(m[1], "_")
 }
 
 // errors flags each changed requirement test whose docs all stayed
