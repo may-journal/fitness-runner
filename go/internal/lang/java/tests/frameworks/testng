@@ -6,3 +6,7 @@ name: TestNG
 group: org.testng
 import: org.testng
 hint: Gradle runs TestNG tests only when the test task calls useTestNG()
+# @Test on a class runs each of its public methods as a test, but not the
+# @BeforeTest and @AfterTest setup methods, which carry their own marks.
+tests: Test
+classes: Test

@@ -72,12 +72,18 @@ func Test0065_20(t *testing.T) {
 // annotation, and a comment, string or helper method does not.
 func junitOwnership(t *testing.T) {
 	t.Helper()
-	parameterized := "import org.junit.jupiter.params.ParameterizedTest;\n\nclass AdderTest {\n  @ParameterizedTest\n  @ValueSource(ints = {1, 2})\n  void test0001_1(int n) {}\n}\n"
-	out, code := checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": parameterized}))
-	sees(t, out, code, 0)
-	passedWith(t, out, "requirements", "2")
-	notJUnit := "class AdderTest {\n  // @Test void test0001_1() {}\n  String note = \"@Test void test0001_1() {}\";\n\n  void test0001_1() {}\n}\n"
-	out, code = checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": notJUnit}))
+	for _, owner := range []string{
+		"class AdderTest {\n  @ParameterizedTest\n  @ValueSource(ints = {1, 2})\n  void test0001_1(int n) {}\n}\n",
+		"class AdderTest {\n  @TestFactory\n  Stream<DynamicTest> test0001_1() {\n    return Stream.empty();\n  }\n}\n",
+		// TestNG runs a marked class's public methods, but not its setup.
+		"@Test\npublic class AdderTest {\n  public AdderTest() {}\n\n  @BeforeTest\n  public void setUp() {}\n\n  public void test0001_1() {}\n}\n",
+	} {
+		out, code := checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": owner}))
+		sees(t, out, code, 0)
+		passedWith(t, out, "requirements", "2")
+	}
+	notJUnit := "class AdderTest {\n  // @Test void test0001_1() {}\n  String note = \"@Test void test0001_1() {}\";\n\n  void test0001_1() {}\n\n  @BeforeTest\n  void test0001_1() {}\n}\n"
+	out, code := checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": notJUnit}))
 	sees(t, out, code, 1, "0001.1 has no test; name exactly one test test0001_1")
 }
 

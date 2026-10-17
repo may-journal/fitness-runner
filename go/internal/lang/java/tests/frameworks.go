@@ -22,7 +22,10 @@ import (
 // JUnit XML, then gives `key: value` lines: its name, the build coordinate
 // groups and import prefixes that reveal it, the endings of test files it
 // runs, a hint for a build whose tests ran none, and a command that must
-// succeed before its tests can run, with the finding when it fails.
+// succeed before its tests can run, with the finding when it fails. A
+// framework of Java tests also names the annotations that mark a test
+// method, and those that mark a class whose public methods all run as
+// tests.
 //
 //go:embed frameworks
 var frameworkFiles embed.FS
@@ -36,6 +39,8 @@ type framework struct {
 	hint    string
 	ready   []string
 	unready string
+	tests   []string
+	classes []string
 }
 
 // frameworks reads the frameworks folder once, in file name order.
@@ -64,6 +69,8 @@ var keys = map[string]func(f *framework, value string){
 	"hint":    func(f *framework, v string) { f.hint = v },
 	"ready":   func(f *framework, v string) { f.ready = strings.Fields(v) },
 	"unready": func(f *framework, v string) { f.unready = v },
+	"tests":   func(f *framework, v string) { f.tests = strings.Fields(v) },
+	"classes": func(f *framework, v string) { f.classes = strings.Fields(v) },
 }
 
 // parse reads one framework file's `key: value` lines, comments left out.

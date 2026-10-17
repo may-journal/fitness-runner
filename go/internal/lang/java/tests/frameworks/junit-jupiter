@@ -5,3 +5,6 @@ name: JUnit Jupiter
 group: org.junit.jupiter org.junit
 import: org.junit.jupiter
 hint: Gradle runs JUnit Jupiter tests only when the test task calls useJUnitPlatform()
+# A test method carries @Test or one of the annotations that run it as a
+# test template or factory.
+tests: Test ParameterizedTest RepeatedTest TestFactory TestTemplate

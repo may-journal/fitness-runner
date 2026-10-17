@@ -66,6 +66,7 @@ func Test0021_11(t *testing.T) {
 		"lib/gradle.lockfile":  "com.example:" + cspellTypo + ":1.0=compileClasspath\n",
 		"mvnw":                 "url=" + cspellTypo + "\n",
 		"app/gradlew.bat":      "set " + cspellRepoWord + "=1\n",
+		".mvn/wrapper/MavenWrapperDownloader.java": "class Downloader { String " + cspellRepoWord + "; }\n",
 		"gradle/wrapper/gradle-wrapper.properties": "distributionUrl=" + cspellBodyTypo + "\n",
 	})
 	write(t, repo, map[string]string{"untracked.md": "the " + cspellRepoWord + " fox\n"})

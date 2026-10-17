@@ -48,10 +48,12 @@ type Build struct {
 	// Scripts are the endings of every file that may apply a plugin to
 	// the build, convention scripts included.
 	Scripts []string
-	// Wrappers are the files the tool's wrapper writes, and a repo commits
-	// as written, to pin the tool's version: first the script checks run,
-	// then its Windows twin and the properties naming the version.
-	Wrappers []string
+	// Wrapper is the script a repo commits to pin the tool's version.
+	Wrapper string
+	// WrapperFiles are the other files the tool's wrapper writes, and a
+	// repo commits as written: its Windows twin, the properties naming
+	// the version, and any helper older wrappers wrote.
+	WrapperFiles []string
 	// Command is the tool's name on PATH.
 	Command string
 	// Flags run the tool without prompts, color, or a background daemon.
@@ -77,13 +79,16 @@ type Build struct {
 // Maven runs once from each root pom.xml in batch mode, without download
 // progress.
 var Maven = &Build{
-	Name:     "Maven",
-	Files:    []string{"pom.xml"},
-	Scripts:  []string{"pom.xml"},
-	Wrappers: []string{"mvnw", "mvnw.cmd", "maven-wrapper.properties"},
-	Command:  "mvn",
-	Flags:    []string{"--batch-mode", "--no-transfer-progress"},
-	Output:   []string{"target"},
+	Name:    "Maven",
+	Files:   []string{"pom.xml"},
+	Scripts: []string{"pom.xml"},
+	Wrapper: "mvnw",
+	// Wrappers before 3.2 also wrote a Java source that downloads the
+	// wrapper jar.
+	WrapperFiles: []string{"mvnw.cmd", "maven-wrapper.properties", "MavenWrapperDownloader.java"},
+	Command:      "mvn",
+	Flags:        []string{"--batch-mode", "--no-transfer-progress"},
+	Output:       []string{"target"},
 	// Surefire writes unit test reports, and Failsafe integration test
 	// reports, each named TEST-<class>.xml. A TestNG run also writes
 	// copies under a junitreports folder, which the patterns leave out.
@@ -97,13 +102,14 @@ var Maven = &Build{
 // Gradle runs once from each root build with the daemon off and plain
 // console output.
 var Gradle = &Build{
-	Name:     "Gradle",
-	Files:    []string{"settings.gradle", "settings.gradle.kts", "build.gradle", "build.gradle.kts"},
-	Scripts:  []string{".gradle", ".gradle.kts"},
-	Wrappers: []string{"gradlew", "gradlew.bat", "gradle-wrapper.properties"},
-	Command:  "gradle",
-	Flags:    []string{"--no-daemon", "--console=plain"},
-	Output:   []string{"build", ".gradle"},
+	Name:         "Gradle",
+	Files:        []string{"settings.gradle", "settings.gradle.kts", "build.gradle", "build.gradle.kts"},
+	Scripts:      []string{".gradle", ".gradle.kts"},
+	Wrapper:      "gradlew",
+	WrapperFiles: []string{"gradlew.bat", "gradle-wrapper.properties"},
+	Command:      "gradle",
+	Flags:        []string{"--no-daemon", "--console=plain"},
+	Output:       []string{"build", ".gradle"},
 	// Each test task writes its reports in a folder named for the task.
 	TestReports: []string{"build/test-results/*/TEST-*.xml"},
 	Coverage:    []string{"build/reports/jacoco/test/jacocoTestReport.xml"},
@@ -164,7 +170,7 @@ func Manifests() []string {
 func Wrappers() []string {
 	var out []string
 	for _, b := range Builds {
-		out = append(out, b.Wrappers...)
+		out = append(append(out, b.Wrapper), b.WrapperFiles...)
 	}
 	return out
 }
@@ -356,7 +362,7 @@ func Tool(root string, p Project) (bin string, ok bool) {
 // above it, up to root.
 func wrapper(root string, p Project) (string, bool) {
 	for dir := p.Dir; ; dir = path.Dir(dir) {
-		if w := filepath.Join(root, filepath.FromSlash(dir), p.Build.Wrappers[0]); executable(w) {
+		if w := filepath.Join(root, filepath.FromSlash(dir), p.Build.Wrapper); executable(w) {
 			return w, true
 		}
 		if dir == "." || dir == "/" {

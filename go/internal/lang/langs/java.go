@@ -20,7 +20,7 @@ var Java = lang.Module{
 	Lockfiles:       []string{"*.lockfile"},
 	BuildOutput:     java.BuildOutput,
 	Wrappers:        java.Wrappers(),
-	Tools:           []string{"java", java.Maven.Wrappers[0], java.Maven.Command, java.Gradle.Wrappers[0], java.Gradle.Command},
+	Tools:           []string{"java", java.Maven.Wrapper, java.Maven.Command, java.Gradle.Wrapper, java.Gradle.Command},
 	Checks:          []string{"spotless", "checkstyle", "java-version", "java-test"},
 	Technology:      java.Technology,
 	TechnologyWords: strings.Fields("java jvm"),

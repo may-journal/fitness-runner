@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
+	"slices"
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
@@ -14,18 +13,14 @@ import (
 
 // Requirements finds Java requirement tests: a method test0001_1() owns
 // 0001.1. A test is a method in a test source set's folder, such as
-// src/test/java, that an annotation named Test or ending in Test marks, as
-// JUnit and TestNG mark them, @ParameterizedTest included. Methods are
-// read from tokens, so a name in a comment or string is no test.
-var Requirements = lang.Tests{
-	Scan:   scan,
-	Name:   func(id string) string { return "test" + strings.Replace(id, ".", "_", 1) },
-	Source: java.Fixture,
-}
+// src/test/java, that the frameworks folder's test annotations mark, or a
+// public method with no annotation of its own in a class its class
+// annotations mark. Methods are read from tokens, so a name in a comment
+// or string is no test.
+var Requirements = lang.Tests{Scan: scan, Name: naming.Name, Source: java.Fixture}
 
-// testID matches a Java test named for an acceptance: test0001_1 is
-// 0001.1.
-var testID = regexp.MustCompile(`^test(\d{4})_([1-9]\d*)$`)
+// naming names Java requirement tests: test0001_1 owns 0001.1.
+const naming = lang.TestPrefix("test")
 
 // scan reads the tests of every Java source in a test source set's
 // folder; a repo with a Java project is written in Java.
@@ -51,28 +46,26 @@ func scan(root string) ([]lang.Test, []string, bool, error) {
 func fileTests(file, src string) []lang.Test {
 	var out []lang.Test
 	for _, m := range views.Methods(src) {
-		if marked(m.Annotations) {
-			out = append(out, lang.Test{Name: m.Name, ID: idOf(m.Name), Loc: fmt.Sprintf("%s:%d", file, m.Line), File: file})
+		if runs(m) {
+			out = append(out, lang.Test{Name: m.Name, ID: naming.ID(m.Name), Loc: fmt.Sprintf("%s:%d", file, m.Line), File: file})
 		}
 	}
 	return out
 }
 
-// marked reports an annotation named Test or ending in Test.
-func marked(annotations []string) bool {
-	for _, a := range annotations {
-		if strings.HasSuffix(a, "Test") {
-			return true
-		}
+// runs reports a method a framework runs as a test: one its own test
+// annotation marks, or a public method without annotations in a class a
+// class annotation marks.
+func runs(m views.Method) bool {
+	if marked(m.Annotations, func(f framework) []string { return f.tests }) {
+		return true
 	}
-	return false
+	return m.Public && !m.Constructor && len(m.Annotations) == 0 && marked(m.Type, func(f framework) []string { return f.classes })
 }
 
-// idOf returns the acceptance ID a test name carries, or "".
-func idOf(name string) string {
-	m := testID.FindStringSubmatch(name)
-	if m == nil {
-		return ""
-	}
-	return m[1] + "." + m[2]
+// marked reports whether any annotation is one a framework names.
+func marked(annotations []string, names func(framework) []string) bool {
+	return slices.ContainsFunc(frameworks(), func(f framework) bool {
+		return slices.ContainsFunc(names(f), func(name string) bool { return slices.Contains(annotations, name) })
+	})
 }

@@ -12,6 +12,7 @@ import (
 	"embed"
 	"io/fs"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -95,6 +96,29 @@ type Tests struct {
 	// Numbers, when set, lists the requirement numbers a test file's name
 	// carries, or none for a file not named for requirements.
 	Numbers func(file string) []string
+}
+
+// TestPrefix is how a module whose test names carry IDs names them: the
+// prefix, then the acceptance ID with _ for its dot, so Test0001_1 or
+// test0001_1 owns 0001.1.
+type TestPrefix string
+
+// prefixedID reads the ID after a test name's prefix: 0001_1 is 0001.1.
+var prefixedID = regexp.MustCompile(`^(\d{4})_([1-9]\d*)$`)
+
+// Name is the test name that owns id.
+func (p TestPrefix) Name(id string) string {
+	return string(p) + strings.Replace(id, ".", "_", 1)
+}
+
+// ID returns the acceptance ID a test name carries, or "".
+func (p TestPrefix) ID(name string) string {
+	rest, ok := strings.CutPrefix(name, string(p))
+	m := prefixedID.FindStringSubmatch(rest)
+	if !ok || m == nil {
+		return ""
+	}
+	return m[1] + "." + m[2]
 }
 
 // TestFileNumbers lists the requirement numbers a test file's name

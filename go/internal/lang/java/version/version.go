@@ -6,13 +6,12 @@
 // Maven's maven.compiler.release or compiler release, one ${property} deep,
 // or a Gradle toolchain's languageVersion. A pom that names no release
 // takes the one its parents outside the repo name, read from the local
-// Maven repository, with the pom's own properties first. The running JDK
-// satisfies a pin when its feature release is at least the pinned one,
-// since a newer JDK builds for an older release. The running JDK is
-// JAVA_HOME's, as the build tools pick it, else the one on PATH. A Gradle
-// toolchain asks for its exact release, so unless the build configures a
-// toolchain resolver to download one, an installed JDK Gradle detects
-// must match it.
+// Maven repository, with the properties of the pom and its parents in the
+// repo first. The running JDK satisfies a pin when its feature release is
+// at least the pinned one, since a newer JDK builds for an older release.
+// The running JDK is JAVA_HOME's, as the build tools pick it, else the
+// one on PATH. A Gradle toolchain asks for its exact release, which Gradle
+// must find installed or download, so Gradle judges it.
 package version
 
 // cspell:ignore sdkmanrc
@@ -36,8 +35,8 @@ const noPin = "no JDK version is pinned; add a .java-version file naming the rel
 	"or java { toolchain { languageVersion = JavaLanguageVersion.of(21) } } in the Gradle build"
 
 // pin is one place the repo names the JDK release it needs. Toolchain is
-// the Gradle build root that must find exactly this release installed, or
-// the zero Project for a pin any newer JDK satisfies.
+// the Gradle build root that must find or download exactly this release,
+// or the zero Project for a pin any newer JDK satisfies.
 type pin struct {
 	file, version string
 	toolchain     java.Project
@@ -90,7 +89,8 @@ func pinErrors(root string, pins []pin) ([]string, error) {
 			newer = append(newer, p)
 		}
 	}
-	errors, err := toolchainErrors(root, pins)
+	have, _ := java.Major(running)
+	errors, err := toolchainErrors(root, have, pins)
 	return append(judge(running, newer), errors...), err
 }
 

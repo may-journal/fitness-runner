@@ -1,5 +1,7 @@
 package version
 
+// cspell:ignore Dmaven
+
 import (
 	"fmt"
 	"os"
@@ -17,12 +19,31 @@ var (
 	// relativeRe reads a parent's relativePath, empty when the tag is
 	// self-closed.
 	relativeRe = regexp.MustCompile(`<relativePath\s*/>|<relativePath>\s*([^<]*?)\s*</relativePath>`)
+	// repoLocalRe reads the local repository a Maven command line sets.
+	repoLocalRe = regexp.MustCompile(`-Dmaven\.repo\.local=(\S+)`)
+	// settingsLocalRe reads the local repository Maven's settings set.
+	settingsLocalRe = regexp.MustCompile(`<localRepository>\s*([^<]*?)\s*</localRepository>`)
 )
 
-// parent is a pom's parent: its coordinates, and the path to its pom in
-// the repo, empty when Maven looks it up only in a repository.
+// maxParents bounds a parent chain, so a pom that names itself ends.
+const maxParents = 16
+
+// parent is a pom's parent: its coordinates, and the path to its pom
+// from the child's folder, empty when Maven looks it up only in a
+// repository.
 type parent struct {
 	group, artifact, version, relative string
+}
+
+// chain is the poms a pom inherits from, nearest first, itself included.
+// The first pins of them name the pom's own release: itself and the
+// parents outside the repo above it. A parent in the repo names its own,
+// so it and those above it lend only their properties.
+type chain struct {
+	poms []string
+	pins int
+	// unread is why a parent that would name the release went unread.
+	unread string
 }
 
 // mavenPins reads the releases a pom names, or else those its parents
@@ -32,13 +53,13 @@ func mavenPins(root, file string, _ []java.Project) ([]pin, string) {
 	if !ok {
 		return nil, ""
 	}
-	poms, why := inherited(root, file, body)
-	for _, pom := range poms {
-		if found := releases(pom, poms); len(found) > 0 {
+	c := inherited(root, file, body)
+	for _, pom := range c.poms[:c.pins] {
+		if found := releases(pom, c.poms); len(found) > 0 {
 			return filePins(file, found), ""
 		}
 	}
-	return nil, why
+	return nil, c.unread
 }
 
 // filePins pins each version to file.
@@ -50,24 +71,50 @@ func filePins(file string, versions []string) []pin {
 	return out
 }
 
-// inherited lists the pom body and, when its parent lives outside the
-// repo, each parent pom the local Maven repository holds, nearest first,
-// and the parent it lacks, if any.
-func inherited(root, file, body string) ([]string, string) {
-	poms := []string{body}
-	p, ok := parentOf(body)
-	if !ok || inRepo(root, file, p) {
-		return poms, ""
-	}
-	for ok {
-		pom, err := os.ReadFile(localPom(p))
-		if err != nil {
-			return poms, fmt.Sprintf("%s inherits %s:%s:%s, which the local Maven repository lacks, so its release is unread; run the build once to fetch it", file, p.group, p.artifact, p.version)
+// inherited reads the chain of the pom at file: each parent from the repo
+// when its relative path names it there, else from the local Maven
+// repository.
+func inherited(root, file, body string) chain {
+	c := chain{poms: []string{body}, pins: 1}
+	at, own := file, true
+	for p, ok := parentOf(body); ok && len(c.poms) < maxParents; p, ok = parentOf(body) {
+		var found bool
+		if body, at, own, found = parentPom(root, at, own, p); !found {
+			c.unread = unread(own, file, p)
+			return c
 		}
-		poms = append(poms, string(pom))
-		p, ok = parentOf(string(pom))
+		c.poms = append(c.poms, body)
+		if own {
+			c.pins++
+		}
 	}
-	return poms, ""
+	return c
+}
+
+// parentPom reads p, named by the pom at at: from the repo, which ends
+// the poms that pin the chain's own release, else from the local Maven
+// repository. at becomes the parent's path in the repo, or empty.
+func parentPom(root, at string, own bool, p parent) (body, next string, stillOwn, found bool) {
+	if rel, in := repoParent(root, at, p); in {
+		return readOr(root, rel), rel, false, true
+	}
+	pom, err := os.ReadFile(localPom(root, p))
+	return string(pom), "", own, err == nil
+}
+
+// readOr returns a tracked file's text, or empty when it is missing.
+func readOr(root, file string) string {
+	body, _ := read(root, file)
+	return body
+}
+
+// unread is why a pom's own parent went unread, when that parent would
+// name its release.
+func unread(own bool, file string, p parent) string {
+	if !own {
+		return ""
+	}
+	return fmt.Sprintf("%s inherits %s:%s:%s, which the local Maven repository lacks, so its release is unread; run the build once to fetch it", file, p.group, p.artifact, p.version)
 }
 
 // parentOf reads the parent a pom names, with Maven's default relative
@@ -93,23 +140,50 @@ func tag(block, name string) string {
 	return m[1]
 }
 
-// inRepo reports a parent whose relative path, from the pom's folder,
-// names a pom in the repo, which the check reads on its own.
-func inRepo(root, file string, p parent) bool {
-	if p.relative == "" {
-		return false
+// repoParent finds the parent's pom in the repo, as Maven does: at its
+// relative path from the pom at file, inside the repo, and naming the
+// parent's artifact.
+func repoParent(root, file string, p parent) (string, bool) {
+	rel, ok := relativePom(file, p)
+	if !ok {
+		return "", false
+	}
+	body, ok := read(root, rel)
+	return rel, ok && tag(parentRe.ReplaceAllString(body, ""), "artifactId") == p.artifact
+}
+
+// relativePom is the repo path p's relative path names from the pom at
+// file, or false when there is none or it leaves the repo.
+func relativePom(file string, p parent) (string, bool) {
+	if file == "" || p.relative == "" {
+		return "", false
 	}
 	rel := path.Join(path.Dir(file), p.relative)
 	if !strings.HasSuffix(rel, ".xml") {
 		rel = path.Join(rel, "pom.xml")
 	}
-	_, ok := read(root, rel)
-	return ok
+	return rel, rel != ".." && !strings.HasPrefix(rel, "../")
 }
 
-// localPom is where the default local Maven repository keeps a parent's
-// pom.
-func localPom(p parent) string {
+// localPom is where the local Maven repository keeps a parent's pom.
+func localPom(root string, p parent) string {
+	return filepath.Join(localRepository(root), filepath.FromSlash(strings.ReplaceAll(p.group, ".", "/")), p.artifact, p.version, p.artifact+"-"+p.version+".pom")
+}
+
+// localRepository is the local Maven repository the build uses: the one
+// the repo's .mvn/maven.config or MAVEN_OPTS sets, else the user
+// settings' localRepository, else ~/.m2/repository.
+func localRepository(root string) string {
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".m2", "repository", filepath.FromSlash(strings.ReplaceAll(p.group, ".", "/")), p.artifact, p.version, p.artifact+"-"+p.version+".pom")
+	config := readOr(root, ".mvn/maven.config") + " " + os.Getenv("MAVEN_OPTS")
+	if m := repoLocalRe.FindStringSubmatch(config); m != nil && filepath.IsAbs(m[1]) {
+		return m[1]
+	} else if m != nil {
+		return filepath.Join(root, m[1])
+	}
+	settings, _ := os.ReadFile(filepath.Join(home, ".m2", "settings.xml"))
+	if m := settingsLocalRe.FindStringSubmatch(string(settings)); m != nil {
+		return strings.ReplaceAll(m[1], "${user.home}", home)
+	}
+	return filepath.Join(home, ".m2", "repository")
 }
