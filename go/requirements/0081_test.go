@@ -117,7 +117,7 @@ func Test0081_4(t *testing.T) {
 	run := javaTestMavenRun(map[string]string{
 		"core/target/surefire-reports/TEST-example.CoreTest.xml": javaTestPassed,
 		"core/target/site/jacoco/jacoco.xml":                     javaTestCoverage("3", "2"),
-		"coverage/target/site/jacoco-aggregate/jacoco.xml":       javaTestFull,
+		"coverage/target/site/jacoco-aggregate/jacoco.xml":       strings.NewReplacer(`<package name="example">`, `<group name="core"><package name=""><sourcefile name="Core.java"/>`, `</package>`, `</package></group>`).Replace(javaTestFull),
 	})
 	_, out, code := javaRun(t, repo, "java-test", map[string][]response{"mvn": {run}})
 	sees(t, out, code, 0, "All 1 checks passed")
