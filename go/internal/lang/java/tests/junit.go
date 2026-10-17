@@ -38,17 +38,20 @@ type results struct {
 	tests int
 	// failed names each test that failed or erred, with its message.
 	failed []string
+	// unreadable names each report that does not parse as JUnit XML.
+	unreadable []string
 }
 
 // readResults reads the JUnit XML reports p's projects wrote since start.
-// A report that does not parse is left out.
 func readResults(root string, p java.Project, start time.Time) results {
 	var r results
 	for _, file := range fresh(root, java.Members(root, p), func(b *java.Build) []string { return b.TestReports }, start) {
 		var s suite
-		if readXML(file, &s) {
-			r.add(s)
+		if !readXML(file, &s) {
+			r.unreadable = append(r.unreadable, java.Relative(root, ".", file)+" is not a JUnit XML report; rerun the build")
+			continue
 		}
+		r.add(s)
 	}
 	return r
 }

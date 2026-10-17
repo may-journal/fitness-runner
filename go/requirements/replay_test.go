@@ -13,6 +13,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // standIns are the external programs fitness calls that tests replace with
@@ -39,6 +40,9 @@ type response struct {
 	Stdout string            `json:"stdout"`
 	Stderr string            `json:"stderr"`
 	Exit   int               `json:"exit"`
+	// Wait, when set, is how many seconds the stand-in hangs first, as a
+	// stalled service does.
+	Wait int `json:"wait"`
 }
 
 // replay answers one call from $FITNESS_REPLAY/<name>.json, the first
@@ -57,6 +61,7 @@ func replay(name string, args []string) int {
 	_ = json.Unmarshal(raw, &saved)
 	for _, r := range saved {
 		if matches(call, r.Match) {
+			time.Sleep(time.Duration(r.Wait) * time.Second)
 			writeFiles(r.Files)
 			fmt.Print(r.Stdout)
 			fmt.Fprint(os.Stderr, r.Stderr)

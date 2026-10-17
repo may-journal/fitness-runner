@@ -4,6 +4,7 @@ package tests
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/goal"
@@ -46,15 +47,25 @@ func coverage(root string, p java.Project, start time.Time) (findings []string, 
 }
 
 // judgeReport reads one report's totals and names those short of the goal,
-// or the report itself when it does not parse.
+// or the report itself when it does not parse or counts no lines, as for
+// classes compiled without debug information.
 func judgeReport(root, file string) []string {
 	rel := java.Relative(root, ".", file)
 	var r report
 	if !readXML(file, &r) {
 		return []string{rel + " is not a JaCoCo XML report; rerun the build"}
 	}
+	if !slices.ContainsFunc(r.Counters, func(c counter) bool { return c.Type == "LINE" }) {
+		return []string{rel + " counts no lines; compile with debug information, the default, and rerun the build"}
+	}
+	return shortfalls(rel, r.Counters)
+}
+
+// shortfalls names each judged total of the report at rel short of the
+// goal.
+func shortfalls(rel string, counters []counter) []string {
 	var out []string
-	for _, c := range r.Counters {
+	for _, c := range counters {
 		if word, ok := judged[c.Type]; ok && !goal.Met(c.Covered, c.Covered+c.Missed) {
 			out = append(out, fmt.Sprintf("%s: %s %d/%d covered; the goal is %s", rel, word, c.Covered, c.Covered+c.Missed, goal.Text()))
 		}

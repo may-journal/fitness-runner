@@ -5,6 +5,7 @@ package requirements
 import (
 	"strings"
 	"testing"
+	"time"
 )
 
 // javaTestMaven declares JaCoCo in a Maven build.
@@ -57,6 +58,10 @@ func Test0081_1(t *testing.T) {
 	if strings.Contains(read(out), "example.AppTest.adds") {
 		t.Errorf("only the failing test may be named:\n%s", out)
 	}
+	// A report cut short names itself, never a missing test run.
+	broken := javaTestMavenRun(map[string]string{"target/surefire-reports/TEST-example.AppTest.xml": "<testsuite><testcase"})
+	_, out, code = javaRun(t, javaRepo(t, map[string]string{"pom.xml": javaPom(javaTestMaven)}), "java-test", map[string][]response{"mvn": {broken}})
+	sees(t, out, code, 1, "target/surefire-reports/TEST-example.AppTest.xml is not a JUnit XML report; rerun the build")
 }
 
 func Test0081_2(t *testing.T) {
@@ -77,6 +82,10 @@ func Test0081_2(t *testing.T) {
 	rp, out, code = javaRun(t, javaRepo(t, map[string]string{"build.gradle": javaTestGradle}), "java-test", map[string][]response{"gradle": {gradle}})
 	sees(t, out, code, 0, "All 1 checks passed")
 	javaCalledOnce(t, rp, "gradle")
+	// Clean rules rerun the tasks on every Gradle version; --rerun needs 7.6.
+	if !rp.called("gradle", "cleanTest test cleanJacocoTestReport jacocoTestReport") || rp.called("gradle", "--rerun") {
+		t.Errorf("gradle calls = %q, want clean rules before each task and no --rerun", rp.calls("gradle"))
+	}
 }
 
 func Test0081_3(t *testing.T) {
@@ -88,6 +97,13 @@ func Test0081_3(t *testing.T) {
 	})
 	_, out, code := javaRun(t, repo, "java-test", map[string][]response{"mvn": {run}})
 	sees(t, out, code, 1, "target/site/jacoco/jacoco.xml: lines 4/5 covered; the goal is 100%")
+	// A report without line counts can't show the goal is met.
+	noLines := javaTestMavenRun(map[string]string{
+		"target/surefire-reports/TEST-example.AppTest.xml": javaTestPassed,
+		"target/site/jacoco/jacoco.xml":                    `<report name="app"><counter type="INSTRUCTION" missed="0" covered="9"/></report>`,
+	})
+	_, out, code = javaRun(t, javaRepo(t, map[string]string{"pom.xml": javaPom(javaTestMaven)}), "java-test", map[string][]response{"mvn": {noLines}})
+	sees(t, out, code, 1, "target/site/jacoco/jacoco.xml counts no lines; compile with debug information")
 }
 
 func Test0081_4(t *testing.T) {
@@ -130,6 +146,14 @@ func Test0081_6(t *testing.T) {
 	sees(t, out, code, 1, "Testcontainers needs a running Docker; start Docker or set DOCKER_HOST, then rerun")
 	if calls := rp.calls("mvn"); len(calls) != 0 {
 		t.Errorf("the build ran %q, want no run without Docker", calls)
+	}
+	// A hung Docker fails fast rather than holding the check to its limit.
+	hung := response{Match: []string{"info"}, Wait: 60}
+	start := time.Now()
+	_, out, code = javaRun(t, repo, "java-test", map[string][]response{"mvn": {javaTestMavenRun(nil)}, "docker": {hung}})
+	sees(t, out, code, 1, "Testcontainers needs a running Docker")
+	if took := time.Since(start); took > 30*time.Second {
+		t.Errorf("a hung Docker held the check for %s, want under 30s", took)
 	}
 }
 

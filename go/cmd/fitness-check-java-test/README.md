@@ -11,7 +11,7 @@ Runs Java tests once from each build root, then judges their results and their [
 ## Behavior
 
 - Maven runs `verify` past failing tests, so Surefire, Failsafe and the JaCoCo reports bound there all run.
-- Gradle reruns `test` and `jacocoTestReport`, or `testCodeCoverageReport` when the build applies report aggregation.
+- Gradle cleans and reruns `test` and `jacocoTestReport`, or `testCodeCoverageReport` under report aggregation. Another test task counts when one of those depends on it.
 - The [Java module](../../internal/lang/java/java.go) says what a build root is and which wrapper or tool runs it.
 - No Maven or Gradle build in the repo: passes clean with `filesChecked: 0`.
 - A Java repo with no running JDK fails with an install hint.
@@ -23,6 +23,8 @@ Runs Java tests once from each build root, then judges their results and their [
 - A failed build with no failing test reports the build's own error lines.
 - A build root with product code whose run ran no test. Test files that ran nothing get each detected framework's hint.
 - A JaCoCo line or branch total below the shared goal, as `report: lines covered/total covered; the goal is 100%`.
+- A report that does not parse, or a JaCoCo report that counts no lines.
+- A Docker check that fails or hangs past 10 seconds, for a framework that needs Docker.
 
 ## Reports
 

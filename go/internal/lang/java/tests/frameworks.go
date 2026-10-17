@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"embed"
 	"io/fs"
 	"os"
@@ -11,6 +12,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
@@ -155,19 +157,28 @@ func readAll(root string, files []string) string {
 	return b.String()
 }
 
+// readyTimeout bounds a readiness command, so a hung service fails fast
+// instead of holding the check to its own time limit.
+const readyTimeout = 10 * time.Second
+
 // ready runs each detected framework's readiness command in p's folder and
-// returns the finding of each that fails.
+// returns the finding of each that fails or outlasts readyTimeout.
 func ready(root string, p java.Project) []string {
 	var out []string
 	for _, f := range detect(root, p) {
-		if len(f.ready) == 0 {
-			continue
-		}
-		cmd := exec.Command(f.ready[0], f.ready[1:]...)
-		cmd.Dir = filepath.Join(root, filepath.FromSlash(p.Dir))
-		if cmd.Run() != nil {
+		if len(f.ready) > 0 && !succeeds(filepath.Join(root, filepath.FromSlash(p.Dir)), f.ready) {
 			out = append(out, f.unready)
 		}
 	}
 	return out
+}
+
+// succeeds runs the command in dir and reports whether it exits zero
+// within readyTimeout.
+func succeeds(dir string, command []string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), readyTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, command[0], command[1:]...)
+	cmd.Dir = dir
+	return cmd.Run() == nil
 }

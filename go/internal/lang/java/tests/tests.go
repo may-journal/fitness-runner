@@ -10,7 +10,8 @@
 //
 // Only reports written during the run count, so a stale report never
 // passes. Gradle reruns the test and report tasks even when it holds them
-// up to date. A failing test is reported before coverage, since a failed
+// up to date. Gradle runs only the test task, so another test task counts
+// when the test or report task depends on it. A failing test is reported before coverage, since a failed
 // run's coverage says little.
 package tests
 
@@ -18,6 +19,8 @@ package tests
 
 import (
 	"regexp"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -65,22 +68,25 @@ func mavenArgs(string, java.Project) []string {
 
 // gradleArgs reruns the test task and the coverage report task, the
 // aggregate one when the build applies aggregation, and goes on past a
-// failing task.
+// failing task. Each task's clean rule deletes its outputs first, so the
+// task runs again on any Gradle version, where the --rerun option needs
+// Gradle 7.6.
 func gradleArgs(root string, p java.Project) []string {
 	report := "jacocoTestReport"
 	if java.Declares(root, p, aggregationRe) {
 		report = "testCodeCoverageReport"
 	}
-	return []string{"test", "--rerun", report, "--rerun", "--continue"}
+	return []string{"cleanTest", "test", "clean" + strings.ToUpper(report[:1]) + report[1:], report, "--continue"}
 }
 
-// judge names each failing test; else the build's own reason for a failed
+// judge names each failing test and each report that does not parse; else
+// the build's own reason for a failed
 // run; else a missing test run for a root with product code; else each
 // coverage total short of the goal, or the missing coverage report.
 func judge(root string, p java.Project, o checkkit.Outcome, start time.Time) []string {
 	r := readResults(root, p, start)
-	if len(r.failed) > 0 {
-		return r.failed
+	if problems := slices.Concat(r.failed, r.unreadable); len(problems) > 0 {
+		return problems
 	}
 	if o.Code != 0 {
 		return java.Fallback(o, "the "+p.Build.Name+" build at "+p.Dir+" failed; run its tests by hand")
