@@ -35,7 +35,7 @@ C4Component
         Component(tool, "21 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
-    System_Ext(peers, "9 Peer tools", "prettier, eslint, biome, vitest, swiftlint")
+    System_Ext(peers, "9 Peer tools", "each language module's formatters, linters and test runners")
     System_Ext(git, "10 git")
 
     Rel(developer, main, "11")
@@ -71,13 +71,13 @@ Numbers on nodes and arrows match the callout table.
 | --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
 | 1   | Developer or agent invokes `fitness`.                                                                   | Same entry as system context.                               |
 | 2   | `go/cmd/fitness` — `main.go` routes the subcommands, else argv, resolve, execute, render.               | No build step, no interpreter startup.                      |
-| 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
+| 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy script config earns a migration hint.     | Config a compiled runner can parse anywhere.                |
 | 4   | Ordered check list: the CLI name, else `allChecks`, which the language module registry lists.           | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
 | 7   | One static binary per check name (`go/cmd/fitness-check-*`), discovered beside the runner then on PATH. | Plugin model at the artifact level; no registry.            |
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
-| 9   | Tool-wrapper checks exec the real peer tool from `node_modules/.bin` (walking up) then PATH, never npx. | Orchestration, not reimplementation.                        |
+| 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
 | 12  | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
@@ -101,6 +101,10 @@ Numbers on nodes and arrows match the callout table.
 2. Otherwise — every installed check minus [ignores](../../go/internal/lang/ignores): unclaimed ones sorted, then each [language module](../../go/internal/lang/langs/langs.go)'s, sorted.
 
 Every check runs in every repo and passes clean with zero files when it does not apply. A missing binary for a module's check fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
+
+## Architecture view readers
+
+The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.
 
 Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 

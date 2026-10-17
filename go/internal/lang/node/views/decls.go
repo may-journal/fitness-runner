@@ -1,19 +1,54 @@
-package architecture
+// Package views reads TypeScript sources for the architecture code view:
+// each file's declarations and the relations between the view's nodes,
+// from tokens, so comments never count and strings stay whole.
+//
+// The reader takes .ts and .tsx product files, leaving out tests and tool
+// configs. It keeps top-level classes, interfaces, functions, enums, and
+// type aliases, and the fields and methods of class and interface bodies.
+//
+//   - A parameter's type is what it states; one with none matches its
+//     name alone.
+//   - A result is the stated return annotation; an inferred result states
+//     none.
+//   - A get accessor is a field of its result type.
+//   - A class's members are those its own file declares.
+//   - In .tsx, a slash right after < closes a tag rather than starting a
+//     regex.
+//   - Without semicolons, a line ending in a postfix !, ++, or -- ends its
+//     statement.
+//
+// It relates names of other classes, Type.member calls, extends, and
+// implements, which is conformance. The view covers a class its file
+// exports, by keyword or export list. The reader is lexical, without
+// imports, so a function stored in a const is no declaration. It reads no
+// references, so the components view takes no TypeScript evidence.
+package views
 
 import (
 	"path"
+	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
+
+// language names TypeScript in the code view's messages.
+const language = "TypeScript"
 
 // tsExts are the TypeScript sources the code view reads.
 var tsExts = []string{".ts", ".tsx"}
 
 func typeScript(file string) bool {
-	return contains(tsExts, path.Ext(file))
+	return slices.Contains(tsExts, path.Ext(file))
+}
+
+// Reader is the Node module's reader for the architecture code view.
+var Reader = codemodel.Reader{
+	Language: language,
+	Exts:     tsExts,
+	Read:     read,
 }
 
 var (
@@ -36,10 +71,10 @@ var (
 // Each returns the token after the statement.
 var tsStatements = map[string]func(r *tsReader, start, i int, exported bool) int{
 	"class": func(r *tsReader, start, i int, exported bool) int {
-		return r.container(start, i, kindType, exported)
+		return r.container(start, i, codemodel.KindType, exported)
 	},
 	"interface": func(r *tsReader, start, i int, _ bool) int {
-		return r.container(start, i, kindInterface, false)
+		return r.container(start, i, codemodel.KindInterface, false)
 	},
 	"function": (*tsReader).function,
 	"enum":     (*tsReader).enum,
@@ -52,12 +87,12 @@ var tsStatements = map[string]func(r *tsReader, start, i int, exported bool) int
 // functions, enums, and type aliases, with the fields and methods of class
 // and interface bodies. Anything inside a body is ignored.
 type tsReader struct {
-	x       *declIndex
+	x       *codemodel.Index
 	file    string
 	src     string
 	tokens  []javascript.Token
 	starts  []int
-	classes []*decl
+	classes []*codemodel.Decl
 	exports map[string]bool
 }
 
@@ -74,15 +109,18 @@ func tsLex(file, src string) []javascript.Token {
 	return javascript.Lex(src)
 }
 
-// tsDecls reads every TypeScript source that is not a test.
-func (m *Model) tsDecls(x *declIndex) {
-	for _, s := range m.Sources {
-		if typeScript(s.Path) && s.Category != "test" && !lang.IsTestFile(langs.All, s.Path) {
-			r := newTSReader(s.Path, strings.Join(m.repo.read(s.Path), "\n"))
+// read reads every TypeScript source that is not a test, by its folder or
+// by the name the test runners find. A class has no extensions, so its
+// members join it only in its own file.
+func read(repo codemodel.Repo, x *codemodel.Index) codemodel.Code {
+	for _, file := range codemodel.FilesWith(repo.Code, tsExts...) {
+		if !node.ScriptTest(file) {
+			r := newTSReader(file, strings.Join(repo.Read(file), "\n"))
 			r.x = x
 			r.read()
 		}
 	}
+	return codemodel.Code{Relate: func(g *codemodel.Graph) { relate(g, repo) }}
 }
 
 func (r *tsReader) read() {
@@ -115,7 +153,7 @@ func (r *tsReader) modifiers(i int) (bool, int) {
 }
 
 func (r *tsReader) modifier(i int) bool {
-	return contains(tsModifiers, r.word(i)) && !contains(tsNameFollowers, r.word(i+1))
+	return slices.Contains(tsModifiers, r.word(i)) && !slices.Contains(tsNameFollowers, r.word(i+1))
 }
 
 // decorators skips each @decorator, with its arguments, from token i.
@@ -139,7 +177,7 @@ func (r *tsReader) container(start, i int, kind string, exported bool) int {
 	}
 	d := r.add(name, "", kind, start, close)
 	d.Supers, d.Implements, d.Open, d.Body = h.supers, h.implements, r.line(h.open), r.at(h.open).Pos
-	if kind == kindType {
+	if kind == codemodel.KindType {
 		d.Exported, r.classes = exported, append(r.classes, d)
 	}
 	r.members(name, h.open+1, close)
@@ -150,7 +188,7 @@ func (r *tsReader) container(start, i int, kind string, exported bool) int {
 // parameters, and its heritage clause up to the body's brace.
 func (r *tsReader) header(i int) (string, heritage) {
 	name := ""
-	if r.ident(i) && !contains([]string{"extends", "implements"}, r.word(i)) {
+	if r.ident(i) && !slices.Contains([]string{"extends", "implements"}, r.word(i)) {
 		name, i = r.word(i), i+1
 	}
 	if r.is(i, "<") {
@@ -193,7 +231,7 @@ func (h *heritage) clause(r *tsReader, j int, list *[]string) *[]string {
 
 // itemStart reports a name that starts a heritage list item.
 func (r *tsReader) itemStart(j int) bool {
-	return r.ident(j) && contains([]string{"extends", "implements", ","}, r.word(j-1))
+	return r.ident(j) && slices.Contains([]string{"extends", "implements", ","}, r.word(j-1))
 }
 
 func (r *tsReader) members(owner string, from, to int) {
@@ -209,7 +247,7 @@ func (r *tsReader) member(owner string, i int) int {
 	start := r.decorators(i)
 	_, j := r.modifiers(start)
 	accessor := ""
-	if contains([]string{"get", "set"}, r.word(j)) && r.named(j+1) {
+	if slices.Contains([]string{"get", "set"}, r.word(j)) && r.named(j+1) {
 		accessor, j = r.word(j), j+1
 	}
 	if !r.named(j) {
@@ -246,9 +284,9 @@ func (r *tsReader) method(owner, name string, start, open int, accessor string) 
 	if accessor == "set" {
 		return last + 1
 	}
-	d := r.add(name, owner, ownedKind(owner, kindFunc, kindMethod), start, last)
+	d := r.add(name, owner, ownedKind(owner, codemodel.KindFunc, codemodel.KindMethod), start, last)
 	if accessor == "get" {
-		d.Kind, d.Type = kindField, result
+		d.Kind, d.Type = codemodel.KindField, result
 		return last + 1
 	}
 	d.Params, d.Results = r.params(open, close), resultList(result)
@@ -295,7 +333,7 @@ func (r *tsReader) body(i int) int {
 func (r *tsReader) field(owner, name string, start, k int) int {
 	typ, next := r.returns(k)
 	last := r.finish(next)
-	d := r.add(name, owner, ownedKind(owner, kindValue, kindField), start, last)
+	d := r.add(name, owner, ownedKind(owner, codemodel.KindValue, codemodel.KindField), start, last)
 	d.Type = typ
 	return last + 1
 }
@@ -314,8 +352,8 @@ func (r *tsReader) finish(i int) int {
 }
 
 // params reads the parameters between the parentheses at open and close.
-func (r *tsReader) params(open, close int) []param {
-	var params []param
+func (r *tsReader) params(open, close int) []codemodel.Param {
+	var params []codemodel.Param
 	for start := open + 1; start < close; {
 		end := r.paramEnd(start, close)
 		params, start = append(params, r.param(start, end)), end+1
@@ -339,17 +377,17 @@ func (r *tsReader) paramEnd(from, close int) int {
 
 // param reads one parameter: modifiers and a rest marker, the name or
 // destructuring pattern, and the stated type before any default.
-func (r *tsReader) param(from, to int) param {
+func (r *tsReader) param(from, to int) codemodel.Param {
 	for r.modifier(from) || r.is(from, ".") {
 		from++
 	}
 	end := r.typeGroup(from) + 1
-	p := param{name: r.render(from, end)}
+	p := codemodel.Param{Name: r.render(from, end)}
 	if r.is(end, "?") {
 		end++
 	}
 	if r.is(end, ":") {
-		p.typ = r.render(end+1, r.defaultAt(end+1, to))
+		p.Type = r.render(end+1, r.defaultAt(end+1, to))
 	}
 	return p
 }
@@ -382,7 +420,7 @@ func (r *tsReader) enum(start, i int, _ bool) int {
 		return r.end(i) + 1
 	}
 	close := r.close(i + 2)
-	r.add(r.word(i+1), "", kindType, start, close)
+	r.add(r.word(i+1), "", codemodel.KindType, start, close)
 	return close + 1
 }
 
@@ -390,7 +428,7 @@ func (r *tsReader) enum(start, i int, _ bool) int {
 func (r *tsReader) alias(start, i int, _ bool) int {
 	last := r.end(i)
 	if r.ident(i + 1) {
-		r.add(r.word(i+1), "", kindType, start, last)
+		r.add(r.word(i+1), "", codemodel.KindType, start, last)
 	}
 	return last + 1
 }
@@ -413,6 +451,6 @@ func (r *tsReader) exportName(j int) {
 	}
 }
 
-func (r *tsReader) add(name, owner, kind string, first, last int) *decl {
-	return r.x.add(&decl{File: r.file, Name: name, Owner: owner, Kind: kind, Line: r.line(first), End: r.line(last)})
+func (r *tsReader) add(name, owner, kind string, first, last int) *codemodel.Decl {
+	return r.x.Add(&codemodel.Decl{File: r.file, Name: name, Owner: owner, Kind: kind, Scope: r.file, Line: r.line(first), End: r.line(last)})
 }

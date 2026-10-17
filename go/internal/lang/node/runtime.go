@@ -17,7 +17,17 @@ import (
 const Technology = "Node"
 
 // Runtime reads package.json files for the runtimes a repo ships and the
-// files its scripts run.
+// files its scripts run. A package.json with a start script or bin, or a
+// deploy file beside it, proves a Node service. Any other public
+// package.json with main, module, exports, or types that is tracked or
+// built proves a Node library. Deploy files are Dockerfile, Procfile,
+// fly.toml, app.yaml, serverless.yml, vercel.json, and wrangler.toml. A
+// public package is not private, and a
+// built one has a build script, so npm init's unused "main": "index.js"
+// proves nothing. A container also owns a package when a code span or
+// label names the package or a path covering an entry point: main,
+// module, types, files, each bin, and each exports path, so dist/esm
+// names dist/esm/index.js though nobody tracks it.
 var Runtime = runtimes.Reader{
 	Manifests: map[string]func(*runtimes.Finder, string){Manifest: product},
 	Scripts:   map[string]func(string, string) runtimes.Runs{Manifest: scriptRuns},

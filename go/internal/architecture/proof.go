@@ -1,9 +1,10 @@
 package architecture
 
 import (
-	"path"
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 )
 
 var word = regexp.MustCompile(`[a-z0-9][a-z0-9.+-]*`)
@@ -38,20 +39,17 @@ func (c *components) draws(from, to string) bool {
 
 func (c *components) proveEdge(ev Evidence, from, to string) {
 	owner := c.owners[ev.Path]
+	reader, supported := codemodel.Of(referenceReaders, ev.Path)
 	switch {
-	case !supportedEvidence(ev.Path):
-		c.fail(ev.At, "unsupported evidence %s; Go and Swift sources only", ev)
+	case !supported:
+		c.fail(ev.At, "unsupported evidence %s; %s sources only", ev, codemodel.Series(referenceReaders, "and"))
 	case !c.within(owner, from):
 		c.fail(ev.At, "evidence %s is owned by %s, not %s", ev, ownerName(owner), from)
 	case external(c.elements[to].Kind):
-		c.proveExternal(ev, c.elements[to])
+		c.proveExternal(ev, c.elements[to], reader)
 	case !c.names(ev, to):
 		c.fail(ev.At, "evidence %s names nothing %s owns", ev, to)
 	}
-}
-
-func supportedEvidence(p string) bool {
-	return contains([]string{".go", ".swift"}, path.Ext(p))
 }
 
 func ownerName(owner string) string {
@@ -72,7 +70,7 @@ func (c *components) names(ev Evidence, to string) bool {
 	return false
 }
 
-func (c *components) reaches(r reference, to string) bool {
+func (c *components) reaches(r codemodel.Reference, to string) bool {
 	for _, owner := range c.pathOwners(r.To) {
 		if c.within(owner, to) {
 			return true
@@ -82,12 +80,11 @@ func (c *components) reaches(r reference, to string) bool {
 }
 
 // proveExternal requires the linked lines to name the external system,
-// by a word of its name, technology, or description, outside comments.
-func (c *components) proveExternal(ev Evidence, e Element) {
+// by a word of its name, technology, or description, outside the comments
+// its language's reader strips.
+func (c *components) proveExternal(ev Evidence, e Element, reader codemodel.Reader) {
 	words := longWords(e.Name + " " + e.Technology + " " + e.Description)
-	sc := &scanner{}
-	for i, line := range c.m.repo.read(ev.Path) {
-		code := sc.line(line)
+	for i, code := range reader.Strip(c.m.repo.read(ev.Path)) {
 		if ev.holds(i+1) && namesAny(code, words) {
 			return
 		}

@@ -1,0 +1,3 @@
+# Kotlin sources are product code no language module reads yet, so the
+# architecture views still list them and need a component to own them.
+product .kt

@@ -1,6 +1,10 @@
 package architecture
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+)
 
 // Edge classes a class diagram arrow draws.
 const (
@@ -20,10 +24,10 @@ var arrows = map[string]string{
 
 // accepted lists the source relations each edge class allows.
 var accepted = map[string][]string{
-	edgeAssociation: {relCalls, relReferences, relEmbeds},
-	edgeLink:        {relCalls, relReferences, relEmbeds},
-	edgeInheritance: {relEmbeds, relInherits},
-	edgeRealization: {relConforms},
+	edgeAssociation: {codemodel.RelCalls, codemodel.RelReferences, codemodel.RelEmbeds},
+	edgeLink:        {codemodel.RelCalls, codemodel.RelReferences, codemodel.RelEmbeds},
+	edgeInheritance: {codemodel.RelEmbeds, codemodel.RelInherits},
+	edgeRealization: {codemodel.RelConforms},
 }
 
 // drawn checks one code view edge. An edge that touches an abstract node
@@ -80,12 +84,12 @@ func (r *relations) required(e Relationship, class string, from, to *codeNode) {
 }
 
 // proved finds a relation the edge class allows, within the linked lines
-// when evidence is given. Go satisfies an interface implicitly, so a Go
-// realization is proved by go/types, and its evidence must hold the
-// type or one of its methods.
+// when evidence is given. A language whose types satisfy an interface
+// without stating it has its reader decide a realization, and its
+// evidence must hold the type or one of its methods.
 func (r *relations) proved(class string, from, to *codeNode, ev *Evidence) bool {
-	if goRealization(class, from) {
-		return r.goProved(from, to, ev)
+	if realizes := r.realizes(class, from); realizes != nil {
+		return r.realized(realizes, from, to, ev)
 	}
 	for _, o := range r.seen {
 		if r.matches(o, class, from, to) && within(ev, o.at) {
@@ -95,22 +99,26 @@ func (r *relations) proved(class string, from, to *codeNode, ev *Evidence) bool 
 	return false
 }
 
-// goProved asks go/types whether the type satisfies the interface, with
-// any evidence on the type's own lines.
-func (r *relations) goProved(from, to *codeNode, ev *Evidence) bool {
-	return r.c.g.implements(from.d, to.d) && r.declares(from, ev)
+// realizes is how the reader of a realization edge's type decides it, or
+// nil when the source's relations decide.
+func (r *relations) realizes(class string, from *codeNode) func(t, i *codemodel.Decl) bool {
+	if class != edgeRealization {
+		return nil
+	}
+	return r.c.reads[language(from.d.File)].Realizes
 }
 
-// goRealization reports a Go realization edge, which go/types decides.
-func goRealization(class string, from *codeNode) bool {
-	return class == edgeRealization && from.d.Package != ""
+// realized asks the reader whether the type realizes the interface, with
+// any evidence on the type's own lines.
+func (r *relations) realized(realizes func(t, i *codemodel.Decl) bool, from, to *codeNode, ev *Evidence) bool {
+	return realizes(from.d, to.d) && r.declares(from, ev)
 }
 
 // declares reports evidence lines holding the type or one of its methods,
 // or no evidence at all.
 func (r *relations) declares(n *codeNode, ev *Evidence) bool {
-	for _, d := range append(r.c.x.members(n.d), n.d) {
-		if within(ev, d.at()) {
+	for _, d := range append(r.c.x.Members(n.d), n.d) {
+		if within(ev, declAt(d)) {
 			return true
 		}
 	}

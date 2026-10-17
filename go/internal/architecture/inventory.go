@@ -2,6 +2,7 @@ package architecture
 
 import (
 	"path"
+	"slices"
 	"sort"
 	"strings"
 
@@ -14,7 +15,13 @@ import (
 // readers are the language modules' runtime readers, in registry order.
 var readers = lang.Runtimes(langs.All)
 
-var sourceExtensions = strings.Fields(".go .swift .js .jsx .ts .tsx .mjs .cjs .py .sh .bash .zsh .c .h .cc .cpp .rs .java .kt .m .mm")
+// otherSources are the endings of the languages no module covers, by the
+// category the views give them.
+var otherSources = lang.Sources()
+
+// sourceExtensions are every ending the views list: each module's
+// inventory, then the other languages' product and tool sources.
+var sourceExtensions = slices.Concat(lang.Inventory(langs.All), otherSources["product"], otherSources["tool"])
 
 func sourceFile(file string) bool {
 	return contains(sourceExtensions, path.Ext(file))
@@ -62,11 +69,11 @@ func category(file string, kept, dev bool) string {
 	return "product"
 }
 
-// tool reports a shell or Python script, or a root-level file a language
-// module names a tool config. A config module deeper down is product code.
+// tool reports a script in a language the sources folder lists as tools,
+// or a root-level file a language module names a tool config. A config
+// module deeper down is product code.
 func tool(file string) bool {
-	ext := path.Ext(file)
-	if contains([]string{".sh", ".bash", ".zsh", ".py"}, ext) {
+	if contains(otherSources["tool"], path.Ext(file)) {
 		return true
 	}
 	return !strings.Contains(file, "/") && lang.IsToolConfig(langs.All, file)

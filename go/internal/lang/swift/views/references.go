@@ -1,6 +1,11 @@
-package architecture
+package views
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
+)
 
 // swiftModule is every product Swift file parsed as one module: the
 // declarations at file level by name, the members of each type by owner,
@@ -18,15 +23,15 @@ type swiftModule struct {
 // initializers and bases.
 const maxTypeHops = 16
 
-// swiftReferences parses every product Swift file, then resolves each name
-// the code uses to the declarations it means, as the compiler's index
-// would, and reports the ones in another file. Comments name nothing.
-func (m *Model) swiftReferences() []reference {
+// references parses every product Swift file, then resolves each name the
+// code uses to the declarations it means, as the compiler's index would,
+// and reports the ones in another file. Comments name nothing.
+func references(repo codemodel.Repo) ([]codemodel.Reference, []string) {
 	mod := &swiftModule{top: map[string][]*swiftSymbol{}, members: map[string][]*swiftSymbol{}, supers: map[string][]string{}, bases: map[string]string{}}
-	for _, file := range m.productSources(".swift") {
-		mod.parse(file, strings.Join(m.repo.read(file), "\n"))
+	for _, file := range codemodel.FilesWith(repo.Product, swift.Ext) {
+		mod.parse(file, strings.Join(repo.Read(file), "\n"))
 	}
-	return mod.references()
+	return mod.references(), nil
 }
 
 // parse reads one file; a stray closing brace at file level is passed
@@ -60,12 +65,12 @@ func (m *swiftModule) declareType(owner string, supers []string) {
 }
 
 // references lists one reference per line, symbol, and declaring file.
-func (m *swiftModule) references() []reference {
-	var refs []reference
-	seen := map[reference]bool{}
+func (m *swiftModule) references() []codemodel.Reference {
+	var refs []codemodel.Reference
+	seen := map[codemodel.Reference]bool{}
 	for _, u := range m.uses {
 		for _, sym := range m.resolve(u) {
-			r := reference{At: Location{u.file, u.line}, To: sym.file, Symbol: sym.display(), Condition: u.under}
+			r := codemodel.Reference{At: codemodel.Location{Path: u.file, Line: u.line}, To: sym.file, Symbol: sym.display(), Condition: u.under}
 			if sym.file != u.file && !seen[r] {
 				seen[r] = true
 				refs = append(refs, r)

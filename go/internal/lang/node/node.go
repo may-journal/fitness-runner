@@ -77,6 +77,9 @@ var (
 	SourceExts = subset(".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx")
 	// LintableExts are the endings ESLint lints.
 	LintableExts = subset(".cjs", ".js", ".mjs", ".ts", ".tsx")
+	// InventoryExts are the endings the architecture views list as
+	// sources, without the module-only TypeScript endings.
+	InventoryExts = subset(".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs")
 )
 
 // subset returns exts, panicking at start-up when one is not a script

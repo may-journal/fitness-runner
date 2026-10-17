@@ -21,7 +21,15 @@ const Ext = ".swift"
 const xcodeGenProject = "project.yml"
 
 // Runtime reads XcodeGen and Xcode projects for targets, and Swift product
-// sources for platform services.
+// sources for platform services. An XcodeGen project.yml target of type
+// application, *extension, or tool, its own or from targetTemplates, or a
+// project.pbxproj native target of those types, proves an app, extension,
+// or tool target whose container names Swift. A template source may name
+// ${target_name}; other template attributes are not substituted. Xcode
+// frameworks, libraries, and test bundles are source types, never
+// products, and project.pbxproj is read even when marked
+// linguist-generated. A product file importing CloudKit, StoreKit,
+// HealthKit, or WeatherKit uses a platform service.
 var Runtime = runtimes.Reader{
 	Manifests: map[string]func(*runtimes.Finder, string){xcodeGenProject: xcodegen, "project.pbxproj": pbxproj},
 	Sources:   map[string]func(*runtimes.Finder, string){Ext: platformServices},

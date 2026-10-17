@@ -1,6 +1,6 @@
 // Command fitness-check-architecture-contract validates declarations beside
 // all five architecture views before more specific checks resolve their proof.
-// A repo with Go, Swift, TypeScript, or JavaScript product code and no views
+// A repo with product code in any language module's sources and no views
 // fails, asking for all five.
 package main
 

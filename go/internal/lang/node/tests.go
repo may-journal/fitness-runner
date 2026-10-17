@@ -11,8 +11,15 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
-// Tests finds vitest and jest requirement tests: test("0001.1 …") owns
-// 0001.1.
+// Tests finds vitest and jest requirement tests: test("0001.1 saves
+// offline", …) owns 0001.1. A test is one it or test call in a *.test.*,
+// *.spec.*, or __tests__/ script whose first argument is a title opening
+// with the acceptance ID. A describe title never names a test, so each it
+// or test inside one owns its own ID. The .skip, .only, and .todo
+// modifiers keep a test, and it.each(rows)("0001.1 …") is one test. A call
+// without a leading title, such as Playwright's test.skip(condition,
+// "reason"), or a comment, string, re.test(…), or test method is no test.
+// A tool config such as vite.config.ts or .eslintrc.cjs is no code.
 var Tests = lang.Tests{Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }}
 
 // scanTests reads every script test file's tests; a repo with any script

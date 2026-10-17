@@ -37,7 +37,7 @@ func (c *components) reach(rt Runtime, unit string, at Location, built bool, see
 	c.declared(rt, unit, at, built)
 	for _, pair := range c.order {
 		if pair[0] == unit {
-			c.reach(rt, pair[1], c.edges[pair].At, false, seen)
+			c.reach(rt, pair[1], Location(c.edges[pair].At), false, seen)
 		}
 	}
 }

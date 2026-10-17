@@ -1,9 +1,11 @@
-package architecture
+package views
 
 import (
+	"slices"
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
@@ -137,8 +139,8 @@ func (r *tsReader) ends(j int) bool {
 
 // continues reports a line ending at token j that the next line goes on.
 func (r *tsReader) continues(j int) bool {
-	joins := r.at(j).Kind == javascript.Punct && contains(tsJoiners, r.word(j)) && !r.postfix(j)
-	return joins || contains(tsLeaders, r.word(j+1))
+	joins := r.at(j).Kind == javascript.Punct && slices.Contains(tsJoiners, r.word(j)) && !r.postfix(j)
+	return joins || slices.Contains(tsLeaders, r.word(j+1))
 }
 
 // typeEnd returns the token after the type starting at token i.
@@ -161,7 +163,7 @@ func (r *tsReader) typeStops(i, j int) bool {
 	case r.is(j, "="):
 		return !r.arrow(j + 1)
 	}
-	return (j > i && r.breaks(j)) || contains(tsTypeEnds, r.word(j))
+	return (j > i && r.breaks(j)) || slices.Contains(tsTypeEnds, r.word(j))
 }
 
 // breaks reports token j on a line the line before does not continue.
@@ -181,13 +183,13 @@ func (r *tsReader) closesType(j int) bool {
 	return r.bracket(j) < 0
 }
 
-// render spells tokens from up to to as a type, spaced as typeText does.
+// render spells tokens from up to to as a type, spaced as TypeText does.
 func (r *tsReader) render(from, to int) string {
 	var parts []string
 	for j := from; j < to && j < len(r.tokens); j++ {
 		parts = append(parts, r.spell(j))
 	}
-	return typeText(strings.Join(parts, " "))
+	return codemodel.TypeText(strings.Join(parts, " "))
 }
 
 func (r *tsReader) spell(j int) string {

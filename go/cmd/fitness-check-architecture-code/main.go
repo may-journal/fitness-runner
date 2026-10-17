@@ -1,6 +1,6 @@
 // Command fitness-check-architecture-code resolves each class of the code
-// view to a Go or Swift declaration and keeps the relations between them
-// to the edges the view draws.
+// view to a declaration a language module's reader reads, and keeps the
+// relations between them to the edges the view draws.
 package main
 
 import (

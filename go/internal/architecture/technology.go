@@ -13,7 +13,8 @@ import (
 var technologyWords = lang.TechnologyWords(langs.All)
 
 // namesTechnology reports whether a container's technology string, such
-// as "Go" or "Swift 6, SwiftUI", names the evidence's language.
+// as a language name with a version and a framework, names the evidence's
+// language by one of its module's words.
 func namesTechnology(technology, language string) bool {
 	for _, word := range technologyTokens(technology) {
 		if contains(technologyWords[language], word) {

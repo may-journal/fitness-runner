@@ -1,14 +1,57 @@
-package architecture
+// Package views reads Swift sources for the architecture views: each
+// file's declarations lexically, the relations between the code view's
+// nodes by name, and every product file parsed as one module whose names
+// resolve to the files declaring them, as the compiler's index would.
+//
+// The code view's reader strips comments and strings, counts braces, and
+// keeps #if conditions. It relates names of other classes, Type.member
+// calls, and inheritance clauses, where a protocol is conformance. A
+// type's extensions add members, and the view covers types marked public
+// or open. Overloads fail as one name declared twice until a line link or
+// signature picks one. Swift is read lexically, not by a compiler index,
+// so a call through a variable, such as store.save(), relates nothing,
+// and neither does a call through a helper.
+//
+// The components view's references come from the parser ADR 0005
+// describes. It reads every product file as one module and resolves a
+// name the way the compiler would:
+//
+//   - A local name, such as a parameter or a binding in a body, hides any
+//     declaration and reaches nothing.
+//   - In a type or extension body, that type's members, from any file,
+//     come before file-level declarations.
+//   - A member after a dot is looked up on its base's type, with members
+//     from extensions and inherited protocols.
+//   - The base's type is known for a type name, self, a literal, or a
+//     value whose type is stated or initialized.
+//   - A base of unknown type, or an implicit member such as .loaded,
+//     reaches nothing.
+//   - A call keeps the overloads its argument labels fit; candidates left
+//     in two files reach none.
+//   - A call of a type also reaches the initializer its labels pick.
+//   - In an #if group whose branches leave a brace open, as alternative
+//     headers do, only the first branch is read.
+//
+// A name inside a string interpolation is a reference. A reference under
+// #if keeps that condition, so an error says under #if DEBUG.
+package views
 
 import (
-	"path"
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
 )
 
-// kindExtension marks a Swift extension, which adds members and
-// conformance to a type but declares none itself.
-const kindExtension = "extension"
+// Reader is the Swift module's reader for the architecture views.
+var Reader = codemodel.Reader{
+	Language:   swift.Technology,
+	Exts:       []string{swift.Ext},
+	Read:       read,
+	References: references,
+	Strip:      codemodel.Strip,
+}
 
 // cspell:ignore fileprivate nonmutating nonisolated typealias
 //
@@ -17,15 +60,15 @@ const kindExtension = "extension"
 var swiftMember = regexp.MustCompile(`^((?:(?:@\w+(?:\([^)]*\))?|public|open|internal|fileprivate|private(?:\(set\))?|final|static|class|override|mutating|nonmutating|convenience|required|lazy|weak|unowned|dynamic|nonisolated|indirect)\s+)*)(class|struct|enum|protocol|actor|extension|typealias|func|init|var|let|case)\b\s*([A-Za-z_][\w.]*)?(.*)$`)
 
 var swiftKinds = map[string]string{
-	"class": kindType, "struct": kindType, "enum": kindType, "actor": kindType, "typealias": kindType,
-	"protocol": kindInterface, "extension": kindExtension, "func": kindFunc, "init": kindFunc,
-	"var": kindValue, "let": kindValue, "case": kindValue,
+	"class": codemodel.KindType, "struct": codemodel.KindType, "enum": codemodel.KindType, "actor": codemodel.KindType, "typealias": codemodel.KindType,
+	"protocol": codemodel.KindInterface, "extension": codemodel.KindExtension, "func": codemodel.KindFunc, "init": codemodel.KindFunc,
+	"var": codemodel.KindValue, "let": codemodel.KindValue, "case": codemodel.KindValue,
 }
 
 // swiftFrame is an open brace a declaration started. Owner is the type a
 // type or extension body adds members to; a function body owns nothing.
 type swiftFrame struct {
-	d     *decl
+	d     *codemodel.Decl
 	owner string
 	depth int
 }
@@ -35,7 +78,7 @@ type swiftFrame struct {
 // directly inside a type or extension body is a member; anything inside a
 // function body is a local binding and ignored.
 type swiftDecls struct {
-	x       *declIndex
+	x       *codemodel.Index
 	file    string
 	code    []string
 	under   []string
@@ -44,19 +87,21 @@ type swiftDecls struct {
 	pending *swiftFrame
 }
 
-func (m *Model) swiftDecls(x *declIndex) {
-	for _, s := range m.Sources {
-		if path.Ext(s.Path) == ".swift" && s.Category != "test" {
-			r := &swiftDecls{x: x, file: s.Path}
-			r.read(m.repo.read(s.Path))
-		}
+// read reads every Swift source that is not a test. Extensions anywhere
+// in the module add members to a type, so every declaration shares one
+// scope.
+func read(repo codemodel.Repo, x *codemodel.Index) codemodel.Code {
+	for _, file := range codemodel.FilesWith(repo.Code, swift.Ext) {
+		r := &swiftDecls{x: x, file: file}
+		r.read(repo.Read(file))
 	}
+	return codemodel.Code{Relate: func(g *codemodel.Graph) { relate(g, repo) }}
 }
 
 func (r *swiftDecls) read(lines []string) {
-	sc, cond := &scanner{literals: true}, &conditions{}
+	sc, cond := &codemodel.Scanner{Literals: true}, &conditions{}
 	for _, line := range lines {
-		code := sc.line(line)
+		code := sc.Line(line)
 		if cond.directive(code) {
 			code = ""
 		}
@@ -122,46 +167,46 @@ func (r *swiftDecls) declare(match []string, i int, opens, complete bool) {
 }
 
 // openBody tracks the body d opens on its line, or the one it waits for.
-func (r *swiftDecls) openBody(d *decl, opens bool) {
+func (r *swiftDecls) openBody(d *codemodel.Decl, opens bool) {
 	frame := swiftFrame{d: d, depth: r.depth + 1}
-	if d.container() {
+	if d.Container() {
 		frame.owner = d.Name
 	}
 	switch {
 	case opens:
 		r.frames = append(r.frames, frame)
-	case d.callable() || frame.owner != "":
+	case d.Callable() || frame.owner != "":
 		r.pending = &frame
 	}
 }
 
-func (r *swiftDecls) newDecl(match []string, i int) *decl {
+func (r *swiftDecls) newDecl(match []string, i int) *codemodel.Decl {
 	keyword, name, rest := match[2], match[3], match[4]
-	d := &decl{File: r.file, Name: name, Owner: r.owner(), Kind: swiftKinds[keyword], Condition: r.under[i], Line: i + 1, End: i + 1}
+	d := &codemodel.Decl{File: r.file, Name: name, Owner: r.owner(), Kind: swiftKinds[keyword], Scope: swift.Ext, Condition: r.under[i], Line: i + 1, End: i + 1}
 	d.Exported = strings.Contains(" "+match[1], " public ") || strings.Contains(" "+match[1], " open ")
 	if keyword == "init" {
 		d.Name, rest = "init", strings.TrimLeft(name+rest, "?!")
 	}
 	r.shape(d, rest, i)
-	return r.x.add(d)
+	return r.x.Add(d)
 }
 
 // shape reads what follows the name: a member's kind, a function's
 // signature, a stored value's type, or a type's inheritance clause.
-func (r *swiftDecls) shape(d *decl, rest string, i int) {
+func (r *swiftDecls) shape(d *codemodel.Decl, rest string, i int) {
 	switch {
-	case d.callable():
+	case d.Callable():
 		d.Params, d.Results = swiftSignature(r.header(rest, i))
-		d.Kind = memberKind(d, kindMethod)
-	case d.Kind == kindValue:
+		d.Kind = memberKind(d, codemodel.KindMethod)
+	case d.Kind == codemodel.KindValue:
 		d.Type = swiftValueType(rest)
-		d.Kind = memberKind(d, kindField)
-	case d.container():
+		d.Kind = memberKind(d, codemodel.KindField)
+	case d.Container():
 		d.Supers = swiftSupers(rest)
 	}
 }
 
-func memberKind(d *decl, member string) string {
+func memberKind(d *codemodel.Decl, member string) string {
 	if d.Owner != "" {
 		return member
 	}
@@ -180,20 +225,20 @@ func (r *swiftDecls) header(rest string, i int) string {
 }
 
 // swiftSignature reads parameter types and the result after ->.
-func swiftSignature(header string) ([]param, []string) {
+func swiftSignature(header string) ([]codemodel.Param, []string) {
 	open := strings.Index(header, "(")
 	if open < 0 {
 		return nil, nil
 	}
-	close := matching(header, open)
-	var params []param
-	for _, item := range splitTop(header[open+1 : close]) {
+	close := codemodel.Matching(header, open)
+	var params []codemodel.Param
+	for _, item := range codemodel.SplitTop(header[open+1 : close]) {
 		params = append(params, swiftParam(item))
 	}
 	return params, swiftResult(header[close+1:])
 }
 
-func swiftParam(item string) param {
+func swiftParam(item string) codemodel.Param {
 	labels, typ, _ := strings.Cut(item, ":")
 	typ, _, _ = strings.Cut(typ, "=")
 	words := strings.Fields(labels)
@@ -201,7 +246,7 @@ func swiftParam(item string) param {
 	if len(words) > 0 {
 		name = words[len(words)-1]
 	}
-	return param{name: name, typ: normalSpace(typ)}
+	return codemodel.Param{Name: name, Type: codemodel.NormalSpace(typ)}
 }
 
 func swiftResult(after string) []string {
@@ -211,7 +256,7 @@ func swiftResult(after string) []string {
 	}
 	result, _, _ = strings.Cut(result, "{")
 	result, _, _ = strings.Cut(result, " where ")
-	if result = normalSpace(result); result == "" {
+	if result = codemodel.NormalSpace(result); result == "" {
 		return nil
 	}
 	return []string{result}
@@ -225,14 +270,14 @@ func swiftValueType(rest string) string {
 	}
 	typ, _, _ = strings.Cut(typ, "=")
 	typ, _, _ = strings.Cut(typ, "{")
-	return normalSpace(typ)
+	return codemodel.NormalSpace(typ)
 }
 
 // swiftSupers reads an inheritance clause, such as ": Base, Codable".
 func swiftSupers(rest string) []string {
 	rest = strings.TrimSpace(rest)
 	if strings.HasPrefix(rest, "<") {
-		rest = rest[matching(rest, 0)+1:]
+		rest = rest[codemodel.Matching(rest, 0)+1:]
 	}
 	clause, ok := strings.CutPrefix(strings.TrimSpace(rest), ":")
 	if !ok {
@@ -241,60 +286,9 @@ func swiftSupers(rest string) []string {
 	clause, _, _ = strings.Cut(clause, "{")
 	clause, _, _ = strings.Cut(clause, " where ")
 	var supers []string
-	for _, item := range splitTop(clause) {
+	for _, item := range codemodel.SplitTop(clause) {
 		base, _, _ := strings.Cut(strings.TrimSpace(item), "<")
 		supers = append(supers, base)
 	}
 	return supers
-}
-
-// matching finds the bracket closing the one at open, or the text's end.
-func matching(text string, open int) int {
-	depth := 0
-	for i := open; i < len(text); i++ {
-		depth += arrowSafeDepth(text, i)
-		if depth == 0 {
-			return i
-		}
-	}
-	return len(text) - 1
-}
-
-func bracketDepth(c byte) int {
-	switch c {
-	case '(', '[', '<', '{':
-		return 1
-	case ')', ']', '>', '}':
-		return -1
-	}
-	return 0
-}
-
-// splitTop splits on commas outside brackets; an empty text has no items.
-func splitTop(text string) []string {
-	if strings.TrimSpace(text) == "" {
-		return nil
-	}
-	var items []string
-	depth, start := 0, 0
-	for i := 0; i < len(text); i++ {
-		depth += arrowSafeDepth(text, i)
-		if text[i] == ',' && depth == 0 {
-			items, start = append(items, strings.TrimSpace(text[start:i])), i+1
-		}
-	}
-	return append(items, strings.TrimSpace(text[start:]))
-}
-
-// arrowSafeDepth is bracketDepth, except the > of a -> arrow closes
-// nothing.
-func arrowSafeDepth(text string, i int) int {
-	if text[i] == '>' && i > 0 && text[i-1] == '-' {
-		return 0
-	}
-	return bracketDepth(text[i])
-}
-
-func normalSpace(text string) string {
-	return strings.Join(strings.Fields(text), " ")
 }

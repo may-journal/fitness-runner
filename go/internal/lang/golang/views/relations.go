@@ -1,23 +1,17 @@
-package architecture
+package views
 
 import (
 	"go/ast"
 	"go/types"
 	"path"
-)
 
-// Kinds of relation a source shows between two declarations.
-const (
-	relCalls      = "calls"
-	relReferences = "references"
-	relEmbeds     = "embeds"
-	relInherits   = "inherits from"
-	relConforms   = "conforms to"
+	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
 )
 
 // use is one place in source that reaches a declaration at To.
 type use struct {
-	At, To Location
+	At, To codemodel.Location
 	Kind   string
 }
 
@@ -59,6 +53,44 @@ func (g *goIndex) check(folder string) *types.Package {
 	return pkg
 }
 
+// relate reads the uses in each Go node's lines through go/types, so
+// comments, strings, and a name that merely matches never relate two
+// nodes.
+func (g *goIndex) relate(gr *codemodel.Graph) {
+	for _, s := range gr.Spans() {
+		if path.Ext(s.File) == golang.Ext {
+			g.span(gr, s)
+		}
+	}
+}
+
+func (g *goIndex) span(gr *codemodel.Graph, s codemodel.Span) {
+	visited := map[*codemodel.Decl]bool{}
+	for _, u := range g.usesIn(s.File, s.From, s.To) {
+		if gr.Owner(u.At) == s.Node {
+			g.follow(gr, s.Node, u, u.At, visited)
+		}
+	}
+}
+
+// follow relates a node to the node a use reaches. A call to a function
+// the view does not show is followed into that function, so a diagram may
+// leave helpers out; the relation is reported at the node's own line.
+func (g *goIndex) follow(gr *codemodel.Graph, n *codemodel.Node, u use, at codemodel.Location, visited map[*codemodel.Decl]bool) {
+	if to := gr.Owner(u.To); to != nil {
+		gr.Observe(n, to, u.Kind, at)
+		return
+	}
+	helper := g.callee(u)
+	if helper == nil || visited[helper] {
+		return
+	}
+	visited[helper] = true
+	for _, next := range g.usesIn(helper.File, helper.Line, helper.End) {
+		g.follow(gr, n, next, at, visited)
+	}
+}
+
 // uses lists every identifier in a folder's files that go/types resolves
 // to a declaration in this repository.
 func (g *goIndex) uses(folder string) []use {
@@ -84,9 +116,9 @@ func (g *goIndex) use(id *ast.Ident, roles map[*ast.Ident]string, uses []use) []
 	to, at := g.fset.Position(obj.Pos()), g.fset.Position(id.Pos())
 	kind := roles[id]
 	if kind == "" {
-		kind = relReferences
+		kind = codemodel.RelReferences
 	}
-	return append(uses, use{At: Location{at.Filename, at.Line}, To: Location{to.Filename, to.Line}, Kind: kind})
+	return append(uses, use{At: codemodel.Location{Path: at.Filename, Line: at.Line}, To: codemodel.Location{Path: to.Filename, Line: to.Line}, Kind: kind})
 }
 
 // goRoles marks the identifiers a call names and those an embedded field
@@ -96,7 +128,7 @@ func goRoles(f *ast.File) map[*ast.Ident]string {
 	ast.Inspect(f, func(n ast.Node) bool {
 		switch n := n.(type) {
 		case *ast.CallExpr:
-			roles[callee(n.Fun)] = relCalls
+			roles[callee(n.Fun)] = codemodel.RelCalls
 		case *ast.StructType:
 			embeddedIn(n.Fields, roles)
 		case *ast.InterfaceType:
@@ -135,15 +167,16 @@ func embedded(f *ast.Field, roles map[*ast.Ident]string) {
 	}
 	ast.Inspect(f.Type, func(n ast.Node) bool {
 		if id, ok := n.(*ast.Ident); ok {
-			roles[id] = relEmbeds
+			roles[id] = codemodel.RelEmbeds
 		}
 		return true
 	})
 }
 
 // implements reports whether a Go type, or a pointer to it, satisfies an
-// interface, by go/types.
-func (g *goIndex) implements(t, i *decl) bool {
+// interface, by go/types. A Go type states no interface it satisfies, so
+// go/types decides a realization rather than the source's relations.
+func (g *goIndex) implements(t, i *codemodel.Decl) bool {
 	typ, iface := g.object(t), g.object(i)
 	if typ == nil || iface == nil {
 		return false
@@ -152,8 +185,8 @@ func (g *goIndex) implements(t, i *decl) bool {
 	return ok && (types.Implements(typ.Type(), under) || types.Implements(types.NewPointer(typ.Type()), under))
 }
 
-func (g *goIndex) object(d *decl) types.Object {
-	if pkg := g.check(d.folder()); pkg != nil {
+func (g *goIndex) object(d *codemodel.Decl) types.Object {
+	if pkg := g.check(d.Folder()); pkg != nil {
 		return pkg.Scope().Lookup(d.Name)
 	}
 	return nil
@@ -176,11 +209,11 @@ func (g *goIndex) usesIn(file string, from, to int) []use {
 }
 
 // callee is the Go function or method a call use reaches.
-func (g *goIndex) callee(u use) *decl {
-	if u.Kind != relCalls {
+func (g *goIndex) callee(u use) *codemodel.Decl {
+	if u.Kind != codemodel.RelCalls {
 		return nil
 	}
-	for _, d := range g.decls {
+	for _, d := range g.own {
 		if declaredAt(d, u.To) {
 			return d
 		}
@@ -188,11 +221,11 @@ func (g *goIndex) callee(u use) *decl {
 	return nil
 }
 
-func inLines(at Location, file string, from, to int) bool {
-	return at.Path == file && from <= at.Line && at.Line <= to
+// declaredAt reports a function or method declared at a line.
+func declaredAt(d *codemodel.Decl, at codemodel.Location) bool {
+	return d.File == at.Path && d.Line == at.Line && d.Callable()
 }
 
-// declaredAt reports a Go function or method declared at a line.
-func declaredAt(d *decl, at Location) bool {
-	return d.File == at.Path && d.Line == at.Line && d.callable() && d.Package != ""
+func inLines(at codemodel.Location, file string, from, to int) bool {
+	return at.Path == file && from <= at.Line && at.Line <= to
 }
