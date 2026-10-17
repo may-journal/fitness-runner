@@ -1,3 +1,5 @@
+// cspell:ignore temurin
+
 package requirements
 
 import "testing"
@@ -41,6 +43,16 @@ func Test0080_4(t *testing.T) {
 			"<maven.compiler.release>${java.version}</maven.compiler.release></properties></project>\n",
 	})
 	sees(t, out, code, 1, "does not satisfy pom.xml (requires 25)")
+	// A parent from the local Maven repository maps the pom's property to
+	// the compiler release, as framework parents do.
+	home := t.TempDir()
+	write(t, home, map[string]string{".m2/repository/com/example/parent/1/parent-1.pom": "<project><properties><java.version>17</java.version>" +
+		"<maven.compiler.release>${java.version}</maven.compiler.release></properties></project>\n"})
+	repo := javaRepo(t, map[string]string{"pom.xml": "<project><parent><groupId>com.example</groupId><artifactId>parent</artifactId>" +
+		"<version>1</version><relativePath/></parent><properties><java.version>25</java.version></properties></project>\n"})
+	rp := standIn(t, map[string][]response{"java": {javaJDK}})
+	out, code = fitness(t, repo, append(rp.env, "JAVA_HOME=", "HOME="+home), "java-version")
+	sees(t, out, code, 1, "JDK 21.0.2 does not satisfy pom.xml (requires 25)")
 }
 
 func Test0080_5(t *testing.T) {
@@ -54,6 +66,24 @@ func Test0080_6(t *testing.T) {
 	repo := javaRepo(t, map[string]string{"pom.xml": javaVersionRelease("21")})
 	out, code := fitness(t, repo, []string{pathWithout(t, "java"), "JAVA_HOME="}, "java-version")
 	sees(t, out, code, 1, "Java not installed: install a JDK")
+}
+
+// javaVersionToolchains is Gradle's javaToolchains answer, saved from a
+// real run, on a machine whose only JDK is 21.
+var javaVersionToolchains = response{
+	Match: []string{"javaToolchains"},
+	Stdout: "> Task :javaToolchains\n\n + Options\n     | Auto-detection:     Enabled\n     | Auto-download:      Enabled\n\n" +
+		" + Eclipse Temurin JDK 21 (21.0.12.1+1-LTS)\n     | Location:           /Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home\n" +
+		"     | Language Version:   21\n     | Vendor:             Eclipse Temurin\n     | Architecture:       aarch64\n" +
+		"     | Is JDK:             true\n     | Detected by:        Current JVM\n\nBUILD SUCCESSFUL in 4s\n",
+}
+
+func Test0080_8(t *testing.T) {
+	t.Parallel()
+	repo := javaRepo(t, map[string]string{"build.gradle": "java { toolchain { languageVersion = JavaLanguageVersion.of(17) } }\n"})
+	rp, out, code := javaRun(t, repo, "java-version", map[string][]response{"gradle": {javaVersionToolchains}})
+	sees(t, out, code, 1, "build.gradle asks for a JDK 17 toolchain, which is not installed; install JDK 17")
+	javaCalledOnce(t, rp, "gradle")
 }
 
 func Test0080_7(t *testing.T) {

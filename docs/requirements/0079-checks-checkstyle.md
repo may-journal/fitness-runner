@@ -42,3 +42,7 @@ Source: `go/internal/lang/java/checkstyle/checkstyle.go:120`
     - Given Developer has a repo with no Maven or Gradle build
         - When fitness runs checkstyle
             - Then it passes with zero files
+- 0079.7
+    - Given Developer has a Maven build holding the config the hint asks for
+        - When fitness runs checkstyle
+            - Then it passes

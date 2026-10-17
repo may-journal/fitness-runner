@@ -106,13 +106,12 @@ func (r repository) lines(file string) int {
 	return len(strings.Split(strings.TrimSuffix(string(body), "\n"), "\n"))
 }
 
-// covers reports whether claim names p or a folder holding it, the root
-// . holding every path. A claim with a pattern, such as
-// go/cmd/fitness-check-*, names every sibling it matches; a star never
-// crosses a slash.
+// covers reports whether claim names p or a folder holding it. A claim
+// with a pattern, such as go/cmd/fitness-check-*, names every sibling it
+// matches; a star never crosses a slash.
 func covers(claim, p string) bool {
 	if !strings.Contains(claim, "*") {
-		return claim == p || claim == "." || strings.HasPrefix(p, claim+"/")
+		return claim == p || strings.HasPrefix(p, claim+"/")
 	}
 	depth := strings.Count(claim, "/") + 1
 	parts := strings.SplitN(p, "/", depth+1)

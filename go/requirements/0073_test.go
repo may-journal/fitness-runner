@@ -193,6 +193,14 @@ func Test0073_9(t *testing.T) {
 	files[".gitattributes"] = "project.yml linguist-generated\n"
 	out, code = accRun(t, files)
 	sees(t, out, code, 0)
+	// A Java build at the repo root beside the service, owned by the root
+	// path alone.
+	root := accEdit(with(acFixture(acRoot), map[string]string{
+		"pom.xml":                  javaPom(""),
+		"src/main/java/Start.java": "public class Start {\n  public static void main(String[] args) {}\n}\n",
+	}), "}\nRel", "Container(start, \"5 Start\", \"Java\", \".\")\n}\nRel")
+	out, code = accRun(t, root)
+	sees(t, out, code, 0)
 }
 
 // accLibrary is an npm library that ships only built files: main on line

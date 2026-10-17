@@ -2,6 +2,7 @@ package requirements
 
 import (
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -118,6 +119,30 @@ func Test0079_5(t *testing.T) {
 	_, out, code := javaRun(t, repo, "checkstyle", map[string][]response{"mvn": {checkstyleClean}})
 	sees(t, out, code, 1, "Checkstyle is not in the Maven build at .; add it:")
 	javaSeesSnippet(t, out, "<artifactId>maven-checkstyle-plugin</artifactId>")
+}
+
+// checkstyleHinted reads, from fitness's output, the config the hint asks
+// a repo without one to add.
+func checkstyleHinted(t *testing.T, out string) string {
+	t.Helper()
+	_, after, ok := strings.Cut(read(out), checkstyleConfig+" holding ")
+	config, _, found := strings.Cut(after, "</module></module></module>")
+	if !ok || !found {
+		t.Fatalf("output gives no config to add:\n%s", out)
+	}
+	return config + "</module></module></module>\n"
+}
+
+func Test0079_7(t *testing.T) {
+	t.Parallel()
+	_, out, _ := javaRun(t, checkstyleRepo(t, checkstyleMaven, nil), "checkstyle", map[string][]response{"mvn": {checkstyleClean}})
+	hinted := checkstyleHinted(t, out)
+	if !strings.HasPrefix(hinted, "<!DOCTYPE module PUBLIC \"-//Checkstyle//DTD Checkstyle Configuration 1.3//EN\"") {
+		t.Errorf("the hinted config lacks the document type line Maven needs:\n%s", hinted)
+	}
+	repo := checkstyleRepo(t, checkstyleMaven, map[string]string{checkstyleConfig: hinted})
+	_, out, code := javaRun(t, repo, "checkstyle", map[string][]response{"mvn": {checkstyleClean}})
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0079_6(t *testing.T) {

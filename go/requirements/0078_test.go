@@ -97,6 +97,29 @@ func Test0078_5(t *testing.T) {
 	}
 }
 
+// spotlessGradleNoJDK is Gradle's answer, saved from a real run, when the
+// build's toolchain asks for a JDK the machine lacks: the failure, then
+// the causes it nests under it.
+var spotlessGradleNoJDK = response{
+	Match: []string{"spotlessCheck"},
+	Stdout: "FAILURE: Build failed with an exception.\n\n* What went wrong:\n" +
+		"Could not determine the dependencies of task ':spotlessJava'.\n" +
+		"> Could not resolve all dependencies for configuration ':compileClasspath'.\n" +
+		"   > Failed to calculate the value of task ':compileJava' property 'javaCompiler'.\n" +
+		"      > Cannot find a Java installation on your machine (Mac OS X 27.0.1 aarch64) matching: {languageVersion=17, vendor=any vendor, implementation=vendor-specific, nativeImageCapable=false}. Toolchain download repositories have not been configured.\n" +
+		"\n* Try:\n> Run with --stacktrace option to get the stack trace.\n\nBUILD FAILED in 1s\n",
+	Exit: 1,
+}
+
+func Test0078_7(t *testing.T) {
+	t.Parallel()
+	repo := javaRepo(t, map[string]string{"build.gradle": "plugins { id 'java'; id 'com.diffplug.spotless' version '8.10.4' }\n"})
+	_, out, code := javaRun(t, repo, "spotless", map[string][]response{"gradle": {spotlessGradleNoJDK}})
+	sees(t, out, code, 1, "Could not determine the dependencies of task ':spotlessJava'.")
+	javaSeesSnippet(t, out, "> Cannot find a Java installation on your machine")
+	javaSeesSnippet(t, out, "matching: {languageVersion=17,")
+}
+
 func Test0078_6(t *testing.T) {
 	t.Parallel()
 	_, out, code := javaRun(t, example(t, "happyRepo", nil), "spotless", nil)

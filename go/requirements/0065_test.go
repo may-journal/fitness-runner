@@ -65,6 +65,20 @@ func Test0065_20(t *testing.T) {
 	passedWith(t, out, "requirements", "2")
 	out, code = scriptChecked(t, notTests...)
 	sees(t, out, code, 1, `0001.1 has no test; name exactly one test test("0001.1 …")`)
+	junitOwnership(t)
+}
+
+// junitOwnership checks a JUnit test owns 0001.1 by its name and test
+// annotation, and a comment, string or helper method does not.
+func junitOwnership(t *testing.T) {
+	t.Helper()
+	parameterized := "import org.junit.jupiter.params.ParameterizedTest;\n\nclass AdderTest {\n  @ParameterizedTest\n  @ValueSource(ints = {1, 2})\n  void test0001_1(int n) {}\n}\n"
+	out, code := checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": parameterized}))
+	sees(t, out, code, 0)
+	passedWith(t, out, "requirements", "2")
+	notJUnit := "class AdderTest {\n  // @Test void test0001_1() {}\n  String note = \"@Test void test0001_1() {}\";\n\n  void test0001_1() {}\n}\n"
+	out, code = checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": notJUnit}))
+	sees(t, out, code, 1, "0001.1 has no test; name exactly one test test0001_1")
 }
 
 func Test0065_21(t *testing.T) {
@@ -74,6 +88,8 @@ func Test0065_21(t *testing.T) {
 	swiftOwnsNothing(t, xcTestFile())
 	out, code = checked(t, with(scriptRepo(), map[string]string{"tests/adder.test.ts": ""}))
 	sees(t, out, code, 1, `0001.1 has no test; name exactly one test test("0001.1 …")`)
+	out, code = checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": junitFile("AdderTest")}))
+	sees(t, out, code, 1, "0001.1 has no test; name exactly one test test0001_1")
 }
 
 func Test0065_17(t *testing.T) {
@@ -96,6 +112,8 @@ func Test0065_22(t *testing.T) {
 	sees(t, out, code, 1, "testAddsAgain proves no requirement; rename it testNNNN_N")
 	out, code = scriptChecked(t, `test("0001.1 adds two numbers", () => {});`, `it("adds again", () => {});`)
 	sees(t, out, code, 1, `tests/adder.test.ts:4: it("adds again") proves no requirement; rename it test("NNNN.N …")`)
+	out, code = checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": junitFile("AdderTest", "test0001_1", "addsAgain")}))
+	sees(t, out, code, 1, "src/test/java/AdderTest.java:6: addsAgain proves no requirement; rename it testNNNN_N")
 }
 
 func Test0065_23(t *testing.T) {
@@ -107,11 +125,13 @@ func Test0065_23(t *testing.T) {
 	}
 	files := with(scriptRepo(), map[string]string{"tests/extra.spec.js": vitestFile(`it("adds again", () => {});`)})
 	unchangedTestFails(t, files, `it("adds again") proves no requirement`)
+	files = with(junitRepo(), map[string]string{"src/test/java/ExtraTest.java": junitFile("ExtraTest", "addsAgain")})
+	unchangedTestFails(t, files, "addsAgain proves no requirement")
 }
 
 func Test0065_24(t *testing.T) {
 	t.Parallel()
-	for _, repo := range []map[string]string{goRepo(), swiftRepo(), scriptRepo()} {
+	for _, repo := range []map[string]string{goRepo(), swiftRepo(), scriptRepo(), junitRepo()} {
 		out, code := checked(t, with(repo, map[string]string{"docs/requirements/0001-adds-numbers.md": ""}))
 		sees(t, out, code, 1, "docs/requirements/ has no requirement docs")
 	}

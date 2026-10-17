@@ -39,9 +39,9 @@ Source: #287
         - When I check its containers
             - Then the error names the manifest
 - 0073.9
-    - Given Developer has a target manifest `.gitattributes` marks `linguist-generated`
+    - Given Developer has a container naming the root path `.`, or a target manifest marked `linguist-generated`
         - When I check its containers
-            - Then its targets still match containers by name
+            - Then it matches the products built there
 - 0073.10
     - Given Developer has a container whose build target no longer exists, or whose paths hold only source layers
         - When I check its containers
