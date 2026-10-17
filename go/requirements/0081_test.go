@@ -109,18 +109,27 @@ func Test0081_3(t *testing.T) {
 func Test0081_4(t *testing.T) {
 	t.Parallel()
 	repo := javaRepo(t, map[string]string{
-		"pom.xml":                      javaParent(javaTestMaven, "core", "coverage"),
-		"core/pom.xml":                 javaPom(""),
-		"core/src/main/java/Core.java": "class Core {}\n",
-		"coverage/pom.xml":             javaPom(""),
+		"pom.xml":                        javaParent(javaTestMaven, "core", "extra", "coverage"),
+		"core/pom.xml":                   javaPom(""),
+		"core/src/main/java/Core.java":   "class Core {}\n",
+		"extra/pom.xml":                  javaPom(""),
+		"extra/src/main/java/Extra.java": "class Extra {}\n",
+		"coverage/pom.xml":               javaPom(""),
 	})
+	// Maven's aggregate holds one group per module it covers, here core
+	// alone, so extra's own report is judged and core's is not.
+	aggregate := strings.NewReplacer(`<package name="example">`, `<group name="core"><package name=""><sourcefile name="Core.java"/>`, `</package>`, `</package></group>`).Replace(javaTestCoverage("4", "1"))
 	run := javaTestMavenRun(map[string]string{
 		"core/target/surefire-reports/TEST-example.CoreTest.xml": javaTestPassed,
-		"core/target/site/jacoco/jacoco.xml":                     javaTestCoverage("3", "2"),
-		"coverage/target/site/jacoco-aggregate/jacoco.xml":       javaTestFull,
+		"core/target/site/jacoco/jacoco.xml":                     javaTestCoverage("2", "3"),
+		"extra/target/site/jacoco/jacoco.xml":                    javaTestCoverage("3", "2"),
+		"coverage/target/site/jacoco-aggregate/jacoco.xml":       aggregate,
 	})
 	_, out, code := javaRun(t, repo, "java-test", map[string][]response{"mvn": {run}})
-	sees(t, out, code, 0, "All 1 checks passed")
+	sees(t, out, code, 1, "coverage/target/site/jacoco-aggregate/jacoco.xml: lines 4/5 covered", "extra/target/site/jacoco/jacoco.xml: lines 3/5 covered")
+	if strings.Contains(read(out), "core/target/site/jacoco/jacoco.xml") {
+		t.Errorf("the aggregate covers core, so its own report may not be judged:\n%s", out)
+	}
 }
 
 func Test0081_5(t *testing.T) {

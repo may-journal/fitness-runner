@@ -282,7 +282,7 @@ func Owned(root string, p Project, exts ...string) []string {
 	roots := Roots(root)
 	var out []string
 	for _, f := range walkfs.FilesByExt(root, exts...) {
-		if owner(roots, p.Build, f) == p {
+		if Nearest(roots, p.Build, f) == p {
 			out = append(out, f)
 		}
 	}
@@ -296,17 +296,18 @@ func Members(root string, p Project) []Project {
 	roots := Roots(root)
 	var out []Project
 	for _, q := range Projects(root) {
-		if q.Build == p.Build && owner(roots, p.Build, path.Join(q.Dir, p.Build.Files[0])) == p {
+		if q.Build == p.Build && Nearest(roots, p.Build, path.Join(q.Dir, p.Build.Files[0])) == p {
 			out = append(out, q)
 		}
 	}
 	return out
 }
 
-// owner is the build root of tool b nearest above file.
-func owner(roots []Project, b *Build, file string) Project {
+// Nearest is the project of tool b among projects nearest above file, such
+// as the build root that owns it or the module it belongs to.
+func Nearest(projects []Project, b *Build, file string) Project {
 	var best Project
-	for _, r := range roots {
+	for _, r := range projects {
 		if r.Build == b && inProject(r, file) && len(r.Dir) >= len(best.Dir) {
 			best = r
 		}

@@ -35,7 +35,7 @@ Source: `go/internal/lang/java/tests/tests.go:80`
 - 0081.4
     - Given Developer has a multi-module build with an aggregate coverage report
         - When fitness runs java-test
-            - Then it judges only the aggregate report
+            - Then it judges the aggregate and each module report the aggregate does not cover
 - 0081.5
     - Given Developer has product code whose build ran no test
         - When fitness runs java-test
