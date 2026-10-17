@@ -151,12 +151,7 @@ func run(argv []string) int {
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}
-	root, err := os.Getwd()
-	if err != nil {
-		report.Error("fitness setup", err)
-		return 1
-	}
-	perfPath, argv, err := jsonPath(argv)
+	root, perfPath, argv, err := runSetup(argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
@@ -179,6 +174,17 @@ func run(argv []string) int {
 	perf := buildPerfReport(checks, outcomes, rows, totals.Ms)
 	code := finish(rows, perf, totals)
 	return withPerfReport(perfPath, perf, code)
+}
+
+// runSetup finds the repo root and takes the `--json` report path out of
+// argv, returning the rest.
+func runSetup(argv []string) (root, perfPath string, rest []string, err error) {
+	root, err = os.Getwd()
+	if err != nil {
+		return "", "", nil, err
+	}
+	perfPath, rest, err = jsonPath(argv)
+	return root, perfPath, rest, err
 }
 
 // withPerfReport writes the `--json` report when one was asked for; a report
