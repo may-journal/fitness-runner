@@ -22,3 +22,7 @@ Source: #189
     - Given Developer has a repo with no files a check can judge
         - When the check runs
             - Then it scans nothing and passes with zero files
+- 0003.2
+    - Given Developer has a repo that chooses no checks
+        - When fitness runs
+            - Then the result rows list every installed check, repo-wide checks first, then each language's

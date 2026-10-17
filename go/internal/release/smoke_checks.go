@@ -6,7 +6,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/lang"
 )
 
 const externalConfig = `{"policy":"external"}`
@@ -145,8 +148,8 @@ func requireAllChecks(paths []string, output string) error {
 	}
 	for _, path := range paths {
 		name := strings.TrimPrefix(filepath.Base(path), "fitness-check-")
-		// Coverage remains explicitly selected during its approved rollout.
-		if name == "go-test-coverage" {
+		// An ignored check runs only when selected by name.
+		if slices.Contains(lang.Ignored(), name) {
 			continue
 		}
 		if !strings.Contains(output, "→ "+name+"\n") {

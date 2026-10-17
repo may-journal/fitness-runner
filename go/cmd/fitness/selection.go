@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
@@ -66,7 +67,7 @@ func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]
 	if cfg != nil {
 		policy, configured = cfg.Policy, cfg.LegacyChecks
 	}
-	policy, names, err := options.Resolve(policy, configured, spec, allChecks, "go-test-coverage")
+	policy, names, err := options.Resolve(policy, configured, spec, allChecks, lang.Ignored()...)
 	if err != nil {
 		return nil, err
 	}

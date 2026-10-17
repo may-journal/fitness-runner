@@ -19,6 +19,53 @@ func Test0003_1(t *testing.T) {
 	}
 }
 
+func Test0003_2(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	out, _ := fitness(t, repo, nil)
+	cells := rowCells(out)
+	want := strings.Fields(catalogRows)
+	if len(cells) != len(want) {
+		t.Fatalf("fitness printed %d rows, want %d:\n%s", len(cells), len(want), out)
+	}
+	for i, check := range want {
+		if !names(cells[i], check) {
+			t.Errorf("row %d is %q, want %s", i+1, cells[i], check)
+		}
+	}
+}
+
+// catalogRows is the order the result rows print in: the repo-wide checks,
+// sorted, then the Go, Swift and Node modules' checks, each sorted.
+const catalogRows = `
+architecture-actors architecture-code architecture-components
+architecture-containers architecture-contract architecture-journey
+build-output-untracked changelog changelog-bullets changelog-updated
+commit-attribution cspell doc-template gitignore-why issue-checklist
+issue-link-once jscpd local-branch markdown-filename-camel-case
+markdown-filename-kebab-case markdown-front-matter markdown-links
+markdown-no-bold-italic mermaid-callout-why mermaid-callouts
+mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
+mermaid-level-bleed no-contrastive-reframing no-plans-dir plan-structure
+plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
+release-changelog repeated-string-literals requirements semantic-commit
+text-readability
+go-complexity go-test go-vet gofmt
+swiftlint
+dependency-currency eslint no-eslint-disable node-version prettier
+vitest-coverage-exclude vitest-coverage-full`
+
+// rowCells returns the check cell of each results-table row, top to bottom.
+func rowCells(out string) []string {
+	var cells []string
+	for _, line := range strings.Split(out, "\n") {
+		if m := resultRow.FindStringSubmatch(line); m != nil {
+			cells = append(cells, m[1])
+		}
+	}
+	return cells
+}
+
 // inActions runs the one-liner in repo as a GitHub Actions job does, and
 // returns what it printed, its exit code, and the job summary it wrote.
 func inActions(t *testing.T, repo string) (string, int, string) {

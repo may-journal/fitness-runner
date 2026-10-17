@@ -85,7 +85,7 @@ Numbers on classes and relationships match the callout table.
 | 3   | Environment the runner exports before dispatch. | Checks stay stateless; context flows one way. |
 | 4   | `{Ok, Errors, FilesChecked, Info}`, in [checkkit.go](../../go/internal/checkkit/checkkit.go): emitted by the check, parsed by the runner. | Aggregated into the results table. |
 | 5   | One check in [checkkit.go](../../go/internal/checkkit/checkkit.go): its metadata and its run function. | A check binary is one value handed to the scaffolding. |
-| 6   | Builds the ordered check list in [main.go](../../go/cmd/fitness/main.go): the CLI name, else every check in `allChecks`. | Single source for which checks run. |
+| 6   | Builds the ordered check list in [main.go](../../go/cmd/fitness/main.go): the CLI name, else every check in `allChecks`, read from the language module registry. | Single source for which checks run. |
 | 7   | Runs `binary --describe` with a two-second budget and group kill, in [main.go](../../go/cmd/fitness/main.go). A failure becomes an info note. | A check that ignores the flag cannot hang resolution. |
 | 8   | Bounded goroutine pool in [main.go](../../go/cmd/fitness/main.go), dispatching in order and collecting outcomes by index. | Parallel execution with strictly ordered rendering afterwards. |
 | 9   | Execs one check with `exec.Command` + Setpgid, in [main.go](../../go/cmd/fitness/main.go); timeout sends TERM then KILL to the group. | A hung check's whole child tree dies (5s default budget). |
@@ -124,7 +124,7 @@ fitness-runner/
     cmd/fitness/               runner binary
     cmd/fitness-check-name/    one main + README per check
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
-                               clonedetect, vitestconf, javascript, nodejs, mdfilename,
+                               clonedetect, vitestconf, javascript, nodejs, lang, mdfilename,
                                render, conf, sharedconf (embedded tool configs)
     bin/                       build output (gitignored)
 

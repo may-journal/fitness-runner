@@ -20,6 +20,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -28,61 +30,18 @@ import (
 // allChecks is the org default and the catalog for explicit external lists.
 // Org checks self-gate when their language, tool, config, or input is absent.
 // External policy also defaults to the full catalog, with optional selection.
-var allChecks = []string{
-	"read-repo-first",
-	"semantic-commit",
-	"plan-trailer",
-	"issue-link-once",
-	"commit-attribution",
-	"changelog",
-	"changelog-updated",
-	"changelog-bullets",
-	"release-changelog",
-	"cspell",
-	"jscpd",
-	"gitignore-why",
-	"no-plans-dir",
-	"doc-template",
-	"requirements",
-	"architecture-contract",
-	"architecture-actors",
-	"architecture-containers",
-	"architecture-components",
-	"architecture-code",
-	"architecture-journey",
-	"no-contrastive-reframing",
-	"repeated-string-literals",
-	"markdown-front-matter",
-	"markdown-filename-kebab-case",
-	"markdown-filename-camel-case",
-	"markdown-links",
-	"markdown-no-bold-italic",
-	"text-readability",
-	"prose-budget",
-	"mermaid-callouts",
-	"mermaid-callout-why",
-	"mermaid-diagram-prose",
-	"mermaid-diagram-table-gap",
-	"mermaid-legend",
-	"mermaid-level-bleed",
-	"plan-structure",
-	"pr-structure",
-	"pr-closes-issue",
-	"issue-checklist",
-	"local-branch",
-	"go-complexity",
-	"go-vet",
-	"gofmt",
-	"go-test",
-	"build-output-untracked",
-	"swiftlint",
-	"eslint",
-	"prettier",
-	"no-eslint-disable",
-	"node-version",
-	"dependency-currency",
-	"vitest-coverage-exclude",
-	"vitest-coverage-full",
+// It is every check installed beside the runner, minus the ignored ones, in
+// the order the language registry gives: repo-wide checks, then each module's.
+// installErr says why no checks were found; a run stops on it.
+var allChecks, installErr = catalog()
+
+// catalog lists the default checks, or the error that leaves it empty.
+func catalog() ([]string, error) {
+	installed, err := checkkit.Installed()
+	if err != nil {
+		return nil, err
+	}
+	return lang.Catalog(installed, langs.All), nil
 }
 
 // resolved is one runnable check: its binary and describe metadata.
@@ -181,6 +140,10 @@ Docs: https://github.com/may-journal/fitness-runner#usage`)
 }
 
 func run(argv []string) int {
+	if installErr != nil {
+		report.Error("fitness setup", installErr)
+		return 1
+	}
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}
