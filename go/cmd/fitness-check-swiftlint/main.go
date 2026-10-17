@@ -10,9 +10,7 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -65,17 +63,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 func execSwiftlint(bin, root string) (exitCode int, output string) {
 	cmd := exec.Command(bin, "lint", "--strict", "--reporter", "json", "--quiet", ".")
 	cmd.Dir = root
-	var combined bytes.Buffer
-	cmd.Stdout = &combined
-	cmd.Stderr = &combined
-	if err := cmd.Run(); err != nil {
-		exitCode = 1
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() > 0 {
-			exitCode = exitErr.ExitCode()
-		}
-	}
-	return exitCode, combined.String()
+	o := checkkit.ExecCombined(cmd)
+	return o.Code, o.Stdout
 }
 
 // judge ports the TS check verbatim: command-not-found output is the install

@@ -38,17 +38,10 @@ func runCheck(root string, registered []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	errs, fileCount, err := walkfs.ScanFiles(root, []string{".md"}, func(file, content string) []string {
+	return walkfs.ScanFiles(root, []string{".md"}, func(file, content string) []string {
 		mdDir := filepath.Dir(filepath.Join(absRoot, filepath.FromSlash(file)))
 		return validateFile(file, content, absRoot, mdDir, registered)
-	})
-	if err != nil {
-		return checkkit.Result{}, err
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(fileCount, errs...), nil
-	}
-	return checkkit.Pass(fileCount), nil
+	}), nil
 }
 
 var (

@@ -66,6 +66,20 @@ func rowCells(out string) []string {
 	return cells
 }
 
+func Test0003_3(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{
+		"README.md": readme + "\nSee [the guide](gone.md).\n",
+		"locked.md": "# Locked\n",
+	})
+	mustDo(t, os.Chmod(filepath.Join(repo, "locked.md"), 0o000))
+	out, code := fitness(t, repo, nil, "markdown-links")
+	sees(t, out, code, 1, "locked.md: skipped, cannot be read (permission denied)", "README.md:9: broken relative link: gone.md")
+	if !strings.Contains(row(out, "markdown-links"), "failed") {
+		t.Errorf("the readable file's finding must still fail, got row %q", row(out, "markdown-links"))
+	}
+}
+
 // inActions runs the one-liner in repo as a GitHub Actions job does, and
 // returns what it printed, its exit code, and the job summary it wrote.
 func inActions(t *testing.T, repo string) (string, int, string) {

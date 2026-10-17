@@ -2,7 +2,9 @@ package gocoverage
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/toolchain"
 	"os"
 	"os/exec"
@@ -22,7 +24,7 @@ func Run(ctx context.Context, root string, options Options) (Report, error) {
 	}
 	bin, err := exec.LookPath("go")
 	if err != nil {
-		return Report{}, fmt.Errorf("%s", toolchain.NotInstalled)
+		return Report{}, checkkit.Internal(errors.New(toolchain.NotInstalled))
 	}
 	temp, err := os.MkdirTemp("", "fitness-go-coverage-")
 	if err != nil {

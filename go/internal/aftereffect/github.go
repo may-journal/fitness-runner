@@ -14,6 +14,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // Target is one issue or pull request a GitHub command judges, as the
@@ -91,17 +93,59 @@ func NewClient() (Client, error) {
 // api runs `gh api` against a path under the repository.
 func (g Client) api(args ...string) ([]byte, error) {
 	args[len(args)-1] = "repos/" + g.repo + "/" + args[len(args)-1]
+	return g.gh(append([]string{"api"}, args...)...)
+}
+
+// gh runs gh within the client's context, passing its stderr through, and
+// classifies a failure with GHErr.
+func (g Client) gh(args ...string) ([]byte, error) {
 	ctx := g.ctx
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	cmd := exec.CommandContext(ctx, "gh", append([]string{"api"}, args...)...)
+	cmd := exec.CommandContext(ctx, "gh", args...)
 	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
-	if ctx.Err() != nil {
-		return nil, ctx.Err()
+	o := checkkit.Exec(cmd)
+	if err := GHErr(ctx, o); err != nil {
+		return nil, err
 	}
-	return out, err
+	return []byte(o.Stdout), nil
+}
+
+// ghEnvText is gh output that names its environment, not the request: no
+// login or a rejected token, or a network that cannot reach GitHub.
+var ghEnvText = []string{
+	"gh auth login", "http 401", "bad credentials", "authentication required",
+	"dial tcp", "no such host", "could not resolve host", "connection refused",
+	"network is unreachable", "i/o timeout", "tls handshake timeout", "error connecting to",
+}
+
+// GHEnvironment reports whether a failed gh run says nothing about the
+// repository: gh could not start, a signal ended it, or its output shows an
+// auth or network failure.
+func GHEnvironment(o checkkit.Outcome) bool {
+	if o.EnvErr("gh") != nil {
+		return true
+	}
+	text := strings.ToLower(o.Stdout + "\n" + o.Stderr)
+	return slices.ContainsFunc(ghEnvText, func(s string) bool { return strings.Contains(text, s) })
+}
+
+// GHErr is a gh run's error: nil on success, a checkkit.Internal error when
+// ctx ran out, gh is missing, or GHEnvironment holds, and the run's own
+// error otherwise, such as a 404 or a 422.
+func GHErr(ctx context.Context, o checkkit.Outcome) error {
+	switch {
+	case o.Err == nil:
+		return nil
+	case ctx.Err() != nil:
+		return checkkit.Internal(ctx.Err())
+	case o.SpawnErr != nil:
+		return checkkit.ToolMissing("gh")
+	case GHEnvironment(o):
+		return checkkit.Internal(o.Err)
+	}
+	return o.Err
 }
 
 // decodeLines decodes the --jq output of gh: one JSON object per line.
@@ -206,11 +250,9 @@ func (g Client) Verdicts(n int) ([]Verdict, error) {
 	jq := `.data.repository.issue.comments.nodes[]
 		| select(.body | contains("fitness:plan-structure:"))
 		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized}`
-	cmd := exec.Command("gh", "api", "graphql", "--paginate",
+	out, err := g.gh("api", "graphql", "--paginate",
 		"-f", "query="+verdictsQuery, "-F", "owner="+owner, "-F", "name="+name,
 		"-F", "number="+strconv.Itoa(n), "--jq", jq)
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
 	}
@@ -266,11 +308,9 @@ const closingPRFilter = `.data.repository.issue.timelineItems.nodes[0].closer as
 
 func (g Client) ClosingPR(n int) (Closer, error) {
 	owner, name, _ := strings.Cut(g.repo, "/")
-	cmd := exec.Command("gh", "api", "graphql",
+	out, err := g.gh("api", "graphql",
 		"-f", "query="+closingPRQuery, "-F", "owner="+owner, "-F", "name="+name, "-F", "n="+strconv.Itoa(n),
 		"--jq", closingPRFilter)
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
 	if err != nil {
 		return Closer{}, err
 	}
@@ -286,11 +326,10 @@ func (g Client) EditComment(id int64, body string) error {
 
 // HideComment collapses a comment as outdated.
 func (g Client) HideComment(nodeID string) error {
-	cmd := exec.Command("gh", "api", "graphql", "--silent",
+	_, err := g.gh("api", "graphql", "--silent",
 		"-f", "query=mutation($id: ID!) { minimizeComment(input: {subjectId: $id, classifier: OUTDATED}) { clientMutationId } }",
 		"-f", "id="+nodeID)
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return err
 }
 
 // EnsureLabel creates the repo label when it is missing.

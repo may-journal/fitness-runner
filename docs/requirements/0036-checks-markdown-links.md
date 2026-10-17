@@ -14,7 +14,7 @@ relative links that reach a real file or folder
 -
 relative links checked
 
-Source: `go/cmd/fitness-check-markdown-links/main.go:102`
+Source: `go/cmd/fitness-check-markdown-links/main.go:95`
 
 ## Requirements
 

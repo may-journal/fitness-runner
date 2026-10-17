@@ -5,8 +5,6 @@
 package toolchain
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -79,20 +77,35 @@ func Fixture(rel string) bool {
 // Run executes bin with args in root/dir and returns its exit code and
 // combined output. A run that fails without an exit code maps to 1.
 func Run(root, dir, bin string, args ...string) (int, string) {
+	code, out, _ := Exec(root, dir, bin, args...)
+	return code, out
+}
+
+// Exec is Run plus envErr, a checkkit.Internal error when the environment
+// rather than the code failed the run: bin could not start, a signal ended
+// it, or a failing run printed sandbox text such as `dial tcp`.
+func Exec(root, dir, bin string, args ...string) (code int, out string, envErr error) {
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = filepath.Join(root, filepath.FromSlash(dir))
 	cmd.Env = CleanEnv(os.Environ())
-	var out bytes.Buffer
-	cmd.Stdout, cmd.Stderr = &out, &out
-	err := cmd.Run()
-	if err == nil {
-		return 0, out.String()
+	o := checkkit.ExecCombined(cmd)
+	name := "go " + strings.Join(args, " ")
+	if err := o.EnvErr(name); err != nil {
+		return o.Code, o.Stdout, err
 	}
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() > 0 {
-		return exitErr.ExitCode(), out.String()
+	return o.Code, o.Stdout, SandboxErr(name, o.Code, o.Stdout)
+}
+
+// SandboxErr is the internal error for a failing go run whose output shows
+// the sandbox stopped it; nil for exit 0 or output without sandbox text.
+func SandboxErr(name string, code int, out string) error {
+	if code == 0 {
+		return nil
 	}
-	return 1, out.String()
+	if phrase := checkkit.SandboxText(out); phrase != "" {
+		return checkkit.Internal(fmt.Errorf("%s hit the environment (%s)", name, phrase))
+	}
+	return nil
 }
 
 // hookVars are the variables git exports to hooks, pointing at the repo being

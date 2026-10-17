@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/toolchain"
 )
 
@@ -20,15 +21,30 @@ type runner struct {
 }
 
 func (r runner) command(args ...string) ([]byte, error) {
+	return r.run("go "+strings.Join(args, " "), nil, args...)
+}
+
+// run executes go with args and returns its combined output. A failure is
+// labeled; it is a checkkit.Internal error when the environment stopped the
+// run (go could not start, a signal other than the deadline ended it, or
+// sandbox text), while the run's deadline stays a plain error.
+func (r runner) run(label string, env []string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(r.ctx, r.bin, args...)
 	cmd.Dir = r.dir
 	cmd.WaitDelay = 2 * time.Second
-	cmd.Env = append(toolchain.CleanEnv(os.Environ()), "GOWORK=off")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("go %s: %w\n%s", strings.Join(args, " "), err, out)
+	cmd.Env = append(append(toolchain.CleanEnv(os.Environ()), "GOWORK=off"), env...)
+	o := checkkit.ExecCombined(cmd)
+	if o.Err == nil {
+		return []byte(o.Stdout), nil
 	}
-	return out, nil
+	err := fmt.Errorf("%s: %w\n%s", label, o.Err, o.Stdout)
+	if r.ctx.Err() != nil {
+		return nil, err
+	}
+	if o.EnvErr(label) != nil || toolchain.SandboxErr(label, o.Code, o.Stdout) != nil {
+		return nil, checkkit.Internal(err)
+	}
+	return nil, err
 }
 func (r runner) measure(pkg, pattern string) (Profile, error) {
 	dir, err := os.MkdirTemp(r.temp, "run-")
@@ -42,13 +58,8 @@ func (r runner) measure(pkg, pattern string) (Profile, error) {
 		return nil, err
 	}
 	args := []string{"test", "-count=1", "-covermode=atomic", "-coverpkg=./...", "-coverprofile=" + profile, "-run=" + pattern, pkg}
-	cmd := exec.CommandContext(r.ctx, r.bin, args...)
-	cmd.Dir = r.dir
-	cmd.WaitDelay = 2 * time.Second
-	cmd.Env = append(toolchain.CleanEnv(os.Environ()), "GOWORK=off", "FITNESS_GO_COVER_DIR="+child)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return nil, fmt.Errorf("go test coverage: %w\n%s", err, out)
+	if _, err := r.run("go test coverage", []string{"FITNESS_GO_COVER_DIR=" + child}, args...); err != nil {
+		return nil, err
 	}
 	return r.profiles(profile, child)
 }

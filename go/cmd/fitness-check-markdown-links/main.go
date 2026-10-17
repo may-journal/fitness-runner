@@ -37,16 +37,9 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	errs, count, err := walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+	return walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
 		return scan(root, rel, content)
-	})
-	if err != nil {
-		return checkkit.Result{}, err
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(count, errs...), nil
-	}
-	return checkkit.Pass(count), nil
+	}), nil
 }
 
 // scan walks one file's lines, skipping fenced code, and validates every

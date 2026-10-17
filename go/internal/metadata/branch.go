@@ -170,15 +170,21 @@ func uniqueIssues(nums []int) []int {
 
 // branchOutput includes the actionable gh auth/network error without hiding
 // the command's failure, and shares the whole run's remote-read deadline.
+// A timeout, a missing gh, or an auth or network failure is a
+// checkkit.Internal error, so it reads as the environment, not a finding.
 func branchOutput(ctx context.Context, root string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	cmd.Dir = root
-	out, err := cmd.CombinedOutput()
+	o := checkkit.ExecCombined(cmd)
 	if ctx.Err() != nil {
-		return nil, fmt.Errorf("GitHub reads timed out: %w", ctx.Err())
+		return nil, checkkit.Internal(fmt.Errorf("GitHub reads timed out: %w", ctx.Err()))
 	}
-	if err != nil {
-		return nil, fmt.Errorf("gh %s: %w: %s", args[0], err, strings.TrimSpace(string(out)))
+	if o.Err == nil {
+		return []byte(o.Stdout), nil
 	}
-	return out, nil
+	err := fmt.Errorf("gh %s: %w: %s", args[0], o.Err, strings.TrimSpace(o.Stdout))
+	if aftereffect.GHEnvironment(o) {
+		return nil, checkkit.Internal(err)
+	}
+	return nil, err
 }
