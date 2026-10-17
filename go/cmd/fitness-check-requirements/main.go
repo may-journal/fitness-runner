@@ -76,7 +76,7 @@ func collectTests(root string, modules []lang.Module) ([]reqTest, []string, []la
 	var tests []reqTest
 	var files []string
 	var written []lang.Module
-	for _, m := range modules {
+	for _, m := range lang.Testing(modules) {
 		found, held, writes, err := m.Tests.Scan(root)
 		if err != nil {
 			return nil, nil, nil, err

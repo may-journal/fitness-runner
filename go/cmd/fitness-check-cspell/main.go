@@ -74,22 +74,6 @@ func walkFiles(root string) checkkit.Result {
 	return checkkit.Pass(len(files))
 }
 
-// lockfiles names the files package managers write and rewrite on every
-// install. Their words are package names and hashes no one can fix. Each
-// language module names its own; ecosystems with no module are listed here.
-var lockfiles = lockfileSet(lang.Lockfiles(langs.All),
-	"Cargo.lock", "Gemfile.lock", "composer.lock", "poetry.lock",
-	"uv.lock", "mix.lock", "flake.lock", "packages.lock.json")
-
-// lockfileSet joins the module lockfiles and the others into one lookup.
-func lockfileSet(modules []string, others ...string) map[string]bool {
-	set := map[string]bool{}
-	for _, name := range append(modules, others...) {
-		set[name] = true
-	}
-	return set
-}
-
 // targets lists the files to spell-check: the changed files, or every
 // tracked file when the run is unscoped, minus lockfiles and those
 // .gitattributes marks linguist-generated.
@@ -98,9 +82,11 @@ func targets(root string) []string {
 	if !scanned {
 		files = walkfs.FilesByExt(root, "")
 	}
+	// A lockfile's words are package names and hashes no one can fix.
+	lockfile := lang.IsLockfile(langs.All)
 	var kept []string
 	for _, f := range files {
-		if !lockfiles[path.Base(f)] {
+		if !lockfile(f) {
 			kept = append(kept, f)
 		}
 	}

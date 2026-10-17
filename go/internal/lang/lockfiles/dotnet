@@ -1,0 +1,4 @@
+# NuGet rewrites its lockfile on every restore, and no language module
+# covers .NET yet, so the lockfile is named here for the checks that skip
+# lockfiles.
+packages.lock.json

@@ -74,3 +74,29 @@ func Test0016_6(t *testing.T) {
 	out, code := buildOutputRun(t, repo)
 	sees(t, out, code, 0, "All 1 checks passed · 2 files scanned")
 }
+
+func Test0016_7(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{
+		"pom.xml":                          "<project/>\n",
+		"target/app.jar":                   "built\n",
+		"lib[1]/build.gradle":              "plugins { id 'java' }\n",
+		"lib[1]/build/out.txt":             "built\n",
+		"lib[1]/.gradle/state":             "cache\n",
+		"lib1/build/kept.txt":              "not a build's output\n",
+		"src/app/pom.xml":                  "<project/>\n",
+		"src/app/target/app.jar":           "built\n",
+		"classes/Old.class":                "compiled\n",
+		"src/test/resources/Fixture.class": "a test input\n",
+		"src/main/java/A.txt":              "source\n",
+	})
+	out, code := buildOutputRun(t, repo)
+	sees(t, out, code, 1, "Remove tracked files: classes/Old.class, lib[1]/.gradle/state, lib[1]/build/out.txt, src/app/target/app.jar, target/app.jar (git rm --cached)")
+}
+
+func Test0016_8(t *testing.T) {
+	t.Parallel()
+	out, code := buildOutputRun(t, example(t, "happyRepo", map[string]string{"build/notes.txt": "kept\n"}))
+	sees(t, out, code, 0, "All 1 checks passed")
+	passedWithNoFiles(t, out, buildOutputCheck)
+}

@@ -28,6 +28,7 @@ archives:
       - fitness-check-changelog
       - fitness-check-changelog-bullets
       - fitness-check-changelog-updated
+      - fitness-check-checkstyle
       - fitness-check-commit-attribution
       - fitness-check-cspell
       - fitness-check-dependency-currency
@@ -41,6 +42,7 @@ archives:
       - fitness-check-gofmt
       - fitness-check-issue-checklist
       - fitness-check-issue-link-once
+      - fitness-check-java-version
       - fitness-check-jscpd
       - fitness-check-local-branch
       - fitness-check-markdown-filename-camel-case
@@ -69,6 +71,7 @@ archives:
       - fitness-check-repeated-string-literals
       - fitness-check-requirements
       - fitness-check-semantic-commit
+      - fitness-check-spotless
       - fitness-check-swiftlint
       - fitness-check-text-readability
       - fitness-check-vitest-coverage-exclude

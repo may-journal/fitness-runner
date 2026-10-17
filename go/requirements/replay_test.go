@@ -1,3 +1,5 @@
+// cspell:ignore mvnw gradlew
+
 package requirements
 
 import (
@@ -14,8 +16,9 @@ import (
 )
 
 // standIns are the external programs fitness calls that tests replace with
-// saved responses: GitHub's CLI and the JavaScript and Swift tools.
-var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint"}
+// saved responses: GitHub's CLI, the JavaScript and Swift tools, and the JDK
+// and the Java build tools with their wrappers.
+var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew"}
 
 // TestMain lets this test binary stand in for those programs. Run under one
 // of their names, it answers from saved responses instead of running tests.

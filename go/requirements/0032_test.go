@@ -64,10 +64,13 @@ func Test0032_9(t *testing.T) {
 	sees(t, out, code, 1, "ERROR: jscpd found too many duplicates (")
 }
 
-func Test0032_5(t *testing.T) {
+func Test0032_11(t *testing.T) {
 	t.Parallel()
 	files := jscpdPair("deps/a.lock", "deps/b.lock", jscpdClone)
 	files[".gitattributes"] = "*.lock linguist-generated\n"
+	for name, body := range jscpdPair("app/gradle.lockfile", "lib/gradle.lockfile", jscpdClone) {
+		files[name] = body
+	}
 	out, code := jscpdRun(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 }

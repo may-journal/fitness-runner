@@ -42,3 +42,11 @@ Source: `go/cmd/fitness-check-build-output-untracked/main.go:65`
     - Given Developer has an untracked TypeScript file importing from `dist`
         - When fitness runs build-output-untracked
             - Then it passes, since only tracked source is judged
+- 0016.7
+    - Given Developer has tracked Maven and Gradle output folders and compiled classes
+        - When fitness runs build-output-untracked
+            - Then it fails listing them with a `git rm --cached` hint
+- 0016.8
+    - Given Developer has a tracked `build` folder and no Java build
+        - When fitness runs build-output-untracked
+            - Then it passes, since only a language's own output is judged

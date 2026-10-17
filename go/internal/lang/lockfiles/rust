@@ -1,0 +1,3 @@
+# Cargo rewrites its lockfile on every build, and no language module covers
+# Rust yet, so the lockfile is named here for the checks that skip lockfiles.
+Cargo.lock

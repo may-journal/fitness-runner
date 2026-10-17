@@ -1,0 +1,4 @@
+# Bundler rewrites its lockfile on every install, and no language module
+# covers Ruby yet, so the lockfile is named here for the checks that skip
+# lockfiles.
+Gemfile.lock

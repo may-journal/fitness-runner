@@ -1,0 +1,4 @@
+# Composer rewrites its lockfile on every install, and no language module
+# covers PHP yet, so the lockfile is named here for the checks that skip
+# lockfiles.
+composer.lock
