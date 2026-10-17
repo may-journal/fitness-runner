@@ -4,6 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 ### 2026.10.17.2215
 
-- Fix: an aggregate JaCoCo report covers a module only when it lists a module source by its declared package.
-- Fix: a module with no product code keeps its own coverage report out of judgement once an aggregate exists.
+- Fix: a Maven aggregate JaCoCo report covers the modules it holds a group for, by artifact id.
+- Fix: a Gradle aggregate covers a project when it lists one of its readable sources by declared package.
+- Fix: once an aggregate exists, a module's own report that lists no class stays out of judgement.
 - Fix: an aggregate report that does not parse is named alone, without every module report.

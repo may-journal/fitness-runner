@@ -18,18 +18,14 @@ import (
 // report is a JaCoCo XML report's own totals: the counters directly under
 // <report>. JaCoCo counts a source line once even when several classes or
 // methods share it, so the report's totals are read as written and never
-// summed from its packages, classes or methods. Its packages, listed
-// directly or inside groups, name the source files it covers.
+// summed from its packages, classes or methods. Maven's aggregate report
+// writes one group per module, named by artifact id, while Gradle's
+// aggregate report and every module report list packages directly.
 type report struct {
 	Counters []counter `xml:"counter"`
-	group
-}
-
-// group is a part of a report: Maven's aggregate report writes one group
-// per module, named by artifact id, while Gradle's aggregate report and
-// every module report list packages directly.
-type group struct {
-	Groups   []group       `xml:"group"`
+	Groups   []struct {
+		Name string `xml:"name,attr"`
+	} `xml:"group"`
 	Packages []javaPackage `xml:"package"`
 }
 
@@ -42,15 +38,21 @@ type javaPackage struct {
 	} `xml:"sourcefile"`
 }
 
-// list adds each source file the group covers, as its package path and
-// file name, to listed.
-func (g group) list(listed map[string]bool) {
-	for _, inner := range g.Groups {
-		inner.list(listed)
+// listing is what aggregate reports list: Maven's module groups by
+// artifact id, and the source files Gradle's list without groups, by
+// package path and file name.
+type listing struct {
+	groups, sources map[string]bool
+}
+
+// add adds what the report lists to l.
+func (l listing) add(r report) {
+	for _, g := range r.Groups {
+		l.groups[g.Name] = true
 	}
-	for _, p := range g.Packages {
+	for _, p := range r.Packages {
 		for _, s := range p.Sources {
-			listed[path.Join(p.Name, s.Name)] = true
+			l.sources[path.Join(p.Name, s.Name)] = true
 		}
 	}
 }
@@ -81,60 +83,82 @@ func coverage(root string, p java.Project, start time.Time) (findings []string, 
 // wrote no aggregate report, else every aggregate and the own report of
 // each project that no aggregate covers. An aggregate leaves out the
 // projects it does not depend on, and by default the project that writes
-// it. An aggregate that does not parse is named alone, since what it
-// covers is unknown.
+// it. An own report that lists no class is left out then, as for a project
+// of tests alone, whose code the build compiles in no language. An
+// aggregate that does not parse is named alone, since what it covers is
+// unknown.
 func reports(root string, p java.Project, start time.Time) []string {
 	members := java.Members(root, p)
 	aggregates := fresh(root, members, func(b *java.Build) []string { return b.Aggregate }, start)
 	if len(aggregates) == 0 {
 		return fresh(root, members, ownReport, start)
 	}
-	listed, ok := listedSources(aggregates)
+	l, ok := listed(aggregates)
 	if !ok {
 		return aggregates
 	}
-	return slices.Concat(aggregates, fresh(root, uncovered(root, p, members, listed), ownReport, start))
+	own := fresh(root, uncovered(root, p, members, l), ownReport, start)
+	return slices.Concat(aggregates, slices.DeleteFunc(own, listsNoClass))
 }
 
 // ownReport is the pattern of a project's report of its own tests.
 func ownReport(b *java.Build) []string { return b.Coverage }
 
-// listedSources reads the source files the reports list, or false when
-// one does not parse.
-func listedSources(files []string) (map[string]bool, bool) {
-	listed := map[string]bool{}
+// listsNoClass reports a report that parses and lists no package.
+func listsNoClass(file string) bool {
+	var r report
+	return readXML(file, &r) && len(r.Groups)+len(r.Packages) == 0
+}
+
+// listed reads what the reports list, or false when one does not parse.
+func listed(files []string) (listing, bool) {
+	l := listing{groups: map[string]bool{}, sources: map[string]bool{}}
 	for _, file := range files {
 		var r report
 		if !readXML(file, &r) {
-			return nil, false
+			return l, false
 		}
-		r.list(listed)
+		l.add(r)
 	}
-	return listed, true
+	return l, true
 }
 
-// uncovered lists the members of build root p with product sources none
-// of which listed holds. An aggregate takes a project's compiled classes
-// whole, so one listed source shows it covers the project, and an unlisted
-// one is a class the build's own filters leave out. A project without
-// product sources, such as one of integration tests only, has no code of
-// its own for a report to cover.
-func uncovered(root string, p java.Project, members []java.Project, listed map[string]bool) []java.Project {
-	sources := map[java.Project]bool{}
+// uncovered lists the members of build root p that no aggregate covers.
+// Maven's aggregate covers a module it holds a group for. Gradle's lists
+// no groups, so it covers a project when it lists one of the project's
+// Java sources: an aggregate takes a project's compiled classes whole, and
+// an unlisted source is a class the build's own filters leave out.
+func uncovered(root string, p java.Project, members []java.Project, l listing) []java.Project {
 	covered := map[java.Project]bool{}
-	for _, f := range productFiles(root, p) {
-		q := java.Nearest(members, p.Build, f)
-		sources[q] = true
-		covered[q] = covered[q] || listed[sourceKey(root, f)]
+	for _, q := range members {
+		covered[q] = l.groups[artifactID(root, q)]
 	}
-	return slices.DeleteFunc(slices.Clone(members), func(q java.Project) bool { return !sources[q] || covered[q] })
+	for _, f := range productFiles(root, p) {
+		if q := java.Nearest(members, p.Build, f); !covered[q] {
+			covered[q] = lists(l.sources, root, f)
+		}
+	}
+	return slices.DeleteFunc(slices.Clone(members), func(q java.Project) bool { return covered[q] })
 }
 
-// sourceKey names a tracked Java source as a JaCoCo report does: by the
-// package it declares and its file name.
-func sourceKey(root, file string) string {
-	body, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
-	return path.Join(views.Package(string(body)), path.Base(file))
+// artifactID is the artifact id a Maven project's pom.xml declares, or ""
+// for a Gradle project.
+func artifactID(root string, q java.Project) string {
+	var pom struct {
+		ArtifactID string `xml:"artifactId"`
+	}
+	if q.Build == java.Maven {
+		readXML(filepath.Join(root, filepath.FromSlash(q.Dir), "pom.xml"), &pom)
+	}
+	return pom.ArtifactID
+}
+
+// lists reports whether sources holds the tracked Java source as a JaCoCo
+// report names it: by the package it declares and its file name. A source
+// that cannot be read is not listed.
+func lists(sources map[string]bool, root, file string) bool {
+	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	return err == nil && sources[path.Join(views.Package(string(body)), path.Base(file))]
 }
 
 // judgeReport reads one report's totals and names those short of the goal,
