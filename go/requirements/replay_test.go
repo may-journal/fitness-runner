@@ -13,12 +13,13 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // standIns are the external programs fitness calls that tests replace with
-// saved responses: GitHub's CLI, the JavaScript and Swift tools, and the JDK
-// and the Java build tools with their wrappers.
-var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew"}
+// saved responses: GitHub's CLI, the JavaScript and Swift tools, the JDK
+// and the Java build tools with their wrappers, and Docker.
+var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew", "docker"}
 
 // TestMain lets this test binary stand in for those programs. Run under one
 // of their names, it answers from saved responses instead of running tests.
@@ -30,13 +31,18 @@ func TestMain(m *testing.M) {
 }
 
 // response is one saved answer: when every Match string appears in the
-// call's arguments, the stand-in prints Stdout and Stderr and exits with
-// Exit. An empty Match answers any call.
+// call's arguments, the stand-in writes Files, relative to the folder it
+// runs in, prints Stdout and Stderr and exits with Exit. An empty Match
+// answers any call.
 type response struct {
-	Match  []string `json:"match"`
-	Stdout string   `json:"stdout"`
-	Stderr string   `json:"stderr"`
-	Exit   int      `json:"exit"`
+	Match  []string          `json:"match"`
+	Files  map[string]string `json:"files"`
+	Stdout string            `json:"stdout"`
+	Stderr string            `json:"stderr"`
+	Exit   int               `json:"exit"`
+	// Wait, when set, is how many seconds the stand-in hangs first, as a
+	// stalled service does.
+	Wait int `json:"wait"`
 }
 
 // replay answers one call from $FITNESS_REPLAY/<name>.json, the first
@@ -55,6 +61,8 @@ func replay(name string, args []string) int {
 	_ = json.Unmarshal(raw, &saved)
 	for _, r := range saved {
 		if matches(call, r.Match) {
+			time.Sleep(time.Duration(r.Wait) * time.Second)
+			writeFiles(r.Files)
 			fmt.Print(r.Stdout)
 			fmt.Fprint(os.Stderr, r.Stderr)
 			return r.Exit
@@ -62,6 +70,15 @@ func replay(name string, args []string) int {
 	}
 	fmt.Fprintf(os.Stderr, "%s stand-in: no saved response for: %s\n", name, call)
 	return 97
+}
+
+// writeFiles writes each file a saved answer leaves behind, such as a test
+// report, relative to the folder the stand-in runs in.
+func writeFiles(files map[string]string) {
+	for name, body := range files {
+		_ = os.MkdirAll(filepath.Dir(name), 0o755)
+		_ = os.WriteFile(name, []byte(body), 0o644)
+	}
 }
 
 // matches reports whether every want appears in call.

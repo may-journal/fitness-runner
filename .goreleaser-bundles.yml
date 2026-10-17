@@ -42,6 +42,7 @@ archives:
       - fitness-check-gofmt
       - fitness-check-issue-checklist
       - fitness-check-issue-link-once
+      - fitness-check-java-test
       - fitness-check-java-version
       - fitness-check-jscpd
       - fitness-check-local-branch

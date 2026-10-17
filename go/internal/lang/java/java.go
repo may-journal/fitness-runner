@@ -11,12 +11,12 @@
 // settings script of their own. One run from each root covers its modules.
 // The build output git must not track is target/ for Maven, build/ and
 // .gradle/ for Gradle, and compiled .class files outside fixtures. The
-// packages in this folder hold each check's own logic: spotless, checkstyle
-// and version. The module brings no spell dictionary: a Java repo adds the
+// packages in this folder hold each check's own logic: spotless, checkstyle,
+// version and tests. The module brings no spell dictionary: a Java repo adds the
 // Java words it uses to its own cspell config.
 package java
 
-// cspell:ignore mvnw gradlew
+// cspell:ignore mvnw gradlew jacoco junitreports
 
 import (
 	"os"
@@ -52,6 +52,15 @@ type Build struct {
 	Flags []string
 	// Output are the folders the tool writes beside each build file.
 	Output []string
+	// TestReports match, from a project's folder, the JUnit XML files its
+	// test runs write, one per test class.
+	TestReports []string
+	// Coverage match, from a project's folder, the JaCoCo XML report of
+	// the project's own tests.
+	Coverage []string
+	// Aggregate match, from a project's folder, a JaCoCo XML report that
+	// joins the coverage of several projects.
+	Aggregate []string
 	// Install is the hint for a machine with neither wrapper nor tool.
 	Install string
 	// Builds reports whether a run from parent builds p as one of its
@@ -69,8 +78,14 @@ var Maven = &Build{
 	Command: "mvn",
 	Flags:   []string{"--batch-mode", "--no-transfer-progress"},
 	Output:  []string{"target"},
-	Install: "Maven not installed: add the Maven wrapper (mvn wrapper:wrapper) or install Maven",
-	Builds:  listsModule,
+	// Surefire writes unit test reports, and Failsafe integration test
+	// reports, each named TEST-<class>.xml. A TestNG run also writes
+	// copies under a junitreports folder, which the patterns leave out.
+	TestReports: []string{"target/surefire-reports/TEST-*.xml", "target/failsafe-reports/TEST-*.xml"},
+	Coverage:    []string{"target/site/jacoco/jacoco.xml"},
+	Aggregate:   []string{"target/site/jacoco-aggregate/jacoco.xml"},
+	Install:     "Maven not installed: add the Maven wrapper (mvn wrapper:wrapper) or install Maven",
+	Builds:      listsModule,
 }
 
 // Gradle runs once from each root build with the daemon off and plain
@@ -83,8 +98,12 @@ var Gradle = &Build{
 	Command: "gradle",
 	Flags:   []string{"--no-daemon", "--console=plain"},
 	Output:  []string{"build", ".gradle"},
-	Install: "Gradle not installed: add the Gradle wrapper (gradle wrapper) or install Gradle",
-	Builds:  settlesBelow,
+	// Each test task writes its reports in a folder named for the task.
+	TestReports: []string{"build/test-results/*/TEST-*.xml"},
+	Coverage:    []string{"build/reports/jacoco/test/jacocoTestReport.xml"},
+	Aggregate:   []string{"build/reports/jacoco/testCodeCoverageReport/testCodeCoverageReport.xml"},
+	Install:     "Gradle not installed: add the Gradle wrapper (gradle wrapper) or install Gradle",
+	Builds:      settlesBelow,
 }
 
 // gradleSettings are the scripts that make a folder a Gradle build of its
@@ -249,10 +268,37 @@ func output(projects []Project, file string) bool {
 // plugin pattern: one in p's folder or below it, outside fixtures and the
 // other build roots nested there.
 func Declares(root string, p Project, plugin *regexp.Regexp) bool {
-	roots := Roots(root)
-	return slices.ContainsFunc(walkfs.FilesByExt(root, p.Build.Scripts...), func(f string) bool {
-		return owner(roots, p.Build, f) == p && !Fixture(f) && matches(root, f, plugin)
+	return slices.ContainsFunc(Owned(root, p, p.Build.Scripts...), func(f string) bool {
+		return !Fixture(f) && matches(root, f, plugin)
 	})
+}
+
+// Owned lists the tracked files with the given endings that build root p
+// owns: those in its folder or below it, outside the other build roots of
+// its tool nested there.
+func Owned(root string, p Project, exts ...string) []string {
+	roots := Roots(root)
+	var out []string
+	for _, f := range walkfs.FilesByExt(root, exts...) {
+		if owner(roots, p.Build, f) == p {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+// Members lists the projects build root p builds, p included: those of its
+// tool in its folder or below it, outside the other build roots nested
+// there.
+func Members(root string, p Project) []Project {
+	roots := Roots(root)
+	var out []Project
+	for _, q := range Projects(root) {
+		if q.Build == p.Build && owner(roots, p.Build, path.Join(q.Dir, p.Build.Files[0])) == p {
+			out = append(out, q)
+		}
+	}
+	return out
 }
 
 // owner is the build root of tool b nearest above file.

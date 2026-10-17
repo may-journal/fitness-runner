@@ -15,5 +15,5 @@ var Java = lang.Module{
 	Lockfiles:   []string{"*.lockfile"},
 	BuildOutput: java.BuildOutput,
 	Tools:       []string{"java", java.Maven.Wrapper, java.Maven.Command, java.Gradle.Wrapper, java.Gradle.Command},
-	Checks:      []string{"spotless", "checkstyle", "java-version"},
+	Checks:      []string{"spotless", "checkstyle", "java-version", "java-test"},
 }

@@ -60,7 +60,7 @@ flowchart TB
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
         requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057)]:::system
-        javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080)]:::system
+        javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055)]:::system
     end
@@ -141,4 +141,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI.            |
 | 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
-| 30  | Java build checks.                  | System  | The build's own plugins check format and lint, and the running JDK meets the pin.     |
+| 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |

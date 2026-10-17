@@ -1,0 +1,7 @@
+# JUnit 5 and JUnit 6 share the Jupiter API and the org.junit BOM. Both run
+# on the JUnit Platform, which Surefire, Failsafe and Gradle report as JUnit
+# XML. Gradle finds them only once the test task calls useJUnitPlatform().
+name: JUnit Jupiter
+group: org.junit.jupiter org.junit
+import: org.junit.jupiter
+hint: Gradle runs JUnit Jupiter tests only when the test task calls useJUnitPlatform()

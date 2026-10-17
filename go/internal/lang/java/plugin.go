@@ -17,14 +17,17 @@ type Plugin struct {
 	Uses map[*Build]Use
 	// Judge turns a finished run into findings, or none for a clean run.
 	Judge func(root string, p Project, o checkkit.Outcome) []string
+	// Ready, when set, lists what a build root's run needs from the
+	// machine and lacks. Any finding stops that root's run.
+	Ready func(root string, p Project) []string
 }
 
 // Use is how one build tool runs a plugin.
 type Use struct {
 	// Declared matches a build script that applies the plugin.
 	Declared *regexp.Regexp
-	// Missing is output the tool prints, matched without case, when the
-	// build lacks the plugin after all.
+	// Missing, when set, is output the tool prints, matched without case,
+	// when the build lacks the plugin after all.
 	Missing string
 	// Snippet is the build file text that adds the plugin.
 	Snippet string
@@ -71,21 +74,34 @@ func (pl Plugin) runAll(root string, roots []Project) ([]string, error) {
 // run runs the plugin for one build root and returns its findings.
 func (pl Plugin) run(root string, p Project) ([]string, error) {
 	use := pl.Uses[p.Build]
-	if !Declares(root, p, use.Declared) {
-		return []string{pl.missing(p, use)}, nil
-	}
-	bin, ok := Tool(root, p)
-	if !ok {
-		return []string{p.Build.Install}, nil
+	bin, lacks := pl.prepare(root, p, use)
+	if len(lacks) > 0 {
+		return lacks, nil
 	}
 	o := Run(root, bin, p, use.Args(root, p)...)
 	if err := o.EnvErr(p.Build.Command); err != nil {
 		return nil, err
 	}
-	if strings.Contains(strings.ToLower(o.Stdout), strings.ToLower(use.Missing)) {
+	if use.Missing != "" && strings.Contains(strings.ToLower(o.Stdout), strings.ToLower(use.Missing)) {
 		return []string{pl.missing(p, use)}, nil
 	}
 	return pl.Judge(root, p, o), nil
+}
+
+// prepare finds the command that runs p's build, or what stops the run: a
+// build without the plugin, no build tool, or what the machine lacks.
+func (pl Plugin) prepare(root string, p Project, use Use) (bin string, lacks []string) {
+	if !Declares(root, p, use.Declared) {
+		return "", []string{pl.missing(p, use)}
+	}
+	bin, ok := Tool(root, p)
+	if !ok {
+		return "", []string{p.Build.Install}
+	}
+	if pl.Ready != nil {
+		return bin, pl.Ready(root, p)
+	}
+	return bin, nil
 }
 
 // missing is the install hint for a build without the plugin.

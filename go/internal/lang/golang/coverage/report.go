@@ -6,6 +6,8 @@ import (
 	"path"
 	"sort"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/goal"
 )
 
 type Count struct{ Covered, Total int64 }
@@ -75,9 +77,9 @@ func (r *Report) sort() {
 func (r Report) Lines() []string {
 	var lines []string
 	for _, row := range r.Rows {
-		target := "target 100%"
+		target := "target " + goal.Text()
 		if row.Entry {
-			target = "required 100%"
+			target = "required " + goal.Text()
 		}
 		lines = append(lines, fmt.Sprintf("%s %s: %d/%d statements (%s); %s", row.Kind, row.Name, row.Covered, row.Total, row.Percent(), target))
 	}
@@ -96,8 +98,8 @@ func (report *Report) addRows(counts map[string]Count, entry map[string]bool) {
 		kind, name, _ := strings.Cut(key, " ")
 		row := Row{Kind: kind, Name: name, Count: c, Entry: entryRow(kind, name, entry)}
 		report.Rows = append(report.Rows, row)
-		if row.Entry && c.Covered != c.Total {
-			report.Failures = append(report.Failures, fmt.Sprintf("entry %s: %d/%d statements; required 100%%", name, c.Covered, c.Total))
+		if row.Entry && !goal.Met(c.Covered, c.Total) {
+			report.Failures = append(report.Failures, fmt.Sprintf("entry %s: %d/%d statements; required %s", name, c.Covered, c.Total, goal.Text()))
 		}
 	}
 }

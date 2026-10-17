@@ -1,0 +1,6 @@
+# REST Assured is a library that tests of another framework call, so its
+# results reach the build's JUnit XML through that framework.
+# cspell:ignore restassured
+name: REST Assured
+group: io.rest-assured
+import: io.restassured

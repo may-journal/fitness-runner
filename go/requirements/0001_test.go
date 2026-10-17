@@ -15,14 +15,14 @@ func Test0001_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", architectedRepo())
 	out, code := fitness(t, repo, nil)
-	sees(t, out, code, 0, "All 57 checks passed")
+	sees(t, out, code, 0, "All 58 checks passed")
 }
 
 func Test0001_2(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
 	out, code := fitness(t, repo, nil)
-	sees(t, out, code, 1, "README.md: disallowed **bold**", "56 of 57 checks passed, 1 failed")
+	sees(t, out, code, 1, "README.md: disallowed **bold**", "57 of 58 checks passed, 1 failed")
 }
 
 func Test0001_3(t *testing.T) {
@@ -78,7 +78,7 @@ func Test0001_11(t *testing.T) {
 	repo := example(t, "happyRepo", with(architectedRepo(), map[string]string{"README.md": readme + "\nSome **bold** text.\n"}))
 	summary := filepath.Join(t.TempDir(), "summary.md")
 	out, code := fitness(t, repo, []string{killedVet(t), "GITHUB_ACTIONS=true", "GITHUB_WORKSPACE=" + repo, "GITHUB_STEP_SUMMARY=" + summary})
-	sees(t, out, code, 1, "55 of 57 checks passed, 1 failed, 1 info", "::error file=README.md",
+	sees(t, out, code, 1, "56 of 58 checks passed, 1 failed, 1 info", "::error file=README.md",
 		"::notice title=go-vet::check ended without a result (signal: killed)")
 	written, _ := os.ReadFile(summary)
 	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
@@ -88,7 +88,7 @@ func Test0001_12(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", architectedRepo())
 	out, code := fitness(t, repo, []string{killedVet(t)})
-	sees(t, out, code, 0, "check ended without a result (signal: killed)", "56 of 57 checks passed, 1 info")
+	sees(t, out, code, 0, "check ended without a result (signal: killed)", "57 of 58 checks passed, 1 info")
 	if !strings.Contains(row(out, "go-vet"), "info") {
 		t.Errorf("the check that cannot run must show info, got row %q", row(out, "go-vet"))
 	}

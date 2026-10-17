@@ -134,13 +134,15 @@ fitness-runner/
     cmd/fitness-check-name/    one main + README per check
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
                                clonedetect, mdfilename, render, conf, runtimes,
-                               codemodel, sharedconf (embedded tool configs)
+                               codemodel, goal (the shared coverage goal),
+                               sharedconf (embedded tool configs)
     internal/lang/             module type, ignores/, sources/ and lockfiles/
                                (ecosystems with no module), langs/ (one file
                                per language)
     internal/lang/<language>/  each language module's own code: runtime, test
                                and architecture view readers, tool runners,
-                               build tool plugins, coverage, and config keys
+                               build tool plugins, test and coverage report
+                               readers, data folders, and config keys
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)

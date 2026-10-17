@@ -1,0 +1,8 @@
+# TestNG runs through Surefire, on the JUnit Platform since Surefire 3.6.0,
+# and through Gradle's useTestNG(). Both write JUnit XML beside TestNG's own
+# testng-results.xml, which the check does not read.
+# cspell:ignore testng
+name: TestNG
+group: org.testng
+import: org.testng
+hint: Gradle runs TestNG tests only when the test task calls useTestNG()
