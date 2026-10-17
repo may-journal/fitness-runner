@@ -141,4 +141,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI.            |
 | 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
-| 30  | Java build checks.                  | System  | The build's own plugins check format and lint, and the running JDK meets the pin.     |
+| 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |

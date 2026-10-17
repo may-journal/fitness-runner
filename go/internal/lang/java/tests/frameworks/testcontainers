@@ -1,0 +1,8 @@
+# Testcontainers starts throwaway containers from inside tests, so its tests
+# need a running Docker-compatible engine. The check asks docker first and
+# reports a missing engine before it runs the build.
+name: Testcontainers
+group: org.testcontainers
+import: org.testcontainers
+ready: docker info
+unready: Testcontainers needs a running Docker; start Docker or set DOCKER_HOST, then rerun

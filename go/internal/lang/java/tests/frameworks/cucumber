@@ -1,0 +1,8 @@
+# Cucumber-JVM runs .feature files through its JUnit Platform engine, from a
+# @Suite class that includes the cucumber engine, so the build's JUnit XML
+# holds its scenarios.
+name: Cucumber-JVM
+group: io.cucumber
+import: io.cucumber
+files: .feature
+hint: Cucumber runs feature files only from a @Suite class with @IncludeEngines("cucumber")

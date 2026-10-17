@@ -1,0 +1,5 @@
+# JUnit 4 ships as junit:junit. Surefire and Gradle run it directly, or
+# through the Vintage engine on the JUnit Platform.
+name: JUnit 4
+group: junit
+import: org.junit.Test org.junit.Assert org.junit.Before org.junit.After org.junit.runner org.junit.Rule

@@ -106,6 +106,10 @@ Every check runs in every repo and passes clean with zero files when it does not
 
 Repo-wide checks take what a language brings from the registry, never from a list of their own. The spell and duplicate checks skip each module's lockfiles, plus those in one [lockfiles](../../go/internal/lang/lockfiles) file per other ecosystem. The build output check fails tracked files under the output folders each module finds in the repo.
 
+## Coverage goal
+
+Every coverage check judges exact counts against one goal in [goal](../../go/internal/goal/goal.go), whichever module runs it. A module that spots test frameworks keeps one commented file per framework in its own folder, so adding one needs no code.
+
 ## Architecture view readers
 
 The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.

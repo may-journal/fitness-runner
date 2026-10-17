@@ -1,0 +1,10 @@
+# Karate runs .feature files through a JUnit runner class, so the build's
+# JUnit XML holds its scenarios. Karate's own JUnit XML in karate-reports is
+# off by default. Version 1 shipped as com.intuit.karate, then io.karatelabs
+# with karate-junit5, and version 2 as io.karatelabs karate-junit6.
+# cspell:ignore karatelabs
+name: Karate
+group: io.karatelabs com.intuit.karate
+import: io.karatelabs com.intuit.karate
+files: .feature
+hint: Karate runs feature files only from a test class with a @Karate.Test method

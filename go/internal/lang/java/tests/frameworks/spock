@@ -1,0 +1,8 @@
+# Spock 2 is a JUnit Platform engine. Its specifications are Groovy files,
+# so the test sources include .groovy files.
+# cspell:ignore spockframework
+name: Spock
+group: org.spockframework
+import: spock.lang
+files: .groovy
+hint: Spock runs on the JUnit Platform; Gradle needs useJUnitPlatform(), Maven a Groovy compiler plugin

@@ -5,11 +5,13 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+
+	"github.com/may-journal/fitness-runner/go/internal/goal"
 )
 
-// fullThreshold is the TS REQUIRED_THRESHOLD: every coverage threshold must
+// fullThreshold is the shared coverage goal: every coverage threshold must
 // be exactly this value for the vitest-coverage-full gate to pass.
-const fullThreshold = 100
+const fullThreshold = goal.Percent
 
 // thresholdKeys are the four coverage threshold keys the TS check demanded.
 var thresholdKeys = []string{"branches", "functions", "lines", "statements"}
