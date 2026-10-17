@@ -306,7 +306,8 @@ func Test0076_10(t *testing.T) {
 		{cvJavaDir + "Cache.java", "", "package shop;\n\n// public class Ghost {}\npublic class Cache {}\n\nclass Local {}\n", cvJavaDir + "Cache.java:4: shop.Cache is an exported type in src/main/java/shop, which " + cvView + " shows, but no node names it"},
 		{cvView, "+save(String) boolean", "+save(int) boolean", cvView + ":11: Store: method shop.Store.save at " + cvJavaDir + "Store.java:10 has signature (String) boolean, not save(int) boolean"},
 		{cvView, "+count: int", "+count: long", cvView + ":20: Entry: field shop.Store.Entry.count at " + cvJavaDir + "Store.java:15 is int, not long"},
-		{cvView, "+count: int", "+static final int count", cvView + ":20: Entry: member \"+static final int count\" names no field or method"}, {cvView, "DiskStore --> write : 9\n", "", cvJavaDir + "DiskStore.java:6: DiskStore calls write, but " + cvView + " " + cvNoEdge + "DiskStore -> write" + cvAllowIt},
+		{cvView, "+count: int", "+static final int count", cvView + ":20: Entry: member \"+static final int count\" names no field or method"},
+		{cvView, "DiskStore --> write : 9\n", "", cvJavaDir + "DiskStore.java:6: DiskStore calls write, but " + cvView + " " + cvNoEdge + "DiskStore -> write" + cvAllowIt},
 		{cvJavaDir + "Store.java", "Store implements Saving", "Store", cvView + ":22: " + cvView + " draws realization Store -> Saving, but no source shows Store conforms to Saving"},
 	}
 	for _, c := range java {

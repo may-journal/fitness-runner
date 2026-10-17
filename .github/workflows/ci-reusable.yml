@@ -65,8 +65,8 @@ jobs:
         shell: bash
         run: |
           if [ -f .java-version ]; then file=.java-version
-          elif grep -qs '^[[:space:]]*java=' .sdkmanrc; then file=.sdkmanrc
-          elif grep -qs '^[[:space:]]*java[[:space:]]' .tool-versions; then file=.tool-versions
+          elif grep -qs '^java[[:space:]]*=' .sdkmanrc; then file=.sdkmanrc
+          elif grep -qs '^java[[:space:]]' .tool-versions; then file=.tool-versions
           fi
           echo "file=${file:-}" >> "$GITHUB_OUTPUT"
       - name: Set up Java from the JDK version file
