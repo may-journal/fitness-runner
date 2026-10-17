@@ -61,6 +61,7 @@ func Test0021_11(t *testing.T) {
 		"pnpm-lock.yaml":       cspellBodyTypo + ": 1.0.0\n",
 		"go.sum":               "example.com/" + cspellBinaryOther + " v1.0.0 h1:abc=\n",
 		"App/Package.resolved": `{"identity":"` + cspellBinaryWord + `"}` + "\n",
+		"lib/gradle.lockfile":  "com.example:" + cspellTypo + ":1.0=compileClasspath\n",
 	})
 	write(t, repo, map[string]string{"untracked.md": "the " + cspellRepoWord + " fox\n"})
 	out, code := fitness(t, repo, nil, "cspell")
@@ -86,14 +87,14 @@ func Test0021_8(t *testing.T) {
 	sees(t, out, code, 1, "(description):1:3 - Unknown word ("+cspellBodyTypo+")")
 }
 
-func Test0021_9(t *testing.T) {
+func Test0021_12(t *testing.T) {
 	t.Parallel()
 	out, code := cspellRun(t, map[string]string{
 		cspellInstalled: `{"words":["fitnessrc","` + cspellSharedWord + `"]}` + "\n",
 		"notes.md":      cspellSharedWord + " is a shared word\n",
 	})
 	sees(t, out, code, 0, "All 1 checks passed")
-	out, code = cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word\n"})
+	out, code = cspellRun(t, map[string]string{"notes.md": "mayjournal is a shared word, and invokevirtual a Java one\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 

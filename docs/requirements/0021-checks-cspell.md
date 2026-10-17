@@ -42,10 +42,10 @@ Source: `go/cmd/fitness-check-cspell/main.go:68`
     - Given Developer has an issue or PR body with a misspelling
         - When cspell checks it in body mode
             - Then it fails naming the word
-- 0021.9
+- 0021.12
     - Given Developer has no repo `cspell.json`
         - When cspell runs
-            - Then an installed `@mayjournal/fitness-shared` package's words are accepted, else the words built into fitness
+            - Then an installed `@mayjournal/fitness-shared` package's words are accepted, else the words built into fitness for every language
 - 0021.10
     - Given Developer has a `cspell.json` `flagWords` phrase used in a tracked file, in a body, and in that `cspell.json`
         - When cspell runs

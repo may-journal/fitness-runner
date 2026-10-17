@@ -36,7 +36,7 @@ func Test0003_2(t *testing.T) {
 }
 
 // catalogRows is the order the result rows print in: the repo-wide checks,
-// sorted, then the Go, Swift and Node modules' checks, each sorted.
+// sorted, then the Go, Swift, Node and Java modules' checks, each sorted.
 const catalogRows = `
 architecture-actors architecture-code architecture-components
 architecture-containers architecture-contract architecture-journey
@@ -53,7 +53,8 @@ text-readability
 go-complexity go-test go-vet gofmt
 swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier
-vitest-coverage-exclude vitest-coverage-full`
+vitest-coverage-exclude vitest-coverage-full
+checkstyle java-version spotless`
 
 // rowCells returns the check cell of each results-table row, top to bottom.
 func rowCells(out string) []string {

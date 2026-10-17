@@ -34,10 +34,10 @@ Source: `go/cmd/fitness-check-jscpd/main.go:43`
     - Given Developer has a Markdown doc and a gitignored but still tracked JSON file sharing a block
         - When `jscpd` runs
             - Then it fails, since every tracked text file is compared
-- 0032.5
-    - Given Developer has copied lock files that `.gitattributes` marks `linguist-generated`
+- 0032.11
+    - Given Developer has copied lockfiles, some a language writes and some marked `linguist-generated`
         - When `jscpd` runs
-            - Then it passes, since generated files are left out
+            - Then it passes, since both are left out
 - 0032.6
     - Given Developer has binary files sharing a block
         - When `jscpd` runs
