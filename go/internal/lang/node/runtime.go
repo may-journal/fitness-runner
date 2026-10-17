@@ -1,4 +1,4 @@
-package runtimes
+package node
 
 import (
 	"encoding/json"
@@ -8,7 +8,20 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 )
+
+// Technology is the name a Node product's container must give its
+// language.
+const Technology = "Node"
+
+// Runtime reads package.json files for the runtimes a repo ships and the
+// files its scripts run.
+var Runtime = runtimes.Reader{
+	Manifests: map[string]func(*runtimes.Finder, string){Manifest: product},
+	Scripts:   map[string]func(string, string) runtimes.Runs{Manifest: scriptRuns},
+}
 
 // deployFiles beside a package.json prove it is deployed as a service.
 var deployFiles = []string{"Dockerfile", "Procfile", "fly.toml", "app.yaml", "serverless.yml", "vercel.json", "wrangler.toml"}
@@ -51,7 +64,7 @@ func (pkg nodePackage) entries(file string) []string {
 	var out []string
 	for _, p := range paths {
 		if p != "" {
-			out = append(out, beside(file, p))
+			out = append(out, runtimes.Beside(file, p))
 		}
 	}
 	return out
@@ -80,68 +93,68 @@ func items(value any) []any {
 	return nil
 }
 
-// node records a package.json folder as a Node service when it has a
+// product records a package.json folder as a Node service when it has a
 // start script, a bin entry, or a deploy file beside it, and as a Node
 // library when it publishes code. A package that only holds development
 // tools proves no runtime.
-func (f *finder) node(file string) {
-	pkg, body, err := readPackage(f.root, file)
+func product(f *runtimes.Finder, file string) {
+	pkg, body, err := readPackage(f.Root(), file)
 	if err != nil {
-		f.fail(Location{file, 1}, "cannot read package.json: %v", err)
+		f.Fail(runtimes.Location{Path: file, Line: 1}, "cannot read package.json: %v", err)
 		return
 	}
 	lines := strings.Split(string(body), "\n")
 	kind := "Node service"
-	at, ok := f.nodeEvidence(file, pkg, lines)
+	at, ok := serviceEvidence(f, file, pkg, lines)
 	if !ok {
 		kind = "Node library"
-		at, ok = f.libraryEvidence(file, pkg, lines)
+		at, ok = libraryEvidence(f, file, pkg, lines)
 	}
 	if ok {
-		f.Products = append(f.Products, Product{Kind: kind, Name: nodeName(file, pkg), Technology: "Node", Paths: []string{path.Dir(file)}, Entries: pkg.entries(file), At: at})
+		f.Products = append(f.Products, runtimes.Product{Kind: kind, Name: nodeName(file, pkg), Technology: Technology, Package: true, Paths: []string{path.Dir(file)}, Entries: pkg.entries(file), At: at})
 	}
 }
 
-func (f *finder) nodeEvidence(file string, pkg nodePackage, lines []string) (Location, bool) {
+func serviceEvidence(f *runtimes.Finder, file string, pkg nodePackage, lines []string) (runtimes.Location, bool) {
 	if _, ok := pkg.Scripts["start"]; ok {
-		return Location{file, lineOf(lines, `"start"`)}, true
+		return runtimes.Location{Path: file, Line: lineOf(lines, `"start"`)}, true
 	}
 	if pkg.Bin != nil {
-		return Location{file, lineOf(lines, `"bin"`)}, true
+		return runtimes.Location{Path: file, Line: lineOf(lines, `"bin"`)}, true
 	}
 	for _, name := range deployFiles {
-		if deploy := beside(file, name); f.exists[deploy] {
-			return Location{deploy, 1}, true
+		if deploy := runtimes.Beside(file, name); f.Exists(deploy) {
+			return runtimes.Location{Path: deploy, Line: 1}, true
 		}
 	}
-	return Location{}, false
+	return runtimes.Location{}, false
 }
 
 // libraryEvidence is the first library field a published package sets.
 // A private package publishes nothing, and an entry nobody tracks needs a
 // build script to make it, so npm init's unused "main": "index.js" proves
 // no library.
-func (f *finder) libraryEvidence(file string, pkg nodePackage, lines []string) (Location, bool) {
-	if pkg.Private || !f.built(file, pkg) {
-		return Location{}, false
+func libraryEvidence(f *runtimes.Finder, file string, pkg nodePackage, lines []string) (runtimes.Location, bool) {
+	if pkg.Private || !built(f, file, pkg) {
+		return runtimes.Location{}, false
 	}
 	set := map[string]bool{"main": pkg.Main != "", "module": pkg.Module != "", "exports": pkg.Exports != nil, "types": pkg.Types != ""}
 	for _, field := range libraryFields {
 		if set[field] {
-			return Location{file, lineOf(lines, `"`+field+`"`)}, true
+			return runtimes.Location{Path: file, Line: lineOf(lines, `"`+field+`"`)}, true
 		}
 	}
-	return Location{}, false
+	return runtimes.Location{}, false
 }
 
 // built reports a package whose build script makes its code, or one of
 // whose main, module, types, or exports paths is tracked.
-func (f *finder) built(file string, pkg nodePackage) bool {
+func built(f *runtimes.Finder, file string, pkg nodePackage) bool {
 	if _, ok := pkg.Scripts["build"]; ok {
 		return true
 	}
 	for _, entry := range leaves(pkg.Exports, []string{pkg.Main, pkg.Module, pkg.Types}) {
-		if entry != "" && f.exists[beside(file, entry)] {
+		if entry != "" && f.Exists(runtimes.Beside(file, entry)) {
 			return true
 		}
 	}
@@ -153,4 +166,14 @@ func nodeName(file string, pkg nodePackage) string {
 		return pkg.Name
 	}
 	return path.Base(path.Dir(file))
+}
+
+// lineOf finds the first line containing text, or 1.
+func lineOf(lines []string, text string) int {
+	for i, line := range lines {
+		if strings.Contains(line, text) {
+			return i + 1
+		}
+	}
+	return 1
 }

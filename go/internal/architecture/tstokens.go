@@ -4,7 +4,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/javascript"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
 // at returns token i, or an empty punctuation token outside the file.

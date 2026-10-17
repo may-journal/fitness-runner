@@ -18,7 +18,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/may-journal/fitness-runner/go/internal/javascript"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
 // ConfigNames are the Vitest config filenames probed in this exact order —

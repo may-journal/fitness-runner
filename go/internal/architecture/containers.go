@@ -31,7 +31,7 @@ func (m *Model) Containers() Containers {
 	for _, e := range m.Elements {
 		c.element(e)
 	}
-	report := runtimes.Find(m.repo.root, m.repo.sorted(), m.product)
+	report := runtimes.Find(m.repo.root, m.repo.sorted(), m.product, readers)
 	for _, p := range report.Products {
 		c.product(p)
 	}
@@ -102,12 +102,12 @@ func (c *containers) owners(p runtimes.Product) []Element {
 	return owners
 }
 
-// names reports whether owner's text names an npm package. A code span
-// or label may name the package or a path covering an entry point, such
-// as dist/esm for dist/esm/index.js; a description word must be an
+// names reports whether owner's text names a package product. A code
+// span or label may name the package or a path covering an entry point,
+// such as dist/esm for dist/esm/index.js; a description word must be an
 // entry point itself. Entry points are often build output nobody tracks.
 func (c *containers) names(owner string, p runtimes.Product) bool {
-	if p.Technology != "Node" {
+	if !p.Package {
 		return false
 	}
 	for _, mention := range c.m.Mentions {

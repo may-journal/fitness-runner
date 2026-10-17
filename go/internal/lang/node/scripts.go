@@ -1,9 +1,11 @@
-package walkfs
+package node
 
 import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // ScriptExts are the TypeScript and JavaScript file extensions.
@@ -24,7 +26,7 @@ var (
 // generated and tool config files such as vite.config.ts or .eslintrc.cjs.
 func Scripts(root string) []string {
 	var out []string
-	for _, f := range WithoutGenerated(root, FilesByExt(root, ScriptExts...)) {
+	for _, f := range walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, ScriptExts...)) {
 		if !ToolConfig(f) {
 			out = append(out, f)
 		}

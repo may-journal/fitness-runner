@@ -23,10 +23,10 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 )
 
-const packageJSON = nodejs.Manifest
+const packageJSON = node.Manifest
 
 // defaultRegistry is the npm registry queried when no .npmrc overrides it.
 const defaultRegistry = "https://registry.npmjs.org"
@@ -58,7 +58,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	filesChecked := len(nodejs.Manifests(root))
+	filesChecked := len(node.Manifests(root))
 	manifests := collectManifests(root)
 	latest := fetchLatest(registryFrom(root), uniqueDeps(manifests))
 	errs := outdatedErrors(manifests, latest)

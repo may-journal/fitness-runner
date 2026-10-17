@@ -31,9 +31,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/biome"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -73,7 +73,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // lintWithEslint lints the paths with the resolved eslint binary.
 func lintWithEslint(root string) checkkit.Result {
-	bin, found := nodejs.FindTool(root, "eslint")
+	bin, found := node.FindTool(root, "eslint")
 	if !found {
 		return checkkit.Fail(0, missingEslintMessage)
 	}
@@ -101,7 +101,7 @@ func buildExecCheckResult(exitCode int, errs []string, filesChecked int) checkki
 // a scoped run at least one changed file it lints, so a run with none skips
 // ESLint instead of linting the whole repo.
 func applies(root string) bool {
-	if !nodejs.Applies(root) {
+	if !node.Applies(root) {
 		return false
 	}
 	changed := checkkit.ChangedFiles()
@@ -122,7 +122,7 @@ func anyLintable(root string, changed []string) bool {
 // tracked lintable file when the run is unscoped.
 func pathsToLint(root string, changed []string) []string {
 	if changed == nil {
-		return walkfs.FilesByExt(root, nodejs.LintableExts...)
+		return walkfs.FilesByExt(root, node.LintableExts...)
 	}
 	var out []string
 	for _, p := range changed {
@@ -141,7 +141,7 @@ func lintableStaged(root, p string) bool {
 
 // hasLintableExt reports whether p ends in one of the endings ESLint lints.
 func hasLintableExt(p string) bool {
-	for _, ext := range nodejs.LintableExts {
+	for _, ext := range node.LintableExts {
 		if strings.HasSuffix(p, ext) {
 			return true
 		}

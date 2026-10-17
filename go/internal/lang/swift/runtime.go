@@ -1,16 +1,37 @@
-package runtimes
+// Package swift is the Swift language module's home: how a Swift repo
+// proves a runtime and names its requirement tests.
+package swift
 
 import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 )
+
+// Technology is the name a Swift product's container must give its
+// language.
+const Technology = "Swift"
+
+// Ext is the Swift source file ending.
+const Ext = ".swift"
+
+// xcodeGenProject is the XcodeGen manifest that generates an Xcode project.
+const xcodeGenProject = "project.yml"
+
+// Runtime reads XcodeGen and Xcode projects for targets, and Swift product
+// sources for platform services.
+var Runtime = runtimes.Reader{
+	Manifests: map[string]func(*runtimes.Finder, string){xcodeGenProject: xcodegen, "project.pbxproj": pbxproj},
+	Sources:   map[string]func(*runtimes.Finder, string){Ext: platformServices},
+}
 
 // target is one XcodeGen or Xcode target while its manifest is read.
 type target struct {
 	name, kind         string
 	sources, templates []string
-	at                 Location
+	at                 runtimes.Location
 	typed              bool
 }
 
@@ -31,22 +52,22 @@ func targetKind(t string) string {
 
 // emit records a finished target as a product when its type ships a
 // runtime. A target without a type cannot be resolved.
-func (f *finder) emit(file string, t *target) {
+func emit(f *runtimes.Finder, file string, t *target) {
 	if !t.typed {
-		f.fail(t.at, "target %s has no type", t.name)
+		f.Fail(t.at, "target %s has no type", t.name)
 		return
 	}
 	if t.kind != "" {
-		f.Products = append(f.Products, Product{Kind: t.kind, Name: t.name, Technology: "Swift", Paths: f.sourceFolders(file, t), At: t.at})
+		f.Products = append(f.Products, runtimes.Product{Kind: t.kind, Name: t.name, Technology: Technology, Paths: sourceFolders(f, file, t), At: t.at})
 	}
 }
 
-func (f *finder) sourceFolders(file string, t *target) []string {
+func sourceFolders(f *runtimes.Finder, file string, t *target) []string {
 	var folders []string
 	for _, source := range t.sources {
-		folder := beside(file, source)
-		if !f.exists[folder] {
-			f.fail(t.at, "target %s names a source %s that does not exist", t.name, folder)
+		folder := runtimes.Beside(file, source)
+		if !f.Exists(folder) {
+			f.Fail(t.at, "target %s names a source %s that does not exist", t.name, folder)
 			continue
 		}
 		folders = append(folders, folder)
@@ -64,19 +85,19 @@ var (
 // xcodegen reads the targets of an XcodeGen project.yml: each target's
 // type, sources, and templates. A target takes the type and sources of
 // the templates it names.
-func (f *finder) xcodegen(file string) {
-	lines, ok := f.lines(file)
+func xcodegen(f *runtimes.Finder, file string) {
+	lines, ok := f.Lines(file)
 	if !ok {
 		return
 	}
-	r := &yamlTargets{f: f, file: file, templates: map[string]*target{}}
+	r := &yamlTargets{file: file, templates: map[string]*target{}}
 	for i, line := range lines {
 		r.line(line, i+1)
 	}
 	r.finish()
 	for _, t := range r.targets {
 		r.resolve(t)
-		f.emit(file, t)
+		emit(f, file, t)
 	}
 }
 
@@ -84,7 +105,6 @@ func (f *finder) xcodegen(file string) {
 // indentation: section keys at 0, target names at 2, fields at 4, and
 // list items at the first item's indent.
 type yamlTargets struct {
-	f          *finder
 	file       string
 	section    string
 	current    *target
@@ -166,7 +186,7 @@ func (r *yamlTargets) target(name string, n int) {
 		return
 	}
 	r.finish()
-	r.current = &target{name: name, at: Location{r.file, n}}
+	r.current = &target{name: name, at: runtimes.Location{Path: r.file, Line: n}}
 }
 
 func (r *yamlTargets) field(name, value string) {
@@ -226,28 +246,28 @@ func (r *yamlTargets) resolve(t *target) {
 
 // pbxproj reads the native targets of an Xcode project: a block holding
 // isa = PBXNativeTarget with its name and productType.
-func (f *finder) pbxproj(file string) {
-	if f.exists[path.Join(path.Dir(path.Dir(file)), "project.yml")] {
+func pbxproj(f *runtimes.Finder, file string) {
+	if f.Exists(path.Join(path.Dir(path.Dir(file)), xcodeGenProject)) {
 		return // XcodeGen generates this project; its project.yml is read instead
 	}
-	lines, ok := f.lines(file)
+	lines, ok := f.Lines(file)
 	if !ok {
 		return
 	}
 	var current *target
 	for i, line := range lines {
-		current = f.pbxLine(file, current, line, i+1)
+		current = pbxLine(f, file, current, line, i+1)
 	}
 }
 
-func (f *finder) pbxLine(file string, current *target, line string, n int) *target {
+func pbxLine(f *runtimes.Finder, file string, current *target, line string, n int) *target {
 	switch {
 	case strings.Contains(line, "isa = PBXNativeTarget;"):
-		return &target{at: Location{file, n}}
+		return &target{at: runtimes.Location{Path: file, Line: n}}
 	case current == nil:
 		return nil
 	case strings.TrimSpace(line) == "};":
-		f.emit(file, current)
+		emit(f, file, current)
 		return nil
 	}
 	pbxField(current, line, n)

@@ -133,8 +133,10 @@ fitness-runner/
     cmd/fitness/               runner binary
     cmd/fitness-check-name/    one main + README per check
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
-                               clonedetect, vitestconf, javascript, nodejs, lang, mdfilename,
-                               render, conf, sharedconf (embedded tool configs)
+                               clonedetect, mdfilename, render, conf, runtimes,
+                               sharedconf (embedded tool configs)
+    internal/lang/             module type, ignores/, langs/ (one file per language)
+    internal/lang/<language>/  each language module's own code
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)

@@ -33,9 +33,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/biome"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/biome"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -117,13 +117,13 @@ func preflight(root string, args []string) (bin string, res checkkit.Result, don
 	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
 		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
 	}
-	if !nodejs.Applies(root) {
+	if !node.Applies(root) {
 		return "", checkkit.Pass(0), true
 	}
 	if biome.Chosen(root) {
 		return "", formatWithBiome(root, args), true
 	}
-	bin, found := nodejs.FindTool(root, "prettier")
+	bin, found := node.FindTool(root, "prettier")
 	if !found {
 		return "", checkkit.Fail(0, notInstalled), true
 	}
@@ -186,7 +186,7 @@ var prettierToBiome = map[string][]string{
 // filesystem root, nearest first, the same walk that finds the binary.
 func nodeModulesDirs(root string) []string {
 	var dirs []string
-	for _, dir := range nodejs.Ancestors(root) {
+	for _, dir := range node.Ancestors(root) {
 		p := filepath.Join(dir, "node_modules")
 		if info, err := os.Stat(p); err == nil && info.IsDir() {
 			dirs = append(dirs, p)

@@ -25,9 +25,9 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/vitestconf"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
-	"github.com/may-journal/fitness-runner/go/internal/vitestconf"
 )
 
 // Error strings ported verbatim from the TS check's enUS.
@@ -56,7 +56,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	if !nodejs.Applies(root) {
+	if !node.Applies(root) {
 		return checkkit.Pass(0), nil
 	}
 	return runVitest(root), nil
@@ -72,7 +72,7 @@ func runVitest(root string) checkkit.Result {
 	if !vitestconf.HasFullThresholds(frRoot, "") {
 		return checkkit.Fail(1, fitnessRunnerThresholdsNot100)
 	}
-	bin, found := nodejs.FindTool(root, "vitest")
+	bin, found := node.FindTool(root, "vitest")
 	if !found {
 		return checkkit.Fail(1, missingVitestHint)
 	}

@@ -14,7 +14,7 @@ acceptances owned by exactly one Go, Swift, or vitest test
 -
 acceptances
 
-Source: `go/cmd/fitness-check-requirements/owners.go:131`
+Source: `go/cmd/fitness-check-requirements/owners.go:41`
 
 ## Requirements
 

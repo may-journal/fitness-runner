@@ -23,9 +23,13 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
+
+// name is the check's name, which language modules key their scans by.
+const name = "repeated-string-literals"
 
 // minLength: string literals shorter than this many runes are ignored as
 // noise (single chars, tiny tokens).
@@ -79,7 +83,7 @@ var moduleWords = map[string]bool{"from": true, "import": true, "require": true}
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "repeated-string-literals"},
+		Describe: checkkit.Describe{Name: name},
 		Run:      run,
 	})
 }
@@ -104,7 +108,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 // findSourceFiles returns sorted relative paths of every tracked source
 // file.
 func findSourceFiles(root string) []string {
-	return walkfs.FilesByExt(root, nodejs.SourceExts...)
+	return walkfs.FilesByExt(root, lang.ScanExts(langs.All, name)...)
 }
 
 // allowedValues returns the exact values allowed via .fitnessrc.json

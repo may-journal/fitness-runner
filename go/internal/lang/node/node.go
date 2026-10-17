@@ -1,7 +1,9 @@
-// Package nodejs holds what the Node checks share: when a repo counts as a
-// JavaScript project, where an installed tool's binary is, and the script
-// extension sets each check reads.
-package nodejs
+// Package node is the Node language module's home. It holds what the Node
+// checks share: when a repo counts as a JavaScript project, where an
+// installed tool's binary is, which files are scripts, and the script
+// extension sets each check reads. The packages in its folder hold the Node
+// tools' own logic: biome, javascript, sharedconf and vitestconf.
+package node
 
 import (
 	"os"
@@ -65,8 +67,8 @@ func executable(p string) bool {
 	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
 }
 
-// The extension sets below are named subsets of walkfs.ScriptExts, so every
-// check reads from one definition while keeping the files it has always read.
+// The extension sets below are named subsets of ScriptExts, so every check
+// reads from one definition while keeping the files it has always read.
 var (
 	// TypeScriptExts are the TypeScript source endings, without TSX.
 	TypeScriptExts = subset(".cts", ".mts", ".ts")
@@ -78,11 +80,11 @@ var (
 )
 
 // subset returns exts, panicking at start-up when one is not a script
-// extension, so a set can never drift from walkfs.ScriptExts.
+// extension, so a set can never drift from ScriptExts.
 func subset(exts ...string) []string {
 	for _, e := range exts {
-		if !slices.Contains(walkfs.ScriptExts, e) {
-			panic("nodejs: " + e + " is not in walkfs.ScriptExts")
+		if !slices.Contains(ScriptExts, e) {
+			panic("node: " + e + " is not in ScriptExts")
 		}
 	}
 	return exts
