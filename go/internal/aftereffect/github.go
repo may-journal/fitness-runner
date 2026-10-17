@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -99,6 +100,13 @@ func (g Client) api(args ...string) ([]byte, error) {
 // gh runs gh within the client's context, passing its stderr through, and
 // classifies a failure with GHErr.
 func (g Client) gh(args ...string) ([]byte, error) {
+	out, _, err := g.run(args...)
+	return out, err
+}
+
+// run is gh that also returns the run's stderr, for callers that classify
+// a failure further.
+func (g Client) run(args ...string) ([]byte, string, error) {
 	ctx := g.ctx
 	if ctx == nil {
 		ctx = context.Background()
@@ -107,9 +115,28 @@ func (g Client) gh(args ...string) ([]byte, error) {
 	cmd.Stderr = os.Stderr
 	o := checkkit.Exec(cmd)
 	if err := GHErr(ctx, o); err != nil {
-		return nil, err
+		return nil, o.Stderr, err
 	}
-	return []byte(o.Stdout), nil
+	return []byte(o.Stdout), o.Stderr, nil
+}
+
+// ErrIssueGone marks a GraphQL issue query that found no such issue in the
+// repository, as after a transfer to another repo.
+var ErrIssueGone = errors.New("the issue no longer exists in this repository")
+
+// goneText is the stderr gh prints when a GraphQL repository.issue lookup finds no
+// issue with that number.
+const goneText = "could not resolve to an issue with the number of"
+
+// issueQuery runs a GraphQL query on repository.issue, wrapping its error
+// with ErrIssueGone when gh says the issue is gone. Only stderr is read, so
+// comment text on stdout never counts.
+func (g Client) issueQuery(args ...string) ([]byte, error) {
+	out, stderr, err := g.run(args...)
+	if err != nil && strings.Contains(strings.ToLower(stderr), goneText) {
+		return nil, fmt.Errorf("%w: %w", ErrIssueGone, err)
+	}
+	return out, err
 }
 
 // ghEnvText is gh output that names its environment, not the request: no
@@ -250,7 +277,7 @@ func (g Client) Verdicts(n int) ([]Verdict, error) {
 	jq := `.data.repository.issue.comments.nodes[]
 		| select(.body | contains("fitness:plan-structure:"))
 		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized}`
-	out, err := g.gh("api", "graphql", "--paginate",
+	out, err := g.issueQuery("api", "graphql", "--paginate",
 		"-f", "query="+verdictsQuery, "-F", "owner="+owner, "-F", "name="+name,
 		"-F", "number="+strconv.Itoa(n), "--jq", jq)
 	if err != nil {
@@ -308,7 +335,7 @@ const closingPRFilter = `.data.repository.issue.timelineItems.nodes[0].closer as
 
 func (g Client) ClosingPR(n int) (Closer, error) {
 	owner, name, _ := strings.Cut(g.repo, "/")
-	out, err := g.gh("api", "graphql",
+	out, err := g.issueQuery("api", "graphql",
 		"-f", "query="+closingPRQuery, "-F", "owner="+owner, "-F", "name="+name, "-F", "n="+strconv.Itoa(n),
 		"--jq", closingPRFilter)
 	if err != nil {

@@ -135,7 +135,21 @@ func Test0013_6(t *testing.T) {
 	}
 }
 
-func Test0013_7(t *testing.T) {
+// readOnce fails unless branch-check fetched issue n exactly once.
+func readOnce(t *testing.T, rp replays, n string) {
+	t.Helper()
+	count := 0
+	for _, call := range rp.calls("gh") {
+		if strings.Contains(call, "issues/"+n) {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("linked Plan #%s fetched %d times: %q", n, count, rp.calls("gh"))
+	}
+}
+
+func Test0013_9(t *testing.T) {
 	t.Parallel()
 	repo := branchRepo(t, nil)
 	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
@@ -143,22 +157,22 @@ func Test0013_7(t *testing.T) {
 	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, brokenPlan, "Plan"))})
 	out, code := fitness(t, repo, rp.env, "branch-check")
 	sees(t, out, code, 1, "plan-check #11", "Background")
-	count := 0
-	for _, call := range rp.calls("gh") {
-		if strings.Contains(call, "issues/11") {
-			count++
-		}
-	}
-	if count != 1 {
-		t.Fatalf("linked Plan fetched %d times: %q", count, rp.calls("gh"))
-	}
+	readOnce(t, rp, "11")
+
+	fork, forkPR := forkBranch(t, "release")
+	git(t, fork, "update-ref", "-d", "refs/remotes/origin/main")
+	rp = standIn(t, map[string][]response{"gh": branchGitHub(forkPR, issue0014(t, 11, "An ordinary issue."), issue0014(t, 12, brokenPlan, "Plan"))})
+	out, code = fitness(t, fork, rp.env, "branch-check")
+	sees(t, out, code, 1, "plan-check #12", "Background")
+	readOnce(t, rp, "12")
 }
 
-func Test0013_8(t *testing.T) {
+func Test0013_10(t *testing.T) {
 	t.Parallel()
-	repo, pr := forkBranch(t, "release")
-	git(t, repo, "update-ref", "-d", "refs/remotes/origin/main")
-	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, "An ordinary issue."), issue0014(t, 12, brokenPlan, "Plan"))})
-	out, code := fitness(t, repo, rp.env, "branch-check")
-	sees(t, out, code, 1, "plan-check #12", "Background")
+	gone := response{Match: []string{"fitness:plan-structure:"}, Stderr: "gh: Could not resolve to an Issue with the number of " + planIssue + ".\n", Exit: 1}
+	out, code, rp := judgePlan(t, planBody("- [ ] Write the tests."), append([]response{gone}, planGitHub("")...))
+	sees(t, out, code, 0, "#"+planIssue+" no longer exists")
+	if rp.called("gh", "-X POST") {
+		t.Errorf("want nothing written to a moved Plan, got gh calls %q", rp.calls("gh"))
+	}
 }

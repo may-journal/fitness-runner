@@ -42,11 +42,11 @@ Source: `go/internal/aftereffect/verdict.go:14`
     - Given Developer has a manual workflow run
         - When plan-check runs
             - Then it judges every open Plan
-- 0013.7
-    - Given Developer has a malformed Plan linked in both the PR and the branch trailer
+- 0013.9
+    - Given Developer has a malformed Plan in both the PR and trailer, or from a fork whose PR base exists only upstream
         - When I run fitness branch-check
             - Then it reports the Plan body violation and reads the Plan once
-- 0013.8
-    - Given Developer has a fork whose trailer names a malformed Plan and whose PR base exists only upstream
-        - When I run fitness branch-check
-            - Then it reports that Plan's body violation
+- 0013.10
+    - Given Developer has a Plan moved to another repo before plan-check reaches it
+        - When plan-check judges it
+            - Then it notes the Plan is gone and exits 0
