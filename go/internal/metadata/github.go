@@ -3,6 +3,7 @@ package metadata
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 
@@ -72,16 +73,29 @@ func (c ghCommand) run(name string, ev ghEvent, gh aftereffect.Client, b blobChe
 	rep := newTargetReport(name, c.kind)
 	failed := false
 	for _, t := range targets {
-		errs := c.judge(t, gh, b)
-		rep.add(t.Number, errs)
-		failed = failed || len(errs) > 0
-		if err := c.react(gh, t, errs); err != nil {
+		bad, err := c.check(gh, b, rep, t)
+		failed = failed || bad
+		if err != nil {
 			rep.finish()
 			return ghFailure(fmt.Sprintf("%s #%d", name, t.Number), err)
 		}
 	}
 	rep.finish()
 	return c.exitCode(name, failed)
+}
+
+// check judges one target, reacts, and reports whether it failed. A target
+// that left the repository, such as an issue moved to another repo, is
+// noted and does not fail.
+func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport, t target) (bool, error) {
+	errs := c.judge(t, gh, b)
+	err := c.react(gh, t, errs)
+	if errors.Is(err, aftereffect.ErrIssueGone) {
+		rep.gone(t.Number)
+		return false, nil
+	}
+	rep.add(t.Number, errs)
+	return len(errs) > 0, err
 }
 
 // judge runs the declared checks on the target's body and its links.

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -107,9 +108,26 @@ func (g Client) gh(args ...string) ([]byte, error) {
 	cmd.Stderr = os.Stderr
 	o := checkkit.Exec(cmd)
 	if err := GHErr(ctx, o); err != nil {
-		return nil, err
+		return nil, issueGone(o, err)
 	}
 	return []byte(o.Stdout), nil
+}
+
+// ErrIssueGone marks a gh failure that says the issue no longer exists in
+// the repository, as after a transfer to another repo.
+var ErrIssueGone = errors.New("the issue no longer exists in this repository")
+
+// goneText is GitHub's GraphQL answer for an issue number the repository
+// does not hold.
+const goneText = "could not resolve to an issue with the number of"
+
+// issueGone wraps err with ErrIssueGone when the run's output says the
+// issue is gone.
+func issueGone(o checkkit.Outcome, err error) error {
+	if strings.Contains(strings.ToLower(o.Stdout+"\n"+o.Stderr), goneText) {
+		return fmt.Errorf("%w: %w", ErrIssueGone, err)
+	}
+	return err
 }
 
 // ghEnvText is gh output that names its environment, not the request: no
