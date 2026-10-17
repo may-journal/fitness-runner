@@ -98,7 +98,7 @@ Numbers on classes and relationships match the callout table.
 | 16  | Each name resolves to `fitness-check-<name>` beside the runner, then on PATH. | Filesystem convention replaces module resolution. |
 | 17  | The pool runs each outcome slot concurrently under a semaphore. | CPU-bounded parallelism. |
 | 18  | The wrapper invokes the binary with cwd = root and the context env. | Check encapsulates its own tool calls. |
-| 19  | The last non-empty stdout line parses as the Result; a crash, timeout or exit other than 0 or 1 becomes info. | Stray tool noise ahead of the JSON is tolerated. |
+| 19  | The last non-empty stdout line parses as the Result; a crash or exit other than 0 or 1 becomes info, and a timeout fails. | Stray tool noise ahead of the JSON is tolerated. |
 | 20  | Binaries read context from the environment via checkkit accessors. | No IPC; plain env vars work everywhere. |
 | 21  | Every check main delegates to `checkkit.Main`. | One protocol implementation across every check binary. |
 | 22  | The scaffolding runs the check it is given. | One entry point per binary. |

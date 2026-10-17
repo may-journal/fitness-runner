@@ -100,11 +100,11 @@ type outcome struct {
 	res    checkkit.Result
 	ms     int64
 	stderr []byte
-	// timedOut marks a budget kill; crashed carries the exit code of a check
-	// that printed no result, exit its protocol exit code, and startErr says
-	// why the check could not start.
+	// timedOut marks a budget kill; crashed says how a check that printed
+	// no result ended, exit is its protocol exit code, and startErr says why
+	// the check could not start.
 	timedOut bool
-	crashed  int
+	crashed  string
 	exit     int
 	startErr string
 }
@@ -261,12 +261,15 @@ func summarize(checks []resolved, outcomes []outcome) ([]render.Row, render.Tota
 	return rows, totals
 }
 
-// rowFor builds the table row for one outcome. A check that could not judge
-// (it did not start, ran out of time, printed no result, or exited other
-// than 0 or 1) becomes an info row, which never fails the run.
+// rowFor builds the table row for one outcome. A budget kill fails as timed
+// out. A check that could not judge (it did not start, printed no result, or
+// exited other than 0 or 1) becomes an info row, which never fails the run.
 func rowFor(c resolved, o outcome) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
-	if note, internal := internalNote(c, o); internal {
+	if o.timedOut {
+		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms,
+			Errors: []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}}
+	} else if note, internal := internalNote(o); internal {
 		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
 	}
 	row.Info = appendNote(row.Info, c.describeErr)
@@ -275,14 +278,12 @@ func rowFor(c resolved, o outcome) render.Row {
 
 // internalNote reports whether the check could not judge and says why. A
 // check that exits 3 with its own info needs no further note.
-func internalNote(c resolved, o outcome) (string, bool) {
+func internalNote(o outcome) (string, bool) {
 	switch {
 	case o.startErr != "":
 		return "check could not start: " + o.startErr, true
-	case o.timedOut:
-		return fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds())), true
-	case o.crashed != 0:
-		return fmt.Sprintf("check ended without a result (exit %d)", o.crashed), true
+	case o.crashed != "":
+		return "check ended without a result (" + o.crashed + ")", true
 	case judged(o.exit):
 		return "", false
 	}
@@ -567,16 +568,13 @@ func exitedWithin(done <-chan error, grace time.Duration) bool {
 }
 
 // decodeOutcome parses the check's protocol result from stdout and keeps its
-// exit code; a non-JSON tail marks the outcome crashed with the process exit
-// code (1 when the process exited 0).
+// exit code; a non-JSON tail marks the outcome crashed with how the process
+// ended, such as "exit status 2" or "signal: killed".
 func decodeOutcome(o outcome, cmd *exec.Cmd, stdout []byte) outcome {
 	o.exit = cmd.ProcessState.ExitCode()
 	var res checkkit.Result
 	if err := json.Unmarshal(checkkit.LastJSONLine(stdout), &res); err != nil {
-		o.crashed = o.exit
-		if o.crashed == 0 {
-			o.crashed = 1
-		}
+		o.crashed = cmd.ProcessState.String()
 		return o
 	}
 	o.res = res
