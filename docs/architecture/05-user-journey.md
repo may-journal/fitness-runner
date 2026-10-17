@@ -118,7 +118,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 5   | Resolve check list.                 | System  | Every built-in check; checks that do not apply pass clean.                            |
 | 6   | Passthrough args forwarded.         | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).      |
 | 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
-| 8   | Results table printed.              | Screen  | Pass/fail per check, totals, ANSI formatting.                                         |
+| 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |
 | 9   | Exit 0.                             | System  | All checks passed — deterministic, not LLM-judged.                                    |
 | 10  | Failures shown in table.            | Screen  | Exit 1; failing check's `errors` printed inline.                                      |
 | 11  | Fix and rerun.                      | Action  | Developer/agent edits source, returns to #3.                                          |

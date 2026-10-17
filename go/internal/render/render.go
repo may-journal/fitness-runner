@@ -24,6 +24,34 @@ type Row struct {
 	Ms           int64
 	// Errors renders as a full-width block when the row failed.
 	Errors []string
+	// Info renders as a full-width block and never fails the row.
+	Info []string
+}
+
+// IsInfo reports whether the row passed with info notes, such as a check
+// that could not run. It shows as info and never fails the run.
+func (r Row) IsInfo() bool { return r.Ok && len(r.Info) > 0 }
+
+// Totals is the tally the totals line reports. Info rows count apart from
+// passes and never as failures.
+type Totals struct {
+	Success, Failure, Info, Files int
+	Ms                            int64
+}
+
+// Add tallies one row.
+func (t *Totals) Add(r Row) {
+	switch {
+	case !r.Ok:
+		t.Failure++
+	case r.IsInfo():
+		t.Info++
+	default:
+		t.Success++
+	}
+	if r.FilesChecked >= 0 {
+		t.Files += r.FilesChecked
+	}
 }
 
 // Palette carries the escape codes; zero value = no color.
@@ -110,7 +138,10 @@ func Table(rows []Row, cols int, p Palette) string {
 	for _, r := range rows {
 		rowLine(&b, rowCells(r, widths, p), p)
 		if !r.Ok && len(r.Errors) > 0 {
-			errorBlock(&b, r, widths, p)
+			noteBlock(&b, r.Name, "Please fix these items:", "✖", r.Errors, widths, p, p.red)
+		}
+		if len(r.Info) > 0 {
+			noteBlock(&b, r.Name, "Info:", "ℹ", r.Info, widths, p, "")
 		}
 	}
 	border(&b, widths, "└", "┴", "┘", p)
@@ -148,6 +179,8 @@ func rowCells(r Row, widths []int, p Palette) []string {
 	status := p.green + pad("passed", widths[1]-2) + p.rst
 	if !r.Ok {
 		status = p.red + pad("failed", widths[1]-2) + p.rst
+	} else if r.IsInfo() {
+		status = pad("info", widths[1]-2)
 	}
 	return []string{
 		pad(truncate(r.Name, widths[0]-2), widths[0]-2),
@@ -157,37 +190,67 @@ func rowCells(r Row, widths []int, p Palette) []string {
 	}
 }
 
-// errorBlock writes a failed row's full-width word-wrapped error lines,
-// including the separating border above them.
-func errorBlock(b *strings.Builder, r Row, widths []int, p Palette) {
+// noteBlock writes a row's full-width word-wrapped notes under a heading,
+// one bulleted line each, including the separating border above them. An
+// empty color leaves the text uncolored.
+func noteBlock(b *strings.Builder, name, heading, bullet string, notes []string, widths []int, p Palette, color string) {
 	border(b, widths, "├", "┼", "┤", p)
 	spanW := widths[0] + widths[1] + widths[2] + widths[3] + 3 - 2
-	lines := []string{fmt.Sprintf("[%s] Please fix these items:", r.Name)}
-	for _, e := range r.Errors {
-		lines = append(lines, "  ✖ "+e)
+	reset := ""
+	if color != "" {
+		reset = p.rst
+	}
+	lines := []string{fmt.Sprintf("[%s] %s", name, heading)}
+	for _, n := range notes {
+		lines = append(lines, "  "+bullet+" "+n)
 	}
 	for _, logical := range lines {
 		for _, wrapped := range wrap(logical, spanW) {
 			b.WriteString(p.gray + "│" + p.off + " " +
-				p.red + pad(wrapped, spanW) + p.rst + " " + p.gray + "│" + p.off + "\n")
+				color + pad(wrapped, spanW) + reset + " " + p.gray + "│" + p.off + "\n")
 		}
 	}
 }
 
-// TotalLine formats the bold summary line.
-func TotalLine(success, failure, files int, ms int64, p Palette) string {
-	total := success + failure
-	line := fmt.Sprintf("✓ All %d checks passed · %d files scanned · %dms", total, files, ms)
+// TotalLine formats the bold summary line. Info rows never fail it.
+func TotalLine(t Totals, p Palette) string {
 	color := p.green
-	if failure > 0 {
+	if t.Failure > 0 {
 		color = p.red
-		line = fmt.Sprintf("✗ %d of %d checks passed, %d failed · %d files scanned · %dms",
-			success, total, failure, files, ms)
 	}
+	line := totalText(t)
 	if color == "" {
 		return line
 	}
 	return p.boldOn + color + line + p.rst + p.boldGreenOff
+}
+
+// totalText is the uncolored totals line: every check passed, or a count of
+// passes with the failures and info rows named.
+func totalText(t Totals) string {
+	total := t.Success + t.Failure + t.Info
+	tail := fmt.Sprintf(" · %d files scanned · %dms", t.Files, t.Ms)
+	if t.Failure == 0 && t.Info == 0 {
+		return fmt.Sprintf("✓ All %d checks passed", total) + tail
+	}
+	mark := "✓"
+	if t.Failure > 0 {
+		mark = "✗"
+	}
+	return fmt.Sprintf("%s %d of %d checks passed", mark, t.Success, total) + Counts(t) + tail
+}
+
+// Counts names the failures and info rows, such as ", 1 failed, 2 info",
+// leaving out a zero count.
+func Counts(t Totals) string {
+	s := ""
+	if t.Failure > 0 {
+		s += fmt.Sprintf(", %d failed", t.Failure)
+	}
+	if t.Info > 0 {
+		s += fmt.Sprintf(", %d info", t.Info)
+	}
+	return s
 }
 
 func border(b *strings.Builder, widths []int, left, mid, right string, p Palette) {

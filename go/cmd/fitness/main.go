@@ -90,6 +90,9 @@ type resolved struct {
 	name string
 	bin  string
 	desc checkkit.Describe
+	// describeErr says why --describe gave no metadata; the check still
+	// runs with defaults and its row carries this as info.
+	describeErr string
 }
 
 // outcome is one finished check, in dispatch order.
@@ -97,9 +100,13 @@ type outcome struct {
 	res    checkkit.Result
 	ms     int64
 	stderr []byte
-	// timedOut marks a budget kill; crashed carries a non-protocol exit.
+	// timedOut marks a budget kill; crashed says how a check that printed
+	// no result ended, exit is its protocol exit code, and startErr says why
+	// the check could not start.
 	timedOut bool
-	crashed  int
+	crashed  string
+	exit     int
+	startErr string
 }
 
 func main() {
@@ -194,10 +201,10 @@ func run(argv []string) int {
 	fmt.Fprintln(os.Stderr, "Running checks:")
 	outcomes := runPool(root, checks, passthrough, env)
 
-	rows, success, failure, files := summarize(checks, outcomes)
-	elapsed := time.Since(start).Milliseconds()
-	printSummary(rows, success, failure, files, elapsed)
-	return finish(rows, success, failure, files, elapsed)
+	rows, totals := summarize(checks, outcomes)
+	totals.Ms = time.Since(start).Milliseconds()
+	printSummary(rows, totals)
+	return finish(rows, totals)
 }
 
 // loadConfig loads the repo config.
@@ -243,49 +250,78 @@ func singleCheckArgs(root string, checks []resolved, passthrough []string, all b
 
 // summarize converts outcomes to table rows, streaming each check's stderr
 // in dispatch order, and tallies the totals-line inputs.
-func summarize(checks []resolved, outcomes []outcome) (rows []render.Row, success, failure, files int) {
-	rows = make([]render.Row, len(checks))
+func summarize(checks []resolved, outcomes []outcome) ([]render.Row, render.Totals) {
+	rows := make([]render.Row, len(checks))
+	var totals render.Totals
 	for i, c := range checks {
-		o := outcomes[i]
-		os.Stderr.Write(o.stderr)
-		row := rowFor(c, o)
-		if row.Ok {
-			success++
-		} else {
-			failure++
-		}
-		if row.FilesChecked >= 0 {
-			files += row.FilesChecked
-		}
-		rows[i] = row
+		os.Stderr.Write(outcomes[i].stderr)
+		rows[i] = rowFor(c, outcomes[i])
+		totals.Add(rows[i])
 	}
-	return rows, success, failure, files
+	return rows, totals
 }
 
-// rowFor builds the table row for one outcome, overriding the check's own
-// result for budget kills and non-protocol crashes.
+// rowFor builds the table row for one outcome. A budget kill fails as timed
+// out. A check that could not judge (it did not start, printed no result, or
+// exited other than 0 or 1) becomes an info row, which never fails the run.
 func rowFor(c resolved, o outcome) render.Row {
-	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors}
+	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
 	if o.timedOut {
-		row.Ok = false
-		row.FilesChecked = -1
-		row.Errors = []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}
-	} else if o.crashed != 0 {
-		row.Ok = false
-		row.FilesChecked = -1
-		row.Errors = []string{fmt.Sprintf("check failed (exit %d)", o.crashed)}
+		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms,
+			Errors: []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}}
+	} else if note, internal := internalNote(o); internal {
+		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
 	}
+	row.Info = appendNote(row.Info, c.describeErr)
 	return row
+}
+
+// internalNote reports whether the check could not judge and says why. A
+// printed result with ok false is a finding whatever the exit code, and a
+// check that exits 3 with its own info needs no further note.
+func internalNote(o outcome) (string, bool) {
+	switch {
+	case o.startErr != "":
+		return "check could not start: " + o.startErr, true
+	case o.crashed != "":
+		return "check ended without a result (" + o.crashed + ")", true
+	case judged(o.exit) || !o.res.Ok:
+		return "", false
+	}
+	return exitNote(o), true
+}
+
+// exitNote says why a check that printed a result exited other than 0 or 1;
+// exit 3 with the check's own info needs no further note.
+func exitNote(o outcome) string {
+	if o.exit == checkkit.ExitInternal && len(o.res.Info) > 0 {
+		return ""
+	}
+	return fmt.Sprintf("check could not judge (exit %d)", o.exit)
+}
+
+// judged reports whether a protocol exit code carries a verdict: 0 passed,
+// 1 found problems.
+func judged(exit int) bool {
+	return exit == 0 || exit == 1
+}
+
+// appendNote appends note to notes unless it is empty.
+func appendNote(notes []string, note string) []string {
+	if note == "" {
+		return notes
+	}
+	return append(append([]string{}, notes...), note)
 }
 
 // printSummary renders the table and total line — to stderr when any check
 // failed, so failure output stays together.
-func printSummary(rows []render.Row, success, failure, files int, elapsedMs int64) {
+func printSummary(rows []render.Row, totals render.Totals) {
 	p := render.NewPalette()
 	table := render.Table(rows, render.TermCols(), p)
-	total := render.TotalLine(success, failure, files, elapsedMs, p)
+	total := render.TotalLine(totals, p)
 	out := os.Stdout
-	if failure > 0 {
+	if totals.Failure > 0 {
 		out = os.Stderr
 	}
 	fmt.Fprintln(out, table)
@@ -353,7 +389,8 @@ func resolveList(names []string) ([]resolved, error) {
 func resolveName(name string, cli bool) (*resolved, error) {
 	bin, err := checkkit.Binary(name)
 	if err == nil {
-		return &resolved{name: name, bin: bin, desc: describe(bin)}, nil
+		desc, describeErr := describe(bin)
+		return &resolved{name: name, bin: bin, desc: desc, describeErr: describeErr}, nil
 	}
 	if cli {
 		return nil, nil
@@ -361,26 +398,28 @@ func resolveName(name string, cli bool) (*resolved, error) {
 	return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", name)
 }
 
-// describe asks a check binary for its metadata; zero value on any failure.
-// The handshake gets its own short budget and process-group kill — a local
-// script that ignores --describe and starts real work must not hang
+// describe asks a check binary for its metadata. On any failure it returns
+// the zero value, so the check runs with defaults, and an info note saying
+// why. The handshake gets its own short budget and process-group kill — a
+// local script that ignores --describe and starts real work must not hang
 // resolution.
-func describe(bin string) checkkit.Describe {
+func describe(bin string) (checkkit.Describe, string) {
+	const failed = "--describe gave no metadata, so the check ran with defaults: "
 	cmd := exec.Command(bin, "--describe")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	if err := cmd.Start(); err != nil {
-		return checkkit.Describe{}
+		return checkkit.Describe{}, failed + err.Error()
 	}
 	if !waitDescribe(cmd) {
-		return checkkit.Describe{}
+		return checkkit.Describe{}, failed + "it failed or ran past 2s"
 	}
 	var d checkkit.Describe
-	if json.Unmarshal(checkkit.LastJSONLine(stdout.Bytes()), &d) != nil {
-		return checkkit.Describe{}
+	if err := json.Unmarshal(checkkit.LastJSONLine(stdout.Bytes()), &d); err != nil {
+		return checkkit.Describe{}, failed + err.Error()
 	}
-	return d
+	return d, ""
 }
 
 // waitDescribe waits for the handshake to exit cleanly within its short
@@ -484,7 +523,7 @@ func runOne(root string, c resolved, passthrough, env []string) outcome {
 
 	start := time.Now()
 	if err := cmd.Start(); err != nil {
-		return outcome{res: checkkit.Fail(-1, err.Error()), ms: 0, crashed: 0}
+		return outcome{startErr: err.Error()}
 	}
 	timedOut := waitWithBudget(cmd, timeoutFor(c))
 	ms := time.Since(start).Milliseconds()
@@ -529,16 +568,14 @@ func exitedWithin(done <-chan error, grace time.Duration) bool {
 	}
 }
 
-// decodeOutcome parses the check's protocol result from stdout; a non-JSON
-// tail marks the outcome crashed with the process exit code (1 when the
-// process exited 0).
+// decodeOutcome parses the check's protocol result from stdout and keeps its
+// exit code; a non-JSON tail marks the outcome crashed with how the process
+// ended, such as "exit status 2" or "signal: killed".
 func decodeOutcome(o outcome, cmd *exec.Cmd, stdout []byte) outcome {
+	o.exit = cmd.ProcessState.ExitCode()
 	var res checkkit.Result
 	if err := json.Unmarshal(checkkit.LastJSONLine(stdout), &res); err != nil {
-		o.crashed = cmd.ProcessState.ExitCode()
-		if o.crashed == 0 {
-			o.crashed = 1
-		}
+		o.crashed = cmd.ProcessState.String()
 		return o
 	}
 	o.res = res

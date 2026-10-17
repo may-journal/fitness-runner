@@ -74,7 +74,7 @@ Numbers on nodes and arrows match the callout table.
 | 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy JS/TS config earns a migration hint.      | Config a compiled runner can parse anywhere.                |
 | 4   | Ordered check list: the CLI name, else the embedded `allChecks` list.                                   | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
-| 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass/fail summary.                             |
+| 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
 | 7   | One static binary per check name (`go/cmd/fitness-check-*`), discovered beside the runner then on PATH. | Plugin model at the artifact level; no registry.            |
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
 | 9   | Tool-wrapper checks exec the real peer tool from `node_modules/.bin` (walking up) then PATH, never npx. | Orchestration, not reimplementation.                        |

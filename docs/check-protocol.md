@@ -6,12 +6,18 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, enabled check names, and the commit message for the commit checks.
 
-- stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n}`
+- stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n, "info": [".."]}`, where `info` is optional
 - stderr — human display output (banners, tool passthrough)
-- exit code — 0 when the check ran and passed, 1 ran and failed, other values mean it crashed
+- exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
 - `--describe` — prints check metadata (name, timeout budget, context-inline arg, blob flag) so the runner needs no registry
 
 The runner executes checks in a bounded parallel pool with per-check timeouts. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table, and the run exits 1 when any check fails.
+
+## Info
+
+A check that cannot judge reports info. Causes include a panic, an error from `Run`, a start error, or output that is not JSON. An exit other than 0 or 1 counts too, while a timeout still fails. A failed `--describe` adds info, and the check runs with defaults.
+
+Info rows show as `info` with an "N info" total. They never change the exit code, locally or in GitHub Actions. A printed result with `ok: false` still fails, whatever the exit code.
 
 ## Blob input
 
