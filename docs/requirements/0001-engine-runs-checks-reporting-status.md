@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Every check runs and ends green or red within its time budget, so I always know whether my code meets the bar.
+Every check runs and ends green, red, or info within its time budget, so I always know whether my code meets the bar.
 
 ## Measurement
 
@@ -27,26 +27,26 @@ Source: `go/cmd/fitness/ci.go:22`
         - When fitness runs
             - Then it reports red with that check's errors and exits 1
 - 0001.3
-    - Given Developer has a check that exits without a verdict
+    - Given Developer has a check that panics, crashes, is killed, exits with an unexpected code, cannot start, or fails its describe call
         - When fitness runs
-            - Then it reports red and exits 1
+            - Then that check shows as info naming why, and the exit code is set by the other checks
 - 0001.4
-    - Given Developer has a check that runs past its time budget
+    - Given Developer has a check that runs past its time budget, or ignores the stop signal until its grace period runs out
         - When fitness runs
-            - Then it is stopped and reported red as timed out
+            - Then it and any child process it started are stopped, or killed if it ignores the stop, and reported red as timed out
 - 0001.5
     - Given Developer has a new check binary
         - When the runner lists its catalog
             - Then the new check is in it, so every repo runs it
-- 0001.7
-    - Given Developer has a hung check that started a child process
-        - When its time budget runs out
-            - Then the child process is stopped too
 - 0001.8
     - Given Developer has a repo that sets timeoutMs in its fitness config
         - When the runner budgets a check that declares none
             - Then the configured budget replaces the default
-- 0001.9
-    - Given Developer has a hung check that ignores the stop signal
-        - When its time budget and grace period run out
-            - Then it is killed and reported red as timed out
+- 0001.11
+    - Given Developer has one real problem and a check that cannot run, such as `local-branch` with `gh` blocked
+        - When fitness runs the full suite
+            - Then the real problem fails, the other check shows as info, the run exits 1, and Actions annotates an error and a notice
+- 0001.12
+    - Given Developer has the same repo with the real problem fixed
+        - When fitness runs
+            - Then the check that cannot run shows as info and the run exits 0
