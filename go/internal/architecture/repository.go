@@ -40,14 +40,17 @@ func (r repository) addFolders(file string) {
 }
 
 // candidate reports whether text names a repository path: no spaces or
-// scheme, and either a slash after a first segment that is a tracked
-// top-level folder, or, when bare names count, a tracked root-level
-// source. Other text, such as a path in a consumer's install folder or an
-// untracked file name, is prose.
+// scheme, and either . for the repo root, a slash after a first segment
+// that is a tracked top-level folder, or, when bare names count, a
+// tracked root-level source. Other text, such as a path in a consumer's
+// install folder or an untracked file name, is prose.
 func (r repository) candidate(text string, bare bool) (string, bool) {
 	text = strings.Trim(text, "()[]{},;:'\"")
-	if strings.ContainsAny(text, " \t") || strings.Contains(text, "://") {
+	if prose(text) {
 		return "", false
+	}
+	if text == "." {
+		return text, true
 	}
 	if !strings.Contains(text, "/") {
 		return text, bare && r.rootSource(text)
@@ -56,16 +59,22 @@ func (r repository) candidate(text string, bare bool) (string, bool) {
 	return path.Clean(text), r.top[first]
 }
 
+// prose reports text no path can be: it holds spaces or a scheme.
+func prose(text string) bool {
+	return strings.ContainsAny(text, " \t") || strings.Contains(text, "://")
+}
+
 // rootSource reports a tracked root-level source file named bare.
 func (r repository) rootSource(name string) bool {
 	return sourceFile(name) && r.files[name]
 }
 
-// exists reports a tracked file or folder; a pattern such as
-// go/cmd/fitness-check-* exists when it matches any of them.
+// exists reports a tracked file or folder, the root . included; a
+// pattern such as go/cmd/fitness-check-* exists when it matches any of
+// them.
 func (r repository) exists(p string) bool {
 	if !strings.Contains(p, "*") {
-		return r.files[p] || r.folder[p]
+		return p == "." || r.files[p] || r.folder[p]
 	}
 	return anyCovered(p, r.folder) || anyCovered(p, r.files)
 }

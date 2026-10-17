@@ -1,3 +1,5 @@
+// cspell:ignore mvnw gradlew
+
 package requirements
 
 import (
@@ -62,6 +64,10 @@ func Test0021_11(t *testing.T) {
 		"go.sum":               "example.com/" + cspellBinaryOther + " v1.0.0 h1:abc=\n",
 		"App/Package.resolved": `{"identity":"` + cspellBinaryWord + `"}` + "\n",
 		"lib/gradle.lockfile":  "com.example:" + cspellTypo + ":1.0=compileClasspath\n",
+		"mvnw":                 "url=" + cspellTypo + "\n",
+		"app/gradlew.bat":      "set " + cspellRepoWord + "=1\n",
+		".mvn/wrapper/MavenWrapperDownloader.java": "class Downloader { String " + cspellRepoWord + "; }\n",
+		"gradle/wrapper/gradle-wrapper.properties": "distributionUrl=" + cspellBodyTypo + "\n",
 	})
 	write(t, repo, map[string]string{"untracked.md": "the " + cspellRepoWord + " fox\n"})
 	out, code := fitness(t, repo, nil, "cspell")

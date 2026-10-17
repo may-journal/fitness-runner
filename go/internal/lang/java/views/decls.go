@@ -68,6 +68,9 @@ type reader struct {
 	size   int
 	tokens []token
 	lines  codemodel.LineIndex
+	// marks, when set, records the annotations and modifiers of each type
+	// and method read.
+	marks map[*codemodel.Decl]mark
 }
 
 func newReader(file, src string) *reader {
@@ -209,6 +212,7 @@ func (r *reader) container(start, j int, owner string, public bool) int {
 	h := r.heritage(k)
 	close := r.close(h.open)
 	d := r.add(r.Word(n), owner, typeKinds[keyword], start, close)
+	r.mark(d, start, j)
 	d.Supers, d.Implements, d.Open, d.Body = h.supers, h.implements, r.Line(h.open), r.Pos(h.open)
 	d.Exported = public && owner == ""
 	r.body(body{d, components}, keyword, h.open, close)

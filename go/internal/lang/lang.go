@@ -12,6 +12,7 @@ import (
 	"embed"
 	"io/fs"
 	"path"
+	"regexp"
 	"slices"
 	"strings"
 	"sync"
@@ -33,6 +34,9 @@ type Module struct {
 	// Lockfiles are the file names its package managers write on install,
 	// each a name or a path.Match pattern for one.
 	Lockfiles []string
+	// Wrappers are the names of the files its build tools' wrappers write,
+	// and a repo commits as written, to pin the tool's version.
+	Wrappers []string
 	// BuildOutput, when set, lists the tracked files in a repo that are
 	// build output the language's projects write, which git must not track.
 	BuildOutput func(root string) []string
@@ -92,6 +96,29 @@ type Tests struct {
 	// Numbers, when set, lists the requirement numbers a test file's name
 	// carries, or none for a file not named for requirements.
 	Numbers func(file string) []string
+}
+
+// TestPrefix is how a module whose test names carry IDs names them: the
+// prefix, then the acceptance ID with _ for its dot, so Test0001_1 or
+// test0001_1 owns 0001.1.
+type TestPrefix string
+
+// prefixedID reads the ID after a test name's prefix: 0001_1 is 0001.1.
+var prefixedID = regexp.MustCompile(`^(\d{4})_([1-9]\d*)$`)
+
+// Name is the test name that owns id.
+func (p TestPrefix) Name(id string) string {
+	return string(p) + strings.Replace(id, ".", "_", 1)
+}
+
+// ID returns the acceptance ID a test name carries, or "".
+func (p TestPrefix) ID(name string) string {
+	rest, ok := strings.CutPrefix(name, string(p))
+	m := prefixedID.FindStringSubmatch(rest)
+	if !ok || m == nil {
+		return ""
+	}
+	return m[1] + "." + m[2]
 }
 
 // TestFileNumbers lists the requirement numbers a test file's name
@@ -313,6 +340,20 @@ func IsLockfile(modules []Module) func(file string) bool {
 			matched, err := path.Match(pattern, base)
 			return err == nil && matched
 		})
+	}
+}
+
+// IsToolWritten returns a test, built once, of whether a file is one a
+// tool writes and a repo commits as written: a lockfile, or a build
+// wrapper file any module names. Its words and repeats are the tool's.
+func IsToolWritten(modules []Module) func(file string) bool {
+	lockfile := IsLockfile(modules)
+	var wrappers []string
+	for _, m := range modules {
+		wrappers = append(wrappers, m.Wrappers...)
+	}
+	return func(file string) bool {
+		return lockfile(file) || slices.Contains(wrappers, path.Base(file))
 	}
 }
 

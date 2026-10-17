@@ -21,7 +21,7 @@ Source: `go/cmd/fitness-check-jscpd/main.go:43`
 - 0032.1
     - Given Developer has two files sharing a block past 1% of all lines
         - When `jscpd` runs
-            - Then it fails naming the duplicate share and the 1% threshold
+            - Then it fails naming the share, the threshold, and each file holding duplicates
 - 0032.2
     - Given Developer has two files sharing a block under 5 lines
         - When `jscpd` runs
@@ -35,9 +35,9 @@ Source: `go/cmd/fitness-check-jscpd/main.go:43`
         - When `jscpd` runs
             - Then it fails, since every tracked text file is compared
 - 0032.11
-    - Given Developer has copied lockfiles, some a language writes and some marked `linguist-generated`
+    - Given Developer has copied lockfiles and build wrapper files, some marked `linguist-generated`
         - When `jscpd` runs
-            - Then it passes, since both are left out
+            - Then it passes, since all are left out
 - 0032.6
     - Given Developer has binary files sharing a block
         - When `jscpd` runs

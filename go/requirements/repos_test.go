@@ -118,6 +118,25 @@ func planBody(task string) string {
 	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
 }
 
+// junitRepo is a Maven project whose JUnit test test0001_1 owns 0001.1.
+func junitRepo() map[string]string {
+	return map[string]string{
+		"pom.xml":                                "<project/>\n",
+		"src/main/java/Adder.java":               "/** Adds numbers. */\nclass Adder {\n  static int add(int a, int b) {\n    return a + b;\n  }\n}\n",
+		"src/test/java/AdderTest.java":           junitFile("AdderTest", "test0001_1"),
+		"docs/requirements/0001-adds-numbers.md": docWith("Source: `src/main/java/Adder.java:3`", acceptances("0001.1")),
+	}
+}
+
+// junitFile is a JUnit test class declaring one empty test per name.
+func junitFile(class string, names ...string) string {
+	body := "import org.junit.jupiter.api.Test;\n\nclass " + class + " {\n"
+	for _, n := range names {
+		body += "  @Test\n  void " + n + "() {}\n"
+	}
+	return body + "}\n"
+}
+
 // scriptRepo is a TypeScript project whose vitest test titled "0001.1 …"
 // owns 0001.1.
 func scriptRepo() map[string]string {

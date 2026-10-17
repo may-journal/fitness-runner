@@ -5,8 +5,8 @@
 // Scoped mode (a changed-file list in the environment) checks the changed
 // files that still exist on disk; with none left it passes without scanning.
 // With no scope it checks every tracked file (internal/walkfs). Files the
-// repo's .gitattributes marks linguist-generated, and package managers'
-// lockfiles, are left out. Binary files are counted but never spelled. No path is ever ignored: a resolved
+// repo's .gitattributes marks linguist-generated, package managers'
+// lockfiles, and build wrapper files are left out. Binary files are counted but never spelled. No path is ever ignored: a resolved
 // cspell.json that sets ignorePaths fails the check instead.
 //
 // cspell.json resolves through internal/sharedconf: the repo's own file
@@ -75,18 +75,19 @@ func walkFiles(root string) checkkit.Result {
 }
 
 // targets lists the files to spell-check: the changed files, or every
-// tracked file when the run is unscoped, minus lockfiles and those
-// .gitattributes marks linguist-generated.
+// tracked file when the run is unscoped, minus lockfiles, build wrapper
+// scripts, and those .gitattributes marks linguist-generated.
 func targets(root string) []string {
 	files, scanned := stagedPaths(root)
 	if !scanned {
 		files = walkfs.FilesByExt(root, "")
 	}
-	// A lockfile's words are package names and hashes no one can fix.
-	lockfile := lang.IsLockfile(langs.All)
+	// A lockfile's or wrapper's words are package names, hashes and tool
+	// names no one can fix.
+	toolWritten := lang.IsToolWritten(langs.All)
 	var kept []string
 	for _, f := range files {
-		if !lockfile(f) {
+		if !toolWritten(f) {
 			kept = append(kept, f)
 		}
 	}

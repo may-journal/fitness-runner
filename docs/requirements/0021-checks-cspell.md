@@ -31,7 +31,7 @@ Source: `go/cmd/fitness-check-cspell/main.go:68`
         - When cspell runs
             - Then it fails asking me to remove `ignorePaths`
 - 0021.11
-    - Given Developer has unknown words only in binary, `linguist-generated`, lockfile, or untracked files
+    - Given Developer has unknown words only in binary, `linguist-generated`, lockfile, build wrapper, or untracked files
         - When cspell runs
             - Then it passes
 - 0021.7

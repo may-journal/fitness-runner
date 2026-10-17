@@ -4,10 +4,11 @@
 // rolling-hash detector with jscpd's min-lines/min-tokens semantics and
 // the jscpd:ignore-start/-end escape hatch. Scan scope: every tracked file
 // (internal/walkfs), minus files .gitattributes marks linguist-generated,
-// lockfiles (internal/lang), and binary files, which have no lines to compare, and doc templates
+// lockfiles and build wrapper files (internal/lang), and binary files, which have no lines to compare, and doc templates
 // (internal/mdtemplate), which docs must repeat by design. Verdict and
-// error format match the TS check; exact percentage parity with jscpd's
-// per-language tokenizers is explicitly not the goal.
+// error format match the TS check, then each file with duplicated lines
+// is named; exact percentage parity with jscpd's per-language tokenizers
+// is explicitly not the goal.
 package main
 
 import (
@@ -43,22 +44,26 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	files := lexTargets(root, scanTargets(root))
 	stats := clonedetect.Detect(files, clonedetect.Options{MinLines: minLines, MinTokens: minTokens})
 	if pct := stats.Percentage(); pct > threshold {
-		return checkkit.Fail(len(files), fmt.Sprintf(
+		errs := []string{fmt.Sprintf(
 			"ERROR: jscpd found too many duplicates (%.1f%%) over threshold (%.1f%%)",
-			pct, threshold)), nil
+			pct, threshold)}
+		for _, f := range stats.Files {
+			errs = append(errs, fmt.Sprintf("%s: %d duplicated lines", f.Path, f.Lines))
+		}
+		return checkkit.Fail(len(files), errs...), nil
 	}
 	return checkkit.Pass(len(files)), nil
 }
 
 // scanTargets lists every tracked file under root (the empty suffix
 // matches all), minus those .gitattributes marks linguist-generated, the
-// lockfiles package managers write, and the templates doc-template makes
-// docs repeat.
+// lockfiles and build wrapper files tools write, and the templates
+// doc-template makes docs repeat.
 func scanTargets(root string) []string {
 	var out []string
-	lockfile := lang.IsLockfile(langs.All)
+	toolWritten := lang.IsToolWritten(langs.All)
 	for _, p := range walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, "")) {
-		if !mdtemplate.IsTemplate(p) && !lockfile(p) {
+		if !mdtemplate.IsTemplate(p) && !toolWritten(p) {
 			out = append(out, p)
 		}
 	}

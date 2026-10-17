@@ -17,7 +17,10 @@ import (
 // test is an XCTest method named test… with no parameters, in a class
 // that inherits XCTestCase, or any function marked @Test. Comments and
 // string literals are skipped, so a name inside them is no test.
-var Tests = lang.Tests{Scan: scan, Name: func(id string) string { return "test" + strings.Replace(id, ".", "_", 1) }}
+var Tests = lang.Tests{Scan: scan, Name: naming.Name}
+
+// naming names Swift requirement tests: test0001_1 owns 0001.1.
+const naming = lang.TestPrefix("test")
 
 // scan reads every Swift file's tests; a repo with any Swift file is
 // written in Swift.
@@ -41,9 +44,6 @@ var (
 	xcTestCase = regexp.MustCompile(`\bXCTestCase\b`)
 	// swiftTestMark is Swift Testing's @Test attribute.
 	swiftTestMark = regexp.MustCompile(`@(?:Testing\.)?Test\b`)
-	// swiftTestID matches a Swift test named for an acceptance: test0001_1 is
-	// 0001.1.
-	swiftTestID = regexp.MustCompile(`^test(\d{4})_([1-9]\d*)$`)
 )
 
 // scanSwift reads every Swift file and returns its tests: XCTest methods named
@@ -76,7 +76,7 @@ func swiftFileTests(file, code string) []lang.Test {
 		name := code[m[2]:m[3]]
 		if isSwiftTest(code, m, bodies[owner] && strings.HasPrefix(name, "test")) {
 			loc := fmt.Sprintf("%s:%d", file, strings.Count(code[:m[0]], "\n")+1)
-			tests = append(tests, lang.Test{Name: name, ID: swiftIDOf(name), Loc: loc, File: file})
+			tests = append(tests, lang.Test{Name: name, ID: naming.ID(name), Loc: loc, File: file})
 		}
 	}
 	return tests
@@ -127,15 +127,6 @@ func braces(stack []int, c byte, i int) []int {
 		return stack[:len(stack)-1]
 	}
 	return stack
-}
-
-// swiftIDOf returns the acceptance ID a Swift test name carries, or "".
-func swiftIDOf(name string) string {
-	m := swiftTestID.FindStringSubmatch(name)
-	if m == nil {
-		return ""
-	}
-	return m[1] + "." + m[2]
 }
 
 // swiftTestFiles lists the files that declare at least one Swift test.

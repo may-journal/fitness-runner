@@ -1,3 +1,5 @@
+// cspell:ignore mvnw gradlew
+
 package requirements
 
 import (
@@ -40,7 +42,10 @@ func jscpdRun(t *testing.T, files map[string]string) (string, int) {
 func Test0032_1(t *testing.T) {
 	t.Parallel()
 	out, code := jscpdRun(t, jscpdPair("src/a.js", "src/b.js", jscpdClone))
-	sees(t, out, code, 1, "ERROR: jscpd found too many duplicates (7.4%) over threshold (1.0%)")
+	sees(t, out, code, 1, "ERROR: jscpd found too many duplicates (7.4%) over threshold (1.0%)", "src/b.js: 6 duplicated lines")
+	if strings.Contains(read(out), "src/a.js:") {
+		t.Errorf("the first copy holds no duplicated line, so only src/b.js is named:\n%s", out)
+	}
 }
 
 func Test0032_2(t *testing.T) {
@@ -69,6 +74,9 @@ func Test0032_11(t *testing.T) {
 	files := jscpdPair("deps/a.lock", "deps/b.lock", jscpdClone)
 	files[".gitattributes"] = "*.lock linguist-generated\n"
 	for name, body := range jscpdPair("app/gradle.lockfile", "lib/gradle.lockfile", jscpdClone) {
+		files[name] = body
+	}
+	for name, body := range jscpdPair("mvnw", "app/gradlew.bat", jscpdClone) {
 		files[name] = body
 	}
 	out, code := jscpdRun(t, files)

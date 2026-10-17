@@ -31,7 +31,7 @@ Source: `go/internal/lang/java/version/version.go:75`
         - When fitness runs java-version
             - Then it fails naming the file and the release it needs
 - 0080.4
-    - Given Developer has a Maven release set through a property
+    - Given Developer has a Maven release set through a property, in the pom or a parent it inherits
         - When fitness runs java-version
             - Then it judges the property's release
 - 0080.5
@@ -46,3 +46,7 @@ Source: `go/internal/lang/java/version/version.go:75`
     - Given Developer has a repo with no Maven or Gradle build
         - When fitness runs java-version
             - Then it passes with zero files
+- 0080.8
+    - Given Developer has a Gradle toolchain no installed JDK matches, and no resolver
+        - When fitness runs java-version
+            - Then it fails naming the JDK to install

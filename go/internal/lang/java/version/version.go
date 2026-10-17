@@ -1,13 +1,17 @@
 // Package version checks a Java repo pins the JDK it builds with, and that
-// the running JDK satisfies each pin, for the java-version check.
+// the machine's JDKs satisfy each pin, for the java-version check.
 //
 // A pin is a version file at the repo root, the ones setup-java reads
 // (.java-version, .sdkmanrc and .tool-versions), or a build's own target:
 // Maven's maven.compiler.release or compiler release, one ${property} deep,
-// or a Gradle toolchain's languageVersion. The running JDK satisfies a pin
-// when its feature release is at least the pinned one, since a newer JDK
-// builds for an older release. The running JDK is JAVA_HOME's, as the
-// build tools pick it, else the one on PATH.
+// or a Gradle toolchain's languageVersion. A pom that names no release
+// takes the one its parents outside the repo name, read from the local
+// Maven repository, with the properties of the pom and its parents in the
+// repo first. The running JDK satisfies a pin when its feature release is
+// at least the pinned one, since a newer JDK builds for an older release.
+// The running JDK is JAVA_HOME's, as the build tools pick it, else the
+// one on PATH. A Gradle toolchain asks for its exact release, which Gradle
+// must find installed or download, so Gradle judges it.
 package version
 
 // cspell:ignore sdkmanrc
@@ -30,9 +34,19 @@ const noPin = "no JDK version is pinned; add a .java-version file naming the rel
 	"or set <maven.compiler.release>21</maven.compiler.release> in pom.xml, " +
 	"or java { toolchain { languageVersion = JavaLanguageVersion.of(21) } } in the Gradle build"
 
-// pin is one place the repo names the JDK release it needs.
+// pin is one place the repo names the JDK release it needs. Toolchain is
+// the Gradle build root that must find or download exactly this release,
+// or the zero Project for a pin any newer JDK satisfies.
 type pin struct {
 	file, version string
+	toolchain     java.Project
+}
+
+// readers read the pins a build file names, by the build's tool, and what
+// stopped them reading one the build inherits.
+var readers = map[*java.Build]func(root, file string, roots []java.Project) ([]pin, string){
+	java.Maven:  mavenPins,
+	java.Gradle: gradlePins,
 }
 
 var (
@@ -40,27 +54,44 @@ var (
 	mavenReleaseRe = regexp.MustCompile(`<(maven\.compiler\.release|release)>\s*([^<\s]+)\s*</`)
 	// propertyRe reads a ${name} reference.
 	propertyRe = regexp.MustCompile(`^\$\{([\w.-]+)\}$`)
-	// toolchainRe reads a Gradle toolchain's language version.
-	toolchainRe = regexp.MustCompile(`JavaLanguageVersion\.of\(\s*["']?(\d+)`)
 )
 
-// Run checks the pins of the repo at root against the running JDK.
+// Run checks the pins of the repo at root against the machine's JDKs.
 func Run(root string, _ []string) (checkkit.Result, error) {
 	if !java.Applies(root) {
 		return checkkit.Pass(0), nil
 	}
-	pins := pins(root)
+	pins, unread := pins(root)
 	if len(pins) == 0 {
-		return checkkit.Fail(0, noPin), nil
+		return checkkit.Fail(0, append(unread, noPin)...), nil
 	}
-	running, ok := java.JDK()
-	if !ok {
-		return checkkit.Fail(len(pins), java.NoJDK), nil
+	errors, err := pinErrors(root, pins)
+	if err != nil {
+		return checkkit.Result{}, err
 	}
-	if errors := judge(running, pins); len(errors) > 0 {
+	if len(errors) > 0 {
 		return checkkit.Fail(len(pins), errors...), nil
 	}
 	return checkkit.Pass(len(pins)), nil
+}
+
+// pinErrors names each pin the machine's JDKs do not satisfy: a toolchain
+// that must match an installed JDK, else the running JDK. With no running
+// JDK, it asks for one.
+func pinErrors(root string, pins []pin) ([]string, error) {
+	running, ok := java.JDK()
+	if !ok {
+		return []string{java.NoJDK}, nil
+	}
+	var newer []pin
+	for _, p := range pins {
+		if p.toolchain == (java.Project{}) {
+			newer = append(newer, p)
+		}
+	}
+	have, _ := java.Major(running)
+	errors, err := toolchainErrors(root, have, pins)
+	return append(judge(running, newer), errors...), err
 }
 
 // judge names each pin the running JDK does not satisfy.
@@ -79,29 +110,28 @@ func judge(running string, pins []pin) []string {
 	return errors
 }
 
-// pins lists the repo's version files, then each build's own pins.
-func pins(root string) []pin {
+// pins lists the repo's version files, then each build's own pins, and
+// what kept a build's inherited release unread.
+func pins(root string) ([]pin, []string) {
 	out := versionFiles(root)
+	roots := java.Roots(root)
+	var unread []string
 	for _, p := range java.Projects(root) {
 		for _, name := range p.Build.Files {
-			out = appendNew(out, filePins(root, path.Join(p.Dir, name))...)
+			found, why := readers[p.Build](root, path.Join(p.Dir, name), roots)
+			out = appendNew(out, found...)
+			if why != "" {
+				unread = append(unread, why)
+			}
 		}
 	}
-	return out
+	return out, unread
 }
 
-// filePins reads the pins one build file names, or none when it is
-// missing.
-func filePins(root, file string) []pin {
+// read returns a tracked file's text, or false when it is missing.
+func read(root, file string) (string, bool) {
 	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
-	if err != nil {
-		return nil
-	}
-	var out []pin
-	for _, v := range buildPins(string(body)) {
-		out = append(out, pin{file, v})
-	}
-	return out
+	return string(body), err == nil
 }
 
 // appendNew appends each pin out does not hold yet.
@@ -137,7 +167,7 @@ func versionFiles(root string) []pin {
 	}
 	for _, r := range readers {
 		if v := readVersionFile(filepath.Join(root, r.name), r.read); v != "" {
-			out = append(out, pin{r.name, v})
+			out = append(out, pin{file: r.name, version: v})
 		}
 	}
 	return out
@@ -169,28 +199,28 @@ func contentLines(body string) []string {
 	return out
 }
 
-// buildPins reads the releases a build file names, resolving a Maven
-// ${property} from the same file.
-func buildPins(body string) []string {
+// releases reads the releases body names, resolving each ${property}
+// from the first of poms that sets it.
+func releases(body string, poms []string) []string {
 	var out []string
 	for _, m := range mavenReleaseRe.FindAllStringSubmatch(body, -1) {
-		out = append(out, resolve(body, m[2]))
-	}
-	for _, m := range toolchainRe.FindAllStringSubmatch(body, -1) {
-		out = append(out, m[1])
+		out = append(out, resolve(m[2], poms))
 	}
 	return out
 }
 
-// resolve replaces a ${name} value with the file's <name> property.
-func resolve(body, value string) string {
+// resolve replaces a ${name} value with the <name> property of the first
+// of poms that sets it.
+func resolve(value string, poms []string) string {
 	m := propertyRe.FindStringSubmatch(value)
 	if m == nil {
 		return value
 	}
-	prop := regexp.MustCompile(`<` + regexp.QuoteMeta(m[1]) + `>\s*([^<\s]+)\s*</`).FindStringSubmatch(body)
-	if prop == nil {
-		return value
+	prop := regexp.MustCompile(`<` + regexp.QuoteMeta(m[1]) + `>\s*([^<\s]+)\s*</`)
+	for _, body := range poms {
+		if found := prop.FindStringSubmatch(body); found != nil {
+			return found[1]
+		}
 	}
-	return prop[1]
+	return value
 }

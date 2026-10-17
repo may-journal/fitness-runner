@@ -42,3 +42,7 @@ Source: `go/internal/lang/java/spotless/spotless.go:56`
     - Given Developer has a repo with no Maven or Gradle build
         - When fitness runs spotless
             - Then it passes with zero files
+- 0078.7
+    - Given Developer has a Gradle build that fails before the plugin runs
+        - When fitness runs spotless
+            - Then it shows each cause line Gradle gives
