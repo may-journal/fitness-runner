@@ -109,7 +109,7 @@ func applying(checks []resolved, outcomes []outcome) ([]resolved, []outcome, []s
 
 // inertOutcome reports a clean pass that judged no file.
 func inertOutcome(o outcome) bool {
-	return o.res.Ok && o.res.FilesChecked == 0 && len(o.res.Info) == 0 && !o.timedOut && o.crashed == 0
+	return o.res.Ok && o.res.FilesChecked == 0 && len(o.res.Info) == 0 && !o.timedOut && o.crashed == ""
 }
 
 // listSkipped names the skipped checks and why, when there are any.
