@@ -25,9 +25,7 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -307,17 +305,8 @@ func execPrettier(bin, root string, env, argv []string) (exitCode int, output st
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	cmd.Env = env
-	var combined bytes.Buffer
-	cmd.Stdout = &combined
-	cmd.Stderr = &combined
-	if err := cmd.Run(); err != nil {
-		exitCode = 1
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() > 0 {
-			exitCode = exitErr.ExitCode()
-		}
-	}
-	return exitCode, combined.String()
+	o := checkkit.ExecCombined(cmd)
+	return o.Code, o.Stdout
 }
 
 // ansiCodes matches terminal color codes. Prettier colors its output in CI,

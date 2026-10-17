@@ -27,16 +27,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	errs, fileCount, err := walkfs.ScanFiles(root, nodejs.SourceExts, func(file, content string) []string {
-		return scanContent(file, content)
-	})
-	if err != nil {
-		return checkkit.Result{}, err
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(fileCount, errs...), nil
-	}
-	return checkkit.Pass(fileCount), nil
+	return walkfs.ScanFiles(root, nodejs.SourceExts, scanContent), nil
 }
 
 // scanContent returns one "path:line: directive" error per line in content

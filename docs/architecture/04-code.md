@@ -44,6 +44,14 @@ classDiagram
     class Row["12 render.Row"]
     class Palette["13 render.Palette"]
     class Totals["30 render.Totals"]
+    class Outcome["32 checkkit.Outcome"] {
+        +Code
+        +Stdout
+        +Stderr
+        +SpawnErr
+        +Signaled
+        +Err
+    }
 
     resolveChecks --> describe : 14
     describe --> Describe : 15
@@ -111,6 +119,7 @@ Numbers on classes and relationships match the callout table.
 | 29  | The scaffolding emits the Result the run returns, or info for a panic or error. | One JSON line per run. |
 | 30  | The pass, failure and info counts, in [render.go](../../go/internal/render/render.go). | Info rows never count as failures. |
 | 31  | The tally adds each row by its status. | One place decides what counts. |
+| 32  | One tool run's exit code, output, start error and signal, in [exec.go](../../go/internal/checkkit/exec.go). | A check tells a broken environment from a tool's verdict. |
 
 ## Monorepo layout
 

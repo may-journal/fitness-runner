@@ -14,7 +14,7 @@ markdown files whose front matter names real paths or enabled checks
 -
 markdown files checked
 
-Source: `go/cmd/fitness-check-markdown-front-matter/main.go:83`
+Source: `go/cmd/fitness-check-markdown-front-matter/main.go:76`
 
 ## Requirements
 

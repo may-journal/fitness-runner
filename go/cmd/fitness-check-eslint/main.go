@@ -25,7 +25,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -165,24 +164,17 @@ func runEslint(root, bin string, paths []string) (errs []string, exitCode, files
 	args = append(args, paths...)
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = root
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	runErr := cmd.Run()
-	if results, parsed := parseResults(stdout.Bytes()); parsed && lintExit(runErr) {
+	o := checkkit.Exec(cmd)
+	if results, parsed := parseResults([]byte(o.Stdout)); parsed && lintExit(o) {
 		return summarize(results)
 	}
-	return []string{eslintFallbackMessage, "Output: " + snippet(&stdout, &stderr, runErr)}, 1, 0
+	return []string{eslintFallbackMessage, "Output: " + snippet(o)}, 1, 0
 }
 
 // lintExit reports whether the process ended with a lint verdict (exit 0 or
 // 1); anything else is a tool crash and takes the fallback path.
-func lintExit(err error) bool {
-	if err == nil {
-		return true
-	}
-	var exit *exec.ExitError
-	return errors.As(err, &exit) && exit.ExitCode() == 1
+func lintExit(o checkkit.Outcome) bool {
+	return o.EnvErr("eslint") == nil && o.Code <= 1
 }
 
 // eslintMessage and eslintResult mirror the JSON-formatter fields the TS
@@ -244,15 +236,15 @@ func formatMessage(filePath string, m eslintMessage) string {
 
 // snippet is the tool output quoted in the fallback error: stdout then
 // stderr (the shared execSyncResult order), else the exec error itself.
-func snippet(stdout, stderr *bytes.Buffer, runErr error) string {
+func snippet(o checkkit.Outcome) string {
 	var parts []string
-	for _, s := range []string{stdout.String(), stderr.String()} {
+	for _, s := range []string{o.Stdout, o.Stderr} {
 		if t := strings.TrimSpace(s); t != "" {
 			parts = append(parts, t)
 		}
 	}
-	if len(parts) == 0 && runErr != nil {
-		return runErr.Error()
+	if len(parts) == 0 && o.Err != nil {
+		return o.Err.Error()
 	}
 	return strings.Join(parts, "\n")
 }

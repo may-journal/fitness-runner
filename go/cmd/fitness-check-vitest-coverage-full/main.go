@@ -19,9 +19,6 @@
 package main
 
 import (
-	"bytes"
-	"errors"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -113,23 +110,12 @@ func vitestArgs(root, frRoot string) []string {
 func execVitest(bin, root string, args []string) (int, string) {
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = root
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = io.MultiWriter(os.Stderr, &stderr)
-	if err := cmd.Run(); err != nil {
-		return failureExitCode(err), combineStreams(stdout.String(), stderr.String())
+	cmd.Stderr = os.Stderr
+	o := checkkit.Exec(cmd)
+	if o.Err != nil {
+		return o.Code, combineStreams(o.Stdout, o.Stderr)
 	}
-	return 0, stdout.String()
-}
-
-// failureExitCode is the TS `typeof status === 'number' ? status : 1`: the
-// child's exit code, or 1 when there is none (signal kill, spawn failure).
-func failureExitCode(err error) int {
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) && exitErr.ExitCode() > 0 {
-		return exitErr.ExitCode()
-	}
-	return 1
+	return 0, o.Stdout
 }
 
 // combineStreams is the TS `[stdout, stderr].filter(Boolean).join('\n')`.

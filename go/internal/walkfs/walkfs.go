@@ -6,6 +6,8 @@ package walkfs
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -39,36 +41,57 @@ func InScope(files []string) []string {
 	return out
 }
 
-// ScanFiles runs scan over every in-scope file under root matching exts and
-// returns the collected error messages plus the file count — the read-loop
-// shared by the file-scanning checks. The first unreadable file aborts with
-// its error.
-func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) ([]string, int, error) {
+// ScanFiles runs scan over every in-scope file under root matching exts —
+// the read-loop shared by the file-scanning checks — and returns the check's
+// Result: failed with the collected messages, else passed, counting the
+// files read. A file that cannot be read is skipped and named as info, so
+// the other files are still judged.
+func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) checkkit.Result {
 	files := InScope(FilesByExt(root, exts...))
 	results := par.Map(len(files), 0, func(i int) scanResult {
 		return scanOne(root, files[i], scan)
 	})
-	var errs []string
+	var errs, info []string
+	read := 0
 	for _, r := range results {
-		if r.err != nil {
-			return nil, 0, r.err
+		if r.skipped != "" {
+			info = append(info, r.skipped)
+			continue
 		}
+		read++
 		errs = append(errs, r.errs...)
 	}
-	return errs, len(files), nil
+	result := checkkit.Pass(read)
+	if len(errs) > 0 {
+		result = checkkit.Fail(read, errs...)
+	}
+	result.Info = info
+	return result
 }
 
 // scanResult carries one file's scan outcome through the worker pool.
 type scanResult struct {
 	errs []string
-	err  error
+	// skipped names a file that could not be read, empty once read.
+	skipped string
+}
+
+// Unreadable is the info note for a file a check skipped because reading
+// it failed, naming the file by its relative path and the reason, such as
+// permission denied.
+func Unreadable(rel string, err error) string {
+	var pathErr *fs.PathError
+	if errors.As(err, &pathErr) {
+		err = pathErr.Err
+	}
+	return fmt.Sprintf("%s: skipped, cannot be read (%v)", rel, err)
 }
 
 // scanOne reads and scans a single file for the parallel ScanFiles pool.
 func scanOne(root, file string, scan func(relPath, content string) []string) scanResult {
 	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 	if err != nil {
-		return scanResult{err: err}
+		return scanResult{skipped: Unreadable(file, err)}
 	}
 	return scanResult{errs: scan(file, string(content))}
 }

@@ -24,14 +24,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	errs, n, err := walkfs.ScanFiles(root, []string{".md"}, fileErrors)
-	if err != nil {
-		return checkkit.Result{}, err
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(n, errs...), nil
-	}
-	return checkkit.Pass(n), nil
+	return walkfs.ScanFiles(root, []string{".md"}, fileErrors), nil
 }
 
 var (

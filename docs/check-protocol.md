@@ -19,6 +19,12 @@ A check that cannot judge reports info. Causes include a panic, an error from `R
 
 Info rows show as `info` with an "N info" total. They never change the exit code, locally or in GitHub Actions. A printed result with `ok: false` still fails, whatever the exit code.
 
+## Environment errors
+
+Shared helpers in `go/internal` mark an environment error with `checkkit.Internal`, so a check can report it as info. `checkkit.Exec` tells a tool that could not start or was killed by a signal from one that ran. `toolchain.Exec` adds sandbox text such as `dial tcp`.
+
+`gitx.Repo` returns git errors and probes a clone for a shallow history, no origin, or a detached HEAD. A missing `gh`, an auth or network failure, or a read timeout is an environment error too.
+
 ## Blob input
 
 A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Given `--body-file`, it reads that body and reports it as one file. Checks never call GitHub themselves.
@@ -61,5 +67,5 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 
 ## Every tracked file
 
-File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A config setting `ignore`, `skipTheseDirectories`, `disabledChecks`, or `proseBudget.exempt` fails.
+File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A file `walkfs.ScanFiles` cannot read is skipped and named as info, and the other files are still judged. A config setting `ignore`, `skipTheseDirectories`, `disabledChecks`, or `proseBudget.exempt` fails.
 
