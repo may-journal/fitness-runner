@@ -277,6 +277,7 @@ func rowFor(c resolved, o outcome) render.Row {
 }
 
 // internalNote reports whether the check could not judge and says why. A
+// printed result with ok false is a finding whatever the exit code, and a
 // check that exits 3 with its own info needs no further note.
 func internalNote(o outcome) (string, bool) {
 	switch {
@@ -284,7 +285,7 @@ func internalNote(o outcome) (string, bool) {
 		return "check could not start: " + o.startErr, true
 	case o.crashed != "":
 		return "check ended without a result (" + o.crashed + ")", true
-	case judged(o.exit):
+	case judged(o.exit) || !o.res.Ok:
 		return "", false
 	}
 	return exitNote(o), true

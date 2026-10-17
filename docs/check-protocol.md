@@ -17,7 +17,7 @@ The runner executes checks in a bounded parallel pool with per-check timeouts. A
 
 A check that cannot judge reports info. Causes include a panic, an error from `Run`, a start error, or output that is not JSON. An exit other than 0 or 1 counts too, while a timeout still fails. A failed `--describe` adds info, and the check runs with defaults.
 
-Info rows show as `info` with an "N info" total. They never change the exit code, locally or in GitHub Actions.
+Info rows show as `info` with an "N info" total. They never change the exit code, locally or in GitHub Actions. A printed result with `ok: false` still fails, whatever the exit code.
 
 ## Blob input
 
