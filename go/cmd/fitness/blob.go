@@ -88,7 +88,7 @@ func judgeBlob(root, text string, checks []resolved, skipped, env []string) int 
 	}
 	listSkipped(out, "needs files", skipped)
 	listSkipped(out, "does not apply to this text", notApplying)
-	return finish(rows, totals)
+	return finish(rows, buildPerfReport(checks, outcomes, rows, totals.Ms), totals)
 }
 
 // applying drops the checks that passed inert with zero files, such as

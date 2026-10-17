@@ -65,7 +65,17 @@ Org mode runs every check; each passes clean when it does not apply. `timeoutMs`
 
 External mode sets `"policy": "external"` and runs all checks by default; a nonempty `"checks"` list is an optional filter. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
 
+## Local checks
+
+A repo adds its own checks with `"localChecks": "<dir>"`, a directory inside the repo. Each executable `fitness-check-<name>` there follows this protocol and runs in the same suite, hooks, and CI. Lookup searches that directory before the bundled checks.
+
+A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0008](architecture/adr/0008-repos-add-checks-org-keeps-the-bar.md) decides. A missing or empty directory, a path outside the repo, or a check without execute permission fails the run.
+
+## Disabled checks
+
+External mode turns checks off with `"disabledChecks": ["name"]`, after any `checks` filter. Each name must be a known check, listed once, and at least one check must remain. The git hooks skip a disabled check too, and pre-push drops its Plan gate when `plan-trailer` is off. Org mode refuses the key under the same ADR, so its repos fix the findings instead.
+
 ## Every tracked file
 
-File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A file `walkfs.ScanFiles` cannot read is skipped and named as info, and the other files are still judged. A config setting `ignore`, `skipTheseDirectories`, `disabledChecks`, or `proseBudget.exempt` fails.
+File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A file `walkfs.ScanFiles` cannot read is skipped and named as info, and the other files are still judged. A config setting `ignore`, `skipTheseDirectories`, or `proseBudget.exempt` fails.
 

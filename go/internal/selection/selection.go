@@ -3,6 +3,7 @@ package selection
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -144,4 +145,51 @@ func resolvedNames(policy string, names, known []string, optional ...string) (st
 		names = append([]string{}, known...)
 	}
 	return policy, names, validateNames(policy, names, append(append([]string{}, known...), optional...))
+}
+
+// AllowReplacements applies ADR 0008 to local checks that share a built-in
+// check's name: org policy is the org's shared bar, so it refuses them;
+// external policy lets a repo own its bar and allows them.
+func AllowReplacements(policy string, replaced []string) error {
+	if len(replaced) == 0 || policy == External {
+		return nil
+	}
+	return fmt.Errorf("local check %s replaces a built-in check, and org policy runs the built-in checks as the shared bar (ADR 0008); rename it, or set \"policy\": \"external\"",
+		strings.Join(replaced, ", "))
+}
+
+// Disable applies ADR 0008 to disabledChecks: org policy refuses it, as it
+// would lower the shared bar; external policy drops each named check from
+// names. Every disabled name must be a known check, listed once, and at
+// least one check must remain.
+func Disable(policy string, names, disabled, known []string) ([]string, error) {
+	if len(disabled) == 0 {
+		return names, nil
+	}
+	if policy != External {
+		return nil, fmt.Errorf("disabledChecks turns off %s, and org policy runs every check as the shared bar (ADR 0008); fix the findings, or set \"policy\": \"external\"",
+			strings.Join(disabled, ", "))
+	}
+	available := make(map[string]bool, len(known))
+	for _, name := range known {
+		available[name] = true
+	}
+	if err := validateList(disabled, available); err != nil {
+		return nil, fmt.Errorf("disabledChecks: %w", err)
+	}
+	return remaining(names, disabled)
+}
+
+// remaining is names without the disabled ones, failing when none is left.
+func remaining(names, disabled []string) ([]string, error) {
+	var kept []string
+	for _, name := range names {
+		if !slices.Contains(disabled, name) {
+			kept = append(kept, name)
+		}
+	}
+	if len(kept) == 0 {
+		return nil, fmt.Errorf("disabledChecks turns off every selected check; run at least one")
+	}
+	return kept, nil
 }

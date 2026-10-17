@@ -38,3 +38,7 @@ Source: `go/cmd/fitness/hook.go:26`
     - Given Developer has only chore or docs commits, even with feature commits merged in from main
         - When I push them
             - Then the push goes through
+- 0010.11
+    - Given Developer has external policy with plan-trailer and local-branch in disabledChecks
+        - When I push a feature commit that names no Plan
+            - Then the push goes through
