@@ -108,27 +108,55 @@ func Test0081_3(t *testing.T) {
 
 func Test0081_4(t *testing.T) {
 	t.Parallel()
-	repo := javaRepo(t, map[string]string{
-		"pom.xml":                        javaParent(javaTestMaven, "core", "extra", "coverage"),
-		"core/pom.xml":                   javaPom(""),
-		"core/src/main/java/Core.java":   "class Core {}\n",
-		"extra/pom.xml":                  javaPom(""),
-		"extra/src/main/java/Extra.java": "class Extra {}\n",
-		"coverage/pom.xml":               javaPom(""),
-	})
-	// Maven's aggregate holds one group per module it covers, here core
-	// alone, so extra's own report is judged and core's is not.
-	aggregate := strings.NewReplacer(`<package name="example">`, `<group name="core"><package name=""><sourcefile name="Core.java"/>`, `</package>`, `</package></group>`).Replace(javaTestCoverage("4", "1"))
-	run := javaTestMavenRun(map[string]string{
+	files := map[string]string{
+		"pom.xml":                      javaParent(javaTestMaven, "core", "extra", "it", "coverage"),
+		"core/pom.xml":                 javaPom(""),
+		"core/src/main/java/Core.java": "class Core {}\n",
+		// A class the aggregate's filters leave out keeps core covered.
+		"core/src/main/java/example/Port.java": "package example;\ninterface Port {}\n",
+		"extra/pom.xml":                        javaPom(""),
+		// The same file name in another package is another source.
+		"extra/src/main/java/example/Core.java": "/* example */\npackage example;\nclass Core {}\n",
+		// A module of tests alone has no code of its own to cover.
+		"it/pom.xml":                           javaPom(""),
+		"it/src/test/java/example/FlowIT.java": "class FlowIT {}\n",
+		"coverage/pom.xml":                     javaPom(""),
+	}
+	reports := map[string]string{
 		"core/target/surefire-reports/TEST-example.CoreTest.xml": javaTestPassed,
 		"core/target/site/jacoco/jacoco.xml":                     javaTestCoverage("2", "3"),
 		"extra/target/site/jacoco/jacoco.xml":                    javaTestCoverage("3", "2"),
-		"coverage/target/site/jacoco-aggregate/jacoco.xml":       aggregate,
-	})
-	_, out, code := javaRun(t, repo, "java-test", map[string][]response{"mvn": {run}})
+		"it/target/site/jacoco/jacoco.xml":                       `<report name="it"><counter type="INSTRUCTION" missed="0" covered="0"/></report>`,
+		"coverage/target/site/jacoco-aggregate/jacoco.xml":       javaTestAggregate("4", "1", "core", "Core.java"),
+	}
+	_, out, code := javaRun(t, javaRepo(t, files), "java-test", map[string][]response{"mvn": {javaTestMavenRun(reports)}})
 	sees(t, out, code, 1, "coverage/target/site/jacoco-aggregate/jacoco.xml: lines 4/5 covered", "extra/target/site/jacoco/jacoco.xml: lines 3/5 covered")
-	if strings.Contains(read(out), "core/target/site/jacoco/jacoco.xml") {
-		t.Errorf("the aggregate covers core, so its own report may not be judged:\n%s", out)
+	javaTestNotJudged(t, out, "core/target/site/jacoco/jacoco.xml", "it/target/site/jacoco/jacoco.xml")
+	// An aggregate that does not parse covers what is unknown, so it is
+	// named alone.
+	reports["coverage/target/site/jacoco-aggregate/jacoco.xml"] = "<report"
+	_, out, code = javaRun(t, javaRepo(t, files), "java-test", map[string][]response{"mvn": {javaTestMavenRun(reports)}})
+	sees(t, out, code, 1, "coverage/target/site/jacoco-aggregate/jacoco.xml is not a JaCoCo XML report; rerun the build")
+	javaTestNotJudged(t, out, "extra/target/site/jacoco/jacoco.xml")
+}
+
+// javaTestAggregate is a Maven aggregate JaCoCo report with the given
+// line totals and one group for the module, listing its default package's
+// source file.
+func javaTestAggregate(covered, missed, module, source string) string {
+	return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><report name="coverage"><sessioninfo id="s" start="1" dump="2"/>` +
+		`<group name="` + module + `"><package name=""><sourcefile name="` + source + `"/></package></group>` +
+		`<counter type="LINE" missed="` + missed + `" covered="` + covered + `"/></report>
+`
+}
+
+// javaTestNotJudged fails when the output names any of the reports.
+func javaTestNotJudged(t *testing.T, out string, reports ...string) {
+	t.Helper()
+	for _, r := range reports {
+		if strings.Contains(read(out), r) {
+			t.Errorf("%s may not be judged:\n%s", r, out)
+		}
 	}
 }
 

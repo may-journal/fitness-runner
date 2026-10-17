@@ -86,6 +86,17 @@ func read(repo codemodel.Repo, x *codemodel.Index) codemodel.Code {
 	return codemodel.Code{Relate: func(g *codemodel.Graph) { relate(g, repo) }}
 }
 
+// Package is the package the Java source src declares, slash-separated
+// as compiled classes name it, or "" for the default package.
+func Package(src string) string {
+	r := newReader("", src)
+	_, j := r.modifiers(0)
+	if !r.is(j, "package") {
+		return ""
+	}
+	return strings.ReplaceAll(r.render(j+1, r.statementEnd(j)), ".", "/")
+}
+
 // relate reads each Java node file's tokens, so comments and literals
 // relate nothing.
 func relate(g *codemodel.Graph, repo codemodel.Repo) {

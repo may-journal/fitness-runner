@@ -4,13 +4,15 @@ package tests
 
 import (
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/goal"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
+	"github.com/may-journal/fitness-runner/go/internal/lang/java/views"
 )
 
 // report is a JaCoCo XML report's own totals: the counters directly under
@@ -65,64 +67,74 @@ type counter struct {
 // count, such as BRANCH for code without branches, which meets the goal.
 var judged = map[string]string{"LINE": "lines", "BRANCH": "branches"}
 
-// coverage judges the JaCoCo XML reports p's projects wrote since start:
-// every aggregate report, and each project's own report unless an
-// aggregate covers that project. An aggregate covers a project when it
-// lists any of the project's product sources, since an aggregate leaves
-// out the projects it does not depend on, and by default the project that
-// writes it. found is false when the run wrote neither.
+// coverage judges the JaCoCo XML reports p's projects wrote since start.
+// found is false when the run wrote none.
 func coverage(root string, p java.Project, start time.Time) (findings []string, found bool) {
-	members := java.Members(root, p)
-	aggregates := fresh(root, members, func(b *java.Build) []string { return b.Aggregate }, start)
-	files := slices.Concat(aggregates, ownReports(root, members, covered(root, p, members, aggregates), start))
+	files := reports(root, p, start)
 	for _, file := range files {
 		findings = append(findings, judgeReport(root, file)...)
 	}
 	return findings, len(files) > 0
 }
 
-// covered lists the projects among members whose product sources build
-// root p's aggregate reports list.
-func covered(root string, p java.Project, members []java.Project, aggregates []string) map[java.Project]bool {
+// reports lists the reports to judge: each project's own when the build
+// wrote no aggregate report, else every aggregate and the own report of
+// each project that no aggregate covers. An aggregate leaves out the
+// projects it does not depend on, and by default the project that writes
+// it. An aggregate that does not parse is named alone, since what it
+// covers is unknown.
+func reports(root string, p java.Project, start time.Time) []string {
+	members := java.Members(root, p)
+	aggregates := fresh(root, members, func(b *java.Build) []string { return b.Aggregate }, start)
+	if len(aggregates) == 0 {
+		return fresh(root, members, ownReport, start)
+	}
+	listed, ok := listedSources(aggregates)
+	if !ok {
+		return aggregates
+	}
+	return slices.Concat(aggregates, fresh(root, uncovered(root, p, members, listed), ownReport, start))
+}
+
+// ownReport is the pattern of a project's report of its own tests.
+func ownReport(b *java.Build) []string { return b.Coverage }
+
+// listedSources reads the source files the reports list, or false when
+// one does not parse.
+func listedSources(files []string) (map[string]bool, bool) {
 	listed := map[string]bool{}
-	for _, file := range aggregates {
+	for _, file := range files {
 		var r report
-		if readXML(file, &r) {
-			r.list(listed)
+		if !readXML(file, &r) {
+			return nil, false
 		}
+		r.list(listed)
 	}
-	out := map[java.Project]bool{}
+	return listed, true
+}
+
+// uncovered lists the members of build root p with product sources none
+// of which listed holds. An aggregate takes a project's compiled classes
+// whole, so one listed source shows it covers the project, and an unlisted
+// one is a class the build's own filters leave out. A project without
+// product sources, such as one of integration tests only, has no code of
+// its own for a report to cover.
+func uncovered(root string, p java.Project, members []java.Project, listed map[string]bool) []java.Project {
+	sources := map[java.Project]bool{}
+	covered := map[java.Project]bool{}
 	for _, f := range productFiles(root, p) {
-		if lists(listed, f) {
-			out[java.Nearest(members, p.Build, f)] = true
-		}
+		q := java.Nearest(members, p.Build, f)
+		sources[q] = true
+		covered[q] = covered[q] || listed[sourceKey(root, f)]
 	}
-	return out
+	return slices.DeleteFunc(slices.Clone(members), func(q java.Project) bool { return !sources[q] || covered[q] })
 }
 
-// ownReports lists the reports of their own tests that the projects not
-// covered wrote since start.
-func ownReports(root string, projects []java.Project, covered map[java.Project]bool, start time.Time) []string {
-	var out []string
-	for _, q := range projects {
-		if !covered[q] {
-			out = append(out, fresh(root, []java.Project{q}, func(b *java.Build) []string { return b.Coverage }, start)...)
-		}
-	}
-	return out
-}
-
-// lists reports whether listed holds the source file, as a report names
-// it by its package path and file name, which ends the file's path below
-// its source folder.
-func lists(listed map[string]bool, file string) bool {
-	segments := strings.Split(file, "/")
-	for i := range segments {
-		if listed[strings.Join(segments[i:], "/")] {
-			return true
-		}
-	}
-	return false
+// sourceKey names a tracked Java source as a JaCoCo report does: by the
+// package it declares and its file name.
+func sourceKey(root, file string) string {
+	body, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	return path.Join(views.Package(string(body)), path.Base(file))
 }
 
 // judgeReport reads one report's totals and names those short of the goal,
