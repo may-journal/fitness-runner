@@ -1,14 +1,15 @@
-package gocoverage
+package coverage
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/toolchain"
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
 )
 
 type Options struct {

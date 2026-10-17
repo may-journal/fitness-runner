@@ -136,7 +136,8 @@ fitness-runner/
                                clonedetect, mdfilename, render, conf, runtimes,
                                sharedconf (embedded tool configs)
     internal/lang/             module type, ignores/, langs/ (one file per language)
-    internal/lang/<language>/  each language module's own code
+    internal/lang/<language>/  each language module's own code: readers, tool
+                               runners, coverage, and its config keys
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)

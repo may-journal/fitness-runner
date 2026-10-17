@@ -14,7 +14,7 @@ changed requirement tests and docs whose partner changed too
 -
 changed requirement tests and docs
 
-Source: `go/cmd/fitness-check-requirements/pairs.go:99`
+Source: `go/cmd/fitness-check-requirements/pairs.go:87`
 
 ## Requirements
 

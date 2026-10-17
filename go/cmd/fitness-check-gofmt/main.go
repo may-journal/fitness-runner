@@ -7,7 +7,8 @@ import (
 	"os/exec"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/toolchain"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -45,7 +46,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 // goFiles returns the repo's own in-scope .go files, leaving out fixtures.
 func goFiles(root string) []string {
 	var files []string
-	for _, f := range walkfs.InScope(walkfs.FilesByExt(root, ".go")) {
+	for _, f := range walkfs.InScope(walkfs.FilesByExt(root, golang.Ext)) {
 		if !toolchain.Fixture(f) {
 			files = append(files, f)
 		}

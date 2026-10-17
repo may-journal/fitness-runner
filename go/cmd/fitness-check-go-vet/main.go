@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/toolchain"
+	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
 )
 
 func main() {
