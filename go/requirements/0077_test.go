@@ -15,13 +15,10 @@ func Test0077_1(t *testing.T) {
 	if strings.Contains(out, "README.md") {
 		t.Errorf("--blob must judge only the text, not repo files:\n%s", out)
 	}
-	for _, check := range []string{"cspell", "markdown-no-bold-italic", "prose-budget", "plan-structure"} {
-		if row(out, check) == "" {
-			t.Errorf("blob-capable %s did not judge the text:\n%s", check, out)
-		}
+	for _, check := range []string{"cspell", "markdown-no-bold-italic", "prose-budget"} {
+		passedWith(t, out, check, "1")
 	}
-	// A plain draft is no Plan or PR body, so those structure checks fail.
-	sees(t, out, code, 1, "Skipped (needs files):", "jscpd", "go-test", "markdown-links")
+	sees(t, out, code, 0, "Skipped (needs files):", "jscpd", "go-test", "markdown-links")
 	if row(out, "jscpd") != "" {
 		t.Errorf("jscpd needs files and must be skipped, not run:\n%s", out)
 	}
@@ -52,6 +49,33 @@ func Test0077_5(t *testing.T) {
 	sees(t, out, code, 1, "Check timed out after 0.001s")
 }
 
+func Test0077_6(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	out, code := piped(t, repo, planBody("- [ ] Write the tests."), nil, "--blob", "-")
+	sees(t, out, code, 0, "Skipped (does not apply to this text): pr-structure, pr-closes-issue, issue-checklist")
+	passedWith(t, out, "plan-structure", "1")
+}
+
+func Test0077_7(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	out, code := piped(t, repo, pr0014(11), nil, "--blob", "-")
+	sees(t, out, code, 0, "Skipped (does not apply to this text): plan-structure, issue-checklist")
+	passedWith(t, out, "pr-structure", "1")
+	passedWith(t, out, "pr-closes-issue", "1")
+}
+
+func Test0077_8(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	misnamed := strings.Replace(pr0014(11), "## Changelog", "### Changelog:", 1)
+	for _, text := range []string{prBody0014("", 11), misnamed} {
+		out, code := piped(t, repo, text, nil, "--blob", "-")
+		sees(t, out, code, 1, "[pr-structure] Please fix these items:", "Changelog")
+	}
+}
+
 func Test0077_4(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
@@ -59,6 +83,8 @@ func Test0077_4(t *testing.T) {
 		{"--blob", ""},
 		{"--blob", cleanText, "--all"},
 		{"cspell", "--blob", cleanText},
+		{"--blob", "--checks=cspell"},
+		{"--blob", cleanText, "--checks=jscpd"},
 	} {
 		out, code := fitness(t, repo, nil, args...)
 		sees(t, out, code, 2, "fitness --blob")

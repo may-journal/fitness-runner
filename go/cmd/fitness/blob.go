@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -61,12 +62,13 @@ func runBlob(argv []string) int {
 		report.Error("fitness --blob", err)
 		return 1
 	}
-	return judgeBlob(root, req.text, withBudgets(cfg, run), skipped)
+	run = withBudgets(cfg, run)
+	return judgeBlob(root, req.text, run, skipped, blobEnv(run, req.checks != nil))
 }
 
-// judgeBlob saves text where the checks read it with --body-file, runs them,
-// and prints the usual summary with the skipped checks named.
-func judgeBlob(root, text string, checks []resolved, skipped []string) int {
+// judgeBlob saves text where the checks read it with --body-file, runs them
+// with env, and prints the usual summary with the skipped checks named.
+func judgeBlob(root, text string, checks []resolved, skipped, env []string) int {
 	file, err := metadata.WriteBody(text)
 	if err != nil {
 		report.Error("fitness --blob", err)
@@ -75,18 +77,46 @@ func judgeBlob(root, text string, checks []resolved, skipped []string) int {
 	defer os.Remove(file)
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
-	outcomes := runPool(root, checks, []string{"--body-file", file}, blobEnv(checks))
+	outcomes := runPool(root, checks, []string{"--body-file", file}, env)
+	checks, outcomes, notApplying := applying(checks, outcomes)
 	rows, success, failure, files := summarize(checks, outcomes)
 	elapsed := time.Since(start).Milliseconds()
 	printSummary(rows, success, failure, files, elapsed)
-	if len(skipped) > 0 {
-		out := os.Stdout
-		if failure > 0 {
-			out = os.Stderr
-		}
-		fmt.Fprintf(out, "Skipped (needs files): %s\n", strings.Join(skipped, ", "))
+	out := os.Stdout
+	if failure > 0 {
+		out = os.Stderr
 	}
+	listSkipped(out, "needs files", skipped)
+	listSkipped(out, "does not apply to this text", notApplying)
 	return finish(rows, success, failure, files, elapsed)
+}
+
+// applying drops the checks that passed inert with zero files, such as
+// plan-structure on a PR description, and returns their names.
+func applying(checks []resolved, outcomes []outcome) ([]resolved, []outcome, []string) {
+	var ran []resolved
+	var results []outcome
+	var inert []string
+	for i, c := range checks {
+		if inertOutcome(outcomes[i]) {
+			inert = append(inert, c.name)
+			continue
+		}
+		ran, results = append(ran, c), append(results, outcomes[i])
+	}
+	return ran, results, inert
+}
+
+// inertOutcome reports a clean pass that judged no file.
+func inertOutcome(o outcome) bool {
+	return o.res.Ok && o.res.FilesChecked == 0 && !o.timedOut && o.crashed == 0
+}
+
+// listSkipped names the skipped checks and why, when there are any.
+func listSkipped(out *os.File, why string, names []string) {
+	if len(names) > 0 {
+		fmt.Fprintf(out, "Skipped (%s): %s\n", why, strings.Join(names, ", "))
+	}
 }
 
 // parseBlob reads `--blob <text>`, `--blob=<text>`, or `--blob -` (stdin),
@@ -130,10 +160,17 @@ func blobValue(argv []string, i int) (string, int, bool) {
 	if v, ok := strings.CutPrefix(argv[i], blobFlag+"="); ok {
 		return v, 1, true
 	}
-	if argv[i] == blobFlag && i+1 < len(argv) {
+	if argv[i] == blobFlag && textFollows(argv, i) {
 		return argv[i+1], 2, true
 	}
 	return "", 0, false
+}
+
+// textFollows reports whether a text follows argv[i]. A next token of
+// --checks=… means the text was left out; any other token, front matter's
+// --- included, is the text.
+func textFollows(argv []string, i int) bool {
+	return i+1 < len(argv) && !strings.HasPrefix(argv[i+1], "--checks=")
 }
 
 // withText fills in the text, reading stdin for "-", and rejects an empty
@@ -165,6 +202,16 @@ func blobChecks(selected []string) (run []resolved, skipped []string, err error)
 	if err != nil {
 		return nil, nil, err
 	}
+	run, skipped = splitBlob(checks)
+	if len(run) == 0 {
+		return nil, nil, errors.New("--checks names no check that can judge a text")
+	}
+	return run, skipped, nil
+}
+
+// splitBlob splits checks into those that declare blob input and the names
+// of those that need files.
+func splitBlob(checks []resolved) (run []resolved, skipped []string) {
 	for _, c := range checks {
 		if c.desc.Blob {
 			run = append(run, c)
@@ -172,7 +219,7 @@ func blobChecks(selected []string) (run []resolved, skipped []string, err error)
 			skipped = append(skipped, c.name)
 		}
 	}
-	return run, skipped, nil
+	return run, skipped
 }
 
 // blobSelection returns the names to consider: every check, or the
@@ -190,15 +237,21 @@ func blobSelection(selected []string) ([]string, error) {
 }
 
 // blobEnv is the environment blob checks get: no changed or staged files and
-// no commit message, so nothing but the text reaches them.
-func blobEnv(checks []resolved) []string {
+// no commit message, so nothing but the text reaches them. Without --checks
+// it sets FITNESS_BLOB, so a body check skips text of another kind; a check
+// named in --checks always judges the text.
+func blobEnv(checks []resolved, chosen bool) []string {
 	env := os.Environ()
-	for _, name := range []string{"FITNESS_CHANGED_FILES", "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE"} {
+	for _, name := range []string{"FITNESS_CHANGED_FILES", "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE", bodycheck.BlobEnv} {
 		env = withoutVar(env, name)
 	}
 	names := make([]string, len(checks))
 	for i, c := range checks {
 		names[i] = c.name
 	}
-	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"))
+	env = append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"))
+	if chosen {
+		return env
+	}
+	return append(env, bodycheck.BlobEnv+"=1")
 }

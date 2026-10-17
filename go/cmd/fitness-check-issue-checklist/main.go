@@ -23,7 +23,7 @@ func main() {
 }
 
 func run(_ string, args []string) (checkkit.Result, error) {
-	return bodycheck.Run(args, func(body string) []string {
+	return bodycheck.RunIf(args, bodycheck.Closing, func(body string) []string {
 		var errs []string
 		for _, item := range checklist.Unchecked(body) {
 			errs = append(errs, fmt.Sprintf("unchecked item: %q", item))

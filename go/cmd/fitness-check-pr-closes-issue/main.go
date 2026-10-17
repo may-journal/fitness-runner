@@ -65,7 +65,7 @@ var implementedIssueRe = regexp.MustCompile(`(?i)\b(?:implement(?:s|ed)?|plan)[:
 
 func run(_ string, args []string) (checkkit.Result, error) {
 	required := parseRequireClose(args)
-	return bodycheck.Run(args, func(body string) []string {
+	return bodycheck.RunIf(args, bodycheck.PRBody, func(body string) []string {
 		return validate(body, required)
 	})
 }

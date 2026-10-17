@@ -17,17 +17,80 @@ import (
 // zero files checked, so the check stays inert under the file runner;
 // otherwise it reports one file whose errors are validate's messages.
 func Run(args []string, validate func(body string) []string) (checkkit.Result, error) {
+	return RunIf(args, func(string) bool { return true }, validate)
+}
+
+// BlobEnv is set by `fitness --blob`, which judges a draft text of any kind.
+const BlobEnv = "FITNESS_BLOB"
+
+// RunIf is Run for a check that judges one kind of body. Under `fitness
+// --blob`, a text applies rejects passes inert with zero files, so the runner
+// lists the check as not applying. Every other caller names the body's kind
+// itself, so the check always judges it.
+func RunIf(args []string, applies func(body string) bool, validate func(body string) []string) (checkkit.Result, error) {
 	body, ok, err := resolveBody(args)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	if !ok {
+	if inert(ok, body, applies) {
 		return checkkit.Pass(0), nil
 	}
 	if errs := validate(body); len(errs) > 0 {
 		return checkkit.Fail(1, errs...), nil
 	}
 	return checkkit.Pass(1), nil
+}
+
+// inert reports whether there is no body to judge, or a blob the check does
+// not apply to.
+func inert(ok bool, body string, applies func(string) bool) bool {
+	return !ok || os.Getenv(BlobEnv) != "" && !applies(body)
+}
+
+// PlanBody reports whether body is a Plan issue: it has the Plan template's
+// checklist section.
+func PlanBody(body string) bool {
+	return hasHeading(body, "What needs to happen")
+}
+
+// PRBody reports whether body is a pull request description: it has the PR
+// template's changelog heading, at any level.
+func PRBody(body string) bool {
+	return hasHeading(body, "Changelog")
+}
+
+// Closing reports whether body is an issue being closed. A draft never is:
+// only close-check and pr-check judge an issue at close time.
+func Closing(string) bool {
+	return false
+}
+
+// hasHeading reports whether body has a heading naming title outside a
+// fenced code block, at any level, in any case, with or without a trailing
+// colon, so the structure check names a wrong level or colon. A text with no
+// such heading is of another kind, and the check does not apply.
+func hasHeading(body, title string) bool {
+	fenced := false
+	for _, line := range strings.Split(body, "\n") {
+		line = strings.TrimSpace(line)
+		if strings.HasPrefix(line, "```") {
+			fenced = !fenced
+		}
+		if !fenced && strings.EqualFold(headingText(line), title) {
+			return true
+		}
+	}
+	return false
+}
+
+// headingText returns a heading line's text without its # marks and a
+// trailing colon, or "" for any other line.
+func headingText(line string) string {
+	text, isHeading := strings.CutPrefix(line, "#")
+	if !isHeading {
+		return ""
+	}
+	return strings.Trim(text, "# :")
 }
 
 // RunDoc runs a file-walking doc check in body mode when an explicit
