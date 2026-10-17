@@ -32,7 +32,17 @@ import (
 // External policy also defaults to the full catalog, with optional selection.
 // It is every check installed beside the runner, minus the ignored ones, in
 // the order the language registry gives: repo-wide checks, then each module's.
-var allChecks = lang.Catalog(checkkit.Installed(), langs.All)
+// installErr says why no checks were found; a run stops on it.
+var allChecks, installErr = catalog()
+
+// catalog lists the default checks, or the error that leaves it empty.
+func catalog() ([]string, error) {
+	installed, err := checkkit.Installed()
+	if err != nil {
+		return nil, err
+	}
+	return lang.Catalog(installed, langs.All), nil
+}
 
 // resolved is one runnable check: its binary and describe metadata.
 type resolved struct {
@@ -130,6 +140,10 @@ Docs: https://github.com/may-journal/fitness-runner#usage`)
 }
 
 func run(argv []string) int {
+	if installErr != nil {
+		report.Error("fitness setup", installErr)
+		return 1
+	}
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}

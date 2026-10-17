@@ -2,6 +2,7 @@ package requirements
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -50,4 +51,17 @@ func Test0008_7(t *testing.T) {
 	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", nil), nil, "hook", "commit-msg")
 	sees(t, out, code, 1, "fitness hook commit-msg: missing message file")
+}
+
+func Test0008_8(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	raw, err := os.ReadFile(filepath.Join(installOnly(t), "fitness"))
+	mustDo(t, err)
+	alone := filepath.Join(t.TempDir(), "fitness")
+	mustDo(t, os.WriteFile(alone, raw, 0o755))
+	cmd := exec.Command(alone, "--policy=external", "--all")
+	cmd.Dir, cmd.Env = repo, userEnv()
+	out, _ := cmd.CombinedOutput()
+	sees(t, ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode(), 1, "reinstall fitness so its checks sit beside it")
 }

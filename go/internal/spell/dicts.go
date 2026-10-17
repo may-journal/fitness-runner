@@ -3,9 +3,11 @@ package spell
 // cspell:ignore wordlists
 
 import (
+	"cmp"
 	"embed"
 	"io/fs"
 	"path"
+	"slices"
 	"strings"
 	"sync"
 
@@ -29,9 +31,11 @@ import (
 //go:embed dict/*.txt
 var dictFiles embed.FS
 
-// embeddedDicts reads the wordlists in the order the language registry
-// gives: the repo-wide lists no module claims, then each module's. A word
-// found in any list is known, so the order changes speed, never a verdict.
+// embeddedDicts reads the wordlists the language registry names: the
+// repo-wide lists no module claims, and each module's. They are searched
+// biggest first, so en-us, which resolves most natural-language lookups,
+// leads. A word found in any list is known, so the order changes speed,
+// never a verdict.
 var embeddedDicts = sync.OnceValue(func() []string {
 	matches, err := fs.Glob(dictFiles, "dict/*.txt")
 	if err != nil {
@@ -49,6 +53,7 @@ var embeddedDicts = sync.OnceValue(func() []string {
 		}
 		lists = append(lists, string(data))
 	}
+	slices.SortStableFunc(lists, func(a, b string) int { return cmp.Compare(len(b), len(a)) })
 	return lists
 })
 

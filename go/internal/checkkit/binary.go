@@ -24,20 +24,25 @@ func Binary(name string) (string, error) {
 }
 
 // Installed names every check installed beside the running Fitness
-// executable, without the binary prefix, sorted.
-func Installed() []string {
+// executable, without the binary prefix, sorted. Finding none is an error,
+// so a broken install fails instead of passing with no checks.
+func Installed() ([]string, error) {
 	self, err := os.Executable()
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("cannot find the fitness executable to list its checks: %w", err)
 	}
-	paths, _ := filepath.Glob(filepath.Join(filepath.Dir(self), binPrefix+"*"))
+	dir := filepath.Dir(self)
+	paths, _ := filepath.Glob(filepath.Join(dir, binPrefix+"*"))
 	var names []string
 	for _, p := range paths {
 		if executableFile(p) {
 			names = append(names, strings.TrimPrefix(filepath.Base(p), binPrefix))
 		}
 	}
-	return names
+	if len(names) == 0 {
+		return nil, fmt.Errorf("no %s* programs beside fitness in %s; reinstall fitness so its checks sit beside it", binPrefix, dir)
+	}
+	return names, nil
 }
 
 // executableFile reports whether path is a file with an execute bit set.
