@@ -54,7 +54,7 @@ go-complexity go-test go-vet gofmt
 swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier
 vitest-coverage-exclude vitest-coverage-full
-checkstyle java-version spotless`
+checkstyle java-test java-version spotless`
 
 // rowCells returns the check cell of each results-table row, top to bottom.
 func rowCells(out string) []string {
