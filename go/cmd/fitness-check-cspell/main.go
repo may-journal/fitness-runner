@@ -27,6 +27,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
@@ -76,7 +77,7 @@ func walkFiles(root string) checkkit.Result {
 // lockfiles names the files package managers write and rewrite on every
 // install. Their words are package names and hashes no one can fix. Each
 // language module names its own; ecosystems with no module are listed here.
-var lockfiles = lockfileSet(lang.Lockfiles(),
+var lockfiles = lockfileSet(lang.Lockfiles(langs.All),
 	"Cargo.lock", "Gemfile.lock", "composer.lock", "poetry.lock",
 	"uv.lock", "mix.lock", "flake.lock", "packages.lock.json")
 

@@ -35,20 +35,24 @@ func Test0003_2(t *testing.T) {
 	}
 }
 
-// catalogRows is the order the result rows have always printed in.
+// catalogRows is the order the result rows print in: the repo-wide checks,
+// sorted, then the Go, Swift and Node modules' checks, each sorted.
 const catalogRows = `
-read-repo-first semantic-commit plan-trailer issue-link-once commit-attribution
-changelog changelog-updated changelog-bullets release-changelog cspell jscpd
-gitignore-why no-plans-dir doc-template requirements architecture-contract
-architecture-actors architecture-containers architecture-components
-architecture-code architecture-journey no-contrastive-reframing
-repeated-string-literals markdown-front-matter markdown-filename-kebab-case
-markdown-filename-camel-case markdown-links markdown-no-bold-italic
-text-readability prose-budget mermaid-callouts mermaid-callout-why
+architecture-actors architecture-code architecture-components
+architecture-containers architecture-contract architecture-journey
+build-output-untracked changelog changelog-bullets changelog-updated
+commit-attribution cspell doc-template gitignore-why issue-checklist
+issue-link-once jscpd local-branch markdown-filename-camel-case
+markdown-filename-kebab-case markdown-front-matter markdown-links
+markdown-no-bold-italic mermaid-callout-why mermaid-callouts
 mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
-mermaid-level-bleed plan-structure pr-structure pr-closes-issue issue-checklist
-local-branch go-complexity go-vet gofmt go-test build-output-untracked swiftlint
-eslint prettier no-eslint-disable node-version dependency-currency
+mermaid-level-bleed no-contrastive-reframing no-plans-dir plan-structure
+plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
+release-changelog repeated-string-literals requirements semantic-commit
+text-readability
+go-complexity go-test go-vet gofmt
+swiftlint
+dependency-currency eslint no-eslint-disable node-version prettier
 vitest-coverage-exclude vitest-coverage-full`
 
 // rowCells returns the check cell of each results-table row, top to bottom.

@@ -25,4 +25,4 @@ Source: #189
 - 0003.2
     - Given Developer has a repo that chooses no checks
         - When fitness runs
-            - Then the result rows list the whole catalog in its fixed order
+            - Then the result rows list every installed check, repo-wide checks first, then each language's

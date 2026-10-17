@@ -3,11 +3,14 @@ package spell
 // cspell:ignore wordlists
 
 import (
-	_ "embed"
+	"embed"
+	"io/fs"
+	"path"
 	"strings"
 	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 )
 
 // The embedded base dictionaries are committed plain-text wordlists derived
@@ -16,98 +19,38 @@ import (
 // npm-free migration — a Go regeneration tool is deferred (see
 // docs/plans/archive/02-npm-free.md). Each file is that header followed by the
 // words: lowercased, deduplicated, sorted, one per line — the committed lists
-// are pre-sorted, which is the guarantee the binary search below relies on (and
-// TestEmbeddedDictsSearchable re-verifies byte-wise).
+// are pre-sorted, which is the guarantee the binary search below relies on.
 //
-// Each file embeds as its own string so Lookup binary-searches the embedded
-// bytes in place: no parsing, no index build, and no per-word allocation at
-// process start — the startup cost of the old eager 217k-entry map.
+// Every file in dict/ is embedded, so a new wordlist needs no list entry.
+// Lookup binary-searches each list's text in place: no parsing, no index
+// build, and no per-word allocation. The lists are read once, on the first
+// lookup, so a process that spells nothing never touches them.
 
-//go:embed dict/en-us.txt
-var dictEnUS string
+//go:embed dict/*.txt
+var dictFiles embed.FS
 
-//go:embed dict/software-terms.txt
-var dictSoftwareTerms string
-
-//go:embed dict/golang.txt
-var dictGolang string
-
-//go:embed dict/node.txt
-var dictNode string
-
-//go:embed dict/npm.txt
-var dictNpm string
-
-//go:embed dict/typescript.txt
-var dictTypescript string
-
-//go:embed dict/html.txt
-var dictHTML string
-
-//go:embed dict/companies.txt
-var dictCompanies string
-
-//go:embed dict/aws.txt
-var dictAWS string
-
-//go:embed dict/css.txt
-var dictCSS string
-
-//go:embed dict/fullstack.txt
-var dictFullstack string
-
-//go:embed dict/filetypes.txt
-var dictFiletypes string
-
-//go:embed dict/shell.txt
-var dictShell string
-
-//go:embed dict/git.txt
-var dictGit string
-
-// dictData maps each embedded wordlist's file name to its words.
-var dictData = map[string]string{
-	"en-us.txt":          dictEnUS,
-	"software-terms.txt": dictSoftwareTerms,
-	"golang.txt":         dictGolang,
-	"node.txt":           dictNode,
-	"npm.txt":            dictNpm,
-	"typescript.txt":     dictTypescript,
-	"html.txt":           dictHTML,
-	"companies.txt":      dictCompanies,
-	"aws.txt":            dictAWS,
-	"css.txt":            dictCSS,
-	"fullstack.txt":      dictFullstack,
-	"filetypes.txt":      dictFiletypes,
-	"shell.txt":          dictShell,
-	"git.txt":            dictGit,
-}
-
-// embeddedDicts lists the wordlists the language modules name, in registry
-// order: the repo-wide lists first (en-us resolves most natural-language
-// lookups), then each language's. A word found in any list is known, so the
-// order changes speed, never a verdict.
-var embeddedDicts = moduleDicts(lang.Dicts())
-
-// moduleDicts pairs each named wordlist with its embedded words. It panics at
-// start-up when a module names a file that is not embedded, or when an
-// embedded file is named by no module or by two, so no list drops out.
-func moduleDicts(names []string) []string {
-	out := make([]string, 0, len(names))
-	seen := map[string]bool{}
-	for _, name := range names {
-		data, ok := dictData[name]
-		if !ok || seen[name] {
-			panic("spell: " + name + " is not embedded once")
+// embeddedDicts reads the wordlists in the order the language registry
+// gives: the repo-wide lists no module claims, then each module's. A word
+// found in any list is known, so the order changes speed, never a verdict.
+var embeddedDicts = sync.OnceValue(func() []string {
+	matches, err := fs.Glob(dictFiles, "dict/*.txt")
+	if err != nil {
+		panic("spell: " + err.Error())
+	}
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		names = append(names, path.Base(m))
+	}
+	var lists []string
+	for _, name := range lang.Dicts(names, langs.All) {
+		data, err := dictFiles.ReadFile("dict/" + name)
+		if err != nil {
+			panic("spell: a language module claims " + name + ", which dict/ lacks")
 		}
-		seen[name] = true
-		out = append(out, data)
+		lists = append(lists, string(data))
 	}
-	if len(out) != len(dictData) {
-		panic("spell: an embedded dictionary is in no language module")
-	}
-	return out
-}
+	return lists
+})
 
 // embeddedDict looks words up directly in the embedded wordlists, memoizing
 // results because natural language repeats heavily. The memo is a sync.Map:
@@ -143,7 +86,7 @@ func (d *embeddedDict) Lookup(word string) bool {
 
 // searchEmbedded binary-searches every embedded wordlist for word.
 func searchEmbedded(word string) bool {
-	for _, data := range embeddedDicts {
+	for _, data := range embeddedDicts() {
 		if searchLines(data, word) {
 			return true
 		}

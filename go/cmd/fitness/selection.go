@@ -67,7 +67,7 @@ func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]
 	if cfg != nil {
 		policy, configured = cfg.Policy, cfg.LegacyChecks
 	}
-	policy, names, err := options.Resolve(policy, configured, spec, allChecks, lang.OptIn)
+	policy, names, err := options.Resolve(policy, configured, spec, allChecks, lang.Ignored()...)
 	if err != nil {
 		return nil, err
 	}

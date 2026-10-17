@@ -1,0 +1,3 @@
+# go-test-coverage runs only when selected by name, while repos repair their
+# entry coverage gaps. Adding it to the default suite needs a separate policy
+# decision; see go/cmd/fitness-check-go-test-coverage/README.md.

@@ -21,6 +21,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -29,8 +30,9 @@ import (
 // allChecks is the org default and the catalog for explicit external lists.
 // Org checks self-gate when their language, tool, config, or input is absent.
 // External policy also defaults to the full catalog, with optional selection.
-// The language registry in internal/lang lists it, module by module.
-var allChecks = lang.Checks()
+// It is every check installed beside the runner, minus the ignored ones, in
+// the order the language registry gives: repo-wide checks, then each module's.
+var allChecks = lang.Catalog(checkkit.Installed(), langs.All)
 
 // resolved is one runnable check: its binary and describe metadata.
 type resolved struct {
