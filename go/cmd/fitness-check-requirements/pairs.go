@@ -33,7 +33,7 @@ type pairs struct {
 // newPairs pairs every doc and test file by number. A test file proves the
 // numbers in its name and those of the tests it holds; a changed file that
 // is gone still pairs by its name.
-func newPairs(docPaths, testFiles []string, tests []goTest, changed []string) pairs {
+func newPairs(docPaths, testFiles []string, tests []reqTest, changed []string) pairs {
 	p := pairs{docs: map[string][]string{}, tests: map[string][]string{}, numbers: map[string][]string{}}
 	for _, f := range append(slices.Clone(docPaths), changed...) {
 		if n := docNumber(f); n != "" {
@@ -46,15 +46,15 @@ func newPairs(docPaths, testFiles []string, tests []goTest, changed []string) pa
 
 // addTestFiles pairs each file by the numbers in its name, then each test
 // named for an acceptance by its number.
-func (p pairs) addTestFiles(files []string, tests []goTest) {
+func (p pairs) addTestFiles(files []string, tests []reqTest) {
 	for _, f := range files {
 		for _, n := range nameNumbers(f) {
 			p.addTest(n, f)
 		}
 	}
 	for _, t := range tests {
-		if t.id != "" {
-			p.addTest(t.id[:4], t.file)
+		if t.ID != "" {
+			p.addTest(t.ID[:4], t.File)
 		}
 	}
 }
@@ -140,7 +140,7 @@ func unchangedPartners(numbers []string, partners map[string][]string, changed, 
 
 // scopedPairs judges pairs in a suite run, except in the pre-commit hook,
 // which leaves them to commit-msg so an exemption trailer is readable.
-func scopedPairs(root string, docPaths, testFiles []string, tests []goTest) []string {
+func scopedPairs(root string, docPaths, testFiles []string, tests []reqTest) []string {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") == "pre-commit" {
 		return nil
 	}
@@ -150,7 +150,7 @@ func scopedPairs(root string, docPaths, testFiles []string, tests []goTest) []st
 // pairErrors judges a scoped run's changed files: staged at commit time, or
 // a pull request's diff against the current merge base with its base branch.
 // A full scan, and a local merge, cherry-pick, or revert, judge no pairs.
-func pairErrors(root string, docPaths, testFiles []string, tests []goTest, changed []string) []string {
+func pairErrors(root string, docPaths, testFiles []string, tests []reqTest, changed []string) []string {
 	if changed == nil || replaying(root) {
 		return nil
 	}

@@ -2,133 +2,43 @@ package main
 
 import (
 	"fmt"
-	"github.com/may-journal/fitness-runner/go/internal/requirement"
-	"go/ast"
-	"go/parser"
-	"go/token"
-	"path/filepath"
-	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/requirement"
 )
 
-// goTest is one test declaration, Go, Swift, or vitest, and the acceptance
-// ID its name carries, if any.
-type goTest struct {
-	name string
-	id   string
-	loc  string
-	file string
-	lang lang
+// reqTest is one test declaration a language module found, and the module
+// whose naming it follows.
+type reqTest struct {
+	lang.Test
+	module lang.Module
 }
 
-// lang is the language a test is written in.
-type lang int
-
-// The languages a test can be written in.
-const (
-	langGo lang = iota
-	langSwift
-	langScript
-)
-
-// only is the langs of a repo that tests in l alone.
-func (l lang) only() langs {
-	return langs{goCode: l == langGo, swift: l == langSwift, script: l == langScript}
-}
-
-// langs records which languages a repo is written in, to name tests its way.
-type langs struct {
-	goCode bool
-	swift  bool
-	script bool
-}
-
-// testName is the test name that owns id in the repo's languages: Test0001_1
-// in Go, test0001_1 in Swift, test("0001.1 …") in TypeScript or JavaScript.
-func (l langs) testName(id string) string {
-	suffix := strings.Replace(id, ".", "_", 1)
-	var names []string
-	if l.goCode || l == (langs{}) {
-		names = append(names, "Test"+suffix)
-	}
-	if l.swift {
-		names = append(names, "test"+suffix)
-	}
-	if l.script {
-		names = append(names, `test("`+id+` …")`)
+// testName is the test name that owns id in the given languages, such as
+// Test0001_1 or test0001_1, joined with "or".
+func testName(written []lang.Module, id string) string {
+	names := make([]string, 0, len(written))
+	for _, m := range written {
+		names = append(names, m.Tests.Name(id))
 	}
 	return strings.Join(names, " or ")
-}
-
-var (
-	// testFunc matches the names go test runs: Test, then no lowercase letter.
-	testFunc = regexp.MustCompile(`^Test($|[^a-z])`)
-	// testID matches a test named for an acceptance: Test0001_1 is 0001.1.
-	testID = regexp.MustCompile(`^Test(\d{4})_([1-9]\d*)$`)
-)
-
-// testFiles lists every tracked Go test file.
-func testFiles(root string) []string {
-	return walkfs.FilesByExt(root, "_test.go")
-}
-
-// scanTests parses every test file and returns its test declarations.
-func scanTests(root string, files []string) ([]goTest, error) {
-	fset := token.NewFileSet()
-	var tests []goTest
-	for _, f := range files {
-		parsed, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
-		if err != nil {
-			return nil, err
-		}
-		tests = append(tests, fileTests(fset, f, parsed)...)
-	}
-	return tests, nil
-}
-
-// fileTests returns one file's top-level test functions.
-func fileTests(fset *token.FileSet, file string, parsed *ast.File) []goTest {
-	var tests []goTest
-	for _, decl := range parsed.Decls {
-		if fn, ok := decl.(*ast.FuncDecl); ok && isTest(fn) {
-			loc := fmt.Sprintf("%s:%d", file, fset.Position(fn.Pos()).Line)
-			tests = append(tests, goTest{name: fn.Name.Name, id: idOf(fn.Name.Name), loc: loc, file: file})
-		}
-	}
-	return tests
-}
-
-// isTest reports whether fn is a function go test runs as a test.
-func isTest(fn *ast.FuncDecl) bool {
-	name := fn.Name.Name
-	return fn.Recv == nil && name != "TestMain" && testFunc.MatchString(name) && fn.Type.Params.NumFields() == 1
-}
-
-// idOf returns the acceptance ID a test name carries, or "".
-func idOf(name string) string {
-	m := testID.FindStringSubmatch(name)
-	if m == nil {
-		return ""
-	}
-	return m[1] + "." + m[2]
 }
 
 // ownershipErrors flags acceptances that no test or several tests own, tests
 // named for an acceptance no doc defines, and tests that name no
 // acceptance at all.
-func ownershipErrors(docs []requirement.Document, tests []goTest, repo langs) []string {
+func ownershipErrors(docs []requirement.Document, tests []reqTest, written []lang.Module) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}
 	for _, t := range tests {
-		owners[t.id] = append(owners[t.id], t.loc)
+		owners[t.ID] = append(owners[t.ID], t.Loc)
 	}
 	var errs []string
 	for _, d := range docs {
 		for _, a := range d.Acceptances {
 			current[a.ID] = true
-			errs = append(errs, ownerError(d.Path, a, owners[a.ID], repo)...)
+			errs = append(errs, ownerError(d.Path, a, owners[a.ID], written)...)
 		}
 	}
 	for _, t := range tests {
@@ -138,8 +48,8 @@ func ownershipErrors(docs []requirement.Document, tests []goTest, repo langs) []
 }
 
 // ownerError requires exactly one test to own the acceptance.
-func ownerError(path string, a requirement.IDLine, owners []string, repo langs) []string {
-	name := repo.testName(a.ID)
+func ownerError(path string, a requirement.IDLine, owners []string, written []lang.Module) []string {
+	name := testName(written, a.ID)
 	switch len(owners) {
 	case 1:
 		return nil
@@ -151,12 +61,12 @@ func ownerError(path string, a requirement.IDLine, owners []string, repo langs) 
 
 // testError flags a test named for an undefined acceptance, and a
 // test that names none.
-func testError(t goTest, current map[string]bool) []string {
+func testError(t reqTest, current map[string]bool) []string {
 	switch {
-	case t.id != "" && !current[t.id]:
-		return []string{fmt.Sprintf("%s: %s names %s, which no requirement defines; delete the test with its acceptance", t.loc, t.name, t.id)}
-	case t.id == "":
-		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.loc, t.name, t.lang.only().testName("NNNN.N"))}
+	case t.ID != "" && !current[t.ID]:
+		return []string{fmt.Sprintf("%s: %s names %s, which no requirement defines; delete the test with its acceptance", t.Loc, t.Name, t.ID)}
+	case t.ID == "":
+		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.Loc, t.Name, t.module.Tests.Name("NNNN.N"))}
 	}
 	return nil
 }

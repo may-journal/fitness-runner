@@ -1,15 +1,20 @@
 // Package lang defines what a language module brings to a run, and orders
 // what the modules claim against what is installed or embedded. A module
 // names how to spot its language, the files it reads and writes, the tools
-// it runs, its checks, and its spell dictionaries. Everything no module
-// claims is repo-wide, so a new repo-wide check or dictionary needs no list
-// entry. The modules themselves live in the langs package.
+// it runs, its checks, its spell dictionaries, the words that name it as a
+// technology, and how it proves a runtime. Everything no module claims is
+// repo-wide, so a new repo-wide check or dictionary needs no list entry. The
+// modules themselves live in the langs package, and each language's own code
+// in a folder named for it beside that package.
 package lang
 
 import (
 	"embed"
 	"io/fs"
+	"path"
 	"slices"
+
+	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 )
 
 // Module is one language's entry in the registry.
@@ -30,6 +35,100 @@ type Module struct {
 	Checks []string
 	// Dicts are the embedded spell dictionary files the module claims.
 	Dicts []string
+	// Technology is the name the language's runtime products give their
+	// technology, such as "Node".
+	Technology string
+	// TechnologyWords are the lowercase words an architecture container's
+	// technology string may use to name the language.
+	TechnologyWords []string
+	// Runtime reads the language's manifests and sources for the runtimes
+	// a repo ships.
+	Runtime runtimes.Reader
+	// Tests finds the language's requirement tests.
+	Tests Tests
+	// Scans are the source endings a repo-wide check reads in the
+	// language, by check name.
+	Scans map[string][]string
+	// ToolConfig, when set, reports a source file that configures a tool,
+	// such as a bundler config, rather than product code.
+	ToolConfig func(file string) bool
+	// TestFile, when set, reports a file the language's test runner finds
+	// by its name or folder.
+	TestFile func(file string) bool
+}
+
+// Test is one test declaration and the acceptance ID its name carries, if
+// any. Loc is file:line.
+type Test struct {
+	Name, ID, Loc, File string
+}
+
+// Tests is how a module finds its requirement tests.
+type Tests struct {
+	// Scan reads the repo's tests and the files holding them, and reports
+	// whether the repo is written in the language.
+	Scan func(root string) (tests []Test, files []string, written bool, err error)
+	// Name is the test name that owns an acceptance ID, such as Test0001_1.
+	Name func(id string) string
+	// Source, when set, reports a lowercase source path only tests build,
+	// which the architecture views class as a test.
+	Source func(lower string) bool
+}
+
+// ScanExts returns every module's source endings for the check, in
+// registry order.
+func ScanExts(modules []Module, check string) []string {
+	var out []string
+	for _, m := range modules {
+		out = append(out, m.Scans[check]...)
+	}
+	return out
+}
+
+// Exts returns every module's source endings, in registry order.
+func Exts(modules []Module) []string {
+	var out []string
+	for _, m := range modules {
+		out = append(out, m.Exts...)
+	}
+	return out
+}
+
+// IsTestFile reports whether any module's test runner finds file by name.
+func IsTestFile(modules []Module, file string) bool {
+	return slices.ContainsFunc(modules, func(m Module) bool { return m.TestFile != nil && m.TestFile(file) })
+}
+
+// IsTestSource reports whether a module classes the lowercase source path
+// as built only for tests.
+func IsTestSource(modules []Module, lower string) bool {
+	return slices.ContainsFunc(modules, func(m Module) bool { return m.Tests.Source != nil && m.Tests.Source(lower) })
+}
+
+// IsToolConfig reports whether the module owning file's ending says it
+// configures a tool.
+func IsToolConfig(modules []Module, file string) bool {
+	return slices.ContainsFunc(modules, func(m Module) bool {
+		return m.ToolConfig != nil && slices.Contains(m.Exts, path.Ext(file)) && m.ToolConfig(file)
+	})
+}
+
+// Runtimes returns every module's runtime reader, in registry order.
+func Runtimes(modules []Module) []runtimes.Reader {
+	out := make([]runtimes.Reader, 0, len(modules))
+	for _, m := range modules {
+		out = append(out, m.Runtime)
+	}
+	return out
+}
+
+// TechnologyWords maps each module's technology name to its words.
+func TechnologyWords(modules []Module) map[string][]string {
+	out := map[string][]string{}
+	for _, m := range modules {
+		out[m.Technology] = m.TechnologyWords
+	}
+	return out
 }
 
 // ignores holds one file per check name kept out of the default catalog;

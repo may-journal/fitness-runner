@@ -1,6 +1,7 @@
 // Package runtimes finds what a repository ships: the runtime products its
 // build targets, entry points, and deploy files prove, and the platform
-// services its code uses. A dependency manifest alone proves nothing.
+// services its code uses. A dependency manifest alone proves nothing. Each
+// language module brings a Reader; this package knows no language itself.
 package runtimes
 
 import (
@@ -20,17 +21,19 @@ type Location struct {
 
 func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) }
 
-// Product is one runtime the repository builds: a Go command, an Xcode app
-// or extension target, or a Node service or library. Paths are the folders
-// it is built from; Technology is the language its container must name.
-// Entries are the paths a package.json publishes, built or not.
+// Product is one runtime the repository builds, such as a command, an app
+// target, or a published package. Paths are the folders it is built from;
+// Technology is the language its container must name. Entries are the
+// paths a package publishes, built or not. Package marks a product a
+// container may name by its package name or an entry path.
 type Product struct {
 	Kind, Name, Technology string
 	Paths, Entries         []string
+	Package                bool
 	At                     Location
 }
 
-// Service is a platform service product code uses, such as CloudKit.
+// Service is a platform service product code uses.
 type Service struct {
 	Name string
 	At   Location
@@ -44,88 +47,107 @@ type Report struct {
 	Errors   []string
 }
 
-// Find reads the product sources and manifests among files under root.
-// product reports whether a tracked file is product code rather than a
-// test, tool, or generated file.
-func Find(root string, files []string, product func(string) bool) Report {
-	f := &finder{root: root, exists: map[string]bool{}}
+// Reader is what one language module brings to runtime discovery.
+type Reader struct {
+	// Manifests read build and package files, by file name.
+	Manifests map[string]func(*Finder, string)
+	// Sources read product source files, by extension.
+	Sources map[string]func(*Finder, string)
+	// Scripts read what a manifest's scripts run, by manifest file name.
+	Scripts map[string]func(root, file string) Runs
+}
+
+// Runs is what one manifest's scripts run and publish, as repository
+// paths: Start for the start script, Dev for the others.
+type Runs struct {
+	Dev, Start, Published []string
+}
+
+// Find reads the product sources and manifests among files under root
+// with the readers given. product reports whether a tracked file is
+// product code rather than a test, tool, or generated file.
+func Find(root string, files []string, product func(string) bool, readers []Reader) Report {
+	f := &Finder{root: root, exists: map[string]bool{}}
 	for _, file := range files {
 		f.remember(file)
 	}
 	for _, file := range files {
 		if product(file) {
-			f.read(file)
+			f.read(file, readers)
 		}
 	}
 	sort.Slice(f.Products, func(i, j int) bool { return f.Products[i].At.String() < f.Products[j].At.String() })
 	return f.Report
 }
 
-type finder struct {
+// Finder collects the Report while readers add to it.
+type Finder struct {
 	Report
 	root   string
 	exists map[string]bool
 }
 
-func (f *finder) remember(file string) {
+func (f *Finder) remember(file string) {
 	f.exists[file] = true
 	for dir := path.Dir(file); dir != "."; dir = path.Dir(dir) {
 		f.exists[dir] = true
 	}
 }
 
-// manifests are the build and package files read by name.
-var manifests = map[string]func(*finder, string){
-	"project.yml":     (*finder).xcodegen,
-	"project.pbxproj": (*finder).pbxproj,
-	"package.json":    (*finder).node,
+// Root is the repository root being read.
+func (f *Finder) Root() string { return f.root }
+
+// Exists reports a tracked file, or a folder holding one.
+func (f *Finder) Exists(p string) bool { return f.exists[p] }
+
+// Manifest reports a build or package file some reader reads by name. A
+// manifest proves runtimes even when .gitattributes marks it
+// linguist-generated, since some build tools write their project file
+// themselves.
+func Manifest(file string, readers []Reader) bool {
+	return manifest(file, readers) != nil
 }
 
-// Manifest reports a build or package file read by name, such as
-// project.pbxproj. A manifest proves runtimes even when .gitattributes marks
-// it linguist-generated, since Xcode writes the project file itself.
-func Manifest(file string) bool {
-	return manifests[path.Base(file)] != nil
+// manifest is the reader for file's name, or nil.
+func manifest(file string, readers []Reader) func(*Finder, string) {
+	for _, r := range readers {
+		if read := r.Manifests[path.Base(file)]; read != nil {
+			return read
+		}
+	}
+	return nil
 }
 
-func (f *finder) read(file string) {
-	if manifest := manifests[path.Base(file)]; manifest != nil {
-		manifest(f, file)
+func (f *Finder) read(file string, readers []Reader) {
+	if read := manifest(file, readers); read != nil {
+		read(f, file)
 		return
 	}
-	if ext := path.Ext(file); ext == ".go" {
-		f.goCommand(file)
-	} else if ext == ".swift" {
-		f.platformServices(file)
+	for _, r := range readers {
+		if read := r.Sources[path.Ext(file)]; read != nil {
+			read(f, file)
+			return
+		}
 	}
 }
 
-func (f *finder) fail(at Location, format string, args ...any) {
+// Fail records evidence that could not be read.
+func (f *Finder) Fail(at Location, format string, args ...any) {
 	f.Errors = append(f.Errors, at.String()+": "+fmt.Sprintf(format, args...))
 }
 
-// lines reads a tracked file as lines; an unreadable file is an error.
-func (f *finder) lines(file string) ([]string, bool) {
+// Lines reads a tracked file as lines; an unreadable file is an error.
+func (f *Finder) Lines(file string) ([]string, bool) {
 	body, err := os.ReadFile(filepath.Join(f.root, filepath.FromSlash(file)))
 	if err != nil {
-		f.fail(Location{file, 1}, "cannot read: %v", err)
+		f.Fail(Location{file, 1}, "cannot read: %v", err)
 		return nil, false
 	}
 	return strings.Split(string(body), "\n"), true
 }
 
-// beside joins a manifest's folder with a path it names, keeping "." for
+// Beside joins a manifest's folder with a path it names, keeping "." for
 // the repository root.
-func beside(manifest, rel string) string {
+func Beside(manifest, rel string) string {
 	return path.Clean(path.Join(path.Dir(manifest), rel))
-}
-
-// lineOf finds the first line containing text, or 1.
-func lineOf(lines []string, text string) int {
-	for i, line := range lines {
-		if strings.Contains(line, text) {
-			return i + 1
-		}
-	}
-	return 1
 }

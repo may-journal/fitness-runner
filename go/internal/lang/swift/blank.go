@@ -1,4 +1,4 @@
-package main
+package swift
 
 import "strings"
 

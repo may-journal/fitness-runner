@@ -1,0 +1,83 @@
+package golang
+
+import (
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"path/filepath"
+	"regexp"
+	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+)
+
+// Tests finds go test requirement tests: Test0001_1 owns 0001.1.
+var Tests = lang.Tests{
+	Scan:   scan,
+	Name:   func(id string) string { return "Test" + strings.Replace(id, ".", "_", 1) },
+	Source: func(lower string) bool { return strings.HasSuffix(lower, testSuffix) },
+}
+
+// testSuffix ends every file go test builds only for tests.
+const testSuffix = "_test" + Ext
+
+var (
+	// testFunc matches the names go test runs: Test, then no lowercase letter.
+	testFunc = regexp.MustCompile(`^Test($|[^a-z])`)
+	// testID matches a test named for an acceptance: Test0001_1 is 0001.1.
+	testID = regexp.MustCompile(`^Test(\d{4})_([1-9]\d*)$`)
+)
+
+// scan reads every tracked Go test file's tests; a repo with any Go file
+// is written in Go.
+func scan(root string) ([]lang.Test, []string, bool, error) {
+	files := walkfs.FilesByExt(root, testSuffix)
+	tests, err := scanTests(root, files)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	return tests, files, len(walkfs.FilesByExt(root, Ext)) > 0, nil
+}
+
+// scanTests parses every test file and returns its test declarations.
+func scanTests(root string, files []string) ([]lang.Test, error) {
+	fset := token.NewFileSet()
+	var tests []lang.Test
+	for _, f := range files {
+		parsed, err := parser.ParseFile(fset, filepath.Join(root, filepath.FromSlash(f)), nil, parser.SkipObjectResolution)
+		if err != nil {
+			return nil, err
+		}
+		tests = append(tests, fileTests(fset, f, parsed)...)
+	}
+	return tests, nil
+}
+
+// fileTests returns one file's top-level test functions.
+func fileTests(fset *token.FileSet, file string, parsed *ast.File) []lang.Test {
+	var tests []lang.Test
+	for _, decl := range parsed.Decls {
+		if fn, ok := decl.(*ast.FuncDecl); ok && isTest(fn) {
+			loc := fmt.Sprintf("%s:%d", file, fset.Position(fn.Pos()).Line)
+			tests = append(tests, lang.Test{Name: fn.Name.Name, ID: idOf(fn.Name.Name), Loc: loc, File: file})
+		}
+	}
+	return tests
+}
+
+// isTest reports whether fn is a function go test runs as a test.
+func isTest(fn *ast.FuncDecl) bool {
+	name := fn.Name.Name
+	return fn.Recv == nil && name != "TestMain" && testFunc.MatchString(name) && fn.Type.Params.NumFields() == 1
+}
+
+// idOf returns the acceptance ID a test name carries, or "".
+func idOf(name string) string {
+	m := testID.FindStringSubmatch(name)
+	if m == nil {
+		return ""
+	}
+	return m[1] + "." + m[2]
+}

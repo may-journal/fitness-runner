@@ -1,4 +1,4 @@
-package main
+package node
 
 import (
 	"fmt"
@@ -7,9 +7,22 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/javascript"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
+
+// Tests finds vitest and jest requirement tests: test("0001.1 …") owns
+// 0001.1.
+var Tests = lang.Tests{Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }}
+
+// scanTests reads every script test file's tests; a repo with any script
+// is written in TypeScript or JavaScript.
+func scanTests(root string) ([]lang.Test, []string, bool, error) {
+	scripts := Scripts(root)
+	files := scriptTestFiles(scripts)
+	tests, err := scanScripts(root, files)
+	return tests, files, len(scripts) > 0, err
+}
 
 var (
 	// scriptTestID matches a vitest title that opens with an acceptance ID:
@@ -24,8 +37,8 @@ var (
 )
 
 // scanScripts reads every vitest or jest test file and returns its tests.
-func scanScripts(root string, files []string) ([]goTest, error) {
-	var tests []goTest
+func scanScripts(root string, files []string) ([]lang.Test, error) {
+	var tests []lang.Test
 	for _, f := range files {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
 		if err != nil {
@@ -41,7 +54,7 @@ func scanScripts(root string, files []string) ([]goTest, error) {
 func scriptTestFiles(scripts []string) []string {
 	var out []string
 	for _, f := range scripts {
-		if walkfs.ScriptTest(f) {
+		if ScriptTest(f) {
 			out = append(out, f)
 		}
 	}
@@ -51,14 +64,14 @@ func scriptTestFiles(scripts []string) []string {
 // scriptFileTests returns each it or test call in one file. Comments and
 // strings are tokens of their own, so a call inside them is no test, and
 // describe titles never name a test.
-func scriptFileTests(file, src string) []goTest {
+func scriptFileTests(file, src string) []lang.Test {
 	tokens := javascript.Lex(src)
-	var tests []goTest
+	var tests []lang.Test
 	for i := range tokens {
 		if title, ok := testCall(tokens, i); ok {
 			loc := fmt.Sprintf("%s:%d", file, strings.Count(src[:tokens[i].Pos], "\n")+1)
 			name := tokens[i].Text + "(" + shownTitle(title) + ")"
-			tests = append(tests, goTest{name: name, id: scriptIDOf(title), loc: loc, file: file, lang: langScript})
+			tests = append(tests, lang.Test{Name: name, ID: scriptIDOf(title), Loc: loc, File: file})
 		}
 	}
 	return tests

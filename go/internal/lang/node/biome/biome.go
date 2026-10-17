@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 )
 
 // NotInstalled is the failure a check reports when the repo chose Biome but
@@ -49,7 +49,7 @@ func hasConfig(root string) bool {
 // declared reports whether package.json names @biomejs/biome in its
 // dependencies or devDependencies.
 func declared(root string) bool {
-	raw, err := os.ReadFile(filepath.Join(root, nodejs.Manifest))
+	raw, err := os.ReadFile(filepath.Join(root, node.Manifest))
 	if err != nil {
 		return false
 	}
@@ -139,7 +139,7 @@ func Check(root, command string, flags, paths []string, fallback string, show fu
 // usable resolves the biome binary and the diagnostics cap its version takes,
 // or the failure when none resolves or it is older than 1.8.
 func usable(root string) (bin, capFlag, failure string) {
-	bin, found := nodejs.FindTool(root, "biome")
+	bin, found := node.FindTool(root, "biome")
 	if !found {
 		return "", "", NotInstalled
 	}

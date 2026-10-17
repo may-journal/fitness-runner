@@ -1,14 +1,14 @@
-// Command fitness-check-requirements enforces docs/requirements in Go, Swift,
-// TypeScript, and JavaScript repos: each file is one requirement with a
+// Command fitness-check-requirements enforces docs/requirements in every
+// repo a language module covers: each file is one requirement with a
 // unique four-digit ID, a Why, a Measurement ratio with one cited source,
 // and acceptances written as a single Given, When, and Then chain. Every
-// acceptance is owned by exactly one test named for it (Go Test0001_1, Swift
-// test0001_1, or vitest test("0001.1 …") owns 0001.1), and every test must
-// own one, so a test that proves no requirement is either a missing
-// requirement or a duplicate. Git history supplies removed IDs, so an ID is
-// never reused. Two docs that cover one area fail, per ADR 0004. A staged or
-// pull request change to a requirement test must change its doc too, and the
-// reverse, unless a commit trailer exempts it.
+// acceptance is owned by exactly one test named for it the way its language
+// module names tests, and every test must own one, so a test that proves no
+// requirement is either a missing requirement or a duplicate. Git history
+// supplies removed IDs, so an ID is never reused. Two docs that cover one
+// area fail, per ADR 0004. A staged or pull request change to a requirement
+// test must change its doc too, and the reverse, unless a commit trailer
+// exempts it.
 package main
 
 import (
@@ -17,6 +17,8 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -32,14 +34,14 @@ const docsDir = "docs/requirements/"
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	paths := docPaths(root)
-	tests, files, repo, err := collectTests(root)
-	if err != nil || repo == (langs{}) {
+	tests, files, written, err := collectTests(root, langs.All)
+	if err != nil || len(written) == 0 {
 		return checkkit.Pass(0), err
 	}
 	if _, ok := checkkit.CtxMessage(); ok {
 		return result(len(paths)+len(files), pairErrors(root, paths, files, tests, commitChanges(root))), nil
 	}
-	errs, err := docErrors(root, paths, tests, repo)
+	errs, err := docErrors(root, paths, tests, written)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
@@ -48,7 +50,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // docErrors judges every doc's shape, its IDs against history, docs that
 // share an area, and which tests own its acceptances.
-func docErrors(root string, paths []string, tests []goTest, repo langs) ([]string, error) {
+func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) ([]string, error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
 		return nil, err
@@ -56,7 +58,7 @@ func docErrors(root string, paths []string, tests []goTest, repo langs) ([]strin
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
 	errs = append(errs, overlapErrors(docs)...)
-	return append(errs, ownershipErrors(docs, tests, repo)...), nil
+	return append(errs, ownershipErrors(docs, tests, written)...), nil
 }
 
 // result passes with no errors and fails with any.
@@ -67,25 +69,27 @@ func result(files int, errs []string) checkkit.Result {
 	return checkkit.Pass(files)
 }
 
-// collectTests reads every Go, Swift, and vitest test, the files that hold
-// them, and which languages the repo is written in.
-func collectTests(root string) ([]goTest, []string, langs, error) {
-	goFiles := testFiles(root)
-	tests, err := scanTests(root, goFiles)
-	if err != nil {
-		return nil, nil, langs{}, err
+// collectTests reads every module's tests and the files that hold them, in
+// registry order, and lists the modules whose language the repo is written
+// in.
+func collectTests(root string, modules []lang.Module) ([]reqTest, []string, []lang.Module, error) {
+	var tests []reqTest
+	var files []string
+	var written []lang.Module
+	for _, m := range modules {
+		found, held, writes, err := m.Tests.Scan(root)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+		for _, t := range found {
+			tests = append(tests, reqTest{Test: t, module: m})
+		}
+		files = append(files, held...)
+		if writes {
+			written = append(written, m)
+		}
 	}
-	swiftFiles := walkfs.FilesByExt(root, ".swift")
-	swiftTests, err := scanSwift(root, swiftFiles)
-	if err != nil {
-		return nil, nil, langs{}, err
-	}
-	scripts := walkfs.Scripts(root)
-	scriptFiles := scriptTestFiles(scripts)
-	scriptTests, err := scanScripts(root, scriptFiles)
-	repo := langs{goCode: len(walkfs.FilesByExt(root, ".go")) > 0, swift: len(swiftFiles) > 0, script: len(scripts) > 0}
-	tests = append(append(tests, swiftTests...), scriptTests...)
-	return tests, append(append(goFiles, swiftTestFiles(swiftTests)...), scriptFiles...), repo, err
+	return tests, files, written, nil
 }
 
 // docPaths lists every requirement doc. A template.md beside them is the

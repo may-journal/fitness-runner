@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 )
 
 func main() {
@@ -26,7 +26,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	if !nodejs.Applies(root) {
+	if !node.Applies(root) {
 		return checkkit.Pass(0), nil
 	}
 	raw, err := os.ReadFile(filepath.Join(root, ".nvmrc"))

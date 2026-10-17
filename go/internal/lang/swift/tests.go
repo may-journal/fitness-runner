@@ -1,12 +1,31 @@
-package main
+package swift
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
+
+// Tests finds Swift requirement tests: test0001_1 owns 0001.1.
+var Tests = lang.Tests{Scan: scan, Name: func(id string) string { return "test" + strings.Replace(id, ".", "_", 1) }}
+
+// scan reads every Swift file's tests; a repo with any Swift file is
+// written in Swift.
+func scan(root string) ([]lang.Test, []string, bool, error) {
+	files := walkfs.FilesByExt(root, Ext)
+	tests, err := scanSwift(root, files)
+	if err != nil {
+		return nil, nil, false, err
+	}
+	return tests, swiftTestFiles(tests), len(files) > 0, nil
+}
 
 var (
 	// swiftFunc matches a function declaration; group 2 is set when it takes
@@ -28,8 +47,8 @@ var (
 // test… in a class that inherits XCTestCase, and functions marked @Test.
 // Comments and string literals are blanked first, so a name inside them is
 // never a test.
-func scanSwift(root string, files []string) ([]goTest, error) {
-	var tests []goTest
+func scanSwift(root string, files []string) ([]lang.Test, error) {
+	var tests []lang.Test
 	for _, f := range files {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
 		if err != nil {
@@ -41,20 +60,20 @@ func scanSwift(root string, files []string) ([]goTest, error) {
 }
 
 // swiftFileTests returns the tests declared in one file's blanked code.
-func swiftFileTests(file, code string) []goTest {
+func swiftFileTests(file, code string) []lang.Test {
 	funcs := swiftFunc.FindAllStringSubmatchIndex(code, -1)
 	starts := make([]int, len(funcs))
 	for i, m := range funcs {
 		starts[i] = m[0]
 	}
 	bodies := xcTestBodies(code)
-	var tests []goTest
+	var tests []lang.Test
 	for i, owner := range enclosing(code, starts) {
 		m := funcs[i]
 		name := code[m[2]:m[3]]
 		if isSwiftTest(code, m, bodies[owner] && strings.HasPrefix(name, "test")) {
 			loc := fmt.Sprintf("%s:%d", file, strings.Count(code[:m[0]], "\n")+1)
-			tests = append(tests, goTest{name: name, id: swiftIDOf(name), loc: loc, file: file, lang: langSwift})
+			tests = append(tests, lang.Test{Name: name, ID: swiftIDOf(name), Loc: loc, File: file})
 		}
 	}
 	return tests
@@ -117,10 +136,10 @@ func swiftIDOf(name string) string {
 }
 
 // swiftTestFiles lists the files that declare at least one Swift test.
-func swiftTestFiles(tests []goTest) []string {
+func swiftTestFiles(tests []lang.Test) []string {
 	seen := map[string]bool{}
 	for _, t := range tests {
-		seen[t.file] = true
+		seen[t.File] = true
 	}
-	return sortedKeys(seen)
+	return slices.Sorted(maps.Keys(seen))
 }

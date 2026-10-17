@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -27,7 +27,7 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	return walkfs.ScanFiles(root, nodejs.SourceExts, scanContent), nil
+	return walkfs.ScanFiles(root, node.SourceExts, scanContent), nil
 }
 
 // scanContent returns one "path:line: directive" error per line in content

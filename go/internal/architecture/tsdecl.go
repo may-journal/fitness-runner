@@ -4,8 +4,9 @@ import (
 	"path"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/javascript"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
 // tsExts are the TypeScript sources the code view reads.
@@ -76,7 +77,7 @@ func tsLex(file, src string) []javascript.Token {
 // tsDecls reads every TypeScript source that is not a test.
 func (m *Model) tsDecls(x *declIndex) {
 	for _, s := range m.Sources {
-		if typeScript(s.Path) && s.Category != "test" && !walkfs.ScriptTest(s.Path) {
+		if typeScript(s.Path) && s.Category != "test" && !lang.IsTestFile(langs.All, s.Path) {
 			r := newTSReader(s.Path, strings.Join(m.repo.read(s.Path), "\n"))
 			r.x = x
 			r.read()

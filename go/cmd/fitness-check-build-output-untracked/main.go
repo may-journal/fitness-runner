@@ -21,9 +21,13 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/nodejs"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
+
+// name is the check's name, which language modules key their scans by.
+const name = "build-output-untracked"
 
 // Messages verbatim from the TS enUS catalog.
 const (
@@ -41,7 +45,7 @@ var distSpecifierRe = regexp.MustCompile(`(^|/)dist/|\.\./dist`)
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "build-output-untracked"},
+		Describe: checkkit.Describe{Name: name},
 		Run:      run,
 	})
 }
@@ -140,10 +144,10 @@ func dedupeSorted(lists ...[]string) []string {
 	return out
 }
 
-// collectSourceFiles returns the sorted, deduped source files (.ts/.mts/.cts)
-// under root, tests included.
+// collectSourceFiles returns the sorted source files under root, tests
+// included, in the endings each language module scans for this check.
 func collectSourceFiles(root string) []string {
-	return walkfs.FilesByExt(root, nodejs.TypeScriptExts...)
+	return walkfs.FilesByExt(root, lang.ScanExts(langs.All, name)...)
 }
 
 // scanFileForDistImports reports rule B: a `path:line imports build output`

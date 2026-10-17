@@ -6,13 +6,12 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
 
-- Pure logic: `node-version`, `gitignore-why`, `changelog`, `changelog-updated`, `changelog-bullets`, `semantic-commit`, `commit-attribution`, `plan-trailer`, `read-repo-first`, `markdown-filename-kebab-case`, `markdown-filename-camel-case`, `markdown-front-matter`, `markdown-links`, `markdown-no-bold-italic`, `no-eslint-disable`, `build-output-untracked`, `repeated-string-literals`, `text-readability`, `prose-budget`, `no-plans-dir`, `no-contrastive-reframing`
+- Pure logic: rules over file names, text, commits, and plans, such as `gitignore-why`, `semantic-commit`, `markdown-links`, and `prose-budget`
 - Issue and PR body checks: `plan-structure`, `pr-structure`, `pr-closes-issue`, `issue-checklist`; file-level `doc-template` (files match the nearest `*.template.md`) and `requirements` (tests change with their docs)
 - `plan-check`, `pr-check`, and `close-check` judge a GitHub blob with the body and prose checks, then an after-effect reacts; [`fitness --blob`](check-protocol.md#blob-input) judges any text
-- Parsers and network: `architecture-contract`, `architecture-actors`, `architecture-containers`, `architecture-components`, `architecture-code`, `architecture-journey`, `issue-link-once`, the mermaid diagram/callout checks, `vitest-coverage-exclude`, and `dependency-currency`
+- Parsers and network: the `architecture-*` checks, `issue-link-once`, and the mermaid diagram/callout checks
 - Native engines: `cspell` (embedded dictionaries, ~217k words) and `jscpd` (token-based clone detection) — no external tool needed
-- `go-complexity`: cyclomatic complexity ceiling for Go, the house eslint rule's counterpart
-- Tool wrappers: `prettier`, `eslint`, `vitest-coverage-full`, `swiftlint` — these exec the real tool, resolved from `node_modules/.bin` (walking up) then PATH, never npx
+- Language checks: each [language module](../go/internal/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
 `release-changelog` correlates Release Please metadata with the version file. `pr-check` holds a PR to one [entry file](../go/cmd/fitness-check-changelog/README.md#entry-files) named for its heading's date, naming extras and a bad name. The description must link the entry the PR adds and never copy a bullet it adds. No check reads `CHANGELOG.md`; each release's notes come from its entry files.
@@ -21,10 +20,10 @@ Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/
 
 ## Every tracked file
 
-Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and jscpd also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, cspell `ignorePaths`, or a `.prettierignore` fails.
+Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and jscpd also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.
 
 ## Shared configs
 
-The opinionated tool configs (eslint flat config, prettier, vitest thresholds, cspell) are embedded inside the check binaries ([go/internal/sharedconf](../go/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.
+The opinionated tool configs are embedded inside the check binaries ([go/internal/sharedconf](../go/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.
 
-Next comes an installed `@mayjournal/fitness-shared` npm package (previously published versions keep working). The embedded copy is the final fallback. The eslint config references plugins that must exist in the consumer repo — exactly the check's peer-tool contract.
+Next comes an installed copy of the shared config package, and the embedded copy is the final fallback. A config may name plugins the consumer repo must install, which is the check's peer-tool contract.
