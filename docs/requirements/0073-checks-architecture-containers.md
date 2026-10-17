@@ -23,7 +23,7 @@ Source: #287
         - When I check its containers
             - Then it passes
 - 0073.2
-    - Given Developer has a Go command, Node service, or deploy file the view does not declare
+    - Given Developer has a Go command, Java application, Node service, or deploy file the view does not declare
         - When I check its containers
             - Then the error names the entry point
 - 0073.4

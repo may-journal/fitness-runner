@@ -47,6 +47,6 @@ Source: #289
         - When I check its code
             - Then the error names the class line and where the symbol is declared, and a matching row passes
 - 0076.10
-    - Given Developer has a TypeScript code view
+    - Given Developer has a TypeScript or Java code view
         - When I check its code
-            - Then each class resolves to its declaration, members, and edges, in TSX and without semicolons too, and an unnamed exported class fails
+            - Then each class resolves to its declaration, members, and edges, for TSX, missing semicolons and nested types, and an unnamed exported class fails
