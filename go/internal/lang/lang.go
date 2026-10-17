@@ -33,8 +33,8 @@ type Module struct {
 	// Lockfiles are the file names its package managers write on install,
 	// each a name or a path.Match pattern for one.
 	Lockfiles []string
-	// BuildOutput, when set, lists the git path patterns of the build output
-	// the language's projects in a repo write, which git must not track.
+	// BuildOutput, when set, lists the tracked files in a repo that are
+	// build output the language's projects write, which git must not track.
 	BuildOutput func(root string) []string
 	// Tools are the programs its checks run.
 	Tools []string
@@ -301,19 +301,22 @@ func Lockfiles(modules []Module) []string {
 	return append(out, otherLockfiles()...)
 }
 
-// IsLockfile reports whether file's base name is a lockfile a package
-// manager writes, by any module's names or patterns or the lockfiles
-// folder.
-func IsLockfile(modules []Module, file string) bool {
-	base := path.Base(file)
-	return slices.ContainsFunc(Lockfiles(modules), func(pattern string) bool {
-		matched, err := path.Match(pattern, base)
-		return err == nil && matched
-	})
+// IsLockfile returns a test, built once, of whether a file's base name is
+// a lockfile a package manager writes, by any module's names or patterns
+// or the lockfiles folder.
+func IsLockfile(modules []Module) func(file string) bool {
+	patterns := Lockfiles(modules)
+	return func(file string) bool {
+		base := path.Base(file)
+		return slices.ContainsFunc(patterns, func(pattern string) bool {
+			matched, err := path.Match(pattern, base)
+			return err == nil && matched
+		})
+	}
 }
 
-// BuildOutput returns the build output patterns every module finds in
-// the repo at root, in registry order.
+// BuildOutput returns the tracked build output files every module finds
+// in the repo at root, in registry order.
 func BuildOutput(modules []Module, root string) []string {
 	var out []string
 	for _, m := range modules {

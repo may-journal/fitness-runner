@@ -62,12 +62,37 @@ func Test0079_1(t *testing.T) {
 	repo := checkstyleRepo(t, checkstyleMaven, map[string]string{checkstyleConfig: checkstyleCeiling})
 	_, out, code := javaRun(t, repo, "checkstyle", map[string][]response{"mvn": {checkstyleWarning(repo)}})
 	sees(t, out, code, 1, javaSource+":3:5 - Name 'Foo' must match pattern '^[a-z][a-zA-Z0-9]*$' (MethodName)")
+	// Gradle prints a warning only when its task runs, never when it holds
+	// the task up to date, so each task must rerun.
+	repo = javaRepo(t, map[string]string{"build.gradle": "plugins { id 'java'; id 'checkstyle' }\n", checkstyleConfig: checkstyleCeiling})
+	rp, out, code := javaRun(t, repo, "checkstyle", map[string][]response{"gradle": {checkstyleGradleWarning(repo)}})
+	sees(t, out, code, 1, javaSource+":3:5 - Name 'Foo' must match pattern '^[a-z][a-zA-Z0-9]*$' (MethodName)")
+	if !rp.called("gradle", "checkstyleMain --rerun", "checkstyleTest --rerun") {
+		t.Errorf("gradle calls = %q, want both Checkstyle tasks forced to rerun", rp.calls("gradle"))
+	}
+}
+
+// checkstyleGradleWarning is Gradle's answer for one warning in the Java
+// source of repo: a plain Checkstyle line, and a passing build, since
+// warnings alone do not fail Gradle's Checkstyle tasks.
+func checkstyleGradleWarning(repo string) response {
+	return response{
+		Match: []string{"checkstyleMain"},
+		Stdout: "> Task :checkstyleMain\n" +
+			"[ant:checkstyle] [WARN] " + filepath.Join(repo, javaSource) + ":3:5: Name 'Foo' must match pattern '^[a-z][a-zA-Z0-9]*$'. [MethodName]\n" +
+			"\nBUILD SUCCESSFUL in 3s\n",
+	}
 }
 
 func Test0079_2(t *testing.T) {
 	t.Parallel()
-	repo := checkstyleRepo(t, checkstyleMaven, map[string]string{checkstyleConfig: checkstyleCeiling})
-	_, out, code := javaRun(t, repo, "checkstyle", map[string][]response{"mvn": {checkstyleClean}})
+	repo := checkstyleRepo(t, checkstyleMaven, map[string]string{
+		checkstyleConfig:                    checkstyleCeiling,
+		"config/checkstyle/strict.xml":      checkstyleCeiling,
+		"src/test/resources/no-ceiling.xml": checkstyleNoCeiling,
+	})
+	clean := response{Match: []string{"checkstyle:check", "checkstyle.config.location=", "/" + checkstyleConfig}, Stdout: checkstyleClean.Stdout}
+	_, out, code := javaRun(t, repo, "checkstyle", map[string][]response{"mvn": {clean}})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWith(t, out, "checkstyle", "1")
 }

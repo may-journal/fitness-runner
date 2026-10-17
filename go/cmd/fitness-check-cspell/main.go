@@ -82,10 +82,11 @@ func targets(root string) []string {
 	if !scanned {
 		files = walkfs.FilesByExt(root, "")
 	}
+	// A lockfile's words are package names and hashes no one can fix.
+	lockfile := lang.IsLockfile(langs.All)
 	var kept []string
 	for _, f := range files {
-		// A lockfile's words are package names and hashes no one can fix.
-		if !lang.IsLockfile(langs.All, f) {
+		if !lockfile(f) {
 			kept = append(kept, f)
 		}
 	}

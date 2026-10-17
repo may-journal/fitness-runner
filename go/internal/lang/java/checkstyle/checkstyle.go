@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -53,7 +54,7 @@ var plugin = java.Plugin{
 			Declared: regexp.MustCompile(`(?m)id\s*\(?\s*["']checkstyle["']|plugin\s*[:=]\s*["']checkstyle["']|^\s*checkstyle\s*(?:\{|$)`),
 			Missing:  "task 'checkstyleMain' not found",
 			Snippet:  `plugins { id("checkstyle") }`,
-			Args:     func(string, java.Project) []string { return []string{"checkstyleMain", "checkstyleTest"} },
+			Args:     gradleArgs,
 		},
 	},
 	Judge: judge,
@@ -72,23 +73,38 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 }
 
 // mavenArgs runs the check goal over test sources too, failing on warnings,
-// with the repo's one config when the build names none of its own.
+// with the repo's config when the build names none of its own.
 func mavenArgs(root string, _ java.Project) []string {
 	args := []string{"checkstyle:check", "-D", "checkstyle.violationSeverity=warning", "-D", "checkstyle.includeTestSourceDirectory=true"}
-	if found := configs(root); len(found) == 1 {
-		abs, err := filepath.Abs(filepath.Join(root, filepath.FromSlash(found[0])))
-		if err == nil {
+	if config, ok := mainConfig(configs(root)); ok {
+		if abs, err := filepath.Abs(filepath.Join(root, filepath.FromSlash(config))); err == nil {
 			args = append(args, "-D", "checkstyle.config.location="+abs)
 		}
 	}
 	return args
 }
 
-// configs lists the repo's tracked Checkstyle configs.
+// mainConfig picks the config a Maven build without its own uses: the
+// repo's only one, else the one at the place Gradle looks.
+func mainConfig(found []string) (string, bool) {
+	if len(found) == 1 {
+		return found[0], true
+	}
+	return defaultConfig, slices.Contains(found, defaultConfig)
+}
+
+// gradleArgs runs both Checkstyle tasks even when Gradle holds them up to
+// date, since an up-to-date task prints none of its warnings.
+func gradleArgs(string, java.Project) []string {
+	return []string{"checkstyleMain", "--rerun", "checkstyleTest", "--rerun"}
+}
+
+// configs lists the repo's tracked Checkstyle configs, test fixtures left
+// out.
 func configs(root string) []string {
 	var out []string
 	for _, f := range walkfs.FilesByExt(root, ".xml") {
-		if body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f))); err == nil && checkerRe.Match(body) {
+		if body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f))); err == nil && !java.Fixture(f) && checkerRe.Match(body) {
 			out = append(out, f)
 		}
 	}

@@ -56,8 +56,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 // docs repeat.
 func scanTargets(root string) []string {
 	var out []string
+	lockfile := lang.IsLockfile(langs.All)
 	for _, p := range walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, "")) {
-		if !mdtemplate.IsTemplate(p) && !lang.IsLockfile(langs.All, p) {
+		if !mdtemplate.IsTemplate(p) && !lockfile(p) {
 			out = append(out, p)
 		}
 	}

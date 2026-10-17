@@ -2,7 +2,10 @@
 
 package requirements
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // spotlessMaven declares Spotless in a Maven build.
 const spotlessMaven = "<plugin><groupId>com.diffplug.spotless</groupId><artifactId>spotless-maven-plugin</artifactId></plugin>"
@@ -36,18 +39,25 @@ func Test0078_1(t *testing.T) {
 
 func Test0078_2(t *testing.T) {
 	t.Parallel()
-	repo := javaRepo(t, map[string]string{
-		"pom.xml":                         javaPom(spotlessMaven),
+	modules := map[string]string{
+		"pom.xml":                         javaParent(spotlessMaven, "core", "web"),
 		"core/pom.xml":                    javaPom(""),
 		"core/src/main/java/Core.java":    "class Core {}\n",
 		"core/src/test/resources/pom.xml": "<project/>\n",
 		"web/pom.xml":                     javaPom(""),
 		"web/src/main/java/web/Page.java": "class Page {}\n",
-	})
-	rp, out, code := javaRun(t, repo, "spotless", map[string][]response{"mvn": {spotlessClean}})
+	}
+	rp, out, code := javaRun(t, javaRepo(t, modules), "spotless", map[string][]response{"mvn": {spotlessClean}})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWith(t, out, "spotless", "3")
 	javaCalledOnce(t, rp, "mvn")
+	// A nested build no pom lists as a module is a build root of its own.
+	modules["tools/pom.xml"] = javaPom(spotlessMaven)
+	rp, out, code = javaRun(t, javaRepo(t, modules), "spotless", map[string][]response{"mvn": {spotlessClean}})
+	sees(t, out, code, 0, "All 1 checks passed")
+	if calls := rp.calls("mvn"); len(calls) != 2 {
+		t.Errorf("mvn calls = %q, want one per build root", calls)
+	}
 }
 
 func Test0078_3(t *testing.T) {
@@ -74,10 +84,17 @@ func Test0078_4(t *testing.T) {
 
 func Test0078_5(t *testing.T) {
 	t.Parallel()
-	repo := javaRepo(t, map[string]string{"pom.xml": javaPom("")})
+	repo := javaRepo(t, map[string]string{
+		"pom.xml":                         javaPom(""),
+		"tools/pom.xml":                   javaPom(spotlessMaven),
+		"src/test/resources/fake/pom.xml": javaPom(spotlessMaven),
+	})
 	_, out, code := javaRun(t, repo, "spotless", map[string][]response{"mvn": {spotlessClean}})
 	sees(t, out, code, 1, "Spotless is not in the Maven build at .; add it:")
 	javaSeesSnippet(t, out, "<artifactId>spotless-maven-plugin</artifactId>")
+	if strings.Contains(read(out), "build at tools") {
+		t.Errorf("the nested build declares Spotless, so only the root may fail:\n%s", out)
+	}
 }
 
 func Test0078_6(t *testing.T) {

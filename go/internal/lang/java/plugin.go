@@ -71,7 +71,7 @@ func (pl Plugin) runAll(root string, roots []Project) ([]string, error) {
 // run runs the plugin for one build root and returns its findings.
 func (pl Plugin) run(root string, p Project) ([]string, error) {
 	use := pl.Uses[p.Build]
-	if !Declares(root, p.Build, use.Declared) {
+	if !Declares(root, p, use.Declared) {
 		return []string{pl.missing(p, use)}, nil
 	}
 	bin, ok := Tool(root, p)

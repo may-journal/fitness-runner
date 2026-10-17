@@ -24,6 +24,15 @@ func javaPom(plugins string) string {
 		"<artifactId>app</artifactId><version>1</version><build><plugins>" + plugins + "</plugins></build></project>\n"
 }
 
+// javaParent is a Maven build that declares plugins and lists modules.
+func javaParent(plugins string, modules ...string) string {
+	list := "<modules>"
+	for _, m := range modules {
+		list += "<module>" + m + "</module>"
+	}
+	return strings.Replace(javaPom(plugins), "<build>", list+"</modules><build>", 1)
+}
+
 // javaRepo makes happyRepo with a Java source and files written over it.
 func javaRepo(t *testing.T, files map[string]string) string {
 	t.Helper()

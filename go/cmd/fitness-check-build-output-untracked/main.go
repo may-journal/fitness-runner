@@ -116,14 +116,10 @@ func trackingErrors(root string, dist bool, output []string) []string {
 	return errors
 }
 
-// trackedOutput returns the tracked files under the build output each
-// language module finds in the repo, sorted.
+// trackedOutput returns the tracked build output files each language
+// module finds in the repo, sorted.
 func trackedOutput(root string) []string {
-	patterns := lang.BuildOutput(langs.All, root)
-	if len(patterns) == 0 {
-		return nil
-	}
-	return dedupeSorted(gitLines(root, append([]string{"ls-files", "--"}, patterns...)...))
+	return dedupeSorted(lang.BuildOutput(langs.All, root))
 }
 
 // isDistIgnored reports whether `git check-ignore -q dist` exits 0 in root
