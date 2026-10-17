@@ -16,11 +16,11 @@ A class is concrete unless it carries `<<abstract>>`. A concrete class resolves 
 | File | A link to a source a view reader reads, in its callout row; a `#L3-L9` anchor narrows it to those lines |
 | Full name | The label, such as `checkkit.Result`, `Store.save`, or `resolveChecks`; a qualifier is a package or an owning type |
 | Kind | Parentheses mean a function or method; none mean a type. `<<interface>>` requires an interface declaration |
-| Signature | The parameter types in parentheses, each as `type`, `name type`, or `name: type`, then an optional result |
+| Signature | The parameter types in parentheses, each as `type`, `name type`, `type name`, or `name: type`, then an optional result |
 
 `()` states no parameters, and a result may be a list such as `(Record, error)`. A method may sit in another file than its type. Class body lines are members: `+Name`, `+Name: Type`, or `+Type Name` is a field; `+Run(string) error` is a method. A type's extensions add members too, in a language that has them.
 
-Mermaid generics such as `Promise~boolean~` read as `Promise<boolean>`. Spaces beside brackets and colons never matter.
+Mermaid generics such as `Promise~boolean~` read as `Promise<boolean>`, and `List~? extends T~` as `List<? extends T>`. A field's type is every word before its name. Spaces beside brackets and colons never matter.
 
 - A class whose linked lines lack the symbol fails, naming where the symbol is declared now, or that it is declared nowhere.
 - A kind, signature, member, or field type that differs fails, naming the class line and the source line.

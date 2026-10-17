@@ -1,5 +1,7 @@
 name: CI (reusable)
 
+# cspell:ignore temurin sdkmanrc
+#
 # The shared fitness file-suite build. A calling repo's ci.yml is a thin
 # caller that passes only its inputs; the whole build lives here.
 on:
@@ -17,6 +19,10 @@ on:
         description: SwiftLint release to install on every runner, so CI and laptops lint alike.
         type: string
         default: 0.65.1
+      java-distribution:
+        description: JDK vendor setup-java installs for a repo with a JDK version file, such as temurin, zulu or corretto.
+        type: string
+        default: temurin
       ref:
         description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
@@ -49,6 +55,16 @@ jobs:
       - name: Install npm packages
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npm ci
+      # Java repos: the spotless, checkstyle, java-version, and java-test
+      # checks run the build with the JDK .java-version pins. A .sdkmanrc or
+      # .tool-versions may name no JDK, so a repo pinning there keeps the
+      # runner's own JDK.
+      - name: Set up Java from .java-version
+        if: ${{ hashFiles('.java-version') != '' }}
+        uses: actions/setup-java@v6
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version-file: .java-version
       - name: Install the pinned fitness bundle
         id: report-step-1
         if: ${{ inputs.ref == '' }}

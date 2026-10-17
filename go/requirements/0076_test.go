@@ -207,7 +207,7 @@ func Test0076_7(t *testing.T) {
 	files := cvFixture()
 	files[cvView] = cvCode("\nclass Contract[\"4 Save contract\"]\nsave --> Contract : 5", "What saving promises.", "Save keeps the promise.")
 	out, code := cvRun(t, files)
-	sees(t, out, code, 1, cvView+":10: Contract \"Save contract\" names no declaration; name a Go, Swift, or TypeScript symbol, or mark it <<abstract>>")
+	sees(t, out, code, 1, cvView+":10: Contract \"Save contract\" names no declaration; name a Go, Swift, TypeScript, or Java symbol, or mark it <<abstract>>")
 	files[cvView] = cvCode("\nclass Contract[\"4 Save contract\"] {\n<<abstract>>\n+promise: one record\n}\nsave --> Contract : 5", "What saving promises.", "Save keeps the promise.")
 	out, code = cvRun(t, files)
 	sees(t, out, code, 0)
@@ -299,4 +299,45 @@ func Test0076_10(t *testing.T) {
 		out, code := cvRun(t, cvEdit(cvScript(), c.file, c.old, c.new))
 		sees(t, out, code, 1, c.want)
 	}
+	out, code = cvRun(t, cvJava())
+	sees(t, out, code, 0)
+	passedWith(t, out, cvCheck, "1")
+	java := []struct{ file, old, new, want string }{
+		{cvJavaDir + "Cache.java", "", "package shop;\n\n// public class Ghost {}\npublic class Cache {}\n\nclass Local {}\n", cvJavaDir + "Cache.java:4: shop.Cache is an exported type in src/main/java/shop, which " + cvView + " shows, but no node names it"},
+		{cvView, "+save(String) boolean", "+save(int) boolean", cvView + ":11: Store: method shop.Store.save at " + cvJavaDir + "Store.java:10 has signature (String) boolean, not save(int) boolean"},
+		{cvView, "+count: int", "+count: long", cvView + ":20: Entry: field shop.Entry.count at " + cvJavaDir + "Store.java:15 is int, not long"},
+		{cvView, "DiskStore --> write : 9\n", "", cvJavaDir + "DiskStore.java:6: DiskStore calls write, but " + cvView + " " + cvNoEdge + "DiskStore -> write" + cvAllowIt},
+		{cvJavaDir + "Store.java", "Store implements Saving", "Store", cvView + ":22: " + cvView + " draws realization Store -> Saving, but no source shows Store conforms to Saving"},
+	}
+	for _, c := range java {
+		out, code := cvRun(t, cvEdit(cvJava(), c.file, c.old, c.new))
+		sees(t, out, code, 1, c.want)
+	}
+}
+
+// cvJavaDir holds the Java sources of cvJava.
+const cvJavaDir = "src/main/java/shop/"
+
+// cvJava is a Java repository whose code view matches its source: an
+// interface, the class implementing it with a nested record, a subclass
+// with a header over two lines, and the static method it calls. A class
+// that is not public and a public test class need no node. The diagram
+// starts on line 4, so the store's members sit on lines 10 and 11, the
+// record's on 19 and 20, and the edges on lines 22 to 25.
+func cvJava() map[string]string {
+	files := acFixture(acRoot)
+	files[cvJavaDir+"Saving.java"] = "package shop;\n\n// Saving writes records.\npublic interface Saving {\n  boolean save(String id);\n}\n"
+	files[cvJavaDir+"Store.java"] = "package shop;\n\nimport java.util.Map;\n\n/** Store keeps records; Sink names nothing here. */\npublic class Store implements Saving {\n  final Map<String, Integer> records = Map.of(), spare = null;\n  private String label = \"Sink\";\n\n  @Override\n  public boolean save(final String id) {\n    return records.containsKey(id);\n  }\n\n  public record Entry(String key, int count) {}\n}\n"
+	files[cvJavaDir+"DiskStore.java"] = "package shop;\n\npublic class DiskStore\n    extends Store {\n  public void flush(boolean force) {\n    Writer.write(records);\n  }\n}\n"
+	files[cvJavaDir+"Writer.java"] = "package shop;\n\npublic final class Writer {\n  static void write(java.util.Map<String, Integer> records) {}\n}\n"
+	files[cvJavaDir+"Sink.java"] = "package shop;\n\nclass Sink {}\n"
+	files["src/test/java/shop/StoreTest.java"] = "package shop;\n\npublic class StoreTest {}\n"
+	files[cvView] = acView("classDiagram\nclass Saving[\"1 Saving\"] {\n<<interface>>\n+save(String id) boolean\n}\nclass Store[\"2 shop.Store\"] {\n+records: Map~String, Integer~\n+save(String) boolean\n}\n"+
+		"class DiskStore[\"3 DiskStore\"] {\n+flush(boolean) void\n}\nclass Writer[\"4 Writer\"]\nclass write[\"5 Writer.write(java.util.Map~String, Integer~) void\"]\nclass Entry[\"6 Store.Entry\"] {\n+key: String\n+count: int\n}\n"+
+		"Store ..|> Saving : 7\nStore <|-- DiskStore : 8\nDiskStore --> write : 9\nDiskStore --> Writer : 10",
+		"Saves records, in [Saving.java](../"+cvJavaDir+"Saving.java).", "Keeps records, in [Store.java](../"+cvJavaDir+"Store.java).",
+		"Writes to disk, in [DiskStore.java](../"+cvJavaDir+"DiskStore.java).", "Writes, in [Writer.java](../"+cvJavaDir+"Writer.java).",
+		"Writes records, in [Writer.java](../"+cvJavaDir+"Writer.java).", "One entry, in [Store.java](../"+cvJavaDir+"Store.java).",
+		"The store saves.", "A disk store is a store.", "Flushing writes.", "Flushing names the writer.")
+	return files
 }

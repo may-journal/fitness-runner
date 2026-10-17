@@ -85,9 +85,10 @@ type Tests struct {
 	Scan func(root string) (tests []Test, files []string, written bool, err error)
 	// Name is the test name that owns an acceptance ID, such as Test0001_1.
 	Name func(id string) string
-	// Source, when set, reports a lowercase source path only tests build,
-	// which the architecture views class as a test.
-	Source func(lower string) bool
+	// Source, when set, reports a source path, as tracked, only tests
+	// build, which the architecture views class as a test. It gets the
+	// path's own case, since a language may tell folders apart by it.
+	Source func(file string) bool
 	// Numbers, when set, lists the requirement numbers a test file's name
 	// carries, or none for a file not named for requirements.
 	Numbers func(file string) []string
@@ -143,10 +144,10 @@ func IsTestFile(modules []Module, file string) bool {
 	return slices.ContainsFunc(modules, func(m Module) bool { return m.TestFile != nil && m.TestFile(file) })
 }
 
-// IsTestSource reports whether a module classes the lowercase source path
-// as built only for tests.
-func IsTestSource(modules []Module, lower string) bool {
-	return slices.ContainsFunc(modules, func(m Module) bool { return m.Tests.Source != nil && m.Tests.Source(lower) })
+// IsTestSource reports whether a module classes the source path as built
+// only for tests.
+func IsTestSource(modules []Module, file string) bool {
+	return slices.ContainsFunc(modules, func(m Module) bool { return m.Tests.Source != nil && m.Tests.Source(file) })
 }
 
 // IsToolConfig reports whether the module owning file's ending says it

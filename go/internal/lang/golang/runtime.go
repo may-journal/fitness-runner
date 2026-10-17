@@ -44,7 +44,7 @@ var Runtime = runtimes.Reader{Sources: map[string]func(*runtimes.Finder, string)
 // is a generator.
 func command(f *runtimes.Finder, file string) {
 	dir := path.Dir(file)
-	if known(f, goCommand, dir) {
+	if f.Known(goCommand, dir) {
 		return
 	}
 	lines, ok := f.Lines(file)
@@ -95,14 +95,4 @@ func mainLine(lines []string) int {
 		}
 	}
 	return 0
-}
-
-// known reports whether a product of kind is already built from dir.
-func known(f *runtimes.Finder, kind, dir string) bool {
-	for _, p := range f.Products {
-		if p.Kind == kind && p.Paths[0] == dir {
-			return true
-		}
-	}
-	return false
 }

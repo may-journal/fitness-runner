@@ -19,7 +19,7 @@ Source: #285
 ## Requirements
 
 - 0070.11
-    - Given Developer has no product code and no architecture
+    - Given Developer has no product code, only tests in any test folder, and no architecture
         - When I check its contract
             - Then it passes with zero files
 - 0070.2
@@ -27,7 +27,7 @@ Source: #285
         - When I renumber their callouts
             - Then the same diagram IDs pass
 - 0070.10
-    - Given Developer has a partial architecture, or Go, Swift, TypeScript, or JavaScript product code and no architecture
+    - Given Developer has a partial architecture, or Go, Swift, TypeScript, JavaScript or Java product code and no architecture
         - When I check it
             - Then it fails asking for each missing view
 - 0070.4

@@ -10,50 +10,21 @@ import (
 // relate nothing: heritage clauses, then names of other TypeScript nodes.
 func relate(g *codemodel.Graph, repo codemodel.Repo) {
 	for _, file := range g.Files(typeScript) {
-		t := newTSReader(file, strings.Join(repo.Read(file), "\n"))
-		for j := range t.tokens {
-			relateToken(g, t, j, codemodel.Location{Path: file, Line: t.line(j)})
-		}
+		codemodel.RelateTokens(g, file, newTSReader(file, strings.Join(repo.Read(file), "\n")))
 	}
 }
 
-// relateToken relates the node holding token j. A class or interface
-// header reads its heritage clause once, at the line's first token, and
-// relates nothing else. Tokens after the body's brace, or in a type alias
-// or enum, relate as names, even on a declaration's first line.
-func relateToken(g *codemodel.Graph, t *tsReader, j int, at codemodel.Location) {
-	from := g.Owner(at)
-	switch d := g.Header(at); {
-	case from == nil:
-	case d != nil && t.at(j).Pos < d.Body:
-		relateHeader(g, t, j, from, d, at)
-	case t.ident(j):
-		relateName(g, t, j, from, at)
-	}
-}
+// Len is the number of tokens, for relating names.
+func (r *tsReader) Len() int { return len(r.tokens) }
 
-func relateHeader(g *codemodel.Graph, t *tsReader, j int, from *codemodel.Node, d *codemodel.Decl, at codemodel.Location) {
-	if j == 0 || t.line(j-1) < at.Line {
-		g.Supers(from, d, at)
-	}
-}
+// Word is the text of a name or punctuation token, for relating names.
+func (r *tsReader) Word(i int) string { return r.word(i) }
 
-// relateName relates a name to the one node it names, or Type.member to
-// that member's node. A call or new expression calls; anything else
-// references.
-func relateName(g *codemodel.Graph, t *tsReader, j int, from *codemodel.Node, at codemodel.Location) {
-	key := t.word(j)
-	if t.is(j-1, ".") {
-		key = t.word(j-2) + "." + key
-	}
-	if to := g.Unique(at.Path, key); to != nil && (!t.is(j-1, ".") || t.ident(j-2)) {
-		g.Observe(from, to, scriptKind(t, j), at)
-	}
-}
+// Ident reports a name at token i, for relating names.
+func (r *tsReader) Ident(i int) bool { return r.ident(i) }
 
-func scriptKind(t *tsReader, j int) string {
-	if t.is(j+1, "(") {
-		return codemodel.RelCalls
-	}
-	return codemodel.RelReferences
-}
+// Line is the line token i starts on, for relating names.
+func (r *tsReader) Line(i int) int { return r.line(i) }
+
+// Pos is the byte offset token i starts at, for relating names.
+func (r *tsReader) Pos(i int) int { return r.at(i).Pos }

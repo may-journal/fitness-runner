@@ -69,11 +69,14 @@ func acEdit(view, old, new string) map[string]string {
 func Test0070_11(t *testing.T) {
 	t.Parallel()
 	for _, files := range []map[string]string{nil, {
-		"vite.config.ts":          "export default {};\n",
-		"tools/check.sh":          "#!/bin/sh\nexit 0\n",
-		"src/store/store_test.go": "package store\n",
-		"src/app.test.ts":         "export {};\n",
-		"src/__tests__/app.ts":    "export {};\n",
+		"vite.config.ts":                        "export default {};\n",
+		"tools/check.sh":                        "#!/bin/sh\nexit 0\n",
+		"src/store/store_test.go":               "package store\n",
+		"src/app.test.ts":                       "export {};\n",
+		"src/__tests__/app.ts":                  "export {};\n",
+		"pom.xml":                               javaPom(""),
+		"src/test/java/AppTest.java":            "class AppTest {}\n",
+		"src/integrationTest/java/AppFlow.java": "class AppFlow {}\n",
 	}} {
 		out, code := acRun(t, files)
 		sees(t, out, code, 0)
@@ -99,7 +102,7 @@ func Test0070_2(t *testing.T) {
 
 func Test0070_10(t *testing.T) {
 	t.Parallel()
-	for _, file := range []string{"src/main.go", "Sources/App/App.swift", "src/app.ts", "src/app.js"} {
+	for _, file := range []string{"src/main.go", "Sources/App/App.swift", "src/app.ts", "src/app.js", "src/main/java/App.java"} {
 		out, code := acRun(t, map[string]string{file: "// The app.\n"})
 		sees(t, out, code, 1, "docs/architecture/ has no views, but product code such as "+file+" needs them; add the five views",
 			"actors (01-system-context.md), containers (02-containers.md), components (03-components.md), code (04-code.md), and journey (05-user-journey.md)")

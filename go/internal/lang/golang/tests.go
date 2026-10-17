@@ -22,7 +22,7 @@ import (
 var Tests = lang.Tests{
 	Scan:    scan,
 	Name:    func(id string) string { return "Test" + strings.Replace(id, ".", "_", 1) },
-	Source:  func(lower string) bool { return strings.HasSuffix(lower, testSuffix) },
+	Source:  func(file string) bool { return strings.HasSuffix(strings.ToLower(file), testSuffix) },
 	Numbers: numbers,
 }
 

@@ -91,13 +91,13 @@ type tsReader struct {
 	file    string
 	src     string
 	tokens  []javascript.Token
-	starts  []int
+	starts  codemodel.LineIndex
 	classes []*codemodel.Decl
 	exports map[string]bool
 }
 
 func newTSReader(file, src string) *tsReader {
-	return &tsReader{file: file, src: src, tokens: tsLex(file, src), starts: lineStarts(src), exports: map[string]bool{}}
+	return &tsReader{file: file, src: src, tokens: tsLex(file, src), starts: codemodel.NewLineIndex(src), exports: map[string]bool{}}
 }
 
 // tsLex reads a .tsx file's closing tags as tags, so their slashes never

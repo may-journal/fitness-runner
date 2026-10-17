@@ -94,6 +94,16 @@ func (f *Finder) remember(file string) {
 	}
 }
 
+// Known reports whether a product of kind is already built from dir.
+func (f *Finder) Known(kind, dir string) bool {
+	for _, p := range f.Products {
+		if p.Kind == kind && p.Paths[0] == dir {
+			return true
+		}
+	}
+	return false
+}
+
 // Root is the repository root being read.
 func (f *Finder) Root() string { return f.root }
 

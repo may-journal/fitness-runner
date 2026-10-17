@@ -75,10 +75,11 @@ func (s stated) matches(d *codemodel.Decl) bool {
 	return s.result == "" || sameTypes(results(s.result), d.Results)
 }
 
-// sameParam accepts a parameter stated by its type, or by name and type.
+// sameParam accepts a parameter stated by its type, or by name and type
+// in either order.
 func sameParam(item string, p codemodel.Param) bool {
 	item = codemodel.TypeText(item)
-	for _, form := range []string{p.Type, p.Name + " " + p.Type, p.Name + ": " + p.Type} {
+	for _, form := range []string{p.Type, p.Name + " " + p.Type, p.Name + ": " + p.Type, p.Type + " " + p.Name} {
 		if codemodel.TypeText(form) == item {
 			return true
 		}
@@ -108,7 +109,8 @@ func sameTypes(a, b []string) bool {
 }
 
 // statedMember reads a class body line: a visibility mark, then a method such as
-// Run(string) error, or a field as name, name: Type, or Type name.
+// Run(string) error, or a field as name, name: Type, or Type name, where
+// the type is every word before the name.
 func statedMember(text string) (stated, string, bool) {
 	text = generics(strings.TrimRight(strings.TrimLeft(strings.TrimSpace(text), "+-#~"), "$* "))
 	if strings.Contains(text, "(") {
@@ -119,15 +121,15 @@ func statedMember(text string) (stated, string, bool) {
 		return stated{text: text, name: strings.TrimSpace(name)}, codemodel.NormalSpace(typ), true
 	}
 	fields := strings.Fields(text)
-	if len(fields) == 2 {
-		return stated{text: text, name: fields[1]}, fields[0], true
+	if last := len(fields) - 1; last > 0 {
+		return stated{text: text, name: fields[last]}, strings.Join(fields[:last], " "), true
 	}
 	return stated{text: text, name: text}, "", len(fields) == 1
 }
 
 // generics reads Mermaid's tilde generics as angle brackets, so
-// Promise~boolean~ states Promise<boolean>. A tilde before a name opens a
-// list. A tilde before an opening bracket opens one only outside a list,
+// Promise~boolean~ states Promise<boolean>. A tilde before a name or a
+// wildcard's ? opens a list. A tilde before an opening bracket opens one only outside a list,
 // so List~Item~[] states List<Item>[]. Any other tilde closes one.
 func generics(text string) string {
 	b := []byte(text)
@@ -149,8 +151,14 @@ func tildeBracket(text string, i, depth int) byte {
 	if i+1 < len(text) {
 		next = text[i+1]
 	}
-	if codemodel.WordByte(next) || (depth == 0 && strings.IndexByte("([{", next) >= 0) {
+	if opensList(next) || (depth == 0 && strings.IndexByte("([{", next) >= 0) {
 		return '<'
 	}
 	return '>'
+}
+
+// opensList reports a byte a list's first item can start with: a name's,
+// or a wildcard's ?.
+func opensList(c byte) bool {
+	return codemodel.WordByte(c) || c == '?'
 }
