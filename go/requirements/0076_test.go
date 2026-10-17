@@ -305,14 +305,24 @@ func Test0076_10(t *testing.T) {
 	java := []struct{ file, old, new, want string }{
 		{cvJavaDir + "Cache.java", "", "package shop;\n\n// public class Ghost {}\npublic class Cache {}\n\nclass Local {}\n", cvJavaDir + "Cache.java:4: shop.Cache is an exported type in src/main/java/shop, which " + cvView + " shows, but no node names it"},
 		{cvView, "+save(String) boolean", "+save(int) boolean", cvView + ":11: Store: method shop.Store.save at " + cvJavaDir + "Store.java:10 has signature (String) boolean, not save(int) boolean"},
-		{cvView, "+count: int", "+count: long", cvView + ":20: Entry: field shop.Entry.count at " + cvJavaDir + "Store.java:15 is int, not long"},
-		{cvView, "DiskStore --> write : 9\n", "", cvJavaDir + "DiskStore.java:6: DiskStore calls write, but " + cvView + " " + cvNoEdge + "DiskStore -> write" + cvAllowIt},
+		{cvView, "+count: int", "+count: long", cvView + ":20: Entry: field shop.Store.Entry.count at " + cvJavaDir + "Store.java:15 is int, not long"},
+		{cvView, "+count: int", "+static final int count", cvView + ":20: Entry: member \"+static final int count\" names no field or method"}, {cvView, "DiskStore --> write : 9\n", "", cvJavaDir + "DiskStore.java:6: DiskStore calls write, but " + cvView + " " + cvNoEdge + "DiskStore -> write" + cvAllowIt},
 		{cvJavaDir + "Store.java", "Store implements Saving", "Store", cvView + ":22: " + cvView + " draws realization Store -> Saving, but no source shows Store conforms to Saving"},
 	}
 	for _, c := range java {
 		out, code := cvRun(t, cvEdit(cvJava(), c.file, c.old, c.new))
 		sees(t, out, code, 1, c.want)
 	}
+	shelf := cvEdit(cvJava(), cvJavaDir+"Store.java", "{}\n}\n", "{}\n}\n\nclass Shelf {\n  record Entry(long size) {}\n}\n")
+	out, code = cvRun(t, cvEdit(shelf, cvView, "+count: int\n", "+count: int\n+size: long\n"))
+	sees(t, out, code, 1, cvView+":21: Entry: shop.Store.Entry at "+cvJavaDir+"Store.java:15 declares no field size")
+	compact := cvEdit(cvJava(), cvJavaDir+"Store.java", "int count) {}", "int count) {\n    public Entry {}\n  }")
+	out, code = cvRun(t, cvEdit(compact, cvView, "+count: int\n", "+count: int\n+Entry(String, int)\n"))
+	sees(t, out, code, 0)
+	out, code = cvRun(t, cvEdit(cvJava(), cvJavaDir+"DiskStore.java", "    Writer.write", "    int mask = 0xE+Writer.write"))
+	sees(t, out, code, 0)
+	out, code = cvRun(t, cvEdit(cvJava(), cvView, "+records: Map~String, Integer~", "+Map~String, Integer~ records"))
+	sees(t, out, code, 0)
 }
 
 // cvJavaDir holds the Java sources of cvJava.

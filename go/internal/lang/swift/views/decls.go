@@ -170,7 +170,7 @@ func (r *swiftDecls) declare(match []string, i int, opens, complete bool) {
 func (r *swiftDecls) openBody(d *codemodel.Decl, opens bool) {
 	frame := swiftFrame{d: d, depth: r.depth + 1}
 	if d.Container() {
-		frame.owner = d.Name
+		frame.owner = d.Key()
 	}
 	switch {
 	case opens:

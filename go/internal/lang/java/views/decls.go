@@ -15,7 +15,8 @@
 //     enum and a record are types.
 //   - A record's components are its fields, and an enum's constants are
 //     fields of the enum's own type.
-//   - A constructor is a method named for its type, with no result.
+//   - A constructor is a method named for its type, with no result. A
+//     record's compact constructor takes the record's components.
 //   - A parameter's type is what it states, with ... for variable arity.
 //     Array brackets after a name join its type.
 //   - Annotations and modifiers state nothing the view compares, and a
@@ -183,21 +184,29 @@ func (r *reader) container(start, j int, owner string, public bool) int {
 	d := r.add(r.Word(n), owner, typeKinds[keyword], start, close)
 	d.Supers, d.Implements, d.Open, d.Body = h.supers, h.implements, r.Line(h.open), r.Pos(h.open)
 	d.Exported = public && owner == ""
-	r.body(d.Name, keyword, components, h.open, close)
+	r.body(body{d, components}, keyword, h.open, close)
 	return close + 1
 }
 
+// body is a type whose body is read: its declaration, which owns the
+// members by its key, and the parenthesis opening a record's components,
+// or -1.
+type body struct {
+	d          *codemodel.Decl
+	components int
+}
+
 // body reads a type's record components, enum constants and members.
-func (r *reader) body(name, keyword string, components, open, close int) {
-	if components >= 0 {
-		r.components(name, components)
+func (r *reader) body(t body, keyword string, open, close int) {
+	if t.components >= 0 {
+		r.components(t.d.Key(), t.components)
 	}
 	from := open + 1
 	if keyword == "enum" {
-		from = r.constants(name, from, close)
+		from = r.constants(t.d, from, close)
 	}
 	for i := from; i < close; {
-		i = r.member(name, i, close)
+		i = r.member(t, i, close)
 	}
 }
 

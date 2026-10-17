@@ -14,9 +14,9 @@ func (r *reader) components(owner string, open int) {
 // constants reads an enum's constants from token i up to the semicolon
 // that ends them or the enum's end, and returns the token where its
 // members start.
-func (r *reader) constants(owner string, i, close int) int {
+func (r *reader) constants(enum *codemodel.Decl, i, close int) int {
 	for i < close && !r.is(i, ";") {
-		if i = r.constant(owner, i); r.is(i, ",") {
+		if i = r.constant(enum, i); r.is(i, ",") {
 			i++
 		}
 	}
@@ -26,14 +26,14 @@ func (r *reader) constants(owner string, i, close int) int {
 // constant reads one enum constant from token i, with its annotations,
 // arguments and body, as a field of the enum's type, and returns the
 // token after it.
-func (r *reader) constant(owner string, i int) int {
+func (r *reader) constant(enum *codemodel.Decl, i int) int {
 	_, j := r.modifiers(i)
 	if !r.Ident(j) {
 		return max(j, i+1)
 	}
 	last := r.groupAfter(r.groupAfter(j, "("), "{")
-	d := r.add(r.Word(j), owner, codemodel.KindField, i, last)
-	d.Type = owner
+	d := r.add(r.Word(j), enum.Key(), codemodel.KindField, i, last)
+	d.Type = enum.Name
 	return last + 1
 }
 
@@ -46,25 +46,43 @@ func (r *reader) groupAfter(j int, open string) int {
 	return j
 }
 
-// member reads one member of owner's body from token i and returns the
-// token after it: an initializer block, a nested type, a constructor, or
-// a typed member.
-func (r *reader) member(owner string, i, close int) int {
+// member reads one member of t's body from token i and returns the token
+// after it: an initializer block, a nested type, a constructor, a
+// record's compact constructor, or a typed member.
+func (r *reader) member(t body, i, close int) int {
 	_, j := r.modifiers(i)
 	switch {
 	case r.is(j, "{"):
 		return r.close(j) + 1
 	case r.typeAt(j):
-		return r.container(i, j, owner, false)
+		return r.container(i, j, t.d.Key(), false)
 	}
-	if j = r.skipAngle(j); r.seq(j, owner, "(") {
-		return r.method(owner, owner, i, j+1, "", close)
+	return r.callable(t, i, j, close)
+}
+
+// callable reads a constructor, a compact constructor, or a typed member
+// from token j after its modifiers.
+func (r *reader) callable(t body, i, j, close int) int {
+	if t.components >= 0 && r.seq(j, t.d.Name, "{") {
+		return r.compact(t, i, j+1)
 	}
-	return r.typed(owner, i, j, close)
+	if j = r.skipAngle(j); r.seq(j, t.d.Name, "(") {
+		return r.method(t.d.Key(), t.d.Name, i, j+1, "", close)
+	}
+	return r.typed(t.d.Key(), i, j, close)
+}
+
+// compact reads a record's compact constructor, whose body opens at
+// token open, as a constructor taking the record's components.
+func (r *reader) compact(t body, start, open int) int {
+	last := r.close(open)
+	d := r.add(t.d.Name, t.d.Key(), codemodel.KindMethod, start, last)
+	r.signature(d, t.components, r.close(t.components))
+	return last + 1
 }
 
 // typed reads a method or fields whose type starts at token j. Anything
-// else, such as a compact record constructor, declares nothing.
+// else declares nothing.
 func (r *reader) typed(owner string, i, j, close int) int {
 	end := r.typeEnd(j)
 	switch {
@@ -83,13 +101,19 @@ func (r *reader) method(owner, name string, start, open int, result string, clos
 	result, k := r.dims(result, end+1)
 	last := r.methodEnd(k, close)
 	d := r.add(name, owner, codemodel.KindMethod, start, last)
-	for _, p := range r.params(open, end) {
-		d.Params = append(d.Params, codemodel.Param{Name: p.name, Type: p.typ})
-	}
+	r.signature(d, open, end)
 	if result != "" {
 		d.Results = []string{result}
 	}
 	return last + 1
+}
+
+// signature gives d the parameters between the parentheses at open and
+// close.
+func (r *reader) signature(d *codemodel.Decl, open, close int) {
+	for _, p := range r.params(open, close) {
+		d.Params = append(d.Params, codemodel.Param{Name: p.name, Type: p.typ})
+	}
 }
 
 // methodEnd returns the last token of a method from token k after its

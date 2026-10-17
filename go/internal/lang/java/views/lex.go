@@ -115,21 +115,26 @@ func numberStart(rest string, r rune) bool {
 
 // number returns the offset after a number literal starting at offset i:
 // digits, letters, underscores and dots, and a sign right after an
-// exponent's letter.
+// exponent's letter. A hexadecimal literal's exponent letter is p, since
+// e is one of its digits, so 0xE+n is a literal, a plus and a name.
 func number(src string, i int) int {
+	exponents := "eEpP"
+	if strings.EqualFold(src[i:min(i+2, len(src))], "0x") {
+		exponents = "pP"
+	}
 	j := i + 1
-	for j < len(src) && numberByte(src, j) {
+	for j < len(src) && numberByte(src, j, exponents) {
 		j++
 	}
 	return j
 }
 
-func numberByte(src string, j int) bool {
-	return src[j] == '.' || nameByte(src[j]) || exponentSign(src, j)
+func numberByte(src string, j int, exponents string) bool {
+	return src[j] == '.' || nameByte(src[j]) || exponentSign(src, j, exponents)
 }
 
-func exponentSign(src string, j int) bool {
-	return strings.ContainsRune("+-", rune(src[j])) && strings.ContainsRune("eEpP", rune(src[j-1]))
+func exponentSign(src string, j int, exponents string) bool {
+	return strings.ContainsRune("+-", rune(src[j])) && strings.ContainsRune(exponents, rune(src[j-1]))
 }
 
 // name returns the offset after a name whose first character ends before

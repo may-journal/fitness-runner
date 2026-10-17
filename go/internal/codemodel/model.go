@@ -86,6 +86,16 @@ func (d *Decl) Full() string {
 	return strings.Join(kept, ".")
 }
 
+// Key is the name its members give as their owner: Owner.Name for a
+// nested type, so two nested types of one name keep their own members,
+// else the name.
+func (d *Decl) Key() string {
+	if d.Owner == "" {
+		return d.Name
+	}
+	return d.Owner + "." + d.Name
+}
+
 // At is the declaration's first line.
 func (d *Decl) At() Location { return Location{d.File, d.Line} }
 
@@ -148,12 +158,12 @@ func inFiles(files []string, file string) bool {
 	return len(files) == 0 || slices.Contains(files, file)
 }
 
-// Members lists the members of a type: the declarations its name owns in
+// Members lists the members of a type: the declarations its key owns in
 // its scope.
 func (x *Index) Members(t *Decl) []*Decl {
 	var found []*Decl
 	for _, d := range x.Decls {
-		if d.Owner == t.Name && d.Scope == t.Scope {
+		if d.Owner == t.Key() && d.Scope == t.Scope {
 			found = append(found, d)
 		}
 	}
