@@ -53,7 +53,7 @@ func Test0077_6(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, code := piped(t, repo, planBody("- [ ] Write the tests."), nil, "--blob", "-")
-	sees(t, out, code, 0, "Skipped (does not apply to this text): pr-structure, pr-closes-issue, issue-checklist")
+	sees(t, out, code, 0, "Skipped (does not apply to this text): issue-checklist, pr-closes-issue, pr-structure")
 	passedWith(t, out, "plan-structure", "1")
 }
 
@@ -61,7 +61,7 @@ func Test0077_7(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, code := piped(t, repo, pr0014(11), nil, "--blob", "-")
-	sees(t, out, code, 0, "Skipped (does not apply to this text): plan-structure, issue-checklist")
+	sees(t, out, code, 0, "Skipped (does not apply to this text): issue-checklist, plan-structure")
 	passedWith(t, out, "pr-structure", "1")
 	passedWith(t, out, "pr-closes-issue", "1")
 }

@@ -41,11 +41,11 @@ Source: `go/cmd/fitness/blob.go:43`
 - 0077.6
     - Given Developer has a Plan issue text that follows the Plan template
         - When I run fitness `--blob` on it with no `--checks`
-            - Then the Plan checks pass, the PR checks are listed as not applying, and it exits 0
+            - Then the Plan checks pass, the PR checks list in order as skipped, and it exits 0
 - 0077.7
     - Given Developer has a PR description text that follows the PR template
         - When I run fitness `--blob` on it with no `--checks`
-            - Then the PR checks pass, the Plan checks are listed as not applying, and it exits 0
+            - Then the PR checks pass, the Plan checks list in order as skipped, and it exits 0
 - 0077.8
     - Given Developer has a PR description text whose changelog section is empty or its heading misnamed
         - When I run fitness `--blob` on it with no `--checks`
