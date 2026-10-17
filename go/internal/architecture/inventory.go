@@ -61,7 +61,7 @@ func category(file string, kept, dev bool) string {
 	switch {
 	case !kept:
 		return "generated"
-	case testFile(lower):
+	case testFile(file):
 		return "test"
 	case dev || tool(lower):
 		return "tool"
@@ -79,8 +79,10 @@ func tool(file string) bool {
 	return !strings.Contains(file, "/") && lang.IsToolConfig(langs.All, file)
 }
 
-func testFile(lower string) bool {
-	return testFolder(path.Dir(lower)) || lang.IsTestSource(langs.All, lower)
+// testFile reports a source in a test folder, by any case, or one a
+// language module says only tests build.
+func testFile(file string) bool {
+	return testFolder(path.Dir(strings.ToLower(file))) || lang.IsTestSource(langs.All, file)
 }
 
 func testFolder(dir string) bool {

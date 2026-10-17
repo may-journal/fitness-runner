@@ -112,7 +112,7 @@ Every coverage check judges exact counts against one goal in [goal](../../go/int
 
 ## Architecture view readers
 
-The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.
+The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. Readers that read tokens relate names through one shared walk, as [ADR 0008](adr/0008-languages-plug-in-as-modules.md) decides. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.
 
 Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 

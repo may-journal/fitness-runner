@@ -2,7 +2,6 @@ package views
 
 import (
 	"slices"
-	"sort"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/codemodel"
@@ -32,17 +31,7 @@ func (r *tsReader) ident(i int) bool { return r.at(i).Kind == javascript.Ident }
 
 // line is the line token i starts on.
 func (r *tsReader) line(i int) int {
-	return sort.SearchInts(r.starts, r.at(i).Pos+1)
-}
-
-func lineStarts(src string) []int {
-	starts := []int{0}
-	for i := 0; i < len(src); i++ {
-		if src[i] == '\n' {
-			starts = append(starts, i+1)
-		}
-	}
-	return starts
+	return r.starts.Line(r.at(i).Pos)
 }
 
 // newline reports token i starting a later line than the token before.

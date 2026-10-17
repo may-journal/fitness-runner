@@ -12,8 +12,10 @@
 // The build output git must not track is target/ for Maven, build/ and
 // .gradle/ for Gradle, and compiled .class files outside fixtures. The
 // packages in this folder hold each check's own logic: spotless, checkstyle,
-// version and tests. The module brings no spell dictionary: a Java repo adds the
-// Java words it uses to its own cspell config.
+// version and tests, and views reads sources for the architecture views. A
+// product source's main method proves an application runtime. The module
+// brings no spell dictionary: a Java repo adds the Java words it uses to its
+// own cspell config.
 package java
 
 // cspell:ignore mvnw gradlew jacoco junitreports

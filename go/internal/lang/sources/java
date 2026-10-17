@@ -1,4 +1,0 @@
-# Java sources are product code the Java module does not read for the
-# architecture views yet, so the views still list them and need a
-# component to own them.
-product .java
