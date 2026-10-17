@@ -52,18 +52,19 @@ func Test0077_5(t *testing.T) {
 func Test0077_6(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	out, code := piped(t, repo, planBody("- [ ] Write the tests."), nil, "--blob", "-")
-	sees(t, out, code, 0, "Skipped (does not apply to this text): issue-checklist, pr-closes-issue, pr-structure")
-	passedWith(t, out, "plan-structure", "1")
-}
-
-func Test0077_7(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", nil)
-	out, code := piped(t, repo, pr0014(11), nil, "--blob", "-")
-	sees(t, out, code, 0, "Skipped (does not apply to this text): issue-checklist, plan-structure")
-	passedWith(t, out, "pr-structure", "1")
-	passedWith(t, out, "pr-closes-issue", "1")
+	for _, c := range []struct {
+		text, skipped string
+		passed        []string
+	}{
+		{planBody("- [ ] Write the tests."), "issue-checklist, pr-closes-issue, pr-structure", []string{"plan-structure"}},
+		{pr0014(11), "issue-checklist, plan-structure", []string{"pr-structure", "pr-closes-issue"}},
+	} {
+		out, code := piped(t, repo, c.text, nil, "--blob", "-")
+		sees(t, out, code, 0, "Skipped (does not apply to this text): "+c.skipped)
+		for _, check := range c.passed {
+			passedWith(t, out, check, "1")
+		}
+	}
 }
 
 func Test0077_8(t *testing.T) {
