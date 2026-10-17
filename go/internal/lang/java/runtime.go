@@ -17,10 +17,11 @@ const Technology = "Java"
 // application is the kind of product a main method proves.
 const application = "Java application"
 
-// mainRe matches a main method the java launcher can start, on one line:
-// static or, since JDK 25 (JEP 512), an instance method, taking nothing or
-// one String array, of fixed or variable arity.
-var mainRe = regexp.MustCompile(`\bvoid\s+main\s*\(\s*(?:final\s+)?(?:String\s*(?:\[\s*\]|\.\.\.)\s*\w+|String\s+\w+\s*\[\s*\])?\s*\)`)
+// mainRe matches a main method the java launcher can start, over any
+// lines: static or, since JDK 25 (JEP 512), an instance method, taking
+// nothing or one String array, of fixed or variable arity. Its first group
+// holds the modifiers, since a private main starts nothing.
+var mainRe = regexp.MustCompile(`((?:\b(?:public|protected|private|static|final|synchronized|strictfp)\s+)*)\bvoid\s+main\s*\(\s*(?:final\s+)?(?:String\s*(?:\[\s*\]|\.\.\.)\s*\w+|String\s+\w+\s*\[\s*\])?\s*\)`)
 
 // Runtime reads Java product sources for applications: a product .java
 // file declaring a main method proves one application per Java project,
@@ -33,7 +34,7 @@ var Runtime = runtimes.Reader{Sources: map[string]func(*runtimes.Finder, string)
 // first time a product file in it declares a main method. Comments are
 // stripped first, so a commented-out main proves nothing.
 func entry(f *runtimes.Finder, file string) {
-	dir := projectDir(f.Root(), file)
+	dir := projectDir(f, file)
 	if f.Known(application, dir) {
 		return
 	}
@@ -42,35 +43,44 @@ func entry(f *runtimes.Finder, file string) {
 	}
 }
 
-// mainLine is the line declaring a main method in file, or 0.
+// mainLine is the line a main method's declaration starts on in file, or
+// 0.
 func mainLine(f *runtimes.Finder, file string) int {
 	lines, _ := f.Lines(file)
-	for i, line := range codemodel.Strip(lines) {
-		if mainRe.MatchString(line) {
-			return i + 1
+	code := strings.Join(codemodel.Strip(lines), "\n")
+	for _, m := range mainRe.FindAllStringSubmatchIndex(code, -1) {
+		if !strings.Contains(code[m[2]:m[3]], "private") {
+			return strings.Count(code[:m[0]], "\n") + 1
 		}
 	}
 	return 0
 }
 
-// projectDir is the folder of the deepest Java project holding file, or
-// the file's own folder outside every project.
-func projectDir(root, file string) string {
-	best, depth := path.Dir(file), -1
-	for _, p := range Projects(root) {
-		if d := folderDepth(p.Dir); inProject(p, file) && d > depth {
-			best, depth = p.Dir, d
+// projectDir is the folder of the deepest Java project holding file: the
+// nearest folder above it with a tracked build file, or the file's own
+// folder outside every project.
+func projectDir(f *runtimes.Finder, file string) string {
+	for dir := path.Dir(file); ; dir = path.Dir(dir) {
+		if builds(f, dir) {
+			return dir
+		}
+		if dir == "." {
+			return path.Dir(file)
 		}
 	}
-	return best
 }
 
-// folderDepth counts a folder's names, 0 for the repository root.
-func folderDepth(dir string) int {
-	if dir == "." {
-		return 0
+// builds reports a tracked build file in dir, fixtures left out, as
+// Projects finds them.
+func builds(f *runtimes.Finder, dir string) bool {
+	for _, b := range Builds {
+		for _, name := range b.Files {
+			if file := path.Join(dir, name); f.Exists(file) && !Fixture(file) {
+				return true
+			}
+		}
 	}
-	return strings.Count(dir, "/") + 1
+	return false
 }
 
 // applicationName is the project folder's name, or the repository

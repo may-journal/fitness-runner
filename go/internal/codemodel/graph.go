@@ -3,6 +3,7 @@ package codemodel
 import (
 	"slices"
 	"sort"
+	"strings"
 )
 
 // Node is one class of a code view that names a declaration.
@@ -95,11 +96,13 @@ func (g *Graph) add(n *Node, d *Decl, inherited int) {
 	g.spans = append(g.spans, Span{Node: n, File: d.File, From: d.Line, To: d.End, weight: 2*(d.End-d.Line) + inherited})
 }
 
+// memberKey is the name source reaches d by: Type.member, by the last
+// name of a nested owner, as code names it, or the name alone.
 func memberKey(d *Decl) string {
 	if d.Owner == "" {
 		return d.Name
 	}
-	return d.Owner + "." + d.Name
+	return d.Owner[strings.LastIndex(d.Owner, ".")+1:] + "." + d.Name
 }
 
 // key scopes a name to its file's language, so a name in one language

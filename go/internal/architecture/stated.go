@@ -110,7 +110,7 @@ func sameTypes(a, b []string) bool {
 
 // statedMember reads a class body line: a visibility mark, then a method such as
 // Run(string) error, or a field as name, name: Type, or Type name, where
-// the type is every word before the name.
+// the type is one word but for spaces inside its type arguments.
 func statedMember(text string) (stated, string, bool) {
 	text = generics(strings.TrimRight(strings.TrimLeft(strings.TrimSpace(text), "+-#~"), "$* "))
 	if strings.Contains(text, "(") {
@@ -122,10 +122,26 @@ func statedMember(text string) (stated, string, bool) {
 	}
 	fields := strings.Fields(text)
 	if last := len(fields) - 1; last > 0 {
-		return stated{text: text, name: fields[last]}, strings.Join(fields[:last], " "), true
+		typ := strings.Join(fields[:last], " ")
+		return stated{text: text, name: fields[last]}, typ, oneWord(typ)
 	}
 	return stated{text: text, name: text}, "", len(fields) == 1
 }
+
+// oneWord reports a type with no space outside its angle brackets, such
+// as Map<String, Integer>.
+func oneWord(typ string) bool {
+	depth := 0
+	for _, c := range typ {
+		if depth += angleDepth[c]; c == ' ' && depth == 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// angleDepth is how an angle bracket changes the type argument depth.
+var angleDepth = map[rune]int{'<': 1, '>': -1}
 
 // generics reads Mermaid's tilde generics as angle brackets, so
 // Promise~boolean~ states Promise<boolean>. A tilde before a name or a

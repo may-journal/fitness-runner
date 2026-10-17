@@ -1,7 +1,7 @@
 ---
 relatedConfigurations: ['../.fitnessrc.json']
 ---
-<!-- cspell:ignore temurin -->
+<!-- cspell:ignore temurin sdkmanrc -->
 
 # Adoption
 
@@ -66,7 +66,7 @@ It reopens issues closed with unchecked items; `fitness pr-check` fails PRs clos
 
 ## Reusable CI
 
-Node repos get Node from `.nvmrc` and `npm ci` from the lockfile. Java repos get the JDK `.java-version` pins through `actions/setup-java`, from the vendor `java-distribution` names, `temurin` by default. SwiftLint is pinned by `swiftlint-version`; bump it with laptops.
+Node repos get Node from `.nvmrc` and `npm ci` from the lockfile. Java repos get the JDK a root `.java-version`, `.sdkmanrc` or `.tool-versions` pins through `actions/setup-java`, from the vendor `java-distribution` names, `temurin` by default. SwiftLint is pinned by `swiftlint-version`; bump it with laptops.
 
 `.github/workflows/ci.yml` (a Swift repo passes `swift: true`, which installs the pinned SwiftLint):
 

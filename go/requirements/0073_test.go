@@ -99,6 +99,7 @@ func Test0073_2(t *testing.T) {
 		{map[string]string{accPackage: accDevTools, "Dockerfile": "FROM node\n"}, "Dockerfile:1: Node service portal" + accNoOwner},
 		{accRootCommand, "main.go:1: Go command tool" + accNoOwner},
 		{accJavaApp, "api/src/main/java/Api.java:4: Java application api" + accNoOwner},
+		{with(accJavaApp, map[string]string{"pom.xml": javaPom(""), accJavaMain: "public class Api {\n  public static void main(\n      String[] args) {}\n}\n"}), accJavaMain + ":2: Java application api" + accNoOwner},
 	}
 	for _, c := range cases {
 		out, code := accRun(t, with(acFixture(acRoot), c.files))
@@ -110,13 +111,18 @@ func Test0073_2(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = accRun(t, accEdit(with(acFixture(acRoot), accJavaApp), "}\nRel", "Container(api, \"5 Api\", \"Java\")\n}\nRel"))
 	sees(t, out, code, 0)
+	out, code = accRun(t, with(acFixture(acRoot), with(accJavaApp, map[string]string{accJavaMain: "public class Api {\n  private static void main(String[] args) {}\n\n  static void main(String name) {}\n}\n"})))
+	sees(t, out, code, 0)
 }
+
+// accJavaMain is the product source of accJavaApp.
+const accJavaMain = "api/src/main/java/Api.java"
 
 // accJavaApp is a Maven project in api/ whose product source declares a
 // main method below a commented-out one.
 var accJavaApp = map[string]string{
 	"api/pom.xml":                  javaPom(""),
-	"api/src/main/java/Api.java":   "// static void main(String[] args) proves nothing here.\npublic class Api {\n\n  public static void main(String[] args) {}\n}\n",
+	accJavaMain:                    "// static void main(String[] args) proves nothing here.\npublic class Api {\n\n  public static void main(String[] args) {}\n}\n",
 	"api/src/test/java/ApiIT.java": "class ApiIT {\n  public static void main(String[] args) {}\n}\n",
 }
 
