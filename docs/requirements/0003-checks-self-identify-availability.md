@@ -26,3 +26,7 @@ Source: #189
     - Given Developer has a repo that chooses no checks
         - When fitness runs
             - Then the result rows list every installed check, repo-wide checks first, then each language's
+- 0003.3
+    - Given Developer has a file that a file-reading check cannot read
+        - When fitness runs that check
+            - Then it skips that file, names it as info, and still judges the other files
