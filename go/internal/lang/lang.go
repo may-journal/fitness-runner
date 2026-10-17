@@ -14,6 +14,7 @@ import (
 	"path"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 	"github.com/may-journal/fitness-runner/go/internal/runtimes"
@@ -29,8 +30,12 @@ type Module struct {
 	Exts []string
 	// Manifests are the file names that mark a project of the language.
 	Manifests []string
-	// Lockfiles are the file names its package managers write on install.
+	// Lockfiles are the file names its package managers write on install,
+	// each a name or a path.Match pattern for one.
 	Lockfiles []string
+	// BuildOutput, when set, lists the git path patterns of the build output
+	// the language's projects in a repo write, which git must not track.
+	BuildOutput func(root string) []string
 	// Tools are the programs its checks run.
 	Tools []string
 	// Checks are the check names the module claims.
@@ -74,8 +79,9 @@ type Test struct {
 
 // Tests is how a module finds its requirement tests.
 type Tests struct {
-	// Scan reads the repo's tests and the files holding them, and reports
-	// whether the repo is written in the language.
+	// Scan, when set, reads the repo's tests and the files holding them,
+	// and reports whether the repo is written in the language. A module
+	// without it finds no requirement tests yet.
 	Scan func(root string) (tests []Test, files []string, written bool, err error)
 	// Name is the test name that owns an acceptance ID, such as Test0001_1.
 	Name func(id string) string
@@ -99,6 +105,18 @@ func TestFileNumbers(modules []Module, file string) []string {
 		}
 	}
 	return nil
+}
+
+// Testing returns the modules that find requirement tests, in registry
+// order.
+func Testing(modules []Module) []Module {
+	var out []Module
+	for _, m := range modules {
+		if m.Tests.Scan != nil {
+			out = append(out, m)
+		}
+	}
+	return out
 }
 
 // ScanExts returns every module's source endings for the check, in
@@ -217,22 +235,48 @@ func Sources() map[string][]string {
 		if err != nil {
 			panic("lang: " + err.Error())
 		}
-		role, exts := sourceLine(string(body))
-		out[role] = append(out[role], exts...)
+		if fields := dataLine(string(body)); len(fields) > 0 {
+			out[fields[0]] = append(out[fields[0]], fields[1:]...)
+		}
 	}
 	return out
 }
 
-// sourceLine reads the role and endings from a sources file's first line
-// that is not a comment.
-func sourceLine(body string) (string, []string) {
+// dataLine reads the fields of a folder file's first line that is not a
+// comment.
+func dataLine(body string) []string {
 	for _, line := range strings.Split(body, "\n") {
 		if fields := strings.Fields(line); len(fields) > 0 && !strings.HasPrefix(fields[0], "#") {
-			return fields[0], fields[1:]
+			return fields
 		}
 	}
-	return "", nil
+	return nil
 }
+
+// lockfiles holds one file per ecosystem no module covers whose package
+// manager writes a lockfile. Each says why in comments, then names its
+// lockfiles.
+//
+//go:embed lockfiles
+var lockfiles embed.FS
+
+// otherLockfiles lists the lockfile names in the lockfiles folder, in file
+// name order, read once.
+var otherLockfiles = sync.OnceValue(func() []string {
+	entries, err := fs.ReadDir(lockfiles, "lockfiles")
+	if err != nil {
+		panic("lang: " + err.Error())
+	}
+	var out []string
+	for _, e := range entries {
+		body, err := fs.ReadFile(lockfiles, path.Join("lockfiles", e.Name()))
+		if err != nil {
+			panic("lang: " + err.Error())
+		}
+		out = append(out, dataLine(string(body))...)
+	}
+	return out
+})
 
 // Catalog orders the default checks: the installed checks no module claims
 // and no ignore file names, sorted, then each module's claimed checks,
@@ -247,11 +291,35 @@ func Dicts(embedded []string, modules []Module) []string {
 	return order(embedded, nil, modules, func(m Module) []string { return m.Dicts })
 }
 
-// Lockfiles returns every module's lockfile names, in registry order.
+// Lockfiles returns every module's lockfile names, in registry order, then
+// those of the ecosystems no module covers.
 func Lockfiles(modules []Module) []string {
 	var out []string
 	for _, m := range modules {
 		out = append(out, m.Lockfiles...)
+	}
+	return append(out, otherLockfiles()...)
+}
+
+// IsLockfile reports whether file's base name is a lockfile a package
+// manager writes, by any module's names or patterns or the lockfiles
+// folder.
+func IsLockfile(modules []Module, file string) bool {
+	base := path.Base(file)
+	return slices.ContainsFunc(Lockfiles(modules), func(pattern string) bool {
+		matched, err := path.Match(pattern, base)
+		return err == nil && matched
+	})
+}
+
+// BuildOutput returns the build output patterns every module finds in
+// the repo at root, in registry order.
+func BuildOutput(modules []Module, root string) []string {
+	var out []string
+	for _, m := range modules {
+		if m.BuildOutput != nil {
+			out = append(out, m.BuildOutput(root)...)
+		}
 	}
 	return out
 }

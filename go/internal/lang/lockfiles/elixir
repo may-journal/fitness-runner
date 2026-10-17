@@ -1,0 +1,4 @@
+# Mix rewrites its lockfile on every dependency fetch, and no language
+# module covers Elixir yet, so the lockfile is named here for the checks
+# that skip lockfiles.
+mix.lock

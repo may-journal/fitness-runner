@@ -1,0 +1,4 @@
+# Poetry and uv rewrite their lockfiles on every install, and no language
+# module covers Python yet, so the lockfiles are named here for the checks
+# that skip lockfiles.
+poetry.lock uv.lock

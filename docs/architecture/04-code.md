@@ -135,11 +135,12 @@ fitness-runner/
     internal/                  checkkit, par, walkfs, gitx, mdx, mermaid, spell,
                                clonedetect, mdfilename, render, conf, runtimes,
                                codemodel, sharedconf (embedded tool configs)
-    internal/lang/             module type, ignores/, sources/ (languages with
-                               no module), langs/ (one file per language)
+    internal/lang/             module type, ignores/, sources/ and lockfiles/
+                               (ecosystems with no module), langs/ (one file
+                               per language)
     internal/lang/<language>/  each language module's own code: runtime, test
                                and architecture view readers, tool runners,
-                               coverage, and its config keys
+                               build tool plugins, coverage, and config keys
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)

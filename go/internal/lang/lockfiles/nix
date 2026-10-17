@@ -1,0 +1,4 @@
+# Nix rewrites a flake's lockfile on every input update, and no language
+# module covers Nix, so the lockfile is named here for the checks that skip
+# lockfiles.
+flake.lock

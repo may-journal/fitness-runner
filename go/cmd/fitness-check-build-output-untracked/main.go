@@ -1,8 +1,9 @@
 // Command fitness-check-build-output-untracked validates that dist/ build
 // output stays out of git and out of the import graph — the Go port of the
 // build-output-untracked check. Three rules: dist must be git-ignored, no
-// file under a dist directory may be git-tracked (one combined error names
-// them all), and no .ts/.mts/.cts source file may import from a dist path.
+// file under a dist directory or the build output a language module names
+// may be git-tracked (one combined error names them all), and no source file
+// a module scans for this check may import from a dist path.
 // One deviation from the TypeScript original: only git's stdout is parsed
 // for tracked files (the TS exec helper folded stderr into the output of a
 // failing command), so a failing git command contributes no phantom tracked
@@ -51,27 +52,44 @@ func main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	files := collectSourceFiles(root)
-	if !applies(root, files) {
+	files, dist, output := scope(root)
+	if !dist && len(output) == 0 {
 		return checkkit.Pass(0), nil
 	}
-	errors := distTrackingErrors(root)
-	for _, file := range files {
-		raw, err := os.ReadFile(filepath.Join(root, file))
-		if err != nil {
-			return checkkit.Result{}, err
-		}
-		errors = append(errors, scanFileForDistImports(file, string(raw))...)
+	imports, err := importErrors(root, files)
+	if err != nil {
+		return checkkit.Result{}, err
 	}
-	if len(errors) > 0 {
+	if errors := append(trackingErrors(root, dist, output), imports...); len(errors) > 0 {
 		return checkkit.Fail(len(files)+1, errors...), nil
 	}
 	return checkkit.Pass(len(files) + 1), nil
 }
 
-// applies reports whether the repo has anything to judge: TypeScript source,
-// a dist directory on disk, or tracked dist files. A docs-only or Go repo has
-// none, so the check passes clean there and is safe in the default list.
+// importErrors reports rule B over every scanned source file.
+func importErrors(root string, files []string) ([]string, error) {
+	var errors []string
+	for _, file := range files {
+		raw, err := os.ReadFile(filepath.Join(root, file))
+		if err != nil {
+			return nil, err
+		}
+		errors = append(errors, scanFileForDistImports(file, string(raw))...)
+	}
+	return errors, nil
+}
+
+// scope reads what the repo gives the check to judge: the source files it
+// scans for imports, whether the dist rules apply, and the tracked files
+// under the build output the language modules name.
+func scope(root string) (files []string, dist bool, output []string) {
+	files = collectSourceFiles(root)
+	return files, applies(root, files), trackedOutput(root)
+}
+
+// applies reports whether the dist rules have anything to judge: scanned
+// source, a dist directory on disk, or tracked dist files. A docs-only repo
+// has none, so the check passes clean there and is safe in the default list.
 func applies(root string, files []string) bool {
 	if len(files) > 0 {
 		return true
@@ -82,18 +100,30 @@ func applies(root string, files []string) bool {
 	return len(trackedDistFiles(root)) > 0
 }
 
-// distTrackingErrors reports rule A: dist must be git-ignored and have no
-// tracked files. The not-ignored error always precedes the tracked-files one.
-func distTrackingErrors(root string) []string {
+// trackingErrors reports rule A: dist must be git-ignored when its rules
+// apply, and no build output may have tracked files. The not-ignored error
+// always precedes the tracked-files one, which names dist and module
+// output files together.
+func trackingErrors(root string, dist bool, output []string) []string {
 	var errors []string
-	if !isDistIgnored(root) {
+	if dist && !isDistIgnored(root) {
 		errors = append(errors, msgNotIgnored)
 	}
-	if tracked := trackedDistFiles(root); len(tracked) > 0 {
+	if tracked := dedupeSorted(trackedDistFiles(root), output); len(tracked) > 0 {
 		errors = append(errors, fmt.Sprintf(
 			"%s %s (git rm --cached)", msgRemovePrefix, strings.Join(tracked, ", ")))
 	}
 	return errors
+}
+
+// trackedOutput returns the tracked files under the build output each
+// language module finds in the repo, sorted.
+func trackedOutput(root string) []string {
+	patterns := lang.BuildOutput(langs.All, root)
+	if len(patterns) == 0 {
+		return nil
+	}
+	return dedupeSorted(gitLines(root, append([]string{"ls-files", "--"}, patterns...)...))
 }
 
 // isDistIgnored reports whether `git check-ignore -q dist` exits 0 in root
