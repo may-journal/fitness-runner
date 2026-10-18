@@ -60,7 +60,7 @@ A changed description earns a new verdict; earlier ones stay hidden. Plan verdic
 
 ## plan-check
 
-[plan-check.yml](plan-check.yml) and [plan-check-reusable.yml](plan-check-reusable.yml) stay for repos that still call them. `fitness plan-check` is issue-check for Plan-labeled Issues only. Both workflows share one concurrency group, so a repo that runs both judges a Plan once.
+[plan-check-reusable.yml](plan-check-reusable.yml) stays for repos whose caller still names it. It calls issue-check-reusable with the `plan-check` command, which is issue-check for Plan-labeled Issues only. This repo runs issue-check alone.
 
 ## pr-check
 

@@ -14,6 +14,10 @@ on:
         description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
         default: ''
+      command:
+        description: The fitness command to run, issue-check or its Plan-only alias plan-check.
+        type: string
+        default: issue-check
 
 permissions:
   contents: read
@@ -49,9 +53,15 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       - name: Validate issue(s) by kind, keep one verdict comment, and label it
         id: report-step-2
-        run: fitness issue-check
+        # plan-check-reusable passes plan-check to judge Plans only.
+        run: |
+          case "$FITNESS_COMMAND" in
+            issue-check|plan-check) fitness "$FITNESS_COMMAND" ;;
+            *) printf '::error::command must be issue-check or plan-check, not %s\n' "$FITNESS_COMMAND"; exit 1 ;;
+          esac
         env:
           GH_TOKEN: ${{ github.token }}
+          FITNESS_COMMAND: ${{ inputs.command }}
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
