@@ -18,5 +18,8 @@ assignees: jasonvanderslice
 <!-- The questions this research answers, each one a list item a finding can close. -->
 - REPLACE-WITH-FIRST-QUESTION
 
+## What has been found out
+<!-- Update this issue directly as findings arrive, one per question above. Leave it empty when the research opens. -->
+
 
 <!-- Absolutely NO OTHER SECTIONS. -->
