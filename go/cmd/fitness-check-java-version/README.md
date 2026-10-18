@@ -2,7 +2,7 @@
 relatedConfigurations: ['../../../.fitnessrc.json']
 ---
 
-<!-- cspell:ignore sdkmanrc -->
+<!-- cspell:ignore sdkmanrc jdks sdkman jabba libexec foojay -->
 
 # java-version
 
@@ -18,7 +18,11 @@ A pom that names no release takes one from its parents outside the repo, read fr
 
 ## Toolchains
 
-A Gradle toolchain asks for its exact release, not a newer one. Gradle always finds the JDK it runs on, so that release passes at once. For any other, the check plans a compile with `compileJava --dry-run` from the build root. Gradle then finds or downloads the JDK as the build would, and a release it cannot provide fails, naming the JDK to install.
+A Gradle toolchain asks for its exact release, not a newer one. Gradle always finds the JDK it runs on, so that release passes at once. Any other release must be installed, and the check looks for it without starting Gradle, so it finishes in well under a second.
+
+The lookup reads `JAVA_HOME`, macOS's `/usr/libexec/java_home -V`, and the folders Gradle detects JDKs in. Those are `~/.gradle/jdks`, SDKMAN, asdf, jabba, `~/.jdks`, Homebrew, `/usr/lib/jvm` and the macOS JDK folders. It adds the folders `org.gradle.java.installations.paths` names in `gradle.properties`, and the environment variables `org.gradle.java.installations.fromEnv` names.
+
+A release found nowhere fails, naming the JDK to install. A toolchain resolver in the settings script exempts it, as `toolchainManagement` or the Foojay plugin, since Gradle then downloads the JDK.
 
 ## Behavior
 

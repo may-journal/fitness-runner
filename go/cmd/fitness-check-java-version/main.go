@@ -1,7 +1,7 @@
 // Command fitness-check-java-version checks a Java repo pins its JDK and
 // that the machine's JDKs satisfy the pin, through the Java language
-// module. Listing the JDKs a Gradle toolchain may use runs Gradle, so the
-// check gets a one-minute time budget.
+// module. Toolchain JDKs come from a local lookup of installed JDKs and
+// never from Gradle, so the check gets a one-minute time budget.
 package main
 
 import (

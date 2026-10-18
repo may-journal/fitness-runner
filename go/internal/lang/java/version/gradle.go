@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"strconv"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
@@ -33,64 +31,36 @@ func gradlePins(root, file string, roots []java.Project) ([]pin, string) {
 	return out, ""
 }
 
-// toolchainErrors names each toolchain release Gradle can neither find
-// installed nor download. A release the running JDK has needs no run,
-// since Gradle always detects the JDK it runs on. Otherwise Gradle plans
-// a compile once per build root, which resolves the toolchain as the
-// build would: through its installed JDKs, resolvers and init scripts.
-func toolchainErrors(root string, have int, pins []pin) ([]string, error) {
+// toolchainErrors names each toolchain release no installed JDK matches,
+// when the build configures no resolver to download it. A release the
+// running JDK has needs no lookup, since Gradle always detects the JDK it
+// runs on. The check reads folders and files and never starts Gradle.
+func toolchainErrors(root string, have int, pins []pin) []string {
 	var errors []string
-	for _, build := range toolchainBuilds(have, pins) {
-		bin, ok := java.Tool(root, build)
-		if !ok {
-			errors = append(errors, build.Build.Install)
+	installed := map[java.Project][]int{}
+	for _, p := range pins {
+		need, _ := java.Major(p.version)
+		if !wantsInstalled(p, need, have) {
 			continue
 		}
-		o := java.Run(root, bin, build, "compileJava", "--dry-run")
-		if err := o.EnvErr(build.Build.Command); err != nil {
-			return nil, err
+		if _, ok := installed[p.toolchain]; !ok {
+			installed[p.toolchain] = installedJDKs(root, p.toolchain)
 		}
-		errors = append(errors, unresolved(o, build, pins)...)
-	}
-	return errors, nil
-}
-
-// unresolved names each of build's toolchain releases a failed plan
-// found no JDK for, and how to install it, or else the plan's own reason.
-func unresolved(o checkkit.Outcome, build java.Project, pins []pin) []string {
-	if o.Code == 0 {
-		return nil
-	}
-	if errors := missingJDKs(o.Stdout, build, pins); len(errors) > 0 {
-		return errors
-	}
-	return java.Fallback(o, "Gradle could not plan the build's compile; run its compileJava task by hand")
-}
-
-// missingJDKs names each of build's toolchain releases Gradle's output
-// says it found no JDK for.
-func missingJDKs(out string, build java.Project, pins []pin) []string {
-	var errors []string
-	for _, m := range missingRe.FindAllStringSubmatch(out, -1) {
-		for _, p := range pins {
-			if p.toolchain == build && p.version == m[1] {
-				need, _ := strconv.Atoi(m[1])
-				errors = append(errors, fmt.Sprintf("%s asks for a JDK %d toolchain, which is not installed; install JDK %d, such as from https://adoptium.net, or configure a toolchain resolver to download it", p.file, need, need))
-			}
+		if missing(root, p, need, installed[p.toolchain]) {
+			errors = append(errors, fmt.Sprintf("%s asks for a JDK %d toolchain, which is not installed; install JDK %d, such as from https://adoptium.net, or configure a toolchain resolver to download it", p.file, need, need))
 		}
 	}
 	return errors
 }
 
-// toolchainBuilds lists, once each, the build roots asking for a
-// toolchain release the running JDK is not.
-func toolchainBuilds(have int, pins []pin) []java.Project {
-	var out []java.Project
-	for _, p := range pins {
-		need, _ := java.Major(p.version)
-		if p.toolchain != (java.Project{}) && need != have && !slices.Contains(out, p.toolchain) {
-			out = append(out, p.toolchain)
-		}
-	}
-	return out
+// wantsInstalled reports whether p is a toolchain for a release other than
+// the running JDK's, which must be installed.
+func wantsInstalled(p pin, need, have int) bool {
+	return p.toolchain != (java.Project{}) && need != have
+}
+
+// missing reports whether no installed release is need and the pin's
+// build has no resolver to download it.
+func missing(root string, p pin, need int, installed []int) bool {
+	return !slices.Contains(installed, need) && !hasResolver(root, p.toolchain)
 }

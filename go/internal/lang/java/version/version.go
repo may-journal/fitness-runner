@@ -10,8 +10,8 @@
 // repo first. The running JDK satisfies a pin when its feature release is
 // at least the pinned one, since a newer JDK builds for an older release.
 // The running JDK is JAVA_HOME's, as the build tools pick it, else the
-// one on PATH. A Gradle toolchain asks for its exact release, which Gradle
-// must find installed or download, so Gradle judges it.
+// one on PATH. A Gradle toolchain asks for its exact release, which an
+// installed JDK must match, else a toolchain resolver must download.
 package version
 
 // cspell:ignore sdkmanrc
@@ -65,10 +65,7 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	if len(pins) == 0 {
 		return checkkit.Fail(0, append(unread, noPin)...), nil
 	}
-	errors, err := pinErrors(root, pins)
-	if err != nil {
-		return checkkit.Result{}, err
-	}
+	errors := pinErrors(root, pins)
 	if len(errors) > 0 {
 		return checkkit.Fail(len(pins), errors...), nil
 	}
@@ -78,10 +75,10 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 // pinErrors names each pin the machine's JDKs do not satisfy: a toolchain
 // that must match an installed JDK, else the running JDK. With no running
 // JDK, it asks for one.
-func pinErrors(root string, pins []pin) ([]string, error) {
+func pinErrors(root string, pins []pin) []string {
 	running, ok := java.JDK()
 	if !ok {
-		return []string{java.NoJDK}, nil
+		return []string{java.NoJDK}
 	}
 	var newer []pin
 	for _, p := range pins {
@@ -90,8 +87,8 @@ func pinErrors(root string, pins []pin) ([]string, error) {
 		}
 	}
 	have, _ := java.Major(running)
-	errors, err := toolchainErrors(root, have, pins)
-	return append(judge(running, newer), errors...), err
+	errors := toolchainErrors(root, have, pins)
+	return append(judge(running, newer), errors...)
 }
 
 // judge names each pin the running JDK does not satisfy.
