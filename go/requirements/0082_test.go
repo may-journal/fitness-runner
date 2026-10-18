@@ -51,11 +51,16 @@ func Test0082_1(t *testing.T) {
 func Test0082_2(t *testing.T) {
 	t.Parallel()
 	table := "\n\n| Plan | State |\n| --- | --- |\n| 22 | open |"
-	body := strings.Replace(epicBody("1. [ ] #22\n2. #23 ✅\n3. #24, after #25\n4. #25\n5. #25"), "fixture.", "fixture."+table, 1)
+	items := "1. [ ] #22\n2. #23 ✅\n3. #24, after #25\n4. #25\n5. may-journal/example#25\n6. may-journal/example#26, after #27\n7. #27"
+	body := strings.Replace(epicBody(items), "fixture.", "fixture."+table, 1)
 	files := map[string]string{".fitnessrc.json": `{"proseBudget": {"maxListItems": 4}}` + "\n"}
-	out, code, rp := judgeKind(t, body, files, epicGitHub("22", "23", "24", "25"))
-	sees(t, out, code, 1, "item 1 uses a checkbox", "item 2 has an emoji", "is listed before", "is listed more than once",
-		"tables are not allowed", "lists 5 issues (max 4); split them under")
+	out, code, rp := judgeKind(t, body, files, epicGitHub("22", "23", "24", "25", "26", "27"))
+	sees(t, out, code, 1, "item 1 uses a checkbox", "item 2 has an emoji", "item 3 (\\#24) is listed before \\#25",
+		"example\\#25 is listed more than once", "item 6 (may-journal/example\\#26) is listed before \\#27",
+		"tables are not allowed", "a list has more than 4 items at level 1")
+	if strings.Contains(out, "is not listed under") || strings.Count(out, "more than 4 items") != 1 {
+		t.Errorf("want the checkbox item counted as listed and one list-length finding:\n%s", out)
+	}
 	if !commentedOn(rp, kindIssue, `body=❌ Epic needs work:\n- `) || !labeledOn(rp, kindIssue, "fitness-invalid") {
 		t.Errorf("want a failing Epic verdict and fitness-invalid, got gh calls %q", rp.calls("gh"))
 	}
@@ -84,6 +89,17 @@ func Test0082_4(t *testing.T) {
 	if !commentedOn(rp, kindIssue, "body=✅ Research looks good.") {
 		t.Errorf("want a passing Research verdict, got gh calls %q", rp.calls("gh"))
 	}
+
+	plan := "---\nname: Plan\nlabels: Plan\n---\n\n<!-- Pitch. -->\n> REPLACE-ME\n\n## Background\n<!-- Context. -->\n\n## Acceptance\n<!-- Checks. -->\n\n## What needs to happen\n<!-- Steps. -->\n- [ ] REPLACE-ME\n"
+	files = map[string]string{".github/ISSUE_TEMPLATE/plan.md": plan}
+	out, code, _ = judgeKind(t, planBody("- [ ] Write the tests."), files, kindGitHub("plan", "Plan"))
+	sees(t, out, code, 1, "Acceptance")
+	if strings.Contains(out, "Unexpected") {
+		t.Errorf("want only the template's sections asked for:\n%s", out)
+	}
+	accepted := strings.Replace(planBody("- [ ] Write the tests."), "## What", "## Acceptance\n\nThe tests pass.\n\n## What", 1)
+	out, code, _ = judgeKind(t, accepted, files, kindGitHub("plan", "Plan"))
+	sees(t, out, code, 0, "Passed.")
 }
 
 func Test0082_5(t *testing.T) {
@@ -92,6 +108,14 @@ func Test0082_5(t *testing.T) {
 	sees(t, out, code, 0, "has no issue kind label, so it is not checked.")
 	if rp.called("gh", "-X POST") {
 		t.Errorf("want nothing written to an issue with no kind, got gh calls %q", rp.calls("gh"))
+	}
+
+	issue := map[string]any{"number": 21, "title": "t", "body": epicBody("1. #22"), "labels": []map[string]string{{"name": "Epic"}}}
+	gone := response{Match: []string{"fitness:issue-check:epic:"}, Stderr: "gh: Could not resolve to an Issue with the number of 21.\n", Exit: 1}
+	out, code, rp = ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, nil, append([]response{gone}, epicGitHub("22")...))
+	sees(t, out, code, 0, "21 no longer exists")
+	if rp.called("gh", "-X POST") || rp.called("gh", "labels: [.labels[].name]") {
+		t.Errorf("want the event's labels used and nothing written to a moved issue, got gh calls %q", rp.calls("gh"))
 	}
 }
 

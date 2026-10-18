@@ -21,9 +21,12 @@ const Section = "What needs to happen"
 type Item struct {
 	// Text is the item after its list marker.
 	Text string
-	// Group is the ### heading above the item, or "" before any.
-	Group string
-	// Ref is the plain reference the item names, or "" when it is not one.
+	// Checkbox is set when the item opens with a task-list box, which is
+	// stripped before the reference is read.
+	Checkbox bool
+	// Lead is the reference that opens the item, whatever follows it.
+	Lead string
+	// Ref is the reference the item names, or "" when it is not a plain one.
 	Ref string
 	// Note is the text after the reference's comma.
 	Note string
@@ -37,18 +40,18 @@ var (
 	plainRe    = regexp.MustCompile(`^(` + refPattern + `)(?:\s*,\s*(.+))?$`)
 	refRe      = regexp.MustCompile(refPattern)
 	afterRe    = regexp.MustCompile(`(?i)\bafter\b`)
-	checkboxRe = regexp.MustCompile(`^\[[ xX]\]`)
-	groupRe    = regexp.MustCompile(`^###\s+(.*\S)`)
+	checkboxRe = regexp.MustCompile(`^\[[ xX]\]\s*`)
 	statusRe   = regexp.MustCompile(`(?i)\b(done|blocked|wip|todo|merged|closed|shipped|complete|completed|in progress|pending)\b`)
 )
 
-// Items returns every list item in the section, in order, with the ###
-// heading each sits under. Fenced code never counts.
+// Items returns every list item in the section, in order. Fenced code
+// never counts, and a ### heading only groups the items below it.
 func Items(body string) []Item {
-	group := ""
 	var items []Item
 	for _, text := range sectionLines(body) {
-		group, items = addLine(text, group, items)
+		if m := itemRe.FindStringSubmatch(text); m != nil {
+			items = append(items, parse(m[1]))
+		}
 	}
 	return items
 }
@@ -71,45 +74,53 @@ func sectionLines(body string) []string {
 	return out
 }
 
-// addLine reads one section line: a ### heading starts a group, and a list
-// item joins the current one.
-func addLine(text, group string, items []Item) (string, []Item) {
-	if m := groupRe.FindStringSubmatch(strings.TrimSpace(text)); m != nil {
-		return m[1], items
-	}
-	if m := itemRe.FindStringSubmatch(text); m != nil {
-		items = append(items, parse(m[1], group))
-	}
-	return group, items
-}
-
-// Refs returns the plain references the section lists, in order.
+// Refs returns the references the section lists, in order, including those
+// behind a checkbox or before other text, so the sub-issue match sees every
+// issue named.
 func Refs(body string) []string {
 	var refs []string
 	for _, it := range Items(body) {
-		if it.Ref != "" {
-			refs = append(refs, it.Ref)
+		if it.Lead != "" {
+			refs = append(refs, it.Lead)
 		}
 	}
 	return refs
 }
 
 // Looks reports whether body reads as an epic: its first item under the
-// section names an issue, with or without a checkbox.
+// section is a plain issue reference with no checkbox. A checklist, even one
+// naming issues, is a Plan.
 func Looks(body string) bool {
 	items := Items(body)
-	if len(items) == 0 {
-		return false
-	}
-	text := strings.TrimSpace(checkboxRe.ReplaceAllString(items[0].Text, ""))
-	loc := refRe.FindStringIndex(text)
-	return loc != nil && loc[0] == 0
+	return len(items) > 0 && !items[0].Checkbox && items[0].Ref != ""
 }
 
-// parse reads one item's reference and note.
-func parse(text, group string) Item {
-	it := Item{Text: text, Group: group}
-	m := plainRe.FindStringSubmatch(text)
+// Key is ref as lower-case owner/name#number, with a bare #number read as
+// one in repo. With no repo, a bare reference stays #number.
+func Key(ref, repo string) string {
+	if strings.HasPrefix(ref, "#") && repo != "" {
+		ref = repo + ref
+	}
+	return strings.ToLower(ref)
+}
+
+// leadRef is the reference text opens with, or "".
+func leadRef(text string) string {
+	if loc := refRe.FindStringIndex(text); loc != nil && loc[0] == 0 {
+		return text[:loc[1]]
+	}
+	return ""
+}
+
+// parse reads one item's checkbox, reference and note.
+func parse(text string) Item {
+	it := Item{Text: text}
+	rest := text
+	if loc := checkboxRe.FindStringIndex(text); loc != nil {
+		it.Checkbox, rest = true, text[loc[1]:]
+	}
+	it.Lead = leadRef(rest)
+	m := plainRe.FindStringSubmatch(rest)
 	if m == nil {
 		return it
 	}
@@ -139,8 +150,9 @@ func bounds(body string) (start, end int) {
 
 // Validate returns the list's findings: each item that is not a plain
 // reference, a repeated reference, an item listed before one it runs after,
-// a table anywhere, and a list group longer than maxItems.
-func Validate(body string, maxItems int) []string {
+// and a table anywhere. repo, when known, reads a bare #number as one in it,
+// so both spellings of one issue match. prose-budget caps the list's length.
+func Validate(body, repo string) []string {
 	start, _ := bounds(body)
 	if start == 0 {
 		return tableErrors(body)
@@ -153,17 +165,16 @@ func Validate(body string, maxItems int) []string {
 	for i, it := range items {
 		errs = append(errs, itemErrors(i+1, it)...)
 	}
-	errs = append(errs, repeatErrors(items)...)
-	errs = append(errs, orderErrors(items)...)
-	errs = append(errs, tableErrors(body)...)
-	return append(errs, sizeErrors(items, maxItems)...)
+	errs = append(errs, repeatErrors(items, repo)...)
+	errs = append(errs, orderErrors(items, repo)...)
+	return append(errs, tableErrors(body)...)
 }
 
 // itemErrors judges one item's form: a plain reference with an optional
 // short note, and no checkbox, emoji or status.
 func itemErrors(n int, it Item) []string {
 	switch {
-	case checkboxRe.MatchString(it.Text):
+	case it.Checkbox:
 		return []string{fmt.Sprintf("item %d uses a checkbox; list the issue as a plain reference, and GitHub shows whether it is done", n)}
 	case hasEmoji(it.Text):
 		return []string{fmt.Sprintf("item %d has an emoji; GitHub shows each issue's state, so drop it", n)}
@@ -176,11 +187,11 @@ func itemErrors(n int, it Item) []string {
 }
 
 // repeatErrors names each reference listed more than once.
-func repeatErrors(items []Item) []string {
+func repeatErrors(items []Item, repo string) []string {
 	var errs []string
 	seen := map[string]bool{}
 	for _, it := range items {
-		key := strings.ToLower(it.Ref)
+		key := Key(it.Ref, repo)
 		if it.Ref != "" && seen[key] {
 			errs = append(errs, fmt.Sprintf("%s is listed more than once; list each issue once", it.Ref))
 		}
@@ -191,31 +202,31 @@ func repeatErrors(items []Item) []string {
 
 // orderErrors names each item listed before an item its note says it runs
 // after.
-func orderErrors(items []Item) []string {
-	at := positions(items)
+func orderErrors(items []Item, repo string) []string {
+	at := positions(items, repo)
 	var errs []string
 	for i, it := range items {
-		errs = append(errs, afterErrors(i, it, at)...)
+		errs = append(errs, afterErrors(i, it, at, repo)...)
 	}
 	return errs
 }
 
-// positions maps each listed reference, in lower case, to its first index.
-func positions(items []Item) map[string]int {
+// positions maps each listed reference's Key to its first index.
+func positions(items []Item, repo string) map[string]int {
 	at := map[string]int{}
 	for i, it := range slices.Backward(items) {
 		if it.Ref != "" {
-			at[strings.ToLower(it.Ref)] = i
+			at[Key(it.Ref, repo)] = i
 		}
 	}
 	return at
 }
 
 // afterErrors names each reference item i runs after that is listed later.
-func afterErrors(i int, it Item, at map[string]int) []string {
+func afterErrors(i int, it Item, at map[string]int, repo string) []string {
 	var errs []string
 	for _, a := range it.After {
-		if j, ok := at[strings.ToLower(a)]; ok && j > i {
+		if j, ok := at[Key(a, repo)]; ok && j > i {
 			errs = append(errs, fmt.Sprintf("item %d (%s) is listed before %s, which it runs after; list them in run order", i+1, it.Ref, a))
 		}
 	}
@@ -230,40 +241,6 @@ func tableErrors(body string) []string {
 		}
 	}
 	return nil
-}
-
-// sizeErrors fails each group of items longer than maxItems.
-func sizeErrors(items []Item, maxItems int) []string {
-	groups, count := groupCounts(items)
-	var errs []string
-	for _, g := range groups {
-		if count[g] > maxItems {
-			errs = append(errs, sizeError(g, count[g], maxItems))
-		}
-	}
-	return errs
-}
-
-// groupCounts returns the groups in order and how many items each holds.
-func groupCounts(items []Item) ([]string, map[string]int) {
-	var groups []string
-	count := map[string]int{}
-	for _, it := range items {
-		if count[it.Group] == 0 {
-			groups = append(groups, it.Group)
-		}
-		count[it.Group]++
-	}
-	return groups, count
-}
-
-// sizeError is the finding for group g holding n items over maxItems.
-func sizeError(g string, n, maxItems int) string {
-	where := "`## " + Section + "`"
-	if g != "" {
-		where = "`### " + g + "`"
-	}
-	return fmt.Sprintf("%s lists %d issues (max %d); split them under ### headings", where, n, maxItems)
 }
 
 // emoji holds the pictograph and dingbat blocks emoji come from.

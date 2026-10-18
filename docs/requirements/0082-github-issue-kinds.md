@@ -14,7 +14,7 @@ labeled issue edits whose verdict matches their kind's template and rules
 -
 labeled issue edits
 
-Source: `go/internal/metadata/kinds.go:51`
+Source: `go/internal/metadata/kinds.go:47`
 
 ## Requirements
 
@@ -31,11 +31,11 @@ Source: `go/internal/metadata/kinds.go:51`
         - When issue-check judges it
             - Then it names each listed issue that is not a sub-issue, or cannot be read, and each sub-issue left off the list
 - 0082.4
-    - Given Developer has an issue of a kind that has only a template
+    - Given Developer has an issue of a kind that has only a template, or a Plan whose repo template adds a section
         - When issue-check judges it
             - Then it fails a body missing the template's sections and passes one that follows it
 - 0082.5
-    - Given Developer has an issue with no kind label
+    - Given Developer has an issue with no kind label, or a labeled issue moved away before issue-check reaches it
         - When issue-check judges it
             - Then it notes the issue is not checked, writes nothing, and exits 0
 - 0082.6

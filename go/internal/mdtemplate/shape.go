@@ -2,6 +2,7 @@ package mdtemplate
 
 import (
 	"fmt"
+	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -301,18 +302,47 @@ var (
 // its list, flow or block, and returns the keys in order. Indented keys
 // belong to a value and are not keys of their own.
 func readFront(body string, into map[string][]string) []string {
+	f := parseFront(body)
+	maps.Copy(into, f.lists)
+	return f.keys
+}
+
+// front is a doc's parsed front matter: its top-level keys in order, each
+// key's list items, and the raw value of each key that holds a scalar.
+type front struct {
+	keys    []string
+	lists   map[string][]string
+	scalars map[string]string
+}
+
+// parseFront reads body's front matter in one pass.
+func parseFront(body string) front {
+	f := front{lists: map[string][]string{}, scalars: map[string]string{}}
 	fm, _ := mdx.FrontMatter(body)
-	var keys []string
 	for _, line := range strings.Split(fm, "\n") {
-		if m := frontKey.FindStringSubmatch(line); m != nil {
-			keys = append(keys, m[1])
-			into[m[1]] = flowItems(m[2])
-		} else if item := blockItem.FindStringSubmatch(line); item != nil && len(keys) > 0 {
-			last := keys[len(keys)-1]
-			into[last] = append(into[last], unquote(item[1]))
-		}
+		f.line(line)
 	}
-	return keys
+	return f
+}
+
+// line reads one front matter line: a key with its flow list or scalar, or
+// a block item of the key above.
+func (f *front) line(line string) {
+	if m := frontKey.FindStringSubmatch(line); m != nil {
+		f.key(m[1], m[2])
+	} else if item := blockItem.FindStringSubmatch(line); item != nil && len(f.keys) > 0 {
+		last := f.keys[len(f.keys)-1]
+		f.lists[last] = append(f.lists[last], unquote(item[1]))
+	}
+}
+
+// key records one top-level key and its value, a flow list or a scalar.
+func (f *front) key(name, value string) {
+	f.keys = append(f.keys, name)
+	f.lists[name] = flowItems(value)
+	if value != "" && !strings.HasPrefix(value, "[") {
+		f.scalars[name] = value
+	}
 }
 
 // flowItems returns the items of a `[a, 'b']` value, never nil, so a key

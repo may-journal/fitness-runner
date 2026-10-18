@@ -1,10 +1,9 @@
 package metadata
 
 import (
+	"errors"
 	"fmt"
 	"maps"
-	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -32,14 +31,8 @@ var kindRules = map[string]kindRule{
 // planChecks are the checks a Plan body gets, for branch-check.
 var planChecks = slices.Concat(kindRules["Plan"].checks, docChecks)
 
-// templateDir holds the issue templates; each one names a kind.
-const templateDir = ".github/ISSUE_TEMPLATE"
-
-// placeholder is the template text a real issue replaces.
-const placeholder = "REPLACE-ME"
-
 // issueKind is one kind of labeled issue: the label that marks it, the shape
-// its template gives, when it has one, and its rule.
+// its template gives when no check of its own judges that, and its rule.
 type issueKind struct {
 	label string
 	spec  *mdtemplate.Spec
@@ -48,22 +41,21 @@ type issueKind struct {
 
 // discoverKinds reads the kinds root's issue templates name, keyed by each
 // template's first label, beside every kind in kindRules a repo has no
-// template for.
+// template for. A kind whose rule names checks leaves its template's shape to
+// them, as plan-structure and epic-structure read the same template, so one
+// source sets the sections and no two specs disagree.
 func discoverKinds(root string) map[string]issueKind {
 	kinds := map[string]issueKind{}
 	for label, rule := range kindRules {
 		kinds[label] = issueKind{label: label, rule: rule}
 	}
-	paths, _ := filepath.Glob(filepath.Join(root, templateDir, "*.md"))
-	for _, p := range paths {
-		raw, err := os.ReadFile(p)
-		labels := mdtemplate.TemplateLabels(string(raw))
-		if err != nil || len(labels) == 0 {
-			continue
+	for label, template := range mdtemplate.IssueTemplates(root) {
+		k := issueKind{label: label, rule: kindRules[label]}
+		if len(k.rule.checks) == 0 {
+			spec := mdtemplate.KindSpec(template, strings.ToLower(label))
+			k.spec = &spec
 		}
-		spec := mdtemplate.SpecFromTemplate(string(raw), strings.ToLower(labels[0]))
-		spec.Placeholder, spec.BanOpenQuestions = placeholder, true
-		kinds[labels[0]] = issueKind{label: labels[0], spec: &spec, rule: kindRules[labels[0]]}
+		kinds[label] = k
 	}
 	return kinds
 }
@@ -118,8 +110,8 @@ func unique(errs []string) []string {
 	return out
 }
 
-// issueTargets is the triggering issue with its labels read from GitHub, or
-// every open issue with a kind label on workflow_dispatch.
+// issueTargets is the triggering issue with the labels its event carries,
+// or every open issue with a kind label on workflow_dispatch.
 func issueTargets(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, error) {
 	if ev.name == "workflow_dispatch" {
 		return openOfKinds(gh, discoverKinds(b.root))
@@ -128,9 +120,25 @@ func issueTargets(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, e
 	if err != nil {
 		return nil, err
 	}
-	_, labels, err := gh.Issue(ts[0].Number)
-	ts[0].Labels = labels
-	return ts, err
+	return ts, eventLabels(&ts[0], gh)
+}
+
+// eventLabels sets t's labels from its event payload, reading them from
+// GitHub only for a payload that carries none. A read that finds the issue
+// gone marks it so, and it is noted and skipped, not failed.
+func eventLabels(t *target, gh aftereffect.Client) error {
+	if t.EventLabels != nil {
+		for _, l := range t.EventLabels {
+			t.Labels = append(t.Labels, l.Name)
+		}
+		return nil
+	}
+	_, labels, err := gh.Issue(t.Number)
+	t.Labels, t.Gone = labels, errors.Is(err, aftereffect.ErrIssueGone)
+	if t.Gone {
+		return nil
+	}
+	return err
 }
 
 // openOfKinds lists the open issues of every kind once each, by number.
@@ -182,8 +190,8 @@ func subIssueErrors(t target, gh aftereffect.Client) []string {
 func listedErrors(refs, subs []string, gh aftereffect.Client) []string {
 	var errs []string
 	for _, ref := range refs {
-		full := fullRef(ref, gh.Repo())
-		if !slices.ContainsFunc(subs, func(s string) bool { return strings.EqualFold(s, full) }) {
+		full := epic.Key(ref, gh.Repo())
+		if !slices.ContainsFunc(subs, func(s string) bool { return epic.Key(s, "") == full }) {
 			errs = append(errs, notSubIssue(ref, full, gh.Repo(), gh))
 		}
 	}
@@ -194,7 +202,7 @@ func listedErrors(refs, subs []string, gh aftereffect.Client) []string {
 func unlistedErrors(refs, subs []string, repo string) []string {
 	var errs []string
 	for _, s := range subs {
-		if !slices.ContainsFunc(refs, func(r string) bool { return fullRef(r, repo) == strings.ToLower(s) }) {
+		if !slices.ContainsFunc(refs, func(r string) bool { return epic.Key(r, repo) == epic.Key(s, repo) }) {
 			errs = append(errs, fmt.Sprintf("sub-issue %s is not listed under `## %s`; list it, or remove it as a sub-issue", shortRef(s, repo), epic.Section))
 		}
 	}
@@ -210,15 +218,6 @@ func notSubIssue(ref, full, repo string, gh aftereffect.Client) string {
 		}
 	}
 	return fmt.Sprintf("%s is listed but is not a sub-issue of this epic; add it as a sub-issue", ref)
-}
-
-// fullRef is ref as lower-case owner/name#number, with a bare #number in
-// repo.
-func fullRef(ref, repo string) string {
-	if strings.HasPrefix(ref, "#") {
-		ref = repo + ref
-	}
-	return strings.ToLower(ref)
 }
 
 // shortRef is a full reference as #number when it is in repo.

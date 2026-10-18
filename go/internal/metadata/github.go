@@ -107,17 +107,14 @@ func (c ghCommand) kindsAt(root string) map[string]issueKind {
 // noted and does not fail, as is an issue with no kind label when the
 // command judges kinds.
 func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport, t target, kinds map[string]issueKind) (bool, error) {
-	var errs []string
-	if c.kinds == nil {
-		errs = c.judge(t, gh, b)
-	} else {
-		k, labelErrs, ok := classify(t, kinds)
-		if !ok {
-			rep.note(t.Number, fmt.Sprintf("#%d has no issue kind label, so it is not checked.", t.Number))
-			return false, nil
-		}
-		t.Kind = k.label
-		errs = append(labelErrs, k.judge(t, gh, b)...)
+	if t.Gone {
+		rep.gone(t.Number)
+		return false, nil
+	}
+	t, errs, skip := c.findings(gh, b, t, kinds)
+	if skip != "" {
+		rep.note(t.Number, skip)
+		return false, nil
 	}
 	err := c.react(gh, t, errs)
 	if errors.Is(err, aftereffect.ErrIssueGone) {
@@ -126,6 +123,21 @@ func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport
 	}
 	rep.add(t.Number, errs)
 	return len(errs) > 0, err
+}
+
+// findings judges t by the declared checks, or by its issue kind when the
+// command judges kinds, returning t with its kind set. skip says why an
+// issue with no kind label is not checked.
+func (c ghCommand) findings(gh aftereffect.Client, b blobChecker, t target, kinds map[string]issueKind) (target, []string, string) {
+	if c.kinds == nil {
+		return t, c.judge(t, gh, b), ""
+	}
+	k, labelErrs, ok := classify(t, kinds)
+	if !ok {
+		return t, nil, fmt.Sprintf("#%d has no issue kind label, so it is not checked.", t.Number)
+	}
+	t.Kind = k.label
+	return t, append(labelErrs, k.judge(t, gh, b)...), ""
 }
 
 // judge runs the declared checks on the target's body and its links.

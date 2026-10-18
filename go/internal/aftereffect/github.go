@@ -34,8 +34,15 @@ type Target struct {
 	// Labels are the issue's label names, as a GitHub read lists them; the
 	// event payload's label objects never fill them.
 	Labels []string `json:"labelNames"`
+	// EventLabels are the label objects an event payload carries; nil when
+	// it carries none.
+	EventLabels []struct {
+		Name string `json:"name"`
+	} `json:"labels"`
 	// Kind is the issue kind label the target is judged as, such as Plan.
 	Kind string `json:"-"`
+	// Gone marks an issue a read found deleted or moved away.
+	Gone bool `json:"-"`
 	// EntryFiles are a local branch's changed changelog entry files against
 	// its PR base; nil reads them from GitHub.
 	EntryFiles *[]FileChange `json:"-"`
@@ -145,6 +152,12 @@ func (g Client) issueQuery(args ...string) ([]byte, error) {
 	return out, err
 }
 
+// goneREST reports whether a REST read's stderr says the issue is not there.
+func goneREST(stderr string) bool {
+	s := strings.ToLower(stderr)
+	return strings.Contains(s, "http 404") || strings.Contains(s, "http 410")
+}
+
 // ghEnvText is gh output that names its environment, not the request: no
 // login or a rejected token, or a network that cannot reach GitHub.
 var ghEnvText = []string{
@@ -206,8 +219,13 @@ func (g Client) Issue(n int) (string, []string, error) {
 	return body, labels, err
 }
 
+// readIssue reads issue n's body and labels. A 404 or 410, an issue deleted
+// or never there, wraps ErrIssueGone.
 func (g Client) readIssue(n int) (string, []string, error) {
-	out, err := g.api("--jq", "{body: (.body // \"\"), labels: [.labels[].name]}", "issues/"+strconv.Itoa(n))
+	out, stderr, err := g.run("api", "--jq", "{body: (.body // \"\"), labels: [.labels[].name]}", "repos/"+g.repo+"/issues/"+strconv.Itoa(n))
+	if err != nil && goneREST(stderr) {
+		return "", nil, fmt.Errorf("%w: %w", ErrIssueGone, err)
+	}
 	if err != nil {
 		return "", nil, err
 	}
