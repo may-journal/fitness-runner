@@ -30,3 +30,7 @@ Source: #189
     - Given Developer has a file that a file-reading check cannot read
         - When fitness runs that check
             - Then it skips that file, names it as info, and still judges the other files
+- 0003.4
+    - Given Developer has a check that asks a service, and the service cannot answer
+        - When fitness runs that check
+            - Then it passes with an info note naming what it could not judge and why
