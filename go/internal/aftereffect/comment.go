@@ -47,8 +47,10 @@ type Notice struct {
 	Body string `json:"body"`
 }
 
-// BotLogin is the account whose replies count as comment-check notices;
-// FITNESS_BOT_LOGIN overrides the Actions token's login.
+// BotLogin is the account fitness posts as. Its verdicts, close-check notes,
+// and comment-check replies count only when this account wrote them, so a
+// pasted marker never does. FITNESS_BOT_LOGIN overrides the Actions token's
+// login.
 func BotLogin() string {
 	if login := os.Getenv("FITNESS_BOT_LOGIN"); login != "" {
 		return login

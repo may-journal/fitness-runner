@@ -82,7 +82,7 @@ type author struct {
 	Type  string `json:"__typename"`
 }
 
-// rest is the login as REST and botLogin spell it.
+// rest is the login as REST and BotLogin spell it.
 func (a author) rest() string {
 	if a.Type == "Bot" {
 		return a.Login + "[bot]"
@@ -365,7 +365,7 @@ func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 func byBot[T any](items []T, writer func(T) string) []T {
 	var kept []T
 	for _, item := range items {
-		if writer(item) == botLogin() {
+		if writer(item) == BotLogin() {
 			kept = append(kept, item)
 		}
 	}
