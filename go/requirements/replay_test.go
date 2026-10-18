@@ -27,6 +27,9 @@ func TestMain(m *testing.M) {
 	if name := filepath.Base(os.Args[0]); slices.Contains(standIns, name) {
 		os.Exit(replay(name, os.Args[1:]))
 	}
+	if name := filepath.Base(os.Args[0]); strings.HasPrefix(name, timedPrefix) {
+		os.Exit(timedCheck(name, os.Args[1:]))
+	}
 	os.Exit(m.Run())
 }
 

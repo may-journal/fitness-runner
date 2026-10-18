@@ -46,7 +46,7 @@ Source: `go/cmd/fitness/ci.go:22`
     - Given Developer has one real problem and a check that cannot run, such as `local-branch` with `gh` blocked
         - When fitness runs the full suite
             - Then the real problem fails, the other check shows as info, the run exits 1, and Actions annotates an error and a notice
-- 0001.12
-    - Given Developer has the same repo with the real problem fixed
+- 0001.13
+    - Given Developer has slow checks with different time budgets
         - When fitness runs
-            - Then the check that cannot run shows as info and the run exits 0
+            - Then they overlap, the longest budget starts first, and the table keeps catalog order
