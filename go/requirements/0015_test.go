@@ -63,12 +63,23 @@ func Test0015_2(t *testing.T) {
 	t.Parallel()
 	sum := sha256.Sum256([]byte(closedAt0015 + "\n" + unfinished))
 	mark := "<!-- fitness:close-check:" + hex.EncodeToString(sum[:])[:12] + " -->"
-	rp, out, code := closeCheck0015(t, closed0015(t, unfinished, "completed"), []response{
-		comments0015(`{"body":"🔁 Reopened: this issue was closed with unchecked checklist items.\n\n` + mark + `"}` + "\n"),
-	})
+	reply := func(author string) response {
+		return comments0015(`{"author":"` + author + `","body":"🔁 Reopened: this issue was closed with unchecked checklist items.\n\n` + mark + `"}` + "\n")
+	}
+	rp, out, code := closeCheck0015(t, closed0015(t, unfinished, "completed"), []response{reply("github-actions[bot]")})
 	sees(t, out, code, 0)
 	if rp.called("gh", "-X POST") {
 		t.Errorf("want no second comment, got gh calls %q", rp.calls("gh"))
+	}
+	rp, out, code = closeCheck0015(t, closed0015(t, unfinished, "completed"), []response{
+		{Match: []string{"-X POST", "issues/21/comments"}, Stdout: `{"id":901,"body":"🔁 Reopened"}`},
+		reply("dev"),
+		{Match: []string{"graphql", "ClosedEvent"}, Stdout: `{"author":"","merger":""}` + "\n"},
+		{Match: []string{"-X PATCH", "state=open", "repos/" + repo0014 + "/issues/21"}, Stdout: `{"number":21,"state":"open"}`},
+	})
+	sees(t, out, code, 0)
+	if !rp.called("gh", "-X PATCH", "state=open", "issues/21") {
+		t.Errorf("want a pasted marker ignored and the issue reopened, got gh calls %q", rp.calls("gh"))
 	}
 }
 

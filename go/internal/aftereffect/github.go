@@ -72,6 +72,22 @@ type Verdict struct {
 	NodeID   string `json:"nodeId"`
 	Body     string `json:"body"`
 	IsHidden bool   `json:"isHidden"`
+	Author   author `json:"author"`
+}
+
+// author is a comment's writer as GraphQL reports it: an app's login comes
+// without the [bot] suffix REST gives it, and its type is Bot.
+type author struct {
+	Login string `json:"login"`
+	Type  string `json:"__typename"`
+}
+
+// rest is the login as REST and BotLogin spell it.
+func (a author) rest() string {
+	if a.Type == "Bot" {
+		return a.Login + "[bot]"
+	}
+	return a.Login
 }
 
 // Effect is a command's reaction to one judged target; errs are the checks'
@@ -316,14 +332,16 @@ const verdictsQuery = `query($owner: String!, $name: String!, $number: Int!, $en
     issue(number: $number) {
       comments(first: 100, after: $endCursor) {
         pageInfo { hasNextPage endCursor }
-        nodes { id databaseId body isMinimized }
+        nodes { id databaseId body isMinimized author { login __typename } }
       }
     }
   }
 }`
 
 // Verdicts returns the issue-check verdict comments for kind, oldest first.
-// A verdict is known by its body-version marker, whoever's token posted it.
+// A verdict is known by its body-version marker, and counts only when the
+// fitness bot wrote it, so a marker another author pastes is never edited,
+// hidden, or taken as the live verdict.
 func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 	owner, name, _ := strings.Cut(g.repo, "/")
 	var tests []string
@@ -332,24 +350,45 @@ func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 	}
 	jq := `.data.repository.issue.comments.nodes[]
 		| select(.body | ` + strings.Join(tests, " or ") + `)
-		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized}`
+		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized, author}`
 	out, err := g.issueQuery("api", "graphql", "--paginate",
 		"-f", "query="+verdictsQuery, "-F", "owner="+owner, "-F", "name="+name,
 		"-F", "number="+strconv.Itoa(n), "--jq", jq)
 	if err != nil {
 		return nil, err
 	}
-	return decodeLines[Verdict](out)
+	found, err := decodeLines[Verdict](out)
+	return byBot(found, func(v Verdict) string { return v.Author.rest() }), err
 }
 
-// CommentBodies selects objects, not bare bodies: gh prints a string result
-// raw rather than as JSON, which would not decode.
+// byBot keeps the items the fitness bot wrote.
+func byBot[T any](items []T, writer func(T) string) []T {
+	var kept []T
+	for _, item := range items {
+		if writer(item) == BotLogin() {
+			kept = append(kept, item)
+		}
+	}
+	return kept
+}
+
+// authoredBody is one comment's body and its REST author login.
+type authoredBody struct {
+	Body   string `json:"body"`
+	Author string `json:"author"`
+}
+
+// CommentBodies returns the bodies of the comments the fitness bot wrote on
+// issue n, so a marker another author pastes never counts. It selects
+// objects, not bare bodies: gh prints a string result raw rather than as
+// JSON, which would not decode.
 func (g Client) CommentBodies(n int) ([]string, error) {
-	out, err := g.api("--paginate", "--jq", ".[] | {body: (.body // \"\")}", "issues/"+strconv.Itoa(n)+"/comments?per_page=100")
+	out, err := g.api("--paginate", "--jq", ".[] | {body: (.body // \"\"), author: .user.login}", "issues/"+strconv.Itoa(n)+"/comments?per_page=100")
 	if err != nil {
 		return nil, err
 	}
-	comments, err := decodeLines[Target](out)
+	all, err := decodeLines[authoredBody](out)
+	comments := byBot(all, func(c authoredBody) string { return c.Author })
 	bodies := make([]string, len(comments))
 	for i, c := range comments {
 		bodies[i] = c.Body

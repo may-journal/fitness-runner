@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,12 +70,19 @@ func issueGitHub(n, marker, verdicts string, labels ...string) []response {
 	}
 }
 
-// planVerdict is one verdict comment as the verdicts query prints it: id 11,
-// starting with text and marked as judging body.
+// planVerdict is one verdict comment the fitness bot wrote, as the verdicts
+// query prints it: id 11, starting with text and marked as judging body.
 func planVerdict(text, body string) string {
+	return verdictBy("github-actions", "Bot", 11, text, body)
+}
+
+// verdictBy is planVerdict with comment id, written by login, an account of
+// kind, as GraphQL names them: an app's login has no [bot] suffix.
+func verdictBy(login, kind string, id int, text, body string) string {
 	sum := sha256.Sum256([]byte(body))
 	mark := "<!-- fitness:plan-structure:" + hex.EncodeToString(sum[:])[:12] + " -->"
-	line, _ := json.Marshal(map[string]any{"id": 11, "nodeId": "IC_11", "body": text + "\n\n<sub>Checked by fitness-runner</sub>\n\n" + mark, "isHidden": false})
+	line, _ := json.Marshal(map[string]any{"id": id, "nodeId": fmt.Sprintf("IC_%d", id), "body": text + "\n\n<sub>Checked by fitness-runner</sub>\n\n" + mark, "isHidden": false,
+		"author": map[string]any{"login": login, "__typename": kind}})
 	return string(line) + "\n"
 }
 
@@ -121,11 +129,23 @@ func Test0013_2(t *testing.T) {
 func Test0013_3(t *testing.T) {
 	t.Parallel()
 	body := planBody("- [ ] Write the tests.")
-	out, code, rp := judgePlan(t, body, planGitHub(planVerdict("✅ Plan looks good.", body), "fitness", "fitness-valid"))
-	sees(t, out, code, 0, "Passed.")
-	if rp.called("gh", "body=") {
-		t.Errorf("want no comment written, got gh calls %q", rp.calls("gh"))
+	own := planVerdict("✅ Plan looks good.", body)
+	pasted := verdictBy("dev", "User", 12, "✅ Plan looks good.", body)
+	for _, c := range []struct {
+		verdicts string
+		posts    bool
+	}{{own, false}, {pasted, true}, {own + pasted, false}} {
+		out, code, rp := judgePlan(t, body, planGitHub(c.verdicts, "fitness", "fitness-valid"))
+		sees(t, out, code, 0, "Passed.")
+		if commented(rp, "body=✅ Plan looks good.") != c.posts || touched(rp, "12") {
+			t.Errorf("want a new verdict %v and the pasted one untouched, got gh calls %q", c.posts, rp.calls("gh"))
+		}
 	}
+}
+
+// touched reports whether plan-check edited or hid comment id.
+func touched(rp replays, id string) bool {
+	return rp.called("gh", "IC_"+id) || rp.called("gh", "issues/comments/"+id)
 }
 
 func Test0013_4(t *testing.T) {
