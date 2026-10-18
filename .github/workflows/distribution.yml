@@ -16,8 +16,14 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
-      - run: go test ./internal/distribution ./internal/release
-        working-directory: go
+          cache: false
+      # No go.sum exists, so setup-go's own cache never restores. Key the build
+      # cache on go.mod and the Go sources, and fall back to the newest one.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ hashFiles('go/go.mod', 'go/**/*.go') }}
+          restore-keys: go-build-${{ runner.os }}-
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v7.2.3
         with:
@@ -105,6 +111,12 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
+          cache: false
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go/go.mod', 'go/**/*.go') }}
+          restore-keys: go-build-${{ runner.os }}-${{ runner.arch }}-
       - name: Run the full suite with the candidate Go installer
         id: report-step-2
         env:

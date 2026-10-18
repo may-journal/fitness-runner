@@ -19,6 +19,14 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go/go.mod
+          cache: false
+      # No go.sum exists, so setup-go's own cache never restores. Key the build
+      # cache on go.mod and the Go sources, and fall back to the newest one.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ hashFiles('go/go.mod', 'go/**/*.go') }}
+          restore-keys: go-build-${{ runner.os }}-
       - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       # A pull request checks the files it changes; a push to main checks
       # every file. The gofmt, go-vet, and go-test checks cover the Go gate.
