@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -25,11 +27,28 @@ type Metadata struct {
 	Version string  `json:"version"`
 	Assets  []Asset `json:"assets"`
 }
-type Config struct{ Root, Out string }
+
+// Config locates the release outputs. Platforms lists the platforms whose
+// outputs bundle-hashes and assemble expect; New sets all four.
+type Config struct {
+	Root, Out string
+	Platforms []string
+}
 
 func New(root string) (Config, error) {
 	root, err := filepath.Abs(root)
-	return Config{Root: root, Out: filepath.Join(root, "out")}, err
+	return Config{Root: root, Out: filepath.Join(root, "out"), Platforms: platforms}, err
+}
+
+// Host limits the expected outputs to the platform this tool runs on, which
+// must be one a release builds.
+func (c Config) Host() (Config, error) {
+	host := runtime.GOOS + "-" + runtime.GOARCH
+	if !slices.Contains(platforms, host) {
+		return c, fmt.Errorf("--host: releases do not build %s", host)
+	}
+	c.Platforms = []string{host}
+	return c, nil
 }
 
 func (c Config) Version() (string, error) {
@@ -80,7 +99,7 @@ func (c Config) asset(name string) (Asset, error) {
 }
 
 func encodedHashes(metadata Metadata) string {
-	pairs := make([]string, 0, len(platforms))
+	pairs := make([]string, 0, len(metadata.Assets))
 	for _, asset := range metadata.Assets {
 		platform := strings.TrimSuffix(strings.TrimPrefix(asset.Name, "fitness-"+metadata.Version+"-"), ".tar.gz")
 		pairs = append(pairs, platform+"="+asset.Hash)

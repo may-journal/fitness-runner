@@ -33,6 +33,9 @@ func (c Config) Assemble() error {
 	if err != nil {
 		return err
 	}
+	if err := c.removeOutputs(); err != nil {
+		return err
+	}
 	if err := c.copyOutputs(assets); err != nil {
 		return err
 	}
@@ -45,7 +48,7 @@ func (c Config) readAssets(stage, version string, installers bool) ([]Asset, err
 		return nil, err
 	}
 	var assets []Asset
-	for _, name := range assetNames(version, installers) {
+	for _, name := range assetNames(c.Platforms, version, installers) {
 		asset, err := c.verifiedOutput(name, sums)
 		if err != nil {
 			return nil, err
@@ -55,9 +58,9 @@ func (c Config) readAssets(stage, version string, installers bool) ([]Asset, err
 	return assets, nil
 }
 
-func assetNames(version string, installers bool) []string {
+func assetNames(targets []string, version string, installers bool) []string {
 	var names []string
-	for _, platform := range platforms {
+	for _, platform := range targets {
 		names = append(names, bundleName(version, platform))
 		if installers {
 			names = append(names, executable(installerName, version, platform))
@@ -131,8 +134,25 @@ func (c Config) copyOutputs(assets []Asset) error {
 	return copyReleaseFile(filepath.Join(c.Out, "tools", "checksums.txt"), filepath.Join(c.Out, "checksums.txt"), 0600)
 }
 
+// removeOutputs deletes the archives, installers, and verifiers an earlier
+// assemble left in out, so none outlives the checksums that listed it.
+func (c Config) removeOutputs() error {
+	for _, pattern := range []string{runnerName + "-*.tar.gz", installerName + "-*", verifierName + "-*"} {
+		paths, err := filepath.Glob(filepath.Join(c.Out, pattern))
+		if err != nil {
+			return err
+		}
+		for _, path := range paths {
+			if err := os.Remove(path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 func (c Config) copyVerifiers() error {
-	for _, platform := range platforms {
+	for _, platform := range c.Platforms {
 		name := verifierName + "-" + platform
 		if err := copyReleaseFile(c.outputPath(name), filepath.Join(c.Out, name), 0700); err != nil {
 			return err

@@ -28,14 +28,6 @@ Source: `go/cmd/fitness-release/main.go:25`
     - Given Developer has a release tag that differs from `version.txt`
         - When `verify-tag` runs
             - Then it fails naming both versions and exits 1
-- 0062.3
-    - Given Developer has bundle archives that match their GoReleaser checksums
-        - When `bundle-hashes` runs
-            - Then it prints each platform with its hash
-- 0062.4
-    - Given Developer has build outputs that are missing or changed
-        - When a build step reads them
-            - Then it fails naming the file and exits 1
 - 0062.5
     - Given Developer has no command, an unknown one, a bad flag, or an invalid version
         - When the release tool runs
@@ -52,3 +44,11 @@ Source: `go/cmd/fitness-release/main.go:25`
     - Given Developer has a job summary path it cannot write
         - When a release step fails
             - Then it still prints the failure and exits 1
+- 0062.9
+    - Given Developer has GoReleaser build outputs and their checksums
+        - When a build step reads them
+            - Then `bundle-hashes` prints each platform with its hash, and a missing or changed file fails naming it with exit 1
+- 0062.10
+    - Given Developer has built only this host's platform after a full build
+        - When a release command runs with `--host`
+            - Then `bundle-hashes` and `assemble` use and keep only this platform's files, and other commands warn it is not handled

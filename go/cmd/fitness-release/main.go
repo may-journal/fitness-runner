@@ -8,10 +8,12 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"slices"
 
 	"github.com/may-journal/fitness-runner/go/internal/release"
 	"github.com/may-journal/fitness-runner/go/internal/releasemeta"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/internal/usage"
 )
 
 func main() { os.Exit(command(os.Args[1:])) }
@@ -37,58 +39,81 @@ func reportFailure(operation string, err error) {
 	}
 }
 
+// subcommand is one release command and the flags it reads. Every command
+// reads --root; a flag it does not list draws a "not handled" warning.
+type subcommand struct {
+	flags []string
+	run   func(config release.Config, root string) error
+}
+
+var commands = map[string]subcommand{
+	"bundle-hashes":   {[]string{"root", "host"}, printBundleHashes},
+	"assemble":        {[]string{"root", "host"}, func(c release.Config, _ string) error { return c.Assemble() }},
+	"promote":         {[]string{"root"}, func(c release.Config, _ string) error { return c.Promote(context.Background()) }},
+	"release-pr":      {[]string{"root"}, func(_ release.Config, root string) error { return updateReleasePR(root) }},
+	"release-notes":   {[]string{"root"}, func(_ release.Config, root string) error { return publishNotes(root) }},
+	"smoke":           {[]string{"root"}, func(c release.Config, _ string) error { return c.Smoke(context.Background(), false) }},
+	"verify-download": {[]string{"root"}, func(c release.Config, _ string) error { return c.Smoke(context.Background(), true) }},
+	"verify-tag":      {[]string{"root"}, func(c release.Config, _ string) error { return c.VerifyTag(os.Getenv("GITHUB_REF_NAME")) }},
+	"version":         {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "") }},
+	"tag":             {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "v") }},
+}
+
 func run(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, version, or tag")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
+	host := flags.Bool("host", false, "bundle-hashes and assemble: expect build outputs for this platform only")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
-	config, err := release.New(*root)
+	command, err := lookup(args[0], flags)
 	if err != nil {
 		return err
 	}
-	return dispatch(args[0], config, *root)
+	config, err := newConfig(*root, *host, command)
+	if err != nil {
+		return err
+	}
+	return command.run(config, *root)
 }
 
-func dispatch(command string, config release.Config, root string) error {
-	handlers := map[string]func() error{
-		"bundle-hashes": func() error {
-			hashes, err := config.BundleHashes()
-			if err == nil {
-				fmt.Println(hashes)
-			}
-			return err
-		},
-		"assemble":        config.Assemble,
-		"promote":         func() error { return config.Promote(context.Background()) },
-		"release-pr":      func() error { return updateReleasePR(root) },
-		"release-notes":   func() error { return publishNotes(root) },
-		"smoke":           func() error { return config.Smoke(context.Background(), false) },
-		"verify-download": func() error { return config.Smoke(context.Background(), true) },
-		"verify-tag":      func() error { return config.VerifyTag(os.Getenv("GITHUB_REF_NAME")) },
-		"version": func() error {
-			version, err := config.Version()
-			if err == nil {
-				fmt.Println(version)
-			}
-			return err
-		},
-		"tag": func() error {
-			version, err := config.Version()
-			if err == nil {
-				fmt.Println("v" + version)
-			}
-			return err
-		},
-	}
-	handler, ok := handlers[command]
+// lookup finds name and warns about each flag it was given but does not read.
+func lookup(name string, flags *flag.FlagSet) (subcommand, error) {
+	command, ok := commands[name]
 	if !ok {
-		return fmt.Errorf("unknown release command %q", command)
+		return command, fmt.Errorf("unknown release command %q", name)
 	}
-	return handler()
+	usage.WarnUnhandled(os.Stderr, "fitness-release "+name, flags, command.flags)
+	return command, nil
+}
+
+// newConfig reads the release config, narrowed to this platform with host
+// when the command reads --host.
+func newConfig(root string, host bool, command subcommand) (release.Config, error) {
+	config, err := release.New(root)
+	if err != nil || !host || !slices.Contains(command.flags, "host") {
+		return config, err
+	}
+	return config.Host()
+}
+
+func printBundleHashes(config release.Config, _ string) error {
+	hashes, err := config.BundleHashes()
+	if err == nil {
+		fmt.Println(hashes)
+	}
+	return err
+}
+
+func printVersion(config release.Config, prefix string) error {
+	version, err := config.Version()
+	if err == nil {
+		fmt.Println(prefix + version)
+	}
+	return err
 }
 
 func updateReleasePR(root string) error {
