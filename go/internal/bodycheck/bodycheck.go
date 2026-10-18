@@ -1,6 +1,6 @@
 // Package bodycheck wires the body-oriented fitness checks (plan-structure,
-// pr-structure) that validate one GitHub Issue or PR body rather than walking
-// files. It resolves the body from a `--body-file` path (`-` meaning stdin),
+// epic-structure, pr-structure) that validate one GitHub Issue or PR body
+// rather than walking files. It resolves the body from a `--body-file` path (`-` meaning stdin),
 // the runner's context-inline `--body` value, or piped stdin, and turns a
 // validator's messages into a checkkit.Result.
 package bodycheck
@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/epic"
 )
 
 // Run resolves the target body and validates it. With no input it passes with
@@ -48,9 +49,15 @@ func inert(ok bool, body string, applies func(string) bool) bool {
 }
 
 // PlanBody reports whether body is a Plan issue: it has the Plan template's
-// checklist section.
+// checklist section, and its steps are not an epic's issue references.
 func PlanBody(body string) bool {
-	return hasHeading(body, "What needs to happen")
+	return hasHeading(body, epic.Section) && !epic.Looks(body)
+}
+
+// EpicBody reports whether body is an Epic issue: its What needs to happen
+// section opens with an issue reference.
+func EpicBody(body string) bool {
+	return epic.Looks(body)
 }
 
 // PRBody reports whether body is a pull request description: it has the PR

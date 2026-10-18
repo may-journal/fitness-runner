@@ -9,25 +9,38 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-// PlanVerdict comments a Plan's verdict once per body version and labels the
-// Issue fitness-valid or fitness-invalid.
-func PlanVerdict(gh Client, t Target, errs []string) error {
+// IssueVerdict comments an issue's verdict once per body version under its
+// kind's marker, and labels the Issue fitness-valid or fitness-invalid. A
+// target with no kind is a Plan.
+func IssueVerdict(gh Client, t Target, errs []string) error {
 	if err := postVerdict(gh, t, errs); err != nil {
 		return err
 	}
 	return labelVerdict(gh, t.Number, len(errs) == 0)
 }
 
+// kindOf is the target's kind label, Plan when none is set.
+func kindOf(t Target) string {
+	if t.Kind == "" {
+		return planKind
+	}
+	return t.Kind
+}
+
+// planKind is the kind plan-check judges, and whose earlier verdicts carry
+// the legacy plan-structure marker.
+const planKind = "Plan"
+
 // postVerdict keeps one live verdict per body version. A pass that follows a
 // pass edits that comment in place with a timestamp; anything else posts a
 // new one. Every older verdict is then hidden as outdated.
 func postVerdict(gh Client, t Target, errs []string) error {
-	mark := planMarker(t.Body)
-	prior, err := gh.Verdicts(t.Number)
+	kind := kindOf(t)
+	prior, err := gh.Verdicts(t.Number, kind)
 	if err != nil {
 		return err
 	}
-	keep, err := liveVerdict(gh, t.Number, errs, mark, prior)
+	keep, err := liveVerdict(gh, t.Number, kind, errs, markers(kind, t.Body), prior)
 	if err != nil {
 		return err
 	}
@@ -35,23 +48,27 @@ func postVerdict(gh Client, t Target, errs []string) error {
 }
 
 // liveVerdict returns the index of the verdict judging this body version,
-// writing it first when none does; -1 means a new comment was posted.
-func liveVerdict(gh Client, n int, errs []string, mark string, prior []Verdict) (int, error) {
-	if i := indexOfMarker(prior, mark); i >= 0 {
+// writing it first when none does; -1 means a new comment was posted. The
+// first marker is the one a new verdict carries; the rest are earlier names
+// for it.
+func liveVerdict(gh Client, n int, kind string, errs, marks []string, prior []Verdict) (int, error) {
+	if i := indexOfMarker(prior, marks); i >= 0 {
 		return i, nil
 	}
 	last := len(prior) - 1
 	if len(errs) == 0 && last >= 0 && strings.HasPrefix(prior[last].Body, passIcon) {
-		return last, gh.EditComment(prior[last].ID, validatedComment(mark))
+		return last, gh.EditComment(prior[last].ID, validatedComment(marks[0]))
 	}
-	return -1, gh.Comment(n, planComment(errs, mark))
+	return -1, gh.Comment(n, verdictComment(kind, errs, marks[0]))
 }
 
 // indexOfMarker is the verdict already judging this body version, or -1.
-func indexOfMarker(prior []Verdict, mark string) int {
+func indexOfMarker(prior []Verdict, marks []string) int {
 	for i, v := range prior {
-		if strings.Contains(v.Body, mark) {
-			return i
+		for _, mark := range marks {
+			if strings.Contains(v.Body, mark) {
+				return i
+			}
 		}
 	}
 	return -1
@@ -71,7 +88,7 @@ func hideOlder(gh Client, prior []Verdict, keep int) error {
 	return nil
 }
 
-// Labels plan-check keeps on each checked Issue.
+// Labels issue-check keeps on each checked Issue.
 const (
 	fitnessLabel = "fitness"
 	validLabel   = "fitness-valid"
@@ -130,11 +147,34 @@ func HasLabel(labels []string, name string) bool {
 	return false
 }
 
-// planMarker tags a comment with a hash of the body it judged; the format
-// matches the earlier JavaScript, so existing comments still count.
-func planMarker(body string) string {
+// MarkerPrefixes are the comment-marker prefixes that name a kind's
+// verdicts: `fitness:issue-check:<kind>:`, and for Plan also the earlier
+// `fitness:plan-structure:`, so verdicts posted before issue-check still
+// count and are hidden in turn.
+func MarkerPrefixes(kind string) []string {
+	prefixes := []string{"fitness:issue-check:" + KindID(kind) + ":"}
+	if kind == planKind {
+		prefixes = append(prefixes, "fitness:plan-structure:")
+	}
+	return prefixes
+}
+
+// KindID is a kind label as it appears in markers: lower case, with each
+// run of spaces a hyphen.
+func KindID(kind string) string {
+	return strings.Join(strings.Fields(strings.ToLower(kind)), "-")
+}
+
+// markers tag a comment with a hash of the body it judged, one per marker
+// prefix; the first is the one a new verdict carries.
+func markers(kind, body string) []string {
 	sum := sha256.Sum256([]byte(body))
-	return "<!-- fitness:plan-structure:" + hex.EncodeToString(sum[:])[:12] + " -->"
+	hash := hex.EncodeToString(sum[:])[:12]
+	var marks []string
+	for _, p := range MarkerPrefixes(kind) {
+		marks = append(marks, "<!-- "+p+hash+" -->")
+	}
+	return marks
 }
 
 // passIcon starts every passing verdict.
@@ -145,12 +185,12 @@ func validatedComment(mark string) string {
 	return passIcon + " Validated (updated " + time.Now().UTC().Format("2006-01-02 15:04 UTC") + ")" + footer(mark)
 }
 
-// planComment is the verdict comment for a Plan body.
-func planComment(errs []string, mark string) string {
+// verdictComment is the verdict comment for an issue body of kind.
+func verdictComment(kind string, errs []string, mark string) string {
 	if len(errs) == 0 {
-		return passIcon + " Plan looks good." + footer(mark)
+		return passIcon + " " + kind + " looks good." + footer(mark)
 	}
-	return "❌ Plan needs work:\n" + strings.TrimSuffix(BulletList(errs), "\n") + footer(mark)
+	return "❌ " + kind + " needs work:\n" + strings.TrimSuffix(BulletList(errs), "\n") + footer(mark)
 }
 
 // footer ends a verdict with its attribution and the body-version marker.

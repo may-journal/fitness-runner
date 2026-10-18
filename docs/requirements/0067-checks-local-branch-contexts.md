@@ -41,7 +41,7 @@ Source: `go/cmd/fitness-check-local-branch/main.go:10`
 - 0067.6
     - Given Developer has an Actions run in a GitHub checkout
         - When I run the full Fitness suite
-            - Then local-branch makes no GitHub reads
+            - Then every check passes and local-branch makes no GitHub reads
 - 0067.7
     - Given Developer has a repo without a GitHub origin
         - When I run local-branch

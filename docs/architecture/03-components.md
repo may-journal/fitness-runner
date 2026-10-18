@@ -129,7 +129,7 @@ Built by the runner before dispatch — not a separate registry.
 
 ## Body mode
 
-Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `fitness plan-check`, `pr-check`, and `close-check` subcommands use this to judge GitHub blobs: Issue and PR bodies.
+Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `fitness issue-check`, `plan-check`, `pr-check`, and `close-check` subcommands use this to judge GitHub blobs: Issue and PR bodies.
 
 An explicit `--body-file` is the only trigger, so a normal file-walking run is never affected. The prose, markdown, and mermaid checks opt in; a cross-file check like `mermaid-level-bleed` does not.
 
@@ -142,7 +142,8 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 | `fitness init`        | Writes the embedded hook shims to `.githooks` and sets `core.hooksPath`.              | A repo pulls its hooks by version, never copies them. |
 | `fitness hook <name>` | Runs the commit-msg, pre-commit, or pre-push logic the shims call.                    | Hook logic lives in one place, not in each repo.      |
 | `fitness pr-check`    | Judges a PR's title, body, one linked changelog entry, and the issues it closes.   | The PR check workflows run one step.                  |
-| `fitness plan-check`  | Judges a Plan's body with checks; its after-effect comments and labels the verdict.   | The plan check workflows run one step.                |
+| `fitness issue-check` | Judges an issue by its kind label: its template's shape and the kind's checks; its after-effect comments and labels the verdict. | The issue check workflows run one step. |
+| `fitness plan-check`  | `issue-check` for Plan issues only.                                                  | Repos on plan-check-reusable keep working.            |
 | `fitness close-check` | Judges a closed issue with `issue-checklist`; its after-effect reopens it once.       | The close check workflows run one step.               |
 
-`go/internal/metadata/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. The local-branch check shares their judgments. Only after-effects write to GitHub, through the `gh` CLI.
+`go/internal/metadata/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. For `issue-check`, `go/internal/metadata/kinds.go` reads each kind from `.github/ISSUE_TEMPLATE` and adds the rules a kind label names. The local-branch check shares their judgments. Only after-effects write to GitHub, through the `gh` CLI.

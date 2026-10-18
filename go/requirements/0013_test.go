@@ -20,14 +20,22 @@ const brokenPlan = "> One clear pitch for this Plan.\n\n## What needs to happen\
 // payload GitHub would deliver, with gh answering from saved responses.
 func planCheck(t *testing.T, event string, payload map[string]any, saved []response) (string, int, replays) {
 	t.Helper()
-	repo := example(t, "happyRepo", nil)
+	return ghRun(t, "plan-check", event, payload, nil, saved)
+}
+
+// ghRun runs a GitHub command the way its Actions step does, in happyRepo
+// with files written over it, on the event payload GitHub would deliver,
+// with gh answering from saved responses.
+func ghRun(t *testing.T, command, event string, payload map[string]any, files map[string]string, saved []response) (string, int, replays) {
+	t.Helper()
+	repo := example(t, "happyRepo", files)
 	path := filepath.Join(t.TempDir(), "event.json")
 	data, err := json.Marshal(payload)
 	mustDo(t, err)
 	mustDo(t, os.WriteFile(path, data, 0o644))
 	rp := standIn(t, map[string][]response{"gh": saved})
 	env := append(rp.env, "GITHUB_EVENT_NAME="+event, "GITHUB_EVENT_PATH="+path, "GITHUB_REPOSITORY=may-journal/example")
-	out, code := fitness(t, repo, env, "plan-check")
+	out, code := fitness(t, repo, env, command)
 	return out, code, rp
 }
 
@@ -42,14 +50,21 @@ func judgePlan(t *testing.T, body string, saved []response) (string, int, replay
 // planGitHub is the saved GitHub that holds the Plan's verdict comments, as
 // the verdicts query prints them, and its labels. Every write succeeds.
 func planGitHub(verdicts string, labels ...string) []response {
-	issue, _ := json.Marshal(map[string]any{"body": "", "labels": append([]string{"Plan"}, labels...)})
+	return issueGitHub(planIssue, "fitness:plan-structure:", verdicts, append([]string{"Plan"}, labels...)...)
+}
+
+// issueGitHub is the saved GitHub that holds issue n's verdict comments,
+// found by a query naming marker, as the verdicts query prints them, and
+// its labels. Every write succeeds.
+func issueGitHub(n, marker, verdicts string, labels ...string) []response {
+	issue, _ := json.Marshal(map[string]any{"body": "", "labels": labels})
 	return []response{
-		{Match: []string{"fitness:plan-structure:"}, Stdout: verdicts},
+		{Match: []string{marker}, Stdout: verdicts},
 		{Match: []string{"minimizeComment"}},
-		{Match: []string{"labels: [.labels[].name]", "issues/" + planIssue}, Stdout: string(issue) + "\n"},
+		{Match: []string{"labels: [.labels[].name]", "issues/" + n}, Stdout: string(issue) + "\n"},
 		{Match: []string{"-X POST"}},
 		{Match: []string{"-X PATCH", "issues/comments/"}},
-		{Match: []string{"-X DELETE", "issues/" + planIssue + "/labels/"}},
+		{Match: []string{"-X DELETE", "issues/" + n + "/labels/"}},
 		{Match: []string{"--silent", "/labels/fitness"}},
 	}
 }
@@ -66,12 +81,23 @@ func planVerdict(text, body string) string {
 // commented reports whether plan-check posted a comment on the Plan
 // holding every want.
 func commented(rp replays, want ...string) bool {
-	return rp.called("gh", append([]string{"-X POST", "body=", "issues/" + planIssue + "/comments"}, want...)...)
+	return commentedOn(rp, planIssue, want...)
+}
+
+// commentedOn reports whether a GitHub command posted a comment on issue n
+// holding every want.
+func commentedOn(rp replays, n string, want ...string) bool {
+	return rp.called("gh", append([]string{"-X POST", "body=", "issues/" + n + "/comments"}, want...)...)
 }
 
 // labeled reports whether plan-check added label to the Plan.
 func labeled(rp replays, label string) bool {
-	return rp.called("gh", "-X POST", "labels[]="+label, "issues/"+planIssue+"/labels")
+	return labeledOn(rp, planIssue, label)
+}
+
+// labeledOn reports whether a GitHub command added label to issue n.
+func labeledOn(rp replays, n, label string) bool {
+	return rp.called("gh", "-X POST", "labels[]="+label, "issues/"+n+"/labels")
 }
 
 func Test0013_1(t *testing.T) {

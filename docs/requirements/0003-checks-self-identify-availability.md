@@ -25,7 +25,7 @@ Source: #189
 - 0003.2
     - Given Developer has a repo that chooses no checks
         - When fitness runs
-            - Then the result rows list every installed check, repo-wide checks first, then each language's
+            - Then the result rows list every installed check, repo-wide checks first, then each language's, each group in name order
 - 0003.3
     - Given Developer has a file that a file-reading check cannot read
         - When fitness runs that check
