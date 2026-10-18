@@ -10,16 +10,18 @@ All workflows follow [ADR 0003](../../docs/architecture/adr/0003-native-github-w
 
 Overflow reports are uploaded as `fitness-reports` artifacts with job, matrix, and attempt suffixes. Job summaries link to run logs; the run artifact list holds complete reports. Reports are retained for seven days. Pinned releases gain command details when upgraded; fallback reports cover their job outcomes now.
 
-## plan-check
+## issue-check
 
-Plans live as GitHub Issues under the `Plan` label, so the file runner never sees them. [plan-check.yml](plan-check.yml) runs `fitness plan-check` to lint an Issue body. It keeps one live verdict comment and label on the Issue.
+Plans, Epics and other labeled kinds live as GitHub Issues, so the file runner never sees them. [issue-check.yml](issue-check.yml) runs `fitness issue-check` to lint an Issue body by its kind. It keeps one live verdict comment and label on the Issue. Other repos call [issue-check-reusable.yml](issue-check-reusable.yml).
+
+Each `.github/ISSUE_TEMPLATE/*.md` in the checkout is a kind, keyed by its `labels` front matter. Its headings and pitch give the sections the body needs. A Plan also gets `plan-structure`, and an Epic gets `epic-structure` plus a match against its GitHub sub-issues. Any other kind needs only its template.
 
 ```mermaid
 flowchart TD
     A[1 Issue event]:::trigger
     B[2 Manual sweep]:::trigger
-    C[3 Plan label guard]:::step
-    D[4 Build and run plan-structure]:::step
+    C[3 Read labels and pick the kind]:::step
+    D[4 Run the kind's checks]:::step
     E[5 Hash body and look for prior comment]:::step
     F[6 Edit or post one verdict comment]:::step
     G[7 Hide older verdicts]:::step
@@ -39,11 +41,11 @@ flowchart TD
 
 | #   | Element      | Description                                                        | Why                                                       |
 | --- | ------------ | ----------------------------------------------------------------- | --------------------------------------------------------- |
-| 1   | Issue event  | An Issue is opened, edited, reopened, or labeled.                 | Validates a plan the moment its description changes.       |
-| 2   | Manual sweep | A `workflow_dispatch` run walks every open `Plan` Issue.          | Backfills plans that predate the workflow.                 |
-| 3   | Plan guard   | Issue-event runs proceed only when the Issue carries `Plan`.      | Other Issues are not plans and need no structure check.    |
-| 4   | Run check    | Build the checks and run `fitness plan-check` on the body.        | One tested binary, same rules as the local suite.          |
-| 5   | Dedupe       | Hash the body and search the Issue for that hash marker.          | One comment per description version, never a duplicate.    |
+| 1   | Issue event  | An Issue is opened, edited, reopened, or labeled.                 | Validates an issue the moment its description changes.     |
+| 2   | Manual sweep | A `workflow_dispatch` run walks every open Issue with a kind label. | Backfills issues that predate the workflow.              |
+| 3   | Kind         | Read the Issue's labels; no kind label passes, and two fail.      | Only labeled kinds have a template to meet.                |
+| 4   | Run check    | Run the template shape, the kind's checks, and the doc checks.    | One tested binary, same rules as the local suite.          |
+| 5   | Dedupe       | Hash the body and search for the kind's `fitness:issue-check:<kind>:` marker. | One comment per description version and kind.  |
 | 6   | Comment      | A pass after a pass edits it to `✅ Validated`; else post anew. | One live verdict, no pile of repeats. |
 | 7   | Hide         | Hide older bot verdicts as outdated.                              | Only the live verdict stays open.                          |
 | 8   | Label        | Add `fitness` and `fitness-valid` or `fitness-invalid`.          | Issue lists show the verdict.                              |
@@ -51,10 +53,14 @@ flowchart TD
 
 ## Triggers
 
-- `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue when it carries the `Plan` label.
-- `workflow_dispatch`: sweeps every open `Plan` Issue and comments on each body version not seen before.
+- `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue by its kind label, and passes an Issue with none.
+- `workflow_dispatch`: sweeps every open Issue with a kind label and comments on each body version not seen before.
 
-A changed description earns a new verdict; earlier ones stay hidden.
+A changed description earns a new verdict; earlier ones stay hidden. Plan verdicts posted under the earlier `fitness:plan-structure:` marker still count.
+
+## plan-check
+
+[plan-check.yml](plan-check.yml) and [plan-check-reusable.yml](plan-check-reusable.yml) stay for repos that still call them. `fitness plan-check` is issue-check for Plan-labeled Issues only. Both workflows share one concurrency group, so a repo that runs both judges a Plan once.
 
 ## pr-check
 
