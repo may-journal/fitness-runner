@@ -49,7 +49,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 }
 
 // docErrors judges every doc's shape, its IDs against history, docs that
-// share an area, and which tests own its acceptances.
+// share an area, which tests own its acceptances, and the tools
+// the tests use.
 func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) ([]string, error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
@@ -58,7 +59,9 @@ func docErrors(root string, paths []string, tests []reqTest, written []lang.Modu
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
 	errs = append(errs, overlapErrors(docs)...)
-	return append(errs, ownershipErrors(docs, tests, written)...), nil
+	errs = append(errs, ownershipErrors(docs, tests, written)...)
+	tooled, err := toolErrors(root, tests, written)
+	return append(errs, tooled...), err
 }
 
 // result passes with no errors and fails with any.

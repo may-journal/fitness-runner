@@ -61,6 +61,15 @@ Each language module finds its tests and names the test that owns an ID, as its 
 - Full and scoped runs judge every doc and test file, including unchanged files in pull requests that change only unrelated files.
 - Ownership is a repository-wide invariant: an unmapped repo stays red until every test owns a requirement.
 
+## Swift tests
+
+Swift requirement tests run on Swift Testing with [apple-ui-testing-library](https://github.com/may-journal/apple-ui-testing-library), hosted in the app, natively as Designed for iPad or on macOS. The [Swift module](../../internal/lang/swift/library.go) judges them.
+
+- Imports: a test file fails on XCTest or another UI test framework, such as ViewInspector or SnapshotTesting.
+- Calls: a test file fails on an XCTestCase subclass, Xcode UI tests such as XCUIApplication, or simctl.
+- Library: a test file fails unless it, or a file in its top folder, imports `UITestingLibrary`.
+- End-to-end: a file that imports `UITestingLibrarySystem` may use XCTest, Xcode UI tests, and simctl.
+
 ## Pairs
 
 A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out.

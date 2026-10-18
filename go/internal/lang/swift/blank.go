@@ -8,11 +8,20 @@ type blanker struct {
 	src string
 	out []byte
 	i   int
+	// keepStrings leaves string literals as written, so only comments blank.
+	keepStrings bool
 }
 
 // blankSwift returns src with its comments and string literals blanked.
-func blankSwift(src string) string {
-	b := &blanker{src: src, out: []byte(src)}
+func blankSwift(src string) string { return blanked(src, false) }
+
+// blankComments returns src with only its comments blanked, so a word a
+// string literal holds, such as a command name, still reads.
+func blankComments(src string) string { return blanked(src, true) }
+
+// blanked runs the blanker over src, keeping string literals if asked.
+func blanked(src string, keepStrings bool) string {
+	b := &blanker{src: src, out: []byte(src), keepStrings: keepStrings}
 	for b.i < len(b.src) {
 		b.step()
 	}
@@ -92,7 +101,7 @@ func (b *blanker) stringLiteral() {
 		b.stringChar(`\` + hashes)
 	}
 	b.i = min(b.i+len(quote+hashes), len(b.src))
-	b.blank(start)
+	b.blankString(start)
 }
 
 // stringChar consumes one character of string content, an escape, or a
@@ -124,6 +133,13 @@ func (b *blanker) interpolation() {
 
 // parenDelta is how a byte changes parenthesis depth.
 var parenDelta = map[byte]int{'(': 1, ')': -1}
+
+// blankString blanks a string literal from start, unless strings are kept.
+func (b *blanker) blankString(start int) {
+	if !b.keepStrings {
+		b.blank(start)
+	}
+}
 
 // blank turns everything from start up to the cursor into spaces, keeping
 // newlines.

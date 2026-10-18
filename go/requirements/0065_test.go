@@ -2,6 +2,36 @@ package requirements
 
 import "testing"
 
+// swiftTest is the path of swiftRepo's requirement test file, and
+// swiftScreens of the helper that imports apple-ui-testing-library.
+const (
+	swiftTest    = "Tests/AdderTests/AdderTests.swift"
+	swiftScreens = "Tests/AdderTests/Screens.swift"
+)
+
+// libraryHint is the part of every test library failure that says what to
+// use instead.
+const libraryHint = "write it with Swift Testing and UITestingLibrary, hosted in the app, as https://github.com/may-journal/apple-ui-testing-library shows"
+
+// swiftChecked runs only the requirements check on swiftRepo with files
+// written over it.
+func swiftChecked(t *testing.T, files map[string]string) (string, int) {
+	t.Helper()
+	return checked(t, with(swiftRepo(), files))
+}
+
+// librarySuite is a Swift Testing file whose test0001_1 runs body on
+// apple-ui-testing-library, after the given extra imports.
+func librarySuite(imports, body string) string {
+	return "import Testing\nimport UITestingLibrary\n" + imports + "\n@MainActor @Test func test0001_1() async throws {\n" + body + "}\n"
+}
+
+// systemSuite is an end-to-end XCTest class whose test0001_1 drives the
+// app through UITestingLibrarySystem.
+const systemSuite = "import UITestingLibrary\nimport UITestingLibrarySystem\nimport XCTest\n\n@MainActor\nfinal class SystemRequirements: XCTestCase {\n" +
+	"  func test0001_1() throws {\n    let session = SystemSession(bundleIdentifier: \"org.example.app\", timeout: 10)\n" +
+	"    session.launch()\n    let reset = [\"xcrun\", \"simctl\", \"erase\", \"all\"]\n    XCTAssertFalse(reset.isEmpty)\n    XCTAssertNotNil(session.application as XCUIApplication?)\n  }\n}\n"
+
 // swiftJudged runs fitness on swiftRepo with files written over it.
 func swiftJudged(t *testing.T, files map[string]string) (string, int) {
 	t.Helper()
@@ -87,7 +117,7 @@ func junitOwnership(t *testing.T) {
 	sees(t, out, code, 1, "0001.1 has no test; name exactly one test test0001_1")
 }
 
-func Test0065_21(t *testing.T) {
+func Test0065_26(t *testing.T) {
 	t.Parallel()
 	out, code := judged(t, with(goRepo(), map[string]string{"adder_test.go": ""}))
 	sees(t, out, code, 1, "0001.1 has no test; name exactly one test Test0001_1")
@@ -96,34 +126,22 @@ func Test0065_21(t *testing.T) {
 	sees(t, out, code, 1, `0001.1 has no test; name exactly one test test("0001.1 …")`)
 	out, code = checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": junitFile("AdderTest")}))
 	sees(t, out, code, 1, "0001.1 has no test; name exactly one test test0001_1")
-}
-
-func Test0065_17(t *testing.T) {
-	t.Parallel()
-	out, code := judged(t, with(goRepo(), map[string]string{"more/more_test.go": testFile("more", "Test0001_1")}))
+	out, code = judged(t, with(goRepo(), map[string]string{"more/more_test.go": testFile("more", "Test0001_1")}))
 	sees(t, out, code, 1, "0001.1 is owned by 2 tests")
-}
-
-func Test0065_18(t *testing.T) {
-	t.Parallel()
-	out, code := judged(t, with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "Test0001_2")}))
+	out, code = judged(t, with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "Test0001_2")}))
 	sees(t, out, code, 1, "Test0001_2 names 0001.2, which no requirement defines")
 }
 
-func Test0065_22(t *testing.T) {
+func Test0065_27(t *testing.T) {
 	t.Parallel()
 	out, code := judged(t, with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "TestAddsAgain")}))
 	sees(t, out, code, 1, "TestAddsAgain proves no requirement")
-	out, code = swiftJudged(t, map[string]string{"Tests/AdderTests/AdderTests.swift": xcTestFile("test0001_1", "testAddsAgain")})
+	out, code = swiftJudged(t, map[string]string{swiftTest: swiftTestingFile("test0001_1", "testAddsAgain")})
 	sees(t, out, code, 1, "testAddsAgain proves no requirement; rename it testNNNN_N")
 	out, code = scriptChecked(t, `test("0001.1 adds two numbers", () => {});`, `it("adds again", () => {});`)
 	sees(t, out, code, 1, `tests/adder.test.ts:4: it("adds again") proves no requirement; rename it test("NNNN.N …")`)
 	out, code = checked(t, with(junitRepo(), map[string]string{"src/test/java/AdderTest.java": junitFile("AdderTest", "test0001_1", "addsAgain")}))
 	sees(t, out, code, 1, "src/test/java/AdderTest.java:6: addsAgain proves no requirement; rename it testNNNN_N")
-}
-
-func Test0065_23(t *testing.T) {
-	t.Parallel()
 	unchangedTestFails(t, with(goRepo(), map[string]string{"adder_test.go": testFile("adder", "Test0001_1", "TestAddsAgain")}), "TestAddsAgain proves no requirement")
 	for _, body := range []string{xcTestFile("testAddsAgain"), "import Testing\n@Test func addsAgain() {}\n"} {
 		files := with(swiftRepo(), map[string]string{"Tests/ExtraTests.swift": body})
@@ -152,4 +170,42 @@ func Test0065_25(t *testing.T) {
 		sees(t, out, code, 0)
 		passedWithNoFiles(t, out, "requirements")
 	}
+}
+
+func Test0065_28(t *testing.T) {
+	t.Parallel()
+	for _, body := range []string{xcTestFile("test0001_1"), "import Testing\n@testable import XCTest\n\n@Test func test0001_1() {}\n"} {
+		out, code := swiftChecked(t, map[string]string{swiftTest: body})
+		sees(t, out, code, 1, swiftTest+":", "imports XCTest; only an end-to-end test that imports UITestingLibrarySystem may use it, so "+libraryHint)
+	}
+	out, code := swiftChecked(t, map[string]string{swiftTest: xcTestFile("test0001_1")})
+	sees(t, out, code, 1, swiftTest+":3: subclasses XCTestCase; "+libraryHint)
+	out, code = swiftChecked(t, map[string]string{swiftTest: librarySuite("", "  let app = XCUIApplication()\n  app.launch()\n")})
+	sees(t, out, code, 1, swiftTest+":5: drives Xcode UI tests through XCUIApplication, which launches the app in a separate process; "+libraryHint)
+	boot := "  let shell = Process()\n  shell.arguments = [\"xcrun\", \"simctl\", \"boot\", \"booted\"]\n"
+	out, code = swiftChecked(t, map[string]string{swiftTest: librarySuite("import Foundation\n", boot)})
+	sees(t, out, code, 1, swiftTest+":7: boots a simulator through simctl outside the end-to-end mode; "+libraryHint)
+	for _, framework := range []string{"ViewInspector", "SnapshotTesting", "KIF", "EarlGrey", "Hammer", "Nimble"} {
+		out, code = swiftChecked(t, map[string]string{swiftTest: librarySuite("import "+framework+"\n", "")})
+		sees(t, out, code, 1, swiftTest+":3: imports "+framework+", a UI test framework requirement tests may not use; "+libraryHint)
+	}
+	out, code = swiftChecked(t, map[string]string{swiftScreens: ""})
+	sees(t, out, code, 1, swiftTest+": nothing in Tests/ imports UITestingLibrary; "+libraryHint)
+	// A library import in another top folder does not reach the test.
+	out, code = swiftChecked(t, map[string]string{swiftScreens: "", "Sources/Adder/Screens.swift": "import UITestingLibrary\n"})
+	sees(t, out, code, 1, "nothing in Tests/ imports UITestingLibrary")
+}
+
+func Test0065_29(t *testing.T) {
+	t.Parallel()
+	// Words in comments and strings are no import or call.
+	quiet := "import Testing\n// import XCTest\n/* XCUIApplication() */\n@MainActor @Test func test0001_1() async throws {\n  let note = \"XCUIApplication\"\n  _ = note\n}\n"
+	for _, body := range []string{swiftTestingFile("test0001_1"), librarySuite("", ""), quiet} {
+		out, code := swiftChecked(t, map[string]string{swiftTest: body})
+		sees(t, out, code, 0)
+		passedWith(t, out, "requirements", "2")
+	}
+	out, code := swiftChecked(t, map[string]string{swiftTest: systemSuite})
+	sees(t, out, code, 0)
+	passedWith(t, out, "requirements", "2")
 }

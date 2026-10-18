@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
@@ -69,4 +70,33 @@ func testError(t reqTest, current map[string]bool) []string {
 		return []string{fmt.Sprintf("%s: %s proves no requirement; rename it %s for the acceptance it proves, or delete it if another test covers that", t.Loc, t.Name, t.module.Tests.Name("NNNN.N"))}
 	}
 	return nil
+}
+
+// toolErrors asks each written module that judges test tools about the
+// files its tests are in, such as a Swift test that imports XCTest.
+func toolErrors(root string, tests []reqTest, written []lang.Module) ([]string, error) {
+	var errs []string
+	for _, m := range written {
+		if m.Tests.Tools == nil {
+			continue
+		}
+		found, err := m.Tests.Tools(root, moduleFiles(tests, m.Name))
+		if err != nil {
+			return nil, err
+		}
+		errs = append(errs, found...)
+	}
+	return errs, nil
+}
+
+// moduleFiles lists, once each in order, the files holding the named
+// module's tests.
+func moduleFiles(tests []reqTest, module string) []string {
+	var files []string
+	for _, t := range tests {
+		if t.module.Name == module && !slices.Contains(files, t.File) {
+			files = append(files, t.File)
+		}
+	}
+	return files
 }

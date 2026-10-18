@@ -16,8 +16,9 @@ import (
 // Tests finds Swift requirement tests: func test0001_1() owns 0001.1. A
 // test is an XCTest method named test… with no parameters, in a class
 // that inherits XCTestCase, or any function marked @Test. Comments and
-// string literals are skipped, so a name inside them is no test.
-var Tests = lang.Tests{Scan: scan, Name: naming.Name}
+// string literals are skipped, so a name inside them is no test. Tools
+// fails a test file that skips apple-ui-testing-library.
+var Tests = lang.Tests{Scan: scan, Name: naming.Name, Tools: tools}
 
 // naming names Swift requirement tests: test0001_1 owns 0001.1.
 const naming = lang.TestPrefix("test")

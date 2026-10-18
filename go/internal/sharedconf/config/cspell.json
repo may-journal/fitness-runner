@@ -113,6 +113,10 @@
     "tvos",
     "visionos",
     "Procfile",
-    "preconcurrency"
+    "preconcurrency",
+    "simctl",
+    "typealias",
+    "xcrun",
+    "XCUI"
   ]
 }
