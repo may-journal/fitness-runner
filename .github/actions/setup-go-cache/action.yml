@@ -6,7 +6,7 @@ inputs:
   cache-key:
     description: >-
       Cache family, such as fitness, bundle or smoke. Empty skips the build
-      cache.
+      cache, for jobs that build too little to gain from one.
     required: false
     default: ''
   save:
@@ -27,27 +27,32 @@ runs:
         go-version-file: go/go.mod
         cache: false
     # One key scheme: family, OS, arch, Go version, then the source hash. Each
-    # part ends in a dash, so no prefix matches another family or arch.
+    # part ends in a dash, so no prefix matches another family or arch. The
+    # hash covers every file under go/, so embedded assets count too.
     - id: key
       if: ${{ inputs.cache-key != '' }}
       shell: bash
       env:
         FAMILY: ${{ inputs.cache-key }}
         GO_VERSION: ${{ steps.setup.outputs.go-version }}
-        SOURCE_HASH: ${{ hashFiles('go/go.mod', 'go/**/*.go') }}
+        SOURCE_HASH: ${{ hashFiles('go/**', '!go/bin/**') }}
+        SAVE: ${{ inputs.save == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
       run: |
         prefix="go-build-$FAMILY-$RUNNER_OS-$RUNNER_ARCH-go$GO_VERSION-"
-        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
-        echo "key=$prefix$SOURCE_HASH" >> "$GITHUB_OUTPUT"
+        {
+          echo "prefix=$prefix"
+          echo "key=$prefix$SOURCE_HASH"
+          echo "save=$SAVE"
+        } >> "$GITHUB_OUTPUT"
     # Pull requests and other events only restore, so their caches never
     # crowd out main's, which every branch can read.
-    - if: ${{ inputs.cache-key != '' && (inputs.save != 'true' || github.event_name != 'push' || github.ref != 'refs/heads/main') }}
+    - if: ${{ steps.key.outputs.save == 'false' }}
       uses: actions/cache/restore@v4
       with:
         path: ~/.cache/go-build
         key: ${{ steps.key.outputs.key }}
         restore-keys: ${{ steps.key.outputs.prefix }}
-    - if: ${{ inputs.cache-key != '' && inputs.save == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    - if: ${{ steps.key.outputs.save == 'true' }}
       uses: actions/cache@v4
       with:
         path: ~/.cache/go-build

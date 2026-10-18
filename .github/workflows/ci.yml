@@ -73,8 +73,6 @@ jobs:
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
       - uses: ./.github/actions/setup-go-cache
-        with:
-          cache-key: fitness
       - name: Prepare releases with Release Please
         id: report-step-1
         uses: googleapis/release-please-action@v5.0.0

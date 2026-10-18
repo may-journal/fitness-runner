@@ -177,15 +177,17 @@ A comment that always passed gets no reply. The `.fitnessrc.json` `comment` key 
 
 ## setup-go-cache
 
-Every workflow here that needs Go uses the local [setup-go-cache](../actions/setup-go-cache/action.yml) action. It installs the Go version `go/go.mod` names, with setup-go's cache off, since no `go.sum` exists. It restores `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<version>-<source hash>`. A miss falls back only to that family, arch, and Go version.
+Every workflow here that needs Go uses the local [setup-go-cache](../actions/setup-go-cache/action.yml) action. It installs the Go version `go/go.mod` names, with setup-go's cache off, since no `go.sum` exists. Jobs that only build `./cmd/...` pass no cache family and build cold in seconds.
 
-| Family  | Saved by                  | Restored by                                             |
-| ------- | ------------------------- | ------------------------------------------------------- |
-| fitness | ci.yml `fitness`          | `release-please`, the check workflows, Release `verify` |
-| bundle  | distribution.yml `bundle` | `bundle`                                                |
-| smoke   | distribution.yml `smoke`  | `smoke`, Release `verify-download`                      |
+The others restore `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<version>-<hash of go/>`. A miss falls back only to that family, arch, and Go version.
 
-Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes to save its caches. Reusable workflows run in other repos, so their setup-go caches modules only when a `go.sum` exists.
+| Family  | Saved by                  | Restored by                         |
+| ------- | ------------------------- | ----------------------------------- |
+| fitness | ci.yml `fitness`          | `fitness`                           |
+| bundle  | distribution.yml `bundle` | `bundle`                            |
+| smoke   | distribution.yml `smoke`  | `smoke`, Release `verify-download`  |
+
+Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes that touch Go or GoReleaser files, to save its caches. Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off.
 
 ## auto-merge
 

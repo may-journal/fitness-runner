@@ -17,8 +17,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go-cache
-        with:
-          cache-key: fitness
       - name: Build the checks
         run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       - name: Validate PR description(s) and fail the run on violations

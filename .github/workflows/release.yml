@@ -21,8 +21,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-go-cache
-        with:
-          cache-key: fitness
       - name: Verify the tag matches the release version
         id: report-step-1
         env:

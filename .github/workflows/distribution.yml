@@ -3,10 +3,20 @@ name: Binary distribution
 on:
   pull_request:
   # A push to main saves the bundle and smoke Go build caches that pull
-  # requests restore.
+  # requests restore. Only a change those caches hold starts it.
   push:
     branches: [main]
+    paths:
+      - 'go/**'
+      - '.goreleaser-*.yml'
+      - .github/actions/setup-go-cache/**
+      - .github/workflows/distribution.yml
   workflow_call:
+# A newer main push supersedes an older one, since only the newest cache
+# matters. Pull request and release runs get their own group, so none wait.
+concurrency:
+  group: distribution-${{ github.ref == 'refs/heads/main' && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/main' }}
 permissions:
   contents: read
 jobs:
