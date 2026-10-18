@@ -123,12 +123,15 @@ func Test0082_5(t *testing.T) {
 func Test0082_6(t *testing.T) {
 	t.Parallel()
 	verdict := "✅ Plan looks good.\n\n<!-- fitness:plan-structure:0123456789ab -->"
-	for _, c := range []map[string]any{
-		eventComment(sloppy, "release-bot[bot]", "Bot"),
-		eventComment(verdict, "dev", "User"),
-		eventComment(sloppy, "someone", "User"),
+	for _, c := range []struct {
+		comment map[string]any
+		ignore  string
+	}{
+		{eventComment(sloppy, "may-journal-automation[bot]", "Bot"), ""},
+		{eventComment(verdict, "dev", "User"), ""},
+		{eventComment(sloppy, "someone", "User"), "release-bot[bot], someone"},
 	} {
-		out, code, rp := judgeComment(t, c, commentGitHub(""), "FITNESS_COMMENT_AUTHORS=dev, agent")
+		out, code, rp := judgeComment(t, c.comment, commentGitHub(""), "FITNESS_COMMENT_IGNORE_AUTHORS="+c.ignore)
 		sees(t, out, code, 0, "Skipped "+commentURL, "0 targets checked")
 		if len(rp.calls("gh")) > 0 {
 			t.Errorf("want nothing read or written, got gh calls %q", rp.calls("gh"))

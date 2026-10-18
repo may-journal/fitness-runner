@@ -173,13 +173,12 @@ type sweptComment struct {
 	Body      string `json:"body"`
 	URL       string `json:"url"`
 	Author    string `json:"author"`
-	Type      string `json:"type"`
 	Parent    string `json:"parent"`
 	InReplyTo int64  `json:"in_reply_to_id"`
 }
 
 // sweepJQ shapes each listed comment as a sweptComment.
-const sweepJQ = `.[] | {id, body: (.body // ""), url: .html_url, author: .user.login, type: .user.type,
+const sweepJQ = `.[] | {id, body: (.body // ""), url: .html_url, author: .user.login,
 	parent: (.issue_url // .pull_request_url), in_reply_to_id: (.in_reply_to_id // 0)}`
 
 // RecentComments lists the issue and review comments created or edited in
@@ -207,7 +206,7 @@ func sweptTargets(found []sweptComment, review bool) []Target {
 	for i, s := range found {
 		targets[i] = CommentTarget(parentNumber(s.Parent), s.Body, Comment{
 			ID: s.ID, Author: s.Author, URL: s.URL, Review: review, Root: s.InReplyTo,
-		}, s.Type)
+		})
 	}
 	return targets
 }
@@ -220,9 +219,9 @@ func parentNumber(url string) int {
 
 // CommentTarget builds the target for comment c on issue or PR n. A review
 // reply's thread root defaults to the comment itself.
-func CommentTarget(n int, body string, c Comment, authorType string) Target {
+func CommentTarget(n int, body string, c Comment) Target {
 	if c.Root == 0 {
 		c.Root = c.ID
 	}
-	return Target{Number: n, Body: body, Comment: &c, AuthorType: authorType}
+	return Target{Number: n, Body: body, Comment: &c}
 }

@@ -33,10 +33,8 @@ type Target struct {
 	// EntryFiles are a local branch's changed changelog entry files against
 	// its PR base; nil reads them from GitHub.
 	EntryFiles *[]FileChange `json:"-"`
-	// Comment is set when the target is one comment on issue or PR Number,
-	// and AuthorType is its author's account type, such as Bot.
-	Comment    *Comment `json:"-"`
-	AuthorType string   `json:"-"`
+	// Comment is set when the target is one comment on issue or PR Number.
+	Comment *Comment `json:"-"`
 }
 
 // FileChange is one file a pull request changes: its path, GitHub's status

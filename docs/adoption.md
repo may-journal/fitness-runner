@@ -66,7 +66,7 @@ It reopens issues closed with unchecked items; `fitness pr-check` fails PRs clos
 
 ## Comments
 
-may-journal/.github syncs this [comment-check](../.github/workflows/README.md#comment-check) caller into each repo. Its `authors` input limits it to the agents' account:
+may-journal/.github syncs this [comment-check](../.github/workflows/README.md#comment-check) caller into each repo. It judges every author but the known bots `fitness comment-check` lists, and carries no list of its own:
 
 ```yaml
 name: Comment check
@@ -79,8 +79,6 @@ on:
 jobs:
   comment-check:
     uses: may-journal/fitness-runner/.github/workflows/comment-check-reusable.yml@v1
-    with:
-      authors: json-claude-bot
     permissions:
       contents: read
       issues: write

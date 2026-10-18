@@ -126,7 +126,7 @@ flowchart TD
 
 ## comment-check
 
-[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml), whose `authors` input limits it to the listed logins.
+[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml). It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists once. The optional `ignore-authors` input replaces that list.
 
 Before posting, an agent runs `fitness comment-check --blob -` with the draft on stdin, or `--blob "<text>"`. It runs the same checks, prints each violation with its line, and exits 1 on any. The reply and the run summary point there too.
 
@@ -155,7 +155,7 @@ flowchart TD
 | --- | ------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | 1   | Comment event | An issue, PR, or review comment is created or edited.                            | Judges a comment the moment its text changes.        |
 | 2   | Manual sweep | A `workflow_dispatch` run walks the last seven days of comments.                  | Audits comments that predate the workflow.           |
-| 3   | Skip guard   | Start only for listed authors; skip apps and fitness verdicts.                    | Only people and agents can fix what they wrote.      |
+| 3   | Skip guard   | Skip the known bots and fitness verdicts and replies.                             | Every person and agent owns what they wrote.         |
 | 4   | Run checks   | Run `comment-structure`, `mermaid-syntax`, and the Plan and PR prose checks.      | One tested rule set, the same one agents run first.  |
 | 5   | Dedupe       | Find the bot's reply whose marker names this comment's id.                        | One reply per comment, never a pile.                 |
 | 6   | Reply        | Mention the author with the violations, or turn the reply into a passing note.    | The author hears what to fix, and sees it cleared.   |

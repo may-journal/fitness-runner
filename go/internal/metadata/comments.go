@@ -27,7 +27,6 @@ type eventComment struct {
 	InReplyTo int64  `json:"in_reply_to_id"`
 	User      struct {
 		Login string `json:"login"`
-		Type  string `json:"type"`
 	} `json:"user"`
 }
 
@@ -38,10 +37,10 @@ func commentTargets(ev ghEvent, gh aftereffect.Client) ([]target, error) {
 	if err != nil {
 		return nil, err
 	}
-	authors := listedAuthors()
+	ignored := ignoredAuthors()
 	var judged []target
 	for _, t := range all {
-		if why := skipReason(t, authors); why != "" {
+		if why := skipReason(t, ignored); why != "" {
 			fmt.Printf("Skipped %s: %s.\n", t.Comment.URL, why)
 			continue
 		}
@@ -65,37 +64,39 @@ func eventComments(ev ghEvent, gh aftereffect.Client) ([]target, error) {
 	c := ev.Comment
 	return []target{aftereffect.CommentTarget(parent.Number, c.Body, aftereffect.Comment{
 		ID: c.ID, Author: c.User.Login, URL: c.URL, Review: parent == ev.PullRequest, Root: c.InReplyTo,
-	}, c.User.Type)}, nil
+	})}, nil
 }
 
+// KnownBots are the org's automation accounts, whose comments no one can
+// fix by hand: the Actions token, the org App, Release Please, and
+// Dependabot. This is the one list; FITNESS_COMMENT_IGNORE_AUTHORS replaces
+// it for a caller that needs another.
+var KnownBots = []string{"github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"}
+
 // skipReason says why comment-check leaves t alone, or "" to judge it:
-// apps cannot fix a comment, fitness verdicts follow their own format, and
-// a caller may judge only the authors it lists.
-func skipReason(t target, authors []string) string {
+// a known bot wrote it, or it is a fitness verdict or reply, which follows
+// its own format.
+func skipReason(t target, ignored []string) string {
 	switch {
-	case isApp(t):
-		return "an app wrote it"
+	case slices.Contains(ignored, t.Comment.Author):
+		return "its author is a known bot"
 	case strings.Contains(t.Body, "<!-- fitness:"):
 		return "it is a fitness verdict"
-	case authors != nil && !slices.Contains(authors, t.Comment.Author):
-		return "its author is not in FITNESS_COMMENT_AUTHORS"
 	}
 	return ""
 }
 
-// isApp reports whether an app, not a person or agent account, wrote t.
-func isApp(t target) bool {
-	return t.AuthorType == "Bot" || strings.HasSuffix(t.Comment.Author, "[bot]")
-}
-
-// listedAuthors is FITNESS_COMMENT_AUTHORS split on commas, or nil to judge
-// every author.
-func listedAuthors() []string {
+// ignoredAuthors is FITNESS_COMMENT_IGNORE_AUTHORS split on commas, or
+// KnownBots when it names none.
+func ignoredAuthors() []string {
 	var out []string
-	for _, a := range strings.Split(os.Getenv("FITNESS_COMMENT_AUTHORS"), ",") {
+	for _, a := range strings.Split(os.Getenv("FITNESS_COMMENT_IGNORE_AUTHORS"), ",") {
 		if a = strings.TrimSpace(a); a != "" {
 			out = append(out, a)
 		}
+	}
+	if out == nil {
+		return KnownBots
 	}
 	return out
 }

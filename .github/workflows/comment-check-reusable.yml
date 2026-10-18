@@ -5,7 +5,9 @@ name: Comment check (reusable)
 # checks and runs `fitness comment-check`, which judges the comment with the
 # Plan and PR prose checks plus comment-structure and mermaid-syntax. A
 # failing comment gets one reply naming its author and a thumbs-down
-# reaction; a fixed one turns that reply into a passing note. fitness-runner
+# reaction; a fixed one turns that reply into a passing note. Every author
+# but fitness's known bots is judged; `ignore-authors` replaces that list.
+# fitness-runner
 # keeps its own build-from-source comment-check to test unreleased changes.
 on:
   workflow_call:
@@ -14,8 +16,8 @@ on:
         description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
         default: ''
-      authors:
-        description: Comma-separated logins to judge; empty judges every author but apps.
+      ignore-authors:
+        description: Comma-separated logins to skip, replacing fitness's known bot list; empty keeps that list.
         type: string
         default: ''
 
@@ -26,8 +28,6 @@ permissions:
 
 jobs:
   comment-check:
-    # Apps cannot fix a comment; a manual sweep filters per comment instead.
-    if: github.event_name == 'workflow_dispatch' || github.event.comment.user.type != 'Bot'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
@@ -59,7 +59,7 @@ jobs:
         run: fitness comment-check
         env:
           GH_TOKEN: ${{ github.token }}
-          FITNESS_COMMENT_AUTHORS: ${{ inputs.authors }}
+          FITNESS_COMMENT_IGNORE_AUTHORS: ${{ inputs.ignore-authors }}
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}

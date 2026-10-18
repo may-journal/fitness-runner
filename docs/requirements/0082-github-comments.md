@@ -39,7 +39,7 @@ Source: `go/internal/aftereffect/comment.go:56`
         - When comment-check judges the edit
             - Then it turns its reply into a passing note and removes its reaction
 - 0082.6
-    - Given Developer has comments from an app, a fitness verdict, and an author the caller does not list
+    - Given Developer has comments from a known bot, a fitness verdict, and an author a caller adds to its ignore list
         - When comment-check judges each comment event
             - Then it skips them all and exits 0
 - 0082.7

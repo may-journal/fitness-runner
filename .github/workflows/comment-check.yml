@@ -14,8 +14,6 @@ permissions:
 
 jobs:
   comment-check:
-    # Only the agents' account is judged; skip others before a runner starts.
-    if: github.event_name == 'workflow_dispatch' || github.event.comment.user.login == 'json-claude-bot'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
@@ -34,7 +32,6 @@ jobs:
         run: go/bin/fitness comment-check
         env:
           GH_TOKEN: ${{ github.token }}
-          FITNESS_COMMENT_AUTHORS: json-claude-bot
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
