@@ -81,19 +81,18 @@ func docNumber(f string) string {
 	return ""
 }
 
-// errors flags each changed requirement test whose docs all stayed
-// unchanged, and each changed doc whose tests all stayed unchanged, unless a
-// trailer exempts its number.
-func (p pairs) judge(changed []string, exempt map[string]bool) []string {
+// judge flags each changed requirement test whose docs all stayed
+// unchanged, and each changed doc whose tests all stayed unchanged.
+func (p pairs) judge(changed []string) []string {
 	isChanged := map[string]bool{}
 	for _, f := range changed {
 		isChanged[f] = true
 	}
 	var errs []string
 	for _, f := range changed {
-		errs = append(errs, unpaired(f, p.numbers[f], p.docs, "requirement doc", isChanged, exempt)...)
+		errs = append(errs, unpaired(f, p.numbers[f], p.docs, "requirement doc", isChanged)...)
 		if n := docNumber(f); n != "" {
-			errs = append(errs, unpaired(f, []string{n}, p.tests, "requirement test", isChanged, exempt)...)
+			errs = append(errs, unpaired(f, []string{n}, p.tests, "requirement test", isChanged)...)
 		}
 	}
 	return errs
@@ -101,23 +100,19 @@ func (p pairs) judge(changed []string, exempt map[string]bool) []string {
 
 // unpaired names file and its missing half when none of its partners
 // changed with it. A number with no partner is ownership's concern.
-func unpaired(file string, numbers []string, partners map[string][]string, half string, changed, exempt map[string]bool) []string {
-	missing := unchangedPartners(numbers, partners, changed, exempt)
+func unpaired(file string, numbers []string, partners map[string][]string, half string, changed map[string]bool) []string {
+	missing := unchangedPartners(numbers, partners, changed)
 	if len(missing) == 0 {
 		return nil
 	}
-	return []string{fmt.Sprintf("%s changed without its %s %s; change both together, or add the commit trailer `%s: %s <reason>`",
-		file, half, strings.Join(missing, " or "), trailerKey, strings.Join(numbers, ", "))}
+	return []string{fmt.Sprintf("%s changed without its %s %s; change both together", file, half, strings.Join(missing, " or "))}
 }
 
 // unchangedPartners lists the partner files of numbers when none of them
-// changed and no number is exempt; nil otherwise.
-func unchangedPartners(numbers []string, partners map[string][]string, changed, exempt map[string]bool) []string {
+// changed; nil otherwise.
+func unchangedPartners(numbers []string, partners map[string][]string, changed map[string]bool) []string {
 	var all []string
 	for _, n := range numbers {
-		if exempt[n] {
-			return nil
-		}
 		all = append(all, partners[n]...)
 	}
 	if slices.ContainsFunc(all, func(f string) bool { return changed[f] }) {
@@ -126,24 +121,15 @@ func unchangedPartners(numbers []string, partners map[string][]string, changed, 
 	return all
 }
 
-// scopedPairs judges pairs in a suite run, except in the pre-commit hook,
-// which leaves them to commit-msg so an exemption trailer is readable.
-func scopedPairs(root string, docPaths, testFiles []string, tests []reqTest) []string {
-	if os.Getenv("FITNESS_INTERNAL_HOOK") == "pre-commit" {
-		return nil
-	}
-	return pairErrors(root, docPaths, testFiles, tests, checkkit.ChangedFiles())
-}
-
 // pairErrors judges a scoped run's changed files: staged at commit time, or
 // a pull request's diff against the current merge base with its base branch.
 // A full scan, and a local merge, cherry-pick, or revert, judge no pairs.
-func pairErrors(root string, docPaths, testFiles []string, tests []reqTest, changed []string) []string {
+func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []string {
+	changed := commitChanges(root)
 	if changed == nil || replaying(root) {
 		return nil
 	}
-	exempt, errs := exemptions(root)
-	errs = append(errs, newPairs(docPaths, testFiles, tests, changed).judge(changed, exempt)...)
+	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed)
 	sort.Strings(errs)
 	return errs
 }

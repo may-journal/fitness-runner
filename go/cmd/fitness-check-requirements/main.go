@@ -7,8 +7,7 @@
 // requirement is either a missing requirement or a duplicate. Git history
 // supplies removed IDs, so an ID is never reused. Two docs that cover one
 // area fail, per ADR 0004. A staged or pull request change to a requirement
-// test must change its doc too, and the reverse, unless a commit trailer
-// exempts it.
+// test must change its doc too, and the reverse.
 package main
 
 import (
@@ -24,7 +23,7 @@ import (
 
 func main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "requirements", ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "requirements"},
 		Run:      run,
 	})
 }
@@ -38,14 +37,11 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil || len(written) == 0 {
 		return checkkit.Pass(0), err
 	}
-	if _, ok := checkkit.CtxMessage(); ok {
-		return result(len(paths)+len(files), pairErrors(root, paths, files, tests, commitChanges(root))), nil
-	}
 	errs, err := docErrors(root, paths, tests, written)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	return result(len(paths)+len(files), append(errs, scopedPairs(root, paths, files, tests)...)), nil
+	return result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...)), nil
 }
 
 // docErrors judges every doc's shape, its IDs against history, docs that
