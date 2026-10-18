@@ -11,7 +11,9 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 - exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
 - `--describe` — prints check metadata (name, timeout budget, context-inline arg, blob flag) so the runner needs no registry
 
-The runner runs the `--describe` handshakes side by side, then runs checks in a pool of one slot per core. Checks with the longest timeout budget start first, and ties keep catalog order. A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+The runner runs the `--describe` handshakes side by side, then runs checks in a pool of one slot per core. Checks start by the timeout budget they declare in `--describe`, largest first, and ties keep catalog order. A handshake that runs past its budget among the others gets one more try alone.
+
+A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
 
 ## Info
 

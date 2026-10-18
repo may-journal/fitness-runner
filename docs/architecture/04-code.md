@@ -36,7 +36,7 @@ classDiagram
         +Run
     }
     class resolveChecks["6 resolveChecks(spec string)"]
-    class describe["7 describe(bin string) (checkkit.Describe, string)"]
+    class describe["7 describe(bin string) (checkkit.Describe, string, bool)"]
     class runPool["8 runPool(string, []resolved, []string, []string)"]
     class runOne["9 runOne(string, resolved, []string, []string)"]
     class checkkitMain["10 checkkit.Main(Check)"]
@@ -70,7 +70,7 @@ classDiagram
     checkkitMain --> Describe : 28
     checkkitMain --> Result : 29
     Totals --> Row : 31
-    runPool --> Describe : 33
+    resolveChecks --> Describe : 33
 ```
 
 ```mermaid
@@ -121,7 +121,7 @@ Numbers on classes and relationships match the callout table.
 | 30  | The pass, failure and info counts, in [render.go](../../go/internal/render/render.go). | Info rows never count as failures. |
 | 31  | The tally adds each row by its status. | One place decides what counts. |
 | 32  | One tool run's exit code, output, start error and signal, in [exec.go](../../go/internal/checkkit/exec.go). | A check tells a broken environment from a tool's verdict. |
-| 33  | The pool reads each check's timeout budget to order its starts. | A slow check never waits behind quick ones. |
+| 33  | Resolution keeps the budget each check declares, before the repo config fills an empty one. | The pool starts checks by their own budget. |
 
 ## Monorepo layout
 
