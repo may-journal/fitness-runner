@@ -9,7 +9,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, which
 
 ## Reusable workflows
 
-fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [issue-check-reusable.yml](../.github/workflows/issue-check-reusable.yml), and [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
+fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [issue-check-reusable.yml](../.github/workflows/issue-check-reusable.yml), [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml), and [comment-check-reusable.yml](../.github/workflows/comment-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
 
 `.github/workflows/pr-check.yml`:
 
@@ -67,6 +67,29 @@ jobs:
 ```
 
 It reopens issues closed with unchecked items; `fitness pr-check` fails PRs closing one.
+
+## Comments
+
+may-journal/.github syncs this [comment-check](../.github/workflows/README.md#comment-check) caller into each repo. It judges every author but the known bots `fitness comment-check` lists, and carries no list of its own:
+
+```yaml
+name: Comment check
+on:
+  issue_comment:
+    types: [created, edited]
+  pull_request_review_comment:
+    types: [created, edited]
+  workflow_dispatch:
+jobs:
+  comment-check:
+    uses: may-journal/fitness-runner/.github/workflows/comment-check-reusable.yml@v1
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+```
+
+Agents run `fitness comment-check --blob -` on a draft before posting, so a failing reply should be rare.
 
 ## Reusable CI
 

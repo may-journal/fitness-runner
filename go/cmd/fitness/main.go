@@ -73,7 +73,7 @@ func main() {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `comment-check`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -90,13 +90,14 @@ func isHelp(args []string) bool {
 // subcommands maps each subcommand name to its handler, which gets the
 // arguments after the name.
 var subcommands = map[string]func(args []string) int{
-	"init":         runInit,
-	"hook":         runHookArgs,
-	"pr-check":     func([]string) int { return metadata.RunGH("pr-check") },
-	"issue-check":  func([]string) int { return metadata.RunGH("issue-check") },
-	"plan-check":   func([]string) int { return metadata.RunGH("plan-check") },
-	"close-check":  func([]string) int { return metadata.RunGH("close-check") },
-	"branch-check": func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
+	"init":          runInit,
+	"hook":          runHookArgs,
+	"pr-check":      func([]string) int { return metadata.RunGH("pr-check") },
+	"issue-check":   func([]string) int { return metadata.RunGH("issue-check") },
+	"plan-check":    func([]string) int { return metadata.RunGH("plan-check") },
+	"close-check":   func([]string) int { return metadata.RunGH("close-check") },
+	"comment-check": runCommentCheck,
+	"branch-check":  func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
 }
 
 // route dispatches the subcommands, defaulting to the check runner.
@@ -136,6 +137,9 @@ Usage:
   fitness issue-check      validate an issue by its kind label and comment the result (GitHub Actions)
   fitness plan-check       issue-check for Plan issues only (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
+  fitness comment-check --blob <text>
+                           judge a drafted comment (- or no arguments reads stdin)
+  fitness comment-check    judge issue and PR comments and reply (GitHub Actions)
 
 Docs: https://github.com/may-journal/fitness-runner#usage`)
 	return 0

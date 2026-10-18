@@ -29,6 +29,7 @@ archives:
       - fitness-check-changelog-bullets
       - fitness-check-changelog-updated
       - fitness-check-checkstyle
+      - fitness-check-comment-structure
       - fitness-check-commit-attribution
       - fitness-check-cspell
       - fitness-check-dependency-currency
@@ -58,6 +59,7 @@ archives:
       - fitness-check-mermaid-diagram-table-gap
       - fitness-check-mermaid-legend
       - fitness-check-mermaid-level-bleed
+      - fitness-check-mermaid-syntax
       - fitness-check-no-contrastive-reframing
       - fitness-check-no-eslint-disable
       - fitness-check-no-plans-dir

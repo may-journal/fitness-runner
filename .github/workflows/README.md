@@ -130,6 +130,51 @@ flowchart TD
 | 5   | Reopen         | Set the Issue back to open.                                        | Unfinished work stays visible.                        |
 | 6   | Comment        | List the items and mention the closer, PR author, and merger.      | The closer hears why it came back.                    |
 
+## comment-check
+
+[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml). It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists once. The optional `ignore-authors` input replaces that list.
+
+Before posting, an agent runs `fitness comment-check --blob -` with the draft on stdin, or `--blob "<text>"`. It runs the same checks, prints each violation with its line, and exits 1 on any. The reply and the run summary point there too.
+
+```mermaid
+flowchart TD
+    A[1 Comment event]:::trigger
+    B[2 Manual sweep]:::trigger
+    C[3 Skip guard]:::step
+    D[4 Run the comment checks]:::step
+    E[5 Find the earlier reply]:::step
+    F[6 Post or edit one reply]:::step
+    G[7 React]:::step
+    H[8 Fail the run on violations]:::step
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    D --> H
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element      | Description                                                                       | Why                                                  |
+| --- | ------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| 1   | Comment event | An issue, PR, or review comment is created or edited.                            | Judges a comment the moment its text changes.        |
+| 2   | Manual sweep | A `workflow_dispatch` run walks the last seven days of comments.                  | Audits comments that predate the workflow.           |
+| 3   | Skip guard   | Skip the known bots and fitness verdicts and replies.                             | Every person and agent owns what they wrote.         |
+| 4   | Run checks   | Run `comment-structure`, `mermaid-syntax`, and the Plan and PR prose checks.      | One tested rule set, the same one agents run first.  |
+| 5   | Dedupe       | Find the bot's reply whose marker names this comment's id.                        | One reply per comment, never a pile.                 |
+| 6   | Reply        | Mention the author with the violations, or turn the reply into a passing note.    | The author hears what to fix, and sees it cleared.   |
+| 7   | React        | Add a thumbs-down to a failing comment and remove it once it passes.              | The thread shows which comment needs work.           |
+| 8   | Fail run     | Exit non-zero when any judged comment has violations.                             | The run page and summary list every violation.       |
+
+## Triggers (comment-check)
+
+- `issue_comment` and `pull_request_review_comment` (`created`, `edited`): judge that one comment; a review reply answers in its thread.
+- `workflow_dispatch`: sweeps recent comments; `FITNESS_SWEEP_DAYS` changes the seven-day window.
+
+A comment that always passed gets no reply. The `.fitnessrc.json` `comment` key sets `maxWords` (100) and `maxTables` (1).
+
 ## auto-merge
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.

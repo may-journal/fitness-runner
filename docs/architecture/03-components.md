@@ -129,7 +129,7 @@ Built by the runner before dispatch — not a separate registry.
 
 ## Body mode
 
-Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `fitness issue-check`, `plan-check`, `pr-check`, and `close-check` subcommands use this to judge GitHub blobs: Issue and PR bodies.
+Check binaries also accept a document instead of a file tree. Given `--body-file`, `bodycheck.RunDoc` runs a check's per-document rule on that body, with config from `--root`. The `fitness issue-check`, `plan-check`, `pr-check`, `close-check`, and `comment-check` subcommands use this to judge GitHub blobs: Issue and PR bodies and comments.
 
 An explicit `--body-file` is the only trigger, so a normal file-walking run is never affected. The prose, markdown, and mermaid checks opt in; a cross-file check like `mermaid-level-bleed` does not.
 

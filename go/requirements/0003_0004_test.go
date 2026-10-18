@@ -41,12 +41,13 @@ const catalogRows = `
 architecture-actors architecture-code architecture-components
 architecture-containers architecture-contract architecture-journey
 build-output-untracked changelog changelog-bullets changelog-updated
-commit-attribution cspell doc-template epic-structure gitignore-why issue-checklist
-issue-link-once jscpd local-branch markdown-filename-camel-case
+comment-structure commit-attribution cspell doc-template epic-structure
+gitignore-why issue-checklist issue-link-once jscpd local-branch
+markdown-filename-camel-case
 markdown-filename-kebab-case markdown-front-matter markdown-links
 markdown-no-bold-italic mermaid-callout-why mermaid-callouts
 mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
-mermaid-level-bleed no-contrastive-reframing no-plans-dir plan-structure
+mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-plans-dir plan-structure
 plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
 release-changelog repeated-string-literals requirements semantic-commit
 text-readability
@@ -55,6 +56,18 @@ swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier
 vitest-coverage-exclude vitest-coverage-full
 checkstyle java-test java-version spotless`
+
+// allPassed is the summary of a run where every installed check passed.
+func allPassed() string {
+	return fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows)))
+}
+
+// passedOf is the summary count of a run where all but notPassed installed
+// checks passed.
+func passedOf(notPassed int) string {
+	n := len(strings.Fields(catalogRows))
+	return fmt.Sprintf("%d of %d checks passed", n-notPassed, n)
+}
 
 // rowCells returns the check cell of each results-table row, top to bottom.
 func rowCells(out string) []string {

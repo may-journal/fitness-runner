@@ -41,7 +41,7 @@ Source: `go/cmd/fitness/blob.go:43`
 - 0077.6
     - Given Developer has a text that follows its template, such as a Plan whose steps name issues
         - When I run fitness `--blob` on it (a Plan issue, an Epic, or a PR description) with no `--checks`
-            - Then its own checks pass, the other kind's checks list in order as skipped, and it exits 0
+            - Then its own checks pass, the comment and other body checks list in order as skipped, and it exits 0
 - 0077.8
     - Given Developer has a PR description text whose changelog section is empty or its heading misnamed
         - When I run fitness `--blob` on it with no `--checks`

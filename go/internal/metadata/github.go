@@ -29,6 +29,8 @@ type ghCommand struct {
 	// failOnFindings exits 1 when any target fails; close-check instead
 	// succeeds once its effect has reopened the issue.
 	failOnFindings bool
+	// hint ends a run summary with findings, such as how to re-check locally.
+	hint string
 }
 
 // ghCommands are the GitHub commands, by subcommand name.
@@ -52,6 +54,12 @@ var ghCommands = map[string]ghCommand{
 		kind: "issues", targets: closeTargets,
 		checks: []string{"issue-checklist"},
 		effect: aftereffect.ReopenUnfinished,
+	},
+	"comment-check": {
+		kind: "issues", targets: commentTargets,
+		checks: CommentChecks,
+		effect: aftereffect.CommentReply, failOnFindings: true,
+		hint: aftereffect.RecheckHint,
 	},
 }
 
@@ -80,6 +88,7 @@ func (c ghCommand) run(name string, ev ghEvent, gh aftereffect.Client, b blobChe
 	}
 	kinds := c.kindsAt(b.root)
 	rep := newTargetReport(name, c.kind)
+	rep.hint = c.hint
 	failed := false
 	for _, t := range targets {
 		bad, err := c.check(gh, b, rep, t, kinds)
@@ -206,9 +215,10 @@ func closeTargets(ev ghEvent, _ aftereffect.Client, _ blobChecker) ([]target, er
 // ghEvent is the part of the Actions event payload the GitHub commands read.
 type ghEvent struct {
 	name        string
-	Action      string  `json:"action"`
-	PullRequest *target `json:"pull_request"`
-	Issue       *target `json:"issue"`
+	Action      string        `json:"action"`
+	PullRequest *target       `json:"pull_request"`
+	Issue       *target       `json:"issue"`
+	Comment     *eventComment `json:"comment"`
 	Sender      struct {
 		Login string `json:"login"`
 	} `json:"sender"`
