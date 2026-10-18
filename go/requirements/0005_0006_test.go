@@ -85,6 +85,13 @@ func Test0005_16(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = prRun(t, failing, fixed, "test(adder): move to Swift Testing")
 	sees(t, out, code, 0)
+	repo, env := hooked(t, with(failing, map[string]string{".fitnessrc.json": `{"policy": "external", "checks": ["requirements"]}` + "\n"}))
+	write(t, repo, fixed)
+	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "--no-verify", "-m", "test(adder): move to Swift Testing"})
+	write(t, repo, map[string]string{swiftTest: edited(fixed[swiftTest])})
+	user(t, repo, env, "add", "-A")
+	out, code = user(t, repo, env, "commit", "--amend", "-m", "test(adder): move to Swift Testing")
+	sees(t, out, code, 0, "test(adder): move to Swift Testing")
 	out, code = stagedRun(t, swiftRepo(), map[string]string{swiftTest: edited(swiftTestingFile("test0001_1"))})
 	sees(t, out, code, 1, swiftTest+" changed without its requirement doc "+pairedDoc+"; change both together")
 }

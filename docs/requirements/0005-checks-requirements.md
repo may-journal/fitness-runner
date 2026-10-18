@@ -45,4 +45,4 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:87`
 - 0005.16
     - Given Developer has a requirement test that fails the check at its base
         - When I fix the test without changing its doc
-            - Then my commit or pull request passes, while a test that passed at its base still fails without its doc
+            - Then my commit, amend, or pull request passes, while a test that passed at its base still fails without its doc
