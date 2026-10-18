@@ -53,7 +53,8 @@ fitness hook pre-commit      # run a hook's logic (the installed shims call thes
 fitness pr-check             # validate PR titles and descriptions (in GitHub Actions)
 fitness branch-check         # validate this branch's PR and linked issues locally
 fitness local-branch         # the same meta-check, also included in pre-push
-fitness plan-check           # validate Plan issues, comment and label the result (in GitHub Actions)
+fitness issue-check          # validate an issue by its kind label, comment and label the result (in GitHub Actions)
+fitness plan-check           # issue-check for Plan issues only (in GitHub Actions)
 fitness close-check          # reopen an issue closed with unchecked items (in GitHub Actions)
 fitness comment-check --blob - < draft.md  # judge a drafted comment before posting it
 fitness comment-check        # judge new comments, reply once to a failing one (in GitHub Actions)

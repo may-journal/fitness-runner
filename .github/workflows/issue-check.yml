@@ -1,4 +1,4 @@
-name: Plan check
+name: Issue check
 
 on:
   issues:
@@ -10,14 +10,12 @@ permissions:
   issues: write
 
 jobs:
-  plan-check:
-    # Issue events: only Plan-labeled issues. Manual sweep: always run.
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'Plan')
+  issue-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Agents edit an Issue in quick bursts; only the newest body needs a verdict.
     concurrency:
-      group: plan-check-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
+      group: issue-check-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +24,9 @@ jobs:
           go-version-file: go/go.mod
       - name: Build the checks
         run: cd go && mkdir -p bin && go build -o bin ./cmd/...
-      - name: Validate plan issue(s), keep one verdict comment, and label it
+      - name: Validate issue(s) by kind, keep one verdict comment, and label it
         id: report-step-1
-        run: go/bin/fitness plan-check
+        run: go/bin/fitness issue-check
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Retain complete Fitness reports

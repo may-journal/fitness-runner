@@ -56,8 +56,10 @@ func Test0077_6(t *testing.T) {
 		text, skipped string
 		passed        []string
 	}{
-		{planBody("- [ ] Write the tests."), "comment-structure, issue-checklist, pr-closes-issue, pr-structure", []string{"plan-structure"}},
-		{pr0014(11), "comment-structure, issue-checklist, plan-structure", []string{"pr-structure", "pr-closes-issue"}},
+		{planBody("- [ ] Write the tests."), "comment-structure, epic-structure, issue-checklist, pr-closes-issue, pr-structure", []string{"plan-structure"}},
+		{planBody("- [ ] #12 Add the schema."), "comment-structure, epic-structure, issue-checklist, pr-closes-issue, pr-structure", []string{"plan-structure"}},
+		{epicBody("1. #22\n2. #23, after #22"), "comment-structure, issue-checklist, plan-structure, pr-closes-issue, pr-structure", []string{"epic-structure"}},
+		{pr0014(11), "comment-structure, epic-structure, issue-checklist, plan-structure", []string{"pr-structure", "pr-closes-issue"}},
 	} {
 		out, code := piped(t, repo, c.text, nil, "--blob", "-")
 		sees(t, out, code, 0, "Skipped (does not apply to this text): "+c.skipped)

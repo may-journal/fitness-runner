@@ -45,7 +45,7 @@ flowchart TB
     runFull(3 Run fitness<br/>Req 0001):::action
     runSingle(4 Run single check<br/>Req 0001):::action
     runBlob(29 Check a draft text<br/>Req 0077):::action
-    runComment(31 Check a draft comment<br/>Req 0082):::action
+    runComment(31 Check a draft comment<br/>Req 0083):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003)]:::system
@@ -55,9 +55,9 @@ flowchart TB
     subgraph checks["Check families"]
         commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0084)]:::system
+        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085)]:::system
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0035, 0036, 0037)]:::system
-        mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0083)]:::system
+        mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
         requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057)]:::system
@@ -71,7 +71,7 @@ flowchart TB
     failuresShown[10 Failures shown<br/>Req 0004]:::blocked
     fixIssues(11 Fix issues<br/>Req 0004):::action
     configError[(12 Config error<br/>Req 0008)]:::blocked
-    ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048)]:::system
+    ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069)]:::system
     release[(28 Release build<br/>Req 0062)]:::system
 
@@ -127,7 +127,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 10  | Failures shown in table.            | Screen  | Exit 1; failing check's `errors` printed inline.                                      |
 | 11  | Fix and rerun.                      | Action  | Developer/agent edits source, returns to #3.                                          |
 | 12  | Bad config or missing binary.       | System  | Fails loud — every check ships together, so a missing binary is a broken install.     |
-| 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, and Plan issues are judged there too.      |
+| 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, and labeled issues are judged by kind too. |
 | 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives every check; nothing else to install.                     |
 | 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite and keep each issue linked once.                                  |
 | 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |

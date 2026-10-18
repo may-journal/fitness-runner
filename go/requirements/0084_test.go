@@ -1,86 +1,74 @@
-// cspell:ignore antml
+// cspell:ignore Descr mindmap xychart
 
 package requirements
 
-import (
-	"strings"
-	"testing"
-)
+import "testing"
 
-// commentStructure runs comment-structure on comment, saved over happyRepo
-// with files, as --body-file.
-func commentStructure(t *testing.T, comment string, files map[string]string) (string, int) {
+// mermaidSyntax runs `fitness-install -- mermaid-syntax <args>` on happyRepo
+// with files written over it.
+func mermaidSyntax(t *testing.T, files map[string]string, args ...string) (string, int) {
 	t.Helper()
-	return fitness(t, example(t, "happyRepo", with(files, map[string]string{"comment.md": comment})), nil,
-		"comment-structure", "--body-file", "comment.md")
+	return fitness(t, example(t, "happyRepo", files), nil, append([]string{"mermaid-syntax"}, args...)...)
 }
-
-// words is n words of plain prose.
-func words(n int) string {
-	return strings.TrimSpace(strings.Repeat("word ", n)) + "."
-}
-
-// numbered is a numbered diagram and its matching callout table.
-const numbered = "```mermaid\nflowchart TD\n  A[1 Start]:::s --> B[2 End]:::s\n  classDef s fill:#eef\n```\n\n" +
-	"| # | Element | Description | Why |\n| - | - | - | - |\n| 1 | Start | First. | Begins. |\n| 2 | End | Last. | Ends. |\n"
-
-// overBudget has 120 prose words, and more inside a table and code.
-var overBudget = words(120) + "\n\n| A | B |\n| - | - |\n| " + words(30) + " | x |\n\n```\n" + words(30) + "\n```\n"
 
 func Test0084_1(t *testing.T) {
 	t.Parallel()
-	out, code := commentStructure(t, overBudget, nil)
-	sees(t, out, code, 1, "(comment): 120 words outside tables, code, and diagrams; the budget is 100")
+	out, code := mermaidSyntax(t, mermaidLegendDoc(
+		mermaidLegendDiagram("flowchart LR", `A["Start (now)"]:::s --> B{Ready?} -->|yes| C((Done))`,
+			"B -.-> D & E", "subgraph S [Group]", "direction TB", "F -- note --> G", "end", "classDef s fill:#eef"),
+		mermaidLegendDiagram("graph TD;", "A-->B;"),
+		mermaidLegendDiagram("sequenceDiagram", "participant A as Client", "loop every minute",
+			"A->>+B: ping", "alt ok", "B-->>-A: pong", "else down", "Note over A,B: retry", "end", "end"),
+		mermaidLegendDiagram("C4Context", `Person(user, "1 User")`, `Rel(user, app, "2")`),
+		mermaidLegendDiagram("flowchart-elk TD", "accDescr {", "free text: here", "}", "A-- yes -->B"),
+		mermaidLegendDiagram("sequenceDiagram", "par_over A", "A->>B: x", "and B", "B->>A: y", "end"),
+		mermaidLegendDiagram("mindmap", "root", "  a)cloud("),
+		mermaidLegendDiagram("xychart", "bar [1, 2]")))
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0084_2(t *testing.T) {
 	t.Parallel()
-	out, code := commentStructure(t, overBudget, map[string]string{".fitnessrc.json": `{"comment": {"maxWords": 150}}`})
-	sees(t, out, code, 0, "All 1 checks passed")
+	out, code := mermaidSyntax(t, mermaidLegendDoc(mermaidLegendDiagram("flowchart TD", "A[Start (x)] --> B")))
+	sees(t, out, code, 1, `README.md: line 11: node A: label "Start (x)" has brackets or quotes; wrap it in double quotes (diagram at line 9)`)
 }
 
 func Test0084_3(t *testing.T) {
 	t.Parallel()
-	table := "| A | B |\n| - | - |\n| 1 | 2 |\n"
-	out, code := commentStructure(t, table+"\nAnd more.\n\n"+table+"\n"+numbered, nil)
-	sees(t, out, code, 1, "(comment): 2 tables besides callout tables; the budget is 1")
+	out, code := mermaidSyntax(t, mermaidLegendDoc(mermaidLegendDiagram("flowchart TD", "A -->", "subgraph S", "B --> C")))
+	sees(t, out, code, 1, "README.md: line 11: an edge has no target node (diagram at line 9)",
+		"README.md: line 12: subgraph is never closed with end (diagram at line 9)")
 }
 
 func Test0084_4(t *testing.T) {
 	t.Parallel()
-	out, code := commentStructure(t, "Flow.\n\n```mermaid\nflowchart TD\n  A --> B\n```\n", nil)
-	sees(t, out, code, 1, "(comment): line 3: mermaid diagram has no numbered callouts")
-	legend := strings.Replace(numbered, "\n\n|", "\n\n```mermaid\nflowchart LR\n  k[Step]:::s\n  classDef s fill:#eef\n```\n\n|", 1)
-	out, code = commentStructure(t, legend, nil)
-	sees(t, out, code, 0, "All 1 checks passed")
+	out, code := mermaidSyntax(t, mermaidLegendDoc(mermaidLegendDiagram("sequenceDiagram", "A->>B", "loop every minute", "A->>B: hi")))
+	sees(t, out, code, 1, `README.md: line 11: message "A->>B" needs a target and a colon`,
+		"README.md: line 12: loop is never closed with end (diagram at line 9)")
 }
 
 func Test0084_5(t *testing.T) {
 	t.Parallel()
-	out, code := commentStructure(t, "The parser works.\n\nEdit 2: it handles tabs too.\n", nil)
-	sees(t, out, code, 1, `(comment): line 3: "Edit 2:": change-log note; edit the text in place and drop the note`)
-	out, code = commentStructure(t, "The cache is updated after every push.\n", nil)
-	sees(t, out, code, 0, "All 1 checks passed")
+	out, code := mermaidSyntax(t, mermaidLegendDoc(mermaidLegendDiagram("graf TD", "A --> B")))
+	sees(t, out, code, 1, `README.md: line 10: unknown diagram type "graf" (diagram at line 9)`)
 }
 
 func Test0084_6(t *testing.T) {
 	t.Parallel()
-	out, code := commentStructure(t, "Done.\n\n<system-reminder>\n\nRan on claude-opus-4-1 today.\n", nil)
-	sees(t, out, code, 1, `(comment): line 3: "<system-reminder": agent frame; post only the finished text`,
-		`(comment): line 5: "claude-opus-4-1": model identifier; name the agent, not the model`)
-	out, code = commentStructure(t, "Pinned to `claude-opus-4-1` in config.\n", nil)
-	sees(t, out, code, 0, "All 1 checks passed")
+	out, code := mermaidSyntax(t, mermaidLegendDoc(mermaidLegendDiagram("C4Context", `Person(user, "1 User")`, `Rel(user, app, "2"`)))
+	sees(t, out, code, 1, "README.md: line 12: '(' is never closed (diagram at line 9)")
 }
 
 func Test0084_7(t *testing.T) {
 	t.Parallel()
-	out, code := piped(t, example(t, "happyRepo", nil), planBody("- [ ] Write the tests."), nil, "--blob", "-")
-	sees(t, out, code, 0, "Skipped (does not apply to this text):", "comment-structure")
+	out, code := mermaidSyntax(t, map[string]string{"body.md": mermaidLegendDiagram("flowchart TD", "A[Start (x)] --> B")},
+		"--body-file", "body.md")
+	sees(t, out, code, 1, `(description): line 3: node A: label "Start (x)"`)
 }
 
 func Test0084_8(t *testing.T) {
 	t.Parallel()
-	out, code := fitness(t, example(t, "happyRepo", nil), nil, "comment-structure")
+	out, code := mermaidSyntax(t, nil)
 	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "comment-structure")
+	passedWithNoFiles(t, out, "mermaid-syntax")
 }

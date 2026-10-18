@@ -6,7 +6,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Judges one GitHub issue, PR, or review comment, so a reply stays short, readable, and free of agent noise. It is driven by `fitness comment-check`, locally on a draft and in the [comment-check workflow](../../../.github/workflows/README.md#comment-check).
 
-A comment is not a file in the tree. This check reads it from stdin, a `--body-file` path (`-` meaning stdin), or the runner's context-inline `--body` value. With no input it passes with zero files checked. Under `fitness --blob` it skips Plan and PR bodies, which have their own structure checks.
+A comment is not a file in the tree. This check reads it from stdin, a `--body-file` path (`-` meaning stdin), or the runner's context-inline `--body` value. With no input it passes with zero files checked. Under `fitness --blob` it skips Plan, Epic, and PR bodies, which have their own structure checks.
 
 ## Behavior
 

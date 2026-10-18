@@ -21,7 +21,7 @@ C4Container
     System_Ext(consumer, "6 Consumer repo", ".fitnessrc.json and the sources under test")
     System_Ext(peers, "7 Peer tooling", "each language module's tools, and git")
     System_Ext(registry, "8 npm registry", "dependency-currency queries")
-    System_Ext(ci, "9 Description checks", "GitHub Actions", "plan-check and pr-check")
+    System_Ext(ci, "9 Description checks", "GitHub Actions", "issue-check and pr-check")
     System_Ext(releases, "10 GitHub Releases", "bundles and tool binaries")
 
     Rel(developer, cli, "11")
@@ -59,7 +59,7 @@ Numbers on nodes and arrows match the callout table. Each container names the co
 | 6   | Optional `.fitnessrc.json` with per-check options, and the files checks lint, format, or scan.   | Every check runs on every tracked file; no path is ignored. |
 | 7   | Tool-wrapper checks exec these when installed; native engines (cspell, jscpd souls) need none.   | Peer tools resolved at runtime, never bundled.              |
 | 8   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
-| 9   | The `plan-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.        | Descriptions held to the same bar as files.                 |
+| 9   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |
 | 10  | Release bundles and tool binaries, one archive per platform.                                     | Artifacts ship through GitHub Releases and the Go proxy.    |
 | 11  | Developer runs the binary from the consumer root.                                                | One front door.                                             |
 | 12  | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
@@ -68,7 +68,7 @@ Numbers on nodes and arrows match the callout table. Each container names the co
 | 15  | Checks read the consumer tree (staged or full).                                                  | Validation target is always the app repo.                   |
 | 16  | Checks resolve peer binaries the way their language module finds tools, then PATH.               | Missing tools fail with one-line install hints.             |
 | 17  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
-| 18  | `fitness pr-check` and `plan-check` exec each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
+| 18  | `fitness pr-check` and `issue-check` exec each check with `--body-file`, reusing body mode.      | One rule engine for files and descriptions.                 |
 | 19  | Developer runs `fitness-install`; the pre-commit hook runs the suite.                           | One documented one-liner installs or runs the suite.        |
 | 20  | `fitness-release` builds and publishes the bundles.                                              | Release and install share one versioned artifact set.       |
 

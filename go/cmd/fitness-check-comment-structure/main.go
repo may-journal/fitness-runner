@@ -7,8 +7,8 @@
 //
 // It reads its target from stdin, a `--body-file` path (`-` meaning stdin),
 // or the runner's context-inline `--body` value, and passes inert with no
-// input. Under `fitness --blob` it skips Plan and PR bodies, which have their
-// own structure checks.
+// input. Under `fitness --blob` it skips Plan, Epic, and PR bodies, which have
+// their own structure checks.
 package main
 
 import (
@@ -49,10 +49,10 @@ func run(root string, args []string) (checkkit.Result, error) {
 	})
 }
 
-// isComment reports whether a draft is a comment rather than a Plan or PR
-// body.
+// isComment reports whether a draft is a comment rather than a Plan, Epic,
+// or PR body.
 func isComment(body string) bool {
-	return !bodycheck.PlanBody(body) && !bodycheck.PRBody(body)
+	return !bodycheck.PlanBody(body) && !bodycheck.EpicBody(body) && !bodycheck.PRBody(body)
 }
 
 // loadLimits reads the repo's comment budget over the defaults.

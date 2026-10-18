@@ -40,8 +40,13 @@ func (r *targetReport) add(number int, errs []string) {
 // gone notes a target that left the repository, such as an issue moved to
 // another repo, as a notice rather than a finding.
 func (r *targetReport) gone(number int) {
+	r.note(number, fmt.Sprintf("#%d no longer exists in this repository; it was moved or deleted, so it is skipped.", number))
+}
+
+// note records a target skipped for message, as a notice rather than a
+// finding.
+func (r *targetReport) note(number int, message string) {
 	r.targets = append(r.targets, number)
-	message := fmt.Sprintf("#%d no longer exists in this repository; it was moved or deleted, so it is skipped.", number)
 	fmt.Fprintf(&r.summary, "### %s #%d\n\n%s\n\n", r.operation, number, report.EscapeMarkdown(message))
 	if report.Enabled() {
 		fmt.Fprintln(r.output, report.Notice(r.operation, message))

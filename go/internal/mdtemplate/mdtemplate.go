@@ -6,6 +6,8 @@
 package mdtemplate
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -87,6 +89,71 @@ func SpecFromTemplate(body, noun string) Spec {
 	}
 	_, hasPitch := pitchLine(body, headings)
 	return Spec{Noun: noun, Sections: sections, NoPitch: !hasPitch}
+}
+
+// TemplateLabels returns the labels a GitHub issue template gives each new
+// issue, from its `labels` front matter: one name, a comma-separated list,
+// a `[a, b]` flow list, or a block list.
+func TemplateLabels(body string) []string {
+	f := parseFront(body)
+	if labels := f.lists["labels"]; len(labels) > 0 {
+		return labels
+	}
+	return scalarLabels(f.scalars["labels"])
+}
+
+// IssueTemplateDir holds a repo's GitHub issue templates; each one names an
+// issue kind by its first label.
+const IssueTemplateDir = ".github/ISSUE_TEMPLATE"
+
+// IssueTemplates reads root's issue templates, keyed by each one's first
+// label. A template with no label names no kind.
+func IssueTemplates(root string) map[string]string {
+	out := map[string]string{}
+	paths, _ := filepath.Glob(filepath.Join(root, IssueTemplateDir, "*.md"))
+	for _, p := range paths {
+		raw, err := os.ReadFile(p)
+		if labels := TemplateLabels(string(raw)); err == nil && len(labels) > 0 {
+			out[labels[0]] = string(raw)
+		}
+	}
+	return out
+}
+
+// KindSpec is the shape an issue template sets for its kind: its sections
+// and pitch, as SpecFromTemplate reads them, with a REPLACE-ME placeholder,
+// no Open questions section, and a checklist required in each section whose
+// template shows a task-list item.
+func KindSpec(template, noun string) Spec {
+	spec := SpecFromTemplate(template, noun)
+	spec.Placeholder, spec.BanOpenQuestions = "REPLACE-ME", true
+	headings := mdx.Headings(template)
+	for i, s := range spec.Sections {
+		if sectionHasMatch(template, headings, s.Heading, checkboxRe) {
+			spec.Sections[i].Requires = Checklist
+		}
+	}
+	return spec
+}
+
+// SpecFor is the kind's shape from root's issue template labeled label, or
+// fallback when root has none, so the template stays the one source.
+func SpecFor(root, label string, fallback Spec) Spec {
+	if template, ok := IssueTemplates(root)[label]; ok {
+		return KindSpec(template, fallback.Noun)
+	}
+	return fallback
+}
+
+// scalarLabels splits a `labels` scalar, one name or a comma-separated list.
+func scalarLabels(value string) []string {
+	var labels []string
+	for _, part := range strings.Split(value, ",") {
+		if l := unquote(part); l != "" {
+			labels = append(labels, l)
+		}
+	}
+	return labels
 }
 
 // MissingCommentSections returns the level-2 headings of a template whose

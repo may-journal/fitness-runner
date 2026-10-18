@@ -1,179 +1,157 @@
 package requirements
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// sloppy is a comment whose first line is a change-log note.
-const sloppy = "Update: the parser now handles tabs.\n"
+// kindIssue is the issue number every 0082 event and saved response names.
+const kindIssue = "21"
 
-// sloppyError is the one finding comment-check reports on sloppy.
-const sloppyError = `(comment): line 1: "Update:": change-log note; edit the text in place and drop the note`
-
-// commentURL is where comment 31, which every 0082 event names, lives.
-const commentURL = "https://github.com/may-journal/example/issues/9#issuecomment-31"
-
-// commentCheck runs comment-check the way its Actions step does, on the event
-// payload GitHub would deliver, with gh answering from saved responses.
-func commentCheck(t *testing.T, event string, payload map[string]any, saved []response, extra ...string) (string, int, replays) {
+// judgeKind runs issue-check on issue 21 with body, as an issue edit
+// triggers it, in happyRepo with files written over it.
+func judgeKind(t *testing.T, body string, files map[string]string, saved []response) (string, int, replays) {
 	t.Helper()
-	repo := example(t, "happyRepo", nil)
-	path := filepath.Join(t.TempDir(), "event.json")
-	data, err := json.Marshal(payload)
-	mustDo(t, err)
-	mustDo(t, os.WriteFile(path, data, 0o644))
-	rp := standIn(t, map[string][]response{"gh": saved})
-	env := append(rp.env, "GITHUB_EVENT_NAME="+event, "GITHUB_EVENT_PATH="+path, "GITHUB_REPOSITORY=may-journal/example")
-	out, code := fitness(t, repo, append(env, extra...), "comment-check")
-	return out, code, rp
+	issue := map[string]any{"number": 21, "title": "t", "body": body}
+	return ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, files, saved)
 }
 
-// eventComment is comment 31 with body, by login, an account of kind.
-func eventComment(body, login, kind string) map[string]any {
-	return map[string]any{"id": 31, "body": body, "html_url": commentURL, "user": map[string]any{"login": login, "type": kind}}
+// kindGitHub is the saved GitHub for issue 21 of kind, with no verdict yet,
+// carrying labels.
+func kindGitHub(kind string, labels ...string) []response {
+	return issueGitHub(kindIssue, "fitness:issue-check:"+kind+":", "", labels...)
 }
 
-// judgeComment runs comment-check on comment 31 on issue 9, as posting it
-// triggers it.
-func judgeComment(t *testing.T, comment map[string]any, saved []response, extra ...string) (string, int, replays) {
-	t.Helper()
-	issue := map[string]any{"number": 9, "title": "t", "body": ""}
-	return commentCheck(t, "issue_comment", map[string]any{"action": "created", "issue": issue, "comment": comment}, saved, extra...)
-}
-
-// commentGitHub is the saved GitHub holding notice, the bot's reply to
-// comment 31 as the lookup prints it, and its thumbs-down, id 55. Every
-// write succeeds.
-func commentGitHub(notice string) []response {
-	return []response{
-		{Match: []string{"-X POST"}},
-		{Match: []string{"-X PATCH"}},
-		{Match: []string{"-X DELETE"}},
-		{Match: []string{"reactions?content=-1"}, Stdout: "55\n"},
-		{Match: []string{"fitness:comment-check:31:"}, Stdout: notice},
-		{Match: []string{"fitness:comment-check:"}},
+// epicGitHub is kindGitHub for an Epic whose sub-issues are subs, in this
+// repository.
+func epicGitHub(subs ...string) []response {
+	var lines strings.Builder
+	for _, n := range subs {
+		line, _ := json.Marshal(map[string]any{"number": json.Number(n), "repo": "may-journal/example"})
+		lines.Write(append(line, '\n'))
 	}
+	return append([]response{{Match: []string{"issues/" + kindIssue + "/sub_issues"}, Stdout: lines.String()}}, kindGitHub("epic", "Epic")...)
 }
 
-// commentNotice is reply 41 stating verdict about comment 31.
-func commentNotice(verdict string) string {
-	sum := sha256.Sum256([]byte(verdict))
-	mark := "<!-- fitness:comment-check:31:" + hex.EncodeToString(sum[:])[:12] + " -->"
-	line, _ := json.Marshal(map[string]any{"id": 41, "body": "❌ reply\n\n" + mark})
-	return string(line) + "\n"
+// epicBody is an Epic that follows the template, listing items.
+func epicBody(items string) string {
+	return "> Every fitness run finishes in a fraction of the time.\n\n## Background\n\nThis epic is a test fixture.\n\n## What needs to happen\n\n" + items + "\n"
 }
-
-// draft is a comment with a change-log note and a diagram whose table
-// misses callout 2.
-const draft = sloppy + "\n```mermaid\nflowchart TD\n  A[1 Start]:::s --> B[2 End]:::s\n  classDef s fill:#eef\n```\n\n" +
-	"| # | Element | Description | Why |\n| - | - | - | - |\n| 1 | Start | First. | Begins. |\n"
 
 func Test0082_1(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", nil)
-	out, code := fitness(t, repo, nil, "comment-check", "--blob", draft)
-	sees(t, out, code, 1, sloppyError, "diagram callout 2 has no matching table row")
-	out, code = piped(t, repo, draft, nil, "comment-check")
-	sees(t, out, code, 1, sloppyError, "diagram callout 2 has no matching table row")
+	out, code, rp := judgeKind(t, epicBody("1. #22\n2. #23, after #22"), nil, epicGitHub("22", "23"))
+	sees(t, out, code, 0, "Passed.")
+	if !commentedOn(rp, kindIssue, "body=✅ Epic looks good.") || !labeledOn(rp, kindIssue, "fitness-valid") {
+		t.Errorf("want a passing Epic verdict and fitness-valid, got gh calls %q", rp.calls("gh"))
+	}
 }
 
 func Test0082_2(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", nil)
-	out, code := fitness(t, repo, nil, "comment-check", "--blob=The parser now handles tabs.\n\n"+numbered)
-	sees(t, out, code, 0, "All 11 checks passed")
+	table := "\n\n| Plan | State |\n| --- | --- |\n| 22 | open |"
+	items := "1. [ ] #22\n2. #23 ✅\n3. #24, after #25\n4. #25\n5. may-journal/example#25\n6. may-journal/example#26, after #27\n7. #27"
+	body := strings.Replace(epicBody(items), "fixture.", "fixture."+table, 1)
+	files := map[string]string{".fitnessrc.json": `{"proseBudget": {"maxListItems": 4}}` + "\n"}
+	out, code, rp := judgeKind(t, body, files, epicGitHub("22", "23", "24", "25", "26", "27"))
+	sees(t, out, code, 1, "item 1 uses a checkbox", "item 2 has an emoji", "item 3 (\\#24) is listed before \\#25",
+		"example\\#25 is listed more than once", "item 6 (may-journal/example\\#26) is listed before \\#27",
+		"tables are not allowed", "a list has more than 4 items at level 1")
+	if strings.Contains(out, "is not listed under") || strings.Count(out, "more than 4 items") != 1 {
+		t.Errorf("want the checkbox item counted as listed and one list-length finding:\n%s", out)
+	}
+	if !commentedOn(rp, kindIssue, `body=❌ Epic needs work:\n- `) || !labeledOn(rp, kindIssue, "fitness-invalid") {
+		t.Errorf("want a failing Epic verdict and fitness-invalid, got gh calls %q", rp.calls("gh"))
+	}
 }
 
 func Test0082_3(t *testing.T) {
 	t.Parallel()
-	out, code, rp := judgeComment(t, eventComment(sloppy, "dev", "User"), commentGitHub(""))
-	sees(t, out, code, 1, "comment-check #9", "Update:", "Re-check a draft before posting with `fitness comment-check --blob -`")
-	reply := rp.called("gh", "-X POST", "body=❌ @dev [This comment]("+commentURL+")", "Update:", "comment-check --blob -", "issues/9/comments")
-	if !reply || !rp.called("gh", "-X POST", "content=-1", "issues/comments/31/reactions") {
-		t.Errorf("want one reply naming the author and a thumbs-down, got gh calls %q", rp.calls("gh"))
-	}
+	saved := append([]response{
+		{Match: []string{"labels: [.labels[].name]", "issues/24"}, Stdout: `{"body": "", "labels": []}` + "\n"},
+		{Match: []string{"issues/26"}, Stderr: "gh: Not Found (HTTP 404)\n", Exit: 1},
+	}, epicGitHub("22", "23")...)
+	out, code, _ := judgeKind(t, epicBody("1. #22\n2. #24\n3. #26"), nil, saved)
+	sees(t, out, code, 1, "24 is listed but is not a sub-issue of this epic", "26 is listed but cannot be read",
+		"sub-issue \\#23 is not listed under")
 }
 
 func Test0082_4(t *testing.T) {
 	t.Parallel()
-	out, code, rp := judgeComment(t, eventComment(sloppy, "dev", "User"), commentGitHub(commentNotice(sloppyError)))
-	sees(t, out, code, 1, "Update:")
-	if rp.called("gh", "body=") {
-		t.Errorf("want no comment written, got gh calls %q", rp.calls("gh"))
+	template := "---\nname: Research\nlabels: Research\n---\n\n<!-- Pitch. -->\n> REPLACE-ME\n\n## Background\n<!-- Context. -->\n\n## What to find out\n<!-- Questions. -->\n- REPLACE-ME\n"
+	files := map[string]string{".github/ISSUE_TEMPLATE/research.md": template}
+	pitch := "> We know which sync wins before we plan the fix.\n\n## Background\n\nTwo devices edit one note offline.\n"
+	out, code, _ := judgeKind(t, pitch, files, kindGitHub("research", "Research"))
+	sees(t, out, code, 1, "What to find out")
+	out, code, rp := judgeKind(t, pitch+"\n## What to find out\n\n- Which edit wins.\n", files, kindGitHub("research", "Research"))
+	sees(t, out, code, 0, "Passed.")
+	if !commentedOn(rp, kindIssue, "body=✅ Research looks good.") {
+		t.Errorf("want a passing Research verdict, got gh calls %q", rp.calls("gh"))
 	}
+
+	plan := "---\nname: Plan\nlabels: Plan\n---\n\n<!-- Pitch. -->\n> REPLACE-ME\n\n## Background\n<!-- Context. -->\n\n## Acceptance\n<!-- Checks. -->\n\n## What needs to happen\n<!-- Steps. -->\n- [ ] REPLACE-ME\n"
+	files = map[string]string{".github/ISSUE_TEMPLATE/plan.md": plan}
+	out, code, _ = judgeKind(t, planBody("- [ ] Write the tests."), files, kindGitHub("plan", "Plan"))
+	sees(t, out, code, 1, "Acceptance")
+	if strings.Contains(out, "Unexpected") {
+		t.Errorf("want only the template's sections asked for:\n%s", out)
+	}
+	accepted := strings.Replace(planBody("- [ ] Write the tests."), "## What", "## Acceptance\n\nThe tests pass.\n\n## What", 1)
+	out, code, _ = judgeKind(t, accepted, files, kindGitHub("plan", "Plan"))
+	sees(t, out, code, 0, "Passed.")
 }
 
 func Test0082_5(t *testing.T) {
 	t.Parallel()
-	fixed := eventComment("The parser now handles tabs.\n", "dev", "User")
-	out, code, rp := judgeComment(t, fixed, commentGitHub(commentNotice(sloppyError)))
-	sees(t, out, code, 0, "Passed.")
-	edit := rp.called("gh", "-X PATCH", "body=✅ [This comment]("+commentURL+") now passes", "issues/comments/41")
-	if !edit || !rp.called("gh", "-X DELETE", "issues/comments/31/reactions/55") {
-		t.Errorf("want the reply turned into a passing note and the reaction removed, got gh calls %q", rp.calls("gh"))
+	out, code, rp := judgeKind(t, "Something odd happened.", nil, kindGitHub("plan", "question"))
+	sees(t, out, code, 0, "has no issue kind label, so it is not checked.")
+	if rp.called("gh", "-X POST") {
+		t.Errorf("want nothing written to an issue with no kind, got gh calls %q", rp.calls("gh"))
+	}
+
+	issue := map[string]any{"number": 21, "title": "t", "body": epicBody("1. #22"), "labels": []map[string]string{{"name": "Epic"}}}
+	gone := response{Match: []string{"fitness:issue-check:epic:"}, Stderr: "gh: Could not resolve to an Issue with the number of 21.\n", Exit: 1}
+	out, code, rp = ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, nil, append([]response{gone}, epicGitHub("22")...))
+	sees(t, out, code, 0, "21 no longer exists")
+	if rp.called("gh", "-X POST") || rp.called("gh", "labels: [.labels[].name]") {
+		t.Errorf("want the event's labels used and nothing written to a moved issue, got gh calls %q", rp.calls("gh"))
 	}
 }
 
 func Test0082_6(t *testing.T) {
 	t.Parallel()
-	verdict := "✅ Plan looks good.\n\n<!-- fitness:plan-structure:0123456789ab -->"
-	for _, c := range []struct {
-		comment map[string]any
-		ignore  string
-	}{
-		{eventComment(sloppy, "may-journal-automation[bot]", "Bot"), ""},
-		{eventComment(verdict, "dev", "User"), ""},
-		{eventComment(sloppy, "someone", "User"), "release-bot[bot], someone"},
-	} {
-		out, code, rp := judgeComment(t, c.comment, commentGitHub(""), "FITNESS_COMMENT_IGNORE_AUTHORS="+c.ignore)
-		sees(t, out, code, 0, "Skipped "+commentURL, "0 targets checked")
-		if len(rp.calls("gh")) > 0 {
-			t.Errorf("want nothing read or written, got gh calls %q", rp.calls("gh"))
-		}
+	out, code, rp := judgeKind(t, planBody("- [ ] Write the tests."), nil, kindGitHub("plan", "Plan", "Epic"))
+	sees(t, out, code, 1, "the issue has 2 kind labels (Plan, Epic); keep the one label that names its kind")
+	if !labeledOn(rp, kindIssue, "fitness-invalid") {
+		t.Errorf("want fitness-invalid, got gh calls %q", rp.calls("gh"))
 	}
 }
 
 func Test0082_7(t *testing.T) {
 	t.Parallel()
-	comment := eventComment(sloppy, "dev", "User")
-	comment["in_reply_to_id"] = 30
-	pr := map[string]any{"number": 9, "title": "t", "body": ""}
-	payload := map[string]any{"action": "created", "pull_request": pr, "comment": comment}
-	out, code, rp := commentCheck(t, "pull_request_review_comment", payload, commentGitHub(""))
-	sees(t, out, code, 1, "Update:")
-	reply := rp.called("gh", "-X POST", "body=❌ @dev", "pulls/9/comments/30/replies")
-	if !reply || !rp.called("gh", "-X POST", "content=-1", "pulls/comments/31/reactions") {
-		t.Errorf("want a reply in the review thread and a thumbs-down, got gh calls %q", rp.calls("gh"))
+	body := planBody("- [ ] Write the tests.")
+	issue := map[string]any{"number": 7, "title": "t", "body": body}
+	saved := planGitHub(planVerdict("✅ Plan looks good.", body), "fitness", "fitness-valid")
+	out, code, rp := ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, nil, saved)
+	sees(t, out, code, 0, "Passed.")
+	if rp.called("gh", "body=") {
+		t.Errorf("want no comment written, got gh calls %q", rp.calls("gh"))
 	}
-}
-
-// sweptComment is one comment as the repository comment list prints it.
-func sweptComment(id int, parent string) string {
-	line, _ := json.Marshal(map[string]any{"id": id, "body": sloppy, "url": commentURL, "author": "dev", "type": "User",
-		"parent": "https://api.github.com/repos/may-journal/example/" + parent, "in_reply_to_id": 0})
-	return string(line) + "\n"
 }
 
 func Test0082_8(t *testing.T) {
 	t.Parallel()
+	plan, _ := json.Marshal(map[string]any{"number": 7, "body": planBody("- [ ] Write the tests."), "labelNames": []string{"Plan"}})
+	epic, _ := json.Marshal(map[string]any{"number": 21, "body": epicBody("1. #22"), "labelNames": []string{"Epic"}})
 	saved := append([]response{
-		{Match: []string{"issues/comments?per_page=100&since="}, Stdout: sweptComment(31, "issues/9")},
-		{Match: []string{"pulls/comments?per_page=100&since="}, Stdout: sweptComment(32, "pulls/9")},
-	}, commentGitHub("")...)
-	out, code, rp := commentCheck(t, "workflow_dispatch", map[string]any{}, saved)
-	sees(t, out, code, 1, "2 targets checked")
-	issue := rp.called("gh", "-X POST", "body=❌", "issues/9/comments")
-	if !issue || !rp.called("gh", "-X POST", "body=❌", "pulls/9/comments/32/replies") {
-		t.Errorf("want the issue and review comments judged, got gh calls %q", rp.calls("gh"))
-	}
-	since := strings.Contains(strings.Join(rp.calls("gh"), "\n"), "since=")
-	if !since {
-		t.Errorf("want the sweep limited to recent comments, got gh calls %q", rp.calls("gh"))
+		{Match: []string{"issues?labels=Plan&state=open"}, Stdout: string(plan) + "\n"},
+		{Match: []string{"issues?labels=Epic&state=open"}, Stdout: string(epic) + "\n"},
+	}, epicGitHub("22")...)
+	saved = append(saved, issueGitHub(planIssue, "fitness:issue-check:plan:", "", "Plan")...)
+	out, code, rp := ghRun(t, "issue-check", "workflow_dispatch", map[string]any{}, nil, saved)
+	sees(t, out, code, 0, "issue-check #7", "issue-check #21")
+	if !labeledOn(rp, planIssue, "fitness-valid") || !labeledOn(rp, kindIssue, "fitness-valid") {
+		t.Errorf("want both open kind issues judged, got gh calls %q", rp.calls("gh"))
 	}
 }

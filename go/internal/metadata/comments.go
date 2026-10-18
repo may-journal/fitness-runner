@@ -32,7 +32,7 @@ type eventComment struct {
 
 // commentTargets is the event's comment, or every recent comment on
 // workflow_dispatch, minus the ones comment-check leaves alone.
-func commentTargets(ev ghEvent, gh aftereffect.Client) ([]target, error) {
+func commentTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, error) {
 	all, err := eventComments(ev, gh)
 	if err != nil {
 		return nil, err

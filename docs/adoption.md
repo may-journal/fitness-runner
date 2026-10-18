@@ -9,7 +9,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, which
 
 ## Reusable workflows
 
-fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [plan-check-reusable.yml](../.github/workflows/plan-check-reusable.yml), [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml), and [comment-check-reusable.yml](../.github/workflows/comment-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
+fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [issue-check-reusable.yml](../.github/workflows/issue-check-reusable.yml), [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml), and [comment-check-reusable.yml](../.github/workflows/comment-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
 
 `.github/workflows/pr-check.yml`:
 
@@ -28,21 +28,25 @@ jobs:
       issues: read
 ```
 
-`.github/workflows/plan-check.yml`:
+`.github/workflows/issue-check.yml`:
 
 ```yaml
-name: Plan check
+name: Issue check
 on:
   issues:
     types: [opened, edited, reopened, labeled]
   workflow_dispatch:
 jobs:
-  plan-check:
-    uses: may-journal/fitness-runner/.github/workflows/plan-check-reusable.yml@v1
+  issue-check:
+    uses: may-journal/fitness-runner/.github/workflows/issue-check-reusable.yml@v1
     permissions:
       contents: read
       issues: write
 ```
+
+## Issue kinds
+
+Each `.github/ISSUE_TEMPLATE/*.md` is an issue kind, keyed by its `labels` front matter. [issue-check](../.github/workflows/README.md#issue-check) judges a labeled Issue by its template's sections and pitch, so a new kind is one template file. Plan and Epic add their own checks, and an Issue with no kind label passes. The older `plan-check-reusable.yml` still judges Plans only, for repos that call it.
 
 ## Closing issues
 
