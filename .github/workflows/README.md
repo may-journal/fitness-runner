@@ -155,7 +155,7 @@ flowchart TD
 | --- | ------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | 1   | Comment event | An issue, PR, or review comment is created or edited.                            | Judges a comment the moment its text changes.        |
 | 2   | Manual sweep | A `workflow_dispatch` run walks the last seven days of comments.                  | Audits comments that predate the workflow.           |
-| 3   | Skip guard   | Skip apps, fitness verdicts, and authors outside the `authors` list.              | Only people and agents can fix what they wrote.      |
+| 3   | Skip guard   | Start only for listed authors; skip apps and fitness verdicts.                    | Only people and agents can fix what they wrote.      |
 | 4   | Run checks   | Run `comment-structure`, `mermaid-syntax`, and the Plan and PR prose checks.      | One tested rule set, the same one agents run first.  |
 | 5   | Dedupe       | Find the bot's reply whose marker names this comment's id.                        | One reply per comment, never a pile.                 |
 | 6   | Reply        | Mention the author with the violations, or turn the reply into a passing note.    | The author hears what to fix, and sees it cleared.   |

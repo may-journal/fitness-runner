@@ -14,8 +14,8 @@ permissions:
 
 jobs:
   comment-check:
-    # Apps cannot fix a comment; a manual sweep filters per comment instead.
-    if: github.event_name == 'workflow_dispatch' || github.event.comment.user.type != 'Bot'
+    # Only the agents' account is judged; skip others before a runner starts.
+    if: github.event_name == 'workflow_dispatch' || github.event.comment.user.login == 'json-claude-bot'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
