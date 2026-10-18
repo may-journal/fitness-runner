@@ -9,6 +9,7 @@
     "goreleaser",
     "textfmt",
     "GOCOVERDIR",
+    "paniconexit",
     "subtests",
     "basenames",
     "bijective",

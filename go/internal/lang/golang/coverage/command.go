@@ -24,13 +24,19 @@ func (r runner) command(args ...string) ([]byte, error) {
 	return r.run("go "+strings.Join(args, " "), nil, args...)
 }
 
-// run executes go with args and returns its combined output. A failure is
-// labeled; it is a checkkit.Internal error when the environment stopped the
-// run (go could not start, a signal other than the deadline ended it, or
-// sandbox text), while the run's deadline stays a plain error.
+// run executes go with args in the module directory and returns its combined
+// output, as exec does.
 func (r runner) run(label string, env []string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(r.ctx, r.bin, args...)
-	cmd.Dir = r.dir
+	return r.exec(r.bin, r.dir, label, env, args...)
+}
+
+// exec runs bin with args in dir and returns its combined output. A failure is
+// labeled; it is a checkkit.Internal error when the environment stopped the
+// run (the binary could not start, a signal other than the deadline ended it,
+// or sandbox text), while the run's deadline stays a plain error.
+func (r runner) exec(bin, dir, label string, env []string, args ...string) ([]byte, error) {
+	cmd := exec.CommandContext(r.ctx, bin, args...)
+	cmd.Dir = dir
 	cmd.WaitDelay = 2 * time.Second
 	cmd.Env = append(append(toolchain.CleanEnv(os.Environ()), "GOWORK=off"), env...)
 	o := checkkit.ExecCombined(cmd)
@@ -46,7 +52,19 @@ func (r runner) run(label string, env []string, args ...string) ([]byte, error) 
 	}
 	return nil, err
 }
+
+// measure runs go test over pkg once with a fresh profile.
 func (r runner) measure(pkg, pattern string) (Profile, error) {
+	return r.collect(func(profile, child string) error {
+		args := []string{"test", "-count=1", "-covermode=atomic", "-coverpkg=./...", "-coverprofile=" + profile, "-run=" + pattern, pkg}
+		_, err := r.run("go test coverage", []string{"FITNESS_GO_COVER_DIR=" + child}, args...)
+		return err
+	})
+}
+
+// collect gives one measurement a private profile path and child coverage
+// directory, runs it, and returns the merged profile.
+func (r runner) collect(measure func(profile, child string) error) (Profile, error) {
 	dir, err := os.MkdirTemp(r.temp, "run-")
 	if err != nil {
 		return nil, err
@@ -57,8 +75,7 @@ func (r runner) measure(pkg, pattern string) (Profile, error) {
 	if err := os.Mkdir(child, 0700); err != nil {
 		return nil, err
 	}
-	args := []string{"test", "-count=1", "-covermode=atomic", "-coverpkg=./...", "-coverprofile=" + profile, "-run=" + pattern, pkg}
-	if _, err := r.run("go test coverage", []string{"FITNESS_GO_COVER_DIR=" + child}, args...); err != nil {
+	if err := measure(profile, child); err != nil {
 		return nil, err
 	}
 	return r.profiles(profile, child)

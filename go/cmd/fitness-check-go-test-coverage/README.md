@@ -40,9 +40,13 @@ This measures statements, not branches or assertion quality.
 
 The audit runs each top-level test and shared setup twice with fresh profiles. Subtests stay with their parent. It subtracts setup coverage before comparing covered blocks. Changes across repeats mark the group as unstable.
 
-Reports show test names, elapsed time including setup, covered blocks, unique blocks, and identical coverage sets. Unstable sets are flagged and excluded from overlap advice. Tests with no measured production coverage get a separate finding and do not count as identical coverage.
+Reports show test names, the elapsed time of both runs, covered blocks, unique blocks, and identical coverage sets. Unstable sets are flagged and excluded from overlap advice. Tests with no measured production coverage get a separate finding and do not count as identical coverage.
 
 The audit always runs. Exact and partial overlap remain review signals because different inputs and assertions can legitimately execute the same blocks. A top-level test fails when it passes a named helper to `t.Run`; this prevents hiding an independently measured test behind a parent. The legacy `--audit` flag remains accepted.
+
+## Audit runs
+
+Each package's test binary is built once with the coverage flags. Every run then starts that binary from the package directory, with `FITNESS_GO_COVER_DIR` set. Runs share a pool sized like the runner's own check pool. Reports keep package and test order.
 
 ## Source map
 
@@ -84,7 +88,7 @@ Use the same source and build flags for test and child coverage. Conflicting cou
 
 The check uses existing Go module discovery and changed-file scope. Each module runs with its own fresh profiles and workspace mode off. Test errors, missing Go, bad profiles, and missing source coverage fail. Repos without Go modules pass.
 
-All profiles live in private temporary paths and are removed on return. Tests may still write their own files. The audit can be costly because it reruns every top-level test twice. The runner allows fifteen minutes; the check stops work after fourteen.
+All profiles live in private temporary paths and are removed on return. Tests may still write their own files. The audit reruns every top-level test twice, so its cost is about twice the tests' own run time, spread over the pool. The runner allows fifteen minutes; the check stops work after fourteen.
 
 ## Rollout
 

@@ -5,8 +5,9 @@ import (
 	"maps"
 	"regexp"
 	"sort"
-	"strings"
 	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 type testGroup struct {
@@ -17,64 +18,69 @@ type testGroup struct {
 	Stable   bool
 }
 
+// audit measures shared setup and each top-level test twice from prebuilt
+// binaries. Every run is independent, so all of them share one bounded pool;
+// results are read back in package and test order.
 func (r runner) audit(packages []Package) ([]testGroup, error) {
-	var groups []testGroup
-	for _, pkg := range packages {
-		if len(pkg.TestGoFiles)+len(pkg.XTestGoFiles) == 0 {
-			continue
-		}
-		tests, err := r.auditPackage(pkg.ImportPath)
-		if err != nil {
-			return nil, err
-		}
-		groups = append(groups, tests...)
-	}
-	return groups, nil
-}
-func (r runner) auditPackage(pkg string) ([]testGroup, error) {
-	out, err := r.command("test", "-list=^Test", pkg)
+	suites, err := r.suites(packages)
 	if err != nil {
 		return nil, err
 	}
-	baseline, err := r.measure(pkg, "^$")
-	if err != nil {
-		return nil, err
+	var jobs []measurement
+	for i, s := range suites {
+		jobs = append(jobs, s.measurements(i)...)
 	}
-	groups, err := r.auditNames(pkg, string(out), baseline)
-	if err != nil {
-		return nil, err
-	}
-	return r.verifyBaseline(pkg, baseline, groups)
-}
-func (r runner) auditNames(pkg, out string, baseline Profile) ([]testGroup, error) {
-	var groups []testGroup
-	for _, name := range strings.Split(out, "\n") {
-		if !testName.MatchString(name) {
-			continue
+	runs := par.Map(len(jobs), par.Processes(), func(i int) measured {
+		return r.measureBinary(suites[jobs[i].suite], jobs[i].pattern)
+	})
+	for _, run := range runs {
+		if run.err != nil {
+			return nil, run.err
 		}
-		group, err := r.auditTest(pkg, name, baseline)
-		if err != nil {
-			return nil, err
-		}
-		groups = append(groups, group)
 	}
-	return groups, nil
+	return assemble(suites, runs), nil
 }
 
-var testName = regexp.MustCompile(`^Test[\pL\pN_]*$`)
+// assemble splits runs, in measurements order, back into each suite's groups.
+func assemble(suites []suite, runs []measured) []testGroup {
+	var groups []testGroup
+	for _, s := range suites {
+		n := 2 + 2*len(s.names)
+		groups = append(groups, s.groups(runs[:n])...)
+		runs = runs[n:]
+	}
+	return groups
+}
 
-func (r runner) auditTest(pkg, name string, baseline Profile) (testGroup, error) {
-	start := time.Now()
-	first, err := r.measure(pkg, "^"+regexp.QuoteMeta(name)+"$")
-	if err != nil {
-		return testGroup{}, err
+// measurement is one run of a suite's binary for one -test.run pattern.
+type measurement struct {
+	suite   int
+	pattern string
+}
+
+// measurements lists a suite's runs: shared setup, each test twice, then
+// shared setup again.
+func (s suite) measurements(index int) []measurement {
+	jobs := []measurement{{index, "^$"}}
+	for _, name := range s.names {
+		pattern := "^" + regexp.QuoteMeta(name) + "$"
+		jobs = append(jobs, measurement{index, pattern}, measurement{index, pattern})
 	}
-	second, err := r.measure(pkg, "^"+regexp.QuoteMeta(name)+"$")
-	if err != nil {
-		return testGroup{}, err
+	return append(jobs, measurement{index, "^$"})
+}
+
+// groups turns a suite's runs, in measurements order, into test groups. A
+// test is stable when both its runs and both setup runs agree.
+func (s suite) groups(runs []measured) []testGroup {
+	baseline := runs[0].profile
+	setupStable := maps.Equal(baseline, runs[len(runs)-1].profile)
+	groups := make([]testGroup, len(s.names))
+	for i, name := range s.names {
+		first, second := runs[1+2*i], runs[2+2*i]
+		a, b := contribution(first.profile, baseline), contribution(second.profile, baseline)
+		groups[i] = testGroup{Name: s.pkg.ImportPath + "/" + name, Covered: a, Setup: contribution(baseline, nil), Stable: setupStable && maps.Equal(a, b), Duration: first.duration + second.duration}
 	}
-	a, b := contribution(first, baseline), contribution(second, baseline)
-	return testGroup{Name: pkg + "/" + name, Covered: a, Setup: contribution(baseline, nil), Stable: maps.Equal(a, b), Duration: time.Since(start)}, nil
+	return groups
 }
 func contribution(profile, baseline Profile) map[Block]bool {
 	result := map[Block]bool{}
@@ -133,17 +139,4 @@ func identicalGroups(group testGroup, previous []testGroup) []string {
 		}
 	}
 	return findings
-}
-
-func (r runner) verifyBaseline(pkg string, baseline Profile, groups []testGroup) ([]testGroup, error) {
-	repeated, err := r.measure(pkg, "^$")
-	if err != nil {
-		return nil, err
-	}
-	if !maps.Equal(baseline, repeated) {
-		for i := range groups {
-			groups[i].Stable = false
-		}
-	}
-	return groups, nil
 }

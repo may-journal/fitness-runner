@@ -30,6 +30,10 @@ func Map[T any](n, workers int, fn func(i int) T) []T {
 	return out
 }
 
+// Processes is the pool size for work that starts child processes: the
+// runner's check pool and the coverage audit's test runs both use it.
+func Processes() int { return min(runtime.NumCPU(), 8) }
+
 // clampWorkers bounds the pool: NumCPU by default, never more than items.
 func clampWorkers(workers, n int) int {
 	if workers <= 0 {
