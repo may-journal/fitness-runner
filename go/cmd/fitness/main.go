@@ -5,11 +5,13 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -332,39 +334,45 @@ func resolveChecks(spec string) ([]resolved, error) {
 // resolveSingle resolves a CLI check name into a one-element list; an empty
 // list means Unknown check.
 func resolveSingle(spec string) ([]resolved, error) {
-	c, err := resolveName(spec, true)
-	if err != nil || c == nil {
-		return nil, err
+	c := resolveName(spec)
+	if c == nil {
+		return nil, nil
 	}
 	return []resolved{*c}, nil
 }
 
-// resolveList resolves each name, in order.
+// resolveList resolves each name, in order. Every binary is found first, so
+// a missing one fails before any process starts; the --describe handshakes
+// then run side by side and come back in catalog order.
 func resolveList(names []string) ([]resolved, error) {
-	var out []resolved
-	for _, name := range names {
-		c, err := resolveName(name, false)
+	bins := make([]string, len(names))
+	for i, name := range names {
+		bin, err := checkkit.Binary(name)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", name)
 		}
-		out = append(out, *c)
+		bins[i] = bin
 	}
-	return out, nil
+	return par.Map(len(names), par.Processes(), func(i int) resolved {
+		return describeCheck(names[i], bins[i])
+	}), nil
 }
 
-// resolveName maps a check name to its binary. A missing binary is nil for
-// a CLI name (the caller renders Unknown check) and an error for the list,
-// since every check ships together.
-func resolveName(name string, cli bool) (*resolved, error) {
+// resolveName maps a CLI check name to its binary; a missing binary is nil,
+// and the caller renders Unknown check.
+func resolveName(name string) *resolved {
 	bin, err := checkkit.Binary(name)
-	if err == nil {
-		desc, describeErr := describe(bin)
-		return &resolved{name: name, bin: bin, desc: desc, describeErr: describeErr}, nil
+	if err != nil {
+		return nil
 	}
-	if cli {
-		return nil, nil
-	}
-	return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", name)
+	c := describeCheck(name, bin)
+	return &c
+}
+
+// describeCheck runs one check's --describe handshake.
+func describeCheck(name, bin string) resolved {
+	desc, describeErr := describe(bin)
+	return resolved{name: name, bin: bin, desc: desc, describeErr: describeErr}
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
@@ -457,14 +465,15 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 	return "", 1
 }
 
-// runPool executes every check with bounded parallelism, dispatching in
-// order and printing the progress line as each starts.
+// runPool executes every check with bounded parallelism, printing the
+// progress line as each starts. Checks start longest budget first, so a slow
+// one never waits behind the quick ones; outcomes stay in catalog order.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
-	jobs := par.Processes()
 	outcomes := make([]outcome, len(checks))
-	sem := make(chan struct{}, jobs)
+	sem := make(chan struct{}, par.Processes())
 	var wg sync.WaitGroup
-	for i, c := range checks {
+	for _, i := range startOrder(checks) {
+		c := checks[i]
 		sem <- struct{}{}
 		fmt.Fprintf(os.Stderr, "  → %s\n", c.name)
 		wg.Add(1)
@@ -476,6 +485,19 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	}
 	wg.Wait()
 	return outcomes
+}
+
+// startOrder lists check indices by descending time budget; equal budgets
+// keep catalog order.
+func startOrder(checks []resolved) []int {
+	order := make([]int, len(checks))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortStableFunc(order, func(a, b int) int {
+		return cmp.Compare(timeoutFor(checks[b]), timeoutFor(checks[a]))
+	})
+	return order
 }
 
 // runOne execs a single check in its own process group with a timeout that
