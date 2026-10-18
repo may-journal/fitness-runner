@@ -65,9 +65,10 @@ func Test0085_5(t *testing.T) {
 
 func Test0085_6(t *testing.T) {
 	t.Parallel()
-	out, code := commentStructure(t, "Done.\n\n<system-reminder>\n\nRan on claude-opus-4-1 today.\n", nil)
+	out, code := commentStructure(t, "Done.\n\n<system-reminder>\n\nRan on claude-opus-4-1 today.\n\n<!-- fitness:comment-check:31:abc -->\n", nil)
 	sees(t, out, code, 1, `(comment): line 3: "<system-reminder": agent frame; post only the finished text`,
-		`(comment): line 5: "claude-opus-4-1": model identifier; name the agent, not the model`)
+		`(comment): line 5: "claude-opus-4-1": model identifier; name the agent, not the model`,
+		`(comment): line 7: "<!-- fitness:": carries a fitness marker; only fitness writes those, so remove it`)
 	out, code = commentStructure(t, "Pinned to `claude-opus-4-1` in config.\n", nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 }

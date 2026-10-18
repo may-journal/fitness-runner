@@ -39,7 +39,7 @@ Source: `go/cmd/fitness-check-comment-structure/main.go:78`
         - When comment-structure checks each
             - Then only the note fails, naming its line
 - 0085.6
-    - Given Developer has a comment with an agent frame and a model ID, and another with a model ID in a code span
+    - Given Developer has a comment with an agent frame, a model ID, and a fitness marker, and one with a quoted model ID
         - When comment-structure checks each
             - Then only the first fails, naming each one and its line
 - 0085.7

@@ -15,6 +15,7 @@ A comment is not a file in the tree. This check reads it from stdin, a `--body-f
 - Fail: a mermaid diagram with no numbered callouts, unless it is the legend right after a numbered diagram.
 - Fail: a change-log note, such as `Update:`, `(edited …)`, or `replaces my earlier`. Edit the text in place instead.
 - Fail: an agent frame, such as a `<system-reminder>` tag, anywhere in the comment, code included.
+- Fail: a fitness marker outside code. Only the known bots post them, and comment-check judges a marker from anyone else.
 - Fail: a model identifier, such as `claude-…` or `gpt-…`, outside code spans, fences, and URLs. Name the agent instead.
 
 Each error names its line. The callout table's numbers are matched by `mermaid-callouts`, and diagrams are parsed by `mermaid-syntax`.

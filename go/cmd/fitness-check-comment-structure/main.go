@@ -152,6 +152,8 @@ var rules = []lineRule{
 		"agent frame; post only the finished text"},
 	{regexp.MustCompile(`(?i)\bclaude-(?:opus|sonnet|haiku|fable|instant|\d)[\w.-]*|\bgpt-\d[\w.-]*|\bgemini-\d[\w.-]*`), false,
 		"model identifier; name the agent, not the model"},
+	{regexp.MustCompile(`<!--\s*fitness:`), false,
+		"carries a fitness marker; only fitness writes those, so remove it"},
 }
 
 // lineRules checks every line against rules, naming each line once per
