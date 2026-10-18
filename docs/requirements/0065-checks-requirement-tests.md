@@ -43,6 +43,6 @@ Source: `go/cmd/fitness-check-requirements/owners.go:42`
         - When fitness runs
             - Then it fails naming the use and apple-ui-testing-library
 - 0065.29
-    - Given Developer has Swift Testing tests on UITestingLibrary, or end-to-end tests on UITestingLibrarySystem
+    - Given Developer has Swift Testing tests on UITestingLibrary, or end-to-end tests that drive the app through SystemSession
         - When fitness runs
             - Then the check passes

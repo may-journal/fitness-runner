@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/lang"
@@ -93,8 +92,10 @@ func toolErrors(root string, tests []reqTest, written []lang.Module) ([]string, 
 // module's tests.
 func moduleFiles(tests []reqTest, module string) []string {
 	var files []string
+	seen := map[string]bool{}
 	for _, t := range tests {
-		if t.module.Name == module && !slices.Contains(files, t.File) {
+		if t.module.Name == module && !seen[t.File] {
+			seen[t.File] = true
 			files = append(files, t.File)
 		}
 	}

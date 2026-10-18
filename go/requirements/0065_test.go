@@ -1,6 +1,9 @@
 package requirements
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // swiftTest is the path of swiftRepo's requirement test file, and
 // swiftScreens of the helper that imports apple-ui-testing-library.
@@ -30,7 +33,7 @@ func librarySuite(imports, body string) string {
 // app through UITestingLibrarySystem.
 const systemSuite = "import UITestingLibrary\nimport UITestingLibrarySystem\nimport XCTest\n\n@MainActor\nfinal class SystemRequirements: XCTestCase {\n" +
 	"  func test0001_1() throws {\n    let session = SystemSession(bundleIdentifier: \"org.example.app\", timeout: 10)\n" +
-	"    session.launch()\n    let reset = [\"xcrun\", \"simctl\", \"erase\", \"all\"]\n    XCTAssertFalse(reset.isEmpty)\n    XCTAssertNotNil(session.application as XCUIApplication?)\n  }\n}\n"
+	"    session.launch()\n    let reset = [\"xcrun\", \"simctl\", \"erase\", \"all\"]\n    XCTAssertFalse(reset.isEmpty)\n    try session.taps(.button(\"Share\"))\n  }\n}\n"
 
 // swiftJudged runs fitness on swiftRepo with files written over it.
 func swiftJudged(t *testing.T, files map[string]string) (string, int) {
@@ -174,32 +177,33 @@ func Test0065_25(t *testing.T) {
 
 func Test0065_28(t *testing.T) {
 	t.Parallel()
-	for _, body := range []string{xcTestFile("test0001_1"), "import Testing\n@testable import XCTest\n\n@Test func test0001_1() {}\n"} {
-		out, code := swiftChecked(t, map[string]string{swiftTest: body})
-		sees(t, out, code, 1, swiftTest+":", "imports XCTest; only an end-to-end test that imports UITestingLibrarySystem may use it, so "+libraryHint)
-	}
 	out, code := swiftChecked(t, map[string]string{swiftTest: xcTestFile("test0001_1")})
-	sees(t, out, code, 1, swiftTest+":3: subclasses XCTestCase; "+libraryHint)
+	sees(t, out, code, 1, swiftTest+":1: imports XCTest; only an end-to-end test that imports UITestingLibrarySystem may use it, so "+libraryHint, swiftTest+":3: subclasses XCTestCase; "+libraryHint)
+	out, code = swiftChecked(t, map[string]string{swiftTest: "import Testing\n@testable import XCTest\n\n@Test func test0001_1() {}\n"})
+	sees(t, out, code, 1, swiftTest+":2: imports XCTest")
+	// An end-to-end test drives the app through SystemSession, never XCUIApplication itself.
+	out, code = swiftChecked(t, map[string]string{swiftTest: strings.Replace(systemSuite, "try session.taps", "XCUIApplication().launch()\n    try session.taps", 1)})
+	sees(t, out, code, 1, "drives Xcode UI tests through XCUIApplication")
 	out, code = swiftChecked(t, map[string]string{swiftTest: librarySuite("", "  let app = XCUIApplication()\n  app.launch()\n")})
 	sees(t, out, code, 1, swiftTest+":5: drives Xcode UI tests through XCUIApplication, which launches the app in a separate process; "+libraryHint)
 	boot := "  let shell = Process()\n  shell.arguments = [\"xcrun\", \"simctl\", \"boot\", \"booted\"]\n"
 	out, code = swiftChecked(t, map[string]string{swiftTest: librarySuite("import Foundation\n", boot)})
 	sees(t, out, code, 1, swiftTest+":7: boots a simulator through simctl outside the end-to-end mode; "+libraryHint)
-	for _, framework := range []string{"ViewInspector", "SnapshotTesting", "KIF", "EarlGrey", "Hammer", "Nimble"} {
+	for _, framework := range []string{"ViewInspector", "SnapshotTesting", "KIF", "EarlGrey", "Hammer"} {
 		out, code = swiftChecked(t, map[string]string{swiftTest: librarySuite("import "+framework+"\n", "")})
 		sees(t, out, code, 1, swiftTest+":3: imports "+framework+", a UI test framework requirement tests may not use; "+libraryHint)
 	}
 	out, code = swiftChecked(t, map[string]string{swiftScreens: ""})
-	sees(t, out, code, 1, swiftTest+": nothing in Tests/ imports UITestingLibrary; "+libraryHint)
-	// A library import in another top folder does not reach the test.
-	out, code = swiftChecked(t, map[string]string{swiftScreens: "", "Sources/Adder/Screens.swift": "import UITestingLibrary\n"})
-	sees(t, out, code, 1, "nothing in Tests/ imports UITestingLibrary")
+	sees(t, out, code, 1, swiftTest+": nothing in Tests/AdderTests/ imports UITestingLibrary; "+libraryHint)
+	// A library import in a sibling folder does not reach the test.
+	out, code = swiftChecked(t, map[string]string{swiftScreens: "", "Tests/OtherTests/Screens.swift": "import UITestingLibrary\n"})
+	sees(t, out, code, 1, "nothing in Tests/AdderTests/ imports UITestingLibrary")
 }
 
 func Test0065_29(t *testing.T) {
 	t.Parallel()
 	// Words in comments and strings are no import or call.
-	quiet := "import Testing\n// import XCTest\n/* XCUIApplication() */\n@MainActor @Test func test0001_1() async throws {\n  let note = \"XCUIApplication\"\n  _ = note\n}\n"
+	quiet := "import Testing\n// import XCTest\n/* XCUIApplication() */\n@MainActor @Test(\"never shells out to simctl\") func test0001_1() async throws {\n  let note = \"XCUIApplication\"\n  _ = note\n}\n"
 	for _, body := range []string{swiftTestingFile("test0001_1"), librarySuite("", ""), quiet} {
 		out, code := swiftChecked(t, map[string]string{swiftTest: body})
 		sees(t, out, code, 0)

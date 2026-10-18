@@ -67,8 +67,8 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 - Imports: a test file fails on XCTest or another UI test framework, such as ViewInspector or SnapshotTesting.
 - Calls: a test file fails on an XCTestCase subclass, Xcode UI tests such as XCUIApplication, or simctl.
-- Library: a test file fails unless it, or a file in its top folder, imports `UITestingLibrary`.
-- End-to-end: a file that imports `UITestingLibrarySystem` may use XCTest, Xcode UI tests, and simctl.
+- Library: a test file fails unless it, or a file in its folder or below, imports `UITestingLibrary`.
+- End-to-end: a file that imports `UITestingLibrarySystem` may use XCTest and simctl, and drives the app through its `SystemSession`.
 
 ## Pairs
 
