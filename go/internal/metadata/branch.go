@@ -51,6 +51,7 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) ch
 	}
 	pr.BaseSHA = currentBase(ctx, root, repo, pr)
 	gh := aftereffect.ReadOnlyClient(ctx, repo)
+	seedPushIssues(gh, repo)
 	b := blobChecker{root}
 	plans, err := branchPlans(ctx, root, repo, branch.Tip, pr)
 	if err != nil {

@@ -16,6 +16,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
@@ -99,6 +100,8 @@ type Client struct {
 	repo   string
 	ctx    context.Context
 	issues map[int]issueResult
+	// mu guards issues, so callers may read issues in parallel.
+	mu *sync.Mutex
 }
 
 type issueResult struct {
@@ -110,7 +113,18 @@ type issueResult struct {
 // ReadOnlyClient shares a bounded context and caches issue reads for local
 // judgments. Workflow clients retain their existing effects.
 func ReadOnlyClient(ctx context.Context, repo string) Client {
-	return Client{repo: repo, ctx: ctx, issues: map[int]issueResult{}}
+	return Client{repo: repo, ctx: ctx, issues: map[int]issueResult{}, mu: &sync.Mutex{}}
+}
+
+// Seed records issue n as already read, so a ReadOnlyClient answers from it
+// instead of GitHub. A client without a cache ignores it.
+func (g Client) Seed(n int, body string, labels []string) {
+	if g.issues == nil {
+		return
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	g.issues[n] = issueResult{body: body, labels: labels}
 }
 
 // NewClient targets the repository the workflow runs in.
@@ -226,14 +240,22 @@ func decodeLines[T any](out []byte) ([]T, error) {
 	return vals, nil
 }
 
+// Issue reads issue n's body and labels. A ReadOnlyClient reads each issue
+// once, and is safe to call from several goroutines.
 func (g Client) Issue(n int) (string, []string, error) {
-	if prior, ok := g.issues[n]; ok {
+	if g.issues == nil {
+		return g.readIssue(n)
+	}
+	g.mu.Lock()
+	prior, ok := g.issues[n]
+	g.mu.Unlock()
+	if ok {
 		return prior.body, prior.labels, prior.err
 	}
 	body, labels, err := g.readIssue(n)
-	if g.issues != nil {
-		g.issues[n] = issueResult{body, labels, err}
-	}
+	g.mu.Lock()
+	g.issues[n] = issueResult{body, labels, err}
+	g.mu.Unlock()
 	return body, labels, err
 }
 

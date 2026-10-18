@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
@@ -23,30 +25,53 @@ type branchPR struct {
 	URL     string `json:"url"`
 }
 
+// discoverBranchPR finds the open PR from the local source's branch in the
+// base repo gh selects. It asks gh for that repo while the pulls read runs.
 func discoverBranchPR(ctx context.Context, root, branch string) (*branchPR, string, error) {
-	source, repo, err := branchRepository(ctx, root)
-	if err != nil {
-		return nil, "", err
+	source := gitx.OriginSlug(root)
+	if source == "" {
+		return nil, "", fmt.Errorf("no GitHub origin remote; configure the branch repository first")
 	}
 	owner, _, _ := strings.Cut(source, "/")
-	path := "repos/" + repo + "/pulls?state=open&head=" + url.QueryEscape(owner+":"+branch) + "&per_page=100"
-	filter := `.[] | {number, title, body: (.body // ""), head: .head.ref, source: .head.repo.full_name, base: .base.ref, baseSHA: .base.sha, url: .html_url}`
-	out, err := branchOutput(ctx, root, "api", "--paginate", "--jq", filter, path)
-	if err != nil {
+	query := "/pulls?state=open&head=" + url.QueryEscape(owner+":"+branch) + "&per_page=100"
+	var repo string
+	var out []byte
+	var repoErr, pullsErr error
+	if setDefaultRepo(ctx, root) {
+		repo, repoErr = branchRepository(ctx, root)
+		if repoErr == nil {
+			out, pullsErr = branchPulls(ctx, root, "repos/"+repo+query)
+		}
+	} else {
+		var wg sync.WaitGroup
+		wg.Go(func() { repo, repoErr = branchRepository(ctx, root) })
+		out, pullsErr = branchPulls(ctx, root, "repos/{owner}/{repo}"+query)
+		wg.Wait()
+	}
+	if err := cmp.Or(repoErr, pullsErr); err != nil {
 		return nil, "", err
 	}
 	pr, err := matchingPR(out, source, branch)
 	return pr, repo, err
 }
 
-// branchRepository resolves the local source and the base repo selected by gh.
-func branchRepository(ctx context.Context, root string) (string, string, error) {
-	source := gitx.OriginSlug(root)
-	if source == "" {
-		return "", "", fmt.Errorf("no GitHub origin remote; configure the branch repository first")
-	}
+// branchRepository is the base repo gh selects.
+func branchRepository(ctx context.Context, root string) (string, error) {
 	out, err := branchOutput(ctx, root, "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner")
-	return source, strings.TrimSpace(string(out)), err
+	return strings.TrimSpace(string(out)), err
+}
+
+// branchPulls reads the open PRs at path.
+func branchPulls(ctx context.Context, root, path string) ([]byte, error) {
+	filter := `.[] | {number, title, body: (.body // ""), head: .head.ref, source: .head.repo.full_name, base: .base.ref, baseSHA: .base.sha, url: .html_url}`
+	return branchOutput(ctx, root, "api", "--paginate", "--jq", filter, path)
+}
+
+// setDefaultRepo reports whether `gh repo set-default` chose a remote. Only
+// then can `gh repo view` select another repo than the {owner}/{repo}
+// placeholders of `gh api`, so the pulls read waits for it.
+func setDefaultRepo(ctx context.Context, root string) bool {
+	return exec.CommandContext(ctx, "git", "-C", root, "config", "--get-regexp", `^remote\..*\.gh-resolved$`).Run() == nil
 }
 
 func currentBranch(ctx context.Context, root string) (string, error) {

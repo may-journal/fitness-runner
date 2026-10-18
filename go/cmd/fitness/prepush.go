@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 )
 
 const zeroSha = "0000000000000000000000000000000000000000"
@@ -47,8 +49,14 @@ func checkPushedBranches(updates []string) int {
 		fmt.Fprintln(os.Stderr, "pre-push:", err)
 		return 1
 	}
+	issues, err := json.Marshal(planReads.shared())
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "pre-push:", err)
+		return 1
+	}
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
 	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
+	_ = os.Setenv(metadata.PushIssuesEnv, string(issues))
 	return run([]string{"local-branch"})
 }
 
@@ -86,11 +94,7 @@ func commitsOf(local, remote string) []string {
 // commit. A merge is exempt because the commits it brings in are gated on their
 // own.
 func allChoreDocs(commits []string) bool {
-	subjects := make([]string, len(commits))
-	for i, c := range commits {
-		subjects[i] = commitSubject(c)
-	}
-	return allChoreDocsSubjects(subjects)
+	return allChoreDocsSubjects(commitSubjects(commits))
 }
 
 // allChoreDocsSubjects is the pure classifier over commit subjects.
@@ -103,10 +107,21 @@ func allChoreDocsSubjects(subjects []string) bool {
 	return true
 }
 
-// commitSubject returns one commit's subject line.
-func commitSubject(c string) string {
-	out, _ := exec.Command("git", "log", "-1", "--format=%s", c).Output()
-	return strings.TrimSpace(string(out))
+// commitSubjects returns each commit's subject line, in order, from one git
+// run. A commit git cannot read gets an empty subject, which is never exempt.
+func commitSubjects(commits []string) []string {
+	args := append([]string{"log", "--no-walk=unsorted", "--format=%H %s"}, commits...)
+	out, _ := exec.Command("git", args...).Output()
+	byHash := map[string]string{}
+	for _, line := range strings.Split(string(out), "\n") {
+		hash, subject, _ := strings.Cut(line, " ")
+		byHash[hash] = strings.TrimSpace(subject)
+	}
+	subjects := make([]string, len(commits))
+	for i, c := range commits {
+		subjects[i] = byHash[c]
+	}
+	return subjects
 }
 
 // planCandidates returns the Plan numbers a push may trace to: those in the
@@ -147,29 +162,66 @@ func planRefs(commits []string) []string {
 	return gitx.PlanNumbers(string(out))
 }
 
-// approvedPlan reports whether issue n is Plan-labeled and carries an approval
-// comment, resolved through the gh CLI.
+// approvedPlan reports whether issue n carries the exact `Plan` label and an
+// approval comment.
 func approvedPlan(n string) bool {
-	if !hasPlanLabel(n) {
+	issue, ok := planReads.read(n)
+	if !ok || !slices.Contains(issue.Labels, "Plan") {
 		return false
 	}
-	out, err := exec.Command("gh", "issue", "view", n, "--json", "comments", "-q", ".comments[].body").Output()
-	if err != nil {
-		return false
-	}
-	return approveRe.Match(out)
+	return slices.ContainsFunc(issue.Comments, approveRe.MatchString)
 }
 
-// hasPlanLabel reports whether issue n carries the exact `Plan` label.
-func hasPlanLabel(n string) bool {
-	out, err := exec.Command("gh", "issue", "view", n, "--json", "labels", "-q", ".labels[].name").Output()
-	if err != nil {
-		return false
+// planIssue is one issue as the gate reads it through the gh CLI.
+type planIssue struct {
+	URL      string   `json:"url"`
+	Body     string   `json:"body"`
+	Labels   []string `json:"labels"`
+	Comments []string `json:"comments"`
+}
+
+// planCache holds the gate's issue reads, so each issue is read once per push
+// and local-branch can reuse them. A failed read is cached as not ok.
+type planCache map[string]*planIssue
+
+var planReads = planCache{}
+
+// read returns issue n from one `gh issue view`.
+func (c planCache) read(n string) (planIssue, bool) {
+	issue, seen := c[n]
+	if !seen {
+		issue = readPlanIssue(n)
+		c[n] = issue
 	}
-	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if l == "Plan" {
-			return true
+	if issue == nil {
+		return planIssue{}, false
+	}
+	return *issue, true
+}
+
+func readPlanIssue(n string) *planIssue {
+	out, err := exec.Command("gh", "issue", "view", n, "--json", "url,body,labels,comments",
+		"--jq", "{url, body, labels: [.labels[].name], comments: [.comments[].body]}").Output()
+	if err != nil {
+		return nil
+	}
+	var issue planIssue
+	if json.Unmarshal(out, &issue) != nil {
+		return nil
+	}
+	return &issue
+}
+
+// shared lists the issues read so far in the form local-branch takes.
+func (c planCache) shared() []metadata.PushIssue {
+	var issues []metadata.PushIssue
+	for _, issue := range c {
+		if issue == nil {
+			continue
+		}
+		if p, ok := metadata.PushIssueAt(issue.URL, issue.Body, issue.Labels); ok {
+			issues = append(issues, p)
 		}
 	}
-	return false
+	return issues
 }

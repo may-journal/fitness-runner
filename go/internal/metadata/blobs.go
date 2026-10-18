@@ -11,6 +11,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // docChecks are the prose and markdown checks every Plan and PR body gets.
@@ -124,16 +125,24 @@ func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 }
 
 // readIssues reports incomplete validation rather than silently accepting
-// an inaccessible issue.
+// an inaccessible issue. It reads the issues in parallel and keeps nums'
+// order in both results.
 func readIssues(nums []int, gh aftereffect.Client) ([]linkedIssue, []string) {
+	type read struct {
+		issue linkedIssue
+		err   error
+	}
+	reads := par.Map(len(nums), len(nums), func(i int) read {
+		body, labels, err := gh.Issue(nums[i])
+		return read{linkedIssue{nums[i], body, labels}, err}
+	})
 	var issues []linkedIssue
 	var errs []string
-	for _, n := range nums {
-		body, labels, err := gh.Issue(n)
-		if err == nil {
-			issues = append(issues, linkedIssue{n, body, labels})
+	for _, r := range reads {
+		if r.err == nil {
+			issues = append(issues, r.issue)
 		} else {
-			errs = append(errs, fmt.Sprintf("cannot validate linked issue #%d: %v; check gh authentication and network access, then retry", n, err))
+			errs = append(errs, fmt.Sprintf("cannot validate linked issue #%d: %v; check gh authentication and network access, then retry", r.issue.number, r.err))
 		}
 	}
 	return issues, errs
