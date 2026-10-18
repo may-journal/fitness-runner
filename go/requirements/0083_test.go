@@ -128,7 +128,7 @@ func Test0083_6(t *testing.T) {
 		ignore  string
 	}{
 		{eventComment(sloppy, "may-journal-automation[bot]", "Bot"), ""},
-		{eventComment(verdict, "dev", "User"), ""},
+		{eventComment(verdict, "github-actions[bot]", "Bot"), "renovate[bot]"},
 		{eventComment(sloppy, "someone", "User"), "release-bot[bot], someone"},
 	} {
 		out, code, rp := judgeComment(t, c.comment, commentGitHub(""), "FITNESS_COMMENT_IGNORE_AUTHORS="+c.ignore)
@@ -136,6 +136,11 @@ func Test0083_6(t *testing.T) {
 		if len(rp.calls("gh")) > 0 {
 			t.Errorf("want nothing read or written, got gh calls %q", rp.calls("gh"))
 		}
+	}
+	out, code, rp := judgeComment(t, eventComment(verdict, "dev", "User"), commentGitHub(""))
+	sees(t, out, code, 1, "carries a fitness marker")
+	if !rp.called("gh", "-X POST", "body=❌ @dev", "issues/9/comments") {
+		t.Errorf("want the pasted marker judged and replied to, got gh calls %q", rp.calls("gh"))
 	}
 }
 

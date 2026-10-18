@@ -73,30 +73,29 @@ func eventComments(ev ghEvent, gh aftereffect.Client) ([]target, error) {
 // it for a caller that needs another.
 var KnownBots = []string{"github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"}
 
-// skipReason says why comment-check leaves t alone, or "" to judge it:
-// a known bot wrote it, or it is a fitness verdict or reply, which follows
-// its own format.
+// skipReason says why comment-check leaves t alone, or "" to judge it: a
+// known bot wrote it. Fitness posts its verdicts and replies as
+// aftereffect.BotLogin, which is always ignored, so their markers need no
+// skip of their own. A marker from anyone else is judged, and
+// comment-structure flags it.
 func skipReason(t target, ignored []string) string {
-	switch {
-	case slices.Contains(ignored, t.Comment.Author):
+	if slices.Contains(ignored, t.Comment.Author) {
 		return "its author is a known bot"
-	case strings.Contains(t.Body, "<!-- fitness:"):
-		return "it is a fitness verdict"
 	}
 	return ""
 }
 
 // ignoredAuthors is FITNESS_COMMENT_IGNORE_AUTHORS split on commas, or
-// KnownBots when it names none.
+// KnownBots when it names none, plus the login fitness itself posts as.
 func ignoredAuthors() []string {
-	var out []string
+	out := []string{aftereffect.BotLogin()}
 	for _, a := range strings.Split(os.Getenv("FITNESS_COMMENT_IGNORE_AUTHORS"), ",") {
 		if a = strings.TrimSpace(a); a != "" {
 			out = append(out, a)
 		}
 	}
-	if out == nil {
-		return KnownBots
+	if len(out) == 1 {
+		out = append(out, KnownBots...)
 	}
 	return out
 }

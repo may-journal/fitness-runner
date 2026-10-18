@@ -35,8 +35,11 @@ func (c Comment) path(rest ...string) string {
 	return strings.Join(append([]string{c.kind(), "comments", strconv.FormatInt(c.ID, 10)}, rest...), "/")
 }
 
+// MarkerPrefix starts every marker fitness writes into a comment.
+const MarkerPrefix = "<!-- fitness:"
+
 // noticePrefix starts the marker that ties a reply to the comment it judges.
-const noticePrefix = "<!-- fitness:comment-check:"
+const noticePrefix = MarkerPrefix + "comment-check:"
 
 // Notice is one comment-check reply already on GitHub.
 type Notice struct {
@@ -44,9 +47,9 @@ type Notice struct {
 	Body string `json:"body"`
 }
 
-// botLogin is the account whose replies count as comment-check notices;
+// BotLogin is the account whose replies count as comment-check notices;
 // FITNESS_BOT_LOGIN overrides the Actions token's login.
-func botLogin() string {
+func BotLogin() string {
 	if login := os.Getenv("FITNESS_BOT_LOGIN"); login != "" {
 		return login
 	}
@@ -140,7 +143,7 @@ func passNotice(c Comment, mark string) string {
 // notice is the bot's reply already judging c, or nil.
 func (g Client) notice(n int, c Comment) (*Notice, error) {
 	jq := fmt.Sprintf(`.[] | select(.user.login == %q and (.body // "" | contains(%q))) | {id, body}`,
-		botLogin(), noticePrefix+strconv.FormatInt(c.ID, 10)+":")
+		BotLogin(), noticePrefix+strconv.FormatInt(c.ID, 10)+":")
 	out, err := g.api("--paginate", "--jq", jq, fmt.Sprintf("%s/%d/comments?per_page=100", c.kind(), n))
 	if err != nil {
 		return nil, err
@@ -154,7 +157,7 @@ func (g Client) notice(n int, c Comment) (*Notice, error) {
 
 // dropReaction removes the bot's thumbs-down from c.
 func (g Client) dropReaction(c Comment) error {
-	jq := fmt.Sprintf(`.[] | select(.user.login == %q) | .id`, botLogin())
+	jq := fmt.Sprintf(`.[] | select(.user.login == %q) | .id`, BotLogin())
 	out, err := g.api("--paginate", "--jq", jq, c.path("reactions")+"?content=-1&per_page=100")
 	if err != nil {
 		return err
