@@ -1,13 +1,10 @@
 package requirements
 
 import (
-	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"testing"
-	"time"
 )
 
 func Test0008_1(t *testing.T) {
@@ -59,40 +56,12 @@ func Test0008_7(t *testing.T) {
 func Test0008_8(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	alone := lone(t, filepath.Join(installOnly(t), "fitness"))
-	out, code := runStarted(t, alone, repo)
-	sees(t, ansi.ReplaceAllString(out, ""), code, 1, "reinstall fitness so its checks sit beside it")
-}
-
-// lone places the installed runner by itself in a temp dir. A hard link
-// leaves no open write handle for a parallel test's fork to inherit, which
-// would make the exec fail with "text file busy".
-func lone(t *testing.T, installed string) string {
-	t.Helper()
 	alone := filepath.Join(t.TempDir(), "fitness")
-	if os.Link(installed, alone) == nil {
-		return alone
-	}
-	raw, err := os.ReadFile(installed)
-	mustDo(t, err)
-	mustDo(t, os.WriteFile(alone, raw, 0o755))
-	return alone
-}
-
-// runStarted runs bin in repo and fails the test if the process never
-// starts, retrying only while the binary is still busy.
-func runStarted(t *testing.T, bin, repo string) (string, int) {
-	t.Helper()
-	for attempt := 0; ; attempt++ {
-		cmd := exec.Command(bin, "--policy=external", "--all")
+	placeRunner(t, filepath.Join(installOnly(t), "fitness"), alone)
+	out, code := execute(t, func() *exec.Cmd {
+		cmd := exec.Command(alone, "--policy=external", "--all")
 		cmd.Dir, cmd.Env = repo, userEnv()
-		out, err := cmd.CombinedOutput()
-		if cmd.ProcessState != nil {
-			return string(out), cmd.ProcessState.ExitCode()
-		}
-		if !errors.Is(err, syscall.ETXTBSY) || attempt == 20 {
-			t.Fatalf("start %s: %v", bin, err)
-		}
-		time.Sleep(50 * time.Millisecond)
-	}
+		return cmd
+	})
+	sees(t, out, code, 1, "reinstall fitness so its checks sit beside it")
 }

@@ -42,22 +42,22 @@ func Test0001_3(t *testing.T) {
 
 // describeFails runs check in repo with a copy of the installed runner, after
 // swapping that check for one whose --describe fails and whose run is the
-// real one, as a user who replaced one check would. The runner is copied, not
-// linked, since Linux resolves a linked runner back to the install folder.
-// It returns the output and exit code.
+// real one, as a user who replaced one check would. The runner is placed in
+// the bundle by hard link or copy, never a symlink, which Linux resolves back
+// to the install folder. It returns the output and exit code.
 func describeFails(t *testing.T, repo, check string) (string, int) {
 	t.Helper()
 	bin := "fitness-check-" + check
 	installed := installOnly(t)
 	bundle := t.TempDir()
 	linkTools(bundle, installed, []string{bin, "fitness"})
-	runner, err := os.ReadFile(filepath.Join(installed, "fitness"))
-	mustDo(t, err)
-	write(t, bundle, map[string]string{"fitness": string(runner), bin: "#!/bin/sh\n[ \"$1\" = --describe ] && exit 1\nexec \"" + filepath.Join(installed, bin) + "\" \"$@\"\n"})
-	cmd := exec.Command(filepath.Join(bundle, "fitness"), check)
-	cmd.Dir, cmd.Env = repo, userEnv()
-	raw, _ := cmd.CombinedOutput()
-	return ansi.ReplaceAllString(string(raw), ""), cmd.ProcessState.ExitCode()
+	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
+	write(t, bundle, map[string]string{bin: "#!/bin/sh\n[ \"$1\" = --describe ] && exit 1\nexec \"" + filepath.Join(installed, bin) + "\" \"$@\"\n"})
+	return execute(t, func() *exec.Cmd {
+		cmd := exec.Command(filepath.Join(bundle, "fitness"), check)
+		cmd.Dir, cmd.Env = repo, userEnv()
+		return cmd
+	})
 }
 
 func Test0001_4(t *testing.T) {

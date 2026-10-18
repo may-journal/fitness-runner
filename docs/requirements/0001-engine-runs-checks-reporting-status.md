@@ -27,7 +27,7 @@ Source: `go/cmd/fitness/ci.go:22`
         - When fitness runs
             - Then it reports red with that check's errors and exits 1
 - 0001.3
-    - Given Developer has a check that panics, crashes, is killed, exits with an unexpected code, cannot start, or fails its describe call
+    - Given Developer has a check that panics, crashes, is killed, exits with an unexpected code, cannot start, or fails its describe step
         - When fitness runs
             - Then that check shows as info naming why, and the exit code is set by the other checks
 - 0001.4
