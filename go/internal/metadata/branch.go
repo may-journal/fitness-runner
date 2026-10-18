@@ -106,7 +106,7 @@ func judgeBranchPlans(issues []linkedIssue, repo string, b blobChecker) []string
 		if !aftereffect.HasLabel(issue.labels, "Plan") {
 			continue
 		}
-		findings := b.judge(ghCommands["plan-check"].checks, issue.body)
+		findings := b.judge(planChecks, issue.body)
 		rep.add(issue.number, findings)
 		errs = append(errs, findings...)
 	}

@@ -41,7 +41,7 @@ const catalogRows = `
 architecture-actors architecture-code architecture-components
 architecture-containers architecture-contract architecture-journey
 build-output-untracked changelog changelog-bullets changelog-updated
-commit-attribution cspell doc-template gitignore-why issue-checklist
+commit-attribution cspell doc-template epic-structure gitignore-why issue-checklist
 issue-link-once jscpd local-branch markdown-filename-camel-case
 markdown-filename-kebab-case markdown-front-matter markdown-links
 markdown-no-bold-italic mermaid-callout-why mermaid-callouts

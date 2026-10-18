@@ -89,6 +89,35 @@ func SpecFromTemplate(body, noun string) Spec {
 	return Spec{Noun: noun, Sections: sections, NoPitch: !hasPitch}
 }
 
+// TemplateLabels returns the labels a GitHub issue template gives each new
+// issue, from its `labels` front matter: one name, a comma-separated list,
+// a `[a, b]` flow list, or a block list.
+func TemplateLabels(body string) []string {
+	front := map[string][]string{}
+	readFront(body, front)
+	if labels := front["labels"]; len(labels) > 0 {
+		return labels
+	}
+	fm, _ := mdx.FrontMatter(body)
+	for _, line := range strings.Split(fm, "\n") {
+		if m := frontKey.FindStringSubmatch(line); m != nil && m[1] == "labels" {
+			return scalarLabels(m[2])
+		}
+	}
+	return nil
+}
+
+// scalarLabels splits a `labels` scalar, one name or a comma-separated list.
+func scalarLabels(value string) []string {
+	var labels []string
+	for _, part := range strings.Split(value, ",") {
+		if l := unquote(part); l != "" {
+			labels = append(labels, l)
+		}
+	}
+	return labels
+}
+
 // MissingCommentSections returns the level-2 headings of a template whose
 // section body carries no HTML comment, so a template must guide every
 // section rather than leave one bare.

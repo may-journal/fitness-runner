@@ -18,8 +18,11 @@ import (
 type ghCommand struct {
 	// kind is the URL segment for target links: "issues" or "pull".
 	kind    string
-	targets func(ev ghEvent, gh aftereffect.Client) ([]target, error)
+	targets func(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, error)
 	checks  []string
+	// kinds, when set, judges each target by its issue kind instead of
+	// checks: the kinds the checkout's templates and kindRules name.
+	kinds func(root string) map[string]issueKind
 	// links judges what a body points at, such as the issues a PR closes.
 	links  func(t target, gh aftereffect.Client, b blobChecker) []string
 	effect aftereffect.Effect
@@ -30,10 +33,15 @@ type ghCommand struct {
 
 // ghCommands are the GitHub commands, by subcommand name.
 var ghCommands = map[string]ghCommand{
+	"issue-check": {
+		kind: "issues", targets: issueTargets, kinds: discoverKinds,
+		effect: aftereffect.IssueVerdict, failOnFindings: true,
+	},
+	// plan-check is issue-check for Plan issues only, for repos whose
+	// workflow still calls it.
 	"plan-check": {
-		kind: "issues", targets: planTargets,
-		checks: append([]string{"plan-structure"}, docChecks...),
-		effect: aftereffect.PlanVerdict, failOnFindings: true,
+		kind: "issues", targets: planTargets, kinds: onlyKind("Plan"),
+		effect: aftereffect.IssueVerdict, failOnFindings: true,
 	},
 	"pr-check": {
 		kind: "pull", targets: prTargets,
@@ -66,14 +74,15 @@ func RunGH(name string) int {
 
 // run judges each target, applies the effect, and reports the sweep.
 func (c ghCommand) run(name string, ev ghEvent, gh aftereffect.Client, b blobChecker) int {
-	targets, err := c.targets(ev, gh)
+	targets, err := c.targets(ev, gh, b)
 	if err != nil {
 		return ghFailure(name, err)
 	}
+	kinds := c.kindsAt(b.root)
 	rep := newTargetReport(name, c.kind)
 	failed := false
 	for _, t := range targets {
-		bad, err := c.check(gh, b, rep, t)
+		bad, err := c.check(gh, b, rep, t, kinds)
 		failed = failed || bad
 		if err != nil {
 			rep.finish()
@@ -84,11 +93,32 @@ func (c ghCommand) run(name string, ev ghEvent, gh aftereffect.Client, b blobChe
 	return c.exitCode(name, failed)
 }
 
+// kindsAt is the issue kinds the checkout at root names, or none when the
+// command does not judge kinds.
+func (c ghCommand) kindsAt(root string) map[string]issueKind {
+	if c.kinds == nil {
+		return nil
+	}
+	return c.kinds(root)
+}
+
 // check judges one target, reacts, and reports whether it failed. A target
 // that left the repository, such as an issue moved to another repo, is
-// noted and does not fail.
-func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport, t target) (bool, error) {
-	errs := c.judge(t, gh, b)
+// noted and does not fail, as is an issue with no kind label when the
+// command judges kinds.
+func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport, t target, kinds map[string]issueKind) (bool, error) {
+	var errs []string
+	if c.kinds == nil {
+		errs = c.judge(t, gh, b)
+	} else {
+		k, labelErrs, ok := classify(t, kinds)
+		if !ok {
+			rep.note(t.Number, fmt.Sprintf("#%d has no issue kind label, so it is not checked.", t.Number))
+			return false, nil
+		}
+		t.Kind = k.label
+		errs = append(labelErrs, k.judge(t, gh, b)...)
+	}
 	err := c.react(gh, t, errs)
 	if errors.Is(err, aftereffect.ErrIssueGone) {
 		rep.gone(t.Number)
@@ -130,17 +160,8 @@ func ghFailure(name string, err error) int {
 	return 1
 }
 
-// planTargets is the triggering issue, or every open Plan on
-// workflow_dispatch.
-func planTargets(ev ghEvent, gh aftereffect.Client) ([]target, error) {
-	if ev.name == "workflow_dispatch" {
-		return gh.OpenPlans()
-	}
-	return eventTarget(ev.name, "issue", ev.Issue)
-}
-
 // prTargets is the triggering PR, or every open PR on workflow_dispatch.
-func prTargets(ev ghEvent, gh aftereffect.Client) ([]target, error) {
+func prTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, error) {
 	if ev.name == "workflow_dispatch" {
 		return gh.OpenPRs()
 	}
@@ -157,7 +178,7 @@ func eventTarget(event, field string, t *target) ([]target, error) {
 
 // closeTargets is the issue an `issues: closed` event carries, unless it was
 // closed as dropped work, where unfinished items are expected.
-func closeTargets(ev ghEvent, _ aftereffect.Client) ([]target, error) {
+func closeTargets(ev ghEvent, _ aftereffect.Client, _ blobChecker) ([]target, error) {
 	if ev.Issue == nil || ev.Action != "closed" {
 		return nil, fmt.Errorf("no closed issue in the %q event", ev.name)
 	}

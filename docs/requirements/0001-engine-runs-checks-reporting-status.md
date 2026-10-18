@@ -37,7 +37,7 @@ Source: `go/cmd/fitness/ci.go:22`
 - 0001.5
     - Given Developer has a new check binary
         - When the runner lists its catalog
-            - Then the new check is in it, so every repo runs it
+            - Then the new check is in it and the run counts it, so every repo runs it
 - 0001.8
     - Given Developer has a repo that sets timeoutMs in its fitness config
         - When the runner budgets a check that declares none

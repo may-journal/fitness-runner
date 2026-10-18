@@ -73,7 +73,7 @@ func main() {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `plan-check`, `close-check`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -93,6 +93,7 @@ var subcommands = map[string]func(args []string) int{
 	"init":         runInit,
 	"hook":         runHookArgs,
 	"pr-check":     func([]string) int { return metadata.RunGH("pr-check") },
+	"issue-check":  func([]string) int { return metadata.RunGH("issue-check") },
 	"plan-check":   func([]string) int { return metadata.RunGH("plan-check") },
 	"close-check":  func([]string) int { return metadata.RunGH("close-check") },
 	"branch-check": func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
@@ -132,7 +133,8 @@ Usage:
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
   fitness branch-check     validate this branch's PR and linked issues locally
-  fitness plan-check       validate Plan issues and comment the result (GitHub Actions)
+  fitness issue-check      validate an issue by its kind label and comment the result (GitHub Actions)
+  fitness plan-check       issue-check for Plan issues only (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
 
 Docs: https://github.com/may-journal/fitness-runner#usage`)

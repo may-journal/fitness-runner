@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
 	"slices"
@@ -30,6 +31,11 @@ type Target struct {
 	ClosedAt    string `json:"closed_at"`
 	// ClosedBy is the event sender who closed the issue.
 	ClosedBy string `json:"-"`
+	// Labels are the issue's label names, as a GitHub read lists them; the
+	// event payload's label objects never fill them.
+	Labels []string `json:"labelNames"`
+	// Kind is the issue kind label the target is judged as, such as Plan.
+	Kind string `json:"-"`
 	// EntryFiles are a local branch's changed changelog entry files against
 	// its PR base; nil reads them from GitHub.
 	EntryFiles *[]FileChange `json:"-"`
@@ -50,7 +56,7 @@ type Closer struct {
 	Merger string `json:"merger"`
 }
 
-// Verdict is one plan-check comment. ID is the REST id for edits; NodeID is
+// Verdict is one issue-check comment. ID is the REST id for edits; NodeID is
 // the GraphQL id for hiding.
 type Verdict struct {
 	ID       int64  `json:"id"`
@@ -249,12 +255,38 @@ func (g Client) ReleasedFiles(dir string) (string, []string, error) {
 	return tag, strings.Fields(string(out)), err
 }
 
-func (g Client) OpenPlans() ([]Target, error) {
-	out, err := g.api("--paginate", "--jq", ".[] | select(.pull_request == null) | {number, body: (.body // \"\")}", "issues?labels=Plan&state=open&per_page=100")
+// Repo is the owner/name the client reaches.
+func (g Client) Repo() string {
+	return g.repo
+}
+
+// OpenLabeled returns every open issue carrying label, with its labels.
+func (g Client) OpenLabeled(label string) ([]Target, error) {
+	jq := `.[] | select(.pull_request == null) | {number, body: (.body // ""), labelNames: [.labels[].name]}`
+	out, err := g.api("--paginate", "--jq", jq, "issues?labels="+url.QueryEscape(label)+"&state=open&per_page=100")
 	if err != nil {
 		return nil, err
 	}
 	return decodeLines[Target](out)
+}
+
+// SubIssues returns issue n's sub-issues, each as owner/name#number, in the
+// order GitHub lists them.
+func (g Client) SubIssues(n int) ([]string, error) {
+	jq := `.[] | {number, repo: (.repository_url | sub("^.*/repos/"; ""))}`
+	out, err := g.api("--paginate", "--jq", jq, "issues/"+strconv.Itoa(n)+"/sub_issues?per_page=100")
+	if err != nil {
+		return nil, err
+	}
+	subs, err := decodeLines[struct {
+		Number int    `json:"number"`
+		Repo   string `json:"repo"`
+	}](out)
+	refs := make([]string, len(subs))
+	for i, s := range subs {
+		refs[i] = s.Repo + "#" + strconv.Itoa(s.Number)
+	}
+	return refs, err
 }
 
 // verdictsQuery lists an issue's comments with the hidden state, which only
@@ -270,12 +302,16 @@ const verdictsQuery = `query($owner: String!, $name: String!, $number: Int!, $en
   }
 }`
 
-// Verdicts returns the plan-check verdict comments, oldest first. A verdict
-// is known by its body-version marker, whoever's token posted it.
-func (g Client) Verdicts(n int) ([]Verdict, error) {
+// Verdicts returns the issue-check verdict comments for kind, oldest first.
+// A verdict is known by its body-version marker, whoever's token posted it.
+func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 	owner, name, _ := strings.Cut(g.repo, "/")
+	var tests []string
+	for _, p := range MarkerPrefixes(kind) {
+		tests = append(tests, fmt.Sprintf("contains(%q)", p))
+	}
 	jq := `.data.repository.issue.comments.nodes[]
-		| select(.body | contains("fitness:plan-structure:"))
+		| select(.body | ` + strings.Join(tests, " or ") + `)
 		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized}`
 	out, err := g.issueQuery("api", "graphql", "--paginate",
 		"-f", "query="+verdictsQuery, "-F", "owner="+owner, "-F", "name="+name,

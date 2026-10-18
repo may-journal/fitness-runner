@@ -70,7 +70,7 @@ flowchart TB
     failuresShown[10 Failures shown<br/>Req 0004]:::blocked
     fixIssues(11 Fix issues<br/>Req 0004):::action
     configError[(12 Config error<br/>Req 0008)]:::blocked
-    ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048)]:::system
+    ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069)]:::system
     release[(28 Release build<br/>Req 0062)]:::system
 
@@ -124,7 +124,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 10  | Failures shown in table.            | Screen  | Exit 1; failing check's `errors` printed inline.                                      |
 | 11  | Fix and rerun.                      | Action  | Developer/agent edits source, returns to #3.                                          |
 | 12  | Bad config or missing binary.       | System  | Fails loud — every check ships together, so a missing binary is a broken install.     |
-| 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, and Plan issues are judged there too.      |
+| 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, and labeled issues are judged by kind too. |
 | 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives every check; nothing else to install.                     |
 | 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite and keep each issue linked once.                                  |
 | 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |

@@ -40,7 +40,7 @@ Source: `go/cmd/fitness/blob.go:43`
             - Then each blob check runs within that budget, as in a normal run
 - 0077.6
     - Given Developer has a text that follows its template
-        - When I run fitness `--blob` on it (a Plan issue or a PR description) with no `--checks`
+        - When I run fitness `--blob` on it (a Plan issue, an Epic, or a PR description) with no `--checks`
             - Then its own checks pass, the other kind's checks list in order as skipped, and it exits 0
 - 0077.8
     - Given Developer has a PR description text whose changelog section is empty or its heading misnamed

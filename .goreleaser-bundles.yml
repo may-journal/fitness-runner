@@ -33,6 +33,7 @@ archives:
       - fitness-check-cspell
       - fitness-check-dependency-currency
       - fitness-check-doc-template
+      - fitness-check-epic-structure
       - fitness-check-eslint
       - fitness-check-gitignore-why
       - fitness-check-go-complexity

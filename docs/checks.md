@@ -7,8 +7,9 @@ relatedConfigurations: ['../.fitnessrc.json']
 Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
 
 - Pure logic: rules over file names, text, commits, and plans, such as `gitignore-why`, `semantic-commit`, `markdown-links`, and `prose-budget`
-- Issue and PR body checks: `plan-structure`, `pr-structure`, `pr-closes-issue`, `issue-checklist`; file-level `doc-template` (files match the nearest `*.template.md`) and `requirements` (tests change with their docs)
-- `plan-check`, `pr-check`, and `close-check` judge a GitHub blob with the body and prose checks, then an after-effect reacts; [`fitness --blob`](check-protocol.md#blob-input) judges any text
+- Issue and PR body checks: `plan-structure`, `epic-structure`, `pr-structure`, `pr-closes-issue`, `issue-checklist`; file-level `doc-template` (files match their nearest template) and `requirements` (tests change with docs)
+- `issue-check`, `pr-check`, and `close-check` judge a GitHub blob with the body and prose checks, then an after-effect reacts; [`fitness --blob`](check-protocol.md#blob-input) judges any text
+    - `issue-check` picks each issue's checks by its kind label and `.github/ISSUE_TEMPLATE`; `plan-check` is its Plan-only alias
 - Parsers and network: the `architecture-*` checks, `issue-link-once`, and the mermaid diagram/callout checks
 - Native engines: `cspell` (embedded dictionaries, ~217k words) and `jscpd` (token-based clone detection) — no external tool needed
 - Language checks: each [language module](../go/internal/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
