@@ -11,7 +11,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 )
 
 // ansi matches terminal color codes, which a reader does not see as text.
@@ -84,17 +86,52 @@ func piped(t *testing.T, repo, stdin string, env []string, args ...string) (stri
 	if len(args) == 0 {
 		args = []string{"--policy=external", "--all"}
 	}
-	cmd := exec.Command(installer(t), append([]string{"--"}, args...)...)
-	cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
-	if stdin != "" {
-		cmd.Stdin = strings.NewReader(stdin)
+	return execute(t, func() *exec.Cmd {
+		cmd := exec.Command(installer(t), append([]string{"--"}, args...)...)
+		cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
+		if stdin != "" {
+			cmd.Stdin = strings.NewReader(stdin)
+		}
+		return cmd
+	})
+}
+
+// execute runs the command build makes and returns its output, color codes
+// dropped, and exit code. A process that never starts fails the test with the
+// start error. A busy binary, still open for writing in a parallel test's
+// fork, is retried for a bounded time, since only a fresh command can retry.
+func execute(t *testing.T, build func() *exec.Cmd) (string, int) {
+	t.Helper()
+	for attempt := 0; ; attempt++ {
+		cmd := build()
+		out, err := cmd.CombinedOutput()
+		if cmd.ProcessState != nil {
+			return ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode()
+		}
+		if !errors.Is(err, syscall.ETXTBSY) || attempt == 40 {
+			t.Fatalf("start %s: %v", cmd.Path, err)
+		}
+		time.Sleep(50 * time.Millisecond)
 	}
-	out, err := cmd.CombinedOutput()
-	var exit *exec.ExitError
-	if err != nil && !errors.As(err, &exit) {
-		t.Fatalf("running fitness: %v", err)
+}
+
+// placeRunner puts the installed runner at dst, on its own. A hard link has
+// no open write handle for a parallel test's fork to inherit and keeps dst as
+// the runner's own path. Where linking fails, it writes a temporary file,
+// closes it, and renames it into place.
+func placeRunner(t *testing.T, installed, dst string) {
+	t.Helper()
+	if os.Link(installed, dst) == nil {
+		return
 	}
-	return ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode()
+	raw, err := os.ReadFile(installed)
+	mustDo(t, err)
+	tmp := dst + ".tmp"
+	f, err := os.OpenFile(tmp, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o755)
+	mustDo(t, err)
+	_, err = f.Write(raw)
+	mustDo(t, errors.Join(err, f.Close()))
+	mustDo(t, os.Rename(tmp, dst))
 }
 
 // userEnv is this process's environment without the CI job's GITHUB_*

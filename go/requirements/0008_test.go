@@ -56,12 +56,12 @@ func Test0008_7(t *testing.T) {
 func Test0008_8(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	raw, err := os.ReadFile(filepath.Join(installOnly(t), "fitness"))
-	mustDo(t, err)
 	alone := filepath.Join(t.TempDir(), "fitness")
-	mustDo(t, os.WriteFile(alone, raw, 0o755))
-	cmd := exec.Command(alone, "--policy=external", "--all")
-	cmd.Dir, cmd.Env = repo, userEnv()
-	out, _ := cmd.CombinedOutput()
-	sees(t, ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode(), 1, "reinstall fitness so its checks sit beside it")
+	placeRunner(t, filepath.Join(installOnly(t), "fitness"), alone)
+	out, code := execute(t, func() *exec.Cmd {
+		cmd := exec.Command(alone, "--policy=external", "--all")
+		cmd.Dir, cmd.Env = repo, userEnv()
+		return cmd
+	})
+	sees(t, out, code, 1, "reinstall fitness so its checks sit beside it")
 }

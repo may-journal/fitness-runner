@@ -47,6 +47,6 @@ Source: `go/cmd/fitness/main.go:205`
         - When it runs
             - Then it reports the missing file and exits 1
 - 0008.8
-    - Given Developer has a fitness runner with no checks beside it
+    - Given Developer has a fitness runner alone in its folder, with no checks in that folder
         - When fitness runs
             - Then it says to reinstall fitness and exits 1
