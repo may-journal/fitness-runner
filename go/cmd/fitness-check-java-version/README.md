@@ -20,9 +20,9 @@ A pom that names no release takes one from its parents outside the repo, read fr
 
 A Gradle toolchain asks for its exact release, not a newer one. Gradle always finds the JDK it runs on, so that release passes at once. Any other release must be installed, and the check looks for it without starting Gradle, so it finishes in well under a second.
 
-The lookup reads `JAVA_HOME`, macOS's `/usr/libexec/java_home -V`, and the folders Gradle detects JDKs in. Those are `~/.gradle/jdks`, SDKMAN, asdf, jabba, `~/.jdks`, Homebrew, `/usr/lib/jvm` and the macOS JDK folders. It adds the folders `org.gradle.java.installations.paths` names in `gradle.properties`, and the environment variables `org.gradle.java.installations.fromEnv` names.
+The lookup reads `JAVA_HOME`, macOS's `/usr/libexec/java_home -V`, and Gradle's detection folders. Those are `~/.gradle/jdks`, SDKMAN, asdf, jabba, `~/.jdks`, Homebrew, `/usr/lib/jvm` and the macOS JDK folders, where a bundle keeps `release` under `Contents/Home`. It adds the folders `org.gradle.java.installations.paths` names, and the variables `org.gradle.java.installations.fromEnv` names. Both split on commas, and come from the build root's `gradle.properties`, overridden by the Gradle user home's.
 
-A release found nowhere fails, naming the JDK to install. A toolchain resolver in the settings script exempts it, as `toolchainManagement` or the Foojay plugin, since Gradle then downloads the JDK.
+A toolchain that sets `vendor` or J9 needs an installed JDK from it, else the check fails naming the JDK to install. A resolver exempts it, since Gradle then downloads the JDK: a download repository in `toolchainManagement`, or the Foojay plugin. Either may sit in the settings script or a user home init script. Commented-out code does not count, and `org.gradle.java.installations.auto-download=false` turns the exemption off.
 
 ## Behavior
 

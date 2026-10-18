@@ -39,7 +39,11 @@ const noPin = "no JDK version is pinned; add a .java-version file naming the rel
 // or the zero Project for a pin any newer JDK satisfies.
 type pin struct {
 	file, version string
-	toolchain     java.Project
+	// vendor is the lower-case text a toolchain looks for in the JDK's vendor,
+	// and j9 whether it requires the OpenJ9 implementation.
+	vendor    string
+	j9        bool
+	toolchain java.Project
 }
 
 // readers read the pins a build file names, by the build's tool, and what

@@ -1,9 +1,8 @@
 package version
 
-// cspell:ignore sdkman jabba jdks libexec foojay
+// cspell:ignore sdkman jabba jdks libexec foojay openj9
 
 import (
-	"bufio"
 	"os"
 	"os/exec"
 	"path"
@@ -15,34 +14,40 @@ import (
 )
 
 var (
-	// releaseRe reads a JDK's feature release from its release file.
-	releaseRe = regexp.MustCompile(`(?m)^JAVA_VERSION="?([^"\s]+)`)
-	// listedRe reads the version `java_home -V` lists for each JDK.
-	listedRe = regexp.MustCompile(`(?m)^\s+(\d[^\s]*)\s+\(`)
-	// resolverRe reads a settings script that configures a toolchain
-	// resolver, such as the Foojay plugin.
-	resolverRe = regexp.MustCompile(`toolchainManagement|foojay`)
+	// listedRe reads the version and vendor `java_home -V` lists for each
+	// JDK.
+	listedRe = regexp.MustCompile(`(?m)^\s+(\d[^\s]*)\s+\([^)]*\)\s+"([^"]*)"`)
+	// resolverRe reads a script that registers a toolchain download
+	// repository: the Foojay plugin, or a Java repository in
+	// toolchainManagement.
+	resolverRe = regexp.MustCompile(`foojay|javaRepositories\s*\{[^}]*\brepository\b`)
+	// blockCommentRe and lineCommentRe read the comments of a Gradle script.
+	blockCommentRe = regexp.MustCompile(`(?s)/\*.*?\*/`)
+	lineCommentRe  = regexp.MustCompile(`(?m)(^|\s)//.*$`)
 )
 
 // jdkParents are the folders, relative to the user's home, whose children
 // are JDKs that Gradle's toolchain detection finds: its own downloads,
-// SDKMAN, asdf, jabba, IntelliJ, Homebrew's versioned formulae and the
-// macOS user folder.
+// SDKMAN, asdf, jabba, IntelliJ and the macOS user folder.
 var jdkParents = []string{
-	".gradle/jdks/*",
-	".sdkman/candidates/java/*",
-	".asdf/installs/java/*",
-	".jabba/jdk/*",
-	".jdks/*",
-	"Library/Java/JavaVirtualMachines/*/Contents/Home",
+	".gradle/jdks",
+	".sdkman/candidates/java",
+	".asdf/installs/java",
+	".jabba/jdk",
+	".jdks",
+	"Library/Java/JavaVirtualMachines",
 }
 
 // systemParents are the folders, from the filesystem root, whose children
 // are JDKs the operating system or Homebrew installs.
 var systemParents = []string{
-	"/usr/lib/jvm/*",
-	"/usr/java/*",
-	"/Library/Java/JavaVirtualMachines/*/Contents/Home",
+	"/usr/lib/jvm",
+	"/usr/java",
+	"/Library/Java/JavaVirtualMachines",
+}
+
+// brewHomes are the patterns for Homebrew's versioned OpenJDK formulae.
+var brewHomes = []string{
 	"/opt/homebrew/opt/openjdk*/libexec/openjdk.jdk/Contents/Home",
 	"/usr/local/opt/openjdk*/libexec/openjdk.jdk/Contents/Home",
 }
@@ -50,128 +55,203 @@ var systemParents = []string{
 // javaHomeTool lists the JDKs macOS registers.
 const javaHomeTool = "/usr/libexec/java_home"
 
-// installedJDKs lists the feature release of every JDK Gradle's toolchain
-// detection would find on this machine, without starting Gradle:
-// JAVA_HOME, the folders above, macOS's list, and the installations
-// gradle.properties names. It reads folders and files only.
-func installedJDKs(root string, build java.Project) []int {
-	majors := listedMajors()
-	for _, h := range jdkHomes(root, build) {
-		if m, ok := homeMajor(h); ok {
-			majors = append(majors, m)
+// jdk is an installed JDK as its release file describes it.
+type jdk struct {
+	major  int
+	vendor string
+	j9     bool
+}
+
+// machineJDKs lists the JDKs every build on this machine may use, without
+// starting Gradle: JAVA_HOME's, the children of the folders above and
+// macOS's list. It reads folders and files only.
+func machineJDKs() []jdk {
+	out := listedJDKs()
+	homes := []string{os.Getenv("JAVA_HOME")}
+	if user, err := os.UserHomeDir(); err == nil {
+		homes = append(homes, children(user, jdkParents)...)
+	}
+	homes = append(homes, children("", systemParents)...)
+	for _, pattern := range brewHomes {
+		matches, _ := filepath.Glob(pattern)
+		homes = append(homes, matches...)
+	}
+	return append(out, jdksIn(homes)...)
+}
+
+// children lists the folders directly inside each parent, which is
+// relative to base when base is set.
+func children(base string, parents []string) []string {
+	var out []string
+	for _, parent := range parents {
+		entries, _ := os.ReadDir(filepath.Join(base, filepath.FromSlash(parent)))
+		for _, e := range entries {
+			out = append(out, filepath.Join(base, filepath.FromSlash(parent), e.Name()))
 		}
 	}
-	return majors
-}
-
-// jdkHomes lists the JDK folders worth reading for a build.
-func jdkHomes(root string, build java.Project) []string {
-	home, _ := os.UserHomeDir()
-	homes := []string{os.Getenv("JAVA_HOME")}
-	for _, pattern := range jdkParents {
-		homes = append(homes, glob(filepath.Join(home, filepath.FromSlash(pattern)))...)
-	}
-	for _, pattern := range systemParents {
-		homes = append(homes, glob(pattern)...)
-	}
-	return append(homes, propertyHomes(root, build, home)...)
-}
-
-// glob lists the paths matching pattern, or none for a bad pattern.
-func glob(pattern string) []string {
-	out, _ := filepath.Glob(pattern)
 	return out
 }
 
-// homeMajor reads the feature release a JDK home's release file names.
-func homeMajor(dir string) (int, bool) {
-	body, err := os.ReadFile(filepath.Join(dir, "release"))
-	if err != nil {
-		return 0, false
+// jdksIn lists the JDK each folder holds, skipping empty names and folders
+// holding none.
+func jdksIn(homes []string) []jdk {
+	var out []jdk
+	for _, h := range homes {
+		if j, ok := homeJDK(h); ok && h != "" {
+			out = append(out, j)
+		}
 	}
-	m := releaseRe.FindStringSubmatch(string(body))
-	if m == nil {
-		return 0, false
-	}
-	return java.Major(m[1])
+	return out
 }
 
-// listedMajors reads the releases macOS's java_home lists, or none where
-// the tool is missing.
-func listedMajors() []int {
+// homeJDK reads the JDK a folder holds. A macOS bundle keeps its release
+// file under Contents/Home, and Gradle's downloads nest the JDK one folder
+// below the one it names.
+func homeJDK(dir string) (jdk, bool) {
+	if dir == "" {
+		return jdk{}, false
+	}
+	for _, file := range releaseFiles(dir) {
+		if j, ok := readJDK(file); ok {
+			return j, true
+		}
+	}
+	return jdk{}, false
+}
+
+// releaseFiles lists where dir's release file may be.
+func releaseFiles(dir string) []string {
+	files := []string{filepath.Join(dir, "release"), filepath.Join(dir, "Contents", "Home", "release")}
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		files = append(files, filepath.Join(dir, e.Name(), "release"), filepath.Join(dir, e.Name(), "Contents", "Home", "release"))
+	}
+	return files
+}
+
+// readJDK reads a JDK's release and vendor from its release file.
+func readJDK(file string) (jdk, bool) {
+	props := properties(file)
+	major, ok := java.Major(unquote(props["JAVA_VERSION"]))
+	if !ok {
+		return jdk{}, false
+	}
+	vendor := unquote(props["IMPLEMENTOR"]) + " " + unquote(props["IMPLEMENTOR_VERSION"])
+	return jdk{major: major, vendor: strings.ToLower(vendor), j9: strings.Contains(strings.ToLower(props["JVM_VARIANT"]), "openj9")}, true
+}
+
+// unquote drops the quotes a release file puts around a value.
+func unquote(value string) string {
+	return strings.Trim(value, `"`)
+}
+
+// listedJDKs reads the JDKs macOS's java_home lists, or none where the
+// tool is missing.
+func listedJDKs() []jdk {
 	if _, err := os.Stat(javaHomeTool); err != nil {
 		return nil
 	}
 	out, _ := exec.Command(javaHomeTool, "-V").CombinedOutput()
-	var majors []int
+	var jdks []jdk
 	for _, m := range listedRe.FindAllStringSubmatch(string(out), -1) {
 		if n, ok := java.Major(m[1]); ok {
-			majors = append(majors, n)
+			jdks = append(jdks, jdk{major: n, vendor: strings.ToLower(m[2])})
 		}
 	}
-	return majors
+	return jdks
 }
 
-// propertyHomes lists the JDK folders gradle.properties names through
-// org.gradle.java.installations.paths, and the environment variables it
-// names through org.gradle.java.installations.fromEnv. It reads the build
-// folder's file, the repo root's and the Gradle user home's.
-func propertyHomes(root string, build java.Project, home string) []string {
-	userHome := os.Getenv("GRADLE_USER_HOME")
-	if userHome == "" {
-		userHome = filepath.Join(home, ".gradle")
-	}
-	files := []string{
-		filepath.Join(userHome, "gradle.properties"),
-		filepath.Join(root, "gradle.properties"),
-		filepath.Join(root, filepath.FromSlash(build.Dir), "gradle.properties"),
-	}
-	var out []string
-	for _, f := range files {
-		props := properties(f)
-		out = append(out, splitList(props["org.gradle.java.installations.paths"])...)
-		for _, name := range splitList(props["org.gradle.java.installations.fromEnv"]) {
-			out = append(out, os.Getenv(name))
-		}
-	}
-	return out
-}
-
-// properties reads a Java properties file's key=value lines, or none for
-// a missing file.
-func properties(file string) map[string]string {
-	f, err := os.Open(file)
-	if err != nil {
-		return nil
-	}
-	defer f.Close()
+// buildProperties reads the Gradle properties a build sees: the build
+// root's gradle.properties, overridden by the Gradle user home's.
+func buildProperties(root string, build java.Project) map[string]string {
 	out := map[string]string{}
-	scan := bufio.NewScanner(f)
-	for scan.Scan() {
-		line := strings.TrimSpace(scan.Text())
-		if key, value, ok := strings.Cut(line, "="); ok && !strings.HasPrefix(line, "#") {
-			out[strings.TrimSpace(key)] = strings.TrimSpace(value)
+	for _, file := range []string{
+		filepath.Join(root, filepath.FromSlash(build.Dir), "gradle.properties"),
+		userFile("gradle.properties"),
+	} {
+		for key, value := range properties(file) {
+			out[key] = value
 		}
 	}
 	return out
 }
 
-// splitList splits a comma or path-separator list, dropping blanks.
+// userFile joins parts under Gradle's user home, or is empty with no home.
+func userFile(parts ...string) string {
+	dir := userHome()
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(append([]string{dir}, parts...)...)
+}
+
+// userHome is Gradle's user home: GRADLE_USER_HOME, else ~/.gradle. It is
+// empty with no home to find, so no file is read from it.
+func userHome() string {
+	if dir := os.Getenv("GRADLE_USER_HOME"); dir != "" {
+		return dir
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".gradle")
+}
+
+// propertyJDKs lists the JDKs in the folders org.gradle.java.installations
+// .paths names, and the environment variables its fromEnv names. Gradle
+// splits both lists on commas.
+func propertyJDKs(props map[string]string) []jdk {
+	homes := splitList(props["org.gradle.java.installations.paths"])
+	for _, name := range splitList(props["org.gradle.java.installations.fromEnv"]) {
+		homes = append(homes, os.Getenv(name))
+	}
+	return jdksIn(homes)
+}
+
+// splitList splits a comma list, dropping blanks.
 func splitList(list string) []string {
 	var out []string
-	for _, item := range strings.FieldsFunc(list, func(r rune) bool { return r == ',' || r == os.PathListSeparator }) {
-		out = append(out, strings.TrimSpace(item))
+	for _, item := range strings.Split(list, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			out = append(out, item)
+		}
 	}
 	return out
 }
 
-// hasResolver reports whether the build's settings script configures a
-// toolchain resolver, which lets Gradle download any JDK it lacks.
-func hasResolver(root string, build java.Project) bool {
-	for _, name := range []string{"settings.gradle", "settings.gradle.kts"} {
-		if body, ok := read(root, path.Join(build.Dir, name)); ok && resolverRe.MatchString(body) {
+// canDownload reports whether Gradle may download a missing JDK for the
+// build: auto-download is not turned off, and a settings or init script
+// registers a toolchain download repository.
+func canDownload(root string, build java.Project, props map[string]string) bool {
+	if props["org.gradle.java.installations.auto-download"] == "false" {
+		return false
+	}
+	for _, body := range scripts(root, build) {
+		body = lineCommentRe.ReplaceAllString(blockCommentRe.ReplaceAllString(body, ""), "$1")
+		if resolverRe.MatchString(body) {
 			return true
 		}
 	}
 	return false
+}
+
+// scripts reads the build's settings scripts and the init scripts of the
+// Gradle user home.
+func scripts(root string, build java.Project) []string {
+	var files []string
+	for _, name := range []string{"settings.gradle", "settings.gradle.kts"} {
+		files = append(files, filepath.Join(root, filepath.FromSlash(path.Join(build.Dir, name))))
+	}
+	for _, name := range []string{"init.gradle", "init.gradle.kts"} {
+		files = append(files, userFile(name))
+	}
+	initD, _ := filepath.Glob(userFile("init.d", "*"))
+	var out []string
+	for _, f := range append(files, initD...) {
+		if body, err := os.ReadFile(f); err == nil {
+			out = append(out, string(body))
+		}
+	}
+	return out
 }
