@@ -57,12 +57,12 @@ dependency-currency eslint no-eslint-disable node-version prettier
 vitest-coverage-exclude vitest-coverage-full
 checkstyle java-test java-version spotless`
 
-// allPassed is the summary of a run where every catalog check passed.
+// allPassed is the summary of a run where every installed check passed.
 func allPassed() string {
 	return fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows)))
 }
 
-// passedOf is the summary count of a run where all but notPassed catalog
+// passedOf is the summary count of a run where all but notPassed installed
 // checks passed.
 func passedOf(notPassed int) string {
 	n := len(strings.Fields(catalogRows))
