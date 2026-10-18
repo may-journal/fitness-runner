@@ -128,7 +128,7 @@ func Test0083_6(t *testing.T) {
 		ignore  string
 	}{
 		{eventComment(sloppy, "may-journal-automation[bot]", "Bot"), ""},
-		{eventComment(verdict, "github-actions[bot]", "Bot"), ""},
+		{eventComment(verdict, "github-actions[bot]", "Bot"), "renovate[bot]"},
 		{eventComment(sloppy, "someone", "User"), "release-bot[bot], someone"},
 	} {
 		out, code, rp := judgeComment(t, c.comment, commentGitHub(""), "FITNESS_COMMENT_IGNORE_AUTHORS="+c.ignore)

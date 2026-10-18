@@ -132,7 +132,7 @@ flowchart TD
 
 ## comment-check
 
-[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml). It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists once. The optional `ignore-authors` input replaces that list.
+[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml). It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists once. The optional `ignore-authors` input replaces that list; the login fitness posts as stays ignored.
 
 Before posting, an agent runs `fitness comment-check --blob -` with the draft on stdin, or `--blob "<text>"`. It runs the same checks, prints each violation with its line, and exits 1 on any. The reply and the run summary point there too.
 

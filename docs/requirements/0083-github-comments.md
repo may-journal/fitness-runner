@@ -39,7 +39,7 @@ Source: `go/internal/aftereffect/comment.go:56`
         - When comment-check judges the edit
             - Then it turns its reply into a passing note and removes its reaction
 - 0083.6
-    - Given Developer has comments from a known bot, an ignored author, and a person who pasted a fitness marker
+    - Given Developer has comments from a known bot, an ignored author, fitness under a custom list, and a pasted fitness marker
         - When comment-check judges each comment event
             - Then it skips the first two and fails the pasted marker
 - 0083.7

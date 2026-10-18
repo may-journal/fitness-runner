@@ -17,7 +17,7 @@ on:
         type: string
         default: ''
       ignore-authors:
-        description: Comma-separated logins to skip, replacing fitness's known bot list; empty keeps that list.
+        description: Comma-separated logins to skip, replacing fitness's known bot list; fitness's own login stays skipped, and empty keeps the list.
         type: string
         default: ''
 
