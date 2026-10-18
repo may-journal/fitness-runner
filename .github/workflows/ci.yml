@@ -16,17 +16,10 @@ jobs:
         with:
           # Full history, so a pull request can diff against its base branch.
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup-go-cache
         with:
-          go-version-file: go/go.mod
-          cache: false
-      # No go.sum exists, so setup-go's own cache never restores. Key the build
-      # cache on go.mod and the Go sources, and fall back to the newest one.
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/go-build
-          key: go-build-${{ runner.os }}-${{ hashFiles('go/go.mod', 'go/**/*.go') }}
-          restore-keys: go-build-${{ runner.os }}-
+          cache-key: fitness
+          save: true
       - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       # A pull request checks the files it changes; a push to main checks
       # every file. The gofmt, go-vet, and go-test checks cover the Go gate.
@@ -79,9 +72,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           token: ${{ steps.app-token.outputs.token }}
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go/go.mod
+      - uses: ./.github/actions/setup-go-cache
       - name: Prepare releases with Release Please
         id: report-step-1
         uses: googleapis/release-please-action@v5.0.0

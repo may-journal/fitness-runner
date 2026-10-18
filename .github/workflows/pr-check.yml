@@ -16,9 +16,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go/go.mod
+      - uses: ./.github/actions/setup-go-cache
       - name: Build the checks
         run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       - name: Validate PR description(s) and fail the run on violations

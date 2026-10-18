@@ -2,7 +2,21 @@
 name: Binary distribution
 on:
   pull_request:
+  # A push to main saves the bundle and smoke Go build caches that pull
+  # requests restore. Only a change those caches hold starts it.
+  push:
+    branches: [main]
+    paths:
+      - 'go/**'
+      - '.goreleaser-*.yml'
+      - .github/actions/setup-go-cache/**
+      - .github/workflows/distribution.yml
   workflow_call:
+# A newer main push supersedes an older one, since only the newest cache
+# matters. Pull request and release runs get their own group, so none wait.
+concurrency:
+  group: distribution-${{ github.ref == 'refs/heads/main' && 'main' || github.run_id }}
+  cancel-in-progress: ${{ github.ref == 'refs/heads/main' }}
 permissions:
   contents: read
 jobs:
@@ -13,17 +27,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup-go-cache
         with:
-          go-version-file: go/go.mod
-          cache: false
-      # No go.sum exists, so setup-go's own cache never restores. Key the build
-      # cache on go.mod and the Go sources, and fall back to the newest one.
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/go-build
-          key: go-build-${{ runner.os }}-${{ hashFiles('go/go.mod', 'go/**/*.go') }}
-          restore-keys: go-build-${{ runner.os }}-
+          cache-key: bundle
+          save: true
       - name: Install GoReleaser
         uses: goreleaser/goreleaser-action@v7.2.3
         with:
@@ -108,15 +115,10 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" smoke
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup-go-cache
         with:
-          go-version-file: go/go.mod
-          cache: false
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/go-build
-          key: go-build-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('go/go.mod', 'go/**/*.go') }}
-          restore-keys: go-build-${{ runner.os }}-${{ runner.arch }}-
+          cache-key: smoke
+          save: true
       - name: Run the full suite with the candidate Go installer
         id: report-step-2
         env:

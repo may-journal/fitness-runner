@@ -1,0 +1,60 @@
+name: Set up Go with a build cache
+description: >-
+  Install the Go version go/go.mod names, then restore the Go build cache for
+  one cache family. Only a push to main saves the cache.
+inputs:
+  cache-key:
+    description: >-
+      Cache family, such as fitness, bundle or smoke. Empty skips the build
+      cache, for jobs that build too little to gain from one.
+    required: false
+    default: ''
+  save:
+    description: Save the cache at the end of the job, on a push to main only.
+    required: false
+    default: 'false'
+outputs:
+  go-version:
+    description: The Go version setup-go installed.
+    value: ${{ steps.setup.outputs.go-version }}
+runs:
+  using: composite
+  steps:
+    # No go.sum exists, so setup-go's own cache would only log a warning.
+    - id: setup
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go/go.mod
+        cache: false
+    # One key scheme: family, OS, arch, Go version, then the source hash. Each
+    # part ends in a dash, so no prefix matches another family or arch. The
+    # hash covers every file under go/, so embedded assets count too.
+    - id: key
+      if: ${{ inputs.cache-key != '' }}
+      shell: bash
+      env:
+        FAMILY: ${{ inputs.cache-key }}
+        GO_VERSION: ${{ steps.setup.outputs.go-version }}
+        SOURCE_HASH: ${{ hashFiles('go/**', '!go/bin/**') }}
+        SAVE: ${{ inputs.save == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      run: |
+        prefix="go-build-$FAMILY-$RUNNER_OS-$RUNNER_ARCH-go$GO_VERSION-"
+        {
+          echo "prefix=$prefix"
+          echo "key=$prefix$SOURCE_HASH"
+          echo "save=$SAVE"
+        } >> "$GITHUB_OUTPUT"
+    # Pull requests and other events only restore, so their caches never
+    # crowd out main's, which every branch can read.
+    - if: ${{ steps.key.outputs.save == 'false' }}
+      uses: actions/cache/restore@v4
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
+    - if: ${{ steps.key.outputs.save == 'true' }}
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/go-build
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.prefix }}

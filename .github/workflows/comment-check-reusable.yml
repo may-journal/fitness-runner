@@ -40,6 +40,8 @@ jobs:
         if: ${{ inputs.ref != '' }}
         with:
           go-version: stable
+          # No go.sum exists to key on, so the cache would only log a warning.
+          cache: false
       - name: Install the pinned fitness bundle
         id: report-step-1
         if: ${{ inputs.ref == '' }}
