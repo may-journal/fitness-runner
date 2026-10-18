@@ -1,8 +1,8 @@
 name: Plan check (reusable)
 
 # Kept for consumer repos whose caller still names it: it runs
-# issue-check-reusable with the Plan-only `plan-check` command, so one
-# workflow holds the steps. New callers use issue-check-reusable.yml.
+# issue-check-reusable at v1 with the Plan-only `plan-check` command, since a
+# `./` path may resolve to the consumer repo. New callers use issue-check-reusable.yml.
 on:
   workflow_call:
     inputs:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   plan-check:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'Plan')
-    uses: ./.github/workflows/issue-check-reusable.yml
+    uses: may-journal/fitness-runner/.github/workflows/issue-check-reusable.yml@v1
     with:
       ref: ${{ inputs.ref }}
       command: plan-check
