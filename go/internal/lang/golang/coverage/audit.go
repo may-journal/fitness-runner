@@ -1,10 +1,13 @@
 package coverage
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"regexp"
+	"slices"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/par"
@@ -18,69 +21,108 @@ type testGroup struct {
 	Stable   bool
 }
 
-// audit measures shared setup and each top-level test twice from prebuilt
-// binaries. Every run is independent, so all of them share one bounded pool;
-// results are read back in package and test order.
+// audit measures each tested package from its prebuilt binary. Packages run
+// on one bounded pool, as go test runs packages, while each package's runs
+// stay in sequence. The first failure stops the remaining work.
 func (r runner) audit(packages []Package) ([]testGroup, error) {
-	suites, err := r.suites(packages)
+	tested := testedPackages(packages)
+	ctx, cancel := context.WithCancel(r.ctx)
+	defer cancel()
+	r.ctx = ctx
+	var failure firstError
+	results := par.Map(len(tested), par.Processes(), func(i int) []testGroup {
+		if err := ctx.Err(); err != nil {
+			failure.set(err)
+			return nil
+		}
+		groups, err := r.auditPackage(tested[i])
+		if err != nil {
+			failure.set(err)
+			cancel()
+		}
+		return groups
+	})
+	if err := failure.get(); err != nil {
+		return nil, err
+	}
+	return slices.Concat(results...), nil
+}
+
+// firstError keeps the first error any pool worker reports.
+type firstError struct {
+	mu  sync.Mutex
+	err error
+}
+
+func (f *firstError) set(err error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.err == nil {
+		f.err = err
+	}
+}
+func (f *firstError) get() error {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.err
+}
+
+// auditSuite measures shared setup, each top-level test twice, then shared
+// setup again, in that order. Changed setup marks every group unstable.
+func (r runner) auditSuite(s suite) ([]testGroup, error) {
+	baseline, err := r.measureBinary(s, "^$")
 	if err != nil {
 		return nil, err
 	}
-	var jobs []measurement
-	for i, s := range suites {
-		jobs = append(jobs, s.measurements(i)...)
+	groups, err := r.auditTests(s, baseline)
+	if err != nil {
+		return nil, err
 	}
-	runs := par.Map(len(jobs), par.Processes(), func(i int) measured {
-		return r.measureBinary(suites[jobs[i].suite], jobs[i].pattern)
-	})
-	for _, run := range runs {
-		if run.err != nil {
-			return nil, run.err
+	return r.verifyBaseline(s, baseline, groups)
+}
+
+// verifyBaseline measures shared setup again and marks every group unstable
+// when it changed.
+func (r runner) verifyBaseline(s suite, baseline Profile, groups []testGroup) ([]testGroup, error) {
+	repeated, err := r.measureBinary(s, "^$")
+	if err != nil {
+		return nil, err
+	}
+	if !maps.Equal(baseline, repeated) {
+		for i := range groups {
+			groups[i].Stable = false
 		}
 	}
-	return assemble(suites, runs), nil
+	return groups, nil
 }
 
-// assemble splits runs, in measurements order, back into each suite's groups.
-func assemble(suites []suite, runs []measured) []testGroup {
-	var groups []testGroup
-	for _, s := range suites {
-		n := 2 + 2*len(s.names)
-		groups = append(groups, s.groups(runs[:n])...)
-		runs = runs[n:]
-	}
-	return groups
-}
-
-// measurement is one run of a suite's binary for one -test.run pattern.
-type measurement struct {
-	suite   int
-	pattern string
-}
-
-// measurements lists a suite's runs: shared setup, each test twice, then
-// shared setup again.
-func (s suite) measurements(index int) []measurement {
-	jobs := []measurement{{index, "^$"}}
-	for _, name := range s.names {
-		pattern := "^" + regexp.QuoteMeta(name) + "$"
-		jobs = append(jobs, measurement{index, pattern}, measurement{index, pattern})
-	}
-	return append(jobs, measurement{index, "^$"})
-}
-
-// groups turns a suite's runs, in measurements order, into test groups. A
-// test is stable when both its runs and both setup runs agree.
-func (s suite) groups(runs []measured) []testGroup {
-	baseline := runs[0].profile
-	setupStable := maps.Equal(baseline, runs[len(runs)-1].profile)
+// auditTests audits the suite's top-level tests in list order.
+func (r runner) auditTests(s suite, baseline Profile) ([]testGroup, error) {
 	groups := make([]testGroup, len(s.names))
 	for i, name := range s.names {
-		first, second := runs[1+2*i], runs[2+2*i]
-		a, b := contribution(first.profile, baseline), contribution(second.profile, baseline)
-		groups[i] = testGroup{Name: s.pkg.ImportPath + "/" + name, Covered: a, Setup: contribution(baseline, nil), Stable: setupStable && maps.Equal(a, b), Duration: first.duration + second.duration}
+		group, err := r.auditTest(s, name, baseline)
+		if err != nil {
+			return nil, err
+		}
+		groups[i] = group
 	}
-	return groups
+	return groups, nil
+}
+
+// auditTest runs one top-level test twice and compares its contributions.
+func (r runner) auditTest(s suite, name string, baseline Profile) (testGroup, error) {
+	start := time.Now()
+	pattern := "^" + regexp.QuoteMeta(name) + "$"
+	first, err := r.measureBinary(s, pattern)
+	if err != nil {
+		return testGroup{}, err
+	}
+	second, err := r.measureBinary(s, pattern)
+	if err != nil {
+		return testGroup{}, err
+	}
+	a, b := contribution(first, baseline), contribution(second, baseline)
+	return testGroup{Name: s.pkg.ImportPath + "/" + name, Covered: a, Setup: contribution(baseline, nil), Stable: maps.Equal(a, b), Duration: time.Since(start)}, nil
 }
 func contribution(profile, baseline Profile) map[Block]bool {
 	result := map[Block]bool{}

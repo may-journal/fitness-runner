@@ -46,7 +46,7 @@ The audit always runs. Exact and partial overlap remain review signals because d
 
 ## Audit runs
 
-Each package's test binary is built once with the coverage flags. Every run then starts that binary from the package directory, with `FITNESS_GO_COVER_DIR` set. Runs share a pool sized like the runner's own check pool. Reports keep package and test order.
+Each package's test binary is built once with the coverage flags. Every run then starts that binary from the package directory, with `FITNESS_GO_COVER_DIR` set. Packages share a pool sized like the runner's own check pool, while each package's runs stay in sequence. The first failure stops the remaining work.
 
 ## Source map
 

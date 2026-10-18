@@ -5,9 +5,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
-
-	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // suite is one package's prebuilt coverage test binary and its top-level
@@ -18,42 +15,35 @@ type suite struct {
 	names []string
 }
 
-// suites builds each tested package's binary once, on the shared process
-// pool, and returns them in package order or the first error in that order.
-func (r runner) suites(packages []Package) ([]suite, error) {
+// testedPackages keeps the packages that have test files, in order.
+func testedPackages(packages []Package) []Package {
 	var tested []Package
 	for _, pkg := range packages {
 		if len(pkg.TestGoFiles)+len(pkg.XTestGoFiles) > 0 {
 			tested = append(tested, pkg)
 		}
 	}
-	built := par.Map(len(tested), par.Processes(), func(i int) built {
-		s, err := r.suite(tested[i])
-		return built{s, err}
-	})
-	result := make([]suite, len(built))
-	for i, b := range built {
-		if b.err != nil {
-			return nil, b.err
-		}
-		result[i] = b.suite
-	}
-	return result, nil
+	return tested
 }
 
-type built struct {
-	suite suite
-	err   error
-}
-
-// suite compiles pkg's test binary with the same coverage flags as the
-// module-wide run and lists its top-level tests.
-func (r runner) suite(pkg Package) (suite, error) {
+// auditPackage builds pkg's test binary once, audits it, and removes the
+// binary before returning.
+func (r runner) auditPackage(pkg Package) ([]testGroup, error) {
 	dir, err := os.MkdirTemp(r.temp, "bin-")
 	if err != nil {
-		return suite{}, err
+		return nil, err
 	}
-	bin := filepath.Join(dir, "pkg.test")
+	defer os.RemoveAll(dir)
+	s, err := r.suite(pkg, filepath.Join(dir, "pkg.test"))
+	if err != nil {
+		return nil, err
+	}
+	return r.auditSuite(s)
+}
+
+// suite compiles pkg's test binary to bin with the same coverage flags as
+// the module-wide run and lists its top-level tests.
+func (r runner) suite(pkg Package, bin string) (suite, error) {
 	if _, err := r.command("test", "-c", "-covermode=atomic", "-coverpkg=./...", "-o", bin, pkg.ImportPath); err != nil {
 		return suite{}, err
 	}
@@ -77,18 +67,10 @@ func testNames(out string) []string {
 
 var testName = regexp.MustCompile(`^Test[\pL\pN_]*$`)
 
-// measured is one run of a suite's binary: its profile and wall time.
-type measured struct {
-	profile  Profile
-	duration time.Duration
-	err      error
-}
-
 // measureBinary runs the suite's binary once for pattern, from the package
 // directory as go test would, with a fresh profile and child coverage dir.
-func (r runner) measureBinary(s suite, pattern string) measured {
-	start := time.Now()
-	p, err := r.collect(func(profile, child string) error {
+func (r runner) measureBinary(s suite, pattern string) (Profile, error) {
+	return r.collect(func(profile, child string) error {
 		counters := filepath.Join(filepath.Dir(profile), "counters")
 		if err := os.Mkdir(counters, 0700); err != nil {
 			return err
@@ -97,5 +79,4 @@ func (r runner) measureBinary(s suite, pattern string) measured {
 		_, err := r.exec(s.bin, s.pkg.Dir, s.pkg.ImportPath+" test coverage", []string{"FITNESS_GO_COVER_DIR=" + child}, args...)
 		return err
 	})
-	return measured{profile: p, duration: time.Since(start), err: err}
 }
