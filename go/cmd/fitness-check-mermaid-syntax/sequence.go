@@ -10,12 +10,16 @@ import (
 // blockOpeners are the sequence statements that open a block closed by end.
 var blockOpeners = map[string]bool{
 	"loop": true, "alt": true, "opt": true, "par": true, "critical": true,
-	"break": true, "rect": true, "box": true,
+	"break": true, "rect": true, "box": true, "par_over": true,
 }
 
 // blockBranches are the statements that split a block, by the block each
 // belongs in.
 var blockBranches = map[string]string{"else": "alt", "and": "par", "option": "critical"}
+
+// blockAlias is the block a branch sees an opener as; par_over takes and
+// like par.
+var blockAlias = map[string]string{"par_over": "par"}
 
 // sequenceArgs are the sequence statements that take operands, and the
 // fields each needs.
@@ -84,10 +88,18 @@ func (s *seq) end() string {
 // branch checks that else, and, or option sits in its own block.
 func (s *seq) branch(word string) string {
 	want := blockBranches[word]
-	if len(s.open) == 0 || s.open[len(s.open)-1].kind != want {
+	if len(s.open) == 0 || seen(s.open[len(s.open)-1].kind) != want {
 		return fmt.Sprintf("%s belongs inside %s", word, want)
 	}
 	return ""
+}
+
+// seen is the block kind a branch statement sees for an opener.
+func seen(kind string) string {
+	if alias, ok := blockAlias[kind]; ok {
+		return alias
+	}
+	return kind
 }
 
 // simple parses a keyword statement, a note, or a message.

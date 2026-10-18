@@ -22,13 +22,17 @@ type Comment struct {
 	Root   int64
 }
 
+// kind is the REST segment the comment lives under: issues or pulls.
+func (c Comment) kind() string {
+	if c.Review {
+		return "pulls"
+	}
+	return "issues"
+}
+
 // path is the REST path of the comment, or of one under it.
 func (c Comment) path(rest ...string) string {
-	kind := "issues"
-	if c.Review {
-		kind = "pulls"
-	}
-	return strings.Join(append([]string{kind, "comments", strconv.FormatInt(c.ID, 10)}, rest...), "/")
+	return strings.Join(append([]string{c.kind(), "comments", strconv.FormatInt(c.ID, 10)}, rest...), "/")
 }
 
 // noticePrefix starts the marker that ties a reply to the comment it judges.
@@ -132,13 +136,9 @@ func passNotice(c Comment, mark string) string {
 
 // notice is the bot's reply already judging c, or nil.
 func (g Client) notice(n int, c Comment) (*Notice, error) {
-	kind := "issues"
-	if c.Review {
-		kind = "pulls"
-	}
 	jq := fmt.Sprintf(`.[] | select(.user.login == %q and (.body // "" | contains(%q))) | {id, body}`,
 		botLogin(), noticePrefix+strconv.FormatInt(c.ID, 10)+":")
-	out, err := g.api("--paginate", "--jq", jq, fmt.Sprintf("%s/%d/comments?per_page=100", kind, n))
+	out, err := g.api("--paginate", "--jq", jq, fmt.Sprintf("%s/%d/comments?per_page=100", c.kind(), n))
 	if err != nil {
 		return nil, err
 	}

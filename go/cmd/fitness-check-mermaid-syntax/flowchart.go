@@ -293,7 +293,7 @@ func firstCloser(s string, closes []string) (int, string) {
 var textEdgeOpen = regexp.MustCompile(`^(?:--|==|-\.)\s`)
 
 // textEdgeClose ends an inline edge label.
-var textEdgeClose = regexp.MustCompile(`\s(?:-{2,}|={2,}|\.-+)[>ox]?(?:\s|$)`)
+var textEdgeClose = regexp.MustCompile(`\s(?:-{2,}|={2,}|\.-+)(?:>|[ox](?:\s|$))?`)
 
 // edgeLine is an edge's line: dashes, thick, dotted, or invisible, with an
 // optional edge id and start marker.

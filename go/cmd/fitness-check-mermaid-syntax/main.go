@@ -8,6 +8,7 @@ package main
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
@@ -71,6 +72,7 @@ type grammar func(header srcLine, lines []srcLine) []problem
 var grammars = map[string]grammar{
 	"flowchart":       flowchart,
 	"graph":           flowchart,
+	"flowchart-elk":   flowchart,
 	"sequenceDiagram": sequence,
 }
 
@@ -80,14 +82,15 @@ var balancedTypes = map[string]bool{
 	"classDiagram": true, "classDiagram-v2": true, "stateDiagram": true, "stateDiagram-v2": true,
 	"journey": true, "gantt": true, "pie": true, "quadrantChart": true, "requirementDiagram": true,
 	"gitGraph": true, "C4Context": true, "C4Container": true, "C4Component": true, "C4Dynamic": true,
-	"C4Deployment": true, "mindmap": true, "timeline": true, "zenuml": true, "sankey-beta": true,
-	"xychart-beta": true, "block-beta": true, "packet-beta": true, "kanban": true,
+	"C4Deployment": true, "timeline": true, "zenuml": true, "sankey-beta": true,
+	"xychart-beta": true, "xychart": true, "sankey": true, "packet": true, "packet-beta": true, "kanban": true,
 	"architecture-beta": true, "radar-beta": true, "treemap-beta": true, "wardley-beta": true,
 }
 
-// headerOnlyTypes are known types whose syntax uses brackets unpaired, such
-// as erDiagram's `||--o{` cardinality, so only the header is checked.
-var headerOnlyTypes = map[string]bool{"erDiagram": true}
+// headerOnlyTypes are known types whose syntax leaves brackets unpaired,
+// such as erDiagram's `||--o{` cardinality, mindmap's `)cloud(` shape, or
+// block-beta's `>flag]` shape, so only the header is checked.
+var headerOnlyTypes = map[string]bool{"erDiagram": true, "mindmap": true, "block-beta": true, "block": true}
 
 // parseDiagram judges one diagram body.
 func parseDiagram(body string) []problem {
@@ -122,11 +125,29 @@ func statements(body string) []srcLine {
 	var out []srcLine
 	for i := start; i < len(raw); i++ {
 		text := strings.TrimSpace(raw[i])
+		if accBlock.MatchString(text) {
+			i = blockEnd(raw, i)
+			continue
+		}
 		if text != "" && !strings.HasPrefix(text, "%%") {
 			out = append(out, srcLine{i + 1, text})
 		}
 	}
 	return out
+}
+
+// accBlock opens a multi-line accessible description, which holds free text.
+var accBlock = regexp.MustCompile(`^accDescr\s*\{[^}]*$`)
+
+// blockEnd is the index of the line that closes the block opened at i, or
+// the last line when none does.
+func blockEnd(raw []string, i int) int {
+	for j := i + 1; j < len(raw); j++ {
+		if strings.Contains(raw[j], "}") {
+			return j
+		}
+	}
+	return len(raw) - 1
 }
 
 // frontMatterEnd is the index after a leading `---` front matter block, or 0.

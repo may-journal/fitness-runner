@@ -35,13 +35,13 @@ Source: `go/cmd/fitness-check-comment-structure/main.go:78`
         - When comment-structure checks each
             - Then only the unnumbered diagram fails, naming its line
 - 0084.5
-    - Given Developer has a comment with a change-log note
-        - When comment-structure checks it
-            - Then it fails naming the note and its line
+    - Given Developer has a comment with a change-log note, and another that only says when something is updated
+        - When comment-structure checks each
+            - Then only the note fails, naming its line
 - 0084.6
-    - Given Developer has a comment with an agent frame and a model ID
-        - When comment-structure checks it
-            - Then it fails naming each one and its line
+    - Given Developer has a comment with an agent frame and a model ID, and another with a model ID in a code span
+        - When comment-structure checks each
+            - Then only the first fails, naming each one and its line
 - 0084.7
     - Given Developer has a Plan body
         - When I run fitness `--blob` on it

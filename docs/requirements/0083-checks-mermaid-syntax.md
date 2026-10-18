@@ -19,7 +19,7 @@ Source: `go/cmd/fitness-check-mermaid-syntax/main.go:93`
 ## Requirements
 
 - 0083.1
-    - Given Developer has a valid flowchart, graph, sequence diagram, and C4 diagram
+    - Given Developer has valid flowcharts, graphs, sequence diagrams, and other types, with inline edge labels, description blocks, and shapes that leave brackets unpaired
         - When mermaid-syntax checks the doc
             - Then it passes
 - 0083.2

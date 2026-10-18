@@ -146,7 +146,7 @@ type lineRule struct {
 var rules = []lineRule{
 	{regexp.MustCompile(`(?i)^\W*(?:edit|edited|update|updated|revised|revision|correction|addendum)(?:\s*\([^)]*\)|\s+\d[\w/.-]*)?\s*:`), false,
 		"change-log note; edit the text in place and drop the note"},
-	{regexp.MustCompile(`(?i)\((?:edited|updated|revised)\b[^)]*\)|\b(?:revised|updated|edited) after\b|\b(?:replaces|supersedes) (?:the|my) (?:earlier|previous)\b`), false,
+	{regexp.MustCompile(`(?i)\((?:edited|updated|revised)\b[^)]*\)|\b(?:replaces|supersedes) (?:the|my) (?:earlier|previous)\b`), false,
 		"change-log note; edit the text in place and drop the note"},
 	{regexp.MustCompile(`</?(?:system-reminder|function_calls|function_results|invoke|parameter|task-notification|thinking)\b|\bantml:|\bSubagentHandback\b|^(?:Human|Assistant): `), true,
 		"agent frame; post only the finished text"},
@@ -166,11 +166,19 @@ func lineRules(body string) []string {
 	return errs
 }
 
+// inlineCode is a code span or a URL, which may name a model or quote a note.
+var inlineCode = regexp.MustCompile("`[^`]*`|https?://\\S+")
+
+// outsideCode blanks the code spans and URLs in a prose line.
+func outsideCode(line string) string {
+	return inlineCode.ReplaceAllString(line, " ")
+}
+
 // find names each line r matches.
 func (r lineRule) find(raw []string, prose []mdx.TextLine) []string {
 	var errs []string
 	for i, l := range prose {
-		text := l.Text
+		text := outsideCode(l.Text)
 		if r.fenced {
 			text = raw[i]
 		}

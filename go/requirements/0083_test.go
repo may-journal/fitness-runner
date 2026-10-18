@@ -1,3 +1,5 @@
+// cspell:ignore Descr mindmap xychart
+
 package requirements
 
 import "testing"
@@ -17,7 +19,11 @@ func Test0083_1(t *testing.T) {
 		mermaidLegendDiagram("graph TD;", "A-->B;"),
 		mermaidLegendDiagram("sequenceDiagram", "participant A as Client", "loop every minute",
 			"A->>+B: ping", "alt ok", "B-->>-A: pong", "else down", "Note over A,B: retry", "end", "end"),
-		mermaidLegendDiagram("C4Context", `Person(user, "1 User")`, `Rel(user, app, "2")`)))
+		mermaidLegendDiagram("C4Context", `Person(user, "1 User")`, `Rel(user, app, "2")`),
+		mermaidLegendDiagram("flowchart-elk TD", "accDescr {", "free text: here", "}", "A-- yes -->B"),
+		mermaidLegendDiagram("sequenceDiagram", "par_over A", "A->>B: x", "and B", "B->>A: y", "end"),
+		mermaidLegendDiagram("mindmap", "root", "  a)cloud("),
+		mermaidLegendDiagram("xychart", "bar [1, 2]")))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 

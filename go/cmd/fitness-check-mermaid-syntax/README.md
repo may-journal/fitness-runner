@@ -1,6 +1,7 @@
 ---
 relatedConfigurations: ['../../../.fitnessrc.json']
 ---
+<!-- cspell:ignore mindmap -->
 
 # mermaid-syntax
 
@@ -14,7 +15,7 @@ The check parses each ` ```mermaid ` block in pure Go, with no npm or browser. E
 - An unquoted flowchart label holding brackets or quotes fails; wrap it in double quotes.
 - Sequence diagrams: participants, notes, messages with a target and a colon, and blocks with their branches and `end`.
 - Other known types, such as `C4Context` and `classDiagram`: balanced brackets and quotes only, since a full grammar for each is out of reach.
-- `erDiagram`: its header only, since its cardinality marks pair no brackets.
+- `erDiagram`, `mindmap`, and `block-beta`: the header only, since their syntax leaves brackets unpaired.
 - An unknown diagram type fails.
 
 It runs on every `.md` file with a mermaid diagram and, given `--body-file`, on one Plan, PR, or comment body. Files with no diagram are skipped and don't count toward `filesChecked`.
