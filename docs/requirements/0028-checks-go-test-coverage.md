@@ -47,6 +47,6 @@ Source: `go/cmd/fitness-check-go-test-coverage/main.go:41`
         - When go-test-coverage runs
             - Then it reports that test as unstable
 - 0028.11
-    - Given Developer has twelve parallel top-level tests that each take a second
+    - Given Developer has sixteen one-second tests, half parallel and half serial across packages
         - When go-test-coverage runs
             - Then it finishes within fifteen seconds

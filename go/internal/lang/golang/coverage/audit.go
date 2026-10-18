@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"sort"
@@ -21,33 +22,37 @@ type testGroup struct {
 	Stable   bool
 }
 
-// audit measures each tested package from its prebuilt binary in three
-// stages on one bounded pool, as go test orders a package: shared setup and
-// the serial tests in sequence, then the tests that call t.Parallel()
-// alongside each other, then shared setup again. Packages run side by side.
-func (r runner) audit(packages []Package) ([]testGroup, error) {
+// audit measures each tested package from its prebuilt binary. Up to
+// par.Processes() packages run side by side, and all their runs share as
+// many process slots. A failure stops only later packages, so the earliest
+// failing package is reported.
+func (r runner) audit(packages []Package, parallel map[string]map[string]bool) ([]testGroup, error) {
 	tested := testedPackages(packages)
-	audits, err := par.MapErr(r.ctx, len(tested), par.Processes(), func(ctx context.Context, i int) (*packageAudit, error) {
-		return r.with(ctx).startPackage(tested[i])
+	r.slots = make(chan struct{}, par.Processes())
+	groups, err := par.MapErr(r.ctx, len(tested), par.Processes(), func(ctx context.Context, i int) ([]testGroup, error) {
+		return r.with(ctx).auditPackage(tested[i], parallel[tested[i].ImportPath])
 	})
-	if err != nil {
-		return nil, err
-	}
-	jobs := parallelJobs(audits)
-	if _, err := par.MapErr(r.ctx, len(jobs), par.Processes(), func(ctx context.Context, i int) (struct{}, error) {
-		return struct{}{}, r.with(ctx).runJob(jobs[i])
-	}); err != nil {
-		return nil, err
-	}
-	finished, err := par.MapErr(r.ctx, len(audits), par.Processes(), func(ctx context.Context, i int) ([]testGroup, error) {
-		return r.with(ctx).finishPackage(audits[i])
-	})
-	return slices.Concat(finished...), err
+	return slices.Concat(groups...), err
 }
 
 func (r runner) with(ctx context.Context) runner {
 	r.ctx = ctx
 	return r
+}
+
+// auditPackage builds pkg's binary into a private directory, audits it, and
+// removes the binary on every path.
+func (r runner) auditPackage(pkg Package, parallel map[string]bool) ([]testGroup, error) {
+	dir, err := os.MkdirTemp(r.temp, "bin-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(dir)
+	s, err := r.suite(pkg, filepath.Join(dir, "pkg.test"), parallel)
+	if err != nil {
+		return nil, err
+	}
+	return r.auditSuite(s)
 }
 
 // packageAudit is one package's suite, its first setup profile, and a group
@@ -58,66 +63,61 @@ type packageAudit struct {
 	groups   []testGroup
 }
 
-// startPackage builds the suite, measures shared setup, then audits the
-// serial tests in list order.
-func (r runner) startPackage(pkg Package) (*packageAudit, error) {
-	s, err := r.suite(pkg)
-	if err != nil {
-		return nil, err
-	}
+// auditSuite follows go test's order for one package: shared setup, the
+// serial tests in sequence, the t.Parallel() tests side by side, then shared
+// setup again.
+func (r runner) auditSuite(s suite) ([]testGroup, error) {
 	baseline, err := r.measureBinary(s, "^$")
 	if err != nil {
 		return nil, err
 	}
 	a := &packageAudit{suite: s, baseline: baseline, groups: make([]testGroup, len(s.names))}
-	return a, r.runSerial(a)
+	if err := r.runSerial(a); err != nil {
+		return nil, err
+	}
+	if err := r.runParallel(a); err != nil {
+		return nil, err
+	}
+	return r.finishPackage(a)
 }
 
-// runSerial audits the package's tests that do not call t.Parallel(), one
-// after another in list order.
+// runSerial audits the package's serial tests one after another.
 func (r runner) runSerial(a *packageAudit) error {
 	for i, name := range a.suite.names {
 		if a.suite.parallel[name] {
 			continue
 		}
-		if err := r.runJob(job{a, i}); err != nil {
+		if err := r.runTest(a, i); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// job is one top-level test of a package audit, by list index.
-type job struct {
-	audit *packageAudit
-	test  int
-}
-
-// parallelJobs lists every package's t.Parallel() tests, in package and list
-// order.
-func parallelJobs(audits []*packageAudit) []job {
-	var jobs []job
-	for _, a := range audits {
-		for i, name := range a.suite.names {
-			if a.suite.parallel[name] {
-				jobs = append(jobs, job{a, i})
-			}
+// runParallel audits the package's t.Parallel() tests side by side.
+func (r runner) runParallel(a *packageAudit) error {
+	var tests []int
+	for i, name := range a.suite.names {
+		if a.suite.parallel[name] {
+			tests = append(tests, i)
 		}
 	}
-	return jobs
-}
-
-// runJob audits one test into its group slot.
-func (r runner) runJob(j job) error {
-	group, err := r.auditTest(j.audit.suite, j.audit.suite.names[j.test], j.audit.baseline)
-	j.audit.groups[j.test] = group
+	_, err := par.MapErr(r.ctx, len(tests), par.Processes(), func(ctx context.Context, k int) (struct{}, error) {
+		return struct{}{}, r.with(ctx).runTest(a, tests[k])
+	})
 	return err
 }
 
-// finishPackage measures shared setup again, marks every group unstable when
-// it changed, and removes the package's binary.
+// runTest audits test i into its group slot.
+func (r runner) runTest(a *packageAudit, i int) error {
+	group, err := r.auditTest(a.suite, a.suite.names[i], a.baseline)
+	a.groups[i] = group
+	return err
+}
+
+// finishPackage measures shared setup again and marks every group unstable
+// when it changed.
 func (r runner) finishPackage(a *packageAudit) ([]testGroup, error) {
-	defer os.RemoveAll(a.suite.dir)
 	repeated, err := r.measureBinary(a.suite, "^$")
 	if err != nil {
 		return nil, err

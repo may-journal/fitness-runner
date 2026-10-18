@@ -117,17 +117,27 @@ func Test0028_10(t *testing.T) {
 	sees(t, out, code, 0, "example.test/cli/TestFlip (", "unstable coverage; excluded from overlap advice")
 }
 
-// gtcSlowTests adds a package of twelve one-second tests that each call
-// t.Parallel(), as go test lets such tests share time.
+// gtcSlowTests adds sixteen one-second tests: eight call t.Parallel() in one
+// package, and eight run serially, two in each of four more packages. Run one
+// test at a time, either half alone takes sixteen seconds.
 func gtcSlowTests() map[string]string {
 	files := gtcCommand(gtcEntryTest)
-	files["slow/wait.go"] = "package slow\n\nimport \"time\"\n\nfunc Wait() { time.Sleep(time.Second) }\n"
-	test := "package slow\n\nimport \"testing\"\n"
-	for i := range 12 {
-		test += fmt.Sprintf("\nfunc TestWait%d(t *testing.T) {\n\tt.Parallel()\n\tWait()\n}\n", i)
+	gtcSlowPackage(files, "parallel", 8, "\tt.Parallel()\n")
+	for i := range 4 {
+		gtcSlowPackage(files, fmt.Sprintf("serial%d", i), 2, "")
 	}
-	files["slow/wait_test.go"] = test
 	return files
+}
+
+// gtcSlowPackage writes package pkg with count one-second tests, each
+// starting with first.
+func gtcSlowPackage(files map[string]string, pkg string, count int, first string) {
+	files[pkg+"/wait.go"] = "package " + pkg + "\n\nimport \"time\"\n\nfunc Wait() { time.Sleep(time.Second) }\n"
+	test := "package " + pkg + "\n\nimport \"testing\"\n"
+	for i := range count {
+		test += fmt.Sprintf("\nfunc TestWait%d(t *testing.T) {\n%s\tWait()\n}\n", i, first)
+	}
+	files[pkg+"/wait_test.go"] = test
 }
 
 func Test0028_11(t *testing.T) {
@@ -135,8 +145,8 @@ func Test0028_11(t *testing.T) {
 	start := time.Now()
 	out, code := goTestCoverage(t, gtcSlowTests())
 	elapsed := time.Since(start)
-	sees(t, out, code, 0, "example.test/cli/slow/TestWait0 (", "example.test/cli/slow/TestWait11 (", "All 1 checks passed")
+	sees(t, out, code, 0, "example.test/cli/parallel/TestWait7 (", "example.test/cli/serial3/TestWait1 (", "All 1 checks passed")
 	if elapsed > 15*time.Second {
-		t.Errorf("go-test-coverage took %s with twelve one-second tests, want within 15s", elapsed.Round(time.Millisecond))
+		t.Errorf("go-test-coverage took %s with sixteen one-second tests, want within 15s", elapsed.Round(time.Millisecond))
 	}
 }

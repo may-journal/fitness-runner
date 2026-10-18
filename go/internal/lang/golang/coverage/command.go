@@ -18,6 +18,17 @@ type runner struct {
 	ctx            context.Context
 	dir, bin, temp string
 	label          string
+	slots          chan struct{}
+}
+
+// slot waits for one of the audit's process slots and returns its release.
+func (r runner) slot(label string) (func(), error) {
+	select {
+	case r.slots <- struct{}{}:
+		return func() { <-r.slots }, nil
+	case <-r.ctx.Done():
+		return nil, fmt.Errorf("%s: %w", label, r.ctx.Err())
+	}
 }
 
 func (r runner) command(args ...string) ([]byte, error) {

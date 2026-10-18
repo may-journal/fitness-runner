@@ -8,10 +8,10 @@ import (
 )
 
 // suite is one package's prebuilt coverage test binary, its top-level test
-// names in list order, and the ones that call t.Parallel().
+// names in list order, and the ones the audit may run side by side.
 type suite struct {
 	pkg      Package
-	dir, bin string
+	bin      string
 	names    []string
 	parallel map[string]bool
 }
@@ -27,24 +27,19 @@ func testedPackages(packages []Package) []Package {
 	return tested
 }
 
-// suite compiles pkg's test binary into a private directory with the same
-// coverage flags as the module-wide run and lists its top-level tests.
-func (r runner) suite(pkg Package) (suite, error) {
-	parallel, err := parallelTests(pkg)
+// suite compiles pkg's test binary to bin with the same coverage flags as
+// the module-wide run and lists its top-level tests, holding a process slot.
+func (r runner) suite(pkg Package, bin string, parallel map[string]bool) (suite, error) {
+	release, err := r.slot(pkg.ImportPath + " test build")
 	if err != nil {
 		return suite{}, err
 	}
-	dir, err := os.MkdirTemp(r.temp, "bin-")
-	if err != nil {
+	defer release()
+	if _, err := r.command("test", "-c", "-covermode=atomic", "-coverpkg=./...", "-o", bin, pkg.ImportPath); err != nil {
 		return suite{}, err
 	}
-	s := suite{pkg: pkg, dir: dir, bin: filepath.Join(dir, "pkg.test"), parallel: parallel}
-	if _, err := r.command("test", "-c", "-covermode=atomic", "-coverpkg=./...", "-o", s.bin, pkg.ImportPath); err != nil {
-		return suite{}, err
-	}
-	out, err := r.exec(s.bin, pkg.Dir, pkg.ImportPath+" -test.list", nil, "-test.list=^Test")
-	s.names = testNames(string(out))
-	return s, err
+	out, err := r.exec(bin, pkg.Dir, pkg.ImportPath+" -test.list", nil, "-test.list=^Test")
+	return suite{pkg: pkg, bin: bin, names: testNames(string(out)), parallel: parallel}, err
 }
 
 // testNames keeps the top-level test names from -test.list output.
@@ -60,9 +55,15 @@ func testNames(out string) []string {
 
 var testName = regexp.MustCompile(`^Test[\pL\pN_]*$`)
 
-// measureBinary runs the suite's binary once for pattern, from the package
-// directory as go test would, with a fresh profile and child coverage dir.
+// measureBinary runs the suite's binary once for pattern in a process slot,
+// from the package directory as go test would, with a fresh profile and child
+// coverage dir.
 func (r runner) measureBinary(s suite, pattern string) (Profile, error) {
+	release, err := r.slot(s.pkg.ImportPath + " test coverage")
+	if err != nil {
+		return nil, err
+	}
+	defer release()
 	return r.collect(func(profile, child string) error {
 		counters := filepath.Join(filepath.Dir(profile), "counters")
 		if err := os.Mkdir(counters, 0700); err != nil {

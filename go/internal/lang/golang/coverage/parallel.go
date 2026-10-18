@@ -1,56 +1,54 @@
 package coverage
 
-import (
-	"go/ast"
-	"go/parser"
-	"go/token"
-	"path/filepath"
-)
+import "go/ast"
 
-// parallelTests names pkg's top-level tests that call t.Parallel() in their
-// own body. go test runs only those alongside other tests, so the audit does
-// the same.
-func parallelTests(pkg Package) (map[string]bool, error) {
-	found := map[string]bool{}
-	for _, name := range append(pkg.TestGoFiles, pkg.XTestGoFiles...) {
-		file, err := parser.ParseFile(token.NewFileSet(), filepath.Join(pkg.Dir, name), nil, 0)
-		if err != nil {
-			return nil, err
-		}
-		addParallel(found, file)
-	}
-	return found, nil
-}
-
-// addParallel records file's top-level tests that call t.Parallel().
-func addParallel(found map[string]bool, file *ast.File) {
-	for _, decl := range file.Decls {
-		if fn := testFunction(decl); fn != nil && callsParallel(fn) {
-			found[fn.Name.Name] = true
-		}
-	}
-}
-
-// callsParallel reports whether a statement of fn's body is a Parallel()
-// call on its parameter.
+// callsParallel reports whether a statement of fn's own body calls Parallel()
+// on fn's testing parameter. go test runs only such tests alongside others;
+// a call nested in a branch or a helper is not counted, so that test stays
+// serial.
 func callsParallel(fn *ast.FuncDecl) bool {
+	param := testParam(fn)
+	if param == "" {
+		return false
+	}
 	for _, stmt := range fn.Body.List {
-		if parallelCall(stmt) {
+		if parallelCall(stmt, param) {
 			return true
 		}
 	}
 	return false
 }
 
-func parallelCall(stmt ast.Stmt) bool {
+// testParam names fn's single parameter, or returns "".
+func testParam(fn *ast.FuncDecl) string {
+	params := fn.Type.Params.List
+	if len(params) != 1 || len(params[0].Names) != 1 {
+		return ""
+	}
+	return params[0].Names[0].Name
+}
+
+// parallelCall reports whether stmt is exactly param.Parallel().
+func parallelCall(stmt ast.Stmt, param string) bool {
+	selector, ok := methodCall(stmt)
+	if !ok || selector.Sel.Name != "Parallel" {
+		return false
+	}
+	receiver, ok := selector.X.(*ast.Ident)
+	return ok && receiver.Name == param
+}
+
+// methodCall returns the selector of a statement that is a call with no
+// arguments.
+func methodCall(stmt ast.Stmt) (*ast.SelectorExpr, bool) {
 	expr, ok := stmt.(*ast.ExprStmt)
 	if !ok {
-		return false
+		return nil, false
 	}
 	call, ok := expr.X.(*ast.CallExpr)
 	if !ok || len(call.Args) != 0 {
-		return false
+		return nil, false
 	}
 	selector, ok := call.Fun.(*ast.SelectorExpr)
-	return ok && selector.Sel.Name == "Parallel"
+	return selector, ok
 }
