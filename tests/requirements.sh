@@ -11,16 +11,19 @@ cd "$(dirname "$0")/.."
 goos="$(go env GOOS)"
 goarch="$(go env GOARCH)"
 platform="$goos-$goarch"
-host_only="s/^\(    goos:\).*/\1 [$goos]/;s/^\(    goarch:\).*/\1 [$goarch]/"
+host_only="s/^\( *goos:\).*/\1 [$goos]/;s/^\( *goarch:\).*/\1 [$goarch]/"
+mkdir -p out
+sed "$host_only" .goreleaser-bundles.yml >out/host-bundles.yml
+sed "$host_only" .goreleaser-tools.yml >out/host-tools.yml
 FITNESS_VERSION="$(go -C go run ./cmd/fitness-release version --root ..)"
 export FITNESS_VERSION
 cover=""
 if [ -n "${FITNESS_COVER:-}" ]; then cover=-cover; fi
-sed "$host_only" .goreleaser-bundles.yml | GOFLAGS="$cover" goreleaser release --clean --skip=publish --snapshot --config - >out.log 2>&1
+GOFLAGS="$cover" goreleaser release --clean --skip=publish --snapshot --config out/host-bundles.yml >out.log 2>&1
 FITNESS_BUNDLE_HASHES="$(go -C go run ./cmd/fitness-release bundle-hashes --host --root ..)"
 export FITNESS_BUNDLE_HASHES
 rm -rf out/tools
-sed "$host_only" .goreleaser-tools.yml | GOFLAGS="$cover" goreleaser release --clean=false --skip=publish --snapshot --config - >>out.log 2>&1
+GOFLAGS="$cover" goreleaser release --clean=false --skip=publish --snapshot --config out/host-tools.yml >>out.log 2>&1
 go -C go run ./cmd/fitness-release assemble --host --root .. >>out.log 2>&1
 rm out.log
 FITNESS_CACHE_DIR="$PWD/out/requirements-cache"

@@ -107,10 +107,13 @@ func Test0062_3(t *testing.T) {
 		sees(t, out, code, 0, fmt.Sprintf("%s=%x", platform, hash))
 	}
 	host := runtime.GOOS + "-" + runtime.GOARCH
-	bundles = releaseToolBundles([]string{host})
+	hash := fmt.Sprintf("%s=%x", host, sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+host+".tar.gz"])))
 	out, code = releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes", "--host")
-	hash := sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+host+".tar.gz"]))
-	sees(t, out, code, 0, fmt.Sprintf("%s=%x", host, hash))
+	if strings.TrimSpace(out) != hash || code != 0 {
+		t.Errorf("bundle-hashes --host printed %q and exited %d, want only %s", out, code, hash)
+	}
+	out, code = releaseToolRun(t, releaseToolRepo(t, releaseToolBundles([]string{host})), nil, "bundle-hashes", "--host")
+	sees(t, out, code, 0, hash)
 }
 
 func Test0062_4(t *testing.T) {
@@ -136,6 +139,8 @@ func Test0062_5(t *testing.T) {
 	sees(t, out, code, 1, `unknown release command "publish-everything"`)
 	out, code = releaseToolRun(t, repo, nil, "tag", "--invalid")
 	sees(t, out, code, 1, "flag provided but not defined: -invalid", "-root string")
+	out, code = releaseToolRun(t, repo, nil, "tag", "--host")
+	sees(t, out, code, 1, "--host applies to bundle-hashes and assemble, not tag")
 	out, code = releaseToolRun(t, releaseToolRepo(t, map[string]string{"version.txt": "one\n"}), nil, "version")
 	sees(t, out, code, 1, `invalid version.txt version "one"`)
 }

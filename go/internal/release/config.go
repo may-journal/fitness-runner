@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 )
 
@@ -39,10 +40,15 @@ func New(root string) (Config, error) {
 	return Config{Root: root, Out: filepath.Join(root, "out"), Platforms: platforms}, err
 }
 
-// Host limits the expected outputs to the platform this tool runs on.
-func (c Config) Host() Config {
-	c.Platforms = []string{runtime.GOOS + "-" + runtime.GOARCH}
-	return c
+// Host limits the expected outputs to the platform this tool runs on, which
+// must be one a release builds.
+func (c Config) Host() (Config, error) {
+	host := runtime.GOOS + "-" + runtime.GOARCH
+	if !slices.Contains(platforms, host) {
+		return c, fmt.Errorf("--host: releases do not build %s", host)
+	}
+	c.Platforms = []string{host}
+	return c, nil
 }
 
 func (c Config) Version() (string, error) {

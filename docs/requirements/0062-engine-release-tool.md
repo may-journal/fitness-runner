@@ -37,7 +37,7 @@ Source: `go/cmd/fitness-release/main.go:25`
         - When a build step reads them
             - Then it fails naming the file and exits 1
 - 0062.5
-    - Given Developer has no command, an unknown one, a bad flag, or an invalid version
+    - Given Developer has no command, an unknown one, a bad flag, `--host` on another command, or an invalid version
         - When the release tool runs
             - Then it names the mistake and exits 1
 - 0062.6

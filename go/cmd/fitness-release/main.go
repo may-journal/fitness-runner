@@ -47,14 +47,24 @@ func run(args []string) error {
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
-	config, err := release.New(*root)
+	config, err := newConfig(args[0], *root, *host)
 	if err != nil {
 		return err
 	}
-	if *host {
-		config = config.Host()
-	}
 	return dispatch(args[0], config, *root)
+}
+
+// newConfig reads the release config, narrowed to this platform with host
+// for the commands that read build outputs.
+func newConfig(command, root string, host bool) (release.Config, error) {
+	config, err := release.New(root)
+	if err != nil || !host {
+		return config, err
+	}
+	if command != "bundle-hashes" && command != "assemble" {
+		return config, fmt.Errorf("--host applies to bundle-hashes and assemble, not %s", command)
+	}
+	return config.Host()
 }
 
 func dispatch(command string, config release.Config, root string) error {
