@@ -175,6 +175,18 @@ flowchart TD
 
 A comment that always passed gets no reply. The `.fitnessrc.json` `comment` key sets `maxWords` (100) and `maxTables` (1).
 
+## setup-go-cache
+
+Every workflow here that needs Go uses the local [setup-go-cache](../actions/setup-go-cache/action.yml) action. It installs the Go version `go/go.mod` names, with setup-go's cache off, since no `go.sum` exists. It restores `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<version>-<source hash>`. A miss falls back only to that family, arch, and Go version.
+
+| Family  | Saved by                  | Restored by                                             |
+| ------- | ------------------------- | ------------------------------------------------------- |
+| fitness | ci.yml `fitness`          | `release-please`, the check workflows, Release `verify` |
+| bundle  | distribution.yml `bundle` | `bundle`                                                |
+| smoke   | distribution.yml `smoke`  | `smoke`, Release `verify-download`                      |
+
+Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes to save its caches. Reusable workflows run in other repos, so their setup-go caches modules only when a `go.sum` exists.
+
 ## auto-merge
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.

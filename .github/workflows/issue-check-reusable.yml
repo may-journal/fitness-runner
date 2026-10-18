@@ -37,6 +37,8 @@ jobs:
         if: ${{ inputs.ref != '' }}
         with:
           go-version: stable
+          # Only go install runs here, so a module cache has nothing to hold.
+          cache: false
       - name: Install the pinned fitness bundle
         id: report-step-1
         if: ${{ inputs.ref == '' }}

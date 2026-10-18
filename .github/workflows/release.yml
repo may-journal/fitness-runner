@@ -20,9 +20,9 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup-go-cache
         with:
-          go-version-file: go/go.mod
+          cache-key: fitness
       - name: Verify the tag matches the release version
         id: report-step-1
         env:
@@ -155,9 +155,9 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" verify-download
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup-go-cache
         with:
-          go-version-file: go/go.mod
+          cache-key: smoke
       - name: Run the full suite through the released action
         id: report-step-2
         uses: ./

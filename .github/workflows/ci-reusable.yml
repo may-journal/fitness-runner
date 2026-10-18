@@ -45,6 +45,10 @@ jobs:
         if: ${{ inputs.ref != '' || hashFiles('**/go.mod') != '' }}
         with:
           go-version: stable
+          # Cache modules only when a go.sum exists; without one setup-go
+          # only logs a warning.
+          cache: ${{ hashFiles('**/go.sum') != '' }}
+          cache-dependency-path: '**/go.sum'
       # Node repos: the prettier, vitest, node-version, and dependency-currency
       # checks run the repo's own installed tools, as on a laptop.
       - name: Set up Node from .nvmrc

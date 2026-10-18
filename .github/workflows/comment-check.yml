@@ -22,9 +22,9 @@ jobs:
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: ./.github/actions/setup-go-cache
         with:
-          go-version-file: go/go.mod
+          cache-key: fitness
       - name: Build the checks
         run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       - name: Validate comment(s), keep one reply, and react
