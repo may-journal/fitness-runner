@@ -45,7 +45,7 @@ func (c Config) readAssets(stage, version string, installers bool) ([]Asset, err
 		return nil, err
 	}
 	var assets []Asset
-	for _, name := range assetNames(version, installers) {
+	for _, name := range assetNames(c.Platforms, version, installers) {
 		asset, err := c.verifiedOutput(name, sums)
 		if err != nil {
 			return nil, err
@@ -55,9 +55,9 @@ func (c Config) readAssets(stage, version string, installers bool) ([]Asset, err
 	return assets, nil
 }
 
-func assetNames(version string, installers bool) []string {
+func assetNames(targets []string, version string, installers bool) []string {
 	var names []string
-	for _, platform := range platforms {
+	for _, platform := range targets {
 		names = append(names, bundleName(version, platform))
 		if installers {
 			names = append(names, executable(installerName, version, platform))
@@ -132,7 +132,7 @@ func (c Config) copyOutputs(assets []Asset) error {
 }
 
 func (c Config) copyVerifiers() error {
-	for _, platform := range platforms {
+	for _, platform := range c.Platforms {
 		name := verifierName + "-" + platform
 		if err := copyReleaseFile(c.outputPath(name), filepath.Join(c.Out, name), 0700); err != nil {
 			return err

@@ -54,11 +54,11 @@ func releaseToolRun(t *testing.T, repo string, env []string, args ...string) (st
 	return string(out), cmd.ProcessState.ExitCode()
 }
 
-// releaseToolBundles returns four bundle archives and the GoReleaser
+// releaseToolBundles returns bundle archives for platforms and the GoReleaser
 // checksums that list them, as the bundle build leaves them in out/bundles.
-func releaseToolBundles() map[string]string {
+func releaseToolBundles(platforms []string) map[string]string {
 	files, sums := map[string]string{}, ""
-	for _, platform := range releaseToolPlatforms {
+	for _, platform := range platforms {
 		name := "fitness-1.0.1-" + platform + ".tar.gz"
 		files["out/bundles/"+name] = "bundle for " + platform + "\n"
 		sums += fmt.Sprintf("%x  %s\n", sha256.Sum256([]byte(files["out/bundles/"+name])), name)
@@ -100,17 +100,22 @@ func Test0062_2(t *testing.T) {
 
 func Test0062_3(t *testing.T) {
 	t.Parallel()
-	bundles := releaseToolBundles()
+	bundles := releaseToolBundles(releaseToolPlatforms)
 	out, code := releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes")
 	for _, platform := range releaseToolPlatforms {
 		hash := sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+platform+".tar.gz"]))
 		sees(t, out, code, 0, fmt.Sprintf("%s=%x", platform, hash))
 	}
+	host := runtime.GOOS + "-" + runtime.GOARCH
+	bundles = releaseToolBundles([]string{host})
+	out, code = releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes", "--host")
+	hash := sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+host+".tar.gz"]))
+	sees(t, out, code, 0, fmt.Sprintf("%s=%x", host, hash))
 }
 
 func Test0062_4(t *testing.T) {
 	t.Parallel()
-	changed := releaseToolBundles()
+	changed := releaseToolBundles(releaseToolPlatforms)
 	changed["out/bundles/fitness-1.0.1-linux-arm64.tar.gz"] = "changed after the build\n"
 	out, code := releaseToolRun(t, releaseToolRepo(t, changed), nil, "bundle-hashes")
 	sees(t, out, code, 1, "GoReleaser checksum mismatch for fitness-1.0.1-linux-arm64.tar.gz")

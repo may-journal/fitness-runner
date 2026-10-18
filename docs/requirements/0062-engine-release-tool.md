@@ -31,7 +31,7 @@ Source: `go/cmd/fitness-release/main.go:25`
 - 0062.3
     - Given Developer has bundle archives that match their GoReleaser checksums
         - When `bundle-hashes` runs
-            - Then it prints each platform with its hash
+            - Then it prints each platform with its hash, or with `--host` only this host's platform
 - 0062.4
     - Given Developer has build outputs that are missing or changed
         - When a build step reads them

@@ -43,12 +43,16 @@ func run(args []string) error {
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
+	host := flags.Bool("host", false, "expect build outputs for this platform only")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
 	config, err := release.New(*root)
 	if err != nil {
 		return err
+	}
+	if *host {
+		config = config.Host()
 	}
 	return dispatch(args[0], config, *root)
 }
