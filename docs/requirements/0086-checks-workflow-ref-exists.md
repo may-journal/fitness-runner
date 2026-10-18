@@ -14,7 +14,7 @@ may-journal `uses:` lines whose path exists at their tag or sha
 -
 may-journal `uses:` lines pinned to a tag or sha
 
-Source: `go/cmd/fitness-check-workflow-ref-exists/main.go:269`
+Source: `go/cmd/fitness-check-workflow-ref-exists/main.go:344`
 
 ## Requirements
 
@@ -27,11 +27,11 @@ Source: `go/cmd/fitness-check-workflow-ref-exists/main.go:269`
         - When workflow-ref-exists runs
             - Then it fails naming the file, line, path, and tag
 - 0086.3
-    - Given Developer has a workflow calling a may-journal action at a ref that is neither a tag nor a branch
+    - Given Developer has workflows calling a may-journal action at a ref name and at a sha, neither of which exists
         - When workflow-ref-exists runs
-            - Then it fails naming the file, line, and ref
+            - Then it fails naming the file, line, and ref of each
 - 0086.4
-    - Given Developer has workflows calling local actions, other owners, expression refs, and a may-journal branch
+    - Given Developer has workflows calling local actions, other owners, expression refs, a may-journal branch, and a run script that writes a `uses:` line
         - When workflow-ref-exists runs
             - Then it passes and reads no paths from GitHub
 - 0086.5
@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-workflow-ref-exists/main.go:269`
     - Given Developer has a repo with no workflows
         - When workflow-ref-exists runs
             - Then it passes having checked no files
+- 0086.7
+    - Given Developer has a workflow with a missing path, then a call GitHub refuses, then a call GitHub cannot reach
+        - When workflow-ref-exists runs
+            - Then it fails on the missing path and notes each call it could not verify

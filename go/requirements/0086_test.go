@@ -68,12 +68,15 @@ func Test0086_2(t *testing.T) {
 
 func Test0086_3(t *testing.T) {
 	t.Parallel()
-	out, code, _ := refCheck(t, refWorkflow("may-journal/fitness-runner@v9"), []response{
+	badSha := strings.Repeat("0", 40)
+	out, code, _ := refCheck(t, refWorkflow("may-journal/fitness-runner@v9", "may-journal/fitness-runner@"+badSha), []response{
 		notFound("repos/may-journal/fitness-runner/git/ref/tags/v9"),
 		notFound("repos/may-journal/fitness-runner/git/ref/heads/v9"),
+		{Match: []string{"contents?ref=" + badSha}, Stderr: "gh: No commit found for the ref " + badSha + " (HTTP 404)\n", Exit: 1},
 		found("repos/may-journal/fitness-runner", `{"full_name":"may-journal/fitness-runner"}`),
 	})
-	sees(t, out, code, 1, ".github/workflows/ci.yml: line 5: may-journal/fitness-runner@v9: no tag or branch v9 exists")
+	sees(t, out, code, 1, ".github/workflows/ci.yml: line 5: may-journal/fitness-runner@v9: v9 is not a tag, a branch, or a full commit sha",
+		".github/workflows/ci.yml: line 7: may-journal/fitness-runner@"+badSha+": no commit "+badSha+" exists")
 }
 
 func Test0086_4(t *testing.T) {
@@ -83,7 +86,7 @@ func Test0086_4(t *testing.T) {
 		"actions/checkout@v4",
 		"may-journal/fitness-runner/.github/workflows/ci-reusable.yml@${{ inputs.ref }}",
 		"may-journal/fitness-runner/.github/workflows/ci-reusable.yml@main",
-	), []response{
+	)+"  script:\n    runs-on: ubuntu-latest\n    steps:\n      - run: |\n          echo 'uses: may-journal/fitness-runner/nope.yml@v1' > caller.yml\n", []response{
 		notFound("repos/may-journal/fitness-runner/git/ref/tags/main"),
 		found("repos/may-journal/fitness-runner/git/ref/heads/main", `{"ref":"refs/heads/main"}`),
 	})
@@ -106,4 +109,22 @@ func Test0086_6(t *testing.T) {
 	out, code := fitness(t, example(t, "happyRepo", nil), nil, "workflow-ref-exists")
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "workflow-ref-exists")
+}
+
+func Test0086_7(t *testing.T) {
+	t.Parallel()
+	out, code, _ := refCheck(t, refWorkflow(
+		"may-journal/fitness-runner/.github/workflows/nope.yml@v1",
+		"may-journal/hub/.github/workflows/sync.yml@v1",
+		"may-journal/journey/.github/workflows/build.yml@v1",
+	), []response{
+		found("repos/may-journal/fitness-runner/git/ref/tags/v1", `{"ref":"refs/tags/v1"}`),
+		notFound("repos/may-journal/fitness-runner/contents/.github/workflows/nope.yml?ref=v1"),
+		found("repos/may-journal/fitness-runner", `{"full_name":"may-journal/fitness-runner"}`),
+		{Match: []string{"repos/may-journal/hub/"}, Stderr: "gh: Resource not accessible by integration (HTTP 403)\n", Exit: 1},
+		{Match: []string{"repos/may-journal/journey/"}, Stderr: "error connecting to api.github.com\n", Exit: 1},
+	})
+	sees(t, out, code, 1, ".github/workflows/ci.yml: line 5: may-journal/fitness-runner/.github/workflows/nope.yml@v1: .github/workflows/nope.yml does not exist at v1",
+		".github/workflows/ci.yml: line 7: may-journal/hub/.github/workflows/sync.yml@v1: skipped, GitHub answered gh: Resource not accessible by integration (HTTP 403)",
+		"workflow refs from .github/workflows/ci.yml line 9 on were not verified: gh api repos/may-journal/journey/git/ref/tags/v1: error connecting to api.github.com")
 }
