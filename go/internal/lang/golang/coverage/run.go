@@ -103,12 +103,12 @@ func (r *Report) append(other Report) {
 }
 
 func (r runner) addAudit(report *Report, packages []Package, export bool) error {
-	wrapperIssues, err := namedWrapperFailures(packages)
+	scan, err := scanTests(packages)
 	if err != nil {
 		return err
 	}
-	report.Failures = append(report.Failures, wrapperIssues...)
-	groups, err := r.audit(packages)
+	report.Failures = append(report.Failures, scan.failures...)
+	groups, err := r.audit(packages, scan.parallel)
 	if err != nil {
 		return err
 	}

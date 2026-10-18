@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -23,6 +22,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -460,7 +460,7 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 // runPool executes every check with bounded parallelism, dispatching in
 // order and printing the progress line as each starts.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
-	jobs := min(runtime.NumCPU(), 8)
+	jobs := par.Processes()
 	outcomes := make([]outcome, len(checks))
 	sem := make(chan struct{}, jobs)
 	var wg sync.WaitGroup

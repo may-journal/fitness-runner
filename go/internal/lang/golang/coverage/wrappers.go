@@ -9,36 +9,69 @@ import (
 	"sort"
 )
 
-func namedWrapperFailures(packages []Package) ([]string, error) {
-	var failures []string
-	for _, pkg := range packages {
-		for _, name := range append(pkg.TestGoFiles, pkg.XTestGoFiles...) {
-			found, err := scanNamedWrappers(filepath.Join(pkg.Dir, name))
-			if err != nil {
-				return nil, err
-			}
-			failures = append(failures, found...)
-		}
-	}
-	sort.Strings(failures)
-	return failures, nil
+// testScan is what one parse of every test file finds: named-helper
+// failures and, per package, which tests the audit may run side by side.
+type testScan struct {
+	failures []string
+	parallel map[string]map[string]bool
 }
 
-func scanNamedWrappers(path string) ([]string, error) {
+func scanTests(packages []Package) (testScan, error) {
+	scan := testScan{parallel: map[string]map[string]bool{}}
+	for _, pkg := range packages {
+		if err := scan.add(pkg); err != nil {
+			return scan, err
+		}
+	}
+	sort.Strings(scan.failures)
+	return scan, nil
+}
+
+// add scans pkg's test files. A package with TestMain gets no parallel
+// tests, because each audit process would run its TestMain at once.
+func (s *testScan) add(pkg Package) error {
+	parallel := map[string]bool{}
+	hasMain := false
+	for _, name := range append(pkg.TestGoFiles, pkg.XTestGoFiles...) {
+		main, err := s.scanFile(filepath.Join(pkg.Dir, name), parallel)
+		if err != nil {
+			return err
+		}
+		hasMain = hasMain || main
+	}
+	if hasMain {
+		parallel = map[string]bool{}
+	}
+	s.parallel[pkg.ImportPath] = parallel
+	return nil
+}
+
+// scanFile records path's named-helper failures and parallel tests, and
+// reports whether it declares TestMain.
+func (s *testScan) scanFile(path string, parallel map[string]bool) (bool, error) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, path, nil, 0)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	var failures []string
+	hasMain := false
+	for _, fn := range testFunctions(file) {
+		s.failures = append(s.failures, namedCalls(fset, path, fn)...)
+		parallel[fn.Name.Name] = callsParallel(fn)
+		hasMain = hasMain || fn.Name.Name == "TestMain"
+	}
+	return hasMain, nil
+}
+
+// testFunctions lists file's top-level test functions with bodies.
+func testFunctions(file *ast.File) []*ast.FuncDecl {
+	var tests []*ast.FuncDecl
 	for _, decl := range file.Decls {
-		fn := testFunction(decl)
-		if fn == nil {
-			continue
+		if fn := testFunction(decl); fn != nil {
+			tests = append(tests, fn)
 		}
-		failures = append(failures, namedCalls(fset, path, fn)...)
 	}
-	return failures, nil
+	return tests
 }
 
 func testFunction(decl ast.Decl) *ast.FuncDecl {

@@ -18,22 +18,10 @@ Source: `go/cmd/fitness-check-go-test-coverage/main.go:41`
 
 ## Requirements
 
-- 0028.1
-    - Given Developer has a command package with an untested statement
-        - When go-test-coverage runs
-            - Then it fails naming the entry and its statement count
-- 0028.2
-    - Given Developer has a command package whose tests run every statement
-        - When go-test-coverage runs
-            - Then it passes
 - 0028.3
     - Given Developer has a library module with no command and no declared entry
         - When go-test-coverage runs
             - Then it fails asking for an `--entry` import path
-- 0028.4
-    - Given Developer has a library entry declared in `.fitnessrc.json` with an untested statement
-        - When go-test-coverage runs
-            - Then it fails naming the entry and its statement count
 - 0028.5
     - Given Developer has an `--entry` flag naming a package no module has
         - When go-test-coverage runs
@@ -50,3 +38,15 @@ Source: `go/cmd/fitness-check-go-test-coverage/main.go:41`
     - Given Developer has an `--audit-map` path to a new file outside the repo
         - When go-test-coverage runs
             - Then it passes and writes the source map there
+- 0028.9
+    - Given Developer has a command and a declared library entry, each with an untested statement
+        - When go-test-coverage runs
+            - Then it fails naming each entry and its statement count
+- 0028.10
+    - Given Developer has a test whose coverage changes between runs
+        - When go-test-coverage runs
+            - Then it reports that test as unstable
+- 0028.11
+    - Given Developer has sixteen one-second tests, half parallel and half serial across packages
+        - When go-test-coverage runs
+            - Then it overlaps their runs exactly where go test would
