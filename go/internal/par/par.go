@@ -94,8 +94,9 @@ func (s *stopper) finish(i int, err error) {
 }
 
 // Processes is the pool size for work that starts child processes: the
-// runner's check pool and the coverage audit's test runs both use it.
-func Processes() int { return min(runtime.NumCPU(), 8) }
+// runner's handshakes and check pool and the coverage audit's test runs all
+// use it. Each child is its own process, so every core takes one.
+func Processes() int { return runtime.NumCPU() }
 
 // clampWorkers bounds the pool: NumCPU by default, never more than items.
 func clampWorkers(workers, n int) int {

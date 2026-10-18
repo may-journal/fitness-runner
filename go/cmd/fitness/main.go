@@ -5,11 +5,14 @@ package main
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -52,6 +55,13 @@ type resolved struct {
 	// describeErr says why --describe gave no metadata; the check still
 	// runs with defaults and its row carries this as info.
 	describeErr string
+	// overran says the handshake ran past its budget, so a compiled check
+	// gets one more try once the crowd of handshakes is done.
+	overran bool
+	// configMs is the repo config's timeoutMs, the budget of a check that
+	// declares none. It stays apart from desc, which holds only what the
+	// check declares.
+	configMs int
 }
 
 // outcome is one finished check, in dispatch order.
@@ -332,78 +342,113 @@ func resolveChecks(spec string) ([]resolved, error) {
 // resolveSingle resolves a CLI check name into a one-element list; an empty
 // list means Unknown check.
 func resolveSingle(spec string) ([]resolved, error) {
-	c, err := resolveName(spec, true)
-	if err != nil || c == nil {
-		return nil, err
-	}
-	return []resolved{*c}, nil
-}
-
-// resolveList resolves each name, in order.
-func resolveList(names []string) ([]resolved, error) {
-	var out []resolved
-	for _, name := range names {
-		c, err := resolveName(name, false)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, *c)
-	}
-	return out, nil
-}
-
-// resolveName maps a check name to its binary. A missing binary is nil for
-// a CLI name (the caller renders Unknown check) and an error for the list,
-// since every check ships together.
-func resolveName(name string, cli bool) (*resolved, error) {
-	bin, err := checkkit.Binary(name)
-	if err == nil {
-		desc, describeErr := describe(bin)
-		return &resolved{name: name, bin: bin, desc: desc, describeErr: describeErr}, nil
-	}
-	if cli {
+	checks, err := resolveList([]string{spec})
+	if errors.Is(err, errNotInstalled) {
 		return nil, nil
 	}
-	return nil, fmt.Errorf("Check binary not installed: fitness-check-%s", name)
+	return checks, err
+}
+
+// errNotInstalled marks a name with no check binary beside the runner.
+var errNotInstalled = errors.New("Check binary not installed")
+
+// resolveList resolves each name, in order. Every binary is found first, so
+// a missing one fails before any process starts. The --describe handshakes
+// then run side by side and come back in catalog order. A compiled check
+// whose handshake overran in that crowd gets a second try, so a slow first
+// start after an install does not drop its own budget.
+func resolveList(names []string) ([]resolved, error) {
+	bins := make([]string, len(names))
+	for i, name := range names {
+		bin, err := checkkit.Binary(name)
+		if err != nil {
+			return nil, fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
+		}
+		bins[i] = bin
+	}
+	checks := par.Map(len(names), par.Processes(), func(i int) resolved {
+		return describeCheck(names[i], bins[i])
+	})
+	if len(checks) > 1 {
+		retryOverran(checks)
+	}
+	return checks, nil
+}
+
+// retryOverran runs once more, side by side, the handshake of each compiled
+// check that overran in the crowd, so the retries cost one budget at most.
+// A script never gets a retry: it starts no slower after an install, so an
+// overrun means it ignores --describe, and its work must not run twice.
+func retryOverran(checks []resolved) {
+	var again []int
+	for i, c := range checks {
+		if c.overran && !isScript(c.bin) {
+			again = append(again, i)
+		}
+	}
+	retried := par.Map(len(again), par.Processes(), func(k int) resolved {
+		return describeCheck(checks[again[k]].name, checks[again[k]].bin)
+	})
+	for k, i := range again {
+		checks[i] = retried[k]
+	}
+}
+
+// isScript reports whether bin starts with a #! line, as a local check
+// script does; an unreadable file counts as one, so it is never retried.
+func isScript(bin string) bool {
+	f, err := os.Open(bin)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+	head := make([]byte, 2)
+	n, _ := io.ReadFull(f, head)
+	return n < 2 || string(head) == "#!"
+}
+
+// describeCheck runs one check's --describe handshake.
+func describeCheck(name, bin string) resolved {
+	desc, describeErr, overran := describe(bin)
+	return resolved{name: name, bin: bin, desc: desc, describeErr: describeErr, overran: overran}
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
 // the zero value, so the check runs with defaults, and an info note saying
 // why. The handshake gets its own short budget and process-group kill — a
 // local script that ignores --describe and starts real work must not hang
-// resolution.
-func describe(bin string) (checkkit.Describe, string) {
+// resolution. overran reports a handshake killed at its budget.
+func describe(bin string) (d checkkit.Describe, note string, overran bool) {
 	const failed = "--describe gave no metadata, so the check ran with defaults: "
 	cmd := exec.Command(bin, "--describe")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	if err := cmd.Start(); err != nil {
-		return checkkit.Describe{}, failed + err.Error()
+		return d, failed + err.Error(), false
 	}
-	if !waitDescribe(cmd) {
-		return checkkit.Describe{}, failed + "it failed or ran past 2s"
+	if ok, overran := waitDescribe(cmd); !ok {
+		return d, failed + "it failed or ran past 2s", overran
 	}
-	var d checkkit.Describe
 	if err := json.Unmarshal(checkkit.LastJSONLine(stdout.Bytes()), &d); err != nil {
-		return checkkit.Describe{}, failed + err.Error()
+		return checkkit.Describe{}, failed + err.Error(), false
 	}
-	return d, ""
+	return d, "", false
 }
 
 // waitDescribe waits for the handshake to exit cleanly within its short
-// budget, killing the process group on overrun; false means no usable
-// output.
-func waitDescribe(cmd *exec.Cmd) bool {
+// budget, killing the process group on overrun. ok false means no usable
+// output, and overran says the budget ran out.
+func waitDescribe(cmd *exec.Cmd) (ok, overran bool) {
 	done := make(chan error, 1)
 	go func() { done <- cmd.Wait() }()
 	select {
 	case err := <-done:
-		return err == nil
+		return err == nil, false
 	case <-time.After(2 * time.Second):
 		killGroup(cmd.Process.Pid, syscall.SIGKILL)
 		<-done
-		return false
+		return false, true
 	}
 }
 
@@ -457,14 +502,16 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 	return "", 1
 }
 
-// runPool executes every check with bounded parallelism, dispatching in
-// order and printing the progress line as each starts.
+// runPool executes every check with bounded parallelism, printing the
+// progress line as each starts. Checks start by the budget they declare,
+// largest first, so a slow one never waits behind the quick ones; outcomes
+// stay in catalog order.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
-	jobs := par.Processes()
 	outcomes := make([]outcome, len(checks))
-	sem := make(chan struct{}, jobs)
+	sem := make(chan struct{}, par.Processes())
 	var wg sync.WaitGroup
-	for i, c := range checks {
+	for _, i := range startOrder(checks) {
+		c := checks[i]
 		sem <- struct{}{}
 		fmt.Fprintf(os.Stderr, "  → %s\n", c.name)
 		wg.Add(1)
@@ -476,6 +523,21 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	}
 	wg.Wait()
 	return outcomes
+}
+
+// startOrder lists check indices by descending declared budget, a check
+// that declares none counting as the default. A budget from the repo config
+// says nothing about cost, so it never moves a check. Equal budgets keep
+// catalog order.
+func startOrder(checks []resolved) []int {
+	order := make([]int, len(checks))
+	for i := range order {
+		order[i] = i
+	}
+	slices.SortStableFunc(order, func(a, b int) int {
+		return cmp.Compare(declaredBudget(checks[b]), declaredBudget(checks[a]))
+	})
+	return order
 }
 
 // runOne execs a single check in its own process group with a timeout that

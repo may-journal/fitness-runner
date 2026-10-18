@@ -1,9 +1,13 @@
 package requirements
 
 import (
+	"fmt"
+	"maps"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"syscall"
@@ -37,6 +41,11 @@ func Test0001_3(t *testing.T) {
 	sees(t, out, code, 0, "--describe gave no metadata, so the check ran with defaults", "0 of 1 checks passed, 1 info")
 	if !strings.Contains(row(out, "markdown-no-bold-italic"), "info") {
 		t.Errorf("a check whose describe fails must still run and show info, got row %q", row(out, "markdown-no-bold-italic"))
+	}
+	out, code = fitness(t, example(t, "happyRepo", architectedRepo()), []string{killedVet(t)})
+	sees(t, out, code, 0, "check ended without a result (signal: killed)", passedOf(1)+", 1 info")
+	if !strings.Contains(row(out, "go-vet"), "info") {
+		t.Errorf("a killed check must show info while the passing checks set exit 0, got row %q", row(out, "go-vet"))
 	}
 }
 
@@ -84,14 +93,150 @@ func Test0001_11(t *testing.T) {
 	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
 }
 
-func Test0001_12(t *testing.T) {
+func Test0001_13(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", architectedRepo())
-	out, code := fitness(t, repo, []string{killedVet(t)})
-	sees(t, out, code, 0, "check ended without a result (signal: killed)", passedOf(1)+", 1 info")
-	if !strings.Contains(row(out, "go-vet"), "info") {
-		t.Errorf("the check that cannot run must show info, got row %q", row(out, "go-vet"))
+	// slow-zz has the longest budget of any check. It sits after one slow
+	// check per pool slot and the installed suite, so catalog order alone
+	// would hold it until another check ends.
+	budgets := map[string]int{"slow-zz": 1800000}
+	for i := range runtime.NumCPU() {
+		budgets[fmt.Sprintf("slow-%02d", i)] = 30000
 	}
+	out, code, stamps := timedRun(t, budgets)
+	sees(t, out, code, 0, fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows))+len(budgets)))
+	describes, runs := stamps.phase(t, "describe", budgets), stamps.phase(t, "run", budgets)
+	// One core gives the pool one slot, so only there may steps not overlap.
+	if runtime.NumCPU() > 1 && overlapping(describes) < 2 {
+		t.Errorf("the describe steps must overlap, but none started before the first ended: %v", describes)
+	}
+	if long, first := runs["slow-zz"], earliestEnd(runs, "slow-zz"); !long.start.Before(first) {
+		t.Errorf("slow-zz has the longest budget, so it must start before any other check ends: it started %v, the first end was %v", long.start, first)
+	}
+	keepsCatalogOrder(t, out, slices.Sorted(maps.Keys(budgets)))
+}
+
+// keepsCatalogOrder asserts the table lists the slow checks in want's order.
+func keepsCatalogOrder(t *testing.T, out string, want []string) {
+	t.Helper()
+	slow := slices.DeleteFunc(rowCells(out), func(c string) bool { return !strings.HasPrefix(c, "slow-") })
+	if !slices.Equal(slow, want) {
+		t.Errorf("the table must keep catalog order %v, got %v", want, slow)
+	}
+}
+
+// timedPrefix names the slow checks Test0001_13 installs. Run under such a
+// name, this test binary is that check, and logs when each step starts and
+// ends.
+const timedPrefix = "fitness-check-slow-"
+
+// timedRun adds one slow check per budget to a copy of the installed suite,
+// each this test binary under the check's name, and runs fitness on a
+// passing repo. It returns the output, the exit code and the times each
+// slow check logged.
+func timedRun(t *testing.T, budgets map[string]int) (string, int, stamps) {
+	t.Helper()
+	installed, bundle, logs := installOnly(t), t.TempDir(), t.TempDir()
+	linkTools(bundle, installed, []string{"fitness"})
+	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
+	self, err := os.Executable()
+	mustDo(t, err)
+	for name, ms := range budgets {
+		mustDo(t, os.Symlink(self, filepath.Join(bundle, "fitness-check-"+name)))
+		write(t, logs, map[string]string{name + ".budget": strconv.Itoa(ms)})
+	}
+	repo := example(t, "happyRepo", architectedRepo())
+	out, code := execute(t, func() *exec.Cmd {
+		cmd := exec.Command(filepath.Join(bundle, "fitness"))
+		cmd.Dir, cmd.Env = repo, append(userEnv(), "FITNESS_TIMED="+logs)
+		return cmd
+	})
+	return out, code, stamps(logs)
+}
+
+// timedCheck is one slow check: it logs its step's start, pauses, logs the
+// end, then answers --describe with its budget or a run with a pass.
+func timedCheck(name string, args []string) int {
+	check := strings.TrimPrefix(name, "fitness-check-")
+	dir := os.Getenv("FITNESS_TIMED")
+	step, pause, answer := "run", time.Second, `{"ok":true,"errors":[],"filesChecked":0}`
+	if slices.Contains(args, "--describe") {
+		budget, err := os.ReadFile(filepath.Join(dir, check+".budget"))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "slow check has no budget:", err)
+			return 3
+		}
+		step, pause, answer = "describe", 300*time.Millisecond, `{"name":"`+check+`","timeoutMs":`+string(budget)+`}`
+	}
+	logCall(filepath.Join(dir, check+".log"), step+" start "+strconv.FormatInt(time.Now().UnixNano(), 10))
+	time.Sleep(pause)
+	logCall(filepath.Join(dir, check+".log"), step+" end "+strconv.FormatInt(time.Now().UnixNano(), 10))
+	fmt.Println(answer)
+	return 0
+}
+
+// stamps is the folder of the slow checks' logs.
+type stamps string
+
+// span is when one step of one check started and ended.
+type span struct{ start, end time.Time }
+
+// phase returns each check's span for step, read from its log. A retried
+// describe keeps its last try. A check that logged no start or end for
+// step fails the test, so no comparison runs on a missing time.
+func (s stamps) phase(t *testing.T, step string, checks map[string]int) map[string]span {
+	t.Helper()
+	spans := map[string]span{}
+	for check := range checks {
+		raw, _ := os.ReadFile(filepath.Join(string(s), check+".log"))
+		got := stepSpan(string(raw), step)
+		if got.start.IsZero() || got.end.IsZero() {
+			t.Fatalf("%s logged no full %s step: %q", check, step, raw)
+		}
+		spans[check] = got
+	}
+	return spans
+}
+
+// stepSpan reads one check's log lines, "<step> start|end <unix ns>", into
+// the span of step.
+func stepSpan(log, step string) span {
+	var got span
+	for _, line := range strings.Split(strings.TrimSpace(log), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) != 3 || fields[0] != step {
+			continue
+		}
+		ns, _ := strconv.ParseInt(fields[2], 10, 64)
+		if fields[1] == "start" {
+			got.start = time.Unix(0, ns)
+		} else {
+			got.end = time.Unix(0, ns)
+		}
+	}
+	return got
+}
+
+// overlapping counts the spans that start before the first one ends.
+func overlapping(spans map[string]span) int {
+	first := earliestEnd(spans, "")
+	n := 0
+	for _, s := range spans {
+		if s.start.Before(first) {
+			n++
+		}
+	}
+	return n
+}
+
+// earliestEnd is when the first span other than skip's ended.
+func earliestEnd(spans map[string]span, skip string) time.Time {
+	var first time.Time
+	for name, s := range spans {
+		if name != skip && (first.IsZero() || s.end.Before(first)) {
+			first = s.end
+		}
+	}
+	return first
 }
 
 func Test0001_5(t *testing.T) {
