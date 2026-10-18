@@ -62,8 +62,19 @@ func Test0005_14(t *testing.T) {
 		out, code := replayed(t, r[0], r[1:]...)
 		sees(t, out, code, 0)
 	}
-	out, code := fitness(t, mergedBase(t), prEnv(), "requirements")
+	out, code := fitness(t, mergedBase(t), prEnv, "requirements")
 	sees(t, out, code, 0)
+}
+
+func Test0005_15(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, pairedRepo())
+	write(t, repo, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))})
+	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "--no-verify", "-m", "test(reqs): check sums twice"})
+	write(t, repo, map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"})
+	user(t, repo, env, "add", "-A")
+	out, code := user(t, repo, env, "commit", "--amend", "-m", "test(reqs): check sums twice")
+	sees(t, out, code, 0, "test(reqs): check sums twice")
 }
 
 // docOf is goRepo with requirement 0001 replaced by body at path.

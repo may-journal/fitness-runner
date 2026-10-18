@@ -93,8 +93,8 @@ func amendArgs(args string) bool {
 }
 
 // hookPreCommit runs file checks, then the repo's own build and tests via an
-// optional .githooks/pre-commit.local. An amend is judged on everything it
-// changes since the amended commit's parent.
+// optional .githooks/pre-commit.local. The requirements check judges an
+// amend on everything it changes since the amended commit's parent.
 func hookPreCommit() int {
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-commit")
 	markAmend()

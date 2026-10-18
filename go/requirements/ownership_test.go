@@ -57,17 +57,16 @@ func prRun(t *testing.T, given, files map[string]string, message string) (string
 	write(t, repo, files)
 	git(t, repo, "add", "-A")
 	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", message)
-	return fitness(t, repo, prEnv(), "requirements")
+	return fitness(t, repo, prEnv, "requirements")
 }
 
 // prEnv is the GitHub Actions environment of a pull request into main.
-func prEnv() []string {
-	return []string{"GITHUB_ACTIONS=true", "GITHUB_BASE_REF=main"}
-}
+var prEnv = []string{"GITHUB_ACTIONS=true", "GITHUB_BASE_REF=main"}
 
 // replayed runs one replay of an unpaired test change in a repo with the
-// hooks committed: a side branch rewords the test alone, past the hooks,
-// while the first branch changes the same line with its doc. The replay conflicts,
+// hooks committed: a side branch rewords the test alone, skipping the hooks
+// as a user with --no-verify would, while the first branch changes the same
+// line with its doc. The replay conflicts,
 // takes the replayed side, and commits with each finish in turn. It returns
 // what the first failing commit, or else the last one, printed.
 func replayed(t *testing.T, replay []string, finish ...[]string) (out string, code int) {
