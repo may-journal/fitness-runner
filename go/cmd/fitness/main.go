@@ -135,8 +135,8 @@ Usage:
   fitness branch-check     validate this branch's PR and linked issues locally
   fitness plan-check       validate Plan issues and comment the result (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
-  fitness comment-check --file <path>
-                           judge a drafted comment (- or no file reads stdin)
+  fitness comment-check --blob <text>
+                           judge a drafted comment (- or no arguments reads stdin)
   fitness comment-check    judge issue and PR comments and reply (GitHub Actions)
 
 Docs: https://github.com/may-journal/fitness-runner#usage`)

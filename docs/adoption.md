@@ -87,7 +87,7 @@ jobs:
       pull-requests: write
 ```
 
-Agents run `fitness comment-check --file <draft>` before posting, so a failing reply should be rare.
+Agents run `fitness comment-check --blob -` on a draft before posting, so a failing reply should be rare.
 
 ## Reusable CI
 

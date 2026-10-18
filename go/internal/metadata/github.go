@@ -26,6 +26,8 @@ type ghCommand struct {
 	// failOnFindings exits 1 when any target fails; close-check instead
 	// succeeds once its effect has reopened the issue.
 	failOnFindings bool
+	// hint ends a run summary with findings, such as how to re-check locally.
+	hint string
 }
 
 // ghCommands are the GitHub commands, by subcommand name.
@@ -49,6 +51,7 @@ var ghCommands = map[string]ghCommand{
 		kind: "issues", targets: commentTargets,
 		checks: CommentChecks,
 		effect: aftereffect.CommentReply, failOnFindings: true,
+		hint: aftereffect.RecheckHint,
 	},
 }
 
@@ -76,6 +79,7 @@ func (c ghCommand) run(name string, ev ghEvent, gh aftereffect.Client, b blobChe
 		return ghFailure(name, err)
 	}
 	rep := newTargetReport(name, c.kind)
+	rep.hint = c.hint
 	failed := false
 	for _, t := range targets {
 		bad, err := c.check(gh, b, rep, t)

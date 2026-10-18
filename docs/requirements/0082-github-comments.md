@@ -20,16 +20,16 @@ Source: `go/internal/aftereffect/comment.go:56`
 
 - 0082.1
     - Given Developer has a drafted comment with a change-log note and a callout table missing a diagram number
-        - When I run fitness comment-check with the draft as a file or on stdin
+        - When I run fitness comment-check with the draft after `--blob` or on stdin
             - Then it names both violations with their lines and exits 1
 - 0082.2
     - Given Developer has a drafted comment whose numbered diagram matches its callout table
-        - When I run fitness comment-check with the draft as a file
+        - When I run fitness comment-check with the draft after `--blob`
             - Then every check passes and it exits 0
 - 0082.3
     - Given Developer has a failing comment on an issue with no reply yet
         - When comment-check judges the comment event
-            - Then it posts one reply mentioning the author with the violations, reacts thumbs-down, and exits 1
+            - Then it posts one reply mentioning the author with the violations and the `--blob` re-check, reacts thumbs-down, and exits 1
 - 0082.4
     - Given Developer has a failing comment whose reply already states the same violations
         - When comment-check judges it again

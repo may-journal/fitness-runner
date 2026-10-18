@@ -124,9 +124,12 @@ func failNotice(c Comment, errs []string, mark string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "❌ %s [This comment](%s) breaks the comment rules:\n\n", mentions(c.Author), c.URL)
 	b.WriteString(BulletList(errs))
-	b.WriteString("\nRun `fitness comment-check --file <draft>` before posting, then edit the comment. This reply follows the edit.")
+	b.WriteString("\n" + RecheckHint + " Then edit the comment; this reply follows the edit.")
 	return b.String() + footer(mark)
 }
+
+// RecheckHint tells an author how to judge a draft before posting it.
+const RecheckHint = "Re-check a draft before posting with `fitness comment-check --blob -`, piping it in, or `fitness comment-check --blob \"<text>\"`."
 
 // passNotice replaces a failing reply once the comment is fixed.
 func passNotice(c Comment, mark string) string {

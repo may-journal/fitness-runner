@@ -76,8 +76,8 @@ const draft = sloppy + "\n```mermaid\nflowchart TD\n  A[1 Start]:::s --> B[2 End
 
 func Test0082_1(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", map[string]string{"draft.md": draft})
-	out, code := fitness(t, repo, nil, "comment-check", "--file", "draft.md")
+	repo := example(t, "happyRepo", nil)
+	out, code := fitness(t, repo, nil, "comment-check", "--blob", draft)
 	sees(t, out, code, 1, sloppyError, "diagram callout 2 has no matching table row")
 	out, code = piped(t, repo, draft, nil, "comment-check")
 	sees(t, out, code, 1, sloppyError, "diagram callout 2 has no matching table row")
@@ -85,16 +85,16 @@ func Test0082_1(t *testing.T) {
 
 func Test0082_2(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", map[string]string{"draft.md": "The parser now handles tabs.\n\n" + numbered})
-	out, code := fitness(t, repo, nil, "comment-check", "--file=draft.md")
+	repo := example(t, "happyRepo", nil)
+	out, code := fitness(t, repo, nil, "comment-check", "--blob=The parser now handles tabs.\n\n"+numbered)
 	sees(t, out, code, 0, "All 11 checks passed")
 }
 
 func Test0082_3(t *testing.T) {
 	t.Parallel()
 	out, code, rp := judgeComment(t, eventComment(sloppy, "dev", "User"), commentGitHub(""))
-	sees(t, out, code, 1, "comment-check #9", "Update:")
-	reply := rp.called("gh", "-X POST", "body=❌ @dev [This comment]("+commentURL+")", "Update:", "issues/9/comments")
+	sees(t, out, code, 1, "comment-check #9", "Update:", "Re-check a draft before posting with `fitness comment-check --blob -`")
+	reply := rp.called("gh", "-X POST", "body=❌ @dev [This comment]("+commentURL+")", "Update:", "comment-check --blob -", "issues/9/comments")
 	if !reply || !rp.called("gh", "-X POST", "content=-1", "issues/comments/31/reactions") {
 		t.Errorf("want one reply naming the author and a thumbs-down, got gh calls %q", rp.calls("gh"))
 	}

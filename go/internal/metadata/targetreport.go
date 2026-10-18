@@ -17,6 +17,7 @@ type targetReport struct {
 	summary         strings.Builder
 	diagnostics     []string
 	targets         []int
+	hint            string
 	output          io.Writer
 }
 
@@ -61,6 +62,9 @@ func (r *targetReport) emit() {
 
 func (r *targetReport) finish() {
 	fmt.Fprintf(&r.summary, "\n%d targets checked; %d findings.\n", len(r.targets), len(r.diagnostics))
+	if r.hint != "" && len(r.diagnostics) > 0 {
+		fmt.Fprintf(&r.summary, "\n%s\n", r.hint)
+	}
 	fmt.Fprint(r.output, r.summary.String())
 	report.WriteSummary(r.summary.String() + r.links())
 	r.emit()

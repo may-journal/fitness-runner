@@ -145,4 +145,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
 | 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
-| 31  | `fitness comment-check --file <draft>`. | Action | An agent judges a comment before posting it; CI replies once to one that fails. |
+| 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |

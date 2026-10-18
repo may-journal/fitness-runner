@@ -128,7 +128,7 @@ flowchart TD
 
 [comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml), whose `authors` input limits it to the listed logins.
 
-Before posting, an agent runs `fitness comment-check --file draft.md`, or pipes the draft in. It runs the same checks, prints each violation with its line, and exits 1 on any.
+Before posting, an agent runs `fitness comment-check --blob -` with the draft on stdin, or `--blob "<text>"`. It runs the same checks, prints each violation with its line, and exits 1 on any. The reply and the run summary point there too.
 
 ```mermaid
 flowchart TD
