@@ -13,8 +13,15 @@ goarch="$(go env GOARCH)"
 platform="$goos-$goarch"
 host_only="s/^\( *goos:\).*/\1 [$goos]/;s/^\( *goarch:\).*/\1 [$goarch]/"
 mkdir -p out
-sed "$host_only" .goreleaser-bundles.yml >out/host-bundles.yml
-sed "$host_only" .goreleaser-tools.yml >out/host-tools.yml
+for config in bundles tools; do
+  # The filter rewrites one-line lists only, so stop on any other form.
+  if ! grep -qE '^ *goos: \[' ".goreleaser-$config.yml" ||
+    grep -E '^ *(goos|goarch):' ".goreleaser-$config.yml" | grep -qvE ': \[[a-z0-9, ]+\]$'; then
+    echo "tests/requirements.sh: .goreleaser-$config.yml needs one-line goos and goarch lists" >&2
+    exit 1
+  fi
+  sed "$host_only" ".goreleaser-$config.yml" >"out/host-$config.yml"
+done
 FITNESS_VERSION="$(go -C go run ./cmd/fitness-release version --root ..)"
 export FITNESS_VERSION
 cover=""

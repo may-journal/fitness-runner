@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -67,6 +68,23 @@ func releaseToolBundles(platforms []string) map[string]string {
 	return files
 }
 
+// releaseToolOutputs returns both GoReleaser passes for platforms: bundle
+// archives in out/bundles, and installers, verifiers, and the checksums that
+// list installers and archives in out/tools.
+func releaseToolOutputs(platforms []string) map[string]string {
+	files, sums := releaseToolBundles(platforms), ""
+	for _, platform := range platforms {
+		installer := "fitness-install-1.0.1-" + platform
+		files["out/tools/"+installer] = "installer for " + platform + "\n"
+		files["out/tools/fitness-release-"+platform] = "verifier for " + platform + "\n"
+		for name, path := range map[string]string{installer: "out/tools/" + installer, "fitness-1.0.1-" + platform + ".tar.gz": "out/bundles/fitness-1.0.1-" + platform + ".tar.gz"} {
+			sums += fmt.Sprintf("%x  %s\n", sha256.Sum256([]byte(files[path])), name)
+		}
+	}
+	files["out/tools/checksums.txt"] = sums
+	return files
+}
+
 // releaseToolActions is a GitHub Actions job's environment with its summary
 // and env files in dir.
 func releaseToolActions(dir, ref string) []string {
@@ -98,38 +116,6 @@ func Test0062_2(t *testing.T) {
 	sees(t, out, code, 1, "tag v1.0.2 does not match version.txt v1.0.1")
 }
 
-func Test0062_3(t *testing.T) {
-	t.Parallel()
-	bundles := releaseToolBundles(releaseToolPlatforms)
-	out, code := releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes")
-	for _, platform := range releaseToolPlatforms {
-		hash := sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+platform+".tar.gz"]))
-		sees(t, out, code, 0, fmt.Sprintf("%s=%x", platform, hash))
-	}
-	host := runtime.GOOS + "-" + runtime.GOARCH
-	hash := fmt.Sprintf("%s=%x", host, sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+host+".tar.gz"])))
-	out, code = releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes", "--host")
-	if strings.TrimSpace(out) != hash || code != 0 {
-		t.Errorf("bundle-hashes --host printed %q and exited %d, want only %s", out, code, hash)
-	}
-	out, code = releaseToolRun(t, releaseToolRepo(t, releaseToolBundles([]string{host})), nil, "bundle-hashes", "--host")
-	sees(t, out, code, 0, hash)
-}
-
-func Test0062_4(t *testing.T) {
-	t.Parallel()
-	changed := releaseToolBundles(releaseToolPlatforms)
-	changed["out/bundles/fitness-1.0.1-linux-arm64.tar.gz"] = "changed after the build\n"
-	out, code := releaseToolRun(t, releaseToolRepo(t, changed), nil, "bundle-hashes")
-	sees(t, out, code, 1, "GoReleaser checksum mismatch for fitness-1.0.1-linux-arm64.tar.gz")
-	missing := map[string]string{"assemble": "tools/checksums.txt", "smoke": "release.json", "verify-download": "release.json", "bundle-hashes": "bundles/checksums.txt"}
-	repo := releaseToolRepo(t, nil)
-	for step, file := range missing {
-		out, code := releaseToolRun(t, repo, nil, step)
-		sees(t, out, code, 1, filepath.Join("out", filepath.FromSlash(file))+": no such file or directory")
-	}
-}
-
 func Test0062_5(t *testing.T) {
 	t.Parallel()
 	repo := releaseToolRepo(t, nil)
@@ -139,8 +125,6 @@ func Test0062_5(t *testing.T) {
 	sees(t, out, code, 1, `unknown release command "publish-everything"`)
 	out, code = releaseToolRun(t, repo, nil, "tag", "--invalid")
 	sees(t, out, code, 1, "flag provided but not defined: -invalid", "-root string")
-	out, code = releaseToolRun(t, repo, nil, "tag", "--host")
-	sees(t, out, code, 1, "--host applies to bundle-hashes and assemble, not tag")
 	out, code = releaseToolRun(t, releaseToolRepo(t, map[string]string{"version.txt": "one\n"}), nil, "version")
 	sees(t, out, code, 1, `invalid version.txt version "one"`)
 }
@@ -176,4 +160,63 @@ func Test0062_8(t *testing.T) {
 	mustDo(t, os.Mkdir(filepath.Join(job, "summary"), 0o755))
 	out, code := releaseToolRun(t, releaseToolRepo(t, nil), releaseToolActions(job, "v9.9.9"), "verify-tag")
 	sees(t, out, code, 1, "Could not write GitHub job summary", "Fitness: fitness-release verify-tag: tag v9.9.9 does not match")
+}
+
+func Test0062_9(t *testing.T) {
+	t.Parallel()
+	bundles := releaseToolBundles(releaseToolPlatforms)
+	out, code := releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes")
+	for _, platform := range releaseToolPlatforms {
+		hash := sha256.Sum256([]byte(bundles["out/bundles/fitness-1.0.1-"+platform+".tar.gz"]))
+		sees(t, out, code, 0, fmt.Sprintf("%s=%x", platform, hash))
+	}
+	bundles["out/bundles/fitness-1.0.1-linux-arm64.tar.gz"] = "changed after the build\n"
+	out, code = releaseToolRun(t, releaseToolRepo(t, bundles), nil, "bundle-hashes")
+	sees(t, out, code, 1, "GoReleaser checksum mismatch for fitness-1.0.1-linux-arm64.tar.gz")
+	missing := map[string]string{"assemble": "tools/checksums.txt", "smoke": "release.json", "verify-download": "release.json", "bundle-hashes": "bundles/checksums.txt"}
+	repo := releaseToolRepo(t, nil)
+	for step, file := range missing {
+		out, code := releaseToolRun(t, repo, nil, step)
+		sees(t, out, code, 1, filepath.Join("out", filepath.FromSlash(file))+": no such file or directory")
+	}
+}
+
+func Test0062_10(t *testing.T) {
+	t.Parallel()
+	host := runtime.GOOS + "-" + runtime.GOARCH
+	full := releaseToolOutputs(releaseToolPlatforms)
+	hash := fmt.Sprintf("%s=%x", host, sha256.Sum256([]byte(full["out/bundles/fitness-1.0.1-"+host+".tar.gz"])))
+	out, code := releaseToolRun(t, releaseToolRepo(t, full), nil, "bundle-hashes", "--host")
+	if strings.TrimSpace(out) != hash || code != 0 {
+		t.Errorf("bundle-hashes --host printed %q and exited %d, want only %s", out, code, hash)
+	}
+	files := releaseToolOutputs([]string{host})
+	for _, platform := range releaseToolPlatforms {
+		files["out/fitness-1.0.0-"+platform+".tar.gz"] = "full build archive\n"
+		files["out/fitness-install-1.0.0-"+platform] = "full build installer\n"
+		files["out/fitness-release-"+platform] = "full build verifier\n"
+	}
+	repo := releaseToolRepo(t, files)
+	out, code = releaseToolRun(t, repo, nil, "assemble", "--host")
+	sees(t, out, code, 0)
+	want := []string{"bundles", "checksums.txt", "fitness-1.0.1-" + host + ".tar.gz", "fitness-install-1.0.1-" + host, "fitness-release-" + host, "release.json", "tools"}
+	if got := releaseToolEntries(t, filepath.Join(repo, "out")); !slices.Equal(got, want) {
+		t.Errorf("assemble --host left %v in out, want %v", got, want)
+	}
+	out, code = releaseToolRun(t, repo, nil, "tag", "--host")
+	sees(t, out, code, 0, "v1.0.1", "fitness-release tag: warning: --host not handled, ignoring it")
+}
+
+// releaseToolEntries returns the sorted names in dir.
+func releaseToolEntries(t *testing.T, dir string) []string {
+	t.Helper()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatalf("reading %s: %v", dir, err)
+	}
+	var names []string
+	for _, entry := range entries {
+		names = append(names, entry.Name())
+	}
+	return names
 }

@@ -33,6 +33,9 @@ func (c Config) Assemble() error {
 	if err != nil {
 		return err
 	}
+	if err := c.removeOutputs(); err != nil {
+		return err
+	}
 	if err := c.copyOutputs(assets); err != nil {
 		return err
 	}
@@ -129,6 +132,23 @@ func (c Config) copyOutputs(assets []Asset) error {
 		return err
 	}
 	return copyReleaseFile(filepath.Join(c.Out, "tools", "checksums.txt"), filepath.Join(c.Out, "checksums.txt"), 0600)
+}
+
+// removeOutputs deletes the archives, installers, and verifiers an earlier
+// assemble left in out, so none outlives the checksums that listed it.
+func (c Config) removeOutputs() error {
+	for _, pattern := range []string{runnerName + "-*.tar.gz", installerName + "-*", verifierName + "-*"} {
+		paths, err := filepath.Glob(filepath.Join(c.Out, pattern))
+		if err != nil {
+			return err
+		}
+		for _, path := range paths {
+			if err := os.Remove(path); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c Config) copyVerifiers() error {
