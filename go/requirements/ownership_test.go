@@ -1,9 +1,6 @@
 package requirements
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -33,7 +30,6 @@ const (
 	pairedTest = "reqs/0001_test.go"
 	pairedDoc  = "docs/requirements/0001-adds-numbers.md"
 	twoTest    = "reqs/0001_0002_test.go"
-	exempt     = "Unpaired-Requirement: 0001 only rewords the test"
 )
 
 // edited is body with one more line, a change that keeps it valid.
@@ -52,36 +48,25 @@ func stagedRun(t *testing.T, given, files map[string]string) (string, int) {
 }
 
 // prRun commits files with message on top of a fresh copy of given, as a
-// pull request branch off main whose description is body, and runs the
-// requirements check on the pull request's changes.
-func prRun(t *testing.T, given, files map[string]string, body string, message ...string) (string, int) {
+// pull request branch off main, and runs the requirements check on the pull
+// request's changes.
+func prRun(t *testing.T, given, files map[string]string, message string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", given)
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
 	write(t, repo, files)
 	git(t, repo, "add", "-A")
-	args := []string{"-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q"}
-	for _, m := range message {
-		args = append(args, "-m", m)
-	}
-	git(t, repo, args...)
-	return fitness(t, repo, prEnv(t, body), "requirements")
+	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", message)
+	return fitness(t, repo, prEnv, "requirements")
 }
 
-// prEnv is the GitHub Actions environment of a pull request into main whose
-// description is body.
-func prEnv(t *testing.T, body string) []string {
-	t.Helper()
-	event := filepath.Join(t.TempDir(), "event.json")
-	data, err := json.Marshal(map[string]any{"pull_request": map[string]string{"body": body}})
-	mustDo(t, err)
-	mustDo(t, os.WriteFile(event, data, 0o644))
-	return []string{"GITHUB_ACTIONS=true", "GITHUB_BASE_REF=main", "GITHUB_EVENT_PATH=" + event}
-}
+// prEnv is the GitHub Actions environment of a pull request into main.
+var prEnv = []string{"GITHUB_ACTIONS=true", "GITHUB_BASE_REF=main"}
 
-// replayed runs one replay of an exempted test change in a repo with the
-// hooks committed: a side branch rewords the test under a trailer while the
-// first branch changes the same line with its doc. The replay conflicts,
+// replayed runs one replay of an unpaired test change in a repo with the
+// hooks committed: a side branch rewords the test alone, skipping the hooks
+// as a user with --no-verify would, while the first branch changes the same
+// line with its doc. The replay conflicts,
 // takes the replayed side, and commits with each finish in turn. It returns
 // what the first failing commit, or else the last one, printed.
 func replayed(t *testing.T, replay []string, finish ...[]string) (out string, code int) {
@@ -91,7 +76,7 @@ func replayed(t *testing.T, replay []string, finish ...[]string) (out string, co
 	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "-m", "chore(hooks): add the fitness hooks"})
 	write(t, repo, map[string]string{pairedTest: strings.Replace(base, "{}", "{ _ = 1 }", 1)})
 	userSteps(t, repo, env, []string{"checkout", "-q", "-b", "side"}, []string{"add", "-A"},
-		[]string{"commit", "-q", "-m", "test(reqs): reword the test", "-m", exempt}, []string{"checkout", "-q", "-"})
+		[]string{"commit", "-q", "--no-verify", "-m", "test(reqs): reword the test"}, []string{"checkout", "-q", "-"})
 	write(t, repo, map[string]string{pairedTest: strings.Replace(base, "{}", "{ _ = 2 }", 1), pairedDoc: requirementDoc("0001.1") + "\n"})
 	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "-m", "test(reqs): check sums again"})
 	if _, code := user(t, repo, env, replay...); code == 0 {

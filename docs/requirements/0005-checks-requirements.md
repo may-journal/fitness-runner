@@ -14,7 +14,7 @@ changed requirement tests and docs whose partner changed too
 -
 changed requirement tests and docs
 
-Source: `go/cmd/fitness-check-requirements/pairs.go:87`
+Source: `go/cmd/fitness-check-requirements/pairs.go:86`
 
 ## Requirements
 
@@ -34,15 +34,11 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:87`
     - Given Developer has a changed shared test helper that proves no requirement
         - When fitness runs on staged changes
             - Then the check passes
-- 0005.12
-    - Given Developer has an unpaired change and a commit trailer giving the reason
-        - When I commit it with the hooks
-            - Then the commit goes through
-- 0005.13
-    - Given Developer has a pull request commit with that trailer
-        - When fitness runs on pull request changes
-            - Then it fails until the pull request body lists the trailer
 - 0005.14
     - Given Developer has a merge, cherry-pick, revert, or base merge that replays an unpaired change
         - When fitness judges my commit or pull request
             - Then only the branch's own changes are judged
+- 0005.15
+    - Given Developer has a commit with a requirement test alone and its doc staged
+        - When I amend the commit with the hooks
+            - Then the commit goes through, judged on everything since its parent

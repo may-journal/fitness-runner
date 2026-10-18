@@ -8,9 +8,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
 // runHook dispatches a `fitness hook <name>` invocation. The installed hooks
@@ -45,43 +42,20 @@ func chdirToplevel() error {
 }
 
 // hookCommitMsg validates the proposed commit message with semantic-commit,
-// plan-trailer, requirements, and issue-link-once — the message file is the
-// first argument. Requirements pairs tests with docs here, where an
-// exemption trailer is readable.
+// plan-trailer, and issue-link-once — the message file is the first
+// argument. An amend is judged against the amended commit's parent.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)
 	if !ok {
 		return 1
 	}
-	if amending() {
-		_ = os.Setenv("FITNESS_COMMIT_AMEND", "1")
-	}
-	for _, check := range commitMsgChecks() {
+	markAmend()
+	for _, check := range []string{"semantic-commit", "plan-trailer", "issue-link-once"} {
 		if code := run([]string{check, "--message=" + msg}); code != 0 {
 			return code
 		}
 	}
 	return 0
-}
-
-// commitMsgChecks lists the checks the commit-msg hook runs. Requirements
-// runs only when the repo's suite does, so an external policy that leaves
-// it out never meets it at commit time.
-func commitMsgChecks() []string {
-	checks := []string{"semantic-commit", "plan-trailer", "requirements", "issue-link-once"}
-	cfg, err := loadConfig(".")
-	if err != nil || !leavesOut(cfg, "requirements") {
-		return checks
-	}
-	return slices.DeleteFunc(checks, func(c string) bool { return c == "requirements" })
-}
-
-// leavesOut reports whether an external policy's check list omits name.
-func leavesOut(cfg *conf.Config, name string) bool {
-	if cfg == nil || cfg.Policy != selection.External {
-		return false
-	}
-	return len(cfg.LegacyChecks) > 0 && !slices.Contains(cfg.LegacyChecks, name)
 }
 
 // readMessage reads the commit message file named by the hook's first
@@ -99,6 +73,13 @@ func readMessage(args []string) (string, bool) {
 	return string(data), true
 }
 
+// markAmend tells the checks when the commit amends HEAD.
+func markAmend() {
+	if amending() {
+		_ = os.Setenv("FITNESS_COMMIT_AMEND", "1")
+	}
+}
+
 // amending reports whether the git process running this hook was invoked with
 // --amend. The shims exec fitness, so the parent process is git itself.
 func amending() bool {
@@ -112,9 +93,11 @@ func amendArgs(args string) bool {
 }
 
 // hookPreCommit runs file checks, then the repo's own build and tests via an
-// optional .githooks/pre-commit.local.
+// optional .githooks/pre-commit.local. The requirements check judges an
+// amend on everything it changes since the amended commit's parent.
 func hookPreCommit() int {
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-commit")
+	markAmend()
 	if code := run(nil); code != 0 {
 		return code
 	}

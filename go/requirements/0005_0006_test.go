@@ -30,9 +30,9 @@ func Test0005_9(t *testing.T) {
 	write(t, repo, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))})
 	user(t, repo, env, "add", "-A")
 	out, code := user(t, repo, env, "commit", "-m", "test(reqs): check sums twice")
-	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc)
-	out, code = prRun(t, pairedRepo(), map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"}, "", "docs(requirements): reword 0001")
-	sees(t, out, code, 1, pairedDoc+" changed without its requirement test "+pairedTest)
+	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
+	out, code = prRun(t, pairedRepo(), map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"}, "docs(requirements): reword 0001")
+	sees(t, out, code, 1, pairedDoc+" changed without its requirement test "+pairedTest+"; change both together")
 }
 
 func Test0005_10(t *testing.T) {
@@ -51,24 +51,6 @@ func Test0005_11(t *testing.T) {
 	sees(t, out, code, 0)
 }
 
-func Test0005_12(t *testing.T) {
-	t.Parallel()
-	repo, env := hooked(t, pairedRepo())
-	write(t, repo, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))})
-	user(t, repo, env, "add", "-A")
-	out, code := user(t, repo, env, "commit", "-m", "test(reqs): check sums twice", "-m", exempt)
-	sees(t, out, code, 0, "test(reqs): check sums twice")
-}
-
-func Test0005_13(t *testing.T) {
-	t.Parallel()
-	change := map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))}
-	out, code := prRun(t, pairedRepo(), change, "Rewords one test.", "test(reqs): reword", exempt)
-	sees(t, out, code, 1, `"`+exempt+`" is not listed in the pull request body`)
-	out, code = prRun(t, pairedRepo(), change, "Rewords one test.\n\n"+exempt+"\n", "test(reqs): reword", exempt)
-	sees(t, out, code, 0)
-}
-
 func Test0005_14(t *testing.T) {
 	t.Parallel()
 	keep := []string{"--no-edit"}
@@ -80,8 +62,19 @@ func Test0005_14(t *testing.T) {
 		out, code := replayed(t, r[0], r[1:]...)
 		sees(t, out, code, 0)
 	}
-	out, code := fitness(t, mergedBase(t), prEnv(t, ""), "requirements")
+	out, code := fitness(t, mergedBase(t), prEnv, "requirements")
 	sees(t, out, code, 0)
+}
+
+func Test0005_15(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, pairedRepo())
+	write(t, repo, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))})
+	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "--no-verify", "-m", "test(reqs): check sums twice"})
+	write(t, repo, map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"})
+	user(t, repo, env, "add", "-A")
+	out, code := user(t, repo, env, "commit", "--amend", "-m", "test(reqs): check sums twice")
+	sees(t, out, code, 0, "test(reqs): check sums twice")
 }
 
 // docOf is goRepo with requirement 0001 replaced by body at path.

@@ -78,14 +78,13 @@ A requirement test and its doc change together, so neither drifts from the other
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
 - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
 - Helpers: a test file that names and holds no requirement pairs with nothing.
-- Exemptions: a commit trailer `Unpaired-Requirement: NNNN, NNNN <reason>` exempts those numbers. A pull request fails until its body lists each such trailer.
+- No exemptions: there is no trailer, flag, or body text that lets an unpaired change through.
 
 Which changes are judged depends on the run:
 
-- Commits: the `commit-msg` hook judges the staged files, since only it can read the message. The `pre-commit` run leaves pairs to it.
+- Commits: the `pre-commit` hook judges the staged files.
 - Amends: an amended commit is judged on everything it changes since its parent.
 - Pull requests: CI judges the diff against the current merge base with the base branch, so merged base changes are not judged.
-- Bodies: CI reads the pull request body from its event, so push or reopen after listing a trailer.
 - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
 
