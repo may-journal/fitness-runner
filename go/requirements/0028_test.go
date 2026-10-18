@@ -1,9 +1,11 @@
 package requirements
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 // goTestCoverage runs `fitness-install -- go-test-coverage <args>` on
@@ -36,31 +38,10 @@ func gtcLibrary(config string) map[string]string {
 	}
 }
 
-// gtcLibEntry declares the library package as an entry.
-const gtcLibEntry = `{"goTestCoverage": {"entries": ["example.test/lib"]}}` + "\n"
-
-func Test0028_1(t *testing.T) {
-	t.Parallel()
-	out, code := goTestCoverage(t, gtcCommand(""))
-	sees(t, out, code, 1, "entry example.test/cli: 0/1 statements; required 100%")
-}
-
-func Test0028_2(t *testing.T) {
-	t.Parallel()
-	out, code := goTestCoverage(t, gtcCommand(gtcEntryTest))
-	sees(t, out, code, 0, "package example.test/cli: 1/1 statements (100.0%); required 100%", "All 1 checks passed")
-}
-
 func Test0028_3(t *testing.T) {
 	t.Parallel()
 	out, code := goTestCoverage(t, gtcLibrary("{}\n"))
 	sees(t, out, code, 1, "no entry packages; declare library entries with --entry=import/path")
-}
-
-func Test0028_4(t *testing.T) {
-	t.Parallel()
-	out, code := goTestCoverage(t, gtcLibrary(gtcLibEntry))
-	sees(t, out, code, 1, "entry example.test/lib: 1/2 statements; required 100%")
 }
 
 func Test0028_5(t *testing.T) {
@@ -89,5 +70,71 @@ func Test0028_8(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 	if _, err := os.Stat(claims); err != nil {
 		t.Errorf("source map was not written: %v", err)
+	}
+}
+
+func Test0028_9(t *testing.T) {
+	t.Parallel()
+	lib := gtcLibrary(`{"goTestCoverage": {"entries": ["example.test/cli/lib"]}}` + "\n")
+	files := gtcCommand("")
+	files[".fitnessrc.json"] = lib[".fitnessrc.json"]
+	for _, name := range []string{"lib.go", "lib_test.go"} {
+		files["lib/"+name] = lib[name]
+	}
+	out, code := goTestCoverage(t, files)
+	sees(t, out, code, 1, "entry example.test/cli: 0/1 statements; required 100%", "entry example.test/cli/lib: 1/2 statements; required 100%")
+}
+
+// gtcFlip is a command source file whose flip takes one branch for even
+// counts and the other for odd ones.
+const gtcFlip = "package main\n\nfunc flip(n int) int {\n\tif n%2 == 0 {\n\t\treturn 1\n\t}\n\treturn 2\n}\n"
+
+// gtcFlipTest covers the command fully in TestEntry, while TestFlip takes the
+// other branch of flip each time it runs, counted in a file it appends to.
+const gtcFlipTest = `package main
+
+import (
+	"os"
+	"testing"
+)
+
+func TestEntry(t *testing.T) { main(); flip(0); flip(1) }
+
+func TestFlip(t *testing.T) {
+	runs, _ := os.ReadFile("runs")
+	if err := os.WriteFile("runs", append(runs, 'x'), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	flip(len(runs))
+}
+`
+
+func Test0028_10(t *testing.T) {
+	t.Parallel()
+	files := gtcCommand(gtcFlipTest)
+	files["flip.go"] = gtcFlip
+	out, code := goTestCoverage(t, files)
+	sees(t, out, code, 0, "example.test/cli/TestFlip (", "unstable coverage; excluded from overlap advice")
+}
+
+// gtcSlowTests spreads twelve one-second tests over six packages, two each.
+func gtcSlowTests() map[string]string {
+	files := gtcCommand(gtcEntryTest)
+	for i := range 6 {
+		pkg := fmt.Sprintf("slow%d", i)
+		files[pkg+"/wait.go"] = "package " + pkg + "\n\nimport \"time\"\n\nfunc Wait() { time.Sleep(time.Second) }\n"
+		files[pkg+"/wait_test.go"] = "package " + pkg + "\n\nimport \"testing\"\n\nfunc TestA(t *testing.T) { Wait() }\n\nfunc TestB(t *testing.T) { Wait() }\n"
+	}
+	return files
+}
+
+func Test0028_11(t *testing.T) {
+	t.Parallel()
+	start := time.Now()
+	out, code := goTestCoverage(t, gtcSlowTests())
+	elapsed := time.Since(start)
+	sees(t, out, code, 0, "All 1 checks passed")
+	if elapsed > 15*time.Second {
+		t.Errorf("go-test-coverage took %s with twelve one-second tests, want within 15s", elapsed.Round(time.Millisecond))
 	}
 }
