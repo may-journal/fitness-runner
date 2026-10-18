@@ -56,7 +56,7 @@ flowchart TD
 - `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue by its kind label, and passes an Issue with none.
 - `workflow_dispatch`: sweeps every open Issue with a kind label and comments on each body version not seen before.
 
-A changed description earns a new verdict; earlier ones stay hidden. Plan verdicts posted under the earlier `fitness:plan-structure:` marker still count.
+A changed description earns a new verdict; earlier ones stay hidden. Plan verdicts posted under the earlier `fitness:plan-structure:` marker still count. Only the bot's own comments count; a run under another token sets `FITNESS_BOT_LOGIN` to that account.
 
 ## plan-check
 

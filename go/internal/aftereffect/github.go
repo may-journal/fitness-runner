@@ -72,8 +72,22 @@ type Verdict struct {
 	NodeID   string `json:"nodeId"`
 	Body     string `json:"body"`
 	IsHidden bool   `json:"isHidden"`
-	// Author is the login that wrote the comment, with an app's [bot] suffix.
-	Author string `json:"author"`
+	Author   author `json:"author"`
+}
+
+// author is a comment's writer as GraphQL reports it: an app's login comes
+// without the [bot] suffix REST gives it, and its type is Bot.
+type author struct {
+	Login string `json:"login"`
+	Type  string `json:"__typename"`
+}
+
+// rest is the login as REST and botLogin spell it.
+func (a author) rest() string {
+	if a.Type == "Bot" {
+		return a.Login + "[bot]"
+	}
+	return a.Login
 }
 
 // Effect is a command's reaction to one judged target; errs are the checks'
@@ -336,7 +350,7 @@ func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 	}
 	jq := `.data.repository.issue.comments.nodes[]
 		| select(.body | ` + strings.Join(tests, " or ") + `)
-		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized, author: ` + authorJQ + `}`
+		| {id: .databaseId, nodeId: .id, body, isHidden: .isMinimized, author}`
 	out, err := g.issueQuery("api", "graphql", "--paginate",
 		"-f", "query="+verdictsQuery, "-F", "owner="+owner, "-F", "name="+name,
 		"-F", "number="+strconv.Itoa(n), "--jq", jq)
@@ -344,22 +358,24 @@ func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 		return nil, err
 	}
 	found, err := decodeLines[Verdict](out)
-	return byBot(found, func(v Verdict) string { return v.Author }), err
+	return byBot(found, func(v Verdict) string { return v.Author.rest() }), err
 }
 
-// authorJQ is a GraphQL comment author's login as REST spells it: an app
-// such as github-actions gains its [bot] suffix.
-const authorJQ = `(if .author.__typename == "Bot" then .author.login + "[bot]" else (.author.login // "") end)`
-
 // byBot keeps the items the fitness bot wrote.
-func byBot[T any](items []T, author func(T) string) []T {
+func byBot[T any](items []T, writer func(T) string) []T {
 	var kept []T
 	for _, item := range items {
-		if author(item) == botLogin() {
+		if writer(item) == botLogin() {
 			kept = append(kept, item)
 		}
 	}
 	return kept
+}
+
+// authoredBody is one comment's body and its REST author login.
+type authoredBody struct {
+	Body   string `json:"body"`
+	Author string `json:"author"`
 }
 
 // CommentBodies returns the bodies of the comments the fitness bot wrote on
@@ -371,8 +387,8 @@ func (g Client) CommentBodies(n int) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	all, err := decodeLines[Notice](out)
-	comments := byBot(all, func(c Notice) string { return c.Author })
+	all, err := decodeLines[authoredBody](out)
+	comments := byBot(all, func(c authoredBody) string { return c.Author })
 	bodies := make([]string, len(comments))
 	for i, c := range comments {
 		bodies[i] = c.Body
