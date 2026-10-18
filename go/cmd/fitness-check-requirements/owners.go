@@ -70,3 +70,34 @@ func testError(t reqTest, current map[string]bool) []string {
 	}
 	return nil
 }
+
+// toolErrors asks each written module that judges test tools about the
+// files its tests are in, such as a Swift test that imports XCTest.
+func toolErrors(root string, tests []reqTest, written []lang.Module) ([]string, error) {
+	var errs []string
+	for _, m := range written {
+		if m.Tests.Tools == nil {
+			continue
+		}
+		found, err := m.Tests.Tools(root, moduleFiles(tests, m.Name))
+		if err != nil {
+			return nil, err
+		}
+		errs = append(errs, found...)
+	}
+	return errs, nil
+}
+
+// moduleFiles lists, once each in order, the files holding the named
+// module's tests.
+func moduleFiles(tests []reqTest, module string) []string {
+	var files []string
+	seen := map[string]bool{}
+	for _, t := range tests {
+		if t.module.Name == module && !seen[t.File] {
+			seen[t.File] = true
+			files = append(files, t.File)
+		}
+	}
+	return files
+}

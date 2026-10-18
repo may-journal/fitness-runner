@@ -41,14 +41,26 @@ func twoRepo() map[string]string {
 	})
 }
 
-// swiftRepo is a Swift package whose XCTest method test0001_1 owns 0001.1.
+// swiftRepo is a Swift package whose Swift Testing test test0001_1 owns
+// 0001.1, beside a shared helper that imports apple-ui-testing-library.
 func swiftRepo() map[string]string {
 	return map[string]string{
+		swiftScreens:                             "import UITestingLibrary\n\n/// Screens every test renders.\nenum Screens {}\n",
 		"Package.swift":                          "// swift-tools-version:5.9\nimport PackageDescription\n\nlet package = Package(name: \"Adder\")\n",
 		"Sources/Adder/Adder.swift":              "/// Adds numbers.\npublic enum Adder {\n  /// Returns the sum of a and b.\n  public static func add(_ a: Int, _ b: Int) -> Int { a + b }\n}\n",
-		"Tests/AdderTests/AdderTests.swift":      xcTestFile("test0001_1"),
+		swiftTest:                                swiftTestingFile("test0001_1"),
 		"docs/requirements/0001-adds-numbers.md": docWith("Source: `Sources/Adder/Adder.swift:4`", acceptances("0001.1")),
 	}
+}
+
+// swiftTestingFile is a Swift Testing suite declaring one empty test per
+// name.
+func swiftTestingFile(names ...string) string {
+	body := "import Testing\n\n@MainActor @Suite struct AdderSpec {\n"
+	for _, n := range names {
+		body += "  @Test func " + n + "() async throws {}\n"
+	}
+	return body + "}\n"
 }
 
 // xcTestFile is an XCTest case class declaring one empty test per name.

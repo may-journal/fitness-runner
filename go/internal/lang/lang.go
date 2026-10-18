@@ -96,6 +96,11 @@ type Tests struct {
 	// Numbers, when set, lists the requirement numbers a test file's name
 	// carries, or none for a file not named for requirements.
 	Numbers func(file string) []string
+	// Tools, when set, judges how the repo's tests are written and run,
+	// given the files Scan found tests in. It returns one error per test
+	// file or run that uses a tool the language's requirement tests may
+	// not use.
+	Tools func(root string, files []string) ([]string, error)
 }
 
 // TestPrefix is how a module whose test names carry IDs names them: the
