@@ -18,7 +18,7 @@ A pom that names no release takes one from its parents outside the repo, read fr
 
 ## Toolchains
 
-A Gradle toolchain asks for its exact release, not a newer one. Gradle always finds the JDK it runs on, so that release passes at once. Any other release must be installed, and the check looks for it without starting Gradle, so it finishes in well under a second.
+A Gradle toolchain asks for its exact release, not a newer one. Gradle always finds the JDK it runs on, so that release passes at once. Any other release must be installed, and the check looks for it without starting Gradle.
 
 The lookup reads `JAVA_HOME`, macOS's `/usr/libexec/java_home -V`, and Gradle's detection folders. Those are `~/.gradle/jdks`, SDKMAN, asdf, jabba, `~/.jdks`, Homebrew, `/usr/lib/jvm` and the macOS JDK folders, where a bundle keeps `release` under `Contents/Home`. It adds the folders `org.gradle.java.installations.paths` names, and the variables `org.gradle.java.installations.fromEnv` names. Both split on commas, and come from the build root's `gradle.properties`, overridden by the Gradle user home's.
 
