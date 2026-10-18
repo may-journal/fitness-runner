@@ -49,4 +49,4 @@ Source: `go/cmd/fitness-check-go-test-coverage/main.go:41`
 - 0028.11
     - Given Developer has sixteen one-second tests, half parallel and half serial across packages
         - When go-test-coverage runs
-            - Then it finishes within fifteen seconds
+            - Then it overlaps their runs exactly where go test would

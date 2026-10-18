@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
-	"time"
 )
 
 // goTestCoverage runs `fitness-install -- go-test-coverage <args>` on
@@ -118,8 +118,9 @@ func Test0028_10(t *testing.T) {
 }
 
 // gtcSlowTests adds sixteen one-second tests: eight call t.Parallel() in one
-// package, and eight run serially, two in each of four more packages. Run one
-// test at a time, either half alone takes sixteen seconds.
+// package, and eight run serially, two in each of four more packages. Each
+// run appends its package, test, process, start and end to runs.log at the
+// module root.
 func gtcSlowTests() map[string]string {
 	files := gtcCommand(gtcEntryTest)
 	gtcSlowPackage(files, "parallel", 8, "\tt.Parallel()\n")
@@ -133,20 +134,119 @@ func gtcSlowTests() map[string]string {
 // starting with first.
 func gtcSlowPackage(files map[string]string, pkg string, count int, first string) {
 	files[pkg+"/wait.go"] = "package " + pkg + "\n\nimport \"time\"\n\nfunc Wait() { time.Sleep(time.Second) }\n"
-	test := "package " + pkg + "\n\nimport \"testing\"\n"
+	test := "package " + pkg + "\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"testing\"\n\t\"time\"\n)\n" + gtcRecord
 	for i := range count {
-		test += fmt.Sprintf("\nfunc TestWait%d(t *testing.T) {\n%s\tWait()\n}\n", i, first)
+		test += fmt.Sprintf("\nfunc TestWait%d(t *testing.T) {\n%s\trecord(t, %q)\n}\n", i, first, pkg)
 	}
 	files[pkg+"/wait_test.go"] = test
 }
 
+// gtcRecord is the slow tests' helper: it waits a second and logs the run.
+const gtcRecord = `
+func record(t *testing.T, pkg string) {
+	start := time.Now().UnixNano()
+	Wait()
+	f, err := os.OpenFile("../runs.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	fmt.Fprintf(f, "%s %s %d %d %d\n", pkg, t.Name(), os.Getpid(), start, time.Now().UnixNano())
+}
+`
+
+// gtcRun is one logged test run.
+type gtcRun struct {
+	pkg, test  string
+	start, end int64
+}
+
+// gtcAuditRuns reads runs.log and keeps the runs whose process ran one test,
+// as each audit run does; the module-wide run logs several per process.
+func gtcAuditRuns(t *testing.T, repo string) []gtcRun {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(repo, "runs.log"))
+	if err != nil {
+		t.Fatalf("the slow tests logged no runs: %v", err)
+	}
+	perProcess := map[string][]gtcRun{}
+	for _, line := range strings.Split(strings.TrimSpace(string(data)), "\n") {
+		pid, run := gtcParseRun(t, line)
+		perProcess[pid] = append(perProcess[pid], run)
+	}
+	var runs []gtcRun
+	for _, group := range perProcess {
+		runs = append(runs, gtcSingle(group)...)
+	}
+	return runs
+}
+
+// gtcParseRun reads one runs.log line as its process ID and run.
+func gtcParseRun(t *testing.T, line string) (string, gtcRun) {
+	t.Helper()
+	var run gtcRun
+	var pid string
+	if _, err := fmt.Sscan(line, &run.pkg, &run.test, &pid, &run.start, &run.end); err != nil {
+		t.Fatalf("bad runs.log line %q: %v", line, err)
+	}
+	return pid, run
+}
+
+// gtcSingle keeps a process's run only when it ran exactly one test.
+func gtcSingle(group []gtcRun) []gtcRun {
+	if len(group) != 1 {
+		return nil
+	}
+	return group
+}
+
+// gtcOverlaps counts overlapping pairs of runs by gtcPairKind.
+func gtcOverlaps(runs []gtcRun) map[string]int {
+	counts := map[string]int{}
+	for i, a := range runs {
+		for _, b := range runs[i+1:] {
+			if a.start < b.end && b.start < a.end {
+				counts[gtcPairKind(a, b)]++
+			}
+		}
+	}
+	return counts
+}
+
+// gtcPairKind names what an overlap of runs a and b shows: "forbidden"
+// within one serial package or one test, else the two runs' sides.
+func gtcPairKind(a, b gtcRun) string {
+	if a.pkg == b.pkg && (a.test == b.test || a.pkg != "parallel") {
+		return "forbidden"
+	}
+	return gtcSide(a) + "-" + gtcSide(b)
+}
+
+// gtcSide is "parallel" for the parallel package's runs, else "serial".
+func gtcSide(run gtcRun) string {
+	if run.pkg == "parallel" {
+		return "parallel"
+	}
+	return "serial"
+}
+
 func Test0028_11(t *testing.T) {
 	t.Parallel()
-	start := time.Now()
-	out, code := goTestCoverage(t, gtcSlowTests())
-	elapsed := time.Since(start)
-	sees(t, out, code, 0, "example.test/cli/parallel/TestWait7 (", "example.test/cli/serial3/TestWait1 (", "All 1 checks passed")
-	if elapsed > 15*time.Second {
-		t.Errorf("go-test-coverage took %s with sixteen one-second tests, want within 15s", elapsed.Round(time.Millisecond))
+	repo := example(t, "happyRepo", gtcSlowTests())
+	out, code := fitness(t, repo, nil, "go-test-coverage")
+	sees(t, out, code, 0, "All 1 checks passed")
+	runs := gtcAuditRuns(t, repo)
+	if len(runs) != 32 {
+		t.Fatalf("audit ran the sixteen tests %d times, want 32", len(runs))
+	}
+	counts := gtcOverlaps(runs)
+	if counts["parallel-parallel"] == 0 {
+		t.Errorf("no two runs of the parallel tests overlapped; go test runs them side by side")
+	}
+	if counts["serial-serial"] == 0 {
+		t.Errorf("no two serial packages' runs overlapped; go test runs packages side by side")
+	}
+	if counts["forbidden"] > 0 {
+		t.Errorf("%d pairs of runs overlapped within a serial package or one test; go test runs them in turn", counts["forbidden"])
 	}
 }
