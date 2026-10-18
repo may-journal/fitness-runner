@@ -76,15 +76,18 @@ A requirement test and its doc change together, so neither drifts from the other
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
+- Fixes: a changed test file that failed this check at its base passes without its doc, since its doc still holds.
+- Base check: this check judges a checkout of the base commit, where a Swift test that imported XCTest fails.
+- New files: a test file the base lacks still needs its doc.
 - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
 - Helpers: a test file that names and holds no requirement pairs with nothing.
 - No exemptions: there is no trailer, flag, or body text that lets an unpaired change through.
 
 Which changes are judged depends on the run:
 
-- Commits: the `pre-commit` hook judges the staged files.
-- Amends: an amended commit is judged on everything it changes since its parent.
-- Pull requests: CI judges the diff against the current merge base with the base branch, so merged base changes are not judged.
+- Commits: the `pre-commit` hook judges the staged files, and HEAD is their base.
+- Amends: an amended commit is judged on everything it changes since its parent, which is their base.
+- Pull requests: CI judges the diff against its base, the merge base with the base branch, so merged base changes are not judged.
 - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
 
