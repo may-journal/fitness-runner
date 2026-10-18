@@ -4,6 +4,7 @@
 package par
 
 import (
+	"context"
 	"runtime"
 	"sync"
 )
@@ -28,6 +29,68 @@ func Map[T any](n, workers int, fn func(i int) T) []T {
 	close(next)
 	wg.Wait()
 	return out
+}
+
+// MapErr runs fn over 0..n-1 like Map, each call under its own context from
+// ctx. When call i fails, later calls are cancelled or skipped while earlier
+// ones finish, so the returned error is always the lowest-index one.
+func MapErr[T any](ctx context.Context, n, workers int, fn func(ctx context.Context, i int) (T, error)) ([]T, error) {
+	s := &stopper{parent: ctx, failed: n, cancels: make([]context.CancelFunc, n)}
+	errs := make([]error, n)
+	out := Map(n, workers, func(i int) T {
+		var zero T
+		c, ok := s.start(i)
+		if !ok {
+			return zero
+		}
+		v, err := fn(c, i)
+		s.finish(i, err)
+		errs[i] = err
+		return v
+	})
+	for _, err := range errs {
+		if err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// stopper hands each MapErr call a context and cancels the calls after the
+// lowest-index failure.
+type stopper struct {
+	mu      sync.Mutex
+	parent  context.Context
+	failed  int
+	cancels []context.CancelFunc
+}
+
+// start returns call i's context, or false when an earlier call failed.
+func (s *stopper) start(i int) (context.Context, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if i > s.failed {
+		return nil, false
+	}
+	ctx, cancel := context.WithCancel(s.parent)
+	s.cancels[i] = cancel
+	return ctx, true
+}
+
+// finish releases call i's context and, on its failure, cancels later calls.
+func (s *stopper) finish(i int, err error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.cancels[i]()
+	if err == nil || i >= s.failed {
+		return
+	}
+	s.failed = i
+	for _, cancel := range s.cancels[i+1:] {
+		if cancel != nil {
+			cancel()
+		}
+	}
 }
 
 // Processes is the pool size for work that starts child processes: the

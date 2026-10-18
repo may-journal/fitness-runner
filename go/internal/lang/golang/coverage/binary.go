@@ -7,12 +7,13 @@ import (
 	"strings"
 )
 
-// suite is one package's prebuilt coverage test binary and its top-level
-// test names, in the order the binary lists them.
+// suite is one package's prebuilt coverage test binary, its top-level test
+// names in list order, and the ones that call t.Parallel().
 type suite struct {
-	pkg   Package
-	bin   string
-	names []string
+	pkg      Package
+	dir, bin string
+	names    []string
+	parallel map[string]bool
 }
 
 // testedPackages keeps the packages that have test files, in order.
@@ -26,32 +27,24 @@ func testedPackages(packages []Package) []Package {
 	return tested
 }
 
-// auditPackage builds pkg's test binary once, audits it, and removes the
-// binary before returning.
-func (r runner) auditPackage(pkg Package) ([]testGroup, error) {
+// suite compiles pkg's test binary into a private directory with the same
+// coverage flags as the module-wide run and lists its top-level tests.
+func (r runner) suite(pkg Package) (suite, error) {
+	parallel, err := parallelTests(pkg)
+	if err != nil {
+		return suite{}, err
+	}
 	dir, err := os.MkdirTemp(r.temp, "bin-")
 	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(dir)
-	s, err := r.suite(pkg, filepath.Join(dir, "pkg.test"))
-	if err != nil {
-		return nil, err
-	}
-	return r.auditSuite(s)
-}
-
-// suite compiles pkg's test binary to bin with the same coverage flags as
-// the module-wide run and lists its top-level tests.
-func (r runner) suite(pkg Package, bin string) (suite, error) {
-	if _, err := r.command("test", "-c", "-covermode=atomic", "-coverpkg=./...", "-o", bin, pkg.ImportPath); err != nil {
 		return suite{}, err
 	}
-	out, err := r.exec(bin, pkg.Dir, pkg.ImportPath+" -test.list", nil, "-test.list=^Test")
-	if err != nil {
+	s := suite{pkg: pkg, dir: dir, bin: filepath.Join(dir, "pkg.test"), parallel: parallel}
+	if _, err := r.command("test", "-c", "-covermode=atomic", "-coverpkg=./...", "-o", s.bin, pkg.ImportPath); err != nil {
 		return suite{}, err
 	}
-	return suite{pkg: pkg, bin: bin, names: testNames(string(out))}, nil
+	out, err := r.exec(s.bin, pkg.Dir, pkg.ImportPath+" -test.list", nil, "-test.list=^Test")
+	s.names = testNames(string(out))
+	return s, err
 }
 
 // testNames keeps the top-level test names from -test.list output.

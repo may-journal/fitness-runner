@@ -46,7 +46,9 @@ The audit always runs. Exact and partial overlap remain review signals because d
 
 ## Audit runs
 
-Each package's test binary is built once with the coverage flags. Every run then starts that binary from the package directory, with `FITNESS_GO_COVER_DIR` set. Packages share a pool sized like the runner's own check pool, while each package's runs stay in sequence. The first failure stops the remaining work.
+Each package's test binary is built once with the coverage flags. Every run then starts that binary from the package directory, with `FITNESS_GO_COVER_DIR` set. Runs share a pool sized like the runner's own check pool, and packages run side by side. Within a package, setup and serial tests run in sequence, as go test runs them.
+
+Tests that call `t.Parallel()` then run alongside each other, and setup runs again last. The first failure stops later work, so the earliest failing package is reported.
 
 ## Source map
 

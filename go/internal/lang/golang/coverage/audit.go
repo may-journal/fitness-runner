@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"os"
 	"regexp"
 	"slices"
 	"sort"
-	"sync"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/par"
@@ -21,92 +21,113 @@ type testGroup struct {
 	Stable   bool
 }
 
-// audit measures each tested package from its prebuilt binary. Packages run
-// on one bounded pool, as go test runs packages, while each package's runs
-// stay in sequence. The first failure stops the remaining work.
+// audit measures each tested package from its prebuilt binary in three
+// stages on one bounded pool, as go test orders a package: shared setup and
+// the serial tests in sequence, then the tests that call t.Parallel()
+// alongside each other, then shared setup again. Packages run side by side.
 func (r runner) audit(packages []Package) ([]testGroup, error) {
 	tested := testedPackages(packages)
-	ctx, cancel := context.WithCancel(r.ctx)
-	defer cancel()
-	r.ctx = ctx
-	var failure firstError
-	results := par.Map(len(tested), par.Processes(), func(i int) []testGroup {
-		if err := ctx.Err(); err != nil {
-			failure.set(err)
-			return nil
-		}
-		groups, err := r.auditPackage(tested[i])
-		if err != nil {
-			failure.set(err)
-			cancel()
-		}
-		return groups
+	audits, err := par.MapErr(r.ctx, len(tested), par.Processes(), func(ctx context.Context, i int) (*packageAudit, error) {
+		return r.with(ctx).startPackage(tested[i])
 	})
-	if err := failure.get(); err != nil {
+	if err != nil {
 		return nil, err
 	}
-	return slices.Concat(results...), nil
-}
-
-// firstError keeps the first error any pool worker reports.
-type firstError struct {
-	mu  sync.Mutex
-	err error
-}
-
-func (f *firstError) set(err error) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if f.err == nil {
-		f.err = err
+	jobs := parallelJobs(audits)
+	if _, err := par.MapErr(r.ctx, len(jobs), par.Processes(), func(ctx context.Context, i int) (struct{}, error) {
+		return struct{}{}, r.with(ctx).runJob(jobs[i])
+	}); err != nil {
+		return nil, err
 	}
-}
-func (f *firstError) get() error {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return f.err
+	finished, err := par.MapErr(r.ctx, len(audits), par.Processes(), func(ctx context.Context, i int) ([]testGroup, error) {
+		return r.with(ctx).finishPackage(audits[i])
+	})
+	return slices.Concat(finished...), err
 }
 
-// auditSuite measures shared setup, each top-level test twice, then shared
-// setup again, in that order. Changed setup marks every group unstable.
-func (r runner) auditSuite(s suite) ([]testGroup, error) {
+func (r runner) with(ctx context.Context) runner {
+	r.ctx = ctx
+	return r
+}
+
+// packageAudit is one package's suite, its first setup profile, and a group
+// slot per top-level test in list order.
+type packageAudit struct {
+	suite    suite
+	baseline Profile
+	groups   []testGroup
+}
+
+// startPackage builds the suite, measures shared setup, then audits the
+// serial tests in list order.
+func (r runner) startPackage(pkg Package) (*packageAudit, error) {
+	s, err := r.suite(pkg)
+	if err != nil {
+		return nil, err
+	}
 	baseline, err := r.measureBinary(s, "^$")
 	if err != nil {
 		return nil, err
 	}
-	groups, err := r.auditTests(s, baseline)
+	a := &packageAudit{suite: s, baseline: baseline, groups: make([]testGroup, len(s.names))}
+	return a, r.runSerial(a)
+}
+
+// runSerial audits the package's tests that do not call t.Parallel(), one
+// after another in list order.
+func (r runner) runSerial(a *packageAudit) error {
+	for i, name := range a.suite.names {
+		if a.suite.parallel[name] {
+			continue
+		}
+		if err := r.runJob(job{a, i}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// job is one top-level test of a package audit, by list index.
+type job struct {
+	audit *packageAudit
+	test  int
+}
+
+// parallelJobs lists every package's t.Parallel() tests, in package and list
+// order.
+func parallelJobs(audits []*packageAudit) []job {
+	var jobs []job
+	for _, a := range audits {
+		for i, name := range a.suite.names {
+			if a.suite.parallel[name] {
+				jobs = append(jobs, job{a, i})
+			}
+		}
+	}
+	return jobs
+}
+
+// runJob audits one test into its group slot.
+func (r runner) runJob(j job) error {
+	group, err := r.auditTest(j.audit.suite, j.audit.suite.names[j.test], j.audit.baseline)
+	j.audit.groups[j.test] = group
+	return err
+}
+
+// finishPackage measures shared setup again, marks every group unstable when
+// it changed, and removes the package's binary.
+func (r runner) finishPackage(a *packageAudit) ([]testGroup, error) {
+	defer os.RemoveAll(a.suite.dir)
+	repeated, err := r.measureBinary(a.suite, "^$")
 	if err != nil {
 		return nil, err
 	}
-	return r.verifyBaseline(s, baseline, groups)
-}
-
-// verifyBaseline measures shared setup again and marks every group unstable
-// when it changed.
-func (r runner) verifyBaseline(s suite, baseline Profile, groups []testGroup) ([]testGroup, error) {
-	repeated, err := r.measureBinary(s, "^$")
-	if err != nil {
-		return nil, err
-	}
-	if !maps.Equal(baseline, repeated) {
-		for i := range groups {
-			groups[i].Stable = false
+	if !maps.Equal(a.baseline, repeated) {
+		for i := range a.groups {
+			a.groups[i].Stable = false
 		}
 	}
-	return groups, nil
-}
-
-// auditTests audits the suite's top-level tests in list order.
-func (r runner) auditTests(s suite, baseline Profile) ([]testGroup, error) {
-	groups := make([]testGroup, len(s.names))
-	for i, name := range s.names {
-		group, err := r.auditTest(s, name, baseline)
-		if err != nil {
-			return nil, err
-		}
-		groups[i] = group
-	}
-	return groups, nil
+	return a.groups, nil
 }
 
 // auditTest runs one top-level test twice and compares its contributions.

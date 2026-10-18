@@ -117,14 +117,16 @@ func Test0028_10(t *testing.T) {
 	sees(t, out, code, 0, "example.test/cli/TestFlip (", "unstable coverage; excluded from overlap advice")
 }
 
-// gtcSlowTests spreads twelve one-second tests over six packages, two each.
+// gtcSlowTests adds a package of twelve one-second tests that each call
+// t.Parallel(), as go test lets such tests share time.
 func gtcSlowTests() map[string]string {
 	files := gtcCommand(gtcEntryTest)
-	for i := range 6 {
-		pkg := fmt.Sprintf("slow%d", i)
-		files[pkg+"/wait.go"] = "package " + pkg + "\n\nimport \"time\"\n\nfunc Wait() { time.Sleep(time.Second) }\n"
-		files[pkg+"/wait_test.go"] = "package " + pkg + "\n\nimport \"testing\"\n\nfunc TestA(t *testing.T) { Wait() }\n\nfunc TestB(t *testing.T) { Wait() }\n"
+	files["slow/wait.go"] = "package slow\n\nimport \"time\"\n\nfunc Wait() { time.Sleep(time.Second) }\n"
+	test := "package slow\n\nimport \"testing\"\n"
+	for i := range 12 {
+		test += fmt.Sprintf("\nfunc TestWait%d(t *testing.T) {\n\tt.Parallel()\n\tWait()\n}\n", i)
 	}
+	files["slow/wait_test.go"] = test
 	return files
 }
 
@@ -133,7 +135,7 @@ func Test0028_11(t *testing.T) {
 	start := time.Now()
 	out, code := goTestCoverage(t, gtcSlowTests())
 	elapsed := time.Since(start)
-	sees(t, out, code, 0, "All 1 checks passed")
+	sees(t, out, code, 0, "example.test/cli/slow/TestWait0 (", "example.test/cli/slow/TestWait11 (", "All 1 checks passed")
 	if elapsed > 15*time.Second {
 		t.Errorf("go-test-coverage took %s with twelve one-second tests, want within 15s", elapsed.Round(time.Millisecond))
 	}
