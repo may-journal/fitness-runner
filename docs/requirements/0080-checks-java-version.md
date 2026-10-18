@@ -14,7 +14,7 @@ Java repos whose running JDK satisfies every pin
 -
 Java repos checked
 
-Source: `go/internal/lang/java/version/version.go:75`
+Source: `go/internal/lang/java/version/version.go:76`
 
 ## Requirements
 

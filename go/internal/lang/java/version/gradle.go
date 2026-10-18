@@ -1,25 +1,36 @@
 package version
 
+// cspell:ignore jdks
+
 import (
 	"fmt"
 	"regexp"
 	"slices"
-	"strconv"
+	"strings"
+	"sync"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
 var (
 	// toolchainRe reads a Gradle toolchain's language version.
 	toolchainRe = regexp.MustCompile(`JavaLanguageVersion\.of\(\s*["']?(\d+)`)
-	// missingRe reads the release Gradle found no JDK for, nor could
-	// download.
-	missingRe = regexp.MustCompile(`Cannot find a Java installation .*?languageVersion=(\d+)`)
+	// blockRe reads the body of a toolchain { } block.
+	blockRe = regexp.MustCompile(`toolchain\s*\{([^{}]*)\}`)
+	// vendorRe reads a toolchain's vendor: a JvmVendorSpec constant, or
+	// matching("text").
+	vendorRe = regexp.MustCompile(`JvmVendorSpec\.(?:matching\(\s*["']([^"']+)["']|(\w+))`)
+	// implementationRe reads a toolchain's JVM implementation.
+	implementationRe = regexp.MustCompile(`JvmImplementation\.(\w+)`)
 )
 
+// vendorNames maps a JvmVendorSpec constant to the text Gradle looks for
+// in a JDK's vendor, where it is not the constant in lower case without
+// underscores.
+var vendorNames = map[string]string{"HEWLETT_PACKARD": "hewlett"}
+
 // gradlePins reads the toolchain releases a Gradle script names, each to
-// be judged by the build root's own toolchain resolution.
+// be matched against the JDKs installed for the build root.
 func gradlePins(root, file string, roots []java.Project) ([]pin, string) {
 	body, ok := read(root, file)
 	if !ok {
@@ -27,70 +38,110 @@ func gradlePins(root, file string, roots []java.Project) ([]pin, string) {
 	}
 	build := java.Nearest(roots, java.Gradle, file)
 	var out []pin
-	for _, m := range toolchainRe.FindAllStringSubmatch(body, -1) {
-		out = append(out, pin{file: file, version: m[1], toolchain: build})
+	for _, m := range toolchainRe.FindAllStringSubmatchIndex(body, -1) {
+		p := pin{file: file, version: body[m[2]:m[3]], toolchain: build}
+		p.vendor, p.j9 = constraints(enclosing(body, m[0]))
+		out = append(out, p)
 	}
 	return out, ""
 }
 
-// toolchainErrors names each toolchain release Gradle can neither find
-// installed nor download. A release the running JDK has needs no run,
-// since Gradle always detects the JDK it runs on. Otherwise Gradle plans
-// a compile once per build root, which resolves the toolchain as the
-// build would: through its installed JDKs, resolvers and init scripts.
-func toolchainErrors(root string, have int, pins []pin) ([]string, error) {
-	var errors []string
-	for _, build := range toolchainBuilds(have, pins) {
-		bin, ok := java.Tool(root, build)
-		if !ok {
-			errors = append(errors, build.Build.Install)
-			continue
+// enclosing returns the toolchain { } block holding body[at], or the text
+// of the line when it sits in none.
+func enclosing(body string, at int) string {
+	for _, b := range blockRe.FindAllStringSubmatchIndex(body, -1) {
+		if b[0] <= at && at < b[1] {
+			return body[b[2]:b[3]]
 		}
-		o := java.Run(root, bin, build, "compileJava", "--dry-run")
-		if err := o.EnvErr(build.Build.Command); err != nil {
-			return nil, err
-		}
-		errors = append(errors, unresolved(o, build, pins)...)
 	}
-	return errors, nil
+	start := strings.LastIndex(body[:at], "\n") + 1
+	end := strings.Index(body[at:], "\n")
+	if end < 0 {
+		return body[start:]
+	}
+	return body[start : at+end]
 }
 
-// unresolved names each of build's toolchain releases a failed plan
-// found no JDK for, and how to install it, or else the plan's own reason.
-func unresolved(o checkkit.Outcome, build java.Project, pins []pin) []string {
-	if o.Code == 0 {
-		return nil
+// constraints reads the vendor text and J9 requirement a toolchain block
+// sets, or none for a toolchain that takes any vendor.
+func constraints(block string) (vendor string, j9 bool) {
+	if m := vendorRe.FindStringSubmatch(block); m != nil {
+		vendor = strings.ToLower(m[1])
+		if m[2] != "" {
+			vendor = vendorText(m[2])
+		}
 	}
-	if errors := missingJDKs(o.Stdout, build, pins); len(errors) > 0 {
-		return errors
-	}
-	return java.Fallback(o, "Gradle could not plan the build's compile; run its compileJava task by hand")
+	m := implementationRe.FindStringSubmatch(block)
+	return vendor, m != nil && m[1] == "J9"
 }
 
-// missingJDKs names each of build's toolchain releases Gradle's output
-// says it found no JDK for.
-func missingJDKs(out string, build java.Project, pins []pin) []string {
+// vendorText is the text Gradle looks for in a JDK's vendor for a
+// JvmVendorSpec constant.
+func vendorText(constant string) string {
+	if text, ok := vendorNames[constant]; ok {
+		return text
+	}
+	return strings.ToLower(strings.ReplaceAll(constant, "_", ""))
+}
+
+// toolchainErrors names each toolchain no installed JDK matches, when the
+// build configures no way to download one. A release the running JDK has
+// needs no lookup unless the toolchain names a vendor or implementation,
+// since Gradle always detects the JDK it runs on. The check reads folders
+// and files and never starts Gradle.
+func toolchainErrors(root string, have int, pins []pin) []string {
 	var errors []string
-	for _, m := range missingRe.FindAllStringSubmatch(out, -1) {
-		for _, p := range pins {
-			if p.toolchain == build && p.version == m[1] {
-				need, _ := strconv.Atoi(m[1])
-				errors = append(errors, fmt.Sprintf("%s asks for a JDK %d toolchain, which is not installed; install JDK %d, such as from https://adoptium.net, or configure a toolchain resolver to download it", p.file, need, need))
-			}
+	look := lookups{root: root, machine: sync.OnceValue(machineJDKs), builds: map[java.Project]buildJDKs{}}
+	for _, p := range pins {
+		need, _ := java.Major(p.version)
+		if wantsInstalled(p, need, have) && !look.provide(p, need) {
+			errors = append(errors, fmt.Sprintf("%s asks for a JDK %d toolchain, which is not installed; install JDK %d, such as from https://adoptium.net, or configure a toolchain resolver to download it", p.file, need, need))
 		}
 	}
 	return errors
 }
 
-// toolchainBuilds lists, once each, the build roots asking for a
-// toolchain release the running JDK is not.
-func toolchainBuilds(have int, pins []pin) []java.Project {
-	var out []java.Project
-	for _, p := range pins {
-		need, _ := java.Major(p.version)
-		if p.toolchain != (java.Project{}) && need != have && !slices.Contains(out, p.toolchain) {
-			out = append(out, p.toolchain)
-		}
+// wantsInstalled reports whether p is a toolchain that needs a JDK found
+// on the machine: another release than the running JDK's, or the running
+// release from a named vendor or implementation.
+func wantsInstalled(p pin, need, have int) bool {
+	if p.toolchain == (java.Project{}) {
+		return false
 	}
-	return out
+	return need != have || p.vendor != "" || p.j9
+}
+
+// buildJDKs is what one build root may use: the JDKs it can find, and
+// whether Gradle may download others.
+type buildJDKs struct {
+	jdks     []jdk
+	download bool
+}
+
+// lookups holds the JDKs found so far in one run. The machine-wide list
+// is read once, on first use, and each build root's own once.
+type lookups struct {
+	root    string
+	machine func() []jdk
+	builds  map[java.Project]buildJDKs
+}
+
+// provide reports whether the pin's build can get a JDK matching it.
+func (l lookups) provide(p pin, need int) bool {
+	b, ok := l.builds[p.toolchain]
+	if !ok {
+		props := buildProperties(l.root, p.toolchain)
+		b = buildJDKs{
+			jdks:     append(slices.Clone(l.machine()), propertyJDKs(props)...),
+			download: canDownload(l.root, p.toolchain, props),
+		}
+		l.builds[p.toolchain] = b
+	}
+	return b.download || slices.ContainsFunc(b.jdks, func(j jdk) bool { return j.matches(p, need) })
+}
+
+// matches reports whether j is the release, vendor and implementation the
+// pin's toolchain asks for.
+func (j jdk) matches(p pin, need int) bool {
+	return j.major == need && strings.Contains(j.vendor, p.vendor) && (j.j9 || !p.j9)
 }

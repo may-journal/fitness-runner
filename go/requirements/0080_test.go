@@ -1,3 +1,4 @@
+// cspell:ignore jdks foojay adoptium hotspot openj
 package requirements
 
 import (
@@ -100,42 +101,177 @@ func Test0080_6(t *testing.T) {
 	sees(t, out, code, 1, "Java not installed: install a JDK")
 }
 
-// javaVersionNoJDK is Gradle's answer, saved from a real run, when it
-// plans a compile whose toolchain asks for a JDK 17 it neither finds nor
-// may download.
-var javaVersionNoJDK = response{
-	Match: []string{"compileJava", "--dry-run"},
-	Stdout: "FAILURE: Build failed with an exception.\n\n* What went wrong:\n" +
-		"Could not determine the dependencies of task ':compileJava'.\n" +
-		"> Could not resolve all dependencies for configuration ':compileClasspath'.\n" +
-		"   > Failed to calculate the value of task ':compileJava' property 'javaCompiler'.\n" +
-		"      > Cannot find a Java installation on your machine (Mac OS X 27.0.1 aarch64) matching: {languageVersion=17, vendor=any vendor, implementation=vendor-specific, nativeImageCapable=false}. Toolchain download repositories have not been configured.\n" +
-		"\n* Try:\n> Run with --stacktrace option to get the stack trace.\n\nBUILD FAILED in 4s\n",
-	Exit: 1,
-}
+// javaVersionNoGradle is a Gradle stand-in that fails if it ever runs, since
+// the check must find toolchain JDKs without starting Gradle.
+var javaVersionNoGradle = response{Stderr: "gradle must not run\n", Exit: 1}
+
+// javaVersionMissing30 is the failure for a toolchain release no installed
+// JDK has. No machine holds a JDK 30, so fixture folders decide the result.
+const javaVersionMissing30 = "build.gradle asks for a JDK 30 toolchain, which is not installed; install JDK 30"
 
 // javaVersionToolchain is a Gradle build whose toolchain asks for release.
-func javaVersionToolchain(t *testing.T, release string) string {
+func javaVersionToolchain(t *testing.T, release string, extra map[string]string) string {
 	t.Helper()
-	return javaRepo(t, map[string]string{"build.gradle": "java { toolchain { languageVersion = JavaLanguageVersion.of(" + release + ") } }\n"})
+	return javaVersionBuild(t, "languageVersion = JavaLanguageVersion.of("+release+")", extra)
 }
+
+// javaVersionBuild is a Gradle build whose toolchain block holds body.
+func javaVersionBuild(t *testing.T, body string, extra map[string]string) string {
+	t.Helper()
+	files := map[string]string{"build.gradle": "java { toolchain { " + body + " } }\n"}
+	for name, text := range extra {
+		files[name] = text
+	}
+	return javaRepo(t, files)
+}
+
+// javaVersionJDK is the release file of an installed JDK of release.
+func javaVersionJDK(release string) string {
+	return javaVersionVendorJDK(release, "Eclipse Adoptium", "Hotspot")
+}
+
+// javaVersionVendorJDK is the release file of a JDK of release from vendor
+// running the JVM variant.
+func javaVersionVendorJDK(release, vendor, variant string) string {
+	return "JAVA_VERSION=\"" + release + ".0.1\"\nIMPLEMENTOR=\"" + vendor + "\"\nJVM_VARIANT=\"" + variant + "\"\n"
+}
+
+// javaVersionGradleRun runs java-version on repo with home as the user's
+// home and a Gradle stand-in that fails if called, and returns what it
+// printed and its exit code. It fails the test if Gradle ran.
+func javaVersionGradleRun(t *testing.T, repo, home string) (string, int) {
+	t.Helper()
+	rp := standIn(t, map[string][]response{"java": {javaJDK}, "gradle": {javaVersionNoGradle}})
+	out, code := fitness(t, repo, append(rp.env, "JAVA_HOME=", "GRADLE_USER_HOME=", "HOME="+home), "java-version")
+	if calls := rp.calls("gradle"); len(calls) != 0 {
+		t.Errorf("gradle calls = %q, want none", calls)
+	}
+	return out, code
+}
+
+// javaVersionPasses asserts java-version passes repo with home.
+func javaVersionPasses(t *testing.T, repo, home string) {
+	t.Helper()
+	out, code := javaVersionGradleRun(t, repo, home)
+	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+// javaVersionFails asserts java-version fails repo with home, naming a
+// missing JDK 30.
+func javaVersionFails(t *testing.T, repo, home string) {
+	t.Helper()
+	out, code := javaVersionGradleRun(t, repo, home)
+	sees(t, out, code, 1, javaVersionMissing30)
+}
+
+// javaVersionHome is a user home holding the files.
+func javaVersionHome(t *testing.T, files map[string]string) string {
+	t.Helper()
+	home := t.TempDir()
+	write(t, home, files)
+	return home
+}
+
+// javaVersionFolder is a folder holding a JDK 30 release file.
+func javaVersionFolder(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	write(t, dir, map[string]string{"release": javaVersionJDK("30")})
+	return dir
+}
+
+// javaVersionResolver is a settings script that registers a download
+// repository.
+const javaVersionResolver = "toolchainManagement { jvm { javaRepositories { repository('foojay') { resolverClass = FoojayResolver } } } }\n"
 
 func Test0080_8(t *testing.T) {
 	t.Parallel()
-	rp, out, code := javaRun(t, javaVersionToolchain(t, "17"), "java-version", map[string][]response{"gradle": {javaVersionNoJDK}})
-	sees(t, out, code, 1, "build.gradle asks for a JDK 17 toolchain, which is not installed; install JDK 17")
-	javaCalledOnce(t, rp, "gradle")
-	// A resolver lets Gradle download the JDK, so the plan succeeds even
-	// above the running JDK.
-	planned := response{Match: []string{"compileJava", "--dry-run"}, Stdout: ":compileJava SKIPPED\n\nBUILD SUCCESSFUL in 2s\n"}
-	_, out, code = javaRun(t, javaVersionToolchain(t, "25"), "java-version", map[string][]response{"gradle": {planned}})
-	sees(t, out, code, 0, "All 1 checks passed")
-	// Gradle always finds the JDK it runs on, so it need not run.
-	rp, out, code = javaRun(t, javaVersionToolchain(t, "21"), "java-version", map[string][]response{"gradle": {javaVersionNoJDK}})
-	sees(t, out, code, 0, "All 1 checks passed")
-	if calls := rp.calls("gradle"); len(calls) != 0 {
-		t.Errorf("gradle calls = %q, want none for the running JDK's release", calls)
+	work := func(release string, extra map[string]string) string { return javaVersionToolchain(t, release, extra) }
+	// No installed JDK has the release and no resolver is configured. Gradle
+	// never runs, so the check stays fast.
+	javaVersionFails(t, work("30", nil), t.TempDir())
+	// Gradle's own download folder counts, flat or as a macOS bundle one
+	// folder down.
+	javaVersionPasses(t, work("30", nil), javaVersionHome(t, map[string]string{".gradle/jdks/jdk-30/release": javaVersionJDK("30")}))
+	javaVersionPasses(t, work("30", nil), javaVersionHome(t, map[string]string{".gradle/jdks/amazon-30/jdk-30/Contents/Home/release": javaVersionJDK("30")}))
+	// Gradle always finds the JDK it runs on.
+	javaVersionPasses(t, work("21", nil), t.TempDir())
+	// An empty JAVA_HOME, home or environment name reads nothing from the
+	// working folder, where a release file sits.
+	cwd := work("30", map[string]string{"release": javaVersionJDK("30"), "gradle.properties": "org.gradle.java.installations.fromEnv=NO_SUCH_JDK_VARIABLE\n"})
+	javaVersionFails(t, cwd, "")
+	javaVersionPropertiesCases(t)
+	javaVersionResolverCases(t)
+	javaVersionVendorCases(t)
+}
+
+// javaVersionPropertiesCases covers the gradle.properties forms, build root
+// and precedence.
+func javaVersionPropertiesCases(t *testing.T) {
+	jdks := javaVersionFolder(t)
+	paths := func(text string) map[string]string { return map[string]string{"gradle.properties": text} }
+	// gradle.properties lists JDK folders in every properties form: an equals
+	// sign, a colon or a space, and a list continued across lines.
+	for _, text := range []string{
+		"org.gradle.java.installations.paths=" + jdks + "\n",
+		"org.gradle.java.installations.paths : " + jdks + "\n",
+		"org.gradle.java.installations.paths " + jdks + "\n",
+		"# the list\norg.gradle.java.installations.paths=/no/such,\\\n    " + jdks + "\n",
+	} {
+		javaVersionPasses(t, javaVersionToolchain(t, "30", paths(text)), t.TempDir())
 	}
+	// The list splits on commas only, so a folder name may hold a colon.
+	colon := filepath.Join(t.TempDir(), "a:b")
+	write(t, colon, map[string]string{"release": javaVersionJDK("30")})
+	javaVersionPasses(t, javaVersionToolchain(t, "30", paths("org.gradle.java.installations.paths="+colon+"\n")), t.TempDir())
+	// A build in a folder reads its own gradle.properties, not the repo's.
+	nested := javaRepo(t, map[string]string{
+		"app/build.gradle":  "java { toolchain { languageVersion = JavaLanguageVersion.of(30) } }\n",
+		"gradle.properties": "org.gradle.java.installations.paths=" + jdks + "\n",
+	})
+	out, code := javaVersionGradleRun(t, nested, t.TempDir())
+	sees(t, out, code, 1, "app/build.gradle asks for a JDK 30 toolchain")
+	// The Gradle user home's gradle.properties overrides the build's.
+	repo := javaVersionToolchain(t, "30", paths("org.gradle.java.installations.paths="+jdks+"\n"))
+	javaVersionFails(t, repo, javaVersionHome(t, map[string]string{".gradle/gradle.properties": "org.gradle.java.installations.paths=\n"}))
+}
+
+// javaVersionResolverCases covers what counts as a toolchain resolver.
+func javaVersionResolverCases(t *testing.T) {
+	settings := func(text string) map[string]string { return map[string]string{"settings.gradle": text} }
+	build := func(extra map[string]string) string { return javaVersionToolchain(t, "30", extra) }
+	// A registered download repository, or the Foojay plugin, lets Gradle
+	// download the JDK.
+	javaVersionPasses(t, build(settings(javaVersionResolver)), t.TempDir())
+	javaVersionPasses(t, build(settings("plugins { id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0' }\n")), t.TempDir())
+	// So does one in an init script of the Gradle user home.
+	javaVersionPasses(t, build(nil), javaVersionHome(t, map[string]string{".gradle/init.d/resolver.gradle": javaVersionResolver}))
+	// An empty block registers none, and a commented-out one is no block.
+	javaVersionFails(t, build(settings("toolchainManagement { jvm { } }\n")), t.TempDir())
+	javaVersionFails(t, build(settings("// id 'org.gradle.toolchains.foojay-resolver-convention'\n/* "+javaVersionResolver+" */\n")), t.TempDir())
+	// Turning auto-download off wins over a resolver.
+	off := settings(javaVersionResolver)
+	off["gradle.properties"] = "org.gradle.java.installations.auto-download=false\n"
+	javaVersionFails(t, build(off), t.TempDir())
+}
+
+// javaVersionVendorCases covers vendor and implementation constraints.
+func javaVersionVendorCases(t *testing.T) {
+	home := func(vendor, variant string) string {
+		return javaVersionHome(t, map[string]string{".gradle/jdks/jdk-30/release": javaVersionVendorJDK("30", vendor, variant)})
+	}
+	adoptium := func() string {
+		return javaVersionBuild(t, "languageVersion = JavaLanguageVersion.of(30); vendor = JvmVendorSpec.ADOPTIUM", nil)
+	}
+	// A toolchain that names a vendor needs a JDK from it.
+	javaVersionPasses(t, adoptium(), home("Eclipse Adoptium", "Hotspot"))
+	javaVersionFails(t, adoptium(), home("Amazon.com Inc.", "Hotspot"))
+	// So does one that asks for the J9 implementation.
+	j9 := func() string {
+		return javaVersionBuild(t, "languageVersion = JavaLanguageVersion.of(30); implementation = JvmImplementation.J9", nil)
+	}
+	javaVersionPasses(t, j9(), home("IBM Corporation", "Openj9"))
+	javaVersionFails(t, j9(), home("IBM Corporation", "Hotspot"))
 }
 
 func Test0080_7(t *testing.T) {
