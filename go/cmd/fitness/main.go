@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"slices"
@@ -54,12 +55,13 @@ type resolved struct {
 	// describeErr says why --describe gave no metadata; the check still
 	// runs with defaults and its row carries this as info.
 	describeErr string
-	// overran says the handshake ran past its budget, so it gets one more
-	// try once the crowd of handshakes is done.
+	// overran says the handshake ran past its budget, so a compiled check
+	// gets one more try once the crowd of handshakes is done.
 	overran bool
-	// declaredMs is the budget the check declares itself, before the repo
-	// config fills an empty one; the pool starts the largest first.
-	declaredMs int
+	// configMs is the repo config's timeoutMs, the budget of a check that
+	// declares none. It stays apart from desc, which holds only what the
+	// check declares.
+	configMs int
 }
 
 // outcome is one finished check, in dispatch order.
@@ -352,9 +354,9 @@ var errNotInstalled = errors.New("Check binary not installed")
 
 // resolveList resolves each name, in order. Every binary is found first, so
 // a missing one fails before any process starts. The --describe handshakes
-// then run side by side and come back in catalog order. One that overran in
-// that crowd gets a second try alone, so a slow first start after an install
-// does not drop a check's own budget.
+// then run side by side and come back in catalog order. A compiled check
+// whose handshake overran in that crowd gets a second try, so a slow first
+// start after an install does not drop its own budget.
 func resolveList(names []string) ([]resolved, error) {
 	bins := make([]string, len(names))
 	for i, name := range names {
@@ -373,19 +375,42 @@ func resolveList(names []string) ([]resolved, error) {
 	return checks, nil
 }
 
-// retryOverran runs each handshake that overran in the crowd once more, alone.
+// retryOverran runs once more, side by side, the handshake of each compiled
+// check that overran in the crowd, so the retries cost one budget at most.
+// A script never gets a retry: it starts no slower after an install, so an
+// overrun means it ignores --describe, and its work must not run twice.
 func retryOverran(checks []resolved) {
+	var again []int
 	for i, c := range checks {
-		if c.overran {
-			checks[i] = describeCheck(c.name, c.bin)
+		if c.overran && !isScript(c.bin) {
+			again = append(again, i)
 		}
 	}
+	retried := par.Map(len(again), par.Processes(), func(k int) resolved {
+		return describeCheck(checks[again[k]].name, checks[again[k]].bin)
+	})
+	for k, i := range again {
+		checks[i] = retried[k]
+	}
+}
+
+// isScript reports whether bin starts with a #! line, as a local check
+// script does; an unreadable file counts as one, so it is never retried.
+func isScript(bin string) bool {
+	f, err := os.Open(bin)
+	if err != nil {
+		return true
+	}
+	defer f.Close()
+	head := make([]byte, 2)
+	n, _ := io.ReadFull(f, head)
+	return n < 2 || string(head) == "#!"
 }
 
 // describeCheck runs one check's --describe handshake.
 func describeCheck(name, bin string) resolved {
 	desc, describeErr, overran := describe(bin)
-	return resolved{name: name, bin: bin, desc: desc, describeErr: describeErr, overran: overran, declaredMs: desc.TimeoutMs}
+	return resolved{name: name, bin: bin, desc: desc, describeErr: describeErr, overran: overran}
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
@@ -500,16 +525,17 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	return outcomes
 }
 
-// startOrder lists check indices by descending declared budget. A budget
-// from the repo config says nothing about cost, so those checks count as
-// declaring none, and equal budgets keep catalog order.
+// startOrder lists check indices by descending declared budget, a check
+// that declares none counting as the default. A budget from the repo config
+// says nothing about cost, so it never moves a check. Equal budgets keep
+// catalog order.
 func startOrder(checks []resolved) []int {
 	order := make([]int, len(checks))
 	for i := range order {
 		order[i] = i
 	}
 	slices.SortStableFunc(order, func(a, b int) int {
-		return cmp.Compare(checks[b].declaredMs, checks[a].declaredMs)
+		return cmp.Compare(declaredBudget(checks[b]), declaredBudget(checks[a]))
 	})
 	return order
 }

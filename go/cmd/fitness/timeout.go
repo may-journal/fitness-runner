@@ -19,9 +19,7 @@ func withBudgets(cfg *conf.Config, checks []resolved) []resolved {
 		return checks
 	}
 	for i := range checks {
-		if checks[i].desc.TimeoutMs == 0 {
-			checks[i].desc.TimeoutMs = cfg.TimeoutMs
-		}
+		checks[i].configMs = cfg.TimeoutMs
 	}
 	return checks
 }
@@ -29,6 +27,14 @@ func withBudgets(cfg *conf.Config, checks []resolved) []resolved {
 // timeoutFor returns the check's budget: its own or the configured one,
 // else defaultTimeout.
 func timeoutFor(c resolved) time.Duration {
+	if c.desc.TimeoutMs == 0 && c.configMs > 0 {
+		return time.Duration(c.configMs) * time.Millisecond
+	}
+	return declaredBudget(c)
+}
+
+// declaredBudget is the budget the check declares, else defaultTimeout.
+func declaredBudget(c resolved) time.Duration {
 	if c.desc.TimeoutMs > 0 {
 		return time.Duration(c.desc.TimeoutMs) * time.Millisecond
 	}
