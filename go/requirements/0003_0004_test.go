@@ -50,7 +50,7 @@ mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
 mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-plans-dir plan-structure
 plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
 release-changelog repeated-string-literals requirements semantic-commit
-text-readability
+text-readability workflow-ref-exists
 go-complexity go-test go-vet gofmt
 swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier
@@ -91,6 +91,17 @@ func Test0003_3(t *testing.T) {
 	sees(t, out, code, 1, "locked.md: skipped, cannot be read (permission denied)", "README.md:9: broken relative link: gone.md")
 	if !strings.Contains(row(out, "markdown-links"), "failed") {
 		t.Errorf("the readable file's finding must still fail, got row %q", row(out, "markdown-links"))
+	}
+}
+
+func Test0003_4(t *testing.T) {
+	t.Parallel()
+	out, code, _ := refCheck(t, refWorkflow("may-journal/fitness-runner/.github/workflows/ci-reusable.yml@v1"), []response{
+		{Stderr: "error connecting to api.github.com\n", Exit: 1},
+	})
+	sees(t, out, code, 0, "workflow refs were not verified: gh api repos/may-journal/fitness-runner/git/ref/tags/v1: error connecting to api.github.com")
+	if strings.Contains(row(out, "workflow-ref-exists"), "failed") {
+		t.Errorf("a check whose service cannot answer must not fail, got row %q", row(out, "workflow-ref-exists"))
 	}
 }
 

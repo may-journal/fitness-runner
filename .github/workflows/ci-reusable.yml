@@ -103,9 +103,13 @@ jobs:
           chmod +x "$RUNNER_TEMP/swiftlint/swiftlint"
           echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/swiftlint/swiftlint" version
+      # workflow-ref-exists asks GitHub whether each may-journal `uses:` path
+      # exists at its tag or sha; without a token it skips with a note.
       - name: Run fitness
         id: report-step-2
         run: fitness
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
