@@ -82,20 +82,31 @@ func docNumber(f string) string {
 }
 
 // judge flags each changed requirement test whose docs all stayed
-// unchanged, and each changed doc whose tests all stayed unchanged.
-func (p pairs) judge(changed []string) []string {
+// unchanged, unless fixed reports it failed this check at the base, and each
+// changed doc whose tests all stayed unchanged.
+func (p pairs) judge(changed []string, fixed func(string) bool) []string {
 	isChanged := map[string]bool{}
 	for _, f := range changed {
 		isChanged[f] = true
 	}
 	var errs []string
 	for _, f := range changed {
-		errs = append(errs, unpaired(f, p.numbers[f], p.docs, "requirement doc", isChanged)...)
+		errs = append(errs, p.unpairedTest(f, isChanged, fixed)...)
 		if n := docNumber(f); n != "" {
 			errs = append(errs, unpaired(f, []string{n}, p.tests, "requirement test", isChanged)...)
 		}
 	}
 	return errs
+}
+
+// unpairedTest flags file when it proves requirements whose docs all stayed
+// unchanged, unless it failed this check at the base.
+func (p pairs) unpairedTest(file string, changed map[string]bool, fixed func(string) bool) []string {
+	missing := unpaired(file, p.numbers[file], p.docs, "requirement doc", changed)
+	if len(missing) == 0 || fixed(file) {
+		return nil
+	}
+	return missing
 }
 
 // unpaired names file and its missing half when none of its partners
@@ -129,9 +140,22 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 	if changed == nil || replaying(root) {
 		return nil
 	}
-	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed)
+	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, fixedAtBase(root))
 	sort.Strings(errs)
 	return errs
+}
+
+// fixedAtBase reports whether a changed test file failed this check at the
+// base commit, so the change fixes it. The base is judged once, and only
+// when a test file needs it.
+func fixedAtBase(root string) func(string) bool {
+	var failed map[string]bool
+	return func(file string) bool {
+		if failed == nil {
+			failed = failedAtBase(root, baseRev(root))
+		}
+		return failed[file]
+	}
 }
 
 // replayHeads are the refs git keeps while a commit replays another one.

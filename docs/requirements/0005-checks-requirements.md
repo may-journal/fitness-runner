@@ -14,7 +14,7 @@ changed requirement tests and docs whose partner changed too
 -
 changed requirement tests and docs
 
-Source: `go/cmd/fitness-check-requirements/pairs.go:86`
+Source: `go/cmd/fitness-check-requirements/pairs.go:87`
 
 ## Requirements
 
@@ -42,3 +42,7 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:86`
     - Given Developer has a commit with a requirement test alone and its doc staged
         - When I amend the commit with the hooks
             - Then the commit goes through, judged on everything since its parent
+- 0005.16
+    - Given Developer has a requirement test that fails the check at its base
+        - When I fix the test without changing its doc
+            - Then my commit or pull request passes, while a test that passed at its base still fails without its doc
