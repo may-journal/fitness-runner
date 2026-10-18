@@ -29,7 +29,7 @@ Shared helpers in `go/internal` mark an environment error with `checkkit.Interna
 
 A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Given `--body-file`, it reads that body and reports it as one file. Checks never call GitHub themselves.
 
-The `plan-check`, `pr-check`, and `close-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`, which comments, labels, hides old verdicts, or reopens.
+The `plan-check`, `pr-check`, `close-check`, and `comment-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`. It comments, labels, hides old verdicts, reopens, or replies to a comment and reacts.
 
 ### Judging a draft
 

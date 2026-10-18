@@ -45,6 +45,7 @@ flowchart TB
     runFull(3 Run fitness<br/>Req 0001):::action
     runSingle(4 Run single check<br/>Req 0001):::action
     runBlob(29 Check a draft text<br/>Req 0077):::action
+    runComment(31 Check a draft comment<br/>Req 0082):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003)]:::system
@@ -54,9 +55,9 @@ flowchart TB
     subgraph checks["Check families"]
         commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058)]:::system
+        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0084)]:::system
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0035, 0036, 0037)]:::system
-        mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043)]:::system
+        mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0083)]:::system
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
         requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057)]:::system
@@ -81,12 +82,14 @@ flowchart TB
     terminal --> commitHook
     terminal --> pushHook
     terminal --> runBlob
+    terminal --> runComment
     commitHook --> runFull
     pushHook --> runFull
     runFull --> resolveConfig
     runSingle --> executeChecks
     runSingle --> passArgs
     runBlob --> executeChecks
+    runComment --> executeChecks
     resolveConfig --> executeChecks
     resolveConfig --> configError
     executeChecks --> checks
@@ -132,7 +135,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 18  | Changelog checks.                   | System  | Each change has one dated entry file whose bullets match the change.                  |
 | 19  | Prose and template checks.          | System  | Docs stay short, readable, spelled right, and shaped by their templates.              |
 | 20  | Markdown file checks.               | System  | File names, front matter, links, and emphasis follow one convention.                  |
-| 21  | Mermaid diagram checks.             | System  | Diagrams carry legends, callouts, and tables that explain each number.                |
+| 21  | Mermaid diagram checks.             | System  | Diagrams parse and carry legends, callouts, and tables that explain each number.      |
 | 22  | Architecture view checks.           | System  | Views match actors, runtimes, folders, symbols, and this journey.                     |
 | 23  | Requirement and test checks.        | System  | Each acceptance has one test, and a doc changes with its test.                        |
 | 24  | Go and Swift code checks.           | System  | Format, vet, tests, coverage, complexity, and lint gate the code.                     |
@@ -142,3 +145,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
 | 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
+| 31  | `fitness comment-check --file <draft>`. | Action | An agent judges a comment before posting it; CI replies once to one that fails. |

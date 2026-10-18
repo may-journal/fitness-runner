@@ -45,6 +45,11 @@ var ghCommands = map[string]ghCommand{
 		checks: []string{"issue-checklist"},
 		effect: aftereffect.ReopenUnfinished,
 	},
+	"comment-check": {
+		kind: "issues", targets: commentTargets,
+		checks: CommentChecks,
+		effect: aftereffect.CommentReply, failOnFindings: true,
+	},
 }
 
 // RunGH runs the named GitHub command against the Actions event.
@@ -173,9 +178,10 @@ func closeTargets(ev ghEvent, _ aftereffect.Client) ([]target, error) {
 // ghEvent is the part of the Actions event payload the GitHub commands read.
 type ghEvent struct {
 	name        string
-	Action      string  `json:"action"`
-	PullRequest *target `json:"pull_request"`
-	Issue       *target `json:"issue"`
+	Action      string        `json:"action"`
+	PullRequest *target       `json:"pull_request"`
+	Issue       *target       `json:"issue"`
+	Comment     *eventComment `json:"comment"`
 	Sender      struct {
 		Login string `json:"login"`
 	} `json:"sender"`

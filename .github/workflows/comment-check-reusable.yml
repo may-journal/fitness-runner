@@ -1,0 +1,87 @@
+name: Comment check (reusable)
+
+# Reusable across the org: a consumer repo calls this from an `issue_comment`
+# and `pull_request_review_comment` caller. It installs the published fitness
+# checks and runs `fitness comment-check`, which judges the comment with the
+# Plan and PR prose checks plus comment-structure and mermaid-syntax. A
+# failing comment gets one reply naming its author and a thumbs-down
+# reaction; a fixed one turns that reply into a passing note. fitness-runner
+# keeps its own build-from-source comment-check to test unreleased changes.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Optional source ref to compile; empty uses the pinned binary release.
+        type: string
+        default: ''
+      authors:
+        description: Comma-separated logins to judge; empty judges every author but apps.
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  comment-check:
+    # Apps cannot fix a comment; a manual sweep filters per comment instead.
+    if: github.event_name == 'workflow_dispatch' || github.event.comment.user.type != 'Bot'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Agents edit a comment in quick bursts; only the newest text needs a reply.
+    concurrency:
+      group: comment-check-${{ github.repository }}-${{ github.event.comment.id || github.run_id }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        if: ${{ inputs.ref != '' }}
+        with:
+          go-version: stable
+      - name: Install the pinned fitness bundle
+        id: report-step-1
+        if: ${{ inputs.ref == '' }}
+        uses: may-journal/fitness-runner@v1
+        with:
+          install-only: 'true'
+      - name: Build an explicitly requested source ref
+        if: ${{ inputs.ref != '' }}
+        env:
+          GOPROXY: direct
+          FITNESS_SOURCE_REF: ${{ inputs.ref }}
+        run: |
+          go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+      - name: Validate comment(s), keep one reply, and react
+        id: report-step-2
+        run: fitness comment-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FITNESS_COMMENT_AUTHORS: ${{ inputs.authors }}
+      - name: Retain complete Fitness reports
+        id: fitness-reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
+          path: ${{ runner.temp }}/fitness-reports/
+          if-no-files-found: ignore
+          retention-days: 7
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          if [ -n "$REPORT_ARTIFACT_URL" ]; then
+            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
+          fi

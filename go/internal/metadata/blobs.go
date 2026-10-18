@@ -25,6 +25,7 @@ var docChecks = []string{
 	"mermaid-diagram-prose",
 	"mermaid-diagram-table-gap",
 	"mermaid-legend",
+	"mermaid-syntax",
 	"cspell",
 }
 

@@ -40,6 +40,12 @@ type Config struct {
 		MaxListItems          int `json:"maxListItems"`
 		MaxWords              int `json:"maxWords"`
 	} `json:"proseBudget"`
+	// Comment holds comment-structure's budget for an issue or PR comment.
+	// Each limit falls back to a built-in default when zero.
+	Comment struct {
+		MaxWords  int `json:"maxWords"`
+		MaxTables int `json:"maxTables"`
+	} `json:"comment"`
 }
 
 // FileName is the config file the runner reads at the repo root.

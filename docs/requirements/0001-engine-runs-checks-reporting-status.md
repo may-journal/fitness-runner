@@ -21,7 +21,7 @@ Source: `go/cmd/fitness/ci.go:22`
 - 0001.1
     - Given Developer has every check passing
         - When fitness runs
-            - Then it reports green and exits 0
+            - Then it reports every installed check green and exits 0
 - 0001.2
     - Given Developer has a check that fails
         - When fitness runs

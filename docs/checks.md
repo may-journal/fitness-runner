@@ -8,7 +8,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 
 - Pure logic: rules over file names, text, commits, and plans, such as `gitignore-why`, `semantic-commit`, `markdown-links`, and `prose-budget`
 - Issue and PR body checks: `plan-structure`, `pr-structure`, `pr-closes-issue`, `issue-checklist`; file-level `doc-template` (files match the nearest `*.template.md`) and `requirements` (tests change with their docs)
-- `plan-check`, `pr-check`, and `close-check` judge a GitHub blob with the body and prose checks, then an after-effect reacts; [`fitness --blob`](check-protocol.md#blob-input) judges any text
+- `plan-check`, `pr-check`, `close-check`, and `comment-check` judge a GitHub blob with the body and prose checks, then an after-effect reacts; [`fitness --blob`](check-protocol.md#blob-input) judges any text
 - Parsers and network: the `architecture-*` checks, `issue-link-once`, and the mermaid diagram/callout checks
 - Native engines: `cspell` (embedded dictionaries, ~217k words) and `jscpd` (token-based clone detection) — no external tool needed
 - Language checks: each [language module](../go/internal/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
