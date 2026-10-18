@@ -69,12 +69,17 @@ func issueGitHub(n, marker, verdicts string, labels ...string) []response {
 	}
 }
 
-// planVerdict is one verdict comment as the verdicts query prints it: id 11,
-// starting with text and marked as judging body.
+// planVerdict is one verdict comment the fitness bot wrote, as the verdicts
+// query prints it: id 11, starting with text and marked as judging body.
 func planVerdict(text, body string) string {
+	return verdictBy("github-actions[bot]", text, body)
+}
+
+// verdictBy is planVerdict written by author.
+func verdictBy(author, text, body string) string {
 	sum := sha256.Sum256([]byte(body))
 	mark := "<!-- fitness:plan-structure:" + hex.EncodeToString(sum[:])[:12] + " -->"
-	line, _ := json.Marshal(map[string]any{"id": 11, "nodeId": "IC_11", "body": text + "\n\n<sub>Checked by fitness-runner</sub>\n\n" + mark, "isHidden": false})
+	line, _ := json.Marshal(map[string]any{"id": 11, "nodeId": "IC_11", "body": text + "\n\n<sub>Checked by fitness-runner</sub>\n\n" + mark, "isHidden": false, "author": author})
 	return string(line) + "\n"
 }
 
@@ -125,6 +130,11 @@ func Test0013_3(t *testing.T) {
 	sees(t, out, code, 0, "Passed.")
 	if rp.called("gh", "body=") {
 		t.Errorf("want no comment written, got gh calls %q", rp.calls("gh"))
+	}
+	out, code, rp = judgePlan(t, body, planGitHub(verdictBy("dev", "✅ Plan looks good.", body), "fitness", "fitness-valid"))
+	sees(t, out, code, 0, "Passed.")
+	if !commented(rp, "body=✅ Plan looks good.") || rp.called("gh", "minimizeComment") || rp.called("gh", "issues/comments/11") {
+		t.Errorf("want a pasted verdict ignored and a real one posted, got gh calls %q", rp.calls("gh"))
 	}
 }
 

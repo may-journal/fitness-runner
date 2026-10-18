@@ -45,7 +45,7 @@ flowchart TD
 | 2   | Manual sweep | A `workflow_dispatch` run walks every open Issue with a kind label. | Backfills issues that predate the workflow.              |
 | 3   | Kind         | Read the Issue's labels; no kind label passes, and two fail.      | Only labeled kinds have a template to meet.                |
 | 4   | Run check    | Run the template shape, the kind's checks, and the doc checks.    | One tested binary, same rules as the local suite.          |
-| 5   | Dedupe       | Hash the body and search for the kind's `fitness:issue-check:<kind>:` marker. | One comment per description version and kind.  |
+| 5   | Dedupe       | Hash the body and search the bot's comments for the kind's `fitness:issue-check:<kind>:` marker. | One comment per description version and kind; a pasted marker never counts. |
 | 6   | Comment      | A pass after a pass edits it to `✅ Validated`; else post anew. | One live verdict, no pile of repeats. |
 | 7   | Hide         | Hide older bot verdicts as outdated.                              | Only the live verdict stays open.                          |
 | 8   | Label        | Add `fitness` and `fitness-valid` or `fitness-invalid`.          | Issue lists show the verdict.                              |
@@ -126,7 +126,7 @@ flowchart TD
 | 1   | Issue closed   | An `issues: closed` event, from a person or a PR keyword.          | Catches every close.                                  |
 | 2   | Reason guard   | A not planned or duplicate close stops here.                       | Dropped work may stay unfinished.                     |
 | 3   | Unchecked scan | List each `- [ ]` item, skipping any inside fenced code.           | Only real tasks count, not examples.                  |
-| 4   | Dedupe         | Hash the close time and body, then look for that marker.           | A re-run never reopens or comments twice.             |
+| 4   | Dedupe         | Hash the close time and body, then look for that marker in the bot's comments. | A re-run never reopens or comments twice; a pasted marker never counts. |
 | 5   | Reopen         | Set the Issue back to open.                                        | Unfinished work stays visible.                        |
 | 6   | Comment        | List the items and mention the closer, PR author, and merger.      | The closer hears why it came back.                    |
 

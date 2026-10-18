@@ -23,9 +23,9 @@ Source: `go/internal/aftereffect/reopen.go:12`
         - When close-check runs
             - Then it reopens the issue with a comment naming the item and the closer
 - 0015.2
-    - Given Developer has a close that close-check already handled
+    - Given Developer has a close that close-check already handled, or one where only another author pasted its marker
         - When it runs again
-            - Then it adds no second comment
+            - Then it stays quiet on the first and reopens the second
 - 0015.3
     - Given Developer has an issue closed as not planned with unchecked items
         - When close-check runs

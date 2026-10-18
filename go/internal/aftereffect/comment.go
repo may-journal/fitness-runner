@@ -45,6 +45,8 @@ const noticePrefix = MarkerPrefix + "comment-check:"
 type Notice struct {
 	ID   int64  `json:"id"`
 	Body string `json:"body"`
+	// Author is the login that wrote it, when a listing asks for it.
+	Author string `json:"author"`
 }
 
 // BotLogin is the account whose replies count as comment-check notices;

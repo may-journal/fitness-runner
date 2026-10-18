@@ -27,9 +27,9 @@ Source: `go/internal/aftereffect/verdict.go:15`
         - When plan-check judges it
             - Then it comments the errors, labels it fitness-invalid, and exits 1
 - 0013.3
-    - Given Developer has a Plan that plan-check already judged
+    - Given Developer has a Plan that plan-check already judged, or one where only another author pasted that verdict
         - When it judges the same body again
-            - Then it adds no comment
+            - Then it adds no comment to the first, and posts a real verdict on the second
 - 0013.4
     - Given Developer has a failed Plan that is then fixed
         - When plan-check judges it
