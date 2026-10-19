@@ -53,11 +53,12 @@ func dupeTargets(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, er
 	if err != nil {
 		return nil, err
 	}
-	all, err := gh.Issues()
+	since := time.Now().UTC().AddDate(0, 0, -cfg.WindowDays).Format(time.RFC3339)
+	all, err := gh.Issues(since)
 	if err != nil {
 		return nil, err
 	}
-	pool := corpus(all, cfg.WindowDays, gh.Repo())
+	pool := corpus(all, since, gh.Repo())
 	if ev.name == "workflow_dispatch" {
 		printMatrix(pool, cfg)
 		return nil, nil
@@ -79,8 +80,9 @@ func eventDupes(ev ghEvent, pool []entry, cfg dupeConfig, repo string) ([]target
 }
 
 // skipDupe reports whether dupe-check leaves the event's issue alone: it is
-// closed, or a known bot opened or changed it, as release tracking issues
-// that repeat one template are.
+// closed, or a known bot sent the event, as when it opens a release
+// tracking issue that repeats one template. The pool never holds issues a
+// known bot opened, so a person's later edit to one finds no such twin.
 func skipDupe(ev ghEvent, t target) bool {
 	if t.State == "closed" || slices.Contains(KnownBots, ev.Sender.Login) {
 		fmt.Printf("Skipped #%d: it is closed or a known bot changed it.\n", t.Number)
@@ -89,11 +91,12 @@ func skipDupe(ev ghEvent, t target) bool {
 	return false
 }
 
-// closes reports whether the best match reaches the close score, when the
-// repo turned the close tier on. Only a newly opened issue closes, so a
-// person who reopens one is never overruled.
+// closes reports whether the best match is open and reaches the close
+// score, when the repo turned the close tier on. Only a newly opened issue
+// closes, so a person who reopens one is never overruled, and never against
+// a closed issue, such as a fixed bug it may report again.
 func closes(found []aftereffect.Dupe, cfg dupeConfig) bool {
-	return cfg.CloseScore > 0 && len(found) > 0 && found[0].Score >= cfg.CloseScore
+	return cfg.CloseScore > 0 && len(found) > 0 && found[0].Open && found[0].Score >= cfg.CloseScore
 }
 
 // entry is one issue in the pool, with its words and the issues its body
@@ -104,22 +107,21 @@ type entry struct {
 	refs  map[int]bool
 }
 
-// corpus is every open issue of repo and every one closed within the
-// window, oldest first, minus those a known bot opened.
-func corpus(all []target, days int, repo string) []entry {
-	since := time.Now().UTC().AddDate(0, 0, -days).Format(time.RFC3339)
+// corpus is the pool of repo's issues dupe-check compares, oldest first.
+func corpus(all []target, since, repo string) []entry {
 	var pool []entry
 	for _, t := range all {
-		if inWindow(t, since) && !slices.Contains(KnownBots, t.Opener) {
+		if inPool(t, since) {
 			pool = append(pool, newEntry(t, nil, repo))
 		}
 	}
 	return pool
 }
 
-// inWindow reports whether t is open or closed at or after since.
-func inWindow(t target, since string) bool {
-	return t.State == "open" || t.ClosedAt >= since
+// inPool reports whether t is open or closed at or after since, and neither
+// opened by a known bot nor closed as a duplicate, a thread that ended.
+func inPool(t target, since string) bool {
+	return (t.State == "open" || t.ClosedAt >= since) && !slices.Contains(KnownBots, t.Opener) && t.StateReason != "duplicate"
 }
 
 // newEntry is t with its words and the issues of repo it references. Its
@@ -131,16 +133,16 @@ func newEntry(t target, pool []entry, repo string) entry {
 			t.Parent = e.Parent
 		}
 	}
-	return entry{target: t, words: dupe.Of(t.Title, t.Body), refs: references(t.Body, repo)}
+	return entry{target: t, words: dupe.Of(t.Title, t.Body), refs: references(t.Title+"\n"+t.Body, repo)}
 }
 
 // refRe is an issue reference: #12, or a link to an issue of a repo.
 var refRe = regexp.MustCompile(`(?:^|[^\w/&])#(\d+)\b|github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)`)
 
-// references are the issue numbers body names in repo.
-func references(body, repo string) map[int]bool {
+// references are the issue numbers text names in repo.
+func references(text, repo string) map[int]bool {
 	refs := map[int]bool{}
-	for _, m := range refRe.FindAllStringSubmatch(body, -1) {
+	for _, m := range refRe.FindAllStringSubmatch(text, -1) {
 		refs[refNumber(m, repo)] = true
 	}
 	return refs
@@ -190,7 +192,7 @@ func matches(t entry, pool []entry, warn float64) []aftereffect.Dupe {
 			continue
 		}
 		if s := dupe.Score(t.words, e.words); s >= warn {
-			found = append(found, aftereffect.Dupe{ID: e.ID, Number: e.Number, Score: s})
+			found = append(found, aftereffect.Dupe{ID: e.ID, Number: e.Number, Score: s, Open: e.State == "open"})
 		}
 	}
 	slices.SortStableFunc(found, func(x, y aftereffect.Dupe) int { return cmp.Compare(y.Score, x.Score) })

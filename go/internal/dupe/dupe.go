@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 // Words is the set of words an issue's title and body share with others.
@@ -31,7 +32,7 @@ var (
 	urlRe = regexp.MustCompile(`https?://\S+`)
 )
 
-// minLength is the shortest word that counts.
+// minLength is the fewest letters a word that counts has.
 const minLength = 3
 
 // filler are common words that say nothing about what an issue is about.
@@ -81,7 +82,7 @@ func notWordRune(r rune) bool {
 // counts reports whether w is long enough, not filler, and not a bare
 // number such as an issue reference.
 func counts(w string) bool {
-	return len(w) >= minLength && !filler[w] && strings.TrimFunc(w, unicode.IsDigit) != ""
+	return utf8.RuneCountInString(w) >= minLength && !filler[w] && strings.TrimFunc(w, unicode.IsDigit) != ""
 }
 
 // Score is the Jaccard index of a and b: the words they share over the words

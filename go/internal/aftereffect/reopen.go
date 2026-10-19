@@ -1,8 +1,6 @@
 package aftereffect
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"strings"
 )
 
@@ -35,8 +33,7 @@ func reopen(gh Client, t Target, errs []string, mark string) error {
 
 // closeMarker tags the comment with a hash of this close, its time and body.
 func closeMarker(t Target) string {
-	sum := sha256.Sum256([]byte(t.ClosedAt + "\n" + t.Body))
-	return MarkerPrefix + "close-check:" + hex.EncodeToString(sum[:])[:12] + " -->"
+	return MarkerPrefix + "close-check:" + shortHash(t.ClosedAt+"\n"+t.Body) + " -->"
 }
 
 // hasMarker reports whether a comment on issue n already carries mark.

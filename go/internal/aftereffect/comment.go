@@ -1,8 +1,6 @@
 package aftereffect
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"os"
 	"strconv"
@@ -120,8 +118,7 @@ func noticePath(c Comment, id int64) string {
 
 // noticeMarker ties a reply to comment id and the verdict it states.
 func noticeMarker(id int64, verdict string) string {
-	sum := sha256.Sum256([]byte(verdict))
-	return noticePrefix + strconv.FormatInt(id, 10) + ":" + hex.EncodeToString(sum[:])[:12] + " -->"
+	return noticePrefix + strconv.FormatInt(id, 10) + ":" + shortHash(verdict) + " -->"
 }
 
 // failNotice lists the violations and mentions the author.

@@ -1,9 +1,8 @@
 package aftereffect
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -14,20 +13,21 @@ const dupePrefix = MarkerPrefix + "dupe-check:"
 
 // DupeComment keeps one note on an issue listing the older issues it
 // resembles, edited in place as the issue changes, and closes the issue as
-// a duplicate when the command asks. An issue that never resembled another
-// gets nothing; one that stops resembling them gets its note cleared.
+// a duplicate when the command asks. It closes first, so a failed close
+// never leaves a note saying it closed. An issue that never resembled
+// another gets nothing; one that stops resembling them gets its note
+// cleared.
 func DupeComment(gh Client, t Target, _ []string) error {
 	prior, err := gh.markedComment("issues", t.Number, dupePrefix)
 	if err != nil {
 		return err
 	}
-	if err := writeDupeNote(gh, t, prior); err != nil {
-		return err
+	if t.CloseDupe {
+		if err := gh.closeAsDuplicate(t.Number, t.Dupes[0].ID); err != nil {
+			return err
+		}
 	}
-	if !t.CloseDupe {
-		return nil
-	}
-	return gh.closeAsDuplicate(t.Number, t.Dupes[0].ID)
+	return writeDupeNote(gh, t, prior)
 }
 
 // writeDupeNote posts the note, or edits prior to it, unless prior already
@@ -37,8 +37,7 @@ func writeDupeNote(gh Client, t Target, prior *Notice) error {
 		return nil
 	}
 	text := dupeText(t)
-	sum := sha256.Sum256([]byte(text))
-	return putNote(gh, t.Number, prior, text, dupePrefix+hex.EncodeToString(sum[:])[:12]+" -->")
+	return putNote(gh, t.Number, prior, text, dupePrefix+shortHash(text)+" -->")
 }
 
 // putNote edits prior to text under mark, or posts it on issue n when there
@@ -79,11 +78,12 @@ func (g Client) closeAsDuplicate(n int, of int64) error {
 	return err
 }
 
-// issuesQuery lists every issue, oldest first, with its parent, which only
-// GraphQL reads in one list.
-const issuesQuery = `query($owner: String!, $name: String!, $endCursor: String) {
+// issuesQuery lists the issues in states, updated since $since, with each
+// one's parent, which only GraphQL reads in one list. A null $since lists
+// them all.
+const issuesQuery = `query($owner: String!, $name: String!, $since: DateTime, $endCursor: String) {
   repository(owner: $owner, name: $name) {
-    issues(first: 100, after: $endCursor, orderBy: {field: CREATED_AT, direction: ASC}) {
+    issues(first: 100, after: $endCursor, states: [%s], filterBy: {since: $since}) {
       pageInfo { hasNextPage endCursor }
       nodes { databaseId number title body state stateReason closedAt parent { number } author { login __typename } }
     }
@@ -96,12 +96,26 @@ const issuesFilter = `.data.repository.issues.nodes[] | {id: .databaseId, number
 	closed_at: (.closedAt // ""), parentNumber: (.parent.number // 0),
 	opener: (if .author.__typename == "Bot" then .author.login + "[bot]" else (.author.login // "") end)}`
 
-// Issues lists every issue in the repository, open and closed, oldest
-// first, each with its parent's number.
-func (g Client) Issues() ([]Target, error) {
+// Issues lists every open issue and every closed one updated since since,
+// an RFC 3339 time, oldest first, each with its parent's number. Older
+// closed issues are never read.
+func (g Client) Issues(since string) ([]Target, error) {
+	open, err := g.issuesIn("OPEN")
+	if err != nil {
+		return nil, err
+	}
+	closed, err := g.issuesIn("CLOSED", "-f", "since="+since)
+	all := append(open, closed...)
+	slices.SortFunc(all, func(a, b Target) int { return a.Number - b.Number })
+	return all, err
+}
+
+// issuesIn lists the issues in state, with extra variables for the query.
+func (g Client) issuesIn(state string, vars ...string) ([]Target, error) {
 	owner, name, _ := strings.Cut(g.repo, "/")
-	out, err := g.gh("api", "graphql", "--paginate",
-		"-f", "query="+issuesQuery, "-F", "owner="+owner, "-F", "name="+name, "--jq", issuesFilter)
+	args := append([]string{"api", "graphql", "--paginate", "-f", "query=" + fmt.Sprintf(issuesQuery, state),
+		"-f", "owner=" + owner, "-f", "name=" + name, "--jq", issuesFilter}, vars...)
+	out, err := g.gh(args...)
 	if err != nil {
 		return nil, err
 	}

@@ -168,13 +168,19 @@ func KindID(kind string) string {
 // markers tag a comment with a hash of the body it judged, one per marker
 // prefix; the first is the one a new verdict carries.
 func markers(kind, body string) []string {
-	sum := sha256.Sum256([]byte(body))
-	hash := hex.EncodeToString(sum[:])[:12]
+	hash := shortHash(body)
 	var marks []string
 	for _, p := range MarkerPrefixes(kind) {
 		marks = append(marks, "<!-- "+p+hash+" -->")
 	}
 	return marks
+}
+
+// shortHash is the first 12 hex digits of text's SHA-256, which every
+// marker uses to name the text it judged.
+func shortHash(text string) string {
+	sum := sha256.Sum256([]byte(text))
+	return hex.EncodeToString(sum[:])[:12]
 }
 
 // passIcon starts every passing verdict.

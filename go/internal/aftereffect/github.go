@@ -71,6 +71,9 @@ type Dupe struct {
 	ID     int64
 	Number int
 	Score  float64
+	// Open marks an older issue still open, the only kind a new one closes
+	// as a duplicate of.
+	Open bool
 }
 
 // FileChange is one file a pull request changes: its path, GitHub's status

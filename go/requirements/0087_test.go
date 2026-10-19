@@ -35,8 +35,17 @@ func listed0087(n int, title, body string, parent int, closedAt string) string {
 // dupeGitHub is the saved GitHub that lists issues and holds note, the bot's
 // earlier note on issue n as the lookup prints it. Every write succeeds.
 func dupeGitHub(n int, note string, issues ...string) []response {
+	var open, closed string
+	for _, line := range issues {
+		if strings.Contains(line, `"state":"closed"`) {
+			closed += line
+		} else {
+			open += line
+		}
+	}
 	return []response{
-		{Match: []string{"graphql", "issues(first: 100"}, Stdout: strings.Join(issues, "")},
+		{Match: []string{"graphql", "states: [OPEN]"}, Stdout: open},
+		{Match: []string{"graphql", "states: [CLOSED]", "since="}, Stdout: closed},
 		{Match: []string{"issues/" + itoa(n) + "/comments?per_page=100", "fitness:dupe-check:"}, Stdout: note},
 		{Match: []string{"-X POST", "issues/" + itoa(n) + "/comments"}, Stdout: `{"id":90}`},
 		{Match: []string{"-X PATCH"}, Stdout: `{}`},

@@ -31,7 +31,7 @@ Source: `go/internal/aftereffect/dupe.go:19`
         - When dupe-check judges the opened issue
             - Then it writes nothing
 - 0087.4
-    - Given Developer has a repo whose `.fitnessrc.json` turns the close tier on, and a new issue above the close score
+    - Given Developer has a close tier on in `.fitnessrc.json`, and a new issue above the close score against an open one
         - When dupe-check judges it opened and close-check judges its close
             - Then it closes as a duplicate with a note, and close-check leaves it closed
 - 0087.5
