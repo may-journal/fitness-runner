@@ -63,7 +63,9 @@ jobs:
       # notice.
       # Once the base PR merges and GitHub moves this PR onto the default
       # branch, the next push or reopen turns auto-merge on; GitHub's edited
-      # event for the move never starts this workflow. It reads the event
+      # event for the move never starts this workflow. GitHub may still count
+      # a moved PR as stacked and refuse, so that refusal passes with a
+      # notice too; any other failure fails the job. It reads the event
       # file, as a test can.
       - name: Enable squash auto-merge
         env:
@@ -75,7 +77,14 @@ jobs:
             echo "::notice::This PR targets $base, not $default, so it gets no auto-merge; GitHub has none for stacks. Push or reopen it once it targets $default."
             exit 0
           fi
-          gh pr merge --auto --squash "$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")"
+          status=0
+          answer="$(gh pr merge --auto --squash "$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")" 2>&1)" || status=$?
+          if [ -n "$answer" ]; then printf '%s\n' "$answer"; fi
+          if [ "$status" -ne 0 ] && [[ "$answer" == *"Auto-merge is not supported for stacked pull requests"* ]]; then
+            echo "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge. Merge it once it is approved and green."
+            exit 0
+          fi
+          exit "$status"
       # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
         if: ${{ always() }}

@@ -43,10 +43,11 @@ func block0091(text string) string {
 
 // autoMerge0091 runs the workflow's auto-merge step as Actions does, with
 // bash -e and pipefail, on a pull_request event for PR 2 based on base in a
-// repo whose default branch is main, GitHub answering from saved responses.
-func autoMerge0091(t *testing.T, base string) (replays, string, int) {
+// repo whose default branch is main, GitHub answering merge with answer.
+func autoMerge0091(t *testing.T, base string, answer response) (replays, string, int) {
 	t.Helper()
-	rp := standIn(t, map[string][]response{"gh": {{Match: []string{"pr merge --auto --squash"}}}})
+	answer.Match = []string{"pr merge --auto --squash"}
+	rp := standIn(t, map[string][]response{"gh": {answer}})
 	env := event0014(t, "pull_request", map[string]any{
 		"action":       "synchronize",
 		"repository":   map[string]any{"default_branch": "main"},
@@ -62,7 +63,7 @@ func autoMerge0091(t *testing.T, base string) (replays, string, int) {
 
 func Test0091_1(t *testing.T) {
 	t.Parallel()
-	rp, out, code := autoMerge0091(t, "photos-grid")
+	rp, out, code := autoMerge0091(t, "photos-grid", response{})
 	sees(t, out, code, 0, "::notice::This PR targets photos-grid, not main", "Push or reopen it once it targets main.")
 	if calls := rp.calls("gh"); len(calls) != 0 {
 		t.Fatalf("a stacked PR asked GitHub for auto-merge: %q", calls)
@@ -71,9 +72,26 @@ func Test0091_1(t *testing.T) {
 
 func Test0091_2(t *testing.T) {
 	t.Parallel()
-	rp, out, code := autoMerge0091(t, "main")
+	rp, out, code := autoMerge0091(t, "main", response{})
 	sees(t, out, code, 0)
 	if !rp.called("gh", "pr merge --auto --squash https://github.com/"+repo0014+"/pull/2") {
 		t.Fatalf("a PR moved onto main did not get auto-merge: %q", rp.calls("gh"))
+	}
+}
+
+func Test0091_3(t *testing.T) {
+	t.Parallel()
+	refusal := "GraphQL: Auto-merge is not supported for stacked pull requests. (enablePullRequestAutoMerge)\n"
+	_, out, code := autoMerge0091(t, "main", response{Stderr: refusal, Exit: 1})
+	sees(t, out, code, 0, strings.TrimSpace(refusal), "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge.")
+}
+
+func Test0091_4(t *testing.T) {
+	t.Parallel()
+	refusal := "GraphQL: Pull request is in clean status (enablePullRequestAutoMerge)\n"
+	_, out, code := autoMerge0091(t, "main", response{Stderr: refusal, Exit: 1})
+	sees(t, out, code, 1, strings.TrimSpace(refusal))
+	if strings.Contains(out, "::notice::") {
+		t.Fatalf("another auto-merge failure passed with a notice:\n%s", out)
 	}
 }

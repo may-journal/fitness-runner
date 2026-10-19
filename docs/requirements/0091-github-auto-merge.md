@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-My stacked pull requests keep a green Auto-merge check, and each one gets auto-merge once it targets the default branch.
+My stacked pull requests keep a green Auto-merge check. Each one gets auto-merge once GitHub no longer counts it as stacked. Any other auto-merge failure still turns the check red.
 
 ## Measurement
 
@@ -26,3 +26,11 @@ Source: #506
     - Given Developer has a stacked pull request that GitHub moved onto the default branch after its base merged
         - When I push to it
             - Then Auto-merge turns on squash auto-merge
+- 0091.3
+    - Given Developer has a pull request on the default branch that GitHub still counts as stacked
+        - When Auto-merge runs and GitHub refuses auto-merge for stacked pull requests
+            - Then it passes with a notice and shows GitHub's answer
+- 0091.4
+    - Given Developer has a pull request on the default branch
+        - When Auto-merge runs and GitHub refuses auto-merge for any other reason
+            - Then it fails and shows GitHub's answer
