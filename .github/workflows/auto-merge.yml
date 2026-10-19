@@ -80,8 +80,8 @@ jobs:
           status=0
           answer="$(gh pr merge --auto --squash "$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")" 2>&1)" || status=$?
           if [ -n "$answer" ]; then printf '%s\n' "$answer"; fi
-          if [ "$status" -ne 0 ] && [[ "$answer" == *"Auto-merge is not supported for stacked pull requests"* ]]; then
-            echo "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge. Merge it once it is approved and green."
+          if [ "$status" -ne 0 ] && grep -qi 'auto-merge is not supported for stacked' <<< "$answer"; then
+            echo "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge. Merge it by hand once it is approved and green, or push once GitHub moves it out of the stack."
             exit 0
           fi
           exit "$status"

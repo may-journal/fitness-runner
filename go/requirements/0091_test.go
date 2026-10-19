@@ -83,7 +83,7 @@ func Test0091_3(t *testing.T) {
 	t.Parallel()
 	refusal := "GraphQL: Auto-merge is not supported for stacked pull requests. (enablePullRequestAutoMerge)\n"
 	_, out, code := autoMerge0091(t, "main", response{Stderr: refusal, Exit: 1})
-	sees(t, out, code, 0, strings.TrimSpace(refusal), "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge.")
+	sees(t, out, code, 0, strings.TrimSpace(refusal), "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge.", "Merge it by hand once it is approved and green")
 }
 
 func Test0091_4(t *testing.T) {

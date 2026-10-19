@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-My stacked pull requests keep a green Auto-merge check. Each one gets auto-merge once GitHub no longer counts it as stacked. Any other auto-merge failure still turns the check red.
+My stacked pull requests keep a green Auto-merge check. Until GitHub stops counting one as stacked, I merge it by hand. Any other auto-merge failure still turns the check red.
 
 ## Measurement
 
