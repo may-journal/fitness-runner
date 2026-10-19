@@ -4,9 +4,12 @@ const { createRequire } = require('node:module');
 const path = require('node:path');
 const requireFromFile = createRequire(__filename);
 
+/** Escapes glob syntax, so a folder named like `app (copy)` matches itself. */
+const literal = (text) => text.replace(/[()[\]{}*?!+@\\]/g, '\\$&');
+
 /** Returns glob, a path from the repo root, as a path from this file's folder. */
 const fromRepoRoot = (glob) =>
-  path.posix.join(path.relative(__dirname, process.cwd()).split(path.sep).join('/'), glob);
+  path.posix.join(literal(path.relative(__dirname, process.cwd()).split(path.sep).join('/')), glob);
 
 /** @type {import('prettier').Config} */
 // package.json sorted via sort-package-json (conventional order); JSON keys sorted recursively.
@@ -29,7 +32,7 @@ const config = {
   overrides: [
     {
       files: ['.github/ISSUE_TEMPLATE/**/*.md', '.github/fitness-setup.md'].map(fromRepoRoot),
-      options: { printWidth: 80, singleQuote: false },
+      options: { jsonRecursiveSort: false, printWidth: 80, singleQuote: false, trailingComma: 'all' },
     },
   ],
 };

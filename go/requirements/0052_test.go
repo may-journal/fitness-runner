@@ -157,6 +157,7 @@ func Test0052_12(t *testing.T) {
 	shared := prettierAnswers(prettierClean, "--config", "prettier.config.cjs", "--check", "app.js", ".github/ISSUE_TEMPLATE/plan.md", ".github/fitness-setup.md")
 	out, code, rp := prettierRun(t, files, []response{shared, prettierWarn})
 	sees(t, out, code, 0, "All 1 checks passed")
+	prettierCalledWith(t, rp, []string{"--config", "prettier.config.cjs", "--ignore-unknown", "--ignore-path", "--with-node-modules", "--check", "app.js"})
 	calls := rp.calls("prettier")
 	if len(calls) != 1 {
 		t.Fatalf("want one prettier call, got %q", calls)
