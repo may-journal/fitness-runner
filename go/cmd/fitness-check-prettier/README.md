@@ -18,6 +18,7 @@ Run `fitness prettier` from your app root to check formatting. Pass through args
 - Otherwise: Runs `prettier --check` on every tracked file from the repo root.
 - Config: Local project config if present; otherwise the shared prettier config resolved as above (no copy required in the consumer repo).
 - Plugins: the shared config loads `prettier-plugin-packagejson` and `prettier-plugin-sort-json`, so the repo installs both.
+- Synced files: the shared config keeps `.github/ISSUE_TEMPLATE/**/*.md` and `.github/fitness-setup.md` at Prettier defaults with an [override](https://prettier.io/docs/configuration#configuration-overrides). Those files arrive from may-journal/.github in that style.
 - The check puts the repo's `node_modules` folders on `NODE_PATH`, where the shared config finds them.
 - When Prettier fails without naming a file, its own `[error]` lines follow the fallback message, such as a plugin it cannot load.
 

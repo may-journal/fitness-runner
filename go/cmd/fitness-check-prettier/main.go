@@ -251,12 +251,18 @@ func hasPrettierConfig(root string) bool {
 // (sharedconf.Resolve; its repo-local step never fires here because
 // hasPrettierConfig already ruled a root-level prettier.config.cjs out). ""
 // again only when even the fallback fails to materialize, running Prettier on
-// its defaults.
+// its defaults. The path has its symlinks resolved, as Node resolves the
+// config's own __dirname, so the config's override globs, which Prettier
+// matches from the --config folder, count the same ../ steps.
 func resolveConfigPath(root string) string {
 	if hasPrettierConfig(root) {
 		return ""
 	}
-	return sharedconf.Resolve(root, prettierConfigCjs)
+	p := sharedconf.Resolve(root, prettierConfigCjs)
+	if real, err := filepath.EvalSymlinks(p); err == nil {
+		return real
+	}
+	return p
 }
 
 // scopedPaths returns the paths to hand Prettier, and false when a scoped run

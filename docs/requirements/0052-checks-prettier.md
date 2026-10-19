@@ -26,10 +26,10 @@ Source: `go/cmd/fitness-check-prettier/main.go:363`
     - Given Developer has a repo with no `package.json`
         - When prettier checks the repo
             - Then it passes without needing Prettier
-- 0052.4
-    - Given Developer has a project with no config, formatted with single quotes
+- 0052.12
+    - Given Developer has a project with no config in single quotes, plus the org's synced templates in Prettier defaults
         - When prettier checks the repo
-            - Then it passes under the shared config, not Prettier defaults
+            - Then it passes under the shared config, which keeps only the synced templates at Prettier defaults, from any checkout path
 - 0052.5
     - Given Developer has a formatted file staged beside an unstaged messy one
         - When prettier checks the staged change

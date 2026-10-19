@@ -2,6 +2,8 @@ package requirements
 
 import (
 	"fmt"
+	"os"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -129,12 +131,43 @@ func Test0052_3(t *testing.T) {
 	}
 }
 
-func Test0052_4(t *testing.T) {
+// prettierSynced are the files may-journal/.github syncs into every repo,
+// formatted with Prettier's defaults: double-quoted front matter.
+var prettierSynced = map[string]string{
+	".github/ISSUE_TEMPLATE/plan.md": "---\nname: Plan\ntitle: \"[Plan] Short name of the work\"\n---\n\n> REPLACE-ME\n",
+	".github/fitness-setup.md":       "---\nrelatedConfigurations: [\"workflows/issue-check.yml\"]\n---\n\n# Fitness setup\n",
+}
+
+// configFrom returns the file a Prettier call names after --config.
+func configFrom(t *testing.T, call string) string {
+	t.Helper()
+	args := strings.Fields(call)
+	i := slices.Index(args, "--config")
+	if i < 0 || i+1 == len(args) {
+		t.Fatalf("prettier was called without --config: %q", call)
+	}
+	raw, err := os.ReadFile(args[i+1])
+	mustDo(t, err)
+	return string(raw)
+}
+
+func Test0052_12(t *testing.T) {
 	t.Parallel()
-	shared := prettierAnswers(prettierClean, "--config", "prettier.config.cjs")
-	out, code, rp := prettierRun(t, prettierJS(map[string]string{".prettierrc.json": "", "app.js": prettierShared}), []response{shared, prettierWarn})
+	files := prettierJS(with(map[string]string{".prettierrc.json": "", "app.js": prettierShared}, prettierSynced))
+	shared := prettierAnswers(prettierClean, "--config", "prettier.config.cjs", "--check", "app.js", ".github/ISSUE_TEMPLATE/plan.md", ".github/fitness-setup.md")
+	out, code, rp := prettierRun(t, files, []response{shared, prettierWarn})
 	sees(t, out, code, 0, "All 1 checks passed")
-	prettierCalledWith(t, rp, []string{"--config", "prettier.config.cjs", "--check", "app.js"})
+	prettierCalledWith(t, rp, []string{"--config", "prettier.config.cjs", "--ignore-unknown", "--ignore-path", "--with-node-modules", "--check", "app.js"})
+	calls := rp.calls("prettier")
+	if len(calls) != 1 {
+		t.Fatalf("want one prettier call, got %q", calls)
+	}
+	config := configFrom(t, calls[0])
+	for _, want := range []string{"singleQuote: true", "'.github/ISSUE_TEMPLATE/**/*.md', '.github/fitness-setup.md'", "singleQuote: false", "fromRepoRoot"} {
+		if !strings.Contains(config, want) {
+			t.Errorf("the shared config must use single quotes and keep the synced files at Prettier defaults; missing %q in:\n%s", want, config)
+		}
+	}
 }
 
 func Test0052_5(t *testing.T) {
