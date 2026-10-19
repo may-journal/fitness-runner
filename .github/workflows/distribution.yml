@@ -117,14 +117,16 @@ jobs:
           "$VERIFIER" smoke
       # Release builds run this job too; see docs/ci.md#performance-record.
       - name: Record binary sizes and install time
-        # The record only measures; a failed timing never blocks a release.
+        # The record only measures; a failed timing never blocks a release,
+        # and only a finished record reaches the artifact.
         continue-on-error: true
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           PLATFORM: ${{ matrix.platform }}
         run: |
           mkdir -p "$RUNNER_TEMP/fitness-performance"
-          "$VERIFIER" record > "$RUNNER_TEMP/fitness-performance/release-$PLATFORM.json"
+          "$VERIFIER" record > "$RUNNER_TEMP/release-$PLATFORM.json"
+          mv "$RUNNER_TEMP/release-$PLATFORM.json" "$RUNNER_TEMP/fitness-performance/"
       - name: Retain the performance record
         if: ${{ always() }}
         uses: actions/upload-artifact@v4

@@ -73,7 +73,9 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 
 A repo adds its own checks with `"localChecks": "<dir>"`, a directory inside the repo. Each executable `fitness-check-<name>` there follows this protocol and runs in the same suite, hooks, and CI. Lookup searches that directory before the bundled checks.
 
-A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md) decides. A missing or empty directory, a path or symlink that leads outside the repo, or a check without execute permission fails the run. Blob mode (`--blob`) runs the same local and disabled checks.
+A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md) decides.
+
+A missing or empty directory fails the run, and so does a path or symlink that leads outside the repo. So does a check without execute permission, or one named like a `fitness` subcommand. Blob mode (`--blob`) and the GitHub body checks, such as `pr-check`, use the same local and disabled checks.
 
 ## Disabled checks
 

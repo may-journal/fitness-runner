@@ -43,6 +43,6 @@ Source: `go/cmd/fitness/blob.go:43`
         - When I run fitness `--blob` on it with no `--checks`
             - Then pr-structure fails naming the section and it exits 1
 - 0077.9
-    - Given Developer has a repo config that sets a check time budget, or disables a blob check under external policy
+    - Given Developer has a repo config that sets a check time budget or, under external policy, a checks list or disabledChecks
         - When I run fitness `--blob` on a draft text
-            - Then each check keeps that budget and the disabled one does not run, as in a normal run
+            - Then each check keeps that budget and only the checks the config leaves on run, as in a normal run

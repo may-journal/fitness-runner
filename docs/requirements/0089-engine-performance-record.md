@@ -46,3 +46,7 @@ Source: `go/cmd/fitness/main.go:208`
     - Given Developer has a report file that is missing or not a `--json` report
         - When `fitness boxes` runs with it
             - Then it names the problem, writes no page, and exits 1
+- 0089.8
+    - Given Developer has a draft text
+        - When fitness runs with `--blob` and `--json=<file>`
+            - Then the file lists each blob check that judged the text, with its result

@@ -121,7 +121,7 @@ func insideRoot(root, path string) bool {
 func localProgram(path, name, configured string) error {
 	shown := filepath.ToSlash(filepath.Join(configured, checkPrefix+name))
 	if !checkName.MatchString(name) {
-		return fmt.Errorf("local check %s: a check name is lowercase words joined by dashes", shown)
+		return fmt.Errorf("local check %s: a check name is lowercase words joined by dashes, so rename it or move it out of %s", shown, configured)
 	}
 	info, err := os.Stat(path)
 	if err != nil {

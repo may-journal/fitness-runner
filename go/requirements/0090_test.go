@@ -24,6 +24,9 @@ func Test0090_2(t *testing.T) {
 	if strings.Contains(out, "disallowed **bold**") {
 		t.Errorf("the bundled markdown-no-bold-italic ran beside its local replacement:\n%s", out)
 	}
+	replacing := with(localCheck("markdown-no-bold-italic", passing), map[string]string{".fitnessrc.json": `{"policy": "external", "localChecks": "checks"}` + "\n"})
+	out, code = boldPR(t, example(t, "happyRepo", replacing))
+	sees(t, out, code, 0, "fitness: local checks replace built-in markdown-no-bold-italic", "Passed.")
 }
 
 func Test0090_3(t *testing.T) {
@@ -44,9 +47,11 @@ func Test0090_4(t *testing.T) {
 		out, code := fitness(t, repo, nil)
 		sees(t, out, code, 1, want)
 	}
+	out, code := fitness(t, example(t, "happyRepo", localCheck("boxes", passing)), nil)
+	sees(t, out, code, 1, "local check boxes shares a fitness subcommand's name")
 	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"localChecks": "checks"}` + "\n"})
 	mustDo(t, os.Symlink(t.TempDir(), filepath.Join(repo, "checks")))
-	out, code := fitness(t, repo, nil)
+	out, code = fitness(t, repo, nil)
 	sees(t, out, code, 1, `.fitnessrc.json localChecks "checks" must be a path inside the repo`)
 }
 
@@ -77,6 +82,10 @@ func Test0090_7(t *testing.T) {
 	if row(out, "markdown-no-bold-italic") != "" {
 		t.Errorf("disabled markdown-no-bold-italic still ran:\n%s", out)
 	}
+	out, code = boldPR(t, example(t, "happyRepo", nil))
+	sees(t, out, code, 1, `disallowed \*\*bold`)
+	out, code = boldPR(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["markdown-no-bold-italic"]}` + "\n"}))
+	sees(t, out, code, 0, "Passed.")
 }
 
 func Test0090_8(t *testing.T) {
@@ -105,4 +114,15 @@ func localCheck(name, verdict string) map[string]string {
 		".fitnessrc.json":              `{"localChecks": "checks"}` + "\n",
 		"checks/fitness-check-" + name: "#!/bin/sh\nif [ \"$1\" = --describe ]; then\n  echo '{\"name\": \"" + name + "\"}'\n  exit 0\nfi\necho '" + verdict + "'\n",
 	}
+}
+
+// boldPR runs pr-check in repo on a PR whose description uses bold, closing
+// a Plan that is done.
+func boldPR(t *testing.T, repo string) (string, int) {
+	t.Helper()
+	body := strings.Replace(pr0014(11), "This change is a test fixture.", "This change is a **bold** test fixture.", 1)
+	plan := issue0014(t, 11, plan0014("- [x] Write the tests."), "Plan")
+	rp := standIn(t, map[string][]response{"gh": {plan, noChangelog0014}})
+	pr := map[string]any{"number": 1, "title": "test(app): add one file", "body": body}
+	return fitness(t, repo, append(rp.env, event0014(t, "pull_request", map[string]any{"action": "opened", "pull_request": pr})...), "pr-check")
 }

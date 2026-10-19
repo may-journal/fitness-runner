@@ -312,3 +312,24 @@ func realSize(t *testing.T, path string, bytes int64) {
 		t.Errorf("%s must be recorded at its real size, got %d bytes", filepath.Base(path), bytes)
 	}
 }
+
+func Test0089_8(t *testing.T) {
+	t.Parallel()
+	path := filepath.Join(t.TempDir(), "blob.json")
+	out, code := piped(t, example(t, "happyRepo", nil), "Some **bold** text.\n", nil, "--blob", "-", "--json="+path)
+	sees(t, out, code, 1, "disallowed **bold**")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("fitness --blob --json wrote no report: %v\n%s", err, out)
+	}
+	var report perfReport
+	mustDo(t, json.Unmarshal(raw, &report))
+	if reported(t, report, "markdown-no-bold-italic").Ok {
+		t.Errorf("the report must mark markdown-no-bold-italic failed:\n%s", raw)
+	}
+	for _, c := range report.Checks {
+		if c.Name == "jscpd" {
+			t.Errorf("the report lists jscpd, which needs files and never judged the text:\n%s", raw)
+		}
+	}
+}

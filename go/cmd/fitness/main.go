@@ -25,7 +25,6 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
-	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -100,18 +99,23 @@ func isHelp(args []string) bool {
 }
 
 // subcommands maps each subcommand name to its handler, which gets the
-// arguments after the name.
-var subcommands = map[string]func(args []string) int{
-	"init":          runInit,
-	"hook":          runHookArgs,
-	"pr-check":      func([]string) int { return metadata.RunGH("pr-check") },
-	"issue-check":   func([]string) int { return metadata.RunGH("issue-check") },
-	"plan-check":    func([]string) int { return metadata.RunGH("plan-check") },
-	"close-check":   func([]string) int { return metadata.RunGH("close-check") },
-	"dupe-check":    func([]string) int { return metadata.RunGH("dupe-check") },
-	"comment-check": runCommentCheck,
-	"branch-check":  func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
-	"boxes":         runBoxes,
+// arguments after the name. init fills it, since a handler runs checks that
+// look the names up.
+var subcommands map[string]func(args []string) int
+
+func init() {
+	subcommands = map[string]func(args []string) int{
+		"init":          runInit,
+		"hook":          runHookArgs,
+		"pr-check":      func([]string) int { return runGH("pr-check") },
+		"issue-check":   func([]string) int { return runGH("issue-check") },
+		"plan-check":    func([]string) int { return runGH("plan-check") },
+		"close-check":   func([]string) int { return runGH("close-check") },
+		"dupe-check":    func([]string) int { return runGH("dupe-check") },
+		"comment-check": runCommentCheck,
+		"branch-check":  func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
+		"boxes":         runBoxes,
+	}
 }
 
 // route dispatches the subcommands, defaulting to the check runner.

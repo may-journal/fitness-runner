@@ -85,12 +85,10 @@ func (c Config) installTime(ctx context.Context, metadata Metadata) (int64, erro
 // freshInstall readies this host's installer in work with its own cache,
 // seeded with the release archives so no download is timed.
 func (c Config) freshInstall(ctx context.Context, metadata Metadata, work string) (smoke, error) {
-	test, err := prepareSmoke(work)
+	test, err := prepareSmokeWith(work, filepath.Join(work, "cache"))
 	if err != nil {
 		return test, err
 	}
-	test.cache = filepath.Join(work, "cache")
-	test.env = append(test.env, "FITNESS_CACHE_DIR="+test.cache)
 	if err := c.seedArchives(metadata, test.cache); err != nil {
 		return test, err
 	}

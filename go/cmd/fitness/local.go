@@ -9,6 +9,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
@@ -29,6 +31,11 @@ func loadLocalChecks(cfg *conf.Config, root string) error {
 	bins, err := cfg.LocalCheckBinaries(root)
 	if err != nil {
 		return err
+	}
+	for name := range bins {
+		if _, taken := subcommands[name]; taken || name == "help" {
+			return fmt.Errorf("local check %s shares a fitness subcommand's name, so `fitness %s` could not run it; rename it", name, name)
+		}
 	}
 	localBins = bins
 	return nil
@@ -115,4 +122,26 @@ func localNames() []string {
 // builtIn reports whether a bundled check has the name.
 func builtIn(name string) bool {
 	return slices.Contains(allChecks, name) || slices.Contains(lang.Ignored(), name)
+}
+
+// runGH runs a GitHub command with the repo's check settings, so an issue or
+// PR body meets the same local and disabled checks as the repo's files.
+func runGH(name string) int {
+	if err := useRepoChecks(); err != nil {
+		report.Error("fitness "+name, err)
+		return 1
+	}
+	return metadata.RunGH(name)
+}
+
+// useRepoChecks checks the repo's settings under ADR 0009, as a suite run
+// does, then points the GitHub commands at its local and disabled checks.
+func useRepoChecks() error {
+	_, cfg, _, err := blobConfig()
+	if err != nil {
+		return err
+	}
+	metadata.RepoChecks.Find = findCheckBinary
+	metadata.RepoChecks.Off = func(name string) bool { return turnedOff(cfg, name) }
+	return nil
 }

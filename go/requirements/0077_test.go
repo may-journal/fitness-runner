@@ -47,11 +47,13 @@ func Test0077_9(t *testing.T) {
 	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"timeoutMs": 1}` + "\n"})
 	out, code := fitness(t, repo, nil, "--blob", cleanText, "--checks=cspell")
 	sees(t, out, code, 1, "Check timed out after 0.001s")
-	repo = example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["markdown-no-bold-italic"]}` + "\n"})
-	out, code = piped(t, repo, "Some **bold** text.\n", nil, "--blob", "-")
-	sees(t, out, code, 0)
-	if row(out, "markdown-no-bold-italic") != "" {
-		t.Errorf("--blob ran the disabled markdown-no-bold-italic:\n%s", out)
+	for _, setting := range []string{`{"policy": "external", "disabledChecks": ["markdown-no-bold-italic"]}`, `{"policy": "external", "checks": ["cspell"]}`} {
+		repo = example(t, "happyRepo", map[string]string{".fitnessrc.json": setting + "\n"})
+		out, code = piped(t, repo, "Some **bold** text.\n", nil, "--blob", "-")
+		sees(t, out, code, 0)
+		if row(out, "markdown-no-bold-italic") != "" {
+			t.Errorf("--blob under %s ran markdown-no-bold-italic:\n%s", setting, out)
+		}
 	}
 }
 
