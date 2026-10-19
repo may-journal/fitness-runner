@@ -306,6 +306,18 @@ func (e *proseExtractor) line(ln string) {
 	e.consume(t)
 }
 
+// ListItem returns a list item line's text without its marker or its task
+// checkbox, ticked or not, so ticking a box never adds a word; ok is false
+// for a line that is not a list item. Every word count of list items reads
+// item text through it.
+func ListItem(line string) (text string, ok bool) {
+	m := listItemRe.FindStringSubmatch(line)
+	if m == nil {
+		return "", false
+	}
+	return checkboxRe.ReplaceAllString(m[1], ""), true
+}
+
 // isProseBreak reports whether the line ends the current prose unit without
 // contributing text: blank lines, table rows, and headings.
 func isProseBreak(trimmed, orig string) bool {
@@ -315,13 +327,12 @@ func isProseBreak(trimmed, orig string) bool {
 // consume adds one content line to the current unit; a new list item first
 // closes the previous unit, and blockquote/checkbox markers are stripped.
 func (e *proseExtractor) consume(t string) {
-	if m := listItemRe.FindStringSubmatch(t); m != nil {
+	if item, ok := ListItem(t); ok {
 		e.flush()
-		t = m[1]
+		e.buf = append(e.buf, strings.TrimPrefix(item, "> "))
+		return
 	}
-	t = strings.TrimPrefix(t, "> ")
-	t = checkboxRe.ReplaceAllString(t, "")
-	e.buf = append(e.buf, t)
+	e.buf = append(e.buf, checkboxRe.ReplaceAllString(strings.TrimPrefix(t, "> "), ""))
 }
 
 // flush closes the current unit, adding terminal punctuation when missing.

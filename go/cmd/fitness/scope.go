@@ -35,8 +35,9 @@ func withoutVar(env []string, name string) []string {
 // request in GitHub Actions scopes to its diff against the base branch, and a
 // local run to the staged files. A push to main, --all, a run with nothing
 // staged, or a diff git cannot compute all scan everything, so the full
-// suite still runs after merge.
-func changedScope(root string, all bool) []string {
+// suite still runs after merge. staged is the run's staged files, already
+// read once by the caller.
+func changedScope(root string, all bool, staged []string) []string {
 	if all {
 		return nil
 	}
@@ -46,5 +47,5 @@ func changedScope(root string, all bool) []string {
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
 		return nil
 	}
-	return gitx.StagedFiles(root)
+	return staged
 }
