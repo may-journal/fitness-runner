@@ -30,10 +30,6 @@ Source: `go/cmd/fitness-check-local-branch/main.go:10`
     - Given Developer has an approved feature Plan and invalid linked PR
         - When I push with the shared hook
             - Then local-branch runs once and refuses the push
-- 0067.4
-    - Given Developer has an approved feature Plan and valid linked PR
-        - When I push with the shared hook
-            - Then local-branch runs once and the push succeeds
 - 0067.5
     - Given Developer has the shared hooks and a GitHub branch
         - When I commit a valid change
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-check-local-branch/main.go:10`
     - Given Developer has a fork PR whose API base commit is missing locally
         - When I run local-branch
             - Then it fails with fetch guidance naming the base repository
+- 0067.9
+    - Given Developer has an approved feature Plan and a valid linked PR
+        - When I push with the shared hook
+            - Then local-branch runs once on the hook's read of that Plan, and the push succeeds

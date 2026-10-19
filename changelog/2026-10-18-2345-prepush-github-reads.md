@@ -6,5 +6,6 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 - Perf: the pre-push gate reads each Plan's labels and comments in one `gh issue view`, once per push.
 - Perf: `local-branch` judges the Plans the gate already read, instead of reading them from GitHub again.
-- Perf: linked issues are read side by side, and `gh repo view` runs alongside the open PR read.
-- Perf: the gate reads every pushed commit's subject with one `git log --no-walk`.
+- Perf: linked issues and `gh repo view` are read side by side, and one `git log --no-walk` reads pushed subjects.
+- Test: requirements 0010.11, 0067.9 and 0068.6 prove a push asks GitHub about each Plan once.
+- Test: requirement 0067.4 folds into 0067.9, since that doc holds at most eight acceptances.

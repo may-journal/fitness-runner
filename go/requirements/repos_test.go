@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -128,6 +129,20 @@ func hungTool(timeoutMs, prelude string) map[string]string {
 // planBody is a Plan that follows the template, with one task.
 func planBody(task string) string {
 	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
+}
+
+// planView is the saved gh answer to the pre-push gate's one read of issue n
+// in repo0014: its URL, body, label names and comment bodies.
+func planView(t *testing.T, n int, body string, labels []string, comments ...string) response {
+	t.Helper()
+	out, err := json.Marshal(map[string]any{
+		"url":      "https://github.com/" + repo0014 + "/issues/" + itoa(n),
+		"body":     body,
+		"labels":   append([]string{}, labels...),
+		"comments": append([]string{}, comments...),
+	})
+	mustDo(t, err)
+	return response{Match: []string{"issue view " + itoa(n) + " ", "--json url,body,labels,comments"}, Stdout: string(out) + "\n"}
 }
 
 // junitRepo is a Maven project whose JUnit test test0001_1 owns 0001.1.

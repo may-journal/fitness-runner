@@ -38,3 +38,7 @@ Source: `go/internal/gitx/push.go:14`
     - Given Developer has a renamed push whose local tip names a malformed Plan
         - When I push from another checkout branch
             - Then it finds the destination PR and fails the pushed tip's Plan
+- 0068.6
+    - Given Developer has two pushed branches whose PRs close one approved Plan
+        - When I push both together
+            - Then GitHub is asked about that Plan once
