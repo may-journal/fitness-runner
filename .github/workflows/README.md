@@ -242,9 +242,9 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.
 
-may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it.
+may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it. The job runs only for an open, ready PR without auto-merge, so other pushes start no runner and bill nothing.
 
-The job skips, billing nothing, unless the PR is open, ready, and has no auto-merge yet. So a push to a PR that already has it starts no runner. GitHub has no auto-merge for a stacked PR, so a PR whose base is not the default branch passes with a notice. Once the base PR merges and GitHub moves the PR onto the default branch, its next push or reopen turns auto-merge on.
+GitHub has no auto-merge for a stacked PR, per its [merging stacked pull requests](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-stacked-pull-requests) docs. So a PR whose base is not the default branch passes with a notice. Once the base PR merges and GitHub moves the PR onto the default branch, its next push or reopen turns auto-merge on. If GitHub still counts it as stacked and refuses, the job passes with a notice too; any other failure fails it.
 
 ## release-please
 
