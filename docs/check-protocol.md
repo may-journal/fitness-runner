@@ -33,6 +33,8 @@ A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Gi
 
 The `issue-check`, `plan-check`, `pr-check`, `close-check`, and `comment-check` commands fetch the blob and run their declared checks on it. They then hand the findings to an after-effect in `go/internal/aftereffect`. It comments, labels, hides old verdicts, reopens, or replies to a comment and reacts. A GitHub read a rule needs, such as an epic's sub-issues, stays in the command: `issue-check` compares them with the list `epic-structure` judges.
 
+`dupe-check` runs no check. It scores an issue's words against older issues, and its after-effect keeps one note or closes the issue as a duplicate.
+
 ### Judging a draft
 
 A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). It sets `FITNESS_BLOB`, so a body check passes inert on text of another kind and is listed as not applying. A check named in `--checks` always judges the text.

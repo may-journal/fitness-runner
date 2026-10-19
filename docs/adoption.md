@@ -9,7 +9,7 @@ Every may-journal repo runs the same checks by calling reusable workflows, which
 
 ## Reusable workflows
 
-fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [issue-check-reusable.yml](../.github/workflows/issue-check-reusable.yml), [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml), and [comment-check-reusable.yml](../.github/workflows/comment-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
+fitness-runner publishes [ci-reusable.yml](../.github/workflows/ci-reusable.yml), [pr-check-reusable.yml](../.github/workflows/pr-check-reusable.yml), [issue-check-reusable.yml](../.github/workflows/issue-check-reusable.yml), [close-check-reusable.yml](../.github/workflows/close-check-reusable.yml), [dupe-check-reusable.yml](../.github/workflows/dupe-check-reusable.yml), and [comment-check-reusable.yml](../.github/workflows/comment-check-reusable.yml). Each uses a pinned binary release, then runs one `fitness` step. Consumers need no Go toolchain to install Fitness; see the [shell and CI guide](ci.md) for direct use. An explicit `ref` keeps the source-build path with `GOPROXY=direct`.
 
 `.github/workflows/pr-check.yml`:
 
@@ -90,6 +90,24 @@ jobs:
 ```
 
 Agents run `fitness comment-check --blob -` on a draft before posting, so a failing reply should be rare.
+
+## Duplicate issues
+
+may-journal/.github syncs this [dupe-check](../.github/workflows/README.md#dupe-check) caller into each repo. A manual run prints every pair's score, so a repo can tune its `dupeCheck` scores before turning the close tier on:
+
+```yaml
+name: Dupe check
+on:
+  issues:
+    types: [opened, edited, reopened]
+  workflow_dispatch:
+jobs:
+  dupe-check:
+    uses: may-journal/fitness-runner/.github/workflows/dupe-check-reusable.yml@v1
+    permissions:
+      contents: read
+      issues: write
+```
 
 ## Reusable CI
 

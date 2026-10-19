@@ -130,6 +130,43 @@ flowchart TD
 | 5   | Reopen         | Set the Issue back to open.                                        | Unfinished work stays visible.                        |
 | 6   | Comment        | List the items and mention the closer, PR author, and merger.      | The closer hears why it came back.                    |
 
+## dupe-check
+
+[dupe-check.yml](dupe-check.yml) runs `fitness dupe-check` when an issue opens or changes, so a repeat points to the first thread. Other repos call [dupe-check-reusable.yml](dupe-check-reusable.yml).
+
+```mermaid
+flowchart TD
+    A[1 Issue event]:::trigger
+    B[2 Manual sweep]:::trigger
+    C[3 Load other issues in window]:::step
+    D[4 Normalize and score pairs]:::step
+    E[5 Drop related pairs]:::step
+    F[6 Edit or post one marker comment]:::step
+    G[7 Close above close score]:::step
+    A --> C
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    F --> G
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element      | Description                                                                 | Why                                                    |
+| --- | ------------ | --------------------------------------------------------------------------- | ------------------------------------------------------ |
+| 1   | Issue event  | An open Issue is opened, edited, or reopened, unless a known bot did it.    | Judges an issue the moment its text changes.           |
+| 2   | Manual sweep | A `workflow_dispatch` run prints every pair's score and writes nothing.     | Tunes the scores on a repo's real issues first.        |
+| 3   | Load         | List open issues and those closed within the window; drop bot-opened ones.  | Old closed work and templated bot issues add noise.    |
+| 4   | Score        | Drop code, links, headings, and filler words, then compare the words.       | Word overlap fits small repos and needs no index.      |
+| 5   | Related      | Skip parent and sub-issue pairs, sibling sub-issues, and issues one names.  | Planned structure is not a repeat.                     |
+| 6   | Comment      | Above the warn score, keep one note listing the top three older matches.    | One note, edited in place, never a pile.               |
+| 7   | Close        | On open only, at or above the close score, close as a duplicate.            | Off by default; a reopen by a person stands.           |
+
+## Configuration (dupe-check)
+
+The `.fitnessrc.json` `dupeCheck` key sets `warnScore` (0.4), `closeScore` (0, off), and `windowDays` (90). A score is the share of words two issues have in common, from 0 to 1. The close tier acts only when `closeScore` is above 0. close-check leaves an issue closed as a duplicate alone.
+
 ## comment-check
 
 [comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml). It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists once. The optional `ignore-authors` input replaces that list; the login fitness posts as stays ignored.
