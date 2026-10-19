@@ -244,4 +244,4 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it.
 
-The job skips, billing nothing, unless the PR is open, ready, and has no auto-merge yet. So a push to a PR that already has it starts no runner.
+The job skips, billing nothing, unless the PR is open, ready, and has no auto-merge yet. So a push to a PR that already has it starts no runner. GitHub has no auto-merge for a stacked PR, one whose base is another PR's branch, so the job passes with a notice. Once the base PR merges and GitHub moves the PR onto the default branch, its next run turns auto-merge on.

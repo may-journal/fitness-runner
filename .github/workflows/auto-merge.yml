@@ -54,11 +54,21 @@ jobs:
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
+      # GitHub refuses auto-merge on a stacked PR, one based on another PR's
+      # branch, so the step passes with a notice instead. Once the base PR
+      # merges and GitHub moves this PR onto the default branch, its next
+      # run turns auto-merge on. It reads the event file, as a test can.
       - name: Enable squash auto-merge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: |
+          base="$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")"
+          default="$(jq -r .repository.default_branch "$GITHUB_EVENT_PATH")"
+          if [ "$base" != "$default" ]; then
+            echo "::notice::This PR is stacked on $base, and GitHub has no auto-merge for stacks. It turns on once the PR targets $default."
+            exit 0
+          fi
+          gh pr merge --auto --squash "$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")"
       # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
         if: ${{ always() }}
