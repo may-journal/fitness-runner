@@ -273,9 +273,23 @@ func Test0081_9(t *testing.T) {
 	// Reports the cache restores are written during the run, so they count.
 	rp, out, code = javaRun(t, javaRepo(t, map[string]string{"build.gradle": javaTestGradle}), "java-test", map[string][]response{"gradle": {javaTestCached}}, home)
 	sees(t, out, code, 0, "All 1 checks passed")
-	// A build that turns caching off reruns every test.
-	off := javaRepo(t, map[string]string{"build.gradle": javaTestGradle, "gradle.properties": "org.gradle.caching = False\n"})
-	rp, out, code = javaRun(t, off, "java-test", map[string][]response{"gradle": {gradle}}, home)
+	if !rp.called("gradle", "--build-cache") {
+		t.Errorf("gradle calls = %q, want --build-cache", rp.calls("gradle"))
+	}
+	// Gradle reads any value but true as off, from the build or the user home.
+	user := t.TempDir()
+	mustDo(t, os.WriteFile(filepath.Join(user, "gradle.properties"), []byte("org.gradle.caching=False\n"), 0o644))
+	javaTestUncached(t, "org.gradle.caching = no\n", gradle, home)
+	javaTestUncached(t, "org.gradle.caching=true\n", gradle, "GRADLE_USER_HOME="+user)
+}
+
+// javaTestUncached asserts a Gradle build with props in its
+// gradle.properties, run with env, reruns its tests without the build
+// cache.
+func javaTestUncached(t *testing.T, props string, gradle response, env string) {
+	t.Helper()
+	repo := javaRepo(t, map[string]string{"build.gradle": javaTestGradle, "gradle.properties": props})
+	rp, out, code := javaRun(t, repo, "java-test", map[string][]response{"gradle": {gradle}}, env)
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !rp.called("gradle", "cleanTest test") || rp.called("gradle", "--build-cache") {
 		t.Errorf("gradle calls = %q, want the tests run without --build-cache", rp.calls("gradle"))
