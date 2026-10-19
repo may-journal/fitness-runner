@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
-	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
@@ -16,7 +14,9 @@ import (
 
 const zeroSha = "0000000000000000000000000000000000000000"
 
-var approveRe = regexp.MustCompile(`(?i)approve`)
+// planReads holds the push's Plan reads, so each Plan is read once and
+// local-branch judges the same reads.
+var planReads = metadata.NewPushPlans()
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
@@ -49,14 +49,14 @@ func checkPushedBranches(updates []string) int {
 		fmt.Fprintln(os.Stderr, "pre-push:", err)
 		return 1
 	}
-	issues, err := json.Marshal(planReads.shared())
+	cleanup, err := planReads.Handoff()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "pre-push:", err)
 		return 1
 	}
+	defer cleanup()
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
 	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
-	_ = os.Setenv(metadata.PushIssuesEnv, string(issues))
 	return run([]string{"local-branch"})
 }
 
@@ -110,10 +110,8 @@ func allChoreDocsSubjects(subjects []string) bool {
 // commitSubjects returns each commit's subject line, in order, from one git
 // run. A commit git cannot read gets an empty subject, which is never exempt.
 func commitSubjects(commits []string) []string {
-	args := append([]string{"log", "--no-walk=unsorted", "--format=%H %s"}, commits...)
-	out, _ := exec.Command("git", args...).Output()
 	byHash := map[string]string{}
-	for _, line := range strings.Split(string(out), "\n") {
+	for _, line := range strings.Split(logCommits(commits, "%H %s"), "\n") {
 		hash, subject, _ := strings.Cut(line, " ")
 		byHash[hash] = strings.TrimSpace(subject)
 	}
@@ -122,6 +120,19 @@ func commitSubjects(commits []string) []string {
 		subjects[i] = byHash[c]
 	}
 	return subjects
+}
+
+// logCommits formats exactly the given commits, in order, in one git run.
+// --no-walk reads only those commits, not their ancestors, and --stdin takes
+// them however many a push holds. A failed run reads as no output.
+func logCommits(commits []string, format string) string {
+	cmd := exec.Command("git", "log", "--no-walk=unsorted", "--stdin", "--format="+format)
+	cmd.Stdin = strings.NewReader(strings.Join(commits, "\n") + "\n")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
 }
 
 // planCandidates returns the Plan numbers a push may trace to: those in the
@@ -141,7 +152,7 @@ func checkPlanApproval(plans []string) int {
 		return 1
 	}
 	for _, n := range plans {
-		if approvedPlan(n) {
+		if planReads.Approved(n) {
 			return 0
 		}
 	}
@@ -150,78 +161,11 @@ func checkPlanApproval(plans []string) int {
 	return 1
 }
 
-// planRefs returns the distinct Plan numbers referenced across the commits.
-// --no-walk reads only those commits, not their ancestors, so a trailer on
-// main never stands in for the branch's own.
+// planRefs returns the distinct Plan numbers referenced across the commits,
+// so a trailer on main never stands in for the branch's own.
 func planRefs(commits []string) []string {
 	if len(commits) == 0 {
 		return nil
 	}
-	args := append([]string{"log", "--no-walk=unsorted", "--format=%B"}, commits...)
-	out, _ := exec.Command("git", args...).Output()
-	return gitx.PlanNumbers(string(out))
-}
-
-// approvedPlan reports whether issue n carries the exact `Plan` label and an
-// approval comment.
-func approvedPlan(n string) bool {
-	issue, ok := planReads.read(n)
-	if !ok || !slices.Contains(issue.Labels, "Plan") {
-		return false
-	}
-	return slices.ContainsFunc(issue.Comments, approveRe.MatchString)
-}
-
-// planIssue is one issue as the gate reads it through the gh CLI.
-type planIssue struct {
-	URL      string   `json:"url"`
-	Body     string   `json:"body"`
-	Labels   []string `json:"labels"`
-	Comments []string `json:"comments"`
-}
-
-// planCache holds the gate's issue reads, so each issue is read once per push
-// and local-branch can reuse them. A failed read is cached as not ok.
-type planCache map[string]*planIssue
-
-var planReads = planCache{}
-
-// read returns issue n from one `gh issue view`.
-func (c planCache) read(n string) (planIssue, bool) {
-	issue, seen := c[n]
-	if !seen {
-		issue = readPlanIssue(n)
-		c[n] = issue
-	}
-	if issue == nil {
-		return planIssue{}, false
-	}
-	return *issue, true
-}
-
-func readPlanIssue(n string) *planIssue {
-	out, err := exec.Command("gh", "issue", "view", n, "--json", "url,body,labels,comments",
-		"--jq", "{url, body, labels: [.labels[].name], comments: [.comments[].body]}").Output()
-	if err != nil {
-		return nil
-	}
-	var issue planIssue
-	if json.Unmarshal(out, &issue) != nil {
-		return nil
-	}
-	return &issue
-}
-
-// shared lists the issues read so far in the form local-branch takes.
-func (c planCache) shared() []metadata.PushIssue {
-	var issues []metadata.PushIssue
-	for _, issue := range c {
-		if issue == nil {
-			continue
-		}
-		if p, ok := metadata.PushIssueAt(issue.URL, issue.Body, issue.Labels); ok {
-			issues = append(issues, p)
-		}
-	}
-	return issues
+	return gitx.PlanNumbers(logCommits(commits, "%B"))
 }
