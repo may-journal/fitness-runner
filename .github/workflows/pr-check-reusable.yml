@@ -31,6 +31,11 @@ jobs:
     if: github.repository != 'may-journal/fitness-runner'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Pushes and edits come in bursts; only the newest PR state needs a check.
+    # The workflow name keeps a caller's run and the ruleset's apart.
+    concurrency:
+      group: pr-check-${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5

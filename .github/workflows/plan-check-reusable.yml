@@ -17,7 +17,14 @@ permissions:
 
 jobs:
   plan-check:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'Plan')
+    # Only a Plan's body or its Plan label can change its verdict, so an edit
+    # that left the body alone and any other label skip, as fitness
+    # plan-check does when run another way.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (contains(github.event.issue.labels.*.name, 'Plan') &&
+      (github.event.action != 'edited' || github.event.changes.body) &&
+      (github.event.action != 'labeled' || github.event.label.name == 'Plan'))
     uses: may-journal/fitness-runner/.github/workflows/issue-check-reusable.yml@v1
     with:
       ref: ${{ inputs.ref }}

@@ -10,6 +10,12 @@ All workflows follow [ADR 0003](../../docs/architecture/adr/0003-native-github-w
 
 Overflow reports are uploaded as `fitness-reports` artifacts with job, matrix, and attempt suffixes. Job summaries link to run logs; the run artifact list holds complete reports. Reports are retained for seven days. Pinned releases gain command details when upgraded; fallback reports cover their job outcomes now.
 
+## Billing
+
+Each started job bills at least one minute, though a check takes seconds, so run count drives spend. A job whose `if` is false starts no runner and bills nothing. So each issue, comment, and PR job skips events that cannot change its result. Its command skips them too.
+
+A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. dupe-check queues instead, since only its opened run can close a duplicate.
+
 ## issue-check
 
 Plans, Epics and other labeled kinds live as GitHub Issues, so the file runner never sees them. [issue-check.yml](issue-check.yml) runs `fitness issue-check` to lint an Issue body by its kind. It keeps one live verdict comment and label on the Issue. Other repos call [issue-check-reusable.yml](issue-check-reusable.yml).
@@ -20,14 +26,16 @@ Each `.github/ISSUE_TEMPLATE/*.md` in the checkout is a kind, keyed by its `labe
 flowchart TD
     A[1 Issue event]:::trigger
     B[2 Manual sweep]:::trigger
-    C[3 Read labels and pick the kind]:::step
-    D[4 Run the kind's checks]:::step
-    E[5 Hash body and look for prior comment]:::step
-    F[6 Edit or post one verdict comment]:::step
-    G[7 Hide older verdicts]:::step
-    H[8 Label the verdict]:::step
-    I[9 Fail the run on violations]:::step
-    A --> C
+    S[3 Skip idle events at job level]:::step
+    C[4 Read labels and pick the kind]:::step
+    D[5 Run the kind's checks]:::step
+    E[6 Hash body and look for prior comment]:::step
+    F[7 Edit or post one verdict comment]:::step
+    G[8 Hide older verdicts]:::step
+    H[9 Label the verdict]:::step
+    I[10 Fail the run on violations]:::step
+    A --> S
+    S --> C
     B --> C
     C --> D
     D --> E
@@ -43,17 +51,19 @@ flowchart TD
 | --- | ------------ | ----------------------------------------------------------------- | --------------------------------------------------------- |
 | 1   | Issue event  | An Issue is opened, edited, reopened, or labeled.                 | Validates an issue the moment its description changes.     |
 | 2   | Manual sweep | A `workflow_dispatch` run walks every open Issue with a kind label. | Backfills issues that predate the workflow.              |
-| 3   | Kind         | Read the Issue's labels; no kind label passes, and two fail.      | Only labeled kinds have a template to meet.                |
-| 4   | Run check    | Run the template shape, the kind's checks, and the doc checks.    | One tested binary, same rules as the local suite.          |
-| 5   | Dedupe       | Hash the body and search the bot's comments for the kind's `fitness:issue-check:<kind>:` marker. | One comment per description version and kind; a pasted marker never counts. |
-| 6   | Comment      | A pass after a pass edits it to `✅ Validated`; else post anew. | One live verdict, no pile of repeats. |
-| 7   | Hide         | Hide older bot verdicts as outdated.                              | Only the live verdict stays open.                          |
-| 8   | Label        | Add `fitness` and `fitness-valid` or `fitness-invalid`.          | Issue lists show the verdict.                              |
-| 9   | Fail run     | Exit non-zero when any validated Issue has violations.            | Surfaces the problem in the Actions run, not just a note.  |
+| 3   | Skip guard   | Skip an edit that left the body alone, or a verdict label added; plan-check skips any label but `Plan`. | A skipped job bills nothing, and agents edit titles and labels often. |
+| 4   | Kind         | Read the Issue's labels; no kind label passes, and two fail.      | Only labeled kinds have a template to meet.                |
+| 5   | Run check    | Run the template shape, the kind's checks, and the doc checks.    | One tested binary, same rules as the local suite.          |
+| 6   | Dedupe       | Hash the body and search the bot's comments for the kind's `fitness:issue-check:<kind>:` marker. | One comment per description version and kind; a pasted marker never counts. |
+| 7   | Comment      | A pass after a pass edits it to `✅ Validated`; else post anew. | One live verdict, no pile of repeats. |
+| 8   | Hide         | Hide older bot verdicts as outdated.                              | Only the live verdict stays open.                          |
+| 9   | Label        | Add `fitness` and `fitness-valid` or `fitness-invalid`.          | Issue lists show the verdict.                              |
+| 10  | Fail run     | Exit non-zero when any validated Issue has violations.            | Surfaces the problem in the Actions run, not just a note.  |
 
 ## Triggers
 
 - `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue by its kind label, and passes an Issue with none.
+- Skipped: an `edited` event with no `changes.body`, and a `labeled` event for a `fitness` verdict label.
 - `workflow_dispatch`: sweeps every open Issue with a kind label and comments on each body version not seen before.
 
 A changed description earns a new verdict; earlier ones stay hidden. Plan verdicts posted under the earlier `fitness:plan-structure:` marker still count. Only the bot's own comments count; a run under another token sets `FITNESS_BOT_LOGIN` to that account.
@@ -124,7 +134,7 @@ flowchart TD
 | #   | Element        | Description                                                         | Why                                                   |
 | --- | -------------- | ------------------------------------------------------------------ | ----------------------------------------------------- |
 | 1   | Issue closed   | An `issues: closed` event, from a person or a PR keyword.          | Catches every close.                                  |
-| 2   | Reason guard   | A not planned or duplicate close stops here.                       | Dropped work may stay unfinished.                     |
+| 2   | Reason guard   | A not planned or duplicate close skips at job level.               | Dropped work may stay unfinished.                     |
 | 3   | Unchecked scan | List each `- [ ]` item, skipping any inside fenced code.           | Only real tasks count, not examples.                  |
 | 4   | Dedupe         | Hash the close time and body, then look for that marker in the bot's comments. | A re-run never reopens or comments twice; a pasted marker never counts. |
 | 5   | Reopen         | Set the Issue back to open.                                        | Unfinished work stays visible.                        |
@@ -169,7 +179,9 @@ The `.fitnessrc.json` `dupeCheck` key sets `warnScore` (0.4), `closeScore` (0, o
 
 ## comment-check
 
-[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml). It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists once. The optional `ignore-authors` input replaces that list; the login fitness posts as stays ignored.
+[comment-check.yml](comment-check.yml) runs `fitness comment-check` on each new or edited issue, PR, and review comment. Other repos call [comment-check-reusable.yml](comment-check-reusable.yml).
+
+It judges every author but the known bots, which `KnownBots` in [comments.go](../../go/internal/metadata/comments.go) lists. Each job condition repeats the list, so a bot comment starts no runner. The optional `ignore-authors` input replaces that list; the login fitness posts as stays ignored.
 
 Before posting, an agent runs `fitness comment-check --blob -` with the draft on stdin, or `--blob "<text>"`. It runs the same checks, prints each violation with its line, and exits 1 on any. The reply and the run summary point there too.
 
@@ -198,7 +210,7 @@ flowchart TD
 | --- | ------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | 1   | Comment event | An issue, PR, or review comment is created or edited.                            | Judges a comment the moment its text changes.        |
 | 2   | Manual sweep | A `workflow_dispatch` run walks the last seven days of comments.                  | Audits comments that predate the workflow.           |
-| 3   | Skip guard   | Skip the known bots, which post every fitness verdict and reply.                  | Every person and agent owns what they wrote.         |
+| 3   | Skip guard   | Skip the known bots at job level, which post every fitness verdict and reply.     | Every person and agent owns what they wrote.         |
 | 4   | Run checks   | Run `comment-structure`, `mermaid-syntax`, and the Plan and PR prose checks.      | One tested rule set, the same one agents run first.  |
 | 5   | Dedupe       | Find the bot's reply whose marker names this comment's id.                        | One reply per comment, never a pile.                 |
 | 6   | Reply        | Mention the author with the violations, or turn the reply into a passing note.    | The author hears what to fix, and sees it cleared.   |
@@ -231,3 +243,5 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.
 
 may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it.
+
+The job skips, billing nothing, unless the PR is open, ready, and has no auto-merge yet. So a push to a PR that already has it starts no runner.

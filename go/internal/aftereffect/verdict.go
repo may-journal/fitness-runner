@@ -95,6 +95,13 @@ const (
 	invalidLabel = "fitness-invalid"
 )
 
+// IsVerdictLabel reports whether name is a label issue-check keeps, which
+// says what the verdict is and so cannot change it.
+func IsVerdictLabel(name string) bool {
+	_, ok := labelColors[name]
+	return ok
+}
+
 // labelColors are the colors a missing label is created with.
 var labelColors = map[string]string{fitnessLabel: "5319e7", validLabel: "0e8a16", invalidLabel: "d93f0b"}
 
