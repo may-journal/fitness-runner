@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -21,6 +20,11 @@ func (i *Installer) fetch(ctx context.Context, url string, limit int64) ([]byte,
 	if err != nil {
 		return nil, err
 	}
+	return i.send(request, limit)
+}
+
+func (i *Installer) send(request *http.Request, limit int64) ([]byte, error) {
+	url := request.URL.String()
 	response, err := i.Client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("download %s: %w", url, err)
@@ -47,18 +51,7 @@ func (i *Installer) resolveVersion(ctx context.Context, version string) (string,
 	if version != "latest" {
 		return normalizeVersion(version)
 	}
-	data, err := i.fetch(ctx, i.LatestURL, maxMetadataBytes)
-	if err != nil {
-		return "", err
-	}
-	var release struct {
-		Tag string `json:"tag_name"`
-	}
-	if err := json.Unmarshal(data, &release); err != nil {
-		return "", err
-	}
-	fmt.Fprintf(i.Log, "fitness: latest resolved to %s\n", release.Tag)
-	return normalizeVersion(release.Tag)
+	return i.resolveLatest(ctx)
 }
 
 func (i *Installer) expectedHash(ctx context.Context, version, asset string) (string, error) {
