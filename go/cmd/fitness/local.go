@@ -94,6 +94,14 @@ func repoChecks(cfg *conf.Config, policy string, names []string) ([]string, erro
 	return selection.Disable(policy, names, disabled, append(checkCatalog(), lang.Ignored()...))
 }
 
+// configPolicy is the repo's configured policy, org unless it says external.
+func configPolicy(cfg *conf.Config) string {
+	if cfg != nil && cfg.Policy == selection.External {
+		return selection.External
+	}
+	return selection.Org
+}
+
 // localNames is the local check names in order.
 func localNames() []string {
 	names := make([]string, 0, len(localBins))

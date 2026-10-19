@@ -117,6 +117,8 @@ jobs:
           "$VERIFIER" smoke
       # Release builds run this job too; see docs/ci.md#performance-record.
       - name: Record binary sizes and install time
+        # The record only measures; a failed timing never blocks a release.
+        continue-on-error: true
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           PLATFORM: ${{ matrix.platform }}

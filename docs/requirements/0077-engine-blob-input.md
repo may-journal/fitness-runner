@@ -35,9 +35,9 @@ Source: `go/cmd/fitness/blob.go:43`
         - When I run fitness `--blob`
             - Then it names the usage error, runs no check, and exits 2
 - 0077.5
-    - Given Developer has a repo config that sets a check time budget
+    - Given Developer has a repo config that sets a check time budget or, under external policy, disables a check
         - When I run fitness `--blob` on a draft text
-            - Then each blob check runs within that budget, as in a normal run
+            - Then each blob check runs within that budget and the disabled check does not run, as in a normal run
 - 0077.6
     - Given Developer has a text that follows its template, such as a Plan whose steps name issues
         - When I run fitness `--blob` on it (a Plan issue, an Epic, or a PR description) with no `--checks`

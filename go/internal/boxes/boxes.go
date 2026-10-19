@@ -11,14 +11,18 @@ import (
 	"slices"
 )
 
-// Report is the part of a `fitness --json` report the diagram reads.
+// Report is the `fitness --json` record of one run: how long it took, how
+// big the runner is, and each check's cost. CI keeps it as an artifact, so
+// the trail of runs shows which checks slow down or grow.
 type Report struct {
 	ElapsedMs   int64   `json:"elapsedMs"`
 	RunnerBytes int64   `json:"runnerBytes"`
 	Checks      []Check `json:"checks"`
 }
 
-// Check is one check's entry in the report.
+// Check is one check's cost: wall time against its budget, files judged,
+// the size of its binary, and how many lines of errors it reported. A check
+// may spend several lines on one problem, so this counts lines, not problems.
 type Check struct {
 	Name         string `json:"name"`
 	Ok           bool   `json:"ok"`

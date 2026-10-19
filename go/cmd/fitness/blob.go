@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
+	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -47,23 +48,36 @@ func runBlob(argv []string) int {
 		report.Error("fitness --blob", err)
 		return usageExit
 	}
-	root, err := os.Getwd()
+	root, cfg, suite, err := blobConfig()
 	if err != nil {
 		report.Error("fitness --blob", err)
 		return 1
 	}
-	run, skipped, err := blobChecks(req.checks)
+	run, skipped, err := blobChecks(suite, req.checks)
 	if err != nil {
 		report.Error("fitness --blob", err)
 		return usageExit
 	}
-	cfg, err := loadConfig(root)
-	if err != nil {
-		report.Error("fitness --blob", err)
-		return 1
-	}
 	run = withBudgets(cfg, run)
 	return judgeBlob(root, req.text, run, skipped, blobEnv(run, req.checks != nil))
+}
+
+// blobConfig reads the repo's config and local checks, and returns the suite
+// they leave, so a text meets the same checks as the repo's files.
+func blobConfig() (string, *conf.Config, []string, error) {
+	root, err := os.Getwd()
+	if err != nil {
+		return "", nil, nil, err
+	}
+	cfg, err := loadConfig(root)
+	if err == nil {
+		err = loadLocalChecks(cfg, root)
+	}
+	if err != nil {
+		return "", nil, nil, err
+	}
+	suite, err := repoChecks(cfg, configPolicy(cfg), checkCatalog())
+	return root, cfg, suite, err
 }
 
 // judgeBlob saves text where the checks read it with --body-file, runs them
@@ -88,7 +102,7 @@ func judgeBlob(root, text string, checks []resolved, skipped, env []string) int 
 	}
 	listSkipped(out, "needs files", skipped)
 	listSkipped(out, "does not apply to this text", notApplying)
-	return finish(rows, buildPerfReport(checks, outcomes, rows, totals.Ms), totals)
+	return finish(rows, perfFor(isGitHubActions(), checks, outcomes, rows, totals.Ms), totals)
 }
 
 // applying drops the checks that passed inert with zero files, such as
@@ -190,11 +204,11 @@ func withText(req blobRequest, value string, stdin io.Reader) (blobRequest, erro
 	return req, nil
 }
 
-// blobChecks resolves the catalog, or the --checks selection, and splits it
+// blobChecks resolves the suite, or the --checks selection, and splits it
 // into the checks that declare blob input and the names of those that need
 // files.
-func blobChecks(selected []string) (run []resolved, skipped []string, err error) {
-	names, err := blobSelection(selected)
+func blobChecks(suite, selected []string) (run []resolved, skipped []string, err error) {
+	names, err := blobSelection(suite, selected)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -222,14 +236,16 @@ func splitBlob(checks []resolved) (run []resolved, skipped []string) {
 	return run, skipped
 }
 
-// blobSelection returns the names to consider: every check, or the
-// --checks list when it names only known checks, each once.
-func blobSelection(selected []string) ([]string, error) {
+// blobSelection returns the names to consider: every check under the repo's
+// local checks and disabledChecks, or the --checks list when it names only
+// known checks, each once.
+func blobSelection(suite, selected []string) ([]string, error) {
 	if selected == nil {
-		return allChecks, nil
+		return suite, nil
 	}
+	catalog := checkCatalog()
 	for i, name := range selected {
-		if !slices.Contains(allChecks, name) || slices.Contains(selected[:i], name) {
+		if !slices.Contains(catalog, name) || slices.Contains(selected[:i], name) {
 			return nil, fmt.Errorf("--checks names an unknown, empty, or repeated check %q", name)
 		}
 	}

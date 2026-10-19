@@ -7,34 +7,19 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/boxes"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
 // jsonFlag names the file that receives the run's performance report.
 const jsonFlag = "--json"
 
-// perfReport is the `--json` record of one run: how long it took, how big
-// the runner is, and each check's cost. CI keeps it as an artifact, so the
-// trail of runs shows which checks slow down or grow.
-type perfReport struct {
-	ElapsedMs   int64       `json:"elapsedMs"`
-	RunnerBytes int64       `json:"runnerBytes"`
-	Checks      []perfCheck `json:"checks"`
-}
+// perfReport is the `--json` record of one run. The box diagram reads the
+// same type, so the writer and the reader share one schema.
+type perfReport = boxes.Report
 
-// perfCheck is one check's cost: wall time against its budget, files judged,
-// the size of its binary, and how many lines of errors it reported. A check
-// may spend several lines on one problem, so this counts lines, not problems.
-type perfCheck struct {
-	Name         string `json:"name"`
-	Ok           bool   `json:"ok"`
-	Ms           int64  `json:"ms"`
-	TimeoutMs    int64  `json:"timeoutMs"`
-	TimedOut     bool   `json:"timedOut"`
-	FilesChecked int    `json:"filesChecked"`
-	BinaryBytes  int64  `json:"binaryBytes"`
-	ErrorLines   int    `json:"errorLines"`
-}
+// perfCheck is one check's entry in that record.
+type perfCheck = boxes.Check
 
 // jsonPath pulls `--json=<file>` out of argv, so neither check selection nor
 // a single check's passthrough sees it.
@@ -60,6 +45,21 @@ func onePath(flags, rest []string) (string, []string, error) {
 		return "", nil, errors.New("use --json=<file> once")
 	}
 	return path, rest, nil
+}
+
+// wantsPerf reports whether a run's report has a reader: a `--json` file or
+// the CI job summary.
+func wantsPerf(path string) bool {
+	return path != "" || isGitHubActions()
+}
+
+// perfFor builds the report only when a `--json` file or the CI job summary
+// reads it, so a plain local run never stats the binaries.
+func perfFor(wanted bool, checks []resolved, outcomes []outcome, rows []render.Row, elapsedMs int64) perfReport {
+	if !wanted {
+		return perfReport{}
+	}
+	return buildPerfReport(checks, outcomes, rows, elapsedMs)
 }
 
 // buildPerfReport pairs each check with its row, in dispatch order.

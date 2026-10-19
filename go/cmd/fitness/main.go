@@ -195,7 +195,7 @@ func run(argv []string) int {
 	rows, totals := summarize(checks, outcomes)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
-	perf := buildPerfReport(checks, outcomes, rows, totals.Ms)
+	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
 	code := finish(rows, perf, totals)
 	return withPerfReport(perfPath, perf, code)
 }

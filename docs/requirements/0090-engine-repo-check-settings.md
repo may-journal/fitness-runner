@@ -31,7 +31,7 @@ Source: `go/cmd/fitness/local.go:34`
         - When the suite starts
             - Then it reports red naming the check and the org rule, and exits 1
 - 0090.4
-    - Given Developer has a check setting naming a directory or check that is not there
+    - Given Developer has a check setting naming a directory or check that is not there or leads outside the repo
         - When the suite starts
             - Then it reports red naming the setting and exits 1
 - 0090.5

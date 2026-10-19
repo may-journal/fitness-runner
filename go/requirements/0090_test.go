@@ -44,6 +44,10 @@ func Test0090_4(t *testing.T) {
 		out, code := fitness(t, repo, nil)
 		sees(t, out, code, 1, want)
 	}
+	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"localChecks": "checks"}` + "\n"})
+	mustDo(t, os.Symlink(t.TempDir(), filepath.Join(repo, "checks")))
+	out, code := fitness(t, repo, nil)
+	sees(t, out, code, 1, `.fitnessrc.json localChecks "checks" must be a path inside the repo`)
 }
 
 func Test0090_5(t *testing.T) {

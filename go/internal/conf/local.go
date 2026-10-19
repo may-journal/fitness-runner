@@ -27,19 +27,19 @@ func (c *Config) LocalCheckBinaries(root string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return localPrograms(dir, c.LocalChecks)
+	return localPrograms(root, dir, c.LocalChecks)
 }
 
 // localPrograms maps each fitness-check-<name> entry in dir to its path,
 // failing on the first one that cannot run, or when there is none.
-func localPrograms(dir, configured string) (map[string]string, error) {
+func localPrograms(root, dir, configured string) (map[string]string, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, fmt.Errorf("%s localChecks %q: %w", FileName, configured, err)
 	}
 	bins := map[string]string{}
 	for _, entry := range entries {
-		if err := addProgram(bins, dir, entry.Name(), configured); err != nil {
+		if err := addProgram(bins, root, dir, entry.Name(), configured); err != nil {
 			return nil, err
 		}
 	}
@@ -50,7 +50,7 @@ func localPrograms(dir, configured string) (map[string]string, error) {
 }
 
 // addProgram adds the entry to bins when its file name marks a check.
-func addProgram(bins map[string]string, dir, entry, configured string) error {
+func addProgram(bins map[string]string, root, dir, entry, configured string) error {
 	name, ok := strings.CutPrefix(entry, checkPrefix)
 	if !ok {
 		return nil
@@ -58,6 +58,9 @@ func addProgram(bins map[string]string, dir, entry, configured string) error {
 	path := filepath.Join(dir, entry)
 	if err := localProgram(path, name, configured); err != nil {
 		return err
+	}
+	if !insideRoot(root, path) {
+		return fmt.Errorf("local check %s links outside the repo; commit the program itself", filepath.ToSlash(filepath.Join(configured, entry)))
 	}
 	bins[name] = path
 	return nil
@@ -68,17 +71,49 @@ func addProgram(bins map[string]string, dir, entry, configured string) error {
 // run the same way in CI.
 func localDir(root, configured string) (string, error) {
 	if !filepath.IsLocal(filepath.FromSlash(configured)) {
-		return "", fmt.Errorf("%s localChecks %q must be a path inside the repo, relative to its root", FileName, configured)
+		return "", outsideRepo(configured)
 	}
 	dir := filepath.Join(root, filepath.FromSlash(configured))
+	if err := isDir(dir, configured); err != nil {
+		return "", err
+	}
+	if !insideRoot(root, dir) {
+		return "", outsideRepo(configured)
+	}
+	return dir, nil
+}
+
+// isDir fails a configured localChecks path that is missing or not a
+// directory.
+func isDir(dir, configured string) error {
 	info, err := os.Stat(dir)
 	if os.IsNotExist(err) {
-		return "", fmt.Errorf("%s localChecks directory %q does not exist", FileName, configured)
+		return fmt.Errorf("%s localChecks directory %q does not exist", FileName, configured)
 	}
 	if err == nil && !info.IsDir() {
 		err = fmt.Errorf("%s localChecks %q is not a directory", FileName, configured)
 	}
-	return dir, err
+	return err
+}
+
+// outsideRepo is the error for a localChecks directory outside the repo.
+func outsideRepo(configured string) error {
+	return fmt.Errorf("%s localChecks %q must be a path inside the repo, relative to its root", FileName, configured)
+}
+
+// insideRoot reports whether path, with every symlink followed, stays inside
+// root, so a link cannot run a program the repo does not track.
+func insideRoot(root, path string) bool {
+	realRoot, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return false
+	}
+	real, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return false
+	}
+	rel, err := filepath.Rel(realRoot, real)
+	return err == nil && filepath.IsLocal(rel)
 }
 
 // localProgram fails a local check whose name or file cannot run, naming
