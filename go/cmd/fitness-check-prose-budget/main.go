@@ -47,10 +47,7 @@ var defaults = limits{
 // document is an Issue or PR description rather than a file on disk.
 const descriptionName = "(description)"
 
-var (
-	htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
-	listItemRe    = regexp.MustCompile(`^(?:[-*+]|\d+\.)\s+(.*)$`)
-)
+var htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
 
 func main() {
 	checkkit.Main(checkkit.Check{

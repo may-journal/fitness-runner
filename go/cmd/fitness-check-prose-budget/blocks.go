@@ -98,9 +98,9 @@ func (b *builder) breakLine(t string) bool {
 // starts or extends the list; anything else closes any open list and extends
 // the paragraph.
 func (b *builder) item(raw, t string) {
-	if m := listItemRe.FindStringSubmatch(t); m != nil {
+	if text, ok := mdx.ListItem(t); ok {
 		b.flushPara()
-		b.items = append(b.items, m[1])
+		b.items = append(b.items, text)
 		b.depths = append(b.depths, b.depth(len(raw)-len(strings.TrimLeft(raw, " \t"))))
 		return
 	}
