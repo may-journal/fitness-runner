@@ -12,6 +12,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/signal"
 	"slices"
 	"strconv"
 	"strings"
@@ -175,10 +176,10 @@ func run(argv []string) int {
 		return 1
 	}
 	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
-	tracked, removeTracked := walkfs.ShareTracked(root)
+	checks = commitChecks(checks)
+	tracked, removeTracked := shareTrackedFiles(root, checks)
 	defer removeTracked()
 	env = append(env, tracked...)
-	checks = commitChecks(checks)
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
@@ -453,6 +454,35 @@ func waitDescribe(cmd *exec.Cmd) (ok, overran bool) {
 		killGroup(cmd.Process.Pid, syscall.SIGKILL)
 		<-done
 		return false, true
+	}
+}
+
+// shareTrackedFiles lists tracked files once for a run of several checks,
+// returning the env entry that hands the list over and a cleanup. A run of
+// one check gains nothing, so that check lists its own, as the commit-msg
+// hook's single-check runs do. The list's file is removed on an interrupt
+// too, before the signal ends the run as it would have.
+func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup func()) {
+	if len(checks) < 2 {
+		return nil, func() {}
+	}
+	env, remove := walkfs.ShareTracked(root)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	done := make(chan struct{})
+	go func() {
+		select {
+		case sig := <-sigs:
+			remove()
+			signal.Reset(sig)
+			_ = syscall.Kill(os.Getpid(), sig.(syscall.Signal))
+		case <-done:
+		}
+	}()
+	return env, func() {
+		signal.Stop(sigs)
+		close(done)
+		remove()
 	}
 }
 

@@ -1,7 +1,6 @@
 package walkfs
 
 import (
-	"bytes"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -15,7 +14,8 @@ const generatedAttr = "linguist-generated"
 // WithoutGenerated drops the files root's .gitattributes marks
 // linguist-generated, such as lock files. It is the one way a repo keeps a
 // file from a check that cannot judge generated content (cspell, jscpd).
-// Outside a git repo, or when git fails, it drops nothing.
+// Outside a git repo, or when git fails, it drops only files an earlier
+// answer in this process marked.
 func WithoutGenerated(root string, files []string) []string {
 	if len(files) == 0 {
 		return files
@@ -32,44 +32,31 @@ func WithoutGenerated(root string, files []string) []string {
 
 // generatedMemo keeps each root's linguist-generated answers for the life
 // of the process, true for a generated file and false for one git said is
-// not, so each file is asked about once however many walks a check makes.
+// not, so a check that walks several times asks about each file once. The
+// lock guards only the maps, never a git call.
 var generatedMemo = struct {
 	sync.Mutex
 	roots map[string]map[string]bool
 }{roots: map[string]map[string]bool{}}
 
 // generatedSet reports which files carry linguist-generated, asking
-// `git check-attr` only about files this process has not asked about yet.
-// A git failure caches nothing and marks no file generated.
+// `git check-attr` only about files this process has no answer for yet.
+// When git fails, the answers already known still count.
 func generatedSet(root string, files []string) map[string]bool {
-	generatedMemo.Lock()
-	defer generatedMemo.Unlock()
-	known := knownGenerated(filepath.Clean(root))
-	if ask := unasked(known, files); len(ask) > 0 && !askGenerated(root, ask, known) {
-		return nil
-	}
-	set := make(map[string]bool)
-	for _, f := range files {
-		if known[f] {
-			set[f] = true
+	key := filepath.Clean(root)
+	if ask := unasked(key, files); len(ask) > 0 {
+		if answers, ok := askGenerated(root, ask); ok {
+			remember(key, answers)
 		}
 	}
-	return set
+	return knownAmong(key, files)
 }
 
-// knownGenerated is root's answer map, created empty on first use. The
-// caller holds generatedMemo's lock.
-func knownGenerated(root string) map[string]bool {
+// unasked lists the files root has no answer for yet.
+func unasked(root string, files []string) []string {
+	generatedMemo.Lock()
+	defer generatedMemo.Unlock()
 	known := generatedMemo.roots[root]
-	if known == nil {
-		known = map[string]bool{}
-		generatedMemo.roots[root] = known
-	}
-	return known
-}
-
-// unasked lists the files known holds no answer for yet.
-func unasked(known map[string]bool, files []string) []string {
 	var ask []string
 	for _, f := range files {
 		if _, seen := known[f]; !seen {
@@ -79,31 +66,61 @@ func unasked(known map[string]bool, files []string) []string {
 	return ask
 }
 
-// askGenerated runs `git check-attr` on files and records each answer in
-// known, reporting whether git answered.
-func askGenerated(root string, files []string, known map[string]bool) bool {
+// remember stores git's answers for root.
+func remember(root string, answers map[string]bool) {
+	generatedMemo.Lock()
+	defer generatedMemo.Unlock()
+	known := generatedMemo.roots[root]
+	if known == nil {
+		known = make(map[string]bool, len(answers))
+		generatedMemo.roots[root] = known
+	}
+	for f, on := range answers {
+		known[f] = on
+	}
+}
+
+// knownAmong is the set of files root's known answers mark generated.
+func knownAmong(root string, files []string) map[string]bool {
+	generatedMemo.Lock()
+	defer generatedMemo.Unlock()
+	known := generatedMemo.roots[root]
+	set := make(map[string]bool)
+	for _, f := range files {
+		if known[f] {
+			set[f] = true
+		}
+	}
+	return set
+}
+
+// askGenerated runs `git check-attr` on files and returns an answer for
+// each, reporting whether git answered.
+func askGenerated(root string, files []string) (map[string]bool, bool) {
 	cmd := exec.Command("git", "-C", root, "check-attr", "-z", "--stdin", generatedAttr)
 	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
 	out, err := cmd.Output()
 	if err != nil {
-		return false
+		return nil, false
 	}
 	set := parseCheckAttr(out)
+	answers := make(map[string]bool, len(files))
 	for _, f := range files {
-		known[f] = set[f]
+		answers[f] = set[f]
 	}
-	return true
+	return answers, true
 }
 
 // parseCheckAttr reads `git check-attr -z` output — path, attribute, value
 // triples, each NUL-terminated — keeping the paths whose value turns the
-// attribute on ("set" for a bare name, or "true").
+// attribute on ("set" for a bare name, or "true"). Git prints no empty
+// field, so dropping empty entries keeps the triples aligned.
 func parseCheckAttr(out []byte) map[string]bool {
-	fields := bytes.Split(out, []byte{0})
+	fields := splitNUL(out)
 	set := make(map[string]bool)
 	for i := 0; i+2 < len(fields); i += 3 {
-		if isOn(string(fields[i+2])) {
-			set[string(fields[i])] = true
+		if isOn(fields[i+2]) {
+			set[fields[i]] = true
 		}
 	}
 	return set
