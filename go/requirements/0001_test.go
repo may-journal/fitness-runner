@@ -29,7 +29,7 @@ func Test0001_2(t *testing.T) {
 	sees(t, out, code, 1, "README.md: disallowed **bold**", passedOf(1)+", 1 failed")
 }
 
-func Test0001_3(t *testing.T) {
+func Test0001_17(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", with(goRepo(), map[string]string{"broken_test.go": "package adder\n\nfunc Test0001_2(t *testing.T {\n"}))
 	out, code := fitness(t, repo, nil)
@@ -47,6 +47,13 @@ func Test0001_3(t *testing.T) {
 	if !strings.Contains(row(out, "go-vet"), "info") {
 		t.Errorf("a killed check must show info while the passing checks set exit 0, got row %q", row(out, "go-vet"))
 	}
+	repo = example(t, "happyRepo", with(architectedRepo(), map[string]string{"README.md": readme + "\nSome **bold** text.\n"}))
+	summary := filepath.Join(t.TempDir(), "summary.md")
+	out, code = fitness(t, repo, []string{killedVet(t), "GITHUB_ACTIONS=true", "GITHUB_WORKSPACE=" + repo, "GITHUB_STEP_SUMMARY=" + summary})
+	sees(t, out, code, 1, passedOf(2)+", 1 failed, 1 info", "::error file=README.md",
+		"::notice title=go-vet::check ended without a result (signal: killed)")
+	written, _ := os.ReadFile(summary)
+	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
 }
 
 // describeFails runs check in repo with a copy of the installed runner, after
@@ -69,8 +76,10 @@ func describeFails(t *testing.T, repo, check string) (string, int) {
 	})
 }
 
-func Test0001_4(t *testing.T) {
+func Test0001_14(t *testing.T) {
 	t.Parallel()
+	// prettier declares no budget, so the repo's 0.3s timeoutMs bounds it,
+	// while go-test keeps the budget it declares.
 	for _, prelude := range []string{"", "trap '' TERM\n"} {
 		repo := example(t, "happyRepo", hungTool("300", prelude))
 		out, code := fitness(t, repo, nil)
@@ -78,19 +87,63 @@ func Test0001_4(t *testing.T) {
 		if !strings.Contains(row(out, "prettier"), "failed") {
 			t.Errorf("a timed-out check must report red, got row %q", row(out, "prettier"))
 		}
+		if strings.Contains(row(out, "go-test"), "failed") {
+			t.Errorf("a check with its own budget must keep it, got row %q", row(out, "go-test"))
+		}
 		childStopped(t, repo)
 	}
 }
 
-func Test0001_11(t *testing.T) {
+func Test0001_15(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", with(architectedRepo(), map[string]string{"README.md": readme + "\nSome **bold** text.\n"}))
-	summary := filepath.Join(t.TempDir(), "summary.md")
-	out, code := fitness(t, repo, []string{killedVet(t), "GITHUB_ACTIONS=true", "GITHUB_WORKSPACE=" + repo, "GITHUB_STEP_SUMMARY=" + summary})
-	sees(t, out, code, 1, passedOf(2)+", 1 failed, 1 info", "::error file=README.md",
-		"::notice title=go-vet::check ended without a result (signal: killed)")
-	written, _ := os.ReadFile(summary)
-	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
+	repo := example(t, "happyRepo", architectedRepo())
+	path, calls := loggedGit(t)
+	out, code := fitness(t, repo, []string{path})
+	sees(t, out, code, 0, allPassed())
+	if n := countLines(calls, "ls-files -z --cached"); n != 1 {
+		t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+	}
+}
+
+// loggedGit returns a PATH setting whose git logs each call's arguments to
+// the returned file, one line each, and then runs the real git.
+func loggedGit(t *testing.T) (path, calls string) {
+	t.Helper()
+	real, err := exec.LookPath("git")
+	mustDo(t, err)
+	dir := t.TempDir()
+	calls = filepath.Join(t.TempDir(), "git.log")
+	write(t, dir, map[string]string{"git": "#!/bin/sh\necho \"$*\" >> \"" + calls + "\"\nexec \"" + real + "\" \"$@\"\n"})
+	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), calls
+}
+
+// countLines counts the lines of the file at path that hold want.
+func countLines(path, want string) int {
+	raw, _ := os.ReadFile(path)
+	return strings.Count(string(raw), want)
+}
+
+func Test0001_16(t *testing.T) {
+	t.Parallel()
+	other := example(t, "happyRepo", map[string]string{"other.md": "# Other\n\nSome **bold** text.\n"})
+	installed, bundle := installOnly(t), t.TempDir()
+	linkTools(bundle, installed, []string{"fitness"})
+	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
+	walk := "exec \"" + filepath.Join(installed, "fitness-check-markdown-no-bold-italic") + "\" --root "
+	write(t, bundle, map[string]string{
+		// Each runs the real check under the list its run handed it: one
+		// after staging a new file, one on another repo.
+		"fitness-check-staged-later": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\":\"staged-later\"}'; exit 0; }\n" +
+			"printf '# New\\n\\nSome **bold** text.\\n' > new.md\ngit add new.md\n" + walk + "\"$PWD\"\n",
+		"fitness-check-other-repo": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\":\"other-repo\"}'; exit 0; }\n" + walk + "\"" + other + "\"\n",
+	})
+	repo := example(t, "happyRepo", nil)
+	out, code := execute(t, func() *exec.Cmd {
+		cmd := exec.Command(filepath.Join(bundle, "fitness"), "--policy=external", "--checks=staged-later,other-repo")
+		cmd.Dir, cmd.Env = repo, userEnv()
+		return cmd
+	})
+	sees(t, out, code, 1, "new.md: disallowed **bold**", "other.md: disallowed **bold**")
 }
 
 func Test0001_13(t *testing.T) {
@@ -259,15 +312,6 @@ func childStopped(t *testing.T, repo string) {
 	t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
 	if !gone(pid, 3*time.Second) {
 		t.Fatalf("prettier's child process %d is still running after fitness stopped it", pid)
-	}
-}
-
-func Test0001_8(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", hungTool("300", ""))
-	out, _ := fitness(t, repo, nil)
-	if !strings.Contains(out, "Check timed out after 0.3s") || strings.Contains(row(out, "go-test"), "failed") {
-		t.Errorf("prettier must stop at the configured 0.3s while checks with their own budget keep it:\n%s", out)
 	}
 }
 

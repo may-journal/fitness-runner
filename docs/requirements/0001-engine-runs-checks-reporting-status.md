@@ -26,27 +26,27 @@ Source: `go/cmd/fitness/ci.go:22`
     - Given Developer has a check that fails
         - When fitness runs
             - Then it reports red with that check's errors and exits 1
-- 0001.3
-    - Given Developer has a check that panics, crashes, is killed, exits with an unexpected code, cannot start, or fails its describe step
-        - When fitness runs
-            - Then that check shows as info naming why, and the exit code is set by the other checks
-- 0001.4
-    - Given Developer has a check that runs past its time budget, or ignores the stop signal until its grace period runs out
-        - When fitness runs
-            - Then it and any child process it started are stopped, or killed if it ignores the stop, and reported red as timed out
 - 0001.5
     - Given Developer has a new check binary
         - When the runner lists its catalog
             - Then the new check is in it and the run counts it, so every repo runs it
-- 0001.8
-    - Given Developer has a repo that sets timeoutMs in its fitness config
-        - When the runner budgets a check that declares none
-            - Then the configured budget replaces the default
-- 0001.11
-    - Given Developer has one real problem and a check that cannot run, such as `local-branch` with `gh` blocked
-        - When fitness runs the full suite
-            - Then the real problem fails, the other check shows as info, the run exits 1, and Actions annotates an error and a notice
 - 0001.13
     - Given Developer has slow checks with different time budgets
         - When fitness runs
             - Then they overlap, the longest budget starts first, and the table keeps catalog order
+- 0001.14
+    - Given Developer has a check past its budget, set by the check or by timeoutMs in the fitness config
+        - When fitness runs
+            - Then it and its child processes stop, or are killed if they ignore the stop, and it shows red as timed out
+- 0001.15
+    - Given Developer has a repo with tracked files
+        - When fitness runs every check
+            - Then git lists the tracked files once for the whole run
+- 0001.16
+    - Given Developer has a tracked-file list from another repo, or from before the index changed
+        - When a check walks the repo
+            - Then it judges the files tracked now
+- 0001.17
+    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start, or fails its describe step
+        - When fitness runs
+            - Then it shows as info naming why, and Actions adds a notice while the other checks set the exit code
