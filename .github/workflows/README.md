@@ -245,3 +245,38 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it.
 
 The job skips, billing nothing, unless the PR is open, ready, and has no auto-merge yet. So a push to a PR that already has it starts no runner. GitHub has no auto-merge for a stacked PR, so a PR whose base is not the default branch passes with a notice. Once the base PR merges and GitHub moves the PR onto the default branch, its next push or reopen turns auto-merge on.
+
+## release-please
+
+[release-please-reusable.yml](release-please-reusable.yml) runs Release Please for every repo that opts in to releases. may-journal/.github syncs a short caller into each one, which runs on pushes to `main` and passes `secrets: inherit`. Each repo keeps its own `release-please-config.json`, manifest, and `version.txt`. This repo releases through its own CI and Release workflows instead.
+
+```mermaid
+flowchart TD
+    A[1 Push to main]:::trigger
+    B[2 Mint the App token]:::step
+    C[3 Prepare or publish the release]:::step
+    D[4 Shape the release notes]:::step
+    E[5 Link the tracking issue]:::step
+    F[6 Reopen after a rewrite]:::step
+    G[7 Move the major tag]:::step
+    A --> B
+    B --> C
+    C --> D
+    D --> E
+    E --> F
+    C --> G
+    classDef trigger fill:#eef,stroke:#333
+    classDef step fill:#efe,stroke:#333
+```
+
+| #   | Element       | Description                                                            | Why                                                   |
+| --- | ------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| 1   | Push to main  | The caller runs on each push to `main`, one run at a time per repo.    | Each merge updates the release PR.                    |
+| 2   | App token     | Check the App secrets, then mint a `may-journal-automation` token.     | GitHub starts no workflows from GITHUB_TOKEN changes. |
+| 3   | Release       | Release Please keeps a release PR open, or tags and publishes it once merged. | Versions come from conventional commits.       |
+| 4   | Shape         | Demote a first release's `##` heading and strip bold scopes.           | pr-check wants plain bullets under `## Changelog`.    |
+| 5   | Link          | Find or open the tracking issue by title, and close it from the PR.   | pr-check needs every PR to close an issue.            |
+| 6   | Reopen        | Close and reopen the PR after either rewrite.                          | pr-check does not run on a body edit.                 |
+| 7   | Major tag     | Point `vX` at the new release.                                         | Consumers pin the major version.                      |
+
+Steps 4 to 6 skip when Release Please leaves no PR open, and step 7 runs only for a new release.

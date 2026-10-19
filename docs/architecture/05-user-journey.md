@@ -73,7 +73,7 @@ flowchart TB
     configError[(12 Config error<br/>Req 0008)]:::blocked
     ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082, 0087)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091)]:::system
-    release[(28 Release build<br/>Req 0062)]:::system
+    release[(28 Release build<br/>Req 0062, 0092)]:::system
     perfRecord[(32 Performance record<br/>Req 0089)]:::system
 
     dev --> install
@@ -145,7 +145,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 25  | Node package and test checks.       | System  | Lint, format, Node version, dependencies, and test coverage stay current.             |
 | 26  | Repo hygiene checks.                | System  | No build output, plan files, unexplained ignores, or copied code.                     |
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI; Auto-merge waits out stacks. |
-| 28  | Release build.                      | System  | The release tool builds bundles and writes notes from the new entry files.            |
+| 28  | Release build.                      | System  | The release tool builds bundles and notes; opted-in repos call the shared Release Please. |
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
 | 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
 | 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |
