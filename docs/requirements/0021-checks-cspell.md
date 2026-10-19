@@ -8,6 +8,8 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 I catch typos before they ship, while my project's own terms still pass.
 
+A full cspell run takes 0.06 s on fitness-runner, down from 0.18 s, and 0.03 s on may-photos, down from 0.04 s. These are medians of 21 runs on an M5 Max, measured for #466.
+
 ## Measurement
 
 checked files with no unknown words
@@ -18,10 +20,10 @@ Source: `go/cmd/fitness-check-cspell/main.go:68`
 
 ## Requirements
 
-- 0021.1
-    - Given Developer has a tracked file with a misspelled word
+- 0021.13
+    - Given Developer has tracked misspellings in a short file, and around a `cspell:disable` block crossing 64 KB in a long one
         - When cspell runs
-            - Then it fails naming the file, line, column, and word
+            - Then it fails naming each word's file, line and column in order, except inside the block
 - 0021.2
     - Given Developer has a repo `cspell.json` beside an installed shared one
         - When cspell runs

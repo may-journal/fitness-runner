@@ -1,0 +1,3 @@
+# words.txt is merged from the lists in go/internal/spell/dict by go generate,
+# so checks judge those lists and skip the copy.
+go/internal/spell/words.txt linguist-generated

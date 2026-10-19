@@ -12,7 +12,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
     - `issue-check` picks each issue's checks by its kind label and `.github/ISSUE_TEMPLATE`; `plan-check` is its Plan-only alias
     - `dupe-check` runs no check; it notes when a new issue's words repeat an older issue's
 - Parsers and network: the `architecture-*` checks, `issue-link-once`, `workflow-ref-exists`, and the mermaid diagram/callout checks
-- Native engines: `cspell` (embedded dictionaries, ~217k words) and `jscpd` (token-based clone detection) — no external tool needed
+- Native engines: `cspell` (one embedded dictionary, ~205k words) and `jscpd` (token-based clone detection) — no external tool needed
 - Language checks: each [language module](../go/internal/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 

@@ -20,6 +20,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // minWordLength mirrors cspell's default: shorter words are never flagged.
@@ -75,14 +77,59 @@ func (c *Checker) AddWords(words []string) {
 
 // CheckText spell-checks one document and returns its unknown words in
 // document order.
+//
+// Directives can span lines, so their mask is built over the whole text
+// first. Everything after is line-local: no ignore pattern, extended token or
+// word crosses a newline. So a text over chunkSize is checked in line-aligned
+// chunks in parallel, and their issues join in chunk order.
 func (c *Checker) CheckText(text string) []Issue {
 	text = strings.TrimPrefix(text, "\ufeff")
 	masked := make([]bool, len(text))
-	docWords := maskDirectives(text, masked)
-	maskPatterns(text, masked)
 	lines := lineOffsets(text)
+	docWords := maskDirectives(text, masked, lines)
+	chunks := lineChunks(text, chunkSize)
+	check := func(i int) []Issue {
+		return c.checkChunk(text, masked, chunks[i], docWords, lines)
+	}
+	if len(chunks) == 1 {
+		return check(0)
+	}
 	var issues []Issue
-	for _, ext := range extendedSpans(text, masked) {
+	for _, part := range par.Map(len(chunks), 0, check) {
+		issues = append(issues, part...)
+	}
+	return issues
+}
+
+// chunkSize is the text each goroutine checks: large enough that starting
+// one is noise, small enough that a 2 MB wordlist spreads over every core.
+const chunkSize = 64 << 10
+
+// lineChunks splits text into spans of about size bytes, each ending just
+// after a newline or at the end of text. An empty text is one empty chunk.
+func lineChunks(text string, size int) []span {
+	chunks := []span{}
+	for start := 0; start < len(text) || len(chunks) == 0; {
+		end := len(text)
+		if start+size < len(text) {
+			if nl := strings.IndexByte(text[start+size:], '\n'); nl >= 0 {
+				end = start + size + nl + 1
+			}
+		}
+		chunks = append(chunks, span{start, end})
+		start = end
+	}
+	return chunks
+}
+
+// checkChunk masks the ignore patterns in one chunk and judges its words.
+// Chunks write disjoint parts of masked, so they run concurrently.
+func (c *Checker) checkChunk(text string, masked []bool, chunk span, docWords map[string]struct{}, lines []int) []Issue {
+	part, partMasked := text[chunk.start:chunk.end], masked[chunk.start:chunk.end]
+	maskPatterns(part, partMasked)
+	var issues []Issue
+	for _, ext := range extendedSpans(part, partMasked) {
+		ext = span{ext.start + chunk.start, ext.end + chunk.start}
 		if c.knownCompound(text[ext.start:ext.end], docWords) {
 			continue
 		}
@@ -364,12 +411,14 @@ func isUpper(r rune) bool {
 // lineOffsets returns the byte offset of each line start.
 func lineOffsets(text string) []int {
 	out := []int{0}
-	for i := 0; i < len(text); i++ {
-		if text[i] == '\n' {
-			out = append(out, i+1)
+	for i := 0; ; {
+		nl := strings.IndexByte(text[i:], '\n')
+		if nl < 0 {
+			return out
 		}
+		i += nl + 1
+		out = append(out, i)
 	}
-	return out
 }
 
 // position converts a byte offset to a 1-based line and rune column.

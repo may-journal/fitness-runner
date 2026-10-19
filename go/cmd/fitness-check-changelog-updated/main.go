@@ -130,11 +130,11 @@ func resolveStagedFiles(root string) []string {
 	return gitx.StagedFiles(root)
 }
 
-// diffFile is one file's accumulated added-line content from the staged diff,
+// diffFile is one file's added lines from the staged diff, space-joined to read,
 // in first-appearance order.
 type diffFile struct {
 	path  string
-	added string
+	added []string
 }
 
 // parseStagedDiff walks raw `git diff --cached` output preserving the TS
@@ -163,19 +163,20 @@ func isAddedLine(current, line string) bool {
 	return current != "" && strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "++")
 }
 
-// accumulateAdded folds one added line's text into path's entry in files —
-// created on first sight, space-joined after — using index (path → position
-// in files) to keep first-appearance order.
+// accumulateAdded appends one added line's text to path's entry in files —
+// created on first sight — using index (path → position in files) to keep
+// first-appearance order. Empty lines before the first text are dropped, so
+// the parts space-join to what the TS parser's concatenation built, without
+// copying the whole file per line.
 func accumulateAdded(files []diffFile, index map[string]int, path, text string) []diffFile {
 	i, seen := index[path]
-	switch {
-	case !seen:
-		index[path] = len(files)
-		files = append(files, diffFile{path: path, added: text})
-	case files[i].added != "":
-		files[i].added += " " + text
-	default:
-		files[i].added = text
+	if !seen {
+		i = len(files)
+		index[path] = i
+		files = append(files, diffFile{path: path})
+	}
+	if len(files[i].added) > 0 || text != "" {
+		files[i].added = append(files[i].added, text)
 	}
 	return files
 }
@@ -220,9 +221,9 @@ func splitDiff(files []diffFile) (changelogAdded string, restParts []string) {
 	var entryParts []string
 	for _, f := range files {
 		if changelog.IsEntryPath(f.path) {
-			entryParts = append(entryParts, f.added)
+			entryParts = append(entryParts, strings.Join(f.added, " "))
 		} else {
-			restParts = append(restParts, f.added)
+			restParts = append(restParts, strings.Join(f.added, " "))
 		}
 	}
 	return strings.Join(entryParts, " "), restParts

@@ -8,11 +8,13 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/may-journal/fitness-runner/go/internal/release"
 	"github.com/may-journal/fitness-runner/go/internal/releasemeta"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/internal/spell"
 	"github.com/may-journal/fitness-runner/go/internal/usage"
 )
 
@@ -58,11 +60,14 @@ var commands = map[string]subcommand{
 	"verify-tag":      {[]string{"root"}, func(c release.Config, _ string) error { return c.VerifyTag(os.Getenv("GITHUB_REF_NAME")) }},
 	"version":         {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "") }},
 	"tag":             {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "v") }},
+	"words": {[]string{"root"}, func(_ release.Config, root string) error {
+		return spell.WriteWords(filepath.Join(root, "go", "internal", "spell"))
+	}},
 }
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, or tag")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, tag, or words")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")

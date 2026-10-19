@@ -19,3 +19,5 @@ Spell-checks with a native Go engine and dictionaries embedded in the check bina
 - Forbidden words: each `flagWords` word or phrase fails wherever it appears whole, in any case, except in a `cspell.json` file.
 
 Errors are reported as one line per issue: `path:line:col - Unknown word (word)` or `path:line:col - Forbidden word (entry)`.
+
+A file over 64 KB is checked in line-aligned chunks in parallel, once its `cspell:` directives are applied to the whole file.
