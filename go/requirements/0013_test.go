@@ -45,7 +45,37 @@ func ghRun(t *testing.T, command, event string, payload map[string]any, files ma
 func judgePlan(t *testing.T, body string, saved []response) (string, int, replays) {
 	t.Helper()
 	issue := map[string]any{"number": 7, "title": "t", "body": body}
-	return planCheck(t, "issues", map[string]any{"action": "edited", "issue": issue}, saved)
+	return planCheck(t, "issues", bodyEdit(issue), saved)
+}
+
+// bodyEdit is the event GitHub delivers when issue's body is edited: its
+// changes name the body's earlier text.
+func bodyEdit(issue map[string]any) map[string]any {
+	return map[string]any{"action": "edited", "issue": issue, "changes": map[string]any{"body": map[string]any{"from": "An earlier body."}}}
+}
+
+// idleEdits are the issues events for Plan 7 that cannot change its
+// verdict: an edit to the title alone, and each label in labels added.
+func idleEdits(labels ...string) []map[string]any {
+	issue := map[string]any{"number": 7, "title": "t", "body": brokenPlan, "labels": []map[string]string{{"name": "Plan"}}}
+	events := []map[string]any{{"action": "edited", "issue": issue, "changes": map[string]any{"title": map[string]any{"from": "s"}}}}
+	for _, l := range labels {
+		events = append(events, map[string]any{"action": "labeled", "issue": issue, "label": map[string]any{"name": l}})
+	}
+	return events
+}
+
+// skipsIdle runs command on each idle event and wants it to note why, call
+// GitHub not at all, and exit 0.
+func skipsIdle(t *testing.T, command string, events []map[string]any) {
+	t.Helper()
+	for _, ev := range events {
+		out, code, rp := ghRun(t, command, "issues", ev, nil, planGitHub(""))
+		sees(t, out, code, 0, "#7 ", "so it is not checked.")
+		if calls := rp.calls("gh"); len(calls) > 0 {
+			t.Errorf("want no GitHub call for %v, got %q", ev["action"], calls)
+		}
+	}
 }
 
 // planGitHub is the saved GitHub that holds the Plan's verdict comments, as
@@ -213,7 +243,7 @@ func Test0013_9(t *testing.T) {
 	readOnce(t, rp, "12")
 }
 
-func Test0013_10(t *testing.T) {
+func Test0013_11(t *testing.T) {
 	t.Parallel()
 	gone := response{Match: []string{"fitness:plan-structure:"}, Stderr: "gh: Could not resolve to an Issue with the number of " + planIssue + ".\n", Exit: 1}
 	out, code, rp := judgePlan(t, planBody("- [ ] Write the tests."), append([]response{gone}, planGitHub("")...))
@@ -221,4 +251,6 @@ func Test0013_10(t *testing.T) {
 	if rp.called("gh", "-X POST") {
 		t.Errorf("want nothing written to a moved Plan, got gh calls %q", rp.calls("gh"))
 	}
+
+	skipsIdle(t, "plan-check", idleEdits("Bug", "fitness-invalid"))
 }

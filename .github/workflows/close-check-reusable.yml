@@ -22,8 +22,15 @@ permissions:
 
 jobs:
   close-check:
+    # Dropped work may stay unfinished, so a not planned or duplicate close
+    # skips before a runner starts, as fitness close-check does.
+    if: ${{ !contains(fromJSON('["not_planned", "duplicate"]'), github.event.issue.state_reason) }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # A close that comes again supersedes the run judging the earlier one.
+    concurrency:
+      group: close-check-${{ github.repository }}-${{ github.event.issue.number }}
+      cancel-in-progress: true
     steps:
       - uses: actions/setup-go@v5
         if: ${{ inputs.ref != '' }}

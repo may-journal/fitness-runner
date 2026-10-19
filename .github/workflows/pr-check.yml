@@ -14,6 +14,10 @@ jobs:
   pr-check:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # Pushes and edits come in bursts; only the newest PR state needs a check.
+    concurrency:
+      group: pr-check-${{ github.repository }}-${{ github.event.pull_request.number || github.run_id }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go-cache

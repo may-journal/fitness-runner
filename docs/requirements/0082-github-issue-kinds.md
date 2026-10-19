@@ -34,10 +34,6 @@ Source: `go/internal/metadata/kinds.go:47`
     - Given Developer has an issue of a kind that has only a template, or a Plan whose repo template adds a section
         - When issue-check judges it
             - Then it fails a body missing the template's sections and passes one that follows it
-- 0082.5
-    - Given Developer has an issue with no kind label, or a labeled issue moved away before issue-check reaches it
-        - When issue-check judges it
-            - Then it notes the issue is not checked, writes nothing, and exits 0
 - 0082.6
     - Given Developer has an issue with two kind labels
         - When issue-check judges it
@@ -50,3 +46,7 @@ Source: `go/internal/metadata/kinds.go:47`
     - Given Developer has a manual issue-check workflow run
         - When issue-check runs
             - Then it judges every open issue with a kind label
+- 0082.9
+    - Given Developer has an issue with no kind label, one moved away, one with only its title edited, or a verdict label added
+        - When issue-check judges each event
+            - Then it notes the issue is not checked, writes nothing, and exits 0

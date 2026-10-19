@@ -78,8 +78,10 @@ func (s smoke) installHook(ctx context.Context) error {
 	return s.commit(ctx, "valid")
 }
 
+// commit commits the smoke repo unsigned, since a signing tool the user's
+// git config names is not on the consumer PATH.
 func (s smoke) commit(ctx context.Context, message string) error {
-	return s.run(ctx, "git", "-c", "user.name=Fitness", "-c", "user.email=fitness@example.com", "commit", "-qm", message)
+	return s.run(ctx, "git", "-c", "user.name=Fitness", "-c", "user.email=fitness@example.com", "-c", "commit.gpgsign=false", "commit", "-qm", message)
 }
 
 func (s smoke) rejectInvalid(ctx context.Context) error {
