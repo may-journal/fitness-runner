@@ -9,10 +9,12 @@
 // to ask for what a framework needs before the run, such as Docker.
 //
 // Only reports written during the run count, so a stale report never
-// passes. Gradle reruns the test and report tasks even when it holds them
-// up to date. Gradle runs only the test task, so another test task counts
-// when the test or report task depends on it. A failing test is reported before coverage, since a failed
-// run's coverage says little.
+// passes. Clean rules make Gradle run the test and report tasks every
+// time; its build cache then restores, and so rewrites, the outputs of
+// tests whose inputs are unchanged, unless the build turns caching off.
+// Gradle runs only the test task, so another test task counts when the
+// test or report task depends on it. A failing test is reported before
+// coverage, since a failed run's coverage says little.
 //
 // Requirements finds the tests named for requirement acceptances, which
 // the requirements check reads.
@@ -21,6 +23,7 @@ package tests
 // cspell:ignore jacoco
 
 import (
+	"os"
 	"regexp"
 	"slices"
 	"strings"
@@ -33,6 +36,10 @@ import (
 // aggregationRe marks a Gradle build that applies JaCoCo report
 // aggregation, whose report task joins every project's coverage.
 var aggregationRe = regexp.MustCompile(`["'\x60]jacoco-report-aggregation["'\x60]`)
+
+// cachingProperty is the Gradle property that turns the build cache on
+// or off.
+const cachingProperty = "org.gradle.caching"
 
 // Run runs and judges the tests of the repo at root.
 func Run(root string, _ []string) (checkkit.Result, error) {
@@ -73,13 +80,35 @@ func mavenArgs(string, java.Project) []string {
 // aggregate one when the build applies aggregation, and goes on past a
 // failing task. Each task's clean rule deletes its outputs first, so the
 // task runs again on any Gradle version, where the --rerun option needs
-// Gradle 7.6.
+// Gradle 7.6. The build cache then restores the outputs of tests whose
+// inputs are unchanged, written afresh, instead of running them again,
+// unless the build turns caching off.
 func gradleArgs(root string, p java.Project) []string {
 	report := "jacocoTestReport"
 	if java.Declares(root, p, aggregationRe) {
 		report = "testCodeCoverageReport"
 	}
-	return []string{"cleanTest", "test", "clean" + strings.ToUpper(report[:1]) + report[1:], report, "--continue"}
+	args := []string{"cleanTest", "test", "clean" + strings.ToUpper(report[:1]) + report[1:], report, "--continue"}
+	if cachingAllowed(root, p) {
+		args = append(args, "--build-cache")
+	}
+	return args
+}
+
+// cachingAllowed reports whether the build leaves the build cache to
+// fitness: no org.gradle.caching set in its gradle.properties, the Gradle
+// user home's, GRADLE_OPTS or JAVA_OPTS, or one set to true. Gradle reads
+// any other value as off.
+func cachingAllowed(root string, p java.Project) bool {
+	value, set := java.GradleProperties(root, p)[cachingProperty]
+	for _, opts := range []string{os.Getenv("JAVA_OPTS"), os.Getenv("GRADLE_OPTS")} {
+		for _, field := range strings.Fields(opts) {
+			if v, ok := strings.CutPrefix(field, "-D"+cachingProperty+"="); ok {
+				value, set = v, true
+			}
+		}
+	}
+	return !set || strings.EqualFold(strings.TrimSpace(value), "true")
 }
 
 // judge names each failing test and each report that does not parse; else

@@ -130,7 +130,7 @@ type lookups struct {
 func (l lookups) provide(p pin, need int) bool {
 	b, ok := l.builds[p.toolchain]
 	if !ok {
-		props := buildProperties(l.root, p.toolchain)
+		props := java.GradleProperties(l.root, p.toolchain)
 		b = buildJDKs{
 			jdks:     append(slices.Clone(l.machine()), propertyJDKs(props)...),
 			download: canDownload(l.root, p.toolchain, props),

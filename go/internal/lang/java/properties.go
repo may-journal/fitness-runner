@@ -1,7 +1,8 @@
-package version
+package java
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -12,10 +13,10 @@ var escapes = map[byte]byte{'t': '\t', 'n': '\n', 'r': '\r', 'f': '\f'}
 // blanks are the whitespace characters a properties file skips.
 const blanks = " \t\f"
 
-// properties reads a Java properties file the way java.util.Properties
+// Properties reads a Java properties file the way java.util.Properties
 // does, or none for a missing file: comments, `=` `:` and whitespace
 // separators, backslash continuations and escapes.
-func properties(file string) map[string]string {
+func Properties(file string) map[string]string {
 	body, err := os.ReadFile(file)
 	if err != nil {
 		return nil
@@ -139,4 +140,42 @@ func unicodeEscape(s string, i int) (rune, bool) {
 // blankOrComment reports whether a trimmed line is empty or a comment.
 func blankOrComment(line string) bool {
 	return line == "" || line[0] == '#' || line[0] == '!'
+}
+
+// GradleProperties reads the Gradle properties a build sees: the build
+// root's gradle.properties, overridden by the Gradle user home's.
+func GradleProperties(root string, build Project) map[string]string {
+	out := map[string]string{}
+	for _, file := range []string{
+		filepath.Join(root, filepath.FromSlash(build.Dir), "gradle.properties"),
+		GradleUserFile("gradle.properties"),
+	} {
+		for key, value := range Properties(file) {
+			out[key] = value
+		}
+	}
+	return out
+}
+
+// GradleUserFile joins parts under Gradle's user home, or is empty with
+// no home.
+func GradleUserFile(parts ...string) string {
+	dir := userHome()
+	if dir == "" {
+		return ""
+	}
+	return filepath.Join(append([]string{dir}, parts...)...)
+}
+
+// userHome is Gradle's user home: GRADLE_USER_HOME, else ~/.gradle. It is
+// empty with no home to find, so no file is read from it.
+func userHome() string {
+	if dir := os.Getenv("GRADLE_USER_HOME"); dir != "" {
+		return dir
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".gradle")
 }

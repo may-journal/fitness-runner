@@ -66,30 +66,6 @@ func Test0081_1(t *testing.T) {
 	sees(t, out, code, 1, "target/surefire-reports/TEST-example.AppTest.xml is not a JUnit XML report; rerun the build")
 }
 
-func Test0081_2(t *testing.T) {
-	t.Parallel()
-	maven := javaTestMavenRun(map[string]string{
-		"target/surefire-reports/TEST-example.AppTest.xml": javaTestPassed,
-		"target/failsafe-reports/TEST-example.AppIT.xml":   javaTestPassed,
-		"target/site/jacoco/jacoco.xml":                    javaTestFull,
-	})
-	rp, out, code := javaRun(t, javaRepo(t, map[string]string{"pom.xml": javaPom(javaTestMaven)}), "java-test", map[string][]response{"mvn": {maven}})
-	sees(t, out, code, 0, "All 1 checks passed")
-	javaCalledOnce(t, rp, "mvn")
-	gradle := response{Match: []string{"test", "jacocoTestReport"}, Stdout: "BUILD SUCCESSFUL in 3s\n", Files: map[string]string{
-		"build/test-results/test/TEST-example.AppTest.xml":          javaTestPassed,
-		"build/test-results/integrationTest/TEST-example.AppIT.xml": javaTestPassed,
-		"build/reports/jacoco/test/jacocoTestReport.xml":            javaTestFull,
-	}}
-	rp, out, code = javaRun(t, javaRepo(t, map[string]string{"build.gradle": javaTestGradle}), "java-test", map[string][]response{"gradle": {gradle}})
-	sees(t, out, code, 0, "All 1 checks passed")
-	javaCalledOnce(t, rp, "gradle")
-	// Clean rules rerun the tasks on every Gradle version; --rerun needs 7.6.
-	if !rp.called("gradle", "cleanTest test cleanJacocoTestReport jacocoTestReport") || rp.called("gradle", "--rerun") {
-		t.Errorf("gradle calls = %q, want clean rules before each task and no --rerun", rp.calls("gradle"))
-	}
-}
-
 func Test0081_3(t *testing.T) {
 	t.Parallel()
 	repo := javaRepo(t, map[string]string{"pom.xml": javaPom(javaTestMaven)})
@@ -261,4 +237,61 @@ func Test0081_8(t *testing.T) {
 	_, out, code := javaRun(t, example(t, "happyRepo", nil), "java-test", nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "java-test")
+}
+
+// javaTestCached is a Gradle run that restores the tests and coverage of
+// an unchanged build from its build cache, rewriting their reports.
+var javaTestCached = response{Match: []string{"test", "jacocoTestReport"}, Stdout: "> Task :test FROM-CACHE\n> Task :jacocoTestReport FROM-CACHE\nBUILD SUCCESSFUL in 1s\n", Files: map[string]string{
+	"build/test-results/test/TEST-example.AppTest.xml": javaTestPassed,
+	"build/reports/jacoco/test/jacocoTestReport.xml":   javaTestFull,
+}}
+
+func Test0081_9(t *testing.T) {
+	t.Parallel()
+	maven := javaTestMavenRun(map[string]string{
+		"target/surefire-reports/TEST-example.AppTest.xml": javaTestPassed,
+		"target/failsafe-reports/TEST-example.AppIT.xml":   javaTestPassed,
+		"target/site/jacoco/jacoco.xml":                    javaTestFull,
+	})
+	rp, out, code := javaRun(t, javaRepo(t, map[string]string{"pom.xml": javaPom(javaTestMaven)}), "java-test", map[string][]response{"mvn": {maven}})
+	sees(t, out, code, 0, "All 1 checks passed")
+	javaCalledOnce(t, rp, "mvn")
+	gradle := response{Match: []string{"test", "jacocoTestReport"}, Stdout: "BUILD SUCCESSFUL in 3s\n", Files: map[string]string{
+		"build/test-results/test/TEST-example.AppTest.xml":          javaTestPassed,
+		"build/test-results/integrationTest/TEST-example.AppIT.xml": javaTestPassed,
+		"build/reports/jacoco/test/jacocoTestReport.xml":            javaTestFull,
+	}}
+	home := "GRADLE_USER_HOME=" + t.TempDir()
+	rp, out, code = javaRun(t, javaRepo(t, map[string]string{"build.gradle": javaTestGradle}), "java-test", map[string][]response{"gradle": {gradle}}, home)
+	sees(t, out, code, 0, "All 1 checks passed")
+	javaCalledOnce(t, rp, "gradle")
+	// Clean rules rerun the tasks on every Gradle version; --rerun needs 7.6.
+	// The build cache then restores the reports of unchanged tests.
+	if !rp.called("gradle", "cleanTest test cleanJacocoTestReport jacocoTestReport", "--build-cache") || rp.called("gradle", "--rerun") {
+		t.Errorf("gradle calls = %q, want clean rules before each task, --build-cache and no --rerun", rp.calls("gradle"))
+	}
+	// Reports the cache restores are written during the run, so they count.
+	rp, out, code = javaRun(t, javaRepo(t, map[string]string{"build.gradle": javaTestGradle}), "java-test", map[string][]response{"gradle": {javaTestCached}}, home)
+	sees(t, out, code, 0, "All 1 checks passed")
+	if !rp.called("gradle", "--build-cache") {
+		t.Errorf("gradle calls = %q, want --build-cache", rp.calls("gradle"))
+	}
+	// Gradle reads any value but true as off, from the build or the user home.
+	user := t.TempDir()
+	mustDo(t, os.WriteFile(filepath.Join(user, "gradle.properties"), []byte("org.gradle.caching=False\n"), 0o644))
+	javaTestUncached(t, "org.gradle.caching = no\n", gradle, home)
+	javaTestUncached(t, "org.gradle.caching=true\n", gradle, "GRADLE_USER_HOME="+user)
+}
+
+// javaTestUncached asserts a Gradle build with props in its
+// gradle.properties, run with env, reruns its tests without the build
+// cache.
+func javaTestUncached(t *testing.T, props string, gradle response, env string) {
+	t.Helper()
+	repo := javaRepo(t, map[string]string{"build.gradle": javaTestGradle, "gradle.properties": props})
+	rp, out, code := javaRun(t, repo, "java-test", map[string][]response{"gradle": {gradle}}, env)
+	sees(t, out, code, 0, "All 1 checks passed")
+	if !rp.called("gradle", "cleanTest test") || rp.called("gradle", "--build-cache") {
+		t.Errorf("gradle calls = %q, want the tests run without --build-cache", rp.calls("gradle"))
+	}
 }
