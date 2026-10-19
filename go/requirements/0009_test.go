@@ -74,6 +74,13 @@ func Test0009_3(t *testing.T) {
 	sees(t, out, code, 1, `Commit message: "added some stuff"`)
 }
 
+func Test0009_10(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, nil)
+	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "added some stuff\n\nPlan 63")
+	sees(t, out, code, 1, `Commit message: "added some stuff"`, `plan trailer "Plan 63" must read exactly "Plan #<number>"`)
+}
+
 func Test0009_4(t *testing.T) {
 	t.Parallel()
 	repo, env := hooked(t, nil)

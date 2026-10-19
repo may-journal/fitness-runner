@@ -26,6 +26,7 @@ func (m *Model) Components() Components {
 	for _, s := range m.Sources {
 		c.own(s)
 	}
+	c.index()
 	c.observe()
 	c.prove()
 	c.share()
@@ -40,9 +41,14 @@ type components struct {
 	elements   map[string]Element
 	containers map[string]bool
 	owners     map[string]string
-	refs       []codemodel.Reference
-	edges      map[[2]string]codemodel.Reference
-	order      [][2]string
+	// ownedFiles are the owners' keys, sorted; folderOwners lists each
+	// folder's distinct file owners in that order. index builds both once
+	// every source has its owner.
+	ownedFiles   []string
+	folderOwners map[string][]string
+	refs         []codemodel.Reference
+	edges        map[[2]string]codemodel.Reference
+	order        [][2]string
 }
 
 func newComponents(m *Model) *components {
@@ -126,13 +132,20 @@ func (c *components) pathOwners(p string) []string {
 	if owner, ok := c.owners[p]; ok {
 		return []string{owner}
 	}
-	var owners []string
-	for _, file := range sortedKeys(c.owners) {
-		if path.Dir(file) == p && !contains(owners, c.owners[file]) {
-			owners = append(owners, c.owners[file])
+	return c.folderOwners[p]
+}
+
+// index sorts the owned files once and groups their owners by folder, so a
+// reference to a folder costs one lookup instead of a sort of every file.
+func (c *components) index() {
+	c.ownedFiles = sortedKeys(c.owners)
+	c.folderOwners = map[string][]string{}
+	for _, file := range c.ownedFiles {
+		dir, owner := path.Dir(file), c.owners[file]
+		if !contains(c.folderOwners[dir], owner) {
+			c.folderOwners[dir] = append(c.folderOwners[dir], owner)
 		}
 	}
-	return owners
 }
 
 // observe reads every module's references, in registry order, and fails

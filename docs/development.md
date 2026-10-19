@@ -24,3 +24,5 @@ See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/
 ## Requirement tests
 
 `make requirements` builds the candidate for this host's platform only, then runs the requirement tests against it. Release and CI builds keep all four platforms.
+
+CI splits the tests over two `requirements` jobs per platform with [tests/requirements-shard.sh](../tests/requirements-shard.sh). `sh tests/requirements-shard.sh 1 2` runs the first half against the candidate in `FITNESS_INSTALL`.

@@ -230,11 +230,11 @@ Every workflow here that needs Go uses the local [setup-go-cache](../actions/set
 
 The others restore `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<version>-<hash of go/>`. A miss falls back only to that family, arch, and Go version.
 
-| Family  | Saved by                  | Restored by                         |
-| ------- | ------------------------- | ----------------------------------- |
-| fitness | ci.yml `fitness`          | `fitness`                           |
-| bundle  | distribution.yml `bundle` | `bundle`                            |
-| smoke   | distribution.yml `smoke`  | `smoke`, Release `verify-download`  |
+| Family  | Saved by                  | Restored by                                        |
+| ------- | ------------------------- | -------------------------------------------------- |
+| fitness | ci.yml `fitness`          | `fitness`                                          |
+| bundle  | distribution.yml `bundle` | `bundle`                                           |
+| smoke   | distribution.yml `smoke`  | `smoke`, `requirements`, Release `verify-download` |
 
 Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes that touch Go or GoReleaser files, to save its caches. Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off.
 
