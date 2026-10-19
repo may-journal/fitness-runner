@@ -144,9 +144,14 @@ func passNotice(c Comment, mark string) string {
 
 // notice is the bot's reply already judging c, or nil.
 func (g Client) notice(n int, c Comment) (*Notice, error) {
-	jq := fmt.Sprintf(`.[] | select(.user.login == %q and (.body // "" | contains(%q))) | {id, body}`,
-		BotLogin(), noticePrefix+strconv.FormatInt(c.ID, 10)+":")
-	out, err := g.api("--paginate", "--jq", jq, fmt.Sprintf("%s/%d/comments?per_page=100", c.kind(), n))
+	return g.markedComment(c.kind(), n, noticePrefix+strconv.FormatInt(c.ID, 10)+":")
+}
+
+// markedComment is the bot's first comment on issue or PR n, under kind
+// (issues or pulls), whose body holds prefix, or nil when none does.
+func (g Client) markedComment(kind string, n int, prefix string) (*Notice, error) {
+	jq := fmt.Sprintf(`.[] | select(.user.login == %q and (.body // "" | contains(%q))) | {id, body}`, BotLogin(), prefix)
+	out, err := g.api("--paginate", "--jq", jq, fmt.Sprintf("%s/%d/comments?per_page=100", kind, n))
 	if err != nil {
 		return nil, err
 	}

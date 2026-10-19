@@ -31,6 +31,9 @@ type ghCommand struct {
 	failOnFindings bool
 	// hint ends a run summary with findings, such as how to re-check locally.
 	hint string
+	// describe, when set, reports each target by what the command found
+	// on it, as a notice that never fails the run, instead of by findings.
+	describe func(t target) string
 }
 
 // ghCommands are the GitHub commands, by subcommand name.
@@ -60,6 +63,10 @@ var ghCommands = map[string]ghCommand{
 		checks: CommentChecks,
 		effect: aftereffect.CommentReply, failOnFindings: true,
 		hint: aftereffect.RecheckHint,
+	},
+	"dupe-check": {
+		kind: "issues", targets: dupeTargets,
+		effect: aftereffect.DupeComment, describe: describeDupes,
 	},
 }
 
@@ -129,6 +136,10 @@ func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport
 	if errors.Is(err, aftereffect.ErrIssueGone) {
 		rep.gone(t.Number)
 		return false, nil
+	}
+	if c.describe != nil {
+		rep.note(t.Number, c.describe(t))
+		return false, err
 	}
 	rep.add(t.Number, errs)
 	return len(errs) > 0, err

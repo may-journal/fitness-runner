@@ -85,7 +85,7 @@ func main() {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `comment-check`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -108,6 +108,7 @@ var subcommands = map[string]func(args []string) int{
 	"issue-check":   func([]string) int { return metadata.RunGH("issue-check") },
 	"plan-check":    func([]string) int { return metadata.RunGH("plan-check") },
 	"close-check":   func([]string) int { return metadata.RunGH("close-check") },
+	"dupe-check":    func([]string) int { return metadata.RunGH("dupe-check") },
 	"comment-check": runCommentCheck,
 	"branch-check":  func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
 }
@@ -149,6 +150,7 @@ Usage:
   fitness issue-check      validate an issue by its kind label and comment the result (GitHub Actions)
   fitness plan-check       issue-check for Plan issues only (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
+  fitness dupe-check       note when a new issue resembles an older one (GitHub Actions)
   fitness comment-check --blob <text>
                            judge a drafted comment (- or no arguments reads stdin)
   fitness comment-check    judge issue and PR comments and reply (GitHub Actions)

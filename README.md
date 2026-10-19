@@ -56,6 +56,7 @@ fitness local-branch         # the same meta-check, also included in pre-push
 fitness issue-check          # validate an issue by its kind label, comment and label the result (in GitHub Actions)
 fitness plan-check           # issue-check for Plan issues only (in GitHub Actions)
 fitness close-check          # reopen an issue closed with unchecked items (in GitHub Actions)
+fitness dupe-check           # note when a new issue resembles an older one (in GitHub Actions)
 fitness comment-check --blob - < draft.md  # judge a drafted comment before posting it
 fitness comment-check        # judge new comments, reply once to a failing one (in GitHub Actions)
 ```

@@ -24,6 +24,8 @@ import (
 // Target is one issue or pull request a GitHub command judges, as the
 // Actions event or the API returns it.
 type Target struct {
+	// ID is the issue's database id, which a duplicate close names.
+	ID     int64  `json:"id"`
 	Number int    `json:"number"`
 	Title  string `json:"title"`
 	Body   string `json:"body"`
@@ -49,6 +51,26 @@ type Target struct {
 	EntryFiles *[]FileChange `json:"-"`
 	// Comment is set when the target is one comment on issue or PR Number.
 	Comment *Comment `json:"-"`
+	// State is open or closed, as the event payload and the issue list
+	// spell it.
+	State string `json:"state"`
+	// Parent is the issue's parent issue number, 0 for none, as the issue
+	// list reads it; an event payload never sets it.
+	Parent int `json:"parentNumber"`
+	// Opener is the login that opened the issue, as REST spells it, when the
+	// issue list reads it.
+	Opener string `json:"opener"`
+	// Dupes are the older issues dupe-check found the issue resembles, best
+	// first; CloseDupe closes it as a duplicate of the first.
+	Dupes     []Dupe `json:"-"`
+	CloseDupe bool   `json:"-"`
+}
+
+// Dupe is an older issue a new one resembles, and how alike they read.
+type Dupe struct {
+	ID     int64
+	Number int
+	Score  float64
 }
 
 // FileChange is one file a pull request changes: its path, GitHub's status
