@@ -34,10 +34,6 @@ Source: `go/cmd/fitness/blob.go:43`
     - Given Developer gives no text, selects no blob check, or adds `--all` or a check name
         - When I run fitness `--blob`
             - Then it names the usage error, runs no check, and exits 2
-- 0077.5
-    - Given Developer has a repo config that sets a check time budget or, under external policy, disables a check
-        - When I run fitness `--blob` on a draft text
-            - Then each blob check runs within that budget and the disabled check does not run, as in a normal run
 - 0077.6
     - Given Developer has a text that follows its template, such as a Plan whose steps name issues
         - When I run fitness `--blob` on it (a Plan issue, an Epic, or a PR description) with no `--checks`
@@ -46,3 +42,7 @@ Source: `go/cmd/fitness/blob.go:43`
     - Given Developer has a PR description text whose changelog section is empty or its heading misnamed
         - When I run fitness `--blob` on it with no `--checks`
             - Then pr-structure fails naming the section and it exits 1
+- 0077.9
+    - Given Developer has a repo config that sets a check time budget, or disables a blob check under external policy
+        - When I run fitness `--blob` on a draft text
+            - Then each check keeps that budget and the disabled one does not run, as in a normal run

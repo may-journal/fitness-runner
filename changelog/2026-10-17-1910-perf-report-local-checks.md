@@ -8,4 +8,4 @@ relatedConfigurations: ['../.fitnessrc.json']
 - Feat: fitness: `boxes <report> <page>` draws the report as an HTML page, one box per check sized by runtime, size, or error lines.
 - Feat: fitness: `localChecks` in `.fitnessrc.json` names a repo directory of checks, searched first; external `disabledChecks` turns checks off, in `--blob` runs too.
 - Fix: hooks: commit-msg and pre-push skip a check that external `disabledChecks` turns off, including the Plan gate.
-- Docs: ADR 0009, the check protocol, and the CI guide cover these; requirements 0009.9, 0010.12, 0077.5, 0089, and 0090 prove them.
+- Docs: ADR 0009, the check protocol, and the CI guide cover these; requirements 0009.9, 0010.12, 0077.9, 0089, and 0090 prove them.
