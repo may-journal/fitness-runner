@@ -14,7 +14,7 @@ const kindIssue = "21"
 func judgeKind(t *testing.T, body string, files map[string]string, saved []response) (string, int, replays) {
 	t.Helper()
 	issue := map[string]any{"number": 21, "title": "t", "body": body}
-	return ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, files, saved)
+	return ghRun(t, "issue-check", "issues", bodyEdit(issue), files, saved)
 }
 
 // kindGitHub is the saved GitHub for issue 21 of kind, with no verdict yet,
@@ -102,7 +102,7 @@ func Test0082_4(t *testing.T) {
 	sees(t, out, code, 0, "Passed.")
 }
 
-func Test0082_5(t *testing.T) {
+func Test0082_9(t *testing.T) {
 	t.Parallel()
 	out, code, rp := judgeKind(t, "Something odd happened.", nil, kindGitHub("plan", "question"))
 	sees(t, out, code, 0, "has no issue kind label, so it is not checked.")
@@ -112,11 +112,13 @@ func Test0082_5(t *testing.T) {
 
 	issue := map[string]any{"number": 21, "title": "t", "body": epicBody("1. #22"), "labels": []map[string]string{{"name": "Epic"}}}
 	gone := response{Match: []string{"fitness:issue-check:epic:"}, Stderr: "gh: Could not resolve to an Issue with the number of 21.\n", Exit: 1}
-	out, code, rp = ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, nil, append([]response{gone}, epicGitHub("22")...))
+	out, code, rp = ghRun(t, "issue-check", "issues", bodyEdit(issue), nil, append([]response{gone}, epicGitHub("22")...))
 	sees(t, out, code, 0, "21 no longer exists")
 	if rp.called("gh", "-X POST") || rp.called("gh", "labels: [.labels[].name]") {
 		t.Errorf("want the event's labels used and nothing written to a moved issue, got gh calls %q", rp.calls("gh"))
 	}
+
+	skipsIdle(t, "issue-check", idleEdits("fitness", "fitness-valid", "fitness-invalid"))
 }
 
 func Test0082_6(t *testing.T) {
@@ -133,7 +135,7 @@ func Test0082_7(t *testing.T) {
 	body := planBody("- [ ] Write the tests.")
 	issue := map[string]any{"number": 7, "title": "t", "body": body}
 	saved := planGitHub(planVerdict("✅ Plan looks good.", body), "fitness", "fitness-valid")
-	out, code, rp := ghRun(t, "issue-check", "issues", map[string]any{"action": "edited", "issue": issue}, nil, saved)
+	out, code, rp := ghRun(t, "issue-check", "issues", bodyEdit(issue), nil, saved)
 	sees(t, out, code, 0, "Passed.")
 	if rp.called("gh", "body=") {
 		t.Errorf("want no comment written, got gh calls %q", rp.calls("gh"))

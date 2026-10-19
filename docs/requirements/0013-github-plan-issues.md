@@ -46,7 +46,7 @@ Source: `go/internal/aftereffect/verdict.go:15`
     - Given Developer has a malformed Plan in both the PR and trailer, or from a fork whose PR base exists only upstream
         - When I run fitness branch-check
             - Then it reports the Plan body violation and reads the Plan once
-- 0013.10
-    - Given Developer has a Plan moved to another repo before plan-check reaches it
-        - When plan-check judges it
-            - Then it notes the Plan is gone and exits 0
+- 0013.11
+    - Given Developer has a Plan moved to another repo, one with only its title edited, or one given another label
+        - When plan-check judges each event
+            - Then it notes the Plan is gone or not checked, writes nothing, and exits 0

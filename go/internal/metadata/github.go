@@ -230,7 +230,16 @@ type ghEvent struct {
 	PullRequest *target       `json:"pull_request"`
 	Issue       *target       `json:"issue"`
 	Comment     *eventComment `json:"comment"`
-	Sender      struct {
+	// Changes names the fields an edit changed; Body is nil when the body
+	// stayed as it was.
+	Changes struct {
+		Body *struct{} `json:"body"`
+	} `json:"changes"`
+	// Label is the label a labeled event added.
+	Label *struct {
+		Name string `json:"name"`
+	} `json:"label"`
+	Sender struct {
 		Login string `json:"login"`
 	} `json:"sender"`
 }

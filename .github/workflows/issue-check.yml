@@ -11,6 +11,13 @@ permissions:
 
 jobs:
   issue-check:
+    # An edit that left the body alone, or a verdict label, cannot change a
+    # verdict. A skipped job starts no runner, so it bills nothing; fitness
+    # issue-check skips the same events when run another way.
+    if: >-
+      github.event_name != 'issues' ||
+      ((github.event.action != 'edited' || github.event.changes.body) &&
+      (github.event.action != 'labeled' || !contains(fromJSON('["fitness", "fitness-valid", "fitness-invalid"]'), github.event.label.name)))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Agents edit an Issue in quick bursts; only the newest body needs a verdict.

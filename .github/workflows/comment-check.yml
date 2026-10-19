@@ -14,6 +14,11 @@ permissions:
 
 jobs:
   comment-check:
+    # Skip a known bot's comment before a runner starts, so it bills nothing.
+    # The list is KnownBots in go/internal/metadata/comments.go.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !contains(fromJSON('["github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), github.event.comment.user.login)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.

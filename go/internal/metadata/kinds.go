@@ -116,11 +116,45 @@ func issueTargets(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, e
 	if ev.name == "workflow_dispatch" {
 		return openOfKinds(gh, discoverKinds(b.root))
 	}
+	if why := idleEvent(ev, notVerdictLabel); why != "" {
+		fmt.Println(why)
+		return nil, nil
+	}
 	ts, err := eventTarget(ev.name, "issue", ev.Issue)
 	if err != nil {
 		return nil, err
 	}
 	return ts, eventLabels(&ts[0], gh)
+}
+
+// notVerdictLabel is true for any label but those issue-check keeps.
+func notVerdictLabel(name string) bool { return !aftereffect.IsVerdictLabel(name) }
+
+// idleEvent says why an issues event cannot change a verdict, or "" when it
+// can: an edit that left the body as it was, or a label relevant rejects.
+// The reusable workflows skip the same events at job level, so they start
+// no runner, and a direct run skips them alike.
+func idleEvent(ev ghEvent, relevant func(label string) bool) string {
+	switch {
+	case ev.Issue == nil:
+		return ""
+	case ev.bodyKept():
+		return fmt.Sprintf("#%d was edited without a body change, so it is not checked.", ev.Issue.Number)
+	case ev.addedLabel() != "" && !relevant(ev.addedLabel()):
+		return fmt.Sprintf("#%d gained the %s label, which cannot change its verdict, so it is not checked.", ev.Issue.Number, ev.addedLabel())
+	}
+	return ""
+}
+
+// bodyKept reports whether ev is an edit that left the body as it was.
+func (ev ghEvent) bodyKept() bool { return ev.Action == "edited" && ev.Changes.Body == nil }
+
+// addedLabel is the label a labeled event added, or "" for any other event.
+func (ev ghEvent) addedLabel() string {
+	if ev.Action != "labeled" || ev.Label == nil {
+		return ""
+	}
+	return ev.Label.Name
 }
 
 // eventLabels sets t's labels from its event payload, reading them from
@@ -163,6 +197,10 @@ func openOfKinds(gh aftereffect.Client, kinds map[string]issueKind) ([]target, e
 func planTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, error) {
 	var ts []target
 	var err error
+	if why := idleEvent(ev, func(label string) bool { return label == "Plan" }); why != "" {
+		fmt.Println(why)
+		return nil, nil
+	}
 	if ev.name == "workflow_dispatch" {
 		ts, err = gh.OpenLabeled("Plan")
 	} else {
