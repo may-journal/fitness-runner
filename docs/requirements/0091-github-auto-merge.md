@@ -21,8 +21,8 @@ Source: #506
 - 0091.1
     - Given Developer has a pull request stacked on another pull request's branch
         - When Auto-merge runs on it
-            - Then it passes with a notice naming the base and asks GitHub for nothing
+            - Then it passes with a notice naming both branches and asks GitHub for nothing
 - 0091.2
     - Given Developer has a stacked pull request that GitHub moved onto the default branch after its base merged
-        - When Auto-merge runs on it again
-            - Then it turns on squash auto-merge
+        - When I push to it
+            - Then Auto-merge turns on squash auto-merge

@@ -29,7 +29,7 @@ func step0091(t *testing.T, name string) string {
 // block0091 returns text's leading lines indented at least as deep as its
 // first, with that indentation dropped: a YAML block scalar's content.
 func block0091(text string) string {
-	lines := strings.Split(text, "\n")
+	lines := strings.Split(strings.TrimLeft(text, "\n"), "\n")
 	indent := lines[0][:len(lines[0])-len(strings.TrimLeft(lines[0], " "))]
 	var script []string
 	for _, line := range lines {
@@ -63,7 +63,7 @@ func autoMerge0091(t *testing.T, base string) (replays, string, int) {
 func Test0091_1(t *testing.T) {
 	t.Parallel()
 	rp, out, code := autoMerge0091(t, "photos-grid")
-	sees(t, out, code, 0, "::notice::This PR is stacked on photos-grid", "It turns on once the PR targets main.")
+	sees(t, out, code, 0, "::notice::This PR targets photos-grid, not main", "Push or reopen it once it targets main.")
 	if calls := rp.calls("gh"); len(calls) != 0 {
 		t.Fatalf("a stacked PR asked GitHub for auto-merge: %q", calls)
 	}
