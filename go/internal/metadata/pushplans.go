@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 )
@@ -19,10 +20,20 @@ const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
 
 var approveRe = regexp.MustCompile(`(?i)approve`)
 
-// PushPlans are the Plans one push reads, each once. A nil read is a read
-// that failed.
+// planReadTimeout bounds one Plan read, as local-branch bounds its own.
+const planReadTimeout = 30 * time.Second
+
+// PushPlans are the Plans one push read successfully, each read once. A
+// failed read is not kept, so a later ask tries GitHub again.
 type PushPlans struct {
-	reads map[string]*aftereffect.IssueView
+	reads map[string]aftereffect.IssueView
+}
+
+// handoff is what the gate hands local-branch: its own process ID, which
+// must be local-branch's parent, and the Plans it read.
+type handoff struct {
+	Gate  int        `json:"gate"`
+	Plans []pushPlan `json:"plans"`
 }
 
 // pushPlan is one handed-off read: the issue's repo, number, body and labels.
@@ -35,26 +46,35 @@ type pushPlan struct {
 
 // NewPushPlans starts a push with no Plans read.
 func NewPushPlans() *PushPlans {
-	return &PushPlans{reads: map[string]*aftereffect.IssueView{}}
+	return &PushPlans{reads: map[string]aftereffect.IssueView{}}
 }
 
 // Approved reports whether issue n carries the exact `Plan` label and an
-// approval comment, reading it from GitHub the first time it is asked.
+// approval comment, reading it from GitHub until a read succeeds.
 func (p *PushPlans) Approved(n string) bool {
-	v, seen := p.reads[n]
-	if !seen {
-		if read, err := aftereffect.ViewIssue(context.Background(), n); err == nil {
-			v = &read
-		}
-		p.reads[n] = v
+	v, ok := p.reads[n]
+	if !ok {
+		v, ok = p.read(n)
 	}
-	return v != nil && slices.Contains(v.Labels, "Plan") && slices.ContainsFunc(v.Comments, approveRe.MatchString)
+	return ok && slices.Contains(v.Labels, "Plan") && slices.ContainsFunc(v.Comments, approveRe.MatchString)
+}
+
+// read asks GitHub for issue n and keeps a successful read.
+func (p *PushPlans) read(n string) (aftereffect.IssueView, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), planReadTimeout)
+	defer cancel()
+	v, err := aftereffect.ViewIssue(ctx, n)
+	if err != nil {
+		return v, false
+	}
+	p.reads[n] = v
+	return v, true
 }
 
 // Handoff writes the reads to a file only this user can read or write and
 // names it for local-branch. The returned func removes the file.
 func (p *PushPlans) Handoff() (func(), error) {
-	data, err := json.Marshal(p.plans())
+	data, err := json.Marshal(handoff{Gate: os.Getpid(), Plans: p.plans()})
 	if err != nil {
 		return nil, err
 	}
@@ -80,7 +100,7 @@ func (p *PushPlans) plans() []pushPlan {
 	var plans []pushPlan
 	for n, v := range p.reads {
 		num, err := strconv.Atoi(n)
-		if v != nil && v.Repo() != "" && err == nil {
+		if v.Repo() != "" && err == nil {
 			plans = append(plans, pushPlan{Repo: v.Repo(), Number: num, Body: v.Body, Labels: v.Labels})
 		}
 	}
@@ -88,9 +108,8 @@ func (p *PushPlans) plans() []pushPlan {
 }
 
 // seedPushIssues gives gh the pre-push gate's reads of repo's issues, so
-// local-branch reads none of them again. It trusts only a regular file that
-// no other user can read or write; anything else adds nothing, and the
-// issues are read from GitHub as usual.
+// local-branch reads none of them again. Without a trusted handoff it adds
+// nothing, and the issues are read from GitHub as usual.
 func seedPushIssues(gh aftereffect.Client, repo string) {
 	for _, plan := range handedPlans() {
 		if strings.EqualFold(plan.Repo, repo) {
@@ -99,18 +118,28 @@ func seedPushIssues(gh aftereffect.Client, repo string) {
 	}
 }
 
-// handedPlans reads the gate's handoff file inside pre-push; nil elsewhere.
+// handedPlans reads the gate's handoff inside pre-push. It trusts only a
+// private file written by this process's parent, so a file set up by hand
+// for a plain local-branch run seeds nothing.
 func handedPlans() []pushPlan {
 	path := os.Getenv(pushPlansEnv)
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-push" || !privateFile(path) {
 		return nil
 	}
-	data, err := os.ReadFile(path)
-	var plans []pushPlan
-	if err != nil || json.Unmarshal(data, &plans) != nil {
-		return nil
+	if h := readHandoff(path); h.Gate == os.Getppid() {
+		return h.Plans
 	}
-	return plans
+	return nil
+}
+
+// readHandoff decodes the handoff at path; an unreadable one is empty.
+func readHandoff(path string) handoff {
+	var h handoff
+	data, err := os.ReadFile(path)
+	if err != nil || json.Unmarshal(data, &h) != nil {
+		return handoff{}
+	}
+	return h
 }
 
 // privateFile reports whether path is a regular file no other user can

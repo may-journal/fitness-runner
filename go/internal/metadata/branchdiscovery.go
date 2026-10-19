@@ -37,7 +37,7 @@ func discoverBranchPR(ctx context.Context, root, branch string) (*branchPR, stri
 	var repo string
 	var out []byte
 	var repoErr, pullsErr error
-	if setDefaultRepo(ctx, root) {
+	if !oneUnresolvedRemote(ctx, root) {
 		repo, repoErr = branchRepository(ctx, root)
 		if repoErr == nil {
 			out, pullsErr = branchPulls(ctx, root, "repos/"+repo+query)
@@ -67,11 +67,29 @@ func branchPulls(ctx context.Context, root, path string) ([]byte, error) {
 	return branchOutput(ctx, root, "api", "--paginate", "--jq", filter, path)
 }
 
-// setDefaultRepo reports whether `gh repo set-default` chose a remote. Only
-// then can `gh repo view` select another repo than the {owner}/{repo}
-// placeholders of `gh api`, so the pulls read waits for it.
-func setDefaultRepo(ctx context.Context, root string) bool {
-	return exec.CommandContext(ctx, "git", "-C", root, "config", "--get-regexp", `^remote\..*\.gh-resolved$`).Run() == nil
+// oneUnresolvedRemote reports whether the checkout has exactly one remote and
+// `gh repo set-default` never chose one. Only then do `gh repo view` and the
+// {owner}/{repo} placeholders of `gh api` surely name the same repo, so the
+// pulls read may start before gh repo view answers.
+func oneUnresolvedRemote(ctx context.Context, root string) bool {
+	out, err := exec.CommandContext(ctx, "git", "-C", root, "config", "--get-regexp", `^remote\.`).Output()
+	return err == nil && os.Getenv("GH_REPO") == "" && remoteURLs(string(out)) == 1
+}
+
+// remoteURLs counts the remote URLs in `git config --get-regexp` output, or
+// returns -1 when a remote carries a gh-resolved choice.
+func remoteURLs(config string) int {
+	urls := 0
+	for _, line := range strings.Split(config, "\n") {
+		key, _, _ := strings.Cut(line, " ")
+		if strings.HasSuffix(key, ".gh-resolved") {
+			return -1
+		}
+		if strings.HasSuffix(key, ".url") {
+			urls++
+		}
+	}
+	return urls
 }
 
 func currentBranch(ctx context.Context, root string) (string, error) {

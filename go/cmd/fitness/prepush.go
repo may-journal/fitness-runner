@@ -49,12 +49,10 @@ func checkPushedBranches(updates []string) int {
 		fmt.Fprintln(os.Stderr, "pre-push:", err)
 		return 1
 	}
-	cleanup, err := planReads.Handoff()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "pre-push:", err)
-		return 1
+	// The handoff only saves reads, so local-branch reads from GitHub without it.
+	if cleanup, err := planReads.Handoff(); err == nil {
+		defer cleanup()
 	}
-	defer cleanup()
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
 	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
 	return run([]string{"local-branch"})
@@ -69,10 +67,14 @@ func checkRefUpdate(line string) int {
 		return 0
 	}
 	commits := commitsOf(f[1], f[3])
-	if len(commits) == 0 || allChoreDocs(commits) {
+	if len(commits) == 0 {
 		return 0
 	}
-	return checkPlanApproval(planCandidates(commits, f[1]))
+	subjects, messages := readCommits(commits)
+	if allChoreDocsSubjects(subjects) {
+		return 0
+	}
+	return checkPlanApproval(planCandidates(messages, f[1]))
 }
 
 // commitsOf lists the commits a ref update pushes: those not already on origin.
@@ -90,14 +92,9 @@ func commitsOf(local, remote string) []string {
 	return strings.Fields(string(out))
 }
 
-// allChoreDocs reports whether every pushed commit is a chore, docs, or merge
-// commit. A merge is exempt because the commits it brings in are gated on their
-// own.
-func allChoreDocs(commits []string) bool {
-	return allChoreDocsSubjects(commitSubjects(commits))
-}
-
-// allChoreDocsSubjects is the pure classifier over commit subjects.
+// allChoreDocsSubjects reports whether every pushed commit is a chore, docs,
+// or merge commit. A merge is exempt because the commits it brings in are
+// gated on their own.
 func allChoreDocsSubjects(subjects []string) bool {
 	for _, s := range subjects {
 		if !strings.HasPrefix(s, "chore") && !strings.HasPrefix(s, "docs") && !strings.HasPrefix(s, "Merge ") {
@@ -107,19 +104,24 @@ func allChoreDocsSubjects(subjects []string) bool {
 	return true
 }
 
-// commitSubjects returns each commit's subject line, in order, from one git
-// run. A commit git cannot read gets an empty subject, which is never exempt.
-func commitSubjects(commits []string) []string {
+// readCommits returns each commit's subject line, in order, and all their
+// messages, from one git run. A commit git cannot read gets an empty
+// subject, which is never exempt.
+func readCommits(commits []string) ([]string, string) {
 	byHash := map[string]string{}
-	for _, line := range strings.Split(logCommits(commits, "%H %s"), "\n") {
-		hash, subject, _ := strings.Cut(line, " ")
-		byHash[hash] = strings.TrimSpace(subject)
+	var messages strings.Builder
+	for _, record := range strings.Split(logCommits(commits, "%H%x1f%s%x1f%B%x1e"), "\x1e") {
+		f := strings.SplitN(strings.TrimLeft(record, "\n"), "\x1f", 3)
+		if len(f) == 3 {
+			byHash[f[0]] = strings.TrimSpace(f[1])
+			messages.WriteString(f[2] + "\n")
+		}
 	}
 	subjects := make([]string, len(commits))
 	for i, c := range commits {
 		subjects[i] = byHash[c]
 	}
-	return subjects
+	return subjects, messages.String()
 }
 
 // logCommits formats exactly the given commits, in order, in one git run.
@@ -136,9 +138,9 @@ func logCommits(commits []string, format string) string {
 }
 
 // planCandidates returns the Plan numbers a push may trace to: those in the
-// pushed commits, else those anywhere on the branch.
-func planCandidates(commits []string, local string) []string {
-	if plans := planRefs(commits); len(plans) > 0 {
+// pushed commits' messages, else those anywhere on the branch.
+func planCandidates(messages, local string) []string {
+	if plans := gitx.PlanNumbers(messages); len(plans) > 0 {
 		return plans
 	}
 	return planRefs(gitx.BranchCommits(".", local, gitx.DefaultBase(".")))
