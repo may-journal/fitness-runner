@@ -179,6 +179,7 @@ func run(argv []string) int {
 	checks = commitChecks(checks)
 	tracked, removeTracked := shareTrackedFiles(root, checks)
 	defer removeTracked()
+	defer stopOnInterrupt(removeTracked)()
 	env = append(env, tracked...)
 
 	start := time.Now()
@@ -460,29 +461,73 @@ func waitDescribe(cmd *exec.Cmd) (ok, overran bool) {
 // shareTrackedFiles lists tracked files once for a run of several checks,
 // returning the env entry that hands the list over and a cleanup. A run of
 // one check gains nothing, so that check lists its own, as the commit-msg
-// hook's single-check runs do. The list's file is removed on an interrupt
-// too, before the signal ends the run as it would have.
+// hook's single-check runs do.
 func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup func()) {
 	if len(checks) < 2 {
 		return nil, func() {}
 	}
-	env, remove := walkfs.ShareTracked(root)
+	return walkfs.ShareTracked(root)
+}
+
+// running holds the process group of every check still running, so an
+// interrupt can stop them with the runner.
+var running = struct {
+	sync.Mutex
+	pids map[int]bool
+}{pids: map[int]bool{}}
+
+// trackRunning records a started check's process group until the returned
+// func runs.
+func trackRunning(pid int) (done func()) {
+	running.Lock()
+	running.pids[pid] = true
+	running.Unlock()
+	return func() {
+		running.Lock()
+		delete(running.pids, pid)
+		running.Unlock()
+	}
+}
+
+// signalRunning passes sig to every running check's process group.
+func signalRunning(sig syscall.Signal) {
+	running.Lock()
+	defer running.Unlock()
+	for pid := range running.pids {
+		killGroup(pid, sig)
+	}
+}
+
+// stopOnInterrupt makes an interrupt, hangup, or terminate signal pass to
+// the running checks and run cleanup, then end the run as the signal would
+// have. A signal the runner was started with ignored stays ignored. The
+// returned func stops listening.
+func stopOnInterrupt(cleanup func()) (stop func()) {
+	var caught []os.Signal
+	for _, s := range []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP} {
+		if !signal.Ignored(s) {
+			caught = append(caught, s)
+		}
+	}
+	if len(caught) == 0 {
+		return func() {}
+	}
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
+	signal.Notify(sigs, caught...)
 	done := make(chan struct{})
 	go func() {
 		select {
 		case sig := <-sigs:
-			remove()
+			signalRunning(sig.(syscall.Signal))
+			cleanup()
 			signal.Reset(sig)
 			_ = syscall.Kill(os.Getpid(), sig.(syscall.Signal))
 		case <-done:
 		}
 	}()
-	return env, func() {
+	return func() {
 		signal.Stop(sigs)
 		close(done)
-		remove()
 	}
 }
 
@@ -493,7 +538,9 @@ func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup fu
 func contextEnv(root string, checks []resolved, all bool) []string {
 	env := withoutVar(withoutVar(os.Environ(), "FITNESS_CHANGED_FILES"), walkfs.TrackedFilesEnv)
 	staged := gitx.StagedFiles(root)
-	env = append(env, "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
+	// A check's `git status` would otherwise refresh and rewrite the index,
+	// which voids the shared tracked-file list for every later check.
+	env = append(env, "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
 	if changed := changedScope(root, all, staged); len(changed) > 0 {
 		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
 	}
@@ -592,6 +639,7 @@ func runOne(root string, c resolved, passthrough, env []string) outcome {
 	if err := cmd.Start(); err != nil {
 		return outcome{startErr: err.Error()}
 	}
+	defer trackRunning(cmd.Process.Pid)()
 	timedOut := waitWithBudget(cmd, timeoutFor(c))
 	ms := time.Since(start).Milliseconds()
 

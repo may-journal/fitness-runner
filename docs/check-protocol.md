@@ -71,7 +71,7 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 
 File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A file `walkfs.ScanFiles` cannot read is skipped and named as info, and the other files are still judged. A config setting `ignore`, `skipTheseDirectories`, `disabledChecks`, or `proseBudget.exempt` fails.
 
-A run of several checks lists tracked files once, in a temporary file that `FITNESS_TRACKED_FILES` names. The file holds the root, the index path and its stamp, then each `git ls-files --cached` path. Every entry is NUL-terminated, and an interrupted run still removes the file.
+A run of several checks lists tracked files once, in a temporary file that `FITNESS_TRACKED_FILES` names. The file holds the root, the index path and its stamp, then each `git ls-files --cached` path. Every entry is NUL-terminated, and an interrupted run stops its checks and removes the file. Checks run with `GIT_OPTIONAL_LOCKS=0`, so their own `git status` never rewrites the index.
 
 A check uses the list only when its root matches `--root` and the index stamp is unchanged. Otherwise, as when run alone or outside git, it lists its own files. Each check process lists a root at most once. It asks `check-attr` about each file's `linguist-generated` mark at most once, batching the files of each walk.
 

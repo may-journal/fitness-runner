@@ -44,12 +44,11 @@ var generatedMemo = struct {
 // When git fails, the answers already known still count.
 func generatedSet(root string, files []string) map[string]bool {
 	key := filepath.Clean(root)
+	var answers map[string]bool
 	if ask := unasked(key, files); len(ask) > 0 {
-		if answers, ok := askGenerated(root, ask); ok {
-			remember(key, answers)
-		}
+		answers = askGenerated(root, ask)
 	}
-	return knownAmong(key, files)
+	return rememberAmong(key, answers, files)
 }
 
 // unasked lists the files root has no answer for yet.
@@ -66,8 +65,9 @@ func unasked(root string, files []string) []string {
 	return ask
 }
 
-// remember stores git's answers for root.
-func remember(root string, answers map[string]bool) {
+// rememberAmong stores git's answers for root, if any, and returns the set
+// of files that root's known answers mark generated, under one lock.
+func rememberAmong(root string, answers map[string]bool, files []string) map[string]bool {
 	generatedMemo.Lock()
 	defer generatedMemo.Unlock()
 	known := generatedMemo.roots[root]
@@ -78,13 +78,6 @@ func remember(root string, answers map[string]bool) {
 	for f, on := range answers {
 		known[f] = on
 	}
-}
-
-// knownAmong is the set of files root's known answers mark generated.
-func knownAmong(root string, files []string) map[string]bool {
-	generatedMemo.Lock()
-	defer generatedMemo.Unlock()
-	known := generatedMemo.roots[root]
 	set := make(map[string]bool)
 	for _, f := range files {
 		if known[f] {
@@ -95,20 +88,20 @@ func knownAmong(root string, files []string) map[string]bool {
 }
 
 // askGenerated runs `git check-attr` on files and returns an answer for
-// each, reporting whether git answered.
-func askGenerated(root string, files []string) (map[string]bool, bool) {
+// each, or nil when git fails.
+func askGenerated(root string, files []string) map[string]bool {
 	cmd := exec.Command("git", "-C", root, "check-attr", "-z", "--stdin", generatedAttr)
 	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
 	out, err := cmd.Output()
 	if err != nil {
-		return nil, false
+		return nil
 	}
 	set := parseCheckAttr(out)
 	answers := make(map[string]bool, len(files))
 	for _, f := range files {
 		answers[f] = set[f]
 	}
-	return answers, true
+	return answers
 }
 
 // parseCheckAttr reads `git check-attr -z` output — path, attribute, value

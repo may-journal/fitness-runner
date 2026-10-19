@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall"
 )
 
 // TrackedFilesEnv names the variable through which the runner hands every
@@ -113,26 +114,27 @@ func trackedSnapshot(root string) ([]byte, bool) {
 // indexPath is the absolute path of root's git index, which
 // `git ls-files --cached` reads.
 func indexPath(root string) (string, bool) {
-	out, err := exec.Command("git", "-C", root, "rev-parse", "--git-path", "index").Output()
+	out, err := exec.Command("git", "-C", root, "rev-parse", "--path-format=absolute", "--git-path", "index").Output()
 	if err != nil {
 		return "", false
 	}
-	path := strings.TrimSpace(string(out))
-	if !filepath.IsAbs(path) {
-		path = filepath.Join(root, path)
-	}
-	return path, true
+	return strings.TrimSpace(string(out)), true
 }
 
-// indexStamp names the index's current version by its modification time
-// in nanoseconds and its size. Git replaces the index file on every write,
-// so a changed index gets a new stamp.
+// indexStamp names the index's current version by its inode, modification
+// time in nanoseconds, and size. Git writes a new index file and renames it
+// into place, so even a same-size rewrite within one mtime tick gets a new
+// inode and a new stamp.
 func indexStamp(index string) (string, bool) {
 	info, err := os.Stat(index)
 	if err != nil {
 		return "", false
 	}
-	return fmt.Sprintf("%d:%d", info.ModTime().UnixNano(), info.Size()), true
+	var inode uint64
+	if st, ok := info.Sys().(*syscall.Stat_t); ok {
+		inode = st.Ino
+	}
+	return fmt.Sprintf("%d:%d:%d", inode, info.ModTime().UnixNano(), info.Size()), true
 }
 
 // encodeTracked is the shared file's content: the header entries (root,

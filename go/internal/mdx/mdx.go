@@ -329,11 +329,10 @@ func isProseBreak(trimmed, orig string) bool {
 func (e *proseExtractor) consume(t string) {
 	if item, ok := ListItem(t); ok {
 		e.flush()
-		t = item
+		e.buf = append(e.buf, strings.TrimPrefix(item, "> "))
+		return
 	}
-	t = strings.TrimPrefix(t, "> ")
-	t = checkboxRe.ReplaceAllString(t, "")
-	e.buf = append(e.buf, t)
+	e.buf = append(e.buf, checkboxRe.ReplaceAllString(strings.TrimPrefix(t, "> "), ""))
 }
 
 // flush closes the current unit, adding terminal punctuation when missing.

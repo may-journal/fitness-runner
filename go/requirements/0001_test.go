@@ -92,6 +92,28 @@ func Test0001_14(t *testing.T) {
 		}
 		childStopped(t, repo)
 	}
+	out, code := ownBudget(t)
+	sees(t, out, code, 1, "Check timed out after 0.3s")
+	if !strings.Contains(row(out, "own-budget"), "failed") {
+		t.Errorf("a check past the budget it declares must report red, got row %q", row(out, "own-budget"))
+	}
+}
+
+// ownBudget runs, beside the installed checks, one that declares a 0.3s
+// budget in --describe and then hangs, and returns the output and exit code.
+func ownBudget(t *testing.T) (string, int) {
+	t.Helper()
+	installed, bundle := installOnly(t), t.TempDir()
+	linkTools(bundle, installed, []string{"fitness"})
+	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
+	write(t, bundle, map[string]string{"fitness-check-own-budget": "#!/bin/sh\n" +
+		"[ \"$1\" = --describe ] && { echo '{\"name\":\"own-budget\",\"timeoutMs\":300}'; exit 0; }\nexec /bin/sleep 30\n"})
+	repo := example(t, "happyRepo", nil)
+	return execute(t, func() *exec.Cmd {
+		cmd := exec.Command(filepath.Join(bundle, "fitness"), "--policy=external", "--checks=own-budget,markdown-links")
+		cmd.Dir, cmd.Env = repo, userEnv()
+		return cmd
+	})
 }
 
 func Test0001_15(t *testing.T) {
@@ -100,7 +122,7 @@ func Test0001_15(t *testing.T) {
 	path, calls := loggedGit(t)
 	out, code := fitness(t, repo, []string{path})
 	sees(t, out, code, 0, allPassed())
-	if n := countLines(calls, "ls-files -z --cached"); n != 1 {
+	if n := occurrences(calls, "ls-files -z --cached"); n != 1 {
 		t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
 	}
 }
@@ -117,8 +139,8 @@ func loggedGit(t *testing.T) (path, calls string) {
 	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), calls
 }
 
-// countLines counts the lines of the file at path that hold want.
-func countLines(path, want string) int {
+// occurrences counts how often want appears in the file at path.
+func occurrences(path, want string) int {
 	raw, _ := os.ReadFile(path)
 	return strings.Count(string(raw), want)
 }

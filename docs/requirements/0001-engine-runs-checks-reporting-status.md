@@ -35,7 +35,7 @@ Source: `go/cmd/fitness/ci.go:22`
         - When fitness runs
             - Then they overlap, the longest budget starts first, and the table keeps catalog order
 - 0001.14
-    - Given Developer has a check past its budget, set by the check or by timeoutMs in the fitness config
+    - Given Developer has a check past the budget it declares, or one set by timeoutMs in the fitness config
         - When fitness runs
             - Then it and its child processes stop, or are killed if they ignore the stop, and it shows red as timed out
 - 0001.15
