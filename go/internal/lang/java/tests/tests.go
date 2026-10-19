@@ -10,9 +10,10 @@
 //
 // Only reports written during the run count, so a stale report never
 // passes. Gradle reruns the test and report tasks even when it holds them
-// up to date. Gradle runs only the test task, so another test task counts
-// when the test or report task depends on it. A failing test is reported before coverage, since a failed
-// run's coverage says little.
+// up to date, restoring unchanged ones from its build cache. Gradle runs
+// only the test task, so another test task counts when the test or report
+// task depends on it. A failing test is reported before coverage, since a
+// failed run's coverage says little.
 //
 // Requirements finds the tests named for requirement acceptances, which
 // the requirements check reads.
@@ -33,6 +34,10 @@ import (
 // aggregationRe marks a Gradle build that applies JaCoCo report
 // aggregation, whose report task joins every project's coverage.
 var aggregationRe = regexp.MustCompile(`["'\x60]jacoco-report-aggregation["'\x60]`)
+
+// cachingProperty is the Gradle property that turns the build cache on
+// or off.
+const cachingProperty = "org.gradle.caching"
 
 // Run runs and judges the tests of the repo at root.
 func Run(root string, _ []string) (checkkit.Result, error) {
@@ -73,13 +78,19 @@ func mavenArgs(string, java.Project) []string {
 // aggregate one when the build applies aggregation, and goes on past a
 // failing task. Each task's clean rule deletes its outputs first, so the
 // task runs again on any Gradle version, where the --rerun option needs
-// Gradle 7.6.
+// Gradle 7.6. The build cache then restores the outputs of tests whose
+// inputs are unchanged, written afresh, instead of running them again,
+// unless the build turns caching off.
 func gradleArgs(root string, p java.Project) []string {
 	report := "jacocoTestReport"
 	if java.Declares(root, p, aggregationRe) {
 		report = "testCodeCoverageReport"
 	}
-	return []string{"cleanTest", "test", "clean" + strings.ToUpper(report[:1]) + report[1:], report, "--continue"}
+	args := []string{"cleanTest", "test", "clean" + strings.ToUpper(report[:1]) + report[1:], report, "--continue"}
+	if !strings.EqualFold(strings.TrimSpace(java.GradleProperties(root, p)[cachingProperty]), "false") {
+		args = append(args, "--build-cache")
+	}
+	return args
 }
 
 // judge names each failing test and each report that does not parse; else

@@ -45,15 +45,15 @@ func javaRepo(t *testing.T, files map[string]string) string {
 
 // javaRun runs `fitness-install -- <check>` on repo with a JDK 21 and the
 // build tools answering saved responses, and JAVA_HOME unset so the JDK on
-// PATH is the one that runs.
-func javaRun(t *testing.T, repo, check string, saved map[string][]response) (replays, string, int) {
+// PATH is the one that runs. env adds to the run's environment.
+func javaRun(t *testing.T, repo, check string, saved map[string][]response, env ...string) (replays, string, int) {
 	t.Helper()
 	all := map[string][]response{"java": {javaJDK}}
 	for name, responses := range saved {
 		all[name] = responses
 	}
 	rp := standIn(t, all)
-	out, code := fitness(t, repo, append(rp.env, "JAVA_HOME="), check)
+	out, code := fitness(t, repo, append(append(rp.env, "JAVA_HOME="), env...), check)
 	return rp, out, code
 }
 

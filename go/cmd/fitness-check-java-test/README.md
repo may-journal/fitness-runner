@@ -12,6 +12,8 @@ Runs Java tests once from each build root, then judges their results and their [
 
 - Maven runs `verify` past failing tests, so Surefire, Failsafe and the JaCoCo reports bound there all run.
 - Gradle cleans and reruns `test` and `jacocoTestReport`, or `testCodeCoverageReport` under report aggregation. Another test task counts when one of those depends on it.
+- Gradle adds `--build-cache`, so unchanged tests and reports are restored, not rerun. Failed tests are never cached.
+- `org.gradle.caching=false` in `gradle.properties` turns the cache off.
 - The [Java module](../../internal/lang/java/java.go) says what a build root is and which wrapper or tool runs it.
 - No Maven or Gradle build in the repo: passes clean with `filesChecked: 0`.
 - A Java repo with no running JDK fails with an install hint.

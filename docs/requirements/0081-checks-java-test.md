@@ -24,10 +24,6 @@ Source: `go/internal/lang/java/tests/tests.go:80`
     - Given Developer has a build whose tests fail
         - When fitness runs java-test
             - Then it fails naming each failing test and its message
-- 0081.2
-    - Given Developer has passing unit and integration tests with full coverage
-        - When fitness runs java-test
-            - Then it passes
 - 0081.3
     - Given Developer has a coverage report below the goal
         - When fitness runs java-test
@@ -52,3 +48,7 @@ Source: `go/internal/lang/java/tests/tests.go:80`
     - Given Developer has a repo with no Maven or Gradle build
         - When fitness runs java-test
             - Then it passes with zero files
+- 0081.9
+    - Given Developer has passing unit and integration tests with full coverage
+        - When fitness runs java-test
+            - Then it passes, and Gradle restores unchanged tests from its build cache unless `gradle.properties` turns caching off
