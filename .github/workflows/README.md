@@ -240,8 +240,8 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 ## auto-merge
 
-[auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.
-
-may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it.
+[auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`. The org syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo so drafts marked ready get it.
 
 The job skips, billing nothing, unless the PR is open, ready, and has no auto-merge yet. So a push to a PR that already has it starts no runner.
+
+GitHub does not support auto-merge for native stacked pull requests. The job reports this case as a successful check without requesting auto-merge; review and merge the stack through GitHub or its merge queue. The workflow recognizes stack membership from `github.event.pull_request.stack`.

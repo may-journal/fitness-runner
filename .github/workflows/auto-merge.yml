@@ -35,7 +35,13 @@ jobs:
       group: auto-merge-${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
+      - name: Explain stacked pull request merge
+        if: ${{ github.event.pull_request.stack }}
+        run: |
+          echo 'GitHub does not support auto-merge for stacked pull requests.'
+          echo 'Review the stack, then merge it through GitHub or its merge queue.'
       - name: Check the App secrets
+        if: ${{ !github.event.pull_request.stack }}
         id: report-step-1
         env:
           APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
@@ -49,12 +55,14 @@ jobs:
             fi
           done
       - name: Mint a one-hour App token
+        if: ${{ !github.event.pull_request.stack }}
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
       - name: Enable squash auto-merge
+        if: ${{ !github.event.pull_request.stack }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR_URL: ${{ github.event.pull_request.html_url }}
