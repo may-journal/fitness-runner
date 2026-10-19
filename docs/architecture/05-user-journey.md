@@ -48,7 +48,7 @@ flowchart TB
     runComment(31 Check a draft comment<br/>Req 0083):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0003, 0090)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001)]:::system
 
@@ -74,6 +74,7 @@ flowchart TB
     ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082, 0087)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091)]:::system
     release[(28 Release build<br/>Req 0062)]:::system
+    perfRecord[(32 Performance record<br/>Req 0089)]:::system
 
     dev --> install
     install --> terminal
@@ -101,6 +102,8 @@ flowchart TB
     ciRun --> resolveConfig
     ciRun --> prCheck
     ciRun --> release
+    resultsTable --> perfRecord
+    release --> perfRecord
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
     classDef screen fill:#f8fafc,stroke:#64748b,color:#1e293b,stroke-width:2px
@@ -119,7 +122,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 2   | Terminal / shell.                   | Screen  | Repo root; the working directory is the app under test, not the runner's own source.  |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
 | 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
-| 5   | Resolve check list.                 | System  | Every built-in check; checks that do not apply pass clean.                            |
+| 5   | Resolve check list.                 | System  | Every built-in check, then the repo's local checks; checks that do not apply pass.    |
 | 6   | Passthrough args forwarded.         | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).      |
 | 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
 | 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |
@@ -146,3 +149,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
 | 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
 | 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |
+| 32  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |

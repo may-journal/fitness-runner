@@ -9,11 +9,19 @@ import (
 	"strings"
 )
 
+// prepareSmoke readies a smoke run in work, sharing FITNESS_CACHE_DIR when
+// it is set.
 func prepareSmoke(work string) (smoke, error) {
-	test := smoke{work: work, tools: filepath.Join(work, "tools"), cache: filepath.Join(work, "cache"), repo: filepath.Join(work, "repo"), installer: filepath.Join(work, installerName)}
-	if cache := os.Getenv("FITNESS_CACHE_DIR"); cache != "" {
-		test.cache = cache
+	cache := filepath.Join(work, "cache")
+	if shared := os.Getenv("FITNESS_CACHE_DIR"); shared != "" {
+		cache = shared
 	}
+	return prepareSmokeWith(work, cache)
+}
+
+// prepareSmokeWith readies a smoke run in work that installs into cache.
+func prepareSmokeWith(work, cache string) (smoke, error) {
+	test := smoke{work: work, tools: filepath.Join(work, "tools"), cache: cache, repo: filepath.Join(work, "repo"), installer: filepath.Join(work, installerName)}
 	if tools := os.Getenv("FITNESS_TEST_TOOL_PATH"); tools != "" {
 		test.tools = tools
 	}

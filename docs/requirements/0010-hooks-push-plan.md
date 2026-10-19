@@ -42,3 +42,7 @@ Source: `go/cmd/fitness/hook.go:26`
     - Given Developer has several feature commits naming one approved Plan
         - When I push them
             - Then the hook asks GitHub about that Plan once
+- 0010.12
+    - Given Developer has external policy with plan-trailer and local-branch in disabledChecks
+        - When I push a feature commit that names no Plan
+            - Then the push goes through

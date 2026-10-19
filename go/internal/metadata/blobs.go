@@ -33,6 +33,15 @@ var docChecks = []string{
 // target is one issue or PR a GitHub command judges.
 type target = aftereffect.Target
 
+// RepoChecks applies a repo's own check settings to the GitHub commands:
+// Find returns a check's program and Off names a check the repo turns off.
+// The fitness command sets it from .fitnessrc.json before RunGH; left zero,
+// every check is the bundled one.
+var RepoChecks struct {
+	Find func(name string) (string, error)
+	Off  func(name string) bool
+}
+
 // blobChecker runs installed check binaries on a GitHub blob, an issue or PR
 // body, saved to a file the checks read with --body-file.
 type blobChecker struct{ root string }
@@ -46,6 +55,9 @@ func (b blobChecker) judge(checks []string, body string) []string {
 	defer os.Remove(file)
 	var errs []string
 	for _, name := range checks {
+		if RepoChecks.Off != nil && RepoChecks.Off(name) {
+			continue
+		}
 		errs = append(errs, b.errorsOf(name, "--root", b.root, "--body-file", file)...)
 	}
 	return errs
@@ -77,7 +89,11 @@ func (b blobChecker) closedIssues(body string) []int {
 // execCheck runs fitness-check-<name> and returns its stdout. A failing check
 // still prints its JSON result, so a non-zero exit is not an error here.
 func execCheck(name string, args []string) []byte {
-	bin, err := checkkit.Binary(name)
+	find := checkkit.Binary
+	if RepoChecks.Find != nil {
+		find = RepoChecks.Find
+	}
+	bin, err := find(name)
 	if err != nil {
 		return nil
 	}

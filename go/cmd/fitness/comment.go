@@ -21,7 +21,7 @@ func runCommentCheck(args []string) int {
 		return draftCheck(args)
 	}
 	if os.Getenv("GITHUB_EVENT_NAME") != "" {
-		return metadata.RunGH("comment-check")
+		return runGH("comment-check")
 	}
 	return run([]string{blobFlag, "-", commentChecks})
 }

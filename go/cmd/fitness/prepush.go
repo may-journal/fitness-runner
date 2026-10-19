@@ -23,11 +23,12 @@ var planReads = metadata.NewPushPlans()
 // Plan once per branch (issue-link-once), so the Plan may be named by an
 // earlier branch commit instead of a pushed commit.
 func hookPrePush() int {
+	gated := !disabledCheck("plan-trailer")
 	s := bufio.NewScanner(os.Stdin)
 	var updates []string
 	for s.Scan() {
 		updates = append(updates, s.Text())
-		if code := checkRefUpdate(s.Text()); code != 0 {
+		if code := gateRef(gated, s.Text()); code != 0 {
 			return code
 		}
 	}
@@ -41,7 +42,7 @@ func hookPrePush() int {
 // checkPushedBranches runs one meta-check over the actual pushed destinations.
 func checkPushedBranches(updates []string) int {
 	branches := gitx.PushedBranches(updates)
-	if len(branches) == 0 {
+	if len(branches) == 0 || disabledCheck("local-branch") {
 		return 0
 	}
 	data, err := json.Marshal(branches)
@@ -56,6 +57,22 @@ func checkPushedBranches(updates []string) int {
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
 	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
 	return run([]string{"local-branch"})
+}
+
+// gateRef applies the Plan gate to one ref update, unless external
+// disabledChecks turned plan-trailer off: the gate enforces that trailer.
+func gateRef(gated bool, line string) int {
+	if !gated {
+		return 0
+	}
+	return checkRefUpdate(line)
+}
+
+// disabledCheck reports whether the repo's external disabledChecks names
+// name, so a hook skips it.
+func disabledCheck(name string) bool {
+	cfg, err := loadConfig(".")
+	return err == nil && turnedOff(cfg, name)
 }
 
 // checkRefUpdate gates one "local_ref local_sha remote_ref remote_sha" line: a

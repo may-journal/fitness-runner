@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fitness checks by cost</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface: #fcfcfb;
+  --box: #f0efec;
+  --box-hover: #e4e3df;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --rule: #d6d5d0;
+  --good: #0ca30c;
+  --critical: #d03b3b;
+  --focus: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --box: #2a2a28;
+    --box-hover: #383835;
+    --ink: #ffffff;
+    --ink-2: #c3c2b7;
+    --rule: #45443f;
+    --focus: #3987e5;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; padding: 24px; background: var(--surface); color: var(--ink); font: 14px/1.4 system-ui, sans-serif; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+.intro { color: var(--ink-2); margin: 0 0 16px; }
+fieldset { border: 0; padding: 0; margin: 0 0 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+legend { float: left; margin-right: 8px; color: var(--ink-2); }
+fieldset label { padding: 4px 12px; border: 1px solid var(--rule); border-radius: 999px; cursor: pointer; }
+.measure { position: absolute; opacity: 0; }
+#by-time:focus-visible ~ fieldset label[for=by-time],
+#by-size:focus-visible ~ fieldset label[for=by-size],
+#by-errors:focus-visible ~ fieldset label[for=by-errors] { outline: 2px solid var(--focus); outline-offset: 2px; }
+#by-time:checked ~ fieldset label[for=by-time],
+#by-size:checked ~ fieldset label[for=by-size],
+#by-errors:checked ~ fieldset label[for=by-errors] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.view { display: none; }
+#by-time:checked ~ .view-time,
+#by-size:checked ~ .view-size,
+#by-errors:checked ~ .view-errors { display: block; }
+.key { display: flex; gap: 16px; color: var(--ink-2); margin: 0 0 8px; padding: 0; list-style: none; }
+.key li::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; background: var(--good); }
+.key li.failed::before { background: var(--critical); }
+.diagram { position: relative; width: 100%; aspect-ratio: 16 / 10; list-style: none; margin: 0; padding: 0; }
+.diagram li { position: absolute; padding: 1px; }
+.cell { height: 100%; overflow: hidden; border-radius: 4px; background: var(--box); border-left: 4px solid var(--good); padding: 4px 6px; font-size: 12px; }
+.cell:hover, .cell:focus { background: var(--box-hover); outline: 2px solid var(--focus); outline-offset: -2px; }
+.failed > .cell, .timed-out > .cell { border-left-color: var(--critical); }
+.cell b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cell span { color: var(--ink-2); white-space: nowrap; }
+.hidden-text { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.zero { display: flex; flex-wrap: wrap; gap: 2px; list-style: none; margin: 8px 0 0; padding: 0; }
+.zero li { width: 140px; height: 44px; }
+.zero-note { color: var(--ink-2); margin: 12px 0 0; }
+details { margin-top: 24px; }
+summary { cursor: pointer; }
+table { border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 4px 12px 4px 0; border-bottom: 1px solid var(--rule); }
+td.n, th.n { text-align: right; }
+</style>
+</head>
+<body>
+<main>
+<h1>Fitness checks by cost</h1>
+<p class="intro">{{len .Checks}} checks, {{.Passed}} passed, {{.Failed}} failed, in {{ms .ElapsedMs}}. Runner binary {{bytes .RunnerBytes}}. Each box is one check; its area is its share of the measure chosen below.</p>
+{{range $i, $v := .Views}}<input class="measure" type="radio" name="measure" id="by-{{$v.ID}}"{{if eq $i 0}} checked{{end}}>
+{{end}}<fieldset>
+<legend>Size boxes by</legend>
+{{range .Views}}<label for="by-{{.ID}}">{{.Label}}</label>
+{{end}}</fieldset>
+{{range .Views}}<section class="view view-{{.ID}}" aria-label="Checks sized by {{.Label}}">
+<ul class="key" aria-hidden="true"><li>passed</li><li class="failed">failed or timed out</li></ul>
+<ul class="diagram">
+{{range .Boxes}}<li class="{{if .TimedOut}}timed-out{{else if not .Ok}}failed{{end}}" style="left:{{printf "%.3f" .Left}}%;top:{{printf "%.3f" .Top}}%;width:{{printf "%.3f" .Width}}%;height:{{printf "%.3f" .Height}}%"><div class="cell" tabindex="0" title="{{.Name}}: {{.Value}}, {{.Result}}">{{if .Labeled}}<b>{{.Name}}</b><span>{{.Value}} · {{.Result}}</span>{{else}}<span class="hidden-text">{{.Name}}: {{.Value}}, {{.Result}}</span>{{end}}</div></li>
+{{end}}</ul>
+{{if .Zero}}<p class="zero-note">{{len .Zero}} checks {{.Empty}}:</p>
+<ul class="zero">
+{{range .Zero}}<li class="{{if .TimedOut}}timed-out{{else if not .Ok}}failed{{end}}"><div class="cell" tabindex="0" title="{{.Name}}: {{.Value}}, {{.Result}}"><b>{{.Name}}</b><span>{{.Result}}</span></div></li>
+{{end}}</ul>
+{{end}}</section>
+{{end}}<details>
+<summary>Table of every check</summary>
+<table>
+<thead><tr><th scope="col">Check</th><th scope="col">Result</th><th scope="col" class="n">Runtime</th><th scope="col" class="n">Budget</th><th scope="col" class="n">Binary size</th><th scope="col" class="n">Error lines</th><th scope="col" class="n">Files</th></tr></thead>
+<tbody>
+{{range .Checks}}<tr><th scope="row">{{.Name}}</th><td>{{.Result}}</td><td class="n">{{ms .Ms}}</td><td class="n">{{ms .TimeoutMs}}</td><td class="n">{{bytes .BinaryBytes}}</td><td class="n">{{.ErrorLines}}</td><td class="n">{{if lt .FilesChecked 0}}-{{else}}{{.FilesChecked}}{{end}}</td></tr>
+{{end}}</tbody>
+</table>
+</details>
+</main>
+</body>
+</html>
