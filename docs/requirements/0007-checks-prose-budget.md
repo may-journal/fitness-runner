@@ -14,14 +14,10 @@ docs within every prose limit
 -
 docs checked
 
-Source: `go/cmd/fitness-check-prose-budget/main.go:120`
+Source: `go/cmd/fitness-check-prose-budget/main.go:117`
 
 ## Requirements
 
-- 0007.1
-    - Given Developer has a sentence past its word limit
-        - When prose-budget checks the doc
-            - Then it fails naming the limit
 - 0007.2
     - Given Developer has a section past its word budget
         - When prose-budget checks the doc
@@ -38,10 +34,6 @@ Source: `go/cmd/fitness-check-prose-budget/main.go:120`
     - Given Developer has a list with more items than its level allows
         - When prose-budget checks the doc
             - Then it fails naming the level
-- 0007.6
-    - Given Developer has a paragraph past its sentence limit
-        - When prose-budget checks the doc
-            - Then it fails naming the limit
 - 0007.7
     - Given Developer has long lines inside a fenced code block
         - When prose-budget checks the doc
@@ -50,3 +42,11 @@ Source: `go/cmd/fitness-check-prose-budget/main.go:120`
     - Given Developer has a repo that sets its own proseBudget limits
         - When prose-budget checks the doc
             - Then it judges against those limits
+- 0007.9
+    - Given Developer has a sentence past its word limit, or a paragraph past its sentence limit
+        - When prose-budget checks the doc
+            - Then it fails naming the limit
+- 0007.10
+    - Given Developer has a ticked Plan task within its word limit
+        - When prose-budget checks the Plan
+            - Then it passes, since the box is not a word

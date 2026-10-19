@@ -7,5 +7,5 @@ relatedConfigurations: ['../.fitnessrc.json']
 - Perf: a run of several checks lists tracked files once and shares them through `FITNESS_TRACKED_FILES`, even removing that file on interrupt.
 - Perf: a check uses the shared list only while the git index is unchanged, and asks `check-attr` about each file once.
 - Perf: a file walk tests names against the wanted extensions before reading from disk, and the runner reads staged files once.
-- Fix: prose-budget reads list items through one shared `mdx.ListItem`, so a ticked task box never counts as a word.
+- Fix: prose-budget reads list items through `mdx.ListItem`, so a ticked box is no word, as 0007.10 proves; 0007.1 and 0007.6 fold into 0007.9.
 - Test: requirements 0001.15 and 0001.16 prove the single listing and the fallback; 0001.4 folds into 0001.14 with 0001.8, and 0001.3 into 0001.17 with 0001.11.

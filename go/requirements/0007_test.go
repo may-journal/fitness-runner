@@ -15,10 +15,21 @@ func proseBudget(t *testing.T, files map[string]string, args ...string) (string,
 // longSentence has 30 words, past the 23-word default.
 var longSentence = strings.Repeat("word ", 29) + "end.\n"
 
-func Test0007_1(t *testing.T) {
+func Test0007_9(t *testing.T) {
 	t.Parallel()
 	out, code := proseBudget(t, map[string]string{"README.md": readme + "\n" + longSentence})
 	sees(t, out, code, 1, "README.md: a sentence has 30 words (max 23)")
+	out, code = proseBudget(t, map[string]string{"README.md": readme + "\nOne. Two. Three. Four. Five.\n"})
+	sees(t, out, code, 1, "README.md: a paragraph has 5 sentences (max 4)")
+}
+
+func Test0007_10(t *testing.T) {
+	t.Parallel()
+	// The task holds 23 words, the default limit, so only a counted box
+	// would push it over.
+	task := "- [x] " + strings.Repeat("word ", 22) + "end"
+	out, code := proseBudget(t, map[string]string{"plan.md": planBody(task)}, "--body-file", "plan.md")
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0007_2(t *testing.T) {
@@ -49,12 +60,6 @@ func Test0007_5(t *testing.T) {
 	nested := readme + "\n- Top item\n" + strings.Repeat("    - Child item\n", 5)
 	out, code := proseBudget(t, map[string]string{"README.md": nested})
 	sees(t, out, code, 1, "README.md: a list has more than 4 items at level 2")
-}
-
-func Test0007_6(t *testing.T) {
-	t.Parallel()
-	out, code := proseBudget(t, map[string]string{"README.md": readme + "\nOne. Two. Three. Four. Five.\n"})
-	sees(t, out, code, 1, "README.md: a paragraph has 5 sentences (max 4)")
 }
 
 func Test0007_7(t *testing.T) {
