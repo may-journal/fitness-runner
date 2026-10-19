@@ -136,12 +136,18 @@ func (r replays) calls(name string) []string {
 
 // called reports whether some call to name holds every want.
 func (r replays) called(name string, want ...string) bool {
+	return r.count(name, want...) > 0
+}
+
+// count returns how many calls to name hold every want.
+func (r replays) count(name string, want ...string) int {
+	n := 0
 	for _, c := range r.calls(name) {
 		if matches(c, want) {
-			return true
+			n++
 		}
 	}
-	return false
+	return n
 }
 
 // registry serves saved npm registry answers, package name to response body,

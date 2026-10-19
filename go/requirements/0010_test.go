@@ -8,13 +8,13 @@ import (
 
 // pushPlans are GitHub's saved answers about the issues a trailer may name:
 // #218 is an approved Plan, #151 is a Plan nobody approved, and #196 is a bug.
-var pushPlans = []response{
-	{Match: []string{"issue view 218 ", "labels"}, Stdout: "Plan\n"},
-	{Match: []string{"issue view 218 ", "comments"}, Stdout: "Looks good.\nApproved, go ahead.\n"},
-	{Match: []string{"issue view 151 ", "labels"}, Stdout: "Plan\nenhancement\n"},
-	{Match: []string{"issue view 151 ", "comments"}, Stdout: "Could this reuse the existing parser?\n"},
-	{Match: []string{"issue view 196 ", "labels"}, Stdout: "bug\n"},
-	{Match: []string{"issue view 196 ", "comments"}, Stdout: "Approved.\n"},
+func pushPlans(t *testing.T) []response {
+	t.Helper()
+	return []response{
+		planView(t, 218, planBody("- [ ] Ship it."), []string{"Plan"}, "Looks good.", "Approved, go ahead."),
+		planView(t, 151, planBody("- [ ] Ship it."), []string{"Plan", "enhancement"}, "Could this reuse the existing parser?"),
+		planView(t, 196, "The parser drops the last line.", []string{"bug"}, "Approved."),
+	}
 }
 
 // pushRepo is a hooked repo whose pre-push asks the gh stand-in about Plans.
@@ -22,7 +22,7 @@ var pushPlans = []response{
 func pushRepo(t *testing.T) (string, []string, replays) {
 	t.Helper()
 	repo, hookEnv := hooked(t, nil)
-	rp := standIn(t, map[string][]response{"gh": pushPlans})
+	rp := standIn(t, map[string][]response{"gh": pushPlans(t)})
 	env := pushEnv(hookEnv, rp)
 	remote(t, repo)
 	if out, code := user(t, repo, env, "push", "-q", "origin", "HEAD:main"); code != 0 {
@@ -60,6 +60,33 @@ func pushAsked(t *testing.T, rp replays, n, field string) {
 	if !rp.called("gh", "issue view "+n+" ", field) {
 		t.Errorf("pre-push never read issue %s's %s; gh calls: %q", n, field, rp.calls("gh"))
 	}
+}
+
+// planReadOnce fails t unless the push asked GitHub about issue n exactly
+// once, through the hook's read or an issue read.
+func planReadOnce(t *testing.T, rp replays, n string) {
+	t.Helper()
+	got := 0
+	for _, call := range rp.calls("gh") {
+		if strings.Contains(call, "issue view "+n+" ") || strings.HasSuffix(call, "/issues/"+n) {
+			got++
+		}
+	}
+	if got != 1 {
+		t.Errorf("want one read of issue %s, got %d; gh calls: %q", n, got, rp.calls("gh"))
+	}
+}
+
+func Test0010_11(t *testing.T) {
+	t.Parallel()
+	repo, env, rp := pushRepo(t)
+	user(t, repo, env, "switch", "-q", "-c", "topic")
+	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "feat(app): start\n\nPlan #218")
+	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "feat(app): continue")
+	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "fix(app): follow up")
+	out, code := user(t, repo, env, "push", "origin", "topic")
+	sees(t, out, code, 0, "topic -> topic")
+	planReadOnce(t, rp, "218")
 }
 
 func Test0010_1(t *testing.T) {

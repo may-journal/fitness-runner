@@ -56,7 +56,7 @@ func metadataPushRepo(t *testing.T, title string) (string, []string, replays) {
 	repo := branchRepo(t, nil)
 	pr := branchAnswer(t, repo, title, pr0014(11))
 	saved := branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
-	saved = append(saved, response{Match: []string{"issue view 11 ", "labels"}, Stdout: "Plan\n"}, response{Match: []string{"issue view 11 ", "comments"}, Stdout: "I approve\n"})
+	saved = append(saved, planView(t, 11, planBody("- [x] Write the tests."), []string{"Plan"}, "I approve"))
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := fitness(t, repo, nil, "init")
 	sees(t, out, code, 0, "installed hooks")
@@ -84,12 +84,13 @@ func Test0067_3(t *testing.T) {
 	pushAsked(t, rp, "11", "comments")
 }
 
-func Test0067_4(t *testing.T) {
+func Test0067_9(t *testing.T) {
 	t.Parallel()
 	out, code, rp := metadataPush(t, "test(app): add one file")
 	sees(t, out, code, 0, "local-branch", "All 1 checks passed", "HEAD -> work")
 	branchReadOnce(t, rp)
 	pushAsked(t, rp, "11", "comments")
+	planReadOnce(t, rp, "11")
 }
 
 func Test0067_5(t *testing.T) {

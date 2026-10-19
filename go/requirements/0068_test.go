@@ -25,12 +25,13 @@ func pushedAnswer(t *testing.T, repo, branch, title, body string, number int) re
 	return pr
 }
 
-// pushedGitHub supplies approval and issue reads alongside the actual pushed PRs.
-func pushedGitHub(prs ...response) []response {
+// pushedGitHub supplies approval and issue reads alongside the actual pushed
+// PRs. Plan #11 has body plan in both the gate's read and the issue read.
+func pushedGitHub(t *testing.T, plan string, prs ...response) []response {
+	t.Helper()
 	saved := []response{{Match: []string{"repo view --json nameWithOwner"}, Stdout: repo0014 + "\n"}}
 	saved = append(saved, prs...)
-	saved = append(saved, response{Match: []string{"issue view 11 ", "labels"}, Stdout: "Plan\n"}, response{Match: []string{"issue view 11 ", "comments"}, Stdout: "I approve\n"})
-	return saved
+	return append(saved, planView(t, 11, plan, []string{"Plan"}, "I approve"), issue0014(t, 11, plan, "Plan"))
 }
 
 func Test0068_1(t *testing.T) {
@@ -39,7 +40,7 @@ func Test0068_1(t *testing.T) {
 	checkoutMain(t, repo)
 	pr := pushedAnswer(t, repo, "work", "added one file", pr0014(11), 1)
 	empty := response{Match: []string{"head=" + url.QueryEscape("may-journal:main")}}
-	saved := append(pushedGitHub(pr, empty), issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
+	saved := pushedGitHub(t, planBody("- [x] Write the tests."), pr, empty)
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := user(t, repo, pushEnv(env, rp), "push", "origin", "work")
 	sees(t, out, code, 1, `"added one file"`)
@@ -55,7 +56,7 @@ func Test0068_2(t *testing.T) {
 	checkoutMain(t, repo)
 	valid := pushedAnswer(t, repo, "work", "test(app): add one file", pr0014(11), 1)
 	invalid := pushedAnswer(t, repo, "main", "changed checkout file", pr0014(11), 2)
-	saved := append(pushedGitHub(valid, invalid), issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
+	saved := pushedGitHub(t, planBody("- [x] Write the tests."), valid, invalid)
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := user(t, repo, pushEnv(env, rp), "push", "origin", "work")
 	sees(t, out, code, 0, "work -> work")
@@ -69,7 +70,7 @@ func Test0068_3(t *testing.T) {
 	git(t, repo, "branch", "other")
 	invalid := pushedAnswer(t, repo, "work", "added one file", pr0014(11), 1)
 	valid := pushedAnswer(t, repo, "other", "test(app): add another file", pr0014(11), 2)
-	saved := append(pushedGitHub(invalid, valid), issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
+	saved := pushedGitHub(t, planBody("- [x] Write the tests."), invalid, valid)
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := user(t, repo, pushEnv(env, rp), "push", "origin", "work", "other")
 	sees(t, out, code, 1, "pr-check #1", "pr-check #2", `"added one file"`)
@@ -81,6 +82,19 @@ func Test0068_3(t *testing.T) {
 			t.Errorf("want one discovery for %s, got %d", pr.Match[0], count)
 		}
 	}
+}
+
+func Test0068_6(t *testing.T) {
+	t.Parallel()
+	repo, env, _ := metadataPushRepo(t, "test(app): add one file")
+	checkoutMain(t, repo)
+	git(t, repo, "branch", "other")
+	work := pushedAnswer(t, repo, "work", "test(app): add one file", pr0014(11), 1)
+	other := pushedAnswer(t, repo, "other", "test(app): add another file", pr0014(11), 2)
+	rp := standIn(t, map[string][]response{"gh": pushedGitHub(t, planBody("- [x] Write the tests."), work, other)})
+	out, code := user(t, repo, pushEnv(env, rp), "push", "origin", "work", "other")
+	sees(t, out, code, 0, "work -> work", "other -> other")
+	planReadOnce(t, rp, "11")
 }
 
 func Test0068_4(t *testing.T) {
@@ -101,7 +115,7 @@ func Test0068_5(t *testing.T) {
 	repo, env, _ := metadataPushRepo(t, "test(app): add one file")
 	checkoutMain(t, repo)
 	pr := pushedAnswer(t, repo, "renamed", "test(app): add one file", pr0014(12), 1)
-	saved := append(pushedGitHub(pr), issue0014(t, 12, "An ordinary issue."), issue0014(t, 11, brokenPlan, "Plan"))
+	saved := append(pushedGitHub(t, brokenPlan, pr), issue0014(t, 12, "An ordinary issue."))
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := user(t, repo, pushEnv(env, rp), "push", "origin", "work:renamed")
 	sees(t, out, code, 1, "pr-check #1", "plan-check #11", "Background")

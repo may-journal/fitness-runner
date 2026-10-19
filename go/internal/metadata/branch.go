@@ -31,8 +31,9 @@ func LocalBranch(root string, args []string) (checkkit.Result, error) {
 		return branchReadResult(err), nil
 	}
 	result := checkkit.Pass(0)
+	clients := repoClients{}
 	for _, branch := range branches {
-		next := checkBranch(ctx, root, branch)
+		next := checkBranch(ctx, root, branch, clients)
 		result.Errors = append(result.Errors, next.Errors...)
 		result.FilesChecked += next.FilesChecked
 	}
@@ -44,13 +45,27 @@ func localBranchApplicable(root string) bool {
 	return !report.Enabled() && os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" && gitx.OriginSlug(root) != ""
 }
 
-func checkBranch(ctx context.Context, root string, branch gitx.BranchContext) checkkit.Result {
+// repoClients holds one client per repo, so the branches of one push share
+// their issue reads and the gate's handoff is read once per repo.
+type repoClients map[string]aftereffect.Client
+
+func (c repoClients) get(ctx context.Context, repo string) aftereffect.Client {
+	gh, ok := c[repo]
+	if !ok {
+		gh = aftereffect.ReadOnlyClient(ctx, repo)
+		seedPushIssues(gh, repo)
+		c[repo] = gh
+	}
+	return gh
+}
+
+func checkBranch(ctx context.Context, root string, branch gitx.BranchContext, clients repoClients) checkkit.Result {
 	pr, repo, err := discoverBranchPR(ctx, root, branch.Name)
 	if err != nil || pr == nil {
 		return branchReadResult(err)
 	}
 	pr.BaseSHA = currentBase(ctx, root, repo, pr)
-	gh := aftereffect.ReadOnlyClient(ctx, repo)
+	gh := clients.get(ctx, repo)
 	b := blobChecker{root}
 	plans, err := branchPlans(ctx, root, repo, branch.Tip, pr)
 	if err != nil {

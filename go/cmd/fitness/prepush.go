@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 )
 
 const zeroSha = "0000000000000000000000000000000000000000"
 
-var approveRe = regexp.MustCompile(`(?i)approve`)
+// planReads holds the push's Plan reads, so each Plan is read once and
+// local-branch judges the same reads.
+var planReads = metadata.NewPushPlans()
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
@@ -47,6 +49,10 @@ func checkPushedBranches(updates []string) int {
 		fmt.Fprintln(os.Stderr, "pre-push:", err)
 		return 1
 	}
+	// The handoff only saves reads, so local-branch reads from GitHub without it.
+	if cleanup, err := planReads.Handoff(); err == nil {
+		defer cleanup()
+	}
 	_ = os.Setenv("FITNESS_INTERNAL_HOOK", "pre-push")
 	_ = os.Setenv("FITNESS_PUSH_BRANCHES", string(data))
 	return run([]string{"local-branch"})
@@ -61,10 +67,14 @@ func checkRefUpdate(line string) int {
 		return 0
 	}
 	commits := commitsOf(f[1], f[3])
-	if len(commits) == 0 || allChoreDocs(commits) {
+	if len(commits) == 0 {
 		return 0
 	}
-	return checkPlanApproval(planCandidates(commits, f[1]))
+	subjects, messages := readCommits(commits)
+	if allChoreDocsSubjects(subjects) {
+		return 0
+	}
+	return checkPlanApproval(planCandidates(messages, f[1]))
 }
 
 // commitsOf lists the commits a ref update pushes: those not already on origin.
@@ -82,18 +92,9 @@ func commitsOf(local, remote string) []string {
 	return strings.Fields(string(out))
 }
 
-// allChoreDocs reports whether every pushed commit is a chore, docs, or merge
-// commit. A merge is exempt because the commits it brings in are gated on their
-// own.
-func allChoreDocs(commits []string) bool {
-	subjects := make([]string, len(commits))
-	for i, c := range commits {
-		subjects[i] = commitSubject(c)
-	}
-	return allChoreDocsSubjects(subjects)
-}
-
-// allChoreDocsSubjects is the pure classifier over commit subjects.
+// allChoreDocsSubjects reports whether every pushed commit is a chore, docs,
+// or merge commit. A merge is exempt because the commits it brings in are
+// gated on their own.
 func allChoreDocsSubjects(subjects []string) bool {
 	for _, s := range subjects {
 		if !strings.HasPrefix(s, "chore") && !strings.HasPrefix(s, "docs") && !strings.HasPrefix(s, "Merge ") {
@@ -103,16 +104,43 @@ func allChoreDocsSubjects(subjects []string) bool {
 	return true
 }
 
-// commitSubject returns one commit's subject line.
-func commitSubject(c string) string {
-	out, _ := exec.Command("git", "log", "-1", "--format=%s", c).Output()
-	return strings.TrimSpace(string(out))
+// readCommits returns each commit's subject line, in order, and all their
+// messages, from one git run. A commit git cannot read gets an empty
+// subject, which is never exempt.
+func readCommits(commits []string) ([]string, string) {
+	byHash := map[string]string{}
+	var messages strings.Builder
+	for _, record := range strings.Split(logCommits(commits, "%H%x1f%s%x1f%B%x1e"), "\x1e") {
+		f := strings.SplitN(strings.TrimLeft(record, "\n"), "\x1f", 3)
+		if len(f) == 3 {
+			byHash[f[0]] = strings.TrimSpace(f[1])
+			messages.WriteString(f[2] + "\n")
+		}
+	}
+	subjects := make([]string, len(commits))
+	for i, c := range commits {
+		subjects[i] = byHash[c]
+	}
+	return subjects, messages.String()
+}
+
+// logCommits formats exactly the given commits, in order, in one git run.
+// --no-walk reads only those commits, not their ancestors, and --stdin takes
+// them however many a push holds. A failed run reads as no output.
+func logCommits(commits []string, format string) string {
+	cmd := exec.Command("git", "log", "--no-walk=unsorted", "--stdin", "--format="+format)
+	cmd.Stdin = strings.NewReader(strings.Join(commits, "\n") + "\n")
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return string(out)
 }
 
 // planCandidates returns the Plan numbers a push may trace to: those in the
-// pushed commits, else those anywhere on the branch.
-func planCandidates(commits []string, local string) []string {
-	if plans := planRefs(commits); len(plans) > 0 {
+// pushed commits' messages, else those anywhere on the branch.
+func planCandidates(messages, local string) []string {
+	if plans := gitx.PlanNumbers(messages); len(plans) > 0 {
 		return plans
 	}
 	return planRefs(gitx.BranchCommits(".", local, gitx.DefaultBase(".")))
@@ -126,7 +154,7 @@ func checkPlanApproval(plans []string) int {
 		return 1
 	}
 	for _, n := range plans {
-		if approvedPlan(n) {
+		if planReads.Approved(n) {
 			return 0
 		}
 	}
@@ -135,41 +163,11 @@ func checkPlanApproval(plans []string) int {
 	return 1
 }
 
-// planRefs returns the distinct Plan numbers referenced across the commits.
-// --no-walk reads only those commits, not their ancestors, so a trailer on
-// main never stands in for the branch's own.
+// planRefs returns the distinct Plan numbers referenced across the commits,
+// so a trailer on main never stands in for the branch's own.
 func planRefs(commits []string) []string {
 	if len(commits) == 0 {
 		return nil
 	}
-	args := append([]string{"log", "--no-walk=unsorted", "--format=%B"}, commits...)
-	out, _ := exec.Command("git", args...).Output()
-	return gitx.PlanNumbers(string(out))
-}
-
-// approvedPlan reports whether issue n is Plan-labeled and carries an approval
-// comment, resolved through the gh CLI.
-func approvedPlan(n string) bool {
-	if !hasPlanLabel(n) {
-		return false
-	}
-	out, err := exec.Command("gh", "issue", "view", n, "--json", "comments", "-q", ".comments[].body").Output()
-	if err != nil {
-		return false
-	}
-	return approveRe.Match(out)
-}
-
-// hasPlanLabel reports whether issue n carries the exact `Plan` label.
-func hasPlanLabel(n string) bool {
-	out, err := exec.Command("gh", "issue", "view", n, "--json", "labels", "-q", ".labels[].name").Output()
-	if err != nil {
-		return false
-	}
-	for _, l := range strings.Split(strings.TrimSpace(string(out)), "\n") {
-		if l == "Plan" {
-			return true
-		}
-	}
-	return false
+	return gitx.PlanNumbers(logCommits(commits, "%B"))
 }

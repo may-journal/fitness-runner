@@ -16,6 +16,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
@@ -98,10 +99,15 @@ type Effect func(gh Client, t Target, errs []string) error
 type Client struct {
 	repo   string
 	ctx    context.Context
-	issues map[int]issueResult
+	issues map[int]*issueResult
+	// mu guards issues, so callers may read issues in parallel.
+	mu *sync.Mutex
 }
 
+// issueResult is one cached issue read; once makes parallel callers of the
+// same issue share a single read.
 type issueResult struct {
+	once   sync.Once
 	body   string
 	labels []string
 	err    error
@@ -110,7 +116,29 @@ type issueResult struct {
 // ReadOnlyClient shares a bounded context and caches issue reads for local
 // judgments. Workflow clients retain their existing effects.
 func ReadOnlyClient(ctx context.Context, repo string) Client {
-	return Client{repo: repo, ctx: ctx, issues: map[int]issueResult{}}
+	return Client{repo: repo, ctx: ctx, issues: map[int]*issueResult{}, mu: &sync.Mutex{}}
+}
+
+// Seed records issue n as already read, so a ReadOnlyClient answers from it
+// instead of GitHub. A client without a cache ignores it.
+func (g Client) Seed(n int, body string, labels []string) {
+	if g.issues == nil {
+		return
+	}
+	r := g.entry(n)
+	r.once.Do(func() { r.body, r.labels = body, labels })
+}
+
+// entry returns issue n's cache slot, adding an empty one.
+func (g Client) entry(n int) *issueResult {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	r, ok := g.issues[n]
+	if !ok {
+		r = &issueResult{}
+		g.issues[n] = r
+	}
+	return r
 }
 
 // NewClient targets the repository the workflow runs in.
@@ -226,15 +254,48 @@ func decodeLines[T any](out []byte) ([]T, error) {
 	return vals, nil
 }
 
+// Issue reads issue n's body and labels. A ReadOnlyClient reads each issue
+// once, and is safe to call from several goroutines.
 func (g Client) Issue(n int) (string, []string, error) {
-	if prior, ok := g.issues[n]; ok {
-		return prior.body, prior.labels, prior.err
+	if g.issues == nil {
+		return g.readIssue(n)
 	}
-	body, labels, err := g.readIssue(n)
-	if g.issues != nil {
-		g.issues[n] = issueResult{body, labels, err}
+	r := g.entry(n)
+	r.once.Do(func() { r.body, r.labels, r.err = g.readIssue(n) })
+	return r.body, r.labels, r.err
+}
+
+// IssueView is one issue with its comments, as `gh issue view` reads it.
+type IssueView struct {
+	URL      string   `json:"url"`
+	Body     string   `json:"body"`
+	Labels   []string `json:"labels"`
+	Comments []string `json:"comments"`
+}
+
+// Repo is the owner/repo the issue's URL names, or "" for another URL.
+func (v IssueView) Repo() string {
+	path, ok := strings.CutPrefix(v.URL, "https://github.com/")
+	parts := strings.Split(path, "/")
+	if !ok || len(parts) != 4 || parts[2] != "issues" {
+		return ""
 	}
-	return body, labels, err
+	return parts[0] + "/" + parts[1]
+}
+
+// ViewIssue reads issue n of the working directory's repository, its body,
+// labels and comments, in one `gh issue view`. The stderr of gh stays out of
+// the caller's output.
+func ViewIssue(ctx context.Context, n string) (IssueView, error) {
+	cmd := exec.CommandContext(ctx, "gh", "issue", "view", n, "--json", "url,body,labels,comments",
+		"--jq", "{url, body, labels: [.labels[].name], comments: [.comments[].body]}")
+	out, err := cmd.Output()
+	if err != nil {
+		return IssueView{}, err
+	}
+	var v IssueView
+	err = json.Unmarshal(out, &v)
+	return v, err
 }
 
 // readIssue reads issue n's body and labels. A 404 or 410, an issue deleted

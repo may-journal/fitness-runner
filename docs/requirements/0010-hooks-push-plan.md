@@ -38,3 +38,7 @@ Source: `go/cmd/fitness/hook.go:26`
     - Given Developer has only chore or docs commits, even with feature commits merged in from main
         - When I push them
             - Then the push goes through
+- 0010.11
+    - Given Developer has several feature commits naming one approved Plan
+        - When I push them
+            - Then the hook asks GitHub about that Plan once
