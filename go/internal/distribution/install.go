@@ -28,7 +28,7 @@ func New(version, hashes string, log io.Writer) (*Installer, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Installer{Version: version, Hashes: ParseHashes(hashes), Platform: platform, Cache: cache, ReleaseURL: releaseRoot, LatestURL: latestRelease, Client: defaultClient(), Log: log}, nil
+	return &Installer{Version: version, Hashes: ParseHashes(hashes), Platform: platform, Cache: cache, ReleaseURL: releaseRoot, LatestURL: latestURL(), Client: defaultClient(), Log: log}, nil
 }
 
 func (i *Installer) Install(ctx context.Context, requested string) (string, error) {

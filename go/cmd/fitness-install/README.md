@@ -17,6 +17,14 @@ fitness-install --version latest -- --help
 
 Installer flags precede `--`; arguments after it reach Fitness unchanged. Install-only mode prints the directory holding the runner and every check. The runner replaces the installer process, so check exit codes and signals reach CI. `--install-hook` writes a compiled Go hook and saved options, preserving existing hooks.
 
+## Latest release
+
+`--version latest` asks the GitHub releases API for the newest release. The lookup sends `GH_TOKEN`, else `GITHUB_TOKEN`, else the token `gh auth token` prints. It then counts against that account's limit, not the one shared by every caller on an address. `GITHUB_API_URL` moves the API root, as GitHub jobs set it.
+
+The answer is recorded in the cache as `latest-release.json`, and for 10 minutes later runs use it without a lookup. A failed lookup, such as HTTP 403 on a rate limit, prints one warning. The installer then uses the recorded answer or the newest installed version, and fails only with neither.
+
+An exact `--version`, as the root action passes, never looks up.
+
 ## Cache
 
 Downloads and archive paths are checked in Go. Each cached copy has a version, platform, and hash key. A repair publishes a new copy and atomically switches the current pointer; older copies remain available to running checks.
