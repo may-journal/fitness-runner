@@ -1,5 +1,5 @@
 // Command fitness-check-go-test-coverage measures entry coverage and test overlap.
-package main
+package check
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang/coverage"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{Describe: checkkit.Describe{Name: "go-test-coverage", TimeoutMs: 900000}, Run: run})
 }
 func run(root string, args []string) (checkkit.Result, error) {

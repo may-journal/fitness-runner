@@ -6,7 +6,7 @@
 // commits are exempt. The runner forwards a proposed
 // message via --message (surfaced as FITNESS_CTX_MESSAGE); a message that is
 // provided but empty fails rather than falling back to git log.
-package main
+package check
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ var requiredTrailers = []string{"AI-Models", "AI-Tools"}
 // msgEmpty is the failure reported when there is no commit message to validate.
 const msgEmpty = `No commit message to validate; add "AI-Tools:" and "AI-Models:" trailers to disclose AI usage`
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{
 			Name:             "commit-attribution",

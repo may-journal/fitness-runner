@@ -8,7 +8,7 @@
 // non-may-journal lines are ignored. When GitHub cannot answer, such as
 // offline, without a token, or for a repo the token cannot read, it skips
 // with a note and never passes or fails a ref it could not see.
-package main
+package check
 
 import (
 	"context"
@@ -29,7 +29,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "workflow-ref-exists", TimeoutMs: 30000},
 		Run:      run,

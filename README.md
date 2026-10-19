@@ -21,7 +21,7 @@ For consumers who choose source builds:
 go install github.com/may-journal/fitness-runner/go/cmd/...@v1
 ```
 
-One command installs the runner and every check binary into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@v1`.
+One command installs `fitness`, which holds every check, and the installer and release tools into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@v1`.
 
 ### Prebuilt binaries
 
@@ -38,7 +38,7 @@ git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
 cd go && mkdir -p bin && go build -o bin ./cmd/...
 ```
 
-Put `go/bin` on PATH, or copy the binaries onto it. The runner finds check binaries beside itself first, then on PATH. The Go toolchain is the only build requirement — no npm, no node.
+Put `go/bin` on PATH, or copy `fitness` onto it. It runs every check itself, and a `fitness-check-<name>` program beside it replaces the check of that name. The Go toolchain is the only build requirement — no npm, no node.
 
 ## Usage
 

@@ -57,7 +57,11 @@ func validBundle(path string, hashes map[string]string) bool {
 
 func validFiles(path string, hashes map[string]string) bool {
 	for name, hash := range hashes {
-		if !validBinary(filepath.Join(path, name), hash) {
+		file := filepath.Join(path, name)
+		if hash == checkLink && validLink(file) {
+			continue
+		}
+		if !validBinary(file, hash) {
 			return false
 		}
 	}

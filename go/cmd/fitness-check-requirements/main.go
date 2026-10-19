@@ -8,7 +8,7 @@
 // supplies removed IDs, so an ID is never reused. Two docs that cover one
 // area fail, per ADR 0004. A staged or pull request change to a requirement
 // test must change its doc too, and the reverse.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
@@ -21,7 +21,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "requirements"},
 		Run:      run,

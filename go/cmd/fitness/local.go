@@ -42,12 +42,19 @@ func loadLocalChecks(cfg *conf.Config, root string) error {
 }
 
 // findCheckBinary returns the program for a check name: the repo's local
-// check when one has that name, else the check bundled beside fitness.
-func findCheckBinary(name string) (string, error) {
+// check when one has that name, else a program of that name beside fitness,
+// else the built-in check, run from this fitness executable.
+func findCheckBinary(name string) (checkkit.Program, error) {
 	if bin, ok := localBins[name]; ok {
-		return bin, nil
+		return checkkit.Program{Path: bin}, nil
 	}
-	return checkkit.Binary(name)
+	if bin, ok := besidePrograms[name]; ok {
+		return checkkit.Program{Path: bin}, nil
+	}
+	if _, ok := builtins[name]; !ok {
+		return checkkit.Program{}, fmt.Errorf("no built-in check %s", name)
+	}
+	return checkkit.Builtin(name)
 }
 
 // checkCatalog is the built-in check list followed by the local checks that add

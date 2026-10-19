@@ -4,7 +4,7 @@
 // for the current version (the TS check read its own runtime's
 // process.version; this binary is not Node), and a missing node binary is a
 // clear failure instead of an impossibility.
-package main
+package check
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "node-version"},
 		Run:      run,

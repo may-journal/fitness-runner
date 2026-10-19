@@ -4,7 +4,7 @@
 // render. Flowcharts, graphs, and sequence diagrams are parsed statement by
 // statement in pure Go; every other known diagram type gets its header and
 // bracket balance checked, and an unknown type fails.
-package main
+package check
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-syntax", Blob: true},
 		Run:      run,

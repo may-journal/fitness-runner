@@ -3,7 +3,7 @@
 // associated callout table, and their callout numbers must be a 1-1 match
 // (no orphan numbers, orphan rows, or duplicates). Un-numbered diagrams need
 // no table; a table with no preceding diagram is an error.
-package main
+package check
 
 import (
 	"fmt"
@@ -13,7 +13,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-callouts", Blob: true},
 		Run:      run,

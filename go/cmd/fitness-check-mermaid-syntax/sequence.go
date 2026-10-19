@@ -1,5 +1,5 @@
 // cspell:ignore Descr autonumber
-package main
+package check
 
 import (
 	"fmt"

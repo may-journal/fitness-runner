@@ -7,7 +7,7 @@
 // arrow functions. Every tracked .go file is scored, tests included. The
 // ceiling is configurable via
 // .fitnessrc.json: {"goComplexity": {"max": N}}; default 5.
-package main
+package check
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 
 const defaultMax = 5
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "go-complexity"},
 		Run:      run,

@@ -10,9 +10,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -34,24 +36,35 @@ import (
 // allChecks is the org default and the catalog for explicit external lists.
 // Org checks self-gate when their language, tool, config, or input is absent.
 // External policy also defaults to the full catalog, with optional selection.
-// It is every check installed beside the runner, minus the ignored ones, in
-// the order the language registry gives: repo-wide checks, then each module's.
-// installErr says why no checks were found; a run stops on it.
+// It is every check built into this executable or installed beside it,
+// minus the ignored ones, in the order the language registry gives:
+// repo-wide checks, then each module's. installErr says why no checks were
+// found; a run stops on it.
 var allChecks, installErr = catalog()
+
+// besidePrograms are the fitness-check-<name> programs beside this
+// executable, which win over the built-in check of their name.
+var besidePrograms = checkkit.Beside()
 
 // catalog lists the default checks, or the error that leaves it empty.
 func catalog() ([]string, error) {
-	installed, err := checkkit.Installed()
-	if err != nil {
-		return nil, err
+	names := slices.Collect(maps.Keys(builtins))
+	for name := range besidePrograms {
+		if _, ok := builtins[name]; !ok {
+			names = append(names, name)
+		}
 	}
-	return lang.Catalog(installed, langs.All), nil
+	if len(names) == 0 {
+		return nil, errors.New("this fitness executable has no built-in checks; reinstall fitness")
+	}
+	slices.Sort(names)
+	return lang.Catalog(names, langs.All), nil
 }
 
-// resolved is one runnable check: its binary and describe metadata.
+// resolved is one runnable check: its program and describe metadata.
 type resolved struct {
 	name string
-	bin  string
+	prog checkkit.Program
 	desc checkkit.Describe
 	// describeErr says why --describe gave no metadata; the check still
 	// runs with defaults and its row carries this as info.
@@ -79,8 +92,45 @@ type outcome struct {
 	startErr string
 }
 
+//go:generate go run ../fitness-release checks --root ../../..
+
+// main runs a built-in check when started under its fitness-check-<name>
+// program name, as the runner and the installed links start it; otherwise it
+// is the runner.
 func main() {
+	if name, ok := strings.CutPrefix(filepath.Base(os.Args[0]), checkkit.BinPrefix); ok {
+		os.Exit(runBuiltin(name, os.Args[1:]))
+	}
 	os.Exit(dispatch(os.Args[1:]))
+}
+
+// runBuiltin runs built-in check name with args exactly as its own program
+// would; the check exits the process itself.
+func runBuiltin(name string, args []string) int {
+	entry, ok := builtins[name]
+	if !ok {
+		fmt.Fprintf(os.Stderr, "fitness: no built-in check %s; `fitness check --list` names them\n", name)
+		return 2
+	}
+	os.Args = append([]string{checkkit.BinPrefix + name}, args...)
+	entry()
+	return 0
+}
+
+// runCheckCommand handles `fitness check <name> [args]`, and `fitness check
+// --list`, which prints every built-in check name, one per line.
+func runCheckCommand(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "fitness check: name a check, or pass --list")
+		return 2
+	}
+	if args[0] == "--list" {
+		for _, name := range slices.Sorted(maps.Keys(builtins)) {
+			fmt.Println(name)
+		}
+		return 0
+	}
+	return runBuiltin(args[0], args[1:])
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
@@ -115,6 +165,7 @@ func init() {
 		"comment-check": runCommentCheck,
 		"branch-check":  func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
 		"boxes":         runBoxes,
+		"check":         runCheckCommand,
 	}
 }
 
@@ -407,16 +458,16 @@ var errNotInstalled = errors.New("Check binary not installed")
 // whose handshake overran in that crowd gets a second try, so a slow first
 // start after an install does not drop its own budget.
 func resolveList(names []string) ([]resolved, error) {
-	bins := make([]string, len(names))
+	progs := make([]checkkit.Program, len(names))
 	for i, name := range names {
-		bin, err := findCheckBinary(name)
+		prog, err := findCheckBinary(name)
 		if err != nil {
 			return nil, fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
 		}
-		bins[i] = bin
+		progs[i] = prog
 	}
 	checks := par.Map(len(names), par.Processes(), func(i int) resolved {
-		return describeCheck(names[i], bins[i])
+		return describeCheck(names[i], progs[i])
 	})
 	if len(checks) > 1 {
 		retryOverran(checks)
@@ -431,12 +482,12 @@ func resolveList(names []string) ([]resolved, error) {
 func retryOverran(checks []resolved) {
 	var again []int
 	for i, c := range checks {
-		if c.overran && !isScript(c.bin) {
+		if c.overran && !isScript(c.prog.Path) {
 			again = append(again, i)
 		}
 	}
 	retried := par.Map(len(again), par.Processes(), func(k int) resolved {
-		return describeCheck(checks[again[k]].name, checks[again[k]].bin)
+		return describeCheck(checks[again[k]].name, checks[again[k]].prog)
 	})
 	for k, i := range again {
 		checks[i] = retried[k]
@@ -457,9 +508,9 @@ func isScript(bin string) bool {
 }
 
 // describeCheck runs one check's --describe handshake.
-func describeCheck(name, bin string) resolved {
-	desc, describeErr, overran := describe(bin)
-	return resolved{name: name, bin: bin, desc: desc, describeErr: describeErr, overran: overran}
+func describeCheck(name string, prog checkkit.Program) resolved {
+	desc, describeErr, overran := describe(prog)
+	return resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran}
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
@@ -467,9 +518,9 @@ func describeCheck(name, bin string) resolved {
 // why. The handshake gets its own short budget and process-group kill — a
 // local script that ignores --describe and starts real work must not hang
 // resolution. overran reports a handshake killed at its budget.
-func describe(bin string) (d checkkit.Describe, note string, overran bool) {
+func describe(prog checkkit.Program) (d checkkit.Describe, note string, overran bool) {
 	const failed = "--describe gave no metadata, so the check ran with defaults: "
-	cmd := exec.Command(bin, "--describe")
+	cmd := prog.Command("--describe")
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -670,7 +721,7 @@ func startOrder(checks []resolved) []int {
 // kills the whole group (TERM, then KILL after a grace period).
 func runOne(root string, c resolved, passthrough, env []string) outcome {
 	args := append([]string{"--root", root}, passthrough...)
-	cmd := exec.Command(c.bin, args...)
+	cmd := c.prog.Command(args...)
 	cmd.Dir = root
 	cmd.Env = append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

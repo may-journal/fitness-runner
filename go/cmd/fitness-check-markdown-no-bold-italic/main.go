@@ -7,7 +7,7 @@
 // look-ahead assertions the TS original relied on, so their scan is
 // hand-rolled here; the flagged snippet is quoted byte-for-byte like
 // JSON.stringify.
-package main
+package check
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "markdown-no-bold-italic", Blob: true},
 		Run:      run,

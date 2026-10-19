@@ -1,7 +1,7 @@
 // Command fitness-check-changelog-updated checks that each staged commit
 // writes a changelog entry about its change. A branch keeps one entry file.
 // CHANGELOG.md is no part of it. The README holds the full rules.
-package main
+package check
 
 import (
 	"fmt"
@@ -72,7 +72,7 @@ func gitStateFileExists(root, ref string) bool {
 	return statErr == nil
 }
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "changelog-updated"},
 		Run:      run,

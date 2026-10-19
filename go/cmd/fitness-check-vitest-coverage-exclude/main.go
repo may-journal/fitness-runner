@@ -10,7 +10,7 @@
 // directory: an installed node_modules/@mayjournal/fitness-shared when
 // present, else the vitest.config.mjs embedded in this binary, materialized
 // to the cache (internal/sharedconf).
-package main
+package check
 
 import (
 	"bytes"
@@ -24,7 +24,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "vitest-coverage-exclude"},
 		Run:      run,

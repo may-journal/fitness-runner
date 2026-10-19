@@ -5,7 +5,7 @@
 // words per list item, items per list, and prose words per section. Each
 // limit falls back to a default and is overridable in .fitnessrc.json.
 // Every tracked .md file is judged, CHANGELOG.md included.
-package main
+package check
 
 import (
 	"fmt"
@@ -49,7 +49,7 @@ const descriptionName = "(description)"
 
 var htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "prose-budget", Blob: true},
 		Run:      run,

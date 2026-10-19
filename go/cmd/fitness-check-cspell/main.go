@@ -13,7 +13,7 @@
 // wins, then an installed node_modules/@mayjournal/fitness-shared, then the
 // copy embedded in this binary, materialized to the cache on demand — so a
 // repo with no npm anywhere still gets the shared words.
-package main
+package check
 
 import (
 	"bytes"
@@ -42,7 +42,7 @@ var check = checkkit.Check{
 	Run:      run,
 }
 
-func main() {
+func Main() {
 	checkkit.Main(check)
 }
 

@@ -92,6 +92,9 @@ func stageBundle(key, top string, data []byte) (string, error) {
 
 func chooseBundle(key, staged, top string, data []byte) (string, error) {
 	hashes, err := extractArchive(data, staged, top)
+	if err == nil {
+		err = linkChecks(staged, hashes)
+	}
 	if err != nil {
 		return "", err
 	}

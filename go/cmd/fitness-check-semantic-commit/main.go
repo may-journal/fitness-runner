@@ -4,7 +4,7 @@
 // the TypeScript original: it inlines the type list the TS check read from
 // the conventional-commit-types package at runtime (same eleven types, same
 // order).
-package main
+package check
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "semantic-commit", ContextInlineArg: "--message"},
 		Run:      run,

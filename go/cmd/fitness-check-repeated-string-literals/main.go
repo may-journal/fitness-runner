@@ -11,7 +11,7 @@
 // .fitnessrc.json via internal/conf, so any config load error — including a
 // legacy .fitnessrc.js/.ts, which this binary cannot evaluate — degrades to
 // an empty allow list instead of reading the configured baseline.
-package main
+package check
 
 import (
 	"fmt"
@@ -81,7 +81,7 @@ var idiomaticValues = map[string]bool{
 // specifier to skip (import/require/from).
 var moduleWords = map[string]bool{"from": true, "import": true, "require": true}
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: name},
 		Run:      run,

@@ -9,7 +9,7 @@
 // or the runner's context-inline `--body` value, and passes inert with no
 // input. Under `fitness --blob` it skips Plan, Epic, and PR bodies, which have
 // their own structure checks.
-package main
+package check
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "comment-structure", Blob: true, ContextInlineArg: "--body"},
 		Run:      run,

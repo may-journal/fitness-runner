@@ -8,7 +8,7 @@
 // collapse to one, and an unreachable registry (or any garbage response)
 // contributes nothing — fully offline degrades to a pass so commits are
 // never blocked.
-package main
+package check
 
 import (
 	"context"
@@ -48,7 +48,7 @@ const fetchBudget = 25 * time.Second
 // requestTimeout caps one registry request within the overall budget.
 const requestTimeout = 10 * time.Second
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		// The registry answers one request per dependency; on a cold cache
 		// that can exceed the default 5s budget, so keep the TS check's 30s.

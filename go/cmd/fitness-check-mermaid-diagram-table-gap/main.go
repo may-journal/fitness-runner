@@ -15,7 +15,7 @@
 // trim/fence helpers it uses are unexported there, so that small residue
 // (jsWS, isJSSpace, trimStartJS, fenceMarker) is duplicated here instead of
 // modifying the frozen package.
-package main
+package check
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-diagram-table-gap", Blob: true},
 		Run:      run,

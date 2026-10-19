@@ -21,7 +21,7 @@
 //
 // It reads its target from stdin, a `--body-file` path (`-` meaning stdin), or
 // the runner's context-inline `--body` value, and passes inert with no input.
-package main
+package check
 
 import (
 	"encoding/json"
@@ -37,7 +37,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-func main() {
+func Main() {
 	if emitClosedMode(os.Args[1:]) {
 		return
 	}

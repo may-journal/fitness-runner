@@ -2,14 +2,14 @@
 // and the requirement docs covering each other: every requirement doc ID
 // appears in a journey diagram label, and every journey node that promises
 // behavior names one.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/architecture"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "architecture-journey"},
 		Run:      run,

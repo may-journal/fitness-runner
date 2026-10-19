@@ -7,8 +7,10 @@ changelog:
   disable: true
 dist: out/bundles
 builds:
-  - dir: go
-    main: ./cmd/...
+  - id: fitness
+    dir: go
+    main: ./cmd/fitness
+    binary: fitness
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
     goarch: [amd64, arm64]
@@ -16,71 +18,7 @@ builds:
     ldflags: [-s -w]
 archives:
   - id: bundle
-    ids:
-      - fitness
-      - fitness-check-architecture-actors
-      - fitness-check-architecture-code
-      - fitness-check-architecture-components
-      - fitness-check-architecture-containers
-      - fitness-check-architecture-contract
-      - fitness-check-architecture-journey
-      - fitness-check-build-output-untracked
-      - fitness-check-changelog
-      - fitness-check-changelog-bullets
-      - fitness-check-changelog-updated
-      - fitness-check-checkstyle
-      - fitness-check-comment-structure
-      - fitness-check-commit-attribution
-      - fitness-check-cspell
-      - fitness-check-dependency-currency
-      - fitness-check-doc-template
-      - fitness-check-epic-structure
-      - fitness-check-eslint
-      - fitness-check-gitignore-why
-      - fitness-check-go-complexity
-      - fitness-check-go-test
-      - fitness-check-go-test-coverage
-      - fitness-check-go-vet
-      - fitness-check-gofmt
-      - fitness-check-issue-checklist
-      - fitness-check-issue-link-once
-      - fitness-check-java-test
-      - fitness-check-java-version
-      - fitness-check-jscpd
-      - fitness-check-local-branch
-      - fitness-check-markdown-filename-camel-case
-      - fitness-check-markdown-filename-kebab-case
-      - fitness-check-markdown-front-matter
-      - fitness-check-markdown-links
-      - fitness-check-markdown-no-bold-italic
-      - fitness-check-mermaid-callout-why
-      - fitness-check-mermaid-callouts
-      - fitness-check-mermaid-diagram-prose
-      - fitness-check-mermaid-diagram-table-gap
-      - fitness-check-mermaid-legend
-      - fitness-check-mermaid-level-bleed
-      - fitness-check-mermaid-syntax
-      - fitness-check-no-contrastive-reframing
-      - fitness-check-no-eslint-disable
-      - fitness-check-no-plans-dir
-      - fitness-check-node-version
-      - fitness-check-plan-structure
-      - fitness-check-plan-trailer
-      - fitness-check-pr-closes-issue
-      - fitness-check-pr-structure
-      - fitness-check-prettier
-      - fitness-check-prose-budget
-      - fitness-check-read-repo-first
-      - fitness-check-release-changelog
-      - fitness-check-repeated-string-literals
-      - fitness-check-requirements
-      - fitness-check-semantic-commit
-      - fitness-check-spotless
-      - fitness-check-swiftlint
-      - fitness-check-text-readability
-      - fitness-check-vitest-coverage-exclude
-      - fitness-check-vitest-coverage-full
-      - fitness-check-workflow-ref-exists
+    ids: [fitness]
     formats: [tar.gz]
     name_template: 'fitness-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     wrap_in_directory: true

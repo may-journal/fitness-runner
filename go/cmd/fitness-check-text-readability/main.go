@@ -9,7 +9,7 @@
 // repo's own corpus). Pass --report to print every file's scores to stderr.
 //
 // cspell:ignore Liau unbackticked scoreable
-package main
+package check
 
 import (
 	"fmt"
@@ -41,7 +41,7 @@ type thresholds struct {
 	minWords int
 }
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "text-readability", Blob: true},
 		Run:      run,

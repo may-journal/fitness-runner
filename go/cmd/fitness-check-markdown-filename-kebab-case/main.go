@@ -3,14 +3,14 @@
 // the Go port of the markdown-filename-kebab-case flavor of the TypeScript
 // markdown-filename-convention package. The validation core is shared with
 // the camelCase flavor in internal/mdfilename.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/mdfilename"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "markdown-filename-kebab-case"},
 		Run:      run,
