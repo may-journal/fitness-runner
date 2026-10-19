@@ -4,7 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 # Check protocol
 
-The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, enabled check names, and the commit message for the commit checks.
+The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, tracked files, enabled check names, and the commit message for the commit checks.
 
 - stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n, "info": [".."]}`, where `info` is optional
 - stderr — human display output (banners, tool passthrough)
@@ -70,4 +70,8 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 ## Every tracked file
 
 File checks judge every tracked file through `walkfs`; outside git, everything but `.git`. A file `walkfs.ScanFiles` cannot read is skipped and named as info, and the other files are still judged. A config setting `ignore`, `skipTheseDirectories`, `disabledChecks`, or `proseBudget.exempt` fails.
+
+The runner lists tracked files once per run, in a temporary file that `FITNESS_TRACKED_FILES` names. The file holds the root, then each `git ls-files --cached` path, every entry NUL-terminated.
+
+A check uses the list only when that root matches its own `--root`. Run alone, outside git, or handed another repo's list, it asks git itself. Each check process asks git once per root for tracked files, and once per file for `linguist-generated`.
 

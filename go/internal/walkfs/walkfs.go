@@ -5,12 +5,10 @@
 package walkfs
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -102,13 +100,13 @@ func scanOne(root, file string, scan func(relPath, content string) []string) sca
 // candidates are the tracked files that still exist on disk; outside one
 // they are every file except those under .git.
 func FilesByExt(root string, exts ...string) []string {
-	all, ok := trackedFiles(root)
-	if !ok {
-		all = walkedFiles(root)
+	candidates, tracked := trackedFiles(root)
+	if !tracked {
+		candidates = walkedFiles(root)
 	}
 	var out []string
-	for _, rel := range all {
-		if hasAnySuffix(filepath.Base(rel), exts) {
+	for _, rel := range candidates {
+		if wanted(root, rel, exts, tracked) {
 			out = append(out, rel)
 		}
 	}
@@ -116,21 +114,12 @@ func FilesByExt(root string, exts ...string) []string {
 	return out
 }
 
-// trackedFiles lists root's tracked files that exist on disk as regular
-// files, relative to root; ok is false when root is not inside a git work
-// tree (or git is missing), so the caller walks the disk instead.
-func trackedFiles(root string) ([]string, bool) {
-	out, err := exec.Command("git", "-C", root, "ls-files", "-z", "--cached").Output()
-	if err != nil {
-		return nil, false
-	}
-	var files []string
-	for _, rel := range bytes.Split(out, []byte{0}) {
-		if len(rel) > 0 && isRegularFile(root, string(rel)) {
-			files = append(files, string(rel))
-		}
-	}
-	return files, true
+// wanted reports whether rel ends in one of exts and, when it came from
+// git, is still a regular file on disk. The cheap name test runs first, so
+// only a matching tracked path costs an lstat; a walked path is already a
+// regular file.
+func wanted(root, rel string, exts []string, tracked bool) bool {
+	return hasAnySuffix(filepath.Base(rel), exts) && (!tracked || isRegularFile(root, rel))
 }
 
 // isRegularFile reports whether the slash-separated rel under root is a

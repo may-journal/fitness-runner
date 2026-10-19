@@ -28,6 +28,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // allChecks is the org default and the catalog for explicit external lists.
@@ -174,6 +175,9 @@ func run(argv []string) int {
 		return 1
 	}
 	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
+	tracked, removeTracked := walkfs.ShareTracked(root)
+	defer removeTracked()
+	env = append(env, tracked...)
 	checks = commitChecks(checks)
 
 	start := time.Now()
@@ -453,12 +457,14 @@ func waitDescribe(cmd *exec.Cmd) (ok, overran bool) {
 }
 
 // contextEnv is the environment every check receives. FITNESS_CHANGED_FILES
-// is set only for a scoped run, so an inherited value never leaks into a
-// full scan.
+// is set only for a scoped run, and the tracked-file list only by run, so
+// an inherited value never leaks into a full scan or another repo. The
+// staged files are read once for both variables.
 func contextEnv(root string, checks []resolved, all bool) []string {
-	env := withoutVar(os.Environ(), "FITNESS_CHANGED_FILES")
-	env = append(env, "FITNESS_STAGED_FILES="+strings.Join(gitx.StagedFiles(root), "\n"))
-	if changed := changedScope(root, all); len(changed) > 0 {
+	env := withoutVar(withoutVar(os.Environ(), "FITNESS_CHANGED_FILES"), walkfs.TrackedFilesEnv)
+	staged := gitx.StagedFiles(root)
+	env = append(env, "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
+	if changed := changedScope(root, all, staged); len(changed) > 0 {
 		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
 	}
 	names := make([]string, len(checks))
