@@ -274,7 +274,7 @@ flowchart TD
 | 1   | Push to main  | The caller runs on each push to `main`, one run at a time per repo.    | Each merge updates the release PR.                    |
 | 2   | App token     | Check the App secrets, then mint a `may-journal-automation` token.     | GitHub starts no workflows from GITHUB_TOKEN changes. |
 | 3   | Release       | Release Please keeps a release PR open, or tags and publishes it once merged. | Versions come from conventional commits.       |
-| 4   | Shape         | Demote a first release's `##` heading and strip bold scopes.           | pr-check wants plain bullets under `## Changelog`.    |
+| 4   | Shape         | Demote each `##` heading under `## Changelog` and strip bold scopes.   | pr-check wants plain bullets under `## Changelog`.    |
 | 5   | Link          | Find or open the tracking issue by title, and close it from the PR.   | pr-check needs every PR to close an issue.            |
 | 6   | Reopen        | Close and reopen the PR after either rewrite.                          | pr-check does not run on a body edit.                 |
 | 7   | Major tag     | Point `vX` at the new release.                                         | Consumers pin the major version.                      |

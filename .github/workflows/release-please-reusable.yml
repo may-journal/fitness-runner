@@ -85,9 +85,13 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
+        # pipefail, so a failed lookup stops the step rather than opening a
+        # second tracking issue. The title search finds the issue however
+        # many others the repo holds; jq keeps only an exact match.
         run: |
+          set -o pipefail
           title="Publish the release from PR #$PR"
-          issue="$(gh issue list --state all --limit 200 --json number,title |
+          issue="$(gh issue list --state all --search "\"$title\" in:title" --json number,title |
             jq -r --arg t "$title" 'map(select(.title == $t))[0].number // empty')"
           if [ -z "$issue" ]; then
             url="$(gh issue create --title "$title" --body "Release Please owns the version and notes in #$PR.")"
@@ -113,6 +117,8 @@ jobs:
         run: |
           gh pr close "$PR"
           gh pr reopen "$PR"
+      # Only a missing tag is created; any other lookup error fails the step
+      # by name instead of a confusing "Reference already exists".
       - name: Move the major version tag
         if: ${{ steps.release.outputs.release_created == 'true' }}
         env:
@@ -121,10 +127,13 @@ jobs:
           SHA: ${{ steps.release.outputs.sha }}
         run: |
           refs="repos/$GITHUB_REPOSITORY/git/refs"
-          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAJOR" --silent 2>/dev/null; then
+          if found="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAJOR" --silent 2>&1)"; then
             gh api -X PATCH "$refs/tags/$MAJOR" -f sha="$SHA" -F force=true --silent
-          else
+          elif [[ "$found" == *"Not Found"* ]]; then
             gh api -X POST "$refs" -f ref="refs/tags/$MAJOR" -f sha="$SHA" --silent
+          else
+            echo "::error::Could not read tag $MAJOR: $found"
+            exit 1
           fi
       # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome

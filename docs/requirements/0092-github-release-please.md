@@ -30,3 +30,7 @@ Source: #517
     - Given Developer has a release created with no pull request
         - When Release Please runs
             - Then only the major tag step runs, and each skipped step still reads its env
+- 0092.4
+    - Given Developer has a created release whose major tag exists, then is missing, then cannot be read
+        - When Release Please moves the major tag
+            - Then it moves the tag, then creates it, then fails naming the tag and changes nothing
