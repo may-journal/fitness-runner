@@ -35,7 +35,10 @@ jobs:
       group: auto-merge-${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
+      # A PR whose base is not the default branch gets no auto-merge, so it needs
+      # no secrets or token; the merge step below explains why.
       - name: Check the App secrets
+        if: github.event.pull_request.base.ref == github.event.repository.default_branch
         id: report-step-1
         env:
           APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
@@ -49,16 +52,30 @@ jobs:
             fi
           done
       - name: Mint a one-hour App token
+        if: github.event.pull_request.base.ref == github.event.repository.default_branch
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
+      # GitHub refuses auto-merge on a stacked PR, one based on another PR's
+      # branch, so a PR whose base is not the default branch passes with a
+      # notice.
+      # Once the base PR merges and GitHub moves this PR onto the default
+      # branch, the next push or reopen turns auto-merge on; GitHub's edited
+      # event for the move never starts this workflow. It reads the event
+      # file, as a test can.
       - name: Enable squash auto-merge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          PR_URL: ${{ github.event.pull_request.html_url }}
-        run: gh pr merge --auto --squash "$PR_URL"
+        run: |
+          base="$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")"
+          default="$(jq -r .repository.default_branch "$GITHUB_EVENT_PATH")"
+          if [ "$base" != "$default" ]; then
+            echo "::notice::This PR targets $base, not $default, so it gets no auto-merge; GitHub has none for stacks. Push or reopen it once it targets $default."
+            exit 0
+          fi
+          gh pr merge --auto --squash "$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")"
       # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
         if: ${{ always() }}
