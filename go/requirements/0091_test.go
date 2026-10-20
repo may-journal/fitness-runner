@@ -75,7 +75,14 @@ func note0091(body string) []response {
 func autoMerge0091(t *testing.T, base string, answer response, note string, writes ...response) (replays, string, int) {
 	t.Helper()
 	answer.Match = []string{"pr merge --auto --squash"}
-	saved := append(append(append([]response{answer}, note0091(note)...), writes...), response{Match: []string{"api "}})
+	return run0091(t, base, append(append([]response{answer}, note0091(note)...), writes...))
+}
+
+// run0091 runs the auto-merge step on PR 2 based on base, with GitHub
+// answering from saved and accepting any other call.
+func run0091(t *testing.T, base string, saved []response) (replays, string, int) {
+	t.Helper()
+	saved = append(saved, response{Match: []string{"api "}})
 	rp := standIn(t, map[string][]response{"gh": saved})
 	env := event0014(t, "pull_request", map[string]any{
 		"action":       "synchronize",
@@ -98,8 +105,13 @@ func logged0091(text string) string {
 
 // posted0091 returns the note text the step posted on PR 2, or "".
 func posted0091(rp replays) string {
+	return postedOn0091(rp, 2)
+}
+
+// postedOn0091 returns the note text the step posted on PR n, or "".
+func postedOn0091(rp replays, n int) string {
 	for _, c := range rp.calls("gh") {
-		if _, body, ok := strings.Cut(c, "api "+issues0091+"/2/comments -f body="); ok {
+		if _, body, ok := strings.Cut(c, "api "+issues0091+"/"+itoa(n)+"/comments -f body="); ok {
 			return body
 		}
 	}
@@ -107,15 +119,17 @@ func posted0091(rp replays) string {
 }
 
 // stacked0091 is the note on a PR based on photos-grid.
-const stacked0091 = "Auto-merge is off: this PR targets `photos-grid`, not `main`, and GitHub has no auto-merge for stacked pull requests. " +
-	"Merge it by hand once it is approved and green, or merge its base PR first. Once GitHub moves this PR onto `main`, auto-merge turns on and this comment says so."
+const stacked0091 = "Auto-merge is off: this PR targets `photos-grid`, not `main`, in a branch chain. " +
+	"The bot cannot merge a chain: merging this PR into `photos-grid` pushes to that PR and dismisses its approval. " +
+	"Merge it by hand, or rebuild the chain with `gh stack`, which the bot merges whole. " +
+	"Once GitHub moves this PR onto `main`, auto-merge turns on and this comment says so."
 
 func Test0091_1(t *testing.T) {
 	t.Parallel()
 	rp, out, code := autoMerge0091(t, "photos-grid", response{}, "")
-	sees(t, out, code, 0, "::notice::This PR targets photos-grid, not main", "Its auto-merge comment says how to merge it.")
-	if rp.called("gh", "pr merge") {
-		t.Fatalf("a stacked PR asked GitHub for auto-merge: %q", rp.calls("gh"))
+	sees(t, out, code, 0, "::notice::This PR targets photos-grid, not main", "GitHub has none for branch chains", "Its auto-merge comment says how to merge it.")
+	if rp.count("gh", "pr merge")+rp.count("gh", "merge-async") > 0 {
+		t.Fatalf("a PR in a branch chain asked GitHub to merge: %q", rp.calls("gh"))
 	}
 	if !rp.called("gh", "api "+issues0091+"/2/comments", logged0091(stacked0091)) {
 		t.Fatalf("a stacked PR got no note saying why it has no auto-merge: %q", rp.calls("gh"))
@@ -127,7 +141,7 @@ func Test0091_1(t *testing.T) {
 	}
 	refused := response{Match: []string{"-f body="}, Stderr: "gh: Resource not accessible by integration (HTTP 403)\n", Exit: 1}
 	_, out, code = autoMerge0091(t, "photos-grid", response{}, "", refused)
-	sees(t, out, code, 0, "HTTP 403", "::warning::GitHub refused a change to this PR's auto-merge comment")
+	sees(t, out, code, 0, "HTTP 403", "::warning::GitHub refused a change to a PR's auto-merge comment")
 }
 
 func Test0091_2(t *testing.T) {
@@ -186,7 +200,15 @@ func runs0091(t *testing.T, event map[string]string) bool {
 	if !ok {
 		t.Fatalf("%s has no job-level if", workflow0091)
 	}
-	cond = strings.ReplaceAll(block0091(cond), "\n", " ")
+	return holds0091(t, strings.ReplaceAll(block0091(cond), "\n", " "), event)
+}
+
+// holds0091 evaluates an Actions condition cond for an event whose fields,
+// keyed by their path under github.event, hold event; "event_name" names
+// the event itself.
+func holds0091(t *testing.T, cond string, event map[string]string) bool {
+	t.Helper()
+	cond = strings.ReplaceAll(cond, "github.event_name", "github.event.event_name")
 	cond = null0091.ReplaceAllString(cond, `""`)
 	cond = eventRef0091.ReplaceAllStringFunc(cond, func(ref string) string {
 		value, given := event[strings.TrimPrefix(ref, "github.event.")]

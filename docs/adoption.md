@@ -153,17 +153,20 @@ An org ruleset can run `pr-check-reusable.yml` from the `v1` tag in every repo w
 
 The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
 
-A draft marked ready never starts it, so may-journal/.github syncs this caller into each repo as `.github/workflows/auto-merge-on-ready.yml`:
+A draft marked ready or an approval never starts it, so may-journal/.github syncs this caller into each repo as `.github/workflows/auto-merge-on-ready.yml`:
 
 ```yaml
 name: Auto-merge on ready
 on:
   pull_request_target:
     types: [ready_for_review]
+  pull_request_review:
+    types: [submitted]
 permissions:
   contents: read
 jobs:
   auto-merge:
+    if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
     uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@v1
     secrets: inherit
 ```

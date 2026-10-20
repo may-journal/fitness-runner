@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Every ready pull request of mine ends up with auto-merge on, or says plainly in a comment why it has none. A stacked one keeps a green Auto-merge check, and its comment tells me how to merge it. Any other auto-merge failure turns the check red with GitHub's answer.
+Every ready pull request of mine ends up with auto-merge on, or says plainly in a comment why it has none. A stacked one keeps a green Auto-merge check, and its comment tells me how it merges. Any other auto-merge failure turns the check red with GitHub's answer.
 
 ## Measurement
 
@@ -19,9 +19,9 @@ Source: #539
 ## Requirements
 
 - 0091.1
-    - Given Developer has a pull request stacked on another pull request's branch
+    - Given Developer has a pull request on another pull request's branch, with no native stack
         - When Auto-merge runs on it twice
-            - Then it passes, asks GitHub for nothing, and comments once naming both branches and how to merge it; a refused comment only warns
+            - Then it passes, merges nothing, and comments once naming both branches and why it cannot merge; a refused comment only warns
 - 0091.2
     - Given Developer has a stacked pull request that GitHub moved onto the default branch after its base merged
         - When Auto-merge runs on it
