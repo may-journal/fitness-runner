@@ -106,6 +106,16 @@ flowchart TD
 
 There is no label guard: every PR has a description, so every PR is validated, and the status check is the verdict.
 
+## Rerun a cancelled pr-check
+
+Never close and reopen a PR to rerun a check: the close turns its auto-merge off. In other repos, pr-check runs from the org ruleset, so its workflow lives here. `gh run rerun <id>` first looks that workflow up in the PR's repo and gets a 404. Call GitHub's [re-run a workflow](https://docs.github.com/en/rest/actions/workflow-runs#re-run-a-workflow) endpoint directly instead:
+
+```sh
+gh api -X POST repos/<owner>/<repo>/actions/runs/<run-id>/rerun
+```
+
+The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/actions/runs?branch=<head>` output.
+
 ## fitness-suite
 
 A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
@@ -243,9 +253,9 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.
 
-may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it. The job runs only for an open, ready PR without auto-merge, so other pushes start no runner and bill nothing.
+may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it. The org's copy also runs it when a PR's base changes. The job runs only for an open, ready PR without auto-merge, so other pushes start no runner and bill nothing. A reopen always runs it, since closing a PR turns its [auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request) off.
 
-GitHub has no auto-merge for a stacked PR, per its [merging stacked pull requests](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-stacked-pull-requests) docs. So a PR whose base is not the default branch passes with a notice. Once the base PR merges and GitHub moves the PR onto the default branch, its next push or reopen turns auto-merge on. If GitHub still counts it as stacked and refuses, the job passes with a notice too; any other failure fails it.
+GitHub has no auto-merge for a [stacked PR](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-stacked-pull-requests), even for a stack's bottom PR on the default branch. Such a PR passes with one comment saying why it has no auto-merge and how to merge it. Once GitHub moves it onto the default branch, the next run turns auto-merge on and edits that comment to say so. Any other refusal fails the job with an error naming GitHub's answer.
 
 ## release-please
 
