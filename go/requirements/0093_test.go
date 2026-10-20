@@ -47,7 +47,7 @@ func run0093(t *testing.T, name string, gh []response, env ...string) (replays, 
 		cmd.Dir = t.TempDir()
 		cmd.Env = append(append(append(userEnv(), rp.env...), "PR=23", "SHA=abc123", "GH_TOKEN=app-token", "GH_REPO="+repo0014,
 			"GITHUB_REPOSITORY="+repo0014, "GITHUB_OUTPUT="+output, "GITHUB_RUN_ID=99", "AUTHOR="+author0093,
-			"TRIES=2", "WAIT_SECONDS=0", "KIND=release"), env...)
+			"TRIES=2", "WAIT_SECONDS=0", "KIND=release", "BOT=may-journal-approver"), env...)
 		return cmd
 	})
 	written, _ := os.ReadFile(output)
@@ -92,10 +92,10 @@ func wait0093(t *testing.T, gh ...response) (replays, string, int, string) {
 	return run0093(t, "Wait for green checks", gh)
 }
 
-// reviews0093 is GitHub naming the approver's token as its machine user,
-// listing PR 23's reviews as reviews, and accepting a new one.
+// reviews0093 is GitHub listing PR 23's reviews as reviews, and accepting
+// a new one.
 func reviews0093(reviews string) []response {
-	return []response{{Match: []string{"api user --jq .login"}, Stdout: "may-journal-approver\n"}, {Match: []string{"pulls/23/reviews --paginate"}, Stdout: reviews + "\n"}, {Match: []string{"-X POST"}, Stdout: "{}\n"}}
+	return []response{{Match: []string{"pulls/23/reviews --paginate"}, Stdout: reviews + "\n"}, {Match: []string{"-X POST"}, Stdout: "{}\n"}}
 }
 
 // approved0093 is a page of reviews holding the approver's approval of
@@ -124,6 +124,23 @@ func Test0093_1(t *testing.T) {
 	sees(t, out, code, 0, "PR #23 is already approved at abc123.")
 	if rp.called("gh", "-X POST") {
 		t.Fatalf("a release PR approved at abc123 was approved again: %q", rp.calls("gh"))
+	}
+	tokens0093(t)
+}
+
+// tokens0093 asserts that only the approval uses the approver's token, and
+// every read of the PR and its checks uses the run's own.
+func tokens0093(t *testing.T) {
+	t.Helper()
+	for step, token := range map[string]string{
+		"Check the release PR":      "github.token",
+		"Check the dependency bump": "github.token",
+		"Wait for green checks":     "github.token",
+		"Approve the PR":            "secrets.APPROVER_TOKEN",
+	} {
+		if want := "GH_TOKEN: ${{ " + token + " }}\n"; !strings.Contains(section0093(t, step), want) {
+			t.Errorf("step %q does not use %s", step, token)
+		}
 	}
 }
 
@@ -234,8 +251,15 @@ func Test0093_6(t *testing.T) {
 		t.Errorf("a missing token was reported ready: %q", written)
 	}
 	skipsAllButReport0093(t)
-	_, _, _, written = run0093(t, "Check the approver token", nil, "TOKEN=token")
-	if written != "ready=true\n" {
+	user := response{Match: []string{"api user --jq .login"}, Stdout: "may-journal-approver\n"}
+	_, _, _, written = run0093(t, "Check the approver token", []response{user}, "TOKEN=token")
+	if written != "ready=true\nlogin=may-journal-approver\n" {
 		t.Errorf("a present token was not reported ready: %q", written)
+	}
+	user.Exit, user.Stdout, user.Stderr = 1, "", "HTTP 401: Bad credentials\n"
+	_, out, code, written = run0093(t, "Check the approver token", []response{user}, "TOKEN=expired")
+	sees(t, out, code, 1, "::error::GitHub rejects APPROVER_TOKEN; replace the org secret with a valid token.")
+	if written != "" {
+		t.Errorf("a rejected token was reported ready: %q", written)
 	}
 }
