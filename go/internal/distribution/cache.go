@@ -2,7 +2,9 @@ package distribution
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -53,7 +55,44 @@ func validBundle(path string, hashes map[string]string) bool {
 	if err != nil || len(entries) != topLevelCount(hashes) {
 		return false
 	}
-	return validFiles(path, hashes)
+	return validContents(path, hashes)
+}
+
+func validContents(path string, hashes map[string]string) bool {
+	return validSkillTree(path, hashes) && validFiles(path, hashes)
+}
+
+// validSkillTree checks the skills folder holds exactly the recorded skill
+// files, at any depth, and nothing else but folders.
+func validSkillTree(path string, hashes map[string]string) bool {
+	want := 0
+	for name := range hashes {
+		if strings.HasPrefix(name, skillsFolder+"/") {
+			want++
+		}
+	}
+	found := 0
+	err := filepath.WalkDir(filepath.Join(path, skillsFolder), func(file string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(path, file)
+		if err != nil {
+			return err
+		}
+		if _, recorded := hashes[filepath.ToSlash(relative)]; !recorded {
+			return errors.New("unrecorded skill file " + relative)
+		}
+		found++
+		return nil
+	})
+	if os.IsNotExist(err) {
+		return want == 0
+	}
+	return err == nil && found == want
 }
 
 func validFiles(path string, hashes map[string]string) bool {
