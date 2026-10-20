@@ -9,7 +9,7 @@ A commit may name its Plan with a line reading exactly `Plan #<number>`. The tra
 
 ## Read the failure
 
-- `plan trailer "Plan 63" must read exactly "Plan #<number>"`: the message also fails for spellings such as `plan #63` or `Plan: 63`. Rewrite each as `Plan #63`.
+- `plan trailer "Plan 63" must read exactly "Plan #<number>"`: the same message names `plan #63` and `Plan: 63` when those appear. Rewrite each line as `Plan #63`.
 - Prose such as "Plan the rollout in 3 steps" is never judged, so leave it.
 
 Put the trailer on the branch's first commit only. [issue-link-once](../../../fitness-check-issue-link-once/skills/issue-link-once/SKILL.md) fails a second commit that links the same Plan.
