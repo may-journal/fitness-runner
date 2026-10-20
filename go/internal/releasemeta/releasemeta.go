@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -62,20 +63,66 @@ func releaseHeading(body string) (string, error) {
 
 // FormatBody rewrites a release PR body to the PR template. Between Release
 // Please's delimiters it keeps only the version heading, which Release Please
-// reads back at merge. It links the entry files at commit sha and the
-// compare view; the tagged release lists their notes.
-func FormatBody(body string, issueNumber int, repo, sha string) (string, error) {
+// reads back at merge; only its version matters there. Every link resolves
+// at sha, the release PR's head, before the release tag exists: the compare
+// view runs from the previous tag to sha, and each entry file in added, the
+// ones added since that tag, is linked at sha. A first release, with no
+// previous tag, links the entry folder at sha.
+func FormatBody(body string, issueNumber int, repo, sha string, added []string) (string, error) {
 	heading, err := releaseHeading(body)
 	if err != nil {
 		return "", err
 	}
-	entries := fmt.Sprintf("[entry files](https://github.com/%s/tree/%s/%s)", repo, sha, changelog.EntryDir)
-	ships := "the " + entries + " at this commit"
+	base := "https://github.com/" + repo
+	ships := fmt.Sprintf("- What ships: the [entry files](%s/tree/%s/%s) at this commit.", base, sha, changelog.EntryDir)
 	if m := compareLink.FindStringSubmatch(heading); m != nil {
-		ships = fmt.Sprintf("the %s added since %s, and the [compare view](%s)", entries, previousTag(m[1]), m[1])
+		since := previousTag(m[1])
+		compare := fmt.Sprintf("%s/compare/%s...%s", base, since, sha)
+		heading = strings.Replace(heading, m[1], compare, 1)
+		ships = shipsSince(base, sha, since, compare, added)
 	}
 	heading = "### " + strings.TrimLeft(heading, "# ")
-	return fmt.Sprintf("> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release. Binary builds and public checks run after this PR merges, and the tagged release lists the notes of its entry files.\n\nCloses #%d. Agent: Release Please.\n\n<!-- fitness-release-issue:%d -->\n\n## Changelog\n\n---\n\n%s\n\n- What ships: %s.\n\n---\nRelease Please manages this release PR.\n", issueNumber, issueNumber, heading, ships), nil
+	return fmt.Sprintf("> Prepare a reviewed Fitness release.\n\n## Background\n\nRelease Please groups merged changes for the next release. Binary builds and public checks run after this PR merges, and the tagged release lists the notes of its entry files.\n\nCloses #%d. Agent: Release Please.\n\n<!-- fitness-release-issue:%d -->\n\n## Changelog\n\n---\n\n%s\n\n%s\n\n---\nRelease Please manages this release PR.\n", issueNumber, issueNumber, heading, ships), nil
+}
+
+// shipsSince is the `## Changelog` list of a release since tag since: the
+// compare view, then one link per added entry file at sha.
+func shipsSince(base, sha, since, compare string, added []string) string {
+	if len(added) == 0 {
+		return fmt.Sprintf("- What ships: no entry files since %s; see the [compare view](%s).", since, compare)
+	}
+	lines := []string{fmt.Sprintf("- What ships: the entry files added since %s, and the [compare view](%s).", since, compare)}
+	for _, p := range added {
+		lines = append(lines, fmt.Sprintf("- [`%s`](%s/blob/%s/%s)", p, base, sha, p))
+	}
+	return strings.Join(lines, "\n")
+}
+
+// sinceTag is the previous release tag a release PR body's compare view
+// starts from, or "" for a first release.
+func sinceTag(body string) string {
+	heading, err := releaseHeading(body)
+	if err != nil {
+		return ""
+	}
+	if m := compareLink.FindStringSubmatch(heading); m != nil {
+		return previousTag(m[1])
+	}
+	return ""
+}
+
+// addedEntries are the entry files that head, the release PR's head commit,
+// added since tag since, newest name first, or none for a first release.
+func (c Client) addedEntries(since, head string) ([]string, error) {
+	if since == "" {
+		return nil, nil
+	}
+	if err := changelog.FetchCommit(c.Root, head); err != nil {
+		return nil, err
+	}
+	paths, err := changelog.AddedPaths(c.Root, since, head)
+	slices.Reverse(paths)
+	return paths, err
 }
 
 // previousTag is the tag a compare view starts from, such as v1.0.0 in
@@ -95,7 +142,7 @@ func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
 	if err != nil {
 		return err
 	}
-	body, err := FormatBody(pr.Body, tracking, c.Repo, pr.Head.SHA)
+	body, err := c.releaseBody(pr, tracking)
 	if err != nil {
 		return err
 	}
@@ -103,6 +150,16 @@ func (c Client) UpdateReleasePR(ctx context.Context, number int) error {
 		return nil
 	}
 	return c.updatePRBody(ctx, number, body)
+}
+
+// releaseBody is pr's body in the PR template, closing issue tracking and
+// linking the entry files added since the previous tag.
+func (c Client) releaseBody(pr pullRequest, tracking int) (string, error) {
+	added, err := c.addedEntries(sinceTag(pr.Body), pr.Head.SHA)
+	if err != nil {
+		return "", err
+	}
+	return FormatBody(pr.Body, tracking, c.Repo, pr.Head.SHA, added)
 }
 
 func (c Client) loadValidPR(ctx context.Context, number int) (pullRequest, error) {

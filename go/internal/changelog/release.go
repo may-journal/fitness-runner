@@ -72,16 +72,12 @@ func headReleaseTag(root string) (string, error) {
 // tag, newest first. An empty since means the first release, which ships
 // every entry file tag holds.
 func AddedSince(root, since, tag string) ([]Entry, error) {
-	args := []string{"diff", "--name-only", "--no-renames", "--diff-filter=A", since, tag, "--", EntryDir}
-	if since == "" {
-		args = []string{"ls-tree", "--name-only", tag, EntryDir + "/"}
-	}
-	list, err := gitRun(root, args...)
+	paths, err := AddedPaths(root, since, tag)
 	if err != nil {
 		return nil, err
 	}
 	var entries []Entry
-	for _, p := range entryPaths(list) {
+	for _, p := range paths {
 		text, err := gitRun(root, "show", tag+":"+p)
 		if err != nil {
 			return nil, err
@@ -90,6 +86,27 @@ func AddedSince(root, since, tag string) ([]Entry, error) {
 	}
 	SortEntries(entries)
 	return entries, nil
+}
+
+// AddedPaths returns the paths of the entry files ref holds that since
+// lacked, oldest name first. An empty since lists every entry file ref holds.
+func AddedPaths(root, since, ref string) ([]string, error) {
+	args := []string{"diff", "--name-only", "--no-renames", "--diff-filter=A", since, ref, "--", EntryDir}
+	if since == "" {
+		args = []string{"ls-tree", "--name-only", ref, EntryDir + "/"}
+	}
+	list, err := gitRun(root, args...)
+	return entryPaths(list), err
+}
+
+// FetchCommit makes commit sha readable in root, fetching it from origin
+// when the clone lacks it, such as a branch pushed after checkout.
+func FetchCommit(root, sha string) error {
+	if _, err := gitRun(root, "cat-file", "-e", sha+"^{commit}"); err == nil {
+		return nil
+	}
+	_, err := gitRun(root, "fetch", "--quiet", "origin", sha)
+	return err
 }
 
 // gitRun returns git's output in root, or an error naming the command and

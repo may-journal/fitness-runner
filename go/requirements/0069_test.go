@@ -4,6 +4,7 @@ package requirements
 import (
 	"encoding/json"
 	"os/exec"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -118,13 +119,13 @@ func entryFileBody(path string) string {
 }
 
 // entryReleasePR is GitHub's answer for release PR 7 with body, from
-// Release Please's branch at commit abc1234.
-func entryReleasePR(t *testing.T, body string) response {
+// Release Please's branch at commit head.
+func entryReleasePR(t *testing.T, body, head string) response {
 	t.Helper()
 	data, err := json.Marshal(map[string]any{
 		"number": 7, "state": "open", "body": body,
 		"base":   map[string]any{"ref": "main"},
-		"head":   map[string]any{"ref": "release-please--branches--main", "sha": "abc1234", "repo": map[string]any{"full_name": repo0014}},
+		"head":   map[string]any{"ref": "release-please--branches--main", "sha": head, "repo": map[string]any{"full_name": repo0014}},
 		"labels": []map[string]string{{"name": "autorelease: pending"}},
 	})
 	mustDo(t, err)
@@ -228,13 +229,17 @@ func entryOrdered(text string, parts ...string) bool {
 	return true
 }
 
-// entryShips is the `## Changelog` item the release tool writes for release
-// PR 7 at commit abc1234.
-const entryShips = "- What ships: the [entry files](https://github.com/" + repo0014 + "/tree/abc1234/changelog) added since v1.0.0, and the [compare view](" + entryCompare + ")."
+// entryShips is the `## Changelog` list the release tool writes for release
+// PR 7 at commit head, before v1.1.0 is tagged.
+func entryShips(head string) string {
+	blob := "https://github.com/" + repo0014 + "/blob/" + head + "/"
+	return "- What ships: the entry files added since v1.0.0, and the [compare view](https://github.com/" + repo0014 + "/compare/v1.0.0..." + head + ").\n" +
+		"- [`" + entryLaterFile + "`](" + blob + entryLaterFile + ")\n- [`" + entryFirstFile + "`](" + blob + entryFirstFile + ")"
+}
 
 func Test0069_20(t *testing.T) {
 	t.Parallel()
-	release := prBody0014(entryShips, 11)
+	release := prBody0014(entryShips("abc1234"), 11)
 	repo, pr := entryCommits(t, nil, release, map[string]string{"version.txt": "1.1.0\n"})
 	out, code := entryActions(t, repo, release)
 	sees(t, out, code, 0, "Passed.")
@@ -253,16 +258,67 @@ func Test0069_20(t *testing.T) {
 func Test0069_21(t *testing.T) {
 	t.Parallel()
 	patch := response{Match: []string{"--method PATCH", "repos/" + repo0014 + "/pulls/7"}, Stdout: "{}\n"}
-	rp := standIn(t, map[string][]response{"gh": {patch, entryReleasePR(t, entryCopiedNotes)}})
+	repo, head := entryPending(t)
+	rp := standIn(t, map[string][]response{"gh": {patch, entryReleasePR(t, entryCopiedNotes, head)}})
 	env := append(rp.env, "RELEASE_PR={\"number\":7}", "GITHUB_REPOSITORY="+repo0014)
-	out, code := releaseToolRun(t, releaseToolRepo(t, nil), env, "release-pr")
+	out, code := releaseToolRun(t, repo, env, "release-pr")
 	sees(t, out, code, 0)
-	if !rp.called("gh", "--method PATCH", strings.TrimPrefix(entryShips, "- ")) {
-		t.Errorf("release PR body does not link its entry files and compare view:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	sent := strings.Join(rp.calls("gh"), "\n")
+	want, err := json.Marshal(entryShips(head))
+	mustDo(t, err)
+	if !rp.called("gh", "--method PATCH", strings.Trim(string(want), `"`)) {
+		t.Errorf("release PR body does not link each new entry file and the compare view at its head:\n%s", sent)
 	}
-	if rp.called("gh", "--method PATCH", "add one file") || rp.called("gh", "graphql") {
-		t.Errorf("release PR body still copies its notes, or the tool committed:\n%s", strings.Join(rp.calls("gh"), "\n"))
+	if rp.called("gh", "--method PATCH", "add one file") || strings.Contains(sent, entryOldFile) || rp.called("gh", "graphql") {
+		t.Errorf("release PR body still copies its notes, links a shipped entry, or the tool committed:\n%s", sent)
 	}
+	entryAllResolve(t, repo, sent)
+}
+
+// entryAllResolve fails for each link in sent to a compare, tree or blob
+// page that does not resolve in repo.
+func entryAllResolve(t *testing.T, repo, sent string) {
+	t.Helper()
+	for _, link := range entryLinks.FindAllStringSubmatch(sent, -1) {
+		if !entryResolves(repo, link[1], link[2]) {
+			t.Errorf("release PR body links %s, which does not resolve before the release", link[0])
+		}
+	}
+}
+
+// entryPending is a repo whose v1.0.0 tag holds entryOldFile and whose main
+// adds two entry files since, with no v1.1.0 tag yet. Release Please's
+// branch adds one version commit, whose hash it returns too. Main then
+// gains a third entry file the release branch lacks.
+func entryPending(t *testing.T) (string, string) {
+	t.Helper()
+	repo := entryTagged(t, true)
+	git(t, repo, "tag", "-d", "v1.1.0")
+	git(t, repo, "checkout", "-q", "-b", "release-please--branches--main")
+	commit(t, repo, map[string]string{"version.txt": "1.1.0\n"}, "chore(main): release 1.1.0")
+	head := iloHead(t, repo)
+	git(t, repo, "checkout", "-q", "-")
+	commit(t, repo, withEntries(map[string]string{"2026-10-10-1100-main-only": entryFileText("2026.10.10.1100", "Fix: land after the release branch.")}), "fix(app): land after the release branch")
+	return repo, head
+}
+
+// entryLinks finds each link to the fixture repo's compare, tree or blob
+// pages: the page kind, then its refs and path.
+var entryLinks = regexp.MustCompile(`https://github\.com/` + regexp.QuoteMeta(repo0014) + `/(compare|tree|blob)/([^)\s"\\]+)`)
+
+// entryResolves reports whether GitHub would show a page of kind for spec
+// in repo: both ends of a compare view are commits, and a tree or blob
+// path exists at its ref.
+func entryResolves(repo, kind, spec string) bool {
+	exists := func(object string) bool {
+		return exec.Command("git", "-C", repo, "cat-file", "-e", object).Run() == nil
+	}
+	if kind == "compare" {
+		from, to, ok := strings.Cut(spec, "...")
+		return ok && exists(from+"^{commit}") && exists(to+"^{commit}")
+	}
+	ref, path, _ := strings.Cut(spec, "/")
+	return exists(ref + ":" + path)
 }
 
 // entryOldFile is an entry file release v1.0.0 shipped.
