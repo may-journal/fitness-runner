@@ -85,10 +85,51 @@ struct ShareView: View {
 }
 `
 
+// localizedStateView passes literals as ternary and ?? branches.
+const localizedStateView = `import SwiftUI
+
+struct StateView: View {
+    let isShared: Bool
+    let name: String?
+
+    var body: some View {
+        Text(isShared ? "Shared" : "Private")
+        Text(name ?? "Nobody")
+        Text(isShared ? Words.Verb.share : Words.Noun.photo)
+        Label("Photos", systemImage: isShared ? "person" : "lock")
+    }
+}
+`
+
+// localizedCountView passes literals as branches inside an interpolation.
+const localizedCountView = `import SwiftUI
+
+struct CountView: View {
+    let count: Int
+
+    var body: some View {
+        Text("\(count == 1 ? "photo" : "photos")")
+        Text("\(count)\(Words.Noun.photo)")
+    }
+}
+`
+
 func Test0097_1(t *testing.T) {
 	t.Parallel()
-	out, code := localizedText(t, map[string]string{"App/ShareView.swift": localizedView})
+	out, code := localizedText(t, map[string]string{
+		"App/ShareView.swift": localizedView,
+		"App/StateView.swift": localizedStateView,
+		"App/CountView.swift": localizedCountView,
+		"App/HelpView.swift":  "import SwiftUI\n\nstruct HelpView: View {\n    var body: some View {\n        Text(\"\"\"\n            Share a \"photo\"\n            with a friend\n            \"\"\")\n    }\n}\n",
+	})
 	sees(t, out, code, 1,
+		`App/StateView.swift:8 - "Shared" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference`,
+		`App/StateView.swift:8 - "Private" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference`,
+		`App/StateView.swift:9 - "Nobody" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference`,
+		`App/StateView.swift:11 - "Photos" passed to Label skips the String Catalog; use a Words reference for catalog entry "noun.photo"`,
+		`App/CountView.swift:7 - "photo" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference`,
+		`App/CountView.swift:7 - "photos" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference`,
+		"App/HelpView.swift:5 - \"\"\"\n            Share a \"photo\"\n            with a friend\n            \"\"\" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference",
 		`App/ShareView.swift:7 - "Share" passed to Button skips the String Catalog; use a Words reference for catalog entry "verb.share"`,
 		`App/ShareView.swift:8 - "Library" passed to navigationTitle skips the String Catalog; add it to the String Catalog and use a Words reference`,
 		`App/ShareView.swift:9 - "\(count) shared" passed to Text skips the String Catalog; add it to the String Catalog and use a Words reference`)
@@ -101,6 +142,7 @@ func Test0097_2(t *testing.T) {
 struct PhotoView: View {
     let caption: String
     let count: Int
+    let titles: [String: String]
 
     var body: some View {
         VStack {
@@ -108,6 +150,7 @@ struct PhotoView: View {
             Text(caption)
             Text("·")
             Text("\(count)")
+            Text("\(titles["first"] ?? Words.Noun.photo)")
             Button(Words.Verb.share) {}
                 .accessibilityLabel(Words.Verb.share)
         }
@@ -142,6 +185,9 @@ func Test0097_4(t *testing.T) {
         try await user.sees(.image("Sparkle"))
         try await user.doesNotSee(.button("Archive"))
         try await user.taps(.button(Words.Verb.share))
+        let label = "Share"
+        try await user.writes(label)
+        try await user.adds(Photo(title: "Photos", caption: "Share"))
     }
 }
 `})
