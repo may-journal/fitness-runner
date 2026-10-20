@@ -34,3 +34,40 @@ func Test0098_3(t *testing.T) {
 		t.Errorf("skills folder %s was created", folder)
 	}
 }
+
+func Test0098_4(t *testing.T) {
+	t.Parallel()
+	folder := t.TempDir()
+	fiRun(t, t.TempDir(), nil, "--link-skills", folder)
+	bundle := filepath.Dir(mustLink(t, filepath.Join(folder, "add-requirements")))
+	mustDo(t, os.Symlink(filepath.Join(bundle, "retired"), filepath.Join(folder, "retired")))
+	other := filepath.Join(t.TempDir(), "bundle-1", "skills", "other")
+	write(t, other, map[string]string{"SKILL.md": "other\n"})
+	mustDo(t, os.Symlink(other, filepath.Join(folder, "foreign")))
+	out, code := fiRun(t, t.TempDir(), nil, "--link-skills", folder)
+	sees(t, out, code, 0, "retired removed")
+	if _, err := os.Lstat(filepath.Join(folder, "retired")); err == nil {
+		t.Errorf("link to the dropped skill stayed")
+	}
+	sees(t, fiFile(t, filepath.Join(folder, "foreign", "SKILL.md")), 0, 0, "other\n")
+}
+
+func Test0098_5(t *testing.T) {
+	t.Parallel()
+	folder := t.TempDir()
+	fiRun(t, t.TempDir(), nil, "--link-skills", folder)
+	for _, name := range []string{"add-requirements", filepath.Join("add-requirements", "SKILL.md")} {
+		info, err := os.Stat(filepath.Join(folder, name))
+		mustDo(t, err)
+		if info.Mode().Perm()&0o044 == 0 {
+			t.Errorf("%s mode %v is not readable by others", name, info.Mode().Perm())
+		}
+	}
+}
+
+func mustLink(t *testing.T, path string) string {
+	t.Helper()
+	target, err := os.Readlink(path)
+	mustDo(t, err)
+	return target
+}

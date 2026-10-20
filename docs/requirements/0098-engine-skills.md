@@ -30,3 +30,11 @@ Source: `go/internal/distribution/skills.go:20`
     - Given Developer asks for the commit hook and skill links in one command
         - When I run `fitness-install --install-hook --link-skills` with a folder
             - Then it refuses with an error and links nothing
+- 0098.4
+    - Given Developer has a link to a dropped skill and a link into another tool's bundle in a skills folder
+        - When I run `fitness-install --link-skills` with that folder
+            - Then the link to the dropped skill is removed and the other tool's link stays
+- 0098.5
+    - Given Developer has an empty skills folder for an agent
+        - When I run `fitness-install --link-skills` with that folder
+            - Then every linked skill file is readable by other users
