@@ -58,7 +58,7 @@ func (b *extractedBundle) extract(reader *tar.Reader, directory, top string) err
 }
 
 func (b *extractedBundle) extractEntry(reader io.Reader, h *tar.Header, directory, top string) error {
-	if h.Typeflag == tar.TypeDir && h.Name == top+"/" {
+	if ignoredFolder(h, top) {
 		return nil
 	}
 	name, err := archiveName(h, top)
@@ -76,7 +76,17 @@ func archiveName(h *tar.Header, top string) (string, error) {
 		return "", fmt.Errorf("archive entry %q is not a regular binary", h.Name)
 	}
 	name := strings.TrimPrefix(h.Name, top+"/")
-	if name == h.Name || !binaryPattern.MatchString(name) {
+	if name == h.Name {
+		return "", fmt.Errorf("unsafe archive path %q", h.Name)
+	}
+	if skillPattern.MatchString(name) {
+		return name, nil
+	}
+	return binaryName(h, name)
+}
+
+func binaryName(h *tar.Header, name string) (string, error) {
+	if !binaryPattern.MatchString(name) {
 		return "", fmt.Errorf("unsafe archive path %q", h.Name)
 	}
 	if h.Mode&0111 == 0 {
@@ -98,5 +108,28 @@ func (b *extractedBundle) writeBinary(reader io.Reader, h *tar.Header, directory
 		return err
 	}
 	b.Hashes[name] = contentHash(data)
-	return os.WriteFile(filepath.Join(directory, name), data, 0700)
+	return writeBundleFile(directory, name, data)
+}
+
+// ignoredFolder reports whether the entry is the bundle folder, the skills folder
+// or one inside it. They are created as the skill files arrive.
+func ignoredFolder(h *tar.Header, top string) bool {
+	name := strings.TrimSuffix(strings.TrimPrefix(h.Name, top+"/"), "/")
+	if h.Typeflag != tar.TypeDir {
+		return false
+	}
+	return h.Name == top+"/" || name == skillsFolder || skillFolderPattern.MatchString(name) || skillPattern.MatchString(name)
+}
+
+// writeBundleFile writes a binary executable and a skill file readable only by
+// the installing user, creating the skill's folder first.
+func writeBundleFile(directory, name string, data []byte) error {
+	path := filepath.Join(directory, name)
+	if !strings.HasPrefix(name, skillsFolder+"/") {
+		return os.WriteFile(path, data, 0700)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0600)
 }
