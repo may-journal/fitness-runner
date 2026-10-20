@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 var generationPattern = regexp.MustCompile(`^bundle-[0-9]+$`)
@@ -49,7 +50,7 @@ func validBundle(path string, hashes map[string]string) bool {
 		return false
 	}
 	entries, err := os.ReadDir(path)
-	if err != nil || len(entries) != len(hashes) {
+	if err != nil || len(entries) != topLevelCount(hashes) {
 		return false
 	}
 	return validFiles(path, hashes)
@@ -58,14 +59,42 @@ func validBundle(path string, hashes map[string]string) bool {
 func validFiles(path string, hashes map[string]string) bool {
 	for name, hash := range hashes {
 		file := filepath.Join(path, name)
-		if hash == checkLink && validLink(file) {
-			continue
-		}
-		if !validBinary(file, hash) {
+		if !validEntry(file, name, hash) {
 			return false
 		}
 	}
 	return true
+}
+
+// topLevelCount counts the bundle entries a directory listing shows, where all
+// skill files sit under the one skills folder.
+func topLevelCount(hashes map[string]string) int {
+	top := map[string]bool{}
+	for name := range hashes {
+		top[strings.SplitN(name, "/", 2)[0]] = true
+	}
+	return len(top)
+}
+
+func validSkillFile(path, hash string) bool {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return false
+	}
+	data, err := readCacheFile(path, maxBinaryBytes)
+	return err == nil && contentHash(data) == hash
+}
+
+// validEntry checks one bundle file by its kind: a check link, a skill file, or
+// a binary.
+func validEntry(file, name, hash string) bool {
+	switch {
+	case hash == checkLink:
+		return validLink(file)
+	case strings.HasPrefix(name, skillsFolder+"/"):
+		return validSkillFile(file, hash)
+	}
+	return validBinary(file, hash)
 }
 
 func validBinary(path, hash string) bool {
