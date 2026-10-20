@@ -1,48 +1,63 @@
 package spell
 
+// cspell:ignore wordlists
+
 import (
-	_ "embed"
-	"sort"
+	"cmp"
+	"embed"
+	"io/fs"
+	"path"
+	"slices"
 	"strings"
 	"sync"
+
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 )
 
-// The base dictionaries are committed plain-text wordlists in dict/, derived
+// The embedded base dictionaries are committed plain-text wordlists derived
 // from the cspell dictionary packages; each file's '#'-prefixed provenance
-// header names its sources and licenses. The Node generator was removed in
-// the npm-free migration — a Go regeneration tool is deferred (see
-// docs/plans/archive/02-npm-free.md).
+// header names its sources and licenses. The Node generator was removed in the
+// npm-free migration — a Go regeneration tool is deferred (see
+// docs/plans/archive/02-npm-free.md). Each file is that header followed by the
+// words: lowercased, deduplicated, sorted, one per line — the committed lists
+// are pre-sorted, which is the guarantee the binary search below relies on.
 //
-// The words generator (package wordlist) merges every list the language
-// registry names into words.txt: one sorted, unique list, so a lookup is one
-// binary search instead of one per list. Run `make words` after changing a
-// list in dict/; `make words-check` in CI fails while words.txt is stale.
+// Every file in dict/ is embedded, so a new wordlist needs no list entry.
+// Lookup binary-searches each list's text in place: no parsing, no index
+// build, and no per-word allocation. The lists are read once, on the first
+// lookup, so a process that spells nothing never touches them.
 
-//go:generate go run gen_words.go
+//go:embed dict/*.txt
+var dictFiles embed.FS
 
-//go:embed words.txt
-var words string
-
-// wordStarts is the offset table of words.txt, built on the first lookup:
-// the start of each word line, then the end of the text. wordlist.Write ends
-// every line with a newline and leads with '#' header lines, which are left out.
-// A process that spells nothing never builds it.
-var wordStarts = sync.OnceValue(func() []int32 {
-	starts := make([]int32, 0, strings.Count(words, "\n")+1)
-	for i := 0; i < len(words); {
-		if words[i] != '#' {
-			starts = append(starts, int32(i))
-		}
-		nl := strings.IndexByte(words[i:], '\n')
-		if nl < 0 {
-			panic("spell: words.txt must end with a newline; rerun go generate")
-		}
-		i += nl + 1
+// embeddedDicts reads the wordlists the language registry names: the
+// repo-wide lists no module claims, and each module's. They are searched
+// biggest first, so en-us, which resolves most natural-language lookups,
+// leads. A word found in any list is known, so the order changes speed,
+// never a verdict.
+var embeddedDicts = sync.OnceValue(func() []string {
+	matches, err := fs.Glob(dictFiles, "dict/*.txt")
+	if err != nil {
+		panic("spell: " + err.Error())
 	}
-	return append(starts, int32(len(words)))
+	names := make([]string, 0, len(matches))
+	for _, m := range matches {
+		names = append(names, path.Base(m))
+	}
+	var lists []string
+	for _, name := range lang.Dicts(names, langs.All) {
+		data, err := dictFiles.ReadFile("dict/" + name)
+		if err != nil {
+			panic("spell: a language module claims " + name + ", which dict/ lacks")
+		}
+		lists = append(lists, string(data))
+	}
+	slices.SortStableFunc(lists, func(a, b string) int { return cmp.Compare(len(b), len(a)) })
+	return lists
 })
 
-// embeddedDict looks words up directly in the embedded wordlist, memoizing
+// embeddedDict looks words up directly in the embedded wordlists, memoizing
 // results because natural language repeats heavily. The memo is a sync.Map:
 // the engine runs lookups concurrently under par.Map, and the read-mostly,
 // write-once-per-key pattern is exactly its sweet spot — a mutex-guarded map ties
@@ -74,16 +89,55 @@ func (d *embeddedDict) Lookup(word string) bool {
 	return found
 }
 
-// searchEmbedded binary-searches the merged wordlist for word through its
-// offset table.
+// searchEmbedded binary-searches every embedded wordlist for word.
 func searchEmbedded(word string) bool {
-	starts := wordStarts()
-	n := len(starts) - 1
-	i := sort.Search(n, func(i int) bool { return wordAt(starts, i) >= word })
-	return i < n && wordAt(starts, i) == word
+	for _, data := range embeddedDicts() {
+		if searchLines(data, word) {
+			return true
+		}
+	}
+	return false
 }
 
-// wordAt returns word i of the merged list, without its newline.
-func wordAt(starts []int32, i int) string {
-	return words[starts[i] : starts[i+1]-1]
+// searchLines reports whether target is exactly one of data's sorted lines:
+// classic binary search over byte offsets — probe the middle, snap to the
+// containing line, and narrow. lo is always a line start, so the containing
+// line never begins before lo and the range always shrinks.
+func searchLines(data, target string) bool {
+	lo, hi := 0, len(data)
+	for lo < hi {
+		start := lineStart(data, (lo+hi)/2)
+		end := lineEnd(data, start)
+		if lineBelow(data[start:end], target) {
+			lo = end + 1
+		} else {
+			hi = start
+		}
+	}
+	return lo < len(data) && data[lo:lineEnd(data, lo)] == target
+}
+
+// lineBelow reports whether a probed line sorts strictly before target.
+// Header comments ('#'-prefixed) appear only before the first word and words
+// never start with '#', so ranking them below every target keeps the
+// predicate monotone; blank lines never occur but would rank below too.
+func lineBelow(line, target string) bool {
+	return line == "" || line[0] == '#' || line < target
+}
+
+// lineStart returns the offset of the first byte of the line containing i.
+func lineStart(data string, i int) int {
+	for i > 0 && data[i-1] != '\n' {
+		i--
+	}
+	return i
+}
+
+// lineEnd returns the offset just past the last byte of the line starting at
+// start (its '\n', or end of data for an unterminated final line).
+func lineEnd(data string, start int) int {
+	if n := strings.IndexByte(data[start:], '\n'); n >= 0 {
+		return start + n
+	}
+	return len(data)
 }
