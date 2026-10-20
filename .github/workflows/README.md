@@ -114,7 +114,7 @@ Never close and reopen a PR to rerun one check: that reruns every workflow and d
 gh api -X POST repos/<owner>/<repo>/actions/runs/<run-id>/rerun
 ```
 
-The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/actions/runs?branch=<head>` output.
+The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/actions/runs?branch=<head>` output. A rerun replays the original event, PR body included, so it suits a cancelled or flaky run. To check an edited body, push a commit before the owner approves.
 
 ## fitness-suite
 
