@@ -46,6 +46,8 @@ type response struct {
 	// Wait, when set, is how many seconds the stand-in hangs first, as a
 	// stalled service does.
 	Wait int `json:"wait"`
+	// Token, when set, also requires the call's GH_TOKEN to equal it.
+	Token string `json:"token"`
 }
 
 // replay answers one call from $FITNESS_REPLAY/<name>.json, the first
@@ -63,7 +65,7 @@ func replay(name string, args []string) int {
 	raw, _ := os.ReadFile(filepath.Join(dir, name+".json"))
 	_ = json.Unmarshal(raw, &saved)
 	for _, r := range saved {
-		if matches(call, r.Match) {
+		if r.answers(call) {
 			time.Sleep(time.Duration(r.Wait) * time.Second)
 			writeFiles(r.Files)
 			fmt.Print(r.Stdout)
@@ -82,6 +84,12 @@ func writeFiles(files map[string]string) {
 		_ = os.MkdirAll(filepath.Dir(name), 0o755)
 		_ = os.WriteFile(name, []byte(body), 0o644)
 	}
+}
+
+// answers reports whether r answers call: every Match string appears in it,
+// and it runs with r's Token, when set, as GH_TOKEN.
+func (r response) answers(call string) bool {
+	return matches(call, r.Match) && (r.Token == "" || os.Getenv("GH_TOKEN") == r.Token)
 }
 
 // matches reports whether every want appears in call.

@@ -310,7 +310,7 @@ It approves only when all of these hold, and otherwise leaves the PR for a perso
 - Every changed path is `CHANGELOG.md`, `version.txt` or `.release-please-manifest.json`, counting both paths of a rename.
 - Every check but this run's own passes or skips within 20 minutes, polled every 30 seconds, and the head has not moved.
 
-The approval names the commit it checked, so the ruleset dismisses it on a later push and the next run approves anew. A repo without the `APPROVER_TOKEN` secret skips the approval with a notice. That secret is the approver's fine-grained token with pull request read and write, used only to read reviews and approve. The run's own token reads the PR, its files and checks, so each calling job grants `contents`, `pull-requests`, `checks` and `statuses` read.
+The approval names the commit it checked, so the ruleset dismisses it on a later push and the next run approves anew. Without the `APPROVER_TOKEN` secret the approval skips with a notice; a rejected token, or one that cannot see the repo, fails at once. That secret is the approver's fine-grained token with pull request read and write, used only to read reviews and approve. The run's own token reads the PR, its files and checks, so each calling job grants `contents`, `pull-requests`, `checks` and `statuses` read.
 
 ### Dependency bumps
 

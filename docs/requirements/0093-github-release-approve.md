@@ -21,7 +21,7 @@ Source: #523
 - 0093.1
     - Given Developer has a release pull request by the automation App that changes only `CHANGELOG.md`, `version.txt` and the manifest, with green checks
         - When Release approve runs on it twice
-            - Then the first run approves it at the commit it checked, and the second approves nothing new
+            - Then the first run approves it as the approver at the commit it checked, and the second approves nothing new
 - 0093.2
     - Given Developer has a release pull request that also changes a workflow, or renames one into a release file
         - When Release approve runs on it
@@ -39,6 +39,6 @@ Source: #523
         - When Release approve runs on each
             - Then it approves the first and not the second
 - 0093.6
-    - Given Developer has a repo without the approver token, calling for a release
-        - When Release approve runs
-            - Then it passes with a notice, and both PR checks, the wait and the approval skip
+    - Given Developer has a repo without the approver token, then ones whose token is rejected or cannot see the repo
+        - When Release approve runs on each
+            - Then the first passes with a notice as both PR checks, the wait and the approval skip, and the others fail at once
