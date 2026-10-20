@@ -40,7 +40,7 @@ Each step's label ends with the requirement docs it fulfils, by ID. The `archite
 ```mermaid
 flowchart TB
     dev((1 Developer or agent)):::persona
-    install(14 Install fitness<br/>Req 0061, 0088, 0098):::action
+    install(14 Install fitness<br/>Req 0061, 0088, 0098, 0099):::action
     terminal[2 Terminal<br/>Req 0001]:::screen
     runFull(3 Run fitness<br/>Req 0001):::action
     runSingle(4 Run single check<br/>Req 0001):::action
