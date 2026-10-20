@@ -26,3 +26,7 @@ Source: `go/internal/distribution/skills.go:20`
     - Given Developer has a broken skill link and a skill folder of my own in an agent's skills folder
         - When I run `fitness-install --link-skills` with that folder
             - Then the broken link is repaired and my own folder stays untouched
+- 0098.3
+    - Given Developer asks for the commit hook and skill links in one command
+        - When I run `fitness-install --install-hook --link-skills` with a folder
+            - Then it refuses with an error and links nothing
