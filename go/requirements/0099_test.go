@@ -22,7 +22,7 @@ func Test0099_1(t *testing.T) {
 	t.Parallel()
 	skill := onboardingSkill(t)
 	sees(t, skill, 0, 0, "## Install and run", "docs/ci.md#download-the-go-installer", "docs/ci.md#run-checks",
-		"docs/ci.md#commit-hook", "## Read a failure", "## Plans and pull requests", "AGENTS.md")
+		"docs/ci.md#commit-hook", "## Read a failure", "## Plans and pull requests", "fitness-check-plan-trailer/README.md")
 }
 
 // skillLink matches a link into the repo's main branch, with its optional heading.
