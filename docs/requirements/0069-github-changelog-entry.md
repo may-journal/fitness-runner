@@ -33,9 +33,9 @@ Source: `go/internal/metadata/changelog.go:17`
         - When pr-check and branch-check judge its changelog entry
             - Then both pass
 - 0069.21
-    - Given Developer has a release PR description that copies its release notes
+    - Given Developer has a release PR, behind main, that copies its notes
         - When the release tool rewrites it
-            - Then it links the entry files and compare view instead, and commits nothing
+            - Then it links its head's new entries and compare view, committing nothing
 - 0069.22
     - Given Developer has entry files from before the previous release tag and entry files added since, or no earlier tag
         - When the release tool writes the new tag's release notes
