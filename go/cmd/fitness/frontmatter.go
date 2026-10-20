@@ -19,13 +19,10 @@ var fitnessKeys = []string{"fitnessFunctions", "relatedConfigurations"}
 
 var (
 	// plainFront is a leading --- block and the blank lines after it.
-	plainFront = regexp.MustCompile(`\A---\n((?s:.*?)\n)?---\n\n*`)
+	plainFront = regexp.MustCompile(`\A---\r?\n((?s:.*?)\r?\n)?---\r?\n(?:\r?\n)*`)
 	// commentFront is the same block inside an HTML comment that opens on
 	// the first line, the form a PR template carries.
-	commentFront = regexp.MustCompile(`\A<!--\n---\n((?s:.*?)\n)?---\n-->\n\n*`)
-	// topKey is a top-level front matter key; indented lines and list items
-	// belong to the key above.
-	topKey = regexp.MustCompile(`^([A-Za-z][\w-]*):`)
+	commentFront = regexp.MustCompile(`\A<!--\r?\n---\r?\n((?s:.*?)\r?\n)?---\r?\n-->\r?\n(?:\r?\n)*`)
 )
 
 // runStripFrontMatter runs `fitness strip-front-matter`: it removes every
@@ -109,13 +106,19 @@ func stripFront(content string) (string, []string) {
 	return content, nil
 }
 
-// frontKeys lists the top-level keys of a front matter block in order.
+// frontKeys lists the top-level entries of a front matter block in order.
+// Indented lines, list items and comments belong to the entry above. A line
+// that is not a key, such as prose after a horizontal rule, counts as an
+// entry no fitness key matches, so that block is kept whole.
 func frontKeys(block string) []string {
 	var keys []string
-	for _, line := range strings.Split(block, "\n") {
-		if m := topKey.FindStringSubmatch(line); m != nil {
-			keys = append(keys, m[1])
+	for _, raw := range strings.Split(block, "\n") {
+		line := strings.TrimRight(raw, "\r")
+		if line == "" || line == "<!--" || strings.ContainsAny(line[:1], " \t-#") {
+			continue
 		}
+		name, _, _ := strings.Cut(line, ":")
+		keys = append(keys, strings.TrimSpace(name))
 	}
 	return keys
 }
