@@ -25,4 +25,4 @@ Source: #528
 - 0099.2
     - Given Developer has the onboarding skill linked into an agent's skills folder
         - When I follow each doc link in it
-            - Then every link names a file and heading that exist in the repo
+            - Then every link names a file and a real heading, not a code comment, that exist in the repo
