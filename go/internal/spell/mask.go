@@ -1,36 +1,42 @@
 package spell
 
-// cspell:ignore anrvtbf
+// cspell:ignore pell
 
 import (
 	"regexp"
+	"sort"
 	"strings"
 	"unicode"
 )
 
 // ignorePatterns are the RE2 ports of the cspell default ignoreRegExpList
-// (Urls, Email, CommitHash, hex and hash forms, UUID, Unicode refs). The
+// (Urls, Email, CommitHash, hash forms, UUID) that stay regexps. The
 // lookahead-dependent Base64/PublicKey/SshRsa patterns are deliberately not
 // replicated; commit-hash "must contain a digit" is enforced in code below.
+// The simpler patterns (hex forms, Unicode refs, escapes) are exact scanners
+// in scan.go.
+//
+// Each pattern pairs with mayMatch, an exact test that holds on every line
+// the regexp can match, so a line that fails it skips the regexp and the
+// mask never changes. Under (?i), Go folds k and s to the Kelvin sign and
+// long s, so the run tests count every non-ASCII byte as a possible member.
 type ignorePattern struct {
-	re      *regexp.Regexp
-	markers string
+	re       *regexp.Regexp
+	mayMatch func(line string) bool
 }
 
 var ignorePatterns = []ignorePattern{
-	{regexp.MustCompile(`(?i)(?:https?|ftp)://[^\s"]+`), ":/"},
-	{regexp.MustCompile(`(?i)<?\b[\w.+-]{1,128}@\w{1,63}(?:\.\w{1,63}){1,4}\b>?`), "@"},
-	{regexp.MustCompile(`(?i)\[[0-9a-f]{7,}\]`), "["},
-	{regexp.MustCompile(`(?i)\b0x[0-9a-f_]+n?\b`), "xX"},
-	{regexp.MustCompile(`(?i)#[0-9a-f]{3,8}\b`), "#"},
-	{regexp.MustCompile(`(?i)\bsha\d+-[a-z0-9+/]{25,}={0,3}`), "-"},
-	{regexp.MustCompile(`(?i)(?:\b(?:sha\d+|md5|base64|crypt|bcrypt|scrypt|security-token|assertion)[-,:$=]|#code/)[-\w/+%.]{25,}={0,3}`), "-,:$=#"},
-	{regexp.MustCompile(`(?i)\bU\+[0-9a-f]{4,5}(?:-[0-9a-f]{4,5})?`), "+"},
-	{regexp.MustCompile(`(?i)\b[0-9a-fx]{8}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{12}\b`), "-"},
-	// Escape sequences in string literals: cspell's word splitter treats \n in
-	// "\nconst" as a break so "const" is judged alone; masking the escape gets
-	// the same judgment.
-	{regexp.MustCompile(`(?i)\\(?:[anrvtbf]|[xu][0-9a-f]+)`), "\\"},
+	{regexp.MustCompile(`(?i)(?:https?|ftp)://[^\s"]+`), func(line string) bool {
+		return strings.Contains(line, "://")
+	}},
+	{regexp.MustCompile(`(?i)<?\b[\w.+-]{1,128}@\w{1,63}(?:\.\w{1,63}){1,4}\b>?`), func(line string) bool {
+		return strings.IndexByte(line, '@') >= 0
+	}},
+	{regexp.MustCompile(`(?i)\bsha\d+-[a-z0-9+/]{25,}={0,3}`), hasHashRun},
+	{regexp.MustCompile(`(?i)(?:\b(?:sha\d+|md5|base64|crypt|bcrypt|scrypt|security-token|assertion)[-,:$=]|#code/)[-\w/+%.]{25,}={0,3}`), hasHashRun},
+	{regexp.MustCompile(`(?i)\b[0-9a-fx]{8}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{4}-[0-9a-fx]{12}\b`), func(line string) bool {
+		return hasRun(line, 36, isUUIDByte)
+	}},
 }
 
 // hexRun is cspell's CommitHash pattern minus its lookahead: the "contains a
@@ -38,8 +44,7 @@ var ignorePatterns = []ignorePattern{
 var hexRun = regexp.MustCompile(`(?i)\b(?:0x)?[0-9a-f]{7,}\b`)
 
 // maskPatterns marks every byte matched by the default ignore patterns.
-// No ignore pattern matches a newline. Match each line separately and avoid
-// regex scans when a required punctuation mark or digit is absent.
+// No ignore pattern matches a newline, so each line is matched alone.
 func maskPatterns(text string, masked []bool) {
 	offset := 0
 	for line := range strings.SplitSeq(text, "\n") {
@@ -50,10 +55,11 @@ func maskPatterns(text string, masked []bool) {
 
 func maskPatternLine(line string, masked []bool) {
 	for _, pattern := range ignorePatterns {
-		if strings.ContainsAny(line, pattern.markers) {
+		if pattern.mayMatch(line) {
 			maskMatches(pattern.re, line, masked)
 		}
 	}
+	scanExact(line, masked)
 	maskHexRuns(line, masked)
 }
 
@@ -63,8 +69,10 @@ func maskMatches(re *regexp.Regexp, text string, masked []bool) {
 	}
 }
 
+// maskHexRuns masks runs of seven or more hex digits holding a digit; a
+// line without such a run skips the regexp.
 func maskHexRuns(text string, masked []bool) {
-	if !strings.ContainsAny(text, "0123456789") {
+	if !hasRun(text, 7, isHexDigit) {
 		return
 	}
 	for _, m := range hexRun.FindAllStringIndex(text, -1) {
@@ -82,16 +90,29 @@ var directiveRe = regexp.MustCompile(`(?i)\bc?spell(?:-?checker)?::?[ \t]*`)
 // lists feed the returned word set, disable-line/disable-next/disable…enable
 // mask regions, and every recognized directive masks its own text. Unknown
 // text after a bare "cspell:" is left alone, exactly like cspell.
-func maskDirectives(text string, masked []bool) map[string]struct{} {
+//
+// Every directive holds "pell" in some case (Go folds the s of spell to a
+// long s too), so only lines holding it are matched, and a text without it
+// returns at once. lines are the text's line offsets.
+func maskDirectives(text string, masked []bool, lines []int) map[string]struct{} {
+	at := indexPell(text)
+	if at < 0 {
+		return nil
+	}
 	d := &directiveMasker{
 		text:       text,
 		masked:     masked,
-		lines:      lineOffsets(text),
+		lines:      lines,
 		words:      make(map[string]struct{}),
 		blockStart: -1,
 	}
-	for n := range d.lines {
+	for at >= 0 {
+		n := sort.SearchInts(lines, at+1) - 1
 		d.maskLine(n)
+		_, next := d.lineSpan(n)
+		if at = indexPell(text[next:]); at >= 0 {
+			at += next
+		}
 	}
 	if d.blockStart >= 0 {
 		mark(masked, d.blockStart, len(text))

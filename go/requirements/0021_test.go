@@ -27,12 +27,6 @@ func cspellRun(t *testing.T, files map[string]string, args ...string) (string, i
 // cspellInstalled is where an installed shared package keeps its cspell.json.
 const cspellInstalled = "node_modules/@mayjournal/fitness-shared/config/cspell.json"
 
-func Test0021_1(t *testing.T) {
-	t.Parallel()
-	out, code := cspellRun(t, map[string]string{"notes.md": "good words\nthe " + cspellTypo + " fox\n"})
-	sees(t, out, code, 1, "notes.md:2:5 - Unknown word ("+cspellTypo+")")
-}
-
 func Test0021_2(t *testing.T) {
 	t.Parallel()
 	out, code := cspellRun(t, map[string]string{
@@ -84,6 +78,26 @@ func Test0021_7(t *testing.T) {
 	sees(t, out, code, 1, "new.md:1:5 - Unknown word ("+cspellRepoWord+")")
 	if strings.Contains(out, cspellTypo) || strings.Contains(out, "gone.md") {
 		t.Errorf("only the staged file on disk may be checked:\n%s", out)
+	}
+}
+
+func Test0021_13(t *testing.T) {
+	t.Parallel()
+	// 2,500 filler lines are 65,000 bytes, so the block opens just before
+	// cspell's 64 KB chunk boundary and closes after it.
+	filler := strings.Repeat("good words in a long file\n", 2500)
+	long := "the " + cspellTypo + " fox\n" + filler +
+		"cspell:disable\n" + filler[:2600] + "the " + cspellBodyTypo + " fox\ncspell:enable\n" +
+		filler + "the " + cspellRepoWord + " fox\n"
+	out, code := cspellRun(t, map[string]string{
+		"notes.md": "good words\nthe " + cspellTypo + " fox\n",
+		"long.md":  long,
+	})
+	first := "long.md:1:5 - Unknown word (" + cspellTypo + ")"
+	last := "long.md:5105:5 - Unknown word (" + cspellRepoWord + ")"
+	sees(t, out, code, 1, "notes.md:2:5 - Unknown word ("+cspellTypo+")", first, last)
+	if strings.Contains(out, cspellBodyTypo) || strings.Index(out, first) > strings.Index(out, last) {
+		t.Errorf("only the words outside the block may be named, in line order:\n%s", out)
 	}
 }
 
