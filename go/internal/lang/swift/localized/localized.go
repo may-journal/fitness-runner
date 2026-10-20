@@ -28,6 +28,10 @@ var shown = map[string]bool{
 	"Text": true, "Label": true, "Button": true, "Section": true,
 	"navigationTitle": true, "accessibilityLabel": true, "accessibilityHint": true,
 	"alert": true, "confirmationDialog": true,
+	"TextField": true, "SecureField": true, "Toggle": true, "Picker": true,
+	"Menu": true, "Link": true, "LabeledContent": true, "DisclosureGroup": true,
+	"GroupBox": true, "ProgressView": true, "ContentUnavailableView": true,
+	"navigationBarTitle": true, "help": true, "badge": true,
 }
 
 // Run judges the repo at root. A repo without a String Catalog has not

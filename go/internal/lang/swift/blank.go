@@ -124,7 +124,11 @@ func (b *blanker) stringChar(escape string) string {
 		b.interpolation()
 		return ""
 	case b.at("u{"):
-		b.i += strings.IndexByte(b.src[b.i:]+"}", '}') + 1
+		if end := strings.IndexByte(b.src[b.i:], '}'); end >= 0 {
+			b.i += end + 1
+		} else {
+			b.i = len(b.src)
+		}
 		return ""
 	}
 	b.i = min(b.i+1, len(b.src))

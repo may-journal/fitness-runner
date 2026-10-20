@@ -10,8 +10,11 @@ Fails SwiftUI text and requirement tests that skip the app's [String Catalog](ht
 
 An app opts in by tracking a `.xcstrings` file. Without one the check passes with zero files.
 
-- App source fails a literal with letters as the first argument of a view or modifier that shows it.
-- Those are `Text`, `Label`, `Button`, `Section`, `navigationTitle`, `accessibilityLabel`, `accessibilityHint`, `alert` and `confirmationDialog`.
+- Text views: `Text`, `Label`, `Button`, `Section`, `Link` and `ProgressView`.
+- Input views: `TextField`, `SecureField`, `Toggle`, `Picker` and `Menu`.
+- Container views: `LabeledContent`, `DisclosureGroup`, `GroupBox` and `ContentUnavailableView`.
+- Title modifiers: `navigationTitle`, `navigationBarTitle`, `help` and `badge`.
+- Other modifiers: `accessibilityLabel`, `accessibilityHint`, `alert` and `confirmationDialog`.
 - A `verbatim:` argument counts too.
 - A reference such as `Text(Words.Verb.share)`, a value, a labeled argument such as `systemImage: "photo"`, and a literal without letters pass.
 
