@@ -30,8 +30,8 @@ func section0093(t *testing.T, name string) string {
 }
 
 // run0093 runs the named step's script as Actions does, with bash -e and
-// pipefail, for release PR 23 checked at commit abc123 in a job of the
-// Release Please workflow. GitHub's CLI answers from gh, and env adds to or
+// pipefail, for release PR 23 checked at commit abc123 in Actions run 99.
+// GitHub's CLI answers from gh, and env adds to or
 // overrides the step's environment. It returns the stand-ins, the output,
 // the exit code, and what the step wrote to GITHUB_OUTPUT.
 func run0093(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
@@ -46,7 +46,7 @@ func run0093(t *testing.T, name string, gh []response, env ...string) (replays, 
 		cmd := exec.Command("bash", "--noprofile", "--norc", "-eo", "pipefail", "-c", block0091(script))
 		cmd.Dir = t.TempDir()
 		cmd.Env = append(append(append(userEnv(), rp.env...), "PR=23", "SHA=abc123", "GH_TOKEN=app-token", "GH_REPO="+repo0014,
-			"GITHUB_REPOSITORY="+repo0014, "GITHUB_OUTPUT="+output, "GITHUB_WORKFLOW=Release Please", "AUTHOR="+author0093,
+			"GITHUB_REPOSITORY="+repo0014, "GITHUB_OUTPUT="+output, "GITHUB_RUN_ID=99", "AUTHOR="+author0093,
 			"TRIES=2", "WAIT_SECONDS=0", "BOT=may-journal-approver[bot]"), env...)
 		return cmd
 	})
@@ -78,7 +78,7 @@ func guard0093(t *testing.T, gh ...response) (replays, string, int, string) {
 // checks0093 is the CLI's answer listing PR 23's checks as JSON, exiting as gh
 // does: 8 while any is pending.
 func checks0093(json string, exit int) response {
-	return response{Match: []string{"pr checks 23 --json bucket,workflow"}, Stdout: json + "\n", Exit: exit}
+	return response{Match: []string{"pr checks 23 --json bucket,link"}, Stdout: json + "\n", Exit: exit}
 }
 
 // head0093 is the CLI's answer reading PR 23's head commit.
@@ -110,7 +110,7 @@ func Test0093_1(t *testing.T) {
 	if written != "sha=abc123\n" {
 		t.Fatalf("a release PR of release files alone was not passed on: output %q\n%s", written, out)
 	}
-	_, out, code, written = wait0093(t, checks0093(`[{"bucket":"pass","workflow":"CI"},{"bucket":"skipping","workflow":"Auto-merge"}]`, 0), head0093("abc123"))
+	_, out, code, written = wait0093(t, checks0093(`[{"bucket":"pass","link":"https://github.com/may-journal/example/actions/runs/11/job/1"},{"bucket":"skipping","link":"https://github.com/may-journal/example/actions/runs/12/job/2"}]`, 0), head0093("abc123"))
 	sees(t, out, code, 0)
 	if written != "green=true\n" {
 		t.Fatalf("green checks were not reported green: output %q\n%s", written, out)
@@ -152,12 +152,12 @@ func Test0093_3(t *testing.T) {
 
 func Test0093_4(t *testing.T) {
 	t.Parallel()
-	_, out, code, written := wait0093(t, checks0093(`[{"bucket":"fail","workflow":"CI"},{"bucket":"pending","workflow":"pr-check"}]`, 1), head0093("abc123"))
+	_, out, code, written := wait0093(t, checks0093(`[{"bucket":"fail","link":"https://github.com/may-journal/example/actions/runs/11/job/1"},{"bucket":"pending","link":"https://github.com/may-journal/example/actions/runs/13/job/3"}]`, 1), head0093("abc123"))
 	sees(t, out, code, 0, "::notice::PR #23 has a failed or cancelled check, so it gets no approval.")
 	if written != "" {
 		t.Errorf("a release PR with a failed check was reported green: %q", written)
 	}
-	rp, out, code, written := wait0093(t, checks0093(`[{"bucket":"pass","workflow":"CI"},{"bucket":"pending","workflow":"pr-check"}]`, 8), head0093("abc123"))
+	rp, out, code, written := wait0093(t, checks0093(`[{"bucket":"pass","link":"https://github.com/may-journal/example/actions/runs/11/job/1"},{"bucket":"pending","link":"https://github.com/may-journal/example/actions/runs/13/job/3"}]`, 8), head0093("abc123"))
 	sees(t, out, code, 0, "::warning::PR #23 still had checks running after 2 tries, so a person approves it.")
 	if written != "" || rp.count("gh", "pr checks") != 2 {
 		t.Errorf("unfinished checks were not read once per try, or were reported green: output %q, gh calls %q", written, rp.calls("gh"))
@@ -172,7 +172,7 @@ func Test0093_4(t *testing.T) {
 
 func Test0093_5(t *testing.T) {
 	t.Parallel()
-	own := checks0093(`[{"bucket":"pass","workflow":"CI"},{"bucket":"pending","workflow":"Release Please"}]`, 8)
+	own := checks0093(`[{"bucket":"pass","link":"https://github.com/may-journal/example/actions/runs/11/job/1"},{"bucket":"pending","link":"https://github.com/may-journal/example/actions/runs/99/job/4"},{"bucket":"pass","link":null}]`, 8)
 	_, out, code, written := wait0093(t, own, head0093("abc123"))
 	sees(t, out, code, 0)
 	if written != "green=true\n" {

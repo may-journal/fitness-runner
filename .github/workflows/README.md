@@ -302,6 +302,6 @@ It approves only when all of these hold, and otherwise leaves the PR for a perso
 
 - The PR's author is `may-journal-automation`, and the PR is open and ready.
 - Every changed path is `CHANGELOG.md`, `version.txt` or `.release-please-manifest.json`, counting both paths of a rename.
-- Every check but the caller's own passes or skips, and the head commit has not moved meanwhile.
+- Every check but this run's own passes or skips within 20 minutes, polled every 30 seconds, and the head has not moved.
 
-The approval names the commit it checked; a later push dismisses it, and the next run approves the new head. The wait polls every 30 seconds for up to 20 minutes. A repo without the `APPROVER_APP_ID` and `APPROVER_APP_KEY` secrets skips the approval with a notice. The approver App needs read access to contents, checks and commit statuses, and write access to pull requests.
+The approval names the commit it checked. The org ruleset dismisses it on a later push, and the next run approves anew. A repo without the `APPROVER_APP_ID` and `APPROVER_APP_KEY` secrets skips the approval with a notice. The approver App needs read access to contents, checks and commit statuses, and write access to pull requests.

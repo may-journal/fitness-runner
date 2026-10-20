@@ -35,7 +35,7 @@ Source: #523
         - When Release approve runs on each
             - Then it approves neither, with a notice for the failed check and a warning for the unfinished ones
 - 0093.5
-    - Given Developer has a release pull request whose only running check is Release approve's own, then one pushed to while its checks ran
+    - Given Developer has a release pull request whose only running check is this run's own, then one pushed to while its checks ran
         - When Release approve runs on each
             - Then it approves the first and not the second
 - 0093.6

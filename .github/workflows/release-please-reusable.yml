@@ -156,11 +156,13 @@ jobs:
           printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
 
   # The approver App approves the release PR once its checks are green.
-  # `./` names this repo at this workflow's own commit.
+  # `$/` names this repo at the commit running, even when another repo
+  # calls this workflow; `./` would name the caller's workspace. See
+  # https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax
   approve:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr != '' }}
-    uses: ./.github/workflows/release-approve.yml
+    uses: $/.github/workflows/release-approve.yml
     with:
       pr: ${{ needs.release-please.outputs.pr }}
     secrets:

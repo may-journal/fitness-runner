@@ -26,9 +26,11 @@ jobs:
     runs-on: ubuntu-latest
     # Checks may take a while; the wait below gives up after 20 minutes.
     timeout-minutes: 25
+    # A newer run waits for the running one, which finds the head moved and
+    # approves nothing, rather than cancelling it partway through its wait.
     concurrency:
       group: release-approve-${{ inputs.pr }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     steps:
       # A repo without the approver App leaves its release PRs to a person,
       # so missing secrets skip the approval instead of failing the release.
@@ -74,14 +76,14 @@ jobs:
           files="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate |
             jq -rs 'add | .[] | .filename, (.previous_filename // empty)')"
           others="$(grep -vxF -e CHANGELOG.md -e version.txt -e .release-please-manifest.json <<< "$files" || true)"
-          if [ -n "$others" ]; then
+          if [ -z "$files" ] || [ -n "$others" ]; then
             echo "::notice::PR #$PR changes more than the release files, so a person approves it: ${others//$'\n'/, }"
             exit 0
           fi
           printf 'sha=%s\n' "$(jq -r .headRefOid <<< "$view")" >> "$GITHUB_OUTPUT"
-      # Every check but this workflow's own must pass. A red or cancelled
-      # check, a new push, or checks still running after the last try leave
-      # the PR for a person.
+      # Every check but this run's own, known by its run link, must pass. A
+      # red or cancelled check, a new push, or checks still running after the
+      # last try leave the PR for a person.
       - name: Wait for green checks
         id: checks
         if: ${{ steps.guard.outputs.sha != '' }}
@@ -94,17 +96,19 @@ jobs:
           WAIT_SECONDS: 30
         run: |
           verdict=pending
+          error="$(mktemp)"
+          own="/actions/runs/$GITHUB_RUN_ID/"
           for ((try = 1; try <= TRIES; try++)); do
             if [ "$try" -gt 1 ]; then sleep "$WAIT_SECONDS"; fi
             # gh exits 1 on a failed check and 8 on a pending one, and
             # prints the list either way.
-            checks="$(gh pr checks "$PR" --json bucket,workflow 2>&1)" || true
+            checks="$(gh pr checks "$PR" --json bucket,link 2> "$error")" || true
             if ! jq -e 'type == "array"' <<< "$checks" > /dev/null 2>&1; then
-              if grep -q 'no checks reported' <<< "$checks"; then continue; fi
-              echo "::error::Could not read the checks of PR #$PR: $checks"
+              if grep -q 'no checks reported' "$error"; then continue; fi
+              echo "::error::Could not read the checks of PR #$PR: $(cat "$error")"
               exit 1
             fi
-            verdict="$(jq -r --arg self "$GITHUB_WORKFLOW" '[.[] | select(.workflow != $self) | .bucket] |
+            verdict="$(jq -r --arg own "$own" '[.[] | select((.link // "") | contains($own) | not) | .bucket] |
               if any(. == "fail" or . == "cancel") then "red"
               elif length == 0 or any(. == "pending") then "pending" else "green" end' <<< "$checks")"
             if [ "$verdict" != pending ]; then break; fi
