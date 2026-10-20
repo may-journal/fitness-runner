@@ -276,6 +276,7 @@ flowchart TD
     D --> E
     E --> F
     C --> G
+    C --> H[8 Approve once green]:::step
     classDef trigger fill:#eef,stroke:#333
     classDef step fill:#efe,stroke:#333
 ```
@@ -289,5 +290,18 @@ flowchart TD
 | 5   | Link          | Find or open the tracking issue by title, and close it from the PR.   | pr-check needs every PR to close an issue.            |
 | 6   | Reopen        | Close and reopen the PR after either rewrite.                          | pr-check does not run on a body edit.                 |
 | 7   | Major tag     | Point `vX` at the new release.                                         | Consumers pin the major version.                      |
+| 8   | Approve       | [release-approve.yml](#release-approve) approves the open release PR once green. | The ruleset needs one approval.          |
 
-Steps 4 to 6 skip when Release Please leaves no PR open, and step 7 runs only for a new release.
+Steps 4 to 6 and 8 skip when Release Please leaves no PR open. Step 7 runs only for a new release.
+
+## release-approve
+
+[release-approve.yml](release-approve.yml) approves a green Release Please PR, so it merges without a person approving it ([#523](https://github.com/may-journal/fitness-runner/issues/523)). The org ruleset needs one approval, and an author cannot [approve its own PR](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews). So a second App, the approver, approves what `may-journal-automation` opens. [release-please-reusable.yml](release-please-reusable.yml) and this repo's CI call it after each run that leaves a release PR open.
+
+It approves only when all of these hold, and otherwise leaves the PR for a person with a notice saying why:
+
+- The PR's author is `may-journal-automation`, and the PR is open and ready.
+- Every changed path is `CHANGELOG.md`, `version.txt` or `.release-please-manifest.json`, counting both paths of a rename.
+- Every check but this run's own passes or skips within 20 minutes, polled every 30 seconds, and the head has not moved.
+
+The approval names the commit it checked. The org ruleset dismisses it on a later push, and the next run approves anew. A repo without the `APPROVER_APP_ID` and `APPROVER_APP_KEY` secrets skips the approval with a notice. The approver App needs read access to contents, checks and commit statuses, and write access to pull requests.
