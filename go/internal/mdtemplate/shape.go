@@ -2,7 +2,6 @@ package mdtemplate
 
 import (
 	"fmt"
-	"maps"
 	"regexp"
 	"slices"
 	"strings"
@@ -12,13 +11,12 @@ import (
 )
 
 // Shape is the whole shape a named template sets for the one doc it governs:
-// front matter, the opening level-2 sections in order, and per section its
-// legend, its callout table columns, and the caption above that table. The
-// opening, before any level-2 heading, is the section named "".
+// the opening level-2 sections in order, and per section its legend, its
+// callout table columns, and the caption above that table. The opening,
+// before any level-2 heading, is the section named "". Front matter is
+// optional, so the shape never reads it.
 type Shape struct {
 	path     string
-	front    map[string][]string
-	keys     []string
 	sections []string
 	parts    map[string]part
 }
@@ -41,8 +39,7 @@ type Finding struct {
 // ShapeFromTemplate reads a named template's shape. path names the template
 // in messages.
 func ShapeFromTemplate(path, body string) Shape {
-	s := Shape{path: path, front: map[string][]string{}, parts: map[string]part{}}
-	s.keys = readFront(body, s.front)
+	s := Shape{path: path, parts: map[string]part{}}
 	s.sections = h2s(body)
 	v := readView(body)
 	for _, l := range v.legends {
@@ -58,10 +55,10 @@ func ShapeFromTemplate(path, body string) Shape {
 	return s
 }
 
-// Validate returns every way body drifts from the shape: front matter, then
-// the opening sections, then each shared section's legend and tables.
+// Validate returns every way body drifts from the shape: the opening
+// sections, then each shared section's legend and tables.
 func (s Shape) Validate(body string) []Finding {
-	out := s.frontFindings(body)
+	var out []Finding
 	have := h2s(body)
 	if opening := have[:min(len(have), len(s.sections))]; !slices.Equal(opening, s.sections) {
 		out = append(out, Finding{0, fmt.Sprintf("sections must open with %s as %s does", quoteSections(s.sections), s.path)})
@@ -81,34 +78,6 @@ func h2s(body string) []string {
 	for _, h := range mdx.Headings(body) {
 		if h.Level == 2 {
 			out = append(out, h.Text)
-		}
-	}
-	return out
-}
-
-// frontFindings names each front matter key, or list item of one, that the
-// template has and the doc lacks.
-func (s Shape) frontFindings(body string) []Finding {
-	doc := map[string][]string{}
-	readFront(body, doc)
-	var out []Finding
-	for _, key := range s.keys {
-		out = append(out, s.keyFindings(key, doc)...)
-	}
-	return out
-}
-
-// keyFindings names one front matter key the doc lacks, or each item of its
-// list the doc lacks.
-func (s Shape) keyFindings(key string, doc map[string][]string) []Finding {
-	items, ok := doc[key]
-	if !ok {
-		return []Finding{{1, fmt.Sprintf("front matter needs `%s` as %s has", key, s.path)}}
-	}
-	var out []Finding
-	for _, want := range s.front[key] {
-		if !slices.Contains(items, want) {
-			out = append(out, Finding{1, fmt.Sprintf("front matter `%s` needs %s as %s has", key, want, s.path)})
 		}
 	}
 	return out
@@ -298,17 +267,9 @@ var (
 	blockItem = regexp.MustCompile(`^\s*-\s+(.+?)\s*$`)
 )
 
-// readFront fills into with each top-level front matter key and the items of
-// its list, flow or block, and returns the keys in order. Indented keys
-// belong to a value and are not keys of their own.
-func readFront(body string, into map[string][]string) []string {
-	f := parseFront(body)
-	maps.Copy(into, f.lists)
-	return f.keys
-}
-
 // front is a doc's parsed front matter: its top-level keys in order, each
-// key's list items, and the raw value of each key that holds a scalar.
+// key's list items, flow or block, and the raw value of each key that holds
+// a scalar. Indented keys belong to a value and are not keys of their own.
 type front struct {
 	keys    []string
 	lists   map[string][]string

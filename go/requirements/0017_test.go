@@ -10,9 +10,14 @@ func changelogRun(t *testing.T, files map[string]string) (string, int) {
 }
 
 // entryFileText is an entry file under stamp with three typed bullets, the
-// first one item.
+// first one item, below the front matter older entries carry.
 func entryFileText(stamp, item string) string {
-	return "---\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n\n### " + stamp + "\n\n- " + item + "\n- Test: cover it.\n- Docs: describe it.\n"
+	return "---\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n\n" + bareEntryText(stamp, item)
+}
+
+// bareEntryText is entryFileText without front matter, which is optional.
+func bareEntryText(stamp, item string) string {
+	return "### " + stamp + "\n\n- " + item + "\n- Test: cover it.\n- Docs: describe it.\n"
 }
 
 // withEntries is files over happyRepo holding each named entry file.
@@ -55,7 +60,7 @@ func Test0017_23(t *testing.T) {
 	t.Parallel()
 	files := withEntries(map[string]string{
 		"2026-10-10-0900-older-change": entryFileText("2026.10.10.0900", "Fix: older change."),
-		"2026-10-11-0900-newer-change": entryFileText("2026.10.11.0900", "Feat: newer change."),
+		"2026-10-11-0900-newer-change": bareEntryText("2026.10.11.0900", "Feat: newer change."),
 	})
 	files["CHANGELOG.md"] = upstreamChangelog
 	files["package.json"] = `{"name": "app", "private": true, "version": "2.0.1"}` + "\n"

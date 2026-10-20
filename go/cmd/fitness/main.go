@@ -143,7 +143,7 @@ func runCheckCommand(args []string) int {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -164,17 +164,18 @@ var subcommands map[string]func(args []string) int
 
 func init() {
 	subcommands = map[string]func(args []string) int{
-		"init":          runInit,
-		"hook":          runHookArgs,
-		"pr-check":      func([]string) int { return runGH("pr-check") },
-		"issue-check":   func([]string) int { return runGH("issue-check") },
-		"plan-check":    func([]string) int { return runGH("plan-check") },
-		"close-check":   func([]string) int { return runGH("close-check") },
-		"dupe-check":    func([]string) int { return runGH("dupe-check") },
-		"comment-check": runCommentCheck,
-		"branch-check":  func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
-		"boxes":         runBoxes,
-		"check":         runCheckCommand,
+		"init":               runInit,
+		"hook":               runHookArgs,
+		"pr-check":           func([]string) int { return runGH("pr-check") },
+		"issue-check":        func([]string) int { return runGH("issue-check") },
+		"plan-check":         func([]string) int { return runGH("plan-check") },
+		"close-check":        func([]string) int { return runGH("close-check") },
+		"dupe-check":         func([]string) int { return runGH("dupe-check") },
+		"comment-check":      runCommentCheck,
+		"branch-check":       func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
+		"boxes":              runBoxes,
+		"strip-front-matter": runStripFrontMatter,
+		"check":              runCheckCommand,
 	}
 }
 
@@ -212,6 +213,8 @@ Usage:
   fitness boxes <report.json> <page.html>
                            draw a --json report as an HTML box diagram
   fitness init             install the shared git hooks into this repo
+  fitness strip-front-matter
+                           remove front matter that holds only fitness keys from tracked .md files
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
   fitness branch-check     validate this branch's PR and linked issues locally

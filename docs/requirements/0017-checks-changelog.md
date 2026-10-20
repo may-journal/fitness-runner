@@ -27,7 +27,7 @@ Source: `go/cmd/fitness-check-changelog/main.go:21`
         - When changelog runs
             - Then it fails naming that file
 - 0017.23
-    - Given Developer has a `CHANGELOG.md` with upstream `### Added` sections and an unstamped `package.json` version, beside valid entry files
+    - Given Developer has a `CHANGELOG.md` with upstream `### Added` sections and an unstamped `package.json` version, beside valid entry files with and without front matter
         - When changelog runs
             - Then it passes, judging only the entry files
 - 0017.24

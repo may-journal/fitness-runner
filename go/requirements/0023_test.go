@@ -132,9 +132,8 @@ func Test0023_13(t *testing.T) {
 	files := dtCopied(t)
 	files[dtViews+acContainer] += "\n## Setup\n\nHow a consumer runs the app.\n"
 	files[dtViews+acJourney] += "\n## Notes\n\nWhat the journey leaves out.\n"
-	dtEdit(t, files, acContext, "fitnessFunctions: ['architecture-contract', 'architecture-actors']", "fitnessFunctions:\n  - architecture-actors\n  - \"architecture-contract\"")
-	dtEdit(t, files, acCode, "fitnessFunctions: ['architecture-contract', 'architecture-code']", "fitnessFunctions: [architecture-code, architecture-contract]")
 	dtEdit(t, files, acComponent, "match the callout table.", "match the callout table. <!-- kept in step with the diagram -->")
+	dtEdit(t, files, acContext, "---\nfitnessFunctions: ['architecture-contract', 'architecture-actors']\n---\n\n", "")
 	files[dtViews+"notes.md"] = "# Notes\n\n## Open threads\n\nWhat the views leave out.\n"
 	files[dtViews+"archive/"+acCode] = "# Old code\n\n## Before\n\nThe first layout.\n"
 	out, code := docTemplate(t, files)
@@ -145,14 +144,10 @@ func Test0023_13(t *testing.T) {
 func Test0023_14(t *testing.T) {
 	t.Parallel()
 	files := dtCopied(t)
-	dtEdit(t, files, acContext, ", 'architecture-actors'", "")
-	dtEdit(t, files, acComponent, "fitnessFunctions: ['architecture-contract', 'architecture-components']\n", "relatedConfigurations: ['../../README.md']\n")
 	dtEdit(t, files, acCode, "```mermaid\nclassDiagram\n    class Example", "```mermaid\nflowchart TB\n    class Example")
 	dtEdit(t, files, acJourney, "## Journey", "## Steps")
 	out, code := docTemplate(t, files)
 	sees(t, out, code, 1,
-		dtViews+acContext+":1: front matter `fitnessFunctions` needs architecture-actors as "+dtTemplates+acContext+" has",
-		dtViews+acComponent+":1: front matter needs `fitnessFunctions` as "+dtTemplates+acComponent+" has",
 		dtViews+acCode+": the opening needs a classDiagram legend as "+dtTemplates+acCode+" has",
 		dtViews+acJourney+": sections must open with `## Legend`, `## Journey` as "+dtTemplates+acJourney+" does")
 }
