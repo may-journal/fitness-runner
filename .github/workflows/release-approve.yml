@@ -1,16 +1,25 @@
+# cspell:ignore slurpfile
 name: Release approve
-# Reusable across the org: release-please-reusable.yml calls it after each
-# run that leaves a release PR open, and this repo's CI does the same. The
-# org ruleset needs one approval, and the automation App that opens release
-# PRs cannot approve its own. A second App, the approver, approves a release
-# PR only when the automation App authored it, its diff is the release files
-# alone, and its checks are green. Any other PR is left for a person.
+# Reusable across the org. release-please-reusable.yml calls it after each
+# run that leaves a release PR open, and this repo's CI does the same. A
+# repo's pull_request caller passes kind: dependency for build(deps) PRs.
+# The org ruleset needs one approval, and a bot cannot approve its own PR.
+# A second App, the approver, approves a release PR only when the automation
+# App authored it and its diff is the release files alone. It approves a
+# dependency bump only when its diff is a patch or minor bump of dev
+# dependencies in package.json and package-lock.json. Either way its checks
+# must be green. Any other PR is left for a person.
 on:
   workflow_call:
     inputs:
       pr:
-        description: The release PR's number.
+        description: The PR's number.
         required: true
+        type: string
+      kind:
+        description: release for a Release Please PR, dependency for a dev-dependency bump.
+        required: false
+        default: release
         type: string
     secrets:
       APPROVER_APP_ID:
@@ -41,7 +50,7 @@ jobs:
           APP_KEY: ${{ secrets.APPROVER_APP_KEY }}
         run: |
           if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
-            echo "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the release PR."
+            echo "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the PR."
             exit 0
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -56,7 +65,7 @@ jobs:
       # qualifies. A rename counts both its paths, so nothing moves in.
       - name: Check the release PR
         id: guard
-        if: ${{ steps.secrets.outputs.ready == 'true' }}
+        if: ${{ steps.secrets.outputs.ready == 'true' && inputs.kind == 'release' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
@@ -81,17 +90,82 @@ jobs:
             exit 0
           fi
           printf 'sha=%s\n' "$(jq -r .headRefOid <<< "$view")" >> "$GITHUB_OUTPUT"
+      # Only a build(deps) PR whose files are package.json and its lockfile
+      # qualifies. Comparing base and head, package.json may change only
+      # existing devDependencies, and the lockfile only dev-only packages.
+      # Every version that moves must keep its major number.
+      - name: Check the dependency bump
+        id: bump
+        if: ${{ steps.secrets.outputs.ready == 'true' && inputs.kind == 'dependency' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr }}
+        run: |
+          view="$(gh pr view "$PR" --json title,state,isDraft,headRefOid,baseRefOid)"
+          if [[ "$(jq -r .title <<< "$view")" != 'build(deps)'* ]]; then
+            echo "::notice::PR #$PR is not titled build(deps), so a person approves it."
+            exit 0
+          fi
+          if [ "$(jq -r '.state + " " + (.isDraft | tostring)' <<< "$view")" != "OPEN false" ]; then
+            echo "::notice::PR #$PR is not open and ready, so it gets no approval."
+            exit 0
+          fi
+          files="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate |
+            jq -rs 'add | .[] | .filename, (.previous_filename // empty)')"
+          others="$(grep -vxF -e package.json -e package-lock.json <<< "$files" || true)"
+          if [ -z "$files" ] || [ -n "$others" ]; then
+            echo "::notice::PR #$PR changes more than package.json and package-lock.json, so a person approves it: ${others//$'\n'/, }"
+            exit 0
+          fi
+          # A file missing on one side reads as {}; any other error fails.
+          dir="$(mktemp -d)"
+          for side in base head; do
+            sha="$(jq -r ".${side}RefOid" <<< "$view")"
+            for file in package.json package-lock.json; do
+              if ! gh api -H 'Accept: application/vnd.github.raw+json' "repos/$GITHUB_REPOSITORY/contents/$file?ref=$sha" \
+                > "$dir/$side-$file" 2> "$dir/error"; then
+                if ! grep -q 'HTTP 404' "$dir/error"; then
+                  echo "::error::Could not read $file at $sha: $(cat "$dir/error")"
+                  exit 1
+                fi
+                echo '{}' > "$dir/$side-$file"
+              fi
+            done
+          done
+          problems="$(jq -rn --slurpfile bm "$dir/base-package.json" --slurpfile hm "$dir/head-package.json" \
+            --slurpfile bl "$dir/base-package-lock.json" --slurpfile hl "$dir/head-package-lock.json" '
+            def major: if type == "string" and test("^[^0-9]*[0-9]+") then capture("^[^0-9]*(?<m>[0-9]+)").m else null end;
+            def bump($name; $from; $to):
+              if ($from | major) == null or ($from | major) != ($to | major)
+              then "\($name) moves from \($from) to \($to), not a patch or minor bump" else empty end;
+            $bm[0] as $b | $hm[0] as $h | ($b.devDependencies // {}) as $bd | ($h.devDependencies // {}) as $hd |
+            ($bl[0].packages // {}) as $bp | ($hl[0].packages // {}) as $hp |
+            (if ($b | del(.devDependencies)) != ($h | del(.devDependencies)) then "package.json changes more than devDependencies" else empty end),
+            (if ($bd | keys) != ($hd | keys) then "package.json adds or removes a dev dependency" else empty end),
+            ($bd | to_entries[] | select(.key as $k | $hd | has($k)) | select(.value != $hd[.key]) | bump(.key; .value; $hd[.key])),
+            (if ($bl[0] | del(.packages)) != ($hl[0] | del(.packages)) then "package-lock.json changes more than its packages" else empty end),
+            (if ($bp[""] | del(.devDependencies)) != ($hp[""] | del(.devDependencies)) then "package-lock.json changes the root package" else empty end),
+            (($bp + $hp) | keys[] | select(. != "") | . as $k | select($bp[$k] != $hp[$k]) |
+              if [$bp[$k], $hp[$k]] | map(select(. != null)) | all(.dev == true) | not then "\($k) is not a dev-only package"
+              elif $bp[$k] != null and $hp[$k] != null and $bp[$k].version != $hp[$k].version then bump($k; $bp[$k].version; $hp[$k].version)
+              else empty end)')"
+          if [ -n "$problems" ]; then
+            echo "::notice::PR #$PR is not a patch or minor dev-dependency bump, so a person approves it: ${problems//$'\n'/; }"
+            exit 0
+          fi
+          printf 'sha=%s\n' "$(jq -r .headRefOid <<< "$view")" >> "$GITHUB_OUTPUT"
       # Every check but this run's own, known by its run link, must pass. A
       # red or cancelled check, a new push, or checks still running after the
       # last try leave the PR for a person.
       - name: Wait for green checks
         id: checks
-        if: ${{ steps.guard.outputs.sha != '' }}
+        if: ${{ steps.guard.outputs.sha != '' || steps.bump.outputs.sha != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
-          SHA: ${{ steps.guard.outputs.sha }}
+          SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
           TRIES: 40
           WAIT_SECONDS: 30
         run: |
@@ -129,13 +203,13 @@ jobs:
           echo "green=true" >> "$GITHUB_OUTPUT"
       # The approval names the commit checked, so a later push needs a new
       # one. A PR the approver already approved at that commit is left alone.
-      - name: Approve the release PR
+      - name: Approve the PR
         id: report-step-1
         if: ${{ steps.checks.outputs.green == 'true' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           PR: ${{ inputs.pr }}
-          SHA: ${{ steps.guard.outputs.sha }}
+          SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
           BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
           reviews="repos/$GITHUB_REPOSITORY/pulls/$PR/reviews"
@@ -146,7 +220,7 @@ jobs:
             exit 0
           fi
           gh api -X POST "$reviews" -f event=APPROVE -f commit_id="$SHA" \
-            -f body="Approved: the automation App's release PR changes only the release files, and its checks are green." > /dev/null
+            -f body="Approved: this PR changes only what Release approve allows for its kind, and its checks are green." > /dev/null
           echo "Approved PR #$PR at $SHA."
       # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome

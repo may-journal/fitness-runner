@@ -41,4 +41,4 @@ Source: #523
 - 0093.6
     - Given Developer has a repo without the approver App's secrets
         - When Release approve runs
-            - Then it passes with a notice, and every later step but the report skips
+            - Then it passes with a notice, and the token, both PR checks, the wait and the approval skip
