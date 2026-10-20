@@ -302,7 +302,7 @@ Steps 4 to 6 and 8 skip when Release Please leaves no PR open. Step 7 runs only 
 
 ## release-approve
 
-[release-approve.yml](release-approve.yml) approves a green Release Please PR, so it merges without a person approving it ([#523](https://github.com/may-journal/fitness-runner/issues/523)). The org ruleset needs one approval, and an author cannot [approve its own PR](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews). So a second App, the approver, approves what `may-journal-automation` opens. [release-please-reusable.yml](release-please-reusable.yml) and this repo's CI call it after each run that leaves a release PR open.
+[release-approve.yml](release-approve.yml) approves a green Release Please PR, so it merges without a person approving it ([#523](https://github.com/may-journal/fitness-runner/issues/523)). The org ruleset needs one approval, and an author cannot [approve its own PR](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/reviewing-changes-in-pull-requests/approving-a-pull-request-with-required-reviews). So the approver, a machine user, approves what `may-journal-automation` opens, as only write-access approvals count toward the required one ([.github#125](https://github.com/may-journal/.github/issues/125)). [release-please-reusable.yml](release-please-reusable.yml) and this repo's CI call it after each run that leaves a release PR open.
 
 It approves only when all of these hold, and otherwise leaves the PR for a person with a notice saying why:
 
@@ -310,7 +310,7 @@ It approves only when all of these hold, and otherwise leaves the PR for a perso
 - Every changed path is `CHANGELOG.md`, `version.txt` or `.release-please-manifest.json`, counting both paths of a rename.
 - Every check but this run's own passes or skips within 20 minutes, polled every 30 seconds, and the head has not moved.
 
-The approval names the commit it checked. The org ruleset dismisses it on a later push, and the next run approves anew. A repo without the `APPROVER_APP_ID` and `APPROVER_APP_KEY` secrets skips the approval with a notice. The approver App needs read access to contents, checks and commit statuses, and write access to pull requests.
+The approval names the commit it checked, so the ruleset dismisses it on a later push and the next run approves anew. A repo without the `APPROVER_TOKEN` secret skips the approval with a notice. That secret is the approver's fine-grained token with pull request read and write, used only to read reviews and approve. The run's own token reads the PR, its files and checks, so each calling job grants `contents`, `pull-requests`, `checks` and `statuses` read.
 
 ### Dependency bumps
 
@@ -325,6 +325,11 @@ on:
 jobs:
   approve:
     if: ${{ startsWith(github.event.pull_request.title, 'build(deps)') }}
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+      statuses: read
     uses: may-journal/fitness-runner/.github/workflows/release-approve.yml@v1
     with:
       pr: ${{ github.event.pull_request.number }}
