@@ -204,9 +204,12 @@ jobs:
         run: |
           chmod +x "$VERIFIER"
           "$VERIFIER" smoke
+      # Smoke no longer builds the requirement tests, so they keep their own
+      # cache; one shard saves it.
       - uses: ./.github/actions/setup-go-cache
         with:
-          cache-key: smoke
+          cache-key: requirements
+          save: ${{ matrix.shard == 1 }}
       - name: Run one shard of the requirement tests with the candidate Go installer
         id: report-step-2
         env:

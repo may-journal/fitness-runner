@@ -57,25 +57,56 @@ func hookCommitMsg(args []string) int {
 }
 
 // runMessageChecks resolves each named check as a single-check run would,
-// then runs them all at once on the message. No names run nothing.
+// then runs those that read the message from the environment at once, and
+// any others one by one as before. No names run nothing.
 func runMessageChecks(names []string, msg string) int {
 	if len(names) == 0 {
 		return 0
 	}
-	root, err := os.Getwd()
-	if err == nil {
-		err = installErr
-	}
-	var checks []resolved
-	if err == nil {
-		checks, err = resolveEach(root, names)
-	}
+	root, checks, err := resolveMessageChecks(names)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
 	}
-	env := append(contextEnv(root, checks, false), "FITNESS_CTX_MESSAGE="+msg)
-	return runChecks(root, "", checks, nil, env)
+	pooled, alone := splitByMessageArg(checks)
+	code := 0
+	if len(pooled) > 0 {
+		env := append(contextEnv(root, pooled, false), "FITNESS_CTX_MESSAGE="+msg)
+		code = runChecks(root, "", pooled, nil, env)
+	}
+	for _, check := range alone {
+		code = max(code, run([]string{check.name, "--message=" + msg}))
+	}
+	return code
+}
+
+// splitByMessageArg separates the checks that read the message from
+// FITNESS_CTX_MESSAGE, which the runner sets for any check naming a
+// context argument, from those, such as a repo's own override, that take
+// --message on their command line and so run one at a time.
+func splitByMessageArg(checks []resolved) (pooled, alone []resolved) {
+	for _, check := range checks {
+		if check.desc.ContextInlineArg != "" {
+			pooled = append(pooled, check)
+		} else {
+			alone = append(alone, check)
+		}
+	}
+	return pooled, alone
+}
+
+// resolveMessageChecks finds the repository root and resolves names there,
+// failing first when the install is broken.
+func resolveMessageChecks(names []string) (string, []resolved, error) {
+	root, err := os.Getwd()
+	if err == nil {
+		err = installErr
+	}
+	if err != nil {
+		return "", nil, err
+	}
+	checks, err := resolveEach(root, names)
+	return root, checks, err
 }
 
 // resolveEach resolves every name as `fitness <name>` would, in order.
