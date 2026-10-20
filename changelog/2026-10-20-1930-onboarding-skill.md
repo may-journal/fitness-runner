@@ -8,3 +8,4 @@ relatedConfigurations: ['../.fitnessrc.json']
 - Test: requirements 0099.1 and 0099.2 link the skill with the real installer and follow each doc link in it.
 - Docs: the user journey lists requirement 0099 beside the installer.
 - Docs: the skill links the install, hook, workflow, check, and Plan docs and copies none of their rules.
+- Fix: the skill orders the policy before install and links check docs by URL.
