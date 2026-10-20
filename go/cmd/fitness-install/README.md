@@ -34,3 +34,7 @@ Set `FITNESS_CACHE_DIR` to choose a private cache. The default is `$XDG_CACHE_HO
 ## Tests
 
 Go tests use a local HTTP server for download failures, unsafe archives, cache repair, and parallel installs. Native release tests run the compiled installer, a real check, a commit hook, and the root action with Go absent from PATH.
+
+## Skills
+
+`--link-skills <folder>` installs the release, links each bundled skill into the folder, and runs no checks. Repeat the flag for more folders. A missing, broken or older-bundle link is written again; a real folder or another link stays. See [development](../../../docs/development.md#skills).

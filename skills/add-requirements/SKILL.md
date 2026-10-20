@@ -8,7 +8,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 A requirement doc states what a user can do, in the user's voice. Each acceptance in it is owned by exactly one test. That test runs the built product on a real example and asserts only what the acceptance promises. The outside world is replayed from saved answers, so the suite runs offline and fast.
 
-The canonical copy lives in fitness-runner at `skills/add-requirements`. On the shared Mac, `~/agents/skills/add-requirements` links to it, so every agent finds it.
+The canonical copy lives in fitness-runner at `skills/add-requirements`. Release bundles carry it, and `fitness-install --link-skills` links it into each agent, as [development](../../docs/development.md#skills) explains.
 
 fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs/requirements), one test package under [go/requirements](../../go/requirements). Read [0061-engine-installer.md](../../docs/requirements/0061-engine-installer.md) and [0061_test.go](../../go/requirements/0061_test.go) side by side before starting.
 
