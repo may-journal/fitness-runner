@@ -251,15 +251,23 @@ func Test0093_6(t *testing.T) {
 		t.Errorf("a missing token was reported ready: %q", written)
 	}
 	skipsAllButReport0093(t)
-	user := response{Match: []string{"api user --jq .login"}, Stdout: "may-journal-approver\n"}
-	_, _, _, written = run0093(t, "Check the approver token", []response{user}, "TOKEN=token")
+	user := response{Match: []string{"api user --jq .login"}, Stdout: "may-journal-approver\n", Token: "token"}
+	repo := response{Match: []string{"api repos/" + repo0014 + " --silent"}, Token: "token"}
+	_, _, _, written = run0093(t, "Check the approver token", []response{user, repo}, "TOKEN=token")
 	if written != "ready=true\nlogin=may-journal-approver\n" {
 		t.Errorf("a present token was not reported ready: %q", written)
 	}
-	user.Exit, user.Stdout, user.Stderr = 1, "", "HTTP 401: Bad credentials\n"
-	_, out, code, written = run0093(t, "Check the approver token", []response{user}, "TOKEN=expired")
-	sees(t, out, code, 1, "::error::GitHub rejects APPROVER_TOKEN; replace the org secret with a valid token.")
-	if written != "" {
-		t.Errorf("a rejected token was reported ready: %q", written)
+	for stderr, want := range map[string]string{
+		"HTTP 401: Bad credentials\n": "::error::GitHub rejects APPROVER_TOKEN; replace the org secret with a valid token.",
+		"HTTP 404: Not Found\n":       "::error::APPROVER_TOKEN cannot see " + repo0014 + "; give the token access to it.",
+		"HTTP 502: Bad Gateway\n":     "::error::Could not check APPROVER_TOKEN: HTTP 502: Bad Gateway",
+	} {
+		failing := repo
+		failing.Exit, failing.Stderr = 1, stderr
+		_, out, code, written = run0093(t, "Check the approver token", []response{user, failing}, "TOKEN=token")
+		sees(t, out, code, 1, want)
+		if written != "" {
+			t.Errorf("a token check failing with %q was reported ready: %q", stderr, written)
+		}
 	}
 }

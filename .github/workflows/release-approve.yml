@@ -53,8 +53,9 @@ jobs:
       # A repo without the approver's token leaves its release PRs to a
       # person, so a missing secret skips the approval instead of failing the
       # release. A kind other than release or dependency is a caller bug, so
-      # it fails. A token GitHub rejects fails here, before the 20-minute wait,
-      # and the approver's login read from it names its reviews below.
+      # it fails. A token GitHub rejects, or one that cannot see this repo,
+      # fails here, before the 20-minute wait; another error names itself. The
+      # approver's login read with the token names its reviews below.
       - name: Check the approver token
         id: secrets
         env:
@@ -69,11 +70,18 @@ jobs:
             echo "::notice::APPROVER_TOKEN is not available to this repo, so a person approves the PR."
             exit 0
           fi
-          login="$(GH_TOKEN="$TOKEN" gh api user --jq .login)" || {
-            echo "::error::GitHub rejects APPROVER_TOKEN; replace the org secret with a valid token."
-            exit 1
-          }
-          printf 'ready=true\nlogin=%s\n' "$login" >> "$GITHUB_OUTPUT"
+          error="$(mktemp)"
+          if login="$(GH_TOKEN="$TOKEN" gh api user --jq .login 2> "$error")" &&
+            GH_TOKEN="$TOKEN" gh api "repos/$GITHUB_REPOSITORY" --silent 2> "$error"; then
+            printf 'ready=true\nlogin=%s\n' "$login" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$(cat "$error")" in
+            *"HTTP 401"*) echo "::error::GitHub rejects APPROVER_TOKEN; replace the org secret with a valid token." ;;
+            *"HTTP 404"*) echo "::error::APPROVER_TOKEN cannot see $GITHUB_REPOSITORY; give the token access to it." ;;
+            *) echo "::error::Could not check APPROVER_TOKEN: $(cat "$error")" ;;
+          esac
+          exit 1
       # Only the automation App's PR whose files are all release files
       # qualifies. A rename counts both its paths, so nothing moves in.
       - name: Check the release PR

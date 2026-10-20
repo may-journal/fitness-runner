@@ -39,6 +39,6 @@ Source: #523
         - When Release approve runs on each
             - Then it approves the first and not the second
 - 0093.6
-    - Given Developer has a repo without the approver token, then one with a token GitHub rejects, each calling for a release
+    - Given Developer has a repo without the approver token, then ones whose token is rejected or cannot see the repo
         - When Release approve runs on each
-            - Then the first passes with a notice as both PR checks, the wait and the approval skip, and the second fails at once
+            - Then the first passes with a notice as both PR checks, the wait and the approval skip, and the others fail at once
