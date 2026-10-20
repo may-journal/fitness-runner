@@ -37,7 +37,7 @@ Source: `go/internal/metadata/changelog.go:17`
         - When the release tool rewrites it
             - Then it links its head's new entries and compare view, committing nothing
 - 0069.22
-    - Given Developer has entry files from before the previous release tag and entry files added since, or no earlier tag
+    - Given Developer has entry files, some without front matter, from before the previous tag and since, or no earlier tag
         - When the release tool writes the new tag's release notes
             - Then the description lists only the new entries, or all for a first release, newest first, with a link
 - 0069.23

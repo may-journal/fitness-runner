@@ -176,8 +176,7 @@ func namesake(template string) string {
 }
 
 // shapeErrors judges a doc against the template that shares its file name:
-// its front matter, opening sections, legends, callout table columns, and
-// captions.
+// its opening sections, legends, callout table columns, and captions.
 func shapeErrors(d doc, t doc) []string {
 	var errs []string
 	for _, f := range mdtemplate.ShapeFromTemplate(t.path, t.body).Validate(d.body) {

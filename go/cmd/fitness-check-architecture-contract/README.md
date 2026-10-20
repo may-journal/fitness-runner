@@ -36,7 +36,7 @@ for view in 01-system-context 02-containers 03-components 04-code 05-user-journe
 done
 ```
 
-Views under `architecture/` keep their templates in `architecture/templates`. The `doc-template` check then fails a view that drifts from its template's front matter, sections, legend, callout columns, or caption; see [named templates](../fitness-check-doc-template/README.md#named-templates). Each template's comments say what to write.
+Views under `architecture/` keep their templates in `architecture/templates`. The `doc-template` check then fails a view that drifts from its template's sections, legend, callout columns, or caption; see [named templates](../fitness-check-doc-template/README.md#named-templates). Each template's comments say what to write.
 
 ## What the diagrams already say
 

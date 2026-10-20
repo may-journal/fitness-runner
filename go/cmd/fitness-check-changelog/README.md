@@ -15,7 +15,7 @@ Judges the `changelog/` entry files, the only changelog source. Each must hold o
 
 ## Entry files
 
-A pull request adds its entry as its own `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file, with the change in kebab-case. So two open pull requests never edit the same lines. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets, with optional front matter above. The name's date is that heading's, dots read as hyphens, so the folder lists in release order.
+A pull request adds its entry as its own `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file, with the change in kebab-case. So two open pull requests never edit the same lines. It holds one `### yyyy.mm.dd.HHMM` heading and its bullets. The name's date is that heading's, dots read as hyphens, so the folder lists in release order.
 
 - A pull request adds exactly one entry file, and later commits add bullets to it.
 - A repo with no `changelog/` folder needs no setting: its first pull request creates it.
