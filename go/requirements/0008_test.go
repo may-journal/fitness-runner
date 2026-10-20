@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -53,15 +54,26 @@ func Test0008_7(t *testing.T) {
 	sees(t, out, code, 1, "fitness hook commit-msg: missing message file")
 }
 
-func Test0008_8(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", nil)
-	alone := filepath.Join(t.TempDir(), "fitness")
-	placeRunner(t, filepath.Join(installOnly(t), "fitness"), alone)
-	out, code := execute(t, func() *exec.Cmd {
-		cmd := exec.Command(alone, "--policy=external", "--all")
+// runAlone runs the runner at alone in repo with args, as a user types it.
+func runAlone(t *testing.T, alone, repo string, args ...string) (string, int) {
+	t.Helper()
+	return execute(t, func() *exec.Cmd {
+		cmd := exec.Command(alone, args...)
 		cmd.Dir, cmd.Env = repo, userEnv()
 		return cmd
 	})
-	sees(t, out, code, 1, "reinstall fitness so its checks sit beside it")
+}
+
+func Test0008_9(t *testing.T) {
+	t.Parallel()
+	alone := filepath.Join(t.TempDir(), "fitness")
+	placeRunner(t, filepath.Join(installOnly(t), "fitness"), alone)
+	out, code := runAlone(t, alone, example(t, "happyRepo", architectedRepo()), "--policy=external", "--all")
+	sees(t, out, code, 0, allPassed())
+	bold := example(t, "happyRepo", map[string]string{"README.md": readme + "\nSome **strong** words.\n"})
+	out, code = runAlone(t, alone, bold, "check", "markdown-no-bold-italic", "--root", bold)
+	sees(t, out, code, 1, `"ok":false`, `README.md: disallowed **bold**`+noBoldItalicRule)
+	if strings.Contains(out, "Running checks") {
+		t.Errorf("fitness check ran the full suite, not one check:\n%s", out)
+	}
 }
