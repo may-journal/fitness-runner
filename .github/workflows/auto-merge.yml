@@ -11,6 +11,7 @@ name: Auto-merge
 # The ruleset starts it only on opened, reopened, and synchronize, whatever
 # types are listed. GitHub refuses auto-merge on a draft, so a draft marked
 # ready needs the auto-merge-on-ready.yml caller, which calls this workflow.
+# The org's copy of that caller also calls it when a PR's base changes.
 on:
   pull_request:
     types: [opened, reopened, synchronize]
@@ -23,10 +24,11 @@ jobs:
   auto-merge:
     # Only an open, ready PR without auto-merge yet needs it turned on, so
     # every other push skips before a runner starts and bills nothing.
+    # Closing a PR turns its auto-merge off, so a reopen always runs.
     if: >-
       github.event.pull_request.state == 'open' &&
-      !github.event.pull_request.draft &&
-      !github.event.pull_request.auto_merge
+      github.event.pull_request.draft == false &&
+      (github.event.action == 'reopened' || github.event.pull_request.auto_merge == null)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # Pushes come in bursts; one run turns auto-merge on. The workflow name
@@ -35,10 +37,7 @@ jobs:
       group: auto-merge-${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
-      # A PR whose base is not the default branch gets no auto-merge, so it needs
-      # no secrets or token; the merge step below explains why.
       - name: Check the App secrets
-        if: github.event.pull_request.base.ref == github.event.repository.default_branch
         id: report-step-1
         env:
           APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
@@ -52,38 +51,81 @@ jobs:
             fi
           done
       - name: Mint a one-hour App token
-        if: github.event.pull_request.base.ref == github.event.repository.default_branch
         id: app-token
         uses: actions/create-github-app-token@v2
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
-      # GitHub refuses auto-merge on a stacked PR, one based on another PR's
-      # branch, so a PR whose base is not the default branch passes with a
-      # notice.
-      # Once the base PR merges and GitHub moves this PR onto the default
-      # branch, the next push or reopen turns auto-merge on; GitHub's edited
-      # event for the move never starts this workflow. GitHub may still count
-      # a moved PR as stacked and refuse, so that refusal passes with a
-      # notice too; any other failure fails the job. It reads the event
-      # file, as a test can.
+      # GitHub refuses auto-merge on a stacked PR: one based on another PR's
+      # branch, or one GitHub still counts as part of a stack. Such a PR
+      # passes and gets one comment, the note, saying why it has no
+      # auto-merge and how to merge it. Once GitHub moves the PR onto the
+      # default branch, the next run turns auto-merge on and edits the note
+      # to say so. Any other refusal fails the job with GitHub's answer. It
+      # reads the event file, as a test can.
       - name: Enable squash auto-merge
+        id: merge
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
+          url="$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")"
+          number="$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")"
           base="$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")"
           default="$(jq -r .repository.default_branch "$GITHUB_EVENT_PATH")"
+          issues="repos/$GITHUB_REPOSITORY/issues"
+          marker='<!-- fitness:auto-merge -->'
+          warning="::warning::GitHub refused a change to this PR's auto-merge comment; its answer is above."
+          # note sets id to the bot's note on this PR, or to nothing.
+          note() {
+            local ids
+            ids="$(gh api "$issues/$number/comments" --paginate --jq ".[] | select(.user.login == \"$BOT\" and (.body | contains(\"$marker\"))) | .id")" || return 1
+            id="${ids%%$'\n'*}"
+          }
+          # write posts the note, or edits it when its text changed. GitHub
+          # may store a body with CRLF line ends, so those never count.
+          write() {
+            local current body="$1"$'\n\n'"$marker"
+            if [ -z "${id+set}" ]; then note || return 1; fi
+            if [ -z "$id" ]; then
+              gh api "$issues/$number/comments" -f body="$body" > /dev/null
+              return
+            fi
+            current="$(gh api "$issues/comments/$id" --jq .body)" || return 1
+            if [ "${current//$'\r'/}" != "$body" ]; then
+              gh api -X PATCH "$issues/comments/$id" -f body="$body" > /dev/null
+            fi
+          }
+          # say writes the note; a write GitHub refuses warns but never
+          # turns the check red, since the PR itself is fine.
+          say() {
+            if ! write "$1"; then echo "$warning"; fi
+          }
           if [ "$base" != "$default" ]; then
-            echo "::notice::This PR targets $base, not $default, so it gets no auto-merge; GitHub has none for stacks. Push or reopen it once it targets $default."
+            echo "::notice::This PR targets $base, not $default, so it gets no auto-merge; GitHub has none for stacks. Its auto-merge comment says how to merge it."
+            say "Auto-merge is off: this PR targets \`$base\`, not \`$default\`, and GitHub has no auto-merge for stacked pull requests. Merge it by hand once it is approved and green, or merge its base PR first. Once GitHub moves this PR onto \`$default\`, auto-merge turns on and this comment says so."
             exit 0
           fi
           status=0
-          answer="$(gh pr merge --auto --squash "$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")" 2>&1)" || status=$?
+          answer="$(gh pr merge --auto --squash "$url" 2>&1)" || status=$?
           if [ -n "$answer" ]; then printf '%s\n' "$answer"; fi
-          if [ "$status" -ne 0 ] && grep -qi 'auto-merge is not supported for stacked' <<< "$answer"; then
-            echo "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge. Merge it by hand once it is approved and green, or push once GitHub moves it out of the stack."
+          if [ "$status" -eq 0 ]; then
+            if ! note; then
+              echo "$warning"
+            elif [ -n "$id" ]; then
+              say "Auto-merge is on: this PR squash-merges into \`$default\` once it is approved and green."
+            fi
             exit 0
           fi
+          if grep -qi 'auto-merge is not supported for stacked' <<< "$answer"; then
+            echo "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge. Its auto-merge comment says how to merge it."
+            say "Auto-merge is off: this PR targets \`$default\`, but GitHub still counts it as part of a stack and refuses auto-merge. Merge it by hand once it is approved and green, or push to it once GitHub moves it out of the stack."
+            exit 0
+          fi
+          answer="${answer//'%'/%25}"
+          answer="${answer//$'\r'/%0D}"
+          echo "::error::GitHub refused auto-merge for this PR: ${answer//$'\n'/%0A}"
+          printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
           exit "$status"
       # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
@@ -91,7 +133,7 @@ jobs:
         shell: bash
         env:
           REPORT_STATUS: ${{ job.status }}
-          REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.merge.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
