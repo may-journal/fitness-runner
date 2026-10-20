@@ -10,7 +10,7 @@ A green Release Please pull request merges without my approving it by hand. Any 
 
 ## Measurement
 
-Green release pull requests the approver App approved
+Green release pull requests the approver approved
 -
 Green release pull requests
 
@@ -39,6 +39,6 @@ Source: #523
         - When Release approve runs on each
             - Then it approves the first and not the second
 - 0093.6
-    - Given Developer has a repo without the approver App's secrets, calling for a release
+    - Given Developer has a repo without the approver token, calling for a release
         - When Release approve runs
-            - Then it passes with a notice, and the token, both PR checks, the wait and the approval skip
+            - Then it passes with a notice, and both PR checks, the wait and the approval skip

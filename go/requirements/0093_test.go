@@ -47,7 +47,7 @@ func run0093(t *testing.T, name string, gh []response, env ...string) (replays, 
 		cmd.Dir = t.TempDir()
 		cmd.Env = append(append(append(userEnv(), rp.env...), "PR=23", "SHA=abc123", "GH_TOKEN=app-token", "GH_REPO="+repo0014,
 			"GITHUB_REPOSITORY="+repo0014, "GITHUB_OUTPUT="+output, "GITHUB_RUN_ID=99", "AUTHOR="+author0093,
-			"TRIES=2", "WAIT_SECONDS=0", "KIND=release", "BOT=may-journal-approver[bot]"), env...)
+			"TRIES=2", "WAIT_SECONDS=0", "KIND=release"), env...)
 		return cmd
 	})
 	written, _ := os.ReadFile(output)
@@ -92,16 +92,16 @@ func wait0093(t *testing.T, gh ...response) (replays, string, int, string) {
 	return run0093(t, "Wait for green checks", gh)
 }
 
-// reviews0093 is GitHub listing PR 23's reviews as reviews, and accepting
-// a new one.
+// reviews0093 is GitHub naming the approver's token as its machine user,
+// listing PR 23's reviews as reviews, and accepting a new one.
 func reviews0093(reviews string) []response {
-	return []response{{Match: []string{"pulls/23/reviews --paginate"}, Stdout: reviews + "\n"}, {Match: []string{"-X POST"}, Stdout: "{}\n"}}
+	return []response{{Match: []string{"api user --jq .login"}, Stdout: "may-journal-approver\n"}, {Match: []string{"pulls/23/reviews --paginate"}, Stdout: reviews + "\n"}, {Match: []string{"-X POST"}, Stdout: "{}\n"}}
 }
 
 // approved0093 is a page of reviews holding the approver's approval of
 // commit abc123.
 const approved0093 = `[{"user":{"login":"jasonvanderslice"},"commit_id":"abc000","state":"APPROVED"},` +
-	`{"user":{"login":"may-journal-approver[bot]"},"commit_id":"abc123","state":"APPROVED"}]`
+	`{"user":{"login":"may-journal-approver"},"commit_id":"abc123","state":"APPROVED"}]`
 
 func Test0093_1(t *testing.T) {
 	t.Parallel()
@@ -212,30 +212,30 @@ func runs0093(t *testing.T, name string, outputs map[string]string) bool {
 }
 
 // skipsAllButReport0093 asserts that with no step outputs set, as when the
-// secrets are missing, every step after the secrets check skips but the
+// token is missing, every step after the token check skips but the
 // report.
 func skipsAllButReport0093(t *testing.T) {
 	t.Helper()
-	for _, step := range []string{"Mint the approver App token", "Check the release PR", "Check the dependency bump", "Wait for green checks", "Approve the PR"} {
+	for _, step := range []string{"Check the release PR", "Check the dependency bump", "Wait for green checks", "Approve the PR"} {
 		if runs0093(t, step, map[string]string{}) {
-			t.Errorf("without the approver secrets, step %q runs, want it skipped", step)
+			t.Errorf("without the approver token, step %q runs, want it skipped", step)
 		}
 	}
 	if !runs0093(t, "Report job outcome", map[string]string{}) {
-		t.Error("without the approver secrets, the report step skips, want it run")
+		t.Error("without the approver token, the report step skips, want it run")
 	}
 }
 
 func Test0093_6(t *testing.T) {
 	t.Parallel()
-	_, out, code, written := run0093(t, "Check the approver App secrets", nil, "APP_ID=", "APP_KEY=")
-	sees(t, out, code, 0, "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the PR.")
+	_, out, code, written := run0093(t, "Check the approver token", nil, "TOKEN=")
+	sees(t, out, code, 0, "::notice::APPROVER_TOKEN is not available to this repo, so a person approves the PR.")
 	if written != "" {
-		t.Errorf("missing secrets were reported ready: %q", written)
+		t.Errorf("a missing token was reported ready: %q", written)
 	}
 	skipsAllButReport0093(t)
-	_, _, _, written = run0093(t, "Check the approver App secrets", nil, "APP_ID=1", "APP_KEY=key")
+	_, _, _, written = run0093(t, "Check the approver token", nil, "TOKEN=token")
 	if written != "ready=true\n" {
-		t.Errorf("present secrets were not reported ready: %q", written)
+		t.Errorf("a present token was not reported ready: %q", written)
 	}
 }

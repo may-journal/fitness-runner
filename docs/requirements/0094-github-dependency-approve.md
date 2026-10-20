@@ -10,7 +10,7 @@ A green pull request that only bumps dev dependencies by a patch or minor versio
 
 ## Measurement
 
-Green dev-dependency bump pull requests the approver App approved
+Green dev-dependency bump pull requests the approver approved
 -
 Green dev-dependency bump pull requests
 
