@@ -17,7 +17,7 @@ var Swift = lang.Module{
 	Manifests:       []string{"Package.swift"},
 	Lockfiles:       []string{"Package.resolved"},
 	Tools:           []string{"swiftlint"},
-	Checks:          []string{"swiftlint"},
+	Checks:          []string{"localized-text", "swiftlint"},
 	Technology:      swift.Technology,
 	TechnologyWords: strings.Fields("swift swiftui objective-c ios macos watchos tvos visionos xcode"),
 	Runtime:         swift.Runtime,
