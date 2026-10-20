@@ -39,6 +39,6 @@ Source: #523
         - When Release approve runs on each
             - Then it approves the first and not the second
 - 0093.6
-    - Given Developer has a repo without the approver App's secrets
+    - Given Developer has a repo without the approver App's secrets, calling for a release
         - When Release approve runs
             - Then it passes with a notice, and the token, both PR checks, the wait and the approval skip

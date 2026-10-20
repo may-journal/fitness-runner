@@ -47,7 +47,7 @@ func run0093(t *testing.T, name string, gh []response, env ...string) (replays, 
 		cmd.Dir = t.TempDir()
 		cmd.Env = append(append(append(userEnv(), rp.env...), "PR=23", "SHA=abc123", "GH_TOKEN=app-token", "GH_REPO="+repo0014,
 			"GITHUB_REPOSITORY="+repo0014, "GITHUB_OUTPUT="+output, "GITHUB_RUN_ID=99", "AUTHOR="+author0093,
-			"TRIES=2", "WAIT_SECONDS=0", "BOT=may-journal-approver[bot]"), env...)
+			"TRIES=2", "WAIT_SECONDS=0", "KIND=release", "BOT=may-journal-approver[bot]"), env...)
 		return cmd
 	})
 	written, _ := os.ReadFile(output)

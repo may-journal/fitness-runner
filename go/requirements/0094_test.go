@@ -39,12 +39,14 @@ func installed0094(version string, dev bool) map[string]any {
 type side0094 struct{ manifest, lock map[string]any }
 
 // at0094 is a commit with zod and parser in package.json, installed as
-// zodLock and parserLock, plus extra installed packages.
+// zodLock and parserLock, with the dev-only tiny at 0.3.5, plus extra
+// installed packages that replace any of those.
 func at0094(zod, parser, zodLock, parserLock string, extra map[string]any) side0094 {
 	m := manifest0094(zod, parser)
 	packages := map[string]any{
 		"node_modules/zod":                       installed0094(zodLock, false),
 		"node_modules/@typescript-eslint/parser": installed0094(parserLock, true),
+		"node_modules/tiny":                      installed0094("0.3.5", true),
 	}
 	for name, entry := range extra {
 		packages[name] = entry
@@ -63,15 +65,17 @@ func contents0094(t *testing.T, file, ref string, body map[string]any) response 
 	return response{Match: []string{"contents/" + file + "?ref=" + ref}, Stdout: string(raw)}
 }
 
-// bump0094 runs the dependency check on PR 23, titled title, from base000
-// to head abc123, whose files are listed by files and whose package.json
-// and lockfile read as base0094 and head.
+// bump0094 runs the dependency check on PR 23, titled title, at head
+// abc123 on a base branch at tip000, whose merge base is base000. Its files
+// are listed by files, and its package.json and lockfile read as base0094
+// at base000 and head at abc123.
 func bump0094(t *testing.T, title string, files response, head side0094) (replays, string, int, string) {
 	t.Helper()
 	view := response{Match: []string{"pr view 23 --json title"},
-		Stdout: `{"title":"` + title + `","state":"OPEN","isDraft":false,"headRefOid":"abc123","baseRefOid":"base000"}` + "\n"}
+		Stdout: `{"title":"` + title + `","state":"OPEN","isDraft":false,"headRefOid":"abc123","baseRefOid":"tip000"}` + "\n"}
+	mergeBase := response{Match: []string{"compare/tip000...abc123 --jq .merge_base_commit.sha"}, Stdout: "base000\n"}
 	return run0093(t, "Check the dependency bump", []response{
-		view, files,
+		view, files, mergeBase,
 		contents0094(t, "package.json", "base000", base0094.manifest), contents0094(t, "package-lock.json", "base000", base0094.lock),
 		contents0094(t, "package.json", "abc123", head.manifest), contents0094(t, "package-lock.json", "abc123", head.lock),
 	})
@@ -97,6 +101,13 @@ func Test0094_1(t *testing.T) {
 	if written != "sha=abc123\n" {
 		t.Errorf("a lockfile-only dev bump was not passed on: output %q\n%s", written, out)
 	}
+	legacy := at0094("^3.23.0", "^8.72.0", "3.23.8", "8.72.0", nil)
+	legacy.lock["dependencies"] = map[string]any{"@typescript-eslint/parser": installed0094("8.72.0", true)}
+	_, out, code, written = bump0094(t, title0094, both0094, legacy)
+	sees(t, out, code, 0)
+	if written != "sha=abc123\n" {
+		t.Errorf("a bump in a lockfile with the legacy dependencies tree was not passed on: output %q\n%s", written, out)
+	}
 }
 
 func Test0094_2(t *testing.T) {
@@ -104,6 +115,10 @@ func Test0094_2(t *testing.T) {
 	for want, head := range map[string]side0094{
 		"package.json changes more than devDependencies": at0094("^3.24.0", "^8.71.2", "3.24.1", "8.71.2", nil),
 		"node_modules/zod is not a dev-only package":     at0094("^3.23.0", "^8.71.2", "3.23.9", "8.71.2", nil),
+		"node_modules/@typescript-eslint/parser resolves outside the npm registry": at0094("^3.23.0", "^8.72.0", "3.23.8", "8.72.0",
+			map[string]any{"node_modules/@typescript-eslint/parser": map[string]any{"version": "8.72.0", "dev": true, "resolved": "https://example.com/parser.tgz"}}),
+		"node_modules/@typescript-eslint/parser changes without a new version": at0094("^3.23.0", "^8.71.2", "3.23.8", "8.71.2",
+			map[string]any{"node_modules/@typescript-eslint/parser": map[string]any{"version": "8.71.2", "dev": true, "integrity": "sha512-other"}}),
 	} {
 		_, out, code, written := bump0094(t, title0094, both0094, head)
 		sees(t, out, code, 0, "::notice::PR #23 is not a patch or minor dev-dependency bump, so a person approves it:", want)
@@ -120,6 +135,12 @@ func Test0094_3(t *testing.T) {
 		"node_modules/@typescript-eslint/parser moves from 8.71.2 to 9.0.0, not a patch or minor bump")
 	if written != "" {
 		t.Errorf("a major dev-dependency bump was passed on: output %q", written)
+	}
+	tiny := map[string]any{"node_modules/tiny": installed0094("0.4.0", true)}
+	_, out, code, written = bump0094(t, title0094, both0094, at0094("^3.23.0", "^8.71.2", "3.23.8", "8.71.2", tiny))
+	sees(t, out, code, 0, "node_modules/tiny moves from 0.3.5 to 0.4.0, not a patch or minor bump")
+	if written != "" {
+		t.Errorf("a 0.x minor bump, which semver counts as breaking, was passed on: output %q", written)
 	}
 }
 
@@ -141,6 +162,8 @@ func Test0094_4(t *testing.T) {
 
 func Test0094_5(t *testing.T) {
 	t.Parallel()
+	_, out, code, _ := run0093(t, "Check the approver App secrets", nil, "KIND=dependencies", "APP_ID=1", "APP_KEY=key")
+	sees(t, out, code, 1, "::error::Release approve got kind 'dependencies'; pass release or dependency.")
 	// Actions fills in the input's default when a caller passes none.
 	for kind, want := range map[string]string{"dependency": "Check the dependency bump", default0094(t): "Check the release PR"} {
 		for _, step := range []string{"Check the dependency bump", "Check the release PR"} {
