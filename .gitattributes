@@ -1,3 +1,0 @@
-# checks.go is written by `fitness-release checks` from the go/cmd/fitness-check-*
-# folders, so checks judge those packages and skip the list.
-go/cmd/fitness/checks.go linguist-generated

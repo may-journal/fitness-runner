@@ -40,19 +40,33 @@ func Builtin(name string) (Program, error) {
 	return Program{Path: self, Name: BinPrefix + name}, nil
 }
 
+// Self returns the program that starts the running check again: this
+// executable, under the name it was started with, since one fitness
+// executable holds every check and the name picks which one runs.
+func Self() (Program, error) {
+	self, err := os.Executable()
+	if err != nil {
+		return Program{}, err
+	}
+	return Program{Path: self, Name: filepath.Base(os.Args[0])}, nil
+}
+
 // Beside maps the name of each fitness-check-<name> program beside the
 // running fitness executable to its path. An installed bundle links every
-// built-in check there; any other program there adds a check, or replaces
-// the built-in check of its name. None is no error, as after `go install`.
+// built-in check there to fitness itself; those links are the built-in
+// checks, so they are left out. Any other program there adds a check, or
+// replaces the built-in check of its name. None is no error, as after
+// `go install`.
 func Beside() map[string]string {
 	self, err := os.Executable()
 	if err != nil {
 		return nil
 	}
+	real, _ := filepath.EvalSymlinks(self)
 	paths, _ := filepath.Glob(filepath.Join(filepath.Dir(self), BinPrefix+"*"))
 	programs := map[string]string{}
 	for _, p := range paths {
-		if executableFile(p) {
+		if target, _ := filepath.EvalSymlinks(p); executableFile(p) && target != real {
 			programs[strings.TrimPrefix(filepath.Base(p), BinPrefix)] = p
 		}
 	}

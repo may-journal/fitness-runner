@@ -47,9 +47,10 @@ func checksSource(imports, entries string) string {
 }
 
 // checkAlias names a check package's import: the check name in camel case,
-// then Check, as go-test becomes goTestCheck.
+// then Check, as go-test becomes goTestCheck. Empty words, as in a--b, add
+// nothing.
 func checkAlias(name string) string {
-	words := strings.Split(name, "-")
+	words := strings.FieldsFunc(name, func(r rune) bool { return r == '-' })
 	for i := 1; i < len(words); i++ {
 		words[i] = strings.ToUpper(words[i][:1]) + words[i][1:]
 	}

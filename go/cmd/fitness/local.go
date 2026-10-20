@@ -43,14 +43,26 @@ func loadLocalChecks(cfg *conf.Config, root string) error {
 
 // findCheckBinary returns the program for a check name: the repo's local
 // check when one has that name, else a program of that name beside fitness,
-// else the built-in check, run from this fitness executable.
+// else the built-in check, run from this fitness executable. A program
+// beside fitness that replaces a built-in check says so on stderr, so a
+// stale one left from an older install does not run unnoticed.
 func findCheckBinary(name string) (checkkit.Program, error) {
 	if bin, ok := localBins[name]; ok {
 		return checkkit.Program{Path: bin}, nil
 	}
+	_, builtin := builtins[name]
 	if bin, ok := besidePrograms[name]; ok {
+		if builtin {
+			fmt.Fprintf(os.Stderr, "fitness: %s replaces the built-in %s check; delete it to run the built-in one\n", bin, name)
+		}
 		return checkkit.Program{Path: bin}, nil
 	}
+	return builtinProgram(name)
+}
+
+// builtinProgram returns the program for built-in check name: this fitness
+// executable, started as fitness-check-<name>.
+func builtinProgram(name string) (checkkit.Program, error) {
 	if _, ok := builtins[name]; !ok {
 		return checkkit.Program{}, fmt.Errorf("no built-in check %s", name)
 	}

@@ -1,11 +1,15 @@
 package distribution
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // checkLink marks a bundle file that is a link to the fitness binary, in
@@ -13,19 +17,23 @@ import (
 // bundle missing one fails validation and is unpacked again.
 const checkLink = "link:fitness"
 
+// listTimeout bounds `fitness check --list`, which only prints names, so a
+// bundle binary that hangs fails the install instead of stalling it.
+const listTimeout = 30 * time.Second
+
 // linkChecks gives a one-binary bundle a fitness-check-<name> link to its
 // fitness binary for every check `fitness check --list` names, so a caller
 // that runs a check by its own program name keeps working. An older bundle
-// that ships one binary per check gets no links.
+// already ships a fitness-check-<name> binary per check and gets no links.
 func linkChecks(directory string, hashes map[string]string) error {
-	if len(hashes) != 1 {
+	if shipsCheckBinaries(hashes) {
 		return nil
 	}
-	out, err := exec.Command(filepath.Join(directory, "fitness"), "check", "--list").Output()
+	names, err := listChecks(directory)
 	if err != nil {
-		return fmt.Errorf("list the bundle's checks: %w", err)
+		return err
 	}
-	for _, name := range strings.Fields(string(out)) {
+	for _, name := range names {
 		if err := linkCheck(directory, name, hashes); err != nil {
 			return err
 		}
@@ -33,10 +41,32 @@ func linkChecks(directory string, hashes map[string]string) error {
 	return nil
 }
 
+// shipsCheckBinaries reports whether a bundle holds a fitness-check-<name>
+// binary of its own, as bundles from before the one binary do.
+func shipsCheckBinaries(hashes map[string]string) bool {
+	for name := range hashes {
+		if strings.HasPrefix(name, checkkit.BinPrefix) {
+			return true
+		}
+	}
+	return false
+}
+
+// listChecks names the checks built into the bundle's fitness binary.
+func listChecks(directory string) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), listTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, filepath.Join(directory, "fitness"), "check", "--list").Output()
+	if err != nil {
+		return nil, fmt.Errorf("list the bundle's checks: %w", err)
+	}
+	return strings.Fields(string(out)), nil
+}
+
 // linkCheck links fitness-check-<name> to the fitness binary in directory
 // and records the link with the bundle's hashes.
 func linkCheck(directory, name string, hashes map[string]string) error {
-	link := "fitness-check-" + name
+	link := checkkit.BinPrefix + name
 	if !binaryPattern.MatchString(link) {
 		return fmt.Errorf("unsafe check name %q", name)
 	}

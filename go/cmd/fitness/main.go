@@ -27,6 +27,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -39,12 +40,17 @@ import (
 // It is every check built into this executable or installed beside it,
 // minus the ignored ones, in the order the language registry gives:
 // repo-wide checks, then each module's. installErr says why no checks were
-// found; a run stops on it.
-var allChecks, installErr = catalog()
+// found; a run stops on it. main sets both when it runs as the runner, so a
+// process started as one check skips the work.
+var (
+	allChecks  []string
+	installErr error
+)
 
 // besidePrograms are the fitness-check-<name> programs beside this
-// executable, which win over the built-in check of their name.
-var besidePrograms = checkkit.Beside()
+// executable, which win over the built-in check of their name. main sets it
+// when it runs as the runner.
+var besidePrograms map[string]string
 
 // catalog lists the default checks, or the error that leaves it empty.
 func catalog() ([]string, error) {
@@ -98,9 +104,12 @@ type outcome struct {
 // program name, as the runner and the installed links start it; otherwise it
 // is the runner.
 func main() {
+	metadata.RepoChecks.Find = builtinProgram
 	if name, ok := strings.CutPrefix(filepath.Base(os.Args[0]), checkkit.BinPrefix); ok {
 		os.Exit(runBuiltin(name, os.Args[1:]))
 	}
+	besidePrograms = checkkit.Beside()
+	allChecks, installErr = catalog()
 	os.Exit(dispatch(os.Args[1:]))
 }
 
