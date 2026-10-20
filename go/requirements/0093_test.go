@@ -115,12 +115,12 @@ func Test0093_1(t *testing.T) {
 	if written != "green=true\n" {
 		t.Fatalf("green checks were not reported green: output %q\n%s", written, out)
 	}
-	rp, out, code, _ := run0093(t, "Approve the release PR", reviews0093(`[]`))
+	rp, out, code, _ := run0093(t, "Approve the PR", reviews0093(`[]`))
 	sees(t, out, code, 0, "Approved PR #23 at abc123.")
 	if !rp.called("gh", "-X POST repos/"+repo0014+"/pulls/23/reviews -f event=APPROVE -f commit_id=abc123") {
 		t.Fatalf("the release PR was not approved at the checked commit: %q", rp.calls("gh"))
 	}
-	rp, out, code, _ = run0093(t, "Approve the release PR", reviews0093(`[]`+"\n"+approved0093))
+	rp, out, code, _ = run0093(t, "Approve the PR", reviews0093(`[]`+"\n"+approved0093))
 	sees(t, out, code, 0, "PR #23 is already approved at abc123.")
 	if rp.called("gh", "-X POST") {
 		t.Fatalf("a release PR approved at abc123 was approved again: %q", rp.calls("gh"))
@@ -185,10 +185,11 @@ func Test0093_5(t *testing.T) {
 	}
 }
 
-var output0093 = regexp.MustCompile(`steps\.(\w+)\.outputs\.(\w+)`)
+var output0093 = regexp.MustCompile(`(?:steps\.(\w+)\.outputs|inputs)\.(\w+)`)
 
 // runs0093 evaluates the step's `if:` as Actions does, given the earlier
-// steps' outputs keyed step.output; a missing output is empty.
+// steps' outputs keyed step.output and its inputs keyed inputs.name; a
+// missing value is empty.
 func runs0093(t *testing.T, name string, outputs map[string]string) bool {
 	t.Helper()
 	_, cond, ok := strings.Cut(section0093(t, name), "if: ${{ ")
@@ -201,7 +202,11 @@ func runs0093(t *testing.T, name string, outputs map[string]string) bool {
 	}
 	cond = output0093.ReplaceAllStringFunc(cond, func(ref string) string {
 		m := output0093.FindStringSubmatch(ref)
-		return `"` + outputs[m[1]+"."+m[2]] + `"`
+		key := m[1] + "." + m[2]
+		if m[1] == "" {
+			key = "inputs." + m[2]
+		}
+		return `"` + outputs[key] + `"`
 	})
 	return exec.Command("bash", "-c", "[[ "+strings.ReplaceAll(cond, "'", `"`)+" ]]").Run() == nil
 }
@@ -211,7 +216,7 @@ func runs0093(t *testing.T, name string, outputs map[string]string) bool {
 // report.
 func skipsAllButReport0093(t *testing.T) {
 	t.Helper()
-	for _, step := range []string{"Mint the approver App token", "Check the release PR", "Wait for green checks", "Approve the release PR"} {
+	for _, step := range []string{"Mint the approver App token", "Check the release PR", "Check the dependency bump", "Wait for green checks", "Approve the PR"} {
 		if runs0093(t, step, map[string]string{}) {
 			t.Errorf("without the approver secrets, step %q runs, want it skipped", step)
 		}
@@ -224,7 +229,7 @@ func skipsAllButReport0093(t *testing.T) {
 func Test0093_6(t *testing.T) {
 	t.Parallel()
 	_, out, code, written := run0093(t, "Check the approver App secrets", nil, "APP_ID=", "APP_KEY=")
-	sees(t, out, code, 0, "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the release PR.")
+	sees(t, out, code, 0, "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the PR.")
 	if written != "" {
 		t.Errorf("missing secrets were reported ready: %q", written)
 	}
