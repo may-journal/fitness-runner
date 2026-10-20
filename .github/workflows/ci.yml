@@ -81,6 +81,8 @@ jobs:
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      pr: ${{ fromJSON(steps.report-step-1.outputs.pr || '{}').number }}
     steps:
       - name: Create release automation token
         id: app-token
@@ -135,3 +137,14 @@ jobs:
           if [ -n "$REPORT_ARTIFACT_URL" ]; then
             printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  # The approver App approves the release PR once its checks are green.
+  release-approve:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.pr != '' }}
+    uses: ./.github/workflows/release-approve.yml
+    with:
+      pr: ${{ needs.release-please.outputs.pr }}
+    secrets:
+      APPROVER_APP_ID: ${{ secrets.APPROVER_APP_ID }}
+      APPROVER_APP_KEY: ${{ secrets.APPROVER_APP_KEY }}

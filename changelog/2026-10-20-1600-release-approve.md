@@ -1,0 +1,11 @@
+---
+relatedConfigurations: ['../.fitnessrc.json']
+---
+
+### 2026.10.20.1600
+
+- Feat: Release approve lets a second App approve a green Release Please pull request, so it merges without a person.
+- Feat: it approves only an automation pull request changing `CHANGELOG.md`, `version.txt` and the manifest, and leaves others for a person.
+- Feat: the shared Release Please workflow and this repo's CI call it whenever a release pull request is open.
+- Docs: the workflows README explains when it approves and what the approver App needs.
+- Test: requirement 0093 covers the approval, each refusal, the wait and missing secrets.

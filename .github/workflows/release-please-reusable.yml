@@ -13,6 +13,11 @@ on:
         required: true
       AUTOMATION_APP_KEY:
         required: true
+      # The approver App, a second identity, approves green release PRs.
+      APPROVER_APP_ID:
+        required: false
+      APPROVER_APP_KEY:
+        required: false
 
 permissions:
   contents: read
@@ -21,6 +26,8 @@ jobs:
   release-please:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      pr: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
     # One release run at a time per repo. The group name differs from any
     # caller's, since a caller and its called workflow sharing one deadlocks.
     concurrency:
@@ -147,3 +154,15 @@ jobs:
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
           fi
           printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+
+  # The approver App approves the release PR once its checks are green.
+  # `./` names this repo at this workflow's own commit.
+  approve:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.pr != '' }}
+    uses: ./.github/workflows/release-approve.yml
+    with:
+      pr: ${{ needs.release-please.outputs.pr }}
+    secrets:
+      APPROVER_APP_ID: ${{ secrets.APPROVER_APP_ID }}
+      APPROVER_APP_KEY: ${{ secrets.APPROVER_APP_KEY }}
