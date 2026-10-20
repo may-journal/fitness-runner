@@ -15,7 +15,7 @@ Edit the issue body, then wait for the bot to recheck.
 - `item 2 has an emoji; GitHub shows each issue's state, so drop it`: delete the emoji and any status word.
 - `item 3 (#24) is listed before #25, which it runs after`: move `#25` above `#24`.
 - `tables are not allowed`: replace the table with the list.
-- `a list has more than N items at level 1`: split the list under `###` headings.
+- A list over the item cap fails prose-budget, not this check: split it under `###` headings.
 - `N is listed but is not a sub-issue of this epic`: link the issue as a sub-issue, or drop it from the list. Every sub-issue must be listed too.
 
 ## Check it first

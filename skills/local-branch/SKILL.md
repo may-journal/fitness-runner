@@ -18,4 +18,4 @@ description: Fix a failing local-branch check, which judges a branch against its
 
 ## Check it first
 
-Run `fitness branch-check` on your branch. It reads GitHub live and changes nothing.
+Run `fitness local-branch` (alias `branch-check`, the name its failures print) on your branch. It reads GitHub live and changes nothing.
