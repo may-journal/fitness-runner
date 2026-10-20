@@ -38,13 +38,26 @@ func headingSlug(heading string) string {
 }
 
 // hasHeading reports whether a markdown file has a heading with that anchor.
+// A line inside a fenced code block is code, such as a shell comment, not a heading.
 func hasHeading(text, anchor string) bool {
+	fenced := false
 	for _, line := range strings.Split(text, "\n") {
-		if strings.HasPrefix(line, "#") && headingSlug(strings.TrimLeft(line, "# ")) == anchor {
+		fenced = fenced != isFence(line)
+		if !fenced && isHeading(line, anchor) {
 			return true
 		}
 	}
 	return false
+}
+
+// isFence reports whether the line opens or closes a fenced code block.
+func isFence(line string) bool {
+	trimmed := strings.TrimLeft(line, " ")
+	return strings.HasPrefix(trimmed, "```") || strings.HasPrefix(trimmed, "~~~")
+}
+
+func isHeading(line, anchor string) bool {
+	return strings.HasPrefix(line, "#") && headingSlug(strings.TrimLeft(line, "# ")) == anchor
 }
 
 // checkSkillLink fails unless the linked file exists in the repo and holds the
