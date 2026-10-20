@@ -305,3 +305,23 @@ It approves only when all of these hold, and otherwise leaves the PR for a perso
 - Every check but this run's own passes or skips within 20 minutes, polled every 30 seconds, and the head has not moved.
 
 The approval names the commit it checked. The org ruleset dismisses it on a later push, and the next run approves anew. A repo without the `APPROVER_APP_ID` and `APPROVER_APP_KEY` secrets skips the approval with a notice. The approver App needs read access to contents, checks and commit statuses, and write access to pull requests.
+
+### Dependency bumps
+
+With `kind: dependency`, it approves a green `build(deps)` PR that only bumps dev dependencies ([#524](https://github.com/may-journal/fitness-runner/issues/524)). Its files must be `package.json` and `package-lock.json` alone. Against the merge base, `package.json` may change only existing `devDependencies`, and the lockfile only `dev` packages from the npm registry. Each moved version keeps its major number, or its minor below 1.0, so runtime and major bumps stay with a person.
+
+A repo opts in with a caller that runs on its pull requests, as in this sketch:
+
+```yaml
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+jobs:
+  approve:
+    if: ${{ startsWith(github.event.pull_request.title, 'build(deps)') }}
+    uses: may-journal/fitness-runner/.github/workflows/release-approve.yml@v1
+    with:
+      pr: ${{ github.event.pull_request.number }}
+      kind: dependency
+    secrets: inherit
+```
