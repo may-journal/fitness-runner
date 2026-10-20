@@ -4,7 +4,8 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 ### 2026.10.20.1900
 
-- Feat: release bundles carry the `skills/` folder, one folder per skill.
-- Feat: `fitness-install --link-skills <folder>` links each skill into an agent's skills folder and repairs broken links.
-- Test: requirements 0098.1, 0098.2 and 0098.3 run the real installer to link skills, repair a broken link and refuse a hook request.
-- Docs: ADR 0011 and the development guide describe the skill layout.
+- Feat: release bundles carry `skills/`, and `fitness-install --link-skills <folder>` links each skill into an agent's skills folder.
+- Fix: an odd skill file name is skipped, not fatal, and bundle validation walks `skills/` at any depth.
+- Fix: skill files are readable by others, and links to dropped skills are removed.
+- Fix: only links into this tool's own bundles are replaced, through unique temporary names.
+- Test: requirements 0098.1 to 0098.5 run the real installer. ADR 0011 describes the layout.

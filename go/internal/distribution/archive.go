@@ -58,7 +58,7 @@ func (b *extractedBundle) extract(reader *tar.Reader, directory, top string) err
 }
 
 func (b *extractedBundle) extractEntry(reader io.Reader, h *tar.Header, directory, top string) error {
-	if ignoredFolder(h, top) {
+	if ignoredFolder(h, top) || oddSkillEntry(h, top) {
 		return nil
 	}
 	name, err := archiveName(h, top)
@@ -121,15 +121,26 @@ func ignoredFolder(h *tar.Header, top string) bool {
 	return h.Name == top+"/" || name == skillsFolder || skillFolderPattern.MatchString(name) || skillPattern.MatchString(name)
 }
 
-// writeBundleFile writes a binary executable and a skill file readable only by
-// the installing user, creating the skill's folder first.
+// oddSkillEntry reports whether the entry sits under the skills folder but is
+// not a regular file with a safe name. Such an entry is skipped, so one odd name
+// cannot abort the install.
+func oddSkillEntry(h *tar.Header, top string) bool {
+	name := strings.TrimPrefix(h.Name, top+"/")
+	if name == h.Name || !strings.HasPrefix(name, skillsFolder+"/") {
+		return false
+	}
+	return h.Typeflag != tar.TypeReg || !skillPattern.MatchString(name)
+}
+
+// writeBundleFile writes a binary executable readable only by the installing
+// user, and a skill file any agent may read, creating the skill's folder first.
 func writeBundleFile(directory, name string, data []byte) error {
 	path := filepath.Join(directory, name)
 	if !strings.HasPrefix(name, skillsFolder+"/") {
 		return os.WriteFile(path, data, 0700)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(path, data, 0600)
+	return os.WriteFile(path, data, 0644)
 }
