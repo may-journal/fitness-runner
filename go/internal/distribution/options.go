@@ -104,20 +104,27 @@ func (options Options) validate() error {
 	if options.InstallOnly && len(options.Args) > 0 {
 		return errors.New("install-only does not accept runner arguments")
 	}
+	if err := options.validateLinkSkills(); err != nil {
+		return err
+	}
 	if options.InstallHook {
 		return options.validateHook()
 	}
-	return options.validateLinkSkills()
+	return nil
 }
 
 func (options Options) validateLinkSkills() error {
 	if len(options.LinkSkills) == 0 {
 		return nil
 	}
-	if len(options.Args) > 0 || options.GitHubAction || options.InstallOnly {
+	if len(options.Args) > 0 || options.otherMode() {
 		return errors.New("link-skills does not combine with other modes or runner arguments")
 	}
 	return nil
+}
+
+func (options Options) otherMode() bool {
+	return options.GitHubAction || options.InstallOnly || options.InstallHook
 }
 
 func (options Options) validateHook() error {

@@ -24,3 +24,13 @@ func Test0098_2(t *testing.T) {
 	sees(t, fiFile(t, filepath.Join(folder, "add-requirements", "SKILL.md")), 0, 0, "name: add-requirements")
 	sees(t, fiFile(t, filepath.Join(folder, "mine", "SKILL.md")), 0, 0, "mine\n")
 }
+
+func Test0098_3(t *testing.T) {
+	t.Parallel()
+	folder := filepath.Join(t.TempDir(), "skills")
+	out, code := fiRun(t, t.TempDir(), nil, "--install-hook", "--link-skills", folder)
+	sees(t, out, code, 1, "link-skills does not combine with other modes")
+	if _, err := os.Lstat(folder); err == nil {
+		t.Errorf("skills folder %s was created", folder)
+	}
+}
