@@ -138,13 +138,18 @@ jobs:
             printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # The approver App approves the release PR once its checks are green.
+  # The approver approves the release PR once its checks are green. Its job
+  # reads the PR and its checks with the run token.
   release-approve:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr != '' }}
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+      statuses: read
     uses: ./.github/workflows/release-approve.yml
     with:
       pr: ${{ needs.release-please.outputs.pr }}
     secrets:
-      APPROVER_APP_ID: ${{ secrets.APPROVER_APP_ID }}
-      APPROVER_APP_KEY: ${{ secrets.APPROVER_APP_KEY }}
+      APPROVER_TOKEN: ${{ secrets.APPROVER_TOKEN }}

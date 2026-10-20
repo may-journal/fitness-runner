@@ -4,11 +4,14 @@ name: Release approve
 # run that leaves a release PR open, and this repo's CI does the same. A
 # repo's pull_request caller passes kind: dependency for build(deps) PRs.
 # The org ruleset needs one approval, and a bot cannot approve its own PR.
-# A second App, the approver, approves a release PR only when the automation
-# App authored it and its diff is the release files alone. It approves a
-# dependency bump only when its diff is a patch or minor bump of dev
-# dependencies in package.json and package-lock.json. Either way its checks
-# must be green. Any other PR is left for a person.
+# The approver, a machine user with write access, approves with its token
+# APPROVER_TOKEN, since only an approval from someone with write access
+# counts toward the review the ruleset requires (may-journal/.github#125).
+# It approves a release PR only when the automation App authored it and its
+# diff is the release files alone. It approves a dependency bump only when
+# its diff is a patch or minor bump of dev dependencies in package.json and
+# package-lock.json. Either way its checks must be green. Any other PR is
+# left for a person.
 on:
   workflow_call:
     inputs:
@@ -22,9 +25,7 @@ on:
         default: release
         type: string
     secrets:
-      APPROVER_APP_ID:
-        required: false
-      APPROVER_APP_KEY:
+      APPROVER_TOKEN:
         required: false
 
 permissions:
@@ -33,6 +34,14 @@ permissions:
 jobs:
   approve:
     runs-on: ubuntu-latest
+    # The run's own token reads the PR, its files, contents and checks, so
+    # the approver's token needs only pull request access. A caller grants
+    # these to the calling job.
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: read
+      statuses: read
     # Checks may take a while; the wait below gives up after 20 minutes.
     timeout-minutes: 25
     # A newer run waits for the running one, which finds the head moved and
@@ -41,39 +50,32 @@ jobs:
       group: release-approve-${{ inputs.pr }}
       cancel-in-progress: false
     steps:
-      # A repo without the approver App leaves its release PRs to a person,
-      # so missing secrets skip the approval instead of failing the release.
-      # A kind other than release or dependency is a caller bug, so it fails.
-      - name: Check the approver App secrets
+      # A repo without the approver's token leaves its release PRs to a
+      # person, so a missing secret skips the approval instead of failing the
+      # release. A kind other than release or dependency is a caller bug, so
+      # it fails.
+      - name: Check the approver token
         id: secrets
         env:
-          APP_ID: ${{ secrets.APPROVER_APP_ID }}
+          TOKEN: ${{ secrets.APPROVER_TOKEN }}
           KIND: ${{ inputs.kind }}
-          APP_KEY: ${{ secrets.APPROVER_APP_KEY }}
         run: |
           case "$KIND" in
             release | dependency) ;;
             *) echo "::error::Release approve got kind '$KIND'; pass release or dependency."; exit 1 ;;
           esac
-          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
-            echo "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the PR."
+          if [ -z "$TOKEN" ]; then
+            echo "::notice::APPROVER_TOKEN is not available to this repo, so a person approves the PR."
             exit 0
           fi
           echo "ready=true" >> "$GITHUB_OUTPUT"
-      - name: Mint the approver App token
-        id: app-token
-        if: ${{ steps.secrets.outputs.ready == 'true' }}
-        uses: actions/create-github-app-token@v2
-        with:
-          app-id: ${{ secrets.APPROVER_APP_ID }}
-          private-key: ${{ secrets.APPROVER_APP_KEY }}
       # Only the automation App's PR whose files are all release files
       # qualifies. A rename counts both its paths, so nothing moves in.
       - name: Check the release PR
         id: guard
         if: ${{ steps.secrets.outputs.ready == 'true' && inputs.kind == 'release' }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
           AUTHOR: app/may-journal-automation
@@ -104,7 +106,7 @@ jobs:
         id: bump
         if: ${{ steps.secrets.outputs.ready == 'true' && inputs.kind == 'dependency' }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
         run: |
@@ -177,7 +179,7 @@ jobs:
         id: checks
         if: ${{ steps.guard.outputs.sha != '' || steps.bump.outputs.sha != '' }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
           SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
@@ -218,18 +220,19 @@ jobs:
           echo "green=true" >> "$GITHUB_OUTPUT"
       # The approval names the commit checked, so a later push needs a new
       # one. A PR the approver already approved at that commit is left alone.
+      # The approver's login comes from its token, so any machine user works.
       - name: Approve the PR
         id: report-step-1
         if: ${{ steps.checks.outputs.green == 'true' }}
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ secrets.APPROVER_TOKEN }}
           PR: ${{ inputs.pr }}
           SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
-          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
         run: |
+          bot="$(gh api user --jq .login)"
           reviews="repos/$GITHUB_REPOSITORY/pulls/$PR/reviews"
           approved="$(gh api "$reviews" --paginate |
-            jq -rs --arg bot "$BOT" --arg sha "$SHA" 'add | any(.user.login == $bot and .commit_id == $sha and .state == "APPROVED")')"
+            jq -rs --arg bot "$bot" --arg sha "$SHA" 'add | any(.user.login == $bot and .commit_id == $sha and .state == "APPROVED")')"
           if [ "$approved" = true ]; then
             echo "PR #$PR is already approved at $SHA."
             exit 0

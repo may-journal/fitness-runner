@@ -162,7 +162,7 @@ func Test0094_4(t *testing.T) {
 
 func Test0094_5(t *testing.T) {
 	t.Parallel()
-	_, out, code, _ := run0093(t, "Check the approver App secrets", nil, "KIND=dependencies", "APP_ID=1", "APP_KEY=key")
+	_, out, code, _ := run0093(t, "Check the approver token", nil, "KIND=dependencies", "TOKEN=token")
 	sees(t, out, code, 1, "::error::Release approve got kind 'dependencies'; pass release or dependency.")
 	// Actions fills in the input's default when a caller passes none.
 	for kind, want := range map[string]string{"dependency": "Check the dependency bump", default0094(t): "Check the release PR"} {
