@@ -82,16 +82,10 @@ func Detect(files []File, opt Options) Stats {
 		return windowHashes(files[i].Tokens, k)
 	})
 	var stats Stats
-	counts := make(map[uint64]int)
+	counts := countWindows(hashes)
 	for fi, f := range files {
 		stats.TotalLines += f.Lines
-		for _, h := range hashes[fi] {
-			counts[h]++
-		}
-	}
-	seen := make(map[uint64]bool)
-	for fi, f := range files {
-		dup := dupWindows(hashes[fi], counts, seen)
+		dup := dupWindows(hashes[fi], counts)
 		if lines := dupLineCount(f.Tokens, dup, k, opt.MinLines); lines > 0 {
 			stats.DuplicatedLines += lines
 			stats.Files = append(stats.Files, FileLines{Path: f.Path, Lines: lines})
@@ -100,21 +94,36 @@ func Detect(files []File, opt Options) Stats {
 	return stats
 }
 
+// countWindows counts each window hash across every file, in a map sized
+// for every window up front so it never grows while filling.
+func countWindows(hashes [][]uint64) map[uint64]int {
+	windows := 0
+	for _, hs := range hashes {
+		windows += len(hs)
+	}
+	counts := make(map[uint64]int, windows)
+	for _, hs := range hashes {
+		for _, h := range hs {
+			counts[h]++
+		}
+	}
+	return counts
+}
+
 // dupWindows returns the positions (ascending) of windows in hs whose hash
 // occurs at least twice across all files, skipping each hash's first
-// occurrence — the "original" copy stays free. It records first sightings
-// in seen, which persists across the per-file calls.
-func dupWindows(hs []uint64, counts map[uint64]int, seen map[uint64]bool) []int {
+// occurrence — the "original" copy stays free. It records a first sighting
+// by setting the hash's count to -1, which persists across the per-file
+// calls, so no second map is filled.
+func dupWindows(hs []uint64, counts map[uint64]int) []int {
 	var dup []int
 	for pos, h := range hs {
-		if counts[h] < 2 {
-			continue
+		switch c := counts[h]; {
+		case c < 0:
+			dup = append(dup, pos)
+		case c >= 2:
+			counts[h] = -1
 		}
-		if !seen[h] {
-			seen[h] = true
-			continue
-		}
-		dup = append(dup, pos)
 	}
 	return dup
 }

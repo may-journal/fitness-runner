@@ -186,6 +186,13 @@ func run(argv []string) int {
 		return 1
 	}
 	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
+	return runChecks(root, perfPath, checks, passthrough, env)
+}
+
+// runChecks runs checks in one pool with env and passthrough, prints the
+// summary table, writes the `--json` report when perfPath names one, and
+// returns the run's exit code.
+func runChecks(root, perfPath string, checks []resolved, passthrough, env []string) int {
 	checks = commitChecks(checks)
 	tracked, removeTracked := shareTrackedFiles(root, checks)
 	defer removeTracked()

@@ -12,7 +12,7 @@ func (c *components) share() {
 
 func (c *components) runtime(rt Runtime) {
 	seen := map[string]bool{}
-	for _, file := range sortedKeys(c.owners) {
+	for _, file := range c.ownedFiles {
 		if coversAnyFolder(rt.Paths, file) {
 			c.reach(rt, c.owners[file], Location(rt.At), true, seen)
 		}

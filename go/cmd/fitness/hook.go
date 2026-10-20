@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // runHook dispatches a `fitness hook <name>` invocation. The installed hooks
@@ -43,19 +45,81 @@ func chdirToplevel() error {
 
 // hookCommitMsg validates the proposed commit message with semantic-commit,
 // plan-trailer, and issue-link-once — the message file is the first
-// argument. An amend is judged against the amended commit's parent.
+// argument. An amend is judged against the amended commit's parent. The
+// three run in one pool, sharing one table, and any failure fails the hook.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)
 	if !ok {
 		return 1
 	}
 	markAmend()
-	for _, check := range commitMsgChecks() {
-		if code := run([]string{check, "--message=" + msg}); code != 0 {
-			return code
+	return runMessageChecks(commitMsgChecks(), msg)
+}
+
+// runMessageChecks resolves each named check as a single-check run would,
+// then runs those that read the message from the environment at once, and
+// any others one by one as before. No names run nothing.
+func runMessageChecks(names []string, msg string) int {
+	if len(names) == 0 {
+		return 0
+	}
+	root, checks, err := resolveMessageChecks(names)
+	if err != nil {
+		report.Error("fitness setup", err)
+		return 1
+	}
+	pooled, alone := splitByMessageArg(checks)
+	code := 0
+	if len(pooled) > 0 {
+		env := append(contextEnv(root, pooled, false), "FITNESS_CTX_MESSAGE="+msg)
+		code = runChecks(root, "", pooled, nil, env)
+	}
+	for _, check := range alone {
+		code = max(code, run([]string{check.name, "--message=" + msg}))
+	}
+	return code
+}
+
+// splitByMessageArg separates the checks that read the message from
+// FITNESS_CTX_MESSAGE, which the runner sets for any check naming a
+// context argument, from those, such as a repo's own override, that take
+// --message on their command line and so run one at a time.
+func splitByMessageArg(checks []resolved) (pooled, alone []resolved) {
+	for _, check := range checks {
+		if check.desc.ContextInlineArg != "" {
+			pooled = append(pooled, check)
+		} else {
+			alone = append(alone, check)
 		}
 	}
-	return 0
+	return pooled, alone
+}
+
+// resolveMessageChecks finds the repository root and resolves names there,
+// failing first when the install is broken.
+func resolveMessageChecks(names []string) (string, []resolved, error) {
+	root, err := os.Getwd()
+	if err == nil {
+		err = installErr
+	}
+	if err != nil {
+		return "", nil, err
+	}
+	checks, err := resolveEach(root, names)
+	return root, checks, err
+}
+
+// resolveEach resolves every name as `fitness <name>` would, in order.
+func resolveEach(root string, names []string) ([]resolved, error) {
+	var checks []resolved
+	for _, name := range names {
+		named, _, err := selectedChecks(root, []string{name})
+		if err != nil {
+			return nil, err
+		}
+		checks = append(checks, named...)
+	}
+	return checks, nil
 }
 
 // commitMsgChecks lists the checks the commit-msg hook runs, without any

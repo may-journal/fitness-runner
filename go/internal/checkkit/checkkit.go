@@ -106,6 +106,7 @@ func splitLines(s string) []string {
 // Main is the entry point every check binary delegates to: it parses
 // --root/--describe, runs the check, and emits the protocol JSON.
 func Main(c Check) {
+	shareCPUs()
 	os.Exit(runMain(c, os.Args[1:], os.Stdout))
 }
 

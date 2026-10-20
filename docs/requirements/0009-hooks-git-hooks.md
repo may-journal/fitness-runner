@@ -30,6 +30,10 @@ Source: `go/cmd/fitness/hook.go:15`
     - Given Developer has the hooks and a message that is not a semantic commit
         - When I commit
             - Then the commit is refused naming semantic-commit
+- 0009.10
+    - Given Developer has the hooks and a message that is not a semantic commit and misspells its Plan trailer
+        - When I commit
+            - Then the commit is refused naming both problems at once
 - 0009.4
     - Given Developer has the hooks and a failing executable pre-commit.local
         - When I commit a change that passes every check
