@@ -21,6 +21,9 @@ jobs:
           cache-key: fitness
           save: true
       - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
+      # cspell embeds words.txt, merged from its dict lists; a list edited
+      # without `make words` fails here.
+      - run: make words-check
       # A pull request checks the files it changes; a push to main checks
       # every file. The gofmt, go-vet, and go-test checks cover the Go gate.
       # The token lets workflow-ref-exists read refs on GitHub.

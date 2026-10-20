@@ -13,18 +13,18 @@ import (
 // the npm-free migration — a Go regeneration tool is deferred (see
 // docs/plans/archive/02-npm-free.md).
 //
-// `fitness-release words` (WriteWords) merges every list the language
+// The words generator (package wordlist) merges every list the language
 // registry names into words.txt: one sorted, unique list, so a lookup is one
-// binary search instead of one per list. Run `go generate ./internal/spell`
-// after changing a list in dict/.
+// binary search instead of one per list. Run `make words` after changing a
+// list in dict/; `make words-check` in CI fails while words.txt is stale.
 
-//go:generate go run ../../cmd/fitness-release words --root ../../..
+//go:generate go run gen_words.go
 
 //go:embed words.txt
 var words string
 
 // wordStarts is the offset table of words.txt, built on the first lookup:
-// the start of each word line, then the end of the text. WriteWords ends
+// the start of each word line, then the end of the text. wordlist.Write ends
 // every line with a newline and leads with '#' header lines, which are left out.
 // A process that spells nothing never builds it.
 var wordStarts = sync.OnceValue(func() []int32 {

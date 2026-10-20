@@ -1,4 +1,4 @@
-# words.txt — written by `fitness-release words`; do not edit.
+# words.txt — written by `make words`; do not edit.
 # Merged from dict/aws.txt, dict/companies.txt, dict/css.txt, dict/en-us.txt, dict/filetypes.txt, dict/fullstack.txt, dict/git.txt, dict/html.txt, dict/shell.txt, dict/software-terms.txt, dict/golang.txt, dict/node.txt, dict/npm.txt, dict/typescript.txt.
 # 204882 words, sorted by byte order, one per line.
 'cause

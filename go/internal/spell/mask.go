@@ -72,7 +72,7 @@ func maskMatches(re *regexp.Regexp, text string, masked []bool) {
 // maskHexRuns masks runs of seven or more hex digits holding a digit; a
 // line without such a run skips the regexp.
 func maskHexRuns(text string, masked []bool) {
-	if !hasRun(text, 7, isHexDigit) || !strings.ContainsAny(text, "0123456789") {
+	if !hasRun(text, 7, isHexDigit) {
 		return
 	}
 	for _, m := range hexRun.FindAllStringIndex(text, -1) {

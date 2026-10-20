@@ -37,7 +37,6 @@ The bundle pass creates four archives. The tools pass embeds their hashes in fou
 | `promote` | Mark a verified release stable and latest without a downgrade. |
 | `release-pr` | Apply the PR template to the release PR, linking its [entry files](../fitness-check-changelog/README.md#entry-files) and compare view. |
 | `release-notes` | Write the `GITHUB_REF_NAME` release description from the entry files added since the previous release tag. |
-| `words` | Merge the spell-check lists in `go/internal/spell/dict` into the `words.txt` the check embeds. |
 
 Invoke helpers with `go -C go run ./cmd/fitness-release COMMAND --root ..`. Pass `--host` to `bundle-hashes` or `assemble` when only this platform was built, as `tests/requirements.sh` does. A command warns about any flag it does not read. Later workflow jobs use the compiled verifier from `out` instead.
 

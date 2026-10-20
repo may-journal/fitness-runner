@@ -11,7 +11,7 @@ unexport GIT_DIR GIT_INDEX_FILE GIT_WORK_TREE GIT_COMMON_DIR GIT_OBJECT_DIRECTOR
 # Extra args for `make run`, e.g. `make run ARGS="--help"`.
 ARGS ?=
 
-.PHONY: help build install test test-race cover vet fmt fmt-check lint check run tidy clean
+.PHONY: help build install test test-race cover vet fmt fmt-check words words-check lint check run tidy clean
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -46,6 +46,12 @@ fmt: ## Format all Go sources in place
 
 fmt-check: ## Fail if any Go source is unformatted (CI check)
 	@test -z "$$(gofmt -l $(GO_DIR))" || { echo "Unformatted files:"; gofmt -l $(GO_DIR); exit 1; }
+
+words: ## Rewrite the cspell words.txt from go/internal/spell/dict
+	cd $(GO_DIR) && go generate ./internal/spell
+
+words-check: words ## Fail if words.txt differs from the dict lists (CI check)
+	git diff --exit-code -- $(GO_DIR)/internal/spell/words.txt
 
 lint: fmt-check vet ## Run format check + go vet
 
