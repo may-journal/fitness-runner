@@ -19,7 +19,8 @@ func branchStart(code string, i int) (int, bool) {
 	if open < 0 {
 		return 0, false
 	}
-	return open + 1, !labeled.MatchString(code[open+1:])
+	label := labeled.FindStringSubmatch(code[open+1:])
+	return open + 1, label == nil || label[1] == "verbatim"
 }
 
 // bracketDelta is how a byte changes bracket depth, read backward: a
@@ -59,9 +60,10 @@ func parenAt(c byte, j int) int {
 }
 
 // labeled matches an argument that starts with a label, such as
-// systemImage: or verbatim:. A ternary's colon follows an expression, so
-// only a name straight after the parenthesis is a label.
-var labeled = regexp.MustCompile(`^\s*[\p{L}_][\p{L}\p{N}_]*[ \t]*:`)
+// systemImage: or verbatim:, and captures the label. A ternary's colon
+// follows an expression, so only a name straight after the parenthesis is
+// a label. Only a verbatim: argument is shown as words.
+var labeled = regexp.MustCompile(`^\s*([\p{L}_][\p{L}\p{N}_]*)[ \t]*:`)
 
 // anchors returns, for each literal, the offset whose context decides
 // what shows it: the literal's own start, or for a branch of a ternary
@@ -89,7 +91,20 @@ func anchors(src string, literals []swift.Literal) []int {
 // branchBefore reports a ? or ternary : just before start in src.
 func branchBefore(src string, start int) bool {
 	i := skipSpaceBack(src, start)
-	return i > 0 && (src[i-1] == '?' || src[i-1] == ':' && !labelColon(src, i))
+	return i > 0 && (src[i-1] == '?' || src[i-1] == ':' && !labelColon(src, i) && ternaryColon(src, i))
+}
+
+// ternaryColon reports a colon just before i that has a ? before it in
+// the same brackets. A dictionary literal's colon has none.
+func ternaryColon(src string, i int) bool {
+	depth := 0
+	for j := i - 2; j >= 0 && depth >= 0; j-- {
+		depth += bracketDelta[src[j]]
+		if src[j] == '?' && depth == 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // labelColon reports a colon just before i that follows an argument label
