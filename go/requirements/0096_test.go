@@ -60,7 +60,8 @@ func Test0096_3(t *testing.T) {
 	t.Parallel()
 	plain := "# Plain\n\nShort and clean.\n"
 	titled := "---\ntitle: Notes\n---\n\n# Notes\n"
-	repo, out, code := stripRun(t, map[string]string{"plain.md": plain, "docs/notes.md": titled})
+	ruled := "---\n\nA note set between two rules.\n\n---\n\n# Ruled\n"
+	repo, out, code := stripRun(t, map[string]string{"plain.md": plain, "docs/notes.md": titled, "docs/ruled.md": ruled})
 	// happyRepo's own README.md and CHANGELOG.md are the two files stripped.
 	sees(t, out, code, 0, "fitness strip-front-matter: stripped 2 files, kept 0")
 	if strings.Contains(out, "plain.md") || strings.Contains(out, "notes.md") {
@@ -68,4 +69,18 @@ func Test0096_3(t *testing.T) {
 	}
 	holds(t, repo, "plain.md", plain)
 	holds(t, repo, "docs/notes.md", titled)
+	holds(t, repo, "docs/ruled.md", ruled)
+}
+
+func Test0096_4(t *testing.T) {
+	t.Parallel()
+	repo, out, code := stripRun(t, map[string]string{
+		"docs/crlf.md":  "---\r\nfitnessFunctions:\r\n  - prose-budget\r\n---\r\n\r\n# Crlf\r\n",
+		"docs/bom.md":   "\ufeff---\nfitnessFunctions: ['prose-budget']\n---\n\n# Bom\n",
+		"docs/empty.md": "---\n---\n\n# Empty\n",
+	})
+	sees(t, out, code, 0, "stripped docs/crlf.md", "stripped docs/bom.md", "stripped docs/empty.md")
+	holds(t, repo, "docs/crlf.md", "# Crlf\r\n")
+	holds(t, repo, "docs/bom.md", "\ufeff# Bom\n")
+	holds(t, repo, "docs/empty.md", "# Empty\n")
 }

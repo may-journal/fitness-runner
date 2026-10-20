@@ -10,7 +10,7 @@ Markdown files whose fitness-only front matter is gone with the body unchanged
 -
 Markdown files holding fitness front matter
 
-Source: `go/cmd/fitness/frontmatter.go:93`
+Source: `go/cmd/fitness/frontmatter.go:100`
 
 ## Requirements
 
@@ -23,6 +23,10 @@ Source: `go/cmd/fitness/frontmatter.go:93`
         - When `fitness strip-front-matter` runs
             - Then it leaves each file unchanged and names the other keys
 - 0096.3
-    - Given Developer has docs with no front matter, or front matter without fitness keys
+    - Given Developer has docs with no front matter, front matter without fitness keys, or a leading rule
         - When `fitness strip-front-matter` runs
             - Then it leaves them unchanged and unlisted
+- 0096.4
+    - Given Developer has docs with fitness front matter and CRLF endings or a byte order mark, and a doc with an empty block
+        - When `fitness strip-front-matter` runs
+            - Then it removes each block, keeps the body and any byte order mark, and lists each file
