@@ -83,18 +83,21 @@ jobs:
           issues="$repo/issues"
           marker='<!-- fitness:auto-merge -->'
           warning="::warning::GitHub refused a change to a PR's auto-merge comment; its answer is above."
-          # note sets id to the bot's note on PR $1, or to nothing.
+          # note sets id to the bot's note on PR $1, or to nothing, and
+          # noted to $1, so the next write to that PR reuses it.
           note() {
             local ids
             ids="$(gh api "$issues/$1/comments" --paginate --jq ".[] | select(.user.login == \"$BOT\" and (.body | contains(\"$marker\"))) | .id")" || return 1
             id="${ids%%$'\n'*}"
+            noted="$1"
           }
           # write posts the note $2 on PR $1, or edits it when its text
           # changed. GitHub may store a body with CRLF line ends, so those
           # never count.
           write() {
             local current body="$2"$'\n\n'"$marker"
-            note "$1" || return 1
+            if [ "${noted-}" != "$1" ]; then note "$1" || return 1; fi
+            noted=""
             if [ -z "$id" ]; then
               gh api "$issues/$1/comments" -f body="$body" > /dev/null
               return
@@ -122,14 +125,28 @@ jobs:
           stack="$(jq -r '.stack.number // empty' <<< "$answer")"
           if [ -n "$stack" ]; then
             answer="$(gh api "$repo/stacks/$stack" 2>&1)" || fail "GitHub refused to show stack #$stack" "$answer"
-            members="$(jq -r '.pull_requests[].number' <<< "$answer")"
-            top="${members##*$'\n'}"
-            sha="$(jq -r '.pull_requests[-1].head.sha' <<< "$answer")"
+            # Merged PRs drop out; the top PR is the one no other builds on.
+            open='[.pull_requests[] | select(.state == "open")]'
+            members="$(jq -r "$open | .[].number" <<< "$answer")"
+            top="$(jq -r "$open | . as \$p | .[] | select(.head.ref as \$h | all(\$p[]; .base.ref != \$h)) | \"\(.number) \(.head.sha)\"" <<< "$answer")"
+            if [ -z "$members" ] || [ "$top" != "${top%%$'\n'*}" ]; then
+              fail "Stack #$stack has no single open top PR" "$answer"
+            fi
+            sha="${top#* }"
+            top="${top%% *}"
             list="$(sed 's/^/#/' <<< "$members" | paste -sd ' ' -)"
+            # Green skips Auto-merge's own runs, which are still running
+            # now. GitHub's merge rechecks every rule itself.
+            ready='def green: .state == "SUCCESS" or (.status == "COMPLETED" and (.conclusion | IN("SUCCESS", "NEUTRAL", "SKIPPED")));
+              if .isDraft then "is a draft"
+              elif (.reviewDecision // "") as $r | $r != "" and $r != "APPROVED" then "needs approval"
+              elif .mergeable == "CONFLICTING" then "has conflicts"
+              elif any(.statusCheckRollup[] | select((.workflowName // "") | startswith("Auto-merge") | not); green | not) then "is not green"
+              else empty end'
             waits=""
             for pr in $members; do
-              answer="$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json isDraft,reviewDecision,mergeStateStatus 2>&1)" || fail "GitHub refused to show #$pr" "$answer"
-              why="$(jq -r 'if .isDraft then "is a draft" elif .reviewDecision != "APPROVED" then "needs approval" elif .mergeStateStatus != "CLEAN" then "is not green and mergeable" else empty end' <<< "$answer")"
+              answer="$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json isDraft,reviewDecision,mergeable,statusCheckRollup 2>&1)" || fail "GitHub refused to show #$pr" "$answer"
+              why="$(jq -r "$ready" <<< "$answer")"
               if [ -n "$why" ]; then waits="$waits #$pr $why;"; fi
             done
             if [ -n "$waits" ]; then
@@ -154,10 +171,11 @@ jobs:
               say "$top" "Auto-merge could not merge stack #$stack ($list): GitHub refused, ${message:-giving no reason}."
               fail "GitHub refused to merge stack #$stack through #$top" "$answer"
             fi
-            # GitHub keeps a result for 24 hours; poll it for two minutes.
+            # A 409's body names the running merge as pending, so a second
+            # run polls the first run's merge. Poll for three minutes.
             result="$(field .status)"
             tries=0
-            while [ "$result" = pending ] && [ "$tries" -lt 24 ]; do
+            while [ "$result" = pending ] && [ "$tries" -lt 36 ]; do
               if [ "$tries" -gt 0 ]; then sleep 5; fi
               tries=$((tries + 1))
               answer="$(gh api "$repo/pulls/$top/merge-async/$uuid" 2>&1)" || fail "GitHub refused to show the merge of stack #$stack" "$answer"
@@ -172,7 +190,8 @@ jobs:
                 exit 0
                 ;;
               pending)
-                echo "::warning::GitHub is still merging stack #$stack through #$top; the next run checks again."
+                echo "::warning::GitHub is still merging stack #$stack through #$top after three minutes."
+                say "$top" "Auto-merge asked GitHub to merge stack #$stack ($list) through #$top, and GitHub was still merging three minutes later. This PR shows the result."
                 exit 0
                 ;;
             esac

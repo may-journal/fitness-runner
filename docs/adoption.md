@@ -166,7 +166,7 @@ permissions:
   contents: read
 jobs:
   auto-merge:
-    if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
+    if: github.event_name != 'pull_request_review' || (github.event.review.state == 'approved' && github.event.pull_request.head.repo.full_name == github.repository)
     uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@v1
     secrets: inherit
 ```

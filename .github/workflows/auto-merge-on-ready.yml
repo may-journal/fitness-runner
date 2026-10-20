@@ -3,7 +3,8 @@ name: Auto-merge on ready
 # marked ready would not get auto-merge. This caller runs it on that event.
 # pull_request_target runs the base branch's copy and checks out no PR code.
 # An approval runs it too, so a native stack merges once its last PR is
-# approved; GitHub has no pull_request_target form of a review event.
+# approved. GitHub has no pull_request_target form of a review event, and a
+# fork's PR gets no secrets, so only approvals of this repo's branches run.
 on:
   pull_request_target:
     types: [ready_for_review]
@@ -15,6 +16,6 @@ permissions:
 
 jobs:
   auto-merge:
-    if: github.event_name != 'pull_request_review' || github.event.review.state == 'approved'
+    if: github.event_name != 'pull_request_review' || (github.event.review.state == 'approved' && github.event.pull_request.head.repo.full_name == github.repository)
     uses: may-journal/fitness-runner/.github/workflows/auto-merge.yml@v1
     secrets: inherit

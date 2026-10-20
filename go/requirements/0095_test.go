@@ -9,16 +9,27 @@ import (
 // pulls0095 is the REST path of pull requests in the event's repo.
 const pulls0095 = "repos/" + repo0014 + "/pulls"
 
-// view0095 is GitHub showing PR n with its review decision and merge state.
-func view0095(n int, review, state string) response {
+// view0095 is GitHub showing PR n with its review decision, mergeable and
+// a Fitness suite check that ended in conclusion. Auto-merge's own check
+// is always still running, as it is while the job runs.
+func view0095(n int, review, conclusion string) response {
+	checks := `[{"__typename":"CheckRun","workflowName":"Fitness suite","status":"COMPLETED","conclusion":"` + conclusion + `"},` +
+		`{"__typename":"CheckRun","workflowName":"Auto-merge on ready","status":"IN_PROGRESS","conclusion":""},` +
+		`{"__typename":"StatusContext","context":"ci/legacy","state":"SUCCESS"}]`
 	return response{
 		Match:  []string{"pr view " + itoa(n) + " --repo"},
-		Stdout: `{"isDraft":false,"reviewDecision":"` + review + `","mergeStateStatus":"` + state + `"}` + "\n",
+		Stdout: `{"isDraft":false,"reviewDecision":"` + review + `","mergeable":"MERGEABLE","statusCheckRollup":` + checks + `}` + "\n",
 	}
 }
 
-// stack0095 runs the auto-merge step on PR 2, the bottom of native stack
-// 7 whose top is PR 3 at head bbb. GitHub shows PRs 2 and 3 as views
+// stackPRs0095 lists stack 7 as GitHub does: PR 1 already merged, PR 2
+// on its branch, and PR 3 on top of PR 2 at head bbb.
+const stackPRs0095 = `[{"number":1,"state":"closed","head":{"ref":"s0","sha":"zzz"},"base":{"ref":"main"}},` +
+	`{"number":2,"state":"open","head":{"ref":"s1","sha":"aaa"},"base":{"ref":"s0"}},` +
+	`{"number":3,"state":"open","head":{"ref":"s2","sha":"bbb"},"base":{"ref":"s1"}}]`
+
+// stack0095 runs the auto-merge step on PR 2, the bottom open PR of native
+// stack 7 whose top is PR 3 at head bbb. GitHub shows PRs 2 and 3 as views
 // does, then answers the top PR's merge with merge and its poll with poll.
 func stack0095(t *testing.T, views []response, merge, poll response) (replays, string, int) {
 	t.Helper()
@@ -26,14 +37,14 @@ func stack0095(t *testing.T, views []response, merge, poll response) (replays, s
 	poll.Match = []string{"api " + pulls0095 + "/3/merge-async/u1"}
 	saved := append([]response{
 		{Match: []string{"api " + pulls0095 + "/2"}, Stdout: `{"number":2,"stack":{"number":7,"position":1,"size":2}}` + "\n"},
-		{Match: []string{"api repos/" + repo0014 + "/stacks/7"}, Stdout: `{"number":7,"pull_requests":[{"number":2,"head":{"sha":"aaa"}},{"number":3,"head":{"sha":"bbb"}}]}` + "\n"},
+		{Match: []string{"api repos/" + repo0014 + "/stacks/7"}, Stdout: `{"number":7,"pull_requests":` + stackPRs0095 + `}` + "\n"},
 		poll, merge,
 	}, views...)
 	return run0091(t, "main", saved)
 }
 
 // approved0095 shows both PRs of the stack approved, green and mergeable.
-var approved0095 = []response{view0095(2, "APPROVED", "CLEAN"), view0095(3, "APPROVED", "CLEAN")}
+var approved0095 = []response{view0095(2, "APPROVED", "SUCCESS"), view0095(3, "APPROVED", "SUCCESS")}
 
 // pending0095 is GitHub accepting a merge request it runs as u1.
 var pending0095 = response{Stdout: `{"status":"pending","details":{"message":"Merge request enqueued.","uuid":"u1","merge_method":"squash","bypass_rules":false}}` + "\n"}
@@ -91,16 +102,16 @@ func Test0095_1(t *testing.T) {
 
 func Test0095_2(t *testing.T) {
 	t.Parallel()
-	views := []response{view0095(2, "APPROVED", "CLEAN"), view0095(3, "REVIEW_REQUIRED", "BLOCKED")}
+	views := []response{view0095(2, "APPROVED", "SUCCESS"), view0095(3, "REVIEW_REQUIRED", "SUCCESS")}
 	rp, out, code := stack0095(t, views, response{}, response{})
 	waits0095(t, rp, out, code, "#3 needs approval")
 }
 
 func Test0095_3(t *testing.T) {
 	t.Parallel()
-	views := []response{view0095(2, "APPROVED", "UNSTABLE"), view0095(3, "APPROVED", "CLEAN")}
+	views := []response{view0095(2, "APPROVED", "FAILURE"), view0095(3, "APPROVED", "SUCCESS")}
 	rp, out, code := stack0095(t, views, response{}, response{})
-	waits0095(t, rp, out, code, "#2 is not green and mergeable")
+	waits0095(t, rp, out, code, "#2 is not green")
 }
 
 func Test0095_4(t *testing.T) {
@@ -136,12 +147,14 @@ func callerIf0095(t *testing.T) string {
 		t.Fatalf("%s does not run on submitted reviews behind a job-level if", caller0095)
 	}
 	cond, _, _ = strings.Cut(cond, "\n")
+	// holds0091 reads only event fields, so the repository is filled in here.
+	cond = strings.ReplaceAll(cond, "github.repository", `"`+repo0014+`"`)
 	return cond
 }
 
-// review0095 is a submitted review event in state.
-func review0095(state string) map[string]string {
-	return map[string]string{"event_name": "pull_request_review", "review.state": state}
+// review0095 is a submitted review event in state on a branch of repo.
+func review0095(state, repo string) map[string]string {
+	return map[string]string{"event_name": "pull_request_review", "review.state": state, "pull_request.head.repo.full_name": repo}
 }
 
 func Test0095_6(t *testing.T) {
@@ -152,10 +165,11 @@ func Test0095_6(t *testing.T) {
 		event map[string]string
 		want  bool
 	}{
-		{"an approval", review0095("approved"), true},
-		{"a comment review", review0095("commented"), false},
-		{"a review requesting changes", review0095("changes_requested"), false},
-		{"a draft marked ready", map[string]string{"event_name": "pull_request_target", "review.state": ""}, true},
+		{"an approval", review0095("approved", repo0014), true},
+		{"an approval of a fork's PR", review0095("approved", "someone/example"), false},
+		{"a comment review", review0095("commented", repo0014), false},
+		{"a review requesting changes", review0095("changes_requested", repo0014), false},
+		{"a draft marked ready", map[string]string{"event_name": "pull_request_target", "review.state": "", "pull_request.head.repo.full_name": repo0014}, true},
 	}
 	for _, c := range cases {
 		if holds0091(t, cond, c.event) != c.want {

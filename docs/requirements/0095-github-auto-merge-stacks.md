@@ -40,5 +40,5 @@ Source: #549
             - Then it fails naming GitHub's answer and comments the reason on the top pull request
 - 0095.6
     - Given Developer has a pull request
-        - When someone approves it, or reviews it without approving
-            - Then Auto-merge runs on the approval and skips the other review before a runner starts
+        - When someone approves it, approves a fork's pull request, or reviews without approving
+            - Then Auto-merge runs on the first and skips the others before a runner starts
