@@ -14,7 +14,7 @@ func Test0003_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, _ := fitness(t, repo, nil)
-	for _, check := range []string{"eslint", "prettier", "swiftlint", "gofmt", "go-test", "requirements"} {
+	for _, check := range []string{"eslint", "prettier", "swiftlint", "localized-text", "gofmt", "go-test", "requirements"} {
 		passedWithNoFiles(t, out, check)
 	}
 }
@@ -52,7 +52,7 @@ plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
 release-changelog repeated-string-literals requirements semantic-commit
 text-readability workflow-ref-exists
 go-complexity go-test go-vet gofmt
-swiftlint
+localized-text swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier
 vitest-coverage-exclude vitest-coverage-full
 checkstyle java-test java-version spotless`

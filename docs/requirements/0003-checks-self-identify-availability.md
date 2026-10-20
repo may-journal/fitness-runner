@@ -19,7 +19,7 @@ Source: `go/cmd/fitness/checks.go:73`
 ## Requirements
 
 - 0003.1
-    - Given Developer has a repo with no files a check can judge
+    - Given Developer has a repo with no files a check can judge, or none that opts the repo in to it
         - When the check runs
             - Then it scans nothing and passes with zero files
 - 0003.2
