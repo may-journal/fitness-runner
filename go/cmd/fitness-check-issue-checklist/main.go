@@ -5,7 +5,7 @@
 // runner's context-inline `--body` value, or stdin, and passes inert with no
 // input. `fitness close-check` runs it on a closed issue and `fitness
 // pr-check` on each issue a PR closes.
-package main
+package check
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checklist"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "issue-checklist", Blob: true, ContextInlineArg: "--body"},
 		Run:      run,

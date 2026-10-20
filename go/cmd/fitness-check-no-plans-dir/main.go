@@ -3,7 +3,7 @@
 // `Plan`-labeled GitHub Issues, not checked-in files. It points the author to
 // open a Plan Issue instead. Wired into the file suite, so the pre-commit hook
 // catches a docs/plans file before it lands.
-package main
+package check
 
 import (
 	"io/fs"
@@ -13,7 +13,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "no-plans-dir"},
 		Run:      run,

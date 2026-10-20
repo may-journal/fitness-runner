@@ -26,10 +26,6 @@ Source: `go/cmd/fitness-install/main.go:43`
     - Given Developer has options the installer cannot combine or read
         - When I run `fitness-install` with them
             - Then it says why and exits 1
-- 0061.3
-    - Given Developer has an exact release version with a `v` prefix
-        - When I run `fitness-install --version` with it and `--install-only`
-            - Then it installs that release and prints the folder holding every check
 - 0061.4
     - Given Developer has a cached install with a damaged check binary
         - When I run a check through `fitness-install` again
@@ -50,3 +46,7 @@ Source: `go/cmd/fitness-install/main.go:43`
     - Given Developer has GitHub job inputs the installer cannot use
         - When I run `fitness-install --github-action`
             - Then it says why, summarizes the failure, and exits 1
+- 0061.9
+    - Given Developer has an exact release version with a `v` prefix
+        - When I run `fitness-install --version` with it and `--install-only`
+            - Then it prints the folder where each `fitness-check-<name>` runs its check

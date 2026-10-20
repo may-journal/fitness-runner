@@ -8,7 +8,7 @@
 // for tracked files (the TS exec helper folded stderr into the output of a
 // failing command), so a failing git command contributes no phantom tracked
 // files.
-package main
+package check
 
 import (
 	"bytes"
@@ -44,7 +44,7 @@ var importSpecifierRe = regexp.MustCompile(`\b(?:from|import|require)\s*\(?\s*['
 // path; the ../dist alternative deliberately has no trailing slash.
 var distSpecifierRe = regexp.MustCompile(`(^|/)dist/|\.\./dist`)
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: name},
 		Run:      run,

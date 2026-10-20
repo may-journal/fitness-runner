@@ -3,14 +3,14 @@
 // "### yyyy.mm.dd.HHMM" heading and its bullets, and its name must start
 // with that heading's date. CHANGELOG.md, in any shape or absent, is not
 // judged, and neither is the package version.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/changelog"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "changelog"},
 		Run:      run,

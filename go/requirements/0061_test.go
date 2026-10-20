@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -61,7 +62,7 @@ func Test0061_2(t *testing.T) {
 	}
 }
 
-func Test0061_3(t *testing.T) {
+func Test0061_9(t *testing.T) {
 	t.Parallel()
 	first, _ := fiRun(t, t.TempDir(), nil, "--install-only")
 	match := fiVersion.FindStringSubmatch(first)
@@ -70,10 +71,16 @@ func Test0061_3(t *testing.T) {
 	}
 	out, code := fiRun(t, t.TempDir(), nil, "--version", "v"+match[1], "--install-only")
 	sees(t, out, code, 0, "fitness: version="+match[1]+" ")
-	for _, name := range []string{"fitness", "fitness-check-gofmt", "fitness-check-prose-budget"} {
-		if info, err := os.Stat(filepath.Join(fiLastLine(out), name)); err != nil || info.Mode()&0o111 == 0 {
-			t.Errorf("printed folder has no runnable %s: %v\n%s", name, err, out)
-		}
+	programs := bundleChecks(t, fiLastLine(out))
+	if !slices.Contains(programs, "fitness-check-gofmt") {
+		t.Fatalf("printed folder has no fitness-check-gofmt among %v\n%s", programs, out)
+	}
+	for _, program := range programs {
+		described, code := execute(t, func() *exec.Cmd {
+			return exec.Command(filepath.Join(fiLastLine(out), program), "--describe")
+		})
+		name := strings.TrimPrefix(program, "fitness-check-")
+		sees(t, described, code, 0, `"name":"`+name+`"`)
 	}
 }
 

@@ -23,8 +23,8 @@ C4Component
         }
     }
 
-    System_Boundary(checks, "Check binaries") {
-        Component(check, "7 Check binary", "fitness-check-<name>")
+    System_Boundary(checks, "Built-in checks") {
+        Component(check, "7 Check package", "go/cmd/fitness-check-*")
     }
 
     System_Boundary(shared, "Shared internals") {
@@ -50,6 +50,7 @@ C4Component
     Rel(check, peers, "16")
     Rel(main, kit, "22")
     Rel(tool, kit, "23")
+    Rel(main, check, "24")
 ```
 
 ```mermaid
@@ -75,32 +76,33 @@ Numbers on nodes and arrows match the callout table.
 | 4   | Ordered check list: the CLI name, else `allChecks`, which the language module registry lists.           | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
-| 7   | One static binary per check name (`go/cmd/fitness-check-*`), discovered beside the runner then on PATH. | Plugin model at the artifact level; no registry.            |
+| 7   | One package per check (`go/cmd/fitness-check-*`), each built into the fitness binary.                   | One file ships every check; each still runs alone.          |
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
 | 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
 | 12  | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
 | 13  | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
-| 14  | Resolver maps a name to the `fitness-check-<name>` binary and collects its `--describe` metadata.       | Timeout and context-inline metadata without header parsing. |
-| 15  | Check binaries build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
+| 14  | Resolver maps a name to its `fitness-check-<name>` program and collects its `--describe` metadata.      | Timeout and context-inline metadata without header parsing. |
+| 15  | Check packages build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
 | 16  | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                |
 | 17  | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          |
 | 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
-| 19  | Pool execs the binary with `--root`, env context, stdout JSON captured.                                 | One execution model for every check.                        |
+| 19  | Pool starts the fitness binary as `fitness-check-<name>`, with `--root` and env context.               | One execution model for every check.                        |
 | 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
-| 21  | The installer and the release tool, one static binary each.                                             | Shipped beside the checks; not part of any run.             |
+| 21  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
 | 22  | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | 23  | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
+| 24  | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
 
 ## Resolve check specs (priority)
 
-`go/cmd/fitness` produces an ordered name list, then resolves each name to `fitness-check-<name>` beside the runner, then on PATH:
+`go/cmd/fitness` produces an ordered name list. It resolves each name to a local check, else a `fitness-check-<name>` program beside the runner, else the built-in check:
 
 1. A CLI name (`fitness prettier`) — run only that built-in check; an unknown name is an error.
 2. Otherwise — every installed check minus [ignores](../../go/internal/lang/ignores): unclaimed ones sorted, then each [language module](../../go/internal/lang/langs/langs.go)'s, sorted.
 
-Every check runs in every repo and passes clean with zero files when it does not apply. A missing binary for a module's check fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
+Every check runs in every repo and passes clean with zero files when it does not apply. A name with no check of that name fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
 
 ## Module data the repo-wide checks read
 

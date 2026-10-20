@@ -6,7 +6,7 @@
 //
 // Like semantic-commit it reads the proposed message from the context-inline
 // `--message` value, falling back to the HEAD commit message.
-package main
+package check
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "plan-trailer", ContextInlineArg: "--message"},
 		Run:      run,

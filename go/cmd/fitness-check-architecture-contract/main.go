@@ -2,14 +2,14 @@
 // all five architecture views before more specific checks resolve their proof.
 // A repo with product code in any language module's sources and no views
 // fails, asking for all five.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/architecture"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "architecture-contract"},
 		Run:      run,

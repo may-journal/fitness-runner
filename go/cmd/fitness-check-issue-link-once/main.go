@@ -14,7 +14,7 @@
 // red until the history is rewritten without the repeat.
 //
 // Anywhere else, such as a local suite run or a push to main, it passes inert.
-package main
+package check
 
 import (
 	"encoding/json"
@@ -29,7 +29,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "issue-link-once", ContextInlineArg: "--message", TimeoutMs: 20000},
 		Run:      run,

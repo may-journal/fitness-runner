@@ -3,7 +3,7 @@
 // why it exists — the Go port of the gitignore-why check. A missing
 // .gitignore passes with zero files checked, exactly like the TypeScript
 // original.
-package main
+package check
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ import (
 // noComment is the violation message tail, verbatim from the TS enUS catalog.
 const noComment = "has no explanatory # comment on the line above"
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "gitignore-why"},
 		Run:      run,

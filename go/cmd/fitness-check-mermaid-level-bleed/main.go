@@ -5,7 +5,7 @@
 // mermaid-level-bleed check: unlike its four siblings it does not use the
 // RunDocCheck driver — filesChecked counts the numbered `architecture/NN*.md`
 // level files, whether or not they contain mermaid blocks.
-package main
+package check
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-level-bleed"},
 		Run:      run,

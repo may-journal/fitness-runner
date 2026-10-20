@@ -6,7 +6,7 @@
 // suffix is stripped before resolution; anchors themselves are not
 // validated. Links inside fenced code blocks and inline code spans are
 // ignored.
-package main
+package check
 
 import (
 	"fmt"
@@ -29,7 +29,7 @@ var (
 	skipRe = regexp.MustCompile(`^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|//|#)`)
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "markdown-links"},
 		Run:      run,

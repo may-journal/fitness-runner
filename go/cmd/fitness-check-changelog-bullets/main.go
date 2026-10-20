@@ -3,7 +3,7 @@
 // bullet must be under 365 characters, and every bullet must start with a
 // semantic type (Feat:, fix(scope):, …). CHANGELOG.md is not judged, so a
 // repo with only it, in any shape, passes with zero files.
-package main
+package check
 
 import (
 	"fmt"
@@ -27,7 +27,7 @@ var (
 	typeRe = regexp.MustCompile(`^((Feat|Fix|Docs|Style|Refactor|Perf|Test|Build|Ci|Chore|Revert)|(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([^()\s]+\))?!?): `)
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "changelog-bullets"},
 		Run:      run,

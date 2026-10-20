@@ -9,7 +9,7 @@
 // error format match the TS check, then each file with duplicated lines
 // is named; exact percentage parity with jscpd's per-language tokenizers
 // is explicitly not the goal.
-package main
+package check
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ const (
 	minTokens = 50
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "jscpd"},
 		Run:      run,

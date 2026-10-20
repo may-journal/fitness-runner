@@ -20,7 +20,7 @@
 //
 // A repo that chose Biome (internal/biome) is linted by `biome lint` on the
 // same paths instead, and needs no eslint (ADR 0006).
-package main
+package check
 
 import (
 	"bytes"
@@ -51,7 +51,7 @@ const eslintConfigMjs = "eslint.config.mjs"
 // one fails, since the check judges every tracked file.
 const ignoredFileNotice = "File ignored because of a matching ignore pattern"
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "eslint"},
 		Run:      run,

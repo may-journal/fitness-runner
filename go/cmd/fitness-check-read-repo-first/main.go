@@ -12,7 +12,7 @@
 // including one space of padding per side, gray borders and red header
 // regardless of tty (unless NO_COLOR), chalk-style bold/cyan/yellow only on
 // a terminal.
-package main
+package check
 
 import (
 	"os"
@@ -29,7 +29,7 @@ const noteNoVerify = "NOTE: Do not under any circumstance use `--no-verify`" +
 const questionLine1 = "Did you familiarize yourself with the decisions logged in the repo,"
 const questionLine2 = `specifically all "Fitness Checks" that are enabled via @mayjournal/fitness?`
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "read-repo-first"},
 		Run:      run,

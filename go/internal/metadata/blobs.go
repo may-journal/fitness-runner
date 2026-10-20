@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -35,10 +34,11 @@ type target = aftereffect.Target
 
 // RepoChecks applies a repo's own check settings to the GitHub commands:
 // Find returns a check's program and Off names a check the repo turns off.
-// The fitness command sets it from .fitnessrc.json before RunGH; left zero,
-// every check is the bundled one.
+// The fitness executable sets Find to its built-in checks when it starts,
+// and to the repo's checks from .fitnessrc.json before RunGH. Left nil, no
+// check runs, so each one fails closed with no result.
 var RepoChecks struct {
-	Find func(name string) (string, error)
+	Find func(name string) (checkkit.Program, error)
 	Off  func(name string) bool
 }
 
@@ -86,18 +86,17 @@ func (b blobChecker) closedIssues(body string) []int {
 	return nums
 }
 
-// execCheck runs fitness-check-<name> and returns its stdout. A failing check
+// execCheck runs check name and returns its stdout. A failing check
 // still prints its JSON result, so a non-zero exit is not an error here.
 func execCheck(name string, args []string) []byte {
-	find := checkkit.Binary
-	if RepoChecks.Find != nil {
-		find = RepoChecks.Find
+	if RepoChecks.Find == nil {
+		return nil
 	}
-	bin, err := find(name)
+	program, err := RepoChecks.Find(name)
 	if err != nil {
 		return nil
 	}
-	cmd := exec.Command(bin, args...)
+	cmd := program.Command(args...)
 	var stdout bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, os.Stderr
 	_ = cmd.Run()

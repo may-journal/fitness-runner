@@ -6,7 +6,7 @@
 // so ordinary technical negations are left alone. It reuses the mdx prose
 // masking, so fenced code, headings, tables, and inline code never trip it,
 // and it drops quoted spans so documenting the pattern does not self-flag.
-package main
+package check
 
 import (
 	"regexp"
@@ -16,7 +16,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "no-contrastive-reframing"},
 		Run:      run,

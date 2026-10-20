@@ -4,7 +4,7 @@
 // The Go port of the mermaid-callout-why check: same rule, same error
 // templates, filesChecked counts the .md files with at least one mermaid
 // diagram or callout table.
-package main
+package check
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-callout-why", Blob: true},
 		Run:      run,

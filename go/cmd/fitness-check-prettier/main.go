@@ -22,7 +22,7 @@
 // A repo that chose Biome (internal/biome) is checked by `biome format` on
 // the same paths instead, and needs no Prettier (ADR 0006). Its passthrough
 // args are translated to Biome's, never handed over as paths.
-package main
+package check
 
 import (
 	"encoding/json"
@@ -82,7 +82,7 @@ const prettierIgnoreFile = ".prettierignore"
 // .gitignore nor .prettierignore hides a tracked file.
 const ignoreNothing = "/dev/null"
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "prettier"},
 		Run:      run,

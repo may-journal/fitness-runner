@@ -7,7 +7,7 @@
 // styling-line pattern it uses are unexported there, so that small residue
 // (jsWS, isJSSpace, trimJS, styleLine) is duplicated here instead of
 // modifying the frozen package.
-package main
+package check
 
 import (
 	"fmt"
@@ -19,7 +19,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-diagram-prose", Blob: true},
 		Run:      run,

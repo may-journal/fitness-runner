@@ -16,7 +16,7 @@
 // internal/sharedconf: an installed node_modules/@mayjournal/fitness-shared
 // walking up from root, else the config directory embedded in this binary,
 // materialized to the cache.
-package main
+package check
 
 import (
 	"os"
@@ -48,7 +48,7 @@ const missingVitestHint = "vitest not found in node_modules/.bin (walking up fro
 // resolved from the fitness-runner root when the consumer has none.
 const fitnessVitestConfig = "vitest.config.mjs"
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "vitest-coverage-full", TimeoutMs: 120000},
 		Run:      run,

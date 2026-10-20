@@ -46,7 +46,7 @@ Source: `go/cmd/fitness/main.go:205`
     - Given Developer has the commit-msg hook with no message file
         - When it runs
             - Then it reports the missing file and exits 1
-- 0008.8
-    - Given Developer has a fitness runner alone in its folder, with no checks in that folder
-        - When fitness runs
-            - Then it says to reinstall fitness and exits 1
+- 0008.9
+    - Given Developer has a fitness runner alone in its folder
+        - When fitness runs, or `fitness check <name>` runs
+            - Then it runs every built-in check, or only the named one

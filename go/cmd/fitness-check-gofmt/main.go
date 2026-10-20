@@ -1,7 +1,7 @@
 // Command fitness-check-gofmt lists Go files that gofmt would change. It
 // checks the repo's own .go files (not testdata or vendor, and not paths the
 // config ignores), so a repo with no Go passes clean.
-package main
+package check
 
 import (
 	"os/exec"
@@ -16,7 +16,7 @@ import (
 // OS limit.
 const batch = 200
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "gofmt", TimeoutMs: 60000},
 		Run:      run,

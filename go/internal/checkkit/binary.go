@@ -4,45 +4,73 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
 
-// binPrefix starts every check binary's file name.
-const binPrefix = "fitness-check-"
+// BinPrefix starts the name every built-in check runs under, and every
+// local check's file name.
+const BinPrefix = "fitness-check-"
 
-// Binary locates a bundled check beside the running Fitness executable.
-func Binary(name string) (string, error) {
-	binName := binPrefix + name
-	if self, err := os.Executable(); err == nil {
-		path := filepath.Join(filepath.Dir(self), binName)
-		if executableFile(path) {
-			return path, nil
-		}
-	}
-	return "", fmt.Errorf("%s is not installed beside fitness", binName)
+// Program is how to start one check. Path is the file to exec. Name, when
+// set, is the program name the check starts under: the one fitness
+// executable runs the built-in check that name names.
+type Program struct {
+	Path, Name string
 }
 
-// Installed names every check installed beside the running Fitness
-// executable, without the binary prefix, sorted. Finding none is an error,
-// so a broken install fails instead of passing with no checks.
-func Installed() ([]string, error) {
+// Command returns the command that runs the program with args.
+func (p Program) Command(args ...string) *exec.Cmd {
+	cmd := exec.Command(p.Path, args...)
+	if p.Name != "" {
+		cmd.Args[0] = p.Name
+	}
+	return cmd
+}
+
+// Builtin returns the program for a built-in check: the running fitness
+// executable, started as fitness-check-<name>. Every check runs from that
+// one file, so a new install loads one binary instead of one per check.
+func Builtin(name string) (Program, error) {
 	self, err := os.Executable()
 	if err != nil {
-		return nil, fmt.Errorf("cannot find the fitness executable to list its checks: %w", err)
+		return Program{}, fmt.Errorf("cannot find the fitness executable to run %s%s: %w", BinPrefix, name, err)
 	}
-	dir := filepath.Dir(self)
-	paths, _ := filepath.Glob(filepath.Join(dir, binPrefix+"*"))
-	var names []string
+	return Program{Path: self, Name: BinPrefix + name}, nil
+}
+
+// Self returns the program that starts the running check again: this
+// executable, under the name it was started with, since one fitness
+// executable holds every check and the name picks which one runs.
+func Self() (Program, error) {
+	self, err := os.Executable()
+	if err != nil {
+		return Program{}, err
+	}
+	return Program{Path: self, Name: filepath.Base(os.Args[0])}, nil
+}
+
+// Beside maps the name of each fitness-check-<name> program beside the
+// running fitness executable to its path. An installed bundle links every
+// built-in check there to fitness itself; those links are the built-in
+// checks, so they are left out. Any other program there adds a check, or
+// replaces the built-in check of its name. None is no error, as after
+// `go install`.
+func Beside() map[string]string {
+	self, err := os.Executable()
+	if err != nil {
+		return nil
+	}
+	real, _ := filepath.EvalSymlinks(self)
+	paths, _ := filepath.Glob(filepath.Join(filepath.Dir(self), BinPrefix+"*"))
+	programs := map[string]string{}
 	for _, p := range paths {
-		if executableFile(p) {
-			names = append(names, strings.TrimPrefix(filepath.Base(p), binPrefix))
+		if target, _ := filepath.EvalSymlinks(p); executableFile(p) && target != real {
+			programs[strings.TrimPrefix(filepath.Base(p), BinPrefix)] = p
 		}
 	}
-	if len(names) == 0 {
-		return nil, fmt.Errorf("no %s* programs beside fitness in %s; reinstall fitness so its checks sit beside it", binPrefix, dir)
-	}
-	return names, nil
+	return programs
 }
 
 // executableFile reports whether path is a file with an execute bit set.

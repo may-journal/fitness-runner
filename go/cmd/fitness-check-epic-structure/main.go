@@ -8,7 +8,7 @@
 // the runner's context-inline `--body` value, and passes inert with no input.
 // It never calls GitHub: `fitness issue-check` compares the list with the
 // epic's sub-issues.
-package main
+package check
 
 import (
 	"os"
@@ -20,7 +20,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "epic-structure", Blob: true, ContextInlineArg: "--body"},
 		Run:      run,

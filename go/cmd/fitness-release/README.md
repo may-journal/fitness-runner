@@ -28,6 +28,7 @@ The bundle pass creates four archives. The tools pass embeds their hashes in fou
 | --- | --- |
 | `version` | Print the version from `version.txt`. |
 | `tag` | Print its root `v` tag. |
+| `checks` | Write `go/cmd/fitness/checks.go`, the list of check packages built into `fitness`. |
 | `bundle-hashes` | Print archive hashes for installer build flags. |
 | `assemble` | Gather GoReleaser outputs for native checks. |
 | `smoke` | Test built assets without public downloads. |

@@ -7,7 +7,7 @@
 // same sections as any one of them. A template in a templates folder that
 // shares the file's name governs it alone, with its whole shape, and no other
 // file. GitHub templates get only the comment rule.
-package main
+package check
 
 import (
 	"fmt"
@@ -22,7 +22,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "doc-template"},
 		Run:      run,

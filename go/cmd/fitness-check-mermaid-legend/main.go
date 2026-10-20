@@ -3,7 +3,7 @@
 // statement) and that diagrams with callouts declare a `classDef` legend —
 // the Go port of the mermaid-legend check. C4/other diagram types (different
 // styling model) are skipped.
-package main
+package check
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "mermaid-legend", Blob: true},
 		Run:      run,

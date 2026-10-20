@@ -74,7 +74,7 @@ func buildPerfReport(checks []resolved, outcomes []outcome, rows []render.Row, e
 			TimeoutMs:    timeoutFor(c).Milliseconds(),
 			TimedOut:     outcomes[i].timedOut,
 			FilesChecked: rows[i].FilesChecked,
-			BinaryBytes:  fileBytes(c.bin),
+			BinaryBytes:  fileBytes(c.prog.Path),
 			ErrorLines:   len(rows[i].Errors),
 		}
 	}

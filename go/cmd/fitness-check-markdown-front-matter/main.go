@@ -5,7 +5,7 @@
 // an enabled check — the Go port of the markdown-front-matter check. The TS
 // check received registeredCheckNames from the runner context; here the same
 // list arrives as FITNESS_ENABLED_CHECKS (empty when run standalone).
-package main
+package check
 
 import (
 	"os"
@@ -19,7 +19,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "markdown-front-matter"},
 		Run:      run,

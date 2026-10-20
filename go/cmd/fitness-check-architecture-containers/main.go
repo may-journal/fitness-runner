@@ -1,13 +1,13 @@
 // Command fitness-check-architecture-containers matches the containers view
 // against the runtime products the repository builds and deploys.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/architecture"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "architecture-containers"},
 		Run:      run,

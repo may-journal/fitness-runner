@@ -1,4 +1,4 @@
-package main
+package check
 
 import (
 	"encoding/json"
@@ -58,11 +58,11 @@ func failedAtBase(root, rev string) map[string]bool {
 // baseErrors checks out rev into dir and returns what this check reports
 // there, as a full scan with no pull request or commit scope.
 func baseErrors(root, rev, dir string) []string {
-	self, err := os.Executable()
+	self, err := checkkit.Self()
 	if err != nil || checkout(root, rev, dir) != nil {
 		return nil
 	}
-	cmd := exec.Command(self, "--root", dir)
+	cmd := self.Command("--root", dir)
 	cmd.Env = append(toolchain.CleanEnv(os.Environ()), "GITHUB_BASE_REF=")
 	out, _ := cmd.Output()
 	var res checkkit.Result

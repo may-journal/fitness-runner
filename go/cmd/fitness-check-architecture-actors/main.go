@@ -1,14 +1,14 @@
 // Command fitness-check-architecture-actors requires each requirement's
 // Given to start with an actor the system context declares, so no role
 // slips into a requirement that the architecture does not know.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/architecture"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "architecture-actors"},
 		Run:      run,

@@ -1,14 +1,14 @@
 // Command fitness-check-architecture-components gives every product source
 // one component owner and keeps the references between components, and
 // the runtimes that reach them, to what the components view draws.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/architecture"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "architecture-components"},
 		Run:      run,

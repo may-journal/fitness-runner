@@ -6,7 +6,7 @@
 //
 // It reads its target from stdin, a `--body-file` path (`-` meaning stdin), or
 // the runner's context-inline `--body` value, and passes inert with no input.
-package main
+package check
 
 import (
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
@@ -14,7 +14,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 )
 
-func main() {
+func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{Name: "plan-structure", Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
