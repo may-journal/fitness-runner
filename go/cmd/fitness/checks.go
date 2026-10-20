@@ -35,7 +35,6 @@ import (
 	localBranchCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch"
 	markdownFilenameCamelCaseCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-filename-camel-case"
 	markdownFilenameKebabCaseCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-filename-kebab-case"
-	markdownFrontMatterCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-front-matter"
 	markdownLinksCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-links"
 	markdownNoBoldItalicCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-no-bold-italic"
 	mermaidCalloutWhyCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-mermaid-callout-why"
@@ -104,7 +103,6 @@ var builtins = map[string]func(){
 	"local-branch":                 localBranchCheck.Main,
 	"markdown-filename-camel-case": markdownFilenameCamelCaseCheck.Main,
 	"markdown-filename-kebab-case": markdownFilenameKebabCaseCheck.Main,
-	"markdown-front-matter":        markdownFrontMatterCheck.Main,
 	"markdown-links":               markdownLinksCheck.Main,
 	"markdown-no-bold-italic":      markdownNoBoldItalicCheck.Main,
 	"mermaid-callout-why":          mermaidCalloutWhyCheck.Main,

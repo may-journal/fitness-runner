@@ -24,6 +24,10 @@ Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/
 
 Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and jscpd also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.
 
+## Front matter
+
+Front matter is optional. No check requires it, and the changelog and release tools read files with or without it. The [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) removes a repo's fitness-only front matter.
+
 ## Shared configs
 
 The opinionated tool configs are embedded inside the check binaries ([go/internal/sharedconf](../go/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.

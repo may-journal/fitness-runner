@@ -386,7 +386,7 @@ func entryTagged(t *testing.T, old bool) string {
 	}
 	commit(t, repo, map[string]string{
 		entryFirstFile: entryFileText(entryFirst, "Feat: add one file."),
-		entryLaterFile: entryFileText(entryLater, "Fix: tidy the file."),
+		entryLaterFile: bareEntryText(entryLater, "Fix: tidy the file."),
 	}, "feat(app): add one file")
 	git(t, repo, "tag", "v1.1.0")
 	return repo

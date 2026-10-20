@@ -44,7 +44,7 @@ build-output-untracked changelog changelog-bullets changelog-updated
 comment-structure commit-attribution cspell doc-template epic-structure
 gitignore-why issue-checklist issue-link-once jscpd local-branch
 markdown-filename-camel-case
-markdown-filename-kebab-case markdown-front-matter markdown-links
+markdown-filename-kebab-case markdown-links
 markdown-no-bold-italic mermaid-callout-why mermaid-callouts
 mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
 mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-plans-dir plan-structure
