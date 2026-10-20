@@ -308,7 +308,7 @@ The approval names the commit it checked. The org ruleset dismisses it on a late
 
 ### Dependency bumps
 
-With `kind: dependency`, it approves a green `build(deps)` PR that only bumps dev dependencies ([#524](https://github.com/may-journal/fitness-runner/issues/524)). Its files must be `package.json` and `package-lock.json` alone. Comparing base and head, `package.json` may change only existing `devDependencies`, and the lockfile only packages marked `dev`. Every version that moves must keep its major number, so a runtime dependency or a major bump stays with a person.
+With `kind: dependency`, it approves a green `build(deps)` PR that only bumps dev dependencies ([#524](https://github.com/may-journal/fitness-runner/issues/524)). Its files must be `package.json` and `package-lock.json` alone. Against the merge base, `package.json` may change only existing `devDependencies`, and the lockfile only `dev` packages from the npm registry. Each moved version keeps its major number, or its minor below 1.0, so runtime and major bumps stay with a person.
 
 A repo opts in with a caller that runs on its pull requests, as in this sketch:
 

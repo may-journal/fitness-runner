@@ -43,12 +43,18 @@ jobs:
     steps:
       # A repo without the approver App leaves its release PRs to a person,
       # so missing secrets skip the approval instead of failing the release.
+      # A kind other than release or dependency is a caller bug, so it fails.
       - name: Check the approver App secrets
         id: secrets
         env:
           APP_ID: ${{ secrets.APPROVER_APP_ID }}
+          KIND: ${{ inputs.kind }}
           APP_KEY: ${{ secrets.APPROVER_APP_KEY }}
         run: |
+          case "$KIND" in
+            release | dependency) ;;
+            *) echo "::error::Release approve got kind '$KIND'; pass release or dependency."; exit 1 ;;
+          esac
           if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
             echo "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the PR."
             exit 0
@@ -118,10 +124,13 @@ jobs:
             echo "::notice::PR #$PR changes more than package.json and package-lock.json, so a person approves it: ${others//$'\n'/, }"
             exit 0
           fi
-          # A file missing on one side reads as {}; any other error fails.
+          # The base side is the merge base, as the file list is. A file
+          # missing on one side reads as {}; any other error fails.
+          head="$(jq -r .headRefOid <<< "$view")"
+          base="$(gh api "repos/$GITHUB_REPOSITORY/compare/$(jq -r .baseRefOid <<< "$view")...$head" --jq .merge_base_commit.sha)"
           dir="$(mktemp -d)"
           for side in base head; do
-            sha="$(jq -r ".${side}RefOid" <<< "$view")"
+            sha="${!side}"
             for file in package.json package-lock.json; do
               if ! gh api -H 'Accept: application/vnd.github.raw+json' "repos/$GITHUB_REPOSITORY/contents/$file?ref=$sha" \
                 > "$dir/$side-$file" 2> "$dir/error"; then
@@ -135,26 +144,32 @@ jobs:
           done
           problems="$(jq -rn --slurpfile bm "$dir/base-package.json" --slurpfile hm "$dir/head-package.json" \
             --slurpfile bl "$dir/base-package-lock.json" --slurpfile hl "$dir/head-package-lock.json" '
-            def major: if type == "string" and test("^[^0-9]*[0-9]+") then capture("^[^0-9]*(?<m>[0-9]+)").m else null end;
+            # A 0.x version breaks on a minor bump, as semver allows.
+            def line: if type == "string" and test("^[^0-9]*[0-9]+")
+              then capture("^[^0-9]*(?<major>[0-9]+)(\\.(?<minor>[0-9]+))?") | if .major == "0" then "0.\(.minor)" else .major end
+              else null end;
+            def header: if has("packages") then del(.packages, .dependencies) else . end;
             def bump($name; $from; $to):
-              if ($from | major) == null or ($from | major) != ($to | major)
+              if ($from | line) == null or ($from | line) != ($to | line)
               then "\($name) moves from \($from) to \($to), not a patch or minor bump" else empty end;
             $bm[0] as $b | $hm[0] as $h | ($b.devDependencies // {}) as $bd | ($h.devDependencies // {}) as $hd |
             ($bl[0].packages // {}) as $bp | ($hl[0].packages // {}) as $hp |
             (if ($b | del(.devDependencies)) != ($h | del(.devDependencies)) then "package.json changes more than devDependencies" else empty end),
             (if ($bd | keys) != ($hd | keys) then "package.json adds or removes a dev dependency" else empty end),
             ($bd | to_entries[] | select(.key as $k | $hd | has($k)) | select(.value != $hd[.key]) | bump(.key; .value; $hd[.key])),
-            (if ($bl[0] | del(.packages)) != ($hl[0] | del(.packages)) then "package-lock.json changes more than its packages" else empty end),
+            (if ($bl[0] | header) != ($hl[0] | header) then "package-lock.json changes more than its packages" else empty end),
             (if ($bp[""] | del(.devDependencies)) != ($hp[""] | del(.devDependencies)) then "package-lock.json changes the root package" else empty end),
             (($bp + $hp) | keys[] | select(. != "") | . as $k | select($bp[$k] != $hp[$k]) |
               if [$bp[$k], $hp[$k]] | map(select(. != null)) | all(.dev == true) | not then "\($k) is not a dev-only package"
-              elif $bp[$k] != null and $hp[$k] != null and $bp[$k].version != $hp[$k].version then bump($k; $bp[$k].version; $hp[$k].version)
+              elif $hp[$k] != null and ($hp[$k].resolved // "https://registry.npmjs.org/" | startswith("https://registry.npmjs.org/") | not) then "\($k) resolves outside the npm registry"
+              elif $bp[$k] != null and $hp[$k] != null and $bp[$k].version == $hp[$k].version then "\($k) changes without a new version"
+              elif $bp[$k] != null and $hp[$k] != null then bump($k; $bp[$k].version; $hp[$k].version)
               else empty end)')"
           if [ -n "$problems" ]; then
             echo "::notice::PR #$PR is not a patch or minor dev-dependency bump, so a person approves it: ${problems//$'\n'/; }"
             exit 0
           fi
-          printf 'sha=%s\n' "$(jq -r .headRefOid <<< "$view")" >> "$GITHUB_OUTPUT"
+          printf 'sha=%s\n' "$head" >> "$GITHUB_OUTPUT"
       # Every check but this run's own, known by its run link, must pass. A
       # red or cancelled check, a new push, or checks still running after the
       # last try leave the PR for a person.
