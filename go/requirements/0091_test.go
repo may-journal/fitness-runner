@@ -70,11 +70,13 @@ func note0091(body string) []response {
 // autoMerge0091 runs the workflow's auto-merge step as Actions does, with
 // bash -e and pipefail, on a pull_request event for PR 2 based on base in a
 // repo whose default branch is main. GitHub answers merge with answer and
-// lists note as the bot's earlier note, and accepts any other call.
-func autoMerge0091(t *testing.T, base string, answer response, note string) (replays, string, int) {
+// lists note as the bot's earlier note, answers comment writes from writes,
+// and accepts any other call.
+func autoMerge0091(t *testing.T, base string, answer response, note string, writes ...response) (replays, string, int) {
 	t.Helper()
 	answer.Match = []string{"pr merge --auto --squash"}
-	rp := standIn(t, map[string][]response{"gh": append(append([]response{answer}, note0091(note)...), response{Match: []string{"api "}})})
+	saved := append(append(append([]response{answer}, note0091(note)...), writes...), response{Match: []string{"api "}})
+	rp := standIn(t, map[string][]response{"gh": saved})
 	env := event0014(t, "pull_request", map[string]any{
 		"action":       "synchronize",
 		"repository":   map[string]any{"default_branch": "main"},
@@ -123,6 +125,9 @@ func Test0091_1(t *testing.T) {
 	if posted0091(rp) != "" || rp.called("gh", "-X PATCH") {
 		t.Fatalf("a second push to a stacked PR wrote its note again: %q", rp.calls("gh"))
 	}
+	refused := response{Match: []string{"-f body="}, Stderr: "gh: Resource not accessible by integration (HTTP 403)\n", Exit: 1}
+	_, out, code = autoMerge0091(t, "photos-grid", response{}, "", refused)
+	sees(t, out, code, 0, "HTTP 403", "::warning::GitHub refused a change to this PR's auto-merge comment")
 }
 
 func Test0091_2(t *testing.T) {
@@ -132,7 +137,7 @@ func Test0091_2(t *testing.T) {
 	if !rp.called("gh", "pr merge --auto --squash https://github.com/"+repo0014+"/pull/2") {
 		t.Fatalf("a PR moved onto main did not get auto-merge: %q", rp.calls("gh"))
 	}
-	on := "Auto-merge is on: this PR now targets `main`, so it squash-merges once it is approved and green."
+	on := "Auto-merge is on: this PR squash-merges into `main` once it is approved and green."
 	if !rp.called("gh", "-X PATCH "+issues0091+"/comments/7", logged0091(on)) {
 		t.Fatalf("the note on a PR moved onto main was not updated: %q", rp.calls("gh"))
 	}
@@ -171,8 +176,10 @@ var (
 )
 
 // runs0091 evaluates the job's `if:` as Actions does for a pull_request
-// event whose fields, keyed by their path under github.event, hold event;
-// a field left out is null, and auto_merge is "on" when enabled.
+// event whose fields, keyed by their path under github.event, hold event.
+// Bash compares strings and Actions compares typed values, so the event
+// must give every field the condition reads: "" for null, and "on" for an
+// enabled auto_merge.
 func runs0091(t *testing.T, event map[string]string) bool {
 	t.Helper()
 	_, cond, ok := strings.Cut(workflowText0091(t), "    if: >-\n")
@@ -182,7 +189,11 @@ func runs0091(t *testing.T, event map[string]string) bool {
 	cond = strings.ReplaceAll(block0091(cond), "\n", " ")
 	cond = null0091.ReplaceAllString(cond, `""`)
 	cond = eventRef0091.ReplaceAllStringFunc(cond, func(ref string) string {
-		return `"` + event[strings.TrimPrefix(ref, "github.event.")] + `"`
+		value, given := event[strings.TrimPrefix(ref, "github.event.")]
+		if !given {
+			t.Fatalf("the job's if reads %s, which the test event does not give", ref)
+		}
+		return `"` + value + `"`
 	})
 	return exec.Command("bash", "-c", "[[ "+cond+" ]]").Run() == nil
 }

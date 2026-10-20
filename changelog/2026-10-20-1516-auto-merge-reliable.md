@@ -8,4 +8,4 @@ relatedConfigurations: ['../.fitnessrc.json']
 - Fix: Auto-merge always runs when a pull request is reopened, since closing it turns auto-merge off.
 - Fix: Auto-merge fails with an error naming GitHub's answer when it refuses auto-merge for any reason but stacking.
 - Docs: the workflows README explains how to rerun a cancelled pr-check without closing the pull request.
-- Test: requirement 0091 covers the comment, its update, the reopen, and the loud failure.
+- Test: requirement 0091 covers the comment, a refused comment, its update, the reopen, and the loud failure.

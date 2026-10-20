@@ -21,7 +21,7 @@ Source: #539
 - 0091.1
     - Given Developer has a pull request stacked on another pull request's branch
         - When Auto-merge runs on it twice
-            - Then it passes, asks GitHub for nothing, and comments once naming both branches and how to merge it
+            - Then it passes, asks GitHub for nothing, and comments once naming both branches and how to merge it; a refused comment only warns
 - 0091.2
     - Given Developer has a stacked pull request that GitHub moved onto the default branch after its base merged
         - When Auto-merge runs on it

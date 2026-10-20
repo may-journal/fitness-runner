@@ -75,21 +75,31 @@ jobs:
           default="$(jq -r .repository.default_branch "$GITHUB_EVENT_PATH")"
           issues="repos/$GITHUB_REPOSITORY/issues"
           marker='<!-- fitness:auto-merge -->'
-          # note prints the id of the bot's note on this PR, or nothing.
+          warning="::warning::GitHub refused a change to this PR's auto-merge comment; its answer is above."
+          # note sets id to the bot's note on this PR, or to nothing.
           note() {
             local ids
-            ids="$(gh api "$issues/$number/comments" --paginate --jq ".[] | select(.user.login == \"$BOT\" and (.body | contains(\"$marker\"))) | .id")"
-            printf '%s' "${ids%%$'\n'*}"
+            ids="$(gh api "$issues/$number/comments" --paginate --jq ".[] | select(.user.login == \"$BOT\" and (.body | contains(\"$marker\"))) | .id")" || return 1
+            id="${ids%%$'\n'*}"
           }
-          # say posts the note, or edits it when its text changed.
-          say() {
-            local id body="$1"$'\n\n'"$marker"
-            id="$(note)"
+          # write posts the note, or edits it when its text changed. GitHub
+          # may store a body with CRLF line ends, so those never count.
+          write() {
+            local current body="$1"$'\n\n'"$marker"
+            if [ -z "${id+set}" ]; then note || return 1; fi
             if [ -z "$id" ]; then
               gh api "$issues/$number/comments" -f body="$body" > /dev/null
-            elif [ "$(gh api "$issues/comments/$id" --jq .body)" != "$body" ]; then
+              return
+            fi
+            current="$(gh api "$issues/comments/$id" --jq .body)" || return 1
+            if [ "${current//$'\r'/}" != "$body" ]; then
               gh api -X PATCH "$issues/comments/$id" -f body="$body" > /dev/null
             fi
+          }
+          # say writes the note; a write GitHub refuses warns but never
+          # turns the check red, since the PR itself is fine.
+          say() {
+            if ! write "$1"; then echo "$warning"; fi
           }
           if [ "$base" != "$default" ]; then
             echo "::notice::This PR targets $base, not $default, so it gets no auto-merge; GitHub has none for stacks. Its auto-merge comment says how to merge it."
@@ -100,8 +110,10 @@ jobs:
           answer="$(gh pr merge --auto --squash "$url" 2>&1)" || status=$?
           if [ -n "$answer" ]; then printf '%s\n' "$answer"; fi
           if [ "$status" -eq 0 ]; then
-            if [ -n "$(note)" ]; then
-              say "Auto-merge is on: this PR now targets \`$default\`, so it squash-merges once it is approved and green."
+            if ! note; then
+              echo "$warning"
+            elif [ -n "$id" ]; then
+              say "Auto-merge is on: this PR squash-merges into \`$default\` once it is approved and green."
             fi
             exit 0
           fi
@@ -111,6 +123,7 @@ jobs:
             exit 0
           fi
           answer="${answer//'%'/%25}"
+          answer="${answer//$'\r'/%0D}"
           echo "::error::GitHub refused auto-merge for this PR: ${answer//$'\n'/%0A}"
           printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
           exit "$status"

@@ -108,7 +108,7 @@ There is no label guard: every PR has a description, so every PR is validated, a
 
 ## Rerun a cancelled pr-check
 
-Never close and reopen a PR to rerun a check: the close turns its auto-merge off. In other repos, pr-check runs from the org ruleset, so its workflow lives here. `gh run rerun <id>` first looks that workflow up in the PR's repo and gets a 404. Call GitHub's [re-run a workflow](https://docs.github.com/en/rest/actions/workflow-runs#re-run-a-workflow) endpoint directly instead:
+Never close and reopen a PR to rerun one check: that reruns every workflow and drops auto-merge until the reopen run restores it. In other repos, pr-check runs from the org ruleset, so its workflow lives here. `gh run rerun <id>` first looks that workflow up in the PR's repo and gets a 404. Call GitHub's [re-run a workflow](https://docs.github.com/en/rest/actions/workflow-runs#re-run-a-workflow) endpoint directly instead:
 
 ```sh
 gh api -X POST repos/<owner>/<repo>/actions/runs/<run-id>/rerun
