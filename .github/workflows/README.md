@@ -253,9 +253,15 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 [auto-merge.yml](auto-merge.yml) turns on squash auto-merge for ready pull requests in every org repo, as a required workflow. It lives here because public repos cannot run a private repo's workflows. It acts as the `may-journal-automation` App, so CI still runs on `main`.
 
-may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready get it. The org's copy also runs it when a PR's base changes. The job runs only for an open, ready PR without auto-merge, so other pushes start no runner and bill nothing. A reopen always runs it, since closing a PR turns its [auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request) off.
+may-journal/.github syncs [auto-merge-on-ready.yml](auto-merge-on-ready.yml) into each repo, so drafts marked ready and approvals get it. The org's copy also runs it when a PR's base changes. The job runs only for an open, ready PR without auto-merge, so other pushes start no runner and bill nothing. A reopen always runs it, since closing a PR turns its [auto-merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/automatically-merging-a-pull-request) off.
 
-GitHub has no auto-merge for a [stacked PR](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-stacked-pull-requests), even for a stack's bottom PR on the default branch. Such a PR passes with one comment saying why it has no auto-merge and how to merge it. Once GitHub moves it onto the default branch, the next run turns auto-merge on and edits that comment to say so. Any other refusal fails the job with an error naming GitHub's answer.
+### Stacks
+
+GitHub has no auto-merge for a [stacked PR](https://docs.github.com/en/pull-requests/how-tos/merge-and-close-pull-requests/merging-stacked-pull-requests), so the job merges a native stack from `gh stack` itself. Once every PR in it is approved, green and mergeable, it [merges the top PR asynchronously](https://docs.github.com/en/rest/pulls/pulls?apiVersion=2026-03-10#merge-a-pull-request-asynchronously). That lands the PRs below it, and each PR gets a comment saying what merged or what waits. Any refusal or failed merge turns the job red with GitHub's answer.
+
+The job runs on each push and on each approval of a branch in the repo, never when checks finish. So a stack approved before its checks pass waits for the next approval or push.
+
+The job never pushes, rebases or bypasses rules, so it never dismisses an approval. So it cannot merge a branch chain, a PR based on another PR's branch with no stack. Merging a child pushes to its parent, which [dismisses stale approvals](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/available-rules-for-rulesets#require-a-pull-request-before-merging). Such a PR gets one comment saying why, and gets auto-merge once GitHub moves it onto the default branch.
 
 ## release-please
 
