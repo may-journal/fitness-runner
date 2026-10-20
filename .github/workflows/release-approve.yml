@@ -1,0 +1,161 @@
+name: Release approve
+# Reusable across the org: release-please-reusable.yml calls it after each
+# run that leaves a release PR open, and this repo's CI does the same. The
+# org ruleset needs one approval, and the automation App that opens release
+# PRs cannot approve its own. A second App, the approver, approves a release
+# PR only when the automation App authored it, its diff is the release files
+# alone, and its checks are green. Any other PR is left for a person.
+on:
+  workflow_call:
+    inputs:
+      pr:
+        description: The release PR's number.
+        required: true
+        type: string
+    secrets:
+      APPROVER_APP_ID:
+        required: false
+      APPROVER_APP_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  approve:
+    runs-on: ubuntu-latest
+    # Checks may take a while; the wait below gives up after 20 minutes.
+    timeout-minutes: 25
+    # A newer run waits for the running one, which finds the head moved and
+    # approves nothing, rather than cancelling it partway through its wait.
+    concurrency:
+      group: release-approve-${{ inputs.pr }}
+      cancel-in-progress: false
+    steps:
+      # A repo without the approver App leaves its release PRs to a person,
+      # so missing secrets skip the approval instead of failing the release.
+      - name: Check the approver App secrets
+        id: secrets
+        env:
+          APP_ID: ${{ secrets.APPROVER_APP_ID }}
+          APP_KEY: ${{ secrets.APPROVER_APP_KEY }}
+        run: |
+          if [ -z "$APP_ID" ] || [ -z "$APP_KEY" ]; then
+            echo "::notice::APPROVER_APP_ID or APPROVER_APP_KEY is not available to this repo, so a person approves the release PR."
+            exit 0
+          fi
+          echo "ready=true" >> "$GITHUB_OUTPUT"
+      - name: Mint the approver App token
+        id: app-token
+        if: ${{ steps.secrets.outputs.ready == 'true' }}
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ secrets.APPROVER_APP_ID }}
+          private-key: ${{ secrets.APPROVER_APP_KEY }}
+      # Only the automation App's PR whose files are all release files
+      # qualifies. A rename counts both its paths, so nothing moves in.
+      - name: Check the release PR
+        id: guard
+        if: ${{ steps.secrets.outputs.ready == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr }}
+          AUTHOR: app/may-journal-automation
+        run: |
+          view="$(gh pr view "$PR" --json author,state,isDraft,headRefOid)"
+          author="$(jq -r .author.login <<< "$view")"
+          if [ "$author" != "$AUTHOR" ]; then
+            echo "::notice::PR #$PR is by $author, not $AUTHOR, so a person approves it."
+            exit 0
+          fi
+          if [ "$(jq -r '.state + " " + (.isDraft | tostring)' <<< "$view")" != "OPEN false" ]; then
+            echo "::notice::PR #$PR is not open and ready, so it gets no approval."
+            exit 0
+          fi
+          files="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate |
+            jq -rs 'add | .[] | .filename, (.previous_filename // empty)')"
+          others="$(grep -vxF -e CHANGELOG.md -e version.txt -e .release-please-manifest.json <<< "$files" || true)"
+          if [ -z "$files" ] || [ -n "$others" ]; then
+            echo "::notice::PR #$PR changes more than the release files, so a person approves it: ${others//$'\n'/, }"
+            exit 0
+          fi
+          printf 'sha=%s\n' "$(jq -r .headRefOid <<< "$view")" >> "$GITHUB_OUTPUT"
+      # Every check but this run's own, known by its run link, must pass. A
+      # red or cancelled check, a new push, or checks still running after the
+      # last try leave the PR for a person.
+      - name: Wait for green checks
+        id: checks
+        if: ${{ steps.guard.outputs.sha != '' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ inputs.pr }}
+          SHA: ${{ steps.guard.outputs.sha }}
+          TRIES: 40
+          WAIT_SECONDS: 30
+        run: |
+          verdict=pending
+          error="$(mktemp)"
+          own="/actions/runs/$GITHUB_RUN_ID/"
+          for ((try = 1; try <= TRIES; try++)); do
+            if [ "$try" -gt 1 ]; then sleep "$WAIT_SECONDS"; fi
+            # gh exits 1 on a failed check and 8 on a pending one, and
+            # prints the list either way.
+            checks="$(gh pr checks "$PR" --json bucket,link 2> "$error")" || true
+            if ! jq -e 'type == "array"' <<< "$checks" > /dev/null 2>&1; then
+              if grep -q 'no checks reported' "$error"; then continue; fi
+              echo "::error::Could not read the checks of PR #$PR: $(cat "$error")"
+              exit 1
+            fi
+            verdict="$(jq -r --arg own "$own" '[.[] | select((.link // "") | contains($own) | not) | .bucket] |
+              if any(. == "fail" or . == "cancel") then "red"
+              elif length == 0 or any(. == "pending") then "pending" else "green" end' <<< "$checks")"
+            if [ "$verdict" != pending ]; then break; fi
+          done
+          case "$verdict" in
+            red)
+              echo "::notice::PR #$PR has a failed or cancelled check, so it gets no approval."
+              exit 0 ;;
+            pending)
+              echo "::warning::PR #$PR still had checks running after $TRIES tries, so a person approves it."
+              exit 0 ;;
+          esac
+          head="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+          if [ "$head" != "$SHA" ]; then
+            echo "::notice::PR #$PR moved to $head while its checks ran, so this run approves nothing."
+            exit 0
+          fi
+          echo "green=true" >> "$GITHUB_OUTPUT"
+      # The approval names the commit checked, so a later push needs a new
+      # one. A PR the approver already approved at that commit is left alone.
+      - name: Approve the release PR
+        id: report-step-1
+        if: ${{ steps.checks.outputs.green == 'true' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          PR: ${{ inputs.pr }}
+          SHA: ${{ steps.guard.outputs.sha }}
+          BOT: ${{ steps.app-token.outputs.app-slug }}[bot]
+        run: |
+          reviews="repos/$GITHUB_REPOSITORY/pulls/$PR/reviews"
+          approved="$(gh api "$reviews" --paginate |
+            jq -rs --arg bot "$BOT" --arg sha "$SHA" 'add | any(.user.login == $bot and .commit_id == $sha and .state == "APPROVED")')"
+          if [ "$approved" = true ]; then
+            echo "PR #$PR is already approved at $SHA."
+            exit 0
+          fi
+          gh api -X POST "$reviews" -f event=APPROVE -f commit_id="$SHA" \
+            -f body="Approved: the automation App's release PR changes only the release files, and its checks are green." > /dev/null
+          echo "Approved PR #$PR at $SHA."
+      # Bootstrap fallback must work even when checkout or tool setup failed.
+      - name: Report job outcome
+        if: ${{ always() }}
+        shell: bash
+        env:
+          REPORT_STATUS: ${{ job.status }}
+        run: |
+          if [ "$REPORT_STATUS" = failure ]; then
+            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+          fi
+          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
