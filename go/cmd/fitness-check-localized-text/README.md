@@ -22,6 +22,13 @@ An app opts in by tracking a `.xcstrings` file. Without one the check passes wit
 App/ShareView.swift:7 - "Share" passed to Button skips the String Catalog; use a Words reference for catalog entry "verb.share"
 ```
 
+## Expressions
+
+- A literal that is a branch of a ternary or `??` expression in a view's first argument fails.
+- A ternary branch inside a literal's interpolation fails. Another literal there, such as a dictionary key, passes.
+- A multi-line `"""` literal is one literal and is named whole.
+- A test literal assigned with `=` or passed under an argument label, such as `caption: "Share"`, is plain data and passes.
+
 ## Tests
 
 - A test file sits in a folder whose name ends in `Tests`, or is named `…Tests.swift`.

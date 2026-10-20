@@ -89,11 +89,12 @@ func judge(file, src string, known entries, cfg config) []string {
 		find = typedFinding
 	}
 	var out []string
-	for _, lit := range literals {
+	for i, at := range anchors(src, literals) {
+		lit := literals[i]
 		if cfg.allowed(lit.Text) {
 			continue
 		}
-		if finding := find(code, lit, known, cfg); finding != "" {
+		if finding := find(src, code, lit, at, known, cfg); finding != "" {
 			out = append(out, fmt.Sprintf("%s:%d - %s", file, lit.Line, finding))
 		}
 	}
@@ -102,17 +103,20 @@ func judge(file, src string, known entries, cfg config) []string {
 
 // typedFinding is a test literal's finding when it types an entry's
 // words, or "".
-func typedFinding(_ string, lit swift.Literal, known entries, cfg config) string {
+func typedFinding(src, _ string, lit swift.Literal, _ int, known entries, cfg config) string {
 	key, ok := known[lit.Text]
-	if !ok {
+	if !ok || isData(src, lit.Start) {
 		return ""
 	}
 	return fmt.Sprintf("%s types catalog entry %q; read it through %s", lit.Source, key, cfg.reference)
 }
 
 // shownFinding is an app literal's finding when a view shows it, or "".
-func shownFinding(code string, lit swift.Literal, known entries, cfg config) string {
-	call := shownBy(code, lit.Start)
+func shownFinding(_, code string, lit swift.Literal, at int, known entries, cfg config) string {
+	call := ""
+	if at >= 0 {
+		call = shownBy(code, at)
+	}
 	if call == "" || !hasWords(lit.Text) {
 		return ""
 	}
@@ -124,11 +128,12 @@ func shownFinding(code string, lit swift.Literal, known entries, cfg config) str
 }
 
 // shownBy returns the view or modifier a literal at start is the first
-// argument of, unlabeled or labeled verbatim, or "" when it is none.
+// argument of, unlabeled or labeled verbatim, or "" when it is none. A
+// branch of a ternary or ?? expression there counts as the argument.
 // code has its comments and literals blanked, so only code is read.
 func shownBy(code string, start int) string {
-	i, ok := argumentStart(code, start)
-	if !ok || !opensCall(code, i) {
+	i, ok := callOpen(code, start)
+	if !ok {
 		return ""
 	}
 	name, at := nameBack(code, skipSpaceBack(code, i-1))
@@ -139,6 +144,16 @@ func shownBy(code string, start int) string {
 	return name
 }
 
+// callOpen returns just after the parenthesis of the call a literal at
+// start is the first argument of, directly or as a branch of a ternary.
+func callOpen(code string, start int) (int, bool) {
+	i, ok := argumentStart(code, start)
+	if ok && !opensCall(code, i) {
+		return branchStart(code, i)
+	}
+	return i, ok
+}
+
 // opensCall reports a parenthesis just before i, opening a call.
 func opensCall(code string, i int) bool { return i > 0 && code[i-1] == '(' }
 
@@ -146,8 +161,8 @@ func opensCall(code string, i int) bool { return i > 0 && code[i-1] == '(' }
 // begins, before a verbatim label; ok is false for another label.
 func argumentStart(code string, start int) (int, bool) {
 	i := skipSpaceBack(code, start)
-	if i == 0 || code[i-1] != ':' {
-		return i, true
+	if i == 0 || code[i-1] != ':' || !labelColon(code, i) {
+		return i, true // not a label: a ternary's colon, or none
 	}
 	label, at := nameBack(code, skipSpaceBack(code, i-1))
 	return skipSpaceBack(code, at), label == "verbatim"
