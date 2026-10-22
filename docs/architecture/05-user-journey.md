@@ -43,7 +43,7 @@ flowchart TB
     install(14 Install fitness<br/>Req 0061, 0088):::action
     terminal[2 Terminal<br/>Req 0001]:::screen
     runFull(3 Run fitness<br/>Req 0001):::action
-    runSingle(4 Run single check<br/>Req 0001):::action
+    runSingle(4 Run single check or folder<br/>Req 0001, 0097):::action
     runBlob(29 Check a draft text<br/>Req 0077):::action
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action

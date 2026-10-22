@@ -47,6 +47,7 @@ fitness                      # full configured suite
 fitness --policy=external     # all checks, each decides applicability
 fitness prettier             # one check by name
 fitness prettier --write .   # passthrough args reach the check
+fitness --dir=docs           # judge only the files under one folder
 fitness --blob - < draft.md  # run every blob-capable check on a text, here stdin
 fitness --json=perf.json     # also save each check's cost (see docs/ci.md#performance-record)
 fitness boxes perf.json perf.html  # draw that record as a box diagram (see docs/ci.md#box-diagram)

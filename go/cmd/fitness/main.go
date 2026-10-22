@@ -208,6 +208,7 @@ Usage:
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
+  fitness --dir=<folder>   judge only the files under one folder
   fitness --blob <text>    run every blob-capable check on text (- reads stdin)
   fitness --json=<file>    also write each check's time, budget, files, binary size, and error lines as JSON
   fitness boxes <report.json> <page.html>
@@ -238,7 +239,7 @@ func run(argv []string) int {
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}
-	root, perfPath, argv, err := runSetup(argv)
+	root, perfPath, only, argv, err := runSetup(argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
@@ -248,7 +249,7 @@ func run(argv []string) int {
 		report.Error("fitness setup", err)
 		return 1
 	}
-	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv))
+	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv), only)
 	return runChecks(root, perfPath, checks, passthrough, env)
 }
 
@@ -274,15 +275,19 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	return withPerfReport(perfPath, perf, code)
 }
 
-// runSetup finds the repo root and takes the `--json` report path out of
-// argv, returning the rest.
-func runSetup(argv []string) (root, perfPath string, rest []string, err error) {
+// runSetup finds the repo root and takes the `--json` report path and the
+// `--dir` folder's files out of argv, returning the rest.
+func runSetup(argv []string) (root, perfPath string, only, rest []string, err error) {
 	root, err = os.Getwd()
 	if err != nil {
-		return "", "", nil, err
+		return "", "", nil, nil, err
 	}
 	perfPath, rest, err = jsonPath(argv)
-	return root, perfPath, rest, err
+	if err != nil {
+		return "", "", nil, nil, err
+	}
+	only, rest, err = dirScope(root, rest)
+	return root, perfPath, only, rest, err
 }
 
 // withPerfReport writes the `--json` report when one was asked for; a report
@@ -323,8 +328,8 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
-func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool) (env, remaining []string) {
-	env = contextEnv(root, checks, all)
+func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, only []string) (env, remaining []string) {
+	env = contextEnv(root, checks, all, only)
 	if len(checks) != 1 {
 		return env, nil
 	}
@@ -641,13 +646,17 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 // is set only for a scoped run, and the tracked-file list only by run, so
 // an inherited value never leaks into a full scan or another repo. The
 // staged files are read once for both variables.
-func contextEnv(root string, checks []resolved, all bool) []string {
+func contextEnv(root string, checks []resolved, all bool, only []string) []string {
 	env := withoutVar(withoutVar(os.Environ(), "FITNESS_CHANGED_FILES"), walkfs.TrackedFilesEnv)
 	staged := gitx.StagedFiles(root)
 	// A check's `git status` would otherwise refresh and rewrite the index,
 	// which voids the shared tracked-file list for every later check.
 	env = append(env, "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
-	if changed := changedScope(root, all, staged); len(changed) > 0 {
+	changed := only
+	if len(changed) == 0 {
+		changed = changedScope(root, all, staged)
+	}
+	if len(changed) > 0 {
 		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
 	}
 	names := make([]string, len(checks))
