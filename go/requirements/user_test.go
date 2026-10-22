@@ -102,11 +102,24 @@ func piped(t *testing.T, repo, stdin string, env []string, args ...string) (stri
 // fork, is retried for a bounded time, since only a fresh command can retry.
 func execute(t *testing.T, build func() *exec.Cmd) (string, int) {
 	t.Helper()
+	var out []byte
+	cmd := started(t, build, func(cmd *exec.Cmd) (err error) {
+		out, err = cmd.CombinedOutput()
+		return err
+	})
+	return ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode()
+}
+
+// started runs each command build makes with run until one starts, and
+// returns it. A busy binary is retried as execute says; any other start
+// error fails the test.
+func started(t *testing.T, build func() *exec.Cmd, run func(*exec.Cmd) error) *exec.Cmd {
+	t.Helper()
 	for attempt := 0; ; attempt++ {
 		cmd := build()
-		out, err := cmd.CombinedOutput()
+		err := run(cmd)
 		if cmd.ProcessState != nil {
-			return ansi.ReplaceAllString(string(out), ""), cmd.ProcessState.ExitCode()
+			return cmd
 		}
 		if !errors.Is(err, syscall.ETXTBSY) || attempt == 40 {
 			t.Fatalf("start %s: %v", cmd.Path, err)

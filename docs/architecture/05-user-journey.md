@@ -67,7 +67,7 @@ flowchart TB
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086)]:::system
     end
 
-    resultsTable[8 Results table<br/>Req 0001]:::screen
+    resultsTable[8 Results table<br/>Req 0001, 0101]:::screen
     exitZero[(9 Exit 0<br/>Req 0001)]:::system
     failuresShown[10 Failures shown<br/>Req 0004]:::blocked
     fixIssues(11 Fix issues<br/>Req 0004):::action

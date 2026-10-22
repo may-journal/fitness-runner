@@ -45,20 +45,7 @@ func InScope(files []string) []string {
 // files read. A file that cannot be read is skipped and named as info, so
 // the other files are still judged.
 func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) checkkit.Result {
-	files := InScope(FilesByExt(root, exts...))
-	results := par.Map(len(files), 0, func(i int) scanResult {
-		return scanOne(root, files[i], scan)
-	})
-	var errs, info []string
-	read := 0
-	for _, r := range results {
-		if r.skipped != "" {
-			info = append(info, r.skipped)
-			continue
-		}
-		read++
-		errs = append(errs, r.errs...)
-	}
+	errs, read, info := scanAll(root, exts, scan)
 	result := checkkit.Pass(read)
 	if len(errs) > 0 {
 		result = checkkit.Fail(read, errs...)
@@ -67,9 +54,37 @@ func ScanFiles(root string, exts []string, scan func(relPath, content string) []
 	return result
 }
 
+// ScanFindings is ScanFiles for a check that reports findings: line renders
+// each as the error line older readers of the result see.
+func ScanFindings(root string, exts []string, line func(checkkit.Finding) string, scan func(relPath, content string) []checkkit.Finding) checkkit.Result {
+	found, read, info := scanAll(root, exts, scan)
+	result := checkkit.Found(read, line, found...)
+	result.Info = info
+	return result
+}
+
+// scanAll scans every in-scope file matching exts in parallel, returning
+// what scan found in file order, how many files it read, and an info note
+// for each file it could not read.
+func scanAll[T any](root string, exts []string, scan func(relPath, content string) []T) (found []T, read int, info []string) {
+	files := InScope(FilesByExt(root, exts...))
+	results := par.Map(len(files), 0, func(i int) scanResult[T] {
+		return scanOne(root, files[i], scan)
+	})
+	for _, r := range results {
+		if r.skipped != "" {
+			info = append(info, r.skipped)
+			continue
+		}
+		read++
+		found = append(found, r.found...)
+	}
+	return found, read, info
+}
+
 // scanResult carries one file's scan outcome through the worker pool.
-type scanResult struct {
-	errs []string
+type scanResult[T any] struct {
+	found []T
 	// skipped names a file that could not be read, empty once read.
 	skipped string
 }
@@ -86,12 +101,12 @@ func Unreadable(rel string, err error) string {
 }
 
 // scanOne reads and scans a single file for the parallel ScanFiles pool.
-func scanOne(root, file string, scan func(relPath, content string) []string) scanResult {
+func scanOne[T any](root, file string, scan func(relPath, content string) []T) scanResult[T] {
 	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 	if err != nil {
-		return scanResult{skipped: Unreadable(file, err)}
+		return scanResult[T]{skipped: Unreadable(file, err)}
 	}
-	return scanResult{errs: scan(file, string(content))}
+	return scanResult[T]{found: scan(file, string(content))}
 }
 
 // FilesByExt returns the sorted slash-separated relative paths of files
