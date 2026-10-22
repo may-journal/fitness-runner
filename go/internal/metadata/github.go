@@ -1,4 +1,19 @@
 // Package metadata shares GitHub judgments between local checks and Actions.
+//
+// In GitHub Actions, `fitness pr-check` judges a pull request's title, body,
+// closed issues and changelog link. `fitness issue-check` judges an issue by
+// its kind label, and `fitness plan-check` judges Plan issues only. `fitness
+// close-check` reopens an issue closed with unchecked items, `fitness
+// dupe-check` notes an issue that reads like an older one, and `fitness
+// comment-check` replies once to a comment that breaks the comment rules.
+// Each reads the Actions event, runs the body checks on the text, and then
+// its after-effect comments, labels or reopens.
+//
+// Locally, `fitness branch-check` runs the same judgments on this branch's
+// open PR and the issues it closes, without posting anything, and the
+// pre-push hook runs it before a push.
+//
+//fitness:topic github
 package metadata
 
 import (

@@ -3,6 +3,8 @@
 // Package conf loads .fitnessrc.json — the Go runner's configuration file.
 // Same keys as the TypeScript FitnessConfig; JSON because the standard
 // library parses it and a config file must not require a toolchain.
+//
+//fitness:topic config
 package conf
 
 import (

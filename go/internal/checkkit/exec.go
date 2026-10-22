@@ -14,10 +14,15 @@ import (
 // any failure. SpawnErr and Signaled tell a broken environment apart from a
 // tool that ran and judged.
 type Outcome struct {
-	Code     int
-	Stdout   string
-	Stderr   string
+	// Code is the exit code, or 1 when the process ended without one.
+	Code int
+	// Stdout is what the tool printed on standard output.
+	Stdout string
+	// Stderr is what the tool printed on standard error.
+	Stderr string
+	// SpawnErr says why the tool could not start, nil when it did.
 	SpawnErr error
+	// Signaled is true when a signal ended the tool.
 	Signaled bool
 	// Err is the error the run returned, nil on exit 0.
 	Err error
