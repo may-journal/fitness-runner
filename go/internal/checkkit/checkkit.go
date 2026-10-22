@@ -27,6 +27,57 @@ type Result struct {
 	FilesChecked int      `json:"filesChecked"`
 	// Info carries notes that never fail a run, such as an internal error.
 	Info []string `json:"info,omitempty"`
+	// Findings repeats Errors in a shape an agent can act on without
+	// parsing prose: where, which rule, and how to fix it. It is optional,
+	// so a check that sets none still speaks the protocol, and Errors
+	// stays for the readers that predate it.
+	Findings []Finding `json:"findings,omitempty"`
+}
+
+// Finding is one problem a check found.
+type Finding struct {
+	// File is the path the problem is in, relative to the repo root, or
+	// empty when it is not in one file.
+	File string `json:"file,omitempty"`
+	// Line is the 1-based line in File, or 0 when the whole file is meant.
+	Line int `json:"line,omitempty"`
+	// Column is the 1-based column on Line, or 0 when not known.
+	Column int `json:"column,omitempty"`
+	// Rule names what the check enforces here, in lowercase words joined
+	// by dashes, such as unknown-word.
+	Rule string `json:"rule"`
+	// Message says what is wrong, in words a person reads.
+	Message string `json:"message"`
+	// Fix says what to change so the check passes, when one change does.
+	Fix string `json:"fix,omitempty"`
+	// Explain is the command that prints why the check exists. The check's
+	// entry point fills it in from the check's name.
+	Explain string `json:"explain,omitempty"`
+}
+
+// ExplainCommand is the command that prints why check exists.
+func ExplainCommand(check string) string {
+	return "fitness explain " + check
+}
+
+// Found builds a Result from findings: failing with one error line each,
+// rendered by line in the check's own words, or passing with none.
+func Found(filesChecked int, line func(Finding) string, findings ...Finding) Result {
+	if len(findings) == 0 {
+		return Pass(filesChecked)
+	}
+	res := Fail(filesChecked, Lines(line, findings)...)
+	res.Findings = findings
+	return res
+}
+
+// Lines renders each finding as an error line with line.
+func Lines(line func(Finding) string, findings []Finding) []string {
+	out := make([]string, len(findings))
+	for i, f := range findings {
+		out[i] = line(f)
+	}
+	return out
 }
 
 // Describe is the metadata a check prints for `--describe`.
@@ -126,7 +177,18 @@ func runMain(c Check, argv []string, stdout *os.File) int {
 		_ = enc.Encode(Info(-1, err.Error()))
 		return ExitInternal
 	}
-	return emitResult(enc, result)
+	return emitResult(enc, withExplain(result, c.Describe.Name))
+}
+
+// withExplain points each finding that names no explain command at the
+// check's own.
+func withExplain(result Result, check string) Result {
+	for i := range result.Findings {
+		if result.Findings[i].Explain == "" {
+			result.Findings[i].Explain = ExplainCommand(check)
+		}
+	}
+	return result
 }
 
 // safeRun runs the check, turning a panic into an internal error.
