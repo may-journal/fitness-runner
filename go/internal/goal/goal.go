@@ -2,6 +2,8 @@
 // whichever language it measures: every counted line, branch or statement
 // covered. A check compares exact counts, so a total that rounds to the goal
 // still falls short.
+//
+//fitness:topic coverage
 package goal
 
 import "strconv"
