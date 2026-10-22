@@ -67,7 +67,7 @@ func Test0114_3(t *testing.T) {
 		t.Fatalf("the README's Usage section has no command list:\n%s", usage)
 	}
 	out, code := fitness(t, repo, nil, "--help")
-	if code != 0 || !strings.Contains(out, "Usage:\n"+list+"\n") {
+	if code != 0 || !strings.Contains(out, "\n"+list+"\n") {
 		t.Errorf("fitness --help (exit %d) does not print the README's command list:\n%s\nREADME:\n%s", code, out, list)
 	}
 }

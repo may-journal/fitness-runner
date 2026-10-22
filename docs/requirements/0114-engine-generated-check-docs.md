@@ -27,4 +27,4 @@ Source: `go/internal/release/readmes.go:28`
 - 0114.3
   - Given Developer reads the command list in the README
     - When they run `fitness --help`
-      - Then the help prints the same list
+      - Then the help prints the same list, its run forms and commands

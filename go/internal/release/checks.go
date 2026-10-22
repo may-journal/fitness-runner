@@ -69,42 +69,60 @@ func (c Config) differs(path string, want []byte) (bool, error) {
 // Generated returns each file the generator writes, by repository path, read
 // from the check folders and their Go doc comments.
 func (c Config) Generated() (map[string][]byte, error) {
-	docs, err := c.checkDocs()
+	in, err := c.readSources()
 	if err != nil {
 		return nil, err
 	}
-	registry, err := checksSource(docs)
-	if err != nil {
+	return c.render(in)
+}
+
+// sources is what the generator reads from the code.
+type sources struct {
+	checks []checkDoc
+	topics []topicDoc
+	usage  usageDoc
+}
+
+// readSources reads the check packages, the topic packages, and the
+// documented command line.
+func (c Config) readSources() (s sources, err error) {
+	if s.checks, err = c.checkDocs(); err != nil {
+		return s, err
+	}
+	if s.topics, err = c.topics(); err != nil {
+		return s, err
+	}
+	s.usage, err = c.usage()
+	return s, err
+}
+
+// render lays out every generated file: the Go sources the fitness binary
+// is built with, the llms page, and the Markdown written from the same
+// comments.
+func (c Config) render(s sources) (map[string][]byte, error) {
+	page := llmsPage(s.usage, s.checks, s.topics)
+	registry, checksErr := checksSource(s.checks)
+	topicFile, topicsErr := topicsSource(s.topics)
+	usage, usageErr := usageSource(s.usage, page)
+	if err := errors.Join(checksErr, topicsErr, usageErr); err != nil {
 		return nil, err
 	}
-	topics, err := c.topics()
-	if err != nil {
-		return nil, err
-	}
-	topicFile, err := topicsSource(topics)
-	if err != nil {
-		return nil, err
-	}
-	files := map[string][]byte{checksFile: registry, topicsFile: topicFile}
-	return files, c.addMarkdown(files, docs)
+	files := map[string][]byte{checksFile: registry, topicsFile: topicFile, usageFile: usage, llmsFile: []byte(page)}
+	return files, c.addMarkdown(files, s)
 }
 
 // addMarkdown adds each check's README, and the files that hold a generated
 // region among hand-written text: the check index in docs/checks.md, and the
 // command list in the README.
-func (c Config) addMarkdown(files map[string][]byte, docs []checkDoc) error {
-	for _, d := range docs {
+func (c Config) addMarkdown(files map[string][]byte, s sources) error {
+	for _, d := range s.checks {
 		files["go/cmd/"+d.Folder+"/README.md"] = checkReadme(d)
 	}
-	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment", checkIndex(docs))
+	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment", checkIndex(s.checks))
 	if err != nil {
 		return err
 	}
-	usage, err := c.usageBlock()
-	if err != nil {
-		return err
-	}
-	readme, err := c.withRegion(readmeFile, usageMarker, "the usage constant in "+usageFile, usage)
+	readme, err := c.withRegion(readmeFile, usageMarker, "the usage comments in go/cmd/fitness and go/internal/selection", usageBlock(s.usage))
 	if err != nil {
 		return err
 	}

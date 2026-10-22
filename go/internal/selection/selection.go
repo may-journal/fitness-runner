@@ -10,8 +10,14 @@ import (
 const External = "external"
 const Org = "org"
 
+// Options select the checks a command line names: with --policy=external, a
+// run runs exactly the checks --checks lists.
+//
+//fitness:usage --policy=external --checks=<name,name>
 type Options struct {
-	Policy               string
+	// Policy is org, which runs every check, or external.
+	Policy string
+	// Checks are the check names --checks gives.
 	Checks               []string
 	policySet, checksSet bool
 }

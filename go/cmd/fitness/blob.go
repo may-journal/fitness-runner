@@ -18,7 +18,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
-// blobFlag runs every blob-capable check on a text instead of the repo.
+// blobFlag runs every blob-capable check on a text instead of the repo;
+// - reads the text from stdin.
+//
+//fitness:usage --blob <text>
 const blobFlag = "--blob"
 
 // usageExit is the exit code for a command line the runner cannot run.

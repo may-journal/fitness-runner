@@ -11,7 +11,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-// dirFlag names the one folder a run judges.
+// dirFlag judges only the files under one folder.
+//
+//fitness:usage --dir=<folder>
 const dirFlag = "--dir"
 
 // dirScope pulls `--dir=<folder>` out of argv and lists the repo files under
