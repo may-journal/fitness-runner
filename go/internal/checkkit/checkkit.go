@@ -29,9 +29,27 @@ type Result struct {
 	Info []string `json:"info,omitempty"`
 }
 
+// The scopes a check declares: what it reads when it judges a repo.
+const (
+	// ScopeFiles judges the repo's tracked files.
+	ScopeFiles = "files"
+	// ScopeBlob judges one text it is given, such as an issue or PR body.
+	ScopeBlob = "blob"
+	// ScopeGit judges commit messages and the branch's history.
+	ScopeGit = "git"
+	// ScopeGitHub judges the branch's live GitHub metadata.
+	ScopeGitHub = "github"
+)
+
 // Describe is the metadata a check prints for `--describe`.
 type Describe struct {
 	Name string `json:"name"`
+	// Summary says in one line what the check enforces. A built-in check
+	// leaves it empty: its package doc comment's first sentence is
+	// generated into the runner, which serves it here.
+	Summary string `json:"summary,omitempty"`
+	// Scope is one of the Scope constants: what the check reads.
+	Scope string `json:"scope,omitempty"`
 	// TimeoutMs is the check's execution budget; 0 means the runner default.
 	TimeoutMs int `json:"timeoutMs,omitempty"`
 	// ContextInlineArg names a flag (e.g. "--message") whose value the runner
@@ -132,6 +150,17 @@ func splitLines(s string) []string {
 	return out
 }
 
+// documented is the summary Document set, which --describe prints for a
+// check that declares none.
+var documented string
+
+// Document sets the summary --describe prints when the check declares none.
+// The runner calls it with the summary generated from the check's package
+// doc comment before it starts a built-in check.
+func Document(summary string) {
+	documented = summary
+}
+
 // Main is the entry point every check binary delegates to: it parses
 // --root/--describe, runs the check, and emits the protocol JSON.
 func Main(c Check) {
@@ -143,7 +172,11 @@ func runMain(c Check, argv []string, stdout *os.File) int {
 	root, args, describe := parseArgs(argv)
 	enc := json.NewEncoder(stdout)
 	if describe {
-		_ = enc.Encode(c.Describe)
+		d := c.Describe
+		if d.Summary == "" {
+			d.Summary = documented
+		}
+		_ = enc.Encode(d)
 		return 0
 	}
 	if root == "" {

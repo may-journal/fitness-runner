@@ -13,7 +13,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "go-test", TimeoutMs: 900000},
+		Describe: checkkit.Describe{Name: "go-test", Scope: checkkit.ScopeFiles, TimeoutMs: 900000},
 		Run:      run,
 	})
 }

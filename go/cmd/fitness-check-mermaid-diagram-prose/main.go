@@ -1,8 +1,7 @@
-// Command fitness-check-mermaid-diagram-prose flags relationship/edge labels
-// that carry prose beyond a callout, a number or a letter, when a diagram is
-// paired with a callout table — the Go port of the mermaid-diagram-prose
-// check. Arrows carry callouts only; descriptions belong in the callout
-// table.
+// Command fitness-check-mermaid-diagram-prose fails edge labels that carry
+// prose beyond a callout, a number or a letter, in a diagram paired with a
+// callout table. Arrows carry callouts only; descriptions belong in the
+// callout table.
 //
 // The shared parser lives in internal/mermaid; the JS \s class and the
 // styling-line pattern it uses are unexported there, so that small residue
@@ -22,7 +21,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-diagram-prose", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-diagram-prose", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

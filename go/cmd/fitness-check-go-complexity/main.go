@@ -26,7 +26,7 @@ const defaultMax = 5
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "go-complexity"},
+		Describe: checkkit.Describe{Name: "go-complexity", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

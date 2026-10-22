@@ -121,6 +121,7 @@ func runBuiltin(name string, args []string) int {
 		fmt.Fprintf(os.Stderr, "fitness: no built-in check %s; `fitness check --list` names them\n", name)
 		return 2
 	}
+	checkkit.Document(builtinSummaries[name])
 	os.Args = append([]string{checkkit.BinPrefix + name}, args...)
 	entry()
 	return 0
@@ -143,7 +144,7 @@ func runCheckCommand(args []string) int {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `check`, `list`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -176,6 +177,7 @@ func init() {
 		"boxes":              runBoxes,
 		"strip-front-matter": runStripFrontMatter,
 		"check":              runCheckCommand,
+		"list":               runList,
 	}
 }
 
@@ -211,6 +213,8 @@ Usage:
   fitness --dir=<folder>   judge only the files under one folder
   fitness --blob <text>    run every blob-capable check on text (- reads stdin)
   fitness --json=<file>    also write each check's time, budget, files, binary size, and error lines as JSON
+  fitness list [--json]    name every check with its summary, scope, budget, and whether this repo enables it
+  fitness check --list     print every built-in check name, one per line
   fitness boxes <report.json> <page.html>
                            draw a --json report as an HTML box diagram
   fitness init             install the shared git hooks into this repo

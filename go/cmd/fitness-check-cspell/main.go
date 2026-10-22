@@ -1,6 +1,6 @@
-// Command fitness-check-cspell is the Go port of the cspell check's soul: no
-// unknown words in the checked files, with the project cspell.json words
-// always winning over the embedded base dictionaries (internal/spell).
+// Command fitness-check-cspell fails unknown words in the checked
+// files. The project cspell.json words always win over the embedded base
+// dictionaries (internal/spell).
 //
 // Scoped mode (a changed-file list in the environment) checks the changed
 // files that still exist on disk; with none left it passes without scanning.
@@ -38,7 +38,7 @@ import (
 const maxIssuesPerFile = 100
 
 var check = checkkit.Check{
-	Describe: checkkit.Describe{Name: "cspell", Blob: true},
+	Describe: checkkit.Describe{Name: "cspell", Scope: checkkit.ScopeFiles, Blob: true},
 	Run:      run,
 }
 

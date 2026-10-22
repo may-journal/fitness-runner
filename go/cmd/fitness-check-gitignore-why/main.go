@@ -1,6 +1,5 @@
-// Command fitness-check-gitignore-why validates that every ignore pattern in
-// the repo's .gitignore is immediately preceded by a `#` comment explaining
-// why it exists — the Go port of the gitignore-why check. A missing
+// Command fitness-check-gitignore-why requires every .gitignore pattern to
+// follow a `#` comment explaining why it exists. A missing
 // .gitignore passes with zero files checked, exactly like the TypeScript
 // original.
 package check
@@ -19,7 +18,7 @@ const noComment = "has no explanatory # comment on the line above"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "gitignore-why"},
+		Describe: checkkit.Describe{Name: "gitignore-why", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

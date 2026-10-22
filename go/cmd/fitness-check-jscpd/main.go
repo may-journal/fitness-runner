@@ -1,5 +1,5 @@
-// Command fitness-check-jscpd is the native soul of the jscpd check:
-// duplicated lines above 1% of scanned lines fail the repo. Instead of
+// Command fitness-check-jscpd fails a repo whose duplicated lines pass
+// 1% of its scanned lines, with jscpd's semantics. Instead of
 // shelling out to jscpd it runs internal/clonedetect — a generic lexer plus a
 // rolling-hash detector with jscpd's min-lines/min-tokens semantics and
 // the jscpd:ignore-start/-end escape hatch. Scan scope: every tracked file
@@ -35,7 +35,7 @@ const (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "jscpd"},
+		Describe: checkkit.Describe{Name: "jscpd", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

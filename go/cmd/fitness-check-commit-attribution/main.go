@@ -1,6 +1,6 @@
-// Command fitness-check-commit-attribution validates that the HEAD or
-// proposed commit message discloses AI usage via "AI-Tools:" and
-// "AI-Models:" git trailers — the Go port of the commit-attribution check.
+// Command fitness-check-commit-attribution requires a commit message to
+// disclose AI use in "AI-Tools:" and "AI-Models:" git trailers. It reads the
+// proposed message, else HEAD.
 // It applies only to repos that use the convention: the proposed message or
 // one of the last historyDepth commits carries a trailer. Merge and revert
 // commits are exempt. The runner forwards a proposed
@@ -28,6 +28,7 @@ func Main() {
 	checkkit.Main(checkkit.Check{
 		Describe: checkkit.Describe{
 			Name:             "commit-attribution",
+			Scope:            checkkit.ScopeGit,
 			ContextInlineArg: "--message",
 		},
 		Run: run,
