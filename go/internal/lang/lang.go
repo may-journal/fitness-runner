@@ -6,6 +6,8 @@
 // repo-wide, so a new repo-wide check or dictionary needs no list entry. The
 // modules themselves live in the langs package, and each language's own code
 // in a folder named for it beside that package.
+//
+//fitness:topic languages
 package lang
 
 import (

@@ -55,6 +55,8 @@ fitness list                 # every check with its summary, scope, budget, and 
 fitness list --json          # the same as JSON, for agents
 fitness explain prose-budget # why a check exists, what it judges, and the config keys it reads
 fitness explain gofmt --json # the same as JSON: name, summary, scope, budget, and body
+fitness docs                 # list the guide topics: protocol, config, hooks, github, languages, coverage
+fitness docs protocol        # print one, generated from the doc comments of the package it covers
 fitness init                 # install the shared git hooks into a repo
 fitness strip-front-matter   # remove front matter holding only fitness keys (see docs/checks.md)
 fitness hook pre-commit      # run a hook's logic (the installed shims call these)
