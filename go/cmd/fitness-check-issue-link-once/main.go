@@ -31,7 +31,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "issue-link-once", ContextInlineArg: "--message", TimeoutMs: 20000},
+		Describe: checkkit.Describe{Name: "issue-link-once", Scope: checkkit.ScopeGit, ContextInlineArg: "--message", TimeoutMs: 20000},
 		Run:      run,
 	})
 }

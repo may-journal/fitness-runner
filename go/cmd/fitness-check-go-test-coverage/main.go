@@ -16,7 +16,7 @@ import (
 )
 
 func Main() {
-	checkkit.Main(checkkit.Check{Describe: checkkit.Describe{Name: "go-test-coverage", TimeoutMs: 900000}, Run: run})
+	checkkit.Main(checkkit.Check{Describe: checkkit.Describe{Name: "go-test-coverage", Scope: checkkit.ScopeFiles, TimeoutMs: 900000}, Run: run})
 }
 func run(root string, args []string) (checkkit.Result, error) {
 	options, err := parse(root, args)

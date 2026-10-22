@@ -1,5 +1,5 @@
-// Command fitness-check-eslint lints the repo with the shared flat config —
-// the Go port of the eslint check. The TypeScript check ran ESLint in-process
+// Command fitness-check-eslint runs ESLint over the repo with the shared
+// flat config. The TypeScript check ran ESLint in-process
 // through its Node API; this binary execs the real eslint CLI instead,
 // resolved from node_modules/.bin walking up from the root, then PATH — never
 // npx. It lints every tracked .cjs/.js/.mjs/.ts/.tsx file (or every changed
@@ -53,7 +53,7 @@ const ignoredFileNotice = "File ignored because of a matching ignore pattern"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "eslint"},
+		Describe: checkkit.Describe{Name: "eslint", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

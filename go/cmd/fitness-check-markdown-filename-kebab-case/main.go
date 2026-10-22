@@ -1,7 +1,5 @@
-// Command fitness-check-markdown-filename-kebab-case validates that every
-// markdown basename under the repo is kebab-case, standard root docs exempt —
-// the Go port of the markdown-filename-kebab-case flavor of the TypeScript
-// markdown-filename-convention package. The validation core is shared with
+// Command fitness-check-markdown-filename-kebab-case requires every markdown
+// file name to be kebab-case, standard root docs exempt. The validation core is shared with
 // the camelCase flavor in internal/mdfilename.
 package check
 
@@ -12,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "markdown-filename-kebab-case"},
+		Describe: checkkit.Describe{Name: "markdown-filename-kebab-case", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

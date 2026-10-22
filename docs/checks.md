@@ -20,6 +20,12 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
 
 Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/cmd/fitness/main.go)). Each detects whether it applies. External mode also runs all checks by default, with an optional `checks` filter; see [CI setup](ci.md). A repo can add its own [local checks](check-protocol.md#local-checks), and an external repo can [disable checks](check-protocol.md#disabled-checks).
 
+## List the checks
+
+`fitness list` names every check this repo can run, built-in or local, in run order. Each row gives the check's summary, its scope, its time budget, and whether the repo's config enables it. `fitness list --json` gives the same fields for an agent; `fitness check --list` still prints the bare built-in names.
+
+A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../checks/README.md) fails when that file is stale.
+
 ## Every tracked file
 
 Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and jscpd also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.

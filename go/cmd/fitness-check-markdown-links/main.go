@@ -31,7 +31,7 @@ var (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "markdown-links"},
+		Describe: checkkit.Describe{Name: "markdown-links", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

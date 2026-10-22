@@ -18,7 +18,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-syntax", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-syntax", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

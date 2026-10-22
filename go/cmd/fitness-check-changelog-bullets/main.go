@@ -29,7 +29,7 @@ var (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "changelog-bullets"},
+		Describe: checkkit.Describe{Name: "changelog-bullets", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

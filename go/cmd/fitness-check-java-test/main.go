@@ -10,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "java-test", TimeoutMs: 900000},
+		Describe: checkkit.Describe{Name: "java-test", Scope: checkkit.ScopeFiles, TimeoutMs: 900000},
 		Run:      tests.Run,
 	})
 }
