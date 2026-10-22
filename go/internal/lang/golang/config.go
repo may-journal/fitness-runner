@@ -7,12 +7,16 @@ type Config struct {
 	// TestCoverage declares library entry packages for the optional
 	// go-test-coverage check.
 	TestCoverage struct {
+		// Entries lists library entry packages by full import path. Each
+		// must reach full coverage, as every command package must.
 		Entries []string `json:"entries"`
-	} `json:"goTestCoverage"`
+	} `json:"goTestCoverage" check:"go-test-coverage"`
 	// Complexity holds options for the go-complexity check.
 	Complexity struct {
+		// Max is the highest cyclomatic complexity a function may have; 5
+		// when zero.
 		Max int `json:"max"`
-	} `json:"goComplexity"`
+	} `json:"goComplexity" check:"go-complexity"`
 }
 
 // LoadConfig reads the Go keys from root's config file. It returns nil,
