@@ -10,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: localized.Name},
+		Describe: checkkit.Describe{Name: localized.Name, Scope: checkkit.ScopeFiles},
 		Run:      localized.Run,
 	})
 }

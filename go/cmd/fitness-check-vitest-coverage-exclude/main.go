@@ -1,6 +1,5 @@
-// Command fitness-check-vitest-coverage-exclude validates that Vitest
-// coverage excludes nothing — the Go port of the vitest-coverage-exclude
-// check, with its allowed set of test, type, and barrel patterns removed. The TS check evaluated the
+// Command fitness-check-vitest-coverage-exclude fails any Vitest coverage
+// exclude entry, so coverage measures every file. The TS check evaluated the
 // vitest config as JavaScript; this port scans it textually via
 // internal/vitestconf, so exclude entries built from variables, spreads, or
 // imports are invisible — the same judgment the TS applied to non-string
@@ -26,7 +25,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "vitest-coverage-exclude"},
+		Describe: checkkit.Describe{Name: "vitest-coverage-exclude", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

@@ -9,7 +9,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "architecture-containers"},
+		Describe: checkkit.Describe{Name: "architecture-containers", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

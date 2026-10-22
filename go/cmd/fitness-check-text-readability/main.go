@@ -1,5 +1,7 @@
-// Command fitness-check-text-readability is a document-level readability
-// smoke detector for markdown prose. It scores each .md file with the three
+// cspell:ignore Liau unbackticked scoreable
+
+// Command fitness-check-text-readability fails a markdown file whose prose
+// scores as hard to read. It scores each .md file with the three
 // character-based readability formulas — Coleman-Liau, ARI, and LIX — and
 // fails only when at least two of the three sit in alarm territory
 // (grade >= 18 for Coleman-Liau/ARI, LIX >= 60 by default). Files with
@@ -7,8 +9,6 @@
 // are noise (see docs/research/0001-prose-cognitive-complexity.md, which
 // derived the bands, the ensemble vote, and the masking spec from this
 // repo's own corpus). Pass --report to print every file's scores to stderr.
-//
-// cspell:ignore Liau unbackticked scoreable
 package check
 
 import (
@@ -44,7 +44,7 @@ type thresholds struct {
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "text-readability", Blob: true},
+		Describe: checkkit.Describe{Name: "text-readability", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

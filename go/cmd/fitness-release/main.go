@@ -18,7 +18,12 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/usage"
 )
 
-func main() { os.Exit(command(os.Args[1:])) }
+func main() {
+	if len(os.Args) > 1 && os.Args[1] == generatedCommand {
+		checkGenerated(os.Args[2:])
+	}
+	os.Exit(command(os.Args[1:]))
+}
 
 func command(args []string) int {
 	operation := "fitness-release"

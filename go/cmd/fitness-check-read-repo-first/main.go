@@ -1,5 +1,5 @@
-// Command fitness-check-read-repo-first prints the familiarization banner —
-// the Go port of the read-repo-first check. The banner (the familiarization
+// Command fitness-check-read-repo-first reminds agents and users to read the
+// repo's decisions and enabled checks first. The banner (the familiarization
 // question, a Check|Src table of the enabled checks, the --no-verify note)
 // is display, not judgment: the result is always ok with zero files checked.
 // Protocol adaptations from the TypeScript original: the banner goes to
@@ -31,7 +31,7 @@ const questionLine2 = `specifically all "Fitness Checks" that are enabled via @m
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "read-repo-first"},
+		Describe: checkkit.Describe{Name: "read-repo-first", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

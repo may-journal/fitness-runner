@@ -19,7 +19,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "plan-trailer", ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "plan-trailer", Scope: checkkit.ScopeGit, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }

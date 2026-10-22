@@ -29,7 +29,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-diagram-table-gap", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-diagram-table-gap", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

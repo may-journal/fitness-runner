@@ -11,7 +11,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "architecture-journey"},
+		Describe: checkkit.Describe{Name: "architecture-journey", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

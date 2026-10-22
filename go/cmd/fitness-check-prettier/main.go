@@ -1,5 +1,5 @@
-// Command fitness-check-prettier runs the real Prettier over the repo — the
-// Go port of the prettier check. The binary stays zero-dependency: Prettier
+// Command fitness-check-prettier runs Prettier `--check` over the repo's
+// files. The binary stays zero-dependency: Prettier
 // is resolved at runtime as a peer of the repo under check (node_modules/.bin
 // walking up from root, then PATH — never npx), and a missing binary fails
 // with a one-line install hint. Prettier checks every tracked file (or every
@@ -84,7 +84,7 @@ const ignoreNothing = "/dev/null"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "prettier"},
+		Describe: checkkit.Describe{Name: "prettier", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }
