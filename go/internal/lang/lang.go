@@ -248,6 +248,23 @@ func Ignored() []string {
 	return names
 }
 
+// IgnoredWhy is the reason the ignores folder gives for keeping check out
+// of the default catalog, its comment lines joined, or "" when it names
+// no such check.
+func IgnoredWhy(check string) string {
+	body, err := fs.ReadFile(ignores, path.Join("ignores", check))
+	if err != nil {
+		return ""
+	}
+	var words []string
+	for _, line := range strings.Split(string(body), "\n") {
+		if text, ok := strings.CutPrefix(strings.TrimSpace(line), "#"); ok {
+			words = append(words, strings.Fields(text)...)
+		}
+	}
+	return strings.Join(words, " ")
+}
+
 // sources holds one file per language no module covers whose files the
 // architecture views still list. Each says why in comments, then names a
 // role, tool or product, and the language's source endings.

@@ -33,14 +33,15 @@ type limits struct {
 
 // defaults are calibrated for tight technical docs: short sentences, small
 // paragraphs and sections, and bounded lists — held about a quarter tighter
-// than the check's first cut.
+// than the check's first cut. conf.Defaults holds them, so the config
+// schema shows the same values.
 var defaults = limits{
-	sentenceWords:      23,
-	paragraphSentences: 4,
-	sectionParagraphs:  3,
-	listItemWords:      23,
-	listItems:          conf.DefaultMaxListItems,
-	words:              300,
+	sentenceWords:      conf.Defaults.ProseBudget.MaxSentenceWords,
+	paragraphSentences: conf.Defaults.ProseBudget.MaxParagraphSentences,
+	sectionParagraphs:  conf.Defaults.ProseBudget.MaxSectionParagraphs,
+	listItemWords:      conf.Defaults.ProseBudget.MaxListItemWords,
+	listItems:          conf.Defaults.ProseBudget.MaxListItems,
+	words:              conf.Defaults.ProseBudget.MaxWords,
 }
 
 // descriptionName labels the pseudo-file in body-mode errors, where the

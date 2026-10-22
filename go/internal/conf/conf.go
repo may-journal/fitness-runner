@@ -4,6 +4,7 @@
 package conf
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -11,10 +12,13 @@ import (
 	"strings"
 )
 
-// Config is the shape of .fitnessrc.json.
+// Config is the shape of .fitnessrc.json, the optional file at a repo's
+// root that tunes which checks run and how strictly they judge.
 type Config struct {
 	// Policy selects org or external use; both default to all checks.
-	Policy string `json:"policy"`
+	// External lets a repo pick, replace, and turn off checks; org runs every
+	// check as the shared bar.
+	Policy string `json:"policy" enum:"org,external"`
 	// LegacyChecks optionally selects checks in external mode. Org ignores it.
 	LegacyChecks []string `json:"checks"`
 	// TimeoutMs replaces the default per-check budget for checks that declare
@@ -28,28 +32,42 @@ type Config struct {
 	DisabledChecks []string `json:"disabledChecks"`
 	// RepeatedStringLiterals holds options for that check.
 	RepeatedStringLiterals struct {
+		// Allow lists exact values the check never flags, for the rare
+		// repeat no shared constant can fix. Keep it a shrinking list.
 		Allow []string `json:"allow"`
 	} `json:"repeatedStringLiterals"`
 	// TextReadability holds alarm bands for the text-readability check.
 	TextReadability struct {
+		// MaxGrade is the Coleman-Liau and ARI grade at which a file alarms.
 		MaxGrade float64 `json:"maxGrade"`
-		MaxLix   float64 `json:"maxLix"`
-		MinWords int     `json:"minWords"`
+		// MaxLix is the LIX score at which a file alarms.
+		MaxLix float64 `json:"maxLix"`
+		// MinWords is the fewest prose words a file needs to be judged.
+		MinWords int `json:"minWords"`
 	} `json:"textReadability"`
 	// ProseBudget holds the prose-budget check's hard caps. Each limit falls
 	// back to a built-in default when zero.
 	ProseBudget struct {
-		MaxSentenceWords      int `json:"maxSentenceWords"`
+		// MaxSentenceWords is the most words one sentence may hold.
+		MaxSentenceWords int `json:"maxSentenceWords"`
+		// MaxParagraphSentences is the most sentences one paragraph may hold.
 		MaxParagraphSentences int `json:"maxParagraphSentences"`
-		MaxSectionParagraphs  int `json:"maxSectionParagraphs"`
-		MaxListItemWords      int `json:"maxListItemWords"`
-		MaxListItems          int `json:"maxListItems"`
-		MaxWords              int `json:"maxWords"`
+		// MaxSectionParagraphs is the most paragraphs one section may hold.
+		MaxSectionParagraphs int `json:"maxSectionParagraphs"`
+		// MaxListItemWords is the most words one list item may hold.
+		MaxListItemWords int `json:"maxListItemWords"`
+		// MaxListItems is the most items one list may hold, and the most
+		// bullets changelog-bullets allows in a release section.
+		MaxListItems int `json:"maxListItems"`
+		// MaxWords is the most prose words one section may hold.
+		MaxWords int `json:"maxWords"`
 	} `json:"proseBudget"`
 	// Comment holds comment-structure's budget for an issue or PR comment.
 	// Each limit falls back to a built-in default when zero.
 	Comment struct {
-		MaxWords  int `json:"maxWords"`
+		// MaxWords is the most words one comment may hold.
+		MaxWords int `json:"maxWords"`
+		// MaxTables is the most tables one comment may hold.
 		MaxTables int `json:"maxTables"`
 	} `json:"comment"`
 }
@@ -57,9 +75,37 @@ type Config struct {
 // FileName is the config file the runner reads at the repo root.
 const FileName = ".fitnessrc.json"
 
-// Load reads root's config. A missing file returns (nil, nil): the caller
-// falls back to the defaults. A config that still sets a retired exclusion
-// key returns an error naming each one.
+// cspell:ignore Liau
+
+// source is this file, whose doc comments describe each key of Config.
+//
+//go:embed conf.go
+var source []byte
+
+// Defaults holds the value each Config key takes when the config file
+// leaves it unset or, for a number, at zero or below.
+var Defaults = func() Config {
+	var c Config
+	c.Policy = "org"
+	c.TimeoutMs = 5000
+	c.TextReadability.MaxGrade = 18
+	c.TextReadability.MaxLix = 60
+	c.TextReadability.MinWords = 100
+	c.ProseBudget.MaxSentenceWords = 23
+	c.ProseBudget.MaxParagraphSentences = 4
+	c.ProseBudget.MaxSectionParagraphs = 3
+	c.ProseBudget.MaxListItemWords = 23
+	c.ProseBudget.MaxListItems = DefaultMaxListItems
+	c.ProseBudget.MaxWords = 300
+	c.Comment.MaxWords = 100
+	c.Comment.MaxTables = 1
+	return c
+}()
+
+func init() {
+	Register(Defaults, source)
+}
+
 // DefaultMaxListItems is the longest list prose-budget allows, and the most
 // bullets changelog-bullets allows in a release section, unless
 // proseBudget.maxListItems sets another limit.
@@ -74,6 +120,9 @@ func MaxListItems(root string) int {
 	return DefaultMaxListItems
 }
 
+// Load reads root's config. A missing file returns (nil, nil): the caller
+// falls back to the defaults. A config that still sets a retired exclusion
+// key returns an error naming each one.
 func Load(root string) (*Config, error) {
 	return LoadAs[Config](root)
 }
@@ -82,11 +131,8 @@ func Load(root string) (*Config, error) {
 // such as a language module's options. It returns (nil, nil) without a
 // config file and fails as Load does.
 func LoadAs[T any](root string) (*T, error) {
-	raw, err := os.ReadFile(filepath.Join(root, FileName))
-	if os.IsNotExist(err) {
-		return nil, nil
-	}
-	if err != nil {
+	raw, err := readFor[T](root)
+	if raw == nil || err != nil {
 		return nil, err
 	}
 	var v T
@@ -98,6 +144,19 @@ func LoadAs[T any](root string) (*T, error) {
 			FileName, strings.Join(retired, ", "), pronoun(len(retired)))
 	}
 	return &v, nil
+}
+
+// readFor reads root's config file for a T, failing when T's keys were
+// never registered. It returns nil, nil without a config file.
+func readFor[T any](root string) ([]byte, error) {
+	if err := registered[T](); err != nil {
+		return nil, err
+	}
+	raw, err := os.ReadFile(filepath.Join(root, FileName))
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	return raw, err
 }
 
 // retiredKeys names the exclusion keys raw still sets, in a fixed order:

@@ -8,8 +8,9 @@ import (
 
 // defaultTimeout is a check's execution budget when neither the check nor
 // .fitnessrc.json sets one. A breach means wasted work, so cut the work, not
-// the limit (ADR 0001).
-const defaultTimeout = 5000 * time.Millisecond
+// the limit (ADR 0001). conf.Defaults holds it, so the config schema shows
+// the same value.
+var defaultTimeout = time.Duration(conf.Defaults.TimeoutMs) * time.Millisecond
 
 // withBudgets gives every check that declares no budget of its own the
 // repo's timeoutMs from .fitnessrc.json, when set. A check's own budget names

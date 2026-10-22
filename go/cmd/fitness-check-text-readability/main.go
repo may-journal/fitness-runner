@@ -27,11 +27,12 @@ import (
 // Defaults calibrated to this repo's baseline: well-written technical prose
 // runs grade 11-15 and LIX 40-48, so the alarm bands sit far above the norm
 // and only genuine outliers fire. Lower scores are NOT better — these are
-// ceilings on absurdity, not targets to optimize.
-const (
-	defaultMaxGrade = 18.0
-	defaultMaxLix   = 60.0
-	defaultMinWords = 100
+// ceilings on absurdity, not targets to optimize. conf.Defaults holds them,
+// so the config schema shows the same values.
+var (
+	defaultMaxGrade = conf.Defaults.TextReadability.MaxGrade
+	defaultMaxLix   = conf.Defaults.TextReadability.MaxLix
+	defaultMinWords = conf.Defaults.TextReadability.MinWords
 )
 
 // thresholds are the resolved alarm bands for one run.

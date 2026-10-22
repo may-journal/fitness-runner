@@ -49,7 +49,7 @@ flowchart TB
     stripFront(33 Strip front matter<br/>Req 0096):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003, 0090)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001)]:::system
 

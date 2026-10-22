@@ -32,9 +32,10 @@ func Main() {
 }
 
 // Default limits, which .fitnessrc.json's comment key may replace.
-const (
-	defaultMaxWords  = 100
-	defaultMaxTables = 1
+// conf.Defaults holds them, so the config schema shows the same values.
+var (
+	defaultMaxWords  = conf.Defaults.Comment.MaxWords
+	defaultMaxTables = conf.Defaults.Comment.MaxTables
 )
 
 // limits is one repo's comment budget.
