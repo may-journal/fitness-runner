@@ -2,6 +2,7 @@ package release
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
 	"maps"
@@ -52,23 +53,41 @@ func (c Config) Stale() (stale []string, total int, err error) {
 // Generated returns each file the generator writes, by repository path, read
 // from the check folders and their Go doc comments.
 func (c Config) Generated() (map[string][]byte, error) {
-	docs, err := c.checkDocs()
+	in, err := c.readSources()
 	if err != nil {
 		return nil, err
 	}
-	registry, err := checksSource(docs)
-	if err != nil {
-		return nil, err
+	return in.render()
+}
+
+// sources is what the generator reads from the code.
+type sources struct {
+	checks []checkDoc
+	topics []topicDoc
+	usage  usageDoc
+}
+
+// readSources reads the check packages, the topic packages, and the
+// documented command line.
+func (c Config) readSources() (s sources, err error) {
+	if s.checks, err = c.checkDocs(); err != nil {
+		return s, err
 	}
-	topics, err := c.topics()
-	if err != nil {
-		return nil, err
+	if s.topics, err = c.topics(); err != nil {
+		return s, err
 	}
-	topicFile, err := topicsSource(topics)
-	if err != nil {
-		return nil, err
-	}
-	return map[string][]byte{checksFile: registry, topicsFile: topicFile}, nil
+	s.usage, err = c.usage()
+	return s, err
+}
+
+// render lays out every generated file.
+func (s sources) render() (map[string][]byte, error) {
+	page := llmsPage(s.usage, s.checks, s.topics)
+	registry, checksErr := checksSource(s.checks)
+	topicFile, topicsErr := topicsSource(s.topics)
+	usage, usageErr := usageSource(s.usage, page)
+	files := map[string][]byte{checksFile: registry, topicsFile: topicFile, usageFile: usage, llmsFile: []byte(page)}
+	return files, errors.Join(checksErr, topicsErr, usageErr)
 }
 
 // topicsFile holds the `fitness docs` topics the fitness binary is built

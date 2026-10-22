@@ -50,6 +50,7 @@ flowchart TB
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
+    readLLMs(37 Read the llms page<br/>Req 0113):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003, 0090)]:::system
@@ -92,6 +93,7 @@ flowchart TB
     terminal --> listChecks
     listChecks --> explainCheck
     terminal --> readDocs
+    terminal --> readLLMs
     commitHook --> runFull
     pushHook --> runFull
     runFull --> resolveConfig
@@ -162,3 +164,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 34  | `fitness list`.                     | Action  | An agent learns every check, its scope, and whether this repo runs it, from the binary. |
 | 35  | `fitness explain <check>`.          | Action  | An agent reads why a check exists and the keys it reads, generated from its code comments. |
 | 36  | `fitness docs [topic]`.             | Action  | An agent reads the protocol, config and GitHub commands from the binary, as the code documents them. |
+| 37  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
