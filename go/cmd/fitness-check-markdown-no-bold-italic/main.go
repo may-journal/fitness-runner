@@ -33,7 +33,7 @@ func Main() {
 
 func run(root string, args []string) (checkkit.Result, error) {
 	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
-		return validateFile("(description)", content)
+		return checkkit.Lines(errorLine, validateFile("(description)", content))
 	}); handled || err != nil {
 		return res, err
 	}
@@ -42,7 +42,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 
 // walkFiles flags bold/italic in every in-scope .md file under root.
 func walkFiles(root string) (checkkit.Result, error) {
-	var errors []string
+	var found []checkkit.Finding
 	filesChecked := 0
 	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
 		filesChecked++
@@ -50,12 +50,9 @@ func walkFiles(root string) (checkkit.Result, error) {
 		if err != nil {
 			return checkkit.Result{}, err
 		}
-		errors = append(errors, validateFile(file, string(raw))...)
+		found = append(found, validateFile(file, string(raw))...)
 	}
-	if len(errors) > 0 {
-		return checkkit.Fail(filesChecked, errors...), nil
-	}
-	return checkkit.Pass(filesChecked), nil
+	return checkkit.Found(filesChecked, errorLine, found...), nil
 }
 
 var (
@@ -160,17 +157,29 @@ func closesEmphasis(s string, i, j int, delim byte) bool {
 
 // validateFile validates one markdown file; returns error messages for
 // disallowed bold/italic, verbatim from the TS template.
-func validateFile(relPath, content string) []string {
-	var errors []string
+func validateFile(relPath, content string) []checkkit.Finding {
+	var found []checkkit.Finding
 	if path.Base(relPath) == "CHANGELOG.md" {
 		content = plainReleaseScopes(content)
 	}
 	for _, h := range findDisallowedEmphasis(content) {
-		errors = append(errors, fmt.Sprintf(
-			"%s: disallowed %s (use only when explicitly required): %s",
-			relPath, h.kind, jsonStringify(h.match)))
+		found = append(found, checkkit.Finding{
+			File: relPath, Rule: rule, Fix: fix,
+			Message: fmt.Sprintf("disallowed %s (use only when explicitly required): %s", h.kind, jsonStringify(h.match)),
+		})
 	}
-	return errors
+	return found
+}
+
+// rule names what the check enforces: markdown uses no bold or italic.
+const rule = "no-bold-italic"
+
+// fix says how to pass: drop the emphasis markers and keep the words.
+const fix = "remove the emphasis markers and keep the words; let structure such as headings and lists carry the weight"
+
+// errorLine renders a finding as "<path>: <message>".
+func errorLine(f checkkit.Finding) string {
+	return f.File + ": " + f.Message
 }
 
 // Release Please writes each release bullet as `* **scope:** text`. Inside

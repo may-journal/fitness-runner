@@ -119,10 +119,8 @@ func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []s
 	rows, totals := summarize(checks, outcomes)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
-	out := os.Stdout
-	if totals.Failure > 0 {
-		out = os.Stderr
-	}
+	printJSON(checks, outcomes, rows, totals)
+	out := humanOut(totals)
 	listSkipped(out, "needs files", skipped)
 	listSkipped(out, "does not apply to this text", notApplying)
 	perf := perfFor(wantsPerf(req.perfPath), checks, outcomes, rows, totals.Ms)

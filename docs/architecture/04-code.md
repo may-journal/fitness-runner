@@ -30,6 +30,7 @@ classDiagram
         +Errors
         +FilesChecked
         +Info
+        +Findings
     }
     class Check["5 checkkit.Check"] {
         +Describe
@@ -79,6 +80,16 @@ classDiagram
     resolveChecks --> Program : 35
     describe --> Program : 36
     runOne --> Program : 37
+    class Finding["38 checkkit.Finding"] {
+        +File
+        +Line
+        +Rule
+        +Message
+        +Fix
+        +Explain
+    }
+    Result --> Finding : 39
+    checkkitMain --> Finding : 40
 ```
 
 ```mermaid
@@ -100,7 +111,7 @@ Numbers on classes and relationships match the callout table.
 | 1   | The check contract: `fitness-check-name --root dir [args…]`, JSON result on stdout. | Every check is one program name; built-in ones share the fitness binary. |
 | 2   | Metadata a check prints for `--describe`, in [checkkit.go](../../go/internal/checkkit/checkkit.go): name, timeout budget, context-inline argument. | The runner discovers capabilities with a handshake, not a registry. |
 | 3   | Environment the runner exports before dispatch. | Checks stay stateless; context flows one way. |
-| 4   | `{Ok, Errors, FilesChecked, Info}`, in [checkkit.go](../../go/internal/checkkit/checkkit.go): emitted by the check, parsed by the runner. | Aggregated into the results table. |
+| 4   | `{Ok, Errors, FilesChecked, Info, Findings}`, in [checkkit.go](../../go/internal/checkkit/checkkit.go): emitted by the check, parsed by the runner. | Aggregated into the results table. |
 | 5   | One check in [checkkit.go](../../go/internal/checkkit/checkkit.go): its metadata and its run function. | A check binary is one value handed to the scaffolding. |
 | 6   | Builds the ordered check list in [main.go](../../go/cmd/fitness/main.go): the CLI name, else every check in `allChecks`, read from the language module registry. | Single source for which checks run. |
 | 7   | Runs `binary --describe` with a two-second budget and group kill, in [main.go](../../go/cmd/fitness/main.go). A failure becomes an info note. | A check that ignores the flag cannot hang resolution. |
@@ -134,6 +145,9 @@ Numbers on classes and relationships match the callout table.
 | 35  | Each name resolves to a local check, a program beside the runner, or the runner itself started as `fitness-check-<name>`. | A program beside the runner still replaces a built-in check. |
 | 36  | The handshake starts the check the same way its run does. | One way to start a check. |
 | 37  | The wrapper starts the check under its program name. | The one binary dispatches on its program name. |
+| 38  | One problem a check found, in [checkkit.go](../../go/internal/checkkit/checkkit.go): file, line, rule, fix and explain command. | An agent acts on it without parsing prose. |
+| 39  | A result may repeat its errors as findings. | Error lines stay for older readers. |
+| 40  | The scaffolding points each finding at its check's explain command. | A check never spells its own name twice. |
 
 ## Monorepo layout
 

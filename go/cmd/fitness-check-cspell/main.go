@@ -49,7 +49,7 @@ func Main() {
 func run(root string, args []string) (checkkit.Result, error) {
 	if res, handled, err := bodycheck.RunDoc(root, args, func(r, content string) []string {
 		cfg := loadConfig(r)
-		return checkContent("(description)", content, newChecker(cfg), cfg.FlagWords)
+		return checkkit.Lines(errorLine, checkContent("(description)", content, newChecker(cfg), cfg.FlagWords))
 	}); handled || err != nil {
 		return res, err
 	}
@@ -67,11 +67,7 @@ func walkFiles(root string) checkkit.Result {
 			cfg.path))
 	}
 	files := targets(root)
-	errs := checkFiles(root, files, newChecker(cfg), cfg)
-	if len(errs) > 0 {
-		return checkkit.Fail(len(files), errs...)
-	}
-	return checkkit.Pass(len(files))
+	return checkkit.Found(len(files), errorLine, checkFiles(root, files, newChecker(cfg), cfg)...)
 }
 
 // targets lists the files to spell-check: the changed files, or every
@@ -119,40 +115,66 @@ func newChecker(cfg config) *spell.Checker {
 	return checker
 }
 
-// checkContent scans one in-memory document (never reading from disk) with the
-// same per-line/word pass checkFiles applies per file, emitting issues in the
-// identical "<name>:<line>:<col> - Unknown word (<word>)" format, then each
-// flagWords match as "<name>:<line>:<col> - Forbidden word (<entry>)".
-func checkContent(name, content string, checker *spell.Checker, flags []string) []string {
-	errs := formatIssues(name, "Unknown", checker.CheckText(content))
-	return append(errs, formatIssues(name, "Forbidden", spell.FindPhrases(content, flags))...)
+// spelling is one kind of word cspell reports: the rule a finding names,
+// the word that starts its message, and the fix.
+type spelling struct {
+	rule, kind, fix string
 }
 
-// checkFiles scans each file and formats issues exactly like the cspell CLI
-// run from the root: "<path>:<line>:<col> - Unknown word (<word>)". The
-// cspell.json files that list the flagWords are never checked for them.
-func checkFiles(root string, files []string, checker *spell.Checker, cfg config) []string {
-	perFile := par.Map(len(files), 0, func(i int) []string {
+var (
+	// unknown is a word no dictionary and no cspell.json words list holds.
+	unknown = spelling{"unknown-word", "Unknown",
+		"correct the spelling, or add the word to the words list in cspell.json"}
+	// forbidden is a word or phrase cspell.json's flagWords lists.
+	forbidden = spelling{"forbidden-word", "Forbidden",
+		"reword without it; cspell.json's flagWords forbids it"}
+)
+
+// unreadable is the rule of a file the check could not read.
+const unreadable = "unreadable-file"
+
+// errorLine renders a finding as the cspell CLI would print it:
+// "<path>:<line>:<col> - Unknown word (<word>)", or "<path>: <message>
+// (run: <fix>)" for a file it could not read.
+func errorLine(f checkkit.Finding) string {
+	if f.Line == 0 {
+		return fmt.Sprintf("%s: %s (run: %s)", f.File, f.Message, f.Fix)
+	}
+	return fmt.Sprintf("%s:%d:%d - %s", f.File, f.Line, f.Column, f.Message)
+}
+
+// checkContent scans one in-memory document (never reading from disk) with the
+// same per-line/word pass checkFiles applies per file: its unknown words,
+// then each flagWords match.
+func checkContent(name, content string, checker *spell.Checker, flags []string) []checkkit.Finding {
+	found := findings(name, unknown, checker.CheckText(content))
+	return append(found, findings(name, forbidden, spell.FindPhrases(content, flags))...)
+}
+
+// checkFiles scans each file as the cspell CLI run from the root would.
+// The cspell.json files that list the flagWords are never checked for them.
+func checkFiles(root string, files []string, checker *spell.Checker, cfg config) []checkkit.Finding {
+	perFile := par.Map(len(files), 0, func(i int) []checkkit.Finding {
 		flags := cfg.FlagWords
 		if path.Base(files[i]) == "cspell.json" {
 			flags = nil
 		}
 		return fileIssues(root, files[i], checker, flags)
 	})
-	var errs []string
+	var found []checkkit.Finding
 	for _, fe := range perFile {
-		errs = append(errs, fe...)
+		found = append(found, fe...)
 	}
-	return errs
+	return found
 }
 
-// fileIssues scans one file and returns its formatted issue lines: a read
-// failure yields the run-cspell hint, binary files yield nothing (counted as
-// checked, never spelled).
-func fileIssues(root, rel string, checker *spell.Checker, flags []string) []string {
+// fileIssues scans one file and returns its findings: a read failure yields
+// the run-cspell hint, binary files yield nothing (counted as checked, never
+// spelled).
+func fileIssues(root, rel string, checker *spell.Checker, flags []string) []checkkit.Finding {
 	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
-		return []string{fmt.Sprintf("%s: cspell reported issues (run: npx cspell <files>)", rel)}
+		return []checkkit.Finding{{File: rel, Rule: unreadable, Message: "cspell reported issues", Fix: "npx cspell <files>"}}
 	}
 	if bytes.IndexByte(data[:min(len(data), 8192)], 0) >= 0 {
 		return nil
@@ -160,17 +182,20 @@ func fileIssues(root, rel string, checker *spell.Checker, flags []string) []stri
 	return checkContent(rel, string(data), checker, flags)
 }
 
-// formatIssues renders one kind of issue for one file, capped at
+// findings turns one kind of issue for one file into findings, capped at
 // maxIssuesPerFile like cspell's default maxNumberOfProblems.
-func formatIssues(rel, kind string, issues []spell.Issue) []string {
+func findings(rel string, kind spelling, issues []spell.Issue) []checkkit.Finding {
 	if len(issues) > maxIssuesPerFile {
 		issues = issues[:maxIssuesPerFile]
 	}
-	var errs []string
+	var found []checkkit.Finding
 	for _, is := range issues {
-		errs = append(errs, fmt.Sprintf("%s:%d:%d - %s word (%s)", rel, is.Line, is.Col, kind, is.Word))
+		found = append(found, checkkit.Finding{
+			File: rel, Line: is.Line, Column: is.Col, Rule: kind.rule,
+			Message: fmt.Sprintf("%s word (%s)", kind.kind, is.Word), Fix: kind.fix,
+		})
 	}
-	return errs
+	return found
 }
 
 // config is the subset of cspell.json this check reads; path is the

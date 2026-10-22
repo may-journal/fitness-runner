@@ -6,7 +6,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, tracked files, enabled check names, and the commit message for the commit checks.
 
-- stdout — one JSON result object: `{"ok": bool, "errors": [".."], "filesChecked": n, "info": [".."]}`, where `info` is optional
+- stdout — one JSON result object, whose fields are documented in the code: `go -C go doc ./internal/checkkit Result` and `go -C go doc ./internal/checkkit Finding` print them
 - stderr — human display output (banners, tool passthrough)
 - exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
 - `--describe` — prints check metadata (name, timeout budget, context-inline arg, blob flag) so the runner needs no registry
@@ -14,6 +14,10 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 The runner runs the `--describe` handshakes side by side, then runs checks in a pool of one slot per core. Checks start by the timeout budget they declare in `--describe`, largest first, and ties keep catalog order. A compiled check whose handshake runs past its budget among the others gets one more try. A script never does, so its work never runs twice.
 
 A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+
+## Findings
+
+A check may add structured findings beside its error lines, so an agent need not parse prose. `fitness --format=json` prints every check's result and findings to stdout and moves the table to stderr. A check without findings gets one per error line. The doc comments on `runReport` in `go/cmd/fitness/format.go` give the output's fields.
 
 ## Info
 
