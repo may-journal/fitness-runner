@@ -22,6 +22,9 @@ type checkDoc struct {
 	// Summary is the first sentence of the package doc comment, without its
 	// "Command fitness-check-<name>" opening.
 	Summary string
+	// Body is the whole package doc comment as Markdown, without that
+	// opening.
+	Body string
 }
 
 // readCheckDoc parses the Go package in dir, leaving out tests, and reads
@@ -40,7 +43,50 @@ func readCheckDoc(dir string) (checkDoc, error) {
 	if !ok {
 		return checkDoc{}, fmt.Errorf("go/cmd/%s: the package doc comment must open with %q", folder, opening)
 	}
-	return checkDoc{Name: name, Folder: folder, Summary: pkg.Synopsis(capitalize(rest))}, nil
+	rest = capitalize(rest)
+	return checkDoc{Name: name, Folder: folder, Summary: pkg.Synopsis(rest), Body: markdown(pkg, rest)}, nil
+}
+
+// markdown renders doc comment text as Markdown, its headings at level 2,
+// below the title an explanation puts above them.
+func markdown(pkg *doc.Package, text string) string {
+	printer := pkg.Printer()
+	printer.HeadingLevel = 2
+	return codeSpans(string(printer.Markdown(pkg.Parser().Parse(text))))
+}
+
+// codeSpans turns the backticks a doc comment writes around code into
+// Markdown code spans. The printer escapes them, since a doc comment has no
+// code spans, and escapes punctuation inside them, which a code span would
+// show. Indented code blocks keep their text.
+func codeSpans(md string) string {
+	lines := strings.Split(md, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "\t") || strings.HasPrefix(line, "    ") {
+			continue
+		}
+		parts := strings.Split(line, "\\`")
+		for j := 1; j < len(parts); j += 2 {
+			parts[j] = unescape(parts[j])
+		}
+		lines[i] = strings.Join(parts, "`")
+	}
+	return strings.Join(lines, "\n")
+}
+
+// unescape drops the backslash before each escaped character in s.
+func unescape(s string) string {
+	var b strings.Builder
+	escaped := false
+	for _, r := range s {
+		if r == '\\' && !escaped {
+			escaped = true
+			continue
+		}
+		escaped = false
+		b.WriteRune(r)
+	}
+	return b.String()
 }
 
 // parseDoc reads the documentation of the one non-test package in dir.

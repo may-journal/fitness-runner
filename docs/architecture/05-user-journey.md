@@ -48,6 +48,7 @@ flowchart TB
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listChecks(34 List the checks<br/>Req 0110):::action
+    explainCheck(35 Explain a check<br/>Req 0111):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003, 0090)]:::system
@@ -88,6 +89,7 @@ flowchart TB
     terminal --> runComment
     terminal --> stripFront
     terminal --> listChecks
+    listChecks --> explainCheck
     commitHook --> runFull
     pushHook --> runFull
     runFull --> resolveConfig
@@ -156,3 +158,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 32  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |
 | 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness-only front matter no check reads; other keys stay.           |
 | 34  | `fitness list`.                     | Action  | An agent learns every check, its scope, and whether this repo runs it, from the binary. |
+| 35  | `fitness explain <check>`.          | Action  | An agent reads why a check exists and the keys it reads, generated from its code comments. |
