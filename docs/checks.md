@@ -26,7 +26,11 @@ Org mode runs every check in the runner's order ([go/cmd/fitness/main.go](../go/
 
 A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../checks/README.md) fails when that file is stale.
 
+## Explain a check
+
 `fitness explain <check>` prints the check's whole package doc comment, rendered as Markdown, and the `.fitnessrc.json` keys it reads. A config struct field tagged `check:"<name>"` names such a key, and its doc comment explains it. `--json` gives the name, summary, scope, budget, and body.
+
+`fitness docs` lists the guide topics, and `fitness docs <topic>` prints one. A topic is a package whose doc comment carries a `//fitness:topic <name>` line, such as `protocol` for `internal/checkkit`. It prints that package's doc comment and its exported declarations, so the guide is the code's own.
 
 ## Every tracked file
 
