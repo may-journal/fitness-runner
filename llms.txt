@@ -1,0 +1,118 @@
+# fitness
+
+fitness runs a repo's fitness checks: small programs that each judge one rule, such as spelling, formatting, tests, or the shape of a pull request. One binary holds every built-in check; a repo may add local checks. Each check decides whether it applies, so any repo runs the same suite with nothing to configure.
+
+A run resolves the checks, runs them side by side with per-check time budgets, and prints a results table: passed, failed, or info, which never fails a run. With files staged it judges only those files; --all judges every tracked file.
+
+## Exit codes
+
+  - 0: every check passed, or a command succeeded.
+  - 1: a check found problems, or the run could not start, such as a bad config.
+  - 2: a command got arguments it does not take, or `fitness explain` or `fitness docs` was asked for a check or topic that does not exist.
+
+## Learn the rest
+
+`fitness list` names every check, `fitness explain <check>` says why one exists and how to pass it, and `fitness docs` serves the guides. All of them, and this page, come from the code's own doc comments.
+
+## Run checks
+
+- `fitness` or `fitness <check> [args]`: Runs the full suite, or with a check name only that check, passing it the arguments after its name.
+- `fitness --all`: Forces a full scan even when files are staged.
+- `fitness --blob <text>`: Runs every blob-capable check on a text instead of the repo; - reads the text from stdin.
+- `fitness --json=<file>`: Names the file that receives the run's performance report: each check's time, budget, files, binary size, and error lines, as JSON.
+- `fitness --policy=external --checks=<name,name>`: Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
+
+## Commands
+
+- `fitness llms`: Prints a page that teaches an AI the whole CLI.
+- `fitness list [--json]`: Names every check with its summary, scope, budget, and whether this repo enables it.
+- `fitness explain <check> [--json]`: Prints why a check exists, what it judges, and the config keys it reads.
+- `fitness docs [topic]`: Lists the guide topics, or prints one, from the code's doc comments.
+- `fitness check --list` or `fitness check <name> [args]`: Prints every built-in check name, one per line, or runs one built-in check by name.
+- `fitness init`: Installs the shared git hooks into this repo.
+- `fitness hook <name>`: Runs a git hook: commit-msg, pre-commit, or pre-push.
+- `fitness boxes <report.json> <page.html>`: Draws a --json report as an HTML box diagram.
+- `fitness strip-front-matter`: Removes front matter that holds only fitness keys from tracked .md files.
+- `fitness branch-check`: Judges this branch's PR and the issues it closes locally, posting nothing.
+- `fitness pr-check`: Judges pull request titles and descriptions, in GitHub Actions.
+- `fitness issue-check`: Judges an issue by its kind label and comments the result, in GitHub Actions.
+- `fitness plan-check`: Judges Plan issues only, as issue-check does, in GitHub Actions.
+- `fitness close-check`: Reopens an issue closed with unchecked items, in GitHub Actions.
+- `fitness dupe-check`: Notes when a new issue resembles an older one, in GitHub Actions.
+- `fitness comment-check --blob <text>` or `fitness comment-check`: Judges a drafted comment, where - or no text reads stdin, or judges issue and PR comments and reply, in GitHub Actions.
+
+## Checks
+
+`fitness explain <check>` prints a check's whole documentation.
+
+- `architecture-actors`: Requires each requirement's Given to start with an actor the system context declares, so no role slips into a requirement that the architecture does not know.
+- `architecture-code`: Resolves each class of the code view to a declaration a language module's reader reads, and keeps the relations between them to the edges the view draws.
+- `architecture-components`: Gives every product source one component owner and keeps the references between components, and the runtimes that reach them, to what the components view draws.
+- `architecture-containers`: Matches the containers view against the runtime products the repository builds and deploys.
+- `architecture-contract`: Validates declarations beside all five architecture views before more specific checks resolve their proof.
+- `architecture-journey`: Keeps the user journey diagram and the requirement docs covering each other: every requirement doc ID appears in a journey diagram label, and every journey node that promises behavior names one.
+- `build-output-untracked`: Keeps build output out of git and out of source imports.
+- `changelog`: Judges the changelog/*.md entry files, the only changelog source.
+- `changelog-bullets`: Keeps changelog entries tight: every changelog/*.md entry file's section must have 3 to 5 bullets, every bullet must be under 365 characters, and every bullet must start with a semantic type (Feat:, fix(scope):, …).
+- `changelog-updated`: Checks that each staged commit writes a changelog entry about its change.
+- `checkstyle`: Lints Java with the Checkstyle plugin through the Java language module, which owns the build run, the complexity ceiling rule and the judgment.
+- `comment-structure`: Judges one GitHub issue or PR comment: a word budget outside tables, code, and diagrams, at most one plain table, numbered diagrams, and no change-log notes, agent frames, or model identifiers.
+- `commit-attribution`: Requires a commit message to disclose AI use in "AI-Tools:" and "AI-Models:" git trailers.
+- `cspell`: Fails unknown words in the checked files.
+- `dependency-currency`: Fails a declared npm dependency that is behind its latest published version.
+- `doc-template`: Makes each markdown document match the shape of a template that governs it.
+- `epic-structure`: Validates that an epic — a GitHub Issue body under the `Epic` label — follows the Epic issue template: a one-line blockquote pitch, a `## Background` section, and a `## What needs to happen` list of plain issue references in run order, and no other `##` sections.
+- `eslint`: Runs ESLint over the repo with the shared flat config.
+- `gitignore-why`: Requires every .gitignore pattern to follow a `#` comment explaining why it exists.
+- `go-complexity`: Enforces a cyclomatic complexity ceiling on Go functions — the Go-native counterpart of the house eslint rule (complexity max 5) that gates JavaScript and TypeScript.
+- `go-test`: Runs `go test ./...` in every Go module of the repo and reports the failing tests.
+- `go-test-coverage`: Measures entry coverage and test overlap.
+- `go-vet`: Runs `go vet ./...` in every Go module of the repo.
+- `gofmt`: Lists Go files that gofmt would change.
+- `issue-checklist`: Fails an issue body whose task list still has unchecked items, so closing it would close unfinished work.
+- `issue-link-once`: Keeps each Issue's timeline readable: every commit that links an Issue adds an entry there, so a branch links an Issue from one commit at most.
+- `java-test`: Runs Java tests once per build root and judges their JUnit XML results and JaCoCo coverage through the Java language module, which owns the build run and the judgment.
+- `java-version`: Checks a Java repo pins its JDK and that the machine's JDKs satisfy the pin, through the Java language module.
+- `jscpd`: Fails a repo whose duplicated lines pass 1% of its scanned lines, with jscpd's semantics.
+- `local-branch`: Runs PR and Plan judgments locally.
+- `markdown-filename-camel-case`: Requires every markdown file name to be camelCase, standard root docs exempt.
+- `markdown-filename-kebab-case`: Requires every markdown file name to be kebab-case, standard root docs exempt.
+- `markdown-links`: Requires every relative link in every markdown file to resolve to an existing file or directory.
+- `markdown-no-bold-italic`: Fails bold and italic emphasis in markdown files: **bold**, __bold__, *italic*, or _italic_.
+- `mermaid-callout-why`: Requires each numbered callout table to carry a "Why" column and flags numbered rows whose "Why" cell is empty — so tables explain why each element exists, not just what it is.
+- `mermaid-callouts`: Requires every numbered mermaid diagram to have a callout table whose numbers match it one to one, with no orphan numbers, orphan rows, or duplicates.
+- `mermaid-diagram-prose`: Fails edge labels that carry prose beyond a callout number in a diagram paired with a callout table.
+- `mermaid-diagram-table-gap`: Flags loose markdown prose wedged between a numbered mermaid diagram (or its legend block) and the callout table that follows it.
+- `mermaid-legend`: Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend.
+- `mermaid-level-bleed`: Warns when a callout description at one C4 level repeats the previous level verbatim — lower levels should add level-specific rationale, not restate the parent.
+- `mermaid-syntax`: Fails a mermaid diagram that would not render.
+- `no-contrastive-reframing`: Flags the "not X, it's Y" reframing in markdown prose, where a sentence rejects a claim and then restates the real point.
+- `no-eslint-disable`: Fails any JS or TS source file that holds an ESLint disable directive, in file, block, `-line`, or `-next-line` form.
+- `no-plans-dir`: Guards the plans-to-Issues migration: it fails when any file exists under docs/plans/, because plans now live as `Plan`-labeled GitHub Issues, not checked-in files.
+- `node-version`: Requires the machine's active Node version to satisfy the repo's .nvmrc.
+- `plan-structure`: Validates that a plan — a GitHub Issue body under the `Plan` label — follows the Plan issue template: a one-line blockquote pitch, a `## Background` section, and a `## What needs to happen` section with at least one checklist item, and no other `##` sections (double-especially no "Open questions").
+- `plan-trailer`: Validates an optional `Plan #NN` commit trailer: a commit may reference the Plan Issue it implements with a line reading exactly `Plan #<number>`.
+- `pr-closes-issue`: Validates that a pull request description closes at least one issue on merge.
+- `pr-structure`: Validates that a pull request description follows the PR template: a one-line blockquote summary, a `## Background` section, and a `## Changelog` section with at least one bullet, and no other `##` sections — the "what changed" lives in the diff, not the prose.
+- `prettier`: Runs Prettier `--check` over the repo's files.
+- `prose-budget`: Caps how much prose a markdown file holds.
+- `read-repo-first`: Reminds agents and users to read the repo's decisions and enabled checks first.
+- `release-changelog`: Binds Release Please's manifest to the version file.
+- `repeated-string-literals`: Fails a string literal that appears three or more times across the repo's JS and TS source files, which should be a shared constant.
+- `requirements`: Enforces docs/requirements in every repo a language module covers: each file is one requirement with a unique four-digit ID, a Why, a Measurement ratio with one cited source, and acceptances written as a single Given, When, and Then chain.
+- `semantic-commit`: Requires the commit subject to follow Conventional Commits, `type(scope): description`, with the scope required.
+- `spotless`: Checks Java formatting with the Spotless plugin through the Java language module, which owns the build run and its judgment.
+- `swiftlint`: Runs SwiftLint over the repo through the Swift language module, which owns the tool run and its judgment.
+- `text-readability`: Fails a markdown file whose prose scores as hard to read.
+- `vitest-coverage-exclude`: Fails any Vitest coverage exclude entry, so coverage measures every file.
+- `vitest-coverage-full`: Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`.
+- `workflow-ref-exists`: Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet.
+
+## Topics
+
+- `fitness docs config`: Package conf loads .fitnessrc.json — the Go runner's configuration file.
+- `fitness docs coverage`: Package goal holds the coverage goal every coverage check judges by, whichever language it measures: every counted line, branch or statement covered.
+- `fitness docs github`: Package metadata shares GitHub judgments between local checks and Actions.
+- `fitness docs hooks`: Package hooks embeds the canonical may-journal git hooks that `fitness init` installs into a consumer repo.
+- `fitness docs languages`: Package lang defines what a language module brings to a run, and orders what the modules claim against what is installed or embedded.
+- `fitness docs protocol`: Package checkkit is the contract between the fitness runner and a check binary, plus the main-function scaffolding every check builds on.

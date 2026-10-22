@@ -11,7 +11,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// jsonFlag names the file that receives the run's performance report.
+// jsonFlag names the file that receives the run's performance report: each
+// check's time, budget, files, binary size, and error lines, as JSON.
+//
+//fitness:usage --json=<file>
 const jsonFlag = "--json"
 
 // perfReport is the `--json` record of one run. The box diagram reads the

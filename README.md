@@ -42,7 +42,10 @@ Put `go/bin` on PATH, or copy `fitness` onto it. It runs every check itself, and
 
 ## Usage
 
+Run `fitness llms` for one page that explains the whole CLI; [llms.txt](llms.txt) holds the same page.
+
 ```bash
+fitness llms                 # one page an AI reads to learn the whole CLI
 fitness                      # full configured suite
 fitness --policy=external     # all checks, each decides applicability
 fitness prettier             # one check by name

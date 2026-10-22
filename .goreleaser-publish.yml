@@ -10,6 +10,7 @@ builds:
 checksum:
   name_template: checksums.txt
   extra_files:
+    - glob: 'llms.txt'
     - glob: 'out/fitness-{{ .Version }}-*.tar.gz'
     - glob: 'out/fitness-install-{{ .Version }}-*'
 release:
@@ -23,5 +24,6 @@ release:
   replace_existing_artifacts: true
   mode: keep-existing
   extra_files:
+    - glob: 'llms.txt'
     - glob: 'out/fitness-{{ .Version }}-*.tar.gz'
     - glob: 'out/fitness-install-{{ .Version }}-*'

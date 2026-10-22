@@ -8,6 +8,8 @@ import (
 )
 
 // allFlag forces a full scan even when files are staged.
+//
+//fitness:usage --all
 const allFlag = "--all"
 
 // hasAllFlag reports whether argv asks for a full scan.

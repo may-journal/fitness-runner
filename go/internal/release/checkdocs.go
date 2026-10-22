@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/doc"
+	"go/doc/comment"
 	"go/parser"
 	"go/token"
 	"os"
@@ -52,6 +53,7 @@ func readCheckDoc(dir string) (checkDoc, error) {
 func markdown(pkg *doc.Package, text string) string {
 	printer := pkg.Printer()
 	printer.HeadingLevel = 2
+	printer.HeadingID = func(*comment.Heading) string { return "" }
 	return codeSpans(string(printer.Markdown(pkg.Parser().Parse(text))))
 }
 
