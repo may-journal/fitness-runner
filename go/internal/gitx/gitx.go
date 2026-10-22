@@ -72,6 +72,12 @@ func (r Repo) ChangedSince(base string) ([]string, error) {
 	return r.names("diff", "--name-only", base+"...HEAD")
 }
 
+// FilesUnder returns the tracked and new, not ignored, files under dir
+// (`git ls-files -co --exclude-standard -- dir`).
+func (r Repo) FilesUnder(dir string) ([]string, error) {
+	return r.names("ls-files", "-co", "--exclude-standard", "--", dir)
+}
+
 // BranchCommits returns the commits reachable from tip but not from base,
 // newest first.
 func (r Repo) BranchCommits(tip, base string) ([]string, error) {
@@ -191,6 +197,13 @@ func StagedSince(root, rev string) []string {
 // on any git failure, such as a base ref the clone never fetched.
 func ChangedSince(root, base string) []string {
 	files, _ := Repo(root).ChangedSince(base)
+	return files
+}
+
+// FilesUnder returns the tracked and new, not ignored, files under dir; nil on
+// any git failure.
+func FilesUnder(root, dir string) []string {
+	files, _ := Repo(root).FilesUnder(dir)
 	return files
 }
 
