@@ -1,6 +1,5 @@
-// Command fitness-check-dependency-currency fails when any declared
-// dependency is behind its latest published version — the Go port of the
-// dependency-currency check. One deviation from the TypeScript original: it
+// Command fitness-check-dependency-currency fails a declared npm
+// dependency that is behind its latest published version. One deviation from the TypeScript original: it
 // queries the npm registry directly over HTTP (abbreviated metadata,
 // dist-tags.latest) instead of shelling out to `npm outdated --json`,
 // enumerating the root manifest plus its workspaces itself. The soul is
@@ -52,7 +51,7 @@ func Main() {
 	checkkit.Main(checkkit.Check{
 		// The registry answers one request per dependency; on a cold cache
 		// that can exceed the default 5s budget, so keep the TS check's 30s.
-		Describe: checkkit.Describe{Name: "dependency-currency", TimeoutMs: 30000},
+		Describe: checkkit.Describe{Name: "dependency-currency", Scope: checkkit.ScopeFiles, TimeoutMs: 30000},
 		Run:      run,
 	})
 }

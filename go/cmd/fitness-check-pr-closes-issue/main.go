@@ -42,7 +42,7 @@ func Main() {
 		return
 	}
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "pr-closes-issue", Blob: true, ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "pr-closes-issue", Scope: checkkit.ScopeBlob, Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

@@ -10,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "spotless", TimeoutMs: 300000},
+		Describe: checkkit.Describe{Name: "spotless", Scope: checkkit.ScopeFiles, TimeoutMs: 300000},
 		Run:      spotless.Run,
 	})
 }

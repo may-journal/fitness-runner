@@ -1,5 +1,5 @@
-// Command fitness-check-doc-template enforces a convention: template files
-// define a markdown document's shape. A template is template.md,
+// Command fitness-check-doc-template makes each markdown document match
+// the shape of a template that governs it. A template is template.md,
 // *.template.md, any markdown file in a templates folder (governing its
 // parent), or a GitHub PR or Issue template. Every template's level-2 section
 // needs a guiding HTML comment. Walking up from each markdown file, the first
@@ -24,7 +24,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "doc-template"},
+		Describe: checkkit.Describe{Name: "doc-template", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

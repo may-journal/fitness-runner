@@ -11,7 +11,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "java-version"},
+		Describe: checkkit.Describe{Name: "java-version", Scope: checkkit.ScopeFiles},
 		Run:      version.Run,
 	})
 }

@@ -12,7 +12,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "changelog"},
+		Describe: checkkit.Describe{Name: "changelog", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

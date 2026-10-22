@@ -1,7 +1,6 @@
-// Command fitness-check-vitest-coverage-full ensures the consumer repo and
-// the fitness-runner package both hold Vitest coverage thresholds of 100,
-// then runs `vitest run --coverage` in root — the Go port of the
-// vitest-coverage-full check. Two departures from the TypeScript original,
+// Command fitness-check-vitest-coverage-full requires Vitest coverage
+// thresholds of 100 in the repo and the shared config, then runs `vitest run
+// --coverage`. Two departures from the TypeScript original,
 // both mechanical: coverage thresholds are judged textually via
 // internal/vitestconf instead of evaluating the config as JavaScript, and
 // vitest is executed directly — resolved from node_modules/.bin walking up
@@ -50,7 +49,7 @@ const fitnessVitestConfig = "vitest.config.mjs"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "vitest-coverage-full", TimeoutMs: 120000},
+		Describe: checkkit.Describe{Name: "vitest-coverage-full", Scope: checkkit.ScopeFiles, TimeoutMs: 120000},
 		Run:      run,
 	})
 }

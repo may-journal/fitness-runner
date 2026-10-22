@@ -23,7 +23,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-level-bleed"},
+		Describe: checkkit.Describe{Name: "mermaid-level-bleed", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

@@ -1,6 +1,7 @@
 // Command fitness-check-no-contrastive-reframing flags the "not X, it's Y"
-// reframing in markdown prose: a sentence rejects a claim, then restates the
-// real point ("It's not a workout. It's a lifestyle."). It favors precision
+// reframing in markdown prose, where a sentence rejects a claim and then
+// restates the real point. An example is "It's not a workout. It's a
+// lifestyle." It favors precision
 // over recall — it fires only when the sentence opens with a demonstrative
 // copula (It's, That's, This is) and carries both a negation and a contrast,
 // so ordinary technical negations are left alone. It reuses the mdx prose
@@ -18,7 +19,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "no-contrastive-reframing"},
+		Describe: checkkit.Describe{Name: "no-contrastive-reframing", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }
