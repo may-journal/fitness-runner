@@ -11,5 +11,7 @@ Part of the mermaid diagram + callout table fitness-function set
 
 Requires every numbered flowchart callout node to carry a `:::class` style assignment, and flags nodes with no styling. Consistent styling keeps callouts legible in a legend.
 
+Connectors carry letter callouts, not numbers, as [mermaid-callouts](../fitness-check-mermaid-callouts/README.md) requires. Links take `linkStyle`, not a class, so this check skips connector letters.
+
 Runs on every `.md` file with a mermaid diagram or callout table; files with
 neither are skipped and don't count toward `filesChecked`.

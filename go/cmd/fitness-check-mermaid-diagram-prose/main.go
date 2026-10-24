@@ -146,7 +146,7 @@ func proseLabels(diagram *mermaid.DiagramBlock) []string {
 func validateDoc(file, content string) []string {
 	errors := []string{}
 	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content)).Pairs {
-		if pair.Table == nil || len(pair.Diagram.Numbers) == 0 {
+		if pair.Table == nil || !pair.Diagram.HasCallouts() {
 			continue
 		}
 		for _, label := range proseLabels(pair.Diagram) {

@@ -43,8 +43,8 @@ classDiagram
     class renderTable["11 render.Table([]Row, int, Palette)"]
     class Row["12 render.Row"]
     class Palette["13 render.Palette"]
-    class Totals["30 render.Totals"]
-    class Outcome["32 checkkit.Outcome"] {
+    class Totals["14 render.Totals"]
+    class Outcome["15 checkkit.Outcome"] {
         +Code
         +Stdout
         +Stderr
@@ -53,32 +53,32 @@ classDiagram
         +Err
     }
 
-    resolveChecks --> describe : 14
-    describe --> Describe : 15
-    resolveChecks --> CheckBinary : 16
-    runPool --> runOne : 17
-    runOne --> CheckBinary : 18
-    runOne --> Result : 19
-    CheckBinary --> RunEnv : 20
-    CheckBinary --> checkkitMain : 21
-    checkkitMain --> Check : 22
-    Check --> Describe : 23
-    Check --> Result : 24
-    renderTable --> Row : 25
-    renderTable --> Palette : 26
-    runOne --> Describe : 27
-    checkkitMain --> Describe : 28
-    checkkitMain --> Result : 29
-    Totals --> Row : 31
-    runPool --> Describe : 33
-    class Program["34 checkkit.Program"] {
+    resolveChecks --> describe : A
+    describe --> Describe : B
+    resolveChecks --> CheckBinary : C
+    runPool --> runOne : D
+    runOne --> CheckBinary : E
+    runOne --> Result : F
+    CheckBinary --> RunEnv : G
+    CheckBinary --> checkkitMain : H
+    checkkitMain --> Check : I
+    Check --> Describe : J
+    Check --> Result : K
+    renderTable --> Row : L
+    renderTable --> Palette : M
+    runOne --> Describe : N
+    checkkitMain --> Describe : O
+    checkkitMain --> Result : P
+    Totals --> Row : Q
+    runPool --> Describe : R
+    class Program["16 checkkit.Program"] {
         +Path
         +Name
         +Command(...string) *exec.Cmd
     }
-    resolveChecks --> Program : 35
-    describe --> Program : 36
-    runOne --> Program : 37
+    resolveChecks --> Program : S
+    describe --> Program : T
+    runOne --> Program : U
 ```
 
 ```mermaid
@@ -93,7 +93,7 @@ classDiagram
     Parent --> Child : uses
 ```
 
-Numbers on classes and relationships match the callout table.
+Numbers on classes and letters on relationships match the callout table.
 
 | #   | Description | Why |
 | --- | ----------- | --- |
@@ -110,30 +110,30 @@ Numbers on classes and relationships match the callout table.
 | 11  | Renders rows into the bordered table with the totals line, in [render.go](../../go/internal/render/render.go). | Deterministic output regardless of completion order. |
 | 12  | One rendered result, in [render.go](../../go/internal/render/render.go). | The runner turns each outcome into one row. |
 | 13  | The escape codes, in [render.go](../../go/internal/render/render.go); the zero value prints no color. | Piped output stays plain. |
-| 14  | Resolution asks each resolved binary to describe itself, all side by side. | Timeouts and inline args ride the same handshake. |
-| 15  | Describe output parsed as JSON. | Stdlib all the way down. |
-| 16  | Each name resolves to a `fitness-check-<name>` program, beside the runner or built in. | The program name is the contract. |
-| 17  | The pool runs each outcome slot concurrently under a semaphore of one slot per core. | CPU-bounded parallelism. |
-| 18  | The wrapper invokes the binary with cwd = root and the context env. | Check encapsulates its own tool calls. |
-| 19  | The last non-empty stdout line parses as the Result; a crash or exit other than 0 or 1 becomes info, and a timeout fails. | Stray tool noise ahead of the JSON is tolerated. |
-| 20  | Binaries read context from the environment via checkkit accessors. | No IPC; plain env vars work everywhere. |
-| 21  | Every check package exports `Main`, which delegates to `checkkit.Main`; the runner maps each name to one in `checks.go`. | One protocol implementation in one binary. |
-| 22  | The scaffolding runs the check it is given. | One entry point per check. |
-| 23  | A check carries its describe metadata. | The handshake answer lives beside the run function. |
-| 24  | The run function returns the Result the scaffolding emits. | Uniform shapes, always non-nil error arrays. |
-| 25  | The renderer reads collected rows in catalog order. | Single summary per invocation. |
-| 26  | The renderer colors through the palette it is given. | Color decisions stay with the caller. |
-| 27  | The wrapper reads the timeout budget from the check's metadata. | The budget rides the describe handshake. |
-| 28  | The scaffolding answers `--describe` with the check's metadata. | Resolution needs no registry. |
-| 29  | The scaffolding emits the Result the run returns, or info for a panic or error. | One JSON line per run. |
-| 30  | The pass, failure and info counts, in [render.go](../../go/internal/render/render.go). | Info rows never count as failures. |
-| 31  | The tally adds each row by its status. | One place decides what counts. |
-| 32  | One tool run's exit code, output, start error and signal, in [exec.go](../../go/internal/checkkit/exec.go). | A check tells a broken environment from a tool's verdict. |
-| 33  | The pool reads the budget each check declares to order its starts, the default for none. | A slow check never waits behind quick ones. |
-| 34  | How to start one check, in [binary.go](../../go/internal/checkkit/binary.go): the file to exec and the program name it starts under. | Every built-in check runs from the one fitness file. |
-| 35  | Each name resolves to a local check, a program beside the runner, or the runner itself started as `fitness-check-<name>`. | A program beside the runner still replaces a built-in check. |
-| 36  | The handshake starts the check the same way its run does. | One way to start a check. |
-| 37  | The wrapper starts the check under its program name. | The one binary dispatches on its program name. |
+| 14  | The pass, failure and info counts, in [render.go](../../go/internal/render/render.go). | Info rows never count as failures. |
+| 15  | One tool run's exit code, output, start error and signal, in [exec.go](../../go/internal/checkkit/exec.go). | A check tells a broken environment from a tool's verdict. |
+| 16  | How to start one check, in [binary.go](../../go/internal/checkkit/binary.go): the file to exec and the program name it starts under. | Every built-in check runs from the one fitness file. |
+| A   | Resolution asks each resolved binary to describe itself, all side by side. | Timeouts and inline args ride the same handshake. |
+| B   | Describe output parsed as JSON. | Stdlib all the way down. |
+| C   | Each name resolves to a `fitness-check-<name>` program, beside the runner or built in. | The program name is the contract. |
+| D   | The pool runs each outcome slot concurrently under a semaphore of one slot per core. | CPU-bounded parallelism. |
+| E   | The wrapper invokes the binary with cwd = root and the context env. | Check encapsulates its own tool calls. |
+| F   | The last non-empty stdout line parses as the Result; a crash or exit other than 0 or 1 becomes info, and a timeout fails. | Stray tool noise ahead of the JSON is tolerated. |
+| G   | Binaries read context from the environment via checkkit accessors. | No IPC; plain env vars work everywhere. |
+| H   | Every check package exports `Main`, which delegates to `checkkit.Main`; the runner maps each name to one in `checks.go`. | One protocol implementation in one binary. |
+| I   | The scaffolding runs the check it is given. | One entry point per check. |
+| J   | A check carries its describe metadata. | The handshake answer lives beside the run function. |
+| K   | The run function returns the Result the scaffolding emits. | Uniform shapes, always non-nil error arrays. |
+| L   | The renderer reads collected rows in catalog order. | Single summary per invocation. |
+| M   | The renderer colors through the palette it is given. | Color decisions stay with the caller. |
+| N   | The wrapper reads the timeout budget from the check's metadata. | The budget rides the describe handshake. |
+| O   | The scaffolding answers `--describe` with the check's metadata. | Resolution needs no registry. |
+| P   | The scaffolding emits the Result the run returns, or info for a panic or error. | One JSON line per run. |
+| Q   | The tally adds each row by its status. | One place decides what counts. |
+| R   | The pool reads the budget each check declares to order its starts, the default for none. | A slow check never waits behind quick ones. |
+| S   | Each name resolves to a local check, a program beside the runner, or the runner itself started as `fitness-check-<name>`. | A program beside the runner still replaces a built-in check. |
+| T   | The handshake starts the check the same way its run does. | One way to start a check. |
+| U   | The wrapper starts the check under its program name. | The one binary dispatches on its program name. |
 
 ## Monorepo layout
 

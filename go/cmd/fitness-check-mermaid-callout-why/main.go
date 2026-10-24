@@ -40,13 +40,8 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return checkkit.Pass(filesChecked), nil
 }
 
-var (
-	// whyCell matches a header cell naming the Why column — the TS WHY regex.
-	whyCell = regexp.MustCompile(`(?i)^why$`)
-	// numberedCell matches a numbered first-column cell, e.g. "1" or "[1]" —
-	// the TS NUMBERED regex.
-	numberedCell = regexp.MustCompile(`^\[?\d+\]?$`)
-)
+// whyCell matches a header cell naming the Why column — the TS WHY regex.
+var whyCell = regexp.MustCompile(`(?i)^why$`)
 
 // cellAt returns row[i], or the empty string past the end — the TS
 // nullish-coalescing fallback on a missing cell.
@@ -57,11 +52,12 @@ func cellAt(row []string, i int) string {
 	return ""
 }
 
-// isNumberedRowMissingWhy reports whether a row is numbered but leaves its
-// Why cell blank. The parser hands cells over already trimmed, so the TS
-// `.trim()` reduces to an emptiness test.
+// isNumberedRowMissingWhy reports whether a row carries a callout label — a
+// node number such as "1" or "[1]", or connector letters such as "A" — but
+// leaves its Why cell blank. The parser hands cells over already trimmed, so
+// the TS `.trim()` reduces to an emptiness test.
 func isNumberedRowMissingWhy(row []string, whyIndex int) bool {
-	return numberedCell.MatchString(cellAt(row, 0)) && cellAt(row, whyIndex) == ""
+	return mermaid.RowLabel(row) != "" && cellAt(row, whyIndex) == ""
 }
 
 // whyErrorsForTable returns the errors for one table: a missing Why column,

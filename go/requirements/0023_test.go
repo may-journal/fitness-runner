@@ -163,6 +163,6 @@ func Test0023_15(t *testing.T) {
 	out, exit := docTemplate(t, files)
 	sees(t, out, exit, 1,
 		journey+": callout table columns #, Description, Kind, Why must be #, Description, Type, Why as "+dtTemplates+acJourney+" has",
-		code+`: callout table needs the caption "Numbers on classes and relationships match the callout table" above it as `+dtTemplates+acCode+" has",
+		code+`: callout table needs the caption "Numbers on classes and letters on relationships match the callout table" above it as `+dtTemplates+acCode+" has",
 		dtViews+acContainer+": the opening needs a callout table with columns #, Description, Why as "+dtTemplates+acContainer+" has")
 }

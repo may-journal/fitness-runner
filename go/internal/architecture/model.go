@@ -25,7 +25,7 @@ func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) 
 // containers and components carry a technology.
 type Element struct {
 	ID, Kind, Name, Technology, Description, Parent, View string
-	Callout                                               int
+	Callout                                               string
 	At                                                    Location
 	// Members are a class body's lines; Annotations its <<name>> lines.
 	Members, Annotations []Member
@@ -41,7 +41,7 @@ type Member struct {
 type Relationship struct {
 	// Arrow is the Mermaid arrow or C4 macro that drew the edge.
 	From, To, Arrow, Label, View string
-	Callout                      int
+	Callout                      string
 	At                           Location
 }
 
