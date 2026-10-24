@@ -18,8 +18,8 @@ C4Container
 
     System_Ext(service, "4 Outside service", "What it lends the product.")
 
-    Rel(user, app, "5")
-    Rel(app, service, "6")
+    Rel(user, app, "A")
+    Rel(app, service, "B")
 ```
 
 <!-- The legend is a second C4Container diagram titled Legend, with one sample of each element kind above. -->
@@ -35,7 +35,7 @@ C4Container
     System_Ext(e, "External", "Outside our boundary")
 ```
 
-Numbers on nodes and arrows match the callout table.
+Numbers on nodes and letters on arrows match the callout table.
 
 | #   | Description                              | Why                                     |
 | --- | ---------------------------------------- | --------------------------------------- |
@@ -43,5 +43,5 @@ Numbers on nodes and arrows match the callout table.
 | 2   | The product's boundary.                  | Everything inside it ships from here.   |
 | 3   | The app, built from `src/app`.           | One unit per runtime or shipped binary. |
 | 4   | Same outside service as the context.     | The product does not own it.            |
-| 5   | The user runs the app.                   | The main way in.                        |
-| 6   | The app calls the outside service.       | The one dependency it does not own.     |
+| A   | The user runs the app.                   | The main way in.                        |
+| B   | The app calls the outside service.       | The one dependency it does not own.     |

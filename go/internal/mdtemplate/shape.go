@@ -166,7 +166,7 @@ func readView(body string) view {
 var titleLegend = regexp.MustCompile(`(?im)^\s*title\s+legend\s*$`)
 
 func isLegend(b *mermaid.DiagramBlock, headings []mdx.Heading) bool {
-	return len(b.Numbers) == 0 || titleLegend.MatchString(b.Body) || strings.EqualFold(headingAbove(headings, b.Line), "Legend")
+	return !b.HasCallouts() || titleLegend.MatchString(b.Body) || strings.EqualFold(headingAbove(headings, b.Line), "Legend")
 }
 
 // headingAbove is the text of the nearest heading of any level above line.

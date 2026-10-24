@@ -18,10 +18,10 @@ func mermaidCalloutsDiagram(lines ...string) string {
 	return "```mermaid\n" + strings.Join(lines, "\n") + "\n```\n"
 }
 
-// mermaidCalloutsTable builds a numbered callout table with one row per number.
-func mermaidCalloutsTable(numbers ...string) string {
+// mermaidCalloutsTable builds a callout table with one row per label.
+func mermaidCalloutsTable(labels ...string) string {
 	table := "| # | Description |\n| --- | --- |\n"
-	for _, n := range numbers {
+	for _, n := range labels {
 		table += "| " + n + " | step " + n + " |\n"
 	}
 	return table
@@ -35,8 +35,13 @@ func mermaidCalloutsDoc(blocks ...string) map[string]string {
 func Test0039_1(t *testing.T) {
 	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
-		mermaidCalloutsDiagram(`Container(app, "1", "UI")`, `Rel(app, api, "2")`),
-		mermaidCalloutsTable("1", "2"),
+		mermaidCalloutsDiagram(
+			"flowchart LR",
+			`app[1 App] -->|A| api["2 API"]`,
+			"api -- B --> db((3 Store))",
+			`db -->|"C"| app`,
+		),
+		mermaidCalloutsTable("1", "2", "3", "A", "B", "C"),
 	))
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "mermaid-callouts")) {
@@ -44,53 +49,45 @@ func Test0039_1(t *testing.T) {
 	}
 }
 
-func Test0039_2(t *testing.T) {
+func Test0039_9(t *testing.T) {
 	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
-		mermaidCalloutsDiagram(`Rel(a, b, "1")`, `Rel(b, c, "2")`),
-		mermaidCalloutsTable("1"),
+		mermaidCalloutsDiagram(`Person(user, "1 User")`, `Rel(user, app, "A")`),
+		mermaidCalloutsTable("1", "B"),
 	))
-	sees(t, out, code, 1, "docs/flow.md: diagram callout 2 has no matching table row (line 1)")
-}
-
-func Test0039_3(t *testing.T) {
-	t.Parallel()
-	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
-		mermaidCalloutsDiagram(`Rel(a, b, "1")`),
-		mermaidCalloutsTable("1", "2"),
-	))
-	sees(t, out, code, 1, "docs/flow.md: callout table row 2 has no matching diagram callout (line 5)")
+	sees(t, out, code, 1,
+		"docs/flow.md: diagram callout A has no matching table row (line 1)",
+		"docs/flow.md: callout table row B has no matching diagram callout (line 6)")
 }
 
 func Test0039_4(t *testing.T) {
 	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
-		mermaidCalloutsDiagram(`Rel(a, b, "1")`, `Rel(a, c, "1")`, `Rel(b, c, "2")`),
-		mermaidCalloutsTable("1", "2", "2"),
+		mermaidCalloutsDiagram("classDiagram", `class a["1 A"]`, `class b["1 B"]`, "a --> b : A", "b --> a : B"),
+		mermaidCalloutsTable("1", "A", "B", "B"),
 	))
 	sees(t, out, code, 1,
 		"docs/flow.md: diagram callout 1 appears 2 times (line 1)",
-		"docs/flow.md: callout table row 2 appears 2 times (line 7)")
+		"docs/flow.md: callout table row B appears 2 times (line 9)")
 }
 
-func Test0039_5(t *testing.T) {
+func Test0039_10(t *testing.T) {
 	t.Parallel()
-	out, code := mermaidCallouts(t, mermaidCalloutsDoc(mermaidCalloutsDiagram(`Rel(a, b, "1")`)))
-	sees(t, out, code, 1, "docs/flow.md: mermaid diagram at line 1 has numbered callouts but no associated callout table")
-}
-
-func Test0039_6(t *testing.T) {
-	t.Parallel()
-	out, code := mermaidCallouts(t, mermaidCalloutsDoc(mermaidCalloutsTable("1")))
-	sees(t, out, code, 1, "docs/flow.md: callout table at line 1 has no preceding mermaid diagram")
+	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
+		mermaidCalloutsTable("A"),
+		mermaidCalloutsDiagram(`Rel(a, b, "A")`),
+	))
+	sees(t, out, code, 1,
+		"docs/flow.md: callout table at line 1 has no preceding mermaid diagram",
+		"docs/flow.md: mermaid diagram at line 5 has numbered callouts but no associated callout table")
 }
 
 func Test0039_7(t *testing.T) {
 	t.Parallel()
 	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
-		mermaidCalloutsDiagram(`Container(app, "1", "UI")`, `Rel(app, api, "2")`),
-		mermaidCalloutsDiagram(`Person(p, "Person")`, `System(s, "System")`),
-		mermaidCalloutsTable("1", "2"),
+		mermaidCalloutsDiagram(`Container(app, "1", "UI")`, `Rel(app, api, "A")`),
+		mermaidCalloutsDiagram(`Person(p, "Person")`, `System(s, "System")`, `Rel(p, s, "uses")`),
+		mermaidCalloutsTable("1", "A"),
 	))
 	sees(t, out, code, 0, "All 1 checks passed")
 }
@@ -98,9 +95,35 @@ func Test0039_7(t *testing.T) {
 func Test0039_8(t *testing.T) {
 	t.Parallel()
 	body := mermaidCalloutsDoc(
-		mermaidCalloutsDiagram(`Rel(a, b, "1")`, `Rel(b, c, "2")`),
-		mermaidCalloutsTable("1"),
+		mermaidCalloutsDiagram(`Rel(a, b, "A")`, `Rel(b, c, "B")`),
+		mermaidCalloutsTable("A"),
 	)["docs/flow.md"]
 	out, code := mermaidCallouts(t, map[string]string{"body.md": body}, "--body-file", "body.md")
-	sees(t, out, code, 1, "(description): diagram callout 2 has no matching table row (line 1)")
+	sees(t, out, code, 1, "(description): diagram callout B has no matching table row (line 1)")
+}
+
+func Test0039_11(t *testing.T) {
+	t.Parallel()
+	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
+		mermaidCalloutsDiagram(`Container(app, "1", "UI")`, `Rel(app, api, "2")`),
+		mermaidCalloutsTable("1", "2"),
+	))
+	sees(t, out, code, 1, "docs/flow.md: connector callout 2 must be a letter; numbers are for nodes (line 1)")
+	if strings.Contains(out, "has no matching") {
+		t.Errorf("a numbered connector must fail only for its form, not as an orphan:\n%s", out)
+	}
+}
+
+func Test0039_12(t *testing.T) {
+	t.Parallel()
+	out, code := mermaidCallouts(t, mermaidCalloutsDoc(
+		mermaidCalloutsDiagram("flowchart LR", "a -->|Z| b", "b -->|AA| c", "c -->|AB| a"),
+		mermaidCalloutsTable("Z", "AA", "AB"),
+	))
+	sees(t, out, code, 1,
+		"docs/flow.md: connector callout AB breaks the letter doubling; use A to Z, then AA to ZZ, then AAA (line 1)",
+		"docs/flow.md: callout table row AB breaks the letter doubling; use A to Z, then AA to ZZ, then AAA (line 8)")
+	if strings.Contains(out, "callout AA ") || strings.Contains(out, "row AA ") {
+		t.Errorf("AA follows the doubling and must pass:\n%s", out)
+	}
 }

@@ -23,14 +23,14 @@ C4Container
     System_Ext(ci, "8 Description checks", "GitHub Actions", "issue-check and pr-check")
     System_Ext(releases, "9 GitHub Releases", "bundles and tool binaries")
 
-    Rel(developer, cli, "10")
-    Rel(agent, cli, "11")
-    Rel(cli, consumer, "12")
-    Rel(cli, peers, "13")
-    Rel(cli, registry, "14")
-    Rel(ci, cli, "15")
-    Rel(developer, tools, "16")
-    Rel(tools, releases, "17")
+    Rel(developer, cli, "A")
+    Rel(agent, cli, "B")
+    Rel(cli, consumer, "C")
+    Rel(cli, peers, "D")
+    Rel(cli, registry, "E")
+    Rel(ci, cli, "F")
+    Rel(developer, tools, "G")
+    Rel(tools, releases, "H")
 ```
 
 ```mermaid
@@ -44,7 +44,7 @@ C4Container
     System_Ext(e, "External", "Outside our boundary")
 ```
 
-Numbers on nodes and arrows match the callout table. Each container names the commands it is built from; a trailing `*` names every sibling folder.
+Numbers on nodes and letters on arrows match the callout table. Each container names the commands it is built from; a trailing `*` names every sibling folder.
 
 | #   | Description                                                                                      | Why                                                         |
 | --- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
@@ -57,14 +57,14 @@ Numbers on nodes and arrows match the callout table. Each container names the co
 | 7   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
 | 8   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |
 | 9   | Release bundles and tool binaries, one archive per platform holding the one fitness binary.      | Artifacts ship through GitHub Releases and the Go proxy.    |
-| 10  | Developer runs the binary from the consumer root.                                                | One front door.                                             |
-| 11  | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
-| 12  | The runner loads `.fitnessrc.json`, and each check process reads the tree, staged or full.        | Config and validation target live with the app.             |
-| 13  | Checks resolve peer binaries the way their language module finds tools, then PATH.               | Missing tools fail with one-line install hints.             |
-| 14  | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
-| 15  | `fitness pr-check` and `issue-check` run each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
-| 16  | Developer runs `fitness-install`; the pre-commit hook runs the suite.                            | One documented one-liner installs or runs the suite.        |
-| 17  | `fitness-release` builds and publishes the bundles.                                              | Release and install share one versioned artifact set.       |
+| A   | Developer runs the binary from the consumer root.                                                | One front door.                                             |
+| B   | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
+| C   | The runner loads `.fitnessrc.json`, and each check process reads the tree, staged or full.        | Config and validation target live with the app.             |
+| D   | Checks resolve peer binaries the way their language module finds tools, then PATH.               | Missing tools fail with one-line install hints.             |
+| E   | Abbreviated registry metadata, configured registry honored from .npmrc.                          | Currency judgment without shelling to npm.                  |
+| F   | `fitness pr-check` and `issue-check` run each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
+| G   | Developer runs `fitness-install`; the pre-commit hook runs the suite.                            | One documented one-liner installs or runs the suite.        |
+| H   | `fitness-release` builds and publishes the bundles.                                              | Release and install share one versioned artifact set.       |
 
 ## Consumer setup
 

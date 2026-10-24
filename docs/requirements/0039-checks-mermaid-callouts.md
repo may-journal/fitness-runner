@@ -6,42 +6,34 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-I can match every numbered callout in a diagram to exactly one row explaining it.
+I can match every callout in a diagram to exactly one row explaining it. Nodes carry numbers and connectors carry letters, so I tell them apart at a glance.
 
 ## Measurement
 
-docs whose numbered diagrams match their callout tables one to one
+docs whose diagrams match their callout tables one to one
 -
 docs with a mermaid diagram or callout table
 
-Source: `go/cmd/fitness-check-mermaid-callouts/main.go:115`
+Source: `go/cmd/fitness-check-mermaid-callouts/main.go:170`
 
 ## Requirements
 
 - 0039.1
-    - Given Developer has a doc whose diagram and table callouts match one to one
+    - Given Developer has a doc whose node numbers and connector letters match its table one to one
         - When mermaid-callouts checks the repo
             - Then it passes, counting only that doc
-- 0039.2
-    - Given Developer has a diagram callout with no table row
+- 0039.9
+    - Given Developer has a callout in only the diagram or only its table
         - When mermaid-callouts checks the repo
-            - Then it fails naming the callout and diagram line
-- 0039.3
-    - Given Developer has a table row with no diagram callout
-        - When mermaid-callouts checks the repo
-            - Then it fails naming the row and table line
+            - Then it fails naming each unmatched callout and its line
 - 0039.4
-    - Given Developer has a callout number repeated in a diagram or table
+    - Given Developer has a callout repeated in a diagram or table
         - When mermaid-callouts checks the repo
-            - Then it fails naming the number and its count
-- 0039.5
-    - Given Developer has a numbered diagram with no callout table
+            - Then it fails naming the callout and its count
+- 0039.10
+    - Given Developer has a diagram with callouts but no table, or a table with no diagram
         - When mermaid-callouts checks the repo
-            - Then it fails naming the diagram line
-- 0039.6
-    - Given Developer has a callout table with no diagram before it
-        - When mermaid-callouts checks the repo
-            - Then it fails naming the table line
+            - Then it fails naming the unpaired block's line
 - 0039.7
     - Given Developer has an un-numbered legend diagram between a diagram and its table
         - When mermaid-callouts checks the repo
@@ -50,3 +42,11 @@ Source: `go/cmd/fitness-check-mermaid-callouts/main.go:115`
     - Given Developer has an issue or PR body with a diagram callout missing its row
         - When mermaid-callouts checks it in body mode
             - Then it fails like a file would
+- 0039.11
+    - Given Developer has a connector labelled with a number
+        - When mermaid-callouts checks the repo
+            - Then it fails asking for a letter
+- 0039.12
+    - Given Developer has a connector letter that breaks the doubling, such as AB after Z
+        - When mermaid-callouts checks the repo
+            - Then it fails naming the letter in the diagram and table

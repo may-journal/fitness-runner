@@ -121,7 +121,7 @@ func (r *viewReader) block(block mermaid.DocBlock) {
 }
 
 func (r *viewReader) diagram(b *mermaid.DiagramBlock) {
-	if len(b.Numbers) == 0 {
+	if !b.HasCallouts() {
 		return
 	}
 	r.flush()

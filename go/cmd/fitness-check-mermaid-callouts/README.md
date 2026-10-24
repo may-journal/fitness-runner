@@ -6,26 +6,49 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 Foundational check of the mermaid diagram + callout table fitness-function set
 ([#28](https://github.com/may-journal/fitness-runner/issues/28)). Ensures every
-numbered mermaid diagram has an associated callout table and that their callout
-numbers are a 1-1 match.
+mermaid diagram with callouts has an associated callout table and that their
+callouts are a 1-1 match.
 
 ## Behavior
 
 For each `.md` file, diagrams (` ```mermaid ` blocks) are paired with the
-numbered callout table that follows them. That table is a GFM table whose first
-header cell is `#`, `No`, `Callout`, or `Ref`.
+callout table that follows them. That table is a GFM table whose first header
+cell is `#`, `No`, `Callout`, or `Ref`.
 
-- Pass: every callout number in the diagram maps to exactly one table row,
-  and vice versa. Un-numbered diagrams need no table.
+Nodes carry number callouts and connectors carry letter callouts, so a reader
+tells them apart at a glance ([#583](https://github.com/may-journal/fitness-runner/issues/583)).
+Letters run `A` to `Z`, then double: `AA`, `BB`, up to `ZZ`, then `AAA`. The
+table's `#` column holds the same letters for connector rows.
+
+- Pass: every callout in the diagram maps to exactly one table row, and vice
+  versa. Diagrams without callouts need no table.
 - Fail (orphan callout): `diagram callout N has no matching table row`.
 - Fail (orphan row): `callout table row N has no matching diagram callout`.
 - Fail (duplicate): `diagram callout N appears K times` / `callout table row N appears K times`.
+- Fail (numbered connector): `connector callout N must be a letter; numbers are for nodes`.
+- Fail (broken doubling): `connector callout AB breaks the letter doubling` / `callout table row AB breaks the letter doubling`.
 - Fail (unpaired diagram): `mermaid diagram … has numbered callouts but no associated callout table`.
 - Fail (unpaired table): `callout table … has no preceding mermaid diagram`.
 
-Callout numbers are read from the leading integer of quoted diagram labels
-(`Rel(a, b, "6")`, `Container(x, "3", …)`). In the table, they come from the
-first (`#`) column.
+## Reading callouts
+
+A node callout is the leading integer of a node label: quoted
+(`Container(x, "3", …)`, `A["1 Check"]`) or inside a node shape (`A[2 Screen]`).
+
+A connector callout is the leading label of an edge, in any of these forms:
+
+| Form | Example |
+| --- | --- |
+| C4 relationship | `Rel(a, b, "A")` |
+| Flowchart pipe | `a -->\|B\| b` or `a -->\|"B"\| b` |
+| Inline link | `a -- C --> b` |
+| Colon after an arrow | `a --> b : D` or `a ->> b: D` |
+
+A colon label with no arrow before it, such as a state description or a note,
+is a node's. Capital letters that break the doubling count only when they are
+the whole label, so prose such as `|API calls|` is not a callout. Such a label
+also never makes a diagram need a table on its own. In the table, callouts come
+from the first (`#`) column: a number, capital letters, or either in brackets.
 
 ## Scope
 
