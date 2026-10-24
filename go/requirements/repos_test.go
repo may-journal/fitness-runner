@@ -192,10 +192,13 @@ func architectedRepo() map[string]string {
 		"src/store/store_test.go": testFile("store", "Test0001_1"),
 		acDoc:                     front("../../") + acDocWith("User opens the app"),
 	}
+	// Connectors carry letter callouts, as mermaid-callouts requires.
 	edits := map[string][]string{
-		acContainer: {"| 2 | The system. |", "| 2 | The app that holds the service. |"},
-		acComponent: {"main.go#L3", "main.go#L6"},
-		acCode: {"class save[\"2 save()\"]\nsave --> Record : 3", "class Save[\"2 Save()\"]\nSave --> Record : 3",
+		acContext: {"Rel(user, app, \"3\")", "Rel(user, app, \"A\")", "| 3 | Uses it.", "| A | Uses it."},
+		acContainer: {"| 2 | The system. |", "| 2 | The app that holds the service. |",
+			"Rel(user, service, \"4\")", "Rel(user, service, \"A\")", "| 4 | Calls it.", "| A | Calls it."},
+		acComponent: {"main.go#L3", "main.go#L6", "Rel(entry, store, \"4\")", "Rel(entry, store, \"A\")", "| 4 | Saves", "| A | Saves"},
+		acCode: {"class save[\"2 save()\"]\nsave --> Record : 3", "class Save[\"2 Save()\"]\nSave --> Record : A", "| 3 | Save returns", "| A | Save returns",
 			"A saved record.", "A saved record, in [store.go](../../src/store/store.go#L5).",
 			"Writes one record.", "Writes one record, in [store.go](../../src/store/store.go#L8)."},
 		acJourney: {"open(2 Open the app):::action\ndone[3 Record saved]:::screen\nuser --> open\nopen -->|saves| done",
@@ -208,7 +211,6 @@ func architectedRepo() map[string]string {
 		}
 		files["docs/architecture/"+view] = front("../../") + body
 	}
-	files["docs/architecture/"+acContext] = front("../../") + views["docs/architecture/"+acContext]
 	return with(views, files)
 }
 

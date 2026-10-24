@@ -32,25 +32,25 @@ C4Component
     }
 
     System_Boundary(tools, "Install and release tools") {
-        Component(tool, "21 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
+        Component(tool, "11 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
     System_Ext(peers, "9 Peer tools", "each language module's formatters, linters and test runners")
     System_Ext(git, "10 git")
 
-    Rel(developer, main, "11")
-    Rel(main, config, "12")
-    Rel(main, resolve, "13")
-    Rel(resolve, check, "14")
-    Rel(main, git, "17")
-    Rel(main, execute, "18")
-    Rel(execute, check, "19")
-    Rel(main, output, "20")
-    Rel(check, kit, "15")
-    Rel(check, peers, "16")
-    Rel(main, kit, "22")
-    Rel(tool, kit, "23")
-    Rel(main, check, "24")
+    Rel(developer, main, "A")
+    Rel(main, config, "B")
+    Rel(main, resolve, "C")
+    Rel(resolve, check, "D")
+    Rel(main, git, "G")
+    Rel(main, execute, "H")
+    Rel(execute, check, "I")
+    Rel(main, output, "J")
+    Rel(check, kit, "E")
+    Rel(check, peers, "F")
+    Rel(main, kit, "K")
+    Rel(tool, kit, "L")
+    Rel(main, check, "M")
 ```
 
 ```mermaid
@@ -66,7 +66,7 @@ C4Component
     System_Ext(e, "External", "Outside our boundary")
 ```
 
-Numbers on nodes and arrows match the callout table.
+Numbers on nodes and letters on arrows match the callout table.
 
 | #   | Description                                                                                             | Why                                                         |
 | --- | ------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -80,20 +80,20 @@ Numbers on nodes and arrows match the callout table.
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
 | 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
-| 11  | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
-| 12  | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
-| 13  | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
-| 14  | Resolver maps a name to its `fitness-check-<name>` program and collects its `--describe` metadata.      | Timeout and context-inline metadata without header parsing. |
-| 15  | Check packages build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
-| 16  | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                |
-| 17  | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          |
-| 18  | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
-| 19  | Pool starts the fitness binary as `fitness-check-<name>`, with `--root` and env context.               | One execution model for every check.                        |
-| 20  | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
-| 21  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
-| 22  | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
-| 23  | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
-| 24  | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
+| 11  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
+| A   | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
+| B   | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
+| C   | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
+| D   | Resolver maps a name to its `fitness-check-<name>` program and collects its `--describe` metadata.      | Timeout and context-inline metadata without header parsing. |
+| E   | Check packages build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
+| F   | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                |
+| G   | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          |
+| H   | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
+| I   | Pool starts the fitness binary as `fitness-check-<name>`, with `--root` and env context.               | One execution model for every check.                        |
+| J   | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
+| K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
+| L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
+| M   | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
 
 ## Resolve check specs (priority)
 
