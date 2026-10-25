@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-When a Plan, Epic or pull request description fails its check, I follow one skill and fix it on the first try.
+When a Plan, Epic or pull request description fails its check, I follow the skill beside that check's code. I fix it on the first try.
 
 ## Measurement
 

@@ -7,11 +7,11 @@ import (
 	"testing"
 )
 
-// taught asserts the skill folder's SKILL.md quotes every line, so a reader
-// of the skill sees the failure the check prints.
+// taught asserts the SKILL.md the check keeps beside its code quotes every
+// line, so a reader of the skill sees the failure the check prints.
 func taught(t *testing.T, skill string, quotes ...string) {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join("..", "..", "skills", skill, "SKILL.md"))
+	raw, err := os.ReadFile(filepath.Join("..", "cmd", "fitness-check-"+skill, "skills", skill, "SKILL.md"))
 	mustDo(t, err)
 	for _, quote := range quotes {
 		if !strings.Contains(string(raw), quote) {
