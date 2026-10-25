@@ -33,6 +33,7 @@ import (
 	javaVersionCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-java-version"
 	jscpdCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-jscpd"
 	localBranchCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch"
+	localizedTextCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-localized-text"
 	markdownFilenameCamelCaseCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-filename-camel-case"
 	markdownFilenameKebabCaseCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-filename-kebab-case"
 	markdownLinksCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-markdown-links"
@@ -101,6 +102,7 @@ var builtins = map[string]func(){
 	"java-version":                 javaVersionCheck.Main,
 	"jscpd":                        jscpdCheck.Main,
 	"local-branch":                 localBranchCheck.Main,
+	"localized-text":               localizedTextCheck.Main,
 	"markdown-filename-camel-case": markdownFilenameCamelCaseCheck.Main,
 	"markdown-filename-kebab-case": markdownFilenameKebabCaseCheck.Main,
 	"markdown-links":               markdownLinksCheck.Main,

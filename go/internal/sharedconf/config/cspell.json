@@ -108,6 +108,7 @@
     "pbxproj",
     "xcodegen",
     "xcodeproj",
+    "xcstrings",
     "swiftui",
     "deinit",
     "watchos",

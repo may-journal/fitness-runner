@@ -10,6 +10,9 @@ type blanker struct {
 	i   int
 	// keepStrings leaves string literals as written, so only comments blank.
 	keepStrings bool
+	// literals collects each string literal the blanker passes, inner
+	// ones in an interpolation before the literal holding them.
+	literals []Literal
 }
 
 // blankSwift returns src with its comments and string literals blanked.
@@ -97,25 +100,44 @@ func (b *blanker) stringLiteral() {
 		quote = `"""`
 	}
 	b.i += len(quote)
+	var text strings.Builder
 	for b.i < len(b.src) && !b.at(quote+hashes) {
-		b.stringChar(`\` + hashes)
+		text.WriteString(b.stringChar(`\` + hashes))
 	}
 	b.i = min(b.i+len(quote+hashes), len(b.src))
+	b.literals = append(b.literals, Literal{Start: start, End: b.i, Text: text.String()})
 	b.blankString(start)
 }
 
 // stringChar consumes one character of string content, an escape, or a
-// whole \( … ) interpolation.
-func (b *blanker) stringChar(escape string) {
-	if b.at(escape) {
-		b.i += len(escape)
-		if b.at("(") {
-			b.interpolation()
-			return
-		}
+// whole \( … ) interpolation, and returns the text it adds to the
+// literal's words: the character, an escaped quote or backslash, and
+// nothing for an interpolation or another escape.
+func (b *blanker) stringChar(escape string) string {
+	if !b.at(escape) {
+		b.i++
+		return b.src[b.i-1 : b.i]
 	}
-	b.i++
+	b.i += len(escape)
+	switch {
+	case b.at("("):
+		b.interpolation()
+		return ""
+	case b.at("u{"):
+		if end := strings.IndexByte(b.src[b.i:], '}'); end >= 0 {
+			b.i += end + 1
+		} else {
+			b.i = len(b.src)
+		}
+		return ""
+	}
+	b.i = min(b.i+1, len(b.src))
+	return escapedWords[b.src[b.i-1]]
 }
+
+// escapedWords is the text an escaped character adds to a literal's words:
+// a quote or backslash stands for itself, and a control character for none.
+var escapedWords = map[byte]string{'"': `"`, '\'': "'", '\\': `\`}
 
 // interpolation consumes balanced parentheses, skipping nested strings and
 // comments.
