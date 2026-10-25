@@ -19,11 +19,11 @@ Source: `go/internal/lang/swift/localized/localized.go:119`
 ## Requirements
 
 - 0097.1
-    - Given Developer has an app with a String Catalog and a view passing a literal to a SwiftUI text view or modifier
+    - Given Developer has a catalog app whose views pass literals to SwiftUI text, even in ternaries, interpolations, or multi-line strings
         - When fitness runs localized-text
             - Then it fails naming the file, line, literal as written, and call, and says which reference and catalog entry to use
 - 0097.2
-    - Given Developer has views that pass references, values, symbol names, and literals without letters
+    - Given Developer has views that pass references, values, symbol names, dictionary keys in an interpolation, and literals without letters
         - When fitness runs localized-text
             - Then it passes
 - 0097.3
@@ -31,7 +31,7 @@ Source: `go/internal/lang/swift/localized/localized.go:119`
         - When fitness runs localized-text
             - Then it fails naming the file, line, literal, and catalog entry, and says which reference to read it through
 - 0097.4
-    - Given Developer has requirement tests that type captions, prices, symbol names, and a word the catalog marks stale
+    - Given Developer has requirement tests that type captions, prices, symbol names, stale words, and entry words assigned to variables or argument labels
         - When fitness runs localized-text
             - Then it passes
 - 0097.5
