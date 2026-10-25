@@ -96,10 +96,11 @@ func Test0005_16(t *testing.T) {
 	sees(t, out, code, 1, swiftTest+" changed without its requirement doc "+pairedDoc+"; change both together")
 }
 
-// unformatted is requirementDoc as it read before Biome formatted it:
-// single-quoted front matter, the Measurement's - with no blank lines, and
-// four-space nesting.
+// unformatted is requirementDoc as it read before a formatter rewrote it:
+// other quotes in its front matter, its Why wrapped across two lines, the
+// Measurement's - with no blank lines, and four-space nesting.
 var unformatted = strings.NewReplacer(
+	"two numbers without", "two numbers\nwithout",
 	`['../../.fitnessrc.json']`, `["../../.fitnessrc.json"]`,
 	"\n\n-\n\n", "\n-\n",
 	"\n  - Given", "\n    - Given",
@@ -114,6 +115,8 @@ func Test0005_17(t *testing.T) {
 	out, code := stagedRun(t, given, formatted)
 	sees(t, out, code, 0)
 	out, code = prRun(t, given, formatted, "style(docs): format requirement docs with Biome")
+	sees(t, out, code, 0)
+	out, code = stagedRun(t, given, with(formatted, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))}))
 	sees(t, out, code, 0)
 }
 
