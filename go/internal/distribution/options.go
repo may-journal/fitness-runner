@@ -20,12 +20,20 @@ var versionPattern = regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+$`)
 var hashPattern = regexp.MustCompile(`^[a-f0-9]{64}$`)
 var binaryPattern = regexp.MustCompile(`^fitness(-[a-z0-9-]+)?$`)
 
+// skillsFolder holds one folder per skill beside the binaries in a bundle. A skill
+// file may sit in subfolders and none may start with a dot, so no path escapes.
+const skillsFolder = "skills"
+
+var skillFolderPattern = regexp.MustCompile(`^skills/[a-z0-9]+(-[a-z0-9]+)*$`)
+var skillPattern = regexp.MustCompile(`^skills/[a-z0-9]+(-[a-z0-9]+)*(/[A-Za-z0-9_-][A-Za-z0-9._-]*)+$`)
+
 // Options separates installer flags from untouched runner arguments.
 type Options struct {
 	Version      string
 	InstallOnly  bool
 	GitHubAction bool
 	InstallHook  bool
+	LinkSkills   []string
 	Args         []string
 }
 
@@ -37,6 +45,10 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
 	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
+	flags.Func("link-skills", "link the release skills into this folder, repeatable, without running checks", func(folder string) error {
+		options.LinkSkills = append(options.LinkSkills, folder)
+		return nil
+	})
 	if err := flags.Parse(args); err != nil {
 		return options, err
 	}
@@ -92,10 +104,27 @@ func (options Options) validate() error {
 	if options.InstallOnly && len(options.Args) > 0 {
 		return errors.New("install-only does not accept runner arguments")
 	}
+	if err := options.validateLinkSkills(); err != nil {
+		return err
+	}
 	if options.InstallHook {
 		return options.validateHook()
 	}
 	return nil
+}
+
+func (options Options) validateLinkSkills() error {
+	if len(options.LinkSkills) == 0 {
+		return nil
+	}
+	if len(options.Args) > 0 || options.otherMode() {
+		return errors.New("link-skills does not combine with other modes or runner arguments")
+	}
+	return nil
+}
+
+func (options Options) otherMode() bool {
+	return options.GitHubAction || options.InstallOnly || options.InstallHook
 }
 
 func (options Options) validateHook() error {

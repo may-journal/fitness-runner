@@ -2,10 +2,13 @@ package distribution
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 )
 
 var generationPattern = regexp.MustCompile(`^bundle-[0-9]+$`)
@@ -49,23 +52,88 @@ func validBundle(path string, hashes map[string]string) bool {
 		return false
 	}
 	entries, err := os.ReadDir(path)
-	if err != nil || len(entries) != len(hashes) {
+	if err != nil || len(entries) != topLevelCount(hashes) {
 		return false
 	}
-	return validFiles(path, hashes)
+	return validContents(path, hashes)
+}
+
+func validContents(path string, hashes map[string]string) bool {
+	return validSkillTree(path, hashes) && validFiles(path, hashes)
+}
+
+// validSkillTree checks the skills folder holds exactly the recorded skill
+// files, at any depth, and nothing else but folders.
+func validSkillTree(path string, hashes map[string]string) bool {
+	want := 0
+	for name := range hashes {
+		if strings.HasPrefix(name, skillsFolder+"/") {
+			want++
+		}
+	}
+	found := 0
+	err := filepath.WalkDir(filepath.Join(path, skillsFolder), func(file string, entry fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(path, file)
+		if err != nil {
+			return err
+		}
+		if _, recorded := hashes[filepath.ToSlash(relative)]; !recorded {
+			return errors.New("unrecorded skill file " + relative)
+		}
+		found++
+		return nil
+	})
+	if os.IsNotExist(err) {
+		return want == 0
+	}
+	return err == nil && found == want
 }
 
 func validFiles(path string, hashes map[string]string) bool {
 	for name, hash := range hashes {
 		file := filepath.Join(path, name)
-		if hash == checkLink && validLink(file) {
-			continue
-		}
-		if !validBinary(file, hash) {
+		if !validEntry(file, name, hash) {
 			return false
 		}
 	}
 	return true
+}
+
+// topLevelCount counts the bundle entries a directory listing shows, where all
+// skill files sit under the one skills folder.
+func topLevelCount(hashes map[string]string) int {
+	top := map[string]bool{}
+	for name := range hashes {
+		top[strings.SplitN(name, "/", 2)[0]] = true
+	}
+	return len(top)
+}
+
+func validSkillFile(path, hash string) bool {
+	info, err := os.Lstat(path)
+	if err != nil || !info.Mode().IsRegular() {
+		return false
+	}
+	data, err := readCacheFile(path, maxBinaryBytes)
+	return err == nil && contentHash(data) == hash
+}
+
+// validEntry checks one bundle file by its kind: a check link, a skill file, or
+// a binary.
+func validEntry(file, name, hash string) bool {
+	switch {
+	case hash == checkLink:
+		return validLink(file)
+	case strings.HasPrefix(name, skillsFolder+"/"):
+		return validSkillFile(file, hash)
+	}
+	return validBinary(file, hash)
 }
 
 func validBinary(path, hash string) bool {

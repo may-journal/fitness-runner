@@ -26,3 +26,7 @@ See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/
 `make requirements` builds the candidate for this host's platform only, then runs the requirement tests against it. Release and CI builds keep all four platforms.
 
 CI splits the tests over two `requirements` jobs per platform with [tests/requirements-shard.sh](../tests/requirements-shard.sh). `sh tests/requirements-shard.sh 1 2` runs the first half against the candidate in `FITNESS_INSTALL`.
+
+## Skills
+
+Each skill is a folder under [skills](../skills) with a `SKILL.md`, named for its topic, as [ADR 0011](architecture/adr/0011-skills-ship-in-the-bundle.md) decides. The [fitness skill](../skills/fitness/SKILL.md) teaches how to read any failing check, so no check has a skill of its own. Release bundles carry every skill, and `fitness-install --link-skills <folder>` links each into an agent's skills folder; run it again after an upgrade. A skill links the docs that hold the rules and copies none of them.

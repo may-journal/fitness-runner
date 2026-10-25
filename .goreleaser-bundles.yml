@@ -22,6 +22,6 @@ archives:
     formats: [tar.gz]
     name_template: 'fitness-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     wrap_in_directory: true
-    files: [none*]
+    files: [skills/**/*]
 checksum:
   name_template: checksums.txt

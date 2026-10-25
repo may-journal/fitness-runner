@@ -8,6 +8,7 @@ on:
     branches: [main]
     paths:
       - 'go/**'
+      - 'skills/**'
       - '.goreleaser-*.yml'
       - .github/actions/setup-go-cache/**
       - .github/workflows/distribution.yml

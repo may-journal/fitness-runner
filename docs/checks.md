@@ -4,7 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 # Checks
 
-Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`):
+Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`). The [fitness skill](../skills/fitness/SKILL.md) shows how to read them:
 
 - Pure logic: rules over file names, text, commits, and plans, such as `gitignore-why`, `semantic-commit`, `markdown-links`, and `prose-budget`
 - Issue and PR body checks: `plan-structure`, `epic-structure`, `pr-structure`, `pr-closes-issue`, `issue-checklist`; file-level `doc-template` (files match their nearest template) and `requirements` (tests change with docs)

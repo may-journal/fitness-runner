@@ -51,6 +51,13 @@ func runInstalled(bin string, options distribution.Options) int {
 	if options.InstallHook {
 		return installHook(options)
 	}
+	if len(options.LinkSkills) > 0 {
+		return linkSkills(bin, options)
+	}
+	return runChecks(bin, options)
+}
+
+func runChecks(bin string, options distribution.Options) int {
 	if options.GitHubAction {
 		if err := distribution.WriteActionFiles(bin); err != nil {
 			return failure(err)
@@ -63,6 +70,14 @@ func runInstalled(bin string, options distribution.Options) int {
 	}
 	runner := filepath.Join(bin, "fitness")
 	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), runnerEnvironment(bin)))
+}
+
+func linkSkills(bin string, options distribution.Options) int {
+	if err := distribution.LinkSkills(bin, options.LinkSkills, os.Stdout); err != nil {
+		return failure(err)
+	}
+	report.Outcome("fitness-install", "Linked the Fitness skills successfully.")
+	return 0
 }
 
 func failure(err error) int {
