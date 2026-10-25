@@ -29,5 +29,6 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
       command: plan-check
-      # A repo with this caller still carries its own dupe-check caller.
+      # The synced issue-check caller runs dupe-check for every issue, so a
+      # Plan here would get a second note.
       dupe-check: false

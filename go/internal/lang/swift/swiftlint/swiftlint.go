@@ -12,7 +12,10 @@ package swiftlint
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -46,13 +49,9 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	if len(all) == 0 {
 		return checkkit.Pass(0), nil
 	}
-	paths := []string{"."}
-	if checkkit.ChangedFiles() != nil {
-		if paths = walkfs.InScope(all); len(paths) == 0 {
-			return checkkit.Pass(0), nil
-		}
-		// SwiftLint lints a named path even when the config excludes it.
-		paths = append([]string{"--force-exclude"}, paths...)
+	paths := lintPaths(root, all)
+	if len(paths) == 0 {
+		return checkkit.Pass(0), nil
 	}
 	bin, err := exec.LookPath("swiftlint")
 	if err != nil {
@@ -60,6 +59,31 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	}
 	exitCode, output := execSwiftlint(bin, root, paths)
 	return judge(exitCode, output), nil
+}
+
+// lintPaths is what SwiftLint lints: the whole tree, or a scoped run's
+// changed Swift files among all, none when it changed no Swift file.
+func lintPaths(root string, all []string) []string {
+	if checkkit.ChangedFiles() == nil || includes(root) {
+		return []string{"."}
+	}
+	changed := walkfs.InScope(all)
+	if len(changed) == 0 {
+		return nil
+	}
+	// SwiftLint lints a named path even when the config excludes it.
+	return append([]string{"--force-exclude"}, changed...)
+}
+
+// includedKey is a top-level `included:` list in a SwiftLint config.
+var includedKey = regexp.MustCompile(`(?m)^included\s*:`)
+
+// includes reports whether the repo's .swiftlint.yml lists `included:`
+// paths. SwiftLint lints a path named on its command line even outside
+// that list, so such a repo keeps the whole-tree lint.
+func includes(root string) bool {
+	config, err := os.ReadFile(filepath.Join(root, ".swiftlint.yml"))
+	return err == nil && includedKey.Match(config)
 }
 
 // execSwiftlint runs `swiftlint lint --strict --reporter json --quiet` on

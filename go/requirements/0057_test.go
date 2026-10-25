@@ -152,15 +152,23 @@ func Test0057_6(t *testing.T) {
 
 func Test0057_9(t *testing.T) {
 	t.Parallel()
-	repo := swiftlintRepo(t, map[string]string{"Clean.swift": "let value = 1\n", "Other.swift": "let other = 1\n"})
-	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
-	commit(t, repo, map[string]string{"Other.swift": "let other = 2\n"}, "fix(app): change other")
-	scoped := "lint --strict --reporter json --quiet --force-exclude Other.swift"
-	rp := standIn(t, map[string][]response{"swiftlint": {{Match: []string{scoped}, Stdout: "[\n\n]\n"}}})
-	out, code := fitness(t, repo, append(rp.env, prEnv...), "swiftlint")
-	sees(t, out, code, 0, "All 1 checks passed")
-	if calls := rp.calls("swiftlint"); len(calls) != 1 || calls[0] != scoped {
-		t.Errorf("swiftlint calls = %q, want one %q", calls, scoped)
+	for config, want := range map[string]string{
+		"":                     "lint --strict --reporter json --quiet --force-exclude Other.swift",
+		"included:\n  - Lib\n": swiftlintArgs,
+	} {
+		files := map[string]string{"Clean.swift": "let value = 1\n", "Other.swift": "let other = 1\n"}
+		if config != "" {
+			files[".swiftlint.yml"] = config
+		}
+		repo := swiftlintRepo(t, files)
+		git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+		commit(t, repo, map[string]string{"Other.swift": "let other = 2\n"}, "fix(app): change other")
+		rp := standIn(t, map[string][]response{"swiftlint": {{Match: []string{want}, Stdout: "[\n\n]\n"}}})
+		out, code := fitness(t, repo, append(rp.env, prEnv...), "swiftlint")
+		sees(t, out, code, 0, "All 1 checks passed")
+		if calls := rp.calls("swiftlint"); len(calls) != 1 || calls[0] != want {
+			t.Errorf("with config %q, swiftlint calls = %q, want one %q", config, calls, want)
+		}
 	}
 }
 

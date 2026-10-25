@@ -33,13 +33,10 @@ type Job struct {
 	Seconds  int
 }
 
-// Billed is the whole minutes GitHub bills a job of seconds: every started
-// job bills at least one, and a job that never started bills none.
+// Billed is the whole minutes GitHub bills a job that ran for seconds: every
+// started job bills at least one, even one that ended within its first second.
 func Billed(seconds int) int {
-	if seconds <= 0 {
-		return 0
-	}
-	return (seconds + 59) / 60
+	return max(1, (seconds+59)/60)
 }
 
 // Table groups jobs by workflow, most billed minutes first, then by name.
@@ -109,7 +106,7 @@ func (Client) Jobs(ctx context.Context, repo string, since time.Time) ([]Job, er
 func runJobs(ctx context.Context, repo, id, workflow string) ([]Job, error) {
 	out, err := gh(ctx, "--paginate", "--jq",
 		`.jobs[] | "\(.conclusion // "")\t\(.started_at // "")\t\(.completed_at // "")"`,
-		"repos/"+repo+"/actions/runs/"+id+"/jobs?per_page=100")
+		"repos/"+repo+"/actions/runs/"+id+"/jobs?per_page=100&filter=all")
 	if err != nil {
 		return nil, err
 	}

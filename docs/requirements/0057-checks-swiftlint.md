@@ -14,7 +14,7 @@ Swift repos with a clean strict SwiftLint run reported green
 -
 Swift repos checked
 
-Source: `go/internal/lang/swift/swiftlint/swiftlint.go:105`
+Source: `go/internal/lang/swift/swiftlint/swiftlint.go:129`
 
 ## Requirements
 
@@ -49,4 +49,4 @@ Source: `go/internal/lang/swift/swiftlint/swiftlint.go:105`
 - 0057.9
     - Given Developer has a pull request that changes one of two Swift files
         - When fitness runs swiftlint on the pull request
-            - Then it lints only the changed file, keeping the config's excludes
+            - Then it lints only that file, or the whole tree when the config lists `included:` paths

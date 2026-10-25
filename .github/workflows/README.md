@@ -125,7 +125,7 @@ The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/ac
 
 A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
 
-The same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit that keeps the base skips the suite and its installs, and runs pr-check alone. `pr-check` findings still fail the job. A caller of `ci-reusable` that cannot grant `pull-requests` and `issues` read passes `pr-check: false`.
+With `pr-check: true` the same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit reruns the whole job, since it reports the same check on the same commit. `pr-check` findings still fail the job. The input defaults to off, since it needs `pull-requests` and `issues` read.
 
 ## close-check
 
@@ -260,7 +260,7 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 ### In other repos
 
-Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off. ci-reusable instead installs the Go the repo's `go.mod` names and caches `~/.cache/go-build` itself. Its key holds the platform, Go version and a hash of the Go sources. So a PR's next push compiles only what changed.
+Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off. ci-reusable instead installs the Go the repo's `go.mod` names and caches `~/.cache/go-build` itself. Its key holds the platform, Go version and a hash of the Go sources. It saves on pull requests, since the suite runs on nothing else, so a PR's next push compiles only what changed.
 
 ## auto-merge
 
