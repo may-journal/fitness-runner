@@ -30,7 +30,23 @@ func TestMain(m *testing.M) {
 	if name := filepath.Base(os.Args[0]); strings.HasPrefix(name, timedPrefix) {
 		os.Exit(timedCheck(name, os.Args[1:]))
 	}
+	keepHostGitOut()
 	os.Exit(m.Run())
+}
+
+// repoGitConfig is the git config every test repo gets, whatever the host's.
+// A signed tag needs a message no test gives. Background maintenance after a
+// commit can still be writing a pack when the test removes the repo.
+var repoGitConfig = [][2]string{{"tag.gpgSign", "false"}, {"maintenance.auto", "false"}, {"gc.auto", "0"}}
+
+// keepHostGitOut puts repoGitConfig in the environment, so every git the
+// tests or fitness start reads it.
+func keepHostGitOut() {
+	for i, kv := range repoGitConfig {
+		_ = os.Setenv(fmt.Sprintf("GIT_CONFIG_KEY_%d", i), kv[0])
+		_ = os.Setenv(fmt.Sprintf("GIT_CONFIG_VALUE_%d", i), kv[1])
+	}
+	_ = os.Setenv("GIT_CONFIG_COUNT", fmt.Sprint(len(repoGitConfig)))
 }
 
 // response is one saved answer: when every Match string appears in the
