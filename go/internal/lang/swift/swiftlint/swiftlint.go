@@ -39,24 +39,35 @@ type violation struct {
 }
 
 // Run lints the repo at root, passing clean when it holds no Swift source.
+// A scoped run, such as a pull request, lints only its changed Swift files,
+// and passes without starting SwiftLint when it changed none.
 func Run(root string, _ []string) (checkkit.Result, error) {
-	if len(walkfs.FilesByExt(root, swift.Ext)) == 0 {
+	all := walkfs.FilesByExt(root, swift.Ext)
+	if len(all) == 0 {
 		return checkkit.Pass(0), nil
+	}
+	paths := []string{"."}
+	if checkkit.ChangedFiles() != nil {
+		if paths = walkfs.InScope(all); len(paths) == 0 {
+			return checkkit.Pass(0), nil
+		}
+		// SwiftLint lints a named path even when the config excludes it.
+		paths = append([]string{"--force-exclude"}, paths...)
 	}
 	bin, err := exec.LookPath("swiftlint")
 	if err != nil {
 		return checkkit.Fail(0, notInstalled), nil
 	}
-	exitCode, output := execSwiftlint(bin, root)
+	exitCode, output := execSwiftlint(bin, root, paths)
 	return judge(exitCode, output), nil
 }
 
-// execSwiftlint runs `swiftlint lint --strict --reporter json --quiet .` in
-// root; returns the exit code and combined stdout+stderr, mirroring the TS
-// execSyncResult (which redirected with `2>&1`). A failure that carries no
-// exit code maps to 1, exactly like the TS catch path.
-func execSwiftlint(bin, root string) (exitCode int, output string) {
-	cmd := exec.Command(bin, "lint", "--strict", "--reporter", "json", "--quiet", ".")
+// execSwiftlint runs `swiftlint lint --strict --reporter json --quiet` on
+// paths in root; returns the exit code and combined stdout+stderr,
+// mirroring the TS execSyncResult (which redirected with `2>&1`). A failure
+// that carries no exit code maps to 1, exactly like the TS catch path.
+func execSwiftlint(bin, root string, paths []string) (exitCode int, output string) {
+	cmd := exec.Command(bin, append([]string{"lint", "--strict", "--reporter", "json", "--quiet"}, paths...)...)
 	cmd.Dir = root
 	o := checkkit.ExecCombined(cmd)
 	return o.Code, o.Stdout

@@ -14,7 +14,7 @@ Swift repos with a clean strict SwiftLint run reported green
 -
 Swift repos checked
 
-Source: `go/internal/lang/swift/swiftlint/swiftlint.go:94`
+Source: `go/internal/lang/swift/swiftlint/swiftlint.go:105`
 
 ## Requirements
 
@@ -46,3 +46,7 @@ Source: `go/internal/lang/swift/swiftlint/swiftlint.go:94`
     - Given Developer has a `.swiftlint.yml` that excludes every Swift file
         - When fitness runs swiftlint
             - Then it passes, since nothing is left to lint
+- 0057.9
+    - Given Developer has a pull request that changes one of two Swift files
+        - When fitness runs swiftlint on the pull request
+            - Then it lints only the changed file, keeping the config's excludes

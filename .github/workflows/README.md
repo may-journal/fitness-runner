@@ -254,7 +254,11 @@ The others restore `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<v
 | smoke        | distribution.yml `smoke`                 | `smoke`, Release `verify-download` |
 | requirements | distribution.yml `requirements`, shard 1 | `requirements`                     |
 
-Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes that touch Go or GoReleaser files, to save its caches. Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off.
+Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes that touch Go or GoReleaser files, to save its caches.
+
+### In other repos
+
+Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off. ci-reusable instead installs the Go the repo's `go.mod` names and caches `~/.cache/go-build` itself. Its key holds the platform, Go version and a hash of the Go sources. So a PR's next push compiles only what changed.
 
 ## auto-merge
 
