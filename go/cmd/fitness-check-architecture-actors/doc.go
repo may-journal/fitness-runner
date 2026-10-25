@@ -1,0 +1,59 @@
+// Command fitness-check-architecture-actors requires each requirement's
+// Given to start with an actor the system context declares. No role slips
+// into a requirement that the architecture does not know, and a dropped role
+// fails every Given that still names it.
+//
+// The check reads the model that [architecture-contract] reads and the
+// Given text that [requirements] parses. It adds no fields, columns, or rows.
+//
+// # Actors
+//
+// An actor is a person in `01-system-context.md`: a C4 `Person` or
+// `Person_Ext`, or a flowchart node classed `person`. Its name is the label
+// without the callout number, and its Mermaid ID is the one alias the
+// diagram declares.
+//
+//   - `Person(developer, "1 Developer")` declares the name `Developer` and the alias `developer`.
+//   - `host((1 Host)):::person` declares the name `Host` and the alias `host`.
+//
+// Systems, legends, and people in other views are never actors.
+//
+// # Grammar
+//
+// A Given starts with one actor, or several joined by `and`, then the
+// state. A spelling matches only as a whole word, with the diagram's case.
+//
+//   - `Given Host has no network` passes.
+//   - `Given host has no network` passes, by ID.
+//   - `Given Host and Participant have joined` passes.
+//   - `Given Hosts have joined` fails: no whole-word actor.
+//   - `Given Admin has joined` fails: undeclared.
+//   - `Given I have joined` fails unless `I` is an actor's name or ID.
+//   - `Given no network` fails: no actor.
+//   - `Given Host and` fails: no actor after `and`.
+//
+// Not every actor needs a Given; the check constrains the roles
+// requirements use.
+//
+// # Failures
+//
+//   - No actor at the start, or after `and`: the Given line, the context diagram line, and the declared names.
+//   - A spelling that is one actor's ID and another actor's name: the Given line and both context lines.
+//
+// Every run reads every requirement doc and the whole model, scoped runs
+// included, so a removed actor fails even when no requirement changed.
+//
+// # Behavior
+//
+//   - No architecture views: pass with `filesChecked: 0`.
+//   - Otherwise `filesChecked` counts the requirement docs read.
+//   - Doc shape and missing views belong to the `requirements` and `architecture-contract` checks.
+//
+// # Requirements
+//
+// [Requirement 0074] has one installed-command test per acceptance.
+//
+// [architecture-contract]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-contract/README.md
+// [requirements]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-requirements/README.md
+// [Requirement 0074]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0074-checks-architecture-actors.md
+package check

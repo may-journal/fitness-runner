@@ -1,20 +1,3 @@
-// Command fitness-check-vitest-coverage-full requires Vitest coverage
-// thresholds of 100 in the repo and the shared config, then runs `vitest run
-// --coverage`. Two departures from the TypeScript original,
-// both mechanical: coverage thresholds are judged textually via
-// internal/vitestconf instead of evaluating the config as JavaScript, and
-// vitest is executed directly — resolved from node_modules/.bin walking up
-// from root, then PATH, never npx — so a missing binary fails with an
-// install hint where npx would have installed it on demand. Threshold
-// gating order, config fallback, last-line failure extraction, error
-// strings, and filesChecked all match the TS check. Node's execSync capped
-// captured output at 1 MiB (maxBuffer); this port does not.
-//
-// The fitness-runner root — the directory whose vitest.config.mjs backs both
-// the threshold fallback and the --config fallback — resolves through
-// internal/sharedconf: an installed node_modules/@mayjournal/fitness-shared
-// walking up from root, else the config directory embedded in this binary,
-// materialized to the cache.
 package check
 
 import (

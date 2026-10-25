@@ -14,7 +14,7 @@ repeat issue links reported red
 -
 repeat issue links
 
-Source: `go/cmd/fitness-check-issue-link-once/main.go:127`
+Source: `go/cmd/fitness-check-issue-link-once/main.go:111`
 
 ## Requirements
 

@@ -14,7 +14,7 @@ Go modules that `go vet` passes clean
 -
 Go modules found
 
-Source: `go/cmd/fitness-check-go-vet/main.go:34`
+Source: `go/cmd/fitness-check-go-vet/main.go:31`
 
 ## Requirements
 

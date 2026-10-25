@@ -1,9 +1,3 @@
-// Command fitness-check-semantic-commit requires the commit subject to
-// follow Conventional Commits, `type(scope): description`, with the scope
-// required. One deviation from
-// the TypeScript original: it inlines the type list the TS check read from
-// the conventional-commit-types package at runtime (same eleven types, same
-// order).
 package check
 
 import (

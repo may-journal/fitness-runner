@@ -1,27 +1,3 @@
-// Command fitness-check-prettier runs Prettier `--check` over the repo's
-// files. The binary stays zero-dependency: Prettier
-// is resolved at runtime as a peer of the repo under check (node_modules/.bin
-// walking up from root, then PATH — never npx), and a missing binary fails
-// with a one-line install hint. Prettier checks every tracked file (or every
-// changed file in a scoped run) with --ignore-unknown, so a file type it has
-// no parser for passes instead of being skipped by name. It ignores nothing
-// else: --ignore-path points at an empty file and --with-node-modules is on,
-// and a repo with a .prettierignore fails. Passthrough args replace --check
-// mode, [warn] lines become per-file errors, and a non-zero exit that parsed
-// nothing reports the fallback message. When the repo has no Prettier config of its own, the
-// shared prettier.config.cjs is passed via --config: an installed
-// @mayjournal/fitness-shared wins (the npm-era node_modules walk, mirroring
-// the TS resolveFitnessConfigPath), else the copy embedded in this binary is
-// materialized to the cache (internal/sharedconf). The shared config resolves
-// its two plugins with createRequire from its own location, which never has
-// them, so the check puts the repo's node_modules folders on NODE_PATH.
-// Installing the plugins stays the check's peer contract, unchanged from the
-// npm era. When Prettier fails without parsing a file, its own [error] lines
-// are reported, so a missing plugin names itself.
-//
-// A repo that chose Biome (internal/biome) is checked by `biome format` on
-// the same paths instead, and needs no Prettier (ADR 0006). Its passthrough
-// args are translated to Biome's, never handed over as paths.
 package check
 
 import (

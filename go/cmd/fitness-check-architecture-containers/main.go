@@ -1,5 +1,3 @@
-// Command fitness-check-architecture-containers matches the containers view
-// against the runtime products the repository builds and deploys.
 package check
 
 import (

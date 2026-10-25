@@ -1,7 +1,3 @@
-// Command fitness-check-gitignore-why requires every .gitignore pattern to
-// follow a `#` comment explaining why it exists. A missing
-// .gitignore passes with zero files checked, exactly like the TypeScript
-// original.
 package check
 
 import (

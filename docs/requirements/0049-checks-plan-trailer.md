@@ -14,7 +14,7 @@ plan references that read exactly `Plan #<number>`
 -
 plan references in commit messages
 
-Source: `go/cmd/fitness-check-plan-trailer/main.go:50`
+Source: `go/cmd/fitness-check-plan-trailer/main.go:42`
 
 ## Requirements
 

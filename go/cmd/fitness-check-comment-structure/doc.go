@@ -1,0 +1,37 @@
+// Command fitness-check-comment-structure judges one GitHub issue or PR
+// comment, so a reply stays short, readable, and free of agent noise. It
+// holds a word budget outside tables, code, and diagrams, and allows at most
+// one plain table. Diagrams are numbered, and change-log notes, agent
+// frames, and model identifiers fail. It is driven by `fitness comment-check`, locally on a draft and in
+// the [comment-check workflow].
+//
+// A comment is not a file in the tree. This check reads it from stdin, a
+// `--body-file` path (`-` meaning stdin), or the runner's context-inline
+// `--body` value. With no input it passes with zero files checked. Under
+// `fitness --blob` it skips Plan, Epic, and PR bodies, which have their own
+// structure checks.
+//
+// # Behavior
+//
+//   - Fail: more words than the budget outside tables, code, and diagrams. Headings, HTML comments, links' targets, and URLs do not count.
+//   - Fail: more plain tables than the budget. A callout table belongs to its diagram and does not count.
+//   - Fail: a mermaid diagram with no numbered callouts, unless it is the legend right after a numbered diagram.
+//   - Fail: a change-log note, such as `Update:`, `(edited …)`, or `replaces my earlier`. Edit the text in place instead.
+//   - Fail: an agent frame, such as a `<system-reminder>` tag, anywhere in the comment, code included.
+//   - Fail: a fitness marker outside code. Only the known bots post them, and comment-check judges a marker from anyone else.
+//   - Fail: a model identifier, such as `claude-…` or `gpt-…`, outside code spans, fences, and URLs. Name the agent instead.
+//
+// Each error names its line. The callout table's numbers are matched by
+// `mermaid-callouts`, and diagrams are parsed by `mermaid-syntax`.
+//
+// The budget is 100 words and 1 table, which the `comment` keys below
+// replace when positive:
+//
+//	{
+//	  "comment": {
+//	    "maxWords": 120
+//	  }
+//	}
+//
+// [comment-check workflow]: https://github.com/may-journal/fitness-runner/blob/main/.github/workflows/README.md#comment-check
+package check

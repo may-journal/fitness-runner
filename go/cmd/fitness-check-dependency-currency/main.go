@@ -1,12 +1,3 @@
-// Command fitness-check-dependency-currency fails a declared npm
-// dependency that is behind its latest published version. One deviation from the TypeScript original: it
-// queries the npm registry directly over HTTP (abbreviated metadata,
-// dist-tags.latest) instead of shelling out to `npm outdated --json`,
-// enumerating the root manifest plus its workspaces itself. The soul is
-// unchanged: internal @mayjournal/* packages are skipped, identical lines
-// collapse to one, and an unreachable registry (or any garbage response)
-// contributes nothing — fully offline degrades to a pass so commits are
-// never blocked.
 package check
 
 import (

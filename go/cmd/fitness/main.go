@@ -202,13 +202,10 @@ func runHookArgs(args []string) int {
 	return runHook(args[0], args[1:])
 }
 
-// printUsage writes the command summary.
-func printUsage() int {
-	fmt.Println(`fitness — run the configured checks.
-
-Usage:
-  fitness                  run the full configured suite
-  fitness <name>           run one check by name
+// usage lists every command, one per line, with what it does. The README
+// shows the same list, which `go generate` writes from this constant.
+const usage = `  fitness                  run the full configured suite
+  fitness <name> [args]    run one check by name; args such as --write reach it
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
@@ -228,6 +225,7 @@ Usage:
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
   fitness branch-check     validate this branch's PR and linked issues locally
+  fitness local-branch     the same meta-check, also included in pre-push
   fitness issue-check      validate an issue by its kind label and comment the result (GitHub Actions)
   fitness plan-check       issue-check for Plan issues only (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
@@ -235,8 +233,11 @@ Usage:
   fitness comment-check --blob <text>
                            judge a drafted comment (- or no arguments reads stdin)
   fitness comment-check    judge issue and PR comments and reply (GitHub Actions)
+`
 
-Docs: https://github.com/may-journal/fitness-runner#usage`)
+// printUsage writes the command summary.
+func printUsage() int {
+	fmt.Print("fitness — run the configured checks.\n\nUsage:\n" + usage + "\nDocs: https://github.com/may-journal/fitness-runner#usage\n")
 	return 0
 }
 

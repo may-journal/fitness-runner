@@ -1,7 +1,3 @@
-// Command fitness-check-no-eslint-disable fails any JS or TS source file
-// that holds an ESLint disable directive, in file, block, `-line`, or
-// `-next-line` form. Each hit
-// reports the file, its 1-based line, and the directive token that matched.
 package check
 
 import (

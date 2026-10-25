@@ -1,13 +1,3 @@
-// Command fitness-check-build-output-untracked keeps build output out of git
-// and out of source imports. Three rules: dist must be git-ignored, no file
-// under a dist directory or the build output a language module names
-// may be git-tracked (one combined error names them all), and no source file
-// a module scans for this check may import from a dist path.
-//
-// One deviation from the TypeScript original: only git's stdout is parsed
-// for tracked files (the TS exec helper folded stderr into the output of a
-// failing command), so a failing git command contributes no phantom tracked
-// files.
 package check
 
 import (

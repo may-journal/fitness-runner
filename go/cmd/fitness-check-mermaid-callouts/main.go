@@ -1,10 +1,3 @@
-// Command fitness-check-mermaid-callouts requires every mermaid diagram with
-// callouts to have a callout table whose callouts match it one to one, with
-// no orphan callouts, orphan rows, or duplicates. Nodes carry number callouts
-// and connectors carry letter callouts (A–Z, then AA–ZZ, then AAA…), so a
-// connector numbered like a node, or a letter that breaks the doubling,
-// fails. Diagrams without callouts need no table; a table with no preceding
-// diagram is an error.
 package check
 
 import (

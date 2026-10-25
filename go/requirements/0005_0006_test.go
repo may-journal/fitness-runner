@@ -118,6 +118,13 @@ func Test0005_17(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = stagedRun(t, given, with(formatted, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))}))
 	sees(t, out, code, 0)
+	moved := map[string]string{pairedDoc: docWith("Source: `adder.go:6`", acceptances("0001.1"))}
+	out, code = stagedRun(t, pairedRepo(), moved)
+	sees(t, out, code, 0)
+	out, code = prRun(t, pairedRepo(), moved, "docs(requirements): cite the moved sum")
+	sees(t, out, code, 0)
+	out, code = stagedRun(t, pairedRepo(), map[string]string{pairedDoc: docWith("Source: `go.mod:1`", acceptances("0001.1"))})
+	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
 }
 
 // docOf is goRepo with requirement 0001 replaced by body at path.

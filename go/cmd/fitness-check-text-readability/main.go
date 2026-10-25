@@ -1,14 +1,5 @@
 // cspell:ignore Liau unbackticked scoreable
 
-// Command fitness-check-text-readability fails a markdown file whose prose
-// scores as hard to read. It scores each .md file with the three
-// character-based readability formulas — Coleman-Liau, ARI, and LIX — and
-// fails only when at least two of the three sit in alarm territory
-// (grade >= 18 for Coleman-Liau/ARI, LIX >= 60 by default). Files with
-// fewer than 100 prose words are never judged: below that, the formulas
-// are noise (see docs/research/0001-prose-cognitive-complexity.md, which
-// derived the bands, the ensemble vote, and the masking spec from this
-// repo's own corpus). Pass --report to print every file's scores to stderr.
 package check
 
 import (

@@ -16,7 +16,7 @@ checked files with no unknown words
 -
 checked files
 
-Source: `go/cmd/fitness-check-cspell/main.go:68`
+Source: `go/cmd/fitness-check-cspell/main.go:53`
 
 ## Requirements
 

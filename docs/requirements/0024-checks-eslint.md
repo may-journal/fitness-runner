@@ -14,7 +14,7 @@ files ESLint reports clean
 -
 files linted
 
-Source: `go/cmd/fitness-check-eslint/main.go:95`
+Source: `go/cmd/fitness-check-eslint/main.go:73`
 
 ## Requirements
 

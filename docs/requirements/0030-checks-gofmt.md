@@ -14,7 +14,7 @@ Go files `gofmt` leaves unchanged
 -
 Go files checked
 
-Source: `go/cmd/fitness-check-gofmt/main.go:40`
+Source: `go/cmd/fitness-check-gofmt/main.go:37`
 
 ## Requirements
 

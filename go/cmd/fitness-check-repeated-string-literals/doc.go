@@ -1,0 +1,54 @@
+// Command fitness-check-repeated-string-literals fails a string literal that
+// appears three or more times across the repo's JS and TS sources. It should
+// be a shared constant. When the repeats are a small closed set
+// like `'active'` and `'pending'`, a union type or enum fits better. It is on
+// by default.
+//
+// # Why not just ESLint or jscpd
+//
+//   - `jscpd` finds duplicated multi-line blocks (`--min-lines 5`); a single repeated literal is one token on one line, so it never sees it.
+//   - `sonarjs/no-duplicate-string` (ESLint) only flags strings of 10+ chars containing a separator, which excludes the short, identifier-like tokens (`'active'`, `'GET'`) this check targets.
+//
+// # What passes and fails
+//
+// A value repeated only twice passes; a value used 3+ times anywhere across
+// the scanned files fails, one error per value, most-repeated first:
+//
+//	// src/a.ts
+//	if (order.status === 'active') setStatus('active');
+//	// src/b.ts
+//	const rows = all.filter((r) => r.status === 'active');
+//
+// It fails with:
+//
+//	"active" appears 3 times (src/a.ts:1, src/a.ts:1, src/b.ts:2) — extract a shared constant
+//
+// # Behavior
+//
+//   - Scans every tracked `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts` file, test, spec, and bench files included.
+//   - A hand lexer extracts single- and double-quoted literals, ignoring comments, regex, and template literals, and dropping module specifiers (after `import`, `require`, `from`).
+//   - Counts identical values repo-wide; flags any at or above the threshold (3). Values under the length floor (3) are ignored.
+//   - Idiomatic tokens are never flagged: buffer encodings (`'utf8'`), stdio modes (`'inherit'`), `typeof` results (`'object'`), and directives (`'use strict'`).
+//   - Error format: `"value" appears N times (file:line, …, +K more) — extract a shared constant`, locations capped at 5.
+//   - `filesChecked` counts every scanned source file.
+//
+// # Allow list
+//
+// Use `allow` for the rare repeat no constant can fix. That means a value
+// that must live once per runtime island — TS sources, published bin
+// scripts, or automation scripts. Or one spelling shared by genuinely
+// different things:
+//
+//	{
+//	  "repeatedStringLiterals": { "allow": ["my-check-name", "kindValue"] }
+//	}
+//
+// `allow` entries match exact values and are never flagged. Keep the list a
+// shrinking baseline; the fix is to centralize the constant. A
+// `.fitnessrc.json` that fails to load leaves the allow list empty.
+//
+// # Limitations
+//
+//   - Template literals are out of scope — only plain `'…'` and `"…"` literals count.
+//   - Thresholds and the idiomatic-token set are fixed in the binary; there is no inline marker and no enum-candidate detection yet (tracked in #44).
+package check

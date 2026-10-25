@@ -1,4 +1,3 @@
-// Command fitness-check-local-branch runs PR and Plan judgments locally.
 package check
 
 import (

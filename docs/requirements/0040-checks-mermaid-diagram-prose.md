@@ -14,7 +14,7 @@ paired diagrams whose relationship labels hold only callout numbers
 -
 paired diagrams checked
 
-Source: `go/cmd/fitness-check-mermaid-diagram-prose/main.go:160`
+Source: `go/cmd/fitness-check-mermaid-diagram-prose/main.go:155`
 
 ## Requirements
 

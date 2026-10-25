@@ -1,6 +1,3 @@
-// Command fitness-check-architecture-actors requires each requirement's
-// Given to start with an actor the system context declares, so no role
-// slips into a requirement that the architecture does not know.
 package check
 
 import (

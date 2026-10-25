@@ -1,10 +1,3 @@
-// Command fitness-check-pr-structure validates that a pull request description
-// follows the PR template: a one-line blockquote summary, a `## Background`
-// section, and a `## Changelog` section with at least one bullet, and no other
-// `##` sections — the "what changed" lives in the diff, not the prose.
-//
-// It reads its target from stdin, a `--body-file` path (`-` meaning stdin), or
-// the runner's context-inline `--body` value, and passes inert with no input.
 package check
 
 import (

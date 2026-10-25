@@ -116,17 +116,21 @@ func tag(field *ast.Field, key string) string {
 }
 
 // configMarkdown renders a check's config keys as a Markdown section, or ""
-// when it reads none.
+// when it reads none. Each key is a paragraph, and the keys nested in it a
+// flat list below it, so no list nests past the depth prose-budget allows.
 func configMarkdown(keys []configKey) string {
 	if len(keys) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("## Configuration\n\nThese `.fitnessrc.json` keys tune the check.\n\n")
+	b.WriteString("## Configuration\n\nThese `.fitnessrc.json` keys tune the check.\n")
 	for _, key := range keys {
-		b.WriteString("- " + keyLine(key) + "\n")
+		b.WriteString("\n" + keyLine(key) + "\n")
+		if len(key.Fields) > 0 {
+			b.WriteString("\n")
+		}
 		for _, sub := range key.Fields {
-			b.WriteString("    - " + keyLine(sub) + "\n")
+			b.WriteString("- " + keyLine(sub) + "\n")
 		}
 	}
 	return b.String()

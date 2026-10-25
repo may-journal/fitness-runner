@@ -1,6 +1,3 @@
-// Command fitness-check-gofmt lists Go files that gofmt would change. It
-// checks the repo's own .go files (not testdata or vendor, and not paths the
-// config ignores), so a repo with no Go passes clean.
 package check
 
 import (

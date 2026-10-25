@@ -14,7 +14,7 @@ files under `docs/plans/` reported red
 -
 files under `docs/plans/`
 
-Source: `go/cmd/fitness-check-no-plans-dir/main.go:27`
+Source: `go/cmd/fitness-check-no-plans-dir/main.go:22`
 
 ## Requirements
 

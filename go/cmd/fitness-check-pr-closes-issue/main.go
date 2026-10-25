@@ -1,26 +1,3 @@
-// Command fitness-check-pr-closes-issue validates that a pull request
-// description closes at least one issue on merge. GitHub auto-closes an issue
-// only for a fixed set of keywords, so a PR that merely references an issue
-// (`Implements #12`, `addresses #12`) leaves it open — this check fails that.
-//
-// Three rules run over the body:
-//   - Every PR must carry at least one closing keyword (`close`/`fix`/
-//     `resolve` and their tenses) linking an issue. A body with only
-//     references, or none, is invalid.
-//   - Every issue the PR says it implements (`Implements #NN`, or a `Plan #NN`
-//     line) must be among the closed issues.
-//   - Every issue named by `--require-close` — an issue that a Plan the PR
-//     closes itself closes — must be among the closed issues too.
-//
-// With `--emit-closed` it prints the body's closed issue numbers as a JSON
-// array and exits; the pr-check workflow uses this to read a Plan's closed
-// issues with the same keyword set, then feeds them back via --require-close.
-//
-// Keywords inside inline code or fenced code are quoted examples, not
-// closures, so every rule skips them.
-//
-// It reads its target from stdin, a `--body-file` path (`-` meaning stdin), or
-// the runner's context-inline `--body` value, and passes inert with no input.
 package check
 
 import (

@@ -14,7 +14,7 @@ runs that show the reminder and pass
 -
 runs of read-repo-first
 
-Source: `go/cmd/fitness-check-read-repo-first/main.go:44`
+Source: `go/cmd/fitness-check-read-repo-first/main.go:38`
 
 ## Requirements
 

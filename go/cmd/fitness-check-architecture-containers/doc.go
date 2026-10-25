@@ -1,0 +1,62 @@
+// Command fitness-check-architecture-containers matches the containers view
+// against the runtime products the repository builds and deploys. A new
+// server, a missing native target, a wrong technology, or a source layer
+// drawn as a runtime fails. The view comes from the model
+// `architecture-contract` reads; this check adds no fields or columns.
+//
+// # What ships
+//
+// Each product is proved by a build target, an entry point, or a deploy
+// file. A dependency manifest alone proves nothing, so a native app may keep
+// another language's packages for lint and build tools. Build manifests are
+// read even when `.gitattributes` marks them `linguist-generated`. Files
+// under test or tool folders are source types, never products.
+//
+// Each [language module] brings a runtime reader. Its `Runtime`
+// documentation names the evidence it reads and the products it proves. It
+// also names their container's technology and the platform services its
+// sources use.
+//
+// # What the view says
+//
+// An owned container is a `Container`, `ContainerDb`, or `ContainerQueue`
+// inside a boundary. A container owns a product when a path it names covers
+// the product's folder, or when its name is the product's name. A trailing
+// `*` in a path, such as `go/cmd/fitness-check-*`, names every sibling folder
+// it matches. A path of `.` names the repo root, so it covers a product built
+// from the root folder and no other.
+//
+// A container also owns a package a code span or label names, or a path
+// covering an entry point its reader lists. A description word counts only
+// as the exact entry point, and trailing punctuation never counts.
+//
+// External systems, `System_Ext` and `Container_Ext`, need no evidence. A
+// platform service the code uses needs an external system whose name,
+// technology, or description names it.
+//
+// # Failures
+//
+// Every error names the view line or the evidence line; an error about both
+// names both.
+//
+//   - A product no owned container claims, naming its entry point, target, or deploy file.
+//   - A product two containers claim.
+//   - A `Container` that matches no product: by name, or through paths that hold only source layers.
+//   - A container whose technology does not name its product's language.
+//   - An owned store that names no schema, configuration, or source path.
+//   - A platform service the code uses with no external system naming it.
+//   - A target without a type, a target source folder that does not exist, or a manifest the check cannot parse.
+//
+// # Runs
+//
+// No architecture views means a pass with zero files; `filesChecked` counts
+// the container views. Scoped runs read every view and every product, so a
+// change on either side still meets the other.
+//
+// # Requirements
+//
+// [Requirement 0073] has one installed-command test per acceptance.
+//
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [Requirement 0073]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0073-checks-architecture-containers.md
+package check

@@ -14,7 +14,7 @@ markdown files named in kebab-case or exempt
 -
 markdown files judged in kebab-case repos
 
-Source: `go/cmd/fitness-check-markdown-filename-kebab-case/main.go:21`
+Source: `go/cmd/fitness-check-markdown-filename-kebab-case/main.go:16`
 
 ## Requirements
 

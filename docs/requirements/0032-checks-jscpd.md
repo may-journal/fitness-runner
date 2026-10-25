@@ -14,7 +14,7 @@ repos with duplicated lines at or under 1% of scanned lines
 -
 repos scanned
 
-Source: `go/cmd/fitness-check-jscpd/main.go:43`
+Source: `go/cmd/fitness-check-jscpd/main.go:32`
 
 ## Requirements
 

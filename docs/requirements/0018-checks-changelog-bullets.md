@@ -14,7 +14,7 @@ entry files within every bullet rule
 -
 entry files checked
 
-Source: `go/cmd/fitness-check-changelog-bullets/main.go:37`
+Source: `go/cmd/fitness-check-changelog-bullets/main.go:32`
 
 ## Requirements
 

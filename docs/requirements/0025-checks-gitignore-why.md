@@ -14,7 +14,7 @@ I know why every file is ignored, because each `.gitignore` pattern carries its 
 -
 `.gitignore` patterns
 
-Source: `go/cmd/fitness-check-gitignore-why/main.go:88`
+Source: `go/cmd/fitness-check-gitignore-why/main.go:83`
 
 ## Requirements
 

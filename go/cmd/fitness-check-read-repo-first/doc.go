@@ -1,0 +1,9 @@
+// Command fitness-check-read-repo-first reminds agents and users to read the
+// repo's decisions and enabled checks first.
+//
+// # Behavior
+//
+//   - Always passes with zero files checked; no TTY or interactive prompt.
+//   - Outputs a boxed message to stderr; stdout carries the JSON result.
+//   - The box shows the question, a table of enabled check names when the runner provides them, and a note about not using `--no-verify`.
+package check

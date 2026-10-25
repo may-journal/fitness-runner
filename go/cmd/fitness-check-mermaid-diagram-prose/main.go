@@ -1,12 +1,8 @@
-// Command fitness-check-mermaid-diagram-prose fails edge labels that carry
-// prose beyond a callout, a number or a letter, in a diagram paired with a
-// callout table. Arrows carry callouts only; descriptions belong in the
-// callout table.
-//
 // The shared parser lives in internal/mermaid; the JS \s class and the
 // styling-line pattern it uses are unexported there, so that small residue
 // (jsWS, isJSSpace, trimJS, styleLine) is duplicated here instead of
 // modifying the frozen package.
+
 package check
 
 import (

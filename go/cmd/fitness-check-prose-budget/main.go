@@ -1,10 +1,3 @@
-// Command fitness-check-prose-budget caps how much prose a markdown file
-// holds. Per .md file — with front matter, fenced code, tables, and headings
-// masked out, the same masking text-readability scores — it enforces six
-// limits: words per sentence, sentences per paragraph, paragraphs per section,
-// words per list item, items per list, and prose words per section. Each
-// limit falls back to a default and is overridable in .fitnessrc.json.
-// Every tracked .md file is judged, CHANGELOG.md included.
 package check
 
 import (
