@@ -137,7 +137,7 @@ Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 
-An org ruleset can run `pr-check-reusable.yml` from the `v1` tag in every repo with no caller file, since it carries a `pull_request` trigger. The org `.github` repo supplies the Plan issue template and conventions by default.
+An org ruleset runs `fitness-suite.yml` from the `v1` tag in every repo with no caller file. Its one job runs the suite and `fitness pr-check`, so the org needs no separate pr-check ruleset. `pr-check-reusable.yml` stays for a repo that wants pr-check alone. The org `.github` repo supplies the Plan issue template and conventions by default.
 
 The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
 

@@ -7,12 +7,18 @@ name: Fitness suite
 # target repo. Only fitness-runner skips the job, since its own CI builds the
 # checks from source. The skip is a job condition rather than a separate job,
 # because GitHub bills every job at least one minute.
+# The same job runs fitness pr-check, which the separate pr-check ruleset
+# workflow ran in a second job. So it also runs on an edit, which skips the
+# suite and judges only the new title and body.
 on:
   pull_request:
+    types: [opened, edited, reopened, synchronize]
   workflow_dispatch:
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
 
 jobs:
   org-fitness:

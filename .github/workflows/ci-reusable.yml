@@ -27,11 +27,19 @@ on:
         description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
         default: ''
+      pr-check:
+        description: On a pull request, also run fitness pr-check on its title and body. The caller grants pull-requests and issues read.
+        type: boolean
+        default: true
 
 jobs:
   fitness:
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: 10
+    # An edit that left the base alone changed only the title or body, which
+    # pr-check alone judges, so the suite and its tool installs skip.
+    env:
+      FITNESS_SUITE: ${{ github.event.action != 'edited' || github.event.changes.base != null }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,7 +50,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-go@v5
-        if: ${{ inputs.ref != '' || hashFiles('**/go.mod') != '' }}
+        if: ${{ inputs.ref != '' || (env.FITNESS_SUITE == 'true' && hashFiles('**/go.mod') != '') }}
         with:
           go-version: stable
           # No org repo has a go.sum to key on, so setup-go's cache would
@@ -51,12 +59,12 @@ jobs:
       # Node repos: the prettier, vitest, node-version, and dependency-currency
       # checks run the repo's own installed tools, as on a laptop.
       - name: Set up Node from .nvmrc
-        if: ${{ hashFiles('.nvmrc') != '' }}
+        if: ${{ env.FITNESS_SUITE == 'true' && hashFiles('.nvmrc') != '' }}
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
       - name: Install npm packages
-        if: ${{ hashFiles('package-lock.json') != '' }}
+        if: ${{ env.FITNESS_SUITE == 'true' && hashFiles('package-lock.json') != '' }}
         run: npm ci
       # Java repos: the spotless, checkstyle, java-version, and java-test
       # checks run the build with the JDK a root version file pins, in the
@@ -64,7 +72,7 @@ jobs:
       # only with a java line, since it may pin other tools alone.
       - name: Find the JDK version file
         id: jdk
-        if: ${{ hashFiles('.java-version', '.sdkmanrc', '.tool-versions') != '' }}
+        if: ${{ env.FITNESS_SUITE == 'true' && hashFiles('.java-version', '.sdkmanrc', '.tool-versions') != '' }}
         shell: bash
         run: |
           if [ -f .java-version ]; then file=.java-version
@@ -85,6 +93,7 @@ jobs:
         with:
           install-only: 'true'
       - name: Build an explicitly requested source ref
+        id: source
         if: ${{ inputs.ref != '' }}
         env:
           GOPROXY: direct
@@ -95,7 +104,7 @@ jobs:
       # One pinned SwiftLint everywhere: "latest" let a release add a rule
       # overnight that laptops had never seen.
       - name: Install swiftlint
-        if: ${{ inputs.swift || hashFiles('**/*.swift') != '' }}
+        if: ${{ env.FITNESS_SUITE == 'true' && (inputs.swift || hashFiles('**/*.swift') != '') }}
         env:
           VERSION: ${{ inputs.swiftlint-version }}
           ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}
@@ -110,11 +119,21 @@ jobs:
       # exists at its tag or sha; without a token it skips with a note.
       - name: Run fitness
         id: report-step-2
+        if: ${{ env.FITNESS_SUITE == 'true' }}
         # A caller may run this workflow from several jobs, which all share
         # one job name here, so a random id keeps each artifact name unique.
         run: |
           printf 'FITNESS_PERFORMANCE_ID=%s\n' "$RANDOM$RANDOM$RANDOM" >> "$GITHUB_ENV"
           fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # One job per PR push: pr-check shares this checkout and install, where
+      # its own job billed a second minute. It runs after failed checks too,
+      # so one run lists both, and it fails the job on its own findings.
+      - name: Validate the PR description and fail the run on violations
+        id: report-step-3
+        if: ${{ !cancelled() && inputs.pr-check && github.event_name == 'pull_request' && (steps.report-step-1.outcome == 'success' || steps.source.outcome == 'success') }}
+        run: fitness pr-check
         env:
           GH_TOKEN: ${{ github.token }}
       # The box diagram rides in the same artifact: see docs/ci.md#box-diagram.
@@ -151,7 +170,7 @@ jobs:
         env:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure' || steps.report-step-3.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"

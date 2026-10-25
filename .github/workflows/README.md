@@ -121,7 +121,9 @@ The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/ac
 
 ## fitness-suite
 
-A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
+A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
+
+The same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit that keeps the base skips the suite and its installs, and runs pr-check alone. `pr-check` findings still fail the job. A caller of `ci-reusable` that cannot grant `pull-requests` and `issues` read passes `pr-check: false`.
 
 ## close-check
 
