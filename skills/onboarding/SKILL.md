@@ -18,7 +18,7 @@ Fitness runs every check this org holds code and issues to. Follow these steps i
 
 ## Read a failure
 
-A failure names the check and the file. Open that check's README under [go/cmd](https://github.com/may-journal/fitness-runner/tree/main/go/cmd) as `fitness-check-<name>/README.md`, which states the rule and how to pass it. [Checks](https://github.com/may-journal/fitness-runner/blob/main/docs/checks.md) groups them by kind. Fix the code, never the check: no renaming, excluding or hiding to pass.
+A failure names the check and the file. Follow the [fitness skill](https://github.com/may-journal/fitness-runner/blob/main/skills/fitness/SKILL.md), which leads from the check's README to its requirements and architecture docs. Fix the code, never the check: no renaming, excluding or hiding to pass.
 
 ## Plans and pull requests
 

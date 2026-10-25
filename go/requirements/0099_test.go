@@ -22,11 +22,11 @@ func Test0099_1(t *testing.T) {
 	t.Parallel()
 	skill := onboardingSkill(t)
 	sees(t, skill, 0, 0, "## Install and run", "docs/ci.md#download-the-go-installer", "docs/ci.md#run-checks",
-		"docs/ci.md#commit-hook", "## Read a failure", "## Plans and pull requests", "fitness-check-plan-trailer/README.md")
+		"docs/ci.md#commit-hook", "## Read a failure", "skills/fitness/SKILL.md", "## Plans and pull requests", "fitness-check-plan-trailer/README.md")
 }
 
-// skillLink matches a link into the repo's main branch, with its optional heading.
-var skillLink = regexp.MustCompile(`\]\(https://github\.com/may-journal/fitness-runner/blob/main/([^)#]+)(?:#([^)]+))?\)`)
+// onboardingLink matches a link into the repo's main branch, with its optional heading.
+var onboardingLink = regexp.MustCompile(`\]\(https://github\.com/may-journal/fitness-runner/blob/main/([^)#]+)(?:#([^)]+))?\)`)
 
 // slugDrop holds what GitHub removes from a heading to name its anchor.
 var slugDrop = regexp.MustCompile(`[^a-z0-9_ -]`)
@@ -75,7 +75,7 @@ func checkSkillLink(t *testing.T, path, anchor string) {
 
 func Test0099_2(t *testing.T) {
 	t.Parallel()
-	links := skillLink.FindAllStringSubmatch(onboardingSkill(t), -1)
+	links := onboardingLink.FindAllStringSubmatch(onboardingSkill(t), -1)
 	if len(links) == 0 {
 		t.Fatal("the onboarding skill links no doc")
 	}
