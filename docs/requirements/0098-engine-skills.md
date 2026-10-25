@@ -6,7 +6,7 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ## Why
 
-Every skill in a Fitness release lands in each agent's skills folder when I run one command, so no agent misses a skill. Skills I made myself stay as they are.
+One `fitness` skill teaches me to read any failing check from its own docs. No check needs a skill of its own. One command links every skill in a Fitness release into each agent's skills folder, and skills I made myself stay as they are.
 
 ## Measurement
 
@@ -38,3 +38,11 @@ Source: `go/internal/distribution/skills.go:20`
     - Given Developer has an empty skills folder for an agent
         - When I run `fitness-install --link-skills` with that folder
             - Then every linked skill file is readable by other users
+- 0098.6
+    - Given Developer has an empty skills folder for an agent
+        - When I run `fitness-install --link-skills` with that folder
+            - Then the fitness skill is linked there and every link in it resolves
+- 0098.7
+    - Given Developer has an empty skills folder for an agent
+        - When I run `fitness-install --link-skills` with that folder
+            - Then no linked skill is named for a single check
