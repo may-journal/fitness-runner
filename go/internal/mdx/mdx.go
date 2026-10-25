@@ -303,7 +303,17 @@ func (e *proseExtractor) line(ln string) {
 		e.flush()
 		return
 	}
+	if DashOnly(t) {
+		return
+	}
 	e.consume(t)
+}
+
+// DashOnly reports whether a trimmed line is one or more dashes and nothing
+// else, such as a Measurement's `-` or a `---` rule. It holds no prose, so
+// prose readers skip it without ending the paragraph around it.
+func DashOnly(t string) bool {
+	return t != "" && strings.Trim(t, "-") == ""
 }
 
 // ListItem returns a list item line's text without its marker or its task

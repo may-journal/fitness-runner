@@ -34,7 +34,7 @@ func pairedRepo() map[string]string {
 // twoRepo is pairedRepo whose one test file proves requirements 0001 and 0002.
 // Requirement 0002 covers its own area, so the two docs never overlap.
 func twoRepo() map[string]string {
-	doubles := "- 0002.1\n    - Given one number\n        - When I double it\n            - Then I get twice that number\n"
+	doubles := "- 0002.1\n  - Given one number\n    - When I double it\n      - Then I get twice that number\n"
 	return with(pairedRepo(), map[string]string{
 		"reqs/0001_test.go":                    "",
 		"reqs/0001_0002_test.go":               testFile("reqs", "Test0001_1", "Test0002_1"),
@@ -87,19 +87,21 @@ func requirementDoc(ids ...string) string {
 	return docWith("Source: `adder.go:5`", acceptances(ids...))
 }
 
-// acceptances renders one well-formed chain per ID.
+// acceptances renders one well-formed chain per ID, nested two spaces deeper
+// at each level as Biome formats it.
 func acceptances(ids ...string) string {
 	body := ""
 	for _, id := range ids {
-		body += "- " + id + "\n    - Given two numbers\n        - When I add them\n            - Then I get their sum\n"
+		body += "- " + id + "\n  - Given two numbers\n    - When I add them\n      - Then I get their sum\n"
 	}
 	return body
 }
 
-// docWith is requirement 0001 with the given Source line and Requirements.
+// docWith is requirement 0001 with the given Source line and Requirements,
+// its Measurement ratio set apart by blank lines as Biome formats it.
 func docWith(source, reqs string) string {
 	return "---\nrelatedConfigurations: ['../../.fitnessrc.json']\n---\n\n# 0001 Adds Numbers\n\n## Why\n\n" +
-		"I can add two numbers without doing it by hand.\n\n## Measurement\n\nsums that are right\n-\nsums asked for\n\n" +
+		"I can add two numbers without doing it by hand.\n\n## Measurement\n\nsums that are right\n\n-\n\nsums asked for\n\n" +
 		source + "\n\n## Requirements\n\n" + reqs
 }
 

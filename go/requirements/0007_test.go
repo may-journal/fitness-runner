@@ -66,6 +66,10 @@ func Test0007_7(t *testing.T) {
 	t.Parallel()
 	out, code := proseBudget(t, map[string]string{"README.md": readme + "\n```\n" + longSentence + "```\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
+	// Three paragraphs, the default limit, so only a counted - would push
+	// the Measurement over.
+	out, code = proseBudget(t, map[string]string{"docs/requirements/0001-adds-numbers.md": requirementDoc("0001.1")})
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0007_8(t *testing.T) {

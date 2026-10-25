@@ -16,7 +16,7 @@ Lower scores are not better. Readability formulas reward chatty filler and punis
 ## Behavior
 
 - Whole documents only, never paragraphs: files under 100 prose words are counted but not judged (below that the formulas are statistically meaningless).
-- Frozen masking spec before scoring: front matter and HTML comments dropped; fenced code, headings, and tables skipped.
+- Frozen masking spec before scoring: front matter and HTML comments dropped; fenced code, headings, tables, and dash-only lines skipped.
 - Inline code spans become a placeholder word; link text kept, URLs and version tokens dropped.
 - Every block end (heading, list item, blank line) counts as a sentence boundary.
 - The formulas use only letter, word, and sentence counts — no syllable guessing, no word lists — so the check is deterministic.

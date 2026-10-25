@@ -83,8 +83,9 @@ func docNumber(f string) string {
 
 // judge flags each changed requirement test whose docs all stayed
 // unchanged, unless fixed reports it failed this check at the base, and each
-// changed doc whose tests all stayed unchanged.
-func (p pairs) judge(changed []string, fixed func(string) bool) []string {
+// changed doc whose tests all stayed unchanged. A reformatted doc needs no
+// test change, yet still counts as changed for its tests.
+func (p pairs) judge(changed []string, reformatted map[string]bool, fixed func(string) bool) []string {
 	isChanged := map[string]bool{}
 	for _, f := range changed {
 		isChanged[f] = true
@@ -92,7 +93,7 @@ func (p pairs) judge(changed []string, fixed func(string) bool) []string {
 	var errs []string
 	for _, f := range changed {
 		errs = append(errs, p.unpairedTest(f, isChanged, fixed)...)
-		if n := docNumber(f); n != "" {
+		if n := docNumber(f); n != "" && !reformatted[f] {
 			errs = append(errs, unpaired(f, []string{n}, p.tests, "requirement test", isChanged)...)
 		}
 	}
@@ -140,7 +141,8 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 	if changed == nil || replaying(root) {
 		return nil
 	}
-	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, fixedAtBase(root))
+	base := baseRev(root)
+	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
 	sort.Strings(errs)
 	return errs
 }
@@ -148,11 +150,11 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 // fixedAtBase reports whether a changed test file failed this check at the
 // base commit, so the change fixes it. The base is judged once, and only
 // when a test file needs it.
-func fixedAtBase(root string) func(string) bool {
+func fixedAtBase(root, base string) func(string) bool {
 	var failed map[string]bool
 	return func(file string) bool {
 		if failed == nil {
-			failed = failedAtBase(root, baseRev(root))
+			failed = failedAtBase(root, base)
 		}
 		return failed[file]
 	}

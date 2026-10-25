@@ -37,6 +37,12 @@ func edited(body string) string {
 	return body + "\n// One more line.\n"
 }
 
+// reworded is a requirement doc with one more word in its Why, a change to
+// what it says and not only to its formatting.
+func reworded(doc string) string {
+	return strings.Replace(doc, "by hand.", "by hand at all.", 1)
+}
+
 // stagedRun writes files over a fresh copy of given, stages them, and runs
 // the requirements check on the staged changes.
 func stagedRun(t *testing.T, given, files map[string]string) (string, int) {
@@ -77,7 +83,7 @@ func replayed(t *testing.T, replay []string, finish ...[]string) (out string, co
 	write(t, repo, map[string]string{pairedTest: strings.Replace(base, "{}", "{ _ = 1 }", 1)})
 	userSteps(t, repo, env, []string{"checkout", "-q", "-b", "side"}, []string{"add", "-A"},
 		[]string{"commit", "-q", "--no-verify", "-m", "test(reqs): reword the test"}, []string{"checkout", "-q", "-"})
-	write(t, repo, map[string]string{pairedTest: strings.Replace(base, "{}", "{ _ = 2 }", 1), pairedDoc: requirementDoc("0001.1") + "\n"})
+	write(t, repo, map[string]string{pairedTest: strings.Replace(base, "{}", "{ _ = 2 }", 1), pairedDoc: reworded(requirementDoc("0001.1"))})
 	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "-m", "test(reqs): check sums again"})
 	if _, code := user(t, repo, env, replay...); code == 0 {
 		t.Fatalf("git %v did not conflict", replay)
@@ -98,7 +104,7 @@ func mergedBase(t *testing.T) string {
 	t.Helper()
 	repo := example(t, "happyRepo", pairedRepo())
 	git(t, repo, "checkout", "-q", "-b", "base")
-	commit(t, repo, map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"}, "docs(requirements): reword 0001")
+	commit(t, repo, map[string]string{pairedDoc: reworded(requirementDoc("0001.1"))}, "docs(requirements): reword 0001")
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
 	git(t, repo, "checkout", "-q", "-b", "work", "HEAD~1")
 	commit(t, repo, map[string]string{"README.md": readme + "\nMore words.\n"}, "docs(readme): add words")

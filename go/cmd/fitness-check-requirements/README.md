@@ -11,6 +11,8 @@ In a repo written in any language of the [module registry](../../internal/lang/l
 
 Copy this into `docs/requirements/NNNN-kebab-title.md`. The comments explain each rule.
 
+Write it as Biome formats Markdown: blank lines around the `-`, so it never underlines the numerator as a heading, and two-space nesting.
+
 ```markdown
 <!-- File name is NNNN-kebab-title.md. NNNN matches the title ID, is unique in docs/requirements, and is never reused after deletion. -->
 # 0001 Offline Sync
@@ -21,23 +23,25 @@ Copy this into `docs/requirements/NNNN-kebab-title.md`. The comments explain eac
 I can keep writing when signal drops or is lost
 
 ## Measurement
-<!-- Numerator line, a "-" line, denominator line. Then "Source:" citing either a line of code that exists (path:line) or the #issue that will implement it. -->
+<!-- Numerator line, a "-" line, denominator line, each set apart by blank lines. Then "Source:" citing either a line of code that exists (path:line) or the #issue that will implement it. -->
 
 users who save locally
+
 -
+
 users who have lost connection
 
 Source: #123
 
 ## Requirements
 <!-- Top-level bullets are IDs: title ID + ".N", unique, never reused. -->
-<!-- Each ID nests exactly one Given, one When, one Then, one level deeper each, each line starting with its keyword. A second Given, When, or Then is a new ID. -->
+<!-- Each ID nests exactly one Given, one When, one Then, one level (two spaces) deeper each, each line starting with its keyword. A second Given, When, or Then is a new ID. -->
 <!-- A Given starts with an actor the system context declares, by name or Mermaid ID; see the architecture-actors check. -->
 <!-- Exactly one test is named for each ID, the way its language module names tests; the check's error names the test it expects. Delete the test when you delete the ID. -->
 - 0001.1
-    - Given Writer has no network
-        - When I edit an entry
-            - Then it is saved locally
+  - Given Writer has no network
+    - When I edit an entry
+      - Then it is saved locally
 ```
 
 ## Rules
@@ -72,7 +76,7 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
