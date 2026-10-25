@@ -26,8 +26,8 @@ table's `#` column holds the same letters for connector rows.
 - Fail (orphan row): `callout table row N has no matching diagram callout`.
 - Fail (duplicate): `diagram callout N appears K times` / `callout table row N appears K times`.
 - Fail (numbered connector): `connector callout N must be a letter; numbers are for nodes`.
-- Fail (broken doubling): `connector callout AB breaks the letter doubling` / `callout table row AB breaks the letter doubling`.
-- Fail (unpaired diagram): `mermaid diagram … has numbered callouts but no associated callout table`.
+- Fail (broken doubling): `connector callout AB breaks the letter doubling` / `callout table row AB breaks the letter doubling`. A diagram label such as YES that no row lists is prose.
+- Fail (unpaired diagram): `mermaid diagram … has callouts but no associated callout table`.
 - Fail (unpaired table): `callout table … has no preceding mermaid diagram`.
 
 ## Reading callouts

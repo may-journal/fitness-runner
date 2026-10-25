@@ -10,6 +10,7 @@ package check
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
@@ -83,10 +84,23 @@ func numberLabels(numbers []int) []string {
 // diagramLabels lists every callout a diagram carries: node numbers, then
 // connector callouts as written, numbers and broken letters included so
 // each is matched once and reported only for its form.
-func diagramLabels(d *mermaid.DiagramBlock) []string {
+func diagramLabels(d *mermaid.DiagramBlock, t *mermaid.CalloutTableBlock) []string {
 	labels := append(numberLabels(d.Numbers), d.Letters...)
 	labels = append(labels, numberLabels(d.EdgeNumbers)...)
-	return append(labels, d.BadLetters...)
+	return append(labels, brokenLetters(d, t)...)
+}
+
+// brokenLetters returns the diagram's labels that break the doubling and
+// that the table lists too, so they were meant as callouts. A whole label
+// such as YES that no row lists is prose.
+func brokenLetters(d *mermaid.DiagramBlock, t *mermaid.CalloutTableBlock) []string {
+	var broken []string
+	for _, label := range d.BadLetters {
+		if t != nil && slices.Contains(t.BadLetters, label) {
+			broken = append(broken, label)
+		}
+	}
+	return broken
 }
 
 // tableLabels lists every callout row label in a table.
@@ -128,7 +142,7 @@ func formErrors(file string, diagram *mermaid.DiagramBlock, table *mermaid.Callo
 		errors = append(errors, fmt.Sprintf(
 			"%s: connector callout %d must be a letter; numbers are for nodes (line %d)", file, n, diagram.Line))
 	}
-	for _, label := range diagram.BadLetters {
+	for _, label := range brokenLetters(diagram, table) {
 		errors = append(errors, fmt.Sprintf(
 			"%s: connector callout %s breaks the letter doubling; %s (line %d)", file, label, doublingRule, diagram.Line))
 	}
@@ -145,7 +159,7 @@ func formErrors(file string, diagram *mermaid.DiagramBlock, table *mermaid.Callo
 // compareCallouts reports the ways a diagram and its table fail to be a 1-1
 // match on callouts.
 func compareCallouts(file string, diagram *mermaid.DiagramBlock, table *mermaid.CalloutTableBlock) []string {
-	inDiagram := countLabels(diagramLabels(diagram))
+	inDiagram := countLabels(diagramLabels(diagram, table))
 	inTable := countLabels(tableLabels(table))
 	var errors []string
 	errors = append(errors, duplicateErrors(inDiagram, func(label string, count int) string {
@@ -178,7 +192,7 @@ func validateDoc(file, content string) []string {
 		errors = append(errors, formErrors(file, pair.Diagram, pair.Table)...)
 		if pair.Table == nil {
 			errors = append(errors, fmt.Sprintf(
-				"%s: mermaid diagram at line %d has numbered callouts but no associated callout table",
+				"%s: mermaid diagram at line %d has callouts but no associated callout table",
 				file, pair.Diagram.Line))
 			continue
 		}

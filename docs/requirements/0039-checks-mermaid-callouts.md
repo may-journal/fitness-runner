@@ -19,7 +19,7 @@ Source: `go/cmd/fitness-check-mermaid-callouts/main.go:170`
 ## Requirements
 
 - 0039.1
-    - Given Developer has a doc whose node numbers and connector letters match its table one to one
+    - Given Developer has a doc whose callouts match its table one to one, beside prose labels such as YES and HTTPS
         - When mermaid-callouts checks the repo
             - Then it passes, counting only that doc
 - 0039.9

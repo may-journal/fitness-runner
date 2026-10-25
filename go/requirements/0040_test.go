@@ -29,21 +29,21 @@ func mdpError(label string) string {
 
 func Test0040_1(t *testing.T) {
 	t.Parallel()
-	body := "Rel(app, api, \"6 Uses over HTTP\")\nBiRel(app, db, \"6 talks both ways\")\nRel_Back(api, app, '6 replies')\nRel(api, db,\n  \"6 wrapped prose\")"
+	body := "Rel(app, api, \"6 Uses over HTTP\")\nBiRel(app, db, \"6 talks both ways\")\nRel_Back(api, app, '6 replies')\nRel(api, db,\n  \"6 wrapped prose\")\nRel(api, db, \"B reads\")"
 	out, code := mdpCheck(t, map[string]string{"docs/arch.md": mdpPaired(body)})
-	sees(t, out, code, 1, mdpError("6 Uses over HTTP"), mdpError("6 talks both ways"), mdpError("6 replies"), mdpError("6 wrapped prose"))
+	sees(t, out, code, 1, mdpError("6 Uses over HTTP"), mdpError("6 talks both ways"), mdpError("6 replies"), mdpError("6 wrapped prose"), mdpError("B reads"))
 }
 
 func Test0040_2(t *testing.T) {
 	t.Parallel()
-	out, code := mdpCheck(t, map[string]string{"docs/arch.md": mdpPaired("flowchart LR\napp -->|6 calls the api| api -->|6 reads| db")})
-	sees(t, out, code, 1, mdpError("6 calls the api"), mdpError("6 reads"))
+	out, code := mdpCheck(t, map[string]string{"docs/arch.md": mdpPaired("flowchart LR\napp -->|6 calls the api| api -->|6 reads| db -->|A calls back| app")})
+	sees(t, out, code, 1, mdpError("6 calls the api"), mdpError("6 reads"), mdpError("A calls back"))
 }
 
 func Test0040_3(t *testing.T) {
 	t.Parallel()
-	out, code := mdpCheck(t, map[string]string{"docs/arch.md": mdpPaired("flowchart LR\napp --> api : 6 sends data   ")})
-	sees(t, out, code, 1, mdpError("6 sends data"))
+	out, code := mdpCheck(t, map[string]string{"docs/arch.md": mdpPaired("flowchart LR\napp --> api : 6 sends data   \napi --> db : C writes")})
+	sees(t, out, code, 1, mdpError("6 sends data"), mdpError("C writes"))
 }
 
 func Test0040_4(t *testing.T) {

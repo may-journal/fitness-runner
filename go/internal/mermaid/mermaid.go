@@ -12,8 +12,7 @@
 //   - ExtractCallouts returns a diagram body's callouts in document order,
 //     duplicates preserved, each marked as a node or a connector callout.
 //     Nodes carry numbers; connectors carry letters (A–Z, then AA–ZZ, then
-//     AAA…). ParseDoc sorts them into the DiagramBlock fields, and
-//     ExtractDiagramNumbers returns just the node numbers.
+//     AAA…). ParseDoc sorts them into the DiagramBlock fields.
 //   - IsCalloutHeader reports whether split header cells mark a numbered
 //     callout table.
 //   - PairDiagramsWithTables associates each diagram with callouts with the
@@ -182,11 +181,11 @@ var calloutPatterns = []calloutPattern{
 	{regexp.MustCompile(`["'](\d+)`), spaceOrQuoteFollows, quotedSide(sideNode), nil},                  // quoted label: "1 Check", "6"
 	{regexp.MustCompile(`[([{>][` + jsWS + `]*(\d+)`), spaceFollows, always(sideNode), nil},            // node-shape label: [2 Screen], ((1 Persona)), [(4 System)]
 	{regexp.MustCompile(`:[` + jsWS + `]*(\d+)`), spaceOrEndFollows, colonSide(sideNode), nil},         // edge/message label: A --> B : 11
-	{regexp.MustCompile(`\|[` + jsWS + `]*(\d+)`), spaceOrPipeFollows, always(sideEdge), nil},          // flowchart pipe label: -->|5|, -->|6 calls the api|
+	{regexp.MustCompile(`\|[` + jsWS + `]*(\d+)`), spaceOrPipeFollows, pipeSide, nil},                  // flowchart pipe label: -->|5|, -->|6 calls the api|
 	{regexp.MustCompile(`--[` + jsWS + `]*(\d+)[` + jsWS + `]*--`), nil, inlineSide, nil},              // inline link label: A -- 5 --> B
 	{regexp.MustCompile(`["']([A-Z]+)`), spaceOrQuoteFollows, quotedSide(sideNone), quoteAhead},        // quoted connector label: Rel(a, b, "A"), -->|"B"|
 	{regexp.MustCompile(`:[` + jsWS + `]*([A-Z]+)`), spaceOrEndFollows, colonSide(sideNone), endAhead}, // message label: A ->> B : C
-	{regexp.MustCompile(`\|[` + jsWS + `]*([A-Z]+)`), spaceOrPipeFollows, always(sideEdge), pipeAhead}, // flowchart pipe label: -->|D|
+	{regexp.MustCompile(`\|[` + jsWS + `]*([A-Z]+)`), spaceOrPipeFollows, pipeSide, pipeAhead},         // flowchart pipe label: -->|D|
 	{regexp.MustCompile(`--[` + jsWS + `]*([A-Z]+)[` + jsWS + `]*--`), nil, inlineSide, nil},           // inline link label: A -- E --> B
 }
 
@@ -204,7 +203,7 @@ func always(s side) func(string, int) side {
 }
 
 // quotedSide classifies a quoted label: a connector's when it opens a pipe
-// or inline link label or sits in a C4 Rel call, otherwise other.
+// or inline link label or is a C4 Rel call's label, otherwise other.
 func quotedSide(other side) func(string, int) side {
 	return func(line string, start int) side {
 		before := strings.TrimRightFunc(line[:start], isJSSpace)
@@ -214,10 +213,34 @@ func quotedSide(other side) func(string, int) side {
 			}
 		}
 		if relLine.MatchString(line) {
-			return sideEdge
+			return relSide(line, start)
 		}
 		return other
 	}
+}
+
+// relSide classifies a quoted argument of a C4 Rel call. The first quoted
+// argument is the connector's label; a later one, such as the technology
+// in Rel(a, b, "A", "HTTPS"), labels nothing.
+func relSide(line string, start int) side {
+	if start == strings.IndexAny(line, `"'`) {
+		return sideEdge
+	}
+	return sideNone
+}
+
+// arrowTail matches the end of a link arrow, such as -->, ---, ==>, -.->,
+// --o, or --x, which a pipe label's opening pipe follows.
+var arrowTail = regexp.MustCompile(`(?:[-=.]{2,}|[-=.]+[>ox])$`)
+
+// pipeSide classifies a pipe label: a connector's when the pipe opens one
+// right after a link arrow, as in A -->|D| B. A closing pipe starts no
+// label, so in A -->|go| Y the node Y is no callout.
+func pipeSide(line string, start int) side {
+	if arrowTail.MatchString(strings.TrimRightFunc(line[:start], isJSSpace)) {
+		return sideEdge
+	}
+	return sideNone
 }
 
 // colonSide classifies a colon label: a connector's when an arrow comes
@@ -391,14 +414,6 @@ func ExtractCallouts(body string) []Callout {
 		callouts[i] = byPosition[p]
 	}
 	return callouts
-}
-
-// ExtractDiagramNumbers returns the node callout numbers referenced in a
-// mermaid diagram body, in document order, preserving duplicates.
-func ExtractDiagramNumbers(body string) []int {
-	b := &DiagramBlock{}
-	b.sort(ExtractCallouts(body))
-	return b.Numbers
 }
 
 // sort files each callout into the block's node numbers, connector letters,

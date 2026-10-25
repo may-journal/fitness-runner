@@ -40,8 +40,11 @@ func Test0039_1(t *testing.T) {
 			`app[1 App] -->|A| api["2 API"]`,
 			"api -- B --> db((3 Store))",
 			`db -->|"C"| app`,
+			"db -->|YES| app -->|go| Q --> db",
 		),
 		mermaidCalloutsTable("1", "2", "3", "A", "B", "C"),
+		mermaidCalloutsDiagram(`Container(web, "4", "UI")`, `Rel(web, api, "D", "HTTPS")`),
+		mermaidCalloutsTable("4", "D"),
 	))
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "mermaid-callouts")) {
@@ -79,7 +82,7 @@ func Test0039_10(t *testing.T) {
 	))
 	sees(t, out, code, 1,
 		"docs/flow.md: callout table at line 1 has no preceding mermaid diagram",
-		"docs/flow.md: mermaid diagram at line 5 has numbered callouts but no associated callout table")
+		"docs/flow.md: mermaid diagram at line 5 has callouts but no associated callout table")
 }
 
 func Test0039_7(t *testing.T) {
