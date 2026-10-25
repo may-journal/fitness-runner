@@ -31,7 +31,7 @@ func Test0005_9(t *testing.T) {
 	user(t, repo, env, "add", "-A")
 	out, code := user(t, repo, env, "commit", "-m", "test(reqs): check sums twice")
 	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
-	out, code = prRun(t, pairedRepo(), map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"}, "docs(requirements): reword 0001")
+	out, code = prRun(t, pairedRepo(), map[string]string{pairedDoc: reworded(requirementDoc("0001.1"))}, "docs(requirements): reword 0001")
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test "+pairedTest+"; change both together")
 }
 
@@ -41,7 +41,7 @@ func Test0005_10(t *testing.T) {
 	test := map[string]string{twoTest: edited(twoRepo()[twoTest])}
 	out, code := stagedRun(t, twoRepo(), test)
 	sees(t, out, code, 1, twoTest+" changed without its requirement doc "+pairedDoc+" or "+doc)
-	out, code = stagedRun(t, twoRepo(), with(test, map[string]string{doc: twoRepo()[doc] + "\n"}))
+	out, code = stagedRun(t, twoRepo(), with(test, map[string]string{doc: reworded(twoRepo()[doc])}))
 	sees(t, out, code, 0)
 }
 
@@ -71,7 +71,7 @@ func Test0005_15(t *testing.T) {
 	repo, env := hooked(t, pairedRepo())
 	write(t, repo, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))})
 	userSteps(t, repo, env, []string{"add", "-A"}, []string{"commit", "-q", "--no-verify", "-m", "test(reqs): check sums twice"})
-	write(t, repo, map[string]string{pairedDoc: requirementDoc("0001.1") + "\n"})
+	write(t, repo, map[string]string{pairedDoc: reworded(requirementDoc("0001.1"))})
 	user(t, repo, env, "add", "-A")
 	out, code := user(t, repo, env, "commit", "--amend", "-m", "test(reqs): check sums twice")
 	sees(t, out, code, 0, "test(reqs): check sums twice")
@@ -94,6 +94,27 @@ func Test0005_16(t *testing.T) {
 	sees(t, out, code, 0, "test(adder): move to Swift Testing")
 	out, code = stagedRun(t, swiftRepo(), map[string]string{swiftTest: edited(swiftTestingFile("test0001_1"))})
 	sees(t, out, code, 1, swiftTest+" changed without its requirement doc "+pairedDoc+"; change both together")
+}
+
+// unformatted is requirementDoc as it read before Biome formatted it:
+// single-quoted front matter, the Measurement's - with no blank lines, and
+// four-space nesting.
+var unformatted = strings.NewReplacer(
+	`['../../.fitnessrc.json']`, `["../../.fitnessrc.json"]`,
+	"\n\n-\n\n", "\n-\n",
+	"\n  - Given", "\n    - Given",
+	"\n    - When", "\n        - When",
+	"\n      - Then", "\n            - Then",
+)
+
+func Test0005_17(t *testing.T) {
+	t.Parallel()
+	given := with(pairedRepo(), map[string]string{pairedDoc: unformatted.Replace(requirementDoc("0001.1"))})
+	formatted := map[string]string{pairedDoc: requirementDoc("0001.1")}
+	out, code := stagedRun(t, given, formatted)
+	sees(t, out, code, 0)
+	out, code = prRun(t, given, formatted, "style(docs): format requirement docs with Biome")
+	sees(t, out, code, 0)
 }
 
 // docOf is goRepo with requirement 0001 replaced by body at path.

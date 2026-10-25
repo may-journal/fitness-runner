@@ -140,6 +140,7 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 	if changed == nil || replaying(root) {
 		return nil
 	}
+	changed = withoutReformats(root, baseRev(root), changed)
 	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, fixedAtBase(root))
 	sort.Strings(errs)
 	return errs

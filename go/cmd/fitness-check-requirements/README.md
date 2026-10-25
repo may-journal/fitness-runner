@@ -76,7 +76,7 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
