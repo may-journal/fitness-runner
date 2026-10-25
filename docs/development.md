@@ -29,4 +29,4 @@ CI splits the tests over two `requirements` jobs per platform with [tests/requir
 
 ## Skills
 
-Each skill is a folder under [skills](../skills) with a `SKILL.md`, named for its check or topic, as [ADR 0011](architecture/adr/0011-skills-ship-in-the-bundle.md) decides. Release bundles carry them. `fitness-install --link-skills <folder>` links every skill into an agent's skills folder and repairs broken links; run it again after an upgrade. A skill links the docs that hold the rules and copies none of them.
+Each skill is a folder `go/cmd/<command>/skills/<name>/` with a `SKILL.md`, named for its check or topic, as [ADR 0011](architecture/adr/0011-skills-ship-in-the-bundle.md) decides. `fitness-release skills` gathers them into each release bundle. `fitness-install --link-skills <folder>` links every skill into an agent's skills folder and repairs broken links; run it again after an upgrade. A skill links the docs that hold the rules and copies none of them.

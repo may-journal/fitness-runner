@@ -5,6 +5,11 @@ snapshot:
   version_template: '{{ .Env.FITNESS_VERSION }}'
 changelog:
   disable: true
+# Each skill sits beside its command's code; this gathers them into
+# out/skills/<name>/ so the archive ships one flat skills folder.
+before:
+  hooks:
+    - go -C go run ./cmd/fitness-release skills --root ..
 dist: out/bundles
 builds:
   - id: fitness
@@ -22,6 +27,8 @@ archives:
     formats: [tar.gz]
     name_template: 'fitness-{{ .Version }}-{{ .Os }}-{{ .Arch }}'
     wrap_in_directory: true
-    files: [skills/**/*]
+    files:
+      - src: out/skills/**/*
+        dst: skills
 checksum:
   name_template: checksums.txt

@@ -59,11 +59,12 @@ var commands = map[string]subcommand{
 	"version":         {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "") }},
 	"tag":             {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "v") }},
 	"checks":          {[]string{"root"}, func(c release.Config, _ string) error { return c.WriteChecks() }},
+	"skills":          {[]string{"root"}, func(c release.Config, _ string) error { return c.StageSkills() }},
 }
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, tag, or checks")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, tag, checks, or skills")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")

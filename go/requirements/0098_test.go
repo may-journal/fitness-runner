@@ -85,6 +85,9 @@ func Test0098_6(t *testing.T) {
 	for _, check := range checks {
 		name := strings.TrimPrefix(filepath.Base(check), "fitness-check-")
 		skill := fiFile(t, filepath.Join(folder, name, "SKILL.md"))
-		sees(t, skill, 0, 0, "name: "+name+"\n", "go/cmd/fitness-check-"+name+"/README.md")
+		sees(t, skill, 0, 0, "name: "+name+"\n", "](../../README.md)")
+		if kept := fiFile(t, filepath.Join(check, "skills", name, "SKILL.md")); kept != skill {
+			t.Errorf("linked skill %s differs from the one kept in %s", name, check)
+		}
 	}
 }

@@ -1,0 +1,131 @@
+---
+name: add-requirements
+description: Give a project stated requirements, each proven by one test that runs the real product the way a user does. Use when adopting the method in a new project, adding a component to it, or reviewing tests for coverage of stated behavior.
+relatedConfigurations: ['../../../../../.fitnessrc.json']
+---
+
+# Add requirements proven by real runs
+
+A requirement doc states what a user can do, in the user's voice. Each acceptance in it is owned by exactly one test. That test runs the built product on a real example and asserts only what the acceptance promises. The outside world is replayed from saved answers, so the suite runs offline and fast.
+
+The canonical copy lives in fitness-runner beside the requirements check, at `go/cmd/fitness-check-requirements/skills/add-requirements`. Release bundles carry it, and `fitness-install --link-skills` links it into each agent, as [development](../../../../../docs/development.md#skills) explains.
+
+fitness-runner did this for itself: 62 docs under [docs/requirements](../../../../../docs/requirements), one test package under [go/requirements](../../../../requirements). Read [0061-engine-installer.md](../../../../../docs/requirements/0061-engine-installer.md) and [0061_test.go](../../../../requirements/0061_test.go) side by side before starting.
+
+## Write one doc per user-facing area
+
+The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [requirements check README](../../README.md) holds the template and every rule the check enforces. Read it first and link to it, do not restate it.
+
+Before adding a doc, find the one that already states the area. [ADR 0004](../../../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) says when to extend it.
+
+- Pick a prefix per kind of area. This repo uses `checks-`, `engine-`, `hooks-`, and `github-`; a project chooses its own.
+- Why: one or two sentences in the user's voice, saying what holds once the requirement is met.
+- Measurement: a numerator line, a `-` line, a denominator line, then `Source:` naming one real code line or one issue.
+- Requirements: `- NNNN.N`, then exactly one Given, When, and Then, each nested four spaces deeper.
+- Hold a doc to one to eight acceptances. A second Given, When, or Then is a new acceptance.
+- Start each Given with an actor the system context declares, by name or Mermaid ID; the [architecture-actors](../../../fitness-check-architecture-actors/README.md) check states the grammar.
+- Never reuse an ID. Retiring one leaves a gap, and the check reads git history to enforce that.
+
+## Draft small, in the user's words
+
+Before writing, count docs, acceptances per doc, and words per acceptance in a sibling project of similar size, merged or in review. A draft far bigger than its siblings is too big. For an app, that usually means four or five acceptances per doc. Keep each acceptance to about 15 words, its Given, When, and Then together.
+
+- Every acceptance states the product's core promise or guards a bug that shipped. Cite that commit or issue while drafting.
+- Formatter, resolver, and wording details are not requirements: countdown text, URL cleanup, default names. Add an acceptance when a bug shows the gap.
+- Write it the way the user talks, never in the code's model names such as roster, slot, composer, or cache.
+- Give each word one meaning across the doc set, and make one claim per Then.
+- Check every acceptance against the current app through the CHANGELOG and recent PRs. One draft described a button already removed.
+
+Before the owner sees it, have three agents argue for the draft and three against, then merge what they find. The pro side checks coverage, bug history, and consistency with sibling repos. The con side checks the core promise, wording and size, and test cost. Verify their claims against the code, since a reviewer can wrongly say a feature is missing.
+
+## Name one test per acceptance
+
+Exactly one test owns each acceptance, and its name carries the ID: in Go, `Test0001_1` owns 0001.1. A test named for an acceptance that no doc defines fails. Delete the test when you delete the acceptance.
+
+### Swift
+
+In Swift, `test0001_1` owns 0001.1. It is either an XCTest method in an `XCTestCase` class or a Swift Testing `@Test func`. Every other Swift test must be renamed for its acceptance or deleted, as in Go. A UI test that launches the built app is the Swift way to drive the real product.
+
+The check enforces Go and Swift. For TypeScript, note the gap for the owner instead of inventing a rule.
+
+## Drive the real product
+
+Each test does what the acceptance's user does: it runs the built binary, app, or CLI on a real example repo or fixture. It asserts only what the Then promises: output, exit code, files written, or calls made. It never calls an internal function, and the product is never mocked.
+
+In this repo, [user_test.go](../../../../requirements/user_test.go) shows the pattern. The `example` helper copies a tracked example repo and commits the Given's files over it. The `fitness` helper runs the documented one-line command, and `sees` asserts the words a user reads plus the exit code.
+
+## Replay the outside world
+
+GitHub, package registries, and external tools are never called live. Save their happy and unhappy answers once, then replay them. Two stand-in patterns cover most cases, both in [replay_test.go](../../../../requirements/replay_test.go):
+
+- A program on PATH: the test binary is symlinked under the program's name, first on PATH.
+- Run under that name, the test binary answers from saved responses and logs every call it received.
+- A registry or web service: a local HTTP server answers each path from saved bodies and 404s the rest.
+
+Each test owns its saved answers, and asserts on the call log when the Then promises a call was made or not made. [0013_test.go](../../../../requirements/0013_test.go) replays `gh` for Plan verdicts; [0022_test.go](../../../../requirements/0022_test.go) serves a local npm registry.
+
+To meet a machine missing one tool, build a PATH holding every real tool but that one. `pathWithout` in [tools_test.go](../../../../requirements/tools_test.go) does this.
+
+## Prove each test fails for the right reason
+
+A test that cannot fail proves nothing. For every new test, flip its Given, run it, and read the failure. The message must name the promise the Then makes, not a setup error. Restore the Given and run again before moving on.
+
+## Delete what the real runs repeat
+
+Once an acceptance's real run covers a behavior, the unit test that stitched internals together to reach the same behavior is a duplicate. Delete it. Code that no acceptance reaches is either an unstated requirement or dead: add an acceptance, or delete the code.
+
+## Measure the real runs
+
+Coverage of the real runs shows the unstated requirements. In this repo, `make requirements-coverage` builds the product with coverage, runs the suite, and prints coverage by package and in total. Elsewhere in Go, build with `go build -cover` and set `GOCOVERDIR` for the runs. Read the uncovered lines as a list of questions: which promise reaches this, and is it written down?
+
+## Keep the suite fast
+
+Every test calls `t.Parallel()` and builds its own temporary repo, so nothing is shared. One command builds the candidate and runs everything; here that is `make requirements`, which runs [tests/requirements.sh](../../../../../tests/requirements.sh). Tests wait on subprocesses rather than the CPU, so a high parallel count is safe. This repo runs 432 tests in about 30 seconds, 32 at once.
+
+## Fan out across a big codebase
+
+For a large product, split the work by component and run one agent per component.
+
+- Assign the requirement IDs up front, one range per component, so two agents never claim the same number.
+- Give each agent its own working copy and branch, following the shared Mac rules in `~/CLAUDE.md`.
+- Prefix every helper name with the component, as `dc` and `eslint` prefix helpers here, so merged test files do not collide.
+- Each agent writes the docs, the tests, proves each test fails right, and deletes the unit tests its runs repeat.
+- The orchestrator collects the branches, runs the whole suite once, and reports the uncovered lines as open questions.
+
+## Adopting in a new project
+
+Convert every component before turning the requirements check on, so the project is never red.
+
+- List the components and assign each a block of requirement IDs.
+- Build the shared helpers first: copy the example, run the real product, assert what the user sees, replay what leaves the machine.
+- For each component, draft its doc from what the product promises today, small and in the user's words, as above.
+- Show the whole draft in one Plan issue comment, edited in place, with what was cut in one line. Wait for sign-off.
+- Write one test per acceptance, named for it, and prove each fails for the right reason.
+- Delete the unit tests the real runs repeat, and fan out across components as above.
+- Measure coverage and turn each uncovered promise into an acceptance or a deletion.
+- With no unit test left unmapped, turn on the requirements check through [docs/adoption.md](../../../../../docs/adoption.md).
+
+## Post the results on the Plan
+
+Once the rewrite PR is up, post one comment on the repo's requirements Plan. It compares main before the rewrite with the PR, measured on the same machine. [may-photos#139](https://github.com/may-journal/may-photos/issues/139) shows the shape.
+
+| | Before (main) | Now (#PR) |
+| --- | --- | --- |
+| Tests that ran | count, split top-level and subtests if relevant | same |
+| Test code | lines in N files | same, with % change |
+| Requirement docs | lines in N docs | same |
+| Product code | non-test lines | same, with % change |
+| Coverage | what it measures, such as app lines or Go statements | same |
+| Full suite time | median of three timed runs | same, with % change |
+
+- Time the command a developer runs, after one warm-up run that is not timed. Note the `uptime` load if it is high.
+- Measure read-only: one detached working copy per commit, removed after. Shut down or delete every simulator you used.
+- Keep it to about 100 words plus the table, with at most two short bullets on surprises.
+- Post one comment and never mark edits as revised. Skip screenshots.
+- Link that Plan whenever you report the results, so the org table of adoption is built from these comments.
+
+What to hope for: in [.github#63](https://github.com/may-journal/.github/issues/63), coverage rose from 65% to 89% with about the same test code.
+
+## Doc conventions
+
+Fitness judges every tracked markdown file, requirement docs and this skill included. [docs/checks.md](../../../../../docs/checks.md) lists the checks, and each check's README states its limits; the project's own fitness run reports any you miss.

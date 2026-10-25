@@ -4,7 +4,7 @@ relatedConfigurations: ['../.fitnessrc.json']
 
 # Checks
 
-Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`). A [skill](../skills) of the same name shows how to fix its failures:
+Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`). Its `skills/<name>/SKILL.md` shows how to fix its failures:
 
 - Pure logic: rules over file names, text, commits, and plans, such as `gitignore-why`, `semantic-commit`, `markdown-links`, and `prose-budget`
 - Issue and PR body checks: `plan-structure`, `epic-structure`, `pr-structure`, `pr-closes-issue`, `issue-checklist`; file-level `doc-template` (files match their nearest template) and `requirements` (tests change with docs)
@@ -26,7 +26,7 @@ Checks judge every tracked file; only untracked files stay out, and outside git 
 
 ## Front matter
 
-Front matter is optional. No check requires it, and the changelog and release tools read files with or without it. The [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) removes a repo's fitness-only front matter.
+Front matter is optional. No check requires it, and the changelog and release tools read files with or without it. The [strip-front-matter skill](../go/cmd/fitness/skills/strip-front-matter/SKILL.md) removes a repo's fitness-only front matter.
 
 ## Shared configs
 
