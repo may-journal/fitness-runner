@@ -221,7 +221,7 @@ flowchart TD
 
 | #   | Element      | Description                                                                       | Why                                                  |
 | --- | ------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 1   | Comment event | An issue, PR, or review comment is created or edited.                            | Judges a comment the moment its text changes.        |
+| 1   | Comment event | An issue comment, a submitted review, or an edited comment.                      | Judges a comment the moment its text changes.        |
 | 2   | Manual sweep | A `workflow_dispatch` run walks the last seven days of comments.                  | Audits comments that predate the workflow.           |
 | 3   | Skip guard   | Skip the known bots at job level, which post every fitness verdict and reply.     | Every person and agent owns what they wrote.         |
 | 4   | Run checks   | Run `comment-structure`, `mermaid-syntax`, and the Plan and PR prose checks.      | One tested rule set, the same one agents run first.  |
@@ -232,7 +232,9 @@ flowchart TD
 
 ## Triggers (comment-check)
 
-- `issue_comment` and `pull_request_review_comment` (`created`, `edited`): judge that one comment; a review reply answers in its thread.
+- `issue_comment` (`created`, `edited`) and `pull_request_review_comment` (`edited`): judge that one comment; a review reply answers in its thread.
+- `pull_request_review` (`submitted`): judges all of that review's comments in one run, replying in each failing thread.
+- One job per review bills one minute, where a job per review comment billed a minute each.
 - `workflow_dispatch`: sweeps recent comments; `FITNESS_SWEEP_DAYS` changes the seven-day window.
 
 A comment that always passed gets no reply. The `.fitnessrc.json` `comment` key sets `maxWords` (100) and `maxTables` (1).

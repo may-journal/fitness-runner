@@ -1,7 +1,9 @@
 name: Comment check (reusable)
 
-# Reusable across the org: a consumer repo calls this from an `issue_comment`
-# and `pull_request_review_comment` caller. It installs the published fitness
+# Reusable across the org: a consumer repo calls this from an `issue_comment`,
+# `pull_request_review` submitted and `pull_request_review_comment` edited
+# caller. A submitted review is judged in one run, comments and all, so ten
+# review comments bill one minute instead of ten. It installs the published fitness
 # checks and runs `fitness comment-check`, which judges the comment with the
 # Plan and PR prose checks plus comment-structure and mermaid-syntax. A
 # failing comment gets one reply naming its author and a thumbs-down
@@ -34,14 +36,14 @@ jobs:
     # check cannot match here still runs, and fitness comment-check skips it.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.comment.user.login != 'github-actions[bot]' &&
-      (inputs.ignore-authors != '' || !contains(fromJSON('["may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), github.event.comment.user.login)) &&
-      !contains(format(',{0},', inputs.ignore-authors), format(',{0},', github.event.comment.user.login)))
+      ((github.event.comment.user.login || github.event.review.user.login) != 'github-actions[bot]' &&
+      (inputs.ignore-authors != '' || !contains(fromJSON('["may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), (github.event.comment.user.login || github.event.review.user.login))) &&
+      !contains(format(',{0},', inputs.ignore-authors), format(',{0},', (github.event.comment.user.login || github.event.review.user.login))))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
     concurrency:
-      group: comment-check-${{ github.repository }}-${{ github.event.comment.id || github.run_id }}
+      group: comment-check-${{ github.repository }}-${{ github.event_name }}-${{ github.event.comment.id || github.event.review.id || github.run_id }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
