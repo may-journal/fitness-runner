@@ -191,6 +191,26 @@ Each box is one check, and its area is that check's share of the chosen measure:
 
 Checks with nothing to measure, such as no error lines, sit in a row of equal small boxes below. Hover or focus a box for its numbers, or open the table under the diagram for every value.
 
+## Actions minutes
+
+GitHub bills each job in a private repo rounded up to a whole minute, so job count drives the bill. `fitness-release minutes` totals it from the runs and jobs API:
+
+```sh
+go -C go run ./cmd/fitness-release minutes --org may-journal --days 4
+```
+
+It prints one Markdown row per workflow: jobs that ran, billed minutes, and the median job's seconds. A skipped job started no runner, so it counts neither. `--repos owner/a,owner/b` names repos instead of an org's private ones. GitHub lists at most 1,000 runs per repo for one window, so keep `--days` short on a busy repo.
+
+## What stays
+
+Three changes looked cheaper and were measured instead. None changes a whole-minute bill, so each stays as it is.
+
+| Kept | Measured | Why it stays |
+| --- | --- | --- |
+| No cancel-in-progress on the suite | a cancelled 20 s suite job still bills one minute | cancelling a superseded push saves no minute |
+| Full-history checkout | 1–3 s of a 20–60 s job | changelog-updated, semantic-commit and plan-trailer read the branch's commits |
+| One process per check | a 62-check run took 1,681 ms, the same as its slowest check | the pool starts every check in parallel, so startup adds no measurable time |
+
 ## Consumer updates
 
 Consumers pin the major tag, `@v1`, and get each verified 1.x release with no update PR. A new major version needs a one-line change to `@v2`.

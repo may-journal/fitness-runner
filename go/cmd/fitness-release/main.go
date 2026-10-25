@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/minutes"
 	"github.com/may-journal/fitness-runner/go/internal/release"
 	"github.com/may-journal/fitness-runner/go/internal/releasemeta"
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -59,15 +61,39 @@ var commands = map[string]subcommand{
 	"version":         {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "") }},
 	"tag":             {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "v") }},
 	"checks":          {[]string{"root"}, func(c release.Config, _ string) error { return c.WriteChecks() }},
+	"minutes":         {[]string{"root", "days", "org", "repos"}, func(release.Config, string) error { return printMinutes() }},
+}
+
+// window is what minutes measures: the last days days of runs in repos, or
+// in org's private repos when repos is empty.
+var window struct {
+	days  int
+	org   string
+	repos string
+}
+
+// printMinutes prints the jobs, billed minutes and median job time of each
+// workflow in the window.
+func printMinutes() error {
+	var repos []string
+	for _, r := range strings.Split(window.repos, ",") {
+		if r = strings.TrimSpace(r); r != "" {
+			repos = append(repos, r)
+		}
+	}
+	return minutes.Print(context.Background(), os.Stdout, window.org, repos, window.days)
 }
 
 func run(args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, version, tag, or checks")
+		return fmt.Errorf("use bundle-hashes, assemble, smoke, verify-download, verify-tag, promote, release-pr, release-notes, record, minutes, version, tag, or checks")
 	}
 	flags := flag.NewFlagSet("fitness-release", flag.ContinueOnError)
 	root := flags.String("root", ".", "repository root")
 	host := flags.Bool("host", false, "bundle-hashes and assemble: expect build outputs for this platform only")
+	flags.IntVar(&window.days, "days", 4, "minutes: how many days of runs to total")
+	flags.StringVar(&window.org, "org", "", "minutes: total the org's private repos")
+	flags.StringVar(&window.repos, "repos", "", "minutes: comma-separated owner/repo names to total instead")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
