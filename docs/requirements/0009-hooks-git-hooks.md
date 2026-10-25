@@ -19,7 +19,7 @@ Source: `go/cmd/fitness/hook.go:15`
 ## Requirements
 
 - 0009.1
-    - Given Developer has a repo with no hooks
+    - Given Developer has a repo with no hooks and no fitness on the PATH
         - When I run fitness init
             - Then git runs the fitness commit-msg, pre-commit, and pre-push hooks
 - 0009.2

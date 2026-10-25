@@ -2,7 +2,6 @@ package requirements
 
 import (
 	"encoding/json"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -60,7 +59,7 @@ func metadataPushRepo(t *testing.T, title string) (string, []string, replays) {
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := fitness(t, repo, nil, "init")
 	sees(t, out, code, 0, "installed hooks")
-	env := pushEnv([]string{"PATH=" + installOnly(t) + string(os.PathListSeparator) + os.Getenv("PATH")}, rp)
+	env := pushEnv(installerEnv(t), rp)
 	bare := t.TempDir()
 	git(t, bare, "init", "-q", "--bare")
 	git(t, repo, "remote", "set-url", "--push", "origin", bare)
@@ -100,7 +99,7 @@ func Test0067_5(t *testing.T) {
 	rp := standIn(t, map[string][]response{"gh": nil})
 	out, code := user(t, repo, pushEnv(hookEnv, rp), "commit", "--allow-empty", "-m", "docs(readme): touch nothing")
 	sees(t, out, code, 0, "docs(readme): touch nothing")
-	if row(out, "local-branch") != "" || len(rp.calls("gh")) != 0 {
+	if strings.Contains(read(out), "local-branch passed") || strings.Contains(read(out), "local-branch failed") || len(rp.calls("gh")) != rp.count("gh", "auth token") {
 		t.Fatalf("pre-commit ran metadata: %s\n%q", out, rp.calls("gh"))
 	}
 }

@@ -33,7 +33,7 @@ Source: `go/cmd/fitness-check-local-branch/main.go:10`
 - 0067.5
     - Given Developer has the shared hooks and a GitHub branch
         - When I commit a valid change
-            - Then the commit succeeds without local-branch or GitHub reads
+            - Then the commit succeeds without local-branch or GitHub reads, apart from the installer's release lookup
 - 0067.6
     - Given Developer has an Actions run in a GitHub checkout
         - When I run the full Fitness suite

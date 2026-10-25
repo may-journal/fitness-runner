@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 # Shared may-journal git hook. The plan-approval gate lives in the fitness Go
 # binary; re-run `fitness init` to update. Requires the `gh` CLI.
-exec fitness hook pre-push
+exec "${FITNESS_INSTALL_DIR:-$HOME/.local/share/fitness}/fitness-install" --version latest -- hook pre-push
