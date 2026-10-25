@@ -79,6 +79,8 @@ A changed description earns a new verdict; earlier ones stay hidden. Plan verdic
 
 A PR description is not a file either, but a PR has a status check. So [pr-check.yml](pr-check.yml) does not comment. It runs `fitness pr-check` on the title and body and writes violations to the run summary. The run fails, so the red check blocks the merge.
 
+In other repos the Fitness suite job runs pr-check, so the org ruleset's injected run of [pr-check-reusable.yml](pr-check-reusable.yml) skips without starting a runner. A repo's own caller of it still runs.
+
 ```mermaid
 flowchart TD
     A[1 PR event]:::trigger
