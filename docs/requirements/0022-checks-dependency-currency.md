@@ -14,7 +14,7 @@ declared dependencies at their latest published version
 -
 declared dependencies
 
-Source: `go/cmd/fitness-check-dependency-currency/main.go:227`
+Source: `go/cmd/fitness-check-dependency-currency/main.go:217`
 
 ## Requirements
 

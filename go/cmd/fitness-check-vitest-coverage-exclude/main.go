@@ -1,14 +1,3 @@
-// Command fitness-check-vitest-coverage-exclude fails any Vitest coverage
-// exclude entry, so coverage measures every file. The TS check evaluated the
-// vitest config as JavaScript; this port scans it textually via
-// internal/vitestconf, so exclude entries built from variables, spreads, or
-// imports are invisible — the same judgment the TS applied to non-string
-// entries at runtime, one level earlier.
-//
-// A root without any config source is judged against the shared config
-// directory: an installed node_modules/@mayjournal/fitness-shared when
-// present, else the vitest.config.mjs embedded in this binary, materialized
-// to the cache (internal/sharedconf).
 package check
 
 import (

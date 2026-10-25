@@ -14,7 +14,7 @@ entry packages with every statement covered
 -
 entry packages measured
 
-Source: `go/cmd/fitness-check-go-test-coverage/main.go:41`
+Source: `go/cmd/fitness-check-go-test-coverage/main.go:40`
 
 ## Requirements
 

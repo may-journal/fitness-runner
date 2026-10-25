@@ -1,18 +1,3 @@
-// Command fitness-check-cspell fails unknown words in the checked
-// files. The project cspell.json words always win over the embedded base
-// dictionaries (internal/spell).
-//
-// Scoped mode (a changed-file list in the environment) checks the changed
-// files that still exist on disk; with none left it passes without scanning.
-// With no scope it checks every tracked file (internal/walkfs). Files the
-// repo's .gitattributes marks linguist-generated, package managers'
-// lockfiles, and build wrapper files are left out. Binary files are counted but never spelled. No path is ever ignored: a resolved
-// cspell.json that sets ignorePaths fails the check instead.
-//
-// cspell.json resolves through internal/sharedconf: the repo's own file
-// wins, then an installed node_modules/@mayjournal/fitness-shared, then the
-// copy embedded in this binary, materialized to the cache on demand — so a
-// repo with no npm anywhere still gets the shared words.
 package check
 
 import (

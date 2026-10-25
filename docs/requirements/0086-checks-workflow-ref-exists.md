@@ -14,7 +14,7 @@ may-journal `uses:` lines whose path exists at their tag or sha
 -
 may-journal `uses:` lines pinned to a tag or sha
 
-Source: `go/cmd/fitness-check-workflow-ref-exists/main.go:344`
+Source: `go/cmd/fitness-check-workflow-ref-exists/main.go:334`
 
 ## Requirements
 

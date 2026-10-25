@@ -1,14 +1,3 @@
-// Command fitness-check-jscpd fails a repo whose duplicated lines pass
-// 1% of its scanned lines, with jscpd's semantics. Instead of
-// shelling out to jscpd it runs internal/clonedetect — a generic lexer plus a
-// rolling-hash detector with jscpd's min-lines/min-tokens semantics and
-// the jscpd:ignore-start/-end escape hatch. Scan scope: every tracked file
-// (internal/walkfs), minus files .gitattributes marks linguist-generated,
-// lockfiles and build wrapper files (internal/lang), and binary files, which have no lines to compare, and doc templates
-// (internal/mdtemplate), which docs must repeat by design. Verdict and
-// error format match the TS check, then each file with duplicated lines
-// is named; exact percentage parity with jscpd's per-language tokenizers
-// is explicitly not the goal.
 package check
 
 import (

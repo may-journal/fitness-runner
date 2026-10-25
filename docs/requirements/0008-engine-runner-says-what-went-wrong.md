@@ -14,7 +14,7 @@ mistakes fitness names
 -
 mistakes made
 
-Source: `go/cmd/fitness/main.go:205`
+Source: `go/cmd/fitness/main.go:240`
 
 ## Requirements
 

@@ -14,7 +14,7 @@ callout descriptions that differ from the previous level
 -
 callout descriptions in numbered architecture level files
 
-Source: `go/cmd/fitness-check-mermaid-level-bleed/main.go:158`
+Source: `go/cmd/fitness-check-mermaid-level-bleed/main.go:155`
 
 ## Requirements
 

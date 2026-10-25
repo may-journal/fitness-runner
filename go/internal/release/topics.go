@@ -99,7 +99,7 @@ func buildTopic(fset *token.FileSet, files []*ast.File, root, dir, name string) 
 	if err != nil {
 		return topicDoc{}, err
 	}
-	return topicDoc{Name: name, Package: rel, Summary: pkg.Synopsis(pkg.Doc), Body: topicMarkdown(pkg)}, nil
+	return topicDoc{Name: name, Package: rel, Summary: synopsis(pkg, pkg.Doc), Body: topicMarkdown(pkg)}, nil
 }
 
 // documented fails a topic package without a doc comment, or with a type

@@ -1,0 +1,109 @@
+// Command fitness-check-requirements enforces docs/requirements in every
+// repo a language module covers. In a repo written in any language of the
+// [module registry], each file in `docs/requirements` is one requirement.
+//
+// A requirement says why the requirement matters, how to measure it, and which acceptances
+// prove it. Each acceptance is owned by exactly one test named for it, and
+// each test owns exactly one acceptance. A test that proves no requirement is
+// either a requirement nobody wrote down or a duplicate to delete.
+//
+// # Template
+//
+// Copy this into `docs/requirements/NNNN-kebab-title.md`. The comments
+// explain each rule.
+//
+// Write it as Biome formats Markdown: blank lines around the `-`, so it never
+// underlines the numerator as a heading, and two-space nesting.
+//
+//	<!-- File name is NNNN-kebab-title.md. NNNN matches the title ID, is unique in docs/requirements, and is never reused after deletion. -->
+//	# 0001 Offline Sync
+//
+//	## Why
+//	<!-- One sentence: what a person can do once this holds. -->
+//
+//	I can keep writing when signal drops or is lost
+//
+//	## Measurement
+//	<!-- Numerator line, a "-" line, denominator line, each set apart by blank lines. Then "Source:" citing either a line of code that exists (path:line) or the #issue that will implement it. -->
+//
+//	users who save locally
+//
+//	-
+//
+//	users who have lost connection
+//
+//	Source: #123
+//
+//	## Requirements
+//	<!-- Top-level bullets are IDs: title ID + ".N", unique, never reused. -->
+//	<!-- Each ID nests exactly one Given, one When, one Then, one level (two spaces) deeper each, each line starting with its keyword. A second Given, When, or Then is a new ID. -->
+//	<!-- A Given starts with an actor the system context declares, by name or Mermaid ID; see the architecture-actors check. -->
+//	<!-- Exactly one test is named for each ID, the way its language module names tests; the check's error names the test it expects. Delete the test when you delete the ID. -->
+//	- 0001.1
+//	  - Given Writer has no network
+//	    - When I edit an entry
+//	      - Then it is saved locally
+//
+// # Rules
+//
+//   - IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004].
+//   - Acceptance IDs: the title ID plus `.N`, unique in its doc.
+//   - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
+//   - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
+//   - Measurement: numerator, `-`, denominator, then `Source:` citing one `path:line` that exists or one `#123` issue.
+//   - Acceptance: one Given, one When, and one Then, nested in order; the Given starts with an [actor].
+//   - Ownership: exactly one test named for each acceptance owns it. A test named for an undefined acceptance fails.
+//   - Every test: each top-level test in the repository must be named for an acceptance. Setup functions and helpers are not tests.
+//
+// Each language module finds its tests and names the test that owns an ID,
+// as its package documents. A comment or string never counts as a test.
+//
+// # Behavior
+//
+//   - No code: a repo with no file in a module's language passes with `filesChecked: 0`.
+//   - Not code: a file a module names a tool config, or a file `.gitattributes` marks `linguist-generated`.
+//   - Missing docs: a repo with such code and none in `docs/requirements` fails.
+//   - Full and scoped runs judge every doc and test file, including unchanged files in pull requests that change only unrelated files.
+//   - Ownership is a repository-wide invariant: an unmapped repo stays red until every test owns a requirement.
+//
+// # Swift tests
+//
+// Swift requirement tests run on Swift Testing with
+// [apple-ui-testing-library], hosted in the app, natively as Designed for
+// iPad or on macOS. The [Swift module] judges them.
+//
+//   - Imports: a test file fails on XCTest or another UI test framework, such as ViewInspector or SnapshotTesting.
+//   - Calls: a test file fails on an XCTestCase subclass, Xcode UI tests such as XCUIApplication, or simctl.
+//   - Library: a test file fails unless it, or a file in its folder or below, imports `UITestingLibrary`.
+//   - End-to-end: a file that imports `UITestingLibrarySystem` may use XCTest and simctl, and drives the app through its `SystemSession`.
+//
+// # Pairs
+//
+// A requirement test and its doc change together, so neither drifts from the
+// other. Changed behavior extends its existing doc, as [ADR 0004] sets out.
+// A doc whose words stay the same line by line, as after `biome format`, has
+// not changed. Nor has one whose Source cites another line of its file.
+//
+//   - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
+//   - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
+//   - Fixes: a changed test file that failed this check at its base passes without its doc, since its doc still holds.
+//   - Base check: this check judges a checkout of the base commit, where a Swift test that imported XCTest fails.
+//   - New files: a test file the base lacks still needs its doc.
+//   - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
+//   - Helpers: a test file that names and holds no requirement pairs with nothing.
+//   - No exemptions: there is no trailer, flag, or body text that lets an unpaired change through.
+//
+// Which changes are judged depends on the run:
+//
+//   - Commits: the `pre-commit` hook judges the staged files, and HEAD is their base.
+//   - Amends: an amended commit is judged on everything it changes since its parent, which is their base.
+//   - Pull requests: CI judges the diff against its base, the merge base with the base branch, so merged base changes are not judged.
+//   - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
+//   - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
+//
+// [module registry]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [ADR 0004]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0004-one-requirement-doc-per-area.md
+// [actor]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-actors/README.md
+// [apple-ui-testing-library]: https://github.com/may-journal/apple-ui-testing-library
+// [Swift module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/swift/library.go
+package check

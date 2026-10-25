@@ -1,6 +1,3 @@
-// Command fitness-check-go-test runs `go test ./...` in every Go module of
-// the repo and reports the failing tests. A repo with no go.mod passes clean,
-// so the check is safe in the default list for every repo.
 package check
 
 import (

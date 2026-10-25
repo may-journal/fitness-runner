@@ -1,8 +1,3 @@
-// Command fitness-check-node-version requires the machine's active Node
-// version to satisfy the repo's .nvmrc. One deviation from the TypeScript original: it asks `node --version`
-// for the current version (the TS check read its own runtime's
-// process.version; this binary is not Node), and a missing node binary is a
-// clear failure instead of an impossibility.
 package check
 
 import (

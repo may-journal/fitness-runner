@@ -1,8 +1,3 @@
-// Command fitness-check-mermaid-legend requires numbered flowchart
-// callout nodes to carry a style class, and diagrams with callouts to
-// declare a `classDef` legend. A class is inline `:::class` or a `class` or
-// `style` statement. C4/other diagram types (different
-// styling model) are skipped.
 package check
 
 import (

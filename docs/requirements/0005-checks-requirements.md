@@ -49,6 +49,6 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:88`
     - When I fix the test without changing its doc
       - Then my commit, amend, or pull request passes, while a test that passed at its base still fails without its doc
 - 0005.17
-  - Given Developer has a requirement doc changed only in its formatting, such as blank lines, line breaks, indents or front matter
+  - Given Developer has a requirement doc changed only in formatting, such as indents, or in its Source line number
     - When fitness judges my commit or pull request
       - Then it passes without a test change

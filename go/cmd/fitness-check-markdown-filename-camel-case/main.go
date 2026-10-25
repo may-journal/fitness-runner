@@ -1,6 +1,3 @@
-// Command fitness-check-markdown-filename-camel-case requires every markdown
-// file name to be camelCase, standard root docs exempt. The validation core is shared with
-// the kebab-case flavor in internal/mdfilename.
 package check
 
 import (

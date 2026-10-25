@@ -1,6 +1,3 @@
-// Command fitness-check-go-vet runs `go vet ./...` in every Go module of the
-// repo. A repo with no go.mod passes clean, so the check is safe in the
-// default list for every repo.
 package check
 
 import (
