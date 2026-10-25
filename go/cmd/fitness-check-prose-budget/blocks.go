@@ -78,15 +78,16 @@ func (b *builder) fenceToggle(t string) bool {
 }
 
 // breakLine handles the lines that end a block without contributing prose —
-// headings (which also open a new section), blanks, and table rows — and
-// reports whether the line was one.
+// headings (which also open a new section), blanks, table rows, and dash-only
+// lines such as a Measurement's `-` or a `---` rule — and reports whether the
+// line was one.
 func (b *builder) breakLine(t string) bool {
 	switch {
 	case strings.HasPrefix(t, "#"):
 		b.flush()
 		b.section++
 		b.sectionName = strings.TrimSpace(strings.TrimLeft(t, "# "))
-	case t == "", strings.HasPrefix(t, "|"):
+	case t == "", strings.HasPrefix(t, "|"), strings.Trim(t, "-") == "":
 		b.flush()
 	default:
 		return false

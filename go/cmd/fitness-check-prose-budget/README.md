@@ -6,7 +6,7 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 A hard-cap brevity linter for markdown prose. It is the volume sibling of [text-readability](../fitness-check-text-readability/README.md), which scores density. Where that check asks whether prose is dense, this one asks whether there is too much of it.
 
-Each `.md` file is masked the same way `text-readability` masks it — front matter, fenced code, tables, and headings are dropped. Only flowing paragraphs, blockquotes, and list items remain. The check then enforces six hard limits on what is left.
+Each `.md` file is masked the same way `text-readability` masks it. Front matter, fenced code, tables, headings, and dash-only lines such as a Measurement's `-` are dropped. Only flowing paragraphs, blockquotes, and list items remain. The check then enforces six hard limits on what is left.
 
 ## Limits
 

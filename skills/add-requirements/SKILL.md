@@ -20,8 +20,8 @@ Before adding a doc, find the one that already states the area. [ADR 0004](../..
 
 - Pick a prefix per kind of area. This repo uses `checks-`, `engine-`, `hooks-`, and `github-`; a project chooses its own.
 - Why: one or two sentences in the user's voice, saying what holds once the requirement is met.
-- Measurement: a numerator line, a `-` line, a denominator line, then `Source:` naming one real code line or one issue.
-- Requirements: `- NNNN.N`, then exactly one Given, When, and Then, each nested four spaces deeper.
+- Measurement: numerator, `-` and denominator lines, each set apart by a blank line, then `Source:` naming one code line or issue.
+- Requirements: `- NNNN.N`, then exactly one Given, When, and Then, each nested two spaces deeper, as Biome formats it.
 - Hold a doc to one to eight acceptances. A second Given, When, or Then is a new acceptance.
 - Start each Given with an actor the system context declares, by name or Mermaid ID; the [architecture-actors](../../go/cmd/fitness-check-architecture-actors/README.md) check states the grammar.
 - Never reuse an ID. Retiring one leaves a gap, and the check reads git history to enforce that.
