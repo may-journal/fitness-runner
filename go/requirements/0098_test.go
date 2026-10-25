@@ -3,6 +3,7 @@ package requirements
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -70,4 +71,20 @@ func mustLink(t *testing.T, path string) string {
 	target, err := os.Readlink(path)
 	mustDo(t, err)
 	return target
+}
+
+func Test0098_6(t *testing.T) {
+	t.Parallel()
+	folder := t.TempDir()
+	fiRun(t, t.TempDir(), nil, "--link-skills", folder)
+	checks, err := filepath.Glob(filepath.Join("..", "cmd", "fitness-check-*"))
+	mustDo(t, err)
+	if len(checks) == 0 {
+		t.Fatal("no check binaries found under go/cmd")
+	}
+	for _, check := range checks {
+		name := strings.TrimPrefix(filepath.Base(check), "fitness-check-")
+		skill := fiFile(t, filepath.Join(folder, name, "SKILL.md"))
+		sees(t, skill, 0, 0, "name: "+name+"\n", "go/cmd/fitness-check-"+name+"/README.md")
+	}
 }

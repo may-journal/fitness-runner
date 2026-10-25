@@ -11,7 +11,7 @@ Shared skills lived by hand in one agent folder, so a new skill reached no agent
 ## Decision
 
 1. A skill is a folder `skills/<name>/` holding a `SKILL.md`, with the name in kebab case.
-2. A skill for one check takes the check's name. A skill for a topic takes the topic's name.
+2. Every check has a skill that takes the check's name. A skill for a topic takes the topic's name.
 3. Every release bundle carries the `skills/` folder beside the `fitness` binary.
 4. `fitness-install --link-skills <folder>` links each bundled skill into the folder, once per agent folder.
 5. A rerun repairs a broken link or one to an older bundle, and leaves a real folder or another link alone.
