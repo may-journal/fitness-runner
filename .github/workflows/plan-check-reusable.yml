@@ -29,3 +29,5 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
       command: plan-check
+      # A repo with this caller still carries its own dupe-check caller.
+      dupe-check: false

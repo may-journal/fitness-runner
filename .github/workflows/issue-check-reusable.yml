@@ -5,6 +5,8 @@ name: Issue check (reusable)
 # repo's issue(s) by kind label — the shape of the kind's issue template, the
 # kind's own checks, and the prose/markdown checks on the body — keeping one
 # verdict comment and label per Issue. An issue with no kind label passes.
+# The same job then runs dupe-check, so one issue event starts one runner,
+# which bills one minute where two jobs billed two.
 # fitness-runner keeps its own build-from-source issue-check so it still tests
 # its own unreleased changes.
 on:
@@ -18,6 +20,10 @@ on:
         description: The fitness command to run, issue-check or its Plan-only alias plan-check.
         type: string
         default: issue-check
+      dupe-check:
+        description: Also run fitness dupe-check in the same job. plan-check-reusable turns it off.
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -25,19 +31,22 @@ permissions:
 
 jobs:
   issue-check:
-    # An edit that left the body alone, or a verdict label, cannot change a
-    # verdict. A skipped job starts no runner, so it bills nothing; fitness
-    # issue-check skips the same events when run another way.
+    # An edit that left the title and body alone, or a verdict label, can
+    # change neither the verdict nor the dupe note. A skipped job starts no
+    # runner, so it bills nothing; fitness issue-check also skips a title-only
+    # edit, which only dupe-check scores.
     if: >-
       github.event_name != 'issues' ||
-      ((github.event.action != 'edited' || github.event.changes.body) &&
+      ((github.event.action != 'edited' || github.event.changes.body || github.event.changes.title) &&
       (github.event.action != 'labeled' || !contains(fromJSON('["fitness", "fitness-valid", "fitness-invalid"]'), github.event.label.name)))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
-    # Agents edit an Issue in quick bursts; only the newest body needs a verdict.
+    # One queue per Issue: an edit never cancels the opened run, the only one
+    # that can close the Issue as a duplicate. A burst still ends in one
+    # verdict, since GitHub keeps only the newest pending run.
     concurrency:
       group: issue-check-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -71,6 +80,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           FITNESS_COMMAND: ${{ inputs.command }}
+      # An invalid issue may still repeat an older one, so this runs after a
+      # failed verdict too, once fitness is installed. A label cannot change
+      # the note, so a labeled event skips it.
+      - name: Note older issues this one resembles, or sweep every pair
+        id: report-step-3
+        if: ${{ !cancelled() && inputs.dupe-check && steps.report-step-2.outcome != 'skipped' && github.event.action != 'labeled' }}
+        run: fitness dupe-check
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: Retain complete Fitness reports
         id: fitness-reports
         if: ${{ always() }}
@@ -87,7 +105,7 @@ jobs:
         env:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure' || steps.report-step-3.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"

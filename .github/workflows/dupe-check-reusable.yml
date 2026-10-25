@@ -5,8 +5,9 @@ name: Dupe check (reusable)
 # `fitness dupe-check`, which keeps one note on a new issue listing the older
 # issues it resembles, and on a manual run prints every pair's score and
 # writes nothing. Its checkout supplies the repo's `.fitnessrc.json` scores.
-# fitness-runner keeps its own build-from-source dupe-check to test unreleased
-# changes.
+# issue-check-reusable now runs dupe-check in its own job, so this one only
+# answers a manual sweep: an issue event here would note twice and bill a
+# second minute. It stays until no repo carries a dupe-check caller.
 on:
   workflow_call:
     inputs:
@@ -21,6 +22,8 @@ permissions:
 
 jobs:
   dupe-check:
+    # A skipped job starts no runner, so an issue event bills nothing here.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Runs for one Issue queue, so an edit never cancels the opened run,

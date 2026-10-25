@@ -11,19 +11,22 @@ permissions:
 
 jobs:
   issue-check:
-    # An edit that left the body alone, or a verdict label, cannot change a
-    # verdict. A skipped job starts no runner, so it bills nothing; fitness
-    # issue-check skips the same events when run another way.
+    # An edit that left the title and body alone, or a verdict label, can
+    # change neither the verdict nor the dupe note. A skipped job starts no
+    # runner, so it bills nothing; fitness issue-check also skips a title-only
+    # edit, which only dupe-check scores.
     if: >-
       github.event_name != 'issues' ||
-      ((github.event.action != 'edited' || github.event.changes.body) &&
+      ((github.event.action != 'edited' || github.event.changes.body || github.event.changes.title) &&
       (github.event.action != 'labeled' || !contains(fromJSON('["fitness", "fitness-valid", "fitness-invalid"]'), github.event.label.name)))
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
-    # Agents edit an Issue in quick bursts; only the newest body needs a verdict.
+    # One queue per Issue: an edit never cancels the opened run, the only one
+    # that can close the Issue as a duplicate. A burst still ends in one
+    # verdict, since GitHub keeps only the newest pending run.
     concurrency:
       group: issue-check-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-go-cache
@@ -32,6 +35,14 @@ jobs:
       - name: Validate issue(s) by kind, keep one verdict comment, and label it
         id: report-step-1
         run: go/bin/fitness issue-check
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # One job per issue event: dupe-check shares this checkout and build.
+      # It runs after a failed verdict too; a label cannot change its note.
+      - name: Note older issues this one resembles, or sweep every pair
+        id: report-step-2
+        if: ${{ !cancelled() && steps.report-step-1.outcome != 'skipped' && github.event.action != 'labeled' }}
+        run: go/bin/fitness dupe-check
         env:
           GH_TOKEN: ${{ github.token }}
       - name: Retain complete Fitness reports
@@ -50,7 +61,7 @@ jobs:
         env:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"

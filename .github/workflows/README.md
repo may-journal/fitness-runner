@@ -16,7 +16,7 @@ Each started job bills at least one minute, though a check takes seconds, so run
 
 Every Fitness job runs on `ubuntu-24.04-arm`, which GitHub bills at $0.005 a minute against $0.008 for x64 Linux, in private repos too. The fitness bundle, SwiftLint, Node and the JDK all ship arm64 builds, so the checks are the same. Only the release and distribution matrices keep an x64 leg, to test that platform's assets.
 
-A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. dupe-check queues instead, since only its opened run can close a duplicate.
+A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. issue-check queues instead, since only its opened run can close a duplicate, and GitHub keeps only the newest pending run.
 
 ## issue-check
 
@@ -65,7 +65,8 @@ flowchart TD
 ## Triggers
 
 - `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue by its kind label, and passes an Issue with none.
-- Skipped: an `edited` event with no `changes.body`, and a `labeled` event for a `fitness` verdict label.
+- Skipped: an `edited` event that changed neither title nor body, and a `labeled` event for a `fitness` verdict label.
+- A title-only edit runs dupe-check alone, since issue-check judges only the body.
 - `workflow_dispatch`: sweeps every open Issue with a kind label and comments on each body version not seen before.
 
 A changed description earns a new verdict; earlier ones stay hidden. Plan verdicts posted under the earlier `fitness:plan-structure:` marker still count. Only the bot's own comments count; a run under another token sets `FITNESS_BOT_LOGIN` to that account.
@@ -154,7 +155,7 @@ flowchart TD
 
 ## dupe-check
 
-[dupe-check.yml](dupe-check.yml) runs `fitness dupe-check` when an issue opens or changes, so a repeat points to the first thread. Other repos call [dupe-check-reusable.yml](dupe-check-reusable.yml).
+The issue-check job runs `fitness dupe-check` after its verdict when an issue opens or changes, so a repeat points to the first thread. One job per issue event bills one minute where a second dupe-check job billed two. [dupe-check-reusable.yml](dupe-check-reusable.yml) stays for repos whose caller still names it, and only answers a manual sweep.
 
 ```mermaid
 flowchart TD
