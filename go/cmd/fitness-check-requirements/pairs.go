@@ -182,11 +182,12 @@ func replaying(root string) bool {
 	return false
 }
 
-// commitChanges is what the commit being written changes: the staged files,
-// or for an amend everything staged since the amended commit's parent.
+// commitChanges is what the commit or pull request changes: its diff, nil for
+// a full scan or a `--dir` folder, or for an amend everything staged since
+// the amended commit's parent.
 func commitChanges(root string) []string {
 	if os.Getenv("FITNESS_COMMIT_AMEND") != "1" {
-		return checkkit.ChangedFiles()
+		return checkkit.DiffFiles()
 	}
 	parent := "HEAD^"
 	if exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", parent).Run() != nil {

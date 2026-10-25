@@ -200,13 +200,6 @@ func ChangedSince(root, base string) []string {
 	return files
 }
 
-// FilesUnder returns the tracked and new, not ignored, files under dir; nil on
-// any git failure.
-func FilesUnder(root, dir string) []string {
-	files, _ := Repo(root).FilesUnder(dir)
-	return files
-}
-
 // nameList splits `git diff --name-only` output into paths, dropping blank
 // lines.
 func nameList(out string) []string {

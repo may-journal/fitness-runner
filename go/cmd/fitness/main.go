@@ -239,28 +239,34 @@ func run(argv []string) int {
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}
-	root, perfPath, only, argv, err := runSetup(argv)
+	s, argv, err := runSetup(argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
 	}
-	checks, passthrough, err := selectedChecks(root, argv)
+	checks, passthrough, err := selectedChecks(s.root, argv)
 	if err != nil {
+		s.cleanup()
 		report.Error("fitness setup", err)
 		return 1
 	}
-	env, passthrough := singleCheckArgs(root, checks, passthrough, hasAllFlag(argv), only)
-	return runChecks(root, perfPath, checks, passthrough, env)
+	env, passthrough := singleCheckArgs(s.root, checks, passthrough, hasAllFlag(argv), s.scope)
+	return runChecks(s.root, s.perfPath, checks, passthrough, env, s.cleanup)
 }
 
 // runChecks runs checks in one pool with env and passthrough, prints the
 // summary table, writes the `--json` report when perfPath names one, and
-// returns the run's exit code.
-func runChecks(root, perfPath string, checks []resolved, passthrough, env []string) int {
+// returns the run's exit code. cleanup removes the caller's shared files
+// when the run ends or is interrupted.
+func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
 	checks = commitChecks(checks)
 	tracked, removeTracked := shareTrackedFiles(root, checks)
-	defer removeTracked()
-	defer stopOnInterrupt(removeTracked)()
+	remove := func() {
+		removeTracked()
+		cleanup()
+	}
+	defer remove()
+	defer stopOnInterrupt(remove)()
 	env = append(env, tracked...)
 
 	start := time.Now()
@@ -275,19 +281,32 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	return withPerfReport(perfPath, perf, code)
 }
 
+// setup is what a run reads from argv before it selects checks.
+type setup struct {
+	root, perfPath string
+	// scope is the `--dir` folder's env entry, and cleanup removes its file.
+	scope   []string
+	cleanup func()
+}
+
 // runSetup finds the repo root and takes the `--json` report path and the
-// `--dir` folder's files out of argv, returning the rest.
-func runSetup(argv []string) (root, perfPath string, only, rest []string, err error) {
-	root, err = os.Getwd()
+// `--dir` folder out of argv, returning the rest. The folder's files are
+// shared once here, so the caller removes them with the setup's cleanup.
+func runSetup(argv []string) (s setup, rest []string, err error) {
+	s.root, err = os.Getwd()
 	if err != nil {
-		return "", "", nil, nil, err
+		return s, nil, err
 	}
-	perfPath, rest, err = jsonPath(argv)
+	s.perfPath, rest, err = jsonPath(argv)
 	if err != nil {
-		return "", "", nil, nil, err
+		return s, nil, err
 	}
-	only, rest, err = dirScope(root, rest)
-	return root, perfPath, only, rest, err
+	only, rest, err := dirScope(s.root, rest)
+	if err != nil {
+		return s, nil, err
+	}
+	s.scope, s.cleanup, err = shareScope(only)
+	return s, rest, err
 }
 
 // withPerfReport writes the `--json` report when one was asked for; a report
@@ -328,8 +347,8 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
-func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, only []string) (env, remaining []string) {
-	env = contextEnv(root, checks, all, only)
+func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string) {
+	env = contextEnv(root, checks, all, scope)
 	if len(checks) != 1 {
 		return env, nil
 	}
@@ -643,20 +662,23 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 }
 
 // contextEnv is the environment every check receives. FITNESS_CHANGED_FILES
-// is set only for a scoped run, and the tracked-file list only by run, so
-// an inherited value never leaks into a full scan or another repo. The
-// staged files are read once for both variables.
-func contextEnv(root string, checks []resolved, all bool, only []string) []string {
-	env := withoutVar(withoutVar(os.Environ(), "FITNESS_CHANGED_FILES"), walkfs.TrackedFilesEnv)
+// is set only for a scoped run, and the tracked-file and `--dir` lists only
+// by run, so an inherited value never leaks into a full scan or another
+// repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
+// so no check reads the folder as changes. The staged files are read once
+// for both variables.
+func contextEnv(root string, checks []resolved, all bool, scope []string) []string {
+	env := os.Environ()
+	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv} {
+		env = withoutVar(env, name)
+	}
 	staged := gitx.StagedFiles(root)
 	// A check's `git status` would otherwise refresh and rewrite the index,
 	// which voids the shared tracked-file list for every later check.
 	env = append(env, "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
-	changed := only
-	if len(changed) == 0 {
-		changed = changedScope(root, all, staged)
-	}
-	if len(changed) > 0 {
+	if len(scope) > 0 {
+		env = append(env, scope...)
+	} else if changed := changedScope(root, all, staged); len(changed) > 0 {
 		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
 	}
 	names := make([]string, len(checks))

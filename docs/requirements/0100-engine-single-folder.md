@@ -22,3 +22,7 @@ Source: `go/cmd/fitness/dir.go:20`
     - Given Developer names a folder that is missing, outside the repo, or holds no files
         - When fitness runs with `--dir`
             - Then it stops with an error naming the folder, not a scan of the whole repo
+- 0100.3
+    - Given Developer names a folder of requirement docs whose tests are elsewhere
+        - When fitness runs the requirements check with `--dir`
+            - Then it passes, since judging a folder changes no file

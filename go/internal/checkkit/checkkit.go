@@ -72,11 +72,40 @@ func StagedFiles() []string {
 	return splitLines(os.Getenv("FITNESS_STAGED_FILES"))
 }
 
-// ChangedFiles returns the changed paths the runner scoped this run to: the
-// staged files at commit time, or a pull request's diff against its base.
-// Nil means the run is unscoped and every file is judged.
+// ScopeFileEnv names the file, one path per line, that lists the files under
+// a `fitness --dir` folder. A folder can list more paths than one variable
+// holds, so the runner hands them over in a file.
+const ScopeFileEnv = "FITNESS_SCOPE_FILE"
+
+// ChangedFiles returns the paths the runner scoped this run to: the staged
+// files at commit time, a pull request's diff against its base, or the files
+// under a `--dir` folder. Nil means the run is unscoped and every file is
+// judged.
 func ChangedFiles() []string {
+	if changed := DiffFiles(); changed != nil {
+		return changed
+	}
+	return scopeFiles()
+}
+
+// DiffFiles returns the paths a commit or pull request changes. Nil means
+// the run changes nothing, as in a full scan or a `--dir` folder, so a
+// check that pairs changes, such as requirements, judges no pairs.
+func DiffFiles() []string {
 	return splitLines(os.Getenv("FITNESS_CHANGED_FILES"))
+}
+
+// scopeFiles reads the `--dir` folder's file list, nil when there is none.
+func scopeFiles() []string {
+	path := os.Getenv(ScopeFileEnv)
+	if path == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	return splitLines(string(data))
 }
 
 // EnabledChecks returns the enabled check names for this run, in order.
