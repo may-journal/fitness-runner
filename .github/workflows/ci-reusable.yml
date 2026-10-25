@@ -8,9 +8,9 @@ on:
   workflow_call:
     inputs:
       runs-on:
-        description: Runner label. ubuntu-latest runs swiftlint too, at a tenth of the macOS cost.
+        description: Runner label. The arm default bills 37% less a minute than x64 Linux and a tenth of macOS, and runs swiftlint too.
         type: string
-        default: ubuntu-latest
+        default: ubuntu-24.04-arm
       swift:
         description: Always install swiftlint. It is also installed when the checkout has Swift files. Linux runners get the official Linux build.
         type: boolean

@@ -19,7 +19,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' ||
       !contains(fromJSON('["github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), github.event.comment.user.login)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
     concurrency:

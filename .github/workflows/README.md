@@ -14,6 +14,8 @@ Overflow reports are uploaded as `fitness-reports` artifacts with job, matrix, a
 
 Each started job bills at least one minute, though a check takes seconds, so run count drives spend. A job whose `if` is false starts no runner and bills nothing. So each issue, comment, and PR job skips events that cannot change its result. Its command skips them too.
 
+Every Fitness job runs on `ubuntu-24.04-arm`, which GitHub bills at $0.005 a minute against $0.008 for x64 Linux, in private repos too. The fitness bundle, SwiftLint, Node and the JDK all ship arm64 builds, so the checks are the same. Only the release and distribution matrices keep an x64 leg, to test that platform's assets.
+
 A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. dupe-check queues instead, since only its opened run can close a duplicate.
 
 ## issue-check

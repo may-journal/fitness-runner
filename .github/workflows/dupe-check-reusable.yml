@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   dupe-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Runs for one Issue queue, so an edit never cancels the opened run,
     # the only one that can close the Issue as a duplicate.

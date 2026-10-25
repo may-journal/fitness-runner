@@ -29,7 +29,7 @@ jobs:
     # fitness-runner runs its own build-from-source pr-check, so skip the
     # pull_request path here; other repos (caller or required workflow) run it.
     if: github.repository != 'may-journal/fitness-runner'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Pushes and edits come in bursts; only the newest PR state needs a check.
     # The workflow name keeps a caller's run and the ruleset's apart.

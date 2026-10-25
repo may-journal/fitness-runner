@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   approve:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     # The run's own token reads the PR, its files, contents and checks, so
     # the approver's token needs only pull request access. A caller grants
     # these to the calling job.

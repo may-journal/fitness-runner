@@ -37,7 +37,7 @@ jobs:
       (github.event.comment.user.login != 'github-actions[bot]' &&
       (inputs.ignore-authors != '' || !contains(fromJSON('["may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), github.event.comment.user.login)) &&
       !contains(format(',{0},', inputs.ignore-authors), format(',{0},', github.event.comment.user.login)))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
     concurrency:
