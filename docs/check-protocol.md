@@ -15,6 +15,12 @@ The runner runs the `--describe` handshakes side by side, then runs checks in a 
 
 A timeout kills the whole process group, so a hung check's child tree dies with it. Each git call the runner makes, such as `git ls-files`, gets ten seconds. A stalled call ends the run as a setup error naming it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
 
+## Progress
+
+The runner prints `→ <name>` as each check starts. On a terminal, or with `FITNESS_PROGRESS=1`, it prints a heartbeat every five seconds. The heartbeat has one line per running check, such as `… 12s  running: go-test (budget 15m)`. Off a terminal, as in Actions, a check prints that line once when it passes half its budget.
+
+The runner holds each check's stderr until the run ends. When only one check is still running, its stderr streams live, and the summary does not print it again. A timed-out row adds the last line the check wrote to stderr, which shows where it stopped.
+
 ## Findings
 
 A check may add structured findings beside its error lines, so an agent need not parse prose. `fitness --format=json` prints every check's result and findings to stdout and moves the table to stderr. A check without findings gets one per error line. The doc comments on `runReport` in `go/cmd/fitness/format.go` give the output's fields.

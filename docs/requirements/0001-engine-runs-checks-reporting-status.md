@@ -33,11 +33,11 @@ Source: `go/cmd/fitness/ci.go:22`
 - 0001.13
     - Given Developer has slow checks with different time budgets
         - When fitness runs
-            - Then they overlap, the longest budget starts first, and the table keeps catalog order
+            - Then they overlap, longest budget first, progress shows each one's time and budget, the last streams live, and the table keeps catalog order
 - 0001.14
     - Given Developer has a check past the budget it declares or timeoutMs sets, or whose git or ssh waits for a password
         - When fitness runs
-            - Then it and its child processes stop, or are killed if they ignore the stop, and it shows red as timed out
+            - Then it and its children stop, by force if they ignore it, and it shows red as timed out with its last output
 - 0001.15
     - Given Developer has a repo with tracked files, a few or thousands, or whose git call listing them or staged files stalls
         - When fitness runs every check

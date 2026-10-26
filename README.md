@@ -107,6 +107,8 @@ Commands:
 
 `fitness --help` prints the same list. The [performance record](docs/ci.md#performance-record) explains `--json`, and the [box diagram](docs/ci.md#box-diagram) explains `boxes`.
 
+On a terminal, a long run names each running check with its elapsed time and budget every five seconds. Off a terminal, it names a check once at half its budget. The last check running streams its output live, as the [check protocol](docs/check-protocol.md#progress) explains.
+
 ## Git hooks
 
 In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
