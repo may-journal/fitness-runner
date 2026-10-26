@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"cmp"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -74,11 +75,13 @@ func dcNpmrc(registry string) string {
 
 // dependencyCurrency runs `fitness-install -- dependency-currency` on
 // happyRepo with files written over it. Like a real repo, it tracks its
-// manifests and ignores the installed node_modules.
+// manifests and ignores the installed node_modules. GitHub's API is a local
+// listener, so the runner's probe of it connects without the network; env
+// may name another.
 func dependencyCurrency(t *testing.T, files map[string]string, env ...string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", with(map[string]string{".gitignore": "node_modules\n"}, files))
-	return fitness(t, repo, append([]string{"HOME=" + t.TempDir()}, env...), "dependency-currency")
+	return fitness(t, repo, append([]string{"HOME=" + t.TempDir(), "GITHUB_API_URL=" + silentListener(t)}, env...), "dependency-currency")
 }
 
 // dcInstalled is the node_modules manifest of name installed at version,
@@ -148,9 +151,11 @@ func Test0022_6(t *testing.T) {
 }
 
 // dcBroken is one registry that cannot tell the latest version, named in
-// the repo or the home .npmrc.
+// the repo or the home .npmrc. want is what the run shows, when not that
+// every check passed.
 type dcBroken struct {
 	name, url string
+	want      string
 	hits      *atomic.Int32
 	home      bool
 	env       []string
@@ -159,7 +164,8 @@ type dcBroken struct {
 // dcBrokenRegistries are an unreachable registry, one answering an error,
 // one answering garbage, and one that never answers, in the repo .npmrc.
 // Then garbage in the home one, and a registry behind a proxy that never
-// answers.
+// answers, which shows info at once: GitHub's API, probed through that
+// proxy, does not answer either.
 func dcBrokenRegistries(t *testing.T) []dcBroken {
 	failing, failHits := dcAnswer(t, http.StatusInternalServerError, `{"error":"Internal Server Error"}`)
 	garbage, garbageHits := dcAnswer(t, http.StatusOK, "<html>proxy login</html>")
@@ -170,7 +176,7 @@ func dcBrokenRegistries(t *testing.T) []dcBroken {
 		{name: "garbage", url: garbage, hits: garbageHits},
 		{name: "silent", url: silentListener(t)},
 		{name: "home garbage", url: homeGarbage, hits: homeHits, home: true},
-		{name: "silent proxy", url: "https://registry.example.invalid", env: []string{"HTTPS_PROXY=" + silentListener(t), "NO_PROXY="}},
+		{name: "silent proxy", url: "https://registry.example.invalid", want: "did not answer within 2s through proxy", env: []string{"HTTPS_PROXY=" + silentListener(t), "NO_PROXY=", "GITHUB_API_URL=https://api.github.com"}},
 	}
 }
 
@@ -179,7 +185,7 @@ func Test0022_7(t *testing.T) {
 	for _, broken := range dcBrokenRegistries(t) {
 		start := time.Now()
 		out, code := dcAgainst(t, broken)
-		sees(t, out, code, 0, "All 1 checks passed")
+		sees(t, out, code, 0, cmp.Or(broken.want, "All 1 checks passed"))
 		if broken.hits != nil && broken.hits.Load() == 0 {
 			t.Errorf("%s: the check never asked the registry", broken.name)
 		}
