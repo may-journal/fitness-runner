@@ -55,10 +55,7 @@ type openPR struct {
 func run(root string, _ []string) (checkkit.Result, error) {
 	repo := gitx.OriginSlug(root)
 	if msg, provided := checkkit.CtxMessage(); provided {
-		if len(links(stripComments(msg), repo)) == 0 {
-			return checkkit.Pass(1), nil
-		}
-		return judge(msg, repo, branchCommits(root), branchPR()), nil
+		return judgeMessage(root, msg, repo), nil
 	}
 	if pr, base, ok := eventPR(); ok {
 		return judgeBranch(repo, prCommits(root, pr.head, base), pr), nil
@@ -66,11 +63,34 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(0), nil
 }
 
+// MessageLinks returns the distinct Issue links a commit message makes, as
+// `owner/repo#NN` keys, leaving out the lines git drops. A bare `#NN`
+// belongs to repo. The runner asks it whether a message reads the network.
+func MessageLinks(msg, repo string) []string {
+	return links(stripComments(msg), repo)
+}
+
+// judgeMessage judges a proposed message that links an Issue against the
+// branch commits and the open PR. When the runner's probe found GitHub's
+// API host unreachable, it skips the open PR read and notes that instead.
+func judgeMessage(root, msg, repo string) checkkit.Result {
+	if len(MessageLinks(msg, repo)) == 0 {
+		return checkkit.Pass(1)
+	}
+	note := checkkit.Offline("the open PR read")
+	if note == "" {
+		return judge(msg, repo, branchCommits(root), branchPR())
+	}
+	result := judge(msg, repo, branchCommits(root), nil)
+	result.Info = append(result.Info, note)
+	return result
+}
+
 // judge fails each Issue the proposed message links that an earlier branch
 // commit or the open PR body already links.
 func judge(msg, repo string, prior []earlier, pr *openPR) checkkit.Result {
 	var errs []string
-	for _, key := range links(stripComments(msg), repo) {
+	for _, key := range MessageLinks(msg, repo) {
 		if e := repeatOf(key, repo, prior, pr, time.Now()); e != "" {
 			errs = append(errs, e+"; drop the reference from this message")
 		}
@@ -97,7 +117,7 @@ func judgeBranch(repo string, commits []earlier, pr *openPR) checkkit.Result {
 // commitRepeats reports each repeat link in one pull request commit.
 func commitRepeats(repo string, c earlier, prior []earlier, pr *openPR) []string {
 	var errs []string
-	for _, key := range links(stripComments(c.message), repo) {
+	for _, key := range MessageLinks(c.message, repo) {
 		if e := repeatOf(key, repo, prior, pr, c.authored); e != "" {
 			errs = append(errs, fmt.Sprintf("commit %s (%q): %s; %s", short(c.sha), c.subject, e, rewriteHint))
 		}
@@ -124,7 +144,7 @@ func short(sha string) string {
 // linkedBy returns the first earlier commit whose message links key.
 func linkedBy(key, repo string, prior []earlier) (earlier, bool) {
 	for _, c := range prior {
-		if contains(links(stripComments(c.message), repo), key) {
+		if contains(MessageLinks(c.message, repo), key) {
 			return c, true
 		}
 	}

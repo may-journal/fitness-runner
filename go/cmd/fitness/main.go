@@ -450,7 +450,7 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
 func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string, err error) {
-	env, err = contextEnv(root, checks, all, scope)
+	env, err = contextEnv(root, checks, all, scope, "")
 	if err != nil || len(checks) != 1 {
 		return env, nil, err
 	}
@@ -804,8 +804,9 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 // repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
 // so no check reads the folder as changes. The staged files are read once
 // for both variables. A stalled git call returns its error. A run with a
-// network check probes GitHub's API host first, as networkEnv says.
-func contextEnv(root string, checks []resolved, all bool, scope []string) ([]string, error) {
+// network check, or a commit message that links an Issue, probes GitHub's
+// API host first, as networkEnv says.
+func contextEnv(root string, checks []resolved, all bool, scope []string, msg string) ([]string, error) {
 	staged, err := stalledOnly(gitx.Repo(root).StagedFiles())
 	if err != nil {
 		return nil, err
@@ -823,7 +824,7 @@ func contextEnv(root string, checks []resolved, all bool, scope []string) ([]str
 	// password prompt would wait, unseen, until the budget kills the check.
 	env = append(append(env, gitx.NoPrompt(root)...), "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
 	env = append(env, scope...)
-	env = append(env, networkEnv(root, checks)...)
+	env = append(env, networkEnv(root, checks, msg)...)
 	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
 }
 
