@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0049 Checks Plan Trailer
 
 ## Why

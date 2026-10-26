@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0005 — Swift references come from a parser in the check
 
 ## Context

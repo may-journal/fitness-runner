@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0021 Checks Cspell
 
 ## Why

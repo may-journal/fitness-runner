@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0002 — One binary per check retires the shared-lint-path decision
 
 ## Context

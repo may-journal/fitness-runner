@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Check protocol
 
 The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, tracked files, enabled check names, and the commit message for the commit checks.

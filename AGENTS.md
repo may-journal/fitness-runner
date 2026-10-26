@@ -1,8 +1,3 @@
----
-# How agents should work in this repo
-relatedConfigurations: ['.fitnessrc.json']
----
-
 # Agents
 
 Guidance for AI agents working in this repository.

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.1545
 
 - Fix: the shared Prettier config keeps `.github/ISSUE_TEMPLATE/**/*.md` and `.github/fitness-setup.md` at Prettier defaults.

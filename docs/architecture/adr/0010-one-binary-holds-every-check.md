@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0010 — One binary holds every check
 
 ## Context

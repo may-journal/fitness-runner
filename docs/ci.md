@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
----
-
 # Run prebuilt Fitness in CI
 
 Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need the tools their language module runs.

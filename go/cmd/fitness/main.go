@@ -222,8 +222,8 @@ func init() {
 		// Draws a --json report as an HTML box diagram.
 		//fitness:usage boxes <report.json> <page.html>
 		"boxes": runBoxes,
-		// Removes front matter that holds only fitness keys from tracked .md
-		// files.
+		// Deletes the fitness keys from tracked .md files' front matter, and
+		// any block they leave empty.
 		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,
 		// Judges this branch's PR and the issues it closes locally, posting

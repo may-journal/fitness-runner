@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0038 Checks Mermaid Callout Why
 
 ## Why

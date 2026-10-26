@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// prettierJS is a formatted project with its own Prettier config, which keeps
-// happyRepo's single-quoted front matter.
+// prettierJS is a formatted project with its own Prettier config, which
+// keeps single quotes.
 func prettierJS(files map[string]string) map[string]string {
 	return with(map[string]string{
 		"package.json":     "{}\n",
@@ -135,7 +135,7 @@ func Test0052_3(t *testing.T) {
 // formatted with Prettier's defaults: double-quoted front matter.
 var prettierSynced = map[string]string{
 	".github/ISSUE_TEMPLATE/plan.md": "---\nname: Plan\ntitle: \"[Plan] Short name of the work\"\n---\n\n> REPLACE-ME\n",
-	".github/fitness-setup.md":       "---\nrelatedConfigurations: [\"workflows/issue-check.yml\"]\n---\n\n# Fitness setup\n",
+	".github/fitness-setup.md":       "# Fitness setup\n\nRun \"fitness\" before each push.\n",
 }
 
 // configFrom returns the file a Prettier call names after --config.

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.15.1859
 
 - Feat: `fitness-release release-notes` writes each draft release's description from the entry files added since the previous tag, before GoReleaser publishes it.

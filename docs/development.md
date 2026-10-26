@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Development
 
 ```bash

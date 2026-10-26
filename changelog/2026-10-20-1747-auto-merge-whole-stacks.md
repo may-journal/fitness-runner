@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1747
 
 - Feat: Auto-merge merges a native stack whole, through an asynchronous merge of its top pull request, once every pull request is ready.

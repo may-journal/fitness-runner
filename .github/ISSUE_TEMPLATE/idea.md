@@ -1,5 +1,4 @@
 ---
-relatedConfigurations: ['../../.fitnessrc.json']
 name: Idea
 about: An idea worth keeping, before it is planned.
 title: "[Idea] Short name of the idea"

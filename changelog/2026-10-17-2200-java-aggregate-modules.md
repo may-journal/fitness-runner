@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.2200
 
 - Fix: Java coverage judges a module's own JaCoCo report when no aggregate report covers that module.

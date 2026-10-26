@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0008 Runner Says What Went Wrong
 
 ## Why

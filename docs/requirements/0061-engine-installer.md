@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0061 Installer Runs Verified Fitness
 
 ## Why

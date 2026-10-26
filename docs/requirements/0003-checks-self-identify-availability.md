@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0003 Checks Self-Identify Availability
 
 ## Why

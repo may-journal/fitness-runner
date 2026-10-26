@@ -1,8 +1,3 @@
-<!--
----
-fitnessFunctions: ['pr-structure']
----
--->
 <!-- One sentence: the value this change delivers, in a reader's terms. -->
 > REPLACE-ME
 

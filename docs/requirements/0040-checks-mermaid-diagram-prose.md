@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0040 Checks Mermaid Diagram Prose
 
 ## Why

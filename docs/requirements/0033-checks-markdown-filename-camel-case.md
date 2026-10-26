@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0033 Checks Markdown Filename Camel Case
 
 ## Why

@@ -1,6 +1,3 @@
----
-relatedConfigurations: ['../release-please-config.json', '../.goreleaser-bundles.yml', '../.goreleaser-tools.yml', '../.goreleaser-publish.yml']
----
 <!-- cspell:ignore goreleaser -->
 
 

@@ -34,7 +34,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `fitness init`: Installs the shared git hooks into this repo.
 - `fitness hook <name>`: Runs a git hook: commit-msg, pre-commit, or pre-push.
 - `fitness boxes <report.json> <page.html>`: Draws a --json report as an HTML box diagram.
-- `fitness strip-front-matter`: Removes front matter that holds only fitness keys from tracked .md files.
+- `fitness strip-front-matter`: Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
 - `fitness branch-check`: Judges this branch's PR and the issues it closes locally, posting nothing.
 - `fitness pr-check`: Judges pull request titles and descriptions, in GitHub Actions.
 - `fitness issue-check`: Judges an issue by its kind label and comments the result, in GitHub Actions.

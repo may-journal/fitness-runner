@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.15.1855
 
 - Fix: the pre-commit hook skips `semantic-commit` beside a commit-msg hook, and alone judges earlier branch commits, never the parent at HEAD.

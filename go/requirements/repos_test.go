@@ -100,7 +100,7 @@ func acceptances(ids ...string) string {
 // docWith is requirement 0001 with the given Requirements, its Measurement
 // ratio set apart by blank lines as Biome formats it.
 func docWith(reqs string) string {
-	return "---\nrelatedConfigurations: ['../../.fitnessrc.json']\n---\n\n# 0001 Adds Numbers\n\n## Why\n\n" +
+	return "# 0001 Adds Numbers\n\n## Why\n\n" +
 		"I can add two numbers without doing it by hand.\n\n## Measurement\n\nsums that are right\n\n-\n\nsums asked for\n\n" +
 		"## Requirements\n\n" + reqs
 }
@@ -209,10 +209,10 @@ func architectedRepo() map[string]string {
 		"src/cmd/service/main.go": "// Command service saves one record.\npackage main\n\nimport \"example.com/service/src/store\"\n\nfunc main() { store.Save() }\n",
 		"src/store/store.go":      "// Package store keeps records.\npackage store\n\n// Record is one saved record.\ntype Record struct{ ID int }\n\n// Save keeps one record and returns it.\nfunc Save() Record { return Record{} }\n",
 		"src/store/store_test.go": testFile("store", "Test0001_1"),
-		acDoc:                     front("../../") + acDocWith("User opens the app"),
+		acDoc:                     acDocWith("User opens the app"),
 	}
 	for view, body := range architectedViews() {
-		files["docs/architecture/"+view] = front("../../") + body
+		files["docs/architecture/"+view] = body
 	}
 	return with(views, files)
 }
@@ -271,13 +271,8 @@ func architectedViews() map[string]string {
 	}
 }
 
-// front is the front matter a Markdown doc at depth up carries.
-func front(up string) string {
-	return "---\nrelatedConfigurations: ['" + up + ".fitnessrc.json']\n---\n\n"
-}
-
 // notesHead opens a changelog in the house layout.
-const notesHead = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n"
+const notesHead = "# Changelog\n\n## Changes\n\n"
 
 // notesEntry is a timestamped entry that follows the house rules.
 const notesEntry = "### 2026.10.09.1500\n\n- Fix: one.\n- Fix: two.\n- Fix: three.\n\n"

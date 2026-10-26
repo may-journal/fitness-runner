@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1903
 
 - Fix: Release approve fails before its 20-minute wait when `APPROVER_TOKEN` is rejected or cannot see the repo.

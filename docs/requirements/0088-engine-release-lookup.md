@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0088 Release Lookup Survives Rate Limits
 
 ## Why

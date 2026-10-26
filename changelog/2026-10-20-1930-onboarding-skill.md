@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1930
 
 - Feat: an onboarding skill teaches a repo or agent to install fitness, run checks, read failures and follow the Plan flow.

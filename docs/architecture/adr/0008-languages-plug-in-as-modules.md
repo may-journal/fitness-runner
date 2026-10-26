@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0008 — Languages plug in as modules through one registry
 
 ## Context

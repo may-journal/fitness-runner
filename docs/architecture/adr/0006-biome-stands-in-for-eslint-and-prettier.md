@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0006 — Biome stands in for ESLint and Prettier
 
 ## Context

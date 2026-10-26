@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1600
 
 - Feat: Release approve lets a second App approve a green Release Please pull request, so it merges without a person.

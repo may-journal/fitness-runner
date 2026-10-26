@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0043 Checks Mermaid Level Bleed
 
 ## Why

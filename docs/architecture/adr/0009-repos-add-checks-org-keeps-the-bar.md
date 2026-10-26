@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0009 — Repos add local checks; only external policy replaces or disables a bundled one
 
 ## Context
