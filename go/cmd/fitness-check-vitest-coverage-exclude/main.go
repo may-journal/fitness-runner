@@ -1,15 +1,3 @@
-// Command fitness-check-vitest-coverage-exclude validates that Vitest
-// coverage excludes nothing — the Go port of the vitest-coverage-exclude
-// check, with its allowed set of test, type, and barrel patterns removed. The TS check evaluated the
-// vitest config as JavaScript; this port scans it textually via
-// internal/vitestconf, so exclude entries built from variables, spreads, or
-// imports are invisible — the same judgment the TS applied to non-string
-// entries at runtime, one level earlier.
-//
-// A root without any config source is judged against the shared config
-// directory: an installed node_modules/@mayjournal/fitness-shared when
-// present, else the vitest.config.mjs embedded in this binary, materialized
-// to the cache (internal/sharedconf).
 package check
 
 import (
@@ -26,7 +14,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "vitest-coverage-exclude"},
+		Describe: checkkit.Describe{Name: "vitest-coverage-exclude", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

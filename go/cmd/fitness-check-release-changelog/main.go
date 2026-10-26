@@ -1,6 +1,3 @@
-// Command fitness-check-release-changelog binds Release Please's manifest to
-// the version file. Release notes come from changelog/ entry files, so
-// CHANGELOG.md is not judged.
 package check
 
 import (
@@ -23,7 +20,7 @@ var semverPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "release-changelog"},
+		Describe: checkkit.Describe{Name: "release-changelog", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

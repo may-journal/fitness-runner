@@ -1,9 +1,3 @@
-// Command fitness-check-semantic-commit validates that the commit subject
-// follows Conventional Commits `type(scope): description` with the scope
-// required — the Go port of the semantic-commit check. One deviation from
-// the TypeScript original: it inlines the type list the TS check read from
-// the conventional-commit-types package at runtime (same eleven types, same
-// order).
 package check
 
 import (
@@ -17,7 +11,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "semantic-commit", ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "semantic-commit", Scope: checkkit.ScopeGit, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }

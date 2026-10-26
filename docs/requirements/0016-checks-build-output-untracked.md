@@ -14,7 +14,7 @@ repos with build output tracked, not ignored, or imported reported red
 -
 repos with build output tracked, not ignored, or imported
 
-Source: `go/cmd/fitness-check-build-output-untracked/main.go:65`
+Source: `go/cmd/fitness-check-build-output-untracked/main.go:55`
 
 ## Requirements
 

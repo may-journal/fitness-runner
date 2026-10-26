@@ -1,12 +1,3 @@
-// Command fitness-check-go-complexity enforces a cyclomatic complexity
-// ceiling on Go functions — the Go-native counterpart of the house eslint
-// rule (complexity max 5) that gates JavaScript and TypeScript. Each
-// function starts at 1 and gains a point per branch: if, for, range,
-// non-default switch/select clause, && and ||. Function literals are
-// scored separately from their enclosing function, like eslint scores
-// arrow functions. Every tracked .go file is scored, tests included. The
-// ceiling is configurable via
-// .fitnessrc.json: {"goComplexity": {"max": N}}; default 5.
 package check
 
 import (
@@ -28,7 +19,7 @@ var defaultMax = golang.Defaults.Complexity.Max
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "go-complexity"},
+		Describe: checkkit.Describe{Name: "go-complexity", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

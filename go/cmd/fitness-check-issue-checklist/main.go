@@ -1,10 +1,3 @@
-// Command fitness-check-issue-checklist fails an issue body whose task list
-// still has unchecked items, so closing it would close unfinished work.
-//
-// It reads its target from a `--body-file` path (`-` meaning stdin), the
-// runner's context-inline `--body` value, or stdin, and passes inert with no
-// input. `fitness close-check` runs it on a closed issue and `fitness
-// pr-check` on each issue a PR closes.
 package check
 
 import (
@@ -17,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "issue-checklist", Blob: true, ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "issue-checklist", Scope: checkkit.ScopeBlob, Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

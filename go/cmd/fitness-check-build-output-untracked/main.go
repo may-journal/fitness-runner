@@ -1,13 +1,3 @@
-// Command fitness-check-build-output-untracked validates that dist/ build
-// output stays out of git and out of the import graph — the Go port of the
-// build-output-untracked check. Three rules: dist must be git-ignored, no
-// file under a dist directory or the build output a language module names
-// may be git-tracked (one combined error names them all), and no source file
-// a module scans for this check may import from a dist path.
-// One deviation from the TypeScript original: only git's stdout is parsed
-// for tracked files (the TS exec helper folded stderr into the output of a
-// failing command), so a failing git command contributes no phantom tracked
-// files.
 package check
 
 import (
@@ -46,7 +36,7 @@ var distSpecifierRe = regexp.MustCompile(`(^|/)dist/|\.\./dist`)
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: name},
+		Describe: checkkit.Describe{Name: name, Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

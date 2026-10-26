@@ -1,12 +1,7 @@
-// Command fitness-check-markdown-no-bold-italic validates that markdown
-// files do not use **bold**, __bold__, *italic*, or _italic_ emphasis — the
-// Go port of the markdown-no-bold-italic check. Emphasis inside fenced code
-// blocks, inline code, and markdown links is allowed, as is the bold scope
-// Release Please gives release bullets; every tracked .md file is checked,
-// CHANGELOG.md included. The italic patterns carry JavaScript look-behind and
-// look-ahead assertions the TS original relied on, so their scan is
-// hand-rolled here; the flagged snippet is quoted byte-for-byte like
-// JSON.stringify.
+// The italic patterns carry JavaScript look-behind and look-ahead assertions
+// the TS original relied on, so their scan is hand-rolled here; the flagged
+// snippet is quoted byte-for-byte like JSON.stringify.
+
 package check
 
 import (
@@ -26,7 +21,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "markdown-no-bold-italic", Blob: true},
+		Describe: checkkit.Describe{Name: "markdown-no-bold-italic", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

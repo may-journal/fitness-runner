@@ -1,8 +1,3 @@
-// Command fitness-check-changelog judges the changelog/*.md entry files,
-// the only changelog source. Each must hold one dated
-// "### yyyy.mm.dd.HHMM" heading and its bullets, and its name must start
-// with that heading's date. CHANGELOG.md, in any shape or absent, is not
-// judged, and neither is the package version.
 package check
 
 import (
@@ -12,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "changelog"},
+		Describe: checkkit.Describe{Name: "changelog", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

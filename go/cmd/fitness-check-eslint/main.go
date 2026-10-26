@@ -1,25 +1,3 @@
-// Command fitness-check-eslint lints the repo with the shared flat config —
-// the Go port of the eslint check. The TypeScript check ran ESLint in-process
-// through its Node API; this binary execs the real eslint CLI instead,
-// resolved from node_modules/.bin walking up from the root, then PATH — never
-// npx. It lints every tracked .cjs/.js/.mjs/.ts/.tsx file (or every changed
-// one in a scoped run), declarations and tests included, and fails a file
-// ESLint reports as ignored, so no ignore pattern hides one. JSON result
-// parsing, message formatting, and the fallback error strings are ported
-// verbatim. Syntactic parse only (see ADR 0001), so the runner-default
-// timeout stands.
-//
-// The shared eslint.config.mjs forced via --config resolves through
-// internal/sharedconf: the repo's own file wins, then an installed
-// node_modules/@mayjournal/fitness-shared, then the copy embedded in this
-// binary, materialized to the cache. The shared config imports its plugins
-// (typescript-eslint, jsdoc, perfectionist, prettier) as bare specifiers, so
-// the materialized copy only loads in repos where Node can resolve those
-// packages — installing them alongside eslint stays the check's peer
-// contract, exactly as it was in the npm era.
-//
-// A repo that chose Biome (internal/biome) is linted by `biome lint` on the
-// same paths instead, and needs no eslint (ADR 0006).
 package check
 
 import (
@@ -53,7 +31,7 @@ const ignoredFileNotice = "File ignored because of a matching ignore pattern"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "eslint"},
+		Describe: checkkit.Describe{Name: "eslint", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

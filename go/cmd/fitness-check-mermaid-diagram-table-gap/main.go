@@ -1,20 +1,8 @@
-// Command fitness-check-mermaid-diagram-table-gap flags loose markdown prose
-// wedged between a numbered mermaid diagram (or its legend block) and the
-// callout table that follows it. In the C4 doc convention the layout is
-// diagram → legend → one caption line → callout table, and all detail lives
-// in the table; a paragraph in that gap duplicates the table and should fail.
-// The single caption line ("Numbers … match the callout table") is allowed,
-// as is prose before the diagram or after the table — only the diagram-to-
-// table gap is policed.
-//
-// The sibling check mermaid-diagram-prose owns a different rule: prose inside
-// the diagram's own edge/relationship labels. This check never looks inside a
-// block; it looks at the markdown lines around them.
-//
 // The shared parser lives in internal/mermaid; the JS \s class and the
 // trim/fence helpers it uses are unexported there, so that small residue
 // (jsWS, isJSSpace, trimStartJS, fenceMarker) is duplicated here instead of
 // modifying the frozen package.
+
 package check
 
 import (
@@ -29,7 +17,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-diagram-table-gap", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-diagram-table-gap", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

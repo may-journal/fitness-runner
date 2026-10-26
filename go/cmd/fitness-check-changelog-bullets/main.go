@@ -1,8 +1,3 @@
-// Command fitness-check-changelog-bullets keeps changelog entries tight:
-// every changelog/*.md entry file's section must have 3 to 5 bullets, every
-// bullet must be under 365 characters, and every bullet must start with a
-// semantic type (Feat:, fix(scope):, …). CHANGELOG.md is not judged, so a
-// repo with only it, in any shape, passes with zero files.
 package check
 
 import (
@@ -29,7 +24,7 @@ var (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "changelog-bullets"},
+		Describe: checkkit.Describe{Name: "changelog-bullets", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

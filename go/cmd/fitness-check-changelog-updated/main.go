@@ -1,6 +1,3 @@
-// Command fitness-check-changelog-updated checks that each staged commit
-// writes a changelog entry about its change. A branch keeps one entry file.
-// CHANGELOG.md is no part of it. The README holds the full rules.
 package check
 
 import (
@@ -74,7 +71,7 @@ func gitStateFileExists(root, ref string) bool {
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "changelog-updated"},
+		Describe: checkkit.Describe{Name: "changelog-updated", Scope: checkkit.ScopeGit},
 		Run:      run,
 	})
 }

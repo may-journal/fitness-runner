@@ -1,6 +1,8 @@
 // Package conf loads .fitnessrc.json — the Go runner's configuration file.
 // Same keys as the TypeScript FitnessConfig; JSON because the standard
 // library parses it and a config file must not require a toolchain.
+//
+//fitness:topic config
 package conf
 
 import (
@@ -35,7 +37,7 @@ type Config struct {
 		// Allow lists exact values the check never flags, for the rare
 		// repeat no shared constant can fix. Keep it a shrinking list.
 		Allow []string `json:"allow"`
-	} `json:"repeatedStringLiterals"`
+	} `json:"repeatedStringLiterals" check:"repeated-string-literals"`
 	// TextReadability holds alarm bands for the text-readability check.
 	TextReadability struct {
 		// MaxGrade is the Coleman-Liau and ARI grade at which a file alarms.
@@ -44,7 +46,7 @@ type Config struct {
 		MaxLix float64 `json:"maxLix"`
 		// MinWords is the fewest prose words a file needs to be judged.
 		MinWords int `json:"minWords"`
-	} `json:"textReadability"`
+	} `json:"textReadability" check:"text-readability"`
 	// ProseBudget holds the prose-budget check's hard caps. Each limit falls
 	// back to a built-in default when zero.
 	ProseBudget struct {
@@ -61,7 +63,7 @@ type Config struct {
 		MaxListItems int `json:"maxListItems"`
 		// MaxWords is the most prose words one section may hold.
 		MaxWords int `json:"maxWords"`
-	} `json:"proseBudget"`
+	} `json:"proseBudget" check:"prose-budget"`
 	// Comment holds comment-structure's budget for an issue or PR comment.
 	// Each limit falls back to a built-in default when zero.
 	Comment struct {
@@ -69,7 +71,7 @@ type Config struct {
 		MaxWords int `json:"maxWords"`
 		// MaxTables is the most tables one comment may hold.
 		MaxTables int `json:"maxTables"`
-	} `json:"comment"`
+	} `json:"comment" check:"comment-structure"`
 }
 
 // FileName is the config file the runner reads at the repo root.

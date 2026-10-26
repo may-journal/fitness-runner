@@ -1,13 +1,3 @@
-// Command fitness-check-doc-template enforces a convention: template files
-// define a markdown document's shape. A template is template.md,
-// *.template.md, any markdown file in a templates folder (governing its
-// parent), or a GitHub PR or Issue template. Every template's level-2 section
-// needs a guiding HTML comment. Walking up from each markdown file, the first
-// folder with a template that governs it decides, and the file must have the
-// same sections as any one of them. A template in a templates folder that
-// shares the file's name governs it alone, with its whole shape, and no other
-// file. An architecture view with no such copy follows the template fitness
-// ships for it. GitHub templates get only the comment rule.
 package check
 
 import (
@@ -26,7 +16,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "doc-template"},
+		Describe: checkkit.Describe{Name: "doc-template", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

@@ -1,11 +1,3 @@
-// Command fitness-check-plan-trailer validates an optional `Plan #NN` commit
-// trailer: a commit may reference the Plan Issue it implements with a line
-// reading exactly `Plan #<number>`. The trailer is optional — a message
-// without one passes — but a plan reference that is present must be well
-// formed, so `Plan 63`, `plan #63`, or `Plan: 63` fail with a fix hint.
-//
-// Like semantic-commit it reads the proposed message from the context-inline
-// `--message` value, falling back to the HEAD commit message.
 package check
 
 import (
@@ -19,7 +11,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "plan-trailer", ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "plan-trailer", Scope: checkkit.ScopeGit, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }

@@ -1,5 +1,3 @@
-// Command fitness-check-architecture-containers matches the containers view
-// against the runtime products the repository builds and deploys.
 package check
 
 import (
@@ -9,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "architecture-containers"},
+		Describe: checkkit.Describe{Name: "architecture-containers", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

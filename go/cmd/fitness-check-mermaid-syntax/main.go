@@ -1,9 +1,5 @@
 // cspell:ignore autonumber Descr gantt mindmap sankey treemap xychart zenuml
 
-// Command fitness-check-mermaid-syntax fails a mermaid diagram that would not
-// render. Flowcharts, graphs, and sequence diagrams are parsed statement by
-// statement in pure Go; every other known diagram type gets its header and
-// bracket balance checked, and an unknown type fails.
 package check
 
 import (
@@ -18,7 +14,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-syntax", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-syntax", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

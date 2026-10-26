@@ -1,10 +1,7 @@
-// Command fitness-check-mermaid-level-bleed warns when a callout description
-// at one C4 level repeats the previous level verbatim — lower levels should
-// add level-specific rationale, not restate the parent. Compares only exact
-// (normalized) matches to stay low-false-positive. The Go port of the
-// mermaid-level-bleed check: unlike its four siblings it does not use the
-// RunDocCheck driver — filesChecked counts the numbered `architecture/NN*.md`
-// level files, whether or not they contain mermaid blocks.
+// Unlike its four siblings this check does not use the RunDocCheck driver,
+// since it compares level files with each other rather than judging each
+// file alone.
+
 package check
 
 import (
@@ -23,7 +20,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-level-bleed"},
+		Describe: checkkit.Describe{Name: "mermaid-level-bleed", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

@@ -1,8 +1,3 @@
-// Command fitness-check-markdown-filename-camel-case validates that every
-// markdown basename under the repo is camelCase, standard root docs exempt —
-// the Go port of the markdown-filename-camel-case flavor of the TypeScript
-// markdown-filename-convention package. The validation core is shared with
-// the kebab-case flavor in internal/mdfilename.
 package check
 
 import (
@@ -12,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "markdown-filename-camel-case"},
+		Describe: checkkit.Describe{Name: "markdown-filename-camel-case", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

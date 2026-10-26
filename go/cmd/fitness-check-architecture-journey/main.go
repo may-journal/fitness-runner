@@ -1,7 +1,3 @@
-// Command fitness-check-architecture-journey keeps the user journey diagram
-// and the requirement docs covering each other: every requirement doc ID
-// appears in a journey diagram label, and every journey node that promises
-// behavior names one.
 package check
 
 import (
@@ -11,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "architecture-journey"},
+		Describe: checkkit.Describe{Name: "architecture-journey", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

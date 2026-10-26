@@ -1,4 +1,3 @@
-// Command fitness-check-local-branch runs PR and Plan judgments locally.
 package check
 
 import (
@@ -8,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "local-branch", TimeoutMs: 35000},
+		Describe: checkkit.Describe{Name: "local-branch", Scope: checkkit.ScopeGitHub, TimeoutMs: 35000},
 		Run:      metadata.LocalBranch,
 	})
 }

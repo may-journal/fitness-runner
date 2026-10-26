@@ -23,7 +23,7 @@ type fileConfig struct {
 			// Reason says why the literal stays out of the catalog.
 			Reason string `json:"reason"`
 		} `json:"allow"`
-	} `json:"localizedText"`
+	} `json:"localizedText" check:"localized-text"`
 }
 
 // configSource is this file, whose doc comments describe each localizedText

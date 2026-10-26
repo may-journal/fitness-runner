@@ -1,16 +1,3 @@
-// Command fitness-check-repeated-string-literals fails when any string
-// literal value appears three or more times across the repo's JS/TS source
-// files — the Go port of the repeated-string-literals check. A hand lexer
-// extracts single- and double-quoted literals, skipping line/block comments,
-// regex literals, template literals, and module specifiers (the string after
-// import/require/from); idiomatic tokens (buffer encodings, stdio modes,
-// typeof results, directive prologues) are never flagged. Each duplicated
-// value earns one error listing its locations, most-repeated first.
-//
-// One deviation from the TypeScript original: the allow list comes from
-// .fitnessrc.json via internal/conf, so any config load error — including a
-// legacy .fitnessrc.js/.ts, which this binary cannot evaluate — degrades to
-// an empty allow list instead of reading the configured baseline.
 package check
 
 import (
@@ -83,7 +70,7 @@ var moduleWords = map[string]bool{"from": true, "import": true, "require": true}
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: name},
+		Describe: checkkit.Describe{Name: name, Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

@@ -1,17 +1,11 @@
-// Command fitness-check-read-repo-first prints the familiarization banner —
-// the Go port of the read-repo-first check. The banner (the familiarization
-// question, a Check|Src table of the enabled checks, the --no-verify note)
-// is display, not judgment: the result is always ok with zero files checked.
-// Protocol adaptations from the TypeScript original: the banner goes to
-// stderr (stdout is the JSON result channel), enabled names come from
-// FITNESS_ENABLED_CHECKS instead of an in-process run context (standalone
-// runs with no context print the table-less form), and the folder-override
-// map (checkFolderByName) does not cross the env protocol, so Src is always
-// go/cmd/fitness-check-<name>/README.md. Table geometry and coloring mirror the
-// cli-table3 output: column widths 28 and max(20, max(70, width-8)-34)
-// including one space of padding per side, gray borders and red header
-// regardless of tty (unless NO_COLOR), chalk-style bold/cyan/yellow only on
-// a terminal.
+// The banner is display, not judgment. Enabled names come from
+// FITNESS_ENABLED_CHECKS; a standalone run with no context prints the
+// table-less form, and Src is always go/cmd/fitness-check-<name>/README.md.
+// Table geometry and coloring mirror the cli-table3 output: column widths 28
+// and max(20, max(70, width-8)-34) including one space of padding per side,
+// gray borders and red header regardless of tty (unless NO_COLOR), and
+// chalk-style bold/cyan/yellow only on a terminal.
+
 package check
 
 import (
@@ -31,7 +25,7 @@ const questionLine2 = `specifically all "Fitness Checks" that are enabled via @m
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "read-repo-first"},
+		Describe: checkkit.Describe{Name: "read-repo-first", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

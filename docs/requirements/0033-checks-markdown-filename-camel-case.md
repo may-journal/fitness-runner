@@ -14,7 +14,7 @@ markdown files named in camelCase or exempt
 -
 markdown files judged in camelCase repos
 
-Source: `go/cmd/fitness-check-markdown-filename-camel-case/main.go:21`
+Source: `go/cmd/fitness-check-markdown-filename-camel-case/main.go:16`
 
 ## Requirements
 

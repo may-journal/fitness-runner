@@ -1,11 +1,3 @@
-// Command fitness-check-plan-structure validates that a plan — a GitHub Issue
-// body under the `Plan` label — follows the Plan issue template: a one-line
-// blockquote pitch, a `## Background` section, and a `## What needs to happen`
-// section with at least one checklist item, and no other `##` sections
-// (double-especially no "Open questions").
-//
-// It reads its target from stdin, a `--body-file` path (`-` meaning stdin), or
-// the runner's context-inline `--body` value, and passes inert with no input.
 package check
 
 import (
@@ -16,7 +8,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "plan-structure", Blob: true, ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "plan-structure", Scope: checkkit.ScopeBlob, Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

@@ -2,6 +2,8 @@
 // installs into a consumer repo. The hooks run the latest fitness through the
 // installer in $FITNESS_INSTALL_DIR (default ~/.local/share/fitness), so no
 // fitness on the PATH is needed.
+//
+//fitness:topic hooks
 package hooks
 
 import "embed"

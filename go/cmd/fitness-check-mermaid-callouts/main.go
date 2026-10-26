@@ -1,11 +1,3 @@
-// Command fitness-check-mermaid-callouts is the Go port of the
-// mermaid-callouts check: every mermaid diagram with callouts must have an
-// associated callout table, and their callouts must be a 1-1 match (no
-// orphan callouts, orphan rows, or duplicates). Nodes carry number callouts
-// and connectors carry letter callouts (A–Z, then AA–ZZ, then AAA…), so a
-// connector numbered like a node, or a letter that breaks the doubling,
-// fails. Diagrams without callouts need no table; a table with no preceding
-// diagram is an error.
 package check
 
 import (
@@ -20,7 +12,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-callouts", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-callouts", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

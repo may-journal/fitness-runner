@@ -1,8 +1,3 @@
-// Command fitness-check-mermaid-legend validates that numbered flowchart
-// callout nodes carry a style class (inline `:::class` or a `class`/`style`
-// statement) and that diagrams with callouts declare a `classDef` legend —
-// the Go port of the mermaid-legend check. C4/other diagram types (different
-// styling model) are skipped.
 package check
 
 import (
@@ -18,7 +13,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-legend", Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-legend", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }

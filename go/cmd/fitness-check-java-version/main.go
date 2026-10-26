@@ -1,7 +1,3 @@
-// Command fitness-check-java-version checks a Java repo pins its JDK and
-// that the machine's JDKs satisfy the pin, through the Java language
-// module. Toolchain JDKs come from a local lookup of installed JDKs, never
-// from Gradle.
 package check
 
 import (
@@ -11,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "java-version"},
+		Describe: checkkit.Describe{Name: "java-version", Scope: checkkit.ScopeFiles},
 		Run:      version.Run,
 	})
 }

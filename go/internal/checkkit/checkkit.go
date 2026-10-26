@@ -8,6 +8,8 @@
 // it found problems. Exit 3 means the check could not judge (a panic or an
 // internal error) and the Result carries that as info, which never fails a
 // run. `--describe` prints a Describe JSON and exits without running.
+//
+//fitness:topic protocol
 package checkkit
 
 import (
@@ -22,9 +24,12 @@ const ExitInternal = 3
 
 // Result is the single JSON object a check prints on stdout.
 type Result struct {
-	Ok           bool     `json:"ok"`
-	Errors       []string `json:"errors"`
-	FilesChecked int      `json:"filesChecked"`
+	// Ok is true when the check found no problem.
+	Ok bool `json:"ok"`
+	// Errors lists each problem found, one line each.
+	Errors []string `json:"errors"`
+	// FilesChecked counts the files judged; -1 when the check judged none.
+	FilesChecked int `json:"filesChecked"`
 	// Info carries notes that never fail a run, such as an internal error.
 	Info []string `json:"info,omitempty"`
 	// Findings repeats Errors in a shape an agent can act on without
@@ -80,9 +85,28 @@ func Lines(line func(Finding) string, findings []Finding) []string {
 	return out
 }
 
+// The scopes a check declares: what it reads when it judges a repo.
+const (
+	// ScopeFiles judges the repo's tracked files.
+	ScopeFiles = "files"
+	// ScopeBlob judges one text it is given, such as an issue or PR body.
+	ScopeBlob = "blob"
+	// ScopeGit judges commit messages and the branch's history.
+	ScopeGit = "git"
+	// ScopeGitHub judges the branch's live GitHub metadata.
+	ScopeGitHub = "github"
+)
+
 // Describe is the metadata a check prints for `--describe`.
 type Describe struct {
+	// Name is the check name, as `fitness <name>` runs it.
 	Name string `json:"name"`
+	// Summary says in one line what the check enforces. A built-in check
+	// leaves it empty: its package doc comment's first sentence is
+	// generated into the runner, which serves it here.
+	Summary string `json:"summary,omitempty"`
+	// Scope is one of the Scope constants: what the check reads.
+	Scope string `json:"scope,omitempty"`
 	// TimeoutMs is the check's execution budget; 0 means the runner default.
 	TimeoutMs int `json:"timeoutMs,omitempty"`
 	// ContextInlineArg names a flag (e.g. "--message") whose value the runner
@@ -96,6 +120,7 @@ type Describe struct {
 
 // Check is one check implementation: its metadata and run function.
 type Check struct {
+	// Describe is the metadata --describe prints.
 	Describe Describe
 	// Run receives the repo root and passthrough args; the returned Result
 	// is emitted verbatim. An error return means the check could not judge:
@@ -183,6 +208,17 @@ func splitLines(s string) []string {
 	return out
 }
 
+// documented is the summary Document set, which --describe prints for a
+// check that declares none.
+var documented string
+
+// Document sets the summary --describe prints when the check declares none.
+// The runner calls it with the summary generated from the check's package
+// doc comment before it starts a built-in check.
+func Document(summary string) {
+	documented = summary
+}
+
 // Main is the entry point every check binary delegates to: it parses
 // --root/--describe, runs the check, and emits the protocol JSON.
 func Main(c Check) {
@@ -194,7 +230,11 @@ func runMain(c Check, argv []string, stdout *os.File) int {
 	root, args, describe := parseArgs(argv)
 	enc := json.NewEncoder(stdout)
 	if describe {
-		_ = enc.Encode(c.Describe)
+		d := c.Describe
+		if d.Summary == "" {
+			d.Summary = documented
+		}
+		_ = enc.Encode(d)
 		return 0
 	}
 	if root == "" {

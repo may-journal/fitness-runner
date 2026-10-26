@@ -1,11 +1,3 @@
-// Command fitness-check-markdown-links requires every relative link in
-// every markdown file to resolve to an existing file or directory. Inline
-// links, images, and reference definitions are checked; absolute URLs
-// (any scheme), protocol-relative URLs, and fragment-only links are never
-// touched, so the check is fully offline and deterministic. A `#fragment`
-// suffix is stripped before resolution; anchors themselves are not
-// validated. Links inside fenced code blocks and inline code spans are
-// ignored.
 package check
 
 import (
@@ -31,7 +23,7 @@ var (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "markdown-links"},
+		Describe: checkkit.Describe{Name: "markdown-links", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

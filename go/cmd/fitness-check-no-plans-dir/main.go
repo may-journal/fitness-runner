@@ -1,8 +1,3 @@
-// Command fitness-check-no-plans-dir guards the plans-to-Issues migration: it
-// fails when any file exists under docs/plans/, because plans now live as
-// `Plan`-labeled GitHub Issues, not checked-in files. It points the author to
-// open a Plan Issue instead. Wired into the file suite, so the pre-commit hook
-// catches a docs/plans file before it lands.
 package check
 
 import (
@@ -15,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "no-plans-dir"},
+		Describe: checkkit.Describe{Name: "no-plans-dir", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

@@ -1,7 +1,3 @@
-// Command fitness-check-no-eslint-disable fails when any JS/TS source file
-// contains an eslint disable directive (file, block, `-line`, or
-// `-next-line` form) — the Go port of the no-eslint-disable check. Each hit
-// reports the file, its 1-based line, and the directive token that matched.
 package check
 
 import (
@@ -21,7 +17,7 @@ var eslintDisableRe = regexp.MustCompile(`eslint-disable(-next-line|-line)?`)
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "no-eslint-disable"},
+		Describe: checkkit.Describe{Name: "no-eslint-disable", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

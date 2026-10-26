@@ -14,12 +14,12 @@ type Config struct {
 		// Entries lists the full import paths of library entry packages,
 		// which must reach full statement coverage, as command packages do.
 		Entries []string `json:"entries"`
-	} `json:"goTestCoverage"`
+	} `json:"goTestCoverage" check:"go-test-coverage"`
 	// Complexity holds options for the go-complexity check.
 	Complexity struct {
 		// Max is the highest cyclomatic complexity one Go function may have.
 		Max int `json:"max"`
-	} `json:"goComplexity"`
+	} `json:"goComplexity" check:"go-complexity"`
 }
 
 // configSource is this file, whose doc comments describe each key of

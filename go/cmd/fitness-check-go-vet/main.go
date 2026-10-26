@@ -1,6 +1,3 @@
-// Command fitness-check-go-vet runs `go vet ./...` in every Go module of the
-// repo. A repo with no go.mod passes clean, so the check is safe in the
-// default list for every repo.
 package check
 
 import (
@@ -13,7 +10,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "go-vet", TimeoutMs: 300000},
+		Describe: checkkit.Describe{Name: "go-vet", Scope: checkkit.ScopeFiles, TimeoutMs: 300000},
 		Run:      run,
 	})
 }

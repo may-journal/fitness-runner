@@ -1,14 +1,5 @@
 // cspell:ignore antml Handback
 
-// Command fitness-check-comment-structure judges one GitHub issue or PR
-// comment: a word budget outside tables, code, and diagrams, at most one
-// plain table, numbered diagrams, and no change-log notes, agent frames, or
-// model identifiers.
-//
-// It reads its target from stdin, a `--body-file` path (`-` meaning stdin),
-// or the runner's context-inline `--body` value, and passes inert with no
-// input. Under `fitness --blob` it skips Plan, Epic, and PR bodies, which have
-// their own structure checks.
 package check
 
 import (
@@ -26,7 +17,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "comment-structure", Blob: true, ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "comment-structure", Scope: checkkit.ScopeBlob, Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

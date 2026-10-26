@@ -19,7 +19,13 @@ git config core.hooksPath githooks
 
 The spell-check dictionaries under [go/internal/spell/dict](../go/internal/spell/dict) are frozen, committed data (provenance in each file header). A Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
 
-See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/architecture/](architecture/)). Every check is a package under `go/cmd/fitness-check-<name>`, built into `fitness`. A new check folder joins it once `go -C go generate ./cmd/fitness` rewrites `go/cmd/fitness/checks.go`.
+See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/architecture/](architecture/)). Every check is a package under `go/cmd/fitness-check-<name>`, built into `fitness`.
+
+## Generated docs
+
+One command writes every file generated from the code: `go -C go generate ./cmd/fitness`. It writes the check registry and guide topics into `fitness`, and each check's README from its package doc comment and config keys. It also writes the check index in [docs/checks.md](checks.md#check-index) and the README's command list, from the `usage` constant in `go/cmd/fitness/main.go`.
+
+Edit the doc comment, usually the check's `doc.go`, never the README. A doc comment link to this repository uses its full GitHub URL, and the README links it relatively. The local [generated check](../checks/README.md) fails a generated file that is stale or edited by hand.
 
 ## Requirement tests
 
