@@ -19,16 +19,22 @@ const promptedRemote = "https://git.example.invalid/app.git"
 // waiting tool writes its process ID. Git waits on any command that reaches
 // a remote and runs the real git otherwise. Each fails at once, with the
 // real tool's message, when the no-prompt setting is on: git under
-// GIT_TERMINAL_PROMPT=0 and ssh under BatchMode=yes.
-func promptingTools(t *testing.T) (path, pidFile string) {
+// GIT_TERMINAL_PROMPT=0 and ssh under BatchMode=yes. Git also waits,
+// whatever the no-prompt setting, on each subcommand stalls names, as a
+// call on an index another process holds does.
+func promptingTools(t *testing.T, stalls ...string) (path, pidFile string) {
 	t.Helper()
 	real, err := exec.LookPath("git")
 	mustDo(t, err)
 	dir := t.TempDir()
 	pidFile = filepath.Join(t.TempDir(), "prompt.pid")
 	wait := "echo $$ > \"" + pidFile + "\"\nexec /bin/sleep 600\n"
+	stall := ""
+	if len(stalls) > 0 {
+		stall = "for a in \"$@\"; do\n  case \"$a\" in " + strings.Join(stalls, "|") + ")\n" + wait + "  ;; esac\ndone\n"
+	}
 	write(t, dir, map[string]string{
-		"git": "#!/bin/sh\nremote=\nfor a in \"$@\"; do\n  case \"$a\" in fetch|pull|push|clone|ls-remote) remote=1 ;; esac\ndone\n" +
+		"git": "#!/bin/sh\n" + stall + "remote=\nfor a in \"$@\"; do\n  case \"$a\" in fetch|pull|push|clone|ls-remote) remote=1 ;; esac\ndone\n" +
 			"[ -z \"$remote\" ] && exec \"" + real + "\" \"$@\"\n" +
 			"if [ \"$GIT_TERMINAL_PROMPT\" = 0 ]; then\n" +
 			"  echo \"fatal: could not read Username for '" + promptedRemote + "': terminal prompts disabled\" >&2\n  exit 128\nfi\n" +
