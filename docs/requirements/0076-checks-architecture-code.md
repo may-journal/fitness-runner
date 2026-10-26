@@ -13,9 +13,9 @@ code views checked
 ## Requirements
 
 - 0076.1
-    - Given Developer has no architecture
+    - Given Developer has no architecture, or commits only a test file beside a wrong code view
         - When I check its code
-            - Then it passes with zero files
+            - Then it passes with zero files, and an unscoped run still fails the code view
 - 0076.4
     - Given Developer has an exported type the view omits, or two classes for one symbol
         - When I check its code

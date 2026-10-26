@@ -12,8 +12,8 @@ func Main() {
 	})
 }
 
-// run reads the whole model on every run, scoped or not, so a change to
-// only the code or only the view still meets the unchanged other side.
+// run reads the whole model unless the run is architecture.Unmoved, so a
+// change to only the code or only the view still meets the other side.
 func run(root string, _ []string) (checkkit.Result, error) {
 	model, err := architecture.Load(root)
 	if err != nil || len(model.Files) == 0 {

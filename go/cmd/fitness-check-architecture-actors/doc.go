@@ -42,8 +42,13 @@
 //   - No actor at the start, or after `and`: the Given line, the context diagram line, and the declared names.
 //   - A spelling that is one actor's ID and another actor's name: the Given line and both context lines.
 //
-// Every run reads every requirement doc and the whole model, scoped runs
-// included, so a removed actor fails even when no requirement changed.
+// # Scope
+//
+// A test, changelog or doc change cannot move the views. So a scoped run
+// with no changed view, requirement doc, product or tool source, manifest
+// or `.gitattributes` passes with zero files.
+// Every other run reads every requirement doc and the whole model, so a
+// removed actor fails even when no requirement changed.
 //
 // # Behavior
 //
