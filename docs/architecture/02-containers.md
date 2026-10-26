@@ -13,7 +13,7 @@ C4Container
     }
 
     System_Boundary(own, "Repo checks") {
-        Container(repo, "10 Repo checks", "Go and shell", "fitness/*")
+        Container(repo, "10 Repo checks", "Go", "fitness/*")
     }
 
     System_Ext(consumer, "5 Consumer repo", ".fitnessrc.json and the sources under test")
@@ -72,7 +72,7 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | 7   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
 | 8   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |
 | 9   | Release bundles and tool binaries, one archive per platform holding the one fitness binary.      | Artifacts ship through GitHub Releases and the Go proxy.    |
-| 10  | This repo's own checks in `fitness/`, each a shell script or a Go program that fitness builds. | Each decision holds while its check passes, as ADR 0012 decides. |
+| 10  | This repo's own checks in `fitness/`, each a Go program that fitness builds, or any executable. | Each decision holds while its check passes, as ADR 0012 decides. |
 | A   | Developer runs the binary from the consumer root.                                                | One front door.                                             |
 | B   | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
 | C   | The runner loads `.fitnessrc.json`, and each check process reads the tree, staged or full.        | Config and validation target live with the app.             |

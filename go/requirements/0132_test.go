@@ -51,9 +51,9 @@ func Test0132_5(t *testing.T) {
 	sees(t, out, code, 1, adrPath+" changed without its check fitness/adr-0001; change both together")
 	repo = example(t, "happyRepo", adrRepo())
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
-	commit(t, repo, map[string]string{"fitness/adr-0001/check": verdictScript(`{"ok": true, "errors": [], "filesChecked": 2}`)}, "fix(adr-0001): count both files")
+	commit(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], "stays small", "stays brief", 1)}, "docs(adr): reword 0001")
 	out, code = fitness(t, repo, prEnv, "adr-checks")
-	sees(t, out, code, 1, "fitness/adr-0001/check changed without its ADR "+adrPath+"; change both together")
+	sees(t, out, code, 1, adrPath+" changed without its check fitness/adr-0001; change both together")
 }
 
 func Test0132_6(t *testing.T) {

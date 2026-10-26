@@ -16,7 +16,7 @@
 //     so either leads a reader to the other.
 //   - Orphans: a `fitness/adr-NNNN/` folder needs an ADR of that number.
 //   - Changes: a changed ADR fails unless a file in its check changed too.
-//   - Check changes: a changed check file fails unless its ADR changed.
+//   - Rewrites: a check may change alone, since its decision still holds.
 //   - Scope: a full scan judges no changes; a commit judges its staged
 //     files, and a pull request its diff.
 //

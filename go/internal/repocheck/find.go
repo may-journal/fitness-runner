@@ -61,6 +61,9 @@ type Check struct {
 	// Shown is where the check lives, relative to the repo root, as a
 	// person reads it in a message.
 	Shown string
+	// Folder is a folder check's folder relative to the repo root, as the
+	// check reads it in FITNESS_CHECK_DIR, or empty for a flat program.
+	Folder string
 	// Readme is the check's README.md, or empty for a flat program.
 	Readme string
 	// Source is the folder of Go source to build, or empty when Path is the
@@ -169,6 +172,7 @@ func flatCheck(root, path, shown, file string) (Check, bool, error) {
 func folderCheck(root, dir, shown, name string) (Check, error) {
 	folder := filepath.Join(dir, name)
 	c := Check{Name: name, Shown: filepath.ToSlash(filepath.Join(shown, name)), Readme: filepath.Join(folder, Readme)}
+	c.Folder = c.Shown
 	if err := named(c, shown); err != nil {
 		return Check{}, err
 	}

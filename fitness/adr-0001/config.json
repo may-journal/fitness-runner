@@ -1,0 +1,17 @@
+{
+  "budgets": {
+    "checkstyle": { "ms": 300000, "cost": "runs the repo's own Gradle or Maven build" },
+    "dependency-currency": { "ms": 30000, "cost": "asks the npm registry over the network" },
+    "go-test-coverage": { "ms": 900000, "cost": "runs the repo's Go tests twice with coverage" },
+    "go-vet": { "ms": 300000, "cost": "compiles every Go package for go vet" },
+    "go-test": { "ms": 900000, "cost": "runs the repo's Go tests" },
+    "java-test": { "ms": 900000, "cost": "runs the repo's Java tests through its build" },
+    "gofmt": { "ms": 60000, "cost": "starts gofmt on every Go file" },
+    "issue-link-once": { "ms": 20000, "cost": "asks GitHub for the branch's pull request" },
+    "local-branch": { "ms": 35000, "cost": "asks GitHub for the branch's pull request and issues" },
+    "spotless": { "ms": 300000, "cost": "runs the repo's own Gradle or Maven build" },
+    "swiftlint": { "ms": 120000, "cost": "runs SwiftLint over the repo" },
+    "workflow-ref-exists": { "ms": 30000, "cost": "asks GitHub whether each workflow path exists" },
+    "vitest-coverage-full": { "ms": 120000, "cost": "runs the repo's Vitest suite with coverage" }
+  }
+}

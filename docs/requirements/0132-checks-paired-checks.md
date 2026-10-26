@@ -29,9 +29,9 @@ ADRs and requirement docs in repos with a fitness folder
         - When the suite runs
             - Then adr-checks passes
 - 0132.5
-    - Given Developer changes an ADR without its check, or the check without its ADR
+    - Given Developer changes an ADR without its check
         - When fitness judges the commit or the pull request
-            - Then adr-checks reports red naming the other half, and exits 1
+            - Then adr-checks reports red naming the check, and exits 1
 - 0132.6
     - Given Developer has a requirement doc proven by a check in `fitness/req-NNNN/` and no test
         - When the full suite runs

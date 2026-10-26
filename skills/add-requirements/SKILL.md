@@ -49,7 +49,7 @@ The check enforces Go and Swift. For TypeScript, note the gap for the owner inst
 
 ### A rule over the repo's files
 
-Some requirements are rules over the repo's own files, such as no scroll work outside one folder. A check in `fitness/req-NNNN/` may prove such a doc in place of tests, as the [local checks guide](../../docs/local-checks.md#adr-and-requirement-checks) shows. Whenever a user meets the behavior, prefer a real-run test, since a check reads files and never runs the product.
+Some requirements are rules over the repo's own files, such as no scroll work outside one folder. A Go check in `fitness/req-NNNN/`, unit-tested on the check SDK, may prove such a doc in place of tests. The [local checks guide](../../docs/local-checks.md#write-a-go-check) shows how. Whenever a user meets the behavior, prefer a real-run test, since a check reads files and never runs the product.
 
 ## Drive the real product
 

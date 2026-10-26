@@ -24,7 +24,7 @@ C4Component
     }
 
     Container_Boundary(own, "Repo checks (fitness/)") {
-        Component(repo, "12 Repo check", "Go and shell", "fitness")
+        Component(repo, "12 Repo check", "Go", "fitness")
     }
 
     System_Ext(peers, "9 Peer tools", "each language module's formatters, linters and test runners")
@@ -90,7 +90,7 @@ Numbers on nodes and letters on arrows match the callout table.
 | 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
-| 12  | A check in the repo's `fitness/` folder: a shell script, or a Go program on the check SDK. | A repo writes its own rules without forking fitness. |
+| 12  | A check in the repo's `fitness/` folder: a Go program on the check SDK, or any executable. | A repo writes its own rules without forking fitness. |
 | A   | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
 | B   | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
 | C   | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |

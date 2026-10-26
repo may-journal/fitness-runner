@@ -14,6 +14,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
@@ -29,12 +30,20 @@ var localBins map[string]repocheck.Check
 // such as `go build`, meets every minFitness.
 var version string
 
-// built memoizes each Go local check's program for the run, so a check
-// that resolves twice, as `fitness list` and a suite run do, builds once.
+// built memoizes each Go local check's build for the run, so a check that
+// resolves twice, as `fitness list` and a suite run do, builds once, and
+// checks build side by side.
 var built = struct {
 	sync.Mutex
-	paths map[string]string
-}{paths: map[string]string{}}
+	builds map[string]*build
+}{builds: map[string]*build{}}
+
+// build is one check's build, done once.
+type build struct {
+	once sync.Once
+	path string
+	err  error
+}
 
 // turnedOff reports whether an external policy's disabledChecks names name,
 // so a hook skips it rather than fail on an empty selection.
@@ -84,20 +93,36 @@ func programFor(name string) (checkkit.Program, error) {
 // into the cache on first use.
 func localProgram(c repocheck.Check) (checkkit.Program, error) {
 	built.Lock()
-	defer built.Unlock()
-	if path, ok := built.paths[c.Name]; ok {
-		return checkkit.Program{Path: path}, nil
+	b := built.builds[c.Name]
+	if b == nil {
+		b = &build{}
+		built.builds[c.Name] = b
 	}
+	built.Unlock()
+	b.once.Do(func() { b.path, b.err = buildCheck(c) })
+	return checkkit.Program{Path: b.path}, b.err
+}
+
+// buildCheck builds a Go local check into fitness's cache, or returns the
+// program of any other.
+func buildCheck(c repocheck.Check) (string, error) {
 	cache, err := distribution.CacheDir()
 	if err != nil {
-		return checkkit.Program{}, err
+		return "", err
 	}
-	path, err := repocheck.Build(c, cache, version, os.Stderr)
-	if err != nil {
-		return checkkit.Program{}, err
-	}
-	built.paths[c.Name] = path
-	return checkkit.Program{Path: path}, nil
+	return repocheck.Build(c, cache, version, os.Stderr)
+}
+
+// prebuild builds the Go local checks among names side by side, so a run
+// of several waits on the slowest build, not their sum.
+func prebuild(names []string) {
+	par.Map(len(names), par.Processes(), func(i int) error {
+		if c, ok := localBins[names[i]]; ok {
+			_, err := localProgram(c)
+			return err
+		}
+		return nil
+	})
 }
 
 // asLocal applies the local check rules to a check's handshake. A local
@@ -121,6 +146,15 @@ func asLocal(r resolved) resolved {
 		r.desc.Summary = repocheck.Summary(c)
 	}
 	return r
+}
+
+// checkDirEnv hands a folder check its own folder, where its config.json
+// lives, as the go/check SDK reads it.
+func checkDirEnv(name string) []string {
+	if c, ok := localBins[name]; ok && c.Folder != "" {
+		return []string{"FITNESS_CHECK_DIR=" + c.Folder}
+	}
+	return nil
 }
 
 // brokenScan fails a paired local check, adr-NNNN or req-NNNN, that passed

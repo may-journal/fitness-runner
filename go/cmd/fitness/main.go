@@ -639,6 +639,7 @@ var errNotInstalled = errors.New("Check binary not installed")
 // whose handshake overran in that crowd gets a second try, so a slow first
 // start after an install does not drop its own budget.
 func resolveList(names []string) ([]resolved, error) {
+	prebuild(names)
 	progs := make([]checkkit.Program, len(names))
 	for i, name := range names {
 		prog, err := programFor(name)
@@ -951,7 +952,7 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
 	cmd.Dir = root
-	cmd.Env = append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name)
+	cmd.Env = append(append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name), checkDirEnv(c.name)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout

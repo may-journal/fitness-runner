@@ -89,6 +89,7 @@ func listChecks() ([]listed, error) {
 	if err != nil {
 		return nil, err
 	}
+	prebuild(checkCatalog())
 	found, missing := installedChecks(checkCatalog())
 	checks, err := resolveList(found)
 	if err != nil {

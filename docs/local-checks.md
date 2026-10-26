@@ -1,10 +1,6 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Local checks
 
-A repo writes its own rules as checks in a `fitness/` folder at its root. Fitness runs them in the suite, the git hooks and CI, beside the built-in checks. `fitness list` and `fitness explain` show them too.
+A repo writes its own rules as Go checks in a `fitness/` folder at its root. Fitness builds them, and runs them in the suite, the git hooks and CI, beside the built-in checks. `fitness list` and `fitness explain` show them too.
 
 ## Layout
 
@@ -12,39 +8,21 @@ Each folder `fitness/<name>/` is one check, named in lowercase words joined by d
 
 ```text
 fitness/
-  go.mod          # only for Go checks
+  go.mod          # once, for every Go check
   no-todo/
     README.md     # the rule, and how to pass it
-    check         # an executable, or
-    main.go       # Go source that fitness builds
+    main.go       # the check, on the go/check SDK
+    main_test.go  # its unit tests
+    config.json   # optional settings the check reads
 ```
 
 - `README.md` is required. Its first sentence is the check's summary in `fitness list`, and `fitness explain <name>` prints it.
-- `check` is any executable file, such as a shell script. It must have its execute bit set.
-- Without `check`, the folder's Go source is built with `fitness/go.mod`.
+- `main.go` is a Go program on the [check SDK](../go/check/check.go), built with `fitness/go.mod`.
 - Folders named `internal` or `testdata`, or starting with `.` or `_`, hold shared code or fixtures, not checks.
 
-A check speaks the [check protocol](check-protocol.md). It runs with the repo root as its working folder and `--root <dir>` in its arguments. It prints one JSON result on stdout and exits 0 when it passed or 1 when it found problems.
+## Write a Go check
 
-## A shell check
-
-```sh
-#!/bin/sh
-# fitness/no-todo/check: no TODO in Swift sources.
-[ "$1" = --describe ] && { echo '{"timeoutMs": 10000}'; exit 0; }
-files=$(git ls-files '*.swift')
-n=$(printf '%s\n' "$files" | grep -c .)
-bad=$(grep -l TODO $files 2>/dev/null)
-[ -z "$bad" ] && { printf '{"ok":true,"errors":[],"filesChecked":%s}\n' "$n"; exit 0; }
-printf '{"ok":false,"errors":["%s: remove the TODO"],"filesChecked":%s}\n' "$bad" "$n"
-exit 1
-```
-
-The `--describe` line is optional for a folder check. It declares a budget in `timeoutMs`, else the check gets the five-second default or the repo's `timeoutMs`. A check that answers no handshake runs once more for it, so answer it when the work is slow. A check past its budget is stopped and fails.
-
-## A Go check
-
-The [check SDK](../go/check/check.go) does the protocol for you. Add `fitness/go.mod` once:
+Add `fitness/go.mod` once:
 
 ```sh
 cd fitness
@@ -58,50 +36,71 @@ Then write `fitness/no-todo/main.go`:
 package main
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/check"
 )
 
-var rule = check.Check{TimeoutMs: 10000, Run: func(root string, _ []string) (check.Result, error) {
-	files := check.Files(root, ".swift")
-	var errs []string
+// Rule fails each Swift source that holds a TODO.
+var Rule = check.Check{TimeoutMs: 10000, Run: func(ctx *check.Context) (check.Result, error) {
+	files := ctx.InScope(ctx.Files(".swift"))
+	var found []check.Finding
 	for _, f := range files {
-		data, err := os.ReadFile(filepath.Join(root, f))
+		text, err := ctx.Read(f)
 		if err != nil {
 			return check.Result{}, err
 		}
-		if strings.Contains(string(data), "TODO") {
-			errs = append(errs, f+": remove the TODO")
+		if strings.Contains(text, "TODO") {
+			found = append(found, check.Finding{File: f, Rule: "no-todo", Message: "holds a TODO", Fix: "do it, or file an issue"})
 		}
 	}
-	if len(errs) > 0 {
-		return check.Fail(len(files), errs...), nil
-	}
-	return check.Pass(len(files)), nil
+	return check.Found(len(files), found...), nil
 }}
 
-func main() { check.Main(rule) }
+func main() { check.Main(Rule) }
 ```
 
-Fitness builds it into its cache the first time it runs, and says so on stderr. Later runs reuse the build until the Go source, `go.mod`, `go.sum`, Go or fitness changes. A machine without Go fails the run, naming where to get Go.
+`fitness check no-todo` builds it into fitness's cache the first time, saying so on stderr, then runs only that check. Later runs reuse the build until the Go source, `go.mod`, `go.sum`, Go or fitness changes. A machine without Go fails the run, naming where to get Go.
 
 ## The SDK
 
-`check.Files` lists tracked files by ending, and `check.ChangedFiles` lists the files a commit or pull request changes. An error from `Run` reports info, which never fails a run. Set `MinFitness` when the check needs a newer fitness, and an older one stops the run naming the upgrade.
+A check's `Run` gets a typed `Context`, and returns a `Result`.
 
-## Run one check alone
+- Inputs: `Root`, `Args`, `Changed` for a scoped run, and `Dir`, the check's own folder.
+- Files: `Files` lists tracked files by ending, `InScope` narrows them to the run's changes, and `Read` and `ReadJSON` read one.
+- Config: `Config` decodes the check's `config.json` into a struct, and `Settings` decodes `.fitnessrc.json`.
+- Findings: each `Finding` names its file, line, rule, message and fix, and `Found` turns them into the verdict.
+- Metadata: `TimeoutMs` is the check's budget, and a check past it is stopped and fails.
+- `MinFitness` names the oldest fitness that runs the check, and an older one stops the run naming the upgrade.
+- An error from `Run` reports info, which never fails a run.
 
-`fitness check no-todo`, or `fitness no-todo`, runs only that check, as a unit test does. A Go check also runs as a Go test:
+## Unit-test a check
+
+`check.Repo` writes a fixture repo, and `check.Judge` runs the check on it, so a test proves the rule both ways:
 
 ```go
-// fitness/no-todo/main_test.go
-func TestRule(t *testing.T) { check.Test(t, rule) }
+func TestRule(t *testing.T) {
+	bad := check.Repo(t, map[string]string{"App.swift": "// TODO: ship\n"})
+	if got := check.Judge(t, Rule, bad); got.Ok {
+		t.Error("a TODO must fail")
+	}
+}
 ```
 
-`go -C fitness test ./...` then judges the repo with every Go check that has such a test. A repo whose `requirements` check judges Go tests names each test for the acceptance it proves.
+`check.Test(t, Rule)` judges the repo the test runs in, as `fitness no-todo` does. `go -C fitness test ./...` runs every check's tests. A repo whose `requirements` check judges Go tests names each test for the acceptance it proves.
+
+## Other executables
+
+Where Go is not wanted, an executable `check` file may stand in for `main.go`, such as a shell script. It speaks the [check protocol](check-protocol.md) itself. It runs with the repo root as its working folder and `--root <dir>` in its arguments, and prints one JSON result.
+
+```sh
+#!/bin/sh
+[ "$1" = --describe ] && { echo '{"timeoutMs": 10000}'; exit 0; }
+n=$(git ls-files '*.swift' | grep -c .)
+printf '{"ok":true,"errors":[],"filesChecked":%s}\n' "$n"
+```
+
+The `--describe` line is optional. A script that answers no handshake runs once more for it, so answer it when the work is slow.
 
 ## ADR and requirement checks
 
@@ -113,7 +112,7 @@ An architecture decision holds only while a check proves it. So in a repo with a
 Check: [fitness/adr-0007](../../../fitness/adr-0007/README.md)
 ```
 
-A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](../go/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. Either way, a change to the doc alone, or to its check alone, fails. A paired check that passes having judged no files fails too, since its scan is broken.
+A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](../go/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. An ADR changed without its check fails, and a requirement check pairs with its doc as a test does. A paired check that passes having judged no files fails too, since its scan is broken.
 
 ## Where checks run
 

@@ -4,44 +4,42 @@
 package main
 
 import (
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/check"
 )
 
-// rule is the check, kept apart from main so a Go test could run it too.
-var rule = check.Check{Run: run}
+// Rule is the check.
+var Rule = check.Check{Run: run}
 
-func main() { check.Main(rule) }
+func main() { check.Main(Rule) }
 
-// run judges the config and every tracked file's place.
-func run(root string, _ []string) (check.Result, error) {
-	config, err := os.ReadFile(filepath.Join(root, ".fitnessrc.json"))
-	if err != nil {
+func run(ctx *check.Context) (check.Result, error) {
+	var settings struct {
+		LocalChecks string `json:"localChecks"`
+	}
+	if _, err := ctx.Settings(&settings); err != nil {
 		return check.Result{}, err
 	}
-	var errs []string
-	if strings.Contains(string(config), `"localChecks"`) {
-		errs = append(errs, ".fitnessrc.json: fitness finds its checks in fitness/ with no config, so drop localChecks (ADR 0012, decision 1)")
+	var found []check.Finding
+	if settings.LocalChecks != "" {
+		found = append(found, check.Finding{File: ".fitnessrc.json", Rule: "no-local-checks-folder",
+			Message: "names a localChecks folder (ADR 0012, decision 1)", Fix: "move its checks into fitness/ and drop the key"})
 	}
-	files := check.Files(root)
+	files := ctx.Files()
 	for _, f := range files {
-		errs = append(errs, placed(f)...)
+		found = append(found, placed(f)...)
 	}
-	if len(errs) > 0 {
-		return check.Fail(len(files)+1, errs...), nil
-	}
-	return check.Pass(len(files) + 1), nil
+	return check.Found(len(files)+1, found...), nil
 }
 
 // placed fails a flat check program outside go/cmd, which belongs in a
 // fitness/<name>/ folder with its README.
-func placed(f string) []string {
+func placed(f string) []check.Finding {
 	if !strings.HasPrefix(path.Base(f), "fitness-check-") || strings.HasPrefix(f, "go/cmd/") {
 		return nil
 	}
-	return []string{f + ": move this check into fitness/<name>/ with a README.md (ADR 0012, decisions 1 and 2)"}
+	return []check.Finding{{File: f, Rule: "check-in-folder", Message: "is a flat check program (ADR 0012, decisions 1 and 2)",
+		Fix: "move it into fitness/<name>/ with a README.md"}}
 }

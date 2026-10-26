@@ -30,8 +30,8 @@ checks in a repo's fitness folder
             - Then it reports red naming the folder and the fix, and exits 1
 - 0131.5
     - Given Developer has checks in `fitness/` that find a problem
-        - When `fitness check <name>` or `go test` in `fitness/` runs one
-            - Then only that check judges the repo, and it fails naming the problem
+        - When `fitness check <name>` or the Go tests in `fitness/` run
+            - Then only that check judges the repo, its fixture tests pass, and it fails naming the problem
 - 0131.6
     - Given AI agent has a repo with a check in `fitness/`
         - When it runs `fitness list` and `fitness explain` on it

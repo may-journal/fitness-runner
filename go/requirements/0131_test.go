@@ -54,8 +54,9 @@ func Test0131_5(t *testing.T) {
 	t.Parallel()
 	files := with(shellCheck("house-rule", "", `{"ok": false, "errors": ["the house rule is broken"], "filesChecked": 1}`),
 		with(goCheck(t, "go-rule", t.TempDir()), map[string]string{
-			"notes.md":                     "# Notes\n\nTODO: write these.\n",
-			"fitness/go-rule/main_test.go": "package main\n\nimport (\n\t\"testing\"\n\n\t\"github.com/may-journal/fitness-runner/go/check\"\n)\n\nfunc TestRule(t *testing.T) { check.Test(t, rule) }\n",
+			"notes.md": "# Notes\n\nTODO: write these.\n",
+			"fitness/go-rule/main_test.go": "package main\n\nimport (\n\t\"testing\"\n\n\t\"github.com/may-journal/fitness-runner/go/check\"\n)\n\nfunc TestRule(t *testing.T) { check.Test(t, rule) }\n\n" +
+				"func TestFixture(t *testing.T) {\n\tif check.Judge(t, rule, check.Repo(t, map[string]string{\"a.md\": \"TODO\"})).Ok {\n\t\tt.Error(\"a TODO must fail\")\n\t}\n}\n",
 		}))
 	repo := example(t, "happyRepo", files)
 	out, code := fitness(t, repo, nil, "check", "house-rule")
@@ -63,8 +64,16 @@ func Test0131_5(t *testing.T) {
 	if row(out, "go-rule") != "" || row(out, "markdown-links") != "" {
 		t.Errorf("fitness check house-rule ran other checks too:\n%s", out)
 	}
-	if out, failed := goTestFitness(t, repo); !failed || !strings.Contains(out, "notes.md: holds a TODO") {
-		t.Errorf("go test in fitness/ must fail on the Go check's finding:\n%s", out)
+	unitTested(t, repo)
+}
+
+// unitTested asserts that go test in repo's fitness folder passes the
+// check's fixture test and fails its test of the repo on the finding.
+func unitTested(t *testing.T, repo string) {
+	t.Helper()
+	out, failed := goTestFitness(t, repo)
+	if !failed || !strings.Contains(out, "notes.md: holds a TODO") || strings.Contains(out, "FAIL: TestFixture") {
+		t.Errorf("go test in fitness/ must pass the fixture test and fail on the repo's finding:\n%s", out)
 	}
 }
 
@@ -159,11 +168,11 @@ func goCheck(t *testing.T, name, marker string) map[string]string {
 // goRuleSource is the Go check goCheck writes, with marker in a comment.
 func goRuleSource(marker string) string {
 	return "// Package main is a check built from " + marker + ".\npackage main\n\n" +
-		"import (\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\n\t\"github.com/may-journal/fitness-runner/go/check\"\n)\n\n" +
-		"var rule = check.Check{Run: func(root string, _ []string) (check.Result, error) {\n" +
-		"\tfiles := check.Files(root, \".md\")\n\tvar errs []string\n" +
-		"\tfor _, f := range files {\n\t\tdata, err := os.ReadFile(filepath.Join(root, f))\n\t\tif err != nil {\n\t\t\treturn check.Result{}, err\n\t\t}\n" +
-		"\t\tif strings.Contains(string(data), \"TODO\") {\n\t\t\terrs = append(errs, f+\": holds a TODO\")\n\t\t}\n\t}\n" +
-		"\tif len(errs) > 0 {\n\t\treturn check.Fail(len(files), errs...), nil\n\t}\n\treturn check.Pass(len(files)), nil\n}}\n\n" +
+		"import (\n\t\"strings\"\n\n\t\"github.com/may-journal/fitness-runner/go/check\"\n)\n\n" +
+		"var rule = check.Check{Run: func(ctx *check.Context) (check.Result, error) {\n" +
+		"\tfiles := ctx.InScope(ctx.Files(\".md\"))\n\tvar found []check.Finding\n" +
+		"\tfor _, f := range files {\n\t\ttext, err := ctx.Read(f)\n\t\tif err != nil {\n\t\t\treturn check.Result{}, err\n\t\t}\n" +
+		"\t\tif strings.Contains(text, \"TODO\") {\n\t\t\tfound = append(found, check.Finding{File: f, Rule: \"no-todo\", Message: \"holds a TODO\", Fix: \"do it\"})\n\t\t}\n\t}\n" +
+		"\treturn check.Found(len(files), found...), nil\n}}\n\n" +
 		"func main() { check.Main(rule) }\n"
 }
