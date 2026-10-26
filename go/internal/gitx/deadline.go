@@ -57,6 +57,19 @@ func (r Repo) SetConfig(key, value string) error {
 	return err
 }
 
+// Config returns key's value as git resolves it from the repo's config, ""
+// when unset.
+func (r Repo) Config(key string) (string, error) {
+	out, err := r.run("config", key)
+	return strings.TrimSpace(out), err
+}
+
+// TracksDir reports whether HEAD tracks dir as a folder.
+func (r Repo) TracksDir(dir string) (bool, error) {
+	out, err := r.run("ls-tree", "-d", "--name-only", "HEAD", "--", dir)
+	return strings.TrimSpace(out) == dir, err
+}
+
 // CheckAttr returns `git check-attr -z` output for attr on files: path,
 // attribute and value, each NUL-terminated.
 func (r Repo) CheckAttr(attr string, files []string) (string, error) {

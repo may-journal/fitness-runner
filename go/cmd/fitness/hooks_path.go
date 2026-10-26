@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -18,11 +17,15 @@ const (
 )
 
 // shippedHooksDir names the hook folder HEAD tracks, newest first, or ""
-// when HEAD tracks neither, as in a repo with no commit yet.
+// when HEAD tracks neither, as in a repo with no commit yet, or when git
+// fails or stalls past its deadline.
 func shippedHooksDir(root string) string {
 	for _, dir := range []string{syncedHooksDir, installedHooksDir} {
-		out, err := exec.Command("git", "-C", root, "ls-tree", "-d", "--name-only", "HEAD", "--", dir).Output()
-		if err == nil && strings.TrimSpace(string(out)) == dir {
+		tracked, err := gitx.Repo(root).TracksDir(dir)
+		if err != nil {
+			return ""
+		}
+		if tracked {
 			return dir
 		}
 	}
@@ -36,8 +39,12 @@ func shippedHooksDir(root string) string {
 // working-tree root.
 func repairHooksPath() {
 	root, _ := os.Getwd()
-	current, shipped := hooksPath(root), shippedHooksDir(root)
-	if current == "" || shipped == "" {
+	current := hooksPath(root)
+	if current == "" {
+		return
+	}
+	shipped := shippedHooksDir(root)
+	if shipped == "" {
 		return
 	}
 	if note := repairedPath(root, current, shipped); note != "" {
@@ -68,10 +75,12 @@ func setHooksPath(root, dir string) error {
 	return gitx.Repo(root).SetConfig("core.hooksPath", dir)
 }
 
-// hooksPath reads core.hooksPath as git resolves it, "" when unset.
+// hooksPath reads core.hooksPath as git resolves it, under the git deadline.
+// It is "" when unset, or when the read fails or stalls, so a stalled git
+// leaves the path alone.
 func hooksPath(root string) string {
-	out, _ := exec.Command("git", "-C", root, "config", "core.hooksPath").Output()
-	return strings.TrimSpace(string(out))
+	path, _ := gitx.Repo(root).Config("core.hooksPath")
+	return path
 }
 
 // insideRepo returns path relative to root and whether it lies inside root.
