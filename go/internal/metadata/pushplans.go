@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"regexp"
 	"slices"
@@ -20,20 +21,34 @@ const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
 
 var approveRe = regexp.MustCompile(`(?i)approve`)
 
-// planReadTimeout bounds one Plan read, as local-branch bounds its own.
-const planReadTimeout = 30 * time.Second
+// PushDeadline bounds every GitHub read one push makes, the gate's and
+// local-branch's together, and any one GitHub read outside a push.
+const PushDeadline = 30 * time.Second
+
+// PushContext opens the deadline every GitHub read of one push shares.
+func PushContext() (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.Background(), PushDeadline)
+}
+
+// GitHubHost is the host gh reads from: GH_HOST, else github.com.
+func GitHubHost() string {
+	return cmp.Or(os.Getenv("GH_HOST"), "github.com")
+}
 
 // PushPlans are the Plans one push read successfully, each read once. A
-// failed read is not kept, so a later ask tries GitHub again.
+// failed read is not kept, so a later ask tries GitHub again while the
+// push's deadline lasts.
 type PushPlans struct {
+	ctx   context.Context
 	reads map[string]aftereffect.IssueView
 }
 
 // handoff is what the gate hands local-branch: its own process ID, which
-// must be local-branch's parent, and the Plans it read.
+// must be local-branch's parent, the push's deadline, and the Plans it read.
 type handoff struct {
-	Gate  int        `json:"gate"`
-	Plans []pushPlan `json:"plans"`
+	Gate     int        `json:"gate"`
+	Deadline time.Time  `json:"deadline"`
+	Plans    []pushPlan `json:"plans"`
 }
 
 // pushPlan is one handed-off read: the issue's repo, number, body and labels.
@@ -44,9 +59,19 @@ type pushPlan struct {
 	Labels []string `json:"labels"`
 }
 
-// NewPushPlans starts a push with no Plans read.
-func NewPushPlans() *PushPlans {
-	return &PushPlans{reads: map[string]aftereffect.IssueView{}}
+// NewPushPlans starts a push with no Plans read, whose reads all end when
+// ctx, the push's deadline from PushContext, does.
+func NewPushPlans(ctx context.Context) *PushPlans {
+	return &PushPlans{ctx: ctx, reads: map[string]aftereffect.IssueView{}}
+}
+
+// TimedOut is one line naming the GitHub host and the deadline once the
+// push's deadline has passed, else empty.
+func (p *PushPlans) TimedOut() string {
+	if p.ctx.Err() == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s did not answer within %s", GitHubHost(), PushDeadline)
 }
 
 // Approved reports whether issue n carries the exact `Plan` label and an
@@ -61,9 +86,7 @@ func (p *PushPlans) Approved(n string) bool {
 
 // read asks GitHub for issue n and keeps a successful read.
 func (p *PushPlans) read(n string) (aftereffect.IssueView, bool) {
-	ctx, cancel := context.WithTimeout(context.Background(), planReadTimeout)
-	defer cancel()
-	v, err := aftereffect.ViewIssue(ctx, n)
+	v, err := aftereffect.ViewIssue(p.ctx, n)
 	if err != nil {
 		return v, false
 	}
@@ -74,7 +97,8 @@ func (p *PushPlans) read(n string) (aftereffect.IssueView, bool) {
 // Handoff writes the reads to a file only this user can read or write and
 // names it for local-branch. The returned func removes the file.
 func (p *PushPlans) Handoff() (func(), error) {
-	data, err := json.Marshal(handoff{Gate: os.Getpid(), Plans: p.plans()})
+	deadline, _ := p.ctx.Deadline()
+	data, err := json.Marshal(handoff{Gate: os.Getpid(), Deadline: deadline, Plans: p.plans()})
 	if err != nil {
 		return nil, err
 	}
@@ -118,18 +142,33 @@ func seedPushIssues(gh aftereffect.Client, repo string) {
 	}
 }
 
-// handedPlans reads the gate's handoff inside pre-push. It trusts only a
-// private file written by this process's parent, so a file set up by hand
-// for a plain local-branch run seeds nothing.
+// handedPlans are the Plans the gate read, from a trusted handoff.
 func handedPlans() []pushPlan {
+	return trustedHandoff().Plans
+}
+
+// pushDeadline is when local-branch's GitHub reads must end: what is left
+// of the gate's deadline inside pre-push, else PushDeadline from now.
+func pushDeadline() time.Time {
+	own := time.Now().Add(PushDeadline)
+	if handed := trustedHandoff().Deadline; !handed.IsZero() && handed.Before(own) {
+		return handed
+	}
+	return own
+}
+
+// trustedHandoff reads the gate's handoff inside pre-push. It trusts only a
+// private file written by this process's parent, so a file set up by hand
+// for a plain local-branch run hands over nothing.
+func trustedHandoff() handoff {
 	path := os.Getenv(pushPlansEnv)
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-push" || !privateFile(path) {
-		return nil
+		return handoff{}
 	}
 	if h := readHandoff(path); h.Gate == os.Getppid() {
-		return h.Plans
+		return h
 	}
-	return nil
+	return handoff{}
 }
 
 // readHandoff decodes the handoff at path; an unreadable one is empty.

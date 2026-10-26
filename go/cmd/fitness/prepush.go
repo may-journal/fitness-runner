@@ -15,14 +15,19 @@ import (
 const zeroSha = "0000000000000000000000000000000000000000"
 
 // planReads holds the push's Plan reads, so each Plan is read once and
-// local-branch judges the same reads.
-var planReads = metadata.NewPushPlans()
+// local-branch judges the same reads. hookPrePush opens it with the push's
+// deadline.
+var planReads *metadata.PushPlans
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
 // Plan once per branch (issue-link-once), so the Plan may be named by an
-// earlier branch commit instead of a pushed commit.
+// earlier branch commit instead of a pushed commit. Every GitHub read of the
+// push, local-branch's too, ends within one deadline.
 func hookPrePush() int {
+	ctx, cancel := metadata.PushContext()
+	defer cancel()
+	planReads = metadata.NewPushPlans(ctx)
 	gated := !disabledCheck("plan-trailer")
 	s := bufio.NewScanner(os.Stdin)
 	var updates []string
@@ -179,6 +184,8 @@ func planCandidates(messages, local string) ([]string, error) {
 }
 
 // checkPlanApproval passes when any candidate names an approved Plan Issue.
+// Once the push's deadline passes, it refuses the push without asking about
+// the rest.
 func checkPlanApproval(plans []string) int {
 	if len(plans) == 0 {
 		fmt.Fprintln(os.Stderr, "pre-push: no 'Plan #NN' trailer on the branch.")
@@ -188,6 +195,10 @@ func checkPlanApproval(plans []string) int {
 	for _, n := range plans {
 		if planReads.Approved(n) {
 			return 0
+		}
+		if late := planReads.TimedOut(); late != "" {
+			fmt.Fprintln(os.Stderr, "pre-push: "+late+"; check the network or proxy, then push again.")
+			return 1
 		}
 	}
 	fmt.Fprintln(os.Stderr, "pre-push: no approved Plan Issue among ("+strings.Join(plans, " ")+").")

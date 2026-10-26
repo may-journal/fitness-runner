@@ -46,3 +46,7 @@ Source: `go/cmd/fitness/hook.go:26`
     - Given Developer has external policy with plan-trailer and local-branch in disabledChecks
         - When I push a feature commit that names no Plan
             - Then the push goes through
+- 0010.13
+    - Given Developer has a feature commit naming three Plans, behind a network that accepts connections and never answers
+        - When I push it
+            - Then the push is refused once its 30-second deadline passes, with one line naming the GitHub host and the deadline

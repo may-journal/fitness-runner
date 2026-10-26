@@ -27,7 +27,7 @@ Source: `go/cmd/fitness-check-local-branch/main.go:9`
         - When I request its describe metadata
             - Then it names the check and declares its timeout without GitHub reads
 - 0067.3
-    - Given Developer has an approved feature Plan and invalid linked PR
+    - Given Developer has an approved feature Plan and an invalid linked PR, or a PR read outlasting the push's remaining deadline
         - When I push with the shared hook
             - Then local-branch runs once and refuses the push
 - 0067.5

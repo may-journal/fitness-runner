@@ -1,9 +1,11 @@
 package requirements
 
 import (
+	"os/exec"
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // pushPlans are GitHub's saved answers about the issues a trailer may name:
@@ -141,6 +143,37 @@ func Test0010_9(t *testing.T) {
 	out, code, rp = pushFeature(t, "Plan #151")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
 	pushAsked(t, rp, "151", "comments")
+}
+
+// silentGitHub is the environment of the real gh behind a proxy that
+// accepts connections and never answers, with a token so it asks GitHub.
+func silentGitHub(t *testing.T) []string {
+	t.Helper()
+	if _, err := exec.LookPath("gh"); err != nil {
+		t.Fatalf("this test runs the real gh: %v", err)
+	}
+	return []string{"HTTPS_PROXY=" + silentListener(t), "NO_PROXY=", "no_proxy=", "GH_TOKEN=unused", "GH_HOST=github.com",
+		"GH_REPO=" + repo0014, "GH_CONFIG_DIR=" + t.TempDir(), "GH_NO_UPDATE_NOTIFIER=1"}
+}
+
+// Three candidate Plans once waited 30 seconds each; the first read to run
+// out ends the push.
+func Test0010_13(t *testing.T) {
+	t.Parallel()
+	repo, hookEnv := hooked(t, nil)
+	remote(t, repo)
+	online := pushEnv(hookEnv, standIn(t, map[string][]response{"gh": pushPlans(t)}))
+	out, code := user(t, repo, online, "commit", "--allow-empty", "-m", "feat(app): add a feature\n\nPlan #218\nPlan #151\nPlan #196")
+	sees(t, out, code, 0, "feat(app): add a feature")
+	start := time.Now()
+	out, code = user(t, repo, append(hookEnv, silentGitHub(t)...), "push", "origin", "HEAD:main")
+	sees(t, out, code, 1, "pre-push: github.com did not answer within 30s; check the network or proxy, then push again.")
+	if took := time.Since(start); took > 40*time.Second {
+		t.Errorf("push took %s, past the 30-second deadline", took)
+	}
+	if n := strings.Count(out, "pre-push:"); n != 1 {
+		t.Errorf("want one pre-push line, got %d:\n%s", n, out)
+	}
 }
 
 func Test0010_12(t *testing.T) {
