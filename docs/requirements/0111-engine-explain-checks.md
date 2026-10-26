@@ -26,3 +26,7 @@ Source: `go/cmd/fitness/explain.go:29`
     - Given AI agent mistypes a check name
         - When it runs `fitness explain prose-budgets`
             - Then fitness exits 2 and suggests the closest check names
+- 0111.4
+    - Given AI agent has a repo with a local check whose describe handshake fails
+        - When it runs `fitness explain` for that check
+            - Then it prints a note saying why the check gave no metadata

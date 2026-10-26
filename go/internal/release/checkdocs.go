@@ -65,13 +65,23 @@ func codeSpans(md string) string {
 		if strings.HasPrefix(line, "\t") || strings.HasPrefix(line, "    ") {
 			continue
 		}
-		parts := strings.Split(line, "\\`")
-		for j := 1; j < len(parts); j += 2 {
-			parts[j] = unescape(parts[j])
-		}
-		lines[i] = strings.Join(parts, "`")
+		lines[i] = spanLine(line)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// spanLine turns each pair of escaped backticks on one line into a code
+// span. A last backtick with no partner stays escaped, so it opens no span.
+func spanLine(line string) string {
+	parts := strings.Split(line, "\\`")
+	for j := 1; j+1 < len(parts); j += 2 {
+		parts[j] = unescape(parts[j])
+	}
+	if len(parts)%2 == 1 {
+		return strings.Join(parts, "`")
+	}
+	last := len(parts) - 1
+	return strings.Join(parts[:last], "`") + "\\`" + parts[last]
 }
 
 // unescape drops the backslash before each escaped character in s.

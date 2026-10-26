@@ -18,6 +18,8 @@ type explained struct {
 	Scope   string `json:"scope"`
 	// BudgetMs is the time the check may run before it is stopped.
 	BudgetMs int64 `json:"budgetMs"`
+	// Note says why the check's describe handshake gave no metadata.
+	Note string `json:"note,omitempty"`
 	// Body is the check's documentation as Markdown.
 	Body string `json:"body"`
 }
@@ -32,12 +34,12 @@ func runExplain(args []string) int {
 		fmt.Fprintln(os.Stderr, "fitness explain:", err)
 		return 2
 	}
-	if installErr != nil {
-		report.Error("fitness explain", installErr)
+	cfg, err := repoConfig()
+	if err != nil {
+		report.Error("fitness explain", err)
 		return 1
 	}
-	cfg := repoConfig()
-	if catalog := checkCatalog(); !slices.Contains(catalog, name) {
+	if catalog := knownChecks(); !slices.Contains(catalog, name) {
 		fmt.Fprintf(os.Stderr, "fitness explain: no check named %q; %s\n", name, suggest(name, catalog))
 		return 2
 	}
@@ -54,8 +56,16 @@ func printExplained(e explained, asJSON bool) int {
 	if asJSON {
 		return writeJSON(os.Stdout, e)
 	}
-	fmt.Printf("# %s\n\nScope: %s · Budget: %ss\n\n%s", e.Name, orDash(e.Scope), trimFloat(float64(e.BudgetMs)/1000), e.Body)
+	fmt.Printf("# %s\n\nScope: %s · Budget: %ss\n\n%s%s", e.Name, orDash(e.Scope), seconds(e.BudgetMs), noteLine(e.Note), e.Body)
 	return 0
+}
+
+// noteLine is the paragraph saying why a check gave no metadata, or "".
+func noteLine(note string) string {
+	if note == "" {
+		return ""
+	}
+	return "Note: " + note + "\n\n"
 }
 
 // explainArgs reads one check name and an optional --json flag.
@@ -67,35 +77,40 @@ func explainArgs(args []string) (name string, asJSON bool, err error) {
 	return rest[0], asJSON, nil
 }
 
-// takeJSONFlag takes --json out of args, saying whether it was there.
-func takeJSONFlag(args []string) (asJSON bool, rest []string) {
-	for _, a := range args {
-		if a == "--json" {
-			asJSON = true
-			continue
-		}
-		rest = append(rest, a)
-	}
-	return asJSON, rest
-}
-
 // repoConfig loads this repo's config and local checks, so a local check
-// explains itself too. A config that cannot load explains the built-in
-// checks with their own budgets.
-func repoConfig() *conf.Config {
+// explains itself too, with the repo's budgets. A config or local check
+// folder that cannot load is an error, as it is for `fitness list`, and so
+// is an install that found no checks.
+func repoConfig() (*conf.Config, error) {
+	if installErr != nil {
+		return nil, installErr
+	}
 	root, err := os.Getwd()
 	if err != nil {
-		return nil
+		return nil, err
 	}
 	cfg, err := loadConfig(root)
-	if err != nil || loadLocalChecks(cfg, root) != nil {
-		return nil
+	if err != nil {
+		return nil, err
 	}
-	return cfg
+	return cfg, loadLocalChecks(cfg, root)
+}
+
+// knownChecks are the names explain answers for: the repo's catalog, and
+// every built-in check, even one a language ignore file leaves out of runs.
+func knownChecks() []string {
+	names := checkCatalog()
+	for name := range builtins {
+		if !slices.Contains(names, name) {
+			names = append(names, name)
+		}
+	}
+	return names
 }
 
 // explainCheck describes the check and reads its documentation: the
 // generated docs of a built-in check, else the summary its handshake gives.
+// A failed handshake comes back as the note saying why.
 func explainCheck(cfg *conf.Config, name string) (explained, error) {
 	checks, err := resolveList([]string{name})
 	if err != nil {
@@ -106,7 +121,8 @@ func explainCheck(cfg *conf.Config, name string) (explained, error) {
 	if !ok || replaced(name) {
 		body = orDash(c.desc.Summary) + "\n"
 	}
-	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(), Body: body}, nil
+	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
+		Note: c.describeErr, Body: body}, nil
 }
 
 // replaced reports whether a local check or a program beside the runner

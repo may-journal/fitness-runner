@@ -1,11 +1,13 @@
 package release
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"io/fs"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -36,13 +38,39 @@ func (c Config) configKeys() (map[string][]configKey, error) {
 		if err != nil || !packageSource(entry) {
 			return err
 		}
-		file, err := parser.ParseFile(fset, path, nil, parser.ParseComments)
-		if err != nil {
-			return err
-		}
-		return taggedFields(fset, file, keys)
+		return c.readTagged(fset, path, keys)
 	})
 	return keys, err
+}
+
+// readTagged adds the check-tagged fields of the Go file at path to keys,
+// parsing only a file whose text holds such a tag.
+func (c Config) readTagged(fset *token.FileSet, path string, keys map[string][]configKey) error {
+	src, err := os.ReadFile(path)
+	if err != nil || !bytes.Contains(src, []byte(`check:"`)) {
+		return err
+	}
+	file, err := parser.ParseFile(fset, path, src, parser.ParseComments)
+	if err != nil {
+		return err
+	}
+	return taggedFields(fset, file, keys)
+}
+
+// structOf is the struct type t names directly, or as the element of a
+// slice, array, pointer, or map value, so a list of objects shows its keys.
+func structOf(t ast.Expr) (*ast.StructType, bool) {
+	switch t := t.(type) {
+	case *ast.StructType:
+		return t, true
+	case *ast.ArrayType:
+		return structOf(t.Elt)
+	case *ast.StarExpr:
+		return structOf(t.X)
+	case *ast.MapType:
+		return structOf(t.Value)
+	}
+	return nil, false
 }
 
 // taggedFields adds each check-tagged field in file to keys.
@@ -72,7 +100,7 @@ func readKey(fset *token.FileSet, field *ast.Field) (configKey, error) {
 	if key.Doc == "" {
 		return key, fmt.Errorf("%s: config key %q has no doc comment", fset.Position(field.Pos()), key.Key)
 	}
-	nested, ok := field.Type.(*ast.StructType)
+	nested, ok := structOf(field.Type)
 	if !ok {
 		return key, nil
 	}
@@ -124,12 +152,18 @@ func configMarkdown(keys []configKey) string {
 	var b strings.Builder
 	b.WriteString("## Configuration\n\nThese `.fitnessrc.json` keys tune the check.\n\n")
 	for _, key := range keys {
-		b.WriteString("- " + keyLine(key) + "\n")
-		for _, sub := range key.Fields {
-			b.WriteString("    - " + keyLine(sub) + "\n")
-		}
+		writeKey(&b, key, "")
 	}
 	return b.String()
+}
+
+// writeKey writes key as a list item at indent, then the keys nested in it
+// one level deeper.
+func writeKey(b *strings.Builder, key configKey, indent string) {
+	b.WriteString(indent + "- " + keyLine(key) + "\n")
+	for _, sub := range key.Fields {
+		writeKey(b, sub, indent+"    ")
+	}
 }
 
 // keyLine is a key's doc comment, led by the key itself when the comment
