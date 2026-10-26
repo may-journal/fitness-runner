@@ -123,6 +123,24 @@ func asLocal(r resolved) resolved {
 	return r
 }
 
+// brokenScan fails a paired local check, adr-NNNN or req-NNNN, that passed
+// having judged no files. Its decision or requirement holds only while the
+// check reads the files it governs, so an empty scan is a broken one.
+func brokenScan(c resolved, o outcome) outcome {
+	if _, local := localBins[c.name]; !local || !repocheck.Paired(c.name) || !emptyPass(o) {
+		return o
+	}
+	o.res.Ok = false
+	o.res.Errors = append(o.res.Errors, c.name+" judged no files, so its scan is broken; fix it to read the files its doc governs")
+	return o
+}
+
+// emptyPass reports whether a check passed, by its own verdict, having
+// judged no files.
+func emptyPass(o outcome) bool {
+	return o.exit == 0 && o.res.Ok && o.res.FilesChecked <= 0
+}
+
 // newEnough fails the first check whose minFitness this fitness does not
 // meet, so a run stops before any check starts, naming the upgrade.
 func newEnough(checks []resolved) error {

@@ -29,6 +29,7 @@ Each row links the check's README and gives the first sentence of its Go package
 
 | Check | Summary |
 | --- | --- |
+| [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) | Pairs each numbered architecture decision record with the check that keeps it. |
 | [architecture-actors](../go/cmd/fitness-check-architecture-actors/README.md) | Requires each requirement's Given to start with an actor the system context declares. |
 | [architecture-code](../go/cmd/fitness-check-architecture-code/README.md) | Resolves each class of the code view to a declaration a language module's reader reads. |
 | [architecture-components](../go/cmd/fitness-check-architecture-components/README.md) | Gives every product source one owner among the components the components view draws. |

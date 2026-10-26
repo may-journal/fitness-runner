@@ -39,20 +39,23 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if err != nil || len(written) == 0 {
 		return checkkit.Pass(0), err
 	}
-	errs, notes, err := docErrors(root, paths, tests, written)
+	checks, proven := reqChecks(root)
+	errs, notes, err := docErrors(root, paths, tests, written, proven)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	res := result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...))
+	res := result(len(paths)+len(files), append(errs, pairErrors(root, paths, append(files, checks...), tests)...))
 	res.Info = notes
 	return res, nil
 }
 
 // docErrors judges every doc's shape, its IDs against history, docs that
 // share an area, which tests own its acceptances, and the tools
-// the tests use. It also returns a note for each leftover Source line,
+// the tests use. A doc whose number proven names has a requirement check
+// in fitness/req-NNNN/, which owns acceptances no test does, and a check
+// with no doc fails. It also returns a note for each leftover Source line,
 // which never fails.
-func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) (errs, notes []string, err error) {
+func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) (errs, notes []string, err error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
 		return nil, nil, err
@@ -65,7 +68,8 @@ func docErrors(root string, paths []string, tests []reqTest, written []lang.Modu
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
 	errs = append(errs, overlapErrors(docs)...)
-	errs = append(errs, ownershipErrors(docs, tests, written)...)
+	errs = append(errs, ownershipErrors(docs, tests, written, proven)...)
+	errs = append(errs, orphanChecks(docs, proven)...)
 	tooled, err := toolErrors(root, tests, written)
 	return append(errs, tooled...), notes, err
 }

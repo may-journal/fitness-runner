@@ -91,3 +91,12 @@ Which changes are judged depends on the run:
 - Pull requests: CI judges the diff against its base, the merge base with the base branch, so merged base changes are not judged.
 - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
+
+## Requirement checks
+
+Some requirements are rules over the repo's own files. A check in `fitness/req-NNNN/`, one of the repo's [local checks](../../../docs/local-checks.md), may prove such a doc.
+
+- Ownership: such a doc's acceptances need no test. A test named for one still owns it, and two still fail.
+- Orphans: a `fitness/req-NNNN/` folder whose number no doc defines fails.
+- Pairs: the check's files pair with the doc as a test file does, so a change to one half alone fails.
+- Broken scan: a requirement check that passes having judged no files fails the run.

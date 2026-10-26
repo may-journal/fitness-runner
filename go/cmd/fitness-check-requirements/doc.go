@@ -99,6 +99,18 @@
 //   - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 //   - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
 //
+// # Requirement checks
+//
+// Some requirements are rules over the repo's own files. A check in
+// `fitness/req-NNNN/`, one of the repo's [local checks], may prove such a
+// doc.
+//
+//   - Ownership: such a doc's acceptances need no test. A test named for one still owns it, and two still fail.
+//   - Orphans: a `fitness/req-NNNN/` folder whose number no doc defines fails.
+//   - Pairs: the check's files pair with the doc as a test file does, so a change to one half alone fails.
+//   - Broken scan: a requirement check that passes having judged no files fails the run.
+//
+// [local checks]: https://github.com/may-journal/fitness-runner/blob/main/docs/local-checks.md
 // [module registry]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
 // [ADR 0004]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0004-one-requirement-doc-per-area.md
 // [actor]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-actors/README.md

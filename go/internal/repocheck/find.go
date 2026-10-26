@@ -37,6 +37,16 @@ const flatPrefix = "fitness-check-"
 // checkName is the shape of a check name: lowercase words joined by dashes.
 var checkName = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 
+// paired matches the name of a check paired with a doc: adr-NNNN keeps an
+// architecture decision, and req-NNNN proves a requirement.
+var paired = regexp.MustCompile(`^(adr|req)-\d{4}$`)
+
+// Paired reports whether a local check of this name keeps an ADR or proves
+// a requirement, so judging no files means its scan is broken.
+func Paired(name string) bool {
+	return paired.MatchString(name)
+}
+
 // skipped are the folder names a checks folder may hold beside its checks:
 // Go's shared-code and fixture folders.
 var skipped = []string{"internal", "testdata"}
