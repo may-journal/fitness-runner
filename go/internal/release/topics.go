@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/doc"
+	"go/parser"
 	"go/token"
 	"io/fs"
 	"path/filepath"
@@ -57,13 +58,18 @@ func (c Config) topics() ([]topicDoc, error) {
 }
 
 // readTopic reads the package in dir as a topic, reporting whether it is
-// one.
+// one. Only a topic's files are parsed whole; the rest stop at the package
+// clause, where the directive sits.
 func readTopic(root, dir string) (topicDoc, bool, error) {
-	fset := token.NewFileSet()
-	files, err := parseSources(fset, dir)
-	name := topicName(files)
+	clauses, err := parseSources(token.NewFileSet(), dir, parser.PackageClauseOnly|parser.ParseComments)
+	name := topicName(clauses)
 	if err != nil || name == "" {
 		return topicDoc{}, false, err
+	}
+	fset := token.NewFileSet()
+	files, err := parseSources(fset, dir, parser.ParseComments)
+	if err != nil {
+		return topicDoc{}, true, err
 	}
 	t, err := buildTopic(fset, files, root, dir, name)
 	return t, true, err
