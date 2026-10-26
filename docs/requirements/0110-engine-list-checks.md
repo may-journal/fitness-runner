@@ -26,3 +26,7 @@ Source: `go/cmd/fitness/list.go:63`
     - Given AI agent has a repo with a local check
         - When it runs `fitness list`
             - Then the local check shows with the summary its describe handshake gives
+- 0110.4
+    - Given AI agent has a repo with a local check whose describe handshake fails
+        - When it runs `fitness list`
+            - Then that check shows with a note saying why, and every other check still shows

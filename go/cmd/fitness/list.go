@@ -20,6 +20,11 @@ type listed struct {
 	BudgetMs int64 `json:"budgetMs"`
 	// Enabled says whether this repo's config runs the check.
 	Enabled bool `json:"enabled"`
+	// Blob says whether `fitness --blob` runs the check on a text.
+	Blob bool `json:"blob"`
+	// Note says why the row holds no metadata: the check's program is not
+	// installed, or its describe handshake failed.
+	Note string `json:"note,omitempty"`
 }
 
 // runList handles `fitness list [--json]`: every check this repo can run,
@@ -59,35 +64,75 @@ func listFlags(args []string) (asJSON bool, err error) {
 }
 
 // listChecks describes every check in the catalog and marks the ones the
-// repo's config selects.
+// repo's config selects. A check whose program is missing, or whose
+// handshake failed, still gets its row, with a note saying why, so one broken
+// check never hides the rest.
 func listChecks() ([]listed, error) {
 	_, cfg, suite, err := blobConfig()
 	if err != nil {
 		return nil, err
 	}
-	checks, err := resolveList(checkCatalog())
+	found, missing := installedChecks(checkCatalog())
+	checks, err := resolveList(found)
 	if err != nil {
 		return nil, err
 	}
-	checks = withBudgets(cfg, checks)
-	out := make([]listed, len(checks))
-	for i, c := range checks {
-		out[i] = listed{Name: c.name, Summary: c.desc.Summary, Scope: c.desc.Scope,
-			BudgetMs: timeoutFor(c).Milliseconds(), Enabled: slices.Contains(suite, c.name)}
+	byName := map[string]resolved{}
+	for _, c := range withBudgets(cfg, checks) {
+		byName[c.name] = c
+	}
+	var out []listed
+	for _, name := range checkCatalog() {
+		out = append(out, listRowFor(name, byName, missing, suite))
 	}
 	return out, nil
 }
 
+// installedChecks splits names into those with a check program and those
+// without, keeping their order.
+func installedChecks(names []string) (found []string, missing map[string]bool) {
+	missing = map[string]bool{}
+	for _, name := range names {
+		if _, err := findCheckBinary(name); err != nil {
+			missing[name] = true
+			continue
+		}
+		found = append(found, name)
+	}
+	return found, missing
+}
+
+// listRowFor is the row for check name: its metadata, or a note saying the
+// program is not installed.
+func listRowFor(name string, byName map[string]resolved, missing map[string]bool, suite []string) listed {
+	enabled := slices.Contains(suite, name)
+	if missing[name] {
+		return listed{Name: name, Enabled: enabled, Note: "not installed: no fitness-check-" + name + " program"}
+	}
+	c := byName[name]
+	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
+		Enabled: enabled, Blob: c.desc.Blob, Note: c.describeErr}
+}
+
 // printList writes one aligned row per check: name, scope, budget, whether
-// it is enabled, and its summary.
+// it is enabled, and its summary, or the note saying why it has none.
 func printList(w io.Writer, checks []listed) {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "CHECK\tSCOPE\tBUDGET\tENABLED\tSUMMARY")
 	for _, c := range checks {
 		fmt.Fprintf(tw, "%s\t%s\t%ss\t%s\t%s\n", c.Name, orDash(c.Scope),
-			trimFloat(float64(c.BudgetMs)/1000), yesNo(c.Enabled), orDash(c.Summary))
+			trimFloat(float64(c.BudgetMs)/1000), yesNo(c.Enabled), summaryOrNote(c))
 	}
 	_ = tw.Flush()
+}
+
+// summaryOrNote is a row's summary, followed by its note in brackets when it
+// has one.
+func summaryOrNote(c listed) string {
+	if c.Note == "" {
+		return orDash(c.Summary)
+	}
+	return orDash(c.Summary) + " (" + c.Note + ")"
 }
 
 // writeJSON writes v as indented JSON and returns the exit code.

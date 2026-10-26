@@ -24,7 +24,11 @@ func listJSON(t *testing.T, repo string) []listedCheck {
 		t.Fatalf("fitness list --json exited %d:\n%s", code, out)
 	}
 	var checks []listedCheck
-	if err := json.Unmarshal([]byte(out[strings.Index(out, "["):]), &checks); err != nil {
+	start := strings.Index(out, "\n[")
+	if start < 0 {
+		t.Fatalf("fitness list --json printed no check list:\n%s", out)
+	}
+	if err := json.Unmarshal([]byte(out[start+1:]), &checks); err != nil {
 		t.Fatalf("fitness list --json printed no check list: %v\n%s", err, out)
 	}
 	return checks
@@ -84,5 +88,16 @@ func Test0110_3(t *testing.T) {
 	sees(t, out, code, 0, "Keeps the house rule.")
 	if fields := strings.Fields(listRow(out, "house-rule")); len(fields) < 4 || fields[1] != "files" || fields[3] != "yes" {
 		t.Errorf("fitness list shows the local check as %q, want scope files and enabled", listRow(out, "house-rule"))
+	}
+}
+
+func Test0110_4(t *testing.T) {
+	t.Parallel()
+	files := localCheck("house-rule", passing)
+	files["checks/fitness-check-house-rule"] = "#!/bin/sh\nif [ \"$1\" = --describe ]; then\n  exit 1\nfi\necho '" + passing + "'\n"
+	out, code := fitness(t, example(t, "happyRepo", files), nil, "list")
+	sees(t, out, code, 0, "Lists Go files that gofmt would change.")
+	if row := listRow(out, "house-rule"); !strings.Contains(row, "(--describe gave no metadata") {
+		t.Errorf("fitness list shows the broken local check as %q, want a note saying why", row)
 	}
 }
