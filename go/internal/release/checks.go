@@ -206,7 +206,12 @@ func checkAlias(name string) string {
 }
 
 // Input reports whether a changed repository path can change what the
-// generator writes: a Go source, which holds the doc comments it reads.
+// generator writes: a Go source, which holds the doc comments it reads, or a
+// Markdown file it writes whole or in part.
 func Input(path string) bool {
-	return strings.HasSuffix(path, ".go")
+	if strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile {
+		return true
+	}
+	matched, _ := filepath.Match("go/cmd/fitness-check-*/README.md", path)
+	return matched
 }
