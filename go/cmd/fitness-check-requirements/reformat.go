@@ -50,7 +50,7 @@ func reformatted(root, base, f string) bool {
 		return false
 	}
 	after, ok := gitShow(root, now)
-	return ok && wording(before) == wording(after)
+	return ok && wording(before, true) == wording(after, false)
 }
 
 // renamedFrom is the one doc at base with f's number, the path a renamed f
@@ -81,9 +81,13 @@ func gitShow(root, object string) (string, bool) {
 // wording is a doc's words in order, without its front matter, and with
 // list markers made alike: what is left when a formatter's choices of
 // blank lines, indents, line breaks, spacing, quotes in the front matter,
-// list markers, and a leftover Source line are set aside. The doc check
+// list markers, and, at base only, a leftover Source line are set aside, so deleting one is no change but adding or editing one is. The doc check
 // judges the structure.
-func wording(doc string) string {
-	body := listMarker.ReplaceAllString(sourceLine.ReplaceAllString(mdx.StripFrontMatter(doc), ""), "$1-$2")
+func wording(doc string, dropSource bool) string {
+	body := mdx.StripFrontMatter(doc)
+	if dropSource {
+		body = sourceLine.ReplaceAllString(body, "")
+	}
+	body = listMarker.ReplaceAllString(body, "$1-$2")
 	return strings.Join(strings.Fields(body), " ")
 }
