@@ -23,7 +23,14 @@
 // configs.
 //
 // Any view requires all five, and each view needs a diagram outside its
-// legends. Scoped runs read the whole model.
+// legends.
+//
+// # Scope
+//
+// A test, changelog or doc change cannot move the views. So a scoped run
+// with no changed view, requirement doc, product or tool source, manifest
+// or `.gitattributes` passes with zero files.
+// Every other run reads the whole model.
 //
 // # Templates
 //

@@ -16,7 +16,11 @@ The roots are `architecture/` and `docs/architecture/`. Both roots add to one mo
 
 No views means a pass with zero files, unless the repo has product code in a [language module](../../internal/lang/langs/langs.go)'s sources. Then the check fails and asks for all five. Product code is any such tracked file except tests, tool configs, and files marked `linguist-generated`. Each module names its own tests and tool configs.
 
-Any view requires all five, and each view needs a diagram outside its legends. Scoped runs read the whole model.
+Any view requires all five, and each view needs a diagram outside its legends.
+
+## Scope
+
+A test, changelog or doc change cannot move the views. So a scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole model.
 
 ## Templates
 

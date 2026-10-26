@@ -50,8 +50,15 @@
 // # Runs
 //
 // No architecture views means a pass with zero files; `filesChecked` counts
-// the container views. Scoped runs read every view and every product, so a
-// change on either side still meets the other.
+// the container views.
+//
+// # Scope
+//
+// A test, changelog or doc change cannot move the views. So a scoped run
+// with no changed view, requirement doc, product or tool source, manifest
+// or `.gitattributes` passes with zero files.
+// Every other run reads every view and every product, so a change on either
+// side still meets the other.
 //
 // # Requirements
 //

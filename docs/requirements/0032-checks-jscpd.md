@@ -20,14 +20,14 @@ repos scanned
     - Given Developer has two files sharing a block past 1% of all lines
         - When `jscpd` runs
             - Then it fails naming the share, the threshold, and each file holding duplicates
-- 0032.2
-    - Given Developer has two files sharing a block under 5 lines
+- 0032.12
+    - Given Developer has two files sharing a block under 5 lines, and two sharing one under 50 tokens
         - When `jscpd` runs
             - Then it passes
-- 0032.3
-    - Given Developer has two files sharing a block under 50 tokens
-        - When `jscpd` runs
-            - Then it passes
+- 0032.13
+    - Given Developer stages a file sharing a block with a tracked file
+        - When I commit
+            - Then `jscpd` passes when their formats differ and fails when they match, reading only files of the staged formats
 - 0032.9
     - Given Developer has a Markdown doc and a gitignored but still tracked JSON file sharing a block
         - When `jscpd` runs

@@ -68,7 +68,19 @@ func Test0076_1(t *testing.T) {
 	out, code := cvRun(t, map[string]string{"src/main.go": "package main\n"})
 	sees(t, out, code, 0)
 	passedWithNoFiles(t, out, cvCheck)
+	repo, env := hooked(t, cvEdit(cvFixture(), cvView, cvEdge, ""))
+	write(t, repo, map[string]string{"src/store/store_test.go": testFile("store")})
+	user(t, repo, env, "add", "src/store/store_test.go")
+	out, _ = user(t, repo, env, "commit", "-m", "test(store): add the store test")
+	for _, check := range architectureChecks {
+		passedWithNoFiles(t, out, check)
+	}
+	out, code = fitness(t, repo, nil, "--all", cvCheck)
+	sees(t, out, code, 1, cvStore+":9: save references Record, but "+cvView+" "+cvNoEdge+"save -> Record")
 }
+
+// architectureChecks are the six checks that read the architecture model.
+var architectureChecks = []string{"architecture-actors", cvCheck, "architecture-components", "architecture-containers", "architecture-contract", "architecture-journey"}
 
 func Test0076_9(t *testing.T) {
 	t.Parallel()
@@ -133,7 +145,7 @@ func Test0076_4(t *testing.T) {
 func Test0076_5(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", cvEdit(cvFixture(), cvView, cvEdge, ""))
-	for _, changed := range []string{"", "README.md", cvStore, cvView} {
+	for _, changed := range []string{"", "go.mod", cvStore, cvView} {
 		out, code := fitness(t, repo, []string{"FITNESS_CHANGED_FILES=" + changed}, cvCheck)
 		sees(t, out, code, 1, cvStore+":9: save references Record, but "+cvView+" "+cvNoEdge+"save -> Record"+cvAllowIt)
 	}

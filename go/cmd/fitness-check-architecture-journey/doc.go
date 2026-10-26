@@ -2,8 +2,14 @@
 // and the requirement docs covering each other. Every requirement doc ID
 // appears in a journey diagram label, and every journey node that promises
 // behavior names one. It reads the shared model from
-// `internal/architecture.Load`. Scoped runs still read the whole journey view
-// and every requirement doc.
+// `internal/architecture.Load`.
+//
+// # Scope
+//
+// A test, changelog or doc change cannot move the views. So a scoped run
+// with no changed view, requirement doc, product or tool source, manifest
+// or `.gitattributes` passes with zero files.
+// Every other run reads the whole journey view and every requirement doc.
 //
 // # Requirement IDs in the diagram
 //
