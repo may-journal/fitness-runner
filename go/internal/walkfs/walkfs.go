@@ -2,6 +2,12 @@
 // Inside a git repo it lists every tracked file still on disk, so only
 // untracked files stay out; outside one it walks every file except .git.
 // No directory name, config key, or tool ignore list removes a file.
+//
+// A run of several checks shares one list, which ShareTracked writes. It
+// drops symlinks and submodules by their index mode, stats the rest once
+// in parallel, and holds only the regular files on disk. A check using a
+// current shared list stats nothing; one listing its own files, as a check
+// run alone does, stats each matching path.
 package walkfs
 
 import (
@@ -118,13 +124,13 @@ func scanOne[T any](root, file string, scan func(relPath, content string) []T) s
 // candidates are the tracked files that still exist on disk; outside one
 // they are every file except those under .git.
 func FilesByExt(root string, exts ...string) []string {
-	candidates, tracked := trackedFiles(root)
-	if !tracked {
-		candidates = walkedFiles(root)
+	list := trackedFiles(root)
+	if !list.ok {
+		list = trackedList{files: walkedFiles(root), onDisk: true}
 	}
 	var out []string
-	for _, rel := range candidates {
-		if wanted(root, rel, exts, tracked) {
+	for _, rel := range list.files {
+		if wanted(root, rel, exts, !list.onDisk) {
 			out = append(out, rel)
 		}
 	}
@@ -139,8 +145,8 @@ func FilesByExt(root string, exts ...string) []string {
 // returns an error when git or the walk cannot list the files, so a check
 // never passes on a list it could not read.
 func AllFiles(root string) ([]string, error) {
-	if files, ok := trackedFiles(root); ok {
-		out := slices.Clone(files)
+	if list := trackedFiles(root); list.ok {
+		out := slices.Clone(list.files)
 		sort.Strings(out)
 		return out, nil
 	}
@@ -158,12 +164,12 @@ func insideWorkTree(root string) bool {
 	return err == nil && strings.TrimSpace(string(out)) == "true"
 }
 
-// wanted reports whether rel ends in one of exts and, when it came from
-// git, is still a regular file on disk. The cheap name test runs first, so
-// only a matching tracked path costs an lstat; a walked path is already a
-// regular file.
-func wanted(root, rel string, exts []string, tracked bool) bool {
-	return hasAnySuffix(filepath.Base(rel), exts) && (!tracked || RegularFile(root, rel))
+// wanted reports whether rel ends in one of exts and, when stat is set, is
+// still a regular file on disk. The cheap name test runs first, so only a
+// matching path costs an lstat. A walked path, or one from the runner's
+// shared list, is already a regular file, so stat is unset for it.
+func wanted(root, rel string, exts []string, stat bool) bool {
+	return hasAnySuffix(filepath.Base(rel), exts) && (!stat || RegularFile(root, rel))
 }
 
 // RegularFile reports whether the slash-separated rel under root is a
