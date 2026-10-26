@@ -259,6 +259,9 @@ func blobChecks(suite, selected []string) (run []resolved, skipped []string, err
 		return nil, nil, err
 	}
 	checks, err := resolveList(names)
+	if err == nil {
+		err = newEnough(checks)
+	}
 	if err != nil {
 		return nil, nil, err
 	}

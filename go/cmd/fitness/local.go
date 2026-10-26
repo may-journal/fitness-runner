@@ -1,23 +1,39 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
 
-// localBins maps this run's local checks, from .fitnessrc.json's
-// localChecks directory, to their programs. loadLocalChecks sets it once per
-// run, before any check resolves.
-var localBins map[string]string
+// localBins maps this run's local checks, from the repo's fitness/ folder
+// and .fitnessrc.json's localChecks folder, by name. loadLocalChecks sets it
+// once per run, before any check resolves.
+var localBins map[string]repocheck.Check
+
+// version is this fitness's release version, which the release build sets.
+// A local check's minFitness is judged against it; a build without one,
+// such as `go build`, meets every minFitness.
+var version string
+
+// built memoizes each Go local check's program for the run, so a check
+// that resolves twice, as `fitness list` and a suite run do, builds once.
+var built = struct {
+	sync.Mutex
+	paths map[string]string
+}{paths: map[string]string{}}
 
 // turnedOff reports whether an external policy's disabledChecks names name,
 // so a hook skips it rather than fail on an empty selection.
@@ -28,16 +44,91 @@ func turnedOff(cfg *conf.Config, name string) bool {
 // loadLocalChecks finds the repo's local checks, so every later lookup
 // searches them before the bundled programs.
 func loadLocalChecks(cfg *conf.Config, root string) error {
-	bins, err := cfg.LocalCheckBinaries(root)
-	if err != nil {
-		return err
+	var configured string
+	if cfg != nil {
+		configured = cfg.LocalChecks
 	}
-	for name := range bins {
+	checks, err := repocheck.Find(root, configured)
+	if err == nil {
+		err = noSubcommand(checks)
+	}
+	if err == nil {
+		localBins = checks
+	}
+	return err
+}
+
+// noSubcommand fails a local check named like a fitness subcommand, which
+// `fitness <name>` could not run.
+func noSubcommand(checks map[string]repocheck.Check) error {
+	for name := range checks {
 		if _, taken := subcommands[name]; taken || name == "help" {
 			return fmt.Errorf("local check %s shares a fitness subcommand's name, so `fitness %s` could not run it; rename it", name, name)
 		}
 	}
-	localBins = bins
+	return nil
+}
+
+// programFor finds the program of each check name resolves, failing on a
+// missing one: a local check says why, and any other is not installed.
+func programFor(name string) (checkkit.Program, error) {
+	prog, err := findCheckBinary(name)
+	if _, local := localBins[name]; err != nil && !local {
+		err = fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
+	}
+	return prog, err
+}
+
+// localProgram returns the program for a local check, building a Go one
+// into the cache on first use.
+func localProgram(c repocheck.Check) (checkkit.Program, error) {
+	built.Lock()
+	defer built.Unlock()
+	if path, ok := built.paths[c.Name]; ok {
+		return checkkit.Program{Path: path}, nil
+	}
+	cache, err := distribution.CacheDir()
+	if err != nil {
+		return checkkit.Program{}, err
+	}
+	path, err := repocheck.Build(c, cache, version, os.Stderr)
+	if err != nil {
+		return checkkit.Program{}, err
+	}
+	built.paths[c.Name] = path
+	return checkkit.Program{Path: path}, nil
+}
+
+// asLocal applies the local check rules to a check's handshake. Every local
+// check shows scope local, and an older fitness than its minFitness is
+// noted. A folder check's handshake is optional: the folder names it, a
+// handshake it does not answer is no info, and its README gives the summary
+// the handshake leaves out.
+func asLocal(r resolved) resolved {
+	c, ok := localBins[r.name]
+	if !ok {
+		return r
+	}
+	r.needs = repocheck.NeedsNewer(r.name, r.desc.MinFitness, version)
+	r.desc.Scope = "local"
+	if c.Readme == "" {
+		return r
+	}
+	r.desc.Name, r.describeErr = r.name, ""
+	if r.desc.Summary == "" {
+		r.desc.Summary = repocheck.Summary(c)
+	}
+	return r
+}
+
+// newEnough fails the first check whose minFitness this fitness does not
+// meet, so a run stops before any check starts, naming the upgrade.
+func newEnough(checks []resolved) error {
+	for _, c := range checks {
+		if c.needs != "" {
+			return errors.New(c.needs)
+		}
+	}
 	return nil
 }
 
@@ -47,8 +138,8 @@ func loadLocalChecks(cfg *conf.Config, root string) error {
 // beside fitness that replaces a built-in check says so on stderr, so a
 // stale one left from an older install does not run unnoticed.
 func findCheckBinary(name string) (checkkit.Program, error) {
-	if bin, ok := localBins[name]; ok {
-		return checkkit.Program{Path: bin}, nil
+	if c, ok := localBins[name]; ok {
+		return localProgram(c)
 	}
 	_, builtin := builtins[name]
 	if bin, ok := besidePrograms[name]; ok {

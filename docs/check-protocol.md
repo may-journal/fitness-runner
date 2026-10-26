@@ -77,7 +77,7 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 
 ## Local checks
 
-A repo adds its own checks with `"localChecks": "<dir>"`, a directory inside the repo. Each executable `fitness-check-<name>` there follows this protocol and runs in the same suite, hooks, and CI. Lookup searches that directory before the bundled checks.
+A repo adds its own checks as `fitness/<name>/` folders, as [local checks](local-checks.md) describes. `"localChecks": "<dir>"` names one more directory inside the repo, which may also hold executable `fitness-check-<name>` files. Each follows this protocol and runs in the same suite, hooks, and CI, searched before the bundled checks. A folder check may skip `--describe`, and a handshake may add `minFitness`, the oldest fitness that runs the check.
 
 A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md) decides.
 

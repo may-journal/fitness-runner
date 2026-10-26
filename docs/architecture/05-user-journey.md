@@ -54,7 +54,7 @@ flowchart TB
     readLLMs(38 Read the llms page<br/>Req 0113):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102, 0131)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001)]:::system
 

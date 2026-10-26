@@ -103,6 +103,9 @@ type resolved struct {
 	// declares none. It stays apart from desc, which holds only what the
 	// check declares.
 	configMs int
+	// needs says why this fitness is too old for the check's minFitness,
+	// which stops a run before any check starts.
+	needs string
 }
 
 // outcome is one finished check, in dispatch order.
@@ -149,7 +152,9 @@ func runBuiltin(name string, args []string) int {
 }
 
 // runCheckCommand handles `fitness check <name> [args]`, and `fitness check
-// --list`, which prints every built-in check name, one per line.
+// --list`, which prints every built-in check name, one per line. A name no
+// built-in check has, such as a repo's own check, runs as `fitness <name>`
+// runs it, alone, with its result row.
 func runCheckCommand(args []string) int {
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "fitness check: name a check, or pass --list")
@@ -160,6 +165,9 @@ func runCheckCommand(args []string) int {
 			fmt.Println(name)
 		}
 		return 0
+	}
+	if _, ok := builtins[args[0]]; !ok {
+		return run(args)
 	}
 	return runBuiltin(args[0], args[1:])
 }
@@ -203,8 +211,8 @@ func init() {
 		// Lists the guide topics, or prints one, from the code's doc comments.
 		//fitness:usage docs [topic]
 		"docs": runDocs,
-		// Prints every built-in check name, one per line, or runs one built-in
-		// check by name.
+		// Prints every built-in check name, one per line, or runs one check by
+		// name, a repo's own check included.
 		//fitness:usage check --list
 		//fitness:usage check <name> [args]
 		"check": runCheckCommand,
@@ -552,9 +560,9 @@ var errNotInstalled = errors.New("Check binary not installed")
 func resolveList(names []string) ([]resolved, error) {
 	progs := make([]checkkit.Program, len(names))
 	for i, name := range names {
-		prog, err := findCheckBinary(name)
+		prog, err := programFor(name)
 		if err != nil {
-			return nil, fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
+			return nil, err
 		}
 		progs[i] = prog
 	}
@@ -602,7 +610,7 @@ func isScript(bin string) bool {
 // describeCheck runs one check's --describe handshake.
 func describeCheck(name string, prog checkkit.Program) resolved {
 	desc, describeErr, overran := describe(prog)
-	return resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran}
+	return asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
