@@ -39,7 +39,7 @@ classDiagram
     class resolveChecks["6 resolveChecks(spec string)"]
     class describe["7 describe(checkkit.Program) (checkkit.Describe, string, bool)"]
     class runPool["8 runPool(string, []resolved, []string, []string)"]
-    class runOne["9 runOne(string, resolved, []string, []string)"]
+    class runOne["9 runOne(string, resolved, []string, []string, watch)"]
     class checkkitMain["10 checkkit.Main(Check)"]
     class renderTable["11 render.Table([]Row, int, Palette)"]
     class Row["12 render.Row"]
