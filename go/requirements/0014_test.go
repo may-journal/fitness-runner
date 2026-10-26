@@ -63,14 +63,31 @@ func issue0014(t *testing.T, n int, body string, labels ...string) response {
 // noChangelog0014 is GitHub listing no CHANGELOG.md change in a PR.
 var noChangelog0014 = response{Match: []string{"/files"}}
 
+// live0014 is GitHub answering PR 1's read with its title and body now.
+func live0014(t *testing.T, title, body string) response {
+	t.Helper()
+	out, err := json.Marshal(map[string]any{"number": 1, "title": title, "body": body})
+	mustDo(t, err)
+	return response{Match: []string{"title, body", "repos/" + repo0014 + "/pulls/1"}, Stdout: string(out) + "\n"}
+}
+
 // judge0014 runs pr-check on a pull_request event with title and body,
 // GitHub answering from issues and the PR leaving the changelog alone.
 func judge0014(t *testing.T, title, body string, issues ...response) (string, int) {
 	t.Helper()
-	rp := standIn(t, map[string][]response{"gh": append(issues, noChangelog0014)})
+	out, code, _ := rerun0014(t, title, body, issues...)
+	return out, code
+}
+
+// rerun0014 runs pr-check on a saved pull_request event carrying title and
+// body, as "Re-run job" replays it, GitHub answering from saved first.
+func rerun0014(t *testing.T, title, body string, saved ...response) (string, int, replays) {
+	t.Helper()
+	rp := standIn(t, map[string][]response{"gh": append(saved, noChangelog0014)})
 	pr := map[string]any{"number": 1, "title": title, "body": body}
 	env := event0014(t, "pull_request", map[string]any{"action": "edited", "pull_request": pr})
-	return fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")
+	out, code := fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")
+	return out, code, rp
 }
 
 func Test0014_1(t *testing.T) {
@@ -129,4 +146,21 @@ func Test0014_5(t *testing.T) {
 	env := event0014(t, "workflow_dispatch", map[string]any{})
 	out, code := fitness(t, example(t, "happyRepo", nil), append(rp.env, env...), "pr-check")
 	sees(t, out, code, 0, "pr-check #5", "pr-check #6")
+}
+
+func Test0014_7(t *testing.T) {
+	t.Parallel()
+	stale := strings.Replace(pr0014(11), "## Background", "## Context", 1)
+	fixed := pr0014(11)
+	plan := issue0014(t, 11, plan0014("- [x] Write the tests."), "Plan")
+	out, code, _ := rerun0014(t, "added one file", stale, live0014(t, "test(app): add one file", fixed), plan)
+	sees(t, out, code, 0, "pr-check #1", "Passed.")
+}
+
+func Test0014_8(t *testing.T) {
+	t.Parallel()
+	offline := response{Match: []string{"title, body", "repos/" + repo0014 + "/pulls/1"}, Stderr: "error connecting to api.github.com\n", Exit: 1}
+	plan := issue0014(t, 11, plan0014("- [x] Write the tests."), "Plan")
+	out, code, _ := rerun0014(t, "added one file", pr0014(11), offline, plan)
+	sees(t, out, code, 1, "cannot reach GitHub for PR #1", `"added one file"`)
 }
