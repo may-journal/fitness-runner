@@ -1,14 +1,18 @@
 package check
 
 import (
+	"bytes"
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 )
 
 // baseRev is the commit a scoped run's changes replace: the merge base with
@@ -72,26 +76,56 @@ func baseErrors(root, rev, dir string) []string {
 	return res.Errors
 }
 
-// checkout writes rev's tree into dir as a repository of its own that
-// borrows root's objects, so root's index and work tree stay untouched.
+// checkout writes the files of rev's tree this check reads into dir, as a
+// repository of its own that borrows root's objects, so root's index and
+// work tree stay untouched. A huge repo's other files are never copied.
 func checkout(root, rev, dir string) error {
-	if err := gitIn(dir, "init", "-q"); err != nil {
+	if err := gitIn(dir, nil, "init", "-q"); err != nil {
 		return err
 	}
 	objects := gitLine(root, "rev-parse", "--path-format=absolute", "--git-path", "objects")
 	if err := os.WriteFile(filepath.Join(dir, ".git", "objects", "info", "alternates"), []byte(objects+"\n"), 0o600); err != nil {
 		return err
 	}
-	if err := gitIn(dir, "read-tree", rev); err != nil {
+	entries, err := judgedEntries(root, rev)
+	if err == nil {
+		err = gitIn(dir, entries, "update-index", "-z", "--index-info")
+	}
+	if err != nil {
 		return err
 	}
-	return gitIn(dir, "checkout-index", "-a")
+	return gitIn(dir, nil, "checkout-index", "-a")
 }
 
-// gitIn runs git in dir without the hook variables that point at the
-// repository being committed.
-func gitIn(dir string, args ...string) error {
+// judgedEntries lists, as `git ls-tree -r -z` prints them, the entries of
+// rev's tree this check reads: the requirement docs, the files a language
+// module finds tests in, and the .gitattributes files that mark files
+// generated.
+func judgedEntries(root, rev string) ([]byte, error) {
+	out, err := exec.Command("git", "-C", root, "ls-tree", "-r", "-z", "--full-tree", rev).Output()
+	if err != nil {
+		return nil, err
+	}
+	var kept bytes.Buffer
+	for _, entry := range bytes.Split(out, []byte{0}) {
+		if _, file, ok := strings.Cut(string(entry), "\t"); ok && judged(file) {
+			kept.Write(entry)
+			kept.WriteByte(0)
+		}
+	}
+	return kept.Bytes(), nil
+}
+
+// judged reports whether this check reads file.
+func judged(file string) bool {
+	return strings.HasPrefix(file, docsDir) || path.Base(file) == ".gitattributes" || lang.TestReads(langs.All, file)
+}
+
+// gitIn runs git in dir with stdin as its input, without the hook
+// variables that point at the repository being committed.
+func gitIn(dir string, stdin []byte, args ...string) error {
 	cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
 	cmd.Env = toolchain.CleanEnv(os.Environ())
+	cmd.Stdin = bytes.NewReader(stdin)
 	return cmd.Run()
 }

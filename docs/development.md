@@ -27,7 +27,13 @@ Edit the doc comment, usually the check's `doc.go`, never the README. A doc comm
 
 `make requirements` builds the candidate for this host's platform only, then runs the requirement tests against it. Release and CI builds keep all four platforms.
 
-CI splits the tests over two `requirements` jobs per platform with [tests/requirements-shard.sh](../tests/requirements-shard.sh). `sh tests/requirements-shard.sh 1 2` runs the first half against the candidate in `FITNESS_INSTALL`.
+Three helpers in [traps_test.go](../go/requirements/traps_test.go) stage what hangs a real machine, so a test proves fitness still ends:
+
+- `promptingTools` puts a `git` and `ssh` on `PATH` that wait for a password, or fail at once under `GIT_TERMINAL_PROMPT=0` or `BatchMode=yes`.
+- `silentListener` accepts connections and never answers, as a proxy that drops traffic does. Use its URL as `HTTPS_PROXY` or as a registry.
+- `generatedTree` commits a temporary repo with as many tracked files as a test asks for. Nothing it writes lands in this repo.
+
+CI splits the tests over two `requirements` jobs per platform with [tests/requirements-shard.sh](../tests/requirements-shard.sh). `sh tests/requirements-shard.sh 1 2` runs the first half against the candidate in `FITNESS_INSTALL`. To time every check on large trees, run `FITNESS_TREE_SIZES=10000,100000,500000 sh tests/requirements.sh -run 'Test0001_14$' -v -timeout 90m`. Its `timesTrees` helper times an unscoped run and a fixing commit on each size's `generatedTree`, logging milliseconds per check.
 
 ## Skills
 

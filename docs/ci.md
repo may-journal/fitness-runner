@@ -157,6 +157,14 @@ The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITN
 
 Upgrade or roll back with `--version VERSION`; `--version latest` is explicit opt-in. The action's `version` input follows the same rules. An exact action tag loads its installer; a major tag such as `v1` loads its newest release, and other refs load the latest.
 
+## Network waits
+
+Each network read first prints the host it asks and how long it waits. The latest release lookup and the hash manifest give up after five seconds. A failed lookup falls back to the recorded or newest installed version with one warning. The bundle download waits up to two minutes and prints its size before it starts, because it has no fallback.
+
+The runner, `gh` and git reach the network through `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`, and git also reads its `http.proxy` setting. A run with `local-branch`, or `dependency-currency` beside a root `package.json`, first probes the GitHub API host. The host is `GITHUB_API_URL` when set, else `api.github.com`, or `GH_HOST` for GitHub Enterprise Server. The probe connects once, through the proxy, within two seconds.
+
+When the probe fails, those checks, `workflow-ref-exists` and the pre-push gate report info naming the host and proxy, without connecting. Go checks then run with `GOPROXY=off`, so a missing module fails at once with Go's own message. When the probe passes, a slow registry still ends at its own budget. A plain commit probes nothing.
+
 ## Release automation
 
 After main CI passes, Release Please groups conventional commits in a release PR and owns its version. Once merged, it creates a draft release and an explicit root `v` tag. `fitness-release release-pr` links each new [entry file](../go/cmd/fitness-check-changelog/README.md#entry-files) and the compare view at the PR's head commit, and commits nothing. While the release is a draft, `fitness-release release-notes` writes its description from the entry files added since the previous tag.

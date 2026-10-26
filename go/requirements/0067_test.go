@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // branchReadOnce proves selection does not append a second metadata run.
@@ -52,10 +53,20 @@ func Test0067_2(t *testing.T) {
 // metadataPush runs real git hooks against a bare push destination and saved PR.
 func metadataPushRepo(t *testing.T, title string) (string, []string, replays) {
 	t.Helper()
+	return stalledPushRepo(t, title, 0, 0)
+}
+
+// stalledPushRepo is metadataPushRepo with GitHub stalling planWait seconds
+// before it answers the gate's Plan read and prWait before local-branch's
+// PR discovery.
+func stalledPushRepo(t *testing.T, title string, planWait, prWait int) (string, []string, replays) {
+	t.Helper()
 	repo := branchRepo(t, nil)
 	pr := branchAnswer(t, repo, title, pr0014(11))
-	saved := branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))
-	saved = append(saved, planView(t, 11, planBody("- [x] Write the tests."), []string{"Plan"}, "I approve"))
+	pr.Wait = prWait
+	plan := planView(t, 11, planBody("- [x] Write the tests."), []string{"Plan"}, "I approve")
+	plan.Wait = planWait
+	saved := branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"), plan)
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := fitness(t, repo, nil, "init")
 	sees(t, out, code, 0, "installed hooks")
@@ -81,6 +92,16 @@ func Test0067_3(t *testing.T) {
 	sees(t, out, code, 1, `"added one file"`, "local-branch", "failed")
 	branchReadOnce(t, rp)
 	pushAsked(t, rp, "11", "comments")
+	// The gate's read takes 25 of the push's 30 seconds, so a valid PR's
+	// 10-second discovery, well inside a deadline of its own, runs out.
+	repo, env, rp := stalledPushRepo(t, "test(app): add one file", 25, 10)
+	start := time.Now()
+	out, code = user(t, repo, env, "push", "origin", "HEAD:work")
+	sees(t, out, code, 1, "local-branch", "GitHub reads timed out")
+	if took := time.Since(start); took > 34*time.Second {
+		t.Errorf("push took %s, past the 30-second deadline", took)
+	}
+	planReadOnce(t, rp, "11")
 }
 
 func Test0067_9(t *testing.T) {

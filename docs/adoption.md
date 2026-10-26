@@ -130,7 +130,9 @@ Run `fitness init` to install the shared git hooks and point `core.hooksPath` at
 }
 ```
 
-Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
+Repo-specific build or tests go in an executable `.githooks/pre-commit.local`. It gets the budget of a check that declares none, so `timeoutMs` tunes it. Past that budget its process group is stopped and the commit is refused. The hooks also give each git call they make ten seconds.
+
+Offline or behind a proxy, the hooks honor `HTTPS_PROXY` and `NO_PROXY`, as `gh` and git do. When the GitHub API host does not answer a two-second probe, network checks and the push gate report info. The [CI guide](ci.md#network-waits) says more.
 
 ## Org-wide
 
