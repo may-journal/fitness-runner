@@ -13,7 +13,7 @@ runs
 ## Requirements
 
 - 0001.1
-    - Given Developer has every check passing
+    - Given Developer has every check passing, with docs whose front matter only another tool reads
         - When fitness runs
             - Then it reports every installed check green and exits 0
 - 0001.2

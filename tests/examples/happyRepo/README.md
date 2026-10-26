@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['.fitnessrc.json']
+title: App
 ---
 
 # App
