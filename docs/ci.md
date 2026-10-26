@@ -161,6 +161,10 @@ The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITN
 
 Upgrade or roll back with `--version VERSION`; `--version latest` is explicit opt-in. The action's `version` input follows the same rules. An exact action tag loads its installer; a major tag such as `v1` loads its newest release, and other refs load the latest.
 
+## Network waits
+
+Each network read first prints the host it asks and how long it waits. The latest release lookup and the hash manifest give up after five seconds. A failed lookup falls back to the recorded or newest installed version with one warning. The bundle download waits up to two minutes and prints its size before it starts, because it has no fallback.
+
 ## Release automation
 
 After main CI passes, Release Please groups conventional commits in a release PR and owns its version. Once merged, it creates a draft release and an explicit root `v` tag. `fitness-release release-pr` links each new [entry file](../go/cmd/fitness-check-changelog/README.md#entry-files) and the compare view at the PR's head commit, and commits nothing. While the release is a draft, `fitness-release release-notes` writes its description from the entry files added since the previous tag.

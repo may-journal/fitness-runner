@@ -38,3 +38,7 @@ Source: `go/internal/distribution/latest.go:45`
     - Given Developer has an exact release version, as the GitHub job passes
         - When I run `fitness-install --version` with it
             - Then it installs that release without a release lookup
+- 0088.6
+    - Given Developer has a stale recorded version and a releases API that never answers
+        - When I run `fitness-install --version latest`
+            - Then it names the host it asks, falls back to that version once five seconds pass, and exits 0

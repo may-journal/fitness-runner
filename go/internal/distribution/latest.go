@@ -72,18 +72,19 @@ func (i *Installer) fallBack(failure error, recorded string) (string, error) {
 	return version, err
 }
 
-// lookupLatest asks the releases API for the newest release tag, signed in
-// when a GitHub token is at hand.
+// lookupLatest asks the releases API for the newest release tag through the
+// lookup client, signed in when a GitHub token is at hand.
 func (i *Installer) lookupLatest(ctx context.Context) (string, error) {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, i.LatestURL, nil)
 	if err != nil {
 		return "", err
 	}
+	i.announce(i.Lookup, "the latest release", request)
 	request.Header.Set("Accept", "application/vnd.github+json")
 	if token := githubToken(ctx); token != "" {
 		request.Header.Set("Authorization", "Bearer "+token)
 	}
-	data, err := i.send(request, maxMetadataBytes)
+	data, err := read(i.Lookup, request, maxMetadataBytes)
 	if err != nil {
 		return "", err
 	}
