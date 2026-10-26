@@ -25,6 +25,9 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 		return nil, nil, err
 	}
 	checks, err := resolvePolicy(cfg, options, spec)
+	if err == nil {
+		err = newEnough(checks)
+	}
 	return checks, passthrough, err
 }
 

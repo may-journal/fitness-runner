@@ -63,6 +63,7 @@
     "blockquote",
     "blockquotes",
     "bodycheck",
+    "repocheck",
     "mdtemplate",
     "gitx",
     "stty",

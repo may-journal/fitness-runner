@@ -26,7 +26,7 @@ func New(version, hashes string, log io.Writer) (*Installer, error) {
 	if err != nil {
 		return nil, err
 	}
-	cache, err := cacheDirectory()
+	cache, err := CacheDir()
 	if err != nil {
 		return nil, err
 	}
