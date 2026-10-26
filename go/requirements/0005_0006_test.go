@@ -129,6 +129,21 @@ func Test0005_17(t *testing.T) {
 	}
 	out, code = stagedRun(t, sourced, map[string]string{pairedDoc: strings.Replace(requirementDoc("0001.1"), "sums asked for", "sums tried", 1)})
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
+	renamed0005(t)
+}
+
+// renamed0005 proves a doc renamed with its number and wording kept needs no
+// test change, while a renamed doc with new wording still needs one.
+func renamed0005(t *testing.T) {
+	t.Helper()
+	const renamed = "docs/requirements/0001-sums-numbers.md"
+	moved := map[string]string{pairedDoc: "", renamed: requirementDoc("0001.1")}
+	out, code := stagedRun(t, pairedRepo(), moved)
+	sees(t, out, code, 0)
+	out, code = prRun(t, pairedRepo(), moved, "docs(requirements): rename the sum requirement")
+	sees(t, out, code, 0)
+	out, code = stagedRun(t, pairedRepo(), map[string]string{pairedDoc: "", renamed: reworded(requirementDoc("0001.1"))})
+	sees(t, out, code, 1, renamed+" changed without its requirement test")
 }
 
 // withSource is doc with the Source line older docs end their Measurement

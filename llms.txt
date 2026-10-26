@@ -91,7 +91,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `mermaid-syntax`: Fails a mermaid diagram that would not render, so a broken diagram never reaches a reader.
 - `no-contrastive-reframing`: Flags the "not X, it's Y" reframing in markdown prose, where a sentence rejects a claim and then restates the real point.
 - `no-eslint-disable`: Fails any JS or TS source file that holds an ESLint disable directive, in file, block, `-line`, or `-next-line` form.
-- `no-plans-dir`: Guards the plans-to-Issues migration: it fails when any file exists under `docs/plans/`, because plans now live as `Plan`-labeled GitHub Issues, not checked-in files.
+- `no-plans-dir`: Keeps plans and temporary design work out of the repo.
 - `node-version`: Requires the machine's active Node version to satisfy the repo's `.nvmrc`.
 - `plan-structure`: Validates that a plan, a GitHub Issue body under the `Plan` label, follows the Plan issue template.
 - `plan-trailer`: Validates an optional `Plan #NN` commit trailer.
