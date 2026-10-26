@@ -176,6 +176,7 @@ func init() {
 		"boxes":              runBoxes,
 		"strip-front-matter": runStripFrontMatter,
 		"check":              runCheckCommand,
+		"config":             runConfig,
 	}
 }
 

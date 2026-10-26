@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"cmp"
+	_ "embed"
 	"fmt"
 	"regexp"
 	"slices"
@@ -18,30 +19,46 @@ import (
 // dupeConfig is the `dupeCheck` key of .fitnessrc.json. A zero CloseScore
 // leaves the close tier off.
 type dupeConfig struct {
-	WarnScore  float64 `json:"warnScore"`
+	// WarnScore is the likeness score, from 0 to 1, at which dupe-check
+	// notes that a new issue resembles an older one.
+	WarnScore float64 `json:"warnScore"`
+	// CloseScore is the likeness score at which dupe-check closes a new
+	// issue as a duplicate of an open one; unset leaves issues open.
 	CloseScore float64 `json:"closeScore"`
-	WindowDays int     `json:"windowDays"`
+	// WindowDays is how many days back dupe-check looks for older issues.
+	WindowDays int `json:"windowDays"`
 }
 
-// Defaults for the keys a repo leaves unset.
-const (
-	defaultWarnScore  = 0.4
-	defaultWindowDays = 90
-	// maxDupes is how many matches the note lists.
-	maxDupes = 3
-)
+// dupeFile is the part of .fitnessrc.json dupe-check reads.
+type dupeFile struct {
+	// DupeCheck holds dupe-check's scores and window.
+	DupeCheck dupeConfig `json:"dupeCheck"`
+}
+
+// dupeSource is this file, whose doc comments describe each dupeCheck key.
+//
+//go:embed dupes.go
+var dupeSource []byte
+
+// dupeDefaults holds the value each dupeCheck key takes when the config
+// file leaves it unset or at zero.
+var dupeDefaults = dupeFile{DupeCheck: dupeConfig{WarnScore: 0.4, WindowDays: 90}}
+
+// dupeSection is the dupeCheck keys, registered so the schema lists them.
+var dupeSection = conf.Register[dupeFile](dupeDefaults, dupeSource)
+
+// maxDupes is how many matches the note lists.
+const maxDupes = 3
 
 // loadDupeConfig reads the repo's dupeCheck key, filling in the defaults.
 func loadDupeConfig(root string) (dupeConfig, error) {
-	file, err := conf.LoadAs[struct {
-		DupeCheck dupeConfig `json:"dupeCheck"`
-	}](root)
+	file, err := dupeSection.Load(root)
 	cfg := dupeConfig{}
 	if file != nil {
 		cfg = file.DupeCheck
 	}
-	cfg.WarnScore = cmp.Or(cfg.WarnScore, defaultWarnScore)
-	cfg.WindowDays = cmp.Or(cfg.WindowDays, defaultWindowDays)
+	cfg.WarnScore = cmp.Or(cfg.WarnScore, dupeDefaults.DupeCheck.WarnScore)
+	cfg.WindowDays = cmp.Or(cfg.WindowDays, dupeDefaults.DupeCheck.WindowDays)
 	return cfg, err
 }
 

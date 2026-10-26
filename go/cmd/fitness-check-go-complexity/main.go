@@ -22,7 +22,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-const defaultMax = 5
+// defaultMax is the ceiling when the config sets none. golang.Defaults
+// holds it, so the config schema shows the same value.
+var defaultMax = golang.Defaults.Complexity.Max
 
 func Main() {
 	checkkit.Main(checkkit.Check{

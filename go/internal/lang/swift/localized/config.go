@@ -1,6 +1,7 @@
 package localized
 
 import (
+	_ "embed"
 	"fmt"
 	"regexp"
 	"strings"
@@ -10,17 +11,29 @@ import (
 
 // fileConfig is the check's own key in the repo's config file.
 type fileConfig struct {
+	// LocalizedText holds the localized-text check's options.
 	LocalizedText struct {
 		// Reference names the type views and tests read catalog entries
 		// through, such as Words.
 		Reference string `json:"reference"`
 		// Allow lists literals the check passes, each with its reason.
 		Allow []struct {
+			// Pattern is a regular expression a literal must match whole.
 			Pattern string `json:"pattern"`
-			Reason  string `json:"reason"`
+			// Reason says why the literal stays out of the catalog.
+			Reason string `json:"reason"`
 		} `json:"allow"`
 	} `json:"localizedText"`
 }
+
+// configSource is this file, whose doc comments describe each localizedText
+// key.
+//
+//go:embed config.go
+var configSource []byte
+
+// section is the localizedText keys, registered so the schema lists them.
+var section = conf.Register[fileConfig](fileConfig{}, configSource)
 
 // config is the loaded check config: how a failure names the reference,
 // and the compiled allow patterns.
@@ -37,7 +50,7 @@ const defaultReference = "String(localized:)"
 // no reason, or one that is no regular expression, is a problem the check
 // fails with.
 func loadConfig(root string) (config, []string, error) {
-	file, err := conf.LoadAs[fileConfig](root)
+	file, err := section.Load(root)
 	if err != nil || file == nil {
 		return config{reference: defaultReference}, nil, err
 	}
