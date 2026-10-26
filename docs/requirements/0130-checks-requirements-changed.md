@@ -12,8 +12,6 @@ changes to product code that also change a test and a requirement doc, or carry 
 
 changes to product code
 
-Source: `go/cmd/fitness-check-requirements-changed/main.go:42`
-
 ## Requirements
 
 - 0130.1

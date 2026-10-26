@@ -93,7 +93,8 @@ func Test0130_5(t *testing.T) {
 
 func Test0130_6(t *testing.T) {
 	t.Parallel()
-	out, code := rcStaged(t, goRepo(), map[string]string{"adder.go": ""})
+	named := strings.Replace(goRepo()[pairedDoc], "by hand.", "by hand, with `adder.go`.", 1)
+	out, code := rcStaged(t, with(goRepo(), map[string]string{pairedDoc: named}), map[string]string{"adder.go": ""})
 	sees(t, out, code, 1, "adder.go was deleted, leaving requirement doc "+pairedDoc+" and test adder_test.go unchanged; change or delete them with it, "+rcTrailerHint)
 }
 

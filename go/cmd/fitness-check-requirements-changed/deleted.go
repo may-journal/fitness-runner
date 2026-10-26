@@ -21,7 +21,7 @@ func leftBehind(root, file string, tests testSet, changed map[string]bool) []str
 }
 
 // namingDocs lists the requirement docs whose text names file by its whole
-// path, as a Measurement Source citing it does.
+// path.
 func namingDocs(root, file string) []string {
 	named := regexp.MustCompile(`(^|[^\w./-])` + regexp.QuoteMeta(file) + `\b`)
 	var docs []string
