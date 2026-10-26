@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
@@ -99,9 +100,10 @@ func localProgram(c repocheck.Check) (checkkit.Program, error) {
 	return checkkit.Program{Path: path}, nil
 }
 
-// asLocal applies the local check rules to a check's handshake. Every local
-// check shows scope local, and an older fitness than its minFitness is
-// noted. A folder check's handshake is optional: the folder names it, a
+// asLocal applies the local check rules to a check's handshake. A local
+// check that declares no scope shows scope local, and an older fitness than
+// its minFitness is noted. A folder check's handshake is optional: the
+// folder names it, a
 // handshake it does not answer is no info, and its README gives the summary
 // the handshake leaves out.
 func asLocal(r resolved) resolved {
@@ -110,7 +112,7 @@ func asLocal(r resolved) resolved {
 		return r
 	}
 	r.needs = repocheck.NeedsNewer(r.name, r.desc.MinFitness, version)
-	r.desc.Scope = "local"
+	r.desc.Scope = cmp.Or(r.desc.Scope, "local")
 	if c.Readme == "" {
 		return r
 	}
