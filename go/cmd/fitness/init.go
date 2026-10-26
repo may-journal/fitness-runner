@@ -1,17 +1,15 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/hooks"
 )
 
-// runInit installs the shared git hooks into .githooks and points git at them,
+// runInit points git at the hook folder the repo ships, .fitness-hooks, or
+// else installs the shared git hooks into .githooks and points git at them,
 // so a consumer repo adopts the canonical hooks by running `fitness init`
 // rather than copying files.
 func runInit(_ []string) int {
@@ -19,6 +17,9 @@ func runInit(_ []string) int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 1
+	}
+	if shippedHooksDir(root) == syncedHooksDir {
+		return useSyncedHooks(root)
 	}
 	if err := installHooks(root); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness init: "+err.Error())
@@ -28,14 +29,25 @@ func runInit(_ []string) int {
 	return 0
 }
 
+// useSyncedHooks points core.hooksPath at the .fitness-hooks folder the repo
+// ships and writes nothing, since the org sync owns those files.
+func useSyncedHooks(root string) int {
+	if err := setHooksPath(root, syncedHooksDir); err != nil {
+		fmt.Fprintln(os.Stderr, "fitness init: "+err.Error())
+		return 1
+	}
+	fmt.Println("fitness init: set core.hooksPath to " + syncedHooksDir + ", which the repo ships")
+	return 0
+}
+
 // installHooks sets core.hooksPath so git runs the hooks, then writes every
 // embedded hook into root/.githooks. Setting the path first means a folder
 // that is not a git repo is refused before anything is written.
 func installHooks(root string) error {
-	if out, err := exec.Command("git", "-C", root, "config", "core.hooksPath", ".githooks").CombinedOutput(); err != nil {
-		return errors.New(strings.TrimSpace(string(out)))
+	if err := setHooksPath(root, installedHooksDir); err != nil {
+		return err
 	}
-	dir := filepath.Join(root, ".githooks")
+	dir := filepath.Join(root, installedHooksDir)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}

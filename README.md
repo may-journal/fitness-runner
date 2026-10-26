@@ -109,7 +109,7 @@ Commands:
 
 ## Git hooks
 
-In a consumer repo, run `fitness init` once — it installs the shared hooks as one-line shims and points Git at them.
+In a consumer repo, run `fitness init` once. It points Git at the `.fitness-hooks` folder the repo ships, or else installs the shared hooks as one-line shims in `.githooks`. A hook repairs a clone whose `core.hooksPath` still names an old folder in the repo.
 
 - commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message being written.
 - pre-commit: checks the staged files, then a repo's own `.githooks/pre-commit.local`. It skips `semantic-commit` when a commit-msg hook will judge the new message.
