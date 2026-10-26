@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.1630
 
 - Perf: `architecture-components` indexes owners by folder once, so it takes 0.05 s on fitness-runner, down from 0.10 s.

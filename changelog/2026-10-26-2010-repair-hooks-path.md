@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json', '../docs/requirements/0122-hooks-hooks-path.md']
----
-
 ### 2026.10.26.2010
 
 - Fix: `fitness hook` repairs a stale `core.hooksPath` to the hook folder HEAD ships, and prints one line naming the old and new path.

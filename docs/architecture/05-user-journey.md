@@ -1,8 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-journey']
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # User Journey
 
 ## Legend
@@ -162,7 +157,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
 | 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |
 | 32  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |
-| 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness-only front matter no check reads; other keys stay.           |
+| 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness keys no check reads; other keys stay.                        |
 | 34  | `fitness list`.                     | Action  | An agent learns every check, its scope, and whether this repo runs it, from the binary. |
 | 35  | `fitness explain <check>`.          | Action  | An agent reads why a check exists and the keys it reads, generated from its code comments. |
 | 36  | `fitness docs [topic]`.             | Action  | An agent reads the protocol, config and GitHub commands from the binary, as the code documents them. |

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0003 — Every workflow provides native GitHub feedback
 
 ## Context

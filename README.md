@@ -1,8 +1,3 @@
----
-# Top-level project config
-relatedConfigurations: ['.fitnessrc.json']
----
-
 # fitness
 
 Zero-dependency Go fitness runner. It runs checks for local dev, CI/CD, and GenAI workflows to keep code aligned with your rules and quality bar.
@@ -85,7 +80,7 @@ Commands:
   fitness boxes <report.json> <page.html>
       Draws a --json report as an HTML box diagram.
   fitness strip-front-matter
-      Removes front matter that holds only fitness keys from tracked .md files.
+      Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
   fitness branch-check
       Judges this branch's PR and the issues it closes locally, posting nothing.
   fitness pr-check

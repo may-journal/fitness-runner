@@ -1,8 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-components']
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # Components
 
 ```mermaid
@@ -155,6 +150,6 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 | `fitness plan-check`  | `issue-check` for Plan issues only.                                                  | Repos on plan-check-reusable keep working.            |
 | `fitness close-check` | Judges a closed issue with `issue-checklist`; its after-effect reopens it once.       | The close check workflows run one step.               |
 | `fitness dupe-check`  | Scores an issue against older ones; its after-effect keeps one note and may close it. | The dupe check workflows run one step.                |
-| `fitness strip-front-matter` | Removes front matter holding only fitness keys from tracked Markdown and lists each file. | A repo drops the front matter no check reads now. |
+| `fitness strip-front-matter` | Deletes the fitness keys from tracked Markdown's front matter, drops a block left empty, and lists each file. | A repo drops the keys no check reads now. |
 
 `go/internal/metadata/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. For `issue-check`, `go/internal/metadata/kinds.go` reads each kind from `.github/ISSUE_TEMPLATE` and adds the rules a kind label names. The local-branch check shares their judgments. Only after-effects write to GitHub, through the `gh` CLI.

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0041 Checks Mermaid Diagram Table Gap
 
 ## Why

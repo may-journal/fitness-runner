@@ -44,7 +44,8 @@ func NewestTag(root, ref string) (string, error) {
 
 // StagedReleasedEdits names each entry file the index edits or deletes
 // that the newest release tag reachable from HEAD already holds, with that
-// tag. A repo without release tags has none.
+// tag. A repo without release tags has none. An edit that only drops front
+// matter leaves the published notes as they were, so it is not named.
 func StagedReleasedEdits(root string) ([]string, error) {
 	tag, err := headReleaseTag(root)
 	if err != nil || tag == "" {
@@ -52,11 +53,18 @@ func StagedReleasedEdits(root string) ([]string, error) {
 	}
 	var errs []string
 	for _, p := range entryPaths(gitOut(root, "diff", "--cached", "--name-only", "--no-renames", "--diff-filter=MD", "--", EntryDir)) {
-		if exec.Command("git", "-C", root, "cat-file", "-e", tag+":"+p).Run() == nil {
+		if releasedEdit(root, tag, p) {
 			errs = append(errs, ReleasedEditError(p, tag))
 		}
 	}
 	return errs, nil
+}
+
+// releasedEdit reports whether the staged change to entry file p, which
+// tag may hold, changes notes that tag already published.
+func releasedEdit(root, tag, p string) bool {
+	return exec.Command("git", "-C", root, "cat-file", "-e", tag+":"+p).Run() == nil &&
+		!DropsOnlyFrontMatter(gitOut(root, "diff", "--cached", "--no-renames", "--", p))
 }
 
 // headReleaseTag is the newest release tag reachable from HEAD, or "" before

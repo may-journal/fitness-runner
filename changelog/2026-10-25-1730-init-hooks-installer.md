@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json', '../go/internal/hooks/files/pre-commit', '../docs/requirements/0009-hooks-git-hooks.md']
----
-
 ### 2026.10.25.1730
 
 - Fix: hooks from `fitness init` run the latest fitness through `fitness-install` in `$FITNESS_INSTALL_DIR`, so no `fitness` on the PATH is needed.

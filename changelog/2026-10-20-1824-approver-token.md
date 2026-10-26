@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1824
 
 - Fix: Release approve approves as a machine user from `APPROVER_TOKEN`, since an App's approval does not count toward the required review.

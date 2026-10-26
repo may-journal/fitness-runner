@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.1931
 
 - Fix: issue-check and plan-check count a verdict marker only when the fitness bot wrote it, checked through the shared `BotLogin`.

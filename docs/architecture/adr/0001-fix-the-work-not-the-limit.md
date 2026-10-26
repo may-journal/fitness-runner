@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0001 — Fix the work, not the limit: checks earn their timeout budget
 
 ## Context

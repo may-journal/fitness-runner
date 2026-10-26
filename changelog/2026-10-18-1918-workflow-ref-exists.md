@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.1918
 
 - Feat: `workflow-ref-exists` fails a may-journal `uses:` path missing at its tag or sha, naming the file, line, path, and ref.

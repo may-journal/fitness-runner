@@ -1,7 +1,6 @@
 ---
 name: add-requirements
 description: Give a project stated requirements, each proven by one test that runs the real product the way a user does. Use when adopting the method in a new project, adding a component to it, or reviewing tests for coverage of stated behavior.
-relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
 # Add requirements proven by real runs

@@ -177,7 +177,7 @@ func Test0006_11(t *testing.T) {
 	sourced := withSource(doc, "`gone.go:99`")
 	repo := example(t, "happyRepo", with(pairedRepo(), map[string]string{pairedDoc: sourced}))
 	out, code := fitness(t, repo, nil, "requirements")
-	sees(t, out, code, 0, pairedDoc+":19: delete this `Source:` line, or run `fitness requirements --fix`")
+	sees(t, out, code, 0, pairedDoc+":15: delete this `Source:` line, or run `fitness requirements --fix`")
 	out, code = fitness(t, repo, nil, "requirements", "--fix")
 	sees(t, out, code, 0)
 	if got, err := os.ReadFile(filepath.Join(repo, pairedDoc)); err != nil || string(got) != doc {

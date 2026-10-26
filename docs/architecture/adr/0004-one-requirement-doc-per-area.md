@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.fitnessrc.json']
----
-
 # 0004 — One requirement doc per user-facing area
 
 ## Context

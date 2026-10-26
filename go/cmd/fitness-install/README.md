@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../action.yml']
----
-
 # fitness-install
 
 Installs a pinned release and runs Fitness without compiling consumer code. Release publishing embeds the version and the SHA-256 hashes of all four bundles. CI downloads and invokes the native executable directly.

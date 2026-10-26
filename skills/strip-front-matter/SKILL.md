@@ -1,21 +1,22 @@
 ---
 name: strip-front-matter
-description: Remove the fitness front matter (fitnessFunctions, relatedConfigurations) from a repo's Markdown files, keeping every body and any front matter other tools need. Use when a repo adopts optional front matter or asks to drop the old fitness keys.
+description: Delete the old fitness keys (fitnessFunctions, relatedConfigurations) from a repo's Markdown files, keeping every body and any front matter other tools need. Use when a repo still carries them, or before adding a Markdown file.
 ---
 
 # Strip fitness front matter
 
-Front matter is optional, as [docs/checks.md](../../docs/checks.md) says. No check reads `fitnessFunctions` or `relatedConfigurations` any more, so a repo can drop those blocks.
+A Markdown file needs no front matter, as [docs/checks.md](../../docs/checks.md) says. No check reads `fitnessFunctions` or `relatedConfigurations`, so never add either to a new file, and drop any that remain.
 
 ## Rule
 
 Run `fitness strip-front-matter` from the repo root, in your own work tree, then commit the result with a changelog entry. Do not edit the blocks by hand.
 
 - It reads every tracked `.md` file: docs, changelog entries, templates and READMEs.
-- A block holding only fitness keys goes, plain or inside the PR template's HTML comment. The body below it stays byte for byte.
-- A block that also holds another key stays whole, and the output names that key.
-- Issue templates and `SKILL.md` files keep theirs, since GitHub and agents read them.
-- It prints `stripped <file>` or `kept <file>: …` per file, then a count. Review `git diff` before you commit.
+- It deletes both keys from each block, plain or inside the PR template's HTML comment.
+- A block left with no key goes, and the body below it stays byte for byte.
+- Other keys stay, such as an issue template's `labels` or a skill's `description`.
+- It prints `stripped <file>` per changed file, naming the keys a block keeps, then a count.
+- Review `git diff` before you commit.
 
 ## Why
 
@@ -27,8 +28,8 @@ A tool, not a hand edit, keeps every body untouched and every other tool's keys 
 $ fitness strip-front-matter
 stripped docs/guide.md
 stripped changelog/2026-10-11-0900-one-change.md
-kept .github/ISSUE_TEMPLATE/bug.md: front matter also holds name, about, title, labels, assignees
-fitness strip-front-matter: stripped 2 files, kept 1
+stripped .github/ISSUE_TEMPLATE/bug.md: front matter keeps name, about, title, labels, assignees
+fitness strip-front-matter: stripped 3 files
 ```
 
 Then run `fitness` once. The [changelog](../../go/cmd/fitness-check-changelog/README.md), [doc-template](../../go/cmd/fitness-check-doc-template/README.md) and [release-changelog](../../go/cmd/fitness-check-release-changelog/README.md) checks pass with or without front matter.

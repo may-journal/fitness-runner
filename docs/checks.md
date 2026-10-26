@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Checks
 
 Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`). The [fitness skill](../skills/fitness/SKILL.md) shows how to read them:
@@ -113,7 +109,7 @@ Checks judge every tracked file; only untracked files stay out, and outside git 
 
 ## Front matter
 
-Front matter is optional. No check requires it, and the changelog and release tools read files with or without it. The [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) removes a repo's fitness-only front matter.
+A Markdown file needs no front matter. Never add `fitnessFunctions` or `relatedConfigurations`: no check reads them, and each check finds its files by path. `fitness strip-front-matter` deletes both keys where they remain, as the [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) shows. Front matter another tool reads, such as an issue template's `name` and `labels`, stays.
 
 ## Shared configs
 

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.26.0200
 - Feat: fitness ships the five architecture view templates, so `doc-template` judges every repo's views against them even without a copy.
 - Feat: `doc-template` fails a diagram or legend whose Mermaid type or direction differs from its template's, such as a flowchart in 03.

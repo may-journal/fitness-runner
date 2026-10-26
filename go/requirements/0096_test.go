@@ -47,13 +47,13 @@ func Test0096_1(t *testing.T) {
 
 func Test0096_2(t *testing.T) {
 	t.Parallel()
-	bug := "---\nrelatedConfigurations: ['../../.fitnessrc.json']\nname: Bug\nlabels: Bug\n---\n\n## Steps\n"
-	skill := "---\nname: tidy\ndescription: Tidy docs.\nrelatedConfigurations: ['../../.fitnessrc.json']\n---\n\n# Tidy\n"
+	bug := "---\nrelatedConfigurations: ['../../.fitnessrc.json']\nname: Bug\nlabels: Bug\n\n---\n\n## Steps\n"
+	skill := "---\nname: tidy\ndescription: Tidy docs.\nfitnessFunctions:\n  - prose-budget\nrelatedConfigurations: ['../../.fitnessrc.json']\n---\n\n# Tidy\n"
 	repo, out, code := stripRun(t, map[string]string{".github/ISSUE_TEMPLATE/bug.md": bug, "skills/tidy/SKILL.md": skill})
-	sees(t, out, code, 0, "kept .github/ISSUE_TEMPLATE/bug.md: front matter also holds name, labels",
-		"kept skills/tidy/SKILL.md: front matter also holds name, description")
-	holds(t, repo, ".github/ISSUE_TEMPLATE/bug.md", bug)
-	holds(t, repo, "skills/tidy/SKILL.md", skill)
+	sees(t, out, code, 0, "stripped .github/ISSUE_TEMPLATE/bug.md: front matter keeps name, labels",
+		"stripped skills/tidy/SKILL.md: front matter keeps name, description")
+	holds(t, repo, ".github/ISSUE_TEMPLATE/bug.md", "---\nname: Bug\nlabels: Bug\n\n---\n\n## Steps\n")
+	holds(t, repo, "skills/tidy/SKILL.md", "---\nname: tidy\ndescription: Tidy docs.\n---\n\n# Tidy\n")
 }
 
 func Test0096_3(t *testing.T) {
@@ -63,7 +63,7 @@ func Test0096_3(t *testing.T) {
 	ruled := "---\n\nA note set between two rules.\n\n---\n\n# Ruled\n"
 	repo, out, code := stripRun(t, map[string]string{"plain.md": plain, "docs/notes.md": titled, "docs/ruled.md": ruled})
 	// happyRepo's own README.md and CHANGELOG.md are the two files stripped.
-	sees(t, out, code, 0, "fitness strip-front-matter: stripped 2 files, kept 0")
+	sees(t, out, code, 0, "fitness strip-front-matter: stripped 2 files\n")
 	if strings.Contains(out, "plain.md") || strings.Contains(out, "notes.md") {
 		t.Errorf("the output lists a file it left alone:\n%s", out)
 	}

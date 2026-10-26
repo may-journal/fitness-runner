@@ -1,7 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-components']
----
-
 # Components
 
 <!-- Start docs/architecture/03-components.md from this template. One `C4Component` diagram, the only form this level takes: each component inside the `Container_Boundary` of the 02 container it splits, named for the folder it owns, with its technology. Its kinds are Person, `Container_Boundary`, Component and `System_Ext`, with their Db and Queue forms. Every product source belongs to exactly one component. Each element carries the one `UpdateElementStyle` line of its kind below: slate people, amber components, grey externals, white text, and no style on the boundary. -->

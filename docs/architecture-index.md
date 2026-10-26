@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Architecture
 
 C4 model for fitness-runner. Read [architecture/](architecture/) in order — system context, then containers, components, and code.

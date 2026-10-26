@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../../.goreleaser-bundles.yml']
----
-
 # 0011 — Skills ship in the bundle
 
 ## Context

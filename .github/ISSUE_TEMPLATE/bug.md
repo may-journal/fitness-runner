@@ -1,5 +1,4 @@
 ---
-relatedConfigurations: ['../../.fitnessrc.json']
 name: Bug
 about: Something that does not work as it should, with how to see it.
 title: "[Bug] Short name of the problem"

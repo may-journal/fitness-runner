@@ -1,6 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
 <!-- cspell:ignore temurin sdkmanrc -->
 
 # Adoption

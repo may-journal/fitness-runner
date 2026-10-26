@@ -144,3 +144,17 @@ func Test0019_21(t *testing.T) {
 	out, code := fitness(t, repo, nil, "changelog-updated")
 	sees(t, out, code, 1, released+" shipped in v1.0.0, so its notes are published; leave it as it is and add a new changelog/<yyyy-mm-dd-HHMM>-<change>.md entry file instead")
 }
+
+func Test0019_22(t *testing.T) {
+	t.Parallel()
+	const released = "changelog/2026-10-01-0900-old-feature.md"
+	item := "Feat: added old feature."
+	repo := example(t, "happyRepo", map[string]string{released: entryFileText("2026.10.01.0900", item)})
+	git(t, repo, "tag", "v1.0.0")
+	files := changelogStagedEntry(changelogStamp, "Feat: added runner feature for validation.")
+	files[released] = bareEntryText("2026.10.01.0900", item)
+	write(t, repo, files)
+	git(t, repo, "add", "-A")
+	out, code := fitness(t, repo, nil, "changelog-updated")
+	sees(t, out, code, 0, "All 1 checks passed")
+}

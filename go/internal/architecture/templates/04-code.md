@@ -1,7 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-code']
----
-
 # Code
 
 <!-- Start docs/architecture/04-code.md from this template. One `classDiagram`, the only form this level takes: the types and functions a reader needs, each labeled with its number and its name in the code, and each arrow a call or reference the code makes, labeled with a letter. Each class carries the one violet style line below, with white text; `classDef` and `:::` color nothing here. -->

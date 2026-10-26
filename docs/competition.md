@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Competition
 
 Landscape for AI-assisted dev quality: who owns rules/skills context vs deterministic enforcement vs commodity checks. See [wardley.md](./wardley.md) for the strategic map.

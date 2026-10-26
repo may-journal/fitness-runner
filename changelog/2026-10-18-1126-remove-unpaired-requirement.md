@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.1126
 
 - Fix: the `requirements` check no longer accepts an `Unpaired-Requirement` commit trailer; a changed requirement test or doc always fails without its partner.

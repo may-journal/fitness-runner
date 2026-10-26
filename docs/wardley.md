@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Wardley map
 
 Context layer for AI-assisted development. Requires Mermaid 11.14+ (`wardley-beta`).
