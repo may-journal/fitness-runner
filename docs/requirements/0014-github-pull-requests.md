@@ -42,3 +42,11 @@ Source: `go/internal/metadata/blobs.go:110`
     - Given Developer has a PR closing an inaccessible issue
         - When I check it locally and through Actions
             - Then both fail naming that issue
+- 0014.7
+    - Given Developer has fixed a PR's title and body after its check failed
+        - When Actions re-runs pr-check on the saved event
+            - Then it judges the title and body GitHub holds now, and passes
+- 0014.8
+    - Given Developer has a PR check whose runner cannot reach GitHub
+        - When pr-check runs
+            - Then it warns and judges the title and body the event carries

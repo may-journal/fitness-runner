@@ -23,6 +23,7 @@ import (
 	"os"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -212,7 +213,27 @@ func prTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, erro
 	if ev.name == "workflow_dispatch" {
 		return gh.OpenPRs()
 	}
-	return eventTarget(ev.name, "pull_request", ev.PullRequest)
+	if ev.PullRequest == nil {
+		return eventTarget(ev.name, "pull_request", nil)
+	}
+	t, err := livePR(*ev.PullRequest, gh)
+	return []target{t}, err
+}
+
+// livePR is the event's PR with the title and body GitHub holds now, since
+// "Re-run job" replays the payload's snapshot of them. When GitHub cannot be
+// reached, it keeps the payload's, with a warning.
+func livePR(t target, gh aftereffect.Client) (target, error) {
+	now, err := gh.PR(t.Number)
+	if checkkit.IsInternal(err) {
+		fmt.Fprintf(os.Stderr, "fitness pr-check: cannot reach GitHub for PR #%d, so it judges the title and body the event carries: %v\n", t.Number, err)
+		return t, nil
+	}
+	if err != nil {
+		return t, fmt.Errorf("read PR #%d: %w", t.Number, err)
+	}
+	t.Title, t.Body = now.Title, now.Body
+	return t, nil
 }
 
 // eventTarget is the one target an event carries.

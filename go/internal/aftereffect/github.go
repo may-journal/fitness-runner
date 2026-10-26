@@ -341,6 +341,17 @@ func (g Client) readIssue(n int) (string, []string, error) {
 	return v.Body, v.Labels, err
 }
 
+// PR reads pull request n's number, title and body as GitHub holds them now.
+func (g Client) PR(n int) (Target, error) {
+	out, err := g.api("--jq", "{number, title, body: (.body // \"\")}", "pulls/"+strconv.Itoa(n))
+	if err != nil {
+		return Target{}, err
+	}
+	var t Target
+	err = json.Unmarshal(out, &t)
+	return t, err
+}
+
 func (g Client) OpenPRs() ([]Target, error) {
 	out, err := g.api("--paginate", "--jq", ".[] | {number, title, body: (.body // \"\")}", "pulls?state=open&per_page=100")
 	if err != nil {

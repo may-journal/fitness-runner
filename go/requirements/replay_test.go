@@ -89,8 +89,49 @@ func replay(name string, args []string) int {
 			return r.Exit
 		}
 	}
+	if pr, ok := eventPR(name, call); ok {
+		fmt.Println(pr)
+		return 0
+	}
 	fmt.Fprintf(os.Stderr, "%s stand-in: no saved response for: %s\n", name, call)
 	return 97
+}
+
+// eventPR answers a gh read of the pull request the Actions event carries,
+// when no saved response does, with the number, title and body the event
+// holds: GitHub holds the PR as the event shows it unless a test saves
+// another answer, as a re-run of a stale event does.
+func eventPR(name, call string) (string, bool) {
+	pr := savedEventPR()
+	if name != "gh" || pr == nil {
+		return "", false
+	}
+	path := fmt.Sprintf("repos/%s/pulls/%d", os.Getenv("GITHUB_REPOSITORY"), pr.Number)
+	if !strings.HasPrefix(call, "api ") || !strings.HasSuffix(call, " "+path) {
+		return "", false
+	}
+	out, err := json.Marshal(pr)
+	return string(out), err == nil
+}
+
+// eventPRFields are the pull request fields a gh read of one PR returns.
+type eventPRFields struct {
+	Number int    `json:"number"`
+	Title  string `json:"title"`
+	Body   string `json:"body"`
+}
+
+// savedEventPR is the pull request the saved Actions event carries, or nil
+// when there is no event or it carries none.
+func savedEventPR() *eventPRFields {
+	var ev struct {
+		PR *eventPRFields `json:"pull_request"`
+	}
+	raw, err := os.ReadFile(os.Getenv("GITHUB_EVENT_PATH"))
+	if err != nil || json.Unmarshal(raw, &ev) != nil {
+		return nil
+	}
+	return ev.PR
 }
 
 // writeFiles writes each file a saved answer leaves behind, such as a test
