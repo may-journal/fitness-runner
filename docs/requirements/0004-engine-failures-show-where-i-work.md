@@ -31,7 +31,7 @@ Source: `go/cmd/fitness/ci.go:139`
         - When fitness reports it in GitHub Actions
             - Then it adds no annotations
 - 0004.4
-    - Given Developer has a finding with a percent sign or line break
+    - Given Developer has a finding in a file whose name has a percent sign, with its fix on a second line
         - When fitness annotates it
             - Then it arrives intact as one annotation
 - 0004.5

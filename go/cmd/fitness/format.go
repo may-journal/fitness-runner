@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"slices"
-	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/render"
@@ -25,27 +24,11 @@ var formatJSON bool
 // selection nor a single check's passthrough sees it. Only json is a format;
 // table, the default, is accepted too.
 func takeFormat(argv []string) (json bool, rest []string, err error) {
-	formats, rest := splitFlag(argv, formatFlag)
-	if len(formats) == 0 {
-		return false, rest, nil
-	}
-	if len(formats) > 1 || !slices.Contains([]string{"json", "table"}, formats[0]) {
+	format, rest, err := oneValueFlag(argv, formatFlag, "json")
+	if err != nil || (format != "" && !slices.Contains([]string{"json", "table"}, format)) {
 		return false, nil, errors.New("use --format=json or --format=table once")
 	}
-	return formats[0] == "json", rest, nil
-}
-
-// splitFlag pulls every `flag=value`, or a bare flag with an empty value,
-// out of argv, returning the values and the rest in order.
-func splitFlag(argv []string, flag string) (values, rest []string) {
-	for _, a := range argv {
-		if value, ok := strings.CutPrefix(a, flag+"="); ok || a == flag {
-			values = append(values, value)
-			continue
-		}
-		rest = append(rest, a)
-	}
-	return values, rest
+	return format == "json", rest, nil
 }
 
 // ready fails a run when fitness has no checks, and otherwise takes the
@@ -87,8 +70,9 @@ type checkReport struct {
 }
 
 // printJSON prints the run's results as one JSON object on stdout, when
-// the run asked for JSON.
-func printJSON(checks []resolved, outcomes []outcome, rows []render.Row, totals render.Totals) {
+// the run asked for JSON. found holds each row's findings, as allFindings
+// gives them.
+func printJSON(rows []render.Row, found [][]checkkit.Finding, totals render.Totals) {
 	if !formatJSON {
 		return
 	}
@@ -96,7 +80,7 @@ func printJSON(checks []resolved, outcomes []outcome, rows []render.Row, totals 
 	for i, row := range rows {
 		report.Checks[i] = checkReport{
 			Name: row.Name, Status: status(row), FilesChecked: row.FilesChecked, Ms: row.Ms,
-			Errors: nonNil(row.Errors), Info: row.Info, Findings: findingsFor(checks[i].name, outcomes[i], row),
+			Errors: nonNil(row.Errors), Info: row.Info, Findings: found[i],
 		}
 	}
 	out, err := json.MarshalIndent(report, "", "  ")
@@ -116,6 +100,16 @@ func status(row render.Row) string {
 		return "info"
 	}
 	return "passed"
+}
+
+// allFindings returns each row's findings, made once for every output that
+// shows them: the JSON, the job summary and the CI annotations.
+func allFindings(checks []resolved, outcomes []outcome, rows []render.Row) [][]checkkit.Finding {
+	found := make([][]checkkit.Finding, len(rows))
+	for i, row := range rows {
+		found[i] = findingsFor(checks[i].name, outcomes[i], row)
+	}
+	return found
 }
 
 // findingsFor returns a check's findings for the JSON output, as

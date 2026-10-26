@@ -277,9 +277,10 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	rows, totals := summarize(checks, outcomes)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
-	printJSON(checks, outcomes, rows, totals)
+	found := allFindings(checks, outcomes, rows)
+	printJSON(rows, found, totals)
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
-	code := finish(rows, perf, totals)
+	code := finish(rows, found, perf, totals)
 	return withPerfReport(perfPath, perf, code)
 }
 

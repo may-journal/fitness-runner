@@ -120,12 +120,13 @@ func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []s
 	rows, totals := summarize(checks, outcomes)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
-	printJSON(checks, outcomes, rows, totals)
+	found := allFindings(checks, outcomes, rows)
+	printJSON(rows, found, totals)
 	out := humanOut(totals)
 	listSkipped(out, "needs files", skipped)
 	listSkipped(out, "does not apply to this text", notApplying)
 	perf := perfFor(wantsPerf(req.perfPath), checks, outcomes, rows, totals.Ms)
-	return withPerfReport(req.perfPath, perf, finish(rows, perf, totals))
+	return withPerfReport(req.perfPath, perf, finish(rows, found, perf, totals))
 }
 
 // applying drops the checks that passed inert with zero files, such as

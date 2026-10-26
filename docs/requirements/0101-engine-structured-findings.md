@@ -26,3 +26,7 @@ Source: `go/cmd/fitness/format.go:124`
     - Given AI agent has a `--format` flag naming no known format
         - When fitness runs with it
             - Then it names the problem and exits 1
+- 0101.4
+    - Given AI agent has a repo with a misspelled word
+        - When fitness runs in GitHub Actions
+            - Then the annotation and the job summary give the finding's file, line, rule, fix and explain command, as `--format=json` does

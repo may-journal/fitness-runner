@@ -1,3 +1,5 @@
+// cspell:ignore zorbleflux
+
 package requirements
 
 import (
@@ -110,4 +112,14 @@ func Test0101_3(t *testing.T) {
 	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", nil), nil, "--policy=external", "--format=yaml")
 	sees(t, out, code, 1, "use --format=json or --format=table once")
+}
+
+func Test0101_4(t *testing.T) {
+	t.Parallel()
+	out, code, summary := inActions(t, example(t, "happyRepo", misspelled(1)))
+	sees(t, out, code, 1, "::error file=README.md,line=9,col=5,title=cspell (unknown-word)::Unknown word (zorbleflux)"+
+		"%0AFix: correct the spelling, or add the word to the words list in cspell.json%0AWhy: fitness explain cspell")
+	sees(t, summary, code, 1, "- README.md:9:5 - Unknown word (zorbleflux)\n"+
+		"  - Fix: correct the spelling, or add the word to the words list in cspell.json\n"+
+		"  - Why: fitness explain cspell\n")
 }
