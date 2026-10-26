@@ -96,7 +96,7 @@ Each row links the check's README and gives the first sentence of its Go package
 
 `fitness list` names every check this repo can run, built-in or local, in run order. Each row gives the check's summary, its scope, its time budget, and whether the repo's config enables it. `fitness list --json` gives the same fields for an agent; `fitness check --list` still prints the bare built-in names.
 
-A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../checks/README.md) fails when that file is stale.
+A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../fitness/generated/README.md) fails when that file is stale.
 
 ## Explain a check
 

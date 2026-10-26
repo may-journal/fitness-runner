@@ -1,5 +1,7 @@
 # 0005 — Swift references come from a parser in the check
 
+Check: [fitness/adr-0005](../../../fitness/adr-0005/README.md)
+
 ## Context
 
 The components check scanned top-level Swift declarations. It missed members, extensions, and names in strings, and dropped every overload. A compiler index needs each app's SDK and packages, which Linux runners lack.

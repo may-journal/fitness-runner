@@ -1,0 +1,11 @@
+#!/bin/sh
+# fitness/adr-0005/check: the Swift reference parser is plain Go, with no
+# dependency, cgo or Swift toolchain.
+. fitness/_lib/verdict.sh
+judged
+grep -q '^require' go/go.mod && fail "go/go.mod: requires a module; the Swift parser builds with the standard library alone (ADR 0005, decision 1)"
+for f in $(git ls-files 'go/internal/lang/swift/views/*.go'); do
+  judged
+  grep -qE 'import "C"|exec\.Command\("(swift[a-z-]*|xcrun)"' "$f" && fail "$f: uses cgo or a Swift toolchain; parse Swift in Go, so the check runs offline everywhere (ADR 0005, decisions 1 and 5)"
+done
+finish

@@ -1,0 +1,13 @@
+#!/bin/sh
+# fitness/adr-0011/check: each skill is a kebab-case folder with a
+# SKILL.md named for it, and every bundle carries the skills.
+. fitness/_lib/verdict.sh
+for d in $(git ls-files 'skills/*' | cut -d/ -f1-2 | sort -u); do
+  judged
+  name=${d#skills/}
+  printf '%s\n' "$name" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$' || fail "$d: name a skill folder in kebab case (ADR 0011, decision 1)"
+  grep -qs "^name: $name\$" "$d/SKILL.md" || fail "$d: hold a SKILL.md whose name is $name (ADR 0011, decision 1)"
+done
+judged
+grep -qF 'skills/**/*' .goreleaser-bundles.yml || fail ".goreleaser-bundles.yml: carry the skills folder in every bundle (ADR 0011, decision 3)"
+finish

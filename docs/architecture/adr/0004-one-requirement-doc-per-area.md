@@ -1,5 +1,7 @@
 # 0004 — One requirement doc per user-facing area
 
+Check: [fitness/adr-0004](../../../fitness/adr-0004/README.md)
+
 ## Context
 
 PR #263 added doc 0066 for a doc-template change, though 0023 already stated that check's promise. Two docs for one area drift apart, and readers miss half the rules.

@@ -1,5 +1,7 @@
 # 0006 — Biome stands in for ESLint and Prettier
 
+Check: [fitness/adr-0006](../../../fitness/adr-0006/README.md)
+
 ## Context
 
 A TypeScript repo that lints and formats with Biome failed the eslint and prettier checks for missing tools it does not want. Skipping both checks would leave its code with no lint or format check.

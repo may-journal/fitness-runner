@@ -23,6 +23,10 @@ C4Component
         Component(tool, "11 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
+    Container_Boundary(own, "Repo checks (fitness/)") {
+        Component(repo, "12 Repo check", "Go and shell", "fitness")
+    }
+
     System_Ext(peers, "9 Peer tools", "each language module's formatters, linters and test runners")
     System_Ext(git, "10 git")
 
@@ -39,6 +43,8 @@ C4Component
     Rel(main, kit, "K")
     Rel(tool, kit, "L")
     Rel(main, check, "M")
+    Rel(execute, repo, "N")
+    Rel(repo, kit, "O")
 
     UpdateElementStyle(developer, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
     UpdateElementStyle(main, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
@@ -49,6 +55,7 @@ C4Component
     UpdateElementStyle(check, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(kit, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(tool, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(repo, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(peers, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
     UpdateElementStyle(git, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
@@ -83,6 +90,7 @@ Numbers on nodes and letters on arrows match the callout table.
 | 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
+| 12  | A check in the repo's `fitness/` folder: a shell script, or a Go program on the check SDK. | A repo writes its own rules without forking fitness. |
 | A   | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
 | B   | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
 | C   | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
@@ -96,6 +104,8 @@ Numbers on nodes and letters on arrows match the callout table.
 | K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
 | M   | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
+| N   | The pool runs each repo check as its own process, as it runs a built-in one. | One execution model for every check. |
+| O   | A Go repo check builds on checkkit through the public SDK. | The protocol lives once. |
 
 ## Resolve check specs (priority)
 

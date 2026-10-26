@@ -1,5 +1,7 @@
 # 0003 — Every workflow provides native GitHub feedback
 
+Check: [fitness/adr-0003](../../../fitness/adr-0003/README.md)
+
 ## Context
 
 Fitness links file failures to PR diff lines through GitHub error annotations. Every workflow needs this reporting contract so people can act without searching logs.
