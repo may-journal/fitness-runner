@@ -24,27 +24,35 @@ type perfCheck = boxes.Check
 // jsonPath pulls `--json=<file>` out of argv, so neither check selection nor
 // a single check's passthrough sees it.
 func jsonPath(argv []string) (path string, rest []string, err error) {
-	var flags []string
+	return oneValueFlag(argv, jsonFlag, "<file>")
+}
+
+// oneValueFlag pulls every `flag` and `flag=<value>` out of argv. It accepts
+// none, returning an empty value, or exactly one that has a value; anything
+// else is an error naming the form, such as `use --json=<file> once`.
+func oneValueFlag(argv []string, flag, form string) (value string, rest []string, err error) {
+	flags, rest := splitFlag(argv, flag)
+	if len(flags) == 0 {
+		return "", rest, nil
+	}
+	value = strings.TrimPrefix(flags[0], flag+"=")
+	if len(flags) > 1 || value == "" || value == flag {
+		return "", nil, errors.New("use " + flag + "=" + form + " once")
+	}
+	return value, rest, nil
+}
+
+// splitFlag separates every `flag` and `flag=<value>` argument from the rest
+// of argv.
+func splitFlag(argv []string, flag string) (flags, rest []string) {
 	for _, a := range argv {
-		if a == jsonFlag || strings.HasPrefix(a, jsonFlag+"=") {
+		if a == flag || strings.HasPrefix(a, flag+"=") {
 			flags = append(flags, a)
 			continue
 		}
 		rest = append(rest, a)
 	}
-	return onePath(flags, rest)
-}
-
-// onePath accepts no `--json` flag, or exactly one that names a file.
-func onePath(flags, rest []string) (string, []string, error) {
-	if len(flags) == 0 {
-		return "", rest, nil
-	}
-	path := strings.TrimPrefix(flags[0], jsonFlag+"=")
-	if len(flags) > 1 || path == "" || path == jsonFlag {
-		return "", nil, errors.New("use --json=<file> once")
-	}
-	return path, rest, nil
+	return flags, rest
 }
 
 // wantsPerf reports whether a run's report has a reader: a `--json` file or

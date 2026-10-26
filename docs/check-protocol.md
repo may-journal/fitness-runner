@@ -55,6 +55,8 @@ Org mode runs every check, so each owes the runner one more rule. In a repo it d
 
 A scoped run lists changed files in `FITNESS_CHANGED_FILES`: the staged files locally, or a pull request's diff against its base. A push to `main` or `fitness --all` leaves it unset, so every file is checked. Checks that compare files, such as jscpd, keep a full walk.
 
+`fitness --dir=<folder>` leaves it unset too. It names a file in `FITNESS_SCOPE_FILE` that lists the folder's files, one per line. `checkkit.ChangedFiles` reads either list, and `checkkit.DiffFiles` reads only the changes.
+
 ## Config
 
 Optional `.fitnessrc.json` at repo root:

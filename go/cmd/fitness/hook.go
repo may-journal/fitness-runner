@@ -71,8 +71,8 @@ func runMessageChecks(names []string, msg string) int {
 	pooled, alone := splitByMessageArg(checks)
 	code := 0
 	if len(pooled) > 0 {
-		env := append(contextEnv(root, pooled, false), "FITNESS_CTX_MESSAGE="+msg)
-		code = runChecks(root, "", pooled, nil, env)
+		env := append(contextEnv(root, pooled, false, nil), "FITNESS_CTX_MESSAGE="+msg)
+		code = runChecks(root, "", pooled, nil, env, func() {})
 	}
 	for _, check := range alone {
 		code = max(code, run([]string{check.name, "--message=" + msg}))
