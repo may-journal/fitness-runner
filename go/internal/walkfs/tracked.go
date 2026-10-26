@@ -71,46 +71,55 @@ func listTracked(root string) (trackedList, error) {
 	return trackedList{files: files, ok: true}, nil
 }
 
+// Shared is one run's tracked-file list as ShareTracked wrote it: Env is
+// the TrackedFilesEnv entry that hands it to checks, Files how many paths
+// it lists, and Remove deletes it. With no list, Env is empty and Files 0.
+type Shared struct {
+	Env    []string
+	Files  int
+	Remove func()
+}
+
 // ShareTracked lists root's tracked files once and writes them to a
-// temporary file for the checks of one run, returning the TrackedFilesEnv
-// entry that points at it and a cleanup that removes it. Outside a git work
-// tree, or when the index or the file cannot be read or written, it returns
-// no entry, and each check lists its own files as it does when run alone. A
-// git call stopped at its deadline returns that gitx.StalledError instead.
-func ShareTracked(root string) (env []string, cleanup func(), err error) {
-	cleanup = func() {}
-	content, err := trackedSnapshot(filepath.Clean(root))
+// temporary file for the checks of one run. Outside a git work tree, or
+// when the index or the file cannot be read or written, it shares no list,
+// and each check lists its own files as it does when run alone. A git call
+// stopped at its deadline returns that gitx.StalledError instead.
+func ShareTracked(root string) (Shared, error) {
+	none := Shared{Remove: func() {}}
+	content, files, err := trackedSnapshot(filepath.Clean(root))
 	if content == nil {
-		return nil, cleanup, err
+		return none, err
 	}
 	f, err := os.CreateTemp("", "fitness-tracked-*")
 	if err != nil {
-		return nil, cleanup, nil
+		return none, nil
 	}
 	remove := func() { _ = os.Remove(f.Name()) }
 	_, writeErr := f.Write(content)
 	if closeErr := f.Close(); writeErr != nil || closeErr != nil {
 		remove()
-		return nil, cleanup, nil
+		return none, nil
 	}
-	return []string{TrackedFilesEnv + "=" + f.Name()}, remove, nil
+	return Shared{Env: []string{TrackedFilesEnv + "=" + f.Name()}, Files: files, Remove: remove}, nil
 }
 
-// trackedSnapshot is the shared file's content for root, or nil when git or
-// the index cannot be read. The error is set only for a stalled git call.
-func trackedSnapshot(root string) ([]byte, error) {
+// trackedSnapshot is the shared file's content for root and how many paths
+// it lists, or nil when git or the index cannot be read. The error is set
+// only for a stalled git call.
+func trackedSnapshot(root string) ([]byte, int, error) {
 	index, err := gitx.Repo(root).GitPath("index")
 	if err != nil {
-		return nil, stalledOnly(err)
+		return nil, 0, stalledOnly(err)
 	}
 	// The stamp is read before the listing, so an index rewritten in
 	// between only makes checks list their own files.
 	stamp, ok := indexStamp(index)
 	l, err := listTracked(root)
 	if err != nil || !ok {
-		return nil, stalledOnly(err)
+		return nil, 0, stalledOnly(err)
 	}
-	return encodeTracked([]string{root, index, stamp}, l.files), nil
+	return encodeTracked([]string{root, index, stamp}, l.files), len(l.files), nil
 }
 
 // stalledOnly keeps err when it is a git call stopped at its deadline, and

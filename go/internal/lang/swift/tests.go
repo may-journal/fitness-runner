@@ -17,8 +17,9 @@ import (
 // test is an XCTest method named test… with no parameters, in a class
 // that inherits XCTestCase, or any function marked @Test. Comments and
 // string literals are skipped, so a name inside them is no test. Tools
-// fails a test file that skips apple-ui-testing-library.
-var Tests = lang.Tests{Scan: scan, Name: naming.Name, Tools: tools}
+// fails a test file that skips apple-ui-testing-library. Any Swift file may
+// hold a test or import the library, so Reads keeps every one.
+var Tests = lang.Tests{Scan: scan, Name: naming.Name, Tools: tools, Reads: func(file string) bool { return strings.HasSuffix(file, Ext) }}
 
 // naming names Swift requirement tests: test0001_1 owns 0001.1.
 const naming = lang.TestPrefix("test")
