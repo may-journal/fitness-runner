@@ -47,6 +47,6 @@ Source: `go/cmd/fitness/ci.go:22`
         - When a check walks the repo
             - Then it judges the files tracked now
 - 0001.18
-    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start, fails its describe step, or meets a password prompt
+    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start or describe itself, or meets prompts or silent proxies
         - When fitness runs
-            - Then it shows as info naming why, and Actions adds a notice while the other checks set the exit code
+            - Then it shows as info naming why, within seconds offline, and Actions adds a notice while the other checks set the exit code
