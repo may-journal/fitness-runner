@@ -7,6 +7,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 )
 
 // The packages these tests declare, each with its saved latest version.
@@ -152,10 +153,13 @@ type dcBroken struct {
 	name, url string
 	hits      *atomic.Int32
 	home      bool
+	env       []string
 }
 
 // dcBrokenRegistries are an unreachable registry, one answering an error,
-// and one answering garbage, in the repo .npmrc, then garbage in the home one.
+// one answering garbage, and one that never answers, in the repo .npmrc.
+// Then garbage in the home one, and a registry behind a proxy that never
+// answers.
 func dcBrokenRegistries(t *testing.T) []dcBroken {
 	failing, failHits := dcAnswer(t, http.StatusInternalServerError, `{"error":"Internal Server Error"}`)
 	garbage, garbageHits := dcAnswer(t, http.StatusOK, "<html>proxy login</html>")
@@ -164,26 +168,44 @@ func dcBrokenRegistries(t *testing.T) []dcBroken {
 		{name: "unreachable", url: dcUnreachable},
 		{name: "server error", url: failing, hits: failHits},
 		{name: "garbage", url: garbage, hits: garbageHits},
+		{name: "silent", url: silentListener(t)},
 		{name: "home garbage", url: homeGarbage, hits: homeHits, home: true},
+		{name: "silent proxy", url: "https://registry.example.invalid", env: []string{"HTTPS_PROXY=" + silentListener(t), "NO_PROXY="}},
 	}
 }
 
 func Test0022_7(t *testing.T) {
 	t.Parallel()
 	for _, broken := range dcBrokenRegistries(t) {
-		files := dcRepo(broken.url, `{"dependencies": {"left-pad": "^1.0.0"}}`, "", dcLeftPad, "1.0.0")
-		home := t.TempDir()
-		if broken.home {
-			delete(files, ".npmrc")
-			write(t, home, map[string]string{".npmrc": dcNpmrc(broken.url)})
-		}
-		out, code := dependencyCurrency(t, files, "HOME="+home)
+		start := time.Now()
+		out, code := dcAgainst(t, broken)
 		sees(t, out, code, 0, "All 1 checks passed")
 		if broken.hits != nil && broken.hits.Load() == 0 {
 			t.Errorf("%s: the check never asked the registry", broken.name)
 		}
+		if took := time.Since(start); took > dcSilentWithin {
+			t.Errorf("%s: the run took %v, past the %v a silent registry may cost", broken.name, took.Round(time.Second), dcSilentWithin)
+		}
 	}
 }
+
+// dcAgainst runs dependency-currency on a repo with left-pad behind latest,
+// asking the broken registry from the repo or home .npmrc.
+func dcAgainst(t *testing.T, broken dcBroken) (string, int) {
+	t.Helper()
+	files := dcRepo(broken.url, `{"dependencies": {"left-pad": "^1.0.0"}}`, "", dcLeftPad, "1.0.0")
+	home := t.TempDir()
+	if broken.home {
+		delete(files, ".npmrc")
+		write(t, home, map[string]string{".npmrc": dcNpmrc(broken.url)})
+	}
+	return dependencyCurrency(t, files, append([]string{"HOME=" + home}, broken.env...)...)
+}
+
+// dcSilentWithin bounds a run whose registry never answers: the check's
+// ten-second request timeout plus the install and the run around it, well
+// under the 25-second fetch phase and the 30-second budget.
+const dcSilentWithin = 20 * time.Second
 
 func Test0022_8(t *testing.T) {
 	t.Parallel()
