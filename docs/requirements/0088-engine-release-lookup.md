@@ -14,8 +14,6 @@ latest release runs that install a version
 -
 latest release runs with a token, a recent answer, or an installed version
 
-Source: `go/internal/distribution/latest.go:45`
-
 ## Requirements
 
 - 0088.1

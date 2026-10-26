@@ -10,8 +10,6 @@ topics `fitness docs` prints
 -
 topics `fitness docs` lists
 
-Source: `go/cmd/fitness/docs.go:25`
-
 ## Requirements
 
 - 0112.1

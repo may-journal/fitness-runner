@@ -8,7 +8,7 @@ import (
 const (
 	aaCheck   = "architecture-actors"
 	acDoc     = "docs/requirements/0001-open.md"
-	aaGiven   = acDoc + ":18: Given "
+	aaGiven   = acDoc + ":16: Given "
 	aaContext = "architecture/01-system-context.md"
 	aaRel     = "Rel(user, app, \"3\")"
 	aaHost    = aaRel + "\nPerson(host, \"4 Host\")"
@@ -16,9 +16,9 @@ const (
 )
 
 // acDocWith is requirement 0001 with one acceptance whose Given is given.
-// The Given sits on line 18.
+// The Given sits on line 16.
 func acDocWith(given string) string {
-	return "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\nSource: #1\n\n## Requirements\n\n- 0001.1\n    - Given " + given + "\n        - When it starts\n            - Then it opens\n"
+	return "# 0001 Open\n\n## Why\n\nI open the app.\n\n## Measurement\n\nopens\n-\ntries\n\n## Requirements\n\n- 0001.1\n    - Given " + given + "\n        - When it starts\n            - Then it opens\n"
 }
 
 // aaFixture is the default architecture with its one Given replaced.

@@ -14,8 +14,6 @@ Given clauses that start with a declared actor
 -
 Given clauses
 
-Source: #286
-
 ## Requirements
 
 - 0074.1

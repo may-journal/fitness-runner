@@ -14,8 +14,6 @@ Java repos whose Spotless check finds nothing to rewrite reported green
 -
 Java repos checked
 
-Source: `go/internal/lang/java/spotless/spotless.go:56`
-
 ## Requirements
 
 - 0078.1

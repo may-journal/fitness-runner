@@ -14,8 +14,6 @@ numbered callout rows with a filled Why cell
 -
 numbered callout rows checked
 
-Source: `go/cmd/fitness-check-mermaid-callout-why/main.go:58`
-
 ## Requirements
 
 - 0038.1

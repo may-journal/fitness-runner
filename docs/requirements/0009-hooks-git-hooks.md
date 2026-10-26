@@ -14,8 +14,6 @@ bad commits and pushes the hooks refuse
 -
 bad commits and pushes tried
 
-Source: `go/cmd/fitness/hook.go:15`
-
 ## Requirements
 
 - 0009.1

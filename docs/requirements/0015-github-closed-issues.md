@@ -14,8 +14,6 @@ issues closed with unchecked items that are reopened
 -
 issues closed as completed with unchecked items
 
-Source: `go/internal/aftereffect/reopen.go:12`
-
 ## Requirements
 
 - 0015.1

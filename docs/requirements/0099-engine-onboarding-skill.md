@@ -14,8 +14,6 @@ Onboarding skills whose every link reaches a real doc
 -
 Onboarding skills
 
-Source: #528
-
 ## Requirements
 
 - 0099.1

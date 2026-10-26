@@ -14,8 +14,6 @@ Green dev-dependency bump pull requests the approver approved
 -
 Green dev-dependency bump pull requests
 
-Source: #524
-
 ## Requirements
 
 - 0094.1

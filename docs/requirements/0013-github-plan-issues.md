@@ -14,8 +14,6 @@ Plan edits whose verdict and label match their body
 -
 Plan edits
 
-Source: `go/internal/aftereffect/verdict.go:15`
-
 ## Requirements
 
 - 0013.1

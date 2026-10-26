@@ -14,8 +14,6 @@ acceptances owned by exactly one test
 -
 acceptances
 
-Source: `go/cmd/fitness-check-requirements/owners.go:42`
-
 ## Requirements
 
 - 0065.20

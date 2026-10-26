@@ -10,8 +10,6 @@ findings printed with `--format=json` that name a rule and an explain command
 -
 findings printed with `--format=json`
 
-Source: `go/cmd/fitness/format.go:124`
-
 ## Requirements
 
 - 0101.1

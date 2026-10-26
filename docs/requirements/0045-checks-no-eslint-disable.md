@@ -14,8 +14,6 @@ source files with no ESLint disable directive
 -
 source files checked
 
-Source: `go/cmd/fitness-check-no-eslint-disable/main.go:36`
-
 ## Requirements
 
 - 0045.1

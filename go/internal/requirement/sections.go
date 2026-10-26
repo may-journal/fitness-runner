@@ -2,60 +2,61 @@ package requirement
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
-var (
-	issueSource = regexp.MustCompile(`^(?:[\w.-]+/[\w.-]+)?#\d+$`)
-	codeSource  = regexp.MustCompile(`^([^\s:]+):([1-9]\d*)$`)
-	acceptID    = regexp.MustCompile(`^(\d{4})\.[1-9]\d*$`)
-)
+var acceptID = regexp.MustCompile(`^(\d{4})\.[1-9]\d*$`)
 
 // chainKeywords open the three nested lines under each acceptance ID.
 var chainKeywords = []string{"Given", "When", "Then"}
 
-// checkMeasurement requires a numerator, a "-" line, a denominator, and a
-// Source line citing one line of code or one issue.
-func checkMeasurement(p *problems, root string, s section) {
-	if len(s.lines) == 0 {
-		return
+// checkMeasurement requires a numerator, a "-" line, and a denominator. A
+// fourth line starting "Source:", which older docs carry, is not judged:
+// a line number in a doc goes stale as soon as the code moves. It returns
+// that line's number, or 0.
+func checkMeasurement(p *problems, s section) int {
+	lines, source := withoutSource(s.lines)
+	if len(lines) > 0 && !isRatio(lines) {
+		p.add(s.n, "Measurement needs three lines: numerator, `-`, denominator")
 	}
-	if !isRatio(s.lines) {
-		p.add(s.n, "Measurement needs four lines: numerator, `-`, denominator, `Source:`")
-		return
-	}
-	src := strings.TrimPrefix(strings.TrimSpace(s.lines[3].text), "Source:")
-	if !validSource(root, strings.Trim(strings.TrimSpace(src), "`")) {
-		p.add(s.lines[3].n, "Source must cite either one existing line of code (`path:line`) or one issue (`#123`)")
-	}
+	return source
 }
 
-// isRatio reports whether lines are a numerator, a "-" line, a denominator,
-// and a Source line.
+// withoutSource drops a fourth line starting "Source:" and returns its
+// number, or 0 when there is none.
+func withoutSource(lines []line) ([]line, int) {
+	if len(lines) == 4 && strings.HasPrefix(strings.TrimSpace(lines[3].text), "Source:") {
+		return lines[:3], lines[3].n
+	}
+	return lines, 0
+}
+
+// isRatio reports whether lines are a numerator, a "-" line, and a
+// denominator.
 func isRatio(lines []line) bool {
-	return len(lines) == 4 && strings.TrimSpace(lines[1].text) == "-" && strings.HasPrefix(strings.TrimSpace(lines[3].text), "Source:")
+	return len(lines) == 3 && strings.TrimSpace(lines[1].text) == "-"
 }
 
-// validSource accepts one issue reference or one path:line that exists in
-// the repo.
-func validSource(root, src string) bool {
-	if issueSource.MatchString(src) {
-		return true
+// DropSource deletes d's Source line from its file under root, with the
+// blank line before it, so the Measurement ends at its denominator.
+func DropSource(root string, d Document) error {
+	if d.SourceLine == 0 {
+		return nil
 	}
-	m := codeSource.FindStringSubmatch(src)
-	return m != nil && codeLineExists(root, m[1], m[2])
-}
-
-// codeLineExists reports whether file is in the repo with at least n lines.
-func codeLineExists(root, file, n string) bool {
-	clean := path.Clean(file)
-	b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(clean)))
-	want, _ := strconv.Atoi(n)
-	return err == nil && !strings.HasPrefix(clean, "../") && strings.Count(string(b), "\n")+1 >= want
+	file := filepath.Join(root, filepath.FromSlash(d.Path))
+	b, err := os.ReadFile(file)
+	if err != nil {
+		return err
+	}
+	lines := strings.SplitAfter(string(b), "\n")
+	from := d.SourceLine - 1
+	if from > 0 && strings.TrimSpace(lines[from-1]) == "" {
+		from--
+	}
+	kept := append(lines[:from:from], lines[d.SourceLine:]...)
+	return os.WriteFile(file, []byte(strings.Join(kept, "")), 0o644)
 }
 
 // item is one list line: its indent width and text after "- ".

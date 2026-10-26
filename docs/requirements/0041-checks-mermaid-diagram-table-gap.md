@@ -14,8 +14,6 @@ diagram-to-table gaps holding at most the caption line
 -
 diagram-to-table gaps checked
 
-Source: `go/cmd/fitness-check-mermaid-diagram-table-gap/main.go:124`
-
 ## Requirements
 
 - 0041.1

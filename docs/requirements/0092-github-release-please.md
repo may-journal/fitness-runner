@@ -14,8 +14,6 @@ Release Please runs whose pull request passes pr-check
 -
 Release Please runs
 
-Source: #517
-
 ## Requirements
 
 - 0092.1

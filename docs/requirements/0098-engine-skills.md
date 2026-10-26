@@ -14,8 +14,6 @@ Agent skills folders that hold every release skill after linking
 -
 Agent skills folders linked
 
-Source: `go/internal/distribution/skills.go:20`
-
 ## Requirements
 
 - 0098.1

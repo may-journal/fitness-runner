@@ -14,8 +14,6 @@ new issues resembling an older one that carry one note naming it
 -
 new issues resembling an older one
 
-Source: `go/internal/aftereffect/dupe.go:19`
-
 ## Requirements
 
 - 0087.1

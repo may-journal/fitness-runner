@@ -14,8 +14,6 @@ workflows whose billed minutes match GitHub's whole-minute rounding of each job
 -
 workflows totalled
 
-Source: `go/internal/minutes/minutes.go:38`
-
 ## Requirements
 
 - 0121.1

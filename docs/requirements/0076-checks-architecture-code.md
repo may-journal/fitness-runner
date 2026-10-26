@@ -14,8 +14,6 @@ code views whose classes and edges match the sources
 -
 code views checked
 
-Source: #289
-
 ## Requirements
 
 - 0076.1

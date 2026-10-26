@@ -14,8 +14,6 @@ repeated values reported red
 -
 values used three or more times in source
 
-Source: `go/cmd/fitness-check-repeated-string-literals/main.go:170`
-
 ## Requirements
 
 - 0055.1

@@ -10,8 +10,6 @@ subcommands the llms page names
 -
 subcommands fitness runs
 
-Source: `go/cmd/fitness/help.go:43`
-
 ## Requirements
 
 - 0113.1

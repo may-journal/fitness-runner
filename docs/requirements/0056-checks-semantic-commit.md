@@ -14,8 +14,6 @@ subjects judged by the semantic rules
 -
 subjects checked
 
-Source: `go/cmd/fitness-check-semantic-commit/main.go:80`
-
 ## Requirements
 
 - 0056.2

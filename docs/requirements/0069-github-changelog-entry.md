@@ -16,8 +16,6 @@ pull requests that add exactly one dated changelog entry file and link it
 -
 pull requests that change the changelog
 
-Source: `go/internal/metadata/changelog.go:17`
-
 ## Requirements
 
 - 0069.17

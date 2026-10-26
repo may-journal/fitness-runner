@@ -14,8 +14,6 @@ component views whose owners, edges, and runtimes match the sources
 -
 component views checked
 
-Source: #288
-
 ## Requirements
 
 - 0075.1

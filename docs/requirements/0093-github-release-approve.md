@@ -14,8 +14,6 @@ Green release pull requests the approver approved
 -
 Green release pull requests
 
-Source: #523
-
 ## Requirements
 
 - 0093.1

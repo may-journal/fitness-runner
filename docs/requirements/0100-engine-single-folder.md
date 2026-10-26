@@ -10,8 +10,6 @@ runs that judge only the files under the folder they were given
 -
 runs given a folder
 
-Source: `go/cmd/fitness/dir.go:20`
-
 ## Requirements
 
 - 0100.1

@@ -14,8 +14,6 @@ PR bodies that close every issue they deliver
 -
 PR bodies checked
 
-Source: `go/cmd/fitness-check-pr-closes-issue/main.go:69`
-
 ## Requirements
 
 - 0050.1

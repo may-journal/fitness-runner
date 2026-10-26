@@ -38,7 +38,7 @@ func twoRepo() map[string]string {
 	return with(pairedRepo(), map[string]string{
 		"reqs/0001_test.go":                    "",
 		"reqs/0001_0002_test.go":               testFile("reqs", "Test0001_1", "Test0002_1"),
-		"docs/requirements/0002-adds-again.md": strings.Replace(docWith("Source: `adder.go:5`", doubles), "0001 Adds Numbers", "0002 Adds Again", 1),
+		"docs/requirements/0002-adds-again.md": strings.Replace(docWith(doubles), "0001 Adds Numbers", "0002 Adds Again", 1),
 	})
 }
 
@@ -50,7 +50,7 @@ func swiftRepo() map[string]string {
 		"Package.swift":                          "// swift-tools-version:5.9\nimport PackageDescription\n\nlet package = Package(name: \"Adder\")\n",
 		"Sources/Adder/Adder.swift":              "/// Adds numbers.\npublic enum Adder {\n  /// Returns the sum of a and b.\n  public static func add(_ a: Int, _ b: Int) -> Int { a + b }\n}\n",
 		swiftTest:                                swiftTestingFile("test0001_1"),
-		"docs/requirements/0001-adds-numbers.md": docWith("Source: `Sources/Adder/Adder.swift:4`", acceptances("0001.1")),
+		"docs/requirements/0001-adds-numbers.md": docWith(acceptances("0001.1")),
 	}
 }
 
@@ -84,7 +84,7 @@ func testFile(pkg string, names ...string) string {
 
 // requirementDoc is requirement 0001 with one Given/When/Then per ID.
 func requirementDoc(ids ...string) string {
-	return docWith("Source: `adder.go:5`", acceptances(ids...))
+	return docWith(acceptances(ids...))
 }
 
 // acceptances renders one well-formed chain per ID, nested two spaces deeper
@@ -97,12 +97,12 @@ func acceptances(ids ...string) string {
 	return body
 }
 
-// docWith is requirement 0001 with the given Source line and Requirements,
-// its Measurement ratio set apart by blank lines as Biome formats it.
-func docWith(source, reqs string) string {
+// docWith is requirement 0001 with the given Requirements, its Measurement
+// ratio set apart by blank lines as Biome formats it.
+func docWith(reqs string) string {
 	return "---\nrelatedConfigurations: ['../../.fitnessrc.json']\n---\n\n# 0001 Adds Numbers\n\n## Why\n\n" +
 		"I can add two numbers without doing it by hand.\n\n## Measurement\n\nsums that are right\n\n-\n\nsums asked for\n\n" +
-		source + "\n\n## Requirements\n\n" + reqs
+		"## Requirements\n\n" + reqs
 }
 
 // with returns base with overrides applied.
@@ -153,7 +153,7 @@ func junitRepo() map[string]string {
 		"pom.xml":                                "<project/>\n",
 		"src/main/java/Adder.java":               "/** Adds numbers. */\nclass Adder {\n  static int add(int a, int b) {\n    return a + b;\n  }\n}\n",
 		"src/test/java/AdderTest.java":           junitFile("AdderTest", "test0001_1"),
-		"docs/requirements/0001-adds-numbers.md": docWith("Source: `src/main/java/Adder.java:3`", acceptances("0001.1")),
+		"docs/requirements/0001-adds-numbers.md": docWith(acceptances("0001.1")),
 	}
 }
 
@@ -172,7 +172,7 @@ func scriptRepo() map[string]string {
 	return map[string]string{
 		"src/adder.ts":                           "/** Adds numbers. */\nexport const add = (a: number, b: number): number => a + b;\n",
 		"tests/adder.test.ts":                    vitestFile(`test("0001.1 adds two numbers", () => {});`),
-		"docs/requirements/0001-adds-numbers.md": docWith("Source: `src/adder.ts:2`", acceptances("0001.1")),
+		"docs/requirements/0001-adds-numbers.md": docWith(acceptances("0001.1")),
 	}
 }
 

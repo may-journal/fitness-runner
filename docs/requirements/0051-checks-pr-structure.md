@@ -14,8 +14,6 @@ PR bodies off the template reported red
 -
 PR bodies off the template
 
-Source: `go/cmd/fitness-check-pr-structure/main.go:29`
-
 ## Requirements
 
 - 0051.1

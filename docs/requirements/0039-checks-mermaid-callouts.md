@@ -14,8 +14,6 @@ docs whose diagrams match their callout tables one to one
 -
 docs with a mermaid diagram or callout table
 
-Source: `go/cmd/fitness-check-mermaid-callouts/main.go:162`
-
 ## Requirements
 
 - 0039.1

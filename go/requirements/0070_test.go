@@ -161,7 +161,7 @@ func Test0070_7(t *testing.T) {
 	out, code = acRun(t, acEdit(acJourney, "0001-open.md", "0002-open.md"))
 	sees(t, out, code, 1, "architecture/05-user-journey.md:29: unresolved requirement 0002 in docs/requirements")
 	files := acFixture(acRoot)
-	files[acDoc] = strings.ReplaceAll(files[acDoc], "Source: #1\n", "")
+	files[acDoc] = strings.ReplaceAll(files[acDoc], "opens\n-\n", "opens\n")
 	out, code = acRun(t, files)
 	sees(t, out, code, 0)
 	if strings.Contains(out, acDoc) {

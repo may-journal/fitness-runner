@@ -1,7 +1,9 @@
 package check
 
 import (
+	"errors"
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
+	"slices"
 	"sort"
 	"strings"
 
@@ -21,33 +23,64 @@ func Main() {
 // docsDir holds the requirement docs, one per file.
 const docsDir = "docs/requirements/"
 
-func run(root string, _ []string) (checkkit.Result, error) {
+// fixFlag makes the check delete every leftover Source line before it
+// judges, so `fitness requirements --fix` converts a repo's docs.
+const fixFlag = "--fix"
+
+// sourceNote is the info a leftover Measurement Source line gets.
+const sourceNote = "delete this `Source:` line, or run `fitness requirements " + fixFlag + "`; a later release fails it"
+
+func run(root string, args []string) (checkkit.Result, error) {
 	paths := docPaths(root)
+	if err := dropSources(root, paths, args); err != nil {
+		return checkkit.Result{}, err
+	}
 	tests, files, written, err := collectTests(root, langs.All)
 	if err != nil || len(written) == 0 {
 		return checkkit.Pass(0), err
 	}
-	errs, err := docErrors(root, paths, tests, written)
+	errs, notes, err := docErrors(root, paths, tests, written)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	return result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...)), nil
+	res := result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...))
+	res.Info = notes
+	return res, nil
 }
 
 // docErrors judges every doc's shape, its IDs against history, docs that
 // share an area, which tests own its acceptances, and the tools
-// the tests use.
-func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) ([]string, error) {
+// the tests use. It also returns a note for each leftover Source line,
+// which never fails.
+func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) (errs, notes []string, err error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+	for _, d := range docs {
+		if d.SourceLine > 0 {
+			notes = append(notes, requirement.At(d.Path, d.SourceLine, sourceNote))
+		}
 	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
 	errs = append(errs, overlapErrors(docs)...)
 	errs = append(errs, ownershipErrors(docs, tests, written)...)
 	tooled, err := toolErrors(root, tests, written)
-	return append(errs, tooled...), err
+	return append(errs, tooled...), notes, err
+}
+
+// dropSources deletes the leftover Source line from each doc at paths when
+// args ask for the fix.
+func dropSources(root string, paths, args []string) error {
+	if !slices.Contains(args, fixFlag) {
+		return nil
+	}
+	docs, _, err := requirement.Load(root, paths)
+	for _, d := range docs {
+		err = errors.Join(err, requirement.DropSource(root, d))
+	}
+	return err
 }
 
 // result passes with no errors and fails with any.

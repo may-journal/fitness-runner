@@ -14,8 +14,6 @@ Go modules whose tests pass
 -
 Go modules found
 
-Source: `go/cmd/fitness-check-go-test/main.go:41`
-
 ## Requirements
 
 - 0027.1

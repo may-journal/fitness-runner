@@ -14,8 +14,6 @@ branch runs with current metadata feedback
 -
 branch runs
 
-Source: `go/internal/metadata/branch.go:20`
-
 ## Requirements
 
 - 0066.1

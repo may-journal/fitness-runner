@@ -14,8 +14,6 @@ staged commits whose changelog bullets name the change under the branch's one cu
 -
 staged commits with changes
 
-Source: `go/cmd/fitness-check-changelog-updated/main.go:79`
-
 ## Requirements
 
 - 0019.3

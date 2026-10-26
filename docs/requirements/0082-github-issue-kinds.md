@@ -14,8 +14,6 @@ labeled issue edits whose verdict matches their kind's template and rules
 -
 labeled issue edits
 
-Source: `go/internal/metadata/kinds.go:47`
-
 ## Requirements
 
 - 0082.1

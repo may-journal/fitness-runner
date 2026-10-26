@@ -14,8 +14,6 @@ runs asked for a record that write one with every check
 -
 runs asked for a record
 
-Source: `go/cmd/fitness/main.go:209`
-
 ## Requirements
 
 - 0089.1

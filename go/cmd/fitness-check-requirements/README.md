@@ -22,15 +22,13 @@ Write it as Biome formats Markdown: blank lines around the `-`, so it never unde
 I can keep writing when signal drops or is lost
 
 ## Measurement
-<!-- Numerator line, a "-" line, denominator line, each set apart by blank lines. Then "Source:" citing either a line of code that exists (path:line) or the #issue that will implement it. -->
+<!-- Numerator line, a "-" line, denominator line, each set apart by blank lines. Nothing else: no "Source:" line, since a code line number goes stale when the code moves. -->
 
 users who save locally
 
 -
 
 users who have lost connection
-
-Source: #123
 
 ## Requirements
 <!-- Top-level bullets are IDs: title ID + ".N", unique, never reused. -->
@@ -49,7 +47,7 @@ Source: #123
 - Acceptance IDs: the title ID plus `.N`, unique in its doc.
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
-- Measurement: numerator, `-`, denominator, then `Source:` citing one `path:line` that exists or one `#123` issue.
+- Measurement: numerator, `-`, denominator, and no `Source:` line. A leftover one gets a note; `fitness requirements --fix` deletes them.
 - Acceptance: one Given, one When, and one Then, nested in order; the Given starts with an [actor](../fitness-check-architecture-actors/README.md).
 - Ownership: exactly one test named for each acceptance owns it. A test named for an undefined acceptance fails.
 - Every test: each top-level test in the repository must be named for an acceptance. Setup functions and helpers are not tests.
@@ -75,7 +73,7 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose Source cites another line of its file.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is to its leftover Source line.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.

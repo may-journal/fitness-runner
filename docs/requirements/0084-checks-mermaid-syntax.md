@@ -14,8 +14,6 @@ mermaid diagrams that parse
 -
 mermaid diagrams
 
-Source: `go/cmd/fitness-check-mermaid-syntax/main.go:89`
-
 ## Requirements
 
 - 0084.1
