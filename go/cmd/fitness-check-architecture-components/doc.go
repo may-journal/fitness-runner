@@ -22,6 +22,7 @@
 // Ownership fails or holds as follows:
 //
 //   - A product source no component names fails, naming the source.
+//   - Agent tooling folders, such as `.claude/` and `.codex/`, get no exemption: their sources need an owner, and their references a drawn edge.
 //   - A code span or label claims a root-level source by its bare name; any other bare name stays prose.
 //   - A source two components name, in two diagrams of one view, fails naming both claims. Two claims in one diagram fail in `architecture-contract`.
 //   - A claimed path that no longer exists fails in `architecture-contract`.
