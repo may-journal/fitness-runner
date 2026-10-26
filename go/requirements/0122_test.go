@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
+	"time"
 )
 
 // hpShims returns the three hook shims for folder dir, each running the
@@ -93,4 +94,21 @@ func Test0122_5(t *testing.T) {
 	out, code := fitness(t, repo, env, "init")
 	sees(t, out, code, 0, "set core.hooksPath to .fitness-hooks")
 	hpWants(t, repo, ".fitness-hooks")
+}
+
+func Test0122_6(t *testing.T) {
+	t.Parallel()
+	for _, call := range []string{"core.hooksPath", "ls-tree"} {
+		repo, env := hpStale(t, ".githooks", ".githooks", ".fitness-hooks")
+		write(t, repo, map[string]string{".git/COMMIT_EDITMSG": "docs(readme): touch nothing\n"})
+		path, pidFile := promptingTools(t, call)
+		start := time.Now()
+		out, code := fitness(t, repo, append(env, path), "hook", "commit-msg", ".git/COMMIT_EDITMSG")
+		sees(t, out, code, 0)
+		if took := time.Since(start); took > 30*time.Second {
+			t.Errorf("a stalled git %s must end at its deadline, but the hook took %s", call, took)
+		}
+		hpWants(t, repo, ".githooks")
+		processStopped(t, pidFile)
+	}
 }

@@ -14,8 +14,6 @@ clones whose stale hooks path is repaired by their next commit
 -
 clones with a stale hooks path
 
-Source: `go/cmd/fitness/hooks_path.go:36`
-
 ## Requirements
 
 - 0122.1
@@ -38,3 +36,7 @@ Source: `go/cmd/fitness/hooks_path.go:36`
     - Given Developer has a clone with a stale hooks path in a repo that ships .fitness-hooks
         - When I run fitness init again
             - Then git runs .fitness-hooks from then on
+- 0122.6
+    - Given Developer has a clone with a stale hooks path, and a git that stalls reading it or the shipped folders
+        - When a hook runs
+            - Then the hook goes on after git's ten-second deadline and leaves the path as it was
