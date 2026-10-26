@@ -14,8 +14,6 @@ plan bodies that follow the Plan template
 -
 plan bodies checked
 
-Source: `go/cmd/fitness-check-plan-structure/main.go:30`
-
 ## Requirements
 
 - 0048.1

@@ -14,8 +14,6 @@ blob runs that judge only the text and name every skipped check
 -
 blob runs
 
-Source: `go/cmd/fitness/blob.go:43`
-
 ## Requirements
 
 - 0077.1

@@ -14,8 +14,6 @@ markdown files with no reframed sentence
 -
 markdown files checked
 
-Source: `go/cmd/fitness-check-no-contrastive-reframing/main.go:44`
-
 ## Requirements
 
 - 0044.1

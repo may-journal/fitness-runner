@@ -14,8 +14,6 @@ requirement docs named in a journey diagram label
 -
 requirement docs
 
-Source: #290
-
 ## Requirements
 
 - 0072.1

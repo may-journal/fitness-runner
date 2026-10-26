@@ -14,8 +14,6 @@ feature pushes that name an approved Plan
 -
 feature pushes
 
-Source: `go/cmd/fitness/hook.go:26`
-
 ## Requirements
 
 - 0010.1

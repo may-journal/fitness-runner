@@ -16,8 +16,6 @@ changed requirement tests and docs whose partner changed too
 
 changed requirement tests and docs
 
-Source: `go/cmd/fitness-check-requirements/pairs.go:88`
-
 ## Requirements
 
 - 0005.8
@@ -49,6 +47,6 @@ Source: `go/cmd/fitness-check-requirements/pairs.go:88`
     - When I fix the test without changing its doc
       - Then my commit, amend, or pull request passes, while a test that passed at its base still fails without its doc
 - 0005.17
-  - Given Developer has a requirement doc changed only in formatting, such as indents, or in its Source line number
+  - Given Developer has a requirement doc changed only in formatting, such as indents, or in its leftover Source line
     - When fitness judges my commit or pull request
       - Then it passes without a test change

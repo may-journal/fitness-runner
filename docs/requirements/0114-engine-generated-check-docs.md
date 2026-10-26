@@ -12,8 +12,6 @@ check READMEs that match `fitness explain`
 
 checks in the catalog
 
-Source: `go/internal/release/readmes.go:28`
-
 ## Requirements
 
 - 0114.1

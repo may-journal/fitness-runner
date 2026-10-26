@@ -14,8 +14,6 @@ installer runs that install a verified bundle or name the mistake
 -
 installer runs
 
-Source: `go/cmd/fitness-install/main.go:43`
-
 ## Requirements
 
 - 0061.1

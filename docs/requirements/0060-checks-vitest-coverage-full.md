@@ -14,8 +14,6 @@ JavaScript projects whose Vitest coverage run passes at 100% thresholds
 -
 JavaScript projects checked
 
-Source: `go/cmd/fitness-check-vitest-coverage-full/main.go:65`
-
 ## Requirements
 
 - 0060.1

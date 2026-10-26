@@ -14,8 +14,6 @@ mistakes fitness names
 -
 mistakes made
 
-Source: `go/cmd/fitness/main.go:240`
-
 ## Requirements
 
 - 0008.1

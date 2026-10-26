@@ -14,8 +14,6 @@ checks that declare when they apply
 -
 checks in the catalog
 
-Source: `go/cmd/fitness/checks.go:73`
-
 ## Requirements
 
 - 0003.1

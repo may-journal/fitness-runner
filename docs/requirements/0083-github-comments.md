@@ -14,8 +14,6 @@ failing comments with exactly one reply that names their violations
 -
 failing comments
 
-Source: `go/internal/aftereffect/comment.go:56`
-
 ## Requirements
 
 - 0083.1

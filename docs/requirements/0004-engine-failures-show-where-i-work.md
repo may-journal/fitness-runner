@@ -14,8 +14,6 @@ findings annotated on their source line
 -
 findings that name a source line
 
-Source: `go/cmd/fitness/ci.go:139`
-
 ## Requirements
 
 - 0004.1

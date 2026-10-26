@@ -14,8 +14,6 @@ pull requests merged with a clean pr-check
 -
 pull requests merged
 
-Source: `go/internal/metadata/blobs.go:110`
-
 ## Requirements
 
 - 0014.1

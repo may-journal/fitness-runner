@@ -14,8 +14,6 @@ pushed branches validated against their destination name and local tip
 -
 live branch updates pushed
 
-Source: `go/internal/gitx/push.go:14`
-
 ## Requirements
 
 - 0068.1

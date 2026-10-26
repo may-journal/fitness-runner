@@ -14,8 +14,6 @@ submitted reviews whose comments one run judges
 -
 submitted reviews
 
-Source: `go/internal/metadata/comments.go:57`
-
 ## Requirements
 
 - 0120.1

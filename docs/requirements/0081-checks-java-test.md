@@ -16,8 +16,6 @@ Java repos whose tests pass and meet the coverage goal reported green
 -
 Java repos checked
 
-Source: `go/internal/lang/java/tests/tests.go:80`
-
 ## Requirements
 
 - 0081.1

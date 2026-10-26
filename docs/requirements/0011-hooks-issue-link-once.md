@@ -14,8 +14,6 @@ amended commits that keep their link
 -
 amended commits that link an issue
 
-Source: `go/cmd/fitness/hook.go:79`
-
 ## Requirements
 
 - 0011.1

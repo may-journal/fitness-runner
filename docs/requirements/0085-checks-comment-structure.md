@@ -14,8 +14,6 @@ comments within their budget and free of change-log notes, agent frames, and mod
 -
 comments
 
-Source: `go/cmd/fitness-check-comment-structure/main.go:69`
-
 ## Requirements
 
 - 0085.1

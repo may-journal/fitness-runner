@@ -14,8 +14,6 @@ Swift repos with a clean strict SwiftLint run reported green
 -
 Swift repos checked
 
-Source: `go/internal/lang/swift/swiftlint/swiftlint.go:129`
-
 ## Requirements
 
 - 0057.1

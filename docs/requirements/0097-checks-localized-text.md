@@ -14,8 +14,6 @@ shown literals and test labels read through the catalog
 -
 shown literals and test labels in a Swift app with a String Catalog
 
-Source: `go/internal/lang/swift/localized/localized.go:119`
-
 ## Requirements
 
 - 0097.1

@@ -14,8 +14,6 @@ commit messages carrying both AI trailers
 -
 commit messages checked in repos that adopted the trailers
 
-Source: `go/cmd/fitness-check-commit-attribution/main.go:116`
-
 ## Requirements
 
 - 0020.1

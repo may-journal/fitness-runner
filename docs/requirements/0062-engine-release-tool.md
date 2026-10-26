@@ -16,8 +16,6 @@ release commands that end with a clear outcome
 -
 release commands run
 
-Source: `go/cmd/fitness-release/main.go:30`
-
 ## Requirements
 
 - 0062.1

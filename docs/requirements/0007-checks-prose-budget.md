@@ -16,8 +16,6 @@ docs within every prose limit
 
 docs checked
 
-Source: `go/cmd/fitness-check-prose-budget/main.go:110`
-
 ## Requirements
 
 - 0007.2

@@ -10,8 +10,6 @@ checks `fitness config` lists with a state and a reason
 -
 checks the suite knows
 
-Source: `go/cmd/fitness/config.go:197`
-
 ## Requirements
 
 - 0102.1

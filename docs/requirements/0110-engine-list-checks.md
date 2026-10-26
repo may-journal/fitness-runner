@@ -10,8 +10,6 @@ checks that `fitness list` names with a summary and a scope
 -
 checks in the catalog
 
-Source: `go/cmd/fitness/list.go:63`
-
 ## Requirements
 
 - 0110.1

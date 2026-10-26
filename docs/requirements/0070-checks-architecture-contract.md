@@ -14,8 +14,6 @@ architecture views read or rejected with clear source locations
 -
 architecture views checked
 
-Source: #285
-
 ## Requirements
 
 - 0070.11

@@ -1,6 +1,8 @@
 package requirements
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -118,13 +120,21 @@ func Test0005_17(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = stagedRun(t, given, with(formatted, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))}))
 	sees(t, out, code, 0)
-	moved := map[string]string{pairedDoc: docWith("Source: `adder.go:6`", acceptances("0001.1"))}
-	out, code = stagedRun(t, pairedRepo(), moved)
-	sees(t, out, code, 0)
-	out, code = prRun(t, pairedRepo(), moved, "docs(requirements): cite the moved sum")
-	sees(t, out, code, 0)
-	out, code = stagedRun(t, pairedRepo(), map[string]string{pairedDoc: docWith("Source: `go.mod:1`", acceptances("0001.1"))})
+	sourced := with(pairedRepo(), map[string]string{pairedDoc: withSource(requirementDoc("0001.1"), "`adder.go:5`")})
+	for _, change := range []string{withSource(requirementDoc("0001.1"), "`adder.go:6`"), requirementDoc("0001.1")} {
+		out, code = stagedRun(t, sourced, map[string]string{pairedDoc: change})
+		sees(t, out, code, 0)
+		out, code = prRun(t, sourced, map[string]string{pairedDoc: change}, "docs(requirements): drop the Source line")
+		sees(t, out, code, 0)
+	}
+	out, code = stagedRun(t, sourced, map[string]string{pairedDoc: strings.Replace(requirementDoc("0001.1"), "sums asked for", "sums tried", 1)})
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
+}
+
+// withSource is doc with the Source line older docs end their Measurement
+// with, citing cite. It sits on line 19.
+func withSource(doc, cite string) string {
+	return strings.Replace(doc, "## Requirements", "Source: "+cite+"\n\n## Requirements", 1)
 }
 
 // docOf is goRepo with requirement 0001 replaced by body at path.
@@ -134,7 +144,7 @@ func docOf(path, body string) map[string]string {
 
 // reqs is goRepo with requirement 0001's Requirements replaced.
 func reqs(body string) map[string]string {
-	return docOf("docs/requirements/0001-adds-numbers.md", docWith("Source: `adder.go:5`", body))
+	return docOf("docs/requirements/0001-adds-numbers.md", docWith(body))
 }
 
 func Test0006_1(t *testing.T) {
@@ -158,13 +168,27 @@ func Test0006_3(t *testing.T) {
 func Test0006_4(t *testing.T) {
 	t.Parallel()
 	out, code := judged(t, docOf("docs/requirements/0001-adds-numbers.md", strings.Replace(requirementDoc("0001.1"), "\n-\n", "\nover\n", 1)))
-	sees(t, out, code, 1, "Measurement needs four lines")
+	sees(t, out, code, 1, "Measurement needs three lines: numerator, `-`, denominator")
 }
 
-func Test0006_5(t *testing.T) {
+func Test0006_11(t *testing.T) {
 	t.Parallel()
-	out, code := judged(t, docOf("docs/requirements/0001-adds-numbers.md", docWith("Source: `adder.go:5` #12", acceptances("0001.1"))))
-	sees(t, out, code, 1, "Source must cite either one existing line of code")
+	doc := requirementDoc("0001.1")
+	sourced := withSource(doc, "`gone.go:99`")
+	repo := example(t, "happyRepo", with(pairedRepo(), map[string]string{pairedDoc: sourced}))
+	out, code := fitness(t, repo, nil, "requirements")
+	sees(t, out, code, 0, pairedDoc+":19: delete this `Source:` line, or run `fitness requirements --fix`")
+	out, code = fitness(t, repo, nil, "requirements", "--fix")
+	sees(t, out, code, 0)
+	if got, err := os.ReadFile(filepath.Join(repo, pairedDoc)); err != nil || string(got) != doc {
+		t.Errorf("--fix must leave the doc without its Source line, got %v:\n%s", err, got)
+	}
+	git(t, repo, "add", "-A")
+	out, code = fitness(t, repo, nil, "requirements")
+	sees(t, out, code, 0)
+	if strings.Contains(out, "Source") {
+		t.Errorf("a doc without a Source line gets no note, got:\n%s", out)
+	}
 }
 
 func Test0006_8(t *testing.T) {
@@ -188,8 +212,8 @@ func Test0006_10(t *testing.T) {
 	again := "- 0002.1\n    - Given Writer has two whole numbers that carry\n        - When I add them\n            - Then I get their sum\n"
 	out, code := judged(t, with(goRepo(), map[string]string{
 		"adder_test.go": testFile("adder", "Test0001_1", "Test0002_1"),
-		pairedDoc:       docWith("Source: `adder.go:5`", adds),
-		other:           strings.Replace(docWith("Source: `adder.go:5`", again), "0001 Adds Numbers", "0002 Adds Again", 1),
+		pairedDoc:       docWith(adds),
+		other:           strings.Replace(docWith(again), "0001 Adds Numbers", "0002 Adds Again", 1),
 	}))
 	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "0004-one-requirement-doc-per-area")
 }

@@ -14,8 +14,6 @@ runs whose exit code matches their checks' status
 -
 runs
 
-Source: `go/cmd/fitness/ci.go:22`
-
 ## Requirements
 
 - 0001.1

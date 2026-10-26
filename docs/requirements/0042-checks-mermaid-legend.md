@@ -14,8 +14,6 @@ numbered flowchart callouts with a style class
 -
 numbered flowchart callouts
 
-Source: `go/cmd/fitness-check-mermaid-legend/main.go:135`
-
 ## Requirements
 
 - 0042.1

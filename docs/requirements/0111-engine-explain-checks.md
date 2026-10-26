@@ -10,8 +10,6 @@ checks that `fitness explain` documents
 -
 checks in the catalog
 
-Source: `go/cmd/fitness/explain.go:29`
-
 ## Requirements
 
 - 0111.1

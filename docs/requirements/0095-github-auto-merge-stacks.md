@@ -14,8 +14,6 @@ Approved, green native stacks merged by Auto-merge
 -
 Approved, green native stacks
 
-Source: #549
-
 ## Requirements
 
 - 0095.1

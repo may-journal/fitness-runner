@@ -14,8 +14,6 @@ container views whose containers match build targets, entry points, and deploy f
 -
 container views checked
 
-Source: #287
-
 ## Requirements
 
 - 0073.1

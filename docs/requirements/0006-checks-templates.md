@@ -14,8 +14,6 @@ requirement docs with no shape errors
 -
 requirement docs
 
-Source: `go/internal/requirement/doc.go:90`
-
 ## Requirements
 
 - 0006.1
@@ -31,11 +29,7 @@ Source: `go/internal/requirement/doc.go:90`
         - When fitness runs
             - Then it fails
 - 0006.4
-    - Given Developer has a Measurement that is not a ratio with a Source
-        - When fitness runs
-            - Then it fails
-- 0006.5
-    - Given Developer has a Source citing neither one existing code line nor one issue
+    - Given Developer has a Measurement that is not a numerator, a `-` line, and a denominator
         - When fitness runs
             - Then it fails
 - 0006.8
@@ -50,3 +44,7 @@ Source: `go/internal/requirement/doc.go:90`
     - Given Developer has two docs with acceptances sharing a When and similar Givens
         - When fitness runs
             - Then it fails naming both docs and linking ADR 0004
+- 0006.11
+    - Given Developer has a doc whose Measurement ends in a Source line citing code that moved
+        - When I run `fitness requirements --fix` and commit
+            - Then the check notes the line, deletes it, and passes with no test change

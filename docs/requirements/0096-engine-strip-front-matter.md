@@ -10,8 +10,6 @@ Markdown files whose fitness-only front matter is gone with the body unchanged
 -
 Markdown files holding fitness front matter
 
-Source: `go/cmd/fitness/frontmatter.go:100`
-
 ## Requirements
 
 - 0096.1

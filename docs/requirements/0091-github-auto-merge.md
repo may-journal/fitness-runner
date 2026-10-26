@@ -14,8 +14,6 @@ Ready pull requests with auto-merge on or an auto-merge comment
 -
 Ready pull requests
 
-Source: #539
-
 ## Requirements
 
 - 0091.1

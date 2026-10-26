@@ -14,8 +14,6 @@ Java repos with a clean Checkstyle run and a complexity ceiling reported green
 -
 Java repos checked
 
-Source: `go/internal/lang/java/checkstyle/checkstyle.go:120`
-
 ## Requirements
 
 - 0079.1

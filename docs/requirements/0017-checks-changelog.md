@@ -14,8 +14,6 @@ entry files with one dated section and a dated name
 -
 entry files checked
 
-Source: `go/cmd/fitness-check-changelog/main.go:16`
-
 ## Requirements
 
 - 0017.21

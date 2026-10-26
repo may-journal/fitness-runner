@@ -14,8 +14,6 @@ issue bodies with unchecked items reported red
 -
 issue bodies with unchecked items
 
-Source: `go/cmd/fitness-check-issue-checklist/main.go:21`
-
 ## Requirements
 
 - 0012.1

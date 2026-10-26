@@ -14,8 +14,6 @@ repo check settings that apply or name what stops them
 -
 repo check settings configured
 
-Source: `go/cmd/fitness/local.go:34`
-
 ## Requirements
 
 - 0090.1

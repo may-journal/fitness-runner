@@ -25,6 +25,9 @@ type Document struct {
 	ID          string
 	TitleLine   int
 	Acceptances []IDLine
+	// SourceLine is the line of the `Source:` line older docs end their
+	// Measurement with, or 0. It is never judged, only noted for deletion.
+	SourceLine int
 }
 
 // ids lists the doc's own ID followed by its acceptance IDs.
@@ -78,7 +81,7 @@ func Load(root string, paths []string) ([]Document, []string, error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		d, docErrs := Parse(root, p, string(b))
+		d, docErrs := Parse(p, string(b))
 		docs = append(docs, d)
 		errs = append(errs, docErrs...)
 	}
@@ -87,7 +90,7 @@ func Load(root string, paths []string) ([]Document, []string, error) {
 
 // Parse validates one doc's name, title, sections, measurement, and
 // Acceptances.
-func Parse(root, file, body string) (Document, []string) {
+func Parse(file, body string) (Document, []string) {
 	p := &problems{path: file}
 	head, sections := splitSections(contentLines(body))
 	d := Document{Path: file}
@@ -97,7 +100,7 @@ func Parse(root, file, body string) (Document, []string) {
 	for _, s := range sections {
 		byName[s.name] = s
 	}
-	checkMeasurement(p, root, byName["Measurement"])
+	d.SourceLine = checkMeasurement(p, byName["Measurement"])
 	d.Acceptances = parseRequirements(p, d.ID, byName["Requirements"])
 	return d, p.errs
 }
