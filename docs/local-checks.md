@@ -103,6 +103,18 @@ func TestRule(t *testing.T) { check.Test(t, rule) }
 
 `go -C fitness test ./...` then judges the repo with every Go check that has such a test. A repo whose `requirements` check judges Go tests names each test for the acceptance it proves.
 
+## ADR and requirement checks
+
+An architecture decision holds only while a check proves it. So in a repo with a `fitness/` folder, the [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) check pairs each numbered ADR with a `fitness/adr-NNNN/` check. The ADR links the check's README, and the README links the ADR. An ADR whose status line says it is superseded needs none.
+
+```markdown
+# 0007 — No work bound to scroll
+
+Check: [fitness/adr-0007](../../../fitness/adr-0007/README.md)
+```
+
+A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](../go/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. Either way, a change to the doc alone, or to its check alone, fails. A paired check that passes having judged no files fails too, since its scan is broken.
+
 ## Where checks run
 
 The suite runs every local check after the built-in ones, under org and external policy alike. A local check named like a built-in one replaces it under external policy only, as [ADR 0009](architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md) decides. `"localChecks": "<folder>"` in `.fitnessrc.json` names one more folder, read the same way, which may also hold flat `fitness-check-<name>` programs.

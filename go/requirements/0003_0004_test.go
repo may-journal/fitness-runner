@@ -38,6 +38,7 @@ func Test0003_2(t *testing.T) {
 // catalogRows is the order the result rows print in: the repo-wide checks,
 // sorted, then the Go, Swift, Node and Java modules' checks, each sorted.
 const catalogRows = `
+adr-checks
 architecture-actors architecture-code architecture-components
 architecture-containers architecture-contract architecture-journey
 build-output-untracked changelog changelog-bullets changelog-updated

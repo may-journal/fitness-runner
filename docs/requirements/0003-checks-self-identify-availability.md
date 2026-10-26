@@ -6,7 +6,7 @@ Every check decides for itself whether it can judge a repo, so any repo runs eve
 
 ## Measurement
 
-checks that declare when they apply
+checks that decide for themselves when they apply, adr-checks included
 -
 checks in the catalog
 

@@ -970,7 +970,7 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	if timedOut {
 		return o
 	}
-	return decodeOutcome(o, cmd, stdout.Bytes())
+	return brokenScan(c, decodeOutcome(o, cmd, stdout.Bytes()))
 }
 
 // waitWithBudget waits for cmd within budget; on overrun it TERMs the
