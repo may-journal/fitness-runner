@@ -14,7 +14,7 @@ entry points that run metadata only in their intended context
 -
 entry points exercised
 
-Source: `go/cmd/fitness-check-local-branch/main.go:10`
+Source: `go/cmd/fitness-check-local-branch/main.go:9`
 
 ## Requirements
 

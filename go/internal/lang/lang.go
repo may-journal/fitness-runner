@@ -6,6 +6,8 @@
 // repo-wide, so a new repo-wide check or dictionary needs no list entry. The
 // modules themselves live in the langs package, and each language's own code
 // in a folder named for it beside that package.
+//
+//fitness:topic languages
 package lang
 
 import (
@@ -76,9 +78,16 @@ type Module struct {
 }
 
 // Test is one test declaration and the acceptance ID its name carries, if
-// any. Loc is file:line.
+// any.
 type Test struct {
-	Name, ID, Loc, File string
+	// Name is the test's name as declared.
+	Name string
+	// ID is the acceptance ID the name carries, or "" for none.
+	ID string
+	// Loc is where the test is declared, as file:line.
+	Loc string
+	// File is the path of the file declaring the test.
+	File string
 }
 
 // Tests is how a module finds its requirement tests.

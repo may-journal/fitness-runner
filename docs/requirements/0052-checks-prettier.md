@@ -14,7 +14,7 @@ tracked files Prettier reports as formatted
 -
 tracked files checked
 
-Source: `go/cmd/fitness-check-prettier/main.go:363`
+Source: `go/cmd/fitness-check-prettier/main.go:339`
 
 ## Requirements
 

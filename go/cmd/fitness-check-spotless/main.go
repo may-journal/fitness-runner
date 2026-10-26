@@ -1,6 +1,3 @@
-// Command fitness-check-spotless checks Java formatting with the Spotless
-// plugin through the Java language module, which owns the build run and its
-// judgment.
 package check
 
 import (

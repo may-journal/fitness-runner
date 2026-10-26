@@ -1,9 +1,3 @@
-// Command fitness-check-mermaid-callout-why requires each numbered callout
-// table to carry a "Why" column and flags numbered rows whose "Why" cell is
-// empty — so tables explain why each element exists, not just what it is.
-// The Go port of the mermaid-callout-why check: same rule, same error
-// templates, filesChecked counts the .md files with at least one mermaid
-// diagram or callout table.
 package check
 
 import (

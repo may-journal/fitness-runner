@@ -8,6 +8,8 @@
 // it found problems. Exit 3 means the check could not judge (a panic or an
 // internal error) and the Result carries that as info, which never fails a
 // run. `--describe` prints a Describe JSON and exits without running.
+//
+//fitness:topic protocol
 package checkkit
 
 import (
@@ -22,9 +24,12 @@ const ExitInternal = 3
 
 // Result is the single JSON object a check prints on stdout.
 type Result struct {
-	Ok           bool     `json:"ok"`
-	Errors       []string `json:"errors"`
-	FilesChecked int      `json:"filesChecked"`
+	// Ok is true when the check found no problem.
+	Ok bool `json:"ok"`
+	// Errors lists each problem found, one line each.
+	Errors []string `json:"errors"`
+	// FilesChecked counts the files judged; -1 when the check judged none.
+	FilesChecked int `json:"filesChecked"`
 	// Info carries notes that never fail a run, such as an internal error.
 	Info []string `json:"info,omitempty"`
 	// Findings repeats Errors in a shape an agent can act on without
@@ -94,6 +99,7 @@ const (
 
 // Describe is the metadata a check prints for `--describe`.
 type Describe struct {
+	// Name is the check name, as `fitness <name>` runs it.
 	Name string `json:"name"`
 	// Summary says in one line what the check enforces. A built-in check
 	// leaves it empty: its package doc comment's first sentence is
@@ -114,6 +120,7 @@ type Describe struct {
 
 // Check is one check implementation: its metadata and run function.
 type Check struct {
+	// Describe is the metadata --describe prints.
 	Describe Describe
 	// Run receives the repo root and passthrough args; the returned Result
 	// is emitted verbatim. An error return means the check could not judge:

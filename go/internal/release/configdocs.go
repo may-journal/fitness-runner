@@ -144,26 +144,43 @@ func tag(field *ast.Field, key string) string {
 }
 
 // configMarkdown renders a check's config keys as a Markdown section, or ""
-// when it reads none.
+// when it reads none. Each key is a paragraph, and the keys nested in it a
+// flat list below it, so no list nests past the depth prose-budget allows.
 func configMarkdown(keys []configKey) string {
 	if len(keys) == 0 {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("## Configuration\n\nThese `.fitnessrc.json` keys tune the check.\n\n")
+	b.WriteString("## Configuration\n\nThese `.fitnessrc.json` keys tune the check.\n")
 	for _, key := range keys {
-		writeKey(&b, key, "")
+		b.WriteString("\n" + keyLine(key) + "\n")
+		if len(key.Fields) > 0 {
+			b.WriteString("\n")
+		}
+		writeNested(&b, key.Fields, "")
 	}
 	return b.String()
 }
 
-// writeKey writes key as a list item at indent, then the keys nested in it
-// one level deeper.
-func writeKey(b *strings.Builder, key configKey, indent string) {
-	b.WriteString(indent + "- " + keyLine(key) + "\n")
-	for _, sub := range key.Fields {
-		writeKey(b, sub, indent+"    ")
+// writeNested writes each nested key as an item of one flat list, a deeper
+// key named by its path from the first level, as allow.pattern, so no list
+// nests past the depth prose-budget allows.
+func writeNested(b *strings.Builder, keys []configKey, prefix string) {
+	for _, key := range keys {
+		path := prefix + key.Key
+		b.WriteString("- " + keyLine(renamed(key, path)) + "\n")
+		writeNested(b, key.Fields, path+".")
 	}
+}
+
+// renamed is key under the name path, with its doc comment's opening name
+// changed to match.
+func renamed(key configKey, path string) configKey {
+	if rest, ok := strings.CutPrefix(key.Doc, "`"+key.Key+"`"); ok {
+		key.Doc = "`" + path + "`" + rest
+	}
+	key.Key = path
+	return key
 }
 
 // keyLine is a key's doc comment, led by the key itself when the comment

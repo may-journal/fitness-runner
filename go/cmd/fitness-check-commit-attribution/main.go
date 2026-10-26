@@ -1,11 +1,3 @@
-// Command fitness-check-commit-attribution requires a commit message to
-// disclose AI use in "AI-Tools:" and "AI-Models:" git trailers. It reads the
-// proposed message, else HEAD.
-// It applies only to repos that use the convention: the proposed message or
-// one of the last historyDepth commits carries a trailer. Merge and revert
-// commits are exempt. The runner forwards a proposed
-// message via --message (surfaced as FITNESS_CTX_MESSAGE); a message that is
-// provided but empty fails rather than falling back to git log.
 package check
 
 import (

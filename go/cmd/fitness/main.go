@@ -144,7 +144,7 @@ func runCheckCommand(args []string) int {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `check`, `list`, `explain`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `check`, `list`, `explain`, `docs`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -180,6 +180,7 @@ func init() {
 		"config":             runConfig,
 		"list":               runList,
 		"explain":            runExplain,
+		"docs":               runDocs,
 	}
 }
 
@@ -202,13 +203,10 @@ func runHookArgs(args []string) int {
 	return runHook(args[0], args[1:])
 }
 
-// printUsage writes the command summary.
-func printUsage() int {
-	fmt.Println(`fitness — run the configured checks.
-
-Usage:
-  fitness                  run the full configured suite
-  fitness <name>           run one check by name
+// usage lists every command, one per line, with what it does. The README
+// shows the same list, which `go generate` writes from this constant.
+const usage = `  fitness                  run the full configured suite
+  fitness <name> [args]    run one check by name; args such as --write reach it
   fitness --policy=external --checks=name,name
                            run exactly the selected checks
   fitness --all            scan every file, even with files staged
@@ -218,6 +216,7 @@ Usage:
   fitness list [--json]    name every check with its summary, scope, budget, and whether this repo enables it
   fitness explain <check> [--json]
                            print why a check exists, what it judges, and the config it reads
+  fitness docs [topic]     list the guide topics, or print one, from the code's doc comments
   fitness check --list     print every built-in check name, one per line
   fitness boxes <report.json> <page.html>
                            draw a --json report as an HTML box diagram
@@ -227,6 +226,7 @@ Usage:
   fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
   fitness pr-check         validate PR titles and descriptions (GitHub Actions)
   fitness branch-check     validate this branch's PR and linked issues locally
+  fitness local-branch     the same meta-check, also included in pre-push
   fitness issue-check      validate an issue by its kind label and comment the result (GitHub Actions)
   fitness plan-check       issue-check for Plan issues only (GitHub Actions)
   fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
@@ -234,8 +234,11 @@ Usage:
   fitness comment-check --blob <text>
                            judge a drafted comment (- or no arguments reads stdin)
   fitness comment-check    judge issue and PR comments and reply (GitHub Actions)
+`
 
-Docs: https://github.com/may-journal/fitness-runner#usage`)
+// printUsage writes the command summary.
+func printUsage() int {
+	fmt.Print("fitness — run the configured checks.\n\nUsage:\n" + usage + "\nDocs: https://github.com/may-journal/fitness-runner#usage\n")
 	return 0
 }
 

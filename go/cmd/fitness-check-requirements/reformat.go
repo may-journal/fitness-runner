@@ -51,11 +51,17 @@ func gitShow(root, object string) (string, bool) {
 	return string(out), err == nil
 }
 
+// sourceLine is the line number a Source citation gives after its path.
+var sourceLine = regexp.MustCompile("(?m)^(Source: `[^`:]+):[0-9]+`")
+
 // wording is a doc's words in order, without its front matter, and with
 // list markers made alike: what is left when a formatter's choices of
 // blank lines, indents, line breaks, spacing, quotes in the front matter,
-// and list markers are set aside. The doc check judges the structure.
+// and list markers are set aside. The line number of its Source citation is
+// set aside too, since the cited code moving in its file changes no
+// acceptance. The doc check judges the structure, and that the line exists.
 func wording(doc string) string {
 	body := listMarker.ReplaceAllString(mdx.StripFrontMatter(doc), "$1-$2")
+	body = sourceLine.ReplaceAllString(body, "$1`")
 	return strings.Join(strings.Fields(body), " ")
 }

@@ -1,6 +1,3 @@
-// Command fitness-check-architecture-components gives every product source
-// one component owner and keeps the references between components, and
-// the runtimes that reach them, to what the components view draws.
 package check
 
 import (

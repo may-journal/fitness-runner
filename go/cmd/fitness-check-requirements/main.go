@@ -1,13 +1,3 @@
-// Command fitness-check-requirements enforces docs/requirements in every
-// repo a language module covers: each file is one requirement with a
-// unique four-digit ID, a Why, a Measurement ratio with one cited source,
-// and acceptances written as a single Given, When, and Then chain. Every
-// acceptance is owned by exactly one test named for it the way its language
-// module names tests, and every test must own one, so a test that proves no
-// requirement is either a missing requirement or a duplicate. Git history
-// supplies removed IDs, so an ID is never reused. Two docs that cover one
-// area fail, per ADR 0004. A staged or pull request change to a requirement
-// test must change its doc too, and the reverse.
 package check
 
 import (

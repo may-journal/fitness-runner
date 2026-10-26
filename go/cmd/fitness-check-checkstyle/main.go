@@ -1,6 +1,3 @@
-// Command fitness-check-checkstyle lints Java with the Checkstyle plugin
-// through the Java language module, which owns the build run, the
-// complexity ceiling rule and the judgment.
 package check
 
 import (

@@ -1,0 +1,80 @@
+// Command fitness-check-architecture-components gives every product source
+// one owner among the components the components view draws. It keeps the
+// references between components, and the runtimes that reach them, to what
+// the view draws. It reads the model `architecture-contract` describes and
+// adds no fields or columns.
+//
+// # Owners
+//
+// A component owns the product sources its claims cover: a path in its
+// diagram strings or its callout row. Boundaries, people, and external
+// systems own nothing; their claims only scope the components inside them.
+//
+// Product sources are the product category of the `architecture-contract`
+// inventory, so tests, tools, and generated files need no owner. These
+// sources are tools:
+//
+//   - A root-level file a language module names a tool config; the same file deeper down is product code.
+//   - A source under the top-level `scripts/` folder.
+//   - A file only a manifest's scripts run, as the language module that reads the manifest finds it.
+//   - Neither of the last two when the product starts it or publishes it.
+//
+// Ownership fails or holds as follows:
+//
+//   - A product source no component names fails, naming the source.
+//   - A code span or label claims a root-level source by its bare name; any other bare name stays prose.
+//   - A source two components name, in two diagrams of one view, fails naming both claims. Two claims in one diagram fail in `architecture-contract`.
+//   - A claimed path that no longer exists fails in `architecture-contract`.
+//
+// # References
+//
+// Every reference between two owners is an observed edge. The view must
+// draw it, from the component or a boundary enclosing it to the other
+// component or a boundary enclosing that one. An edge the view does not draw
+// fails at the reference, naming the view and any drawn edge in the other
+// direction. A drawn edge no reference uses is allowed.
+//
+// Each [language module] whose view reader lists references finds them in
+// its product sources. A reference is an import of another folder, or a name
+// that resolves to a declaration in another file. The reader's package,
+// `go/internal/lang/<language>/views`, documents how it resolves them.
+//
+// Comments and string literals create no reference. A source its reader
+// cannot parse fails. A reference under a build condition keeps it, and the
+// error names it after `under`. Generated sources stay in the inventory but
+// are not read.
+//
+// # Evidence
+//
+// An edge row that links a source file requires the edge; a row without a
+// link allows it. The link must be a source whose reader lists references,
+// owned by the edge's first component. Its lines, or the whole file without
+// an anchor, must name the second component: import its folder, or name a
+// symbol it declares. Anything else fails, naming the row and the link.
+//
+// For an external system the lines must name it outside comments, by a word
+// of its name, technology, or description.
+//
+// # Runtimes
+//
+// The runtimes are the products `architecture-containers` matches to
+// containers. A component under a boundary whose ID is a container of the
+// containers view belongs to that runtime. Each runtime is walked from the
+// components its product folders are built from, along the observed edges.
+//
+// Reaching a component declared under another runtime's container fails at
+// the reference, naming that boundary. A component outside every container
+// boundary is shared and may be reached by any runtime.
+//
+// # Scope
+//
+// Every run reads the whole model and every product source, so a change to
+// only the code or only the view still fails.
+//
+// # Requirements
+//
+// [Requirement 0075] has one installed-command test per acceptance.
+//
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [Requirement 0075]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0075-checks-architecture-components.md
+package check

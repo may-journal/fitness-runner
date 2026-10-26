@@ -14,7 +14,7 @@ JavaScript repos whose Node satisfies `.nvmrc`
 -
 JavaScript repos checked
 
-Source: `go/cmd/fitness-check-node-version/main.go:50`
+Source: `go/cmd/fitness-check-node-version/main.go:44`
 
 ## Requirements
 

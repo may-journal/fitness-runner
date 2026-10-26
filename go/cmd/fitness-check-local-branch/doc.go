@@ -1,0 +1,35 @@
+// Command fitness-check-local-branch runs PR and Plan judgments locally. It
+// runs the existing PR and Plan checks against this branch's live GitHub
+// metadata, without posting comments or changing issues.
+//
+// # Usage
+//
+//	fitness local-branch
+//	fitness branch-check
+//	fitness --policy=external --checks=local-branch
+//
+// Full local Fitness checks the current branch. Pre-push runs one meta-check
+// over each live pushed destination branch and local tip, including branches
+// outside the checkout. Deletions and tags skip; pre-commit excludes it. In
+// Actions or a repo without a GitHub origin, it passes without network
+// reads.
+//
+// # Behavior
+//
+// The check matches the current branch's open PR, including drafts and
+// forks, then validates its closing issues and branch Plan trailers. History
+// starts at the fetched base branch when it contains the API base commit,
+// else at that commit. Upstream Plans and entries merged since never count.
+// Ordinary issues receive PR checklist rules.
+//
+// No PR or detached HEAD skips. Ambiguous PRs, unfinished checklists,
+// inaccessible metadata, and missing base history fail with retry guidance.
+// GitHub reads share a 30-second deadline; the runner allows 35 seconds for
+// cancellation and reporting.
+//
+// # Implementation
+//
+// `go/internal/metadata` supplies the same judgments to this check and the
+// Actions commands. Only Actions applies GitHub effects. The meta-check calls
+// judgments directly, so it cannot recursively run the suite.
+package check

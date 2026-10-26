@@ -1,12 +1,7 @@
-// Command fitness-check-markdown-no-bold-italic fails bold and italic
-// emphasis in markdown files: **bold**, __bold__, *italic*, or _italic_.
-// Emphasis inside fenced code
-// blocks, inline code, and markdown links is allowed, as is the bold scope
-// Release Please gives release bullets; every tracked .md file is checked,
-// CHANGELOG.md included. The italic patterns carry JavaScript look-behind and
-// look-ahead assertions the TS original relied on, so their scan is
-// hand-rolled here; the flagged snippet is quoted byte-for-byte like
-// JSON.stringify.
+// The italic patterns carry JavaScript look-behind and look-ahead assertions
+// the TS original relied on, so their scan is hand-rolled here; the flagged
+// snippet is quoted byte-for-byte like JSON.stringify.
+
 package check
 
 import (
