@@ -25,18 +25,27 @@ Any view requires all five, and each view needs a diagram outside its legends. S
 
 ## Templates
 
-Each view has a template in [docs/architecture/templates](../../../docs/architecture/templates). Copy all five into the repo's own `docs/architecture/templates`, then start each view as a copy of its template:
+Each view has a template in [internal/architecture/templates](../../internal/architecture/templates), and fitness ships all five inside the binary. Start each view as a copy of its template:
 
 ```bash
-mkdir -p docs/architecture/templates
+mkdir -p docs/architecture
 for view in 01-system-context 02-containers 03-components 04-code 05-user-journey; do
-  curl -fsSL "https://raw.githubusercontent.com/may-journal/fitness-runner/v1/docs/architecture/templates/$view.md" \
-    -o "docs/architecture/templates/$view.md"
-  cp -n "docs/architecture/templates/$view.md" "docs/architecture/$view.md"
+  curl -fsSL "https://raw.githubusercontent.com/may-journal/fitness-runner/v1/go/internal/architecture/templates/$view.md" \
+    -o "docs/architecture/$view.md"
 done
 ```
 
-Views under `architecture/` keep their templates in `architecture/templates`. The `doc-template` check then fails a view that drifts from its template's sections, legend, callout columns, or caption; see [named templates](../fitness-check-doc-template/README.md#named-templates). Each template's comments say what to write.
+The `doc-template` check judges every view under `docs/architecture/` or `architecture/` against its shipped template. A repo needs no copy of the templates; see [shipped templates](../fitness-check-doc-template/README.md#shipped-templates). Each template's comments say what to write.
+
+| View | Diagram | Kinds | Palette |
+| --- | --- | --- | --- |
+| 01 System context | `C4Context` | Person, System, `System_Ext` | System `#1d4ed8` |
+| 02 Containers | `C4Container` | Person, `System_Boundary`, Container, `System_Ext` | Container `#0f766e` |
+| 03 Components | `C4Component` | Person, `Container_Boundary`, Component, `System_Ext` | Component `#b45309` |
+| 04 Code | `classDiagram` | class | class `#6d28d9` |
+| 05 User journey | `flowchart TB` | the four journey classes | its `classDef` lines |
+
+People are slate `#334155` and outside systems grey `#64748b` on every level, all with white text. Each fill is a fixed color that keeps 4.5:1 contrast with white, so GitHub's light and dark themes draw it alike.
 
 ## What the diagrams already say
 

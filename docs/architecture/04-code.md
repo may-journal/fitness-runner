@@ -90,6 +90,24 @@ classDiagram
     }
     Result --> Finding : V
     checkkitMain --> Finding : W
+
+    style CheckBinary fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style RunEnv fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Result fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Check fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style resolveChecks fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style runPool fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style runOne fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style checkkitMain fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style renderTable fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Row fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Palette fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Totals fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Outcome fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Program fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Finding fill:#6d28d9,stroke:#4c1d95,color:#ffffff
 ```
 
 ```mermaid
@@ -102,6 +120,10 @@ classDiagram
     class Child
     Parent <|-- Child : inherits
     Parent --> Child : uses
+
+    style Example fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Parent fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Child fill:#6d28d9,stroke:#4c1d95,color:#ffffff
 ```
 
 Numbers on classes and letters on relationships match the callout table.

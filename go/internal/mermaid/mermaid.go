@@ -645,3 +645,19 @@ func RunDocCheck(root string, validate func(file, content string) []string) (err
 	}
 	return errors, filesChecked, nil
 }
+
+// SplitArgs splits the arguments of a C4 macro call on commas outside
+// quotes, each trimmed, as in `Person(user, "1 User, admin")`.
+func SplitArgs(text string) []string {
+	var parts []string
+	quoted, start := false, 0
+	for i, r := range text {
+		if r == '"' {
+			quoted = !quoted
+		}
+		if r == ',' && !quoted {
+			parts, start = append(parts, strings.TrimSpace(text[start:i])), i+1
+		}
+	}
+	return append(parts, strings.TrimSpace(text[start:]))
+}

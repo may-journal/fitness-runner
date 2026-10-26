@@ -6,7 +6,8 @@
 // folder with a template that governs it decides, and the file must have the
 // same sections as any one of them. A template in a templates folder that
 // shares the file's name governs it alone, with its whole shape, and no other
-// file. GitHub templates get only the comment rule.
+// file. An architecture view with no such copy follows the template fitness
+// ships for it. GitHub templates get only the comment rule.
 package check
 
 import (
@@ -17,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/architecture/templates"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -103,15 +105,29 @@ func templatesByDir(docs []doc) map[string][]doc {
 	return m
 }
 
-// judge walks up from the doc's folder to the first folder with a template
-// that governs it, and judges it there. A doc no template governs passes, as
-// in a repo with no templates.
+// judge holds an architecture view with no copy of its template to the
+// shipped one. Otherwise it walks up from the doc's folder to the first
+// folder with a template that governs it, and judges it there. A doc no
+// template governs passes, as in a repo with no templates.
 func judge(d doc, byDir map[string][]doc, named map[string]bool) []string {
+	if t, ok := shipped(d, named); ok {
+		return shapeErrors(d, t)
+	}
 	for dir := dirOf(d.path); ; dir = dirOf(dir) {
 		if errs, governed := judgeAt(d, byDir[dir], named); governed || dir == "." {
 			return errs
 		}
 	}
+}
+
+// shipped returns the template fitness ships for an architecture view, unless
+// the repo keeps its own copy beside the view.
+func shipped(d doc, named map[string]bool) (doc, bool) {
+	name, body, ok := templates.For(d.path)
+	if !ok || named[path.Join(dirOf(d.path), "templates", path.Base(d.path))] {
+		return doc{}, false
+	}
+	return doc{name, body}, true
 }
 
 // judgeAt holds a doc to the named template whose namesake it is, else to any

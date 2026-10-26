@@ -192,26 +192,64 @@ func architectedRepo() map[string]string {
 		"src/store/store_test.go": testFile("store", "Test0001_1"),
 		acDoc:                     front("../../") + acDocWith("User opens the app"),
 	}
-	// Connectors carry letter callouts, as mermaid-callouts requires.
-	edits := map[string][]string{
-		acContext: {"Rel(user, app, \"3\")", "Rel(user, app, \"A\")", "| 3 | Uses it.", "| A | Uses it."},
-		acContainer: {"| 2 | The system. |", "| 2 | The app that holds the service. |",
-			"Rel(user, service, \"4\")", "Rel(user, service, \"A\")", "| 4 | Calls it.", "| A | Calls it."},
-		acComponent: {"main.go#L3", "main.go#L6", "Rel(entry, store, \"4\")", "Rel(entry, store, \"A\")", "| 4 | Saves", "| A | Saves"},
-		acCode: {"class save[\"2 save()\"]\nsave --> Record : 3", "class Save[\"2 Save()\"]\nSave --> Record : A", "| 3 | Save returns", "| A | Save returns",
-			"A saved record.", "A saved record, in [store.go](../../src/store/store.go#L5).",
-			"Writes one record.", "Writes one record, in [store.go](../../src/store/store.go#L8)."},
-		acJourney: {"open(2 Open the app):::action\ndone[3 Record saved]:::screen\nuser --> open\nopen -->|saves| done",
-			"open(2 Open the app, Req 0001):::action\nuser --> open", "| 3 | Shows the record, see [0001](../../docs/requirements/0001-open.md). | Shared by later checks. |\n", ""},
-	}
-	for view, pairs := range edits {
-		body := views["docs/architecture/"+view]
-		for i := 0; i < len(pairs); i += 2 {
-			body = strings.Replace(body, pairs[i], pairs[i+1], 1)
-		}
+	for view, body := range architectedViews() {
 		files["docs/architecture/"+view] = front("../../") + body
 	}
 	return with(views, files)
+}
+
+// The palette of each kind, as the shipped view templates style it.
+const (
+	palettePerson    = `$bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")`
+	paletteSystem    = `$bgColor="#1d4ed8", $borderColor="#1e3a8a", $fontColor="#ffffff")`
+	paletteContainer = `$bgColor="#0f766e", $borderColor="#115e59", $fontColor="#ffffff")`
+	paletteComponent = `$bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")`
+	paletteClass     = "fill:#6d28d9,stroke:#4c1d95,color:#ffffff"
+)
+
+// c4Styled is the UpdateElementStyle line that gives alias its palette.
+func c4Styled(alias, palette string) string {
+	return "    UpdateElementStyle(" + alias + ", " + palette + "\n"
+}
+
+// archView is a view as its shipped template shapes it: the diagram, its
+// legend, then the caption and the callout table of rows.
+func archView(title, diagram, legend, caption string, rows ...string) string {
+	body := "# " + title + "\n\n```mermaid\n" + diagram + "```\n\n```mermaid\n" + legend + "```\n\n" + caption + "\n\n| # | Description | Why |\n| --- | --- | --- |\n"
+	for _, row := range rows {
+		body += "| " + row + " | Shared by later checks. |\n"
+	}
+	return body
+}
+
+const archCaption = "Numbers on nodes and letters on arrows match the callout table."
+
+// architectedViews are the five views of architectedRepo, each in its
+// level's one form and palette.
+func architectedViews() map[string]string {
+	return map[string]string{
+		acContext: archView("System Context",
+			"C4Context\n    title Service\n    Person(user, \"1 User\")\n    System(app, \"2 App\")\n    Rel(user, app, \"A\")\n"+c4Styled("user", palettePerson)+c4Styled("app", paletteSystem),
+			"C4Context\n    title Legend\n    Person(p, \"Person\")\n"+c4Styled("p", palettePerson),
+			archCaption, "1 | A person who uses the app.", "2 | The system.", "A | Uses it."),
+		acContainer: archView("Containers",
+			"C4Container\n    title Service\n    Person(user, \"1 User\")\n    System_Boundary(app, \"2 App\") {\n        Container(service, \"3 Service\", \"Go\", \"src/cmd/service\")\n    }\n    Rel(user, service, \"A\")\n"+c4Styled("user", palettePerson)+c4Styled("service", paletteContainer),
+			"C4Container\n    title Legend\n    System_Boundary(b, \"System boundary\") {\n        Container(c, \"Container\", \"Tech\")\n    }\n"+c4Styled("c", paletteContainer),
+			archCaption, "1 | Same person.", "2 | The app that holds the service.", "3 | Runs requests.", "A | Calls it."),
+		acComponent: archView("Components",
+			"C4Component\n    title Service\n    Container_Boundary(service, \"1 Service (src/cmd/service)\") {\n        Component(entry, \"2 Entry\", \"Go\")\n        Component(store, \"3 Store\", \"Go\", \"src/store\")\n    }\n    Rel(entry, store, \"A\")\n"+c4Styled("entry", paletteComponent)+c4Styled("store", paletteComponent),
+			"C4Component\n    title Legend\n    Container_Boundary(cb, \"Container boundary\") {\n        Component(c, \"Component\", \"Tech\")\n    }\n"+c4Styled("c", paletteComponent),
+			archCaption, "1 | The service.", "2 | `src/cmd/service/main.go` starts it.", "3 | Keeps records.", "A | Saves through the store, see [source](../../src/cmd/service/main.go#L6)."),
+		acCode: archView("Code",
+			"classDiagram\n    class Record[\"1 Record\"] {\n        +ID\n    }\n    class Save[\"2 Save()\"]\n    Save --> Record : A\n    style Record "+paletteClass+"\n    style Save "+paletteClass+"\n",
+			"classDiagram\n    class Example\n    Parent <|-- Child : inherits\n    style Example "+paletteClass+"\n    style Parent "+paletteClass+"\n    style Child "+paletteClass+"\n",
+			"Numbers on classes and letters on relationships match the callout table.",
+			"1 | A saved record, in [store.go](../../src/store/store.go#L5).", "2 | Writes one record, in [store.go](../../src/store/store.go#L8).", "A | Save returns the record."),
+		acJourney: "# User Journey\n\n## Legend\n\n```mermaid\nflowchart TB\n    person((1 Person)):::persona\n    classDef persona fill:#fff\n```\n\n" +
+			"Numbers match the callout table.\n\n| # | Description | Why |\n| --- | --- | --- |\n| 1 | Persona | A legend row. |\n\n" +
+			"## Journey\n\n```mermaid\nflowchart TB\n    user((1 User)):::persona\n    open(2 Open the app, Req 0001):::action\n    user --> open\n    classDef persona fill:#fff\n```\n\n" +
+			"Numbers match the callout table.\n\n| # | Description | Type | Why |\n| --- | --- | --- | --- |\n| 1 | Same person. | Persona | Shared by later checks. |\n| 2 | Opens it, `0001.1`. | Action | Shared by later checks. |\n",
+	}
 }
 
 // front is the front matter a Markdown doc at depth up carries.

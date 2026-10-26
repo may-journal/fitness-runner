@@ -3,6 +3,8 @@ package architecture
 import (
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
 var (
@@ -43,27 +45,12 @@ func (d *diagram) c4(line string, at Location) {
 // arguments such as $tags="v1" style a diagram and stay out of the model.
 func c4Args(text string) []string {
 	var args []string
-	for _, arg := range splitOutsideQuotes(text) {
-		arg = strings.TrimSpace(arg)
+	for _, arg := range mermaid.SplitArgs(text) {
 		if !strings.HasPrefix(arg, "$") {
 			args = append(args, strings.Trim(arg, `"`))
 		}
 	}
 	return args
-}
-
-func splitOutsideQuotes(text string) []string {
-	var parts []string
-	quoted, start := false, 0
-	for i, r := range text {
-		if r == '"' {
-			quoted = !quoted
-		}
-		if r == ',' && !quoted {
-			parts, start = append(parts, text[start:i]), i+1
-		}
-	}
-	return append(parts, text[start:])
 }
 
 func (d *diagram) c4Call(name string, args []string, line string, at Location, opens bool) {

@@ -42,11 +42,11 @@ Source: #286
     - Given Developer has several actors joined by and before the state
         - When I check the actors
             - Then they pass, and an undeclared one among them fails
-- 0074.7
-    - Given Developer has a Given that starts with a system or legend node
-        - When I check the actors
-            - Then it fails naming the Given line and the context diagram
 - 0074.8
     - Given Developer has an acceptance the requirements check rejects
         - When I check the actors
             - Then it reports nothing for that acceptance
+- 0074.9
+    - Given Developer has a Given that starts with a system, a legend node, or a flowchart node classed person
+        - When I check the actors
+            - Then it fails naming the Given line and the context diagram, since only a C4 person is an actor

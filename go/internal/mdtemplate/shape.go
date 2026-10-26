@@ -11,19 +11,23 @@ import (
 )
 
 // Shape is the whole shape a named template sets for the one doc it governs:
-// the opening level-2 sections in order, and per section its legend, its
-// callout table columns, and the caption above that table. The opening,
-// before any level-2 heading, is the section named "". Front matter is
-// optional, so the shape never reads it.
+// the opening level-2 sections in order, per section its diagram and legend
+// types, its callout table columns, and the caption above that table, and
+// the palette of its C4 and class diagrams. The opening, before any level-2
+// heading, is the section named "". Front matter is optional, so the shape
+// never reads it.
 type Shape struct {
 	path     string
 	sections []string
 	parts    map[string]part
+	palette  palette
 }
 
-// part is what one template section holds: the Mermaid type of its legend,
-// and the columns and caption of its first callout table. Empty means none.
+// part is what one template section holds: the Mermaid types of its first
+// diagram and its legend, and the columns and caption of its first callout
+// table. Empty means none.
 type part struct {
+	diagram string
 	legend  string
 	columns []string
 	caption string
@@ -42,11 +46,16 @@ func ShapeFromTemplate(path, body string) Shape {
 	s := Shape{path: path, parts: map[string]part{}}
 	s.sections = h2s(body)
 	v := readView(body)
-	for _, l := range v.legends {
-		p := s.parts[l.section]
-		p.legend = l.kind
-		s.parts[l.section] = p
+	for _, d := range slices.Backward(v.diagrams) {
+		p := s.parts[d.section]
+		if d.legend {
+			p.legend = d.kind
+		} else {
+			p.diagram = d.kind
+		}
+		s.parts[d.section] = p
 	}
+	s.palette = readPalette(path, v.diagrams)
 	for _, t := range slices.Backward(v.tables) {
 		p := s.parts[t.section]
 		p.columns, p.caption = t.columns, firstSentence(t.caption)
@@ -56,7 +65,8 @@ func ShapeFromTemplate(path, body string) Shape {
 }
 
 // Validate returns every way body drifts from the shape: the opening
-// sections, then each shared section's legend and tables.
+// sections, then each shared section's diagrams and tables, then the
+// palette of every diagram.
 func (s Shape) Validate(body string) []Finding {
 	var out []Finding
 	have := h2s(body)
@@ -69,7 +79,7 @@ func (s Shape) Validate(body string) []Finding {
 			out = append(out, s.partFindings(name, v)...)
 		}
 	}
-	return out
+	return append(out, s.palette.allFindings(v.diagrams)...)
 }
 
 // h2s lists a doc's level-2 headings in order.
@@ -83,12 +93,16 @@ func h2s(body string) []string {
 	return out
 }
 
-// partFindings judges one section: its legend, then its callout tables.
+// partFindings judges one section: the types of its diagrams and legends,
+// then its callout tables.
 func (s Shape) partFindings(name string, v view) []Finding {
 	want := s.parts[name]
 	var out []Finding
 	if want.legend != "" && !v.hasLegend(name, want.legend) {
 		out = append(out, Finding{0, fmt.Sprintf("%s needs a %s legend as %s has", sectionName(name), want.legend, s.path)})
+	}
+	for _, d := range v.diagramsIn(name) {
+		out = append(out, s.typeFindings(d, want)...)
 	}
 	if want.columns != nil {
 		out = append(out, s.tableFindings(name, want, v.tablesIn(name))...)
@@ -115,13 +129,33 @@ func (s Shape) tableFindings(name string, want part, tables []table) []Finding {
 	return out
 }
 
-// view is a doc's legends and callout tables, each in its section.
-type view struct {
-	legends []legend
-	tables  []table
+// typeFindings fails a diagram or legend whose Mermaid type differs from
+// the one the template's section uses.
+func (s Shape) typeFindings(d diagram, want part) []Finding {
+	what, kind := "diagram", want.diagram
+	if d.legend {
+		what, kind = "legend", want.legend
+	}
+	if kind == "" || d.kind == kind {
+		return nil
+	}
+	return []Finding{{d.line, fmt.Sprintf("%s type %s must be %s as %s has", what, d.kind, kind, s.path)}}
 }
 
-type legend struct{ section, kind string }
+// view is a doc's diagrams and callout tables, each in its section.
+type view struct {
+	diagrams []diagram
+	tables   []table
+}
+
+// diagram is one Mermaid block: its section, its type, whether it is a
+// legend, its fence line, and its source.
+type diagram struct {
+	section, kind string
+	legend        bool
+	line          int
+	body          string
+}
 
 type table struct {
 	section, caption string
@@ -130,7 +164,17 @@ type table struct {
 }
 
 func (v view) hasLegend(section, kind string) bool {
-	return slices.Contains(v.legends, legend{section, kind})
+	return slices.ContainsFunc(v.diagramsIn(section), func(d diagram) bool { return d.legend && d.kind == kind })
+}
+
+func (v view) diagramsIn(section string) []diagram {
+	var out []diagram
+	for _, d := range v.diagrams {
+		if d.section == section {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 func (v view) tablesIn(section string) []table {
@@ -143,7 +187,7 @@ func (v view) tablesIn(section string) []table {
 	return out
 }
 
-// readView finds the legends and callout tables of a doc. A legend is a
+// readView finds the diagrams and callout tables of a doc. A legend is a
 // diagram with no callout numbers, one titled Legend, or one under a Legend
 // heading, as the architecture checks read them.
 func readView(body string) view {
@@ -153,9 +197,7 @@ func readView(body string) view {
 	for _, block := range mermaid.ParseDoc(body) {
 		switch b := block.(type) {
 		case *mermaid.DiagramBlock:
-			if isLegend(b, headings) {
-				v.legends = append(v.legends, legend{sectionAt(headings, b.Line), diagramKind(b.Body)})
-			}
+			v.diagrams = append(v.diagrams, diagram{sectionAt(headings, b.Line), diagramKind(b.Body), isLegend(b, headings), b.Line, b.Body})
 		case *mermaid.CalloutTableBlock:
 			v.tables = append(v.tables, table{sectionAt(headings, b.Line), captionAbove(lines, b.Line), b.Header, b.Line})
 		}
