@@ -37,6 +37,12 @@ Shared helpers in `go/internal` mark an environment error with `checkkit.Interna
 
 `gitx.Repo` returns git errors and probes a clone for a shallow history, no origin, or a detached HEAD. A missing `gh`, an auth or network failure, or a read timeout is an environment error too.
 
+## No password prompts
+
+Checks run with `GIT_TERMINAL_PROMPT=0`, `GH_PROMPT_DISABLED=1` and ssh in batch mode, which `gitx.NoPrompt` returns. Git, ssh and gh then fail at once instead of waiting for a password on the terminal. The hooks, the pre-push gate and the installer set the same for their own runs.
+
+A user's own `GIT_SSH_COMMAND`, `GIT_SSH` or `core.sshCommand` stays, and a credential helper still answers. A check that did not pass, whose output holds git's `terminal prompts disabled` or ssh's `Permission denied` line, shows as info naming the remote.
+
 ## Blob input
 
 A check can judge a GitHub blob, an Issue or PR body, instead of a file tree. Given `--body-file`, it reads that body and reports it as one file. Checks never call GitHub themselves.

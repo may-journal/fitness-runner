@@ -468,7 +468,22 @@ func rowFor(c resolved, o outcome) render.Row {
 		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
 	}
 	row.Info = appendNote(row.Info, c.describeErr)
-	return row
+	return promptRow(row, o)
+}
+
+// promptRow makes a row that did not pass info naming the remote when the
+// check's git or ssh refused to ask for a password: the clone lacks a saved
+// credential, which says nothing about the code.
+func promptRow(row render.Row, o outcome) render.Row {
+	if row.Ok && len(row.Info) == 0 {
+		return row
+	}
+	said := strings.Join(append(append([]string{o.stderr.text()}, row.Errors...), row.Info...), "\n")
+	remote, refused := gitx.RefusedPrompt(said)
+	if !refused {
+		return row
+	}
+	return render.Row{Name: row.Name, Ok: true, FilesChecked: -1, Ms: row.Ms, Info: appendNote(row.Info, gitx.PromptNote(remote))}
 }
 
 // timedOutErrors are a timed-out row's error lines: the budget it ran past,
@@ -773,12 +788,13 @@ func contextEnv(root string, checks []resolved, all bool, scope []string) ([]str
 		return nil, err
 	}
 	env := os.Environ()
-	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv} {
+	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
 		env = withoutVar(env, name)
 	}
 	// A check's `git status` would otherwise refresh and rewrite the index,
-	// which voids the shared tracked-file list for every later check.
-	env = append(env, "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
+	// which voids the shared tracked-file list for every later check. A
+	// password prompt would wait, unseen, until the budget kills the check.
+	env = append(append(env, gitx.NoPrompt(root)...), "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
 	env = append(env, scope...)
 	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
 }
