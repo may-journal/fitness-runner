@@ -29,3 +29,6 @@ jobs:
     with:
       ref: ${{ inputs.ref }}
       command: plan-check
+      # The synced issue-check caller runs dupe-check for every issue, so a
+      # Plan here would get a second note.
+      dupe-check: false

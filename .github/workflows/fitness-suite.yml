@@ -7,14 +7,23 @@ name: Fitness suite
 # target repo. Only fitness-runner skips the job, since its own CI builds the
 # checks from source. The skip is a job condition rather than a separate job,
 # because GitHub bills every job at least one minute.
+# The same job runs fitness pr-check, which the separate pr-check ruleset
+# workflow ran in a second job. So it also runs on an edit, which reruns the
+# suite too: the edit reports the same check on the same commit, so a skipped
+# suite would turn an earlier failure green.
 on:
   pull_request:
+    types: [opened, edited, reopened, synchronize]
   workflow_dispatch:
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
 
 jobs:
   org-fitness:
     if: github.repository != 'may-journal/fitness-runner'
     uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@v1
+    with:
+      pr-check: true

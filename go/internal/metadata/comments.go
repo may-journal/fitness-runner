@@ -51,9 +51,27 @@ func commentTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target,
 
 // eventComments reads the comments the event names.
 func eventComments(ev ghEvent, gh aftereffect.Client) ([]target, error) {
-	if ev.name == "workflow_dispatch" {
+	switch ev.name {
+	case "workflow_dispatch":
 		return gh.RecentComments(sweepDays())
+	case "pull_request_review":
+		return reviewComments(ev, gh)
 	}
+	return oneComment(ev)
+}
+
+// reviewComments reads every inline comment of the submitted review, so
+// one run judges the whole review.
+func reviewComments(ev ghEvent, gh aftereffect.Client) ([]target, error) {
+	if ev.Review == nil || ev.PullRequest == nil {
+		return nil, fmt.Errorf("no review in the %q event", ev.name)
+	}
+	return gh.ReviewComments(ev.PullRequest.Number, ev.Review.ID)
+}
+
+// oneComment is the single comment an issue_comment or
+// pull_request_review_comment event carries.
+func oneComment(ev ghEvent) ([]target, error) {
 	parent := ev.Issue
 	if ev.name == "pull_request_review_comment" {
 		parent = ev.PullRequest

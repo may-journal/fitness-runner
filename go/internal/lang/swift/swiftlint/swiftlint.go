@@ -12,7 +12,10 @@ package swiftlint
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -39,24 +42,56 @@ type violation struct {
 }
 
 // Run lints the repo at root, passing clean when it holds no Swift source.
+// A scoped run, such as a pull request, lints only its changed Swift files,
+// and passes without starting SwiftLint when it changed none.
 func Run(root string, _ []string) (checkkit.Result, error) {
-	if len(walkfs.FilesByExt(root, swift.Ext)) == 0 {
+	all := walkfs.FilesByExt(root, swift.Ext)
+	if len(all) == 0 {
+		return checkkit.Pass(0), nil
+	}
+	paths := lintPaths(root, all)
+	if len(paths) == 0 {
 		return checkkit.Pass(0), nil
 	}
 	bin, err := exec.LookPath("swiftlint")
 	if err != nil {
 		return checkkit.Fail(0, notInstalled), nil
 	}
-	exitCode, output := execSwiftlint(bin, root)
+	exitCode, output := execSwiftlint(bin, root, paths)
 	return judge(exitCode, output), nil
 }
 
-// execSwiftlint runs `swiftlint lint --strict --reporter json --quiet .` in
-// root; returns the exit code and combined stdout+stderr, mirroring the TS
-// execSyncResult (which redirected with `2>&1`). A failure that carries no
-// exit code maps to 1, exactly like the TS catch path.
-func execSwiftlint(bin, root string) (exitCode int, output string) {
-	cmd := exec.Command(bin, "lint", "--strict", "--reporter", "json", "--quiet", ".")
+// lintPaths is what SwiftLint lints: the whole tree, or a scoped run's
+// changed Swift files among all, none when it changed no Swift file.
+func lintPaths(root string, all []string) []string {
+	if checkkit.ChangedFiles() == nil || includes(root) {
+		return []string{"."}
+	}
+	changed := walkfs.InScope(all)
+	if len(changed) == 0 {
+		return nil
+	}
+	// SwiftLint lints a named path even when the config excludes it.
+	return append([]string{"--force-exclude"}, changed...)
+}
+
+// includedKey is a top-level `included:` list in a SwiftLint config.
+var includedKey = regexp.MustCompile(`(?m)^included\s*:`)
+
+// includes reports whether the repo's .swiftlint.yml lists `included:`
+// paths. SwiftLint lints a path named on its command line even outside
+// that list, so such a repo keeps the whole-tree lint.
+func includes(root string) bool {
+	config, err := os.ReadFile(filepath.Join(root, ".swiftlint.yml"))
+	return err == nil && includedKey.Match(config)
+}
+
+// execSwiftlint runs `swiftlint lint --strict --reporter json --quiet` on
+// paths in root; returns the exit code and combined stdout+stderr,
+// mirroring the TS execSyncResult (which redirected with `2>&1`). A failure
+// that carries no exit code maps to 1, exactly like the TS catch path.
+func execSwiftlint(bin, root string, paths []string) (exitCode int, output string) {
+	cmd := exec.Command(bin, append([]string{"lint", "--strict", "--reporter", "json", "--quiet"}, paths...)...)
 	cmd.Dir = root
 	o := checkkit.ExecCombined(cmd)
 	return o.Code, o.Stdout

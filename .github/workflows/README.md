@@ -14,7 +14,9 @@ Overflow reports are uploaded as `fitness-reports` artifacts with job, matrix, a
 
 Each started job bills at least one minute, though a check takes seconds, so run count drives spend. A job whose `if` is false starts no runner and bills nothing. So each issue, comment, and PR job skips events that cannot change its result. Its command skips them too.
 
-A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. dupe-check queues instead, since only its opened run can close a duplicate.
+Every Fitness job runs on `ubuntu-24.04-arm`, which GitHub bills at $0.005 a minute against $0.008 for x64 Linux, in private repos too. The fitness bundle, SwiftLint, Node and the JDK all ship arm64 builds, so the checks are the same. Only the release and distribution matrices keep an x64 leg, to test that platform's assets.
+
+A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. issue-check queues instead, since only its opened run can close a duplicate, and GitHub keeps only the newest pending run.
 
 ## issue-check
 
@@ -63,7 +65,8 @@ flowchart TD
 ## Triggers
 
 - `issues` (`opened`, `edited`, `reopened`, `labeled`): validates that one Issue by its kind label, and passes an Issue with none.
-- Skipped: an `edited` event with no `changes.body`, and a `labeled` event for a `fitness` verdict label.
+- Skipped: an `edited` event that changed neither title nor body, and a `labeled` event for a `fitness` verdict label.
+- A title-only edit runs dupe-check alone, since issue-check judges only the body.
 - `workflow_dispatch`: sweeps every open Issue with a kind label and comments on each body version not seen before.
 
 A changed description earns a new verdict; earlier ones stay hidden. Plan verdicts posted under the earlier `fitness:plan-structure:` marker still count. Only the bot's own comments count; a run under another token sets `FITNESS_BOT_LOGIN` to that account.
@@ -75,6 +78,8 @@ A changed description earns a new verdict; earlier ones stay hidden. Plan verdic
 ## pr-check
 
 A PR description is not a file either, but a PR has a status check. So [pr-check.yml](pr-check.yml) does not comment. It runs `fitness pr-check` on the title and body and writes violations to the run summary. The run fails, so the red check blocks the merge.
+
+In other repos the Fitness suite job runs pr-check, so the org ruleset's injected run of [pr-check-reusable.yml](pr-check-reusable.yml) skips without starting a runner. A repo's own caller of it still runs.
 
 ```mermaid
 flowchart TD
@@ -118,7 +123,9 @@ The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/ac
 
 ## fitness-suite
 
-A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request, as it does pr-check. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
+A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
+
+With `pr-check: true` the same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit reruns the whole job, since it reports the same check on the same commit. `pr-check` findings still fail the job. The input defaults to off, since it needs `pull-requests` and `issues` read.
 
 ## close-check
 
@@ -152,7 +159,7 @@ flowchart TD
 
 ## dupe-check
 
-[dupe-check.yml](dupe-check.yml) runs `fitness dupe-check` when an issue opens or changes, so a repeat points to the first thread. Other repos call [dupe-check-reusable.yml](dupe-check-reusable.yml).
+The issue-check job runs `fitness dupe-check` after its verdict when an issue opens or changes, so a repeat points to the first thread. One job per issue event bills one minute where a second dupe-check job billed two. [dupe-check-reusable.yml](dupe-check-reusable.yml) stays for repos whose caller still names it, and only answers a manual sweep.
 
 ```mermaid
 flowchart TD
@@ -218,7 +225,7 @@ flowchart TD
 
 | #   | Element      | Description                                                                       | Why                                                  |
 | --- | ------------ | --------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| 1   | Comment event | An issue, PR, or review comment is created or edited.                            | Judges a comment the moment its text changes.        |
+| 1   | Comment event | An issue comment, a submitted review, or an edited comment.                      | Judges a comment the moment its text changes.        |
 | 2   | Manual sweep | A `workflow_dispatch` run walks the last seven days of comments.                  | Audits comments that predate the workflow.           |
 | 3   | Skip guard   | Skip the known bots at job level, which post every fitness verdict and reply.     | Every person and agent owns what they wrote.         |
 | 4   | Run checks   | Run `comment-structure`, `mermaid-syntax`, and the Plan and PR prose checks.      | One tested rule set, the same one agents run first.  |
@@ -229,7 +236,9 @@ flowchart TD
 
 ## Triggers (comment-check)
 
-- `issue_comment` and `pull_request_review_comment` (`created`, `edited`): judge that one comment; a review reply answers in its thread.
+- `issue_comment` (`created`, `edited`) and `pull_request_review_comment` (`edited`): judge that one comment; a review reply answers in its thread.
+- `pull_request_review` (`submitted`): judges all of that review's comments in one run, replying in each failing thread.
+- One job per review bills one minute, where a job per review comment billed a minute each.
 - `workflow_dispatch`: sweeps recent comments; `FITNESS_SWEEP_DAYS` changes the seven-day window.
 
 A comment that always passed gets no reply. The `.fitnessrc.json` `comment` key sets `maxWords` (100) and `maxTables` (1).
@@ -247,7 +256,11 @@ The others restore `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<v
 | smoke        | distribution.yml `smoke`                 | `smoke`, Release `verify-download` |
 | requirements | distribution.yml `requirements`, shard 1 | `requirements`                     |
 
-Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes that touch Go or GoReleaser files, to save its caches. Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off.
+Only a push to `main` saves, when the job passes `save: true`. Pull requests restore main's caches but never save, so they cannot evict main's under the 10 GB limit. Binary distribution runs on main pushes that touch Go or GoReleaser files, to save its caches.
+
+### In other repos
+
+Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off. ci-reusable instead installs the Go the repo's `go.mod` names and caches `~/.cache/go-build` itself. Its key holds the platform, Go version and a hash of the Go sources. It saves on pull requests, since the suite runs on nothing else, so a PR's next push compiles only what changed.
 
 ## auto-merge
 

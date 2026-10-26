@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   release-please:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     outputs:
       pr: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}

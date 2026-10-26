@@ -70,15 +70,17 @@ It reopens issues closed with unchecked items; `fitness pr-check` fails PRs clos
 
 ## Comments
 
-may-journal/.github syncs this [comment-check](../.github/workflows/README.md#comment-check) caller into each repo. It judges every author but the known bots `fitness comment-check` lists, and carries no list of its own:
+may-journal/.github syncs this [comment-check](../.github/workflows/README.md#comment-check) caller into each repo. It judges every author but the known bots `fitness comment-check` lists, and carries no list of its own. A submitted review is judged in one job, so a review with ten comments bills one minute:
 
 ```yaml
 name: Comment check
 on:
   issue_comment:
     types: [created, edited]
+  pull_request_review:
+    types: [submitted]
   pull_request_review_comment:
-    types: [created, edited]
+    types: [edited]
   workflow_dispatch:
 jobs:
   comment-check:
@@ -93,21 +95,7 @@ Agents run `fitness comment-check --blob -` on a draft before posting, so a fail
 
 ## Duplicate issues
 
-may-journal/.github syncs this [dupe-check](../.github/workflows/README.md#dupe-check) caller into each repo. A manual run prints every pair's score, so a repo can tune its `dupeCheck` scores before turning the close tier on:
-
-```yaml
-name: Dupe check
-on:
-  issues:
-    types: [opened, edited, reopened]
-  workflow_dispatch:
-jobs:
-  dupe-check:
-    uses: may-journal/fitness-runner/.github/workflows/dupe-check-reusable.yml@v1
-    permissions:
-      contents: read
-      issues: write
-```
+The issue-check caller above also runs [dupe-check](../.github/workflows/README.md#dupe-check) in its one job, so a repo needs no dupe-check caller. A manual issue-check run also prints every pair's score, so a repo can tune its `dupeCheck` scores before turning the close tier on. `dupe-check-reusable.yml` stays for older callers and answers only a manual run.
 
 ## Reusable CI
 
@@ -149,7 +137,7 @@ Repo-specific build or tests go in an executable `.githooks/pre-commit.local`.
 
 ## Org-wide
 
-An org ruleset can run `pr-check-reusable.yml` from the `v1` tag in every repo with no caller file, since it carries a `pull_request` trigger. The org `.github` repo supplies the Plan issue template and conventions by default.
+An org ruleset runs `fitness-suite.yml` from the `v1` tag in every repo with no caller file. Its one job runs the suite and `fitness pr-check`, so the org needs no separate pr-check ruleset. `pr-check-reusable.yml` stays for a repo that wants pr-check alone. The org `.github` repo supplies the Plan issue template and conventions by default.
 
 The org's `auto-merge.yml` runs as a ruleset workflow too, acting as the `may-journal-automation` App. It reads the org secrets `AUTOMATION_APP_ID` and `AUTOMATION_APP_KEY`.
 

@@ -230,6 +230,11 @@ type ghEvent struct {
 	PullRequest *target       `json:"pull_request"`
 	Issue       *target       `json:"issue"`
 	Comment     *eventComment `json:"comment"`
+	// Review is the review a pull_request_review event submitted; its
+	// inline comments are read by its id.
+	Review *struct {
+		ID int64 `json:"id"`
+	} `json:"review"`
 	// Changes names the fields an edit changed; Body is nil when the body
 	// stayed as it was.
 	Changes struct {

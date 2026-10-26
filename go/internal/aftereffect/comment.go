@@ -207,6 +207,21 @@ func (g Client) RecentComments(days int) ([]Target, error) {
 	return all, nil
 }
 
+// ReviewComments lists the inline comments of review id on pull request n,
+// so one run judges a whole submitted review.
+func (g Client) ReviewComments(n int, id int64) ([]Target, error) {
+	path := "pulls/" + strconv.Itoa(n) + "/reviews/" + strconv.FormatInt(id, 10) + "/comments?per_page=100"
+	out, err := g.api("--paginate", "--jq", sweepJQ, path)
+	if err != nil {
+		return nil, err
+	}
+	found, err := decodeLines[sweptComment](out)
+	if err != nil {
+		return nil, err
+	}
+	return sweptTargets(found, true), nil
+}
+
 // sweptTargets turns listed comments into targets.
 func sweptTargets(found []sweptComment, review bool) []Target {
 	targets := make([]Target, len(found))

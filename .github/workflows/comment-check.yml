@@ -3,8 +3,12 @@ name: Comment check
 on:
   issue_comment:
     types: [created, edited]
+  # A submitted review starts one job for all its comments, where a job per
+  # new comment billed a minute each. An edit is still judged alone.
+  pull_request_review:
+    types: [submitted]
   pull_request_review_comment:
-    types: [created, edited]
+    types: [edited]
   workflow_dispatch:
 
 permissions:
@@ -18,12 +22,12 @@ jobs:
     # The list is KnownBots in go/internal/metadata/comments.go.
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      !contains(fromJSON('["github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), github.event.comment.user.login)
-    runs-on: ubuntu-latest
+      !contains(fromJSON('["github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), (github.event.comment.user.login || github.event.review.user.login))
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
     concurrency:
-      group: comment-check-${{ github.repository }}-${{ github.event.comment.id || github.run_id }}
+      group: comment-check-${{ github.repository }}-${{ github.event_name }}-${{ github.event.comment.id || github.event.review.id || github.run_id }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4

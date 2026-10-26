@@ -8,9 +8,9 @@ on:
   workflow_call:
     inputs:
       runs-on:
-        description: Runner label. ubuntu-latest runs swiftlint too, at a tenth of the macOS cost.
+        description: Runner label. The arm default bills 37% less a minute than x64 Linux and a tenth of macOS, and runs swiftlint too.
         type: string
-        default: ubuntu-latest
+        default: ubuntu-24.04-arm
       swift:
         description: Always install swiftlint. It is also installed when the checkout has Swift files. Linux runners get the official Linux build.
         type: boolean
@@ -27,6 +27,10 @@ on:
         description: Optional source ref to compile; empty uses the pinned binary release.
         type: string
         default: ''
+      pr-check:
+        description: On a pull request, also run fitness pr-check on its title and body. The caller must grant pull-requests and issues read.
+        type: boolean
+        default: false
 
 jobs:
   fitness:
@@ -41,13 +45,36 @@ jobs:
           # base branch to check only the files it changes.
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-go@v5
+      # Go repos: the Go the repo's go.mod names, the root one or else the
+      # shallowest, so setup-go uses the runner's copy instead of
+      # downloading the newest stable release for 9-16 s.
+      - name: Find the Go module file
+        id: go-module
         if: ${{ inputs.ref != '' || hashFiles('**/go.mod') != '' }}
+        shell: bash
+        run: |
+          file=$(git ls-files -- go.mod '*/go.mod' | awk -F/ '{ print NF, $0 }' | sort -n | head -n 1 | cut -d' ' -f2-)
+          echo "file=${file:-}" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-go@v5
+        id: go
+        if: ${{ steps.go-module.outcome == 'success' }}
         with:
-          go-version: stable
+          # A source build of fitness keeps the newest stable Go it needs.
+          go-version: ${{ (inputs.ref != '' || steps.go-module.outputs.file == '') && 'stable' || '' }}
+          go-version-file: ${{ inputs.ref == '' && steps.go-module.outputs.file || '' }}
           # No org repo has a go.sum to key on, so setup-go's cache would
-          # only log a warning.
+          # only log a warning; the next step caches the build instead.
           cache: false
+      # go-test and go-vet compile for 26-28 s with a cold build cache. Each
+      # run saves the cache under its source hash, so the PR's next push
+      # restores it and compiles only what changed.
+      - name: Restore the Go build cache
+        if: ${{ steps.go.outcome == 'success' }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ runner.os }}-${{ runner.arch }}-go${{ steps.go.outputs.go-version }}-${{ hashFiles('**/go.mod', '**/*.go') }}
+          restore-keys: go-build-${{ runner.os }}-${{ runner.arch }}-go${{ steps.go.outputs.go-version }}-
       # Node repos: the prettier, vitest, node-version, and dependency-currency
       # checks run the repo's own installed tools, as on a laptop.
       - name: Set up Node from .nvmrc
@@ -55,6 +82,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .nvmrc
+          # npm ci then fills node_modules from the cached downloads.
+          cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
       - name: Install npm packages
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npm ci
@@ -85,6 +114,7 @@ jobs:
         with:
           install-only: 'true'
       - name: Build an explicitly requested source ref
+        id: source
         if: ${{ inputs.ref != '' }}
         env:
           GOPROXY: direct
@@ -93,16 +123,28 @@ jobs:
           go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
       # One pinned SwiftLint everywhere: "latest" let a release add a rule
-      # overnight that laptops had never seen.
+      # overnight that laptops had never seen. The zip is cached per version
+      # and platform, which saves its 2-5 s download on every later run.
+      - name: Restore the SwiftLint download
+        id: swiftlint-zip
+        if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') }}
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/fitness-swiftlint
+          key: swiftlint-${{ inputs.swiftlint-version }}-${{ runner.os }}-${{ runner.arch }}
       - name: Install swiftlint
-        if: ${{ inputs.swift || hashFiles('**/*.swift') != '' }}
+        if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') }}
         env:
           VERSION: ${{ inputs.swiftlint-version }}
           ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}
         run: |
-          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" \
-            "https://github.com/realm/SwiftLint/releases/download/${VERSION}/${ASSET}.zip"
-          unzip -q -o "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
+          zip="$HOME/.cache/fitness-swiftlint/${ASSET}.zip"
+          if [ ! -f "$zip" ]; then
+            mkdir -p "$(dirname "$zip")"
+            curl -fsSL -o "$zip" \
+              "https://github.com/realm/SwiftLint/releases/download/${VERSION}/${ASSET}.zip"
+          fi
+          unzip -q -o "$zip" -d "$RUNNER_TEMP/swiftlint"
           chmod +x "$RUNNER_TEMP/swiftlint/swiftlint"
           echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/swiftlint/swiftlint" version
@@ -115,6 +157,15 @@ jobs:
         run: |
           printf 'FITNESS_PERFORMANCE_ID=%s\n' "$RANDOM$RANDOM$RANDOM" >> "$GITHUB_ENV"
           fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      # One job per PR push: pr-check shares this checkout and install, where
+      # its own job billed a second minute. It runs after failed checks too,
+      # so one run lists both, and it fails the job on its own findings.
+      - name: Validate the PR description and fail the run on violations
+        id: report-step-3
+        if: ${{ !cancelled() && inputs.pr-check && github.event_name == 'pull_request' && (steps.report-step-1.outcome == 'success' || steps.source.outcome == 'success') }}
+        run: fitness pr-check
         env:
           GH_TOKEN: ${{ github.token }}
       # The box diagram rides in the same artifact: see docs/ci.md#box-diagram.
@@ -151,7 +202,7 @@ jobs:
         env:
           REPORT_STATUS: ${{ job.status }}
           REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure') }}
+          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.report-step-2.outcome == 'failure' || steps.report-step-3.outcome == 'failure') }}
         run: |
           if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
             printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
