@@ -14,10 +14,15 @@ import (
 // promptedRemote is the remote a prompting git asks a password for.
 const promptedRemote = "https://git.example.invalid/app.git"
 
+// sshRemote is a remote the real git reaches through ssh, so the prompting
+// ssh asks the password.
+const sshRemote = "git@git.example.invalid:app.git"
+
 // promptingTools returns a PATH setting whose git and ssh wait for a
 // password as the real tools do on a terminal, and the file where the
 // waiting tool writes its process ID. Git waits on any command that reaches
-// a remote and runs the real git otherwise. Each fails at once, with the
+// a remote and runs the real git otherwise, or when named an ssh remote, so
+// the real git runs ssh. Each fails at once, with the
 // real tool's message, when the no-prompt setting is on: git under
 // GIT_TERMINAL_PROMPT=0 and ssh under BatchMode=yes. Git also waits,
 // whatever the no-prompt setting, on each subcommand stalls names, as a
@@ -34,7 +39,8 @@ func promptingTools(t *testing.T, stalls ...string) (path, pidFile string) {
 		stall = "for a in \"$@\"; do\n  case \"$a\" in " + strings.Join(stalls, "|") + ")\n" + wait + "  ;; esac\ndone\n"
 	}
 	write(t, dir, map[string]string{
-		"git": "#!/bin/sh\n" + stall + "remote=\nfor a in \"$@\"; do\n  case \"$a\" in fetch|pull|push|clone|ls-remote) remote=1 ;; esac\ndone\n" +
+		"git": "#!/bin/sh\n" + stall + "remote=\nfor a in \"$@\"; do\n  case \"$a\" in fetch|pull|push|clone|ls-remote) remote=${remote:-1} ;; " + sshRemote + ") remote=ssh ;; esac\ndone\n" +
+			"[ \"$remote\" = ssh ] && remote=\n" +
 			"[ -z \"$remote\" ] && exec \"" + real + "\" \"$@\"\n" +
 			"if [ \"$GIT_TERMINAL_PROMPT\" = 0 ]; then\n" +
 			"  echo \"fatal: could not read Username for '" + promptedRemote + "': terminal prompts disabled\" >&2\n  exit 128\nfi\n" +

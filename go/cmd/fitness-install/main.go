@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -20,7 +21,10 @@ var bundleHashes string
 
 func main() { os.Exit(run(os.Args[1:])) }
 
+// run installs and runs Fitness. Every git, ssh and gh it starts, such as
+// `gh auth token`, fails instead of asking for a password.
 func run(args []string) int {
+	gitx.DisablePrompts(".")
 	options, err := commandOptions(args)
 	if errors.Is(err, flag.ErrHelp) {
 		return 0

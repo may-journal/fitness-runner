@@ -46,7 +46,7 @@ Source: `go/cmd/fitness/ci.go:22`
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo
             - Then it judges the files tracked now
-- 0001.17
-    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start, or fails its describe step
+- 0001.18
+    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start, fails its describe step, or meets a password prompt
         - When fitness runs
             - Then it shows as info naming why, and Actions adds a notice while the other checks set the exit code
