@@ -148,10 +148,18 @@ func (s *stream) replay() {
 
 // lastLine is the last line with text the check wrote to stderr, or "".
 func (s *stream) lastLine() string {
+	text := s.text()
+	return strings.TrimSpace(text[strings.LastIndexByte(text, '\n')+1:])
+}
+
+// text is all the check wrote, trimmed; empty for a check with no stream.
+func (s *stream) text() string {
+	if s == nil {
+		return ""
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	text := strings.TrimSpace(s.buf.String())
-	return strings.TrimSpace(text[strings.LastIndexByte(text, '\n')+1:])
+	return strings.TrimSpace(s.buf.String())
 }
 
 // streams holds every check's stderr in a run, and makes the last check

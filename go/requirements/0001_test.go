@@ -29,7 +29,7 @@ func Test0001_2(t *testing.T) {
 	sees(t, out, code, 1, "README.md: disallowed **bold**", passedOf(1)+", 1 failed")
 }
 
-func Test0001_17(t *testing.T) {
+func Test0001_18(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", with(goRepo(), map[string]string{"broken_test.go": "package adder\n\nfunc Test0001_2(t *testing.T {\n"}))
 	out, code := fitness(t, repo, nil)
@@ -54,6 +54,7 @@ func Test0001_17(t *testing.T) {
 		"::notice title=go-vet::check ended without a result (signal: killed)")
 	written, _ := os.ReadFile(summary)
 	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
+	promptsRefused(t)
 }
 
 // describeFails runs check in repo with a copy of the installed runner, after
@@ -102,10 +103,11 @@ func Test0001_14(t *testing.T) {
 }
 
 // promptsTimeOut asserts a check whose git or ssh waits for a password times
-// out red at its budget, and the waiting tool is stopped.
+// out red at its budget, and the waiting tool is stopped. Git waits only in a
+// check that turns its prompts back on, since 0001.18 turns them off.
 func promptsTimeOut(t *testing.T) {
 	t.Helper()
-	for _, call := range []string{"git fetch origin", "ssh git@git.example.invalid true"} {
+	for _, call := range []string{"GIT_TERMINAL_PROMPT=1 git fetch origin", "ssh git@git.example.invalid true"} {
 		promptTimesOut(t, call)
 	}
 }
@@ -123,9 +125,9 @@ func promptTimesOut(t *testing.T, call string) {
 
 // prompted runs, under a 0.5s timeoutMs, a local check that runs call with
 // git and ssh waiting for a password, as on a machine with no credentials
-// saved. It returns the output, the exit code and the file holding the
-// waiting tool's process ID.
-func prompted(t *testing.T, call string) (string, int, string) {
+// saved, and env added to the user's environment. It returns the output, the
+// exit code and the file holding the waiting tool's process ID.
+func prompted(t *testing.T, call string, env ...string) (string, int, string) {
 	t.Helper()
 	path, pidFile := promptingTools(t)
 	repo := example(t, "happyRepo", map[string]string{
@@ -133,8 +135,21 @@ func prompted(t *testing.T, call string) (string, int, string) {
 		"checks/fitness-check-prompted": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"prompted\"}'; exit 0; }\n" + call + "\necho '" + passing + "'\n",
 	})
 	git(t, repo, "remote", "add", "origin", promptedRemote)
-	out, code := fitness(t, repo, []string{path}, "--policy=external", "--checks=prompted")
+	out, code := fitness(t, repo, append([]string{path}, env...), "--policy=external", "--checks=prompted")
 	return out, code, pidFile
+}
+
+// promptsRefused asserts a check whose git, over HTTPS or ssh, meets a
+// password prompt ends within its budget as info naming the remote.
+func promptsRefused(t *testing.T) {
+	t.Helper()
+	for remote, call := range map[string]string{promptedRemote: "git fetch origin", "git@git.example.invalid": "git fetch " + sshRemote} {
+		out, code, _ := prompted(t, call+" || exit 1")
+		sees(t, out, code, 0, remote+" asked for a password, and checks never wait for one", "1 info")
+		if !strings.Contains(row(out, "prompted"), "info") {
+			t.Errorf("a check whose %s may not ask for a password must show info, got row %q", call, row(out, "prompted"))
+		}
+	}
 }
 
 // ownBudget runs, beside the installed checks, one that declares a 0.3s

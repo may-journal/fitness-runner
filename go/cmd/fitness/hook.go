@@ -16,12 +16,15 @@ import (
 
 // runHook dispatches a `fitness hook <name>` invocation. The installed hooks
 // are one-line shims that call this, so the orchestration lives here in Go
-// rather than in each repo's Bash.
+// rather than in each repo's Bash. A hook owns the terminal, so every git,
+// ssh and gh it starts, the pre-push gate's too, fails instead of asking for
+// a password.
 func runHook(name string, args []string) int {
 	if err := chdirToplevel(); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness hook: "+err.Error())
 		return 1
 	}
+	gitx.DisablePrompts(".")
 	switch name {
 	case "commit-msg":
 		return hookCommitMsg(args)

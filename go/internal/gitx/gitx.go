@@ -48,8 +48,12 @@ func gitResult(ctx context.Context, o checkkit.Outcome, args []string) (string, 
 	return o.Stdout, nil
 }
 
-// gitReason is git's own last stderr line, else the run error.
+// gitReason names the remote when git or ssh refused to ask for a password,
+// else it is git's own last stderr line, else the run error.
 func gitReason(o checkkit.Outcome) string {
+	if remote, ok := RefusedPrompt(o.Stderr); ok {
+		return PromptNote(remote)
+	}
 	lines := strings.Split(strings.TrimSpace(o.Stderr), "\n")
 	if last := strings.TrimSpace(lines[len(lines)-1]); last != "" {
 		return last
