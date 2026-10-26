@@ -76,7 +76,7 @@ func (d *diagram) encloses(outer, inner string) bool {
 func (m *Model) actors() {
 	names, ids := map[string]Element{}, map[string]Element{}
 	for _, e := range m.Elements {
-		if m.person(e.Kind) {
+		if person(e.Kind) {
 			m.actor(e, names, ids)
 		}
 	}

@@ -26,18 +26,6 @@ const (
 	dtTemplates = dtViews + "templates/"
 )
 
-// viewRulesFail is a config that opts in to failing on the staged
-// architecture view rules, which only warn without it.
-const viewRulesFail = `{"architectureViews": "error"}` + "\n"
-
-// stagedNote is how a run ends its staged warnings.
-const stagedNote = `staged architecture view warning(s); set "architectureViews": "error" in .fitnessrc.json to fail on them, as a later release will by default`
-
-// dtEnforced is files with the config that fails the staged rules.
-func dtEnforced(files map[string]string) map[string]string {
-	return with(files, map[string]string{".fitnessrc.json": viewRulesFail})
-}
-
 // dtShipped is what a user has after following the architecture-contract
 // README: each view in docs/architecture started as a copy of its shipped
 // template, and no copy of the templates.
@@ -176,6 +164,19 @@ func Test0023_16(t *testing.T) {
 		journey+": callout table columns #, Description, Kind, Why must be #, Description, Type, Why as "+dtTemplates+acJourney+" has",
 		table+`: callout table needs the caption "Numbers on classes and letters on relationships match the callout table" above it as `+dtTemplates+acCode+" has",
 		dtViews+acContainer+": the opening needs a callout table with columns #, Description, Why as "+dtTemplates+acContainer+" has")
+
+	files = dtShipped(t)
+	dtEdit(t, files, acContainer, "C4Container\n    title Product", "C4Context\n    title Product")
+	dtEdit(t, files, acComponent, "C4Component\n    title Legend", "C4Container\n    title Legend")
+	dtEdit(t, files, acCode, "```mermaid\nclassDiagram\n    class Record", "```mermaid\nflowchart TB\n    class Record")
+	dtEdit(t, files, acJourney, "flowchart TB", "flowchart LR")
+	out, code = docTemplate(t, files)
+	sees(t, out, code, 1,
+		dtLine(t, files, acContainer, "```mermaid")+": diagram type C4Context must be C4Container as "+dtShippedName(acContainer)+" has",
+		dtViews+acComponent+": the opening needs a C4Component legend as "+dtShippedName(acComponent)+" has",
+		": legend type C4Container must be C4Component as "+dtShippedName(acComponent)+" has",
+		dtLine(t, files, acCode, "```mermaid")+": diagram type flowchart TB must be classDiagram as "+dtShippedName(acCode)+" has",
+		dtLine(t, files, acJourney, "```mermaid")+": legend type flowchart LR must be flowchart TB as "+dtShippedName(acJourney)+" has")
 }
 
 func Test0023_17(t *testing.T) {
@@ -197,52 +198,26 @@ func Test0023_17(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 	dtEdit(t, files, acJourney, "## Journey", "## Steps")
 	dtEdit(t, files, acCode, "Numbers on classes", "Labels on classes")
-	journey := dtViews + acJourney + ": sections must open with `## Legend`, `## Journey` as " + dtShippedName(acJourney) + " does"
-	caption := `: callout table needs the caption "Numbers on classes and letters on relationships match the callout table" above it as ` + dtShippedName(acCode) + " has"
 	out, code = docTemplate(t, files)
-	sees(t, out, code, 0, "warning: "+journey, caption, stagedNote)
-	out, code = docTemplate(t, dtEnforced(files))
-	sees(t, out, code, 1, journey, caption)
+	sees(t, out, code, 1,
+		dtViews+acJourney+": sections must open with `## Legend`, `## Journey` as "+dtShippedName(acJourney)+" does",
+		`: callout table needs the caption "Numbers on classes and letters on relationships match the callout table" above it as `+dtShippedName(acCode)+" has")
 }
 
 func Test0023_18(t *testing.T) {
 	t.Parallel()
 	files := dtShipped(t)
-	dtEdit(t, files, acContainer, "C4Container\n    title Product", "C4Context\n    title Product")
-	dtEdit(t, files, acComponent, "C4Component\n    title Legend", "C4Container\n    title Legend")
-	dtEdit(t, files, acCode, "```mermaid\nclassDiagram\n    class Record", "```mermaid\nflowchart TB\n    class Record")
-	dtEdit(t, files, acJourney, "flowchart TB", "flowchart LR")
-	types := []string{
-		dtLine(t, files, acContainer, "```mermaid") + ": diagram type C4Context must be C4Container as " + dtShippedName(acContainer) + " has",
-		dtViews + acComponent + ": the opening needs a C4Component legend as " + dtShippedName(acComponent) + " has",
-		": legend type C4Container must be C4Component as " + dtShippedName(acComponent) + " has",
-		dtLine(t, files, acCode, "```mermaid") + ": diagram type flowchart TB must be classDiagram as " + dtShippedName(acCode) + " has",
-		dtLine(t, files, acJourney, "```mermaid") + ": legend type flowchart LR must be flowchart TB as " + dtShippedName(acJourney) + " has",
-	}
-	out, code := docTemplate(t, files)
-	sees(t, out, code, 0, append(types, "warning: "+types[0], stagedNote)...)
-	out, code = docTemplate(t, dtEnforced(files))
-	sees(t, out, code, 1, types...)
-	out, code = docTemplate(t, with(files, map[string]string{".fitnessrc.json": `{"architectureViews": "strict"}` + "\n"}))
-	sees(t, out, code, 1, `.fitnessrc.json sets "architectureViews" to "strict"; use "warn" or "error"`)
-
-	copied := dtCopied(t)
-	dtEdit(t, copied, acContext, "UpdateElementStyle(product, $bgColor=\"#1d4ed8\"", "UpdateElementStyle(product, $bgColor=\"#ff0000\"")
-	out, code = docTemplate(t, copied)
-	sees(t, out, code, 0, "styles each System", stagedNote)
-
-	files = dtShipped(t)
 	dtEdit(t, files, acContext, "    UpdateElementStyle(user,",
 		"    SystemDb_Ext(db, \"4 Records\", \"Keeps records.\")\n    UpdateElementStyle(db, $fontColor=\"#FFFFFF\", $bgColor=\"#64748b\",  $borderColor=\"#475569\")\n    UpdateLayoutConfig($c4ShapeInRow=\"3\")\n    Lay_R(user, product)\n    UpdateElementStyle(user,")
 	dtEdit(t, files, acCode, "    save --> Record : A", "    save --> Record : A\n    Store : +save()\n    <<interface>> Store\n    style Store "+paletteClass)
-	out, code = docTemplate(t, dtEnforced(files))
+	out, code := docTemplate(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 	dtEdit(t, files, acContext, "UpdateElementStyle(product, $bgColor=\"#1d4ed8\"", "UpdateElementStyle(product, $bgColor=\"#ff0000\"")
 	dtEdit(t, files, acContainer, "    UpdateElementStyle(app, "+paletteContainer+"\n", "")
 	dtEdit(t, files, acComponent, "Container_Boundary(app,", "System_Boundary(app,")
 	dtEdit(t, files, acComponent, "    Rel(user, entry, \"A\")", "    Rel(user, entry, \"A\")\n    UpdateRelStyle(user, entry, $textColor=\"red\")")
 	dtEdit(t, files, acCode, "    save --> Record : A", "    save --> Record : A\n    classDef hot fill:#ff0000")
-	out, code = docTemplate(t, dtEnforced(files))
+	out, code = docTemplate(t, files)
 	sees(t, out, code, 1,
 		"`UpdateElementStyle(product, $bgColor=\"#ff0000\", $borderColor=\"#1e3a8a\", $fontColor=\"#ffffff\")` must be `UpdateElementStyle(product, "+paletteSystem+"` as "+dtShippedName(acContext)+" styles each System",
 		"Container app needs `UpdateElementStyle(app, "+paletteContainer+"` as "+dtShippedName(acContainer)+" styles each Container",

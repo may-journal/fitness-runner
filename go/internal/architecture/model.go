@@ -104,10 +104,7 @@ type Model struct {
 	Requirements  []requirement.Document
 	Files         []string
 	Errors        []string
-	// FlowchartPeople keeps a flowchart node classed person counting as a
-	// person, until the repo opts in to the staged view rules.
-	FlowchartPeople bool
-	repo            repository
+	repo          repository
 	// journeyAt is the first journey diagram's fence line, or the journey
 	// view's first line when it has no diagram.
 	journeyAt Location

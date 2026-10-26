@@ -27,7 +27,7 @@ A template file defines a markdown document's shape, and its neighbors must matc
 A file in a `templates` folder governs alone the neighbor that shares its name, so `docs/architecture/templates/04-code.md` judges `docs/architecture/04-code.md`. It governs no other doc, so the other neighbors match the folder's other templates. A neighbor in a folder of only named templates follows the nearest folder above with others, so `docs/architecture/notes.md` follows `docs/template.md`. A named template holds its namesake to its whole shape:
 
 - Sections: the template's `##` sections open the doc, in order. Sections of the doc's own may follow.
-- Legends: a section with a legend in the template needs a legend of the same Mermaid type, direction aside.
+- Legends: a section with a legend in the template needs a legend of the same Mermaid type.
 - Legend kinds: a diagram with no callout numbers, one titled `Legend`, or one under a `Legend` heading.
 - Diagram types: each diagram and legend in a section has the Mermaid type and direction of the template's there.
 - Callout tables: a section with one in the template needs one, and each has the template's columns.
@@ -49,22 +49,6 @@ The journey template draws a flowchart, so its palette judges nothing.
 ## Shipped templates
 
 Fitness ships the five architecture view templates inside the binary. A view under `docs/architecture/` or `architecture/` follows its shipped template, such as [04-code.md](../../internal/architecture/templates/04-code.md), with every rule above. A repo's own copy in the views' `templates` folder governs instead, as a named template. The [architecture-contract README](../fitness-check-architecture-contract/README.md#templates) lists each level's form and palette.
-
-## Staged rollout
-
-Three rules are staged, so a release does not break a repo's commits before its views follow them:
-
-- Shipped templates, for a view with no copy of its own.
-- Diagram types.
-- Palette.
-
-By default each staged finding is a warning: an info note that starts `warning:`, then one note on how to opt in. The run still passes, and a view with no copy is judged as before. Set `architectureViews` in `.fitnessrc.json` to make the staged rules fail now:
-
-```json
-{ "architectureViews": "error" }
-```
-
-The value is `"warn"`, the default, or `"error"`; any other value fails the check. A later release makes `"error"` the default. The same key stages a rule in [architecture-actors](../fitness-check-architecture-actors/README.md#staged-rollout).
 
 ## Behavior
 

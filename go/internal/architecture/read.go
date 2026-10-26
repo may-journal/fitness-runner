@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -24,9 +23,7 @@ var heading = regexp.MustCompile(`^#{1,6}\s+(.*?)\s*#*$`)
 // so a change on one side still meets the unchanged other side.
 func Load(root string) (Model, error) {
 	files := walkfs.FilesByExt(root, "")
-	// A bad architectureViews value counts as "warn"; doc-template fails it.
-	enforce, _ := conf.ViewRulesFail(root)
-	m := Model{repo: newRepository(root, files), FlowchartPeople: !enforce}
+	m := Model{repo: newRepository(root, files)}
 	if err := m.readRequirements(root, files); err != nil {
 		return m, err
 	}

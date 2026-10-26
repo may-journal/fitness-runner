@@ -1,7 +1,6 @@
 package architecture
 
 import (
-	"slices"
 	"sort"
 	"strings"
 
@@ -18,38 +17,18 @@ type Actor struct {
 
 // person reports a C4 Person macro, the one form a person takes. A
 // flowchart node classed person is no person, since the system context is
-// a C4Context diagram. That rule is staged: until the repo opts in, such a
-// node still counts, as FlowchartPeople says.
-func (m *Model) person(kind string) bool {
-	return strings.HasPrefix(kind, "Person") || m.FlowchartPeople && strings.EqualFold(kind, "person")
+// a C4Context diagram.
+func person(kind string) bool {
+	return strings.HasPrefix(kind, "Person")
 }
 
-// StagedGivens lists the Given failures that only the staged rule finds:
-// those CheckGivens reports once flowchart people stop counting, and not
-// before. It is empty when the repo already opts in.
-func (m *Model) StagedGivens() []string {
-	if !m.FlowchartPeople {
-		return nil
-	}
-	now := m.CheckGivens()
-	strict := *m
-	strict.FlowchartPeople = false
-	var staged []string
-	for _, e := range strict.CheckGivens() {
-		if !slices.Contains(now, e) {
-			staged = append(staged, e)
-		}
-	}
-	return staged
-}
-
-// Actors lists the context view's people in diagram order, once per ID
+// Actors lists the context view's C4 people in diagram order, once per ID
 // across both roots.
 func (m *Model) Actors() []Actor {
 	var actors []Actor
 	seen := map[string]bool{}
 	for _, e := range m.Elements {
-		if e.View == "context" && m.person(e.Kind) && !seen[e.ID] {
+		if e.View == "context" && person(e.Kind) && !seen[e.ID] {
 			seen[e.ID] = true
 			actors = append(actors, Actor{ID: e.ID, Name: e.Name, At: e.At})
 		}

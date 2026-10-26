@@ -81,7 +81,7 @@ func (c *components) fail(at Location, format string, args ...any) {
 // not a boundary, person, or external system.
 func (c *components) unit(id string) bool {
 	e, ok := c.elements[id]
-	return ok && !boundary(e.Kind) && !external(e.Kind) && !c.m.person(e.Kind)
+	return ok && !boundary(e.Kind) && !external(e.Kind) && !person(e.Kind)
 }
 
 func boundary(kind string) bool {

@@ -70,33 +70,6 @@ type Config struct {
 		// MaxTables is the most tables one comment may hold.
 		MaxTables int `json:"maxTables"`
 	} `json:"comment"`
-	// ArchitectureViews is "warn" or "error": how the staged architecture
-	// view rules report. Empty means "warn"; see ViewRulesFail.
-	ArchitectureViews string `json:"architectureViews"`
-}
-
-// ViewRulesFail reports whether root's config opts in to failing on the
-// staged architecture view rules. They warn by default, so a repo adopts
-// them before a release makes them fail. A value other than "warn" or
-// "error" is an error naming both.
-func ViewRulesFail(root string) (bool, error) {
-	cfg, err := Load(root)
-	if err != nil || cfg == nil {
-		return false, err
-	}
-	switch cfg.ArchitectureViews {
-	case "", "warn":
-		return false, nil
-	case "error":
-		return true, nil
-	}
-	return false, fmt.Errorf(`%s sets "architectureViews" to %q; use "warn" or "error"`, FileName, cfg.ArchitectureViews)
-}
-
-// StagedNote is the info note that closes a run's staged warnings, naming
-// how to make them fail now.
-func StagedNote(n int) string {
-	return fmt.Sprintf(`%d staged architecture view warning(s); set "architectureViews": "error" in %s to fail on them, as a later release will by default`, n, FileName)
 }
 
 // FileName is the config file the runner reads at the repo root.
