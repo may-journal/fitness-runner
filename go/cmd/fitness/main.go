@@ -478,7 +478,7 @@ func promptRow(row render.Row, o outcome) render.Row {
 	if row.Ok && len(row.Info) == 0 {
 		return row
 	}
-	said := strings.Join(append(append([]string{string(o.stderr)}, row.Errors...), row.Info...), "\n")
+	said := strings.Join(append(append([]string{o.stderr.text()}, row.Errors...), row.Info...), "\n")
 	remote, refused := gitx.RefusedPrompt(said)
 	if !refused {
 		return row
