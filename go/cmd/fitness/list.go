@@ -54,13 +54,29 @@ func runList(args []string) int {
 
 // listFlags reads the one flag `fitness list` takes.
 func listFlags(args []string) (asJSON bool, err error) {
-	for _, a := range args {
-		if a != "--json" {
-			return false, fmt.Errorf("unknown argument %q; use --json or nothing", a)
-		}
-		asJSON = true
+	asJSON, rest := takeJSONFlag(args)
+	if len(rest) > 0 {
+		return false, fmt.Errorf("unknown argument %q; use --json or nothing", rest[0])
 	}
 	return asJSON, nil
+}
+
+// takeJSONFlag takes --json out of args, saying whether it was there.
+func takeJSONFlag(args []string) (asJSON bool, rest []string) {
+	for _, a := range args {
+		if a == "--json" {
+			asJSON = true
+			continue
+		}
+		rest = append(rest, a)
+	}
+	return asJSON, rest
+}
+
+// seconds writes a budget in milliseconds as seconds, as both commands
+// show it.
+func seconds(ms int64) string {
+	return trimFloat(float64(ms) / 1000)
 }
 
 // listChecks describes every check in the catalog and marks the ones the
@@ -121,7 +137,7 @@ func printList(w io.Writer, checks []listed) {
 	fmt.Fprintln(tw, "CHECK\tSCOPE\tBUDGET\tENABLED\tSUMMARY")
 	for _, c := range checks {
 		fmt.Fprintf(tw, "%s\t%s\t%ss\t%s\t%s\n", c.Name, orDash(c.Scope),
-			trimFloat(float64(c.BudgetMs)/1000), yesNo(c.Enabled), summaryOrNote(c))
+			seconds(c.BudgetMs), yesNo(c.Enabled), summaryOrNote(c))
 	}
 	_ = tw.Flush()
 }

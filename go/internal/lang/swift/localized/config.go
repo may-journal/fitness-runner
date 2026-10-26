@@ -10,16 +10,19 @@ import (
 
 // fileConfig is the check's own key in the repo's config file.
 type fileConfig struct {
+	// LocalizedText holds the localized-text check's options.
 	LocalizedText struct {
 		// Reference names the type views and tests read catalog entries
 		// through, such as Words.
 		Reference string `json:"reference"`
 		// Allow lists literals the check passes, each with its reason.
 		Allow []struct {
+			// Pattern is a regular expression a literal must match whole.
 			Pattern string `json:"pattern"`
-			Reason  string `json:"reason"`
+			// Reason says why the literal stays out of the catalog.
+			Reason string `json:"reason"`
 		} `json:"allow"`
-	} `json:"localizedText"`
+	} `json:"localizedText" check:"localized-text"`
 }
 
 // config is the loaded check config: how a failure names the reference,

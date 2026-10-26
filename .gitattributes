@@ -1,0 +1,2 @@
+# Files `go generate` writes from the code; their sources are checked.
+go/cmd/fitness/checks.go linguist-generated
