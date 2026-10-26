@@ -107,9 +107,10 @@ type resolved struct {
 
 // outcome is one finished check, in dispatch order.
 type outcome struct {
-	res    checkkit.Result
-	ms     int64
-	stderr []byte
+	res checkkit.Result
+	ms  int64
+	// stderr holds what the check wrote there, which may have streamed live.
+	stderr *stream
 	// timedOut marks a budget kill; crashed says how a check that printed
 	// no result ended, exit is its protocol exit code, and startErr says why
 	// the check could not start.
@@ -442,13 +443,14 @@ func singleCheckArgs(root string, checks []resolved, passthrough []string, all b
 	return env, remaining, nil
 }
 
-// summarize converts outcomes to table rows, streaming each check's stderr
-// in dispatch order, and tallies the totals-line inputs.
+// summarize converts outcomes to table rows, printing each check's stderr
+// that did not stream live, in dispatch order, and tallies the totals-line
+// inputs.
 func summarize(checks []resolved, outcomes []outcome) ([]render.Row, render.Totals) {
 	rows := make([]render.Row, len(checks))
 	var totals render.Totals
 	for i, c := range checks {
-		os.Stderr.Write(outcomes[i].stderr)
+		outcomes[i].stderr.replay()
 		rows[i] = rowFor(c, outcomes[i])
 		totals.Add(rows[i])
 	}
@@ -461,13 +463,22 @@ func summarize(checks []resolved, outcomes []outcome) ([]render.Row, render.Tota
 func rowFor(c resolved, o outcome) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
 	if o.timedOut {
-		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms,
-			Errors: []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}}
+		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms, Errors: timedOutErrors(c, o)}
 	} else if note, internal := internalNote(o); internal {
 		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
 	}
 	row.Info = appendNote(row.Info, c.describeErr)
 	return row
+}
+
+// timedOutErrors are a timed-out row's error lines: the budget it ran past,
+// then the last line it wrote to stderr, which says where it stopped.
+func timedOutErrors(c resolved, o outcome) []string {
+	errs := []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}
+	if last := o.stderr.lastLine(); last != "" {
+		errs = append(errs, "Last output: "+last)
+	}
+	return errs
 }
 
 // internalNote reports whether the check could not judge and says why. A
@@ -685,17 +696,17 @@ func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup fu
 }
 
 // running holds the process group of every check still running, so an
-// interrupt can stop them with the runner.
+// interrupt can stop them with the runner, and the heartbeat can name them.
 var running = struct {
 	sync.Mutex
-	pids map[int]bool
-}{pids: map[int]bool{}}
+	pids map[int]liveCheck
+}{pids: map[int]liveCheck{}}
 
 // trackRunning records a started check's process group until the returned
 // func runs.
-func trackRunning(pid int) (done func()) {
+func trackRunning(pid int, c liveCheck) (done func()) {
 	running.Lock()
-	running.pids[pid] = true
+	running.pids[pid] = c
 	running.Unlock()
 	return func() {
 		running.Lock()
@@ -837,11 +848,17 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 }
 
 // runPool executes every check with bounded parallelism, printing the
-// progress line as each starts. Checks start by the budget they declare,
-// largest first, so a slow one never waits behind the quick ones; outcomes
-// stay in catalog order.
+// progress line as each starts, and the heartbeat while they run. Checks
+// start by the budget they declare, largest first, so a slow one never
+// waits behind the quick ones; outcomes stay in catalog order. The last
+// check still running streams its stderr live.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
 	outcomes := make([]outcome, len(checks))
+	out := newStreams(len(checks))
+	heartbeat := heartbeatOn()
+	if heartbeat {
+		defer startHeartbeat(heartbeatEvery)()
+	}
 	sem := make(chan struct{}, par.Processes())
 	var wg sync.WaitGroup
 	for _, i := range startOrder(checks) {
@@ -852,7 +869,8 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 		go func(i int, c resolved) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			outcomes[i] = runOne(root, c, passthrough, env)
+			outcomes[i] = runOne(root, c, passthrough, env, out.watch(i, heartbeat))
+			out.finish(i)
 		}(i, c)
 	}
 	wg.Wait()
@@ -875,26 +893,28 @@ func startOrder(checks []resolved) []int {
 }
 
 // runOne execs a single check in its own process group with a timeout that
-// kills the whole group (TERM, then KILL after a grace period).
-func runOne(root string, c resolved, passthrough, env []string) outcome {
+// kills the whole group (TERM, then KILL after a grace period). Its stderr
+// goes to w's stream, and off the heartbeat it is named at half its budget.
+func runOne(root string, c resolved, passthrough, env []string, w watch) outcome {
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
 	cmd.Dir = root
 	cmd.Env = append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	var stdout, stderr bytes.Buffer
+	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	cmd.Stderr = w.stderr
 
-	start := time.Now()
+	live := liveCheck{name: c.name, start: time.Now(), budget: timeoutFor(c)}
 	if err := cmd.Start(); err != nil {
-		return outcome{startErr: err.Error()}
+		return outcome{stderr: w.stderr, startErr: err.Error()}
 	}
-	defer trackRunning(cmd.Process.Pid)()
-	timedOut := waitWithBudget(cmd, timeoutFor(c))
-	ms := time.Since(start).Milliseconds()
+	defer trackRunning(cmd.Process.Pid, live)()
+	defer warnHalfway(live, w.heartbeat)()
+	timedOut := waitWithBudget(cmd, live.budget)
+	ms := time.Since(live.start).Milliseconds()
 
-	o := outcome{ms: ms, stderr: stderr.Bytes(), timedOut: timedOut}
+	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut}
 	if timedOut {
 		return o
 	}
