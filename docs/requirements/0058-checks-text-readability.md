@@ -14,7 +14,7 @@ docs with 2 of 3 scores in alarm reported red
 -
 docs with 2 of 3 scores in alarm
 
-Source: `go/cmd/fitness-check-text-readability/main.go:143`
+Source: `go/cmd/fitness-check-text-readability/main.go:134`
 
 ## Requirements
 

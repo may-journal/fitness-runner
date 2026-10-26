@@ -1,19 +1,3 @@
-// Command fitness-check-issue-link-once keeps each Issue's timeline readable:
-// every commit that links an Issue adds an entry there, so a branch links an
-// Issue from one commit at most.
-//
-// It runs in two places. The commit-msg hook passes the proposed message as
-// the context-inline `--message` value. The check fails it when an earlier
-// commit on the branch, since its merge base with origin's default branch,
-// links the same Issue, or when the branch's open PR body links it. With no
-// PR, or no network, it warns and skips the PR rule.
-//
-// On a pull request in CI, it judges every branch commit, oldest first, by
-// the same two rules. The PR rule counts only commits authored after the PR
-// opened, so the one link written before it stays allowed. A failure stays
-// red until the history is rewritten without the repeat.
-//
-// Anywhere else, such as a local suite run or a push to main, it passes inert.
 package check
 
 import (

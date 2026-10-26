@@ -14,7 +14,7 @@ docs free of bold and italic emphasis
 -
 docs checked
 
-Source: `go/cmd/fitness-check-markdown-no-bold-italic/main.go:163`
+Source: `go/cmd/fitness-check-markdown-no-bold-italic/main.go:158`
 
 ## Requirements
 

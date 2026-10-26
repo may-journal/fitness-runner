@@ -14,7 +14,7 @@ coverage exclude entries reported red
 -
 coverage exclude entries found
 
-Source: `go/cmd/fitness-check-vitest-coverage-exclude/main.go:58`
+Source: `go/cmd/fitness-check-vitest-coverage-exclude/main.go:46`
 
 ## Requirements
 

@@ -1,4 +1,3 @@
-// Command fitness-check-go-test-coverage measures entry coverage and test overlap.
 package check
 
 import (

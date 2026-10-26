@@ -1,7 +1,3 @@
-// Command fitness-check-architecture-contract validates declarations beside
-// all five architecture views before more specific checks resolve their proof.
-// A repo with product code in any language module's sources and no views
-// fails, asking for all five.
 package check
 
 import (

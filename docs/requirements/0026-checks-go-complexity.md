@@ -14,7 +14,7 @@ Go functions within the complexity ceiling
 -
 Go functions scored
 
-Source: `go/cmd/fitness-check-go-complexity/main.go:90`
+Source: `go/cmd/fitness-check-go-complexity/main.go:81`
 
 ## Requirements
 

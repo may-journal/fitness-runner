@@ -19,7 +19,8 @@ const checksFile = "go/cmd/fitness/checks.go"
 
 // WriteChecks rewrites every file Generated returns, so the fitness binary
 // builds in every go/cmd/fitness-check-<name> package with the docs its code
-// comments hold, and no one keeps that list by hand.
+// comments hold, each check README and the check index say the same, and
+// no one keeps them by hand.
 func (c Config) WriteChecks() error {
 	files, err := c.Generated()
 	if err != nil {
@@ -84,7 +85,31 @@ func (c Config) Generated() (map[string][]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return map[string][]byte{checksFile: registry, topicsFile: topicFile}, nil
+	files := map[string][]byte{checksFile: registry, topicsFile: topicFile}
+	return files, c.addMarkdown(files, docs)
+}
+
+// addMarkdown adds each check's README, and the files that hold a generated
+// region among hand-written text: the check index in docs/checks.md, and the
+// command list in the README.
+func (c Config) addMarkdown(files map[string][]byte, docs []checkDoc) error {
+	for _, d := range docs {
+		files["go/cmd/"+d.Folder+"/README.md"] = checkReadme(d)
+	}
+	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment", checkIndex(docs))
+	if err != nil {
+		return err
+	}
+	usage, err := c.usageBlock()
+	if err != nil {
+		return err
+	}
+	readme, err := c.withRegion(readmeFile, usageMarker, "the usage constant in "+usageFile, usage)
+	if err != nil {
+		return err
+	}
+	files[docsChecksFile], files[readmeFile] = index, readme
+	return nil
 }
 
 // topicsFile holds the `fitness docs` topics the fitness binary is built
@@ -181,7 +206,12 @@ func checkAlias(name string) string {
 }
 
 // Input reports whether a changed repository path can change what the
-// generator writes: a Go source, which holds the doc comments it reads.
+// generator writes: a Go source, which holds the doc comments it reads, or a
+// Markdown file it writes whole or in part.
 func Input(path string) bool {
-	return strings.HasSuffix(path, ".go")
+	if strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile {
+		return true
+	}
+	matched, _ := filepath.Match("go/cmd/fitness-check-*/README.md", path)
+	return matched
 }

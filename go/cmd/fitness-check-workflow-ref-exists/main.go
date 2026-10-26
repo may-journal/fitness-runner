@@ -1,13 +1,3 @@
-// Command fitness-check-workflow-ref-exists fails a workflow that calls a
-// may-journal workflow or action at a tag or sha where that path does not
-// exist yet. A caller that merges before its tag holds the file fails every
-// event in the repo with a missing-workflow error.
-//
-// It reads each `uses:` line in .github/workflows and asks GitHub, through
-// the gh CLI, whether the path exists at the ref. Local, branch-ref, and
-// non-may-journal lines are ignored. When GitHub cannot answer, such as
-// offline, without a token, or for a repo the token cannot read, it skips
-// with a note and never passes or fails a ref it could not see.
 package check
 
 import (

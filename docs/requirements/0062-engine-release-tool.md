@@ -16,7 +16,7 @@ release commands that end with a clear outcome
 -
 release commands run
 
-Source: `go/cmd/fitness-release/main.go:25`
+Source: `go/cmd/fitness-release/main.go:30`
 
 ## Requirements
 

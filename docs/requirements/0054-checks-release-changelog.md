@@ -14,7 +14,7 @@ release versions whose version file agrees
 -
 release versions in a manifest
 
-Source: `go/cmd/fitness-check-release-changelog/main.go:74`
+Source: `go/cmd/fitness-check-release-changelog/main.go:71`
 
 ## Requirements
 

@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"go/ast"
 	"go/doc"
+	"go/doc/comment"
 	"go/parser"
 	"go/token"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -44,16 +46,78 @@ func readCheckDoc(dir string) (checkDoc, error) {
 		return checkDoc{}, fmt.Errorf("go/cmd/%s: the package doc comment must open with %q", folder, opening)
 	}
 	rest = capitalize(rest)
-	return checkDoc{Name: name, Folder: folder, Summary: pkg.Synopsis(rest), Body: markdown(pkg, rest)}, nil
+	return checkDoc{Name: name, Folder: folder, Summary: synopsis(pkg, rest), Body: markdown(pkg, rest)}, nil
+}
+
+// synopsis is the first sentence of doc comment text as plain text. Go cuts
+// the sentence before it reads the link definitions at the comment's end,
+// so a link there would keep its brackets; synopsis shows its text alone.
+func synopsis(pkg *doc.Package, text string) string {
+	summary := pkg.Synopsis(text)
+	for _, def := range pkg.Parser().Parse(text).Links {
+		summary = strings.ReplaceAll(summary, "["+def.Text+"]", def.Text)
+	}
+	return summary
 }
 
 // markdown renders doc comment text as Markdown, its headings at level 2,
-// below the title an explanation puts above them.
+// with no IDs, which GitHub derives from the heading text itself,
+// below the title an explanation or README puts above them.
 func markdown(pkg *doc.Package, text string) string {
 	printer := pkg.Printer()
 	printer.HeadingLevel = 2
-	return codeSpans(string(printer.Markdown(pkg.Parser().Parse(text))))
+	printer.HeadingID = func(*comment.Heading) string { return "" }
+	return blocks(codeSpans(string(printer.Markdown(pkg.Parser().Parse(text)))))
 }
+
+// blocks writes the printer's code blocks and lists the way the repo's own
+// Markdown writes them. A run of tab-indented code lines, with any blank
+// lines inside it, becomes a fenced block, which the prose checks mask as
+// code. A list item loses the indent the printer puts before its marker.
+func blocks(md string) string {
+	lines := strings.Split(md, "\n")
+	var out []string
+	for i := 0; i < len(lines); i++ {
+		if !strings.HasPrefix(lines[i], "\t") {
+			out = append(out, unindentItem(lines[i]))
+			continue
+		}
+		end := codeEnd(lines, i)
+		out = append(out, "```")
+		for _, line := range lines[i:end] {
+			out = append(out, strings.TrimPrefix(line, "\t"))
+		}
+		out = append(out, "```")
+		i = end - 1
+	}
+	return strings.Join(out, "\n")
+}
+
+// codeEnd is the index just past the code block starting at lines[start]:
+// past its last tab-indented line, so the blank lines after it stay out.
+func codeEnd(lines []string, start int) int {
+	end := start + 1
+	for j := start + 1; j < len(lines); j++ {
+		if strings.HasPrefix(lines[j], "\t") {
+			end = j + 1
+		} else if lines[j] != "" {
+			break
+		}
+	}
+	return end
+}
+
+// unindentItem drops the indent the printer puts before a list marker:
+// two spaces before "-", one before a number.
+func unindentItem(line string) string {
+	if strings.HasPrefix(line, "  - ") || numberedItem.MatchString(line) {
+		return strings.TrimLeft(line, " ")
+	}
+	return line
+}
+
+// numberedItem matches a numbered list item as the printer writes it.
+var numberedItem = regexp.MustCompile(`^ [0-9]+\. `)
 
 // codeSpans turns the backticks a doc comment writes around code into
 // Markdown code spans. The printer escapes them, since a doc comment has no

@@ -1,12 +1,3 @@
-// Command fitness-check-doc-template makes each markdown document match
-// the shape of a template that governs it. A template is template.md,
-// *.template.md, any markdown file in a templates folder (governing its
-// parent), or a GitHub PR or Issue template. Every template's level-2 section
-// needs a guiding HTML comment. Walking up from each markdown file, the first
-// folder with a template that governs it decides, and the file must have the
-// same sections as any one of them. A template in a templates folder that
-// shares the file's name governs it alone, with its whole shape, and no other
-// file. GitHub templates get only the comment rule.
 package check
 
 import (
