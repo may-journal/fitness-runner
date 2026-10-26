@@ -21,7 +21,7 @@ An agent may work an Issue as it sees fit — implement it, branch, commit, and 
 
 Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and pair each change with an [entry file](go/cmd/fitness-check-changelog/README.md#entry-files). A pull request adds one `changelog/<yyyy-mm-dd-HHMM>-<change>.md` in its first commit, and later commits edit its bullets, which release notes list. The PR description's `## Changelog` links that file, as the [PR template](.github/PULL_REQUEST_TEMPLATE.md) shows, and never copies its bullets.
 
-Name the approved Issue with a `Plan #NN` trailer on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
+Name the approved Issue with a `Plan #NN` trailer, or `Plan <owner>/<repo>#NN` for another repo's Plan, on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
 
 The `pre-push` hook blocks a push that does not trace to an approved Plan Issue through the branch or its open PR. Chore and docs-only pushes are exempt. A PR body names the agent that wrote it, such as `Agent: Claude`, so a reviewer knows whom to ask.
 

@@ -78,6 +78,10 @@ func Test0031_1(t *testing.T) {
 	iloCommit(t, repo, "", "feat(app): start\n\nPlan #12")
 	out, code := iloCheck(t, repo, "fix(app): more\n\nSee https://github.com/"+iloRepo+"/issues/12")
 	sees(t, out, code, 1, iloRepo+`#12 is already linked by commit`, `("feat(app): start")`)
+	repo = iloOnGitHub(t, "topic")
+	iloCommit(t, repo, "", "feat(app): begin\n\nPlan may-journal/.github#144")
+	out, code = iloCheck(t, repo, "fix(app): more\n\nPlan https://github.com/may-journal/.github/issues/144")
+	sees(t, out, code, 1, `may-journal/.github#144 is already linked by commit`, `("feat(app): begin")`)
 }
 
 func Test0031_2(t *testing.T) {

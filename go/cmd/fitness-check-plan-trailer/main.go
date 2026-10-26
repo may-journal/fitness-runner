@@ -18,12 +18,17 @@ func Main() {
 
 var (
 	// planRefRe matches a line that is entirely a plan reference: `Plan`
-	// followed by separators and a number, and nothing else. It will not
-	// match body prose like "Plan the rollout in 3 steps".
-	planRefRe = regexp.MustCompile(`(?mi)^\s*plan[ :#]+\s*\d+\s*$`)
-	// validPlanRe is the one accepted spelling.
-	validPlanRe = regexp.MustCompile(`^Plan #\d+$`)
+	// followed by separators, an optional repo or issue URL, and a number,
+	// and nothing else. It will not match body prose like "Plan the rollout
+	// in 3 steps".
+	planRefRe = regexp.MustCompile(`(?mi)^\s*plan[ :#]+\s*(?:https?://\S+/|[\w.-]+/[\w.-]+\s*#?\s*)?\d+\s*$`)
+	// validPlanRe is the three accepted spellings: a Plan of this repo, a
+	// Plan of another repo, and that Plan's URL.
+	validPlanRe = regexp.MustCompile(`^Plan (?:#\d+|[\w.-]+/[\w.-]+#\d+|https://github\.com/[\w.-]+/[\w.-]+/issues/\d+)$`)
 )
+
+// planTrailerFix names the accepted spellings in every failure.
+const planTrailerFix = `must read exactly "Plan #<number>", "Plan <owner>/<repo>#<number>" or "Plan https://github.com/<owner>/<repo>/issues/<number>"`
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	msg, provided := checkkit.CtxMessage()
@@ -33,14 +38,14 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return judge(msg), nil
 }
 
-// judge flags every plan-reference line that is not exactly `Plan #<number>`;
-// a message with no plan reference passes.
+// judge flags every plan-reference line in none of the accepted spellings; a
+// message with no plan reference passes.
 func judge(msg string) checkkit.Result {
 	var errs []string
 	for _, line := range planRefRe.FindAllString(msg, -1) {
 		t := strings.TrimSpace(line)
 		if !validPlanRe.MatchString(t) {
-			errs = append(errs, fmt.Sprintf("plan trailer \"%s\" must read exactly \"Plan #<number>\"", t))
+			errs = append(errs, fmt.Sprintf("plan trailer \"%s\" %s", t, planTrailerFix))
 		}
 	}
 	if len(errs) > 0 {

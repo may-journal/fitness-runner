@@ -19,7 +19,7 @@ Source: `go/cmd/fitness-check-issue-link-once/main.go:111`
 ## Requirements
 
 - 0031.1
-    - Given Developer has a branch commit that links `#12` of origin's repo
+    - Given Developer has a branch commit that links `#12` of origin's repo, or `Plan may-journal/.github#144`
         - When issue-link-once checks a message linking that issue by URL
             - Then it fails naming the earlier commit
 - 0031.2
