@@ -6,22 +6,47 @@ import (
 	"testing"
 )
 
+// Comment authors on the saved Plans: the repo's owner, a passer-by with no
+// tie to the repo, an org member, and a reviewer a repo may list in
+// planApprovers.
+var (
+	owner    = func(body string) comment { return comment{Body: body, Author: "example-owner", Association: "OWNER"} }
+	passerby = func(body string) comment { return comment{Body: body, Author: "passerby", Association: "NONE"} }
+	member   = func(body string) comment { return comment{Body: body, Author: "org-member", Association: "MEMBER"} }
+	reviewer = func(body string) comment { return comment{Body: body, Author: "reviewer-bot", Association: "NONE"} }
+)
+
 // pushPlans are GitHub's saved answers about the issues a trailer may name:
-// #218 is an approved Plan, #151 is a Plan nobody approved, and #196 is a bug.
+// #218 is a Plan the repo's owner approved, #151 is a Plan only called
+// approved or approved by a passer-by, #196 is a bug, #307 is a Plan the
+// reviewer approved, and #308 is a Plan an org member approved.
 func pushPlans(t *testing.T) []response {
 	t.Helper()
+	plan, labels := planBody("- [ ] Ship it."), []string{"Plan"}
 	return []response{
-		planView(t, 218, planBody("- [ ] Ship it."), []string{"Plan"}, "Looks good.", "Approved, go ahead."),
-		planView(t, 151, planBody("- [ ] Ship it."), []string{"Plan", "enhancement"}, "Could this reuse the existing parser?"),
-		planView(t, 196, "The parser drops the last line.", []string{"bug"}, "Approved."),
+		planViewBy(t, 218, plan, labels, passerby("Looks good."), owner("I approve this Plan.")),
+		planViewBy(t, 151, plan, []string{"Plan", "enhancement"}, owner("This is not approved; it needs work."), passerby("I approve.")),
+		planView(t, 196, "The parser drops the last line.", []string{"bug"}, "I approve."),
+		planViewBy(t, 307, plan, labels, reviewer("I approve.")),
+		planViewBy(t, 308, plan, labels, member("i approve, go ahead")),
 	}
 }
+
+// listed is a config whose planApprovers names only the reviewer, in another
+// case than GitHub reports the login.
+var listed = map[string]string{".fitnessrc.json": `{"planApprovers": ["Reviewer-Bot"]}` + "\n"}
 
 // pushRepo is a hooked repo whose pre-push asks the gh stand-in about Plans.
 // It pushes main, so later pushes start from a shared base.
 func pushRepo(t *testing.T) (string, []string, replays) {
 	t.Helper()
-	repo, hookEnv := hooked(t, nil)
+	return pushRepoWith(t, nil)
+}
+
+// pushRepoWith is pushRepo with files written over the example repo.
+func pushRepoWith(t *testing.T, files map[string]string) (string, []string, replays) {
+	t.Helper()
+	repo, hookEnv := hooked(t, files)
 	rp := standIn(t, map[string][]response{"gh": pushPlans(t)})
 	env := pushEnv(hookEnv, rp)
 	remote(t, repo)
@@ -39,7 +64,13 @@ func pushEnv(hookEnv []string, rp replays) []string {
 // pushFeature commits a feature naming the Plan trailer and pushes it.
 func pushFeature(t *testing.T, trailer string) (string, int, replays) {
 	t.Helper()
-	repo, env, rp := pushRepo(t)
+	return pushFeatureWith(t, nil, trailer)
+}
+
+// pushFeatureWith is pushFeature in a repo with files written over it.
+func pushFeatureWith(t *testing.T, files map[string]string, trailer string) (string, int, replays) {
+	t.Helper()
+	repo, env, rp := pushRepoWith(t, files)
 	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "feat(app): add a feature\n\n"+trailer)
 	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
 	return out, code, rp
@@ -85,6 +116,10 @@ func Test0010_1(t *testing.T) {
 	out, code, rp := pushFeature(t, "Plan #218")
 	sees(t, out, code, 0, "HEAD -> main")
 	pushAsked(t, rp, "218", "comments")
+	out, code, _ = pushFeature(t, "Plan #308")
+	sees(t, out, code, 0, "HEAD -> main")
+	out, code, _ = pushFeatureWith(t, listed, "Plan #307")
+	sees(t, out, code, 0, "HEAD -> main")
 }
 
 func Test0010_4(t *testing.T) {
@@ -200,8 +235,14 @@ func Test0010_14(t *testing.T) {
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (196)")
 	pushAsked(t, rp, "196", "labels")
 	out, code, rp = pushFeature(t, "Plan #151")
-	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)",
+		`A Plan needs a comment starting "I approve" from the repo's owner or an org member (planApprovers is unset).`)
 	pushAsked(t, rp, "151", "comments")
+	out, code, _ = pushFeature(t, "Plan #307")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (307)")
+	out, code, _ = pushFeatureWith(t, listed, "Plan #218")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (218)",
+		`A Plan needs a comment starting "I approve" from one of planApprovers: Reviewer-Bot.`)
 	out, code, rp = orgPushFeature(t, "Plan may-journal/.github#141")
 	sees(t, out, code, 1, "no approved Plan Issue among (may-journal/.github#141)")
 	pushAsked(t, rp, "141", "-R may-journal/.github")

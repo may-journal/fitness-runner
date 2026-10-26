@@ -19,7 +19,13 @@ import (
 // local-branch the Plans it read.
 const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
 
-var approveRe = regexp.MustCompile(`(?i)approve`)
+// approvalRe matches a comment whose first line starts with `I approve`, in
+// any case, so a mere mention of approval, such as "not approved", is none.
+var approvalRe = regexp.MustCompile(`(?i)^[ \t]*I approve\b`)
+
+// defaultApprovers are the associations GitHub gives the repo's owner and
+// its org's members, who may approve when planApprovers is unset.
+var defaultApprovers = []string{"OWNER", "MEMBER"}
 
 // planReadTimeout bounds one Plan read, as local-branch bounds its own.
 const planReadTimeout = 30 * time.Second
@@ -57,15 +63,29 @@ func NewPushPlans() *PushPlans {
 }
 
 // Approved reports whether the Plan ref names carries the exact `Plan` label
-// and an approval comment, reading it from GitHub until a read succeeds. A
-// qualified ref is read from the repo it names; a bare one from this repo.
-func (p *PushPlans) Approved(ref gitx.PlanRef) bool {
+// and a comment whose first line starts with `I approve` by an allowed
+// approver, reading it from GitHub until a read succeeds. A qualified ref is
+// read from the repo it names; a bare one from this repo. Approvers lists the
+// logins allowed; with none, the repo's owner and its org's members are.
+func (p *PushPlans) Approved(ref gitx.PlanRef, approvers []string) bool {
 	key := strings.ToLower(ref.String())
 	r, ok := p.reads[key]
 	if !ok {
 		r, ok = p.read(key, ref)
 	}
-	return ok && slices.Contains(r.view.Labels, "Plan") && slices.ContainsFunc(r.view.Comments, approveRe.MatchString)
+	return ok && slices.Contains(r.view.Labels, "Plan") && slices.ContainsFunc(r.view.Comments, func(c aftereffect.IssueComment) bool {
+		return approvalRe.MatchString(c.Body) && allowed(c, approvers)
+	})
+}
+
+// allowed reports whether c's author may approve: a login approvers lists,
+// compared case-insensitively, or with no list the repo's owner or an org
+// member.
+func allowed(c aftereffect.IssueComment, approvers []string) bool {
+	if len(approvers) == 0 {
+		return slices.Contains(defaultApprovers, c.Association)
+	}
+	return slices.ContainsFunc(approvers, func(login string) bool { return strings.EqualFold(login, c.Author) })
 }
 
 // read asks GitHub for the Plan ref names and keeps a successful read.
