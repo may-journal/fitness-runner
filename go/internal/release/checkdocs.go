@@ -46,7 +46,7 @@ func readCheckDoc(dir string) (checkDoc, error) {
 // parseDoc reads the documentation of the one non-test package in dir.
 func parseDoc(dir string) (*doc.Package, error) {
 	fset := token.NewFileSet()
-	files, err := parseSources(fset, dir)
+	files, err := parseSources(fset, dir, parser.PackageClauseOnly|parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
@@ -56,8 +56,10 @@ func parseDoc(dir string) (*doc.Package, error) {
 	return doc.NewFromFiles(fset, files, "github.com/may-journal/fitness-runner/go/cmd/"+filepath.Base(dir))
 }
 
-// parseSources parses each package source in dir, with its comments.
-func parseSources(fset *token.FileSet, dir string) ([]*ast.File, error) {
+// parseSources parses each package source in dir in mode, such as the
+// package clause and its doc comment alone when the generator needs only
+// the doc comment.
+func parseSources(fset *token.FileSet, dir string, mode parser.Mode) ([]*ast.File, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -67,7 +69,7 @@ func parseSources(fset *token.FileSet, dir string) ([]*ast.File, error) {
 		if !packageSource(entry) {
 			continue
 		}
-		file, err := parser.ParseFile(fset, filepath.Join(dir, entry.Name()), nil, parser.ParseComments)
+		file, err := parser.ParseFile(fset, filepath.Join(dir, entry.Name()), nil, mode)
 		if err != nil {
 			return nil, err
 		}

@@ -2,8 +2,10 @@ package release
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -34,19 +36,33 @@ func (c Config) WriteChecks() error {
 // Stale lists each generated file, relative to the root, whose content
 // differs from what WriteChecks would write, and how many files it writes.
 // An error means the code holds something the generator cannot read, such
-// as a check package without a doc comment.
+// as a check package without a doc comment, or a generated file it cannot
+// read for a reason other than its absence.
 func (c Config) Stale() (stale []string, total int, err error) {
 	files, err := c.Generated()
 	if err != nil {
 		return nil, 0, err
 	}
 	for _, path := range slices.Sorted(maps.Keys(files)) {
-		got, err := os.ReadFile(filepath.Join(c.Root, filepath.FromSlash(path)))
-		if err != nil || !bytes.Equal(got, files[path]) {
+		differs, err := c.differs(path, files[path])
+		if err != nil {
+			return nil, 0, err
+		}
+		if differs {
 			stale = append(stale, path)
 		}
 	}
 	return stale, len(files), nil
+}
+
+// differs reports whether the file at path, relative to the root, holds
+// other than want. A missing file differs; any other read error is returned.
+func (c Config) differs(path string, want []byte) (bool, error) {
+	got, err := os.ReadFile(filepath.Join(c.Root, filepath.FromSlash(path)))
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return false, err
+	}
+	return !bytes.Equal(got, want), nil
 }
 
 // Generated returns each file the generator writes, by repository path, read
@@ -111,4 +127,10 @@ func checkAlias(name string) string {
 		words[i] = strings.ToUpper(words[i][:1]) + words[i][1:]
 	}
 	return strings.Join(words, "") + "Check"
+}
+
+// Input reports whether a changed repository path can change what the
+// generator writes: a Go source, which holds the doc comments it reads.
+func Input(path string) bool {
+	return strings.HasSuffix(path, ".go")
 }

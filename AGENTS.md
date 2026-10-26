@@ -23,7 +23,7 @@ Follow the repo's normal flow. Commit straight to `main`, run the full `fitness`
 
 Name the approved Issue with a `Plan #NN` trailer on the branch's first commit only. Each link adds to the Issue's timeline, and `issue-link-once` fails a repeat. CI fails a pull request whose commits repeat a link. Fix it by rewriting that commit without the link and force-pushing with `--force-with-lease`.
 
-The `pre-push` hook blocks a push that does not trace to an approved Plan Issue through the branch or its open PR. Chore and docs-only pushes are exempt. A PR body names the agent that wrote it, such as `Agent: Vanderbot Claude`, so a reviewer knows whom to ask.
+The `pre-push` hook blocks a push that does not trace to an approved Plan Issue through the branch or its open PR. Chore and docs-only pushes are exempt. A PR body names the agent that wrote it, such as `Agent: Claude`, so a reviewer knows whom to ask.
 
 ## Working with checks
 
