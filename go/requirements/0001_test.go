@@ -97,6 +97,43 @@ func Test0001_14(t *testing.T) {
 	if !strings.Contains(row(out, "own-budget"), "failed") {
 		t.Errorf("a check past the budget it declares must report red, got row %q", row(out, "own-budget"))
 	}
+	promptsTimeOut(t)
+}
+
+// promptsTimeOut asserts a check whose git or ssh waits for a password times
+// out red at its budget, and the waiting tool is stopped.
+func promptsTimeOut(t *testing.T) {
+	t.Helper()
+	for _, call := range []string{"git fetch origin", "ssh git@git.example.invalid true"} {
+		promptTimesOut(t, call)
+	}
+}
+
+// promptTimesOut asserts what promptsTimeOut does for one call.
+func promptTimesOut(t *testing.T, call string) {
+	t.Helper()
+	out, code, pidFile := prompted(t, call)
+	sees(t, out, code, 1, "Check timed out after 0.5s")
+	if !strings.Contains(row(out, "prompted"), "failed") {
+		t.Errorf("a check whose %s waits for a password must time out red, got row %q", call, row(out, "prompted"))
+	}
+	processStopped(t, pidFile)
+}
+
+// prompted runs, under a 0.5s timeoutMs, a local check that runs call with
+// git and ssh waiting for a password, as on a machine with no credentials
+// saved. It returns the output, the exit code and the file holding the
+// waiting tool's process ID.
+func prompted(t *testing.T, call string) (string, int, string) {
+	t.Helper()
+	path, pidFile := promptingTools(t)
+	repo := example(t, "happyRepo", map[string]string{
+		".fitnessrc.json":               `{"localChecks": "checks", "timeoutMs": 500}` + "\n",
+		"checks/fitness-check-prompted": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"prompted\"}'; exit 0; }\n" + call + "\necho '" + passing + "'\n",
+	})
+	git(t, repo, "remote", "add", "origin", promptedRemote)
+	out, code := fitness(t, repo, []string{path}, "--policy=external", "--checks=prompted")
+	return out, code, pidFile
 }
 
 // ownBudget runs, beside the installed checks, one that declares a 0.3s
@@ -118,12 +155,13 @@ func ownBudget(t *testing.T) (string, int) {
 
 func Test0001_15(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", architectedRepo())
-	path, calls := loggedGit(t)
-	out, code := fitness(t, repo, []string{path})
-	sees(t, out, code, 0, allPassed())
-	if n := occurrences(calls, "ls-files -z --cached"); n != 1 {
-		t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+	for _, repo := range []string{example(t, "happyRepo", architectedRepo()), generatedTree(t, architectedRepo(), 3000)} {
+		path, calls := loggedGit(t)
+		out, code := fitness(t, repo, []string{path})
+		sees(t, out, code, 0, allPassed())
+		if n := occurrences(calls, "ls-files -z --cached"); n != 1 {
+			t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+		}
 	}
 }
 
@@ -328,12 +366,18 @@ func Test0001_5(t *testing.T) {
 // childStopped asserts the hung prettier's child process is gone.
 func childStopped(t *testing.T, repo string) {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(repo, "prettier.pid"))
+	processStopped(t, filepath.Join(repo, "prettier.pid"))
+}
+
+// processStopped asserts the process whose ID pidFile holds is gone.
+func processStopped(t *testing.T, pidFile string) {
+	t.Helper()
+	raw, err := os.ReadFile(pidFile)
 	mustDo(t, err)
 	pid, _ := strconv.Atoi(strings.TrimSpace(string(raw)))
 	t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
 	if !gone(pid, 3*time.Second) {
-		t.Fatalf("prettier's child process %d is still running after fitness stopped it", pid)
+		t.Fatalf("process %d from %s is still running after fitness stopped it", pid, filepath.Base(pidFile))
 	}
 }
 

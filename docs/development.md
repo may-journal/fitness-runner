@@ -31,6 +31,12 @@ Edit the doc comment, usually the check's `doc.go`, never the README. A doc comm
 
 `make requirements` builds the candidate for this host's platform only, then runs the requirement tests against it. Release and CI builds keep all four platforms.
 
+Three helpers in [traps_test.go](../go/requirements/traps_test.go) stage what hangs a real machine, so a test proves fitness still ends:
+
+- `promptingTools` puts a `git` and `ssh` on `PATH` that wait for a password, or fail at once under `GIT_TERMINAL_PROMPT=0` or `BatchMode=yes`.
+- `silentListener` accepts connections and never answers, as a proxy that drops traffic does. Use its URL as `HTTPS_PROXY` or as a registry.
+- `generatedTree` commits a temporary repo with as many tracked files as a test asks for. Nothing it writes lands in this repo.
+
 CI splits the tests over two `requirements` jobs per platform with [tests/requirements-shard.sh](../tests/requirements-shard.sh). `sh tests/requirements-shard.sh 1 2` runs the first half against the candidate in `FITNESS_INSTALL`.
 
 ## Skills

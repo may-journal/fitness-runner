@@ -33,11 +33,11 @@ runs
         - When fitness runs
             - Then they overlap, the longest budget starts first, and the table keeps catalog order
 - 0001.14
-    - Given Developer has a check past the budget it declares, or one set by timeoutMs in the fitness config
+    - Given Developer has a check past the budget it declares or timeoutMs sets, or whose git or ssh waits for a password
         - When fitness runs
             - Then it and its child processes stop, or are killed if they ignore the stop, and it shows red as timed out
 - 0001.15
-    - Given Developer has a repo with tracked files
+    - Given Developer has a repo with tracked files, a few or thousands
         - When fitness runs every check
             - Then git lists the tracked files once for the whole run
 - 0001.16
