@@ -14,8 +14,6 @@ clones whose stale hooks path is repaired by their next commit
 -
 clones with a stale hooks path
 
-Source: `go/cmd/fitness/hooks_path.go:36`
-
 ## Requirements
 
 - 0122.1

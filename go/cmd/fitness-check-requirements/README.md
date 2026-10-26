@@ -47,7 +47,7 @@ users who have lost connection
 - Acceptance IDs: the title ID plus `.N`, unique in its doc.
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
-- Measurement: numerator, `-`, denominator, and no `Source:` line. A leftover one gets a note; `fitness requirements --fix` deletes them.
+- Measurement: numerator, `-`, denominator. A `Source:` line fails; `fitness requirements --fix` deletes every one.
 - Acceptance: one Given, one When, and one Then, nested in order; the Given starts with an [actor](../fitness-check-architecture-actors/README.md).
 - Ownership: exactly one test named for each acceptance owns it. A test named for an undefined acceptance fails.
 - Every test: each top-level test in the repository must be named for an acceptance. Setup functions and helpers are not tests.
@@ -73,7 +73,7 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is to its leftover Source line.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is deleting its Source line.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.

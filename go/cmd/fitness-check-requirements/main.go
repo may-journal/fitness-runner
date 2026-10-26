@@ -27,9 +27,6 @@ const docsDir = "docs/requirements/"
 // judges, so `fitness requirements --fix` converts a repo's docs.
 const fixFlag = "--fix"
 
-// sourceNote is the info a leftover Measurement Source line gets.
-const sourceNote = "delete this `Source:` line, or run `fitness requirements " + fixFlag + "`; a later release fails it"
-
 func run(root string, args []string) (checkkit.Result, error) {
 	paths := docPaths(root)
 	if err := dropSources(root, paths, args); err != nil {
@@ -39,35 +36,27 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if err != nil || len(written) == 0 {
 		return checkkit.Pass(0), err
 	}
-	errs, notes, err := docErrors(root, paths, tests, written)
+	errs, err := docErrors(root, paths, tests, written)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	res := result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...))
-	res.Info = notes
-	return res, nil
+	return result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...)), nil
 }
 
 // docErrors judges every doc's shape, its IDs against history, docs that
 // share an area, which tests own its acceptances, and the tools
-// the tests use. It also returns a note for each leftover Source line,
-// which never fails.
-func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) (errs, notes []string, err error) {
+// the tests use.
+func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) ([]string, error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
-		return nil, nil, err
-	}
-	for _, d := range docs {
-		if d.SourceLine > 0 {
-			notes = append(notes, requirement.At(d.Path, d.SourceLine, sourceNote))
-		}
+		return nil, err
 	}
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
 	errs = append(errs, overlapErrors(docs)...)
 	errs = append(errs, ownershipErrors(docs, tests, written)...)
 	tooled, err := toolErrors(root, tests, written)
-	return append(errs, tooled...), notes, err
+	return append(errs, tooled...), err
 }
 
 // dropSources deletes the leftover Source line from each doc at paths when

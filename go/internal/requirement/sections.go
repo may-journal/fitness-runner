@@ -12,12 +12,18 @@ var acceptID = regexp.MustCompile(`^(\d{4})\.[1-9]\d*$`)
 // chainKeywords open the three nested lines under each acceptance ID.
 var chainKeywords = []string{"Given", "When", "Then"}
 
-// checkMeasurement requires a numerator, a "-" line, and a denominator. A
-// fourth line starting "Source:", which older docs carry, is not judged:
-// a line number in a doc goes stale as soon as the code moves. It returns
-// that line's number, or 0.
+// sourceError is what a fourth line starting "Source:" fails with. A line
+// number in a doc goes stale as soon as the code moves, so docs cite none.
+const sourceError = "delete this `Source:` line, or run `fitness requirements --fix`; a Measurement is a numerator, `-` and a denominator"
+
+// checkMeasurement requires a numerator, a "-" line, and a denominator, and
+// fails a fourth line starting "Source:", which older docs carry. It
+// returns that line's number, or 0, so the fix can delete it.
 func checkMeasurement(p *problems, s section) int {
 	lines, source := withoutSource(s.lines)
+	if source > 0 {
+		p.add(source, sourceError)
+	}
 	if len(lines) > 0 && !isRatio(lines) {
 		p.add(s.n, "Measurement needs three lines: numerator, `-`, denominator")
 	}
