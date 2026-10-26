@@ -22,6 +22,13 @@ C4Context
     Rel(fitness, tools, "D")
     Rel(ci, fitness, "E")
     Rel(fitness, ci, "F")
+
+    UpdateElementStyle(developer, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
+    UpdateElementStyle(agent, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
+    UpdateElementStyle(fitness, $bgColor="#1d4ed8", $borderColor="#1e3a8a", $fontColor="#ffffff")
+    UpdateElementStyle(consumer, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
+    UpdateElementStyle(tools, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
+    UpdateElementStyle(ci, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
 
 ```mermaid
@@ -31,6 +38,10 @@ C4Context
     Person(p, "Person", "Human or agent actor")
     System(s, "System", "Software we own")
     System_Ext(e, "External", "Outside our boundary")
+
+    UpdateElementStyle(p, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
+    UpdateElementStyle(s, $bgColor="#1d4ed8", $borderColor="#1e3a8a", $fontColor="#ffffff")
+    UpdateElementStyle(e, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
 
 Numbers on nodes and letters on arrows match the callout table.

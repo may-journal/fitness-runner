@@ -120,12 +120,15 @@ func Test0074_8(t *testing.T) {
 	}
 }
 
-func Test0074_7(t *testing.T) {
+func Test0074_9(t *testing.T) {
 	t.Parallel()
-	out, code := aaRun(t, aaFixture("User"+aaOpens))
+	given := "User" + aaOpens
+	out, code := aaRun(t, aaFixture(given))
 	sees(t, out, code, 0)
 	for _, given := range []string{"App" + aaOpens, "app" + aaOpens, "Person" + aaOpens, "p" + aaOpens} {
 		out, code := aaRun(t, aaFixture(given))
 		sees(t, out, code, 1, aaNoActor(given, " starts with no actor", "User"))
 	}
+	out, code = aaRun(t, aaWith(given, "C4Context\nPerson(user, \"1 User\")\nSystem(app, \"2 App\")\nRel(user, app, \"3\")", "flowchart LR\nuser((1 User)):::person\napp[2 App]:::system\nuser -->|3| app"))
+	sees(t, out, code, 1, aaGiven+"\""+given+"\" starts with no actor; no actor is declared at "+aaContext+":3")
 }

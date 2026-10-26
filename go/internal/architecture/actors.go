@@ -15,12 +15,14 @@ type Actor struct {
 	At       Location
 }
 
-// person reports a C4 Person macro or a flowchart node classed person.
+// person reports a C4 Person macro, the one form a person takes. A
+// flowchart node classed person is no person, since the system context is
+// a C4Context diagram.
 func person(kind string) bool {
-	return strings.HasPrefix(kind, "Person") || strings.EqualFold(kind, "person")
+	return strings.HasPrefix(kind, "Person")
 }
 
-// Actors lists the context view's people in diagram order, once per ID
+// Actors lists the context view's C4 people in diagram order, once per ID
 // across both roots.
 func (m *Model) Actors() []Actor {
 	var actors []Actor

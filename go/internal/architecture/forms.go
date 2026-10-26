@@ -3,27 +3,24 @@ package architecture
 import (
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
 var (
-	macro     = regexp.MustCompile(`^([A-Za-z_]+)\((.*)\)\s*(\{)?$`)
 	classNode = regexp.MustCompile(`^class\s+([^\s\[{]+)\s*(?:\["([^"]*)"\])?\s*(\{)?$`)
 	namespace = regexp.MustCompile(`^namespace\s+([^\s{]+)\s*\{$`)
-	member    = regexp.MustCompile(`^[A-Za-z_][\w-]*\s*:`)
 	subgraph  = regexp.MustCompile(`^subgraph\s+([^\s\[]+)\s*(?:\[(.*)\])?$`)
 	flowNode  = regexp.MustCompile(`^([^\s\[\]({>]+)\s*([\[({>].*)$`)
 	nodeClass = regexp.MustCompile(`:::([\w-]+)\s*;?$`)
-	edge      = regexp.MustCompile(`^([A-Za-z_][\w-]*)\s*(?:"[^"]*"\s*)?(<-->|<\|--|<\|\.\.|<--|<\.\.|\*--|o--|--\*|--o|--x|--\|>|\.\.\|>|-->|-\.->|==>|\.\.>|---|--|\.\.)\s*(?:"[^"]*"\s*)?(?:\|([^|]*)\|\s*)?([A-Za-z_][\w-]*)\s*(?::\s*(.*))?$`)
 )
-
-var c4Nodes = strings.Fields("Person System SystemDb SystemQueue Container ContainerDb ContainerQueue Component ComponentDb ComponentQueue Boundary Enterprise_Boundary System_Boundary Container_Boundary")
 
 var c4Relations = strings.Fields("Rel BiRel Rel_U Rel_Up Rel_D Rel_Down Rel_L Rel_Left Rel_R Rel_Right Rel_Back")
 
 // c4 reads one Mermaid C4 macro. Boundaries become parents; the label and
 // technology strings may name repository paths.
 func (d *diagram) c4(line string, at Location) {
-	call := macro.FindStringSubmatch(line)
+	call := mermaid.C4Macro.FindStringSubmatch(line)
 	if call == nil {
 		d.unsupported(line, at)
 		return
@@ -43,8 +40,7 @@ func (d *diagram) c4(line string, at Location) {
 // arguments such as $tags="v1" style a diagram and stay out of the model.
 func c4Args(text string) []string {
 	var args []string
-	for _, arg := range splitOutsideQuotes(text) {
-		arg = strings.TrimSpace(arg)
+	for _, arg := range mermaid.SplitArgs(text) {
 		if !strings.HasPrefix(arg, "$") {
 			args = append(args, strings.Trim(arg, `"`))
 		}
@@ -52,25 +48,11 @@ func c4Args(text string) []string {
 	return args
 }
 
-func splitOutsideQuotes(text string) []string {
-	var parts []string
-	quoted, start := false, 0
-	for i, r := range text {
-		if r == '"' {
-			quoted = !quoted
-		}
-		if r == ',' && !quoted {
-			parts, start = append(parts, text[start:i]), i+1
-		}
-	}
-	return append(parts, text[start:])
-}
-
 func (d *diagram) c4Call(name string, args []string, line string, at Location, opens bool) {
 	switch {
 	case contains(c4Relations, name):
 		d.c4Relation(name, args, line, at)
-	case contains(c4Nodes, strings.TrimSuffix(name, "_Ext")):
+	case mermaid.IsC4Element(name):
 		d.c4Element(name, args, line, at, opens)
 	default:
 		d.m.fail(at, "unsupported C4 macro %q", name)
@@ -132,7 +114,7 @@ func (d *diagram) class(line string, at Location) {
 		d.parents = append(d.parents, match[1])
 		return
 	}
-	d.edgeOr(line, at, member)
+	d.edgeOr(line, at, mermaid.ClassMember)
 }
 
 func (d *diagram) classNode(match []string, line string, at Location) {
@@ -166,7 +148,7 @@ func (d *diagram) flow(line string, at Location) {
 // edgeOr reads an edge; otherwise a flowchart node, or a class member when
 // members is set.
 func (d *diagram) edgeOr(line string, at Location, members *regexp.Regexp) {
-	if match := edge.FindStringSubmatch(line); match != nil {
+	if match := mermaid.Edge.FindStringSubmatch(line); match != nil {
 		d.edge(match, line, at)
 		return
 	}

@@ -7,31 +7,24 @@ relatedConfigurations: ['../../.fitnessrc.json']
 
 ```mermaid
 C4Component
-    title Runner CLI
+    title Fitness binary and tools
 
     Person(developer, "1 Developer")
 
-    System_Boundary(cli, "Runner binary (go/cmd/fitness)") {
-        Container_Boundary(entry, "Entry") {
-            Component(main, "2 CLI entry", "Go")
-        }
-        Container_Boundary(runner, "Run loop") {
-            Component(config, "3 Config loader", ".fitnessrc.json")
-            Component(resolve, "4 Check resolver", "allChecks from the module registry")
-            Component(execute, "5 Execution pool", "goroutines + group kill")
-            Component(output, "6 Results renderer", "internal/render")
-        }
+    Container_Boundary(cli, "Fitness binary (go/cmd/fitness)") {
+        Component(main, "2 CLI entry", "Go")
+        Component(config, "3 Config loader", "Go", ".fitnessrc.json")
+        Component(resolve, "4 Check resolver", "Go", "allChecks from the module registry")
+        Component(execute, "5 Execution pool", "Go", "goroutines + group kill")
+        Component(output, "6 Results renderer", "Go", "internal/render")
+        Component(check, "7 Check package", "Go", "go/cmd/fitness-check-*")
     }
 
-    System_Boundary(checks, "Built-in checks") {
-        Component(check, "7 Check package", "go/cmd/fitness-check-*")
+    Container_Boundary(shared, "Shared internals") {
+        Component(kit, "8 checkkit protocol", "Go", "go/internal")
     }
 
-    System_Boundary(shared, "Shared internals") {
-        Component(kit, "8 checkkit protocol", "go/internal")
-    }
-
-    System_Boundary(tools, "Install and release tools") {
+    Container_Boundary(tools, "Install and release tools") {
         Component(tool, "11 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
@@ -51,6 +44,18 @@ C4Component
     Rel(main, kit, "K")
     Rel(tool, kit, "L")
     Rel(main, check, "M")
+
+    UpdateElementStyle(developer, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
+    UpdateElementStyle(main, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(config, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(resolve, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(execute, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(output, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(check, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(kit, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(tool, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(peers, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
+    UpdateElementStyle(git, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
 
 ```mermaid
@@ -58,12 +63,14 @@ C4Component
     title Legend
 
     Person(p, "Person", "Human or agent actor")
-    System_Boundary(b, "System boundary") {
-        Container_Boundary(cb, "Container boundary") {
-            Component(c, "Component", "Tech", "Logical unit")
-        }
+    Container_Boundary(cb, "Container boundary") {
+        Component(c, "Component", "Tech", "Logical unit")
     }
     System_Ext(e, "External", "Outside our boundary")
+
+    UpdateElementStyle(p, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
+    UpdateElementStyle(c, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(e, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
 
 Numbers on nodes and letters on arrows match the callout table.

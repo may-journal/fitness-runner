@@ -29,10 +29,26 @@ A file in a `templates` folder governs alone the neighbor that shares its name, 
 - Sections: the template's `##` sections open the doc, in order. Sections of the doc's own may follow.
 - Legends: a section with a legend in the template needs a legend of the same Mermaid type.
 - Legend kinds: a diagram with no callout numbers, one titled `Legend`, or one under a `Legend` heading.
+- Diagram types: each diagram and legend in a section has the Mermaid type and direction of the template's there.
 - Callout tables: a section with one in the template needs one, and each has the template's columns.
 - Captions: the paragraph above each callout table starts with the first sentence of the template's caption.
+- Palette: see below, for templates with C4 or class diagrams.
 
-The five architecture view templates ship this way; the [architecture-contract README](../fitness-check-architecture-contract/README.md#templates) says how to copy them.
+## Palette
+
+A template's C4 and `classDiagram` diagrams, legends included, set its palette: the element kinds they use, and the one style each kind carries. Db and Queue forms count as their base kind, and `Person_Ext` as Person. Every C4 or class diagram in the doc must then:
+
+- Use only those kinds, so a Container in the system context or a `System_Boundary` in the components view fails.
+- Give each element of a styled kind exactly its kind's style: an `UpdateElementStyle` line in C4, a `style` line for a class.
+- Write that style in any order, spacing and case.
+- Leave each unstyled kind, such as a boundary, without style.
+- Hold no other style: another `Update…Style` macro, a color argument, `classDef`, `cssClass`, `:::`, or `%%{init}`. `UpdateLayoutConfig` only lays out, so it stays.
+
+The journey template draws a flowchart, so its palette judges nothing.
+
+## Shipped templates
+
+Fitness ships the five architecture view templates inside the binary. A view under `docs/architecture/` or `architecture/` follows its shipped template, such as [04-code.md](../../internal/architecture/templates/04-code.md), with every rule above. A repo's own copy in the views' `templates` folder governs instead, as a named template. The [architecture-contract README](../fitness-check-architecture-contract/README.md#templates) lists each level's form and palette.
 
 ## Behavior
 

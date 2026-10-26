@@ -14,7 +14,7 @@ markdown files that match their template, and templates that guide every section
 -
 markdown files checked
 
-Source: `go/cmd/fitness-check-doc-template/main.go:70`
+Source: `go/cmd/fitness-check-doc-template/main.go:72`
 
 ## Requirements
 
@@ -38,15 +38,15 @@ Source: `go/cmd/fitness-check-doc-template/main.go:70`
     - Given Developer has a folder with two templates and a doc matching neither
         - When doc-template checks the repo
             - Then it fails naming both templates
-- 0023.13
-    - Given Developer has views copied from the shipped architecture templates, with sections of their own and no front matter, beside other docs
+- 0023.16
+    - Given Developer has a view that lacks a legend, opening section, callout column or caption, or Mermaid type or direction its template has
         - When doc-template checks the repo
-            - Then it passes
-- 0023.14
-    - Given Developer has a view missing a legend or opening section its template has
+            - Then it fails naming or quoting what the template has
+- 0023.17
+    - Given Developer has views started from the shipped architecture templates, with or without a copy, and sections of their own
         - When doc-template checks the repo
-            - Then it fails naming what the template has
-- 0023.15
-    - Given Developer has a view whose callout table lacks its template's columns or caption
+            - Then it passes, and a view that drifts fails naming the copy or shipped template
+- 0023.18
+    - Given Developer has a view with a style, color, or element kind outside its template's palette
         - When doc-template checks the repo
-            - Then it fails quoting the template's columns or caption
+            - Then it fails naming the style or kinds the template uses

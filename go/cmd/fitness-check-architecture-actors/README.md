@@ -11,14 +11,14 @@ The check reads the model that [architecture-contract](../fitness-check-architec
 
 ## Actors
 
-An actor is a person in `01-system-context.md`: a C4 `Person` or `Person_Ext`, or a flowchart node classed `person`. Its name is the label without the callout number, and its Mermaid ID is the one alias the diagram declares.
+An actor is a person in `01-system-context.md`: a C4 `Person` or `Person_Ext`. Its name is the label without the callout number, and its Mermaid ID is the one alias the diagram declares.
 
 | Diagram | Name | Alias |
 | --- | --- | --- |
 | `Person(developer, "1 Developer")` | `Developer` | `developer` |
-| `host((1 Host)):::person` | `Host` | `host` |
+| `Person_Ext(host, "2 Host")` | `Host` | `host` |
 
-Systems, legends, and people in other views are never actors.
+The system context is a `C4Context` diagram, as its [template](../../internal/architecture/templates/01-system-context.md) draws it. A flowchart node classed `person` is no actor, so a Given that names one fails until the view becomes C4. Systems, legends, and people in other views are never actors.
 
 ## Grammar
 
