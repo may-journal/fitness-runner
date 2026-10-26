@@ -148,8 +148,8 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 
 | Subcommand            | Does                                                                                  | Why                                                   |
 | --------------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------------- |
-| `fitness init`        | Writes the embedded hook shims to `.githooks` and sets `core.hooksPath`.              | A repo pulls its hooks by version, never copies them. |
-| `fitness hook <name>` | Runs the commit-msg, pre-commit, or pre-push logic the shims call.                    | Hook logic lives in one place, not in each repo.      |
+| `fitness init`        | Points `core.hooksPath` at a shipped `.fitness-hooks`, else writes the shims to `.githooks`. | A repo pulls its hooks by version, never copies them. |
+| `fitness hook <name>` | Repairs a stale `core.hooksPath`, then runs the logic the shims call. | Hook logic lives in one place, not in each repo.      |
 | `fitness pr-check`    | Judges a PR's title, body, one linked changelog entry, and the issues it closes.   | The PR check workflows run one step.                  |
 | `fitness issue-check` | Judges an issue by its kind label: its template's shape and the kind's checks; its after-effect comments and labels the verdict. | The issue check workflows run one step. |
 | `fitness plan-check`  | `issue-check` for Plan issues only.                                                  | Repos on plan-check-reusable keep working.            |

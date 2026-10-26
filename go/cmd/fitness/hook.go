@@ -20,6 +20,7 @@ func runHook(name string, args []string) int {
 		fmt.Fprintln(os.Stderr, "fitness hook: "+err.Error())
 		return 1
 	}
+	repairHooksPath()
 	switch name {
 	case "commit-msg":
 		return hookCommitMsg(args)

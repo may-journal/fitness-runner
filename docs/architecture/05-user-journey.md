@@ -52,7 +52,7 @@ flowchart TB
     readDocs(36 Read the docs topics<br/>Req 0112):::action
     readReadme(37 Read a check README<br/>Req 0114):::action
     readLLMs(38 Read the llms page<br/>Req 0113):::action
-    commitHook(15 Commit through hooks<br/>Req 0009, 0011):::action
+    commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
