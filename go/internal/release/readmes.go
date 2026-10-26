@@ -2,12 +2,8 @@ package release
 
 import (
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -77,69 +73,26 @@ func checkIndex(docs []checkDoc) string {
 	return b.String()
 }
 
-// usageFile is the fitness command's source, whose usage constant is the
-// command list `fitness --help` prints.
-const usageFile = "go/cmd/fitness/main.go"
-
-// usageBlock is the command list as the README shows it: the usage
-// constant in a fenced block.
-func (c Config) usageBlock() (string, error) {
-	text, err := stringConst(filepath.Join(c.Root, filepath.FromSlash(usageFile)), "usage")
-	if err != nil {
-		return "", err
-	}
-	return "```text\n" + strings.TrimRight(text, "\n") + "\n```\n", nil
+// usageBlock is the command list as the README shows it: the forms that
+// run checks and the subcommands, each with its summary, as `fitness
+// --help` prints them, in a fenced block.
+func usageBlock(u usageDoc) string {
+	var b strings.Builder
+	b.WriteString("```text\nRun checks:\n")
+	writeHelp(&b, u.Runner)
+	b.WriteString("\nCommands:\n")
+	writeHelp(&b, u.Commands)
+	return b.String() + "```\n"
 }
 
-// stringConst is the value of the string constant name declares in the Go
-// file at path.
-func stringConst(file, name string) (string, error) {
-	parsed, err := parser.ParseFile(token.NewFileSet(), file, nil, 0)
-	if err != nil {
-		return "", err
-	}
-	for _, decl := range parsed.Decls {
-		if value := constValue(decl, name); value != "" {
-			return strconv.Unquote(value)
+// writeHelp writes each entry's forms, then its summary indented below.
+func writeHelp(b *strings.Builder, entries []usageEntry) {
+	for _, e := range entries {
+		for _, s := range e.Synopses {
+			b.WriteString("  " + strings.TrimSpace("fitness "+s) + "\n")
 		}
+		b.WriteString("      " + e.Summary + "\n")
 	}
-	return "", fmt.Errorf("%s declares no string constant %s", file, name)
-}
-
-// constValue is the literal a const declaration gives name, or "".
-func constValue(decl ast.Decl, name string) string {
-	gen, ok := decl.(*ast.GenDecl)
-	if !ok || gen.Tok != token.CONST {
-		return ""
-	}
-	for _, spec := range gen.Specs {
-		if value := specValue(spec.(*ast.ValueSpec), name); value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-// specValue is the string literal a value spec gives name, or "".
-func specValue(value *ast.ValueSpec, name string) string {
-	for i, ident := range value.Names {
-		if lit, ok := literal(value, i); ok && ident.Name == name {
-			return lit
-		}
-	}
-	return ""
-}
-
-// literal is the string literal a value spec gives its i-th name, if any.
-func literal(value *ast.ValueSpec, i int) (string, bool) {
-	if i >= len(value.Values) {
-		return "", false
-	}
-	lit, ok := value.Values[i].(*ast.BasicLit)
-	if !ok || lit.Kind != token.STRING {
-		return "", false
-	}
-	return lit.Value, true
 }
 
 // withRegion returns the file at path, relative to the root, with the text

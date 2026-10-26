@@ -27,4 +27,4 @@ The `pre-push` hook blocks a push that does not trace to an approved Plan Issue 
 
 ## Working with checks
 
-Read the checks under `go/cmd/fitness-check-*/`, each with a README, and the shared logic in `go/internal/` before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.
+`fitness llms` explains the whole CLI and `fitness explain <check>` explains one check. Read the checks under `go/cmd/fitness-check-*/`, each with a README, and the shared logic in `go/internal/` before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.

@@ -1,6 +1,27 @@
-// Command fitness runs the configured check suite: it resolves check
-// binaries, execs them in a bounded parallel pool with per-check timeouts,
-// and renders the results table. See docs/plans/archive/01-go-rewrite.md.
+// Command fitness runs a repo's fitness checks: small programs that each
+// judge one rule, such as spelling, formatting, tests, or the shape of a
+// pull request. One binary holds every built-in check; a repo may add local
+// checks. Each check decides whether it applies, so any repo runs the same
+// suite with nothing to configure.
+//
+// A run resolves the checks, runs them side by side with per-check time
+// budgets, and prints a results table: passed, failed, or info, which never
+// fails a run. With files staged it judges only those files; --all judges
+// every tracked file.
+//
+// # Exit codes
+//
+//   - 0: every check passed, or a command succeeded.
+//   - 1: a check found problems, or the run could not start, such as a bad
+//     config.
+//   - 2: a command got arguments it does not take, or `fitness explain`
+//     or `fitness docs` was asked for a check or topic that does not exist.
+//
+// # Learn the rest
+//
+// `fitness list` names every check, `fitness explain <check>` says why one
+// exists and how to pass it, and `fitness docs` serves the guides. All of
+// them, and this page, come from the code's own doc comments.
 package main
 
 import (
@@ -164,23 +185,72 @@ func isHelp(args []string) bool {
 var subcommands map[string]func(args []string) int
 
 func init() {
+	// Each entry's comment is its line in `fitness --help` and the llms
+	// page: a usage directive per form, then what it does. `go generate`
+	// reads them, and fails on an entry without one.
 	subcommands = map[string]func(args []string) int{
-		"init":               runInit,
-		"hook":               runHookArgs,
-		"pr-check":           func([]string) int { return runGH("pr-check") },
-		"issue-check":        func([]string) int { return runGH("issue-check") },
-		"plan-check":         func([]string) int { return runGH("plan-check") },
-		"close-check":        func([]string) int { return runGH("close-check") },
-		"dupe-check":         func([]string) int { return runGH("dupe-check") },
-		"comment-check":      runCommentCheck,
-		"branch-check":       func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
-		"boxes":              runBoxes,
+		// Prints a page that teaches an AI the whole CLI.
+		//fitness:usage llms
+		"llms": runLLMs,
+		// Names every check with its summary, scope, budget, and whether this
+		// repo enables it.
+		//fitness:usage list [--json]
+		"list": runList,
+		// Prints why a check exists, what it judges, and the config keys it
+		// reads.
+		//fitness:usage explain <check> [--json]
+		"explain": runExplain,
+		// Lists the guide topics, or prints one, from the code's doc comments.
+		//fitness:usage docs [topic]
+		"docs": runDocs,
+		// Prints every built-in check name, one per line, or runs one built-in
+		// check by name.
+		//fitness:usage check --list
+		//fitness:usage check <name> [args]
+		"check": runCheckCommand,
+		// Shows the resolved settings and each check's state, or prints a JSON
+		// Schema for the config file.
+		//fitness:usage config [--json] [--policy=..] [--checks=..]
+		//fitness:usage config schema
+		"config": runConfig,
+		// Installs the shared git hooks into this repo.
+		//fitness:usage init
+		"init": runInit,
+		// Runs a git hook: commit-msg, pre-commit, or pre-push.
+		//fitness:usage hook <name>
+		"hook": runHookArgs,
+		// Draws a --json report as an HTML box diagram.
+		//fitness:usage boxes <report.json> <page.html>
+		"boxes": runBoxes,
+		// Removes front matter that holds only fitness keys from tracked .md
+		// files.
+		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,
-		"check":              runCheckCommand,
-		"config":             runConfig,
-		"list":               runList,
-		"explain":            runExplain,
-		"docs":               runDocs,
+		// Judges this branch's PR and the issues it closes locally, posting
+		// nothing.
+		//fitness:usage branch-check
+		"branch-check": func(args []string) int { return run(append([]string{"local-branch"}, args...)) },
+		// Judges pull request titles and descriptions, in GitHub Actions.
+		//fitness:usage pr-check
+		"pr-check": func([]string) int { return runGH("pr-check") },
+		// Judges an issue by its kind label and comments the result, in GitHub
+		// Actions.
+		//fitness:usage issue-check
+		"issue-check": func([]string) int { return runGH("issue-check") },
+		// Judges Plan issues only, as issue-check does, in GitHub Actions.
+		//fitness:usage plan-check
+		"plan-check": func([]string) int { return runGH("plan-check") },
+		// Reopens an issue closed with unchecked items, in GitHub Actions.
+		//fitness:usage close-check
+		"close-check": func([]string) int { return runGH("close-check") },
+		// Notes when a new issue resembles an older one, in GitHub Actions.
+		//fitness:usage dupe-check
+		"dupe-check": func([]string) int { return runGH("dupe-check") },
+		// Judges a drafted comment, where - or no text reads stdin, or judges
+		// issue and PR comments and reply, in GitHub Actions.
+		//fitness:usage comment-check --blob <text>
+		//fitness:usage comment-check
+		"comment-check": runCommentCheck,
 	}
 }
 
@@ -203,45 +273,11 @@ func runHookArgs(args []string) int {
 	return runHook(args[0], args[1:])
 }
 
-// usage lists every command, one per line, with what it does. The README
-// shows the same list, which `go generate` writes from this constant.
-const usage = `  fitness                  run the full configured suite
-  fitness <name> [args]    run one check by name; args such as --write reach it
-  fitness --policy=external --checks=name,name
-                           run exactly the selected checks
-  fitness --all            scan every file, even with files staged
-  fitness --dir=<folder>   judge only the files under one folder
-  fitness --blob <text>    run every blob-capable check on text (- reads stdin)
-  fitness --json=<file>    also write each check's time, budget, files, binary size, and error lines as JSON
-  fitness list [--json]    name every check with its summary, scope, budget, and whether this repo enables it
-  fitness explain <check> [--json]
-                           print why a check exists, what it judges, and the config it reads
-  fitness docs [topic]     list the guide topics, or print one, from the code's doc comments
-  fitness check --list     print every built-in check name, one per line
-  fitness boxes <report.json> <page.html>
-                           draw a --json report as an HTML box diagram
-  fitness init             install the shared git hooks into this repo
-  fitness strip-front-matter
-                           remove front matter that holds only fitness keys from tracked .md files
-  fitness hook <name>      run a git hook (commit-msg | pre-commit | pre-push)
-  fitness pr-check         validate PR titles and descriptions (GitHub Actions)
-  fitness branch-check     validate this branch's PR and linked issues locally
-  fitness local-branch     the same meta-check, also included in pre-push
-  fitness issue-check      validate an issue by its kind label and comment the result (GitHub Actions)
-  fitness plan-check       issue-check for Plan issues only (GitHub Actions)
-  fitness close-check      reopen an issue closed with unchecked items (GitHub Actions)
-  fitness dupe-check       note when a new issue resembles an older one (GitHub Actions)
-  fitness comment-check --blob <text>
-                           judge a drafted comment (- or no arguments reads stdin)
-  fitness comment-check    judge issue and PR comments and reply (GitHub Actions)
-`
-
-// printUsage writes the command summary.
-func printUsage() int {
-	fmt.Print("fitness — run the configured checks.\n\nUsage:\n" + usage + "\nDocs: https://github.com/may-journal/fitness-runner#usage\n")
-	return 0
-}
-
+// run runs the full suite, or with a check name only that check, passing it
+// the arguments after its name.
+//
+//fitness:usage
+//fitness:usage <check> [args]
 func run(argv []string) int {
 	argv, err := ready(argv)
 	if err != nil {
