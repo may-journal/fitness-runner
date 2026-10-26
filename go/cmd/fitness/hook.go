@@ -88,7 +88,7 @@ func runPooledMessage(root string, pooled []resolved, msg string) int {
 	if len(pooled) == 0 {
 		return 0
 	}
-	env, err := contextEnv(root, pooled, false, nil)
+	env, err := contextEnv(root, pooled, false, nil, msg)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1

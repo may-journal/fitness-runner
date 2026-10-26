@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"slices"
 
+	issueLinkOnceCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-issue-link-once"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 )
@@ -15,10 +17,11 @@ import (
 // will run, and returns the env entries that tell every check it did not
 // answer: checkkit.NetworkEnv, and GOPROXY=off so a Go check missing a
 // module fails at once with Go's own message. One proxy blocks GitHub and
-// the npm registry alike, so the one probe stands for both. A run without
+// the npm registry alike, so the one probe stands for both. msg is the
+// commit-msg hook's proposed message, empty in any other run. A run without
 // such a check, as a plain commit, makes no connection.
-func networkEnv(root string, checks []resolved) []string {
-	if !slices.ContainsFunc(checks, func(c resolved) bool { return readsNetwork(root, c) }) {
+func networkEnv(root string, checks []resolved, msg string) []string {
+	if !slices.ContainsFunc(checks, func(c resolved) bool { return readsNetwork(root, c, msg) }) {
 		return nil
 	}
 	host := metadata.UnreachableGitHub()
@@ -29,12 +32,17 @@ func networkEnv(root string, checks []resolved) []string {
 }
 
 // readsNetwork reports whether check reads the network in this run: a check
-// that judges live GitHub metadata, unless pre-commit leaves it out, or
-// dependency-currency in a repo with a root package.json to look up.
-func readsNetwork(root string, check resolved) bool {
-	if check.name == "dependency-currency" {
+// that judges live GitHub metadata, unless pre-commit leaves it out,
+// dependency-currency in a repo with a root package.json to look up, or
+// issue-link-once judging a message that links an Issue, which reads the
+// branch's open PR.
+func readsNetwork(root string, check resolved, msg string) bool {
+	switch check.name {
+	case "dependency-currency":
 		_, err := os.Stat(filepath.Join(root, node.Manifest))
 		return err == nil
+	case "issue-link-once":
+		return len(issueLinkOnceCheck.MessageLinks(msg, gitx.OriginSlug(root))) > 0
 	}
 	return check.desc.Scope == checkkit.ScopeGitHub && !atCommit(check.name)
 }
