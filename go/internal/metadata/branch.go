@@ -9,7 +9,6 @@ import (
 	"slices"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -26,7 +25,7 @@ func LocalBranch(root string, args []string) (checkkit.Result, error) {
 		fmt.Fprintln(os.Stderr, "local-branch: no local GitHub branch context; skipped.")
 		return checkkit.Pass(0), nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithDeadline(context.Background(), pushDeadline())
 	defer cancel()
 	branches, err := branchContexts(ctx, root)
 	if err != nil {
