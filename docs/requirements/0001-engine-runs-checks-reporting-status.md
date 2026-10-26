@@ -39,9 +39,9 @@ Source: `go/cmd/fitness/ci.go:22`
         - When fitness runs
             - Then it and its child processes stop, or are killed if they ignore the stop, and it shows red as timed out
 - 0001.15
-    - Given Developer has a repo with tracked files, a few or thousands
+    - Given Developer has a repo with tracked files, a few or thousands, or whose git call listing them or staged files stalls
         - When fitness runs every check
-            - Then git lists the tracked files once for the whole run
+            - Then git lists tracked files once per run, or a stalled call stops after ten seconds as a setup error naming it
 - 0001.16
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo

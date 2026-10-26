@@ -1,13 +1,11 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/hooks"
 )
 
@@ -32,8 +30,8 @@ func runInit(_ []string) int {
 // embedded hook into root/.githooks. Setting the path first means a folder
 // that is not a git repo is refused before anything is written.
 func installHooks(root string) error {
-	if out, err := exec.Command("git", "-C", root, "config", "core.hooksPath", ".githooks").CombinedOutput(); err != nil {
-		return errors.New(strings.TrimSpace(string(out)))
+	if err := gitx.Repo(root).SetConfig("core.hooksPath", ".githooks"); err != nil {
+		return err
 	}
 	dir := filepath.Join(root, ".githooks")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
