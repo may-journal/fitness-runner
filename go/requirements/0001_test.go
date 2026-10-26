@@ -98,6 +98,7 @@ func Test0001_14(t *testing.T) {
 		t.Errorf("a check past the budget it declares must report red, got row %q", row(out, "own-budget"))
 	}
 	promptsTimeOut(t)
+	timeoutNamesLastLine(t)
 }
 
 // promptsTimeOut asserts a check whose git or ssh waits for a password times
@@ -227,6 +228,7 @@ func Test0001_13(t *testing.T) {
 		t.Errorf("slow-zz has the longest budget, so it must start before any other check ends: it started %v, the first end was %v", long.start, first)
 	}
 	keepsCatalogOrder(t, out, slices.Sorted(maps.Keys(budgets)))
+	showsProgress(t)
 }
 
 // keepsCatalogOrder asserts the table lists the slow checks in want's order.
@@ -351,6 +353,60 @@ func earliestEnd(spans map[string]span, skip string) time.Time {
 		}
 	}
 	return first
+}
+
+// showsProgress asserts the heartbeat names a slow check with its time and
+// budget, and that the check, once alone, streams its stderr live.
+func showsProgress(t *testing.T) {
+	t.Helper()
+	out, code := slowCheck(t, 20000, "sleep 7", progressOn)
+	sees(t, out, code, 0, "  running: slow (budget 20s)")
+	streamedLive(t, out)
+}
+
+// timeoutNamesLastLine asserts a timed-out check's row shows its last stderr
+// line, and that off a terminal it was named once at half its budget.
+func timeoutNamesLastLine(t *testing.T) {
+	t.Helper()
+	out, code := slowCheck(t, 1000, "exec /bin/sleep 30")
+	sees(t, out, code, 1, "Check timed out after 1s", "Last output: "+slowFirst)
+	if n := strings.Count(out, "running: slow (budget 1s)"); n != 1 {
+		t.Errorf("off a terminal, a check past half its budget must be named once, but was named %d times:\n%s", n, out)
+	}
+}
+
+// progressOn asks for the heartbeat, as a terminal would.
+const progressOn = "FITNESS_PROGRESS=1"
+
+// slowFirst and slowLast are the stderr lines slowCheck's check writes
+// before and after it waits.
+const slowFirst, slowLast = "compiling 1 of 3", "compiling 3 of 3"
+
+// slowCheck runs a local check, slow, beside a quick one. Slow declares
+// budgetMs, writes slowFirst to stderr, runs wait, then writes slowLast and
+// passes. It returns the output and exit code.
+func slowCheck(t *testing.T, budgetMs int, wait string, env ...string) (string, int) {
+	t.Helper()
+	repo := example(t, "happyRepo", map[string]string{
+		".fitnessrc.json": `{"localChecks": "checks"}` + "\n",
+		"checks/fitness-check-slow": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"slow\", \"timeoutMs\": " + strconv.Itoa(budgetMs) + "}'; exit 0; }\n" +
+			"echo '" + slowFirst + "' >&2\n" + wait + "\necho '" + slowLast + "' >&2\necho '" + passing + "'\n",
+		"checks/fitness-check-quick": localCheck("quick", passing)["checks/fitness-check-quick"],
+	})
+	return fitness(t, repo, env, "--policy=external", "--checks=slow,quick")
+}
+
+// streamedLive asserts slow's stderr streamed once, as it ran: its first
+// line before the heartbeat named it, its last line after.
+func streamedLive(t *testing.T, out string) {
+	t.Helper()
+	first, beat, last := strings.Index(out, slowFirst), strings.Index(out, "running: slow"), strings.Index(out, slowLast)
+	if first < 0 || first > beat || beat > last {
+		t.Errorf("slow's stderr must stream as it runs, around the heartbeat:\n%s", out)
+	}
+	if n := strings.Count(out, slowFirst); n != 1 {
+		t.Errorf("streamed stderr must not print again after the run, but printed %d times:\n%s", n, out)
+	}
 }
 
 func Test0001_5(t *testing.T) {

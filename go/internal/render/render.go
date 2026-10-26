@@ -96,6 +96,11 @@ func isTerminal(f *os.File) bool {
 	return info.Mode()&os.ModeCharDevice != 0
 }
 
+// StderrIsTerminal reports whether stderr is a terminal a person watches.
+func StderrIsTerminal() bool {
+	return isTerminal(os.Stderr)
+}
+
 // TermCols returns the terminal width when attached to one, else 80.
 func TermCols() int {
 	if !isTerminal(os.Stderr) {
