@@ -37,9 +37,9 @@ runs
         - When fitness runs
             - Then it and its children stop, by force if needed, showing red as timed out with last output, file count and scope hint
 - 0001.15
-    - Given Developer has a repo with tracked files, a few or thousands, or whose git call listing them or staged files stalls
-        - When fitness runs every check
-            - Then git lists tracked files once per run, or a stalled call stops after ten seconds as a setup error naming it
+    - Given Developer has 500,000 tracked files, symlinks or deleted ones, or a git call listing tracked or staged files that stalls
+        - When fitness runs every check, or I commit one product file
+            - Then the runner lists and stats them once, architecture checks pass in budget, and a stalled call stops in ten seconds naming it
 - 0001.16
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo

@@ -92,20 +92,34 @@ func silentListener(t *testing.T) string {
 // generatedTree copies happyRepo with files written over it, as example
 // does, adds n more tracked files under tree/, and commits them all. The
 // files are plain text no check judges, a thousand to a folder, and live
-// only in the test's temporary folder.
+// only in the test's temporary folder. They share one blob: git stages
+// them all in one update-index call and writes them with checkout-index,
+// so even 500,000 files take seconds.
 func generatedTree(t *testing.T, files map[string]string, n int) string {
 	t.Helper()
 	repo := example(t, "happyRepo", files)
+	blob := strings.TrimSpace(gitInput(t, repo, strings.Repeat("0", 16)+"\n", "hash-object", "-w", "--stdin"))
+	var index strings.Builder
 	for i := range n {
-		dir := filepath.Join(repo, "tree", fmt.Sprintf("%04d", i/1000))
-		if i%1000 == 0 {
-			mustDo(t, os.MkdirAll(dir, 0o755))
-		}
-		mustDo(t, os.WriteFile(filepath.Join(dir, fmt.Sprintf("f%07d.dat", i)), []byte(strings.Repeat("0", 16)+"\n"), 0o644))
+		fmt.Fprintf(&index, "100644 %s\ttree/%04d/f%07d.dat\x00", blob, i/1000, i)
 	}
-	git(t, repo, "add", "-A")
+	gitInput(t, repo, index.String(), "update-index", "--add", "-z", "--index-info")
+	git(t, repo, "checkout-index", "--all", "--force", "--index")
 	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "chore(tree): add generated files")
 	return repo
+}
+
+// gitInput runs git in repo with stdin as its input and returns what it
+// printed to stdout, failing the test when git fails.
+func gitInput(t *testing.T, repo, stdin string, args ...string) string {
+	t.Helper()
+	cmd := exec.Command("git", append([]string{"-C", repo}, args...)...)
+	cmd.Stdin = strings.NewReader(stdin)
+	out, err := cmd.Output()
+	if err != nil {
+		t.Fatalf("git %v: %v", args, err)
+	}
+	return string(out)
 }
 
 // treeSizesEnv names, comma-separated, the tree sizes Test0001_14 also
