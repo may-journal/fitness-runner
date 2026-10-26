@@ -18,7 +18,7 @@ An actor is a person in `01-system-context.md`: a C4 `Person` or `Person_Ext`. I
 | `Person(developer, "1 Developer")` | `Developer` | `developer` |
 | `Person_Ext(host, "2 Host")` | `Host` | `host` |
 
-The system context is a `C4Context` diagram, as its [template](../../internal/architecture/templates/01-system-context.md) draws it. A flowchart node classed `person` is no actor, so a Given that names one fails until the view becomes C4. Systems, legends, and people in other views are never actors.
+The system context is a `C4Context` diagram, as its [template](../../internal/architecture/templates/01-system-context.md) draws it. A flowchart node classed `person` is no actor, so a Given that names one fails until the view becomes C4. That rule is [staged](#staged-rollout). Systems, legends, and people in other views are never actors.
 
 ## Grammar
 
@@ -43,6 +43,12 @@ Not every actor needs a Given; the check constrains the roles requirements use.
 - A spelling that is one actor's ID and another actor's name: the Given line and both context lines.
 
 Every run reads every requirement doc and the whole model, scoped runs included, so a removed actor fails even when no requirement changed.
+
+## Staged rollout
+
+Until the repo sets `"architectureViews": "error"` in `.fitnessrc.json`, a flowchart node classed `person` still counts as an actor. Each Given that fails only once it stops counting gets a warning, an info note that starts `warning:`, and the run passes. A later release makes `"error"` the default.
+
+[doc-template](../fitness-check-doc-template/README.md#staged-rollout) stages its view rules with the same key.
 
 ## Behavior
 

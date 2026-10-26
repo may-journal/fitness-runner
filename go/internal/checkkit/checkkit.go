@@ -108,6 +108,18 @@ func Info(filesChecked int, msgs ...string) Result {
 	return Result{Ok: true, Errors: []string{}, FilesChecked: filesChecked, Info: msgs}
 }
 
+// Warn adds each warning to r as an info note, then closing, so a rule
+// still being staged informs without failing. No warnings add nothing.
+func (r *Result) Warn(warnings []string, closing string) {
+	if len(warnings) == 0 {
+		return
+	}
+	for _, w := range warnings {
+		r.Info = append(r.Info, "warning: "+w)
+	}
+	r.Info = append(r.Info, closing)
+}
+
 // Pass builds a passing Result.
 func Pass(filesChecked int) Result {
 	return Result{Ok: true, Errors: []string{}, FilesChecked: filesChecked}

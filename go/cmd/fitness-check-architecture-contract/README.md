@@ -35,7 +35,7 @@ for view in 01-system-context 02-containers 03-components 04-code 05-user-journe
 done
 ```
 
-The `doc-template` check judges every view under `docs/architecture/` or `architecture/` against its shipped template. A repo needs no copy of the templates; see [shipped templates](../fitness-check-doc-template/README.md#shipped-templates). Each template's comments say what to write.
+The `doc-template` check judges every view under `docs/architecture/` or `architecture/` against its shipped template. A repo needs no copy of the templates; see [shipped templates](../fitness-check-doc-template/README.md#shipped-templates). Each template's comments say what to write. These rules warn until the repo sets `"architectureViews": "error"`; see [staged rollout](../fitness-check-doc-template/README.md#staged-rollout).
 
 | View | Diagram | Kinds | Palette |
 | --- | --- | --- | --- |

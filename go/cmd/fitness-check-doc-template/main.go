@@ -20,6 +20,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/architecture/templates"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -42,11 +43,39 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	errs := validateAll(docs)
-	if len(errs) > 0 {
-		return checkkit.Fail(len(docs), errs...), nil
+	enforce, err := conf.ViewRulesFail(root)
+	if err != nil {
+		return checkkit.Fail(len(docs), err.Error()), nil
 	}
-	return checkkit.Pass(len(docs)), nil
+	return result(len(docs), validateAll(docs, enforce)), nil
+}
+
+// verdict is what the rules found: errors fail the run, and warnings, from
+// staged rules a repo has not opted in to, only inform.
+type verdict struct {
+	errs, warnings []string
+}
+
+// add files staged findings as errors when enforce is set, else as
+// warnings.
+func (v *verdict) add(errs, staged []string, enforce bool) {
+	v.errs = append(v.errs, errs...)
+	if enforce {
+		v.errs = append(v.errs, staged...)
+	} else {
+		v.warnings = append(v.warnings, staged...)
+	}
+}
+
+// result fails on any error and carries each warning as an info note,
+// closed by one note on how to make them fail.
+func result(files int, v verdict) checkkit.Result {
+	r := checkkit.Pass(files)
+	if len(v.errs) > 0 {
+		r = checkkit.Fail(files, v.errs...)
+	}
+	r.Warn(v.warnings, conf.StagedNote(len(v.warnings)))
+	return r
 }
 
 // readAll loads every markdown file into a doc.
@@ -63,16 +92,17 @@ func readAll(root string, files []string) ([]doc, error) {
 }
 
 // validateAll runs the comment rule over every template and the conformance
-// rule over every governed file.
-func validateAll(docs []doc) []string {
+// rule over every governed file. enforce fails the staged rules too.
+func validateAll(docs []doc, enforce bool) verdict {
 	byDir, named := templatesByDir(docs), namedTemplates(docs)
-	errs := commentErrors(docs)
+	v := verdict{errs: commentErrors(docs)}
 	for _, d := range docs {
 		if !mdtemplate.IsTemplate(d.path) {
-			errs = append(errs, judge(d, byDir, named)...)
+			errs, staged := judge(d, byDir, named, enforce)
+			v.add(errs, staged, enforce)
 		}
 	}
-	return errs
+	return v
 }
 
 // commentErrors flags every template section without a guiding HTML comment.
@@ -108,14 +138,28 @@ func templatesByDir(docs []doc) map[string][]doc {
 // judge holds an architecture view with no copy of its template to the
 // shipped one. Otherwise it walks up from the doc's folder to the first
 // folder with a template that governs it, and judges it there. A doc no
-// template governs passes, as in a repo with no templates.
-func judge(d doc, byDir map[string][]doc, named map[string]bool) []string {
-	if t, ok := shipped(d, named); ok {
-		return shapeErrors(d, t)
+// template governs passes, as in a repo with no templates. The shipped
+// templates are a staged rule: until enforce, a view without a copy is
+// still judged by the walk, and every shipped finding is staged.
+func judge(d doc, byDir map[string][]doc, named map[string]bool, enforce bool) (errs, staged []string) {
+	t, ok := shipped(d, named)
+	if !ok {
+		return walk(d, byDir, named)
 	}
+	settled, more := shapeErrors(d, t)
+	if enforce {
+		return settled, more
+	}
+	errs, _ = walk(d, byDir, named)
+	return errs, append(settled, more...)
+}
+
+// walk judges d at the first folder, from its own up, with a template that
+// governs it.
+func walk(d doc, byDir map[string][]doc, named map[string]bool) (errs, staged []string) {
 	for dir := dirOf(d.path); ; dir = dirOf(dir) {
-		if errs, governed := judgeAt(d, byDir[dir], named); governed || dir == "." {
-			return errs
+		if errs, staged, governed := judgeAt(d, byDir[dir], named); governed || dir == "." {
+			return errs, staged
 		}
 	}
 }
@@ -134,19 +178,20 @@ func shipped(d doc, named map[string]bool) (doc, bool) {
 // one of the folder's other templates. A named template governs only its
 // namesake, so false means none of templates governs the doc, as when all
 // are named for other docs.
-func judgeAt(d doc, templates []doc, named map[string]bool) ([]string, bool) {
+func judgeAt(d doc, templates []doc, named map[string]bool) (errs, staged []string, governed bool) {
 	var rest []doc
 	for _, t := range templates {
 		if !named[t.path] {
 			rest = append(rest, t)
 		} else if namesake(t.path) == d.path {
-			return shapeErrors(d, t), true
+			errs, staged = shapeErrors(d, t)
+			return errs, staged, true
 		}
 	}
 	if len(rest) == 0 {
-		return nil, false
+		return nil, nil, false
 	}
-	return docErrors(d, rest), true
+	return docErrors(d, rest), nil, true
 }
 
 // docErrors returns nil when the doc matches any one template. Otherwise it
@@ -191,18 +236,25 @@ func namesake(template string) string {
 	return path.Join(dirOf(dirOf(template)), filepath.Base(template))
 }
 
-// shapeErrors judges a doc against the template that shares its file name:
-// its opening sections, legends, callout table columns, and captions.
-func shapeErrors(d doc, t doc) []string {
-	var errs []string
-	for _, f := range mdtemplate.ShapeFromTemplate(t.path, t.body).Validate(d.body) {
-		at := d.path
+// shapeErrors judges a doc against the template that shares its file name.
+// errs covers its opening sections, legends, callout table columns, and
+// captions; staged covers its diagram types and palette.
+func shapeErrors(d doc, t doc) (errs, staged []string) {
+	settled, more := mdtemplate.ShapeFromTemplate(t.path, t.body).Validate(d.body)
+	return located(d.path, settled), located(d.path, more)
+}
+
+// located prefixes each finding with the doc's path and its line, if any.
+func located(file string, findings []mdtemplate.Finding) []string {
+	var out []string
+	for _, f := range findings {
+		at := file
 		if f.Line > 0 {
 			at += ":" + strconv.Itoa(f.Line)
 		}
-		errs = append(errs, at+": "+f.Text)
+		out = append(out, at+": "+f.Text)
 	}
-	return errs
+	return out
 }
 
 // dirOf returns the slash directory of a slash path; the repo root is ".".

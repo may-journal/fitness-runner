@@ -129,6 +129,15 @@ func Test0074_9(t *testing.T) {
 		out, code := aaRun(t, aaFixture(given))
 		sees(t, out, code, 1, aaNoActor(given, " starts with no actor", "User"))
 	}
-	out, code = aaRun(t, aaWith(given, "C4Context\nPerson(user, \"1 User\")\nSystem(app, \"2 App\")\nRel(user, app, \"3\")", "flowchart LR\nuser((1 User)):::person\napp[2 App]:::system\nuser -->|3| app"))
-	sees(t, out, code, 1, aaGiven+"\""+given+"\" starts with no actor; no actor is declared at "+aaContext+":3")
+	flowchart := aaGiven + "\"" + given + "\" starts with no actor; no actor is declared at " + aaContext + ":3"
+	out, code = aaRun(t, aaFlowchart(given))
+	sees(t, out, code, 0, "warning: "+flowchart, "1 "+stagedNote)
+	out, code = aaRun(t, dtEnforced(aaFlowchart(given)))
+	sees(t, out, code, 1, flowchart)
+}
+
+// aaFlowchart is aaFixture with the context drawn as a flowchart whose
+// user node is classed person.
+func aaFlowchart(given string) map[string]string {
+	return aaWith(given, "C4Context\nPerson(user, \"1 User\")\nSystem(app, \"2 App\")\nRel(user, app, \"3\")", "flowchart LR\nuser((1 User)):::person\napp[2 App]:::system\nuser -->|3| app")
 }

@@ -49,4 +49,4 @@ Source: #286
 - 0074.9
     - Given Developer has a Given that starts with a system, a legend node, or a flowchart node classed person
         - When I check the actors
-            - Then it fails naming the Given line and the context diagram, since only a C4 person is an actor
+            - Then it fails naming the Given line and the context diagram, though the flowchart node only warns until opted in

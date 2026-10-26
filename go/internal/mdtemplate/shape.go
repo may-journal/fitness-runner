@@ -64,22 +64,23 @@ func ShapeFromTemplate(path, body string) Shape {
 	return s
 }
 
-// Validate returns every way body drifts from the shape: the opening
-// sections, then each shared section's diagrams and tables, then the
-// palette of every diagram.
-func (s Shape) Validate(body string) []Finding {
-	var out []Finding
+// Validate returns every way body drifts from the shape, in two lists.
+// settled holds the opening sections, then each shared section's legends
+// and tables. staged holds the rules repos adopt in stages: each diagram's
+// Mermaid type and direction, then the palette of every diagram.
+func (s Shape) Validate(body string) (settled, staged []Finding) {
 	have := h2s(body)
 	if opening := have[:min(len(have), len(s.sections))]; !slices.Equal(opening, s.sections) {
-		out = append(out, Finding{0, fmt.Sprintf("sections must open with %s as %s does", quoteSections(s.sections), s.path)})
+		settled = append(settled, Finding{0, fmt.Sprintf("sections must open with %s as %s does", quoteSections(s.sections), s.path)})
 	}
 	v := readView(body)
 	for _, name := range append([]string{""}, s.sections...) {
 		if name == "" || slices.Contains(have, name) {
-			out = append(out, s.partFindings(name, v)...)
+			settled = append(settled, s.partFindings(name, v)...)
+			staged = append(staged, s.typesFindings(name, v)...)
 		}
 	}
-	return append(out, s.palette.allFindings(v.diagrams)...)
+	return settled, append(staged, s.palette.allFindings(v.diagrams)...)
 }
 
 // h2s lists a doc's level-2 headings in order.
@@ -93,16 +94,13 @@ func h2s(body string) []string {
 	return out
 }
 
-// partFindings judges one section: the types of its diagrams and legends,
-// then its callout tables.
+// partFindings judges one section: its legend, then its callout tables. A
+// legend counts by its Mermaid type alone; typesFindings judges direction.
 func (s Shape) partFindings(name string, v view) []Finding {
 	want := s.parts[name]
 	var out []Finding
-	if want.legend != "" && !v.hasLegend(name, want.legend) {
-		out = append(out, Finding{0, fmt.Sprintf("%s needs a %s legend as %s has", sectionName(name), want.legend, s.path)})
-	}
-	for _, d := range v.diagramsIn(name) {
-		out = append(out, s.typeFindings(d, want)...)
+	if legend := baseType(want.legend); legend != "" && !v.hasLegend(name, legend) {
+		out = append(out, Finding{0, fmt.Sprintf("%s needs a %s legend as %s has", sectionName(name), legend, s.path)})
 	}
 	if want.columns != nil {
 		out = append(out, s.tableFindings(name, want, v.tablesIn(name))...)
@@ -125,6 +123,16 @@ func (s Shape) tableFindings(name string, want part, tables []table) []Finding {
 		if !strings.HasPrefix(t.caption, want.caption) {
 			out = append(out, Finding{t.line, fmt.Sprintf("callout table needs the caption %q above it as %s has", want.caption, s.path)})
 		}
+	}
+	return out
+}
+
+// typesFindings judges the Mermaid type of each diagram and legend in one
+// section.
+func (s Shape) typesFindings(name string, v view) []Finding {
+	var out []Finding
+	for _, d := range v.diagramsIn(name) {
+		out = append(out, s.typeFindings(d, s.parts[name])...)
 	}
 	return out
 }
@@ -163,8 +171,17 @@ type table struct {
 	line             int
 }
 
+// hasLegend reports a legend in section whose Mermaid type, direction
+// aside, is kind.
 func (v view) hasLegend(section, kind string) bool {
-	return slices.ContainsFunc(v.diagramsIn(section), func(d diagram) bool { return d.legend && d.kind == kind })
+	return slices.ContainsFunc(v.diagramsIn(section), func(d diagram) bool { return d.legend && baseType(d.kind) == kind })
+}
+
+// baseType is a diagram kind without its direction: `flowchart` for
+// `flowchart TB`.
+func baseType(kind string) string {
+	name, _, _ := strings.Cut(kind, " ")
+	return name
 }
 
 func (v view) diagramsIn(section string) []diagram {
