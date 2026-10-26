@@ -3,7 +3,7 @@
 // Repo's methods return an error when git fails. Git describes the clone, not
 // the code, so every such error is a checkkit.Internal error that a check
 // reports as info. The package-level functions keep their older shape and
-// read a failure as empty.
+// read a failure as empty. Every call runs under Deadline.
 package gitx
 
 import (
@@ -14,6 +14,7 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
@@ -21,15 +22,27 @@ import (
 // Repo is the root of a git work tree that git commands run in.
 type Repo string
 
-// git runs `git -C repo args` and returns its stdout, or an internal error
-// naming git's stderr.
-func (r Repo) git(ctx context.Context, args ...string) (string, error) {
+// git runs `git -C repo args` with stdin, when set, and returns its stdout,
+// or an internal error naming git's stderr. A call ctx ends early is
+// stopped; ending it at its deadline is a StalledError.
+func (r Repo) git(ctx context.Context, stdin string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, "git", append([]string{"-C", string(r)}, args...)...)
-	o := checkkit.Exec(cmd)
-	if o.SpawnErr != nil {
-		return "", checkkit.ToolMissing("git")
+	// A tool git started may hold its output open after git is stopped.
+	cmd.WaitDelay = time.Second
+	if stdin != "" {
+		cmd.Stdin = strings.NewReader(stdin)
 	}
-	if o.Err != nil {
+	return gitResult(ctx, checkkit.Exec(cmd), args)
+}
+
+// gitResult reads a finished git call: its stdout, or why it failed.
+func gitResult(ctx context.Context, o checkkit.Outcome, args []string) (string, error) {
+	switch {
+	case errors.Is(ctx.Err(), context.DeadlineExceeded):
+		return "", checkkit.Internal(&StalledError{Args: args})
+	case o.SpawnErr != nil:
+		return "", checkkit.ToolMissing("git")
+	case o.Err != nil:
 		return "", checkkit.Internal(fmt.Errorf("git %s: %s", args[0], gitReason(o)))
 	}
 	return o.Stdout, nil
@@ -44,8 +57,16 @@ func gitReason(o checkkit.Outcome) string {
 	return o.Err.Error()
 }
 
+// run runs one git call under Deadline.
 func (r Repo) run(args ...string) (string, error) {
-	return r.git(context.Background(), args...)
+	return r.input("", args...)
+}
+
+// input runs one git call under Deadline, with stdin as its input.
+func (r Repo) input(stdin string, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), Deadline)
+	defer cancel()
+	return r.git(ctx, stdin, args...)
 }
 
 // names runs a git command that prints one path or commit per line.
@@ -299,7 +320,7 @@ func FetchedBase(ctx context.Context, root, branch string) string {
 	if branch == "" {
 		return ""
 	}
-	out, _ := Repo(root).git(ctx, "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+branch+"^{commit}")
+	out, _ := Repo(root).git(ctx, "", "rev-parse", "--verify", "--quiet", "refs/remotes/origin/"+branch+"^{commit}")
 	return strings.TrimSpace(out)
 }
 

@@ -35,11 +35,11 @@ mistakes made
 - 0008.5
     - Given Developer has a folder that is not a git repo
         - When I run fitness init
-            - Then it says why, writes no hooks, and exits 1
+            - Then it says why, naming the git call that failed, writes no hooks, and exits 1
 - 0008.6
     - Given Developer has a folder that is not a git repo
         - When a fitness hook runs there
-            - Then it says why and exits 1
+            - Then it says why, naming the git call that failed, and exits 1
 - 0008.7
     - Given Developer has the commit-msg hook with no message file
         - When it runs

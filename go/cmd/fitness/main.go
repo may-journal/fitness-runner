@@ -287,18 +287,28 @@ func run(argv []string) int {
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}
-	s, argv, err := runSetup(argv)
+	s, rest, err := runSetup(argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
 	}
+	return runSelected(s, rest)
+}
+
+// runSelected selects the checks argv names and runs them with the run's
+// environment. A failure to select them or to read git ends the run as a
+// setup error after the setup's cleanup.
+func runSelected(s setup, argv []string) int {
 	checks, passthrough, err := selectedChecks(s.root, argv)
+	var env []string
+	if err == nil {
+		env, passthrough, err = singleCheckArgs(s.root, checks, passthrough, hasAllFlag(argv), s.scope)
+	}
 	if err != nil {
 		s.cleanup()
 		report.Error("fitness setup", err)
 		return 1
 	}
-	env, passthrough := singleCheckArgs(s.root, checks, passthrough, hasAllFlag(argv), s.scope)
 	return runChecks(s.root, s.perfPath, checks, passthrough, env, s.cleanup)
 }
 
@@ -307,11 +317,10 @@ func run(argv []string) int {
 // returns the run's exit code. cleanup removes the caller's shared files
 // when the run ends or is interrupted.
 func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
-	checks = commitChecks(checks)
-	tracked, removeTracked := shareTrackedFiles(root, checks)
-	remove := func() {
-		removeTracked()
-		cleanup()
+	checks, tracked, remove, err := prepareRun(root, checks, cleanup)
+	if err != nil {
+		report.Error("fitness setup", err)
+		return 1
 	}
 	defer remove()
 	defer stopOnInterrupt(remove)()
@@ -329,6 +338,26 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
 	code := finish(rows, found, perf, totals)
 	return withPerfReport(perfPath, perf, code)
+}
+
+// prepareRun drops the checks a commit leaves out and shares the
+// tracked-file list, returning its env entry and a remove that deletes it
+// and the caller's files. A stalled git call runs cleanup and returns why.
+func prepareRun(root string, checks []resolved, cleanup func()) (kept []resolved, tracked []string, remove func(), err error) {
+	kept, err = commitChecks(checks)
+	if err != nil {
+		cleanup()
+		return nil, nil, nil, err
+	}
+	tracked, removeTracked, err := shareTrackedFiles(root, kept)
+	if err != nil {
+		cleanup()
+		return nil, nil, nil, err
+	}
+	return kept, tracked, func() {
+		removeTracked()
+		cleanup()
+	}, nil
 }
 
 // setup is what a run reads from argv before it selects checks.
@@ -397,20 +426,20 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
-func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string) {
-	env = contextEnv(root, checks, all, scope)
-	if len(checks) != 1 {
-		return env, nil
+func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string, err error) {
+	env, err = contextEnv(root, checks, all, scope)
+	if err != nil || len(checks) != 1 {
+		return env, nil, err
 	}
 	arg := checks[0].desc.ContextInlineArg
 	if arg == "" {
-		return env, passthrough
+		return env, passthrough, nil
 	}
 	value, remaining, found := extractInline(passthrough, arg)
 	if found {
 		env = append(env, "FITNESS_CTX_MESSAGE="+value)
 	}
-	return env, remaining
+	return env, remaining, nil
 }
 
 // summarize converts outcomes to table rows, streaming each check's stderr
@@ -647,10 +676,10 @@ func waitDescribe(cmd *exec.Cmd) (ok, overran bool) {
 // shareTrackedFiles lists tracked files once for a run of several checks,
 // returning the env entry that hands the list over and a cleanup. A run of
 // one check gains nothing, so that check lists its own, as the commit-msg
-// hook's single-check runs do.
-func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup func()) {
+// hook's single-check runs do. A stalled git call returns its error.
+func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup func(), err error) {
 	if len(checks) < 2 {
-		return nil, func() {}
+		return nil, func() {}, nil
 	}
 	return walkfs.ShareTracked(root)
 }
@@ -722,27 +751,56 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 // by run, so an inherited value never leaks into a full scan or another
 // repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
 // so no check reads the folder as changes. The staged files are read once
-// for both variables.
-func contextEnv(root string, checks []resolved, all bool, scope []string) []string {
+// for both variables. A stalled git call returns its error.
+func contextEnv(root string, checks []resolved, all bool, scope []string) ([]string, error) {
+	staged, err := stalledOnly(gitx.Repo(root).StagedFiles())
+	if err != nil {
+		return nil, err
+	}
+	scope, err = scopeEnv(root, all, scope, staged)
+	if err != nil {
+		return nil, err
+	}
 	env := os.Environ()
 	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv} {
 		env = withoutVar(env, name)
 	}
-	staged := gitx.StagedFiles(root)
 	// A check's `git status` would otherwise refresh and rewrite the index,
 	// which voids the shared tracked-file list for every later check.
 	env = append(env, "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
+	env = append(env, scope...)
+	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
+}
+
+// scopeEnv is the env entry that scopes the run: the `--dir` one when set,
+// else the changed files, else none for a full scan.
+func scopeEnv(root string, all bool, scope, staged []string) ([]string, error) {
 	if len(scope) > 0 {
-		env = append(env, scope...)
-	} else if changed := changedScope(root, all, staged); len(changed) > 0 {
-		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
+		return scope, nil
 	}
+	changed, err := changedScope(root, all, staged)
+	if len(changed) == 0 {
+		return nil, err
+	}
+	return []string{"FITNESS_CHANGED_FILES=" + strings.Join(changed, "\n")}, nil
+}
+
+// checkNames lists the checks' names, in order.
+func checkNames(checks []resolved) []string {
 	names := make([]string, len(checks))
 	for i, c := range checks {
 		names[i] = c.name
 	}
-	env = append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"))
-	return env
+	return names
+}
+
+// stalledOnly passes on a git answer, keeping its error only when the call
+// stalled: any other failure reads as an empty answer, as before.
+func stalledOnly[T any](v T, err error) (T, error) {
+	if gitx.Stalled(err) {
+		return v, err
+	}
+	return v, nil
 }
 
 // extractInline pulls the first `--arg=value` or `--arg value` out of args
