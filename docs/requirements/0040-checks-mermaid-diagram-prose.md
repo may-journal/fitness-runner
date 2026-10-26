@@ -14,20 +14,20 @@ paired diagrams whose relationship labels hold only callout numbers
 -
 paired diagrams checked
 
-Source: `go/cmd/fitness-check-mermaid-diagram-prose/main.go:152`
+Source: `go/cmd/fitness-check-mermaid-diagram-prose/main.go:160`
 
 ## Requirements
 
 - 0040.1
-    - Given Developer has a paired diagram whose `Rel` label has prose after its number
+    - Given Developer has a paired diagram whose `Rel` label has prose after its number or letter
         - When mermaid-diagram-prose checks the doc
             - Then it fails quoting the label
 - 0040.2
-    - Given Developer has a paired flowchart whose pipe edge label has prose after its number
+    - Given Developer has a paired flowchart whose pipe edge label has prose after its number or letter
         - When mermaid-diagram-prose checks the doc
             - Then it fails quoting the label
 - 0040.3
-    - Given Developer has a paired diagram whose colon edge label has prose after its number
+    - Given Developer has a paired diagram whose colon edge label has prose after its number or letter
         - When mermaid-diagram-prose checks the doc
             - Then it fails quoting the label
 - 0040.4

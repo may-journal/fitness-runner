@@ -37,7 +37,7 @@ type diagram struct {
 	elements    map[string]*Element
 	order       []*Element
 	edges       []*Relationship
-	callouts    map[int]subject
+	callouts    map[string]subject
 	claims      []Claim
 	mentions    []Mention
 	parents     []string
@@ -49,11 +49,10 @@ type diagram struct {
 var (
 	semanticID   = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_-]*$`)
 	leadingCount = regexp.MustCompile(`^\d+\s+`)
-	rowNumber    = regexp.MustCompile(`^\[?(\d+)\]?$`)
 )
 
 func (m *Model) readDiagram(file, view string, b *mermaid.DiagramBlock) *diagram {
-	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[int]subject{}, annotations: map[string][]Member{}}
+	d := &diagram{m: m, file: file, view: view, elements: map[string]*Element{}, callouts: map[string]subject{}, annotations: map[string][]Member{}}
 	m.diagramStart(view, Location{file, b.Line})
 	lines := strings.Split(b.Body, "\n")
 	start := frontMatterEnd(lines)
@@ -186,7 +185,7 @@ func (d *diagram) add(id, kind, label, line string, at Location) *Element {
 		d.m.fail(at, "duplicate ID %s; first at %s", id, first.At)
 		return nil
 	}
-	e := &Element{ID: id, Kind: kind, Name: displayName(label), Parent: d.parent(), View: d.view, Callout: callout(line), At: at}
+	e := &Element{ID: id, Kind: kind, Name: displayName(label), Parent: d.parent(), View: d.view, Callout: nodeCallout(line), At: at}
 	d.elements[id] = e
 	d.order = append(d.order, e)
 	d.mark(e.Callout, subject{element: e})
@@ -201,14 +200,14 @@ func (d *diagram) parent() string {
 }
 
 func (d *diagram) relate(from, to, arrow, label, line string, at Location) {
-	r := &Relationship{From: from, To: to, Arrow: arrow, Label: label, View: d.view, Callout: callout(line), At: at}
+	r := &Relationship{From: from, To: to, Arrow: arrow, Label: label, View: d.view, Callout: edgeCallout(line), At: at}
 	d.edges = append(d.edges, r)
 	d.mark(r.Callout, subject{edge: r})
 }
 
-func (d *diagram) mark(number int, s subject) {
-	if _, taken := d.callouts[number]; number > 0 && !taken {
-		d.callouts[number] = s
+func (d *diagram) mark(label string, s subject) {
+	if _, taken := d.callouts[label]; label != "" && !taken {
+		d.callouts[label] = s
 	}
 }
 
@@ -216,22 +215,47 @@ func displayName(label string) string {
 	return leadingCount.ReplaceAllString(strings.Trim(strings.TrimSpace(label), `"`), "")
 }
 
-func callout(line string) int {
-	if numbers := mermaid.ExtractDiagramNumbers(line); len(numbers) > 0 {
-		return numbers[0]
+// nodeCallout is the first node callout number on a line, or "".
+func nodeCallout(line string) string {
+	return firstCallout(line, false)
+}
+
+// edgeCallout is the first connector callout on a line, a letter such as
+// "A", or "".
+func edgeCallout(line string) string {
+	return firstCallout(line, true)
+}
+
+func firstCallout(line string, edge bool) string {
+	for _, c := range mermaid.ExtractCallouts(line) {
+		if c.Edge == edge {
+			return calloutKey(c.Label)
+		}
 	}
-	return 0
+	return ""
+}
+
+// calloutKey normalizes a callout label so a diagram's 1 and a row's 01
+// meet; 0 marks nothing.
+func calloutKey(label string) string {
+	n, err := strconv.Atoi(label)
+	switch {
+	case err != nil:
+		return label
+	case n > 0:
+		return strconv.Itoa(n)
+	}
+	return ""
 }
 
 // bindRows reads each callout row's text for the element or edge it marks.
 func (d *diagram) bindRows(table *mermaid.CalloutTableBlock) {
 	for i, row := range table.Rows {
-		match := rowNumber.FindStringSubmatch(row[0])
-		if match == nil {
+		key := calloutKey(mermaid.RowLabel(row))
+		if key == "" {
 			continue
 		}
-		n, _ := strconv.Atoi(match[1])
-		if s, ok := d.callouts[n]; ok {
+		if s, ok := d.callouts[key]; ok {
 			d.rowContent(s, strings.Join(row[1:], " | "), Location{d.file, table.Line + 2 + i})
 		}
 	}

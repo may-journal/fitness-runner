@@ -1,7 +1,8 @@
 // Command fitness-check-mermaid-diagram-prose flags relationship/edge labels
-// that carry prose beyond a callout number when a diagram is paired with a
-// callout table — the Go port of the mermaid-diagram-prose check. Arrows
-// carry numbers only; descriptions belong in the callout table.
+// that carry prose beyond a callout, a number or a letter, when a diagram is
+// paired with a callout table — the Go port of the mermaid-diagram-prose
+// check. Arrows carry callouts only; descriptions belong in the callout
+// table.
 //
 // The shared parser lives in internal/mermaid; the JS \s class and the
 // styling-line pattern it uses are unexported there, so that small residue
@@ -63,9 +64,16 @@ func isJSSpace(r rune) bool {
 // trimJS trims JavaScript whitespace from both ends — String.prototype.trim.
 func trimJS(s string) string { return strings.TrimFunc(s, isJSSpace) }
 
-// numberThenProse matches a callout number followed by prose, e.g. `6 Uses`
-// — the duplication #20 targets.
-var numberThenProse = regexp.MustCompile(`^\d+[` + jsWS + `]+[A-Za-z]`)
+// calloutThenProse matches a callout, a number or capital letters, followed
+// by prose, e.g. `6 Uses` or `A calls` — the duplication #20 targets.
+var calloutThenProse = regexp.MustCompile(`^(\d+|[A-Z]+)[` + jsWS + `]+[A-Za-z]`)
+
+// isCalloutProse reports a label that starts with a node number or a
+// connector letter that follows the doubling, then carries prose.
+func isCalloutProse(label string) bool {
+	m := calloutThenProse.FindStringSubmatch(label)
+	return m != nil && (m[1][0] <= '9' || mermaid.IsLetterCallout(m[1]))
+}
 
 // relCall matches C4 relationship calls whose label argument may carry prose.
 var relCall = regexp.MustCompile(`\b(?:Bi)?Rel\w*\([^)]*\)`)
@@ -81,14 +89,14 @@ var pipeLabel = regexp.MustCompile(`\|[` + jsWS + `]*([^|]*?)[` + jsWS + `]*\|`)
 var styleLine = regexp.MustCompile(`^[` + jsWS + `]*(classDef|style|linkStyle|%%)`)
 
 // colonLabel matches an edge label after a colon: `A --> B : 6 uses`.
-var colonLabel = regexp.MustCompile(`:[` + jsWS + `]*(\d+[` + jsWS + `]+[A-Za-z][^|]*?)[` + jsWS + `]*$`)
+var colonLabel = regexp.MustCompile(`:[` + jsWS + `]*((?:\d+|[A-Z]+)[` + jsWS + `]+[A-Za-z][^|]*?)[` + jsWS + `]*$`)
 
 // relCallProse returns prose labels from C4 `Rel(...)` call arguments.
 func relCallProse(body string) []string {
 	var found []string
 	for _, rel := range relCall.FindAllString(body, -1) {
 		for _, arg := range quoted.FindAllStringSubmatch(rel, -1) {
-			if label := trimJS(arg[1]); numberThenProse.MatchString(label) {
+			if label := trimJS(arg[1]); isCalloutProse(label) {
 				found = append(found, label)
 			}
 		}
@@ -101,7 +109,7 @@ func relCallProse(body string) []string {
 func pipeProse(line string) []string {
 	var found []string
 	for _, pipe := range pipeLabel.FindAllStringSubmatch(line, -1) {
-		if label := trimJS(pipe[1]); numberThenProse.MatchString(label) {
+		if label := trimJS(pipe[1]); isCalloutProse(label) {
 			found = append(found, label)
 		}
 	}
@@ -115,7 +123,7 @@ func colonProse(line string) []string {
 	if colon == nil {
 		return nil
 	}
-	if label := trimJS(colon[1]); numberThenProse.MatchString(label) {
+	if label := trimJS(colon[1]); isCalloutProse(label) {
 		return []string{label}
 	}
 	return nil
@@ -131,7 +139,7 @@ func lineEdgeProse(line string) []string {
 }
 
 // proseLabels returns relationship/edge labels in a diagram body that carry
-// prose beyond a callout number.
+// prose beyond a callout.
 func proseLabels(diagram *mermaid.DiagramBlock) []string {
 	found := relCallProse(diagram.Body)
 	for _, line := range strings.Split(diagram.Body, "\n") {
@@ -141,12 +149,12 @@ func proseLabels(diagram *mermaid.DiagramBlock) []string {
 }
 
 // validateDoc flags relationship/edge labels that carry prose beyond a
-// callout number when a diagram is paired with a callout table —
+// callout when a diagram is paired with a callout table —
 // descriptions belong in the table.
 func validateDoc(file, content string) []string {
 	errors := []string{}
 	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content)).Pairs {
-		if pair.Table == nil || len(pair.Diagram.Numbers) == 0 {
+		if pair.Table == nil || !pair.Diagram.HasCallouts() {
 			continue
 		}
 		for _, label := range proseLabels(pair.Diagram) {

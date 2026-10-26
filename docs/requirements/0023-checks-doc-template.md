@@ -49,4 +49,4 @@ Source: `go/cmd/fitness-check-doc-template/main.go:70`
 - 0023.15
     - Given Developer has a view whose callout table lacks its template's columns or caption
         - When doc-template checks the repo
-            - Then it fails naming the template's columns or caption
+            - Then it fails quoting the template's columns or caption

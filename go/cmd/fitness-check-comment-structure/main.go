@@ -121,7 +121,7 @@ func unnumbered(body string) []string {
 	var errs []string
 	var prev mermaid.DocBlock
 	for _, b := range mermaid.ParseDoc(body) {
-		if d, ok := b.(*mermaid.DiagramBlock); ok && len(d.Numbers) == 0 && !numberedDiagram(prev) {
+		if d, ok := b.(*mermaid.DiagramBlock); ok && !d.HasCallouts() && !numberedDiagram(prev) {
 			errs = append(errs, fmt.Sprintf("(comment): line %d: mermaid diagram has no numbered callouts; number its nodes, as in A[1 Step], and add a # | Element | Description | Why table", d.Line))
 		}
 		prev = b
@@ -132,7 +132,7 @@ func unnumbered(body string) []string {
 // numberedDiagram reports whether b is a diagram with callout numbers.
 func numberedDiagram(b mermaid.DocBlock) bool {
 	d, ok := b.(*mermaid.DiagramBlock)
-	return ok && len(d.Numbers) > 0
+	return ok && d.HasCallouts()
 }
 
 // lineRule is one pattern a comment line must not match, and why.

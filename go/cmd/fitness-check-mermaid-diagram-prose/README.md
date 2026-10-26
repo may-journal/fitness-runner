@@ -9,7 +9,7 @@ Part of the mermaid diagram + callout table fitness-function set
 
 ## Behavior
 
-When a diagram is paired with a callout table, flags relationship/edge labels with prose beyond a callout number (e.g. `"6 Uses"` instead of `"6"`). Descriptions belong in the table, not the diagram.
+When a diagram is paired with a callout table, it flags edge labels with prose after a callout number or letter. For example, `"6 Uses"` should be `"6"` and `"A calls"` should be `"A"`. Descriptions belong in the table, not the diagram.
 
 Runs on every `.md` file with a mermaid diagram or callout table; files with
 neither are skipped and don't count toward `filesChecked`.
