@@ -87,7 +87,7 @@
 //   - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 //   - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
 //   - Fixes: a changed test file that failed this check at its base passes without its doc, since its doc still holds.
-//   - Base check: this check judges a checkout of the base commit, where a Swift test that imported XCTest fails.
+//   - Base check: this check judges a checkout of the base commit's docs and test files, where a Swift test importing XCTest fails.
 //   - New files: a test file the base lacks still needs its doc.
 //   - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
 //   - Helpers: a test file that names and holds no requirement pairs with nothing.

@@ -148,6 +148,8 @@ func Test0001_14(t *testing.T) {
 	}
 	promptsTimeOut(t)
 	timeoutNamesLastLine(t)
+	hugeTreeHints(t)
+	timesTrees(t)
 }
 
 // promptsTimeOut asserts a check whose git or ssh waits for a password times
@@ -436,6 +438,34 @@ func timeoutNamesLastLine(t *testing.T) {
 	if n := strings.Count(out, "running: slow (budget 1s)"); n != 1 {
 		t.Errorf("off a terminal, a check past half its budget must be named once, but was named %d times:\n%s", n, out)
 	}
+}
+
+// hugeTreeHints asserts that in a repo of 20,000 tracked files a commit,
+// scoped to its staged files, passes, while an unscoped run under a 0.1s
+// timeoutMs times out the checks that read every file, each row naming the
+// tracked-file count and how to scope the run.
+func hugeTreeHints(t *testing.T) {
+	t.Helper()
+	repo := generatedTree(t, staleTest(), 20000)
+	out, code, _ := fixingCommit(t, repo)
+	sees(t, out, code, 0)
+	write(t, repo, map[string]string{".fitnessrc.json": `{"timeoutMs": 100}` + "\n"})
+	out, code = fitness(t, repo, nil)
+	hint := fmt.Sprintf("Hint: the repo tracks %d files; scope the run with fitness --dir=<folder>, or commit to check only the staged files", trackedCount(t, repo))
+	sees(t, out, code, 1, "Check timed out after 0.1s", hint)
+	for _, check := range []string{"cspell", "jscpd"} {
+		if !strings.Contains(row(out, check), "failed") {
+			t.Errorf("%s reads all 20,000 files, so it must time out under a 0.1s budget, got row %q", check, row(out, check))
+		}
+	}
+}
+
+// trackedCount is how many files git tracks in repo.
+func trackedCount(t *testing.T, repo string) int {
+	t.Helper()
+	out, err := exec.Command("git", "-C", repo, "ls-files", "-z").Output()
+	mustDo(t, err)
+	return strings.Count(string(out), "\x00")
 }
 
 // progressOn asks for the heartbeat, as a terminal would.

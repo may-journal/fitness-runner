@@ -37,7 +37,7 @@ Source: `go/cmd/fitness/ci.go:22`
 - 0001.14
     - Given Developer has a check past the budget it declares or timeoutMs sets, or whose git or ssh waits for a password
         - When fitness runs
-            - Then it and its children stop, by force if they ignore it, and it shows red as timed out with its last output
+            - Then it and its children stop, by force if needed, showing red as timed out with last output, file count and scope hint
 - 0001.15
     - Given Developer has a repo with tracked files, a few or thousands, or whose git call listing them or staged files stalls
         - When fitness runs every check

@@ -1,14 +1,20 @@
 package requirements
 
 import (
+	"encoding/json"
 	"fmt"
+	"maps"
 	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
+	"time"
 )
 
 // promptedRemote is the remote a prompting git asks a password for.
@@ -100,4 +106,126 @@ func generatedTree(t *testing.T, files map[string]string, n int) string {
 	git(t, repo, "add", "-A")
 	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "chore(tree): add generated files")
 	return repo
+}
+
+// treeSizesEnv names, comma-separated, the tree sizes Test0001_14 also
+// times, such as 10000,100000,500000. Unset, it times none, since a large
+// tree takes minutes to write.
+const treeSizesEnv = "FITNESS_TREE_SIZES"
+
+// timesTrees logs, as one Markdown table, how long each check takes on an
+// unscoped run of a generatedTree of every size treeSizesEnv names, and how
+// long a commit that edits one test file takes. Each tree is deleted once
+// timed.
+func timesTrees(t *testing.T) {
+	t.Helper()
+	sizes := strings.FieldsFunc(os.Getenv(treeSizesEnv), func(r rune) bool { return r == ',' })
+	if len(sizes) == 0 {
+		return
+	}
+	cells := map[string][]string{}
+	for i, size := range sizes {
+		n, err := strconv.Atoi(size)
+		mustDo(t, err)
+		for name, took := range treeTimes(t, n) {
+			if cells[name] == nil {
+				cells[name] = make([]string, len(sizes))
+			}
+			cells[name][i] = took
+		}
+	}
+	t.Log("\n" + timesTable(sizes, cells))
+}
+
+// treeTimes times one generatedTree of n files: each check's row on an
+// unscoped run, the run itself, and a commit scoped to one edited test
+// file, with its requirements row.
+func treeTimes(t *testing.T, n int) map[string]string {
+	t.Helper()
+	repo := generatedTree(t, staleTest(), n)
+	defer os.RemoveAll(repo)
+	report := filepath.Join(t.TempDir(), "report.json")
+	start := time.Now()
+	fitness(t, repo, nil, "--policy=external", "--all", "--json="+report)
+	times := map[string]string{"(unscoped run)": millis(time.Since(start).Milliseconds(), false)}
+	raw, err := os.ReadFile(report)
+	mustDo(t, err)
+	var r struct {
+		Checks []struct {
+			Name     string `json:"name"`
+			Ms       int64  `json:"ms"`
+			TimedOut bool   `json:"timedOut"`
+		} `json:"checks"`
+	}
+	mustDo(t, json.Unmarshal(raw, &r))
+	for _, c := range r.Checks {
+		times[c.Name] = millis(c.Ms, c.TimedOut)
+	}
+	maps.Copy(times, commitTimes(t, repo))
+	return times
+}
+
+// commitTimes makes fixingCommit in repo and returns its time and its
+// requirements row's, marked failed when the commit failed.
+func commitTimes(t *testing.T, repo string) map[string]string {
+	t.Helper()
+	out, code, took := fixingCommit(t, repo)
+	req := rowMillis.FindStringSubmatch(row(out, "requirements"))
+	if code != 0 || req == nil {
+		t.Log("the scoped commit did not pass:\n" + out)
+		return map[string]string{"(scoped commit)": millis(took, false) + " failed", "requirements (scoped commit)": "-"}
+	}
+	return map[string]string{"(scoped commit)": millis(took, false), "requirements (scoped commit)": req[1] + " ms"}
+}
+
+// staleTest is architectedRepo with a store test named for no acceptance,
+// so the requirements check fails the store test file until a commit fixes
+// it.
+func staleTest() map[string]string {
+	files := architectedRepo()
+	files["src/store/store_test.go"] = testFile("store", "Test0001_1", "Test0001_9")
+	return files
+}
+
+// fixingCommit installs the hooks in a staleTest repo and commits, as a
+// user does, the store test without its stale test and a changelog entry
+// that says so. The requirements check judges the base commit to see the
+// test file was failing there. It returns the output, the exit code and
+// the commit's milliseconds.
+func fixingCommit(t *testing.T, repo string) (string, int, int64) {
+	t.Helper()
+	env := installerEnv(t)
+	got, code := fitness(t, repo, env, "init")
+	sees(t, got, code, 0, "fitness init: installed hooks")
+	fix := map[string]string{
+		"src/store/store_test.go":                 testFile("store", "Test0001_1"),
+		"changelog/2026-10-26-1200-store-test.md": entryFileText("2026.10.26.1200", "Fix: the store test owns only its own acceptance."),
+	}
+	write(t, repo, fix)
+	user(t, repo, env, append([]string{"add"}, slices.Collect(maps.Keys(fix))...)...)
+	start := time.Now()
+	out, code := user(t, repo, env, "commit", "-m", "test(store): drop the stale store test")
+	return out, code, time.Since(start).Milliseconds()
+}
+
+// rowMillis reads a results-table row's time, in milliseconds.
+var rowMillis = regexp.MustCompile(`│ (\d+)ms\s+│\s*$`)
+
+// millis shows ms as a table cell, marked when the check timed out.
+func millis(ms int64, timedOut bool) string {
+	if timedOut {
+		return strconv.FormatInt(ms, 10) + " ms, timed out"
+	}
+	return strconv.FormatInt(ms, 10) + " ms"
+}
+
+// timesTable renders cells as a Markdown table: one row per name, sorted,
+// and one column per size.
+func timesTable(sizes []string, cells map[string][]string) string {
+	var b strings.Builder
+	b.WriteString("| check | " + strings.Join(sizes, " files | ") + " files |\n|---" + strings.Repeat("|---", len(sizes)) + "|\n")
+	for _, name := range slices.Sorted(maps.Keys(cells)) {
+		b.WriteString("| " + name + " | " + strings.Join(cells[name], " | ") + " |\n")
+	}
+	return b.String()
 }
