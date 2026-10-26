@@ -17,7 +17,7 @@ checks in the catalog
 ## Requirements
 
 - 0003.1
-    - Given Developer has a repo with no files a check can judge, or none that opts the repo in to it
+    - Given Developer has a repo with no files or changes a check can judge, or none that opts the repo in to it
         - When the check runs
             - Then it scans nothing and passes with zero files
 - 0003.2

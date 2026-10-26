@@ -103,6 +103,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `release-changelog`: Binds Release Please's manifest to the version file a reviewer can inspect.
 - `repeated-string-literals`: Fails a string literal that appears three or more times across the repo's JS and TS sources.
 - `requirements`: Enforces docs/requirements in every repo a language module covers.
+- `requirements-changed`: Fails a change that adds or changes product code without also changing a test and a requirement doc.
 - `semantic-commit`: Requires the commit subject to follow Conventional Commits, `type(scope): description`, with the scope required.
 - `spotless`: Checks Java formatting with the Spotless plugin the repo's own build declares.
 - `swiftlint`: Runs SwiftLint over the repo through the Swift language module, which owns the tool run and its judgment, via `swiftlint lint --strict`.

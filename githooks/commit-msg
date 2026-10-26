@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Delegates to the same Go hook every consumer repo runs: semantic-commit,
-# plan-trailer, and issue-link-once. exec keeps git as the parent process, so
-# the hook can tell an amend apart.
+# plan-trailer, issue-link-once, and requirements-changed. exec keeps git as
+# the parent process, so the hook can tell an amend apart.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 exec go/bin/fitness hook commit-msg "$1"

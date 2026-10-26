@@ -46,8 +46,10 @@ func chdirToplevel() error {
 
 // hookCommitMsg validates the proposed commit message with semantic-commit,
 // plan-trailer, and issue-link-once — the message file is the first
-// argument. An amend is judged against the amended commit's parent. The
-// three run in one pool, sharing one table, and any failure fails the hook.
+// argument. It also runs requirements-changed on the staged files, so the
+// message's trailer counts. An amend is judged against the amended commit's
+// parent. The four run in one pool, sharing one table, and any failure fails
+// the hook.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)
 	if !ok {
@@ -126,7 +128,7 @@ func resolveEach(root string, names []string) ([]resolved, error) {
 // commitMsgChecks lists the checks the commit-msg hook runs, without any
 // that an external policy's disabledChecks turns off.
 func commitMsgChecks() []string {
-	checks := []string{"semantic-commit", "plan-trailer", "issue-link-once"}
+	checks := []string{"semantic-commit", "plan-trailer", "issue-link-once", "requirements-changed"}
 	cfg, err := loadConfig(".")
 	if err != nil {
 		return checks
