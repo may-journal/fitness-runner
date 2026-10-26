@@ -1,25 +1,34 @@
 package requirements
 
 import (
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
 
-// hooked copies happyRepo with files over it, puts the installed fitness on
-// PATH as a user's setup does, and runs `fitness init`. It returns the repo
-// and the environment git needs to find fitness.
+// installerEnv puts the installer where a user's setup does, with no fitness on
+// the PATH, and returns the environment the hooks need to find it, a saved
+// release lookup, and a private cache.
+func installerEnv(t *testing.T) []string {
+	t.Helper()
+	dir := t.TempDir()
+	mustDo(t, os.Symlink(installer(t), filepath.Join(dir, "fitness-install")))
+	lookups := rlReleases(t, http.StatusOK, rlCandidate(t))
+	return slices.Concat([]string{"FITNESS_INSTALL_DIR=" + dir}, lookups.env, fiPrivateCache(t))
+}
+
+// hooked copies happyRepo with files over it, puts the installer where a
+// user's setup does (and no fitness on the PATH), and runs `fitness init`. It
+// returns the repo and the environment the hooks need to find the installer,
+// a saved release lookup, and a private cache.
 func hooked(t *testing.T, files map[string]string) (string, []string) {
 	t.Helper()
 	repo := example(t, "happyRepo", files)
-	out, err := exec.Command(installer(t), "--install-only").Output()
-	if err != nil {
-		t.Fatalf("installing fitness: %v", err)
-	}
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-	env := []string{"PATH=" + lines[len(lines)-1] + string(os.PathListSeparator) + os.Getenv("PATH")}
+	env := installerEnv(t)
 	got, code := fitness(t, repo, env, "init")
 	sees(t, got, code, 0, "fitness init: installed hooks")
 	return repo, env
@@ -52,8 +61,8 @@ func Test0009_1(t *testing.T) {
 	}
 	for _, name := range []string{"commit-msg", "pre-commit", "pre-push"} {
 		data, _ := os.ReadFile(filepath.Join(repo, ".githooks", name))
-		if !strings.Contains(string(data), "exec fitness hook "+name) {
-			t.Errorf(".githooks/%s does not run fitness hook %s", name, name)
+		if !strings.Contains(string(data), `fitness-install" --version latest -- hook `+name) {
+			t.Errorf(".githooks/%s does not run the installer for hook %s", name, name)
 		}
 	}
 }

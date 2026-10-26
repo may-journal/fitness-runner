@@ -1,7 +1,7 @@
 package requirements
 
 import (
-	"os"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -31,18 +31,9 @@ func pushRepo(t *testing.T) (string, []string, replays) {
 	return repo, env, rp
 }
 
-// pushEnv puts the stand-ins on PATH ahead of the installed fitness.
+// pushEnv adds the stand-ins, first on PATH, to the environment that already holds the installer.
 func pushEnv(hookEnv []string, rp replays) []string {
-	sep := string(os.PathListSeparator)
-	fitnessPath := strings.TrimPrefix(hookEnv[0], "PATH=")
-	var env []string
-	for _, kv := range rp.env {
-		if path, ok := strings.CutPrefix(kv, "PATH="); ok {
-			kv = "PATH=" + strings.SplitN(path, sep, 2)[0] + sep + fitnessPath
-		}
-		env = append(env, kv)
-	}
-	return env
+	return slices.Concat(hookEnv, rp.env)
 }
 
 // pushFeature commits a feature naming the Plan trailer and pushes it.

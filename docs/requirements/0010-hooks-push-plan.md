@@ -19,7 +19,7 @@ Source: `go/cmd/fitness/hook.go:26`
 ## Requirements
 
 - 0010.1
-    - Given Developer has a feature commit whose trailer names an approved Plan
+    - Given Developer has the shared hooks, no fitness on the PATH, and a feature commit whose trailer names an approved Plan
         - When I push it
             - Then the push goes through
 - 0010.4

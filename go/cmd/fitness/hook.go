@@ -156,7 +156,7 @@ func markAmend() {
 }
 
 // amending reports whether the git process running this hook was invoked with
-// --amend. The shims exec fitness, so the parent process is git itself.
+// --amend. The shims exec the installer, which execs fitness, so the parent process is git itself.
 func amending() bool {
 	out, err := exec.Command("ps", "-o", "args=", "-p", strconv.Itoa(os.Getppid())).Output()
 	return err == nil && amendArgs(string(out))
