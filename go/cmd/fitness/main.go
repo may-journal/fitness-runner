@@ -144,7 +144,7 @@ func runCheckCommand(args []string) int {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `check`, `list`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `check`, `list`, `explain`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -179,6 +179,7 @@ func init() {
 		"check":              runCheckCommand,
 		"config":             runConfig,
 		"list":               runList,
+		"explain":            runExplain,
 	}
 }
 
@@ -215,6 +216,8 @@ Usage:
   fitness --blob <text>    run every blob-capable check on text (- reads stdin)
   fitness --json=<file>    also write each check's time, budget, files, binary size, and error lines as JSON
   fitness list [--json]    name every check with its summary, scope, budget, and whether this repo enables it
+  fitness explain <check> [--json]
+                           print why a check exists, what it judges, and the config it reads
   fitness check --list     print every built-in check name, one per line
   fitness boxes <report.json> <page.html>
                            draw a --json report as an HTML box diagram
