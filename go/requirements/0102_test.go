@@ -151,7 +151,8 @@ func describedKeys(prefix string, schema schemaKey) map[string]string {
 }
 
 // keysFitnessReads lists every config key path fitness's own source reads:
-// the JSON keys of each type a LoadAs call names, found in that package.
+// the JSON keys of each type a conf.Register call names, found in that
+// package. Only a registered Section loads keys, so these are all it reads.
 func keysFitnessReads(t *testing.T) []string {
 	t.Helper()
 	var keys []string
@@ -163,12 +164,12 @@ func keysFitnessReads(t *testing.T) []string {
 	})
 	mustDo(t, err)
 	if len(keys) == 0 {
-		t.Fatal("found no LoadAs call in the source; the search is broken")
+		t.Fatal("found no conf.Register call in the source; the search is broken")
 	}
 	return keys
 }
 
-// packageKeys lists the keys each LoadAs call in one package's source reads.
+// packageKeys lists the keys each Register call in one package's source reads.
 func packageKeys(t *testing.T, dir string) []string {
 	t.Helper()
 	types, calls := map[string]*ast.StructType{}, []string{}
@@ -186,7 +187,7 @@ func packageKeys(t *testing.T, dir string) []string {
 }
 
 // readSource records file's struct types in types and returns the type
-// names its LoadAs calls read into.
+// names its Register calls declare.
 func readSource(t *testing.T, file string, types map[string]*ast.StructType) []string {
 	t.Helper()
 	parsed, err := parser.ParseFile(token.NewFileSet(), file, nil, 0)
@@ -196,23 +197,28 @@ func readSource(t *testing.T, file string, types map[string]*ast.StructType) []s
 		if spec, ok := n.(*ast.TypeSpec); ok {
 			types[spec.Name.Name], _ = spec.Type.(*ast.StructType)
 		}
-		calls = append(calls, loadAsType(n)...)
+		calls = append(calls, registerType(t, file, n)...)
 		return true
 	})
 	return calls
 }
 
-// loadAsType returns the type a LoadAs[T] expression names, if n is one.
-func loadAsType(n ast.Node) []string {
+// registerType returns the type a Register[T] call names, if n is one. A
+// Register call that leaves T to inference fails the test: the search reads
+// T from the source, so the call must name it.
+func registerType(t *testing.T, file string, n ast.Node) []string {
+	if call, ok := n.(*ast.CallExpr); ok && strings.HasSuffix(exprName(call.Fun), "Register") {
+		t.Errorf("%s: name the type a Register call reads, as conf.Register[T]", file)
+	}
 	index, ok := n.(*ast.IndexExpr)
-	if !ok || !strings.HasSuffix(exprName(index.X), "LoadAs") {
+	if !ok || !strings.HasSuffix(exprName(index.X), "Register") {
 		return nil
 	}
 	return []string{exprName(index.Index)}
 }
 
 // exprName renders an identifier or selector as written, such as
-// conf.LoadAs, or "" for anything else.
+// conf.Register, or "" for anything else.
 func exprName(x ast.Expr) string {
 	switch e := x.(type) {
 	case *ast.Ident:

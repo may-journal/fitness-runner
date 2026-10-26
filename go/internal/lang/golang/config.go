@@ -36,12 +36,11 @@ var Defaults = func() Config {
 	return c
 }()
 
-func init() {
-	conf.Register(Defaults, configSource)
-}
+// section is the Go keys, registered so the schema lists them.
+var section = conf.Register[Config](Defaults, configSource)
 
 // LoadConfig reads the Go keys from root's config file. It returns nil,
 // nil when the repo has no config file, and fails as conf.Load does.
 func LoadConfig(root string) (*Config, error) {
-	return conf.LoadAs[Config](root)
+	return section.Load(root)
 }

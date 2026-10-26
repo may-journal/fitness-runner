@@ -27,6 +27,6 @@ Source: `go/cmd/fitness/config.go:197`
         - When `fitness config` runs
             - Then it names the org rule that would stop a run and exits 1
 - 0102.4
-    - Given Developer has fitness source code that reads config keys
+    - Given Developer has fitness source code that reads config keys through the sections it registers
         - When `fitness config schema` runs
-            - Then the schema describes every key that code reads
+            - Then the schema describes every key each registered section reads

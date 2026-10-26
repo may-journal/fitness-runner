@@ -102,9 +102,8 @@ var Defaults = func() Config {
 	return c
 }()
 
-func init() {
-	Register(Defaults, source)
-}
+// configSection is Config's registered keys, which Load reads.
+var configSection = Register[Config](Defaults, source)
 
 // DefaultMaxListItems is the longest list prose-budget allows, and the most
 // bullets changelog-bullets allows in a release section, unless
@@ -124,16 +123,16 @@ func MaxListItems(root string) int {
 // falls back to the defaults. A config that still sets a retired exclusion
 // key returns an error naming each one.
 func Load(root string) (*Config, error) {
-	return LoadAs[Config](root)
+	return configSection.Load(root)
 }
 
-// LoadAs reads root's config into a T, which holds the keys a caller owns,
+// Load reads root's config into a T, which holds the keys a caller owns,
 // such as a language module's options. It returns (nil, nil) without a
-// config file and fails as Load does.
-func LoadAs[T any](root string) (*T, error) {
-	raw, err := readFor[T](root)
-	if raw == nil || err != nil {
-		return nil, err
+// config file and fails as the package's Load does.
+func (*Section[T]) Load(root string) (*T, error) {
+	raw, err := os.ReadFile(filepath.Join(root, FileName))
+	if err != nil {
+		return nil, ignoreMissing(err)
 	}
 	var v T
 	if err := json.Unmarshal(raw, &v); err != nil {
@@ -146,17 +145,12 @@ func LoadAs[T any](root string) (*T, error) {
 	return &v, nil
 }
 
-// readFor reads root's config file for a T, failing when T's keys were
-// never registered. It returns nil, nil without a config file.
-func readFor[T any](root string) ([]byte, error) {
-	if err := registered[T](); err != nil {
-		return nil, err
-	}
-	raw, err := os.ReadFile(filepath.Join(root, FileName))
+// ignoreMissing is err, or nil when it says the config file does not exist.
+func ignoreMissing(err error) error {
 	if os.IsNotExist(err) {
-		return nil, nil
+		return nil
 	}
-	return raw, err
+	return err
 }
 
 // retiredKeys names the exclusion keys raw still sets, in a fixed order:

@@ -32,9 +32,8 @@ type fileConfig struct {
 //go:embed config.go
 var configSource []byte
 
-func init() {
-	conf.Register(fileConfig{}, configSource)
-}
+// section is the localizedText keys, registered so the schema lists them.
+var section = conf.Register[fileConfig](fileConfig{}, configSource)
 
 // config is the loaded check config: how a failure names the reference,
 // and the compiled allow patterns.
@@ -51,7 +50,7 @@ const defaultReference = "String(localized:)"
 // no reason, or one that is no regular expression, is a problem the check
 // fails with.
 func loadConfig(root string) (config, []string, error) {
-	file, err := conf.LoadAs[fileConfig](root)
+	file, err := section.Load(root)
 	if err != nil || file == nil {
 		return config{reference: defaultReference}, nil, err
 	}

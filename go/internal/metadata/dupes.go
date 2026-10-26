@@ -44,16 +44,15 @@ var dupeSource []byte
 // file leaves it unset or at zero.
 var dupeDefaults = dupeFile{DupeCheck: dupeConfig{WarnScore: 0.4, WindowDays: 90}}
 
-func init() {
-	conf.Register(dupeDefaults, dupeSource)
-}
+// dupeSection is the dupeCheck keys, registered so the schema lists them.
+var dupeSection = conf.Register[dupeFile](dupeDefaults, dupeSource)
 
 // maxDupes is how many matches the note lists.
 const maxDupes = 3
 
 // loadDupeConfig reads the repo's dupeCheck key, filling in the defaults.
 func loadDupeConfig(root string) (dupeConfig, error) {
-	file, err := conf.LoadAs[dupeFile](root)
+	file, err := dupeSection.Load(root)
 	cfg := dupeConfig{}
 	if file != nil {
 		cfg = file.DupeCheck

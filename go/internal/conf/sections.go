@@ -23,13 +23,18 @@ var sections = struct {
 	byType map[reflect.Type]section
 }{byType: map[reflect.Type]section{}}
 
-// Register declares the keys a package reads from the config file with
-// LoadAs: their Go type T, a T holding each key's default, and the Go source
-// that declares T. The schema, `fitness config`, and its descriptions all
-// come from these, so a package calls Register from an init function before
-// it ever loads its keys. A key that another section already declares panics,
-// since one key must mean one thing.
-func Register[T any](defaults T, source []byte) {
+// Section is a registered package's keys in the config file. Loading keys
+// takes a Section, and only Register makes one, so no code can read keys
+// the schema does not describe.
+type Section[T any] struct{}
+
+// Register declares the keys a package reads from the config file: their Go
+// type T, a T holding each key's default, and the Go source that declares
+// T. The schema, `fitness config`, and its descriptions all come from these.
+// A package keeps the returned Section in a package variable and loads its
+// keys with it. A key that another section already declares panics, since
+// one key must mean one thing.
+func Register[T any](defaults T, source []byte) *Section[T] {
 	t := reflect.TypeFor[T]()
 	sections.Lock()
 	defer sections.Unlock()
@@ -42,17 +47,7 @@ func Register[T any](defaults T, source []byte) {
 		sections.order = append(sections.order, t)
 	}
 	sections.byType[t] = section{defaults: reflect.ValueOf(defaults), source: source}
-}
-
-// registered reports whether T's keys were registered.
-func registered[T any]() error {
-	t := reflect.TypeFor[T]()
-	sections.Lock()
-	defer sections.Unlock()
-	if _, ok := sections.byType[t]; !ok {
-		return fmt.Errorf("conf: %v reads %s keys no section declares; call conf.Register for it, so the schema lists them", t, FileName)
-	}
-	return nil
+	return &Section[T]{}
 }
 
 // registeredSections returns every section, in registration order.
