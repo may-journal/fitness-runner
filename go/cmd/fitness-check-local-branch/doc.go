@@ -28,7 +28,9 @@
 // GitHub reads share a 30-second deadline; the runner allows 35 seconds for
 // cancellation and reporting. Inside pre-push, the gate opens the push's
 // deadline before its Plan reads and hands it over. This check then reads
-// under what is left of it.
+// under what is left of it. When the runner's two-second probe finds GitHub's
+// API host unreachable, the check reads nothing and reports info naming the
+// host and proxy.
 //
 // # Implementation
 //

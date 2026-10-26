@@ -105,8 +105,12 @@ func workflowFiles(root string) []string {
 
 // judge checks every call against GitHub and fails each missing path. When
 // GitHub stops answering, it keeps the findings so far and notes the calls
-// it could not verify.
+// it could not verify. When the runner's probe found GitHub's API host
+// unreachable, it asks nothing and notes that instead.
 func judge(files int, calls []call, gh *github) checkkit.Result {
+	if note := checkkit.Offline("the workflow ref reads"); note != "" {
+		return checkkit.Info(files, note)
+	}
 	var errs, notes []string
 	for i, c := range calls {
 		v, err := gh.verify(c)

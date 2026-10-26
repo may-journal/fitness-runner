@@ -55,6 +55,54 @@ func Test0001_18(t *testing.T) {
 	written, _ := os.ReadFile(summary)
 	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
 	promptsRefused(t)
+	offlineCommitAndPush(t)
+}
+
+// offlineWithin bounds a commit or a push behind a proxy that never answers:
+// the runner's two-second probe plus the hooks around it.
+const offlineWithin = 10 * time.Second
+
+// offlineCommitAndPush commits and pushes a feature in a JavaScript repo with
+// a GitHub origin, behind a proxy that accepts connections and never
+// answers. Each step must finish within offlineWithin, with the registry
+// check, the Plan gate and local-branch reporting info that names GitHub's
+// API host and the proxy. The push lands in a local bare repo. The
+// installer's latest release lookup was recorded minutes ago, as by an
+// online run, so the installer asks nothing.
+func offlineCommitAndPush(t *testing.T) {
+	t.Helper()
+	repo, env := hooked(t, map[string]string{"package.json": `{"dependencies": {"left-pad": "^1.0.0"}}` + "\n",
+		".fitnessrc.json": `{"policy": "external", "checks": ["dependency-currency", "local-branch"]}` + "\n"})
+	recordedNow(t, env)
+	bare := t.TempDir()
+	git(t, bare, "init", "-q", "--bare")
+	git(t, repo, "remote", "add", "origin", "https://github.com/may-journal/fitness-runner.git")
+	git(t, repo, "remote", "set-url", "--push", "origin", bare)
+	proxy := silentListener(t)
+	env = append(env, "HTTPS_PROXY="+proxy, "NO_PROXY=", "no_proxy=", "GITHUB_API_URL=https://api.github.com", "GH_HOST=github.com")
+	note := "api.github.com did not answer within 2s through proxy " + proxy + ", so fitness skipped "
+	steps := [][]string{{"commit", "--allow-empty", "-m", "feat(app): add a feature"}, {"push", "origin", "HEAD:main"}}
+	wants := [][]string{{note + "the npm registry reads"}, {"pre-push: info: " + note + "the Plan gate", note + "the PR and Plan reads"}}
+	for i, step := range steps {
+		start := time.Now()
+		out, code := user(t, repo, env, step...)
+		sees(t, out, code, 0, wants[i]...)
+		if took := time.Since(start); took > offlineWithin {
+			t.Errorf("git %s took %s behind a silent proxy, want under %s", step[0], took.Round(time.Second), offlineWithin)
+		}
+	}
+}
+
+// recordedNow writes a latest release lookup of the candidate's version,
+// made just now, into the private cache env names.
+func recordedNow(t *testing.T, env []string) {
+	t.Helper()
+	i := slices.IndexFunc(env, func(kv string) bool { return strings.HasPrefix(kv, "FITNESS_CACHE_DIR=") })
+	if i < 0 {
+		t.Fatalf("no private cache in %q", env)
+	}
+	record := fmt.Sprintf(`{"tag":"v%s","checked":%q}`, rlCandidate(t), time.Now().Format(time.RFC3339))
+	mustDo(t, os.WriteFile(filepath.Join(strings.TrimPrefix(env[i], "FITNESS_CACHE_DIR="), "latest-release.json"), []byte(record), 0o600))
 }
 
 // describeFails runs check in repo with a copy of the installed runner, after

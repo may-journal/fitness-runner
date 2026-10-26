@@ -21,9 +21,8 @@ func LocalBranch(root string, args []string) (checkkit.Result, error) {
 	if len(args) != 0 {
 		return checkkit.Fail(0, "usage: fitness branch-check"), nil
 	}
-	if !localBranchApplicable(root) {
-		fmt.Fprintln(os.Stderr, "local-branch: no local GitHub branch context; skipped.")
-		return checkkit.Pass(0), nil
+	if skip, ok := skipBranch(root); ok {
+		return skip, nil
 	}
 	ctx, cancel := context.WithDeadline(context.Background(), pushDeadline())
 	defer cancel()
@@ -40,6 +39,20 @@ func LocalBranch(root string, args []string) (checkkit.Result, error) {
 	}
 	result.Ok = len(result.Errors) == 0
 	return result, nil
+}
+
+// skipBranch is local-branch's result without reading GitHub, and true, when
+// the repo has no local GitHub branch context, which passes, or the runner's
+// probe found GitHub's API host unreachable, which is info.
+func skipBranch(root string) (checkkit.Result, bool) {
+	if !localBranchApplicable(root) {
+		fmt.Fprintln(os.Stderr, "local-branch: no local GitHub branch context; skipped.")
+		return checkkit.Pass(0), true
+	}
+	if note := checkkit.Offline("the PR and Plan reads"); note != "" {
+		return checkkit.Info(0, note), true
+	}
+	return checkkit.Result{}, false
 }
 
 func localBranchApplicable(root string) bool {
