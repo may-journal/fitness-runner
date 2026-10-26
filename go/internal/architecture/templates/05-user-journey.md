@@ -34,7 +34,7 @@ Numbers match the callout table.
 
 ## Journey
 
-<!-- One flowchart TB, the only form this level takes: the person's steps from start to result, each node styled by one of the four classes above and no other style. Each label ends with the requirement docs the step fulfils, by ID, and every requirement doc appears on some step. Each label ends with the requirement docs the step fulfils, by ID, and every requirement doc appears on some step. -->
+<!-- One flowchart TB, the only form this level takes: the person's steps from start to result, each node styled by one of the four classes above and no other style. Each label ends with the requirement docs the step fulfils, by ID, and every requirement doc appears on some step. -->
 
 ```mermaid
 flowchart TB

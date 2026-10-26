@@ -169,12 +169,14 @@ func Test0023_16(t *testing.T) {
 	dtEdit(t, files, acContainer, "C4Container\n    title Product", "C4Context\n    title Product")
 	dtEdit(t, files, acComponent, "C4Component\n    title Legend", "C4Container\n    title Legend")
 	dtEdit(t, files, acCode, "```mermaid\nclassDiagram\n    class Record", "```mermaid\nflowchart TB\n    class Record")
+	dtEdit(t, files, acJourney, "flowchart TB", "flowchart LR")
 	out, code = docTemplate(t, files)
 	sees(t, out, code, 1,
 		dtLine(t, files, acContainer, "```mermaid")+": diagram type C4Context must be C4Container as "+dtShippedName(acContainer)+" has",
 		dtViews+acComponent+": the opening needs a C4Component legend as "+dtShippedName(acComponent)+" has",
 		": legend type C4Container must be C4Component as "+dtShippedName(acComponent)+" has",
-		dtLine(t, files, acCode, "```mermaid")+": diagram type flowchart must be classDiagram as "+dtShippedName(acCode)+" has")
+		dtLine(t, files, acCode, "```mermaid")+": diagram type flowchart TB must be classDiagram as "+dtShippedName(acCode)+" has",
+		dtLine(t, files, acJourney, "```mermaid")+": legend type flowchart LR must be flowchart TB as "+dtShippedName(acJourney)+" has")
 }
 
 func Test0023_17(t *testing.T) {
@@ -206,7 +208,8 @@ func Test0023_18(t *testing.T) {
 	t.Parallel()
 	files := dtShipped(t)
 	dtEdit(t, files, acContext, "    UpdateElementStyle(user,",
-		"    SystemDb_Ext(db, \"4 Records\", \"Keeps records.\")\n    UpdateElementStyle(db, $fontColor=\"#FFFFFF\", $bgColor=\"#64748b\",  $borderColor=\"#475569\")\n    UpdateLayoutConfig($c4ShapeInRow=\"3\")\n    UpdateElementStyle(user,")
+		"    SystemDb_Ext(db, \"4 Records\", \"Keeps records.\")\n    UpdateElementStyle(db, $fontColor=\"#FFFFFF\", $bgColor=\"#64748b\",  $borderColor=\"#475569\")\n    UpdateLayoutConfig($c4ShapeInRow=\"3\")\n    Lay_R(user, product)\n    UpdateElementStyle(user,")
+	dtEdit(t, files, acCode, "    save --> Record : A", "    save --> Record : A\n    Store : +save()\n    <<interface>> Store\n    style Store "+paletteClass)
 	out, code := docTemplate(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 	dtEdit(t, files, acContext, "UpdateElementStyle(product, $bgColor=\"#1d4ed8\"", "UpdateElementStyle(product, $bgColor=\"#ff0000\"")

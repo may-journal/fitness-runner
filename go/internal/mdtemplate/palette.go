@@ -230,15 +230,14 @@ func (f *facts) line(t string, at int) {
 }
 
 var (
-	c4Macro    = regexp.MustCompile(`^([A-Za-z_]+)\((.*)\)\s*\{?$`)
 	classDecl  = regexp.MustCompile(`^class\s+([A-Za-z_][\w-]*)`)
 	classStyle = regexp.MustCompile(`^style\s+(\S+)\s+(.+)$`)
-	classEdge  = regexp.MustCompile(`^([A-Za-z_][\w-]*)\s*(?:"[^"]*"\s*)?(?:<\|--|<\|\.\.|<--|<\.\.|\*--|o--|--\*|--o|--\|>|\.\.\|>|-->|\.\.>|--|\.\.)\s*(?:"[^"]*"\s*)?([A-Za-z_][\w-]*)`)
+	classNote  = regexp.MustCompile(`^<<[^>]*>>\s*([A-Za-z_][\w-]*)$`)
 )
 
 // c4Line reads one C4 macro call.
 func (f *facts) c4Line(t string, at int) {
-	if m := c4Macro.FindStringSubmatch(t); m != nil {
+	if m := mermaid.C4Macro.FindStringSubmatch(t); m != nil {
 		f.c4Call(m[1], mermaid.SplitArgs(m[2]), t, at)
 	}
 }
@@ -256,30 +255,24 @@ func (f *facts) c4Call(name string, args []string, t string, at int) {
 }
 
 // c4Role sorts a C4 macro: UpdateElementStyle styles an element, any other
-// style macro or color argument is a stray, a relationship is neither, and
-// the rest declare elements.
+// style macro or color argument is a stray, an element or boundary macro
+// declares one, and the rest, such as Rel or Lay_R, do neither.
 func c4Role(name string, args []string) string {
 	switch {
 	case name == "UpdateElementStyle":
 		return "style"
 	case styling(name, args):
 		return "stray"
-	case layoutOnly(name):
-		return ""
+	case mermaid.IsC4Element(name):
+		return "element"
 	}
-	return "element"
+	return ""
 }
 
 // styling reports a macro that sets a look: an Update macro other than
 // UpdateLayoutConfig, which only lays out, or a color argument.
 func styling(name string, args []string) bool {
 	return strings.HasPrefix(name, "Update") && name != "UpdateLayoutConfig" || slices.ContainsFunc(args, colorArg)
-}
-
-// layoutOnly reports a macro that neither declares nor styles an element:
-// a relationship, or UpdateLayoutConfig.
-func layoutOnly(name string) bool {
-	return strings.HasPrefix(name, "Rel") || strings.HasPrefix(name, "BiRel") || strings.HasPrefix(name, "Update")
 }
 
 // colorArg reports a named C4 argument that sets a color.
@@ -314,8 +307,8 @@ func classStray(t string) bool {
 	return strings.Contains(t, ":::") || strings.HasPrefix(t, "classDef ") || strings.HasPrefix(t, "cssClass ")
 }
 
-// classStatement reads a style line, a class declaration, or the two
-// classes a relationship names.
+// classStatement reads a style line, a class declaration, or the classes
+// another statement names.
 func (f *facts) classStatement(t string, at int) {
 	if m := classStyle.FindStringSubmatch(t); m != nil {
 		f.styles = append(f.styles, styled{m[1], styleKey(strings.Split(m[2], ",")), "style {alias} " + m[2], t, at})
@@ -325,10 +318,24 @@ func (f *facts) classStatement(t string, at int) {
 		f.declare(m[1], at, strings.HasSuffix(t, "{"))
 		return
 	}
-	if m := classEdge.FindStringSubmatch(t); m != nil {
-		f.declare(m[1], at, false)
-		f.declare(m[2], at, false)
+	for _, alias := range classesNamed(t) {
+		f.declare(alias, at, false)
 	}
+}
+
+// classesNamed lists the classes an arrow, an annotation such as
+// `<<interface>> Store`, or a member line such as `Record : +ID` names.
+func classesNamed(t string) []string {
+	if m := mermaid.Edge.FindStringSubmatch(t); m != nil {
+		return []string{m[1], m[4]}
+	}
+	if m := classNote.FindStringSubmatch(t); m != nil {
+		return m[1:]
+	}
+	if m := mermaid.ClassMember.FindStringSubmatch(t); m != nil {
+		return m[1:]
+	}
+	return nil
 }
 
 func (f *facts) declare(alias string, at int, opens bool) {

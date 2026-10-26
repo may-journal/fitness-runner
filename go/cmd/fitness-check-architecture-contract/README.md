@@ -25,13 +25,13 @@ Any view requires all five, and each view needs a diagram outside its legends. S
 
 ## Templates
 
-Each view has a template in [internal/architecture/templates](../../internal/architecture/templates), and fitness ships all five inside the binary. Start each view as a copy of its template:
+Each view has a template in [internal/architecture/templates](../../internal/architecture/templates), and fitness ships all five inside the binary. Start each view the repo lacks as a copy of its template:
 
 ```bash
 mkdir -p docs/architecture
 for view in 01-system-context 02-containers 03-components 04-code 05-user-journey; do
-  curl -fsSL "https://raw.githubusercontent.com/may-journal/fitness-runner/v1/go/internal/architecture/templates/$view.md" \
-    -o "docs/architecture/$view.md"
+  test -e "docs/architecture/$view.md" || curl -fsSL -o "docs/architecture/$view.md" \
+    "https://raw.githubusercontent.com/may-journal/fitness-runner/v1/go/internal/architecture/templates/$view.md"
 done
 ```
 

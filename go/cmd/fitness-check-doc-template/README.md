@@ -29,7 +29,7 @@ A file in a `templates` folder governs alone the neighbor that shares its name, 
 - Sections: the template's `##` sections open the doc, in order. Sections of the doc's own may follow.
 - Legends: a section with a legend in the template needs a legend of the same Mermaid type.
 - Legend kinds: a diagram with no callout numbers, one titled `Legend`, or one under a `Legend` heading.
-- Diagram types: each diagram and legend in a section has the Mermaid type of the template's diagram or legend there.
+- Diagram types: each diagram and legend in a section has the Mermaid type and direction of the template's there.
 - Callout tables: a section with one in the template needs one, and each has the template's columns.
 - Captions: the paragraph above each callout table starts with the first sentence of the template's caption.
 - Palette: see below, for templates with C4 or class diagrams.

@@ -222,13 +222,13 @@ func headingAbove(headings []mdx.Heading, line int) string {
 	return text
 }
 
-// diagramKind is a diagram's Mermaid type, its first word past any front
-// matter and comments.
+// diagramKind is a diagram's Mermaid type with its direction, such as
+// `flowchart TB`: its first line past any front matter and comments.
 func diagramKind(body string) string {
 	lines := strings.Split(mdx.StripFrontMatter(strings.TrimLeft(body, "\n")), "\n")
 	for _, line := range lines {
 		if t := strings.TrimSpace(line); t != "" && !strings.HasPrefix(t, "%%") {
-			return strings.Fields(t)[0]
+			return strings.Join(strings.Fields(t), " ")
 		}
 	}
 	return ""

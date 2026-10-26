@@ -39,7 +39,7 @@ Source: `go/cmd/fitness-check-doc-template/main.go:72`
         - When doc-template checks the repo
             - Then it fails naming both templates
 - 0023.16
-    - Given Developer has a view that lacks a legend, opening section, callout column or caption, or Mermaid type its template has
+    - Given Developer has a view that lacks a legend, opening section, callout column or caption, or Mermaid type or direction its template has
         - When doc-template checks the repo
             - Then it fails naming or quoting what the template has
 - 0023.17
