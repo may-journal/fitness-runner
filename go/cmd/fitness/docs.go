@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -21,23 +22,30 @@ type topic struct {
 }
 
 // runDocs handles `fitness docs [topic]`: with no topic it lists them, and
-// with one it prints that topic. An unknown topic exits 2 and lists them.
+// with one it prints that topic. An unknown topic, more than one, or a flag
+// such as --help exits 2: a flag with the usage, a name with the topics.
 func runDocs(args []string) int {
 	switch {
 	case len(args) == 0:
 		listTopics(os.Stdout)
 		return 0
-	case len(args) > 1:
-		fmt.Fprintln(os.Stderr, "fitness docs: name one topic, as `fitness docs <topic>`")
+	case len(args) > 1 || strings.HasPrefix(args[0], "-"):
+		fmt.Fprintln(os.Stderr, "fitness docs: name one topic, as `fitness docs [topic]`; `fitness docs` lists them")
 		return 2
 	}
+	return printTopic(args[0])
+}
+
+// printTopic prints the named topic, or exits 2 listing the topics when no
+// topic has that name.
+func printTopic(name string) int {
 	for _, t := range topics {
-		if t.name == args[0] {
+		if t.name == name {
 			fmt.Printf("# %s\n\nFrom the doc comments of go/%s.\n\n%s", t.name, t.pkg, t.body)
 			return 0
 		}
 	}
-	fmt.Fprintf(os.Stderr, "fitness docs: no topic named %q; the topics are:\n", args[0])
+	fmt.Fprintf(os.Stderr, "fitness docs: no topic named %q; the topics are:\n", name)
 	listTopics(os.Stderr)
 	return 2
 }

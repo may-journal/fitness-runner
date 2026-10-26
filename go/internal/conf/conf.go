@@ -78,9 +78,6 @@ type Config struct {
 // FileName is the config file the runner reads at the repo root.
 const FileName = ".fitnessrc.json"
 
-// Load reads root's config. A missing file returns (nil, nil): the caller
-// falls back to the defaults. A config that still sets a retired exclusion
-// key returns an error naming each one.
 // DefaultMaxListItems is the longest list prose-budget allows, and the most
 // bullets changelog-bullets allows in a release section, unless
 // proseBudget.maxListItems sets another limit.
@@ -95,6 +92,9 @@ func MaxListItems(root string) int {
 	return DefaultMaxListItems
 }
 
+// Load reads root's config. A missing file returns (nil, nil): the caller
+// falls back to the defaults. A config that still sets a retired exclusion
+// key returns an error naming each one.
 func Load(root string) (*Config, error) {
 	return LoadAs[Config](root)
 }

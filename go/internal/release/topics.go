@@ -30,14 +30,18 @@ type topicDoc struct {
 	Body string
 }
 
-// topics reads every package under go/internal whose doc comment carries a
-// topic directive, in topic name order. Two packages naming one topic, or a
-// topic package without a doc comment, is an error.
+// topics reads every package under go/internal, outside the folders the go
+// tool ignores, whose doc comment carries a topic directive, in topic name
+// order. Two packages naming one topic, or a topic package without a doc
+// comment, is an error.
 func (c Config) topics() ([]topicDoc, error) {
 	var topics []topicDoc
 	err := filepath.WalkDir(filepath.Join(c.Root, "go", "internal"), func(path string, entry fs.DirEntry, err error) error {
 		if err != nil || !entry.IsDir() {
 			return err
+		}
+		if ignoredDir(entry.Name()) {
+			return fs.SkipDir
 		}
 		t, ok, err := readTopic(c.Root, path)
 		if ok {
@@ -55,6 +59,12 @@ func (c Config) topics() ([]topicDoc, error) {
 		}
 	}
 	return topics, nil
+}
+
+// ignoredDir reports whether the go tool leaves a folder of this name out of
+// ./...: testdata, and any name starting with _ or a dot.
+func ignoredDir(name string) bool {
+	return name == "testdata" || strings.HasPrefix(name, "_") || strings.HasPrefix(name, ".")
 }
 
 // readTopic reads the package in dir as a topic, reporting whether it is
@@ -135,18 +145,28 @@ func directive(group *ast.CommentGroup) string {
 }
 
 // topicMarkdown renders a package's doc comment, then each exported
-// constant group, type and function with its doc comment, as Markdown.
+// constant and variable group, type with its methods, and function with its
+// doc comment, as Markdown.
 func topicMarkdown(pkg *doc.Package) string {
 	var b strings.Builder
 	b.WriteString(markdown(pkg, pkg.Doc))
 	writeValues(&b, pkg, pkg.Consts)
+	writeValues(&b, pkg, pkg.Vars)
 	for _, t := range pkg.Types {
-		writeDecl(&b, pkg, t.Name, t.Doc+fieldDocs(t.Decl))
-		writeValues(&b, pkg, t.Consts)
-		writeFuncs(&b, pkg, t.Funcs)
+		writeType(&b, pkg, t)
 	}
-	writeFuncs(&b, pkg, pkg.Funcs)
+	writeFuncs(&b, pkg, pkg.Funcs, "")
 	return b.String()
+}
+
+// writeType adds a type with its fields, then its constants, variables,
+// constructors and methods.
+func writeType(b *strings.Builder, pkg *doc.Package, t *doc.Type) {
+	writeDecl(b, pkg, t.Name, t.Doc+fieldDocs(t.Decl))
+	writeValues(b, pkg, t.Consts)
+	writeValues(b, pkg, t.Vars)
+	writeFuncs(b, pkg, t.Funcs, "")
+	writeFuncs(b, pkg, t.Methods, t.Name+".")
 }
 
 // writeValues adds each constant group with its exported names.
@@ -156,10 +176,11 @@ func writeValues(b *strings.Builder, pkg *doc.Package, values []*doc.Value) {
 	}
 }
 
-// writeFuncs adds each function.
-func writeFuncs(b *strings.Builder, pkg *doc.Package, funcs []*doc.Func) {
+// writeFuncs adds each function, its name led by prefix, as a method by
+// its type.
+func writeFuncs(b *strings.Builder, pkg *doc.Package, funcs []*doc.Func, prefix string) {
 	for _, fn := range funcs {
-		writeDecl(b, pkg, fn.Name, fn.Doc)
+		writeDecl(b, pkg, prefix+fn.Name, fn.Doc)
 	}
 }
 
@@ -183,13 +204,14 @@ func exported(names []string) []string {
 	return out
 }
 
-// fieldDocs lists a struct type's exported fields with their JSON keys and
-// doc comments, as a doc comment list, or "" for any other type.
+// fieldDocs lists a struct type's exported fields, nested ones by their path
+// such as proseBudget.maxWords, with their JSON keys and doc comments, as a
+// doc comment list, or "" for any other type.
 func fieldDocs(decl *ast.GenDecl) string {
 	var b strings.Builder
 	for _, spec := range decl.Specs {
-		for _, field := range structFields(spec) {
-			writeField(&b, field)
+		if ts, ok := spec.(*ast.TypeSpec); ok {
+			writeFields(&b, ts.Type, "")
 		}
 	}
 	if b.Len() == 0 {
@@ -198,42 +220,56 @@ func fieldDocs(decl *ast.GenDecl) string {
 	return "\nFields:\n\n" + b.String()
 }
 
-// structFields are the fields a type spec declares, or none when it is not
-// a struct type.
-func structFields(spec ast.Spec) []*ast.Field {
-	ts, ok := spec.(*ast.TypeSpec)
+// writeFields adds each exported field of the struct t names, and the
+// fields nested in it, named from prefix.
+func writeFields(b *strings.Builder, t ast.Expr, prefix string) {
+	st, ok := structOf(t)
 	if !ok {
-		return nil
-	}
-	st, ok := ts.Type.(*ast.StructType)
-	if !ok {
-		return nil
-	}
-	return st.Fields.List
-}
-
-// writeField adds one exported field to a doc comment list: its JSON key
-// when it has one, else its name, and its doc comment.
-func writeField(b *strings.Builder, field *ast.Field) {
-	if len(field.Names) != 1 || !token.IsExported(field.Names[0].Name) {
 		return
 	}
-	fmt.Fprintf(b, "  - %s: %s\n", fieldName(field), orUndocumented(field))
-}
-
-// fieldName is a field's JSON key, else its Go name.
-func fieldName(field *ast.Field) string {
-	if key := tag(field, "json"); key != "" && key != "-" {
-		return key
+	for _, field := range st.Fields.List {
+		for _, name := range fieldNames(field) {
+			fmt.Fprintf(b, "  - %s\n", keyLine(configKey{Key: prefix + name, Doc: orUndocumented(field, prefix+name)}))
+			writeFields(b, field.Type, prefix+name+".")
+		}
 	}
-	return field.Names[0].Name
 }
 
-// orUndocumented is a field's doc comment on one line, or undocumented.
-func orUndocumented(field *ast.Field) string {
-	text := strings.Join(strings.Fields(field.Doc.Text()+field.Comment.Text()), " ")
+// fieldNames are the exported names a field declares: its JSON key when it
+// has one, else each Go name, or for an embedded field its type's name.
+func fieldNames(field *ast.Field) []string {
+	if key := tag(field, "json"); key != "" && key != "-" {
+		return []string{key}
+	}
+	var names []string
+	for _, ident := range field.Names {
+		names = append(names, ident.Name)
+	}
+	if len(field.Names) == 0 {
+		names = append(names, embeddedName(field.Type))
+	}
+	return exported(names)
+}
+
+// embeddedName is the type name an embedded field takes its name from.
+func embeddedName(t ast.Expr) string {
+	switch t := t.(type) {
+	case *ast.Ident:
+		return t.Name
+	case *ast.SelectorExpr:
+		return t.Sel.Name
+	case *ast.StarExpr:
+		return embeddedName(t.X)
+	}
+	return ""
+}
+
+// orUndocumented is a field's doc comment on one line, as explain shows
+// config keys, opening with name in place of its key, or undocumented.
+func orUndocumented(field *ast.Field, name string) string {
+	text := fieldDoc(field)
 	if text == "" {
 		return undocumented
 	}
-	return text
+	return renamed(configKey{Key: tag(field, "json"), Doc: text}, name).Doc
 }
