@@ -174,16 +174,35 @@ func checkPlanApproval(plans []gitx.PlanRef) int {
 		return 1
 	}
 	owner, _, _ := strings.Cut(gitx.OriginSlug("."), "/")
-	if slices.ContainsFunc(plans, func(p gitx.PlanRef) bool { return ownPlan(p, owner) && planReads.Approved(p) }) {
+	approvers := planApprovers()
+	if slices.ContainsFunc(plans, func(p gitx.PlanRef) bool { return ownPlan(p, owner) && planReads.Approved(p, approvers) }) {
 		return 0
 	}
-	refuseUnapproved(plans, owner)
+	refuseUnapproved(plans, owner, approvers)
 	return 1
 }
 
-// refuseUnapproved explains a refusal: it lists the candidates and names
-// each Plan of another owner, which never counts.
-func refuseUnapproved(plans []gitx.PlanRef, owner string) {
+// planApprovers is the repo's planApprovers setting, empty when unset or
+// unreadable.
+func planApprovers() []string {
+	if cfg, err := loadConfig("."); err == nil && cfg != nil {
+		return cfg.PlanApprovers
+	}
+	return nil
+}
+
+// approverNames says who may approve: the listed logins, or with no list
+// the repo's owner and its org's members.
+func approverNames(approvers []string) string {
+	if len(approvers) == 0 {
+		return "the repo's owner or an org member (planApprovers is unset)"
+	}
+	return "one of planApprovers: " + strings.Join(approvers, ", ")
+}
+
+// refuseUnapproved explains a refusal: it lists the candidates, names each
+// Plan of another owner, which never counts, and says who may approve.
+func refuseUnapproved(plans []gitx.PlanRef, owner string, approvers []string) {
 	names := make([]string, len(plans))
 	for i, p := range plans {
 		names[i] = planName(p)
@@ -194,7 +213,7 @@ func refuseUnapproved(plans []gitx.PlanRef, owner string) {
 			fmt.Fprintf(os.Stderr, "  Plan %s is refused: only a Plan owned by %q counts here.\n", p, owner)
 		}
 	}
-	fmt.Fprintln(os.Stderr, "  Get a human to comment an approval on the Plan Issue before pushing.")
+	fmt.Fprintln(os.Stderr, "  A Plan needs a comment starting \"I approve\" from "+approverNames(approvers)+".")
 }
 
 // planName names p in a refusal: the number alone for a Plan of this repo,

@@ -134,14 +134,33 @@ func planBody(task string) string {
 }
 
 // planView is the saved gh answer to the pre-push gate's one read of issue n
-// in repo0014: its URL, body, label names and comment bodies.
+// in repo0014: its URL, body, label names and comments, each written by the
+// repo's owner.
 func planView(t *testing.T, n int, body string, labels []string, comments ...string) response {
+	t.Helper()
+	by := make([]comment, len(comments))
+	for i, c := range comments {
+		by[i] = comment{Body: c, Author: "example-owner", Association: "OWNER"}
+	}
+	return planViewBy(t, n, body, labels, by...)
+}
+
+// comment is one Plan comment as the gate reads it: its text, its author's
+// login and the author's association with the repo.
+type comment struct {
+	Body        string `json:"body"`
+	Author      string `json:"author"`
+	Association string `json:"association"`
+}
+
+// planViewBy is planView with each comment's author given.
+func planViewBy(t *testing.T, n int, body string, labels []string, comments ...comment) response {
 	t.Helper()
 	out, err := json.Marshal(map[string]any{
 		"url":      "https://github.com/" + repo0014 + "/issues/" + itoa(n),
 		"body":     body,
 		"labels":   append([]string{}, labels...),
-		"comments": append([]string{}, comments...),
+		"comments": append([]comment{}, comments...),
 	})
 	mustDo(t, err)
 	return response{Match: []string{"issue view " + itoa(n) + " ", "--json url,body,labels,comments"}, Stdout: string(out) + "\n"}
