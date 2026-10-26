@@ -32,15 +32,27 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Fail(0, toolchain.NotInstalled), nil
 	}
-	var errs []string
+	var found []checkkit.Finding
 	for start := 0; start < len(files); start += batch {
 		end := min(start+batch, len(files))
-		errs = append(errs, unformatted(root, bin, files[start:end])...)
+		found = append(found, unformatted(root, bin, files[start:end])...)
 	}
-	if len(errs) > 0 {
-		return checkkit.Fail(len(files), errs...), nil
-	}
-	return checkkit.Pass(len(files)), nil
+	return checkkit.Found(len(files), errorLine, found...), nil
+}
+
+// rule names what gofmt enforces: Go files stay as gofmt writes them.
+const rule = "gofmt-formatted"
+
+// message says what is wrong with a file gofmt would change.
+const message = "not gofmt-formatted"
+
+// fixCommand is the command that formats a file, given its path.
+const fixCommand = "gofmt -w "
+
+// errorLine renders a finding as `path: not gofmt-formatted (run: gofmt -w
+// path)`.
+func errorLine(f checkkit.Finding) string {
+	return f.File + ": " + f.Message + " (run: " + f.Fix + ")"
 }
 
 // goFiles returns the repo's own in-scope .go files, leaving out fixtures.
@@ -56,11 +68,11 @@ func goFiles(root string) []string {
 
 // unformatted runs gofmt -l over files and turns each listed path into a
 // finding.
-func unformatted(root, bin string, files []string) []string {
+func unformatted(root, bin string, files []string) []checkkit.Finding {
 	_, out := toolchain.Run(root, ".", bin, append([]string{"-l"}, files...)...)
-	var errs []string
+	var found []checkkit.Finding
 	for _, l := range toolchain.Lines(out) {
-		errs = append(errs, l+": not gofmt-formatted (run: gofmt -w "+l+")")
+		found = append(found, checkkit.Finding{File: l, Rule: rule, Message: message, Fix: fixCommand + l})
 	}
-	return errs
+	return found
 }

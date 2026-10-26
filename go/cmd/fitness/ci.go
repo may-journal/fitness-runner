@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -17,9 +18,9 @@ const maxAnnotations = 10
 
 // finish emits the CI report when running under GitHub Actions, then maps the
 // failure count to the process exit code. Info rows never change it.
-func finish(rows []render.Row, perf perfReport, t render.Totals) int {
+func finish(rows []render.Row, found [][]checkkit.Finding, perf perfReport, t render.Totals) int {
 	if isGitHubActions() {
-		emitCIReport(rows, perf, t)
+		emitCIReport(rows, found, perf, t)
 	}
 	if t.Failure > 0 {
 		return 1
@@ -37,12 +38,12 @@ func isGitHubActions() bool {
 // running under GitHub Actions. It never changes the process result — the
 // exit code still comes from the check outcomes — so it is additive to the
 // terminal table a local run prints.
-func emitCIReport(rows []render.Row, perf perfReport, t render.Totals) {
-	writeStepSummary(ciSummaryMarkdown(rows, t) + timingMarkdown(perf))
+func emitCIReport(rows []render.Row, found [][]checkkit.Finding, perf perfReport, t render.Totals) {
+	writeStepSummary(ciSummaryMarkdown(rows, found, t) + timingMarkdown(perf))
 	if t.Failure > 0 {
 		report.MarkFailure()
 	}
-	for _, line := range annotations(rows, maxAnnotations) {
+	for _, line := range annotations(rows, found, maxAnnotations) {
 		fmt.Println(line)
 	}
 	for _, line := range notices(rows, maxAnnotations) {
@@ -58,7 +59,7 @@ func writeStepSummary(md string) {
 // ciSummaryMarkdown renders the results as a markdown job summary: a
 // status table, then a section per failing check listing its errors and an
 // Info section for checks that could not judge.
-func ciSummaryMarkdown(rows []render.Row, t render.Totals) string {
+func ciSummaryMarkdown(rows []render.Row, found [][]checkkit.Finding, t render.Totals) string {
 	var b strings.Builder
 	b.WriteString("## Fitness checks\n\n")
 	b.WriteString(headline(t) + "\n\n")
@@ -66,8 +67,8 @@ func ciSummaryMarkdown(rows []render.Row, t render.Totals) string {
 	for _, r := range rows {
 		fmt.Fprintf(&b, "| %s | %s | %s | %dms |\n", report.EscapeMarkdown(r.Name), statusMark(r), filesCell(r.FilesChecked), r.Ms)
 	}
-	for _, r := range rows {
-		b.WriteString(rowDetail(r))
+	for i, r := range rows {
+		b.WriteString(rowDetail(r, found[i]))
 	}
 	b.WriteString(infoSection(rows))
 	return b.String()
@@ -161,25 +162,26 @@ func filesCell(n int) string {
 	return fmt.Sprintf("%d", n)
 }
 
-// rowDetail renders one failing check's errors as a bulleted section, or ""
-// when the check passed or carried no errors.
-func rowDetail(r render.Row) string {
+// rowDetail renders one failing check's findings as a bulleted section, or
+// "" when the check passed or carried no errors. The findings are the ones
+// `--format=json` prints, so the summary and the JSON never disagree.
+func rowDetail(r render.Row, found []checkkit.Finding) string {
 	if r.Ok || len(r.Errors) == 0 {
 		return ""
 	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "\n### ❌ %s\n\n", report.EscapeMarkdown(r.Name))
-	for _, e := range r.Errors {
-		fmt.Fprintf(&b, "- %s\n", report.EscapeMarkdown(e))
+	for _, f := range found {
+		b.WriteString(report.FindingMarkdown(f))
 	}
 	return b.String()
 }
 
 // annotations returns the workflow-command annotation lines for the failing
-// checks, capped at limit. When more errors exist than the cap, a trailing
+// checks, capped at limit. When more findings exist than the cap, a trailing
 // warning names how many were not annotated, so nothing is dropped silently.
-func annotations(rows []render.Row, limit int) []string {
-	all := allAnnotationLines(rows)
+func annotations(rows []render.Row, found [][]checkkit.Finding, limit int) []string {
+	all := allAnnotationLines(rows, found)
 	if len(all) <= limit {
 		return all
 	}
@@ -187,29 +189,26 @@ func annotations(rows []render.Row, limit int) []string {
 	return append(all[:limit], note)
 }
 
-// allAnnotationLines builds one annotation per error across every failing row.
-func allAnnotationLines(rows []render.Row) []string {
+// allAnnotationLines builds one annotation per finding across every failing
+// row, through the shared reporter.
+func allAnnotationLines(rows []render.Row, found [][]checkkit.Finding) []string {
 	var out []string
-	for _, r := range rows {
+	for i, r := range rows {
 		if r.Ok {
 			continue
 		}
-		for _, e := range rowErrors(r) {
-			out = append(out, annotationLine(r.Name, e))
+		for _, f := range orUndiagnosed(r.Name, found[i]) {
+			out = append(out, report.FindingAnnotation(r.Name, f))
 		}
 	}
 	return out
 }
 
-// annotationLine delegates location parsing and escaping to the shared reporter.
-func annotationLine(check, err string) string {
-	return report.Annotation(check, err, true)
-}
-
-// rowErrors ensures a failing check without diagnostics still has an annotation.
-func rowErrors(r render.Row) []string {
-	if len(r.Errors) == 0 {
-		return []string{"check failed without a diagnostic; see the check log"}
+// orUndiagnosed ensures a failing check without diagnostics still has an
+// annotation.
+func orUndiagnosed(check string, found []checkkit.Finding) []checkkit.Finding {
+	if len(found) == 0 {
+		return []checkkit.Finding{{Rule: check, Message: "check failed without a diagnostic; see the check log"}}
 	}
-	return r.Errors
+	return found
 }

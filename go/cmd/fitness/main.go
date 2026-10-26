@@ -233,8 +233,9 @@ Docs: https://github.com/may-journal/fitness-runner#usage`)
 }
 
 func run(argv []string) int {
-	if installErr != nil {
-		report.Error("fitness setup", installErr)
+	argv, err := ready(argv)
+	if err != nil {
+		report.Error("fitness setup", err)
 		return 1
 	}
 	if hasBlobFlag(argv) {
@@ -277,8 +278,10 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	rows, totals := summarize(checks, outcomes)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
+	found := allFindings(checks, outcomes, rows)
+	printJSON(rows, found, totals)
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
-	code := finish(rows, perf, totals)
+	code := finish(rows, found, perf, totals)
 	return withPerfReport(perfPath, perf, code)
 }
 
@@ -431,17 +434,23 @@ func appendNote(notes []string, note string) []string {
 }
 
 // printSummary renders the table and total line — to stderr when any check
-// failed, so failure output stays together.
+// failed, so failure output stays together, or when stdout carries JSON.
 func printSummary(rows []render.Row, totals render.Totals) {
 	p := render.NewPalette()
 	table := render.Table(rows, render.TermCols(), p)
 	total := render.TotalLine(totals, p)
-	out := os.Stdout
-	if totals.Failure > 0 {
-		out = os.Stderr
-	}
+	out := humanOut(totals)
 	fmt.Fprintln(out, table)
 	fmt.Fprintln(out, total)
+}
+
+// humanOut is where text for people goes after a run: stdout, unless a
+// check failed or stdout carries JSON.
+func humanOut(totals render.Totals) *os.File {
+	if totals.Failure > 0 || formatJSON {
+		return os.Stderr
+	}
+	return os.Stdout
 }
 
 // parseArgv returns the check named by the first non-flag argument and the

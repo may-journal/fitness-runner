@@ -37,15 +37,15 @@ func Main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	return walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+	return walkfs.ScanFindings(root, []string{".md"}, errorLine, func(rel, content string) []checkkit.Finding {
 		return scan(root, rel, content)
 	}), nil
 }
 
 // scan walks one file's lines, skipping fenced code, and validates every
 // link target found outside code spans.
-func scan(root, rel, content string) []string {
-	var errs []string
+func scan(root, rel, content string) []checkkit.Finding {
+	var errs []checkkit.Finding
 	inFence := false
 	for i, line := range strings.Split(content, "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "```") {
@@ -61,14 +61,25 @@ func scan(root, rel, content string) []string {
 }
 
 // judgeLine validates every link target on one line.
-func judgeLine(root, rel, line string, lineNo int) []string {
-	var errs []string
+func judgeLine(root, rel, line string, lineNo int) []checkkit.Finding {
+	var errs []checkkit.Finding
 	for _, target := range targets(codeSpanRe.ReplaceAllString(line, "")) {
 		if msg, ok := validate(root, rel, target); !ok {
-			errs = append(errs, fmt.Sprintf("%s:%d: %s", rel, lineNo, msg))
+			errs = append(errs, checkkit.Finding{File: rel, Line: lineNo, Rule: rule, Message: msg, Fix: fix})
 		}
 	}
 	return errs
+}
+
+// rule names what the check enforces: a relative link resolves.
+const rule = "broken-relative-link"
+
+// fix says how to mend a broken relative link.
+const fix = "point the link at a file or folder that exists, relative to this file, or remove it"
+
+// errorLine renders a finding as "<path>:<line>: <message>".
+func errorLine(f checkkit.Finding) string {
+	return fmt.Sprintf("%s:%d: %s", f.File, f.Line, f.Message)
 }
 
 // targets extracts link targets from a code-span-masked line: inline links

@@ -127,7 +127,7 @@ func misspelled(n int) map[string]string {
 func Test0004_1(t *testing.T) {
 	t.Parallel()
 	out, code, _ := inActions(t, example(t, "happyRepo", misspelled(1)))
-	sees(t, out, code, 1, "::error file=README.md,line=9::cspell: README.md:9:5 - Unknown word (zorbleflux)")
+	sees(t, out, code, 1, "::error file=README.md,line=9,col=5,title=cspell (unknown-word)::Unknown word (zorbleflux)")
 }
 
 func Test0004_2(t *testing.T) {
@@ -152,8 +152,8 @@ func Test0004_3(t *testing.T) {
 
 func Test0004_4(t *testing.T) {
 	t.Parallel()
-	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{"README.md": readme + "\nThe zorbleflux is 100% here.\n"}))
-	sees(t, out, code, 1, "::error file=README.md,line=9::cspell: README.md:9:5 - Unknown word (zorbleflux)")
+	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{"docs/notes-100%.md": "The zorbleflux sits here.\n"}))
+	sees(t, out, code, 1, "::error file=docs/notes-100%25.md,line=1,col=5,title=cspell (unknown-word)::Unknown word (zorbleflux)%0AFix: ")
 	for _, line := range strings.Split(out, "\n") {
 		if strings.HasPrefix(line, "::") && strings.Contains(line, "100%") && !strings.Contains(line, "100%25") {
 			t.Errorf("a percent sign must arrive escaped in one annotation, got %q", line)
