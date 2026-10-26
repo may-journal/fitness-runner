@@ -777,7 +777,8 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 // by run, so an inherited value never leaks into a full scan or another
 // repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
 // so no check reads the folder as changes. The staged files are read once
-// for both variables. A stalled git call returns its error.
+// for both variables. A stalled git call returns its error. A run with a
+// network check probes GitHub's API host first, as networkEnv says.
 func contextEnv(root string, checks []resolved, all bool, scope []string) ([]string, error) {
 	staged, err := stalledOnly(gitx.Repo(root).StagedFiles())
 	if err != nil {
@@ -788,7 +789,7 @@ func contextEnv(root string, checks []resolved, all bool, scope []string) ([]str
 		return nil, err
 	}
 	env := os.Environ()
-	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
+	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
 		env = withoutVar(env, name)
 	}
 	// A check's `git status` would otherwise refresh and rewrite the index,
@@ -796,6 +797,7 @@ func contextEnv(root string, checks []resolved, all bool, scope []string) ([]str
 	// password prompt would wait, unseen, until the budget kills the check.
 	env = append(append(env, gitx.NoPrompt(root)...), "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
 	env = append(env, scope...)
+	env = append(env, networkEnv(root, checks)...)
 	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
 }
 

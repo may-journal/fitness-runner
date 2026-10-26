@@ -23,12 +23,14 @@ var planReads *metadata.PushPlans
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
 // Plan once per branch (issue-link-once), so the Plan may be named by an
 // earlier branch commit instead of a pushed commit. Every GitHub read of the
-// push, local-branch's too, ends within one deadline.
+// push, local-branch's too, ends within one deadline. When GitHub's API host
+// does not answer the runner's probe, the gate and local-branch report info
+// instead of reading, and the push goes on.
 func hookPrePush() int {
 	ctx, cancel := metadata.PushContext()
 	defer cancel()
 	planReads = metadata.NewPushPlans(ctx)
-	gated := !disabledCheck("plan-trailer")
+	gated := gateOnline(!disabledCheck("plan-trailer"))
 	s := bufio.NewScanner(os.Stdin)
 	var updates []string
 	for s.Scan() {

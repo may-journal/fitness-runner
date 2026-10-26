@@ -14,6 +14,10 @@
 //   - Internal `@mayjournal/*` workspace packages are skipped, since they are versioned in-repo, not published to the registry.
 //   - Registry unreachable, or any garbage response: contributes nothing, so a run offline or in CI without network passes.
 //
+// One proxy blocks GitHub and the registry alike. So when the runner's probe
+// finds GitHub's API host unreachable, the check reads no registry and
+// reports info naming the host and proxy.
+//
 // # Notes
 //
 //   - `filesChecked` counts the tracked `package.json` manifests.
