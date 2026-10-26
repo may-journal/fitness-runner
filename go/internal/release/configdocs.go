@@ -175,3 +175,13 @@ func keyLine(key configKey) string {
 	}
 	return name + ": " + key.Doc
 }
+
+// renamed is key under the name path, with its doc comment's opening name
+// changed to match.
+func renamed(key configKey, path string) configKey {
+	if rest, ok := strings.CutPrefix(key.Doc, "`"+key.Key+"`"); ok {
+		key.Doc = "`" + path + "`" + rest
+	}
+	key.Key = path
+	return key
+}

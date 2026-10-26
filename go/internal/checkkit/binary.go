@@ -13,11 +13,13 @@ import (
 // local check's file name.
 const BinPrefix = "fitness-check-"
 
-// Program is how to start one check. Path is the file to exec. Name, when
-// set, is the program name the check starts under: the one fitness
-// executable runs the built-in check that name names.
+// Program is how to start one check.
 type Program struct {
-	Path, Name string
+	// Path is the file to exec.
+	Path string
+	// Name, when set, is the program name the check starts under: the one
+	// fitness executable runs the built-in check that name names.
+	Name string
 }
 
 // Command returns the command that runs the program with args.

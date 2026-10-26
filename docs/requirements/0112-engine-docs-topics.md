@@ -22,3 +22,7 @@ Source: `go/cmd/fitness/docs.go:25`
     - Given AI agent asks for a topic that does not exist
         - When it runs `fitness docs nope`
             - Then fitness exits 2 and lists the topics
+- 0112.3
+    - Given AI agent passes `docs` a flag, as `list` and `explain` take `--json`
+        - When it runs `fitness docs --json`
+            - Then fitness exits 2 and shows how to name a topic
