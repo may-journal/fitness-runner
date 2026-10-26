@@ -163,6 +163,7 @@ func Test0001_15(t *testing.T) {
 			t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
 		}
 	}
+	stalledGitStops(t)
 }
 
 // loggedGit returns a PATH setting whose git logs each call's arguments to
@@ -416,4 +417,24 @@ func gone(pid int, within time.Duration) bool {
 		}
 	}
 	return false
+}
+
+// stalledGitStops asserts a run whose git call listing tracked or staged
+// files stalls, under no-prompt mode, ends at the call's ten-second deadline
+// as a setup error naming it, and the stalled git is stopped.
+func stalledGitStops(t *testing.T) {
+	t.Helper()
+	for call, named := range map[string]string{
+		"ls-files": "git ls-files -z --cached did not finish within 10s",
+		"diff":     "git diff --cached --name-only did not finish within 10s",
+	} {
+		path, pidFile := promptingTools(t, call)
+		start := time.Now()
+		out, code := fitness(t, example(t, "happyRepo", architectedRepo()), []string{path, "GIT_TERMINAL_PROMPT=0"})
+		sees(t, out, code, 1, "fitness setup: "+named)
+		if took := time.Since(start); took > 30*time.Second {
+			t.Errorf("a stalled git %s must end the run at its deadline, but the run took %s", call, took)
+		}
+		processStopped(t, pidFile)
+	}
 }
