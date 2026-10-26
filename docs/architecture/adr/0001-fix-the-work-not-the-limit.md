@@ -4,6 +4,8 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # 0001 — Fix the work, not the limit: checks earn their timeout budget
 
+Check: [fitness/adr-0001](../../../fitness/adr-0001/README.md)
+
 ## Context
 
 The `eslint` check timed out in CI — 5.4s against the 5s per-check budget — and the reflex was to raise the timeout. That hid the cause: the check built a full TypeScript type-checker program over the whole repo, yet no enabled rule reads type information. It paid ~5s for zero findings; parsing syntactically was ~4x faster with byte-identical output. The breach was waste, not work that needed more room.

@@ -4,6 +4,8 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # 0010 — One binary holds every check
 
+Check: [fitness/adr-0010](../../../fitness/adr-0010/README.md)
+
 ## Context
 
 Each platform shipped 63 binaries, 219 MB unpacked, which linked the same packages 63 times. Releases spent most of their build linking, and installs most of their time downloading.

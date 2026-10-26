@@ -1,0 +1,11 @@
+#!/bin/sh
+# fitness/adr-0008/check: each language module is one lang.Module value in
+# its own file.
+. fitness/_lib/verdict.sh
+for f in $(git ls-files 'go/internal/lang/langs/*.go'); do
+  case "$f" in */langs.go | *_test.go) continue ;; esac
+  judged
+  n=$(grep -c '= lang\.Module{' "$f")
+  [ "$n" -eq 1 ] || fail "$f: declares $n language modules; keep one lang.Module value per file (ADR 0008, decision 1)"
+done
+finish

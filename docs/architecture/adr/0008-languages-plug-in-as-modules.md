@@ -4,6 +4,8 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # 0008 — Languages plug in as modules through one registry
 
+Check: [fitness/adr-0008](../../../fitness/adr-0008/README.md)
+
 ## Context
 
 Language knowledge was copied through the runner: hand lists of checks, lockfiles and dictionaries, and readers inside shared packages. Each new language added another copy.

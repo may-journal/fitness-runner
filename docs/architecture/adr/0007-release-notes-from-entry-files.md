@@ -4,6 +4,8 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # 0007 — Release notes come from entry files
 
+Check: [fitness/adr-0007](../../../fitness/adr-0007/README.md)
+
 ## Context
 
 Entry files fed a shared CHANGELOG.md, which three checks guarded and the release PR folded. Releases only linked it, and a fork's upstream CHANGELOG.md failed every rule.

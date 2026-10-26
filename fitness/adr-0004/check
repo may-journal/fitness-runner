@@ -1,0 +1,20 @@
+#!/bin/sh
+# fitness/adr-0004/check: each requirement doc names one area, and no two
+# docs name the same one.
+. fitness/_lib/verdict.sh
+areas=""
+for f in $(git ls-files 'docs/requirements/*.md'); do
+  base=$(basename "$f" .md)
+  [ "$base" = template ] && continue
+  judged
+  area=${base#????-}
+  case "$area" in
+  checks-* | engine-* | hooks-* | github-*) ;;
+  *) fail "$f: start its area with checks-, engine-, hooks- or github- (ADR 0004)" ;;
+  esac
+  areas="$areas $area"
+done
+for area in $(printf '%s\n' $areas | sort | uniq -d); do
+  fail "docs/requirements: two docs cover $area; fold the newer into the older (ADR 0004, decision 5)"
+done
+finish

@@ -17,6 +17,10 @@ C4Container
         Container(tools, "4 Install and release tools", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
     }
 
+    System_Boundary(own, "Repo checks") {
+        Container(repo, "10 Repo checks", "Go and shell", "fitness/*")
+    }
+
     System_Ext(consumer, "5 Consumer repo", ".fitnessrc.json and the sources under test")
     System_Ext(peers, "6 Peer tooling", "each language module's tools, and git")
     System_Ext(registry, "7 npm registry", "dependency-currency queries")
@@ -31,11 +35,13 @@ C4Container
     Rel(ci, cli, "F")
     Rel(developer, tools, "G")
     Rel(tools, releases, "H")
+    Rel(cli, repo, "I")
 
     UpdateElementStyle(developer, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
     UpdateElementStyle(agent, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
     UpdateElementStyle(cli, $bgColor="#0f766e", $borderColor="#115e59", $fontColor="#ffffff")
     UpdateElementStyle(tools, $bgColor="#0f766e", $borderColor="#115e59", $fontColor="#ffffff")
+    UpdateElementStyle(repo, $bgColor="#0f766e", $borderColor="#115e59", $fontColor="#ffffff")
     UpdateElementStyle(consumer, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
     UpdateElementStyle(peers, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
     UpdateElementStyle(registry, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
@@ -71,6 +77,7 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | 7   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
 | 8   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |
 | 9   | Release bundles and tool binaries, one archive per platform holding the one fitness binary.      | Artifacts ship through GitHub Releases and the Go proxy.    |
+| 10  | This repo's own checks in `fitness/`, each a shell script or a Go program that fitness builds. | Each decision holds while its check passes, as ADR 0012 decides. |
 | A   | Developer runs the binary from the consumer root.                                                | One front door.                                             |
 | B   | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
 | C   | The runner loads `.fitnessrc.json`, and each check process reads the tree, staged or full.        | Config and validation target live with the app.             |
@@ -79,6 +86,7 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | F   | `fitness pr-check` and `issue-check` run each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
 | G   | Developer runs `fitness-install`; the pre-commit hook runs the suite.                            | One documented one-liner installs or runs the suite.        |
 | H   | `fitness-release` builds and publishes the bundles.                                              | Release and install share one versioned artifact set.       |
+| I   | The runner finds each check folder, builds a Go one into its cache, and runs it as its own process. | Repo checks speak the protocol built-in checks speak. |
 
 ## Consumer setup
 

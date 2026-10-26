@@ -4,6 +4,8 @@ relatedConfigurations: ['../../../.fitnessrc.json']
 
 # 0009 — Repos add local checks; only external policy replaces or disables a bundled one
 
+Check: [fitness/adr-0009](../../../fitness/adr-0009/README.md)
+
 ## Context
 
 A repo had no designed way to run its own rules through fitness. Org repos also cannot set `ignore` or turn a check off, since [ADR 0001](./0001-fix-the-work-not-the-limit.md) fixes the work, not the bar.

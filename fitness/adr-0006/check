@@ -1,0 +1,14 @@
+#!/bin/sh
+# fitness/adr-0006/check: only the Biome package runs Biome's GitHub
+# reporter.
+. fitness/_lib/verdict.sh
+for f in $(git ls-files 'go/*.go'); do
+  case "$f" in *_test.go | */doc.go | go/cmd/fitness/checks.go) continue ;; esac
+  judged
+  grep -qF '"--reporter=github"' "$f" || continue
+  case "$f" in
+  go/internal/lang/node/biome/*) ;;
+  *) fail "$f: runs Biome's reporter itself; read Biome through go/internal/lang/node/biome (ADR 0006, decision 3)" ;;
+  esac
+done
+finish

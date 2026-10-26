@@ -1,0 +1,13 @@
+checkstyle 300000 runs the repo's own Gradle or Maven build
+dependency-currency 30000 asks the npm registry over the network
+go-test-coverage 900000 runs the repo's Go tests twice with coverage
+go-vet 300000 compiles every Go package for go vet
+go-test 900000 runs the repo's Go tests
+java-test 900000 runs the repo's Java tests through its build
+gofmt 60000 starts gofmt on every Go file
+issue-link-once 20000 asks GitHub for the branch's pull request
+local-branch 35000 asks GitHub for the branch's pull request and issues
+spotless 300000 runs the repo's own Gradle or Maven build
+swiftlint 120000 runs SwiftLint over the repo
+workflow-ref-exists 30000 asks GitHub whether each workflow path exists
+vitest-coverage-full 120000 runs the repo's Vitest suite with coverage

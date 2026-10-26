@@ -4,6 +4,8 @@ relatedConfigurations: ['../../../.goreleaser-bundles.yml']
 
 # 0011 — Skills ship in the bundle
 
+Check: [fitness/adr-0011](../../../fitness/adr-0011/README.md)
+
 ## Context
 
 Shared skills lived by hand in one agent folder, so a new skill reached no agent until someone linked it. Each check already has a README, requirement docs and architecture docs. A skill per check would repeat them.
