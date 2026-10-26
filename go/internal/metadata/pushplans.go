@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // pushPlansEnv names the file through which the pre-push gate hands
@@ -26,7 +27,13 @@ const planReadTimeout = 30 * time.Second
 // PushPlans are the Plans one push read successfully, each read once. A
 // failed read is not kept, so a later ask tries GitHub again.
 type PushPlans struct {
-	reads map[string]aftereffect.IssueView
+	reads map[string]planRead
+}
+
+// planRead is one successful read and the issue number it read.
+type planRead struct {
+	number int
+	view   aftereffect.IssueView
 }
 
 // handoff is what the gate hands local-branch: its own process ID, which
@@ -46,29 +53,33 @@ type pushPlan struct {
 
 // NewPushPlans starts a push with no Plans read.
 func NewPushPlans() *PushPlans {
-	return &PushPlans{reads: map[string]aftereffect.IssueView{}}
+	return &PushPlans{reads: map[string]planRead{}}
 }
 
-// Approved reports whether issue n carries the exact `Plan` label and an
-// approval comment, reading it from GitHub until a read succeeds.
-func (p *PushPlans) Approved(n string) bool {
-	v, ok := p.reads[n]
+// Approved reports whether the Plan ref names carries the exact `Plan` label
+// and an approval comment, reading it from GitHub until a read succeeds. A
+// qualified ref is read from the repo it names; a bare one from this repo.
+func (p *PushPlans) Approved(ref gitx.PlanRef) bool {
+	key := strings.ToLower(ref.String())
+	r, ok := p.reads[key]
 	if !ok {
-		v, ok = p.read(n)
+		r, ok = p.read(key, ref)
 	}
-	return ok && slices.Contains(v.Labels, "Plan") && slices.ContainsFunc(v.Comments, approveRe.MatchString)
+	return ok && slices.Contains(r.view.Labels, "Plan") && slices.ContainsFunc(r.view.Comments, approveRe.MatchString)
 }
 
-// read asks GitHub for issue n and keeps a successful read.
-func (p *PushPlans) read(n string) (aftereffect.IssueView, bool) {
+// read asks GitHub for the Plan ref names and keeps a successful read.
+func (p *PushPlans) read(key string, ref gitx.PlanRef) (planRead, bool) {
 	ctx, cancel := context.WithTimeout(context.Background(), planReadTimeout)
 	defer cancel()
-	v, err := aftereffect.ViewIssue(ctx, n)
-	if err != nil {
-		return v, false
+	v, err := aftereffect.ViewIssue(ctx, ref.Slug(), ref.Number)
+	num, numErr := strconv.Atoi(ref.Number)
+	if err = cmp.Or(err, numErr); err != nil {
+		return planRead{}, false
 	}
-	p.reads[n] = v
-	return v, true
+	r := planRead{number: num, view: v}
+	p.reads[key] = r
+	return r, true
 }
 
 // Handoff writes the reads to a file only this user can read or write and
@@ -98,10 +109,9 @@ func (p *PushPlans) Handoff() (func(), error) {
 // plans lists the successful reads that name their repo.
 func (p *PushPlans) plans() []pushPlan {
 	var plans []pushPlan
-	for n, v := range p.reads {
-		num, err := strconv.Atoi(n)
-		if v.Repo() != "" && err == nil {
-			plans = append(plans, pushPlan{Repo: v.Repo(), Number: num, Body: v.Body, Labels: v.Labels})
+	for _, r := range p.reads {
+		if v := r.view; v.Repo() != "" {
+			plans = append(plans, pushPlan{Repo: v.Repo(), Number: r.number, Body: v.Body, Labels: v.Labels})
 		}
 	}
 	return plans

@@ -3,8 +3,10 @@ package metadata
 import (
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"os/exec"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -74,13 +76,28 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext, cl
 	if err := readBranchChangelog(ctx, root, branch.Tip, pr); err != nil {
 		return branchReadResult(err)
 	}
-	nums := b.closedIssues(pr.Body)
-	nums = append(nums, plans...)
+	own, others := localPlans(plans, repo)
+	nums := append(b.closedIssues(pr.Body), own...)
 	errs := judgeBranchPR(pr, gh, b)
 	issues, readErrs := readIssues(uniqueIssues(nums), gh)
 	errs = append(errs, readErrs...)
 	errs = append(errs, judgeBranchPlans(issues, repo, b)...)
-	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: 1 + len(issues)}
+	otherErrs, otherChecked := judgeOtherPlans(ctx, others, clients, b)
+	errs = append(errs, otherErrs...)
+	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: 1 + len(issues) + otherChecked}
+}
+
+// judgeOtherPlans reads and judges the Plans the branch names in other repos
+// of its owner, each from the repo that holds it, in repo order.
+func judgeOtherPlans(ctx context.Context, others map[string][]int, clients repoClients, b blobChecker) ([]string, int) {
+	var errs []string
+	checked := 0
+	for _, other := range slices.Sorted(maps.Keys(others)) {
+		issues, readErrs := readIssues(uniqueIssues(others[other]), clients.get(ctx, other))
+		errs = append(append(errs, readErrs...), judgeBranchPlans(issues, other, b)...)
+		checked += len(issues)
+	}
+	return errs, checked
 }
 
 // readBranchChangelog gives pr the local tip's entry files, so pr-check
@@ -154,7 +171,7 @@ func contains(ctx context.Context, root, tip, commit string) bool {
 
 // branchPlans uses the base commit from currentBase, even when origin is a
 // stale fork.
-func branchPlans(ctx context.Context, root, repo, tip string, pr *branchPR) ([]int, error) {
+func branchPlans(ctx context.Context, root, repo, tip string, pr *branchPR) ([]gitx.PlanRef, error) {
 	if pr.BaseSHA == "" {
 		return nil, fmt.Errorf("GitHub PR response has no base commit; retry fitness branch-check")
 	}
@@ -163,12 +180,43 @@ func branchPlans(ctx context.Context, root, repo, tip string, pr *branchPR) ([]i
 	if err != nil {
 		return nil, fmt.Errorf("cannot read branch Plan trailers from base commit %s; fetch %s from https://github.com/%s.git and retry: %w", pr.BaseSHA, pr.Base, repo, err)
 	}
+	return gitx.PlanNumbers(string(out)), nil
+}
+
+// localPlans splits the branch's Plans into the issue numbers of repo, which
+// join the PR's closed issues, and the Plans other repos of repo's owner
+// hold, grouped by repo. A Plan of another owner is left out, since the push
+// gate refuses it.
+func localPlans(plans []gitx.PlanRef, repo string) ([]int, map[string][]int) {
 	var nums []int
-	for _, text := range gitx.PlanNumbers(string(out)) {
-		n, _ := strconv.Atoi(text)
-		nums = append(nums, n)
+	others := map[string][]int{}
+	for _, p := range plans {
+		n, _ := strconv.Atoi(p.Number)
+		switch home := planHome(p, repo); home {
+		case "":
+			nums = append(nums, n)
+		case otherOwner:
+		default:
+			others[home] = append(others[home], n)
+		}
 	}
-	return nums, nil
+	return nums, others
+}
+
+// otherOwner is planHome's answer for a Plan of another owner.
+const otherOwner = "-"
+
+// planHome names the repo that holds p: "" for repo itself, otherOwner for
+// a repo of another owner, else that repo's owner/repo.
+func planHome(p gitx.PlanRef, repo string) string {
+	owner, _, _ := strings.Cut(repo, "/")
+	switch {
+	case !p.Qualified() || strings.EqualFold(p.Slug(), repo):
+		return ""
+	case !strings.EqualFold(p.Owner, owner):
+		return otherOwner
+	}
+	return p.Slug()
 }
 
 func uniqueIssues(nums []int) []int {

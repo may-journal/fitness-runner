@@ -308,12 +308,18 @@ func (v IssueView) Repo() string {
 	return parts[0] + "/" + parts[1]
 }
 
-// ViewIssue reads issue n of the working directory's repository, its body,
-// labels and comments, in one `gh issue view`. The stderr of gh stays out of
-// the caller's output.
-func ViewIssue(ctx context.Context, n string) (IssueView, error) {
-	cmd := exec.CommandContext(ctx, "gh", "issue", "view", n, "--json", "url,body,labels,comments",
+// ViewIssue reads issue n of repo, an owner/repo slug, or of the working
+// directory's repository when repo is empty. It reads the body, labels and
+// comments in one `gh issue view`. The stderr of gh stays out of the
+// caller's output.
+func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
+	args := []string{"issue", "view", n}
+	if repo != "" {
+		args = append(args, "-R", repo)
+	}
+	args = append(args, "--json", "url,body,labels,comments",
 		"--jq", "{url, body, labels: [.labels[].name], comments: [.comments[].body]}")
+	cmd := exec.CommandContext(ctx, "gh", args...)
 	out, err := cmd.Output()
 	if err != nil {
 		return IssueView{}, err

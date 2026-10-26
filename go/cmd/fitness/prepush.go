@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
@@ -154,9 +155,9 @@ func logCommits(commits []string, format string) string {
 	return string(out)
 }
 
-// planCandidates returns the Plan numbers a push may trace to: those in the
-// pushed commits' messages, else those anywhere on the branch.
-func planCandidates(messages, local string) []string {
+// planCandidates returns the Plans a push may trace to: those in the pushed
+// commits' messages, else those anywhere on the branch.
+func planCandidates(messages, local string) []gitx.PlanRef {
 	if plans := gitx.PlanNumbers(messages); len(plans) > 0 {
 		return plans
 	}
@@ -164,25 +165,57 @@ func planCandidates(messages, local string) []string {
 }
 
 // checkPlanApproval passes when any candidate names an approved Plan Issue.
-func checkPlanApproval(plans []string) int {
+// A qualified Plan counts only from the pushing repo's own owner.
+func checkPlanApproval(plans []gitx.PlanRef) int {
 	if len(plans) == 0 {
 		fmt.Fprintln(os.Stderr, "pre-push: no 'Plan #NN' trailer on the branch.")
-		fmt.Fprintln(os.Stderr, "  Add a 'Plan #NN' trailer to the branch's first commit, or push only chore/docs commits.")
+		fmt.Fprintln(os.Stderr, "  Add a 'Plan #NN' trailer to the branch's first commit, or 'Plan <owner>/<repo>#NN' for a Plan in another repo of this owner.")
+		fmt.Fprintln(os.Stderr, "  Or push only chore/docs commits.")
 		return 1
 	}
-	for _, n := range plans {
-		if planReads.Approved(n) {
-			return 0
-		}
+	owner, _, _ := strings.Cut(gitx.OriginSlug("."), "/")
+	if slices.ContainsFunc(plans, func(p gitx.PlanRef) bool { return ownPlan(p, owner) && planReads.Approved(p) }) {
+		return 0
 	}
-	fmt.Fprintln(os.Stderr, "pre-push: no approved Plan Issue among ("+strings.Join(plans, " ")+").")
-	fmt.Fprintln(os.Stderr, "  Get a human to comment an approval on the Plan Issue before pushing.")
+	refuseUnapproved(plans, owner)
 	return 1
 }
 
-// planRefs returns the distinct Plan numbers referenced across the commits,
-// so a trailer on main never stands in for the branch's own.
-func planRefs(commits []string) []string {
+// refuseUnapproved explains a refusal: it lists the candidates and names
+// each Plan of another owner, which never counts.
+func refuseUnapproved(plans []gitx.PlanRef, owner string) {
+	names := make([]string, len(plans))
+	for i, p := range plans {
+		names[i] = planName(p)
+	}
+	fmt.Fprintln(os.Stderr, "pre-push: no approved Plan Issue among ("+strings.Join(names, " ")+").")
+	for _, p := range plans {
+		if !ownPlan(p, owner) {
+			fmt.Fprintf(os.Stderr, "  Plan %s is refused: only a Plan owned by %q counts here.\n", p, owner)
+		}
+	}
+	fmt.Fprintln(os.Stderr, "  Get a human to comment an approval on the Plan Issue before pushing.")
+}
+
+// planName names p in a refusal: the number alone for a Plan of this repo,
+// else owner/repo#number.
+func planName(p gitx.PlanRef) string {
+	if p.Qualified() {
+		return p.String()
+	}
+	return p.Number
+}
+
+// ownPlan reports whether p may approve a push to a repo of owner: a bare
+// Plan always may, and a qualified one only from the same owner, compared
+// case-insensitively.
+func ownPlan(p gitx.PlanRef, owner string) bool {
+	return !p.Qualified() || (owner != "" && strings.EqualFold(p.Owner, owner))
+}
+
+// planRefs returns the distinct Plans referenced across the commits, so a
+// trailer on main never stands in for the branch's own.
+func planRefs(commits []string) []gitx.PlanRef {
 	if len(commits) == 0 {
 		return nil
 	}

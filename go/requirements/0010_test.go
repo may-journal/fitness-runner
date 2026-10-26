@@ -128,21 +128,6 @@ func Test0010_6(t *testing.T) {
 	sees(t, out, code, 0, "[deleted]", "topic")
 }
 
-func Test0010_9(t *testing.T) {
-	t.Parallel()
-	repo, env := hooked(t, nil)
-	remote(t, repo)
-	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
-	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
-	sees(t, out, code, 1, "pre-push: no 'Plan #NN' trailer")
-	out, code, rp := pushFeature(t, "Plan #196")
-	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (196)")
-	pushAsked(t, rp, "196", "labels")
-	out, code, rp = pushFeature(t, "Plan #151")
-	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
-	pushAsked(t, rp, "151", "comments")
-}
-
 func Test0010_12(t *testing.T) {
 	t.Parallel()
 	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["plan-trailer", "local-branch"]}` + "\n"})
@@ -150,4 +135,79 @@ func Test0010_12(t *testing.T) {
 	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
 	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
 	sees(t, out, code, 0)
+}
+
+// orgPlanView is GitHub's saved answer about issue n of repo, read with -R.
+func orgPlanView(t *testing.T, repo string, n int, labels []string, comments ...string) response {
+	t.Helper()
+	r := planView(t, n, planBody("- [ ] Ship it."), labels, comments...)
+	r.Stdout = strings.Replace(r.Stdout, repo0014, repo, 1)
+	r.Match = append(r.Match, "-R "+repo)
+	return r
+}
+
+// orgPlans are GitHub's saved answers about Plans in other repos:
+// may-journal/.github#144 is approved however its owner is cased,
+// may-journal/.github#141 is not, and
+// other-org/.github#7 is approved but belongs to another owner.
+func orgPlans(t *testing.T) []response {
+	t.Helper()
+	return []response{
+		orgPlanView(t, "may-journal/.github", 144, []string{"Plan"}, "I approve"),
+		orgPlanView(t, "May-Journal/.github", 144, []string{"Plan"}, "I approve"),
+		orgPlanView(t, "may-journal/.github", 141, []string{"Plan"}, "Could this wait a week?"),
+		orgPlanView(t, "other-org/.github", 7, []string{"Plan"}, "I approve"),
+	}
+}
+
+// orgPushFeature commits a feature naming trailer in a repo whose origin is
+// repo0014 on GitHub, pushed to a bare folder, and pushes it. local-branch
+// is off, so the push asks GitHub only about Plans.
+func orgPushFeature(t *testing.T, trailer string) (string, int, replays) {
+	t.Helper()
+	repo, hookEnv := hooked(t, map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["local-branch"]}` + "\n"})
+	git(t, repo, "remote", "add", "origin", "https://github.com/"+repo0014+".git")
+	bare := t.TempDir()
+	git(t, bare, "init", "-q", "--bare")
+	git(t, repo, "remote", "set-url", "--push", "origin", bare)
+	rp := standIn(t, map[string][]response{"gh": orgPlans(t)})
+	env := pushEnv(hookEnv, rp)
+	user(t, repo, env, "commit", "-q", "--allow-empty", "-m", "feat(app): add a feature\n\n"+trailer)
+	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
+	return out, code, rp
+}
+
+func Test0010_13(t *testing.T) {
+	t.Parallel()
+	out, code, rp := orgPushFeature(t, "Plan May-Journal/.github#144")
+	sees(t, out, code, 0, "HEAD -> main")
+	if n := rp.count("gh", "issue view 144 ", "-R May-Journal/.github"); n != 1 {
+		t.Errorf("want one read of May-Journal/.github#144, got %d; gh calls: %q", n, rp.calls("gh"))
+	}
+	out, code, rp = orgPushFeature(t, "Plan https://github.com/may-journal/.github/issues/144")
+	sees(t, out, code, 0, "HEAD -> main")
+	pushAsked(t, rp, "144", "-R may-journal/.github")
+}
+
+func Test0010_14(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, nil)
+	remote(t, repo)
+	user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add a feature")
+	out, code := user(t, repo, env, "push", "origin", "HEAD:main")
+	sees(t, out, code, 1, "pre-push: no 'Plan #NN' trailer", "'Plan <owner>/<repo>#NN' for a Plan in another repo")
+	out, code, rp := pushFeature(t, "Plan #196")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (196)")
+	pushAsked(t, rp, "196", "labels")
+	out, code, rp = pushFeature(t, "Plan #151")
+	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)")
+	pushAsked(t, rp, "151", "comments")
+	out, code, rp = orgPushFeature(t, "Plan may-journal/.github#141")
+	sees(t, out, code, 1, "no approved Plan Issue among (may-journal/.github#141)")
+	pushAsked(t, rp, "141", "-R may-journal/.github")
+	out, code, rp = orgPushFeature(t, "Plan other-org/.github#7")
+	sees(t, out, code, 1, "no approved Plan Issue among (other-org/.github#7)", `Plan other-org/.github#7 is refused: only a Plan owned by "may-journal" counts here.`)
+	if rp.called("gh", "issue view 7 ") {
+		t.Errorf("pre-push read another owner's Plan; gh calls: %q", rp.calls("gh"))
+	}
 }

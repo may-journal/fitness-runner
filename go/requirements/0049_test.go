@@ -10,7 +10,7 @@ func planTrailer(t *testing.T, msg string) (string, int) {
 }
 
 // planTrailerFix is the hint every misspelled plan reference carries.
-const planTrailerFix = `must read exactly "Plan #<number>"`
+const planTrailerFix = `must read exactly "Plan #<number>", "Plan <owner>/<repo>#<number>" or "Plan https://github.com/<owner>/<repo>/issues/<number>"`
 
 func Test0049_1(t *testing.T) {
 	t.Parallel()
@@ -45,4 +45,20 @@ func Test0049_5(t *testing.T) {
 	commit(t, repo, nil, "feat(app): add a feature\n\nPlan: 63")
 	out, code := fitness(t, repo, nil, "plan-trailer")
 	sees(t, out, code, 1, `plan trailer "Plan: 63" `+planTrailerFix)
+}
+
+func Test0049_6(t *testing.T) {
+	t.Parallel()
+	out, code := planTrailer(t, "feat(app): add a feature\n\nPlan may-journal/.github#144\n")
+	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = planTrailer(t, "feat(app): add a feature\n\nPlan https://github.com/may-journal/.github/issues/144\n")
+	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+func Test0049_7(t *testing.T) {
+	t.Parallel()
+	out, code := planTrailer(t, "feat(app): add a feature\n\nPlan may-journal/.github 144\nPlan: may-journal/.github#144\n")
+	sees(t, out, code, 1,
+		`plan trailer "Plan may-journal/.github 144" `+planTrailerFix,
+		`plan trailer "Plan: may-journal/.github#144" `+planTrailerFix)
 }

@@ -10,7 +10,7 @@ I can link a commit to its Plan Issue, and a misspelled link is caught before it
 
 ## Measurement
 
-plan references that read exactly `Plan #<number>`
+plan references in one of the three accepted spellings
 -
 plan references in commit messages
 
@@ -36,3 +36,11 @@ plan references in commit messages
     - Given Developer has no message passed and a HEAD commit with a misspelled plan reference
         - When plan-trailer runs
             - Then it fails quoting the HEAD commit's line
+- 0049.6
+    - Given Developer has a commit message naming a Plan of another repo as `Plan may-journal/.github#144`, or by its issue URL
+        - When plan-trailer checks it
+            - Then it passes
+- 0049.7
+    - Given Developer has plan references spelled `Plan may-journal/.github 144` and `Plan: may-journal/.github#144`
+        - When plan-trailer checks the message
+            - Then it fails once per line, with a fix naming all three spellings
