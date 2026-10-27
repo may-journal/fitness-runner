@@ -121,6 +121,9 @@
     "simctl",
     "typealias",
     "xcrun",
-    "XCUI"
+    "XCUI",
+    "Appfile",
+    "Fastfile",
+    "Gymfile"
   ]
 }
