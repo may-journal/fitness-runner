@@ -33,11 +33,11 @@ component views checked
         - When I check its components
             - Then each name reaches the declaration its labels and base type pick, and a local name reaches nothing
 - 0075.12
-    - Given Developer has a product source no component names
+    - Given Developer has a product source no component names, also under `.claude/`
         - When I check its components
             - Then the error names the source, naming its folder or root source passes, and root tool configs need no owner
 - 0075.13
-    - Given Developer has a Go import or Swift reference the view does not draw, also under a build condition
+    - Given Developer has a Go import or Swift reference the view does not draw, also under a build condition or `.codex/`
         - When I check its components
             - Then the error names the reference line, the view, a reversed edge, and the condition, and a drawn edge passes
 - 0075.14
