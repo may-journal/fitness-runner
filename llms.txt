@@ -29,7 +29,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `fitness list [--json]`: Names every check with its summary, scope, budget, and whether this repo enables it.
 - `fitness explain <check> [--json]`: Prints why a check exists, what it judges, and the config keys it reads.
 - `fitness docs [topic]`: Lists the guide topics, or prints one, from the code's doc comments.
-- `fitness check --list` or `fitness check <name> [args]`: Prints every built-in check name, one per line, or runs one built-in check by name.
+- `fitness check --list` or `fitness check <name> [args]`: Prints every built-in check name, one per line, or runs one check by name, a repo's own check included.
 - `fitness config [--json] [--policy=..] [--checks=..]` or `fitness config schema`: Shows the resolved settings and each check's state, or prints a JSON Schema for the config file.
 - `fitness init`: Installs the shared git hooks into this repo.
 - `fitness hook <name>`: Runs a git hook: commit-msg, pre-commit, or pre-push.
@@ -47,6 +47,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 
 `fitness explain <check>` prints a check's whole documentation.
 
+- `adr-checks`: Keeps each architecture decision record in the README of the check that proves it.
 - `architecture-actors`: Requires each requirement's Given to start with an actor the system context declares.
 - `architecture-code`: Resolves each class of the code view to a declaration a language module's reader reads.
 - `architecture-components`: Gives every product source one owner among the components the components view draws.
@@ -118,4 +119,5 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `fitness docs github`: Package metadata shares GitHub judgments between local checks and Actions.
 - `fitness docs hooks`: Package hooks embeds the canonical may-journal git hooks that `fitness init` installs into a consumer repo.
 - `fitness docs languages`: Package lang defines what a language module brings to a run, and orders what the modules claim against what is installed or embedded.
+- `fitness docs local-checks`: Package repocheck finds a repo's own checks, as ADR 0009 and ADR 0012 decide, and builds the ones written in Go.
 - `fitness docs protocol`: Package checkkit is the contract between the fitness runner and a check binary, plus the main-function scaffolding every check builds on.

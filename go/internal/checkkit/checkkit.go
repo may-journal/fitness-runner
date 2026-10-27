@@ -116,6 +116,11 @@ type Describe struct {
 	// Blob marks a check that judges a text given with `--body-file`, so
 	// `fitness --blob` runs it; the rest need files and are skipped there.
 	Blob bool `json:"blob,omitempty"`
+	// MinFitness is the oldest fitness release, as major.minor.patch, that
+	// runs the check as written, such as one that reads a newer protocol
+	// field. An older fitness stops the run and names the upgrade. Built-in
+	// checks leave it empty.
+	MinFitness string `json:"minFitness,omitempty"`
 }
 
 // Check is one check implementation: its metadata and run function.

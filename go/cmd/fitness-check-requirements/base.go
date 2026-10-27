@@ -15,19 +15,6 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 )
 
-// baseRev is the commit a scoped run's changes replace: the merge base with
-// a pull request's base branch, the parent of an amended commit, or HEAD for
-// staged files. It is empty when there is none, as in a first commit.
-func baseRev(root string) string {
-	if base := os.Getenv("GITHUB_BASE_REF"); base != "" {
-		return gitLine(root, "merge-base", "HEAD", "origin/"+base)
-	}
-	if os.Getenv("FITNESS_COMMIT_AMEND") == "1" {
-		return gitLine(root, "rev-parse", "-q", "--verify", "HEAD^")
-	}
-	return gitLine(root, "rev-parse", "-q", "--verify", "HEAD")
-}
-
 // gitLine is git's one line of output in root, or empty when git fails.
 func gitLine(root string, args ...string) string {
 	out, err := exec.Command("git", append([]string{"-C", root}, args...)...).Output()

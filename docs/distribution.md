@@ -3,7 +3,7 @@
 
 # Distribution
 
-Consumers install source with `go install` or download verified static binaries from GitHub Releases. Each bundle holds one `fitness` binary that is the runner and every check, as [ADR 0010](architecture/adr/0010-one-binary-holds-every-check.md) decides. The installer links `fitness-check-<name>` to it for each check, so a script that calls a check by name keeps working.
+Consumers install source with `go install` or download verified static binaries from GitHub Releases. Each bundle holds one `fitness` binary that is the runner and every check, as [ADR 0010](../fitness/adr-0010/README.md) decides. The installer links `fitness-check-<name>` to it for each check, so a script that calls a check by name keeps working.
 
 That bundle is 14 MB unpacked in a 6 MB archive, down from 219 MB and 97 MB. Its download takes about 0.7 s, down from 1.4 to 3.2 s, measured on an M5 Max for #468.
 

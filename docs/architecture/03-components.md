@@ -16,11 +16,15 @@ C4Component
     }
 
     Container_Boundary(shared, "Shared internals") {
-        Component(kit, "8 checkkit protocol", "Go", "go/internal")
+        Component(kit, "8 checkkit protocol", "Go", "go/internal, go/check")
     }
 
     Container_Boundary(tools, "Install and release tools") {
         Component(tool, "11 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
+    }
+
+    Container_Boundary(own, "Repo checks (fitness/)") {
+        Component(repo, "12 Repo check", "Go", "fitness")
     }
 
     System_Ext(peers, "9 Peer tools", "each language module's formatters, linters and test runners")
@@ -39,6 +43,8 @@ C4Component
     Rel(main, kit, "K")
     Rel(tool, kit, "L")
     Rel(main, check, "M")
+    Rel(execute, repo, "N")
+    Rel(repo, kit, "O")
 
     UpdateElementStyle(developer, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
     UpdateElementStyle(main, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
@@ -49,6 +55,7 @@ C4Component
     UpdateElementStyle(check, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(kit, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(tool, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
+    UpdateElementStyle(repo, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(peers, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
     UpdateElementStyle(git, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
@@ -79,10 +86,11 @@ Numbers on nodes and letters on arrows match the callout table.
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
 | 7   | One package per check (`go/cmd/fitness-check-*`), each built into the fitness binary.                   | One file ships every check; each still runs alone.          |
-| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers.      | One implementation shared by every check binary.            |
+| 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers. The public `go/check` SDK wraps it for a repo's own Go checks. | One implementation shared by every check binary.            |
 | 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
+| 12  | A check in the repo's `fitness/` folder: a Go program on the check SDK, or any executable. | A repo writes its own rules without forking fitness. |
 | A   | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
 | B   | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
 | C   | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
@@ -96,6 +104,8 @@ Numbers on nodes and letters on arrows match the callout table.
 | K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
 | M   | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
+| N   | The pool runs each repo check as its own process, as it runs a built-in one. | One execution model for every check. |
+| O   | A Go repo check builds on checkkit through the public SDK. | The protocol lives once. |
 
 ## Resolve check specs (priority)
 
@@ -116,7 +126,7 @@ Every coverage check judges exact counts against one goal in [goal](../../go/int
 
 ## Architecture view readers
 
-The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. Readers that read tokens relate names through one shared walk, as [ADR 0008](adr/0008-languages-plug-in-as-modules.md) decides. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.
+The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. Readers that read tokens relate names through one shared walk, as [ADR 0008](../../fitness/adr-0008/README.md) decides. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.
 
 Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 

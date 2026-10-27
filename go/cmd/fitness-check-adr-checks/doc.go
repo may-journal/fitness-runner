@@ -1,0 +1,38 @@
+// Command fitness-check-adr-checks keeps each architecture decision record
+// in the README of the check that proves it. An ADR is prose, so a
+// decision holds only while a check in `fitness/adr-NNNN/` proves it, and
+// that folder's README.md is the ADR. A requirement doc holds the same
+// way, while its tests pass.
+//
+// The check applies to a repo with a `fitness/` folder of its own checks.
+// A repo without one passes with `filesChecked: 0`. The [local checks
+// guide] shows how to write a check.
+//
+// # The ADR
+//
+// A `fitness/adr-NNNN/README.md` opens with the ADR's title and a one-line
+// summary, which `fitness list` shows. Its `## Context`, `## Decision` and
+// `## Consequences` sections state the decision. A `## Check` section after
+// them says what the check fails and how to pass it.
+//
+// # Rules
+//
+//   - Home: a numbered `NNNN-kebab-title.md` ADR in a folder named `adr`,
+//     outside `fitness/`, fails. Move it into its check's README.
+//   - Shape: an `adr-NNNN` README that lacks a decision section fails.
+//   - Check: each ADR folder needs a check program, unless superseded; the
+//     run fails before any check starts without one.
+//   - Changes: an ADR whose decision sections changed fails unless another
+//     file of its check changed too.
+//   - Rewrites: the check's code, or its README's own part, may change
+//     alone, since the decision still holds.
+//   - Moves: a README that held no decision at the base is new, so moving an
+//     ADR into it needs no code change.
+//   - Scope: a full scan judges no changes; a commit judges its staged
+//     files, and a pull request its diff.
+//
+// A paired check that judges no files fails as a broken scan. So an ADR
+// check whose file list goes empty never passes by reading nothing.
+//
+// [local checks guide]: https://github.com/may-journal/fitness-runner/blob/main/docs/local-checks.md
+package check

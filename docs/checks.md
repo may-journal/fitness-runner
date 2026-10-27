@@ -25,6 +25,7 @@ Each row links the check's README and gives the first sentence of its Go package
 
 | Check | Summary |
 | --- | --- |
+| [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) | Keeps each architecture decision record in the README of the check that proves it. |
 | [architecture-actors](../go/cmd/fitness-check-architecture-actors/README.md) | Requires each requirement's Given to start with an actor the system context declares. |
 | [architecture-code](../go/cmd/fitness-check-architecture-code/README.md) | Resolves each class of the code view to a declaration a language module's reader reads. |
 | [architecture-components](../go/cmd/fitness-check-architecture-components/README.md) | Gives every product source one owner among the components the components view draws. |
@@ -95,7 +96,7 @@ Each row links the check's README and gives the first sentence of its Go package
 
 `fitness list` names every check this repo can run, built-in or local, in run order. Each row gives the check's summary, its scope, its time budget, and whether the repo's config enables it. `fitness list --json` gives the same fields for an agent; `fitness check --list` still prints the bare built-in names.
 
-A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../checks/README.md) fails when that file is stale.
+A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../fitness/generated/README.md) fails when that file is stale.
 
 ## Explain a check
 

@@ -85,6 +85,7 @@ classDiagram
     }
     Result --> Finding : V
     checkkitMain --> Finding : W
+    resolveChecks --> Describe : X
 
     style CheckBinary fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
@@ -165,6 +166,7 @@ Numbers on classes and letters on relationships match the callout table.
 | U   | The wrapper starts the check under its program name. | The one binary dispatches on its program name. |
 | V   | A result may repeat its errors as findings. | Error lines stay for older readers. |
 | W   | The scaffolding points each finding at its check's explain command. | A check never spells its own name twice. |
+| X   | Resolution judges a local check's `minFitness`, and fills the name, scope and summary a folder check's handshake leaves out. | A folder check may skip the handshake. |
 
 ## Monorepo layout
 

@@ -27,8 +27,9 @@ func testName(written []lang.Module, id string) string {
 
 // ownershipErrors flags acceptances that no test or several tests own, tests
 // named for an acceptance no doc defines, and tests that name no
-// acceptance at all.
-func ownershipErrors(docs []requirement.Document, tests []reqTest, written []lang.Module) []string {
+// acceptance at all. A doc that proven names has a check in
+// fitness/req-NNNN/ that proves it, so its acceptances need no test.
+func ownershipErrors(docs []requirement.Document, tests []reqTest, written []lang.Module, proven map[string]bool) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}
 	for _, t := range tests {
@@ -36,13 +37,23 @@ func ownershipErrors(docs []requirement.Document, tests []reqTest, written []lan
 	}
 	var errs []string
 	for _, d := range docs {
-		for _, a := range d.Acceptances {
-			current[a.ID] = true
-			errs = append(errs, ownerError(d.Path, a, owners[a.ID], written)...)
-		}
+		errs = append(errs, docOwners(d, owners, written, proven[d.ID], current)...)
 	}
 	for _, t := range tests {
 		errs = append(errs, testError(t, current)...)
+	}
+	return errs
+}
+
+// docOwners judges who owns each of the doc's acceptances, marking each
+// current. One a check proves needs no test, but two tests still fail.
+func docOwners(d requirement.Document, owners map[string][]string, written []lang.Module, proven bool, current map[string]bool) []string {
+	var errs []string
+	for _, a := range d.Acceptances {
+		current[a.ID] = true
+		if len(owners[a.ID]) > 0 || !proven {
+			errs = append(errs, ownerError(d.Path, a, owners[a.ID], written)...)
+		}
 	}
 	return errs
 }
@@ -54,7 +65,7 @@ func ownerError(path string, a requirement.IDLine, owners []string, written []la
 	case 1:
 		return nil
 	case 0:
-		return []string{requirement.At(path, a.Line, fmt.Sprintf("%s has no test; name exactly one test %s", a.ID, name))}
+		return []string{requirement.At(path, a.Line, fmt.Sprintf("%s has no test; name exactly one test %s, or prove the doc with a check in %s%s/", a.ID, name, reqPrefix, a.ID[:4]))}
 	}
 	return []string{requirement.At(path, a.Line, fmt.Sprintf("%s is owned by %d tests (%s); keep exactly one", a.ID, len(owners), strings.Join(owners, ", ")))}
 }

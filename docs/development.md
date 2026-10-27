@@ -21,7 +21,7 @@ See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/
 
 One command writes every file generated from the code: `go -C go generate ./cmd/fitness`. It writes the check registry, topics and command line into `fitness`, and each check's README from its package doc comment and config keys. It also writes the check index in [docs/checks.md](checks.md#check-index), the root `llms.txt`, and the README's command list.
 
-Edit the doc comment, usually the check's `doc.go`, never the README. A doc comment link to this repository uses its full GitHub URL, and the README links it relatively. The local [generated check](../checks/README.md) fails a generated file that is stale or edited by hand. Each subcommand needs a `//fitness:usage` line in its comment, which `fitness --help` prints, or generation fails.
+Edit the doc comment, usually the check's `doc.go`, never the README. A doc comment link to this repository uses its full GitHub URL, and the README links it relatively. The local [generated check](../fitness/generated/README.md) fails a generated file that is stale or edited by hand. Each subcommand needs a `//fitness:usage` line in its comment, which `fitness --help` prints, or generation fails.
 
 ## Requirement tests
 
@@ -37,4 +37,4 @@ CI splits the tests over two `requirements` jobs per platform with [tests/requir
 
 ## Skills
 
-Each skill is a folder under [skills](../skills) with a `SKILL.md`, named for its topic, as [ADR 0011](architecture/adr/0011-skills-ship-in-the-bundle.md) decides. The [fitness skill](../skills/fitness/SKILL.md) teaches how to read any failing check, so no check has a skill of its own. Release bundles carry every skill, and `fitness-install --link-skills <folder>` links each into an agent's skills folder; run it again after an upgrade. A skill links the docs that hold the rules and copies none of them.
+Each skill is a folder under [skills](../skills) with a `SKILL.md`, named for its topic, as [ADR 0011](../fitness/adr-0011/README.md) decides. The [fitness skill](../skills/fitness/SKILL.md) teaches how to read any failing check, so no check has a skill of its own. Release bundles carry every skill, and `fitness-install --link-skills <folder>` links each into an agent's skills folder; run it again after an upgrade. A skill links the docs that hold the rules and copies none of them.

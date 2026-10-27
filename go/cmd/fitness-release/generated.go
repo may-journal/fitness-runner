@@ -77,7 +77,7 @@ func touchesInputs(changed []string) bool {
 
 // localProgram is the local check that starts this one, relative to the
 // repository root.
-const localProgram = "checks/fitness-check-generated"
+const localProgram = "fitness/generated/check"
 
 // describeDrift fails the local program when the describe line it answers
 // itself says something other than generatedDescribe.
