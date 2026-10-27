@@ -151,7 +151,7 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 	if changed == nil || replaying(root) {
 		return nil
 	}
-	base := baseRev(root)
+	base := gitx.ScopeBase(root)
 	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
 	sort.Strings(errs)
 	return errs

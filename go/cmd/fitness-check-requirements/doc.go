@@ -112,7 +112,7 @@
 //
 // [local checks]: https://github.com/may-journal/fitness-runner/blob/main/docs/local-checks.md
 // [module registry]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
-// [ADR 0004]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0004-one-requirement-doc-per-area.md
+// [ADR 0004]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0004/README.md
 // [actor]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-actors/README.md
 // [apple-ui-testing-library]: https://github.com/may-journal/apple-ui-testing-library
 // [Swift module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/swift/library.go

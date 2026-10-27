@@ -15,23 +15,16 @@ func Test0132_1(t *testing.T) {
 
 func Test0132_2(t *testing.T) {
 	t.Parallel()
-	for want, files := range map[string]map[string]string{
-		adrPath + ": ADR 0001 has no check; add fitness/adr-0001/ with a README.md that links this ADR": with(shellCheck("house-rule", "", passing), map[string]string{adrPath: adrText("")}),
-		"fitness/adr-0002: no ADR 0002 exists; delete the check or give it its ADR's number":            with(adrRepo(), adrCheck("0002", passing)),
-	} {
-		out, code := fitness(t, example(t, "happyRepo", files), nil)
-		sees(t, out, code, 1, want)
-	}
+	apart := "docs/architecture/adr/0001-small-files.md"
+	out, code := fitness(t, example(t, "happyRepo", with(adrRepo(), map[string]string{apart: adrText("")})), nil)
+	sees(t, out, code, 1, apart+": ADR 0001 lives apart from its check; move it into fitness/adr-0001/README.md, beside the check that keeps it, and delete this file")
 }
 
 func Test0132_3(t *testing.T) {
 	t.Parallel()
-	unlinked := with(adrRepo(), map[string]string{
-		adrPath:                      adrText(""),
-		"fitness/adr-0001/README.md": "# Small files\n\nKeeps every Markdown file small.\n",
-	})
-	out, code := fitness(t, example(t, "happyRepo", unlinked), nil)
-	sees(t, out, code, 1, adrPath+": link its check fitness/adr-0001/README.md", "fitness/adr-0001/README.md: link "+adrPath)
+	bare := with(adrRepo(), map[string]string{adrPath: "# Small files\n\nKeeps every Markdown file small.\n\n## Decision\n\n1. Every Markdown file stays small.\n"})
+	out, code := fitness(t, example(t, "happyRepo", bare), nil)
+	sees(t, out, code, 1, adrPath+": is no ADR, as it lacks ## Context and ## Consequences; write the decision this check keeps under ## Context, ## Decision and ## Consequences")
 }
 
 func Test0132_4(t *testing.T) {
@@ -44,16 +37,17 @@ func Test0132_4(t *testing.T) {
 
 func Test0132_5(t *testing.T) {
 	t.Parallel()
+	want := adrPath + " changed its decision without its check fitness/adr-0001; change both together"
 	repo := example(t, "happyRepo", adrRepo())
 	write(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], "stays small", "stays short", 1)})
 	git(t, repo, "add", "-A")
 	out, code := fitness(t, repo, nil, "adr-checks")
-	sees(t, out, code, 1, adrPath+" changed without its check fitness/adr-0001; change both together")
+	sees(t, out, code, 1, want)
 	repo = example(t, "happyRepo", adrRepo())
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
 	commit(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], "stays small", "stays brief", 1)}, "docs(adr): reword 0001")
 	out, code = fitness(t, repo, prEnv, "adr-checks")
-	sees(t, out, code, 1, adrPath+" changed without its check fitness/adr-0001; change both together")
+	sees(t, out, code, 1, want)
 }
 
 func Test0132_6(t *testing.T) {
@@ -84,28 +78,28 @@ func Test0132_8(t *testing.T) {
 	}
 }
 
-// adrPath is the one ADR adrRepo holds.
-const adrPath = "docs/architecture/adr/0001-small-files.md"
+// adrPath is the one ADR adrRepo holds: the README of its check.
+const adrPath = "fitness/adr-0001/README.md"
 
-// adrText is ADR 0001 with status, a line or more that opens it, and a
-// link to its check when it is paired.
+// adrText is ADR 0001 with status, a line or more that opens it, and the
+// sections that state its decision.
 func adrText(status string) string {
-	return "# 0001 — Small files\n\n" + status + "## Decision\n\n1. Every Markdown file stays small.\n"
+	return "# 0001 — Small files\n\nSmall files read fast.\n\n" + status +
+		"## Context\n\nLong files hide their point.\n\n## Decision\n\n1. Every Markdown file stays small.\n\n" +
+		"## Consequences\n\n1. Readers find the point fast.\n"
 }
 
-// adrRepo is a repo with ADR 0001 and its check, each linking the other.
+// adrRepo is a repo with ADR 0001 as the README of its check.
 func adrRepo() map[string]string {
-	return with(adrCheck("0001", passing), map[string]string{
-		adrPath: adrText("Check: [fitness/adr-0001](../../../fitness/adr-0001/README.md)\n\n"),
-	})
+	return adrCheck("0001", passing)
 }
 
-// adrCheck is the check folder fitness/adr-<number> linking ADR 0001 and
-// printing verdict.
+// adrCheck is the check folder fitness/adr-<number>, whose README is ADR
+// 0001 and whose program prints verdict.
 func adrCheck(number, verdict string) map[string]string {
 	folder := "fitness/adr-" + number + "/"
 	return map[string]string{
-		folder + "README.md": "# Small files\n\nKeeps [ADR 0001](../../" + adrPath + ").\n",
+		folder + "README.md": adrText(""),
 		folder + "check":     verdictScript(verdict),
 	}
 }

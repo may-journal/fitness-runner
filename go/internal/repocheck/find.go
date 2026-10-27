@@ -140,13 +140,13 @@ func addEntry(checks map[string]Check, root, dir, shown string, entry os.DirEntr
 }
 
 // entryCheck reads one entry of a checks folder: a folder check, a flat
-// program, or neither.
+// program, or neither, as is a superseded ADR's folder with no program.
 func entryCheck(root, dir, shown string, entry os.DirEntry) (Check, bool, error) {
 	path := filepath.Join(dir, entry.Name())
 	if !entry.IsDir() {
 		return flatCheck(root, path, shown, entry.Name())
 	}
-	if strings.HasPrefix(entry.Name(), ".") || strings.HasPrefix(entry.Name(), "_") || slices.Contains(skipped, entry.Name()) {
+	if notCheck(path) {
 		return Check{}, false, nil
 	}
 	c, err := folderCheck(root, dir, shown, entry.Name())

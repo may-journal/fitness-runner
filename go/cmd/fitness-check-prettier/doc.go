@@ -53,5 +53,5 @@
 //
 // [Prettier]: https://prettier.io
 // [override]: https://prettier.io/docs/configuration#configuration-overrides
-// [ADR 0006]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0006-biome-stands-in-for-eslint-and-prettier.md
+// [ADR 0006]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0006/README.md
 package check

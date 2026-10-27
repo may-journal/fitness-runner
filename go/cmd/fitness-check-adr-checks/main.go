@@ -6,7 +6,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -21,62 +20,36 @@ func Main() {
 	})
 }
 
-// numbered matches an ADR file name, NNNN-kebab-title.md, and takes its
-// number.
+// numbered matches an ADR file kept apart from its check, named
+// NNNN-kebab-title.md, and takes its number.
 var numbered = regexp.MustCompile(`^(\d{4})-.+\.md$`)
 
-// superseded matches a status line that retires the decision, such as
-// `Status: Superseded by ADR 0012` or a `## Status` section opening with
-// Superseded.
-var superseded = regexp.MustCompile(`(?im)(^[\s>*_-]*status[\s*_]*:[\s*_]*superseded\b)|(^#+\s*status\s*$\s*^[\s>*_-]*superseded\b)`)
+// sections are the parts of an ADR that state its decision, in the order
+// they appear.
+var sections = []string{"Context", "Decision", "Consequences"}
 
-// link matches a Markdown link's target.
-var link = regexp.MustCompile(`\]\(([^)\s]+)`)
-
-// adr is one numbered decision record.
+// adr is one decision record: the README of a fitness/adr-NNNN folder.
 type adr struct {
-	path, number string
-	retired      bool
+	folder, readme, text string
+	retired              bool
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
+	if !hasFolder(root) {
+		return checkkit.Pass(0), nil
+	}
 	decisions, err := records(root)
-	if err != nil || len(decisions) == 0 || !hasFolder(root) {
+	if err != nil {
 		return checkkit.Pass(0), err
 	}
-	if errs := judge(root, decisions); len(errs) > 0 {
-		return checkkit.Fail(len(decisions), errs...), nil
+	apart := strays(root)
+	judged := len(decisions) + len(apart)
+	errs := append(apart, shapeErrors(decisions)...)
+	errs = append(errs, changeErrors(root, decisions, checkkit.DiffFiles())...)
+	if len(errs) > 0 {
+		return checkkit.Fail(judged, errs...), nil
 	}
-	return checkkit.Pass(len(decisions)), nil
-}
-
-// judge lists every pairing problem: an ADR without its check or links, a
-// check without its ADR, and a change to one half alone.
-func judge(root string, decisions []adr) []string {
-	folders := checkFolders(root)
-	var errs []string
-	for _, a := range decisions {
-		errs = append(errs, pairErrors(root, a, folders)...)
-	}
-	errs = append(errs, orphans(decisions, folders)...)
-	return append(errs, changeErrors(decisions, checkkit.DiffFiles())...)
-}
-
-// records reads every tracked numbered ADR in a folder named adr.
-func records(root string) ([]adr, error) {
-	var out []adr
-	for _, f := range walkfs.FilesByExt(root, ".md") {
-		m := numbered.FindStringSubmatch(path.Base(f))
-		if m == nil || path.Base(path.Dir(f)) != "adr" {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
-		if err != nil {
-			return nil, checkkit.Internal(err)
-		}
-		out = append(out, adr{path: f, number: m[1], retired: superseded.Match(data)})
-	}
-	return out, nil
+	return checkkit.Pass(judged), nil
 }
 
 // hasFolder reports whether the repo keeps a folder of its own checks.
@@ -85,75 +58,90 @@ func hasFolder(root string) bool {
 	return err == nil && info.IsDir()
 }
 
-// checkFolders maps each ADR number with a fitness/adr-NNNN folder to the
-// folder's path.
-func checkFolders(root string) map[string]string {
-	entries, _ := os.ReadDir(filepath.Join(root, repocheck.Folder))
-	folders := map[string]string{}
-	for _, e := range entries {
-		if n, ok := adrNumber(e.Name()); ok && e.IsDir() {
-			folders[n] = repocheck.Folder + "/" + e.Name()
-		}
-	}
-	return folders
-}
-
-// adrNumber reads the number of a check folder named adr-NNNN.
-func adrNumber(name string) (string, bool) {
-	n, ok := strings.CutPrefix(name, "adr-")
-	return n, ok && len(n) == 4 && strings.Trim(n, "0123456789") == ""
-}
-
-// pairErrors judges one ADR: it needs its check, unless retired, and the
-// two link each other.
-func pairErrors(root string, a adr, folders map[string]string) []string {
-	if a.retired {
-		return nil
-	}
-	folder, ok := folders[a.number]
-	if !ok {
-		return []string{fmt.Sprintf("%s: ADR %s has no check; add %s/adr-%s/ with a README.md that links this ADR and a check that proves it, or mark the ADR Status: superseded", a.path, a.number, repocheck.Folder, a.number)}
-	}
-	readme := folder + "/" + repocheck.Readme
-	var errs []string
-	if !links(root, a.path, folder) {
-		errs = append(errs, fmt.Sprintf("%s: link its check %s, so a reader finds what keeps the decision", a.path, readme))
-	}
-	if !links(root, readme, a.path) {
-		errs = append(errs, fmt.Sprintf("%s: link %s, so the check names the decision it keeps", readme, a.path))
-	}
-	return errs
-}
-
-// links reports whether the Markdown file from holds a relative link to
-// target, or to a file inside it.
-func links(root, from, target string) bool {
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(from)))
+// records reads the README of every fitness/adr-NNNN folder. A folder
+// without one reads as empty text, which holds no decision.
+func records(root string) ([]adr, error) {
+	entries, err := os.ReadDir(filepath.Join(root, repocheck.Folder))
 	if err != nil {
-		return false
+		return nil, checkkit.Internal(err)
 	}
-	for _, m := range link.FindAllStringSubmatch(string(data), -1) {
-		dest, _, _ := strings.Cut(m[1], "#")
-		resolved := path.Join(path.Dir(from), dest)
-		if resolved == target || strings.HasPrefix(resolved, target+"/") {
-			return true
+	var out []adr
+	for _, e := range entries {
+		if !e.IsDir() || !adrFolder(e.Name()) {
+			continue
 		}
+		folder := repocheck.Folder + "/" + e.Name()
+		readme := folder + "/" + repocheck.Readme
+		data, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(readme)))
+		out = append(out, adr{folder: folder, readme: readme, text: string(data), retired: repocheck.Retired(string(data))})
 	}
-	return false
+	return out, nil
 }
 
-// orphans fails each ADR check folder whose number no ADR has.
-func orphans(decisions []adr, folders map[string]string) []string {
-	known := map[string]bool{}
-	for _, a := range decisions {
-		known[a.number] = true
-	}
+// adrFolder reports whether a check folder is named adr-NNNN.
+func adrFolder(name string) bool {
+	n, ok := strings.CutPrefix(name, repocheck.ADRPrefix)
+	return ok && len(n) == 4 && strings.Trim(n, "0123456789") == ""
+}
+
+// strays fails each numbered ADR kept in a folder named adr, apart from its
+// check: its one home is the README of its fitness/adr-NNNN folder.
+func strays(root string) []string {
 	var errs []string
-	for n, folder := range folders {
-		if !known[n] {
-			errs = append(errs, fmt.Sprintf("%s: no ADR %s exists; delete the check or give it its ADR's number", folder, n))
+	for _, f := range walkfs.FilesByExt(root, ".md") {
+		m := numbered.FindStringSubmatch(path.Base(f))
+		if m == nil || path.Base(path.Dir(f)) != "adr" || strings.HasPrefix(f, repocheck.Folder+"/") {
+			continue
+		}
+		errs = append(errs, fmt.Sprintf("%s: ADR %s lives apart from its check; move it into %s/%s%s/%s, beside the check that keeps it, and delete this file", f, m[1], repocheck.Folder, repocheck.ADRPrefix, m[1], repocheck.Readme))
+	}
+	return errs
+}
+
+// shapeErrors fails each ADR folder whose README lacks a section of the
+// decision, so every adr-NNNN README is the ADR itself.
+func shapeErrors(decisions []adr) []string {
+	var errs []string
+	for _, a := range decisions {
+		if missing := missingSections(a.text); len(missing) > 0 {
+			errs = append(errs, fmt.Sprintf("%s: is no ADR, as it lacks %s; write the decision this check keeps under ## Context, ## Decision and ## Consequences", a.readme, strings.Join(missing, " and ")))
 		}
 	}
-	sort.Strings(errs)
 	return errs
+}
+
+// missingSections lists each ADR section heading text lacks.
+func missingSections(text string) []string {
+	var missing []string
+	for _, s := range sections {
+		if _, ok := section(text, s); !ok {
+			missing = append(missing, "## "+s)
+		}
+	}
+	return missing
+}
+
+// section is the body of text's `## name` section, up to the next heading
+// of its level or above, and whether text has one.
+func section(text, name string) (string, bool) {
+	var body []string
+	in, found := false, false
+	for _, line := range strings.Split(text, "\n") {
+		if title, ok := heading(line); ok {
+			in = strings.EqualFold(title, name)
+			found = found || in
+		} else if in {
+			body = append(body, line)
+		}
+	}
+	return strings.TrimSpace(strings.Join(body, "\n")), found
+}
+
+// heading reads a line that opens a section: a `##` heading's title, or ""
+// for the `#` title, which opens none.
+func heading(line string) (string, bool) {
+	if title, ok := strings.CutPrefix(line, "## "); ok {
+		return strings.TrimSpace(title), true
+	}
+	return "", strings.HasPrefix(line, "# ")
 }

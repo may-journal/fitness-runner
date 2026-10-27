@@ -43,7 +43,7 @@ users who have lost connection
 
 ## Rules
 
-- IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md).
+- IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004](../../../fitness/adr-0004/README.md).
 - Acceptance IDs: the title ID plus `.N`, unique in its doc.
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
@@ -73,7 +73,7 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is to its leftover Source line.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../fitness/adr-0004/README.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is to its leftover Source line.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.

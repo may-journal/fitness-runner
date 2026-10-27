@@ -215,5 +215,5 @@ func Test0006_10(t *testing.T) {
 		pairedDoc:       docWith(adds),
 		other:           strings.Replace(docWith(again), "0001 Adds Numbers", "0002 Adds Again", 1),
 	}))
-	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "0004-one-requirement-doc-per-area")
+	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "blob/main/fitness/adr-0004")
 }

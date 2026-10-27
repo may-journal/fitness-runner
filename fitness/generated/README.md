@@ -9,4 +9,4 @@ Fails when a file `go generate` writes is stale or edited by hand. It also fails
 
 The program answers `--describe` itself, since compiling `fitness-release` can outlast the handshake's budget. The check fails when that line drifts from the Go copy. Every other run goes to `fitness-release generated`, which compares the files on disk with what the generator writes now. A scoped run that changes no Go file and no file it writes skips.
 
-It is one of this repo's [local checks](../../docs/local-checks.md), as [ADR 0012](../../docs/architecture/adr/0012-repo-checks-live-in-the-fitness-folder.md) decides.
+It is one of this repo's [local checks](../../docs/local-checks.md), as [ADR 0012](../adr-0012/README.md) decides.
