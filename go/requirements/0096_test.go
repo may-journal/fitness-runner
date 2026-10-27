@@ -39,7 +39,7 @@ func Test0096_1(t *testing.T) {
 		".github/PULL_REQUEST_TEMPLATE.md":        "<!--\n---\nfitnessFunctions: ['pr-structure']\n---\n-->\n<!-- One sentence. -->\n> REPLACE-ME\n",
 	})
 	sees(t, out, code, 0, "stripped docs/guide.md", "stripped changelog/2026-10-11-0900-one-change.md",
-		"stripped .github/PULL_REQUEST_TEMPLATE.md", "stripped README.md")
+		"stripped .github/PULL_REQUEST_TEMPLATE.md", "fitness strip-front-matter: stripped 3 files\n")
 	holds(t, repo, "docs/guide.md", stripBody)
 	holds(t, repo, "changelog/2026-10-11-0900-one-change.md", entry)
 	holds(t, repo, ".github/PULL_REQUEST_TEMPLATE.md", "<!-- One sentence. -->\n> REPLACE-ME\n")
@@ -62,8 +62,7 @@ func Test0096_3(t *testing.T) {
 	titled := "---\ntitle: Notes\n---\n\n# Notes\n"
 	ruled := "---\n\nA note set between two rules.\n\n---\n\n# Ruled\n"
 	repo, out, code := stripRun(t, map[string]string{"plain.md": plain, "docs/notes.md": titled, "docs/ruled.md": ruled})
-	// happyRepo's own README.md and CHANGELOG.md are the two files stripped.
-	sees(t, out, code, 0, "fitness strip-front-matter: stripped 2 files\n")
+	sees(t, out, code, 0, "fitness strip-front-matter: stripped 0 files\n")
 	if strings.Contains(out, "plain.md") || strings.Contains(out, "notes.md") {
 		t.Errorf("the output lists a file it left alone:\n%s", out)
 	}
@@ -83,4 +82,18 @@ func Test0096_4(t *testing.T) {
 	holds(t, repo, "docs/crlf.md", "# Crlf\r\n")
 	holds(t, repo, "docs/bom.md", "\ufeff# Bom\n")
 	holds(t, repo, "docs/empty.md", "# Empty\n")
+}
+
+func Test0096_5(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{
+		"docs/guide.md":        "---\nfitnessFunctions:\n  - prose-budget\n---\n\n# Guide\n",
+		"skills/tidy/SKILL.md": "---\nname: tidy\nfitnessFunctions:\n  - prose-budget\n---\n\n# Tidy\n",
+	})
+	out, code := fitness(t, repo, nil, "no-fitness-front-matter")
+	sees(t, out, code, 1, "docs/guide.md: front matter holds", "skills/tidy/SKILL.md: front matter holds")
+	out, code = fitness(t, repo, nil, "strip-front-matter")
+	sees(t, out, code, 0, "fitness strip-front-matter: stripped 2 files\n")
+	out, code = fitness(t, repo, nil, "no-fitness-front-matter")
+	sees(t, out, code, 0, "All 1 checks passed")
 }

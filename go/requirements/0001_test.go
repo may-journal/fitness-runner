@@ -532,7 +532,7 @@ func processStopped(t *testing.T, pidFile string) {
 }
 
 // readme is happyRepo's README, for Givens that add to it.
-const readme = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# App\n\nShort and clean.\n"
+const readme = "---\ntitle: App\n---\n\n# App\n\nShort and clean.\n"
 
 // bundleChecks lists the check programs the installer put in dir.
 func bundleChecks(t *testing.T, dir string) []string {

@@ -199,7 +199,7 @@ func fixingCommit(t *testing.T, repo string) (string, int, int64) {
 	sees(t, got, code, 0, "fitness init: installed hooks")
 	fix := map[string]string{
 		"src/store/store_test.go":                 testFile("store", "Test0001_1"),
-		"changelog/2026-10-26-1200-store-test.md": entryFileText("2026.10.26.1200", "Fix: the store test owns only its own acceptance."),
+		"changelog/2026-10-26-1200-store-test.md": bareEntryText("2026.10.26.1200", "Fix: the store test owns only its own acceptance."),
 	}
 	write(t, repo, fix)
 	user(t, repo, env, append([]string{"add"}, slices.Collect(maps.Keys(fix))...)...)
