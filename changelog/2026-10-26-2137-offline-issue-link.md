@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.26.2137
 
 - Fix: a commit message that links an Issue makes the runner probe GitHub's API host first.
