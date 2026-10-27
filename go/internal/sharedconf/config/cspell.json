@@ -124,6 +124,7 @@
     "XCUI",
     "Appfile",
     "Fastfile",
-    "Gymfile"
+    "Gymfile",
+    "nojekyll"
   ]
 }

@@ -118,6 +118,8 @@ func Test0021_12(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 	out, code = cspellRun(t, map[string]string{"body.md": "sync `fastlane/Appfile`, `fastlane/Fastfile`, `fastlane/Gymfile`\n"}, "--body-file", "body.md")
 	sees(t, out, code, 0, "All 1 checks passed")
+	out, code = cspellRun(t, map[string]string{"static-preview.yml": "run: touch \"$PAGES/.nojekyll\"\n"})
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0021_10(t *testing.T) {

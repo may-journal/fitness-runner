@@ -1,4 +1,4 @@
 ### 2026.10.27.1500
-- Fix: the shared cspell word list accepts `Appfile`, `Fastfile` and `Gymfile`, so a sync PR body naming the fastlane files passes pr-check.
-- Test: requirement 0021.12 covers a PR body naming the three files with no repo `cspell.json`.
-- Docs: requirement 0021.12 says the built-in words include the fastlane file names.
+- Fix: the shared cspell word list accepts `Appfile`, `Fastfile`, `Gymfile` and `nojekyll`, so sync PRs naming them pass pr-check.
+- Test: requirement 0021.12 covers a PR body naming the three files and a workflow touching `.nojekyll`.
+- Docs: requirement 0021.12 lists the fastlane file names and `nojekyll` as built-in words.
