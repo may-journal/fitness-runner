@@ -35,7 +35,8 @@ func reformats(root, base string, changed []string) map[string]bool {
 
 // reformatted reports whether doc f holds the same wording at base and in
 // the scope being judged: HEAD for a pull request, else the index, which
-// holds what a commit records.
+// holds what a commit records. A doc renamed since base is compared with
+// the base doc of its number, since a number is never reused.
 func reformatted(root, base, f string) bool {
 	now := ":" + f
 	if os.Getenv("GITHUB_BASE_REF") != "" {
@@ -43,10 +44,32 @@ func reformatted(root, base, f string) bool {
 	}
 	before, ok := gitShow(root, base+":"+f)
 	if !ok {
+		before, ok = gitShow(root, base+":"+renamedFrom(root, base, f))
+	}
+	if !ok {
 		return false
 	}
 	after, ok := gitShow(root, now)
 	return ok && wording(before) == wording(after)
+}
+
+// renamedFrom is the one doc at base with f's number, the path a renamed f
+// had there. With none, or more than one, it is f.
+func renamedFrom(root, base, f string) string {
+	out, err := exec.Command("git", "-C", root, "ls-tree", "--name-only", base, docsDir).Output()
+	if err != nil {
+		return f
+	}
+	var same []string
+	for _, doc := range strings.Fields(string(out)) {
+		if docNumber(doc) == docNumber(f) {
+			same = append(same, doc)
+		}
+	}
+	if len(same) == 1 {
+		return same[0]
+	}
+	return f
 }
 
 // gitShow returns the content of a git object such as rev:path.

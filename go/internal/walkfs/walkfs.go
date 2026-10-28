@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -130,6 +132,32 @@ func FilesByExt(root string, exts ...string) []string {
 	return out
 }
 
+// AllFiles returns every path under root a check judges by name, sorted and
+// slash-separated. Inside a git work tree it is every path in the index, so a
+// staged addition or a rename's target counts before its commit; outside one
+// it is every regular file except those under .git. Unlike FilesByExt, it
+// returns an error when git or the walk cannot list the files, so a check
+// never passes on a list it could not read.
+func AllFiles(root string) ([]string, error) {
+	if files, ok := trackedFiles(root); ok {
+		out := slices.Clone(files)
+		sort.Strings(out)
+		return out, nil
+	}
+	if insideWorkTree(root) {
+		return nil, errors.New("git cannot list the tracked files; run `git ls-files` to see why")
+	}
+	files, err := walkFiles(root, true)
+	sort.Strings(files)
+	return files, err
+}
+
+// insideWorkTree reports whether git sees root as inside a work tree.
+func insideWorkTree(root string) bool {
+	out, err := exec.Command("git", "-C", root, "rev-parse", "--is-inside-work-tree").Output()
+	return err == nil && strings.TrimSpace(string(out)) == "true"
+}
+
 // wanted reports whether rel ends in one of exts and, when it came from
 // git, is still a regular file on disk. The cheap name test runs first, so
 // only a matching tracked path costs an lstat; a walked path is already a
@@ -152,10 +180,17 @@ func isRegularFile(root, rel string) bool {
 // directories.
 // Unreadable subtrees are skipped, never fatal.
 func walkedFiles(root string) []string {
+	files, _ := walkFiles(root, false)
+	return files
+}
+
+// walkFiles walks root as walkedFiles says. When strict, the first
+// unreadable entry stops the walk and is returned; otherwise it is skipped.
+func walkFiles(root string, strict bool) ([]string, error) {
 	var files []string
-	_ = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
-			return nil
+			return keptIf(strict, err)
 		}
 		if d.IsDir() {
 			return pruneGit(root, path, d.Name())
@@ -168,7 +203,16 @@ func walkedFiles(root string) []string {
 		}
 		return nil
 	})
-	return files
+	return files, err
+}
+
+// keptIf returns err when strict, so the walk stops on it, and nil
+// otherwise, so the walk skips the entry.
+func keptIf(strict bool, err error) error {
+	if strict {
+		return err
+	}
+	return nil
 }
 
 // pruneGit returns filepath.SkipDir for a .git directory below root, the
