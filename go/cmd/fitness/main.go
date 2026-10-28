@@ -103,6 +103,9 @@ type resolved struct {
 	// declares none. It stays apart from desc, which holds only what the
 	// check declares.
 	configMs int
+	// needs says why this fitness is too old for the check's minFitness,
+	// which stops a run before any check starts.
+	needs string
 }
 
 // outcome is one finished check, in dispatch order.
@@ -150,7 +153,9 @@ func runBuiltin(name string, args []string) int {
 }
 
 // runCheckCommand handles `fitness check <name> [args]`, and `fitness check
-// --list`, which prints every built-in check name, one per line.
+// --list`, which prints every built-in check name, one per line. A name no
+// built-in check has, such as a repo's own check, runs as `fitness <name>`
+// runs it, alone, with its result row.
 func runCheckCommand(args []string) int {
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "fitness check: name a check, or pass --list")
@@ -161,6 +166,9 @@ func runCheckCommand(args []string) int {
 			fmt.Println(name)
 		}
 		return 0
+	}
+	if _, ok := builtins[args[0]]; !ok {
+		return run(args)
 	}
 	return runBuiltin(args[0], args[1:])
 }
@@ -204,8 +212,8 @@ func init() {
 		// Lists the guide topics, or prints one, from the code's doc comments.
 		//fitness:usage docs [topic]
 		"docs": runDocs,
-		// Prints every built-in check name, one per line, or runs one built-in
-		// check by name.
+		// Prints every built-in check name, one per line, or runs one check by
+		// name, a repo's own check included.
 		//fitness:usage check --list
 		//fitness:usage check <name> [args]
 		"check": runCheckCommand,
@@ -450,7 +458,7 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
 func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string, err error) {
-	env, err = contextEnv(root, checks, all, scope)
+	env, err = contextEnv(root, checks, all, scope, "")
 	if err != nil || len(checks) != 1 {
 		return env, nil, err
 	}
@@ -631,11 +639,12 @@ var errNotInstalled = errors.New("Check binary not installed")
 // whose handshake overran in that crowd gets a second try, so a slow first
 // start after an install does not drop its own budget.
 func resolveList(names []string) ([]resolved, error) {
+	prebuild(names)
 	progs := make([]checkkit.Program, len(names))
 	for i, name := range names {
-		prog, err := findCheckBinary(name)
+		prog, err := programFor(name)
 		if err != nil {
-			return nil, fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
+			return nil, err
 		}
 		progs[i] = prog
 	}
@@ -683,7 +692,7 @@ func isScript(bin string) bool {
 // describeCheck runs one check's --describe handshake.
 func describeCheck(name string, prog checkkit.Program) resolved {
 	desc, describeErr, overran := describe(prog)
-	return resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran}
+	return asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
@@ -804,8 +813,9 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 // repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
 // so no check reads the folder as changes. The staged files are read once
 // for both variables. A stalled git call returns its error. A run with a
-// network check probes GitHub's API host first, as networkEnv says.
-func contextEnv(root string, checks []resolved, all bool, scope []string) ([]string, error) {
+// network check, or a commit message that links an Issue, probes GitHub's
+// API host first, as networkEnv says.
+func contextEnv(root string, checks []resolved, all bool, scope []string, msg string) ([]string, error) {
 	staged, err := stalledOnly(gitx.Repo(root).StagedFiles())
 	if err != nil {
 		return nil, err
@@ -823,7 +833,7 @@ func contextEnv(root string, checks []resolved, all bool, scope []string) ([]str
 	// password prompt would wait, unseen, until the budget kills the check.
 	env = append(append(env, gitx.NoPrompt(root)...), "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
 	env = append(env, scope...)
-	env = append(env, networkEnv(root, checks)...)
+	env = append(env, networkEnv(root, checks, msg)...)
 	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
 }
 
@@ -943,7 +953,7 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
 	cmd.Dir = root
-	cmd.Env = append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name)
+	cmd.Env = append(append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name), checkDirEnv(c.name)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -962,7 +972,7 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	if timedOut {
 		return o
 	}
-	return decodeOutcome(o, cmd, stdout.Bytes())
+	return brokenScan(c, decodeOutcome(o, cmd, stdout.Bytes()))
 }
 
 // waitWithBudget waits for cmd within budget; on overrun it TERMs the

@@ -1,5 +1,4 @@
 {
-  "localChecks": "checks",
   "planApprovers": ["jasonvanderslice", "json-claude-bot"],
   "textReadability": {
     "maxGrade": 15,

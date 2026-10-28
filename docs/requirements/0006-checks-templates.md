@@ -39,7 +39,7 @@ requirement docs
 - 0006.10
     - Given Developer has two docs with acceptances sharing a When and similar Givens
         - When fitness runs
-            - Then it fails naming both docs and linking ADR 0004
+            - Then it fails naming both docs and linking ADR 0004 in the README of its check
 - 0006.11
     - Given Developer has a doc whose Measurement ends in a Source line citing code that moved
         - When I run `fitness requirements --fix` and commit

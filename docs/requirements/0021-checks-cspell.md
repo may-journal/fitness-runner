@@ -41,7 +41,7 @@ checked files
 - 0021.12
     - Given Developer has no repo `cspell.json`
         - When cspell runs
-            - Then an installed `@mayjournal/fitness-shared` package's words are accepted, else the words built into fitness for every language
+            - Then an installed `@mayjournal/fitness-shared` package's words are accepted, else the words built into fitness, fastlane file names and `nojekyll` too
 - 0021.10
     - Given Developer has a `cspell.json` `flagWords` phrase used in a tracked file, in a body, and in that `cspell.json`
         - When cspell runs

@@ -32,4 +32,4 @@ stripped .github/ISSUE_TEMPLATE/bug.md: front matter keeps name, about, title, l
 fitness strip-front-matter: stripped 3 files
 ```
 
-Then run `fitness` once. The [changelog](../../go/cmd/fitness-check-changelog/README.md), [doc-template](../../go/cmd/fitness-check-doc-template/README.md) and [release-changelog](../../go/cmd/fitness-check-release-changelog/README.md) checks pass with or without front matter.
+Then run `fitness` once. The [no-fitness-front-matter](../../go/cmd/fitness-check-no-fitness-front-matter/README.md) check fails any file that still holds either key, so a leftover cannot land. Files under `testdata` or `tests/examples` stay out of its scope as fixtures. The [changelog](../../go/cmd/fitness-check-changelog/README.md), [doc-template](../../go/cmd/fitness-check-doc-template/README.md) and [release-changelog](../../go/cmd/fitness-check-release-changelog/README.md) checks pass with or without front matter.

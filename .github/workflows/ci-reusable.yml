@@ -47,7 +47,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       # Go repos: the Go the repo's go.mod names, the root one or else the
       # shallowest, so setup-go uses the runner's copy instead of
-      # downloading the newest stable release for 9-16 s.
+      # downloading the newest stable release for 9-16 s. A repo's Go checks
+      # in fitness/ count too: fitness/go.mod gets the Go that builds them.
       - name: Find the Go module file
         id: go-module
         if: ${{ inputs.ref != '' || hashFiles('**/go.mod') != '' }}

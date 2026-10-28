@@ -15,7 +15,7 @@ fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs
 
 The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [requirements check README](../../go/cmd/fitness-check-requirements/README.md) holds the template and every rule the check enforces. Read it first and link to it, do not restate it.
 
-Before adding a doc, find the one that already states the area. [ADR 0004](../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) says when to extend it.
+Before adding a doc, find the one that already states the area. [ADR 0004](../../fitness/adr-0004/README.md) says when to extend it.
 
 - Pick a prefix per kind of area. This repo uses `checks-`, `engine-`, `hooks-`, and `github-`; a project chooses its own.
 - Why: one or two sentences in the user's voice, saying what holds once the requirement is met.
@@ -46,6 +46,10 @@ Exactly one test owns each acceptance, and its name carries the ID: in Go, `Test
 In Swift, `test0001_1` owns 0001.1. It is either an XCTest method in an `XCTestCase` class or a Swift Testing `@Test func`. Every other Swift test must be renamed for its acceptance or deleted, as in Go. A UI test that launches the built app is the Swift way to drive the real product.
 
 The check enforces Go and Swift. For TypeScript, note the gap for the owner instead of inventing a rule.
+
+### A rule over the repo's files
+
+Some requirements are rules over the repo's own files, such as no scroll work outside one folder. A Go check in `fitness/req-NNNN/`, unit-tested on the check SDK, may prove such a doc in place of tests. The [local checks guide](../../docs/local-checks.md#write-a-go-check) shows how. Whenever a user meets the behavior, prefer a real-run test, since a check reads files and never runs the product.
 
 ## Drive the real product
 

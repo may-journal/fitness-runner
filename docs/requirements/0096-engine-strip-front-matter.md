@@ -28,3 +28,7 @@ Markdown files holding fitness front matter
     - Given Developer has docs with fitness front matter and CRLF endings or a byte order mark, and a doc with an empty block
         - When `fitness strip-front-matter` runs
             - Then it removes each block, keeps the body and any byte order mark, and lists each file
+- 0096.5
+    - Given Developer has docs that fail no-fitness-front-matter, one beside another tool's key
+        - When `fitness strip-front-matter` runs, then that check
+            - Then the check passes

@@ -39,5 +39,5 @@
 // `path:line:col - message (rule)`.
 //
 // [ESLint]: https://eslint.org
-// [ADR 0006]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0006-biome-stands-in-for-eslint-and-prettier.md
+// [ADR 0006]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0006/README.md
 package check
