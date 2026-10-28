@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.1400
 
 - Feat: the `requirements` check fails a Swift requirement test on XCTest, Xcode UI tests, simctl, or another UI test framework.

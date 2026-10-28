@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../action.yml', '../go/cmd/fitness-install/main.go']
----
-
 # Run prebuilt Fitness in CI
 
 Fitness builds its installer, runner, and checks when publishing a release. Consumers download executables; they do not compile Fitness or install Go. Selected project checks may still need the tools their language module runs.
@@ -160,6 +156,14 @@ Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook com
 The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks.
 
 Upgrade or roll back with `--version VERSION`; `--version latest` is explicit opt-in. The action's `version` input follows the same rules. An exact action tag loads its installer; a major tag such as `v1` loads its newest release, and other refs load the latest.
+
+## Network waits
+
+Each network read first prints the host it asks and how long it waits. The latest release lookup and the hash manifest give up after five seconds. A failed lookup falls back to the recorded or newest installed version with one warning. The bundle download waits up to two minutes and prints its size before it starts, because it has no fallback.
+
+The runner, `gh` and git reach the network through `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`, and git also reads its `http.proxy` setting. A run with `local-branch`, `dependency-currency` beside a root `package.json`, or a commit message linking an Issue first probes the GitHub API host. The host is `GITHUB_API_URL` when set, else `api.github.com`, or `GH_HOST` for GitHub Enterprise Server. The probe connects once, through the proxy, within two seconds.
+
+When the probe fails, those checks, `workflow-ref-exists` and the pre-push gate report info naming the host and proxy, without connecting. `issue-link-once` skips its open PR read and still judges the branch commits. Go checks then run with `GOPROXY=off`, so a missing module fails at once with Go's own message. A plain commit probes nothing, and when the probe passes, a slow registry or proxy still ends at the check's budget.
 
 ## Release automation
 

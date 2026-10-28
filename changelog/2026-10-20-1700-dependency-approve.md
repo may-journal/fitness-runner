@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1700
 
 - Feat: Release approve takes `kind: dependency` to approve a green `build(deps)` pull request that only bumps dev dependencies.

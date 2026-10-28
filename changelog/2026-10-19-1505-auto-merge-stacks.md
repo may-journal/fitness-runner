@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.1505
 
 - Fix: Auto-merge passes with a notice on a stacked pull request, since GitHub has no auto-merge for stacks.

@@ -21,3 +21,10 @@ out/
 
 # Local builds of the fitness binaries, made while checking work before a commit
 .build/
+
+# `go build` in an ADR check folder writes a binary named for it; fitness builds into its cache
+/fitness/*/adr-[0-9][0-9][0-9][0-9]
+# `go build` in a requirement check folder writes a binary named for it, never committed
+/fitness/*/req-[0-9][0-9][0-9][0-9]
+# `go build` in the generated check folder writes its binary here, never committed
+/fitness/generated/generated

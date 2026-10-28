@@ -192,7 +192,7 @@ func Test0006_11(t *testing.T) {
 	sourced := withSource(doc, "`gone.go:99`")
 	repo := example(t, "happyRepo", with(pairedRepo(), map[string]string{pairedDoc: sourced}))
 	out, code := fitness(t, repo, nil, "requirements")
-	sees(t, out, code, 0, pairedDoc+":19: delete this `Source:` line, or run `fitness requirements --fix`")
+	sees(t, out, code, 0, pairedDoc+":15: delete this `Source:` line, or run `fitness requirements --fix`")
 	out, code = fitness(t, repo, nil, "requirements", "--fix")
 	sees(t, out, code, 0)
 	if got, err := os.ReadFile(filepath.Join(repo, pairedDoc)); err != nil || string(got) != doc {
@@ -230,5 +230,5 @@ func Test0006_10(t *testing.T) {
 		pairedDoc:       docWith(adds),
 		other:           strings.Replace(docWith(again), "0001 Adds Numbers", "0002 Adds Again", 1),
 	}))
-	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "0004-one-requirement-doc-per-area")
+	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "blob/main/fitness/adr-0004")
 }

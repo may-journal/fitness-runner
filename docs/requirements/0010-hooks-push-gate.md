@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0010 Push Plan
 
 ## Why
@@ -33,9 +29,9 @@ feature pushes
         - When I push them
             - Then the push goes through
 - 0010.11
-    - Given Developer has several feature commits naming one approved Plan
+    - Given Developer has several feature commits naming one approved Plan, or three Plans behind a network that never answers
         - When I push them
-            - Then the hook asks GitHub about that Plan once
+            - Then the hook asks GitHub about that Plan once, or refuses once 30 seconds pass with one line naming the host
 - 0010.12
     - Given Developer has external policy with plan-trailer and local-branch in disabledChecks
         - When I push a feature commit that names no Plan

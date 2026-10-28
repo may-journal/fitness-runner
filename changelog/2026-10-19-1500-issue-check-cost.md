@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.1500
 
 - Perf: issue-check and plan-check skip a title-only edit and a label that cannot change the verdict, at job level, billing nothing.

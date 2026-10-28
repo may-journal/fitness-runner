@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0009 Git Hooks
 
 ## Why
@@ -33,9 +29,9 @@ bad commits and pushes tried
         - When I commit
             - Then the commit is refused naming both problems at once
 - 0009.4
-    - Given Developer has the hooks and a failing executable pre-commit.local
+    - Given Developer has the hooks and a failing executable pre-commit.local, or one whose git waits for a password
         - When I commit a change that passes every check
-            - Then the commit is refused
+            - Then the commit is refused, and a waiting one and its children stop at the budget timeoutMs sets
 - 0009.7
     - Given Developer has a repo that already has a pre-commit hook
         - When I install the Go hook with --install-hook

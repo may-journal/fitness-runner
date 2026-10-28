@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0069 Changelog Entry
 
 ## Why
@@ -39,7 +35,7 @@ pull requests that change the changelog
         - When the release tool writes the new tag's release notes
             - Then the description lists only the new entries, or all for a first release, newest first, with a link
 - 0069.23
-    - Given Developer has a PR that edits or deletes an entry file the newest release's tag holds
+    - Given Developer has a PR that changes the notes of an entry file the newest release holds
         - When pr-check and branch-check judge its changelog entry
             - Then both fail naming the file and asking for a new entry file
 - 0069.24

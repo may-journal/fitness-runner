@@ -352,6 +352,23 @@ func Test0069_23(t *testing.T) {
 		local, localCode := entryLocal(t, repo, pr, entryReleased()...)
 		sees(t, local, localCode, 1, entryShipped)
 	}
+	entryFrontDropped(t)
+}
+
+// entryFrontDropped runs pr-check and branch-check on a PR that only drops
+// the front matter of the shipped entryOldFile, and fails if either names it.
+func entryFrontDropped(t *testing.T) {
+	t.Helper()
+	const item = "Feat: ship the old file."
+	old := entryFileText("2026.10.01.0900", item)
+	repo, pr := entryCommits(t, map[string]string{entryOldFile: old}, pr0014(11), map[string]string{entryOldFile: bareEntryText("2026.10.01.0900", item)})
+	out, _ := entryActions(t, repo, pr0014(11), entryReleased()...)
+	local, _ := entryLocal(t, repo, pr, entryReleased()...)
+	for _, got := range []string{out, local} {
+		if strings.Contains(read(got), "shipped in") {
+			t.Errorf("an edit that only drops front matter was named as a shipped entry:\n%s", got)
+		}
+	}
 }
 
 // entryNotes runs release-notes for tag in repo, with GitHub answering that

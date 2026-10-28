@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0084 Checks Mermaid Syntax
 
 ## Why

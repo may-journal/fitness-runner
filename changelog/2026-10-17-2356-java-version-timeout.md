@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.2356
 
 - Fix: the `java-version` check no longer starts Gradle, so a cold daemon or a JDK download cannot slow it.

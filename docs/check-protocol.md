@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Check protocol
 
 The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, tracked files, enabled check names, and the commit message for the commit checks.
@@ -13,7 +9,13 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 
 The runner runs the `--describe` handshakes side by side, then runs checks in a pool of one slot per core. Checks start by the timeout budget they declare in `--describe`, largest first, and ties keep catalog order. A compiled check whose handshake runs past its budget among the others gets one more try. A script never does, so its work never runs twice.
 
-A timeout kills the whole process group, so a hung check's child tree dies with it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+A timeout kills the whole process group, so a hung check's child tree dies with it. Each git call the runner makes, such as `git ls-files`, gets ten seconds. A stalled call ends the run as a setup error naming it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+
+## Progress
+
+The runner prints `→ <name>` as each check starts. On a terminal, or with `FITNESS_PROGRESS=1`, it prints a heartbeat every five seconds. The heartbeat has one line per running check, such as `… 12s  running: go-test (budget 15m)`. Off a terminal, as in Actions, a check prints that line once when it passes half its budget.
+
+The runner holds each check's stderr until the run ends. When only one check is still running, its stderr streams live, and the summary does not print it again. A timed-out row adds the last line the check wrote to stderr, which shows where it stopped.
 
 ## Findings
 
@@ -30,6 +32,12 @@ Info rows show as `info` with an "N info" total. They never change the exit code
 Shared helpers in `go/internal` mark an environment error with `checkkit.Internal`, so a check can report it as info. `checkkit.Exec` tells a tool that could not start or was killed by a signal from one that ran. A language module's tool runner also reports sandbox text that `checkkit.SandboxText` spots, such as `dial tcp`, the same way.
 
 `gitx.Repo` returns git errors and probes a clone for a shallow history, no origin, or a detached HEAD. A missing `gh`, an auth or network failure, or a read timeout is an environment error too.
+
+## No password prompts
+
+Checks run with `GIT_TERMINAL_PROMPT=0`, `GH_PROMPT_DISABLED=1` and ssh in batch mode, which `gitx.NoPrompt` returns. Git, ssh and gh then fail at once instead of waiting for a password on the terminal. The hooks, the pre-push gate and the installer set the same for their own runs.
+
+A user's own `GIT_SSH_COMMAND`, `GIT_SSH` or `core.sshCommand` stays, and a credential helper still answers. A check that did not pass, whose output holds git's `terminal prompts disabled` or ssh's `Permission denied` line, shows as info naming the remote.
 
 ## Blob input
 
@@ -77,9 +85,9 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 
 ## Local checks
 
-A repo adds its own checks with `"localChecks": "<dir>"`, a directory inside the repo. Each executable `fitness-check-<name>` there follows this protocol and runs in the same suite, hooks, and CI. Lookup searches that directory before the bundled checks.
+A repo adds its own checks as `fitness/<name>/` folders, as [local checks](local-checks.md) describes. `"localChecks": "<dir>"` names one more directory inside the repo, which may also hold executable `fitness-check-<name>` files. Each follows this protocol and runs in the same suite, hooks, and CI, searched before the bundled checks. A folder check may skip `--describe`, and a handshake may add `minFitness`, the oldest fitness that runs the check.
 
-A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md) decides.
+A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](../fitness/adr-0009/README.md) decides.
 
 A missing or empty directory fails the run, and so does a path or symlink that leads outside the repo. So does a check without execute permission, or one named like a `fitness` subcommand. Blob mode (`--blob`) and the GitHub body checks, such as `pr-check`, use the same local and disabled checks.
 

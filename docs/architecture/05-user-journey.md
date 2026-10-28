@@ -1,8 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-journey']
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # User Journey
 
 ## Legend
@@ -54,7 +49,7 @@ flowchart TB
     readLLMs(38 Read the llms page<br/>Req 0113):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102, 0131)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001)]:::system
 
@@ -62,10 +57,10 @@ flowchart TB
         commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
         proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085)]:::system
-        markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037)]:::system
+        markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
-        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065)]:::system
+        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0132)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057, 0097)]:::system
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
@@ -162,7 +157,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
 | 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |
 | 32  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |
-| 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness-only front matter no check reads; other keys stay.           |
+| 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness keys no check reads; other keys stay.                        |
 | 34  | `fitness list`.                     | Action  | An agent learns every check, its scope, and whether this repo runs it, from the binary. |
 | 35  | `fitness explain <check>`.          | Action  | An agent reads why a check exists and the keys it reads, generated from its code comments. |
 | 36  | `fitness docs [topic]`.             | Action  | An agent reads the protocol, config and GitHub commands from the binary, as the code documents them. |

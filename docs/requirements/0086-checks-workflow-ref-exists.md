@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0086 Checks Workflow Ref Exists
 
 ## Why

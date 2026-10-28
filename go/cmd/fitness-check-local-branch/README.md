@@ -18,7 +18,9 @@ Full local Fitness checks the current branch. Pre-push runs one meta-check over 
 
 The check matches the current branch's open PR, including drafts and forks, then validates its closing issues and branch Plan trailers. History starts at the fetched base branch when it contains the API base commit, else at that commit. Upstream Plans and entries merged since never count. Ordinary issues receive PR checklist rules.
 
-No PR or detached HEAD skips. Ambiguous PRs, unfinished checklists, inaccessible metadata, and missing base history fail with retry guidance. GitHub reads share a 30-second deadline; the runner allows 35 seconds for cancellation and reporting.
+No PR or detached HEAD skips. Ambiguous PRs, unfinished checklists, inaccessible metadata, and missing base history fail with retry guidance.
+
+GitHub reads share a 30-second deadline; the runner allows 35 seconds for cancellation and reporting. Inside pre-push, the gate opens the push's deadline before its Plan reads and hands it over. This check then reads under what is left of it. When the runner's two-second probe finds GitHub's API host unreachable, the check reads nothing and reports info naming the host and proxy.
 
 ## Implementation
 

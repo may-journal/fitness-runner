@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.16.1753
 
 - Refactor: the Node checks share one tool finder and one JavaScript project rule, in `go/internal/nodejs`.

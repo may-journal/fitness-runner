@@ -53,7 +53,7 @@ Each failure names the file, line, and literal, the call or catalog entry, and t
 }
 ```
 
-Org repos cannot turn the check off, as [ADR 0009](../../../docs/architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md) decides.
+Org repos cannot turn the check off, as [ADR 0009](../../../fitness/adr-0009/README.md) decides.
 
 ## Configuration
 

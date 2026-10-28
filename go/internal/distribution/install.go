@@ -11,11 +11,13 @@ import (
 )
 
 // Installer holds typed release, transport, and cache settings. The command
-// uses public HTTPS endpoints; tests inject a local HTTP server.
+// uses public HTTPS endpoints; tests inject a local HTTP server. Client
+// downloads the bundle; Lookup asks for the latest release and the hash
+// manifest, which have a fallback or are small, so it gives up sooner.
 type Installer struct {
 	Version, Platform, Cache, ReleaseURL, LatestURL string
 	Hashes                                          map[string]string
-	Client                                          *http.Client
+	Client, Lookup                                  *http.Client
 	Log                                             io.Writer
 }
 
@@ -24,11 +26,11 @@ func New(version, hashes string, log io.Writer) (*Installer, error) {
 	if err != nil {
 		return nil, err
 	}
-	cache, err := cacheDirectory()
+	cache, err := CacheDir()
 	if err != nil {
 		return nil, err
 	}
-	return &Installer{Version: version, Hashes: ParseHashes(hashes), Platform: platform, Cache: cache, ReleaseURL: releaseRoot, LatestURL: latestURL(), Client: defaultClient(), Log: log}, nil
+	return &Installer{Version: version, Hashes: ParseHashes(hashes), Platform: platform, Cache: cache, ReleaseURL: releaseRoot, LatestURL: latestURL(), Client: defaultClient(), Lookup: lookupClient(), Log: log}, nil
 }
 
 func (i *Installer) Install(ctx context.Context, requested string) (string, error) {
@@ -65,7 +67,7 @@ func (i *Installer) archive(ctx context.Context, key, version, asset, digest str
 	if data, valid := cachedArchive(path, digest); valid {
 		return data, nil
 	}
-	data, err := i.fetch(ctx, i.assetURL(version, asset), maxArchiveBytes)
+	data, err := i.download(ctx, i.assetURL(version, asset), asset)
 	if err != nil {
 		return nil, err
 	}

@@ -96,6 +96,23 @@ func Test0009_4(t *testing.T) {
 	write(t, repo, map[string]string{".githooks/pre-commit.local": "#!/bin/sh\necho local build broke\nexit 1\n"})
 	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "docs(readme): touch nothing")
 	sees(t, out, code, 1, "local build broke")
+	localHookStops(t)
+}
+
+// localHookStops asserts a pre-commit.local whose git waits for a password,
+// and which ignores the stop signal, is killed with that git at the 2s
+// budget timeoutMs sets, and the commit is refused.
+func localHookStops(t *testing.T) {
+	t.Helper()
+	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"timeoutMs": 2000}` + "\n"})
+	git(t, repo, "remote", "add", "origin", promptedRemote)
+	path, pidFile := promptingTools(t, "fetch")
+	// Git puts its own folder first on a hook's PATH, so the hook names the waiting git.
+	tools := strings.SplitN(strings.TrimPrefix(path, "PATH="), string(os.PathListSeparator), 2)[0]
+	write(t, repo, map[string]string{".githooks/pre-commit.local": "#!/bin/sh\ntrap '' TERM\n\"" + tools + "/git\" fetch origin\n"})
+	out, code := user(t, repo, append(env, path, "GIT_TERMINAL_PROMPT=0"), "commit", "--allow-empty", "-m", "docs(readme): touch nothing")
+	sees(t, out, code, 1, "fitness hook: .githooks/pre-commit.local timed out after 2s")
+	processStopped(t, pidFile)
 }
 
 func Test0009_7(t *testing.T) {

@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
 )
@@ -25,6 +25,9 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 		return nil, nil, err
 	}
 	checks, err := resolvePolicy(cfg, options, spec)
+	if err == nil {
+		err = newEnough(checks)
+	}
 	return checks, passthrough, err
 }
 
@@ -33,18 +36,18 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 // will judge the new message. Without one, as with the installer's hook,
 // semantic-commit judges the branch's earlier commits. Both stay enabled,
 // so docs may still name them.
-func commitChecks(checks []resolved) []resolved {
+func commitChecks(checks []resolved) ([]resolved, error) {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
-		return checks
+		return checks, nil
 	}
-	messageHook := commitMsgHook()
+	messageHook, err := commitMsgHook()
 	var local []resolved
 	for _, check := range checks {
 		if !skipsAtCommit(check.name, messageHook) {
 			local = append(local, check)
 		}
 	}
-	return local
+	return local, err
 }
 
 // skipsAtCommit reports whether pre-commit leaves check out, given whether a
@@ -54,14 +57,15 @@ func skipsAtCommit(check string, messageHook bool) bool {
 }
 
 // commitMsgHook reports whether the repository has an executable commit-msg
-// hook, in core.hooksPath or the git directory.
-func commitMsgHook() bool {
-	out, err := exec.Command("git", "rev-parse", "--path-format=absolute", "--git-path", "hooks/commit-msg").Output()
+// hook, in core.hooksPath or the git directory. A stalled git call returns
+// its error.
+func commitMsgHook() (bool, error) {
+	path, err := gitx.Repo(".").GitPath("hooks/commit-msg")
 	if err != nil {
-		return false
+		return stalledOnly(false, err)
 	}
-	info, err := os.Stat(strings.TrimSpace(string(out)))
-	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0, nil
 }
 
 func resolvePolicy(cfg *conf.Config, options selection.Options, spec string) ([]resolved, error) {
