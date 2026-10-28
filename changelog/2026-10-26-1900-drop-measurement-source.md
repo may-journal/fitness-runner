@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.26.1900
 - Feat: a requirement doc's Measurement is a numerator, `-` and a denominator, with no `Source:` line.
 - Feat: a leftover `Source:` line is no longer judged; it gets an info note, and a later release fails it.

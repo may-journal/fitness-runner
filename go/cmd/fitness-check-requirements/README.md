@@ -43,7 +43,7 @@ users who have lost connection
 
 ## Rules
 
-- IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md).
+- IDs: the file name's `NNNN` matches the title, and no two docs share it or one area, per [ADR 0004](../../../fitness/adr-0004/README.md).
 - Acceptance IDs: the title ID plus `.N`, unique in its doc.
 - Reuse: git history records every ID a commit removed. A doc or acceptance that brings one back fails.
 - Sections: exactly `## Why`, `## Measurement`, `## Requirements`, in that order, none empty.
@@ -73,12 +73,12 @@ Swift requirement tests run on Swift Testing with [apple-ui-testing-library](htt
 
 ## Pairs
 
-A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../docs/architecture/adr/0004-one-requirement-doc-per-area.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is to its leftover Source line.
+A requirement test and its doc change together, so neither drifts from the other. Changed behavior extends its existing doc, as [ADR 0004](../../../fitness/adr-0004/README.md) sets out. A doc whose words stay the same line by line, as after `biome format`, has not changed. Nor has one whose only change is to its leftover Source line.
 
 - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
 - Fixes: a changed test file that failed this check at its base passes without its doc, since its doc still holds.
-- Base check: this check judges a checkout of the base commit, where a Swift test that imported XCTest fails.
+- Base check: this check judges a checkout of the base commit's docs and test files, where a Swift test importing XCTest fails.
 - New files: a test file the base lacks still needs its doc.
 - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
 - Helpers: a test file that names and holds no requirement pairs with nothing.
@@ -91,3 +91,12 @@ Which changes are judged depends on the run:
 - Pull requests: CI judges the diff against its base, the merge base with the base branch, so merged base changes are not judged.
 - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
+
+## Requirement checks
+
+Some requirements are rules over the repo's own files. A check in `fitness/req-NNNN/`, one of the repo's [local checks](../../../docs/local-checks.md), may prove such a doc.
+
+- Ownership: such a doc's acceptances need no test. A test named for one still owns it, and two still fail.
+- Orphans: a `fitness/req-NNNN/` folder whose number no doc defines fails.
+- Pairs: the check's files pair with the doc as a test file does, so a change to one half alone fails.
+- Broken scan: a requirement check that passes having judged no files fails the run.

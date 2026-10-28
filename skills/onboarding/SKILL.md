@@ -1,7 +1,6 @@
 ---
 name: onboarding
 description: Adopt fitness in a repo or as an agent joining one. Use when a new repo needs the checks, a hook, or CI, when an agent asks how to install and run fitness, or when a fitness failure needs reading.
-relatedConfigurations: ['../../.fitnessrc.json']
 ---
 
 # Adopt fitness

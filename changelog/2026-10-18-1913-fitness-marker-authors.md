@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.1913
 
 - Fix: comment-check skips a comment only when a known bot wrote it, so a pasted fitness marker no longer hides a comment.

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.2300
 
 - Fix: plan-check skips a Plan moved to another repo before it is judged, and exits 0 instead of failing the job.

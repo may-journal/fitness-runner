@@ -1,95 +1,69 @@
 package requirements
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 )
 
-// reportStep is a last step that reports every outcome to the job summary.
-const reportStep = `      - name: Report job outcome
-        if: ${{ always() }}
-        run: printf 'Job %s\n' "${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
-`
-
-// reportingJob is a workflow whose job, on line 4, builds and then
-// reports with tail as its last steps.
-func reportingJob(tail string) string {
-	return "name: CI\non: push\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: make\n" + tail
+// noFitnessFront writes files over happyRepo and runs
+// `fitness no-fitness-front-matter` there.
+func noFitnessFront(t *testing.T, files map[string]string) (string, int) {
+	t.Helper()
+	return fitness(t, example(t, "happyRepo", files), nil, "no-fitness-front-matter")
 }
 
-// reportingCheck runs workflow-reporting on happyRepo with files written
-// over it.
-func reportingCheck(t *testing.T, files map[string]string) (string, int) {
+// frontFix is what the check prints after each file that holds a key.
+const frontFix = ": front matter holds fitnessFunctions or relatedConfigurations, which no check reads; run `fitness strip-front-matter`"
+
+// byteOrderMark is the UTF-8 BOM some editors put before a file's first line.
+const byteOrderMark = string(rune(0xFEFF))
+
+// fitnessBlock is a plain block holding both fitness keys.
+const fitnessBlock = "---\nfitnessFunctions:\n  - prose-budget\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n\n"
+
+// flagged asserts out names each file once with the fix.
+func flagged(t *testing.T, out string, files ...string) {
 	t.Helper()
-	return fitness(t, example(t, "happyRepo", files), nil, "workflow-reporting")
+	for _, f := range files {
+		if n := strings.Count(read(out), read(f+frontFix)); n != 1 {
+			t.Errorf("%s is named %d times, want once:\n%s", f, n, out)
+		}
+	}
 }
 
 func Test0123_1(t *testing.T) {
 	t.Parallel()
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": reportingJob(reportStep)})
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWith(t, out, "workflow-reporting", "1")
+	out, code := noFitnessFront(t, map[string]string{
+		"docs/guide.md":                    fitnessBlock + "# Guide\n",
+		"changelog/2026-10-11-0900-one.md": entryFileText("2026.10.11.0900", "Feat: one change."),
+		".github/PULL_REQUEST_TEMPLATE.md": "<!--\n---\nfitnessFunctions: ['pr-structure']\n---\n-->\n<!-- One sentence. -->\n> REPLACE-ME\n",
+	})
+	sees(t, out, code, 1)
+	flagged(t, out, "docs/guide.md", "changelog/2026-10-11-0900-one.md", ".github/PULL_REQUEST_TEMPLATE.md")
 }
 
 func Test0123_2(t *testing.T) {
 	t.Parallel()
-	out, code := reportingCheck(t, map[string]string{".github/workflows/build.yaml": reportingJob("")})
-	sees(t, out, code, 1, ".github/workflows/build.yaml:4: job build has no step that runs with if: always() and writes $GITHUB_STEP_SUMMARY",
-		"add a last step with `if: ${{ always() }}` whose run writes the job's status to \"$GITHUB_STEP_SUMMARY\"")
+	out, code := noFitnessFront(t, map[string]string{
+		"docs/crlf.md":                  "---\r\nrelatedConfigurations: ['../.fitnessrc.json']\r\n---\r\n\r\n# Crlf\r\n",
+		"docs/bom.md":                   byteOrderMark + "---\nfitnessFunctions: ['prose-budget']\n---\n\n# Bom\n",
+		".github/ISSUE_TEMPLATE/bug.md": "---\nname: Bug\nrelatedConfigurations: ['../../.fitnessrc.json']\nlabels: Bug\n---\n\n## Steps\n",
+	})
+	sees(t, out, code, 1)
+	flagged(t, out, "docs/crlf.md", "docs/bom.md", ".github/ISSUE_TEMPLATE/bug.md")
 }
 
 func Test0123_3(t *testing.T) {
 	t.Parallel()
-	onSuccess := strings.Replace(reportStep, "        if: ${{ always() }}\n", "", 1)
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": reportingJob(onSuccess)})
-	sees(t, out, code, 1, ".github/workflows/ci.yml:4: job build writes $GITHUB_STEP_SUMMARY only when earlier steps pass, at line 9",
-		"add `if: ${{ always() }}` to the step at line 9")
-}
-
-func Test0123_4(t *testing.T) {
-	t.Parallel()
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": "name: CI\non: push\njobs:\n" +
-		"  fitness:\n    uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@v1\n    secrets: inherit\n"})
+	out, code := noFitnessFront(t, map[string]string{
+		"docs/notes.md":                     "---\ntitle: Notes\n---\n\n# Notes\n",
+		"docs/ruled.md":                     "---\n\nrelatedConfigurations: a note set between two rules.\n\n---\n\n# Ruled\n",
+		".github/ISSUE_TEMPLATE/bug.md":     "---\nname: Bug\nlabels: Bug\n---\n\n## Steps\n",
+		"tests/examples/demoRepo/README.md": fitnessBlock + "# Demo\n",
+		"go/tool/testdata/guide.md":         fitnessBlock + "# Guide\n",
+	})
 	sees(t, out, code, 0, "All 1 checks passed")
-	passedWith(t, out, "workflow-reporting", "1")
-}
-
-func Test0123_5(t *testing.T) {
-	t.Parallel()
-	matrix := "name: CI\non: push\njobs:\n  test:\n    strategy:\n      matrix:\n        os: [ubuntu-latest, macos-latest, windows-latest]\n" +
-		"    runs-on: ${{ matrix.os }}\n    steps:\n      - run: make test\n"
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": matrix})
-	sees(t, out, code, 1, ".github/workflows/ci.yml:4: job test has no step")
-	if n := strings.Count(out, "job test has no step"); n != 1 {
-		t.Errorf("a matrix job must be named once, got %d times:\n%s", n, out)
+	if strings.Contains(out, "strip-front-matter") {
+		t.Errorf("a file without fitness front matter, or a fixture, was flagged:\n%s", out)
 	}
-}
-
-func Test0123_6(t *testing.T) {
-	t.Parallel()
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": "name: CI\non: push\njobs:\n  build:\n\truns-on: ubuntu-latest\n"})
-	sees(t, out, code, 1, ".github/workflows/ci.yml:5: this workflow is not valid YAML: a tab indents this line")
-}
-
-func Test0123_7(t *testing.T) {
-	t.Parallel()
-	out, code := reportingCheck(t, nil)
-	sees(t, out, code, 0, "All 1 checks passed")
-	passedWithNoFiles(t, out, "workflow-reporting")
-}
-
-func Test0123_8(t *testing.T) {
-	t.Parallel()
-	own, err := filepath.Glob(filepath.Join("..", "..", ".github", "workflows", "*.y*ml"))
-	mustDo(t, err)
-	files := map[string]string{}
-	for _, f := range own {
-		body, err := os.ReadFile(f)
-		mustDo(t, err)
-		files[".github/workflows/"+filepath.Base(f)] = string(body)
-	}
-	out, code := reportingCheck(t, files)
-	sees(t, out, code, 0, "All 1 checks passed")
 }

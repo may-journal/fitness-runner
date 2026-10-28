@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.1530
 
 - Perf: `java-test` runs Gradle with `--build-cache`, so unchanged tests are restored instead of rerun.

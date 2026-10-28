@@ -15,7 +15,7 @@ builds:
     goos: [linux, darwin]
     goarch: [amd64, arm64]
     flags: [-trimpath, -buildvcs=false]
-    ldflags: [-s -w]
+    ldflags: ['-s -w -X main.version={{ .Version }}']
 archives:
   - id: bundle
     ids: [fitness]

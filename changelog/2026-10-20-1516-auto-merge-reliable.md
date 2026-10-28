@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1516
 
 - Fix: Auto-merge comments once on a stacked pull request saying how to merge it, and edits that comment once auto-merge is on.

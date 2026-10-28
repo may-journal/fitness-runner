@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.1912
 
 - Perf: `go-test-coverage` builds each package's test binary once and runs every audit measurement from it.

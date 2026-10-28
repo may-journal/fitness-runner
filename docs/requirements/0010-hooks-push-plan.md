@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0010 Push Plan
 
 ## Why
@@ -17,9 +13,9 @@ feature pushes
 ## Requirements
 
 - 0010.1
-    - Given Developer has the shared hooks, no fitness on the PATH, and a feature commit whose trailer names an approved Plan
+    - Given Developer has the shared hooks, no fitness on the PATH, and a feature commit naming a Plan an allowed approver approved
         - When I push it
-            - Then the push goes through
+            - Then the push goes through, with the repo's owner and org members allowed when planApprovers is unset
 - 0010.4
     - Given Developer has a branch whose first pushed commit names an approved Plan
         - When I push a later feature commit with no trailer
@@ -33,9 +29,9 @@ feature pushes
         - When I push them
             - Then the push goes through
 - 0010.11
-    - Given Developer has several feature commits naming one approved Plan
+    - Given Developer has several feature commits naming one approved Plan, or three Plans behind a network that never answers
         - When I push them
-            - Then the hook asks GitHub about that Plan once
+            - Then the hook asks GitHub about that Plan once, or refuses once 30 seconds pass with one line naming the host
 - 0010.12
     - Given Developer has external policy with plan-trailer and local-branch in disabledChecks
         - When I push a feature commit that names no Plan
@@ -45,6 +41,6 @@ feature pushes
         - When I push it
             - Then the push goes through, having read that Plan once from the repo it names
 - 0010.14
-    - Given Developer has a feature commit with no Plan trailer, or naming a non-Plan issue, an unapproved Plan, or another owner's Plan
+    - Given Developer has a feature commit naming no Plan, a non-Plan issue, another owner's Plan, or a Plan no allowed approver approved
         - When I push it
-            - Then the push is refused naming that issue, or the missing trailer with both spellings as the fix
+            - Then the push is refused naming that issue and who may approve, or the missing trailer with both spellings as the fix

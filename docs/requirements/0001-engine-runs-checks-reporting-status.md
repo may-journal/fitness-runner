@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0001 Runs Checks Reporting Status
 
 ## Why
@@ -17,7 +13,7 @@ runs
 ## Requirements
 
 - 0001.1
-    - Given Developer has every check passing
+    - Given Developer has every check passing, with docs whose front matter only another tool reads
         - When fitness runs
             - Then it reports every installed check green and exits 0
 - 0001.2
@@ -31,20 +27,20 @@ runs
 - 0001.13
     - Given Developer has slow checks with different time budgets
         - When fitness runs
-            - Then they overlap, the longest budget starts first, and the table keeps catalog order
+            - Then they overlap, longest budget first, progress shows each one's time and budget, the last streams live, and the table keeps catalog order
 - 0001.14
-    - Given Developer has a check past the budget it declares, or one set by timeoutMs in the fitness config
+    - Given Developer has a check past the budget it declares or timeoutMs sets, or whose git or ssh waits for a password
         - When fitness runs
-            - Then it and its child processes stop, or are killed if they ignore the stop, and it shows red as timed out
+            - Then it and its children stop, by force if needed, showing red as timed out with last output, file count and scope hint
 - 0001.15
-    - Given Developer has a repo with tracked files
+    - Given Developer has a repo with tracked files, a few or thousands, or whose git call listing them or staged files stalls
         - When fitness runs every check
-            - Then git lists the tracked files once for the whole run
+            - Then git lists tracked files once per run, or a stalled call stops after ten seconds as a setup error naming it
 - 0001.16
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo
             - Then it judges the files tracked now
-- 0001.17
-    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start, or fails its describe step
+- 0001.18
+    - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start or describe itself, or meets prompts or silent proxies
         - When fitness runs
-            - Then it shows as info naming why, and Actions adds a notice while the other checks set the exit code
+            - Then it shows as info naming why, within seconds offline, and Actions adds a notice while the other checks set the exit code

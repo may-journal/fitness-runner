@@ -1,7 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-containers']
----
-
 # Containers
 
 <!-- Start docs/architecture/02-containers.md from this template. One `C4Container` diagram, the only form this level takes: each unit that runs or ships, inside the product's `System_Boundary`, named for the folder it is built from, with its technology. Its kinds are Person, `System_Boundary`, Container and `System_Ext`, with their Db and Queue forms. Reuse the people and IDs of the system context. Each element carries the one `UpdateElementStyle` line of its kind below: slate people, teal containers, grey externals, white text, and no style on the boundary. -->

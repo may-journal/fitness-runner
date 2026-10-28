@@ -8,7 +8,7 @@ Fails unknown words in the checked files. It spell-checks with a native Go engin
 
 - Pass: no unknown words in checked files.
 - In a scoped run: only the changed paths that still exist on disk are checked; with none left it passes without scanning.
-- Otherwise: spell-checks every tracked file; binary files count but are never spelled.
+- Otherwise: spell-checks every tracked file; binary files, with a NUL in their first 8 KB, count but are never spelled or read whole.
 - Generated files: files `.gitattributes` marks `linguist-generated`, and the [lockfiles and build wrapper files](../../internal/lang/lang.go) of any language, are left out; nothing else is.
 - Fail: a resolved `cspell.json` that sets `ignorePaths` fails before any scan; remove it and fix the words instead.
 - Config: a repo-local `cspell.json` wins; otherwise an installed `@mayjournal/fitness-shared` package under `node_modules`; otherwise the copy embedded in the binary, materialized on demand.

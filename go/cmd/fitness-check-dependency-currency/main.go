@@ -50,6 +50,9 @@ func Main() {
 func run(root string, _ []string) (checkkit.Result, error) {
 	filesChecked := len(node.Manifests(root))
 	manifests := collectManifests(root)
+	if note := checkkit.Offline("the npm registry reads"); note != "" && len(manifests) > 0 {
+		return checkkit.Info(filesChecked, note), nil
+	}
 	latest := fetchLatest(registryFrom(root), uniqueDeps(manifests))
 	errs := outdatedErrors(manifests, latest)
 	if len(errs) > 0 {

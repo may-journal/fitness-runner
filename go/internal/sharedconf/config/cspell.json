@@ -63,6 +63,7 @@
     "blockquote",
     "blockquotes",
     "bodycheck",
+    "repocheck",
     "mdtemplate",
     "gitx",
     "stty",
@@ -120,6 +121,10 @@
     "simctl",
     "typealias",
     "xcrun",
-    "XCUI"
+    "XCUI",
+    "Appfile",
+    "Fastfile",
+    "Gymfile",
+    "nojekyll"
   ]
 }

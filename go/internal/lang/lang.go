@@ -110,6 +110,9 @@ type Tests struct {
 	// file or run that uses a tool the language's requirement tests may
 	// not use.
 	Tools func(root string, files []string) ([]string, error)
+	// Reads reports a tracked file Scan or Tools may read, so a copy of the
+	// repo made only to judge its tests can hold just those files.
+	Reads func(file string) bool
 }
 
 // TestPrefix is how a module whose test names carry IDs names them: the
@@ -183,6 +186,11 @@ func Exts(modules []Module) []string {
 // IsTestFile reports whether any module's test runner finds file by name.
 func IsTestFile(modules []Module, file string) bool {
 	return slices.ContainsFunc(modules, func(m Module) bool { return m.TestFile != nil && m.TestFile(file) })
+}
+
+// TestReads reports whether any module's Tests.Reads keeps file.
+func TestReads(modules []Module, file string) bool {
+	return slices.ContainsFunc(modules, func(m Module) bool { return m.Tests.Reads != nil && m.Tests.Reads(file) })
 }
 
 // IsTestSource reports whether a module classes the source path as built

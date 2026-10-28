@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 <!-- cspell:ignore jacoco -->
 
 # 0081 Checks Java Test

@@ -38,16 +38,16 @@ func withoutVar(env []string, name string) []string {
 // local run to the staged files. A push to main, --all, a run with nothing
 // staged, or a diff git cannot compute all scan everything, so the full
 // suite still runs after merge. staged is the run's staged files, already
-// read once by the caller.
-func changedScope(root string, all bool, staged []string) []string {
+// read once by the caller. A stalled git call returns its error.
+func changedScope(root string, all bool, staged []string) ([]string, error) {
 	if all {
-		return nil
+		return nil, nil
 	}
 	if base := os.Getenv("GITHUB_BASE_REF"); base != "" {
-		return gitx.ChangedSince(root, "origin/"+base)
+		return stalledOnly(gitx.Repo(root).ChangedSince("origin/" + base))
 	}
 	if os.Getenv("GITHUB_ACTIONS") == "true" {
-		return nil
+		return nil, nil
 	}
-	return staged
+	return staged, nil
 }

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0034 Checks Markdown Filename Kebab Case
 
 ## Why

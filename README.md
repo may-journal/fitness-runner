@@ -1,8 +1,3 @@
----
-# Top-level project config
-relatedConfigurations: ['.fitnessrc.json']
----
-
 # fitness
 
 Zero-dependency Go fitness runner. It runs checks for local dev, CI/CD, and GenAI workflows to keep code aligned with your rules and quality bar.
@@ -74,7 +69,7 @@ Commands:
       Lists the guide topics, or prints one, from the code's doc comments.
   fitness check --list
   fitness check <name> [args]
-      Prints every built-in check name, one per line, or runs one built-in check by name.
+      Prints every built-in check name, one per line, or runs one check by name, a repo's own check included.
   fitness config [--json] [--policy=..] [--checks=..]
   fitness config schema
       Shows the resolved settings and each check's state, or prints a JSON Schema for the config file.
@@ -85,7 +80,7 @@ Commands:
   fitness boxes <report.json> <page.html>
       Draws a --json report as an HTML box diagram.
   fitness strip-front-matter
-      Removes front matter that holds only fitness keys from tracked .md files.
+      Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
   fitness branch-check
       Judges this branch's PR and the issues it closes locally, posting nothing.
   fitness pr-check
@@ -106,6 +101,8 @@ Commands:
 <!-- end fitness usage -->
 
 `fitness --help` prints the same list. The [performance record](docs/ci.md#performance-record) explains `--json`, and the [box diagram](docs/ci.md#box-diagram) explains `boxes`.
+
+On a terminal, a long run names each running check with its elapsed time and budget every five seconds. Off a terminal, it names a check once at half its budget. The last check running streams its output live, as the [check protocol](docs/check-protocol.md#progress) explains.
 
 ## Git hooks
 

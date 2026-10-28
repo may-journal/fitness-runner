@@ -1,5 +1,5 @@
 ---
-relatedConfigurations: ['.fitnessrc.json']
+title: Changelog
 ---
 
 # Changelog

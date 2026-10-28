@@ -17,6 +17,9 @@ func Test0003_1(t *testing.T) {
 	for _, check := range []string{"eslint", "prettier", "swiftlint", "localized-text", "gofmt", "go-test", "requirements"} {
 		passedWithNoFiles(t, out, check)
 	}
+	fixtures := example(t, "happyRepo", map[string]string{"tool/testdata/bad.go": "package bad\nfunc  X( ) {}\n"})
+	out, _ = fitness(t, fixtures, nil, "gofmt")
+	passedWithNoFiles(t, out, "gofmt")
 }
 
 func Test0003_2(t *testing.T) {
@@ -38,6 +41,7 @@ func Test0003_2(t *testing.T) {
 // catalogRows is the order the result rows print in: the repo-wide checks,
 // sorted, then the Go, Swift, Node and Java modules' checks, each sorted.
 const catalogRows = `
+adr-checks
 architecture-actors architecture-code architecture-components
 architecture-containers architecture-contract architecture-journey
 build-output-untracked changelog changelog-bullets changelog-updated
@@ -47,7 +51,8 @@ markdown-filename-camel-case
 markdown-filename-kebab-case markdown-links
 markdown-no-bold-italic mermaid-callout-why mermaid-callouts
 mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
-mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-plans-dir plan-structure
+mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-fitness-front-matter
+no-plans-dir plan-structure
 plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
 release-changelog repeated-string-literals requirements semantic-commit
 text-readability workflow-ref-exists workflow-reporting

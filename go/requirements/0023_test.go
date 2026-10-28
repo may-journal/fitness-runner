@@ -185,7 +185,6 @@ func Test0023_17(t *testing.T) {
 	files[dtViews+acContainer] += "\n## Setup\n\nHow a consumer runs the app.\n"
 	files[dtViews+acJourney] += "\n## Notes\n\nWhat the journey leaves out.\n"
 	dtEdit(t, files, acComponent, "match the callout table.", "match the callout table. <!-- kept in step with the diagram -->")
-	dtEdit(t, files, acContext, "---\nfitnessFunctions: ['architecture-contract', 'architecture-actors']\n---\n\n", "")
 	files[dtViews+"notes.md"] = "# Notes\n\n## Open threads\n\nWhat the views leave out.\n"
 	files[dtViews+"archive/"+acCode] = "# Old code\n\n## Before\n\nThe first layout.\n"
 	out, code := docTemplate(t, files)

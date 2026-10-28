@@ -103,13 +103,17 @@ type resolved struct {
 	// declares none. It stays apart from desc, which holds only what the
 	// check declares.
 	configMs int
+	// needs says why this fitness is too old for the check's minFitness,
+	// which stops a run before any check starts.
+	needs string
 }
 
 // outcome is one finished check, in dispatch order.
 type outcome struct {
-	res    checkkit.Result
-	ms     int64
-	stderr []byte
+	res checkkit.Result
+	ms  int64
+	// stderr holds what the check wrote there, which may have streamed live.
+	stderr *stream
 	// timedOut marks a budget kill; crashed says how a check that printed
 	// no result ended, exit is its protocol exit code, and startErr says why
 	// the check could not start.
@@ -149,7 +153,9 @@ func runBuiltin(name string, args []string) int {
 }
 
 // runCheckCommand handles `fitness check <name> [args]`, and `fitness check
-// --list`, which prints every built-in check name, one per line.
+// --list`, which prints every built-in check name, one per line. A name no
+// built-in check has, such as a repo's own check, runs as `fitness <name>`
+// runs it, alone, with its result row.
 func runCheckCommand(args []string) int {
 	if len(args) == 0 {
 		fmt.Fprintln(os.Stderr, "fitness check: name a check, or pass --list")
@@ -160,6 +166,9 @@ func runCheckCommand(args []string) int {
 			fmt.Println(name)
 		}
 		return 0
+	}
+	if _, ok := builtins[args[0]]; !ok {
+		return run(args)
 	}
 	return runBuiltin(args[0], args[1:])
 }
@@ -203,8 +212,8 @@ func init() {
 		// Lists the guide topics, or prints one, from the code's doc comments.
 		//fitness:usage docs [topic]
 		"docs": runDocs,
-		// Prints every built-in check name, one per line, or runs one built-in
-		// check by name.
+		// Prints every built-in check name, one per line, or runs one check by
+		// name, a repo's own check included.
 		//fitness:usage check --list
 		//fitness:usage check <name> [args]
 		"check": runCheckCommand,
@@ -222,8 +231,8 @@ func init() {
 		// Draws a --json report as an HTML box diagram.
 		//fitness:usage boxes <report.json> <page.html>
 		"boxes": runBoxes,
-		// Removes front matter that holds only fitness keys from tracked .md
-		// files.
+		// Deletes the fitness keys from tracked .md files' front matter, and
+		// any block they leave empty.
 		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,
 		// Judges this branch's PR and the issues it closes locally, posting
@@ -287,18 +296,28 @@ func run(argv []string) int {
 	if hasBlobFlag(argv) {
 		return runBlob(argv)
 	}
-	s, argv, err := runSetup(argv)
+	s, rest, err := runSetup(argv)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
 	}
+	return runSelected(s, rest)
+}
+
+// runSelected selects the checks argv names and runs them with the run's
+// environment. A failure to select them or to read git ends the run as a
+// setup error after the setup's cleanup.
+func runSelected(s setup, argv []string) int {
 	checks, passthrough, err := selectedChecks(s.root, argv)
+	var env []string
+	if err == nil {
+		env, passthrough, err = singleCheckArgs(s.root, checks, passthrough, hasAllFlag(argv), s.scope)
+	}
 	if err != nil {
 		s.cleanup()
 		report.Error("fitness setup", err)
 		return 1
 	}
-	env, passthrough := singleCheckArgs(s.root, checks, passthrough, hasAllFlag(argv), s.scope)
 	return runChecks(s.root, s.perfPath, checks, passthrough, env, s.cleanup)
 }
 
@@ -307,21 +326,21 @@ func run(argv []string) int {
 // returns the run's exit code. cleanup removes the caller's shared files
 // when the run ends or is interrupted.
 func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
-	checks = commitChecks(checks)
-	tracked, removeTracked := shareTrackedFiles(root, checks)
-	remove := func() {
-		removeTracked()
-		cleanup()
+	checks, tracked, err := prepareRun(root, checks, cleanup)
+	if err != nil {
+		report.Error("fitness setup", err)
+		return 1
 	}
-	defer remove()
-	defer stopOnInterrupt(remove)()
-	env = append(env, tracked...)
+	defer tracked.Remove()
+	defer stopOnInterrupt(tracked.Remove)()
+	hint := scopeHint(env, tracked.Files)
+	env = append(env, tracked.Env...)
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
 	outcomes := runPool(root, checks, passthrough, env)
 
-	rows, totals := summarize(checks, outcomes)
+	rows, totals := summarize(checks, outcomes, hint)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
 	found := allFindings(checks, outcomes, rows)
@@ -329,6 +348,47 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
 	code := finish(rows, found, perf, totals)
 	return withPerfReport(perfPath, perf, code)
+}
+
+// prepareRun drops the checks a commit leaves out and shares the
+// tracked-file list, whose Remove deletes it and the caller's files. A
+// stalled git call runs cleanup and returns why.
+func prepareRun(root string, checks []resolved, cleanup func()) (kept []resolved, tracked walkfs.Shared, err error) {
+	kept, err = commitChecks(checks)
+	if err == nil {
+		tracked, err = shareTrackedFiles(root, kept)
+	}
+	if err != nil {
+		cleanup()
+		return nil, walkfs.Shared{}, err
+	}
+	removeTracked := tracked.Remove
+	tracked.Remove = func() {
+		removeTracked()
+		cleanup()
+	}
+	return kept, tracked, nil
+}
+
+// scopeHint is the line a timed-out row adds on an unscoped run: how many
+// files the repo tracks, when the run listed them, and how to judge fewer.
+// A run scoped to a commit or a `--dir` folder adds none.
+func scopeHint(env []string, files int) string {
+	if slices.ContainsFunc(env, scopes) {
+		return ""
+	}
+	if files > 0 {
+		return fmt.Sprintf("Hint: the repo tracks %d files; %s", files, scopeAdvice)
+	}
+	return "Hint: " + scopeAdvice
+}
+
+// scopeAdvice says how to judge fewer files than the whole repo.
+const scopeAdvice = "scope the run with fitness --dir=<folder>, or commit to check only the staged files"
+
+// scopes reports whether an env entry scopes the run to fewer files.
+func scopes(entry string) bool {
+	return strings.HasPrefix(entry, "FITNESS_CHANGED_FILES=") || strings.HasPrefix(entry, checkkit.ScopeFileEnv+"=")
 }
 
 // setup is what a run reads from argv before it selects checks.
@@ -397,48 +457,77 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
 // context-inline apply only to a single-check run: multi-check runs drop
 // passthrough entirely.
-func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string) {
-	env = contextEnv(root, checks, all, scope)
-	if len(checks) != 1 {
-		return env, nil
+func singleCheckArgs(root string, checks []resolved, passthrough []string, all bool, scope []string) (env, remaining []string, err error) {
+	env, err = contextEnv(root, checks, all, scope, "")
+	if err != nil || len(checks) != 1 {
+		return env, nil, err
 	}
 	arg := checks[0].desc.ContextInlineArg
 	if arg == "" {
-		return env, passthrough
+		return env, passthrough, nil
 	}
 	value, remaining, found := extractInline(passthrough, arg)
 	if found {
 		env = append(env, "FITNESS_CTX_MESSAGE="+value)
 	}
-	return env, remaining
+	return env, remaining, nil
 }
 
-// summarize converts outcomes to table rows, streaming each check's stderr
-// in dispatch order, and tallies the totals-line inputs.
-func summarize(checks []resolved, outcomes []outcome) ([]render.Row, render.Totals) {
+// summarize converts outcomes to table rows, printing each check's stderr
+// that did not stream live, in dispatch order, and tallies the totals-line
+// inputs. A timed-out row ends with hint, when set.
+func summarize(checks []resolved, outcomes []outcome, hint string) ([]render.Row, render.Totals) {
 	rows := make([]render.Row, len(checks))
 	var totals render.Totals
 	for i, c := range checks {
-		os.Stderr.Write(outcomes[i].stderr)
-		rows[i] = rowFor(c, outcomes[i])
+		outcomes[i].stderr.replay()
+		rows[i] = rowFor(c, outcomes[i], hint)
 		totals.Add(rows[i])
 	}
 	return rows, totals
 }
 
 // rowFor builds the table row for one outcome. A budget kill fails as timed
-// out. A check that could not judge (it did not start, printed no result, or
+// out, with hint. A check that could not judge (it did not start, printed no result, or
 // exited other than 0 or 1) becomes an info row, which never fails the run.
-func rowFor(c resolved, o outcome) render.Row {
+func rowFor(c resolved, o outcome, hint string) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
 	if o.timedOut {
-		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms,
-			Errors: []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}}
+		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms, Errors: timedOutErrors(c, o, hint)}
 	} else if note, internal := internalNote(o); internal {
 		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
 	}
 	row.Info = appendNote(row.Info, c.describeErr)
-	return row
+	return promptRow(row, o)
+}
+
+// promptRow makes a row that did not pass info naming the remote when the
+// check's git or ssh refused to ask for a password: the clone lacks a saved
+// credential, which says nothing about the code.
+func promptRow(row render.Row, o outcome) render.Row {
+	if row.Ok && len(row.Info) == 0 {
+		return row
+	}
+	said := strings.Join(append(append([]string{o.stderr.text()}, row.Errors...), row.Info...), "\n")
+	remote, refused := gitx.RefusedPrompt(said)
+	if !refused {
+		return row
+	}
+	return render.Row{Name: row.Name, Ok: true, FilesChecked: -1, Ms: row.Ms, Info: appendNote(row.Info, gitx.PromptNote(remote))}
+}
+
+// timedOutErrors are a timed-out row's error lines: the budget it ran past,
+// then the last line it wrote to stderr, which says where it stopped,
+// then hint, when set.
+func timedOutErrors(c resolved, o outcome, hint string) []string {
+	errs := []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}
+	if last := o.stderr.lastLine(); last != "" {
+		errs = append(errs, "Last output: "+last)
+	}
+	if hint != "" {
+		errs = append(errs, hint)
+	}
+	return errs
 }
 
 // internalNote reports whether the check could not judge and says why. A
@@ -550,11 +639,12 @@ var errNotInstalled = errors.New("Check binary not installed")
 // whose handshake overran in that crowd gets a second try, so a slow first
 // start after an install does not drop its own budget.
 func resolveList(names []string) ([]resolved, error) {
+	prebuild(names)
 	progs := make([]checkkit.Program, len(names))
 	for i, name := range names {
-		prog, err := findCheckBinary(name)
+		prog, err := programFor(name)
 		if err != nil {
-			return nil, fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
+			return nil, err
 		}
 		progs[i] = prog
 	}
@@ -602,7 +692,7 @@ func isScript(bin string) bool {
 // describeCheck runs one check's --describe handshake.
 func describeCheck(name string, prog checkkit.Program) resolved {
 	desc, describeErr, overran := describe(prog)
-	return resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran}
+	return asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
 }
 
 // describe asks a check binary for its metadata. On any failure it returns
@@ -645,28 +735,28 @@ func waitDescribe(cmd *exec.Cmd) (ok, overran bool) {
 }
 
 // shareTrackedFiles lists tracked files once for a run of several checks,
-// returning the env entry that hands the list over and a cleanup. A run of
+// returning the list that hands it over. A run of
 // one check gains nothing, so that check lists its own, as the commit-msg
-// hook's single-check runs do.
-func shareTrackedFiles(root string, checks []resolved) (env []string, cleanup func()) {
+// hook's single-check runs do. A stalled git call returns its error.
+func shareTrackedFiles(root string, checks []resolved) (walkfs.Shared, error) {
 	if len(checks) < 2 {
-		return nil, func() {}
+		return walkfs.Shared{Remove: func() {}}, nil
 	}
 	return walkfs.ShareTracked(root)
 }
 
 // running holds the process group of every check still running, so an
-// interrupt can stop them with the runner.
+// interrupt can stop them with the runner, and the heartbeat can name them.
 var running = struct {
 	sync.Mutex
-	pids map[int]bool
-}{pids: map[int]bool{}}
+	pids map[int]liveCheck
+}{pids: map[int]liveCheck{}}
 
 // trackRunning records a started check's process group until the returned
 // func runs.
-func trackRunning(pid int) (done func()) {
+func trackRunning(pid int, c liveCheck) (done func()) {
 	running.Lock()
-	running.pids[pid] = true
+	running.pids[pid] = c
 	running.Unlock()
 	return func() {
 		running.Lock()
@@ -722,27 +812,60 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 // by run, so an inherited value never leaks into a full scan or another
 // repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
 // so no check reads the folder as changes. The staged files are read once
-// for both variables.
-func contextEnv(root string, checks []resolved, all bool, scope []string) []string {
+// for both variables. A stalled git call returns its error. A run with a
+// network check, or a commit message that links an Issue, probes GitHub's
+// API host first, as networkEnv says.
+func contextEnv(root string, checks []resolved, all bool, scope []string, msg string) ([]string, error) {
+	staged, err := stalledOnly(gitx.Repo(root).StagedFiles())
+	if err != nil {
+		return nil, err
+	}
+	scope, err = scopeEnv(root, all, scope, staged)
+	if err != nil {
+		return nil, err
+	}
 	env := os.Environ()
-	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv} {
+	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
 		env = withoutVar(env, name)
 	}
-	staged := gitx.StagedFiles(root)
 	// A check's `git status` would otherwise refresh and rewrite the index,
-	// which voids the shared tracked-file list for every later check.
-	env = append(env, "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
+	// which voids the shared tracked-file list for every later check. A
+	// password prompt would wait, unseen, until the budget kills the check.
+	env = append(append(env, gitx.NoPrompt(root)...), "GIT_OPTIONAL_LOCKS=0", "FITNESS_STAGED_FILES="+strings.Join(staged, "\n"))
+	env = append(env, scope...)
+	env = append(env, networkEnv(root, checks, msg)...)
+	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
+}
+
+// scopeEnv is the env entry that scopes the run: the `--dir` one when set,
+// else the changed files, else none for a full scan.
+func scopeEnv(root string, all bool, scope, staged []string) ([]string, error) {
 	if len(scope) > 0 {
-		env = append(env, scope...)
-	} else if changed := changedScope(root, all, staged); len(changed) > 0 {
-		env = append(env, "FITNESS_CHANGED_FILES="+strings.Join(changed, "\n"))
+		return scope, nil
 	}
+	changed, err := changedScope(root, all, staged)
+	if len(changed) == 0 {
+		return nil, err
+	}
+	return []string{"FITNESS_CHANGED_FILES=" + strings.Join(changed, "\n")}, nil
+}
+
+// checkNames lists the checks' names, in order.
+func checkNames(checks []resolved) []string {
 	names := make([]string, len(checks))
 	for i, c := range checks {
 		names[i] = c.name
 	}
-	env = append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(names, "\n"))
-	return env
+	return names
+}
+
+// stalledOnly passes on a git answer, keeping its error only when the call
+// stalled: any other failure reads as an empty answer, as before.
+func stalledOnly[T any](v T, err error) (T, error) {
+	if gitx.Stalled(err) {
+		return v, err
+	}
+	return v, nil
 }
 
 // extractInline pulls the first `--arg=value` or `--arg value` out of args
@@ -779,11 +902,17 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 }
 
 // runPool executes every check with bounded parallelism, printing the
-// progress line as each starts. Checks start by the budget they declare,
-// largest first, so a slow one never waits behind the quick ones; outcomes
-// stay in catalog order.
+// progress line as each starts, and the heartbeat while they run. Checks
+// start by the budget they declare, largest first, so a slow one never
+// waits behind the quick ones; outcomes stay in catalog order. The last
+// check still running streams its stderr live.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
 	outcomes := make([]outcome, len(checks))
+	out := newStreams(len(checks))
+	heartbeat := heartbeatOn()
+	if heartbeat {
+		defer startHeartbeat(heartbeatEvery)()
+	}
 	sem := make(chan struct{}, par.Processes())
 	var wg sync.WaitGroup
 	for _, i := range startOrder(checks) {
@@ -794,7 +923,8 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 		go func(i int, c resolved) {
 			defer wg.Done()
 			defer func() { <-sem }()
-			outcomes[i] = runOne(root, c, passthrough, env)
+			outcomes[i] = runOne(root, c, passthrough, env, out.watch(i, heartbeat))
+			out.finish(i)
 		}(i, c)
 	}
 	wg.Wait()
@@ -817,30 +947,32 @@ func startOrder(checks []resolved) []int {
 }
 
 // runOne execs a single check in its own process group with a timeout that
-// kills the whole group (TERM, then KILL after a grace period).
-func runOne(root string, c resolved, passthrough, env []string) outcome {
+// kills the whole group (TERM, then KILL after a grace period). Its stderr
+// goes to w's stream, and off the heartbeat it is named at half its budget.
+func runOne(root string, c resolved, passthrough, env []string, w watch) outcome {
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
 	cmd.Dir = root
-	cmd.Env = append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name)
+	cmd.Env = append(append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name), checkDirEnv(c.name)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	var stdout, stderr bytes.Buffer
+	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
+	cmd.Stderr = w.stderr
 
-	start := time.Now()
+	live := liveCheck{name: c.name, start: time.Now(), budget: timeoutFor(c)}
 	if err := cmd.Start(); err != nil {
-		return outcome{startErr: err.Error()}
+		return outcome{stderr: w.stderr, startErr: err.Error()}
 	}
-	defer trackRunning(cmd.Process.Pid)()
-	timedOut := waitWithBudget(cmd, timeoutFor(c))
-	ms := time.Since(start).Milliseconds()
+	defer trackRunning(cmd.Process.Pid, live)()
+	defer warnHalfway(live, w.heartbeat)()
+	timedOut := waitWithBudget(cmd, live.budget)
+	ms := time.Since(live.start).Milliseconds()
 
-	o := outcome{ms: ms, stderr: stderr.Bytes(), timedOut: timedOut}
+	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut}
 	if timedOut {
 		return o
 	}
-	return decodeOutcome(o, cmd, stdout.Bytes())
+	return brokenScan(c, decodeOutcome(o, cmd, stdout.Bytes()))
 }
 
 // waitWithBudget waits for cmd within budget; on overrun it TERMs the

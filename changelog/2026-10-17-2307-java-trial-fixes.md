@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.2307
 
 - Fix: the Checkstyle config hint parses under Maven, and a failed Gradle build shows every cause line.

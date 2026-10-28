@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0019 Checks Changelog Updated
 
 ## Why
@@ -44,3 +40,7 @@ staged commits with changes
     - Given Developer has staged an edit to an entry file the newest release tag already holds
         - When changelog-updated checks the staged commit
             - Then it fails naming the file and asking for a new entry file
+- 0019.22
+    - Given Developer has staged an edit that only drops front matter from an entry file the newest release tag holds
+        - When changelog-updated checks the staged commit
+            - Then it passes, since the published notes stay the same

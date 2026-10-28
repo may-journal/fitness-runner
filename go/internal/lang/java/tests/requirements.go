@@ -3,6 +3,7 @@ package tests
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"slices"
 
@@ -17,7 +18,7 @@ import (
 // public method with no annotation of its own in a class its class
 // annotations mark. Methods are read from tokens, so a name in a comment
 // or string is no test.
-var Requirements = lang.Tests{Scan: scan, Name: naming.Name, Source: java.Fixture}
+var Requirements = lang.Tests{Scan: scan, Name: naming.Name, Source: java.Fixture, Reads: reads}
 
 // naming names Java requirement tests: test0001_1 owns 0001.1.
 const naming = lang.TestPrefix("test")
@@ -68,4 +69,11 @@ func marked(annotations []string, names func(framework) []string) bool {
 	return slices.ContainsFunc(frameworks(), func(f framework) bool {
 		return slices.ContainsFunc(names(f), func(name string) bool { return slices.Contains(annotations, name) })
 	})
+}
+
+// reads reports a file Scan reads: a Java source in a test source set's
+// folder, or a build file, which says whether the repo holds a Java
+// project.
+func reads(file string) bool {
+	return java.Fixture(file) && path.Ext(file) == java.Ext || slices.Contains(java.Manifests(), path.Base(file))
 }
