@@ -32,19 +32,13 @@
 //
 // A deletion passes when that doc or one of its tests changes with it.
 //
-// # Explaining an exception
+// # No exceptions
 //
-// The one exception is a commit trailer:
-//
-//	Requirements: none, <reason>
-//
-// A commit whose message carries it passes, and in a pull request the files
-// such a commit changes pass. Any other spelling counts for nothing. There is
-// no flag or setting that turns the check off for one change.
+// No commit trailer, flag or setting turns the check off for one change.
 //
 // # When it runs
 //
-//   - Commits: the staged files. With a `commit-msg` hook, the hook judges them, so the trailer counts.
+//   - Commits: the staged files. With a `commit-msg` hook, the hook judges them.
 //   - A `commit-msg` hook, as `fitness init` installs, also makes `pre-commit` leave the check out.
 //   - Amends: everything the amended commit changes since its parent.
 //   - Pull requests: CI judges the diff against the merge base with the base branch.

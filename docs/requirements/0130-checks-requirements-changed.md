@@ -2,11 +2,11 @@
 
 ## Why
 
-When I change product code, I change its test and requirement doc with it, or I say why not in a commit trailer.
+When I change product code, I change its test and requirement doc with it, with no way to opt out.
 
 ## Measurement
 
-changes to product code that also change a test and a requirement doc, or carry the trailer
+changes to product code that also change a test and a requirement doc
 
 -
 
@@ -45,4 +45,4 @@ changes to product code
 - 0130.8
   - Given Developer has the hooks installed and staged product code alone
     - When I commit with a `Requirements: none, <reason>` trailer
-      - Then the commit lands
+      - Then the commit is refused naming the file and the missing half

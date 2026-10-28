@@ -6,4 +6,4 @@ relatedConfigurations: ['../.fitnessrc.json']
 - Feat: the new `requirements-changed` check fails a commit or pull request that changes product code without a changed test and requirement doc.
 - Feat: docs, config, changelog, renames, whitespace edits, replays, and pure deletions still pass.
 - Feat: a deletion fails when its path is still named in a requirement doc, with or without a Source line.
-- Feat: a `Requirements: none, <reason>` commit trailer is the one exception, so the commit-msg hook now judges requirements-changed.
+- Feat: no commit trailer, flag or setting exempts a change, and the commit-msg hook judges requirements-changed.

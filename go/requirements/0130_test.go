@@ -33,16 +33,13 @@ func rcAdder() string {
 // rcPassed is what a passing single-check run prints.
 const rcPassed = "All 1 checks passed"
 
-// rcTrailerHint closes every requirements-changed error.
-const rcTrailerHint = `or add a "Requirements: none, <reason>" commit trailer`
-
 func Test0130_1(t *testing.T) {
 	t.Parallel()
 	adder := map[string]string{"adder.go": rcAdder()}
 	out, code := rcStaged(t, goRepo(), adder)
-	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc; change both with it, "+rcTrailerHint)
+	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc; change both with it")
 	out, code = rcStaged(t, goRepo(), with(adder, map[string]string{"adder_test.go": edited(goRepo()["adder_test.go"])}))
-	sees(t, out, code, 1, "adder.go changed without a requirement doc; change one with it, "+rcTrailerHint)
+	sees(t, out, code, 1, "adder.go changed without a requirement doc; change one with it")
 	out, code = rcPull(t, goRepo(), adder)
 	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc")
 }
@@ -95,7 +92,7 @@ func Test0130_6(t *testing.T) {
 	t.Parallel()
 	named := strings.Replace(goRepo()[pairedDoc], "by hand.", "by hand, with `adder.go`.", 1)
 	out, code := rcStaged(t, with(goRepo(), map[string]string{pairedDoc: named}), map[string]string{"adder.go": ""})
-	sees(t, out, code, 1, "adder.go was deleted, leaving requirement doc "+pairedDoc+" and test adder_test.go unchanged; change or delete them with it, "+rcTrailerHint)
+	sees(t, out, code, 1, "adder.go was deleted, leaving requirement doc "+pairedDoc+" and test adder_test.go unchanged; change or delete them with it")
 }
 
 func Test0130_7(t *testing.T) {
@@ -111,5 +108,5 @@ func Test0130_8(t *testing.T) {
 	write(t, repo, map[string]string{"adder.go": rcAdder()})
 	user(t, repo, env, "add", "-A")
 	out, code := user(t, repo, env, "commit", "-m", "feat(adder): double numbers\n\nRequirements: none, a helper no user calls yet")
-	sees(t, out, code, 0, "feat(adder): double numbers")
+	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc; change both with it")
 }

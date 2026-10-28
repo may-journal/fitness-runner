@@ -17,7 +17,7 @@ func leftBehind(root, file string, tests testSet, changed map[string]bool) []str
 	if len(docs) == 0 || slices.ContainsFunc(slices.Concat(docs, proving), func(f string) bool { return changed[f] }) {
 		return nil
 	}
-	return []string{fmt.Sprintf("%s was deleted, leaving %s unchanged; change or delete them with it%s", file, behind(docs, proving), trailerHint)}
+	return []string{fmt.Sprintf("%s was deleted, leaving %s unchanged; change or delete them with it", file, behind(docs, proving))}
 }
 
 // namingDocs lists the requirement docs whose text names file by its whole

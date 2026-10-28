@@ -46,9 +46,8 @@ func chdirToplevel() error {
 
 // hookCommitMsg validates the proposed commit message with semantic-commit,
 // plan-trailer, and issue-link-once — the message file is the first
-// argument. It also runs requirements-changed on the staged files, so the
-// message's trailer counts. An amend is judged against the amended commit's
-// parent. The four run in one pool, sharing one table, and any failure fails
+// argument. It also runs requirements-changed on the staged files. An amend
+// is judged against the amended commit's parent. The four run in one pool, sharing one table, and any failure fails
 // the hook.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)

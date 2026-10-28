@@ -27,7 +27,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	return judge(root, changes, exemption(root, scope.base))
+	return judge(root, changes)
 }
 
 // skips reports a run with nothing to judge: a full scan, a replay, or a
@@ -37,9 +37,8 @@ func skips(root string) bool {
 }
 
 // judge fails each changed product file whose test or requirement doc did
-// not change with it, and each deleted one whose doc and tests stay behind,
-// unless a trailer exempts it.
-func judge(root string, changes []change, exempt func(string) bool) (checkkit.Result, error) {
+// not change with it, and each deleted one whose doc and tests stay behind.
+func judge(root string, changes []change) (checkkit.Result, error) {
 	tests, err := scanTests(root)
 	if err != nil {
 		return checkkit.Result{}, err
@@ -48,9 +47,7 @@ func judge(root string, changes []change, exempt func(string) bool) (checkkit.Re
 	changed := changedSet(changes)
 	var errs []string
 	for _, c := range product {
-		if !exempt(c.path) {
-			errs = append(errs, c.problem(root, tests, changed)...)
-		}
+		errs = append(errs, c.problem(root, tests, changed)...)
 	}
 	if len(errs) > 0 {
 		return checkkit.Fail(len(product), errs...), nil
@@ -65,13 +62,10 @@ func (c change) problem(root string, tests testSet, changed map[string]bool) []s
 		return leftBehind(root, c.path, tests, changed)
 	}
 	if what, which := missing(tests.anyTest(changed), anyDoc(changed)); what != "" {
-		return []string{fmt.Sprintf("%s changed without %s; change %s with it%s", c.path, what, which, trailerHint)}
+		return []string{fmt.Sprintf("%s changed without %s; change %s with it", c.path, what, which)}
 	}
 	return nil
 }
-
-// trailerHint closes every error with the one way to explain an exception.
-const trailerHint = `, or add a "Requirements: none, <reason>" commit trailer`
 
 // missing names the half a change lacks, and the pronoun for it, or "" when
 // it has both.
