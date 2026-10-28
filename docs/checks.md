@@ -71,7 +71,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [no-contrastive-reframing](../go/cmd/fitness-check-no-contrastive-reframing/README.md) | Flags the "not X, it's Y" reframing in markdown prose, where a sentence rejects a claim and then restates the real point. |
 | [no-eslint-disable](../go/cmd/fitness-check-no-eslint-disable/README.md) | Fails any JS or TS source file that holds an ESLint disable directive, in file, block, `-line`, or `-next-line` form. |
 | [no-fitness-front-matter](../go/cmd/fitness-check-no-fitness-front-matter/README.md) | Fails a Markdown file whose front matter still holds `fitnessFunctions` or `relatedConfigurations`. |
-| [no-plans-dir](../go/cmd/fitness-check-no-plans-dir/README.md) | Guards the plans-to-Issues migration: it fails when any file exists under `docs/plans/`, because plans now live as `Plan`-labeled GitHub Issues, not checked-in files. |
+| [no-plans-dir](../go/cmd/fitness-check-no-plans-dir/README.md) | Keeps plans and temporary design work out of the repo. |
 | [node-version](../go/cmd/fitness-check-node-version/README.md) | Requires the machine's active Node version to satisfy the repo's `.nvmrc`. |
 | [plan-structure](../go/cmd/fitness-check-plan-structure/README.md) | Validates that a plan, a GitHub Issue body under the `Plan` label, follows the Plan issue template. |
 | [plan-trailer](../go/cmd/fitness-check-plan-trailer/README.md) | Validates an optional `Plan #NN` commit trailer. |
