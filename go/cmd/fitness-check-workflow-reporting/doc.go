@@ -32,5 +32,5 @@
 //	    run: printf '### Job %s: %s\n' "$GITHUB_JOB" "${{ job.status }}" >> "$GITHUB_STEP_SUMMARY"
 //
 // [#181]: https://github.com/may-journal/fitness-runner/issues/181
-// [ADR 0003]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0003-native-github-workflow-feedback.md
+// [ADR 0003]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0003/README.md
 package check

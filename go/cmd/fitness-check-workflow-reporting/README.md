@@ -2,7 +2,7 @@
 
 # workflow-reporting
 
-Fails a workflow job that can fail without a report on its run page ([#181](https://github.com/may-journal/fitness-runner/issues/181)). [ADR 0003](../../../docs/architecture/adr/0003-native-github-workflow-feedback.md) asks every job for a job summary, so a failure never shows only a red badge.
+Fails a workflow job that can fail without a report on its run page ([#181](https://github.com/may-journal/fitness-runner/issues/181)). [ADR 0003](../../../fitness/adr-0003/README.md) asks every job for a job summary, so a failure never shows only a red badge.
 
 ## Behavior
 
