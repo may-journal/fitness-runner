@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0062 Release Tool Reports Every Step
 
 ## Why

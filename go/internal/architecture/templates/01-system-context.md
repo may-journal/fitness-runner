@@ -1,7 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-actors']
----
-
 # System Context
 
 <!-- Start docs/architecture/01-system-context.md from this template. One `C4Context` diagram, the only form this level takes: each person and outside system the product meets, and the product as one System. Its kinds are Person, System and `System_Ext`, with their Db and Queue forms. Each element carries the one `UpdateElementStyle` line of its kind below: slate people, blue systems, grey externals, white text. A number opens each label and a letter labels each arrow, A to Z, then AA to ZZ. Each has a row in the callout table. -->

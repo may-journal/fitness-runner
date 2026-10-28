@@ -1,11 +1,6 @@
----
-# Frozen at 1.14.0; see ADR 0007
-relatedConfigurations: ['.fitnessrc.json']
----
-
 # Changelog
 
-This file is frozen at 1.14.0. Each later release lists its notes on [GitHub Releases](https://github.com/may-journal/fitness-runner/releases), written from the [entry files](go/cmd/fitness-check-changelog/README.md#entry-files) it ships. See [ADR 0007](docs/architecture/adr/0007-release-notes-from-entry-files.md).
+This file is frozen at 1.14.0. Each later release lists its notes on [GitHub Releases](https://github.com/may-journal/fitness-runner/releases), written from the [entry files](go/cmd/fitness-check-changelog/README.md#entry-files) it ships. See [ADR 0007](fitness/adr-0007/README.md).
 
 ## Changes
 

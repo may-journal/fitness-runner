@@ -16,10 +16,10 @@ func changelogBullets(t *testing.T, body string) (string, int) {
 // bulletsFile is the path changelogBullets writes its entry file to.
 const bulletsFile = "changelog/2026-10-08-1400-entry.md"
 
-// changelogBulletsDoc is an entry file whose section, opened on line 5,
-// holds bullets, so its first bullet sits on line 7.
+// changelogBulletsDoc is an entry file whose section, opened on line 1,
+// holds bullets, so its first bullet sits on line 3.
 func changelogBulletsDoc(bullets ...string) string {
-	doc := "---\nrelatedConfigurations: ['../.fitnessrc.json']\n---\n\n### 2026.10.08.1400\n\n"
+	doc := "### 2026.10.08.1400\n\n"
 	for _, b := range bullets {
 		doc += "- " + b + "\n"
 	}
@@ -53,8 +53,8 @@ func Test0018_12(t *testing.T) {
 	wrapped := "Fix: " + strings.Repeat("x", 200) + "\n  " + strings.Repeat("y", 200)
 	out, code := changelogBullets(t, changelogBulletsDoc(long, wrapped, "Docs: three."))
 	sees(t, out, code, 1,
-		bulletsFile+":7: bullet is 365 characters; keep each under 365",
-		bulletsFile+":8: bullet is 406 characters; keep each under 365")
+		bulletsFile+":3: bullet is 365 characters; keep each under 365",
+		bulletsFile+":4: bullet is 406 characters; keep each under 365")
 }
 
 func Test0018_18(t *testing.T) {
@@ -68,7 +68,7 @@ func Test0018_18(t *testing.T) {
 func Test0018_19(t *testing.T) {
 	t.Parallel()
 	out, code := changelogBullets(t, changelogBulletsDoc("Feat: one.", "fix(release)!: two.", "chore(ci): three.", "Revert: four.", "Added the readme."))
-	sees(t, out, code, 1, bulletsFile+":11: bullet must start with a semantic type")
+	sees(t, out, code, 1, bulletsFile+":7: bullet must start with a semantic type")
 	if n := strings.Count(read(out), "must start with a semantic type"); n != 1 {
 		t.Errorf("only the untyped bullet must fail, got %d failures:\n%s", n, out)
 	}

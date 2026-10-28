@@ -19,8 +19,9 @@ import (
 // modifiers keep a test, and it.each(rows)("0001.1 …") is one test. A call
 // without a leading title, such as Playwright's test.skip(condition,
 // "reason"), or a comment, string, re.test(…), or test method is no test.
-// A tool config such as vite.config.ts or .eslintrc.cjs is no code.
-var Tests = lang.Tests{Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }}
+// A tool config such as vite.config.ts or .eslintrc.cjs is no code. Reads keeps
+// the test scripts.
+var Tests = lang.Tests{Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }, Reads: ScriptTest}
 
 // scanTests reads every script test file's tests; a repo with any script
 // is written in TypeScript or JavaScript.

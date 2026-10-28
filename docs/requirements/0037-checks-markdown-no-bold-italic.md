@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0037 Checks Markdown No Bold Italic
 
 ## Why

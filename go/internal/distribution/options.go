@@ -74,7 +74,10 @@ func Platform(system, arch string) (string, error) {
 	return platform, nil
 }
 
-func cacheDirectory() (string, error) {
+// CacheDir is fitness's cache folder: FITNESS_CACHE_DIR when set, else
+// fitness under XDG_CACHE_HOME, else ~/.cache/fitness. Installed bundles
+// and the programs built from a repo's Go checks live there.
+func CacheDir() (string, error) {
 	if path := os.Getenv("FITNESS_CACHE_DIR"); path != "" {
 		return filepath.Abs(path)
 	}

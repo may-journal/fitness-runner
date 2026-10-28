@@ -18,12 +18,13 @@ import (
 // owns 0001.1. Tests are read with go/ast, so only real top-level test
 // functions count; TestMain and helpers are not tests. A file such as
 // 0003_0004_test.go is named for both requirements, and one such as
-// tools_test.go for none.
+// tools_test.go for none. Reads keeps only the test files.
 var Tests = lang.Tests{
 	Scan:    scan,
 	Name:    naming.Name,
 	Source:  func(file string) bool { return strings.HasSuffix(strings.ToLower(file), testSuffix) },
 	Numbers: numbers,
+	Reads:   func(file string) bool { return strings.HasSuffix(file, testSuffix) },
 }
 
 // naming names go test requirement tests: Test0001_1 owns 0001.1.

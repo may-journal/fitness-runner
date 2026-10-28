@@ -14,7 +14,9 @@
 //
 // The `commit-msg` hook judges the proposed message, which it passes as the
 // context-inline `--message` value. An amend leaves out HEAD, the commit it
-// replaces. With no open PR, or no network, it warns and skips the PR rule.
+// replaces. With no open PR, or no answer from gh, it warns and skips the PR
+// rule. When GitHub's API host misses the runner's probe, it skips only the
+// open PR read, with a note naming the host and proxy.
 //
 // On a pull request, the org `fitness-suite` workflow judges every branch
 // commit, oldest first, in every repo ([#157]). The one link written before

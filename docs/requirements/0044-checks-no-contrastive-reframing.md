@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0044 Checks No Contrastive Reframing
 
 ## Why

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.1910
 
 - Feat: fitness: `--json=<file>` records each check's time, size, and errors; the job summary adds a timing table, under `--blob` too.

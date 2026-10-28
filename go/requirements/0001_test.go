@@ -29,7 +29,7 @@ func Test0001_2(t *testing.T) {
 	sees(t, out, code, 1, "README.md: disallowed **bold**", passedOf(1)+", 1 failed")
 }
 
-func Test0001_17(t *testing.T) {
+func Test0001_18(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", with(goRepo(), map[string]string{"broken_test.go": "package adder\n\nfunc Test0001_2(t *testing.T {\n"}))
 	out, code := fitness(t, repo, nil)
@@ -54,6 +54,55 @@ func Test0001_17(t *testing.T) {
 		"::notice title=go-vet::check ended without a result (signal: killed)")
 	written, _ := os.ReadFile(summary)
 	sees(t, string(written), code, 1, "| go-vet | ℹ️ info |", "### ℹ️ Info")
+	promptsRefused(t)
+	offlineCommitAndPush(t)
+}
+
+// offlineWithin bounds a commit or a push behind a proxy that never answers:
+// the runner's two-second probe plus the hooks around it.
+const offlineWithin = 10 * time.Second
+
+// offlineCommitAndPush commits and pushes a feature in a JavaScript repo with
+// a GitHub origin, behind a proxy that accepts connections and never
+// answers. Each step must finish within offlineWithin, with the registry
+// check, the Plan gate and local-branch reporting info that names GitHub's
+// API host and the proxy. The push lands in a local bare repo. The
+// installer's latest release lookup was recorded minutes ago, as by an
+// online run, so the installer asks nothing.
+func offlineCommitAndPush(t *testing.T) {
+	t.Helper()
+	repo, env := hooked(t, map[string]string{"package.json": `{"dependencies": {"left-pad": "^1.0.0"}}` + "\n",
+		".fitnessrc.json": `{"policy": "external", "checks": ["dependency-currency", "local-branch"]}` + "\n"})
+	recordedNow(t, env)
+	bare := t.TempDir()
+	git(t, bare, "init", "-q", "--bare")
+	git(t, repo, "remote", "add", "origin", "https://github.com/may-journal/fitness-runner.git")
+	git(t, repo, "remote", "set-url", "--push", "origin", bare)
+	proxy := silentListener(t)
+	env = append(env, "HTTPS_PROXY="+proxy, "NO_PROXY=", "no_proxy=", "GITHUB_API_URL=https://api.github.com", "GH_HOST=github.com")
+	note := "api.github.com did not answer within 2s through proxy " + proxy + ", so fitness skipped "
+	steps := [][]string{{"commit", "--allow-empty", "-m", "feat(app): add a feature"}, {"push", "origin", "HEAD:main"}}
+	wants := [][]string{{note + "the npm registry reads"}, {"pre-push: info: " + note + "the Plan gate", note + "the PR and Plan reads"}}
+	for i, step := range steps {
+		start := time.Now()
+		out, code := user(t, repo, env, step...)
+		sees(t, out, code, 0, wants[i]...)
+		if took := time.Since(start); took > offlineWithin {
+			t.Errorf("git %s took %s behind a silent proxy, want under %s", step[0], took.Round(time.Second), offlineWithin)
+		}
+	}
+}
+
+// recordedNow writes a latest release lookup of the candidate's version,
+// made just now, into the private cache env names.
+func recordedNow(t *testing.T, env []string) {
+	t.Helper()
+	i := slices.IndexFunc(env, func(kv string) bool { return strings.HasPrefix(kv, "FITNESS_CACHE_DIR=") })
+	if i < 0 {
+		t.Fatalf("no private cache in %q", env)
+	}
+	record := fmt.Sprintf(`{"tag":"v%s","checked":%q}`, rlCandidate(t), time.Now().Format(time.RFC3339))
+	mustDo(t, os.WriteFile(filepath.Join(strings.TrimPrefix(env[i], "FITNESS_CACHE_DIR="), "latest-release.json"), []byte(record), 0o600))
 }
 
 // describeFails runs check in repo with a copy of the installed runner, after
@@ -97,6 +146,60 @@ func Test0001_14(t *testing.T) {
 	if !strings.Contains(row(out, "own-budget"), "failed") {
 		t.Errorf("a check past the budget it declares must report red, got row %q", row(out, "own-budget"))
 	}
+	promptsTimeOut(t)
+	timeoutNamesLastLine(t)
+	hugeTreeHints(t)
+	timesTrees(t)
+}
+
+// promptsTimeOut asserts a check whose git or ssh waits for a password times
+// out red at its budget, and the waiting tool is stopped. Git waits only in a
+// check that turns its prompts back on, since 0001.18 turns them off.
+func promptsTimeOut(t *testing.T) {
+	t.Helper()
+	for _, call := range []string{"GIT_TERMINAL_PROMPT=1 git fetch origin", "ssh git@git.example.invalid true"} {
+		promptTimesOut(t, call)
+	}
+}
+
+// promptTimesOut asserts what promptsTimeOut does for one call.
+func promptTimesOut(t *testing.T, call string) {
+	t.Helper()
+	out, code, pidFile := prompted(t, call)
+	sees(t, out, code, 1, "Check timed out after 0.5s")
+	if !strings.Contains(row(out, "prompted"), "failed") {
+		t.Errorf("a check whose %s waits for a password must time out red, got row %q", call, row(out, "prompted"))
+	}
+	processStopped(t, pidFile)
+}
+
+// prompted runs, under a 0.5s timeoutMs, a local check that runs call with
+// git and ssh waiting for a password, as on a machine with no credentials
+// saved, and env added to the user's environment. It returns the output, the
+// exit code and the file holding the waiting tool's process ID.
+func prompted(t *testing.T, call string, env ...string) (string, int, string) {
+	t.Helper()
+	path, pidFile := promptingTools(t)
+	repo := example(t, "happyRepo", map[string]string{
+		".fitnessrc.json":               `{"localChecks": "checks", "timeoutMs": 500}` + "\n",
+		"checks/fitness-check-prompted": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"prompted\"}'; exit 0; }\n" + call + "\necho '" + passing + "'\n",
+	})
+	git(t, repo, "remote", "add", "origin", promptedRemote)
+	out, code := fitness(t, repo, append([]string{path}, env...), "--policy=external", "--checks=prompted")
+	return out, code, pidFile
+}
+
+// promptsRefused asserts a check whose git, over HTTPS or ssh, meets a
+// password prompt ends within its budget as info naming the remote.
+func promptsRefused(t *testing.T) {
+	t.Helper()
+	for remote, call := range map[string]string{promptedRemote: "git fetch origin", "git@git.example.invalid": "git fetch " + sshRemote} {
+		out, code, _ := prompted(t, call+" || exit 1")
+		sees(t, out, code, 0, remote+" asked for a password, and checks never wait for one", "1 info")
+		if !strings.Contains(row(out, "prompted"), "info") {
+			t.Errorf("a check whose %s may not ask for a password must show info, got row %q", call, row(out, "prompted"))
+		}
+	}
 }
 
 // ownBudget runs, beside the installed checks, one that declares a 0.3s
@@ -118,13 +221,15 @@ func ownBudget(t *testing.T) (string, int) {
 
 func Test0001_15(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", architectedRepo())
-	path, calls := loggedGit(t)
-	out, code := fitness(t, repo, []string{path})
-	sees(t, out, code, 0, allPassed())
-	if n := occurrences(calls, "ls-files -z --cached"); n != 1 {
-		t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+	for _, repo := range []string{example(t, "happyRepo", architectedRepo()), generatedTree(t, architectedRepo(), 3000)} {
+		path, calls := loggedGit(t)
+		out, code := fitness(t, repo, []string{path})
+		sees(t, out, code, 0, allPassed())
+		if n := occurrences(calls, "ls-files -z --cached"); n != 1 {
+			t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+		}
 	}
+	stalledGitStops(t)
 }
 
 // loggedGit returns a PATH setting whose git logs each call's arguments to
@@ -188,6 +293,7 @@ func Test0001_13(t *testing.T) {
 		t.Errorf("slow-zz has the longest budget, so it must start before any other check ends: it started %v, the first end was %v", long.start, first)
 	}
 	keepsCatalogOrder(t, out, slices.Sorted(maps.Keys(budgets)))
+	showsProgress(t)
 }
 
 // keepsCatalogOrder asserts the table lists the slow checks in want's order.
@@ -314,6 +420,88 @@ func earliestEnd(spans map[string]span, skip string) time.Time {
 	return first
 }
 
+// showsProgress asserts the heartbeat names a slow check with its time and
+// budget, and that the check, once alone, streams its stderr live.
+func showsProgress(t *testing.T) {
+	t.Helper()
+	out, code := slowCheck(t, 20000, "sleep 7", progressOn)
+	sees(t, out, code, 0, "  running: slow (budget 20s)")
+	streamedLive(t, out)
+}
+
+// timeoutNamesLastLine asserts a timed-out check's row shows its last stderr
+// line, and that off a terminal it was named once at half its budget.
+func timeoutNamesLastLine(t *testing.T) {
+	t.Helper()
+	out, code := slowCheck(t, 1000, "exec /bin/sleep 30")
+	sees(t, out, code, 1, "Check timed out after 1s", "Last output: "+slowFirst)
+	if n := strings.Count(out, "running: slow (budget 1s)"); n != 1 {
+		t.Errorf("off a terminal, a check past half its budget must be named once, but was named %d times:\n%s", n, out)
+	}
+}
+
+// hugeTreeHints asserts that in a repo of 20,000 tracked files a commit,
+// scoped to its staged files, passes, while an unscoped run under a 0.1s
+// timeoutMs times out the checks that read every file, each row naming the
+// tracked-file count and how to scope the run.
+func hugeTreeHints(t *testing.T) {
+	t.Helper()
+	repo := generatedTree(t, staleTest(), 20000)
+	out, code, _ := fixingCommit(t, repo)
+	sees(t, out, code, 0)
+	write(t, repo, map[string]string{".fitnessrc.json": `{"timeoutMs": 100}` + "\n"})
+	out, code = fitness(t, repo, nil)
+	hint := fmt.Sprintf("Hint: the repo tracks %d files; scope the run with fitness --dir=<folder>, or commit to check only the staged files", trackedCount(t, repo))
+	sees(t, out, code, 1, "Check timed out after 0.1s", hint)
+	for _, check := range []string{"cspell", "jscpd"} {
+		if !strings.Contains(row(out, check), "failed") {
+			t.Errorf("%s reads all 20,000 files, so it must time out under a 0.1s budget, got row %q", check, row(out, check))
+		}
+	}
+}
+
+// trackedCount is how many files git tracks in repo.
+func trackedCount(t *testing.T, repo string) int {
+	t.Helper()
+	out, err := exec.Command("git", "-C", repo, "ls-files", "-z").Output()
+	mustDo(t, err)
+	return strings.Count(string(out), "\x00")
+}
+
+// progressOn asks for the heartbeat, as a terminal would.
+const progressOn = "FITNESS_PROGRESS=1"
+
+// slowFirst and slowLast are the stderr lines slowCheck's check writes
+// before and after it waits.
+const slowFirst, slowLast = "compiling 1 of 3", "compiling 3 of 3"
+
+// slowCheck runs a local check, slow, beside a quick one. Slow declares
+// budgetMs, writes slowFirst to stderr, runs wait, then writes slowLast and
+// passes. It returns the output and exit code.
+func slowCheck(t *testing.T, budgetMs int, wait string, env ...string) (string, int) {
+	t.Helper()
+	repo := example(t, "happyRepo", map[string]string{
+		".fitnessrc.json": `{"localChecks": "checks"}` + "\n",
+		"checks/fitness-check-slow": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"slow\", \"timeoutMs\": " + strconv.Itoa(budgetMs) + "}'; exit 0; }\n" +
+			"echo '" + slowFirst + "' >&2\n" + wait + "\necho '" + slowLast + "' >&2\necho '" + passing + "'\n",
+		"checks/fitness-check-quick": localCheck("quick", passing)["checks/fitness-check-quick"],
+	})
+	return fitness(t, repo, env, "--policy=external", "--checks=slow,quick")
+}
+
+// streamedLive asserts slow's stderr streamed once, as it ran: its first
+// line before the heartbeat named it, its last line after.
+func streamedLive(t *testing.T, out string) {
+	t.Helper()
+	first, beat, last := strings.Index(out, slowFirst), strings.Index(out, "running: slow"), strings.Index(out, slowLast)
+	if first < 0 || first > beat || beat > last {
+		t.Errorf("slow's stderr must stream as it runs, around the heartbeat:\n%s", out)
+	}
+	if n := strings.Count(out, slowFirst); n != 1 {
+		t.Errorf("streamed stderr must not print again after the run, but printed %d times:\n%s", n, out)
+	}
+}
+
 func Test0001_5(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
@@ -328,17 +516,23 @@ func Test0001_5(t *testing.T) {
 // childStopped asserts the hung prettier's child process is gone.
 func childStopped(t *testing.T, repo string) {
 	t.Helper()
-	raw, err := os.ReadFile(filepath.Join(repo, "prettier.pid"))
+	processStopped(t, filepath.Join(repo, "prettier.pid"))
+}
+
+// processStopped asserts the process whose ID pidFile holds is gone.
+func processStopped(t *testing.T, pidFile string) {
+	t.Helper()
+	raw, err := os.ReadFile(pidFile)
 	mustDo(t, err)
 	pid, _ := strconv.Atoi(strings.TrimSpace(string(raw)))
 	t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
 	if !gone(pid, 3*time.Second) {
-		t.Fatalf("prettier's child process %d is still running after fitness stopped it", pid)
+		t.Fatalf("process %d from %s is still running after fitness stopped it", pid, filepath.Base(pidFile))
 	}
 }
 
 // readme is happyRepo's README, for Givens that add to it.
-const readme = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# App\n\nShort and clean.\n"
+const readme = "---\ntitle: App\n---\n\n# App\n\nShort and clean.\n"
 
 // bundleChecks lists the check programs the installer put in dir.
 func bundleChecks(t *testing.T, dir string) []string {
@@ -372,4 +566,24 @@ func gone(pid int, within time.Duration) bool {
 		}
 	}
 	return false
+}
+
+// stalledGitStops asserts a run whose git call listing tracked or staged
+// files stalls, under no-prompt mode, ends at the call's ten-second deadline
+// as a setup error naming it, and the stalled git is stopped.
+func stalledGitStops(t *testing.T) {
+	t.Helper()
+	for call, named := range map[string]string{
+		"ls-files": "git ls-files -z --cached did not finish within 10s",
+		"diff":     "git diff --cached --name-only did not finish within 10s",
+	} {
+		path, pidFile := promptingTools(t, call)
+		start := time.Now()
+		out, code := fitness(t, example(t, "happyRepo", architectedRepo()), []string{path, "GIT_TERMINAL_PROMPT=0"})
+		sees(t, out, code, 1, "fitness setup: "+named)
+		if took := time.Since(start); took > 30*time.Second {
+			t.Errorf("a stalled git %s must end the run at its deadline, but the run took %s", call, took)
+		}
+		processStopped(t, pidFile)
+	}
 }

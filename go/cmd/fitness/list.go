@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -88,6 +89,7 @@ func listChecks() ([]listed, error) {
 	if err != nil {
 		return nil, err
 	}
+	prebuild(checkCatalog())
 	found, missing := installedChecks(checkCatalog())
 	checks, err := resolveList(found)
 	if err != nil {
@@ -105,12 +107,13 @@ func listChecks() ([]listed, error) {
 }
 
 // installedChecks splits names into those with a check program and those
-// without, keeping their order.
-func installedChecks(names []string) (found []string, missing map[string]bool) {
-	missing = map[string]bool{}
+// without, keeping their order. Each missing one maps to the note saying
+// why.
+func installedChecks(names []string) (found []string, missing map[string]string) {
+	missing = map[string]string{}
 	for _, name := range names {
 		if _, err := findCheckBinary(name); err != nil {
-			missing[name] = true
+			missing[name] = notInstalled(name, err)
 			continue
 		}
 		found = append(found, name)
@@ -118,16 +121,25 @@ func installedChecks(names []string) (found []string, missing map[string]bool) {
 	return found, missing
 }
 
+// notInstalled says why check name has no program: a local check that
+// cannot build says why, and any other has none installed.
+func notInstalled(name string, err error) string {
+	if _, local := localBins[name]; local {
+		return err.Error()
+	}
+	return "not installed: no fitness-check-" + name + " program"
+}
+
 // listRowFor is the row for check name: its metadata, or a note saying the
 // program is not installed.
-func listRowFor(name string, byName map[string]resolved, missing map[string]bool, suite []string) listed {
+func listRowFor(name string, byName map[string]resolved, missing map[string]string, suite []string) listed {
 	enabled := slices.Contains(suite, name)
-	if missing[name] {
-		return listed{Name: name, Enabled: enabled, Note: "not installed: no fitness-check-" + name + " program"}
+	if note, ok := missing[name]; ok {
+		return listed{Name: name, Enabled: enabled, Note: note}
 	}
 	c := byName[name]
 	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
-		Enabled: enabled, Blob: c.desc.Blob, Note: c.describeErr}
+		Enabled: enabled, Blob: c.desc.Blob, Note: cmp.Or(c.needs, c.describeErr)}
 }
 
 // printList writes one aligned row per check: name, scope, budget, whether

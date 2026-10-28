@@ -19,7 +19,18 @@ const (
 	aoNotDrawn = ", but " + aoView + " draws no "
 	aoImports  = "package main\n\nimport \"example.com/app/src/store\"\n\nfunc main() { store.Save() }\n"
 	aoScreen   = "import SwiftUI\n\nstruct HomeScreen {\n    let store = Store()\n}\n"
+	aoDrawn    = "Rel(ui, model, \"8\")"
+	aoFrames   = ".claude/skills/build-log/scripts/Frames.swift"
+	aoSeed     = ".codex/scripts/Seed.swift"
 )
+
+// aoTooling adds component 9, owning the agent tooling folder, to the
+// native app's components view, before its drawn edge.
+func aoTooling(component, row string) map[string]string {
+	files := aoEdit(aoNative(), aoDrawn, component+"\n"+aoDrawn)
+	files[aoView] += "| 9 | " + row + " | Agent tooling meets the product bar. |\n"
+	return files
+}
 
 // aoComponents is the components view with the entry owning its folder,
 // inside added to the service boundary, after added past the edge, and
@@ -100,6 +111,14 @@ func Test0075_12(t *testing.T) {
 	files["src/api/api.go"], files["src/api/api.config.ts"] = "", ""
 	out, code = fitness(t, example(t, "happyRepo", files), nil, acCheck)
 	sees(t, out, code, 1, aoView+":7: unresolved source path src/api")
+	tooling := aoNative()
+	tooling[aoFrames] = "import Foundation\n\nlet frameRate = 30\n"
+	out, code = aoRun(t, tooling)
+	sees(t, out, code, 1, aoFrames+aoNoOwner)
+	tooling = aoTooling("Component(frames, \"9 Build log frames\", \"Swift\", \".claude/skills/build-log\")", "Captures build log frames.")
+	tooling[aoFrames] = "import Foundation\n\nlet frameRate = 30\n"
+	out, code = aoRun(t, tooling)
+	sees(t, out, code, 0)
 }
 
 func Test0075_3(t *testing.T) {
@@ -150,6 +169,14 @@ func Test0075_13(t *testing.T) {
 	sees(t, out, code, 1, aoHome+":7: ui names Store, owned by model"+aoNotDrawn+"ui -> model edge")
 	native[aoView] = aoNative()[aoView]
 	out, code = aoRun(t, native)
+	sees(t, out, code, 0)
+	tooling := aoTooling("Component(seed, \"9 Seed\", \"Swift\", \".codex/scripts\")", "Seeds sample records.")
+	tooling[aoSeed] = "import Foundation\n\nlet sample = Store()\n"
+	out, code = aoRun(t, tooling)
+	sees(t, out, code, 1, aoSeed+":3: seed names Store, owned by model"+aoNotDrawn+"seed -> model edge")
+	tooling = aoEdit(tooling, aoDrawn, aoDrawn+"\nRel(seed, model, \"10\")")
+	tooling[aoView] += "| 10 | Seed fills the store. | Agent tooling meets the product bar. |\n"
+	out, code = aoRun(t, tooling)
 	sees(t, out, code, 0)
 }
 

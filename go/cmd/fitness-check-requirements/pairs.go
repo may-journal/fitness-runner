@@ -38,11 +38,12 @@ func newPairs(docPaths, testFiles []string, tests []reqTest, changed []string) p
 	return p
 }
 
-// addTestFiles pairs each file by the numbers in its name, then each test
-// named for an acceptance by its number.
+// addTestFiles pairs each file by the numbers in its name, or a file in a
+// fitness/req-NNNN check by that number, then each test named for an
+// acceptance by its number.
 func (p pairs) addTestFiles(files []string, tests []reqTest) {
 	for _, f := range files {
-		for _, n := range lang.TestFileNumbers(langs.All, f) {
+		for _, n := range fileNumbers(f) {
 			p.addTest(n, f)
 		}
 	}
@@ -51,6 +52,15 @@ func (p pairs) addTestFiles(files []string, tests []reqTest) {
 			p.addTest(t.ID[:4], t.File)
 		}
 	}
+}
+
+// fileNumbers lists the requirement numbers a file proves by its path: a
+// requirement check's number, or those its test file name carries.
+func fileNumbers(f string) []string {
+	if n := reqCheckNumber(f); n != "" {
+		return []string{n}
+	}
+	return lang.TestFileNumbers(langs.All, f)
 }
 
 // addTest records that file proves requirement n.
@@ -138,7 +148,7 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 	if changed == nil || gitx.Replaying(root) {
 		return nil
 	}
-	base := baseRev(root)
+	base := gitx.ScopeBase(root)
 	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
 	sort.Strings(errs)
 	return errs

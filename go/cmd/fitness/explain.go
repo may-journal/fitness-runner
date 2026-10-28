@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -108,9 +109,10 @@ func knownChecks() []string {
 	return names
 }
 
-// explainCheck describes the check and reads its documentation: the
-// generated docs of a built-in check, else the summary its handshake gives.
-// A failed handshake comes back as the note saying why.
+// explainCheck describes the check and reads its documentation: a folder
+// check's README, the generated docs of a built-in check, else the summary
+// its handshake gives. A failed handshake, or a minFitness this fitness
+// does not meet, comes back as the note saying why.
 func explainCheck(cfg *conf.Config, name string) (explained, error) {
 	checks, err := resolveList([]string{name})
 	if err != nil {
@@ -119,10 +121,10 @@ func explainCheck(cfg *conf.Config, name string) (explained, error) {
 	c := withBudgets(cfg, checks)[0]
 	body, ok := builtinDocs[name]
 	if !ok || replaced(name) {
-		body = orDash(c.desc.Summary) + "\n"
+		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}
 	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
-		Note: c.describeErr, Body: body}, nil
+		Note: cmp.Or(c.needs, c.describeErr), Body: body}, nil
 }
 
 // replaced reports whether a local check or a program beside the runner

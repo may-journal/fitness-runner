@@ -120,7 +120,7 @@ func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []s
 	fmt.Fprintln(os.Stderr, "Running checks:")
 	outcomes := runPool(root, checks, []string{"--body-file", file}, env)
 	checks, outcomes, notApplying := applying(checks, outcomes)
-	rows, totals := summarize(checks, outcomes)
+	rows, totals := summarize(checks, outcomes, "")
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
 	found := allFindings(checks, outcomes, rows)
@@ -259,6 +259,9 @@ func blobChecks(suite, selected []string) (run []resolved, skipped []string, err
 		return nil, nil, err
 	}
 	checks, err := resolveList(names)
+	if err == nil {
+		err = newEnough(checks)
+	}
 	if err != nil {
 		return nil, nil, err
 	}

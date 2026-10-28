@@ -1,7 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-journey']
----
-
 # User Journey
 
 ## Legend

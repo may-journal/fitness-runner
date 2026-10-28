@@ -23,7 +23,7 @@ Errors list file paths that need formatting.
 
 ## Biome
 
-A repo that chose Biome formats with it instead, as [ADR 0006](../../../docs/architecture/adr/0006-biome-stands-in-for-eslint-and-prettier.md) records. Such a repo has a `biome.json` or `biome.jsonc` at its root and `@biomejs/biome` in its `package.json` dependencies. The check runs `biome format --reporter=github` on the same paths, and needs no Prettier.
+A repo that chose Biome formats with it instead, as [ADR 0006](../../../fitness/adr-0006/README.md) records. Such a repo has a `biome.json` or `biome.jsonc` at its root and `@biomejs/biome` in its `package.json` dependencies. The check runs `biome format --reporter=github` on the same paths, and needs no Prettier.
 
 Biome resolves like Prettier, and a missing binary fails with an install hint. Biome before 1.8 fails naming its version, since its CLI rejects the GitHub reporter. Each file Biome would reformat fails by name.
 

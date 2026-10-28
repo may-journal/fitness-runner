@@ -9,7 +9,7 @@ import (
 )
 
 // adr0004 states the rule that one user-facing area has one requirement doc.
-const adr0004 = "https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0004-one-requirement-doc-per-area.md"
+const adr0004 = "https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0004/README.md"
 
 // minOverlap is the share of words two Givens must have in common, under the
 // same When, for their docs to cover one area. It is loose on purpose, so a

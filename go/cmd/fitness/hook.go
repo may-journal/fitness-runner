@@ -1,25 +1,30 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"slices"
 	"strconv"
 	"strings"
+	"syscall"
+	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // runHook dispatches a `fitness hook <name>` invocation. The installed hooks
 // are one-line shims that call this, so the orchestration lives here in Go
-// rather than in each repo's Bash.
+// rather than in each repo's Bash. A hook owns the terminal, so every git,
+// ssh and gh it starts, the pre-push gate's too, fails instead of asking for
+// a password.
 func runHook(name string, args []string) int {
 	if err := chdirToplevel(); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness hook: "+err.Error())
 		return 1
 	}
+	gitx.DisablePrompts(".")
 	repairHooksPath()
 	switch name {
 	case "commit-msg":
@@ -37,11 +42,11 @@ func runHook(name string, args []string) int {
 // chdirToplevel moves to the git working-tree root so checks and paths resolve
 // the same way from any hook's working directory.
 func chdirToplevel() error {
-	out, err := exec.Command("git", "rev-parse", "--show-toplevel").CombinedOutput()
+	top, err := gitx.Repo(".").Toplevel()
 	if err != nil {
-		return errors.New(strings.TrimSpace(string(out)))
+		return err
 	}
-	return os.Chdir(strings.TrimSpace(string(out)))
+	return os.Chdir(top)
 }
 
 // hookCommitMsg validates the proposed commit message with semantic-commit,
@@ -71,15 +76,25 @@ func runMessageChecks(names []string, msg string) int {
 		return 1
 	}
 	pooled, alone := splitByMessageArg(checks)
-	code := 0
-	if len(pooled) > 0 {
-		env := append(contextEnv(root, pooled, false, nil), "FITNESS_CTX_MESSAGE="+msg)
-		code = runChecks(root, "", pooled, nil, env, func() {})
-	}
+	code := runPooledMessage(root, pooled, msg)
 	for _, check := range alone {
 		code = max(code, run([]string{check.name, "--message=" + msg}))
 	}
 	return code
+}
+
+// runPooledMessage runs the checks that read the message from the
+// environment in one pool; none run nothing.
+func runPooledMessage(root string, pooled []resolved, msg string) int {
+	if len(pooled) == 0 {
+		return 0
+	}
+	env, err := contextEnv(root, pooled, false, nil, msg)
+	if err != nil {
+		report.Error("fitness setup", err)
+		return 1
+	}
+	return runChecks(root, "", pooled, nil, append(env, "FITNESS_CTX_MESSAGE="+msg), func() {})
 }
 
 // splitByMessageArg separates the checks that read the message from
@@ -183,16 +198,43 @@ func hookPreCommit() int {
 
 // runLocalHook runs .githooks/pre-commit.local when it is present and
 // executable, so a repo adds its own build without forking the shared hook.
+// It gets the budget of a check that declares none, so timeoutMs tunes it.
+// Past the budget its process group is stopped, as a check's is, and the
+// commit is refused.
 func runLocalHook() int {
 	const path = ".githooks/pre-commit.local"
 	info, err := os.Stat(path)
 	if err != nil || info.Mode()&0o100 == 0 {
 		return 0
 	}
+	return runBudgeted(path, localHookBudget())
+}
+
+// runBudgeted runs the program at path in its own process group, returning
+// 0 when it exits cleanly within budget and 1 otherwise.
+func runBudgeted(path string, budget time.Duration) int {
 	cmd := exec.Command(path)
 	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
-	if err := cmd.Run(); err != nil {
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	if err := cmd.Start(); err != nil {
+		return 1
+	}
+	if waitWithBudget(cmd, budget) {
+		fmt.Fprintf(os.Stderr, "fitness hook: %s timed out after %ss\n", path, trimFloat(budget.Seconds()))
+		return 1
+	}
+	if !cmd.ProcessState.Success() {
 		return 1
 	}
 	return 0
+}
+
+// localHookBudget is the budget of a check that declares none: the repo's
+// timeoutMs, else the default.
+func localHookBudget() time.Duration {
+	var c resolved
+	if cfg, err := loadConfig("."); err == nil && cfg != nil {
+		c.configMs = cfg.TimeoutMs
+	}
+	return timeoutFor(c)
 }

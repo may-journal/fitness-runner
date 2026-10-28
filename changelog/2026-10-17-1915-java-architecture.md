@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.1915
 
 - Feat: Java product code needs the five architecture views, and sources in a test source set's folder count as tests.

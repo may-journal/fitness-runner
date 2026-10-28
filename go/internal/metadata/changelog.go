@@ -51,11 +51,12 @@ func shippedErrors(changed, released []string, tag string) []string {
 }
 
 // editedEntries are the entry files among files that the PR edits or
-// deletes rather than adds.
+// deletes rather than adds. An edit that only drops front matter leaves
+// the published notes as they were, so it is not among them.
 func editedEntries(files []aftereffect.FileChange) []string {
 	var changed []string
 	for _, f := range files {
-		if f.Status != "added" {
+		if f.Status != "added" && !changelog.DropsOnlyFrontMatter(f.Patch) {
 			changed = append(changed, f.Filename)
 		}
 	}

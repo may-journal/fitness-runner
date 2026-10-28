@@ -61,5 +61,5 @@
 // [#527]: https://github.com/may-journal/fitness-runner/issues/527
 // [LocalizedStringKey]: https://developer.apple.com/documentation/swiftui/localizedstringkey
 // [0097]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0097-checks-localized-text.md
-// [ADR 0009]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0009-repos-add-checks-org-keeps-the-bar.md
+// [ADR 0009]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0009/README.md
 package check

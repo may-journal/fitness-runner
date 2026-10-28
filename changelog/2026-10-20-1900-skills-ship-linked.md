@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1900
 
 - Feat: release bundles carry `skills/`, and `fitness-install --link-skills <folder>` links each skill into an agent's skills folder.

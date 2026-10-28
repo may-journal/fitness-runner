@@ -292,10 +292,19 @@ func (g Client) Issue(n int) (string, []string, error) {
 
 // IssueView is one issue with its comments, as `gh issue view` reads it.
 type IssueView struct {
-	URL      string   `json:"url"`
-	Body     string   `json:"body"`
-	Labels   []string `json:"labels"`
-	Comments []string `json:"comments"`
+	URL      string         `json:"url"`
+	Body     string         `json:"body"`
+	Labels   []string       `json:"labels"`
+	Comments []IssueComment `json:"comments"`
+}
+
+// IssueComment is one comment on an issue: its text, its author's login,
+// and the author's association with the repo as GitHub reports it, such as
+// OWNER, MEMBER or NONE.
+type IssueComment struct {
+	Body        string `json:"body"`
+	Author      string `json:"author"`
+	Association string `json:"association"`
 }
 
 // Repo is the owner/repo the issue's URL names, or "" for another URL.
@@ -310,7 +319,7 @@ func (v IssueView) Repo() string {
 
 // ViewIssue reads issue n of repo, an owner/repo slug, or of the working
 // directory's repository when repo is empty. It reads the body, labels and
-// comments in one `gh issue view`. The stderr of gh stays out of the
+// comments with their authors in one `gh issue view`. The stderr of gh stays out of the
 // caller's output.
 func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
 	args := []string{"issue", "view", n}
@@ -318,7 +327,7 @@ func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
 		args = append(args, "-R", repo)
 	}
 	args = append(args, "--json", "url,body,labels,comments",
-		"--jq", "{url, body, labels: [.labels[].name], comments: [.comments[].body]}")
+		"--jq", "{url, body, labels: [.labels[].name], comments: [.comments[] | {body, author: .author.login, association: .authorAssociation}]}")
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	out, err := cmd.Output()
 	if err != nil {

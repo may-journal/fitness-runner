@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0022 Checks Dependency Currency
 
 ## Why
@@ -41,9 +37,9 @@ declared dependencies
         - When dependency-currency runs
             - Then it lists each installed version once
 - 0022.7
-    - Given Developer has a repo or home `.npmrc` registry that is unreachable, answers an error, or sends garbage
+    - Given Developer has a repo or home `.npmrc` registry, or its proxy, that is unreachable, answers an error, sends garbage, or never answers
         - When dependency-currency runs
-            - Then it passes rather than blocking the commit
+            - Then it passes within its ten-second request timeout, or shows info at once behind a silent proxy, never blocking the commit
 - 0022.8
     - Given Developer has a repo without a `package.json`
         - When dependency-currency runs
