@@ -250,15 +250,17 @@ func scopedPaths(root string, args []string) ([]string, bool) {
 	return paths, changed == nil || len(paths) > 0 || len(args) > 0
 }
 
-// pathsToCheck returns the changed paths still on disk, or every tracked
-// file when the run is unscoped.
+// pathsToCheck returns the changed paths still on disk as regular files, or
+// every tracked file when the run is unscoped. A symbolic link is left out,
+// since Prettier refuses one named on its command line and its target is
+// checked as its own file.
 func pathsToCheck(root string, changed []string) []string {
 	if len(changed) == 0 {
 		return walkfs.FilesByExt(root, "")
 	}
 	var out []string
 	for _, p := range changed {
-		if info, err := os.Stat(filepath.Join(root, p)); err == nil && !info.IsDir() {
+		if walkfs.RegularFile(root, p) {
 			out = append(out, p)
 		}
 	}

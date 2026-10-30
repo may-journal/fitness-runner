@@ -3,6 +3,7 @@ package requirements
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -170,15 +171,25 @@ func Test0052_12(t *testing.T) {
 	}
 }
 
+// prettierLinkRefused is what Prettier 3 prints when a symbolic link is
+// named on its command line.
+var prettierLinkRefused = response{
+	Match:  []string{"ci_scripts/ci_post_clone.sh"},
+	Stderr: "[error] Explicitly specified pattern \"ci_scripts/ci_post_clone.sh\" is a symbolic link.\n",
+	Exit:   2,
+}
+
 func Test0052_5(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", prettierJS(nil))
-	write(t, repo, map[string]string{"app.js": prettierMessy, "lib.js": prettierFormatted})
-	git(t, repo, "add", "lib.js")
-	rp := standIn(t, map[string][]response{"prettier": {prettierAnswers(prettierWarn, "app.js"), prettierClean}})
-	out, code := fitness(t, repo, rp.env, "prettier")
-	sees(t, out, code, 0, "All 1 checks passed")
-	prettierCalledWith(t, rp, []string{"--check lib.js"}, "app.js")
+	repo, env := hooked(t, prettierJS(map[string]string{".fitnessrc.json": `{"policy": "external", "checks": ["prettier"]}` + "\n"}))
+	write(t, repo, map[string]string{"app.js": prettierMessy, "ci_scripts/run.sh": "#!/bin/sh\necho ready\n"})
+	mustDo(t, os.Symlink("run.sh", filepath.Join(repo, "ci_scripts", "ci_post_clone.sh")))
+	rp := standIn(t, map[string][]response{"prettier": {prettierLinkRefused, prettierAnswers(prettierWarn, "app.js"), prettierClean}})
+	env = append(env, rp.env...)
+	user(t, repo, env, "add", "ci_scripts")
+	out, code := user(t, repo, env, "commit", "-m", "ci(scripts): share one post-clone script")
+	sees(t, out, code, 0, "ci(scripts): share one post-clone script")
+	prettierCalledWith(t, rp, []string{"--check", "ci_scripts/run.sh"}, "app.js", "ci_scripts/ci_post_clone.sh")
 }
 
 func Test0052_6(t *testing.T) {
