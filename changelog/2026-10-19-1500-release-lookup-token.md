@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.1500
 
 - Fix: `fitness-install --version latest` signs its release lookup with `GH_TOKEN`, `GITHUB_TOKEN`, or the `gh` login, so hooks stop sharing the anonymous rate limit.

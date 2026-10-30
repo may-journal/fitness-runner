@@ -128,10 +128,25 @@ func Test0005_17(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = stagedRun(t, sourced, map[string]string{pairedDoc: strings.Replace(requirementDoc("0001.1"), "sums asked for", "sums tried", 1)})
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
+	renamed0005(t)
+}
+
+// renamed0005 proves a doc renamed with its number and wording kept needs no
+// test change, while a renamed doc with new wording still needs one.
+func renamed0005(t *testing.T) {
+	t.Helper()
+	const renamed = "docs/requirements/0001-sums-numbers.md"
+	moved := map[string]string{pairedDoc: "", renamed: requirementDoc("0001.1")}
+	out, code := stagedRun(t, pairedRepo(), moved)
+	sees(t, out, code, 0)
+	out, code = prRun(t, pairedRepo(), moved, "docs(requirements): rename the sum requirement")
+	sees(t, out, code, 0)
+	out, code = stagedRun(t, pairedRepo(), map[string]string{pairedDoc: "", renamed: reworded(requirementDoc("0001.1"))})
+	sees(t, out, code, 1, renamed+" changed without its requirement test")
 }
 
 // withSource is doc with the Source line older docs end their Measurement
-// with, citing cite. It sits on line 19.
+// with, citing cite. It sits on line 15.
 func withSource(doc, cite string) string {
 	return strings.Replace(doc, "## Requirements", "Source: "+cite+"\n\n## Requirements", 1)
 }
@@ -176,7 +191,7 @@ func Test0006_11(t *testing.T) {
 	sourced := withSource(doc, "`gone.go:99`")
 	repo := example(t, "happyRepo", with(pairedRepo(), map[string]string{pairedDoc: sourced}))
 	out, code := fitness(t, repo, nil, "requirements")
-	sees(t, out, code, 1, pairedDoc+":19: delete this `Source:` line, or run `fitness requirements --fix`")
+	sees(t, out, code, 1, pairedDoc+":15: delete this `Source:` line, or run `fitness requirements --fix`")
 	out, code = fitness(t, repo, nil, "requirements", "--fix")
 	sees(t, out, code, 0)
 	if got, err := os.ReadFile(filepath.Join(repo, pairedDoc)); err != nil || string(got) != doc {
@@ -214,5 +229,5 @@ func Test0006_10(t *testing.T) {
 		pairedDoc:       docWith(adds),
 		other:           strings.Replace(docWith(again), "0001 Adds Numbers", "0002 Adds Again", 1),
 	}))
-	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "0004-one-requirement-doc-per-area")
+	sees(t, out, code, 1, pairedDoc+" and "+other+` both cover "When I add them"`, "blob/main/fitness/adr-0004")
 }

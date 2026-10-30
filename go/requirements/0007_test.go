@@ -44,7 +44,7 @@ func Test0007_2(t *testing.T) {
 
 func Test0007_3(t *testing.T) {
 	t.Parallel()
-	changelog := "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n### 2026.10.08.1400\n\n- Docs: " + longSentence
+	changelog := "# Changelog\n\n## Changes\n\n### 2026.10.08.1400\n\n- Docs: " + longSentence
 	out, code := proseBudget(t, map[string]string{"CHANGELOG.md": changelog})
 	sees(t, out, code, 1, "CHANGELOG.md: a list item has 31 words (max 23)")
 }

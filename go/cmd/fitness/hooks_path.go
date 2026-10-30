@@ -1,12 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // The hook folders a repo can ship, newest first. The org sync ships
@@ -17,11 +17,15 @@ const (
 )
 
 // shippedHooksDir names the hook folder HEAD tracks, newest first, or ""
-// when HEAD tracks neither, as in a repo with no commit yet.
+// when HEAD tracks neither, as in a repo with no commit yet, or when git
+// fails or stalls past its deadline.
 func shippedHooksDir(root string) string {
 	for _, dir := range []string{syncedHooksDir, installedHooksDir} {
-		out, err := exec.Command("git", "-C", root, "ls-tree", "-d", "--name-only", "HEAD", "--", dir).Output()
-		if err == nil && strings.TrimSpace(string(out)) == dir {
+		tracked, err := gitx.Repo(root).TracksDir(dir)
+		if err != nil {
+			return ""
+		}
+		if tracked {
 			return dir
 		}
 	}
@@ -35,8 +39,12 @@ func shippedHooksDir(root string) string {
 // working-tree root.
 func repairHooksPath() {
 	root, _ := os.Getwd()
-	current, shipped := hooksPath(root), shippedHooksDir(root)
-	if current == "" || shipped == "" {
+	current := hooksPath(root)
+	if current == "" {
+		return
+	}
+	shipped := shippedHooksDir(root)
+	if shipped == "" {
 		return
 	}
 	if note := repairedPath(root, current, shipped); note != "" {
@@ -61,18 +69,18 @@ func repairedPath(root, current, shipped string) string {
 	return "core.hooksPath was " + current + ", now " + shipped
 }
 
-// setHooksPath points git at dir in root, failing with what git said.
+// setHooksPath points git at dir in root under the git deadline, failing
+// with what git said.
 func setHooksPath(root, dir string) error {
-	if out, err := exec.Command("git", "-C", root, "config", "core.hooksPath", dir).CombinedOutput(); err != nil {
-		return errors.New(strings.TrimSpace(string(out)))
-	}
-	return nil
+	return gitx.Repo(root).SetConfig("core.hooksPath", dir)
 }
 
-// hooksPath reads core.hooksPath as git resolves it, "" when unset.
+// hooksPath reads core.hooksPath as git resolves it, under the git deadline.
+// It is "" when unset, or when the read fails or stalls, so a stalled git
+// leaves the path alone.
 func hooksPath(root string) string {
-	out, _ := exec.Command("git", "-C", root, "config", "core.hooksPath").Output()
-	return strings.TrimSpace(string(out))
+	path, _ := gitx.Repo(root).Config("core.hooksPath")
+	return path
 }
 
 // insideRepo returns path relative to root and whether it lies inside root.

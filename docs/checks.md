@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 # Checks
 
 Every check name has one binary under [go/cmd/](../go/cmd/), with each check's rule documented in its own README (`go/cmd/fitness-check-<name>/README.md`). The [fitness skill](../skills/fitness/SKILL.md) shows how to read them:
@@ -29,6 +25,7 @@ Each row links the check's README and gives the first sentence of its Go package
 
 | Check | Summary |
 | --- | --- |
+| [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) | Keeps each architecture decision record in the README of the check that proves it. |
 | [architecture-actors](../go/cmd/fitness-check-architecture-actors/README.md) | Requires each requirement's Given to start with an actor the system context declares. |
 | [architecture-code](../go/cmd/fitness-check-architecture-code/README.md) | Resolves each class of the code view to a declaration a language module's reader reads. |
 | [architecture-components](../go/cmd/fitness-check-architecture-components/README.md) | Gives every product source one owner among the components the components view draws. |
@@ -73,7 +70,8 @@ Each row links the check's README and gives the first sentence of its Go package
 | [mermaid-syntax](../go/cmd/fitness-check-mermaid-syntax/README.md) | Fails a mermaid diagram that would not render, so a broken diagram never reaches a reader. |
 | [no-contrastive-reframing](../go/cmd/fitness-check-no-contrastive-reframing/README.md) | Flags the "not X, it's Y" reframing in markdown prose, where a sentence rejects a claim and then restates the real point. |
 | [no-eslint-disable](../go/cmd/fitness-check-no-eslint-disable/README.md) | Fails any JS or TS source file that holds an ESLint disable directive, in file, block, `-line`, or `-next-line` form. |
-| [no-plans-dir](../go/cmd/fitness-check-no-plans-dir/README.md) | Guards the plans-to-Issues migration: it fails when any file exists under `docs/plans/`, because plans now live as `Plan`-labeled GitHub Issues, not checked-in files. |
+| [no-fitness-front-matter](../go/cmd/fitness-check-no-fitness-front-matter/README.md) | Fails a Markdown file whose front matter still holds `fitnessFunctions` or `relatedConfigurations`. |
+| [no-plans-dir](../go/cmd/fitness-check-no-plans-dir/README.md) | Keeps plans and temporary design work out of the repo. |
 | [node-version](../go/cmd/fitness-check-node-version/README.md) | Requires the machine's active Node version to satisfy the repo's `.nvmrc`. |
 | [plan-structure](../go/cmd/fitness-check-plan-structure/README.md) | Validates that a plan, a GitHub Issue body under the `Plan` label, follows the Plan issue template. |
 | [plan-trailer](../go/cmd/fitness-check-plan-trailer/README.md) | Validates an optional `Plan #NN` commit trailer. |
@@ -85,6 +83,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [release-changelog](../go/cmd/fitness-check-release-changelog/README.md) | Binds Release Please's manifest to the version file a reviewer can inspect. |
 | [repeated-string-literals](../go/cmd/fitness-check-repeated-string-literals/README.md) | Fails a string literal that appears three or more times across the repo's JS and TS sources. |
 | [requirements](../go/cmd/fitness-check-requirements/README.md) | Enforces docs/requirements in every repo a language module covers. |
+| [requirements-changed](../go/cmd/fitness-check-requirements-changed/README.md) | Fails a change that adds or changes product code without also changing a test and a requirement doc. |
 | [semantic-commit](../go/cmd/fitness-check-semantic-commit/README.md) | Requires the commit subject to follow Conventional Commits, `type(scope): description`, with the scope required. |
 | [spotless](../go/cmd/fitness-check-spotless/README.md) | Checks Java formatting with the Spotless plugin the repo's own build declares. |
 | [swiftlint](../go/cmd/fitness-check-swiftlint/README.md) | Runs SwiftLint over the repo through the Swift language module, which owns the tool run and its judgment, via `swiftlint lint --strict`. |
@@ -92,6 +91,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [vitest-coverage-exclude](../go/cmd/fitness-check-vitest-coverage-exclude/README.md) | Fails any Vitest coverage exclude entry, so coverage measures every file. |
 | [vitest-coverage-full](../go/cmd/fitness-check-vitest-coverage-full/README.md) | Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`. |
 | [workflow-ref-exists](../go/cmd/fitness-check-workflow-ref-exists/README.md) | Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet (#485). |
+| [workflow-reporting](../go/cmd/fitness-check-workflow-reporting/README.md) | Fails a workflow job that can fail without a report on its run page (#181). |
 
 <!-- end check index -->
 
@@ -99,7 +99,7 @@ Each row links the check's README and gives the first sentence of its Go package
 
 `fitness list` names every check this repo can run, built-in or local, in run order. Each row gives the check's summary, its scope, its time budget, and whether the repo's config enables it. `fitness list --json` gives the same fields for an agent; `fitness check --list` still prints the bare built-in names.
 
-A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../checks/README.md) fails when that file is stale.
+A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../fitness/generated/README.md) fails when that file is stale.
 
 ## Explain a check
 
@@ -113,7 +113,7 @@ Checks judge every tracked file; only untracked files stay out, and outside git 
 
 ## Front matter
 
-Front matter is optional. No check requires it, and the changelog and release tools read files with or without it. The [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) removes a repo's fitness-only front matter.
+A Markdown file needs no front matter. Never add `fitnessFunctions` or `relatedConfigurations`: no check reads them, and each check finds its files by path. `fitness strip-front-matter` deletes both keys where they remain, as the [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) shows. Front matter another tool reads, such as an issue template's `name` and `labels`, stays.
 
 ## Shared configs
 

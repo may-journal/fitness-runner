@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.17.2215
 
 - Fix: a Maven aggregate JaCoCo report covers the modules it holds a group for, by artifact id.

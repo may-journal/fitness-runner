@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -157,14 +158,37 @@ func checkFiles(root string, files []string, checker *spell.Checker, cfg config)
 // the run-cspell hint, binary files yield nothing (counted as checked, never
 // spelled).
 func fileIssues(root, rel string, checker *spell.Checker, flags []string) []checkkit.Finding {
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	data, binary, err := readText(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
 		return []checkkit.Finding{{File: rel, Rule: unreadable, Message: "cspell reported issues", Fix: "npx cspell <files>"}}
 	}
-	if bytes.IndexByte(data[:min(len(data), 8192)], 0) >= 0 {
+	if binary {
 		return nil
 	}
 	return checkContent(rel, string(data), checker, flags)
+}
+
+// probeBytes is how much of a file the binary probe reads.
+const probeBytes = 8192
+
+// readText reads the file at name unless a NUL byte in its first
+// probeBytes marks it binary, so a large binary file costs one small read,
+// never a whole one.
+func readText(name string) (data []byte, binary bool, err error) {
+	f, err := os.Open(name)
+	if err != nil {
+		return nil, false, err
+	}
+	defer f.Close()
+	probe := make([]byte, probeBytes)
+	// A short file ends the probe early; the read of the rest reports any
+	// real error.
+	n, _ := io.ReadFull(f, probe)
+	if bytes.IndexByte(probe[:n], 0) >= 0 {
+		return nil, true, nil
+	}
+	rest, err := io.ReadAll(f)
+	return append(probe[:n], rest...), false, err
 }
 
 // findings turns one kind of issue for one file into findings, capped at

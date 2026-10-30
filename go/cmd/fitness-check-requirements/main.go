@@ -36,17 +36,20 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if err != nil || len(written) == 0 {
 		return checkkit.Pass(0), err
 	}
-	errs, err := docErrors(root, paths, tests, written)
+	checks, proven := reqChecks(root)
+	errs, err := docErrors(root, paths, tests, written, proven)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	return result(len(paths)+len(files), append(errs, pairErrors(root, paths, files, tests)...)), nil
+	return result(len(paths)+len(files), append(errs, pairErrors(root, paths, append(files, checks...), tests)...)), nil
 }
 
 // docErrors judges every doc's shape, its IDs against history, docs that
 // share an area, which tests own its acceptances, and the tools
-// the tests use.
-func docErrors(root string, paths []string, tests []reqTest, written []lang.Module) ([]string, error) {
+// the tests use. A doc whose number proven names has a requirement check
+// in fitness/req-NNNN/, which owns acceptances no test does, and a check
+// with no doc fails.
+func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) ([]string, error) {
 	docs, errs, err := requirement.Load(root, paths)
 	if err != nil {
 		return nil, err
@@ -54,7 +57,8 @@ func docErrors(root string, paths []string, tests []reqTest, written []lang.Modu
 	errs = append(errs, missingDocs(paths)...)
 	errs = append(errs, idErrors(docs, readHistory(root))...)
 	errs = append(errs, overlapErrors(docs)...)
-	errs = append(errs, ownershipErrors(docs, tests, written)...)
+	errs = append(errs, ownershipErrors(docs, tests, written, proven)...)
+	errs = append(errs, orphanChecks(docs, proven)...)
 	tooled, err := toolErrors(root, tests, written)
 	return append(errs, tooled...), err
 }

@@ -1,6 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
 <!-- cspell:ignore sdkmanrc -->
 
 ### 2026.10.17.2011

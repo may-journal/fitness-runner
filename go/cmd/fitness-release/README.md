@@ -1,6 +1,3 @@
----
-relatedConfigurations: ['../../../.github/workflows/release.yml', '../../../.goreleaser-bundles.yml', '../../../.goreleaser-tools.yml']
----
 <!-- cspell:ignore goreleaser -->
 
 

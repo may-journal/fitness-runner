@@ -159,6 +159,26 @@ func Test0088_4(t *testing.T) {
 	}
 }
 
+// rlSilentBudget is how long a run may take when the releases API never
+// answers: the five-second lookup, then an install from the private cache.
+const rlSilentBudget = 10 * time.Second
+
+func Test0088_6(t *testing.T) {
+	t.Parallel()
+	version := rlCandidate(t)
+	cache, gh, api := fiPrivateCache(t), rlGh(t, "from-gh"), silentListener(t)
+	rlRecorded(t, cache, version)
+	env := slices.Concat(cache, gh.env, []string{"GITHUB_API_URL=" + api, "GH_TOKEN=", "GITHUB_TOKEN="})
+	start := time.Now()
+	out, code := fiRun(t, t.TempDir(), env, "--version", "latest", "--install-only")
+	took := time.Since(start)
+	sees(t, out, code, 0, "fitness: asking "+strings.TrimPrefix(api, "http://")+" for the latest release (gives up after 5s)",
+		"fitness: warning: ", "Client.Timeout exceeded", "; using "+version, "fitness: version="+version+" ")
+	if took > rlSilentBudget {
+		t.Errorf("a silent releases API held the run %s, want under %s", took.Round(time.Second), rlSilentBudget)
+	}
+}
+
 func Test0088_5(t *testing.T) {
 	t.Parallel()
 	version := rlCandidate(t)

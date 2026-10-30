@@ -1,10 +1,10 @@
 package walkfs
 
 import (
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
+
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // generatedAttr is the .gitattributes attribute that marks a file as
@@ -90,13 +90,11 @@ func rememberAmong(root string, answers map[string]bool, files []string) map[str
 // askGenerated runs `git check-attr` on files and returns an answer for
 // each, or nil when git fails.
 func askGenerated(root string, files []string) map[string]bool {
-	cmd := exec.Command("git", "-C", root, "check-attr", "-z", "--stdin", generatedAttr)
-	cmd.Stdin = strings.NewReader(strings.Join(files, "\x00") + "\x00")
-	out, err := cmd.Output()
+	out, err := gitx.Repo(root).CheckAttr(generatedAttr, files)
 	if err != nil {
 		return nil
 	}
-	set := parseCheckAttr(out)
+	set := parseCheckAttr([]byte(out))
 	answers := make(map[string]bool, len(files))
 	for _, f := range files {
 		answers[f] = set[f]

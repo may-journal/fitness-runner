@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.19.0031
 
 - Perf: a run of several checks lists tracked files once through `FITNESS_TRACKED_FILES`; an interrupt stops running checks and removes that file.

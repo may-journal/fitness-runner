@@ -1,8 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-code']
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # Code
 
 ```mermaid
@@ -39,7 +34,7 @@ classDiagram
     class resolveChecks["6 resolveChecks(spec string)"]
     class describe["7 describe(checkkit.Program) (checkkit.Describe, string, bool)"]
     class runPool["8 runPool(string, []resolved, []string, []string)"]
-    class runOne["9 runOne(string, resolved, []string, []string)"]
+    class runOne["9 runOne(string, resolved, []string, []string, watch)"]
     class checkkitMain["10 checkkit.Main(Check)"]
     class renderTable["11 render.Table([]Row, int, Palette)"]
     class Row["12 render.Row"]
@@ -90,6 +85,7 @@ classDiagram
     }
     Result --> Finding : V
     checkkitMain --> Finding : W
+    resolveChecks --> Describe : X
 
     style CheckBinary fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
@@ -170,6 +166,7 @@ Numbers on classes and letters on relationships match the callout table.
 | U   | The wrapper starts the check under its program name. | The one binary dispatches on its program name. |
 | V   | A result may repeat its errors as findings. | Error lines stay for older readers. |
 | W   | The scaffolding points each finding at its check's explain command. | A check never spells its own name twice. |
+| X   | Resolution judges a local check's `minFitness`, and fills the name, scope and summary a folder check's handshake leaves out. | A folder check may skip the handshake. |
 
 ## Monorepo layout
 

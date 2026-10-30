@@ -1,8 +1,3 @@
----
-fitnessFunctions: ['architecture-contract', 'architecture-actors']
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # System Context
 
 ```mermaid

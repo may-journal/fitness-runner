@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0059 Checks Vitest Coverage Exclude
 
 ## Why

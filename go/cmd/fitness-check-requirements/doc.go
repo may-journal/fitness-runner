@@ -85,7 +85,7 @@
 //   - Pairing: a test file pairs with each doc whose number its name or its tests carry, one or several.
 //   - Tests: a changed test file fails unless one of its docs changed too. The error names both files and the missing doc.
 //   - Fixes: a changed test file that failed this check at its base passes without its doc, since its doc still holds.
-//   - Base check: this check judges a checkout of the base commit, where a Swift test that imported XCTest fails.
+//   - Base check: this check judges a checkout of the base commit's docs and test files, where a Swift test importing XCTest fails.
 //   - New files: a test file the base lacks still needs its doc.
 //   - Docs: a changed doc fails unless one of its test files changed too. The error names both files and the missing test.
 //   - Helpers: a test file that names and holds no requirement pairs with nothing.
@@ -99,8 +99,20 @@
 //   - Replays: a local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 //   - Full scans: a run with nothing staged, or a push to the default branch, judges no pairs.
 //
+// # Requirement checks
+//
+// Some requirements are rules over the repo's own files. A check in
+// `fitness/req-NNNN/`, one of the repo's [local checks], may prove such a
+// doc.
+//
+//   - Ownership: such a doc's acceptances need no test. A test named for one still owns it, and two still fail.
+//   - Orphans: a `fitness/req-NNNN/` folder whose number no doc defines fails.
+//   - Pairs: the check's files pair with the doc as a test file does, so a change to one half alone fails.
+//   - Broken scan: a requirement check that passes having judged no files fails the run.
+//
+// [local checks]: https://github.com/may-journal/fitness-runner/blob/main/docs/local-checks.md
 // [module registry]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
-// [ADR 0004]: https://github.com/may-journal/fitness-runner/blob/main/docs/architecture/adr/0004-one-requirement-doc-per-area.md
+// [ADR 0004]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0004/README.md
 // [actor]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-actors/README.md
 // [apple-ui-testing-library]: https://github.com/may-journal/apple-ui-testing-library
 // [Swift module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/swift/library.go

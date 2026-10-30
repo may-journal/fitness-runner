@@ -36,7 +36,7 @@ func Test0008_5(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
 	out, code := fitness(t, dir, nil, "init")
-	sees(t, out, code, 1, "fitness init: fatal: not in a git directory")
+	sees(t, out, code, 1, "fitness init: git config: fatal: not in a git directory")
 	if _, err := os.Stat(filepath.Join(dir, ".githooks")); err == nil {
 		t.Error("fitness init wrote .githooks outside a git repo")
 	}
@@ -45,7 +45,7 @@ func Test0008_5(t *testing.T) {
 func Test0008_6(t *testing.T) {
 	t.Parallel()
 	out, code := fitness(t, t.TempDir(), nil, "hook", "pre-push")
-	sees(t, out, code, 1, "fitness hook: fatal: not a git repository")
+	sees(t, out, code, 1, "fitness hook: git rev-parse: fatal: not a git repository")
 }
 
 func Test0008_7(t *testing.T) {

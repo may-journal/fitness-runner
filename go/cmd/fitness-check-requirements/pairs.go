@@ -2,15 +2,12 @@ package check
 
 import (
 	"fmt"
-	"os"
-	"os/exec"
 	"path"
 	"regexp"
 	"slices"
 	"sort"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
@@ -41,11 +38,12 @@ func newPairs(docPaths, testFiles []string, tests []reqTest, changed []string) p
 	return p
 }
 
-// addTestFiles pairs each file by the numbers in its name, then each test
-// named for an acceptance by its number.
+// addTestFiles pairs each file by the numbers in its name, or a file in a
+// fitness/req-NNNN check by that number, then each test named for an
+// acceptance by its number.
 func (p pairs) addTestFiles(files []string, tests []reqTest) {
 	for _, f := range files {
-		for _, n := range lang.TestFileNumbers(langs.All, f) {
+		for _, n := range fileNumbers(f) {
 			p.addTest(n, f)
 		}
 	}
@@ -54,6 +52,15 @@ func (p pairs) addTestFiles(files []string, tests []reqTest) {
 			p.addTest(t.ID[:4], t.File)
 		}
 	}
+}
+
+// fileNumbers lists the requirement numbers a file proves by its path: a
+// requirement check's number, or those its test file name carries.
+func fileNumbers(f string) []string {
+	if n := reqCheckNumber(f); n != "" {
+		return []string{n}
+	}
+	return lang.TestFileNumbers(langs.All, f)
 }
 
 // addTest records that file proves requirement n.
@@ -137,11 +144,11 @@ func unchangedPartners(numbers []string, partners map[string][]string, changed m
 // a pull request's diff against the current merge base with its base branch.
 // A full scan, and a local merge, cherry-pick, or revert, judge no pairs.
 func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []string {
-	changed := commitChanges(root)
-	if changed == nil || replaying(root) {
+	changed := gitx.CommitChanges(root)
+	if changed == nil || gitx.Replaying(root) {
 		return nil
 	}
-	base := baseRev(root)
+	base := gitx.ScopeBase(root)
 	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
 	sort.Strings(errs)
 	return errs
@@ -158,48 +165,4 @@ func fixedAtBase(root, base string) func(string) bool {
 		}
 		return failed[file]
 	}
-}
-
-// replayHeads are the refs git keeps while a commit replays another one.
-var replayHeads = []string{"MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"}
-
-// replaying reports whether a local commit replays changes judged where they
-// were first made, including an amend of a merge commit, whose second parent
-// brought them. A pull request run still judges its whole diff.
-func replaying(root string) bool {
-	if os.Getenv("GITHUB_BASE_REF") != "" {
-		return false
-	}
-	refs := replayHeads
-	if os.Getenv("FITNESS_COMMIT_AMEND") == "1" {
-		refs = append(slices.Clone(refs), "HEAD^2")
-	}
-	for _, ref := range refs {
-		if exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", ref).Run() == nil {
-			return true
-		}
-	}
-	return false
-}
-
-// commitChanges is what the commit or pull request changes: its diff, nil for
-// a full scan or a `--dir` folder, or for an amend everything staged since
-// the amended commit's parent.
-func commitChanges(root string) []string {
-	if os.Getenv("FITNESS_COMMIT_AMEND") != "1" {
-		return checkkit.DiffFiles()
-	}
-	parent := "HEAD^"
-	if exec.Command("git", "-C", root, "rev-parse", "-q", "--verify", parent).Run() != nil {
-		parent = emptyTree(root)
-	}
-	return gitx.StagedSince(root, parent)
-}
-
-// emptyTree returns the ID of the empty tree in root's object format.
-func emptyTree(root string) string {
-	cmd := exec.Command("git", "-C", root, "hash-object", "-t", "tree", "--stdin")
-	cmd.Stdin = strings.NewReader("")
-	out, _ := cmd.Output()
-	return strings.TrimSpace(string(out))
 }

@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.20.1839
 
 - Fix: release PR links resolve before the release, since they point at the PR's head commit.

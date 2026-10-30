@@ -1,23 +1,19 @@
----
-relatedConfigurations: ['../../.fitnessrc.json']
----
-
 # 0003 Checks Self-Identify Availability
 
 ## Why
 
-Every check decides for itself whether it can judge a repo, so any repo runs every check with nothing to configure.
+Every check decides for itself whether it can judge a repo. So any repo runs every check, new ones included, with nothing to configure.
 
 ## Measurement
 
-checks that declare when they apply
+checks that decide for themselves when they apply, adr-checks included
 -
 checks in the catalog
 
 ## Requirements
 
 - 0003.1
-    - Given Developer has a repo with no files a check can judge, or none that opts the repo in to it
+    - Given Developer has a repo with no files or changes a check can judge, only fixtures, or none that opts the repo in
         - When the check runs
             - Then it scans nothing and passes with zero files
 - 0003.2

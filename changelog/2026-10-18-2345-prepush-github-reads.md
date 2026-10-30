@@ -1,7 +1,3 @@
----
-relatedConfigurations: ['../.fitnessrc.json']
----
-
 ### 2026.10.18.2345
 
 - Perf: the pre-push gate reads each Plan's labels and comments in one `gh issue view`, once per push.

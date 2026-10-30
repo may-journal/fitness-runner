@@ -15,6 +15,8 @@ The error names the check, such as `doc-template`. Find it in [the checks index]
 
 Open `go/cmd/fitness-check-<name>/README.md`. It states the rule, the exact errors and how a pass looks.
 
+A repo's own check lives in its `fitness/<name>/` folder instead, with its README beside its Go source. To add one, write it in Go on the check SDK with unit tests, as the [local checks guide](../../docs/local-checks.md) shows.
+
 ## Read the requirements
 
 Open [docs/requirements](../../docs/requirements) and search for the check name. Each requirement is proven by a test that runs the real product. The engine's own rules are there too, such as [engine front matter](../../docs/requirements/0096-engine-strip-front-matter.md).

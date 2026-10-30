@@ -100,7 +100,7 @@ func acceptances(ids ...string) string {
 // docWith is requirement 0001 with the given Requirements, its Measurement
 // ratio set apart by blank lines as Biome formats it.
 func docWith(reqs string) string {
-	return "---\nrelatedConfigurations: ['../../.fitnessrc.json']\n---\n\n# 0001 Adds Numbers\n\n## Why\n\n" +
+	return "# 0001 Adds Numbers\n\n## Why\n\n" +
 		"I can add two numbers without doing it by hand.\n\n## Measurement\n\nsums that are right\n\n-\n\nsums asked for\n\n" +
 		"## Requirements\n\n" + reqs
 }
@@ -134,14 +134,33 @@ func planBody(task string) string {
 }
 
 // planView is the saved gh answer to the pre-push gate's one read of issue n
-// in repo0014: its URL, body, label names and comment bodies.
+// in repo0014: its URL, body, label names and comments, each written by the
+// repo's owner.
 func planView(t *testing.T, n int, body string, labels []string, comments ...string) response {
+	t.Helper()
+	by := make([]comment, len(comments))
+	for i, c := range comments {
+		by[i] = comment{Body: c, Author: "example-owner", Association: "OWNER"}
+	}
+	return planViewBy(t, n, body, labels, by...)
+}
+
+// comment is one Plan comment as the gate reads it: its text, its author's
+// login and the author's association with the repo.
+type comment struct {
+	Body        string `json:"body"`
+	Author      string `json:"author"`
+	Association string `json:"association"`
+}
+
+// planViewBy is planView with each comment's author given.
+func planViewBy(t *testing.T, n int, body string, labels []string, comments ...comment) response {
 	t.Helper()
 	out, err := json.Marshal(map[string]any{
 		"url":      "https://github.com/" + repo0014 + "/issues/" + itoa(n),
 		"body":     body,
 		"labels":   append([]string{}, labels...),
-		"comments": append([]string{}, comments...),
+		"comments": append([]comment{}, comments...),
 	})
 	mustDo(t, err)
 	return response{Match: []string{"issue view " + itoa(n) + " ", "--json url,body,labels,comments"}, Stdout: string(out) + "\n"}
@@ -190,10 +209,10 @@ func architectedRepo() map[string]string {
 		"src/cmd/service/main.go": "// Command service saves one record.\npackage main\n\nimport \"example.com/service/src/store\"\n\nfunc main() { store.Save() }\n",
 		"src/store/store.go":      "// Package store keeps records.\npackage store\n\n// Record is one saved record.\ntype Record struct{ ID int }\n\n// Save keeps one record and returns it.\nfunc Save() Record { return Record{} }\n",
 		"src/store/store_test.go": testFile("store", "Test0001_1"),
-		acDoc:                     front("../../") + acDocWith("User opens the app"),
+		acDoc:                     acDocWith("User opens the app"),
 	}
 	for view, body := range architectedViews() {
-		files["docs/architecture/"+view] = front("../../") + body
+		files["docs/architecture/"+view] = body
 	}
 	return with(views, files)
 }
@@ -252,13 +271,8 @@ func architectedViews() map[string]string {
 	}
 }
 
-// front is the front matter a Markdown doc at depth up carries.
-func front(up string) string {
-	return "---\nrelatedConfigurations: ['" + up + ".fitnessrc.json']\n---\n\n"
-}
-
 // notesHead opens a changelog in the house layout.
-const notesHead = "---\nrelatedConfigurations: ['.fitnessrc.json']\n---\n\n# Changelog\n\n## Changes\n\n"
+const notesHead = "# Changelog\n\n## Changes\n\n"
 
 // notesEntry is a timestamped entry that follows the house rules.
 const notesEntry = "### 2026.10.09.1500\n\n- Fix: one.\n- Fix: two.\n- Fix: three.\n\n"
