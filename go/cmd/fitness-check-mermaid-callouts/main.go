@@ -25,6 +25,17 @@ func run(root string, args []string) (checkkit.Result, error) {
 	} else if handled {
 		return res, nil
 	}
+	notes, err := fixDocs(root, args)
+	if err != nil {
+		return checkkit.Result{}, err
+	}
+	res, err := judge(root)
+	res.Info = notes
+	return res, err
+}
+
+// judge runs the callout rule over every doc under root.
+func judge(root string) (checkkit.Result, error) {
 	errors, filesChecked, err := mermaid.RunDocCheck(root, validateDoc)
 	if err != nil {
 		return checkkit.Result{}, err
@@ -132,7 +143,7 @@ func formErrors(file string, diagram *mermaid.DiagramBlock, table *mermaid.Callo
 	var errors []string
 	for _, n := range diagram.EdgeNumbers {
 		errors = append(errors, fmt.Sprintf(
-			"%s: connector callout %d must be a letter; numbers are for nodes (line %d)", file, n, diagram.Line))
+			"%s: connector callout %d must be a letter; numbers are for nodes; %s (line %d)", file, n, fixHint, diagram.Line))
 	}
 	for _, label := range brokenLetters(diagram, table) {
 		errors = append(errors, fmt.Sprintf(
