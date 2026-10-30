@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
@@ -32,10 +33,10 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 }
 
 // commitChecks excludes branch metadata from a pre-commit run, including
-// installer hooks. It also excludes semantic-commit when a commit-msg hook
-// will judge the new message. Without one, as with the installer's hook,
-// semantic-commit judges the branch's earlier commits. Both stay enabled,
-// so docs may still name them.
+// installer hooks. It also excludes semantic-commit and requirements-changed
+// when a commit-msg hook will judge the new message. Without one, as with
+// the installer's hook, semantic-commit judges the branch's earlier commits.
+// All stay enabled, so docs may still name them.
 func commitChecks(checks []resolved) ([]resolved, error) {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
 		return checks, nil
@@ -53,8 +54,11 @@ func commitChecks(checks []resolved) ([]resolved, error) {
 // skipsAtCommit reports whether pre-commit leaves check out, given whether a
 // commit-msg hook judges the new message.
 func skipsAtCommit(check string, messageHook bool) bool {
-	return check == "local-branch" || messageHook && check == "semantic-commit"
+	return check == "local-branch" || messageHook && slices.Contains(messageChecks, check)
 }
+
+// messageChecks are the checks pre-commit leaves to a commit-msg hook.
+var messageChecks = []string{"semantic-commit", "requirements-changed"}
 
 // commitMsgHook reports whether the repository has an executable commit-msg
 // hook, in core.hooksPath or the git directory. A stalled git call returns
