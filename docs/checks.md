@@ -91,6 +91,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [vitest-coverage-exclude](../go/cmd/fitness-check-vitest-coverage-exclude/README.md) | Fails any Vitest coverage exclude entry, so coverage measures every file. |
 | [vitest-coverage-full](../go/cmd/fitness-check-vitest-coverage-full/README.md) | Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`. |
 | [workflow-ref-exists](../go/cmd/fitness-check-workflow-ref-exists/README.md) | Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet (#485). |
+| [workflow-reporting](../go/cmd/fitness-check-workflow-reporting/README.md) | Fails a workflow job that can fail without a report on its run page (#181). |
 
 <!-- end check index -->
 

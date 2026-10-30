@@ -113,6 +113,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `vitest-coverage-exclude`: Fails any Vitest coverage exclude entry, so coverage measures every file.
 - `vitest-coverage-full`: Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`.
 - `workflow-ref-exists`: Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet (#485).
+- `workflow-reporting`: Fails a workflow job that can fail without a report on its run page (#181).
 
 ## Topics
 
