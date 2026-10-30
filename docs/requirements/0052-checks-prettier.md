@@ -25,9 +25,9 @@ tracked files checked
         - When prettier checks the repo
             - Then it passes under the shared config, which keeps only the synced templates at Prettier defaults, from any checkout path
 - 0052.5
-    - Given Developer has a formatted file staged beside an unstaged messy one
-        - When prettier checks the staged change
-            - Then it passes, judging only the staged file
+    - Given Developer has a formatted file and a symbolic link to it staged in a hooked repo, beside an unstaged messy file
+        - When Developer commits the staged change
+            - Then prettier passes, judging only the staged file and leaving the link out
 - 0052.6
     - Given Developer has a messy file and the `--write` argument, with Prettier or Biome
         - When prettier runs with that argument

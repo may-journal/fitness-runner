@@ -50,6 +50,7 @@
 //   - `--ignore-unknown` lets a file type Prettier cannot parse pass, instead of skipping it by name.
 //   - `--ignore-path /dev/null` and `--with-node-modules` override `.gitignore` and the `node_modules` default.
 //   - A `.prettierignore` at the root fails, even in a repo without `package.json`; delete it and format the files instead.
+//   - A symbolic link is left out, staged or not, since Prettier refuses one by name; its target is checked as its own file.
 //
 // [Prettier]: https://prettier.io
 // [override]: https://prettier.io/docs/configuration#configuration-overrides
