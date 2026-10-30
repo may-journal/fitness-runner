@@ -115,8 +115,8 @@ const treeSizesEnv = "FITNESS_TREE_SIZES"
 
 // timesTrees logs, as one Markdown table, how long each check takes on an
 // unscoped run of a generatedTree of every size treeSizesEnv names, and how
-// long a commit that edits one test file takes. Each tree is deleted once
-// timed.
+// long a commit that edits one test file and one that edits one product
+// file take. Each tree is deleted once timed.
 func timesTrees(t *testing.T) {
 	t.Helper()
 	sizes := strings.FieldsFunc(os.Getenv(treeSizesEnv), func(r rune) bool { return r == ',' })
@@ -138,8 +138,8 @@ func timesTrees(t *testing.T) {
 }
 
 // treeTimes times one generatedTree of n files: each check's row on an
-// unscoped run, the run itself, and a commit scoped to one edited test
-// file, with its requirements row.
+// unscoped run, the run itself, and the two commits of commitTimes, with
+// their timedRows rows.
 func treeTimes(t *testing.T, n int) map[string]string {
 	t.Helper()
 	repo := generatedTree(t, staleTest(), n)
@@ -165,17 +165,62 @@ func treeTimes(t *testing.T, n int) map[string]string {
 	return times
 }
 
-// commitTimes makes fixingCommit in repo and returns its time and its
-// requirements row's, marked failed when the commit failed.
+// commitTimes makes fixingCommit in repo, which edits one test file, then
+// productCommit, which edits one product file, and returns each commit's
+// times as commitRows names them.
 func commitTimes(t *testing.T, repo string) map[string]string {
 	t.Helper()
 	out, code, took := fixingCommit(t, repo)
-	req := rowMillis.FindStringSubmatch(row(out, "requirements"))
-	if code != 0 || req == nil {
-		t.Log("the scoped commit did not pass:\n" + out)
-		return map[string]string{"(scoped commit)": millis(took, false) + " failed", "requirements (scoped commit)": "-"}
+	times := commitRows(t, "test commit", out, code, took)
+	out, code, took = productCommit(t, repo)
+	maps.Copy(times, commitRows(t, "product commit", out, code, took))
+	return times
+}
+
+// timedRows are the checks whose rows each timed commit reports: those
+// that compare files or read the whole repo, and requirements.
+var timedRows = append([]string{"jscpd", "requirements"}, architectureChecks...)
+
+// commitRows names one commit's time and each timedRows row's, all marked
+// failed when they failed, and logs the output of a failed commit.
+func commitRows(t *testing.T, commit, out string, code int, took int64) map[string]string {
+	t.Helper()
+	total := millis(took, false)
+	if code != 0 {
+		t.Logf("the %s did not pass:\n%s", commit, out)
+		total += " failed"
 	}
-	return map[string]string{"(scoped commit)": millis(took, false), "requirements (scoped commit)": req[1] + " ms"}
+	times := map[string]string{"(" + commit + ")": total}
+	for _, check := range timedRows {
+		times[check+" ("+commit+")"] = rowTime(row(out, check))
+	}
+	return times
+}
+
+// rowTime is a results-table row's time as a table cell, marked when the
+// check failed, or "-" when the commit showed no such row.
+func rowTime(line string) string {
+	took := rowMillis.FindStringSubmatch(line)
+	if took == nil {
+		return "-"
+	}
+	if strings.Contains(line, "│ failed") {
+		return took[1] + " ms failed"
+	}
+	return took[1] + " ms"
+}
+
+// productCommit commits, as a user does after fixingCommit, an edited
+// comment in the store's product file and a changelog entry that says so.
+// It returns what timedCommit does.
+func productCommit(t *testing.T, repo string) (string, int, int64) {
+	t.Helper()
+	store := architectedRepo()["src/store/store.go"]
+	edit := map[string]string{
+		"src/store/store.go":                         strings.Replace(store, "keeps records.", "keeps saved records.", 1),
+		"changelog/2026-10-26-1300-store-comment.md": entryFileText("2026.10.26.1300", "Fix: the store comment says it keeps saved records."),
+	}
+	return timedCommit(t, repo, installerEnv(t), edit, "fix(store): say the store keeps saved records")
 }
 
 // staleTest is architectedRepo with a store test named for no acceptance,
@@ -201,10 +246,18 @@ func fixingCommit(t *testing.T, repo string) (string, int, int64) {
 		"src/store/store_test.go":                 testFile("store", "Test0001_1"),
 		"changelog/2026-10-26-1200-store-test.md": bareEntryText("2026.10.26.1200", "Fix: the store test owns only its own acceptance."),
 	}
-	write(t, repo, fix)
-	user(t, repo, env, append([]string{"add"}, slices.Collect(maps.Keys(fix))...)...)
+	return timedCommit(t, repo, env, fix, "test(store): drop the stale store test")
+}
+
+// timedCommit writes and stages files in repo, commits them with message
+// as a user does, with env for the hooks, and returns the output, the exit
+// code and the commit's milliseconds.
+func timedCommit(t *testing.T, repo string, env []string, files map[string]string, message string) (string, int, int64) {
+	t.Helper()
+	write(t, repo, files)
+	user(t, repo, env, append([]string{"add"}, slices.Collect(maps.Keys(files))...)...)
 	start := time.Now()
-	out, code := user(t, repo, env, "commit", "-m", "test(store): drop the stale store test")
+	out, code := user(t, repo, env, "commit", "-m", message)
 	return out, code, time.Since(start).Milliseconds()
 }
 

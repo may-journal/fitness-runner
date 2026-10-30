@@ -14,6 +14,12 @@ Fails a repo whose duplicated lines pass 1% of its scanned lines, with [jscpd](h
 - Fail: over threshold — the check reports `ERROR: jscpd found too many duplicates (X%) over threshold (Y%)`, then `path: N duplicated lines` for each file holding them.
 - The engine is built into the check binary — no external jscpd tool to install.
 
+## Scope
+
+jscpd compares files of one format. So a scoped run, such as a commit, reads the changed files and the tracked files sharing their endings. A file's ending is its extension, or its whole name when it has none.
+
+An unscoped run reads every tracked file. The 1% threshold applies to the lines read, so a scoped verdict can be stricter than an unscoped one.
+
 ## Templates
 
 A doc must repeat its template, so templates are left out. Any file [doc-template](../fitness-check-doc-template/README.md#what-is-a-template) treats as a template is skipped, in any folder. Docs built from one template are still compared with each other and with every other file.

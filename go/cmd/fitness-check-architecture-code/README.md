@@ -56,7 +56,7 @@ A use belongs to the smallest class whose lines hold it: a method's own class, e
 
 ## Scope
 
-Every run reads the whole model and every source, so a change to only the code or only the view still fails.
+A test, changelog or doc change cannot move the views. So a scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole model and every source, so a change to one side still meets the other.
 
 ## Requirements
 

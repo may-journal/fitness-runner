@@ -27,8 +27,12 @@ func run(root string, _ []string) (checkkit.Result, error) {
 }
 
 // noViews passes a repo without product code and fails one with it, since
-// its code then has no architecture.
+// its code then has no architecture. A scoped run whose changes cannot move
+// the views passes with zero files, as it judges none.
 func noViews(root string) checkkit.Result {
+	if architecture.Unmoved(root) {
+		return checkkit.Pass(0)
+	}
 	code := architecture.ProductCode(root)
 	if len(code) == 0 {
 		return checkkit.Pass(0)

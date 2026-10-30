@@ -2,8 +2,11 @@ package check
 
 import (
 	"fmt"
+	"maps"
 	"os"
+	"path"
 	"path/filepath"
+	"slices"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/clonedetect"
@@ -44,19 +47,45 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(len(files)), nil
 }
 
-// scanTargets lists every tracked file under root (the empty suffix
-// matches all), minus those .gitattributes marks linguist-generated, the
-// lockfiles and build wrapper files tools write, and the templates
-// doc-template makes docs repeat.
+// scanTargets lists the candidates under root, minus those .gitattributes
+// marks linguist-generated, the lockfiles and build wrapper files tools
+// write, and the templates doc-template makes docs repeat.
 func scanTargets(root string) []string {
 	var out []string
 	toolWritten := lang.IsToolWritten(langs.All)
-	for _, p := range walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, "")) {
+	for _, p := range walkfs.WithoutGenerated(root, candidates(root)) {
 		if !mdtemplate.IsTemplate(p) && !toolWritten(p) {
 			out = append(out, p)
 		}
 	}
 	return out
+}
+
+// candidates lists the tracked files a run may compare. An unscoped run
+// takes every tracked file (the empty suffix matches all). jscpd compares
+// files of one format, so a scoped run takes only the tracked files sharing
+// an ending with a changed file, the changed files among them.
+func candidates(root string) []string {
+	changed := checkkit.ChangedFiles()
+	if changed == nil {
+		return walkfs.FilesByExt(root, "")
+	}
+	endings := map[string]bool{}
+	for _, file := range changed {
+		endings[ending(file)] = true
+	}
+	return slices.DeleteFunc(walkfs.FilesByExt(root, slices.Collect(maps.Keys(endings))...), func(file string) bool {
+		return !endings[ending(file)]
+	})
+}
+
+// ending is the format key jscpd groups a file by: its extension, or its
+// whole name when it has none, such as Makefile.
+func ending(file string) string {
+	if ext := path.Ext(file); ext != "" {
+		return ext
+	}
+	return path.Base(file)
 }
 
 // lexTargets reads and lexes each path, skipping binary files and files

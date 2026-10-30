@@ -4,6 +4,7 @@ package requirements
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -48,16 +49,40 @@ func Test0032_1(t *testing.T) {
 	}
 }
 
-func Test0032_2(t *testing.T) {
+// Test0032_12 puts a block of 3 lines in one pair and a block of 18 tokens
+// in another, each under one of the two minimums.
+func Test0032_12(t *testing.T) {
 	t.Parallel()
-	out, code := jscpdRun(t, jscpdPair("src/a.js", "src/b.js", jscpdBlock("w", 3, 20)))
+	files := jscpdPair("src/a.js", "src/b.js", jscpdBlock("w", 3, 20))
+	files["src/c.js"] = jscpdBlock("s", 6, 3) + jscpdBlock("fc", 24, 3)
+	files["src/d.js"] = jscpdBlock("s", 6, 3) + jscpdBlock("fd", 24, 3)
+	out, code := jscpdRun(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0032_3(t *testing.T) {
+// Test0032_13 tracks a doc holding a copied block, then commits the block
+// in a script, which jscpd never compares with a doc, or in a second doc.
+// Each commit reads only the files of its staged format: the script, or
+// the README, the changelog and both docs.
+func Test0032_13(t *testing.T) {
 	t.Parallel()
-	out, code := jscpdRun(t, jscpdPair("src/a.js", "src/b.js", jscpdBlock("s", 6, 3)))
-	sees(t, out, code, 0, "All 1 checks passed")
+	passedWith(t, jscpdCommit(t, "src/copy.js"), "jscpd", "1")
+	out := jscpdCommit(t, "docs/copy.md")
+	if !regexp.MustCompile(`│ failed\s+│ 4\s+│`).MatchString(row(out, "jscpd")) {
+		t.Errorf("a staged doc copying a tracked doc must fail jscpd over the 4 docs, got row %q\n%s", row(out, "jscpd"), out)
+	}
+}
+
+// jscpdCommit tracks a doc holding jscpdClone in a hooked repo, stages file
+// holding it too, commits as a user does, and returns what the commit
+// printed.
+func jscpdCommit(t *testing.T, file string) string {
+	t.Helper()
+	repo, env := hooked(t, map[string]string{"docs/guide.md": jscpdClone + jscpdBlock("fg", 24, 3)})
+	write(t, repo, map[string]string{file: jscpdClone + jscpdBlock("fc", 24, 3)})
+	user(t, repo, env, "add", file)
+	out, _ := user(t, repo, env, "commit", "-m", "docs(guide): copy the block")
+	return out
 }
 
 func Test0032_9(t *testing.T) {

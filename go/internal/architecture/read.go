@@ -20,8 +20,13 @@ var views = map[string]string{
 var heading = regexp.MustCompile(`^#{1,6}\s+(.*?)\s*#*$`)
 
 // Load reads every view and its connected sources, including in scoped runs,
-// so a change on one side still meets the unchanged other side.
+// so a change on one side still meets the unchanged other side. A scoped
+// run whose changes cannot move the views, as Unmoved decides, reads
+// nothing and returns an empty model.
 func Load(root string) (Model, error) {
+	if Unmoved(root) {
+		return Model{}, nil
+	}
 	files := walkfs.FilesByExt(root, "")
 	m := Model{repo: newRepository(root, files)}
 	if err := m.readRequirements(root, files); err != nil {
@@ -74,7 +79,7 @@ func (m *Model) missingViews(present map[string]bool) {
 func (m *Model) readRequirements(root string, files []string) error {
 	var paths []string
 	for _, file := range files {
-		if strings.HasPrefix(file, "docs/requirements/") && strings.HasSuffix(file, ".md") && path.Base(file) != "template.md" {
+		if requirementFile(file) {
 			paths = append(paths, file)
 		}
 	}

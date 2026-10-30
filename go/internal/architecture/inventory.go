@@ -29,17 +29,19 @@ func sourceFile(file string) bool {
 
 // inventory lists every tracked source with its category and the elements
 // whose claims cover it. Unowned sources stay listed; the component check
-// decides which must have an owner.
+// decides which must have an owner. Only sources and manifests are
+// classed, as no other file can be product code.
 func (m *Model) inventory(root string, files []string) {
+	classed := inventoried(files)
 	var sources []string
-	for _, file := range files {
+	for _, file := range classed {
 		if sourceFile(file) {
 			sources = append(sources, file)
 		}
 	}
 	m.repo.kept = map[string]bool{}
-	m.repo.dev = runtimes.DevScripts(root, files, readers)
-	for _, file := range walkfs.WithoutGenerated(root, files) {
+	m.repo.dev = runtimes.DevScripts(root, classed, readers)
+	for _, file := range walkfs.WithoutGenerated(root, classed) {
 		m.repo.kept[file] = true
 	}
 	for _, file := range sources {
