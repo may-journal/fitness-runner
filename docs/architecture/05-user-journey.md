@@ -60,11 +60,11 @@ flowchart TB
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
-        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0132)]:::system
+        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0130, 0132)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057, 0097)]:::system
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
-        repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086)]:::system
+        repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
     end
 
     resultsTable[8 Results table<br/>Req 0001, 0101]:::screen

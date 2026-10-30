@@ -14,7 +14,7 @@ func Test0003_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, _ := fitness(t, repo, nil)
-	for _, check := range []string{"eslint", "prettier", "swiftlint", "localized-text", "gofmt", "go-test", "requirements"} {
+	for _, check := range []string{"eslint", "prettier", "swiftlint", "localized-text", "gofmt", "go-test", "requirements", "requirements-changed"} {
 		passedWithNoFiles(t, out, check)
 	}
 	fixtures := example(t, "happyRepo", map[string]string{"tool/testdata/bad.go": "package bad\nfunc  X( ) {}\n"})
@@ -54,8 +54,8 @@ mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
 mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-fitness-front-matter
 no-plans-dir plan-structure
 plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
-release-changelog repeated-string-literals requirements semantic-commit
-text-readability workflow-ref-exists
+release-changelog repeated-string-literals requirements requirements-changed
+semantic-commit text-readability workflow-ref-exists workflow-reporting
 go-complexity go-test go-vet gofmt
 localized-text swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier

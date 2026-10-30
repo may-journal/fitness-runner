@@ -83,6 +83,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [release-changelog](../go/cmd/fitness-check-release-changelog/README.md) | Binds Release Please's manifest to the version file a reviewer can inspect. |
 | [repeated-string-literals](../go/cmd/fitness-check-repeated-string-literals/README.md) | Fails a string literal that appears three or more times across the repo's JS and TS sources. |
 | [requirements](../go/cmd/fitness-check-requirements/README.md) | Enforces docs/requirements in every repo a language module covers. |
+| [requirements-changed](../go/cmd/fitness-check-requirements-changed/README.md) | Fails a change that adds or changes product code without also changing a test and a requirement doc. |
 | [semantic-commit](../go/cmd/fitness-check-semantic-commit/README.md) | Requires the commit subject to follow Conventional Commits, `type(scope): description`, with the scope required. |
 | [spotless](../go/cmd/fitness-check-spotless/README.md) | Checks Java formatting with the Spotless plugin the repo's own build declares. |
 | [swiftlint](../go/cmd/fitness-check-swiftlint/README.md) | Runs SwiftLint over the repo through the Swift language module, which owns the tool run and its judgment, via `swiftlint lint --strict`. |
@@ -90,6 +91,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [vitest-coverage-exclude](../go/cmd/fitness-check-vitest-coverage-exclude/README.md) | Fails any Vitest coverage exclude entry, so coverage measures every file. |
 | [vitest-coverage-full](../go/cmd/fitness-check-vitest-coverage-full/README.md) | Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`. |
 | [workflow-ref-exists](../go/cmd/fitness-check-workflow-ref-exists/README.md) | Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet (#485). |
+| [workflow-reporting](../go/cmd/fitness-check-workflow-reporting/README.md) | Fails a workflow job that can fail without a report on its run page (#181). |
 
 <!-- end check index -->
 
