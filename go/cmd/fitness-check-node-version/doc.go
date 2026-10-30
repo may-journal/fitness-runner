@@ -1,7 +1,8 @@
 // Command fitness-check-node-version requires the machine's active Node
 // version to satisfy the repo's `.nvmrc`. It only compares; run `nvm use`
-// yourself if needed. It asks `node --version` for the current version, and
-// a missing node binary is a clear failure.
+// yourself if needed. It asks `node --version` for the current version. A
+// missing or broken node binary reports info with an install hint, since no
+// version was read to judge.
 //
 // # Behavior
 //

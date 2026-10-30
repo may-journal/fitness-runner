@@ -54,5 +54,5 @@ func Test0047_6(t *testing.T) {
 func Test0047_7(t *testing.T) {
 	t.Parallel()
 	out, code := nodeVersionCheck(t, nodeVersionRepo("1\n"), []string{pathWithout(t, "node")})
-	sees(t, out, code, 1, "node not found on PATH. Install Node.js")
+	showsInfo(t, out, code, "node-version", "node not found on PATH. Install Node.js")
 }

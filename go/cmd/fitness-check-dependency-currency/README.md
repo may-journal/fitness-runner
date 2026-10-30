@@ -13,7 +13,7 @@ Fails a declared npm dependency that is behind its latest published version — 
 - Fail: one or more dependencies are behind — reports `name: current → latest` per dep, and identical lines collapse to one.
 - A declared-but-uninstalled dep reads as `name: missing → latest`.
 - Internal `@mayjournal/*` workspace packages are skipped, since they are versioned in-repo, not published to the registry.
-- Registry unreachable, or any garbage response: contributes nothing, so a run offline or in CI without network passes.
+- Registry unreachable or answering an error or garbage: no finding for that package, and info counts the packages it could not query.
 
 One proxy blocks GitHub and the registry alike. So when the runner's probe finds GitHub's API host unreachable, the check reads no registry and reports info naming the host and proxy.
 

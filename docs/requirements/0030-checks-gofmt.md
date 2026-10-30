@@ -31,8 +31,16 @@ Go files checked
 - 0030.5
     - Given Developer has Go files and no Go toolchain on the path
         - When fitness runs `gofmt`
-            - Then it fails with a hint to install Go
+            - Then it shows info with a hint to install Go, never failing
 - 0030.6
     - Given Developer has an unformatted Go file that is not tracked by git
         - When fitness runs `gofmt`
             - Then it passes, since only tracked files are judged
+- 0030.7
+    - Given Developer has a `gofmt` that crashes without listing a file
+        - When fitness runs `gofmt`
+            - Then it shows info quoting what `gofmt` printed, never failing
+- 0030.8
+    - Given Developer has a committed Go file `gofmt` cannot parse
+        - When fitness runs `gofmt`
+            - Then it fails naming the file, line and syntax error

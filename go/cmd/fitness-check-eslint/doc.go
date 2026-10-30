@@ -1,9 +1,9 @@
 // Command fitness-check-eslint runs ESLint over the repo with the shared
 // flat config, by executing the real [ESLint] binary. It resolves the binary
 // from `node_modules/.bin`, walking up from the repo root, then PATH — never
-// npx. When no eslint binary resolves, the check fails with a one-line
-// install hint. The shared flat config `eslint.config.mjs` is forced via
-// `--config`.
+// npx. When no eslint binary resolves, or ESLint crashes or fails without a
+// finding, the check reports info naming the cause. The shared flat config
+// `eslint.config.mjs` is forced via `--config`.
 //
 // The config resolves in order: the repo's own file, an installed
 // `@mayjournal/fitness-shared` package under `node_modules`, then the copy

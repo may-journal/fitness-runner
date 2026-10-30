@@ -32,6 +32,26 @@ func killedVet(t *testing.T) string {
 	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH")
 }
 
+// brokenTool returns a PATH setting whose name runs script, a shell body,
+// ahead of every real tool on the caller's PATH, so one tool misbehaves as
+// a crashed or broken install does while the rest work.
+func brokenTool(t *testing.T, name, script string) string {
+	t.Helper()
+	dir := t.TempDir()
+	write(t, dir, map[string]string{name: "#!/bin/sh\n" + script})
+	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH")
+}
+
+// crashingGo returns a PATH setting whose go prints message and exits 2,
+// as a crashed toolchain does, when its first argument is sub, and runs
+// the real go otherwise.
+func crashingGo(t *testing.T, sub, message string) string {
+	t.Helper()
+	real, err := exec.LookPath("go")
+	mustDo(t, err)
+	return brokenTool(t, "go", "[ \"$1\" = "+sub+" ] && { echo '"+message+"' >&2; exit 2; }\nexec \""+real+"\" \"$@\"\n")
+}
+
 // linkTools links each entry of src into dir, except names and entries an
 // earlier PATH folder already supplied.
 func linkTools(dir, src string, names []string) {

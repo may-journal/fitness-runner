@@ -151,8 +151,8 @@ func Test0022_6(t *testing.T) {
 }
 
 // dcBroken is one registry that cannot tell the latest version, named in
-// the repo or the home .npmrc. want is what the run shows, when not that
-// every check passed.
+// the repo or the home .npmrc. want is the info the run shows, when not
+// the count of packages it could not query.
 type dcBroken struct {
 	name, url string
 	want      string
@@ -185,7 +185,7 @@ func Test0022_7(t *testing.T) {
 	for _, broken := range dcBrokenRegistries(t) {
 		start := time.Now()
 		out, code := dcAgainst(t, broken)
-		sees(t, out, code, 0, cmp.Or(broken.want, "All 1 checks passed"))
+		showsInfo(t, out, code, "dependency-currency", cmp.Or(broken.want, "1 of 1 packages could not be queried from "+broken.url+", so their currency is unknown"))
 		if broken.hits != nil && broken.hits.Load() == 0 {
 			t.Errorf("%s: the check never asked the registry", broken.name)
 		}

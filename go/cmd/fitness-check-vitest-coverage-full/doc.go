@@ -22,8 +22,9 @@
 //	Vitest coverage thresholds must be 100 for branches, functions, lines, and statements.
 //	Fitness-runner package must have Vitest coverage thresholds set to 100 for branches, functions, lines, and statements.
 //
-// A failing coverage run reports the last line of vitest output, or a
-// fallback hint when there is none:
-//
-//	Vitest coverage did not meet 100% thresholds. Run: npm run test
+// A failing coverage run reports the last line of Vitest output when Vitest
+// judged the code. It judged the code when a threshold is missed or a test
+// failed. A run that exits non-zero with neither, could not start, or was
+// killed reports info quoting its last lines. A missing coverage provider is
+// one example.
 package check

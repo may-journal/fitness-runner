@@ -25,6 +25,11 @@ func run(root string, args []string) (checkkit.Result, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 14*time.Minute)
 	defer cancel()
 	report, err := coverage.Run(ctx, root, options)
+	if checkkit.IsInternal(err) {
+		// The environment stopped the run, so it reports info; a config
+		// or coverage error still fails.
+		return checkkit.Result{}, err
+	}
 	if err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}

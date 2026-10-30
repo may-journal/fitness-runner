@@ -37,9 +37,9 @@ tracked files checked
         - When prettier checks the repo
             - Then it fails telling me to delete it
 - 0052.8
-    - Given Developer has a project without Prettier installed
+    - Given Developer has no Prettier installed, or one whose error names no file or a file it cannot parse
         - When prettier checks the repo
-            - Then it fails with an install hint
+            - Then it shows info for the first two, quoting the cause, and fails naming the unparsable file
 - 0052.11
     - Given Developer has a `biome.jsonc`, `@biomejs/biome` at any version under any spec, no Prettier, and more than 20 files Biome would reformat
         - When prettier checks the repo

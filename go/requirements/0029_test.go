@@ -77,5 +77,11 @@ func Test0029_6(t *testing.T) {
 func Test0029_7(t *testing.T) {
 	t.Parallel()
 	out, code := goVet(t, example(t, "happyRepo", goVetModule("api", goVetBad)), pathWithout(t, "go"))
-	sees(t, out, code, 1, "✖ Go not installed: see https://go.dev/dl")
+	showsInfo(t, out, code, "go-vet", "Go not installed: see https://go.dev/dl")
+}
+
+func Test0029_8(t *testing.T) {
+	t.Parallel()
+	out, code := goVet(t, example(t, "happyRepo", goVetModule(".", goVetBad)), crashingGo(t, "vet", "go: unexpected internal error"))
+	showsInfo(t, out, code, "go-vet", "go vet ./... exited 2 without a finding: go: unexpected internal error")
 }

@@ -22,33 +22,36 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	bin, err := exec.LookPath("go")
 	if err != nil {
-		return checkkit.Fail(0, toolchain.NotInstalled), nil
+		return checkkit.Result{}, toolchain.Missing()
 	}
-	var errs []string
-	for _, dir := range mods {
-		errs = append(errs, test(root, dir, bin)...)
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(len(mods), errs...), nil
-	}
-	return checkkit.Pass(len(mods)), nil
+	return toolchain.EachModule(mods, func(dir string) ([]string, error) {
+		return test(root, dir, bin)
+	})
 }
 
 // test runs go test in one module and returns the lines that explain a
-// failure, falling back to a run hint when none can be picked out.
-func test(root, dir, bin string) []string {
-	code, out := toolchain.Run(root, dir, bin, "test", "./...")
-	if code == 0 {
-		return nil
+// failure. A run that could not start, was killed, or failed without a line
+// that explains it is an internal error, since no test judged the code.
+func test(root, dir, bin string) ([]string, error) {
+	code, out, envErr := toolchain.Exec(root, dir, bin, "test", "./...")
+	if envErr != nil || code == 0 {
+		return nil, envErr
 	}
+	errs := failureLines(dir, out)
+	if len(errs) == 0 {
+		return nil, checkkit.NoVerdict(toolchain.Label(dir, "go test ./..."), code, out)
+	}
+	return errs, nil
+}
+
+// failureLines returns the go test output lines that explain a failure,
+// each labeled with its module.
+func failureLines(dir, out string) []string {
 	var errs []string
 	for _, l := range toolchain.Lines(out) {
 		if failureLine(l) {
 			errs = append(errs, toolchain.Label(dir, strings.TrimSpace(l)))
 		}
-	}
-	if len(errs) == 0 {
-		errs = []string{toolchain.Label(dir, "go test failed (run: go test ./...)")}
 	}
 	return errs
 }

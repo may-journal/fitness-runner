@@ -61,6 +61,9 @@ func Test0028_7(t *testing.T) {
 	t.Parallel()
 	out, _ := goTestCoverage(t, nil)
 	passedWithNoFiles(t, out, "go-test-coverage")
+	repo := example(t, "happyRepo", gtcCommand(gtcEntryTest))
+	out, code := fitness(t, repo, []string{pathWithout(t, "go")}, "go-test-coverage")
+	showsInfo(t, out, code, "go-test-coverage", "Go not installed: see https://go.dev/dl")
 }
 
 func Test0028_8(t *testing.T) {

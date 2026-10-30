@@ -121,7 +121,19 @@ func Test0060_5(t *testing.T) {
 func Test0060_6(t *testing.T) {
 	t.Parallel()
 	out, code := vcfRun(t, vcfRepo(t, nil), nil)
-	sees(t, out, code, 1, "vitest not found in node_modules/.bin (walking up from root) or on PATH. Install it (npm install -D vitest)")
+	showsInfo(t, out, code, "vitest-coverage-full", "vitest not found in node_modules/.bin (walking up from root) or on PATH. Install it (npm install -D vitest)")
+}
+
+func Test0060_8(t *testing.T) {
+	t.Parallel()
+	rp := standIn(t, map[string][]response{"vitest": {{
+		Match:  []string{"run --coverage"},
+		Stderr: " MISSING DEPENDENCY  Cannot find dependency '@vitest/coverage-v8'\n",
+		Exit:   1,
+	}}})
+	out, code := vcfRun(t, vcfRepo(t, nil), rp.env)
+	showsInfo(t, out, code, "vitest-coverage-full", "vitest run --coverage exited 1 without a finding", "Cannot find dependency '@vitest/coverage-v8'")
+	vcfRanWithLocalConfig(t, rp)
 }
 
 func Test0060_7(t *testing.T) {

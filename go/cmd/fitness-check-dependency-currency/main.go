@@ -3,6 +3,7 @@ package check
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -32,7 +33,7 @@ const lead = "Dependencies behind their latest published version — update them
 const fetchWorkers = 8
 
 // fetchBudget caps the whole fetch phase inside the check's 30s timeout so
-// a slow registry degrades to a pass instead of the runner killing us.
+// a slow registry degrades to info instead of the runner killing us.
 const fetchBudget = 25 * time.Second
 
 // requestTimeout caps one registry request within the overall budget.
@@ -53,12 +54,22 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if note := checkkit.Offline("the npm registry reads"); note != "" && len(manifests) > 0 {
 		return checkkit.Info(filesChecked, note), nil
 	}
-	latest := fetchLatest(registryFrom(root), uniqueDeps(manifests))
-	errs := outdatedErrors(manifests, latest)
-	if len(errs) > 0 {
-		return checkkit.Fail(filesChecked, append([]string{lead}, errs...)...), nil
+	registry, names := registryFrom(root), uniqueDeps(manifests)
+	latest := fetchLatest(registry, names)
+	res := checkkit.Pass(filesChecked)
+	if errs := outdatedErrors(manifests, latest); len(errs) > 0 {
+		res = checkkit.Fail(filesChecked, append([]string{lead}, errs...)...)
 	}
-	return checkkit.Pass(filesChecked), nil
+	if missed := len(names) - len(latest); missed > 0 {
+		res.Info = []string{notQueried(missed, len(names), registry)}
+	}
+	return res, nil
+}
+
+// notQueried is the info note for the packages the registry did not answer
+// for, whose currency the check could not judge.
+func notQueried(missed, total int, registry string) string {
+	return fmt.Sprintf("%d of %d packages could not be queried from %s, so their currency is unknown", missed, total, registry)
 }
 
 // manifest is one package.json's declared external dependency names plus
@@ -301,7 +312,7 @@ func isNpmrcComment(line string) bool {
 // fetchLatest resolves each name's dist-tags.latest from the registry with
 // bounded concurrency. Any failure — network error, non-200, garbage body —
 // leaves that name out of the map, so a fully unreachable registry yields
-// an empty map and the check degrades to a pass.
+// an empty map and the check reports info counting the names left out.
 func fetchLatest(registry string, names []string) map[string]string {
 	ctx, cancel := context.WithTimeout(context.Background(), fetchBudget)
 	defer cancel()

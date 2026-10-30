@@ -8,8 +8,8 @@
 //
 // [Prettier] itself is a peer tool: the check execs the real binary, never
 // npx. It resolves from `node_modules/.bin` (walking up from the repo root)
-// then PATH. It fails with a one-line install hint when the binary is
-// missing.
+// then PATH. A missing binary reports info with a one-line install hint, and
+// a crashed one info quoting its output.
 //
 // Run `fitness prettier` from your app root to check formatting. Pass
 // through args to Prettier: `fitness prettier --write .` or
@@ -25,7 +25,7 @@
 //   - Plugins: the shared config loads `prettier-plugin-packagejson` and `prettier-plugin-sort-json`, so the repo installs both.
 //   - Synced files: the shared config keeps `.github/ISSUE_TEMPLATE/**/*.md` and `.github/fitness-setup.md` at Prettier defaults with an [override], as they arrive from may-journal/.github.
 //   - The check puts the repo's `node_modules` folders on `NODE_PATH`, where the shared config finds them.
-//   - When Prettier fails without naming a file, its own `[error]` lines follow the fallback message, such as a plugin it cannot load.
+//   - An `[error]` line naming a file Prettier cannot parse fails; one naming no file, such as a missing plugin, reports info quoting it.
 //
 // Errors list file paths that need formatting.
 //

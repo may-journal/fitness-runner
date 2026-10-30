@@ -72,5 +72,7 @@ func Test0027_7(t *testing.T) {
 func Test0027_8(t *testing.T) {
 	t.Parallel()
 	out, code := goTest(t, goTestModule("", "func TestFine(t *testing.T) {}\n"), pathWithout(t, "go"))
-	sees(t, out, code, 1, "Go not installed: see https://go.dev/dl")
+	showsInfo(t, out, code, "go-test", "Go not installed: see https://go.dev/dl")
+	out, code = goTest(t, goTestModule("", goTestBroken), crashingGo(t, "test", "go: unexpected internal error"))
+	showsInfo(t, out, code, "go-test", "go test ./... exited 2 without a finding: go: unexpected internal error")
 }

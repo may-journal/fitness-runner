@@ -2,6 +2,7 @@ package check
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,12 +18,7 @@ import (
 )
 
 const (
-	// prettierCLI names the tool in user-facing messages exactly like the TS
-	// check's PRETTIER_CLI (install hints may still say npx; the binary never
-	// execs it).
-	prettierCLI             = "npx prettier"
-	prettierFallbackMessage = "Prettier reported issues. Run: " + prettierCLI + " . --write"
-	notInstalled            = "Prettier not installed: npm install --save-dev prettier"
+	notInstalled = "Prettier not installed: npm install --save-dev prettier"
 
 	warnPrefix        = "[warn] "
 	codeStyleSummary  = "Code style issues"
@@ -70,25 +66,27 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if done {
 		return res, nil
 	}
+	if bin == "" {
+		return checkkit.Result{}, checkkit.Internal(errors.New(notInstalled))
+	}
 	configPath := resolveConfigPath(root)
 	paths, ok := scopedPaths(root, args)
 	if !ok {
 		return checkkit.Pass(0), nil
 	}
-	env := os.Environ()
-	if configPath != "" {
-		env = withNodePath(env, root)
+	o := execPrettier(bin, root, prettierEnv(root, configPath), prettierArgv(configPath, args, paths))
+	if err := o.EnvErr("prettier"); err != nil {
+		return checkkit.Result{}, err
 	}
-	exitCode, output := execPrettier(bin, root, env, prettierArgv(configPath, args, paths))
-	output = ansiCodes.ReplaceAllString(output, "")
-	parsed := parsePrettierOutput(output)
-	return buildExecResult(exitCode, parsed, prettierErrors(output), filesChecked(parsed, paths)), nil
+	output := ansiCodes.ReplaceAllString(o.Stdout, "")
+	parsed := append(parsePrettierOutput(output), unparsable(root, output)...)
+	return buildExecResult(o.Code, parsed, prettierErrors(output), filesChecked(parsed, paths))
 }
 
 // preflight resolves the Prettier binary, or the verdict that ends the run
 // first: a failure for any repo with a .prettierignore, then a pass for a
-// repo with no package.json, then Biome's verdict in a repo that chose it,
-// then a failure without Prettier installed.
+// repo with no package.json, then Biome's verdict in a repo that chose it.
+// Without Prettier installed it returns no binary and no verdict.
 func preflight(root string, args []string) (bin string, res checkkit.Result, done bool) {
 	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
 		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
@@ -99,10 +97,7 @@ func preflight(root string, args []string) (bin string, res checkkit.Result, don
 	if biome.Chosen(root) {
 		return "", formatWithBiome(root, args), true
 	}
-	bin, found := node.FindTool(root, "prettier")
-	if !found {
-		return "", checkkit.Fail(0, notInstalled), true
-	}
+	bin, _ = node.FindTool(root, "prettier")
 	return bin, checkkit.Result{}, false
 }
 
@@ -156,6 +151,15 @@ var prettierToBiome = map[string][]string{
 	"--check": nil, "-c": nil,
 	"--list-different": nil, "-l": nil,
 	"--ignore-unknown": nil, "-u": nil,
+}
+
+// prettierEnv is the environment Prettier runs in: this process's, with
+// root's node_modules folders on NODE_PATH when the shared config applies.
+func prettierEnv(root, configPath string) []string {
+	if configPath == "" {
+		return os.Environ()
+	}
+	return withNodePath(os.Environ(), root)
 }
 
 // nodeModulesDirs lists every node_modules folder from root up to the
@@ -280,15 +284,47 @@ func prettierArgv(configPath string, passthrough, paths []string) []string {
 	return append(append(argv, "--check"), paths...)
 }
 
-// execPrettier runs the resolved binary in root; returns the exit code and
-// one combined stdout+stderr buffer, mirroring the TS execSyncResult (which
-// redirected with `2>&1`). A failure carrying no exit code maps to 1.
-func execPrettier(bin, root string, env, argv []string) (exitCode int, output string) {
+// execPrettier runs the resolved binary in root and returns its outcome,
+// with stdout and stderr in one buffer, mirroring the TS execSyncResult
+// (which redirected with `2>&1`).
+func execPrettier(bin, root string, env, argv []string) checkkit.Outcome {
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root
 	cmd.Env = env
-	o := checkkit.ExecCombined(cmd)
-	return o.Code, o.Stdout
+	return checkkit.ExecCombined(cmd)
+}
+
+// errorPrefix opens each error line Prettier prints.
+const errorPrefix = "[error] "
+
+// unparsable returns Prettier's error lines that name a file under root,
+// such as `[error] src/a.ts: SyntaxError: …`: a file Prettier could not
+// parse is a finding. An error line naming no file, such as a plugin the
+// config cannot load, is not.
+func unparsable(root, output string) []string {
+	var errs []string
+	for _, line := range strings.Split(output, "\n") {
+		line = strings.TrimSpace(line)
+		rest, ok := strings.CutPrefix(line, errorPrefix)
+		if !ok {
+			continue
+		}
+		if namesFile(root, rest) {
+			errs = append(errs, line)
+		}
+	}
+	return errs
+}
+
+// namesFile reports whether an error line's text opens with a path to a
+// file under root, then ": ".
+func namesFile(root, text string) bool {
+	file, _, found := strings.Cut(text, ": ")
+	if !found {
+		return false
+	}
+	info, err := os.Stat(filepath.Join(root, file))
+	return err == nil && !info.IsDir()
 }
 
 // ansiCodes matches terminal color codes. Prettier colors its output in CI,
@@ -319,7 +355,7 @@ func prettierErrors(output string) []string {
 	var errs []string
 	for _, line := range strings.Split(output, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "[error] ") && len(errs) < maxPrettierErrors {
+		if strings.HasPrefix(line, errorPrefix) && len(errs) < maxPrettierErrors {
 			errs = append(errs, line)
 		}
 	}
@@ -350,14 +386,15 @@ func filesChecked(parsed, paths []string) int {
 }
 
 // buildExecResult is the TS buildExecCheckResult: ok only on exit 0 with no
-// parsed errors; a failure that parsed nothing gets the fallback message,
-// followed by Prettier's own [error] lines when it printed any.
-func buildExecResult(exitCode int, parsed, prettierErrs []string, files int) checkkit.Result {
+// parsed errors, failing with the parsed errors otherwise. A failure that
+// parsed nothing is an internal error quoting Prettier's own [error] lines
+// or last lines, which name the cause.
+func buildExecResult(exitCode int, parsed, prettierErrs []string, files int) (checkkit.Result, error) {
 	if exitCode == 0 && len(parsed) == 0 {
-		return checkkit.Pass(files)
+		return checkkit.Pass(files), nil
 	}
 	if len(parsed) == 0 {
-		return checkkit.Fail(files, append([]string{prettierFallbackMessage}, prettierErrs...)...)
+		return checkkit.Result{}, checkkit.NoVerdict("prettier", exitCode, strings.Join(prettierErrs, "\n"))
 	}
-	return checkkit.Fail(files, parsed...)
+	return checkkit.Fail(files, parsed...), nil
 }
