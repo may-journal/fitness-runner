@@ -1,6 +1,7 @@
 package check
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -29,7 +30,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	current, err := currentNodeVersion()
 	if err != nil {
-		return checkkit.Fail(1, "node not found on PATH. Install Node.js (e.g. via nvm) to run the node-version check"), nil
+		return checkkit.Result{}, err
 	}
 	return judge(strings.TrimSpace(string(raw)), current), nil
 }
@@ -67,10 +68,23 @@ func versionMajor(version string) (int, bool) {
 	return major, true
 }
 
+// nodeMissing is the info a run without node on PATH reports.
+const nodeMissing = "node not found on PATH. Install Node.js (e.g. via nvm) to run the node-version check"
+
+// currentNodeVersion runs `node --version`. A missing node, or one that
+// could not start, crashed or was killed, is an internal error, since no
+// version was read to judge.
 func currentNodeVersion() (string, error) {
-	out, err := exec.Command("node", "--version").Output()
+	bin, err := exec.LookPath("node")
 	if err != nil {
+		return "", checkkit.Internal(errors.New(nodeMissing))
+	}
+	o := checkkit.Exec(exec.Command(bin, "--version"))
+	if err := o.EnvErr("node --version"); err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(string(out)), nil
+	if o.Code != 0 {
+		return "", checkkit.NoVerdict("node --version", o.Code, o.Stderr+"\n"+o.Stdout)
+	}
+	return strings.TrimSpace(o.Stdout), nil
 }

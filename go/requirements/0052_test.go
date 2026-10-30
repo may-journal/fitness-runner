@@ -220,5 +220,11 @@ func Test0052_7(t *testing.T) {
 func Test0052_8(t *testing.T) {
 	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", prettierJS(nil)), []string{pathWithout(t, "prettier")}, "prettier")
-	sees(t, out, code, 1, "Prettier not installed: npm install --save-dev prettier")
+	showsInfo(t, out, code, "prettier", "Prettier not installed: npm install --save-dev prettier")
+	noPlugin := response{Stderr: "[error] Cannot find package 'prettier-plugin-packagejson' imported from /shared/prettier.config.cjs\n", Exit: 2}
+	out, code, _ = prettierRun(t, prettierJS(nil), []response{noPlugin})
+	showsInfo(t, out, code, "prettier", "prettier exited 2 without a finding: [error] Cannot find package 'prettier-plugin-packagejson'")
+	unparsable := response{Stderr: "Checking formatting...\n[error] app.js: SyntaxError: Unexpected token (1:7)\n", Exit: 2}
+	out, code, _ = prettierRun(t, prettierJS(nil), []response{unparsable})
+	sees(t, out, code, 1, "[error] app.js: SyntaxError: Unexpected token (1:7)")
 }

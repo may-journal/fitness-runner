@@ -216,6 +216,16 @@ func passedWithNoFiles(t *testing.T, out, check string) {
 	}
 }
 
+// showsInfo asserts the run exited 0 printing every want, with check's row
+// showing info: the check could not judge, so it never fails the run.
+func showsInfo(t *testing.T, out string, code int, check string, want ...string) {
+	t.Helper()
+	sees(t, out, code, 0, want...)
+	if !strings.Contains(row(out, check), "info") {
+		t.Errorf("%s must show info, got row %q", check, row(out, check))
+	}
+}
+
 // passedWith asserts check's row shows a pass that judged files.
 func passedWith(t *testing.T, out, check, files string) {
 	t.Helper()

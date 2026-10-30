@@ -147,7 +147,10 @@ func Test0057_6(t *testing.T) {
 	t.Parallel()
 	repo := swiftlintRepo(t, map[string]string{"Clean.swift": "let value = 1\n"})
 	out, code := fitness(t, repo, []string{pathWithout(t, "swiftlint")}, "swiftlint")
-	sees(t, out, code, 1, "SwiftLint not installed: brew install swiftlint")
+	showsInfo(t, out, code, "swiftlint", "SwiftLint not installed: brew install swiftlint")
+	rp, out, code := swiftlintRun(t, repo, response{Match: []string{swiftlintArgs}, Stderr: "Fatal error: SourceKit crashed\n", Exit: 1})
+	showsInfo(t, out, code, "swiftlint", "swiftlint lint --strict exited 1 without a finding: Fatal error: SourceKit crashed")
+	swiftlintAsked(t, rp)
 }
 
 func Test0057_9(t *testing.T) {

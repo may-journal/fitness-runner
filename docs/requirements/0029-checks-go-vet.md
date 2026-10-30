@@ -39,4 +39,8 @@ Go modules found
 - 0029.7
     - Given Developer has a Go module and no Go toolchain on the path
         - When fitness runs go-vet
-            - Then it fails with a one-line install hint
+            - Then it shows info with a one-line install hint, never failing
+- 0029.8
+    - Given Developer has a `go vet` that exits non-zero without naming a `.go` file
+        - When fitness runs go-vet
+            - Then it shows info quoting what `go vet` printed, never failing

@@ -41,6 +41,6 @@ Go modules found
         - When fitness runs go-test
             - Then it passes having checked 0 files
 - 0027.8
-    - Given Developer has a Go module and no Go toolchain on the path
+    - Given Developer has a Go module and no Go toolchain, or a `go test` that fails without a failing test, panic or file line
         - When fitness runs go-test
-            - Then it fails with a link to install Go
+            - Then it shows info with a link to install Go or what `go test` printed, never failing

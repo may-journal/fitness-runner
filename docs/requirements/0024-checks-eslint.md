@@ -17,9 +17,9 @@ files linted
         - When fitness runs eslint
             - Then it passes with nothing to judge
 - 0024.2
-    - Given Developer has a JavaScript project without `eslint` installed
+    - Given Developer has a JavaScript project without `eslint` installed, or with one that crashes printing no JSON
         - When fitness runs eslint
-            - Then it fails with an install hint
+            - Then it shows info with an install hint or ESLint's output, never failing
 - 0024.3
     - Given Developer has a project with the shared config and clean JavaScript and TypeScript files
         - When fitness runs eslint

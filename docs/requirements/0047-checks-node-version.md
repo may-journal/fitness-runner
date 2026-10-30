@@ -39,4 +39,4 @@ JavaScript repos checked
 - 0047.7
     - Given Developer has no `node` on the `PATH`
         - When fitness runs node-version
-            - Then it fails telling me to install Node
+            - Then it shows info telling me to install Node, never failing

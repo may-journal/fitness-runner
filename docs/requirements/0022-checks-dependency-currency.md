@@ -39,7 +39,7 @@ declared dependencies
 - 0022.7
     - Given Developer has a repo or home `.npmrc` registry, or its proxy, that is unreachable, answers an error, sends garbage, or never answers
         - When dependency-currency runs
-            - Then it passes within its ten-second request timeout, or shows info at once behind a silent proxy, never blocking the commit
+            - Then it shows info counting the packages it could not query, within its ten-second timeout or at once behind a silent proxy
 - 0022.8
     - Given Developer has a repo without a `package.json`
         - When dependency-currency runs

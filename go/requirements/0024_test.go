@@ -204,7 +204,14 @@ func Test0024_11(t *testing.T) {
 func Test0024_2(t *testing.T) {
 	t.Parallel()
 	out, code := fitness(t, example(t, "happyRepo", eslintShared(t, map[string]string{"app.js": eslintUnsorted})), nil, "eslint")
-	sees(t, out, code, 1, eslintMissing)
+	showsInfo(t, out, code, "eslint", eslintMissing)
+	crashed := standIn(t, map[string][]response{"eslint": {{
+		Stderr: "Oops! Something went wrong! :(\n\nTypeError: Cannot read properties of undefined (reading 'rules')\n",
+		Exit:   2,
+	}}})
+	repo := example(t, "happyRepo", eslintShared(t, map[string]string{"app.js": eslintUnsorted}))
+	out, code = fitness(t, repo, crashed.env, "eslint")
+	showsInfo(t, out, code, "eslint", "TypeError: Cannot read properties of undefined (reading 'rules')")
 }
 
 func Test0024_3(t *testing.T) {

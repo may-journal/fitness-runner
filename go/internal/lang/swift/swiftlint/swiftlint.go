@@ -1,16 +1,17 @@
 // Package swiftlint runs SwiftLint's strict JSON reporter over a repo for
 // the swiftlint check. The tool is a system binary (brew, never
 // node_modules): it is resolved from PATH at runtime, and a missing binary
-// fails with the same install hint the TypeScript check printed. The TS
-// check shelled out with `2>&1`; this port feeds one combined stdout+stderr
-// buffer to the same judgment: a "command not found" output is the install
-// hint, "No lintable files found" passes clean, and otherwise the JSON
-// violation array becomes `file:line[:col] - reason (rule_id)` lines with a
-// fallback run hint when nothing parses.
+// reports info with the same install hint the TypeScript check printed. The
+// TS check shelled out with `2>&1`; this port feeds one combined
+// stdout+stderr buffer to the same judgment: a "command not found" output is
+// the install hint, "No lintable files found" passes clean, and otherwise
+// the JSON violation array becomes `file:line[:col] - reason (rule_id)`
+// lines. A failure where nothing parses reports info quoting the output.
 package swiftlint
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -24,8 +25,7 @@ import (
 )
 
 const (
-	notInstalled    = "SwiftLint not installed: brew install swiftlint"
-	fallbackRunHint = "swiftlint reported an error (run: swiftlint lint --strict)"
+	notInstalled = "SwiftLint not installed: brew install swiftlint"
 
 	commandNotFoundMarker = "command not found"
 	noLintableFilesMarker = "No lintable files found"
@@ -55,10 +55,9 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	}
 	bin, err := exec.LookPath("swiftlint")
 	if err != nil {
-		return checkkit.Fail(0, notInstalled), nil
+		return checkkit.Result{}, checkkit.Internal(errors.New(notInstalled))
 	}
-	exitCode, output := execSwiftlint(bin, root, paths)
-	return judge(exitCode, output), nil
+	return judge(execSwiftlint(bin, root, paths))
 }
 
 // lintPaths is what SwiftLint lints: the whole tree, or a scoped run's
@@ -87,41 +86,43 @@ func includes(root string) bool {
 }
 
 // execSwiftlint runs `swiftlint lint --strict --reporter json --quiet` on
-// paths in root; returns the exit code and combined stdout+stderr,
-// mirroring the TS execSyncResult (which redirected with `2>&1`). A failure
-// that carries no exit code maps to 1, exactly like the TS catch path.
-func execSwiftlint(bin, root string, paths []string) (exitCode int, output string) {
+// paths in root; returns its outcome with stdout and stderr in one buffer,
+// mirroring the TS execSyncResult (which redirected with `2>&1`).
+func execSwiftlint(bin, root string, paths []string) checkkit.Outcome {
 	cmd := exec.Command(bin, append([]string{"lint", "--strict", "--reporter", "json", "--quiet"}, paths...)...)
 	cmd.Dir = root
-	o := checkkit.ExecCombined(cmd)
-	return o.Code, o.Stdout
+	return checkkit.ExecCombined(cmd)
 }
 
-// judge ports the TS check verbatim: command-not-found output is the install
-// hint, no-lintable-files passes with zero files, and otherwise the exec
-// result is judged like buildExecCheckResult — ok only on exit 0 with no
-// parsed violations, fallback hint when a failure parsed nothing.
-func judge(exitCode int, output string) checkkit.Result {
-	if strings.Contains(output, commandNotFoundMarker) {
-		return checkkit.Fail(0, notInstalled)
+// judge ports the TS check: a run that could not start, was killed, or
+// printed command-not-found is an internal error with the install hint,
+// no-lintable-files passes with zero files, and otherwise the exec result is
+// judged like buildExecCheckResult.
+func judge(o checkkit.Outcome) (checkkit.Result, error) {
+	if err := o.EnvErr("swiftlint"); err != nil {
+		return checkkit.Result{}, err
 	}
-	if strings.Contains(output, noLintableFilesMarker) {
-		return checkkit.Pass(0)
+	if strings.Contains(o.Stdout, commandNotFoundMarker) {
+		return checkkit.Result{}, checkkit.Internal(errors.New(notInstalled))
 	}
-	return judgeExecResult(exitCode, parseViolations(output))
+	if strings.Contains(o.Stdout, noLintableFilesMarker) {
+		return checkkit.Pass(0), nil
+	}
+	return judgeExecResult(o.Code, parseViolations(o.Stdout), o.Stdout)
 }
 
 // judgeExecResult judges the exec outcome like the TS buildExecCheckResult:
-// ok only on exit 0 with no parsed violations, the fallback run hint when a
-// failure parsed nothing, else the violations themselves.
-func judgeExecResult(exitCode int, violations []string) checkkit.Result {
+// ok only on exit 0 with no parsed violations, else the violations
+// themselves. A failure that parsed nothing is an internal error quoting
+// what SwiftLint printed, since it named nothing to fix.
+func judgeExecResult(exitCode int, violations []string, output string) (checkkit.Result, error) {
 	if exitCode == 0 && len(violations) == 0 {
-		return checkkit.Pass(0)
+		return checkkit.Pass(0), nil
 	}
 	if len(violations) == 0 {
-		return checkkit.Fail(0, fallbackRunHint)
+		return checkkit.Result{}, checkkit.NoVerdict("swiftlint lint --strict", exitCode, output)
 	}
-	return checkkit.Fail(0, violations...)
+	return checkkit.Fail(0, violations...), nil
 }
 
 // parseViolations parses the JSON reporter's violation array; malformed

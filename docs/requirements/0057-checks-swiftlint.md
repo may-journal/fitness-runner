@@ -33,9 +33,9 @@ Swift repos checked
         - When fitness runs swiftlint
             - Then it passes with zero files
 - 0057.6
-    - Given Developer has Swift files and no SwiftLint on the path
+    - Given Developer has Swift files and no SwiftLint on the path, or one that exits non-zero without a violation
         - When fitness runs swiftlint
-            - Then it fails with the install hint
+            - Then it shows info with the install hint or SwiftLint's output, never failing
 - 0057.8
     - Given Developer has a `.swiftlint.yml` that excludes every Swift file
         - When fitness runs swiftlint

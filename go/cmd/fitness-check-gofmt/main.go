@@ -1,7 +1,11 @@
 package check
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"regexp"
+	"strconv"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
@@ -27,12 +31,16 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	bin, err := exec.LookPath("gofmt")
 	if err != nil {
-		return checkkit.Fail(0, toolchain.NotInstalled), nil
+		return checkkit.Result{}, toolchain.Missing()
 	}
 	var found []checkkit.Finding
 	for start := 0; start < len(files); start += batch {
 		end := min(start+batch, len(files))
-		found = append(found, unformatted(root, bin, files[start:end])...)
+		batchFound, err := unformatted(root, bin, files[start:end])
+		if err != nil {
+			return checkkit.Result{}, err
+		}
+		found = append(found, batchFound...)
 	}
 	return checkkit.Found(len(files), errorLine, found...), nil
 }
@@ -46,9 +54,19 @@ const message = "not gofmt-formatted"
 // fixCommand is the command that formats a file, given its path.
 const fixCommand = "gofmt -w "
 
+// syntaxRule names a file gofmt cannot parse, so it cannot format it.
+const syntaxRule = "go-syntax"
+
+// syntaxError matches the line gofmt prints on stderr for a file it cannot
+// parse: path:line:column: message.
+var syntaxError = regexp.MustCompile(`^(.+\.go):(\d+):(\d+): (.+)$`)
+
 // errorLine renders a finding as `path: not gofmt-formatted (run: gofmt -w
-// path)`.
+// path)`, or a syntax error as `path:line:column: message`.
 func errorLine(f checkkit.Finding) string {
+	if f.Rule == syntaxRule {
+		return fmt.Sprintf("%s:%d:%d: %s", f.File, f.Line, f.Column, f.Message)
+	}
 	return f.File + ": " + f.Message + " (run: " + f.Fix + ")"
 }
 
@@ -63,13 +81,44 @@ func goFiles(root string) []string {
 	return files
 }
 
-// unformatted runs gofmt -l over files and turns each listed path into a
-// finding.
-func unformatted(root, bin string, files []string) []checkkit.Finding {
-	_, out := toolchain.Run(root, ".", bin, append([]string{"-l"}, files...)...)
+// unformatted runs gofmt -l over files and turns each path it lists on
+// stdout, and each syntax error it prints on stderr, into a finding. A run
+// that could not start, was killed, or failed with neither is an internal
+// error, since gofmt never judged the files.
+func unformatted(root, bin string, files []string) ([]checkkit.Finding, error) {
+	cmd := exec.Command(bin, append([]string{"-l"}, files...)...)
+	cmd.Dir = root
+	cmd.Env = toolchain.CleanEnv(os.Environ())
+	o := checkkit.Exec(cmd)
+	if err := o.EnvErr("gofmt"); err != nil {
+		return nil, err
+	}
+	found := append(listed(o.Stdout), syntaxErrors(o.Stderr)...)
+	if o.Code != 0 && len(found) == 0 {
+		return nil, checkkit.NoVerdict("gofmt -l", o.Code, o.Stderr+"\n"+o.Stdout)
+	}
+	return found, nil
+}
+
+// listed turns each path gofmt -l printed into an unformatted finding.
+func listed(stdout string) []checkkit.Finding {
 	var found []checkkit.Finding
-	for _, l := range toolchain.Lines(out) {
+	for _, l := range toolchain.Lines(stdout) {
 		found = append(found, checkkit.Finding{File: l, Rule: rule, Message: message, Fix: fixCommand + l})
+	}
+	return found
+}
+
+// syntaxErrors turns each parse error gofmt printed on stderr into a
+// finding at its file, line and column.
+func syntaxErrors(stderr string) []checkkit.Finding {
+	var found []checkkit.Finding
+	for _, l := range toolchain.Lines(stderr) {
+		if m := syntaxError.FindStringSubmatch(l); m != nil {
+			line, _ := strconv.Atoi(m[2])
+			col, _ := strconv.Atoi(m[3])
+			found = append(found, checkkit.Finding{File: m[1], Line: line, Column: col, Rule: syntaxRule, Message: m[4]})
+		}
 	}
 	return found
 }

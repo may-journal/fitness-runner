@@ -25,9 +25,9 @@ entry packages measured
         - When go-test-coverage runs
             - Then it fails naming the test and the helper
 - 0028.7
-    - Given Developer has a repo without Go modules
+    - Given Developer has a repo without Go modules, or a Go module and no Go toolchain on the path
         - When go-test-coverage runs
-            - Then it passes with no files checked
+            - Then it passes with no files checked, or shows info with a link to install Go
 - 0028.8
     - Given Developer has an `--audit-map` path to a new file outside the repo
         - When go-test-coverage runs

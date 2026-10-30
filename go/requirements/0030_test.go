@@ -1,6 +1,9 @@
 package requirements
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // gofmtCheck runs `fitness-install -- gofmt` on happyRepo with files written
 // over it and env added.
@@ -47,7 +50,26 @@ func Test0030_4(t *testing.T) {
 func Test0030_5(t *testing.T) {
 	t.Parallel()
 	out, code := gofmtCheck(t, []string{pathWithout(t, "go", "gofmt")}, map[string]string{"ok.go": gofmtTidy})
-	sees(t, out, code, 1, "Go not installed: see https://go.dev/dl")
+	showsInfo(t, out, code, "gofmt", "Go not installed: see https://go.dev/dl")
+}
+
+func Test0030_7(t *testing.T) {
+	t.Parallel()
+	crashed := brokenTool(t, "gofmt", "echo 'fatal error: runtime: out of memory' >&2\nexit 2\n")
+	out, code := gofmtCheck(t, []string{crashed}, map[string]string{"ok.go": gofmtTidy})
+	showsInfo(t, out, code, "gofmt", "gofmt -l exited 2 without a finding: fatal error: runtime: out of memory")
+	if strings.Contains(out, "not gofmt-formatted") {
+		t.Errorf("a crash must not read as an unformatted file:\n%s", out)
+	}
+}
+
+func Test0030_8(t *testing.T) {
+	t.Parallel()
+	out, code := gofmtCheck(t, nil, map[string]string{"ok.go": gofmtTidy, "broken.go": "package m\n\nfunc {\n"})
+	sees(t, out, code, 1, "broken.go:3:6: expected 'IDENT', found '{'")
+	if strings.Contains(out, "not gofmt-formatted") {
+		t.Errorf("a syntax error must fail as itself, not as an unformatted file:\n%s", out)
+	}
 }
 
 func Test0030_6(t *testing.T) {

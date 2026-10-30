@@ -22,33 +22,37 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	bin, err := exec.LookPath("go")
 	if err != nil {
-		return checkkit.Fail(0, toolchain.NotInstalled), nil
+		return checkkit.Result{}, toolchain.Missing()
 	}
-	var errs []string
-	for _, dir := range mods {
-		errs = append(errs, vet(root, dir, bin)...)
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(len(mods), errs...), nil
-	}
-	return checkkit.Pass(len(mods)), nil
+	return toolchain.EachModule(mods, func(dir string) ([]string, error) {
+		return vet(root, dir, bin)
+	})
 }
 
 // vet runs go vet in one module and returns its findings; package header
-// lines ("# pkg") are dropped since each finding names its file.
-func vet(root, dir, bin string) []string {
-	code, out := toolchain.Run(root, dir, bin, "vet", "./...")
-	if code == 0 {
-		return nil
+// lines ("# pkg") are dropped since each finding names its file. A run that
+// could not start, was killed, or failed without naming a .go file is an
+// internal error, since go vet never judged the code.
+func vet(root, dir, bin string) ([]string, error) {
+	code, out, envErr := toolchain.Exec(root, dir, bin, "vet", "./...")
+	if envErr != nil || code == 0 {
+		return nil, envErr
 	}
-	var errs []string
+	errs, named := findings(dir, out)
+	if !named {
+		return nil, checkkit.NoVerdict(toolchain.Label(dir, "go vet ./..."), code, out)
+	}
+	return errs, nil
+}
+
+// findings returns go vet's output lines but the package headers, each
+// labeled with its module, and whether any names a .go file.
+func findings(dir, out string) (errs []string, named bool) {
 	for _, l := range toolchain.Lines(out) {
 		if !strings.HasPrefix(l, "#") {
 			errs = append(errs, toolchain.Label(dir, l))
+			named = named || strings.Contains(l, ".go:")
 		}
 	}
-	if len(errs) == 0 {
-		errs = []string{toolchain.Label(dir, "go vet failed (run: go vet ./...)")}
-	}
-	return errs
+	return errs, named
 }

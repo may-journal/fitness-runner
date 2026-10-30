@@ -35,8 +35,12 @@ JavaScript projects checked
 - 0060.6
     - Given Developer has a JavaScript project without Vitest installed
         - When vitest-coverage-full runs
-            - Then it fails with a hint to install Vitest
+            - Then it shows info with a hint to install Vitest, never failing
 - 0060.7
     - Given Developer has a non-executable `node_modules/.bin/vitest` and Vitest on `PATH`
         - When vitest-coverage-full runs
             - Then it runs the Vitest on `PATH` and passes
+- 0060.8
+    - Given Developer has a Vitest that exits non-zero with no threshold miss or failed test
+        - When vitest-coverage-full runs
+            - Then it shows info quoting Vitest's last lines, never failing

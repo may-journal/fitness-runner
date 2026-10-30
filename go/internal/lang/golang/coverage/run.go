@@ -2,7 +2,6 @@ package coverage
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -25,11 +24,11 @@ func Run(ctx context.Context, root string, options Options) (Report, error) {
 	}
 	bin, err := exec.LookPath("go")
 	if err != nil {
-		return Report{}, checkkit.Internal(errors.New(toolchain.NotInstalled))
+		return Report{}, toolchain.Missing()
 	}
 	temp, err := os.MkdirTemp("", "fitness-go-coverage-")
 	if err != nil {
-		return Report{}, err
+		return Report{}, checkkit.Internal(err)
 	}
 	defer os.RemoveAll(temp)
 	return runModules(ctx, root, bin, temp, mods, options)

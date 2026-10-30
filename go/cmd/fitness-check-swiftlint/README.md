@@ -11,7 +11,8 @@ Runs SwiftLint over the repo through the Swift language module, which owns the t
 - Fail: any violation — reported as `file:line[:col] - reason (rule_id)`.
 - No Swift files in the repo: passes clean (`filesChecked: 0`) instead of erroring, so it is safe in every repo.
 - SwiftLint is not an npm package but a system binary (`brew install swiftlint`), resolved from PATH at runtime, never `node_modules`.
-- A missing binary fails clearly with a one-line install hint rather than a stack trace.
+- A missing binary reports info with a one-line install hint rather than a stack trace.
+- A run that could not start, was killed, or exits non-zero without a violation reports info quoting its output.
 
 ## SwiftLint config
 
