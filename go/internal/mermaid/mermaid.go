@@ -148,6 +148,9 @@ type Callout struct {
 	Label string
 	// Edge reports a connector callout; false means a node callout.
 	Edge bool
+	// Offset is the label's byte offset in the diagram body, so a fix can
+	// rewrite exactly the label the check read.
+	Offset int
 }
 
 // side says what a pattern match labels: nothing, a node, or a connector.
@@ -367,7 +370,8 @@ func (p calloutPattern) scan(line string, offset int, byPosition map[int]Callout
 			pos = start + 1
 			continue
 		}
-		byPosition[offset+pos+loc[2]] = Callout{Label: label, Edge: s == sideEdge}
+		at := offset + pos + loc[2]
+		byPosition[at] = Callout{Label: label, Edge: s == sideEdge, Offset: at}
 		pos = end
 	}
 }
@@ -394,7 +398,8 @@ func (p calloutPattern) needsWhole(label string) bool {
 // `((1 …))`), or as an edge label (`: B`, `|C|`, `-- D --`). Each callout is
 // marked as a node's or a connector's. Styling lines are skipped so hex
 // colors and stroke widths aren't mistaken for callouts. Callouts come back
-// in document order, preserving duplicates at distinct positions.
+// in document order, preserving duplicates at distinct positions, each with
+// its byte offset in body.
 func ExtractCallouts(body string) []Callout {
 	byPosition := map[int]Callout{}
 	offset := 0
@@ -472,6 +477,16 @@ func RowLabel(row []string) string {
 		return m[1]
 	}
 	return ""
+}
+
+// RowLabelOffset returns the byte offset in a raw table row line where its
+// first-column label starts, past the outer pipe, the cell's padding, and
+// an opening bracket. The label RowLabel reads from the split row starts
+// there.
+func RowLabelOffset(line string) int {
+	rest := strings.TrimPrefix(trimStartJS(line), "|")
+	rest = strings.TrimPrefix(trimStartJS(rest), "[")
+	return len(line) - len(rest)
 }
 
 // readRows files each row's first-column label into the table's numbers,

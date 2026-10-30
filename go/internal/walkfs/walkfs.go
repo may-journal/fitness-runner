@@ -163,14 +163,14 @@ func insideWorkTree(root string) bool {
 // only a matching tracked path costs an lstat; a walked path is already a
 // regular file.
 func wanted(root, rel string, exts []string, tracked bool) bool {
-	return hasAnySuffix(filepath.Base(rel), exts) && (!tracked || isRegularFile(root, rel))
+	return hasAnySuffix(filepath.Base(rel), exts) && (!tracked || RegularFile(root, rel))
 }
 
-// isRegularFile reports whether the slash-separated rel under root is a
+// RegularFile reports whether the slash-separated rel under root is a
 // regular file on disk: a tracked path deleted from the work tree, a
 // submodule directory, or a symlink is not. A symlink's tracked content is
 // its target path, and the target is judged as its own file.
-func isRegularFile(root, rel string) bool {
+func RegularFile(root, rel string) bool {
 	info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(rel)))
 	return err == nil && info.Mode().IsRegular()
 }
