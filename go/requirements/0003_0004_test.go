@@ -55,7 +55,7 @@ mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-fitness-front-mat
 no-plans-dir plan-structure
 plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
 release-changelog repeated-string-literals requirements semantic-commit
-text-readability workflow-ref-exists
+text-readability workflow-ref-exists workflow-reporting
 go-complexity go-test go-vet gofmt
 localized-text swiftlint
 dependency-currency eslint no-eslint-disable node-version prettier

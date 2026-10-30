@@ -2,7 +2,7 @@
 
 ## Why
 
-Every check decides for itself whether it can judge a repo, so any repo runs every check with nothing to configure.
+Every check decides for itself whether it can judge a repo. So any repo runs every check, new ones included, with nothing to configure.
 
 ## Measurement
 
