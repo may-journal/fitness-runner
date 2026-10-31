@@ -26,7 +26,7 @@ type Document struct {
 	TitleLine   int
 	Acceptances []IDLine
 	// SourceLine is the line of the `Source:` line older docs end their
-	// Measurement with, or 0. It is never judged, only noted for deletion.
+	// Measurement with, or 0. The check fails it, and the fix deletes it.
 	SourceLine int
 }
 

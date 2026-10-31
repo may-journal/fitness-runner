@@ -121,13 +121,15 @@ func Test0005_17(t *testing.T) {
 	out, code = stagedRun(t, given, with(formatted, map[string]string{pairedTest: edited(testFile("reqs", "Test0001_1"))}))
 	sees(t, out, code, 0)
 	sourced := with(pairedRepo(), map[string]string{pairedDoc: withSource(requirementDoc("0001.1"), "`adder.go:5`")})
-	for _, change := range []string{withSource(requirementDoc("0001.1"), "`adder.go:6`"), requirementDoc("0001.1")} {
-		out, code = stagedRun(t, sourced, map[string]string{pairedDoc: change})
-		sees(t, out, code, 0)
-		out, code = prRun(t, sourced, map[string]string{pairedDoc: change}, "docs(requirements): drop the Source line")
-		sees(t, out, code, 0)
-	}
+	dropped := map[string]string{pairedDoc: requirementDoc("0001.1")}
+	out, code = stagedRun(t, sourced, dropped)
+	sees(t, out, code, 0)
+	out, code = prRun(t, sourced, dropped, "docs(requirements): drop the Source line")
+	sees(t, out, code, 0)
 	out, code = stagedRun(t, sourced, map[string]string{pairedDoc: strings.Replace(requirementDoc("0001.1"), "sums asked for", "sums tried", 1)})
+	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
+	cited := map[string]string{pairedDoc: withSource(requirementDoc("0001.1"), "`adder.go:6`")}
+	out, code = stagedRun(t, sourced, cited)
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
 	renamed0005(t)
 }
@@ -147,7 +149,7 @@ func renamed0005(t *testing.T) {
 }
 
 // withSource is doc with the Source line older docs end their Measurement
-// with, citing cite. It sits on line 19.
+// with, citing cite. It sits on line 15.
 func withSource(doc, cite string) string {
 	return strings.Replace(doc, "## Requirements", "Source: "+cite+"\n\n## Requirements", 1)
 }
@@ -192,7 +194,7 @@ func Test0006_11(t *testing.T) {
 	sourced := withSource(doc, "`gone.go:99`")
 	repo := example(t, "happyRepo", with(pairedRepo(), map[string]string{pairedDoc: sourced}))
 	out, code := fitness(t, repo, nil, "requirements")
-	sees(t, out, code, 0, pairedDoc+":15: delete this `Source:` line, or run `fitness requirements --fix`")
+	sees(t, out, code, 1, pairedDoc+":15: delete this `Source:` line, or run `fitness requirements --fix`")
 	out, code = fitness(t, repo, nil, "requirements", "--fix")
 	sees(t, out, code, 0)
 	if got, err := os.ReadFile(filepath.Join(repo, pairedDoc)); err != nil || string(got) != doc {
@@ -202,7 +204,7 @@ func Test0006_11(t *testing.T) {
 	out, code = fitness(t, repo, nil, "requirements")
 	sees(t, out, code, 0)
 	if strings.Contains(out, "Source") {
-		t.Errorf("a doc without a Source line gets no note, got:\n%s", out)
+		t.Errorf("a doc without a Source line gets no error, got:\n%s", out)
 	}
 }
 
