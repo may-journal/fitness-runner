@@ -173,6 +173,7 @@ func Test0057_9(t *testing.T) {
 		rp := standIn(t, map[string][]response{"swiftlint": {{Match: []string{want}, Stdout: "[\n\n]\n"}}})
 		out, code := fitness(t, repo, append(rp.env, prEnv...), "swiftlint")
 		sees(t, out, code, 0, "All 1 checks passed")
+		swiftlintCounted(t, out, map[bool]string{true: "2", false: "1"}[want == swiftlintArgs])
 		if calls := rp.calls("swiftlint"); len(calls) != 1 || calls[0] != want {
 			t.Errorf("with config %q, swiftlint calls = %q, want one %q", config, calls, want)
 		}
@@ -188,4 +189,12 @@ func Test0057_8(t *testing.T) {
 	rp, out, code := swiftlintRun(t, repo, swiftlintNothingLeft)
 	swiftlintAsked(t, rp)
 	sees(t, out, code, 0, "All 1 checks passed")
+}
+
+// swiftlintCounted asserts the swiftlint row passed with files files.
+func swiftlintCounted(t *testing.T, out, files string) {
+	t.Helper()
+	if !regexp.MustCompile(`│ passed\s+│ ` + files + `\s+│`).MatchString(row(out, "swiftlint")) {
+		t.Errorf("swiftlint must pass with %s files, got row %q", files, row(out, "swiftlint"))
+	}
 }

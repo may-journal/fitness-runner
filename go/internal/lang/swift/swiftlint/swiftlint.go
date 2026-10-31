@@ -71,7 +71,7 @@ func lintPaths(root string, all []string) ([]string, int) {
 	if len(changed) == 0 {
 		return nil, 0
 	}
-	// SwiftLint lints a named path even when the config excludes it.
+	// --force-exclude drops a named path the config excludes.
 	return append([]string{"--force-exclude"}, changed...), len(changed)
 }
 
