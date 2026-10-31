@@ -13,7 +13,7 @@ files linted
 ## Requirements
 
 - 0024.9
-    - Given Developer has a repo without a `package.json`, or a scoped run that stages no JavaScript or TypeScript file
+    - Given Developer has a repo without JavaScript or TypeScript source, even with a formatting-only `package.json`, or a scoped run staging none
         - When fitness runs eslint
             - Then it passes with nothing to judge
 - 0024.2

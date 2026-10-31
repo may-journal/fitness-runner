@@ -18,6 +18,7 @@
 // # Behavior
 //
 //   - Pass: no errors in checked files.
+//   - A repo with no tracked JavaScript or TypeScript source passes with 0 files, even with a formatting-only `package.json`. Tool configs are not source.
 //   - Execs eslint with `cwd` set to the repo root, forcing the resolved shared config via `--config`.
 //   - In a scoped run: only changed paths are linted, passing with 0 files when none is lintable. Otherwise lints every tracked lintable file.
 //   - Lints `.ts`, `.tsx`, `.cjs`, `.js`, `.mjs`, declarations and tests included.

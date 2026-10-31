@@ -4,6 +4,8 @@
 //
 // # Behavior
 //
+// A repo with no tracked JavaScript or TypeScript source passes with 0 files, even with a `package.json` for formatting tools.
+//
 // A pass requires all three of:
 //
 //   - The project sets Vitest coverage thresholds to 100 for branches, functions, lines, and statements.

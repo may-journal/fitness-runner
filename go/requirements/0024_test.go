@@ -124,6 +124,7 @@ func Test0024_9(t *testing.T) {
 	t.Parallel()
 	for _, repo := range []string{
 		example(t, "happyRepo", map[string]string{"app.js": eslintUnsorted}),
+		example(t, "happyRepo", map[string]string{"package.json": "{\"private\": true}\n", "eslint.config.mjs": "export default [];\n"}),
 		eslintStaged(t, map[string]string{"README.md": readme + "\nOne more short line.\n"}),
 	} {
 		rp := standIn(t, map[string][]response{"eslint": {{Stdout: "[]\n"}}})

@@ -85,6 +85,10 @@ func Test0060_1(t *testing.T) {
 	out, code := vcfRun(t, example(t, "happyRepo", nil), nil)
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "vitest-coverage-full")
+	tooling := example(t, "happyRepo", map[string]string{"package.json": "{\"private\": true}\n", "vitest.config.mjs": vcfConfig("50"), "vite.config.ts": "export default {};\n"})
+	out, code = vcfRun(t, tooling, nil)
+	sees(t, out, code, 0, "All 1 checks passed")
+	passedWithNoFiles(t, out, "vitest-coverage-full")
 }
 
 func Test0060_2(t *testing.T) {
