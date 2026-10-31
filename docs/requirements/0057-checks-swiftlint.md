@@ -23,7 +23,7 @@ Swift repos checked
 - 0057.3
     - Given Developer has clean Swift files
         - When fitness runs swiftlint
-            - Then it passes
+            - Then it passes, reporting 1 file checked
 - 0057.4
     - Given Developer has a repo `.swiftlint.yml` that disables a found rule
         - When fitness runs swiftlint
