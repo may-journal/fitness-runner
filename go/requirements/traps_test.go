@@ -225,13 +225,16 @@ func rowTime(line string) string {
 }
 
 // productCommit commits, as a user does after fixingCommit, an edited
-// comment in the store's product file and a changelog entry that says so.
+// comment in the store's product file, a test and requirement doc beside it,
+// and a changelog entry that says so.
 // It returns what timedCommit does.
 func productCommit(t *testing.T, repo string) (string, int, int64) {
 	t.Helper()
 	store := architectedRepo()["src/store/store.go"]
 	edit := map[string]string{
 		"src/store/store.go":                         strings.Replace(store, "keeps records.", "keeps saved records.", 1),
+		"src/store/store_test.go":                    testFile("store", "Test0001_1") + "\n// The store keeps saved records.\n",
+		"docs/requirements/0001-adds-numbers.md":     requirementDoc("0001.1"),
 		"changelog/2026-10-26-1300-store-comment.md": bareEntryText("2026.10.26.1300", "Fix: the store comment says it keeps saved records."),
 	}
 	return timedCommit(t, repo, installerEnv(t), edit, "fix(store): say the store keeps saved records")
