@@ -128,6 +128,9 @@ func Test0005_17(t *testing.T) {
 	sees(t, out, code, 0)
 	out, code = stagedRun(t, sourced, map[string]string{pairedDoc: strings.Replace(requirementDoc("0001.1"), "sums asked for", "sums tried", 1)})
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
+	cited := map[string]string{pairedDoc: withSource(requirementDoc("0001.1"), "`adder.go:6`")}
+	out, code = stagedRun(t, sourced, cited)
+	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
 	renamed0005(t)
 }
 

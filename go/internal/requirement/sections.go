@@ -12,12 +12,12 @@ var acceptID = regexp.MustCompile(`^(\d{4})\.[1-9]\d*$`)
 // chainKeywords open the three nested lines under each acceptance ID.
 var chainKeywords = []string{"Given", "When", "Then"}
 
-// sourceError is what a fourth line starting "Source:" fails with. A line
+// sourceError is what a line starting "Source:" fails with. A line
 // number in a doc goes stale as soon as the code moves, so docs cite none.
 const sourceError = "delete this `Source:` line, or run `fitness requirements --fix`; a Measurement is a numerator, `-` and a denominator"
 
 // checkMeasurement requires a numerator, a "-" line, and a denominator, and
-// fails a fourth line starting "Source:", which older docs carry. It
+// fails a line starting "Source:", which older docs carry. It
 // returns that line's number, or 0, so the fix can delete it.
 func checkMeasurement(p *problems, s section) int {
 	lines, source := withoutSource(s.lines)
@@ -30,11 +30,14 @@ func checkMeasurement(p *problems, s section) int {
 	return source
 }
 
-// withoutSource drops a fourth line starting "Source:" and returns its
+// withoutSource drops the first line starting "Source:" and returns its
 // number, or 0 when there is none.
 func withoutSource(lines []line) ([]line, int) {
-	if len(lines) == 4 && strings.HasPrefix(strings.TrimSpace(lines[3].text), "Source:") {
-		return lines[:3], lines[3].n
+	for i, l := range lines {
+		if strings.HasPrefix(strings.TrimSpace(l.text), "Source:") {
+			rest := append(append([]line{}, lines[:i]...), lines[i+1:]...)
+			return rest, l.n
+		}
 	}
 	return lines, 0
 }
