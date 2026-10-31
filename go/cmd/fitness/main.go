@@ -249,7 +249,7 @@ func init() {
 		// Judges Plan issues only, as issue-check does, in GitHub Actions.
 		//fitness:usage plan-check
 		"plan-check": func([]string) int { return runGH("plan-check") },
-		// Reopens an issue closed with unchecked items, in GitHub Actions.
+		// Reopens an issue closed with unchecked items, or closes the parent it finishes, in GitHub Actions.
 		//fitness:usage close-check
 		"close-check": func([]string) int { return runGH("close-check") },
 		// Notes when a new issue resembles an older one, in GitHub Actions.

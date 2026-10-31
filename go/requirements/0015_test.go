@@ -93,7 +93,7 @@ func Test0015_3(t *testing.T) {
 func Test0015_4(t *testing.T) {
 	t.Parallel()
 	done := "- [x] Write the doc.\n- [x] Write the tests.\n"
-	rp, out, code := closeCheck0015(t, closed0015(t, done, "completed"), nil)
+	rp, out, code := closeCheck0015(t, closed0015(t, done, "completed"), noParent0134(21))
 	sees(t, out, code, 0, "Passed.")
 	quiet0015(t, rp)
 }
