@@ -124,7 +124,7 @@ func gitInput(t *testing.T, repo, stdin string, args ...string) string {
 
 // treeSizesEnv names, comma-separated, the tree sizes Test0001_14 also
 // times, such as 10000,100000,500000. Unset, it times none, since a large
-// tree takes minutes to write.
+// tree is slow to check.
 const treeSizesEnv = "FITNESS_TREE_SIZES"
 
 // timesTrees logs, as one Markdown table, how long each check takes on an
@@ -232,7 +232,7 @@ func productCommit(t *testing.T, repo string) (string, int, int64) {
 	store := architectedRepo()["src/store/store.go"]
 	edit := map[string]string{
 		"src/store/store.go":                         strings.Replace(store, "keeps records.", "keeps saved records.", 1),
-		"changelog/2026-10-26-1300-store-comment.md": entryFileText("2026.10.26.1300", "Fix: the store comment says it keeps saved records."),
+		"changelog/2026-10-26-1300-store-comment.md": bareEntryText("2026.10.26.1300", "Fix: the store comment says it keeps saved records."),
 	}
 	return timedCommit(t, repo, installerEnv(t), edit, "fix(store): say the store keeps saved records")
 }

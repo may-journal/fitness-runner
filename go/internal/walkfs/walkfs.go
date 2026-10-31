@@ -139,14 +139,14 @@ func FilesByExt(root string, exts ...string) []string {
 }
 
 // AllFiles returns every path under root a check judges by name, sorted and
-// slash-separated. Inside a git work tree it is every path in the index, so a
-// staged addition or a rename's target counts before its commit; outside one
+// slash-separated. Inside a git work tree it is every regular file in the index that
+// is on disk, so a staged addition or a rename's target counts before its commit; outside one
 // it is every regular file except those under .git. Unlike FilesByExt, it
 // returns an error when git or the walk cannot list the files, so a check
 // never passes on a list it could not read.
 func AllFiles(root string) ([]string, error) {
 	if list := trackedFiles(root); list.ok {
-		out := slices.Clone(list.files)
+		out := listedOnDisk(root, list)
 		sort.Strings(out)
 		return out, nil
 	}
@@ -156,6 +156,15 @@ func AllFiles(root string) ([]string, error) {
 	files, err := walkFiles(root, true)
 	sort.Strings(files)
 	return files, err
+}
+
+// listedOnDisk returns a copy of the list paths that are regular files on disk,
+// checking the disk only when the list has not been checked already.
+func listedOnDisk(root string, list trackedList) []string {
+	if list.onDisk {
+		return slices.Clone(list.files)
+	}
+	return onDisk(root, list.files)
 }
 
 // insideWorkTree reports whether git sees root as inside a work tree.

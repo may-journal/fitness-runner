@@ -226,7 +226,7 @@ func Test0001_15(t *testing.T) {
 		out, code := fitness(t, repo, []string{path})
 		sees(t, out, code, 0, allPassed())
 		if n := occurrences(calls, "ls-files -z --stage"); n != 1 {
-			t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+			t.Errorf("git must list the tracked files once, and the runner stat them once, for the whole run, but listed them %d times", n)
 		}
 		if n := occurrences(calls, "ls-files -z --cached"); n != 0 {
 			t.Errorf("every check must use the shared list, but %d listed their own", n)

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 	"syscall"
 
@@ -135,11 +134,16 @@ func trackedSnapshot(root string) ([]byte, int, error) {
 func regularEntries(entries []gitx.IndexEntry) []string {
 	paths := make([]string, 0, len(entries))
 	for i, e := range entries {
-		if strings.HasPrefix(e.Mode, "100") && (i == 0 || entries[i-1].Path != e.Path) {
+		if regularMode(e.Mode) && (i == 0 || entries[i-1].Path != e.Path) {
 			paths = append(paths, e.Path)
 		}
 	}
 	return paths
+}
+
+// regularMode reports whether an index mode names a regular file.
+func regularMode(mode string) bool {
+	return mode == "100644" || mode == "100755"
 }
 
 // onDisk keeps the paths that are still regular files under root, stating
