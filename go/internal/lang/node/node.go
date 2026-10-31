@@ -39,11 +39,15 @@ func HasSource(root string) bool {
 	})
 }
 
-// isToolConfig reports whether a file name is a tool config, such as
-// eslint.config.mjs, which configures the tools rather than being product code.
+// toolConfigs are the tools whose `<tool>.config.<ext>` file configures the
+// tool rather than being product code.
+var toolConfigs = []string{"eslint", "vitest", "vite", "jest", "prettier", "babel", "rollup", "webpack"}
+
+// isToolConfig reports whether a file name is one of those tool configs.
 func isToolConfig(name string) bool {
-	ext := filepath.Ext(name)
-	return strings.HasSuffix(strings.TrimSuffix(name, ext), ".config")
+	return slices.ContainsFunc(toolConfigs, func(tool string) bool {
+		return strings.HasPrefix(name, tool+".config.")
+	})
 }
 
 // Ancestors lists root, made absolute when it can be, and each folder above
