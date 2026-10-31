@@ -53,7 +53,10 @@ func walkFiles(root string) checkkit.Result {
 			cfg.path))
 	}
 	files := targets(root)
-	return checkkit.Found(len(files), errorLine, checkFiles(root, files, newChecker(cfg), cfg)...)
+	found, skipped := checkFiles(root, files, newChecker(cfg), cfg)
+	result := checkkit.Found(len(files)-len(skipped), errorLine, found...)
+	result.Info = skipped
+	return result
 }
 
 // targets lists the files to spell-check: the changed files, or every
@@ -116,16 +119,9 @@ var (
 		"reword without it; cspell.json's flagWords forbids it"}
 )
 
-// unreadable is the rule of a file the check could not read.
-const unreadable = "unreadable-file"
-
 // errorLine renders a finding as the cspell CLI would print it:
-// "<path>:<line>:<col> - Unknown word (<word>)", or "<path>: <message>
-// (run: <fix>)" for a file it could not read.
+// "<path>:<line>:<col> - Unknown word (<word>)".
 func errorLine(f checkkit.Finding) string {
-	if f.Line == 0 {
-		return fmt.Sprintf("%s: %s (run: %s)", f.File, f.Message, f.Fix)
-	}
 	return fmt.Sprintf("%s:%d:%d - %s", f.File, f.Line, f.Column, f.Message)
 }
 
@@ -139,33 +135,43 @@ func checkContent(name, content string, checker *spell.Checker, flags []string) 
 
 // checkFiles scans each file as the cspell CLI run from the root would.
 // The cspell.json files that list the flagWords are never checked for them.
-func checkFiles(root string, files []string, checker *spell.Checker, cfg config) []checkkit.Finding {
-	perFile := par.Map(len(files), 0, func(i int) []checkkit.Finding {
+// A file it cannot read is skipped and named in skipped, so the other files
+// are still judged.
+func checkFiles(root string, files []string, checker *spell.Checker, cfg config) (found []checkkit.Finding, skipped []string) {
+	perFile := par.Map(len(files), 0, func(i int) fileResult {
 		flags := cfg.FlagWords
 		if path.Base(files[i]) == "cspell.json" {
 			flags = nil
 		}
 		return fileIssues(root, files[i], checker, flags)
 	})
-	var found []checkkit.Finding
-	for _, fe := range perFile {
-		found = append(found, fe...)
+	for _, fr := range perFile {
+		found = append(found, fr.found...)
+		if fr.skipped != "" {
+			skipped = append(skipped, fr.skipped)
+		}
 	}
-	return found
+	return found, skipped
+}
+
+// fileResult is one file's findings, or the note that it could not be read.
+type fileResult struct {
+	found   []checkkit.Finding
+	skipped string
 }
 
 // fileIssues scans one file and returns its findings: a read failure yields
-// the run-cspell hint, binary files yield nothing (counted as checked, never
+// a skip note, binary files yield nothing (counted as checked, never
 // spelled).
-func fileIssues(root, rel string, checker *spell.Checker, flags []string) []checkkit.Finding {
+func fileIssues(root, rel string, checker *spell.Checker, flags []string) fileResult {
 	data, binary, err := readText(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
-		return []checkkit.Finding{{File: rel, Rule: unreadable, Message: "cspell reported issues", Fix: "npx cspell <files>"}}
+		return fileResult{skipped: walkfs.Unreadable(rel, err)}
 	}
 	if binary {
-		return nil
+		return fileResult{}
 	}
-	return checkContent(rel, string(data), checker, flags)
+	return fileResult{found: checkContent(rel, string(data), checker, flags)}
 }
 
 // probeBytes is how much of a file the binary probe reads.

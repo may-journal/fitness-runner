@@ -1,6 +1,7 @@
 package architecture
 
 import (
+	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -85,9 +86,12 @@ func (m *Model) readRequirements(root string, files []string) error {
 	}
 	// The requirements check owns doc shape errors; this check only resolves
 	// references against the parsed docs.
-	docs, _, err := requirement.Load(root, paths)
+	docs, _, skipped := requirement.Load(root, paths)
 	m.Requirements = docs
-	return err
+	if len(skipped) > 0 {
+		return errors.New(skipped[0])
+	}
+	return nil
 }
 
 // viewReader pairs each model diagram with the callout table after it.

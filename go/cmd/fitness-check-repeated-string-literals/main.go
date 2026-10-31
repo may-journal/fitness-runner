@@ -78,18 +78,21 @@ func Main() {
 func run(root string, _ []string) (checkkit.Result, error) {
 	files := findSourceFiles(root)
 	scanned := make([]scannedFile, 0, len(files))
+	var skipped []string
 	for _, file := range files {
 		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if err != nil {
-			return checkkit.Result{}, err
+			skipped = append(skipped, walkfs.Unreadable(file, err))
+			continue
 		}
 		scanned = append(scanned, scannedFile{file: file, literals: scanStringLiterals(string(content))})
 	}
-	errs := findDuplicates(scanned, allowedValues(root))
-	if len(errs) > 0 {
-		return checkkit.Fail(len(files), errs...), nil
+	result := checkkit.Pass(len(scanned))
+	if errs := findDuplicates(scanned, allowedValues(root)); len(errs) > 0 {
+		result = checkkit.Fail(len(scanned), errs...)
 	}
-	return checkkit.Pass(len(files)), nil
+	result.Info = skipped
+	return result, nil
 }
 
 // findSourceFiles returns sorted relative paths of every tracked source

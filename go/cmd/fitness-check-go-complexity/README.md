@@ -10,6 +10,7 @@ Enforces a cyclomatic complexity ceiling on Go functions — the Go-native count
 - Function literals score separately from their enclosing function, the way eslint scores arrow functions.
 - Test files (`_test.go`) are scored like any other Go file; table-driven tests keep them under the ceiling.
 - A file that fails to parse fails the check with the parser's error.
+- A file it cannot read is skipped and named as info; the other files are still judged.
 - `filesChecked` counts every Go file scanned, tests included.
 
 ## Errors

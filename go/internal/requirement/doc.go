@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // IDLine is an ID and the line that declares it. An acceptance with three
@@ -72,20 +74,20 @@ func At(file string, n int, msg string) string {
 	return fmt.Sprintf("%s:%d: %s", file, n, msg)
 }
 
-// Load reads and parses every requirement doc.
-func Load(root string, paths []string) ([]Document, []string, error) {
-	var docs []Document
-	var errs []string
+// Load reads and parses every requirement doc. A doc it cannot read is left
+// out and named in skipped.
+func Load(root string, paths []string) (docs []Document, errs, skipped []string) {
 	for _, p := range paths {
 		b, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(p)))
 		if err != nil {
-			return nil, nil, err
+			skipped = append(skipped, walkfs.Unreadable(p, err))
+			continue
 		}
 		d, docErrs := Parse(p, string(b))
 		docs = append(docs, d)
 		errs = append(errs, docErrs...)
 	}
-	return docs, errs, nil
+	return docs, errs, skipped
 }
 
 // Parse validates one doc's name, title, sections, measurement, and

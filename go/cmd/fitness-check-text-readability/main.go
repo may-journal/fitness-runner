@@ -48,17 +48,28 @@ func run(root string, args []string) (checkkit.Result, error) {
 	} else if handled {
 		return res, nil
 	}
-	th := loadThresholds(root)
-	report := hasFlag(args, "--report")
+	return walkFiles(root, loadThresholds(root), hasFlag(args, "--report")), nil
+}
+
+// walkFiles scores every in-scope markdown file. A file it cannot read is
+// skipped and named as info.
+func walkFiles(root string, th thresholds, report bool) checkkit.Result {
 	files := walkfs.InScope(walkfs.FilesByExt(root, ".md"))
-	var errs []string
+	var errs, skipped []string
 	for _, rel := range files {
-		errs = append(errs, judgeFile(root, rel, th, report)...)
+		alarm, skip := judgeFile(root, rel, th, report)
+		errs = append(errs, alarm...)
+		if skip != "" {
+			skipped = append(skipped, skip)
+		}
 	}
+	read := len(files) - len(skipped)
+	result := checkkit.Pass(read)
 	if len(errs) > 0 {
-		return checkkit.Fail(len(files), append(errs, guidance()...)...), nil
+		result = checkkit.Fail(read, append(errs, guidance()...)...)
 	}
-	return checkkit.Pass(len(files)), nil
+	result.Info = skipped
+	return result
 }
 
 // guidance follows the per-file alarms once per failing run: what each
@@ -107,13 +118,14 @@ func hasFlag(args []string, flag string) bool {
 	return false
 }
 
-// judgeFile scores one markdown file and returns its alarm, if any.
-func judgeFile(root, rel string, th thresholds, report bool) []string {
+// judgeFile scores one markdown file and returns its alarm, if any, or the
+// note that it could not be read.
+func judgeFile(root, rel string, th thresholds, report bool) (alarm []string, skipped string) {
 	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
-		return []string{fmt.Sprintf("%s: %v", rel, err)}
+		return nil, walkfs.Unreadable(rel, err)
 	}
-	return judgeContent(rel, string(raw), th, report)
+	return judgeContent(rel, string(raw), th, report), ""
 }
 
 // judgeContent scores already-read markdown content under name and returns its
