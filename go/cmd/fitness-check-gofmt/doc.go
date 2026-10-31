@@ -10,4 +10,7 @@
 //   - A missing Go toolchain reports info with a one-line install hint, never a failure.
 //   - A gofmt that could not start, was killed, or exits non-zero with neither finding reports info quoting its output.
 //   - `filesChecked` counts the Go files checked.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

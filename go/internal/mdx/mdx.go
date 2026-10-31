@@ -2,6 +2,9 @@
 // mermaid checks share: front matter extraction, fenced-block scanning, and
 // GFM table row splitting. Semantics mirror the TypeScript helpers the
 // checks were ported from.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package mdx
 
 import (

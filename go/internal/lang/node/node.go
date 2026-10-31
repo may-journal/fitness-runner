@@ -3,6 +3,9 @@
 // installed tool's binary is, which files are scripts, and the script
 // extension sets each check reads. The packages in its folder hold the Node
 // tools' own logic: biome, javascript, sharedconf and vitestconf.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package node
 
 import (

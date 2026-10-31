@@ -15,4 +15,7 @@
 // # Errors
 //
 //	docs/competition.md:11: broken relative link: ./README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

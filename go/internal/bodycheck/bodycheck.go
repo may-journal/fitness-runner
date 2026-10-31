@@ -3,6 +3,9 @@
 // rather than walking files. It resolves the body from a `--body-file` path (`-` meaning stdin),
 // the runner's context-inline `--body` value, or piped stdin, and turns a
 // validator's messages into a checkkit.Result.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package bodycheck
 
 import (

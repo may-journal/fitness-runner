@@ -3,6 +3,9 @@
 // or biome.jsonc at its root and @biomejs/biome in its package.json. The
 // eslint check then runs `biome lint` and the prettier check `biome format`,
 // each with the GitHub reporter, whose one-line findings this package reads.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package biome
 
 import (

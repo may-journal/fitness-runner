@@ -2,6 +2,9 @@
 // that ran, rounded up to a whole minute, as GitHub bills private repos.
 // fitness-release minutes prints its table, so a CI change is measured by
 // the jobs it started and the minutes they billed.
+//
+//fitness:container tools
+//fitness:component tool The release tool totals billed minutes through it.
 package minutes
 
 import (

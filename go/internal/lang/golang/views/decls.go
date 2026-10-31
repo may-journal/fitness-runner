@@ -17,6 +17,9 @@
 // repository, resolved through the nearest tracked go.mod, and each pkg.X
 // use of it. A reference under //go:build keeps that condition, so an
 // error says under go:build linux. A file that does not parse fails.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package views
 
 import (

@@ -10,6 +10,8 @@
 // run. `--describe` prints a Describe JSON and exits without running.
 //
 //fitness:topic protocol
+//fitness:container cli
+//fitness:component kit It is the protocol every check and the runner speak.
 package checkkit
 
 import (

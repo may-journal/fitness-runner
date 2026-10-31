@@ -4,6 +4,8 @@
 // fitness on the PATH is needed.
 //
 //fitness:topic hooks
+//fitness:container cli
+//fitness:component main The init subcommand installs the hooks it embeds.
 package hooks
 
 import "embed"

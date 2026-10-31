@@ -2,6 +2,9 @@
 // for the go-vet, go-test, and gofmt checks. Each check self-gates: a repo
 // with no go.mod passes clean, and a missing toolchain reports info with an
 // install hint.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package toolchain
 
 import (

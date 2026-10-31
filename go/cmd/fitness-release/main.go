@@ -1,5 +1,8 @@
 // Command fitness-release builds, publishes, and verifies release assets.
 // cspell:ignore releasemeta
+//
+//fitness:container tools
+//fitness:component tool It builds and publishes the bundles, outside any run.
 package main
 
 import (

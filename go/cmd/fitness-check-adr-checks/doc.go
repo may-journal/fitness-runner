@@ -35,4 +35,7 @@
 // check whose file list goes empty never passes by reading nothing.
 //
 // [local checks guide]: https://github.com/may-journal/fitness-runner/blob/main/docs/local-checks.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

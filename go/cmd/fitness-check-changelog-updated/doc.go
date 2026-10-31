@@ -35,4 +35,7 @@
 //
 // [entry file]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-changelog/README.md#entry-files
 // [changelog]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-changelog/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

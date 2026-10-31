@@ -33,4 +33,7 @@
 //
 // [#181]: https://github.com/may-journal/fitness-runner/issues/181
 // [ADR 0003]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0003/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

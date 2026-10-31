@@ -81,11 +81,16 @@ type sources struct {
 	checks []checkDoc
 	topics []topicDoc
 	usage  usageDoc
+	roles  []role
 }
 
-// readSources reads the check packages, the topic packages, and the
-// documented command line.
+// readSources reads the place in the architecture views every package
+// names, the check packages, the topic packages, and the documented
+// command line.
 func (c Config) readSources() (s sources, err error) {
+	if s.roles, err = c.roles(); err != nil {
+		return s, err
+	}
 	if s.checks, err = c.checkDocs(); err != nil {
 		return s, err
 	}
@@ -223,11 +228,17 @@ func checkAlias(name string) string {
 	return strings.Join(words, "") + "Check"
 }
 
+// markdownInputs are the Markdown files the generator reads, by repository
+// path, other than the check READMEs: the views whose element IDs package
+// doc comments name, and the files holding a generated region.
+var markdownInputs = map[string]bool{readmeFile: true, docsChecksFile: true, containersView: true, componentsView: true}
+
 // Input reports whether a changed repository path can change what the
-// generator writes: a Go source, which holds the doc comments it reads, or a
-// Markdown file it writes whole or in part.
+// generator writes: a Go source, which holds the doc comments it reads, a
+// view whose element IDs those comments name, or a Markdown file it writes
+// whole or in part.
 func Input(path string) bool {
-	if strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile {
+	if strings.HasSuffix(path, ".go") || markdownInputs[path] {
 		return true
 	}
 	matched, _ := filepath.Match("go/cmd/fitness-check-*/README.md", path)

@@ -23,4 +23,7 @@
 //   - `filesChecked` counts the tracked `package.json` manifests.
 //   - Reports against `latest`, not `wanted`: a dependency inside its declared semver range but behind the newest release is still flagged.
 //   - The point is to stay current, not merely in-range.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

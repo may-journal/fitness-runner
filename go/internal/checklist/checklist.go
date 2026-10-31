@@ -1,5 +1,8 @@
 // Package checklist reads the task list in an issue body, so `fitness
 // close-check` and `fitness pr-check` agree on which items are still open.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package checklist
 
 import (

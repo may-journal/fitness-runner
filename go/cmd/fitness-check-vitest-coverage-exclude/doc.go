@@ -14,4 +14,7 @@
 //
 // It reads the config as text, so exclude entries built from variables,
 // spreads, or imports are invisible to it.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

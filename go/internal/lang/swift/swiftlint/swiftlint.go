@@ -7,6 +7,9 @@
 // the install hint, "No lintable files found" passes clean, and otherwise
 // the JSON violation array becomes `file:line[:col] - reason (rule_id)`
 // lines. A failure where nothing parses reports info quoting the output.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package swiftlint
 
 import (

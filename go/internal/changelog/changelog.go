@@ -4,6 +4,9 @@
 // both agree that a pull request carries one entry file, which later commits
 // amend. The release tool reads the entry files a tag adds to write that
 // release's notes. CHANGELOG.md is no part of it.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package changelog
 
 import (

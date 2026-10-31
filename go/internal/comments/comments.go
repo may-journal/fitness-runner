@@ -2,6 +2,9 @@
 // prints about its own types comes from the code and cannot drift from it.
 // Its surface stays small on purpose: a shared generator of docs from
 // comments can sit behind it later without changing its callers.
+//
+//fitness:container cli
+//fitness:component main The explain and docs subcommands print the doc comments it reads.
 package comments
 
 import (

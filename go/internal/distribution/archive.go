@@ -1,4 +1,7 @@
 // cspell:ignore Typeflag
+//
+//fitness:container tools
+//fitness:component tool The installer and release tool fetch and verify bundles through it.
 package distribution
 
 import (

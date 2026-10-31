@@ -27,4 +27,7 @@
 // failed. A run that exits non-zero with neither, could not start, or was
 // killed reports info quoting its last lines. A missing coverage provider is
 // one example.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

@@ -3,6 +3,8 @@
 // library parses it and a config file must not require a toolchain.
 //
 //fitness:topic config
+//fitness:container cli
+//fitness:component config It loads .fitnessrc.json before any check is resolved.
 package conf
 
 import (

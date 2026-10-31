@@ -34,6 +34,9 @@
 //
 // A name inside a string interpolation is a reference. A reference under
 // #if keeps that condition, so an error says under #if DEBUG.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package views
 
 import (

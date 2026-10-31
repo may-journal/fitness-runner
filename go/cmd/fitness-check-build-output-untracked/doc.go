@@ -25,4 +25,7 @@
 //   - Each module's package docs name its output paths. A repo with no such output and no `dist` rules to judge passes clean.
 //
 // [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

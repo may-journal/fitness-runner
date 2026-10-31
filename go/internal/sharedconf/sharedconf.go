@@ -20,6 +20,9 @@
 // renamed into place; rename is atomic, so a reader never observes a partial
 // file, and the per-file exists-check merely skips work another process has
 // already finished.
+//
+//fitness:container cli
+//fitness:component config It ships the tool config the checks read.
 package sharedconf
 
 import (

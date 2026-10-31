@@ -68,4 +68,7 @@
 //
 // [04-code.md]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/architecture/templates/04-code.md
 // [architecture-contract README]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-contract/README.md#templates
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

@@ -1,5 +1,8 @@
 // Package swift is the Swift language module's home: how a Swift repo
 // proves a runtime and names its requirement tests.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package swift
 
 import (

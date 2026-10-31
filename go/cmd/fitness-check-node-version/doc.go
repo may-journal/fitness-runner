@@ -12,4 +12,7 @@
 //
 // It accepts plain or `v`-prefixed versions in `.nvmrc`, such as `24` or
 // `v24`.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

@@ -56,4 +56,7 @@
 // [Requirement 0072] has one installed-command test per acceptance.
 //
 // [Requirement 0072]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0072-checks-architecture-journey.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

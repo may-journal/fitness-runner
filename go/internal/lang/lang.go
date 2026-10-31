@@ -8,6 +8,8 @@
 // in a folder named for it beside that package.
 //
 //fitness:topic languages
+//fitness:container cli
+//fitness:component resolve It orders what each language module claims into the check list.
 package lang
 
 import (

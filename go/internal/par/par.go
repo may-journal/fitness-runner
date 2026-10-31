@@ -1,6 +1,9 @@
 // Package par is the tiny deterministic worker pool the file-scanning
 // checks share: results come back in input order regardless of completion
 // order, so parallelism never changes a check's output.
+//
+//fitness:container cli
+//fitness:component kit File-scanning checks share its worker pool.
 package par
 
 import (

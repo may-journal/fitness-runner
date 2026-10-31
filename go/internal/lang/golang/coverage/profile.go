@@ -1,5 +1,8 @@
 // Package coverage measures Go entry coverage and reports test overlap for
 // the go-test-coverage check.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package coverage
 
 import (

@@ -1,6 +1,9 @@
 // Package javascript tokenizes JavaScript and TypeScript source without running
 // it, so checks can read config literals and test calls the way the
 // language would.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package javascript
 
 import (

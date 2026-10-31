@@ -139,4 +139,7 @@
 // and default adoption need a separate policy decision.
 //
 //	fitness --policy=external --checks=go-test-coverage --all
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

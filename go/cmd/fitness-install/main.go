@@ -1,4 +1,7 @@
 // Command fitness-install fetches verified Fitness binaries and runs them.
+//
+//fitness:container tools
+//fitness:component tool It ships beside the bundle as its own binary, outside any run.
 package main
 
 import (

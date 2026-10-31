@@ -8,6 +8,9 @@
 // comment that opens on the first line, the form a PR template carries.
 // A byte order mark may come first, and lines may end in CRLF. A leading
 // `---` followed by prose is a horizontal rule, never front matter.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package frontmatter
 
 import (

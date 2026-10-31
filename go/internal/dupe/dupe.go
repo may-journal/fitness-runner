@@ -4,6 +4,9 @@
 // titles and bodies have in common, once markdown, code, links and filler
 // words are gone. `fitness dupe-check` comments when a new issue scores high
 // against an older one.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package dupe
 
 import (

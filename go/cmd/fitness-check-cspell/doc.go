@@ -22,4 +22,7 @@
 // `cspell:` directives are applied to the whole file.
 //
 // [lockfiles and build wrapper files]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/lang.go
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

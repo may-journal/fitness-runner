@@ -22,4 +22,7 @@
 //   - Each error names the path, its rule, and the comment to move it to,
 //     sorted by path. The check never deletes a file.
 //   - `filesChecked` is the number of paths judged.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

@@ -18,6 +18,9 @@
 //
 // Requirements finds the tests named for requirement acceptances, which
 // the requirements check reads.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package tests
 
 // cspell:ignore jacoco

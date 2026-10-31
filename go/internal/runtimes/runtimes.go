@@ -2,6 +2,9 @@
 // build targets, entry points, and deploy files prove, and the platform
 // services its code uses. A dependency manifest alone proves nothing. Each
 // language module brings a Reader; this package knows no language itself.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package runtimes
 
 import (

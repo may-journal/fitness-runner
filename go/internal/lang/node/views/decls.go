@@ -22,6 +22,9 @@
 // exports, by keyword or export list. The reader is lexical, without
 // imports, so a function stored in a const is no declaration. It reads no
 // references, so the components view takes no TypeScript evidence.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package views
 
 import (

@@ -35,4 +35,7 @@
 // public ones, so private repos are skipped in CI.
 //
 // [#485]: https://github.com/may-journal/fitness-runner/issues/485
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

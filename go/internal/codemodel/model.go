@@ -3,6 +3,9 @@
 // files, and the relations between declarations a code view shows. Each
 // language module brings a Reader that fills it; this package and the views
 // that use it know no language.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package codemodel
 
 import (

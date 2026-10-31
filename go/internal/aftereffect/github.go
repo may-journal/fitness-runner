@@ -2,6 +2,9 @@
 // a blob: comment a verdict, label it, hide outdated verdicts, or reopen an
 // issue. Each command names its effect by code reference, so every GitHub
 // reaction lives here and the checks stay pure judgments.
+//
+//fitness:container cli
+//fitness:component main The GitHub subcommands act on a verdict through it.
 package aftereffect
 
 import (

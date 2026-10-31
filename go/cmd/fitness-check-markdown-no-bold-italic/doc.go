@@ -12,4 +12,7 @@
 // code, and markdown link blocks `[text](url)`, so underscores in URLs or
 // link text are not flagged. The bold scope Release Please gives release
 // bullets is allowed too.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

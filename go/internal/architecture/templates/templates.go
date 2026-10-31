@@ -1,6 +1,9 @@
 // Package templates ships the five architecture view templates inside the
 // binary, so doc-template judges every repo's views against them, whether
 // or not the repo keeps a copy of its own.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package templates
 
 import (

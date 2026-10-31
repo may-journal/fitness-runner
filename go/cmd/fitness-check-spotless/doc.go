@@ -20,4 +20,7 @@
 //
 // [Spotless]: https://github.com/diffplug/spotless
 // [Java module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/java/java.go
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

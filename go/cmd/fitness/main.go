@@ -22,6 +22,9 @@
 // `fitness list` names every check, `fitness explain <check>` says why one
 // exists and how to pass it, and `fitness docs` serves the guides. All of
 // them, and this page, come from the code's own doc comments.
+//
+//fitness:container cli
+//fitness:component main It routes the subcommands, then resolves, runs and reports every check.
 package main
 
 import (

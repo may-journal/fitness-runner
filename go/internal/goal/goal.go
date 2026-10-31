@@ -4,6 +4,8 @@
 // still falls short.
 //
 //fitness:topic coverage
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package goal
 
 import "strconv"

@@ -1,4 +1,7 @@
 // Package report integrates command outcomes with GitHub Actions.
+//
+//fitness:container cli
+//fitness:component output It reports each outcome to GitHub Actions.
 package report
 
 import (

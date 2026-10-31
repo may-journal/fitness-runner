@@ -125,4 +125,7 @@
 // [internal/architecture/templates]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/architecture/templates
 // [shipped templates]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-doc-template/README.md#shipped-templates
 // [Requirement 0070]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0070-checks-architecture-contract.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

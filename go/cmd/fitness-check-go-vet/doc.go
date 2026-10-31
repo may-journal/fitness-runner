@@ -10,4 +10,7 @@
 //   - A missing Go toolchain reports info with a one-line install hint, never a failure.
 //   - A `go vet` that could not start, was killed, hit sandbox text, or failed naming no `.go` file reports info quoting its output.
 //   - `filesChecked` counts the modules vetted.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

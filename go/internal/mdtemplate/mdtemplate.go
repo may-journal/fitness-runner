@@ -3,6 +3,9 @@
 // set of level-2 sections, and a per-section content rule. It is shared by the
 // plan-structure and pr-structure checks so the pitch, required-section, and
 // "no other sections" rules live in one place.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package mdtemplate
 
 import (

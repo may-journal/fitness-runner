@@ -16,4 +16,7 @@
 //
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28
 // [mermaid-callouts]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-mermaid-callouts/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

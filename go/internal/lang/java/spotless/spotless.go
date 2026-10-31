@@ -3,6 +3,9 @@
 // and its formatter, so the check never picks a style. Each file Spotless
 // would rewrite becomes one finding; a failure that names no file reports
 // the build's own error lines.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package spotless
 
 // cspell:ignore diffplug

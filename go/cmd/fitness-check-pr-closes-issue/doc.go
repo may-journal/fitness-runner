@@ -42,4 +42,7 @@
 // [#69]: https://github.com/may-journal/fitness-runner/issues/69
 // [#141]: https://github.com/may-journal/fitness-runner/issues/141
 // [pr-check.yml]: https://github.com/may-journal/fitness-runner/blob/main/.github/workflows/pr-check.yml
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

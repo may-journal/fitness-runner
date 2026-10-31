@@ -83,4 +83,7 @@
 //
 // [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
 // [Requirement 0076]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0076-checks-architecture-code.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

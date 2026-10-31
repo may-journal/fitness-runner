@@ -5,6 +5,9 @@
 // widths 28/10/8/max(10, terminal-51) including one space of padding per
 // side, gray borders and red header regardless of tty (unless NO_COLOR),
 // chalk-style status colors only on a terminal.
+//
+//fitness:container cli
+//fitness:component output It draws the results table every run prints.
 package render
 
 import (

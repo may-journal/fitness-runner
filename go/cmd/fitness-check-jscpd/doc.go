@@ -45,4 +45,7 @@
 // [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
 // [lockfiles]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/lockfiles
 // [doc-template]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-doc-template/README.md#what-is-a-template
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

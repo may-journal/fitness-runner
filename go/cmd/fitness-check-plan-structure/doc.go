@@ -26,4 +26,7 @@
 //
 // [Plan issue template]: https://github.com/may-journal/fitness-runner/blob/main/.github/ISSUE_TEMPLATE/plan.md
 // [issue-check workflow]: https://github.com/may-journal/fitness-runner/blob/main/.github/workflows/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

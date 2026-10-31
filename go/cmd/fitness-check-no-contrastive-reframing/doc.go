@@ -22,4 +22,7 @@
 //
 // The detection is deliberately narrow; widen it only with tests that pin
 // the false-positive line.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

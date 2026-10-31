@@ -68,4 +68,7 @@
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28
 // [#583]: https://github.com/may-journal/fitness-runner/issues/583
 // [#702]: https://github.com/may-journal/fitness-runner/issues/702
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

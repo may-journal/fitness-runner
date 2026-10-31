@@ -50,4 +50,7 @@
 //   - Pass: no scanned file contains a directive.
 //   - Fail: `path/to/file.ts:42: <directive>` per hit.
 //   - `filesChecked` counts every scanned source file (after de-duplication).
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

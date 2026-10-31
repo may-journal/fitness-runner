@@ -12,6 +12,9 @@
 // four runes are never flagged; lookup is case-insensitive against the
 // embedded base dictionaries plus any added project words, tolerating a
 // trailing possessive ('s).
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package spell
 
 import (

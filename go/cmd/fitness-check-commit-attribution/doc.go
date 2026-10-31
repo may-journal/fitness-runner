@@ -64,4 +64,7 @@
 //   - Pass: both trailers present with non-empty values, or a `Merge ` or `Revert ` subject.
 //   - Fail: one error per missing trailer; on no repo, git error, or empty message, the empty-message guidance error.
 //   - `filesChecked` is always 1.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

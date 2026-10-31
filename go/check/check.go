@@ -30,6 +30,9 @@
 // which report info and never fail a run. Judge runs a check in a unit
 // test, on a repo Repo writes, and Test runs it on the repo the test runs
 // in. docs/local-checks.md is the guide.
+//
+//fitness:container repo
+//fitness:component kit A repo's own Go checks speak the protocol through it.
 package check
 
 import (

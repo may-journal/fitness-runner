@@ -18,6 +18,9 @@
 // it uses, such as a framework's package names, to its own cspell config.
 // The spell and duplicate checks skip each build tool's wrapper files,
 // which the tool writes.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package java
 
 // cspell:ignore mvnw gradlew jacoco junitreports

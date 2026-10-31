@@ -28,6 +28,9 @@
 // call through a variable, such as store.save(), relates nothing, and
 // overloads differ only by their stated signatures. It reads no
 // references, so the components view takes no Java evidence.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package views
 
 import (

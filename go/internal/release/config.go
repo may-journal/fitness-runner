@@ -1,4 +1,7 @@
 // Package release verifies GoReleaser assets and prepares installer hash metadata.
+//
+//fitness:container tools
+//fitness:component tool The release tool builds, verifies and documents through it.
 package release
 
 import (

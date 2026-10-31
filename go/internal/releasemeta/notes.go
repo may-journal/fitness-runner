@@ -1,4 +1,7 @@
 // cspell:ignore releasemeta
+//
+//fitness:container tools
+//fitness:component tool It holds the release facts the tools share.
 package releasemeta
 
 import (

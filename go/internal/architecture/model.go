@@ -2,6 +2,9 @@
 // already in each architecture view. Mermaid IDs are the stable identities;
 // callout numbers stay display references. Nothing here is a proof: an edge
 // counts as proved only when later checks resolve its evidence.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package architecture
 
 import (

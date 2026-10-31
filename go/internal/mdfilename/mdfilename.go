@@ -4,6 +4,9 @@
 // check binaries are each a thin main over Run with their own Convention:
 // same function, two flavors. Both run in every repo; Detect picks the
 // repo's convention from its existing names, and only that flavor judges.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package mdfilename
 
 import (

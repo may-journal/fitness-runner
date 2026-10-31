@@ -12,6 +12,9 @@
 // The running JDK is JAVA_HOME's, as the build tools pick it, else the
 // one on PATH. A Gradle toolchain asks for its exact release, which an
 // installed JDK must match, else a toolchain resolver must download.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package version
 
 // cspell:ignore sdkmanrc

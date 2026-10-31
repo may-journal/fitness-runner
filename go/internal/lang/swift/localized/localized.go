@@ -5,6 +5,9 @@
 // accessibility, alert or dialog modifier fails. So does a test literal
 // that types an entry's words. Each finding names the file, line and
 // literal, and the reference to use instead.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package localized
 
 import (

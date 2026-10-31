@@ -2,6 +2,9 @@
 // Inside a git repo it lists every tracked file still on disk, so only
 // untracked files stay out; outside one it walks every file except .git.
 // No directory name, config key, or tool ignore list removes a file.
+//
+//fitness:container cli
+//fitness:component kit Checks list a repo's files through it.
 package walkfs
 
 import (

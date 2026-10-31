@@ -38,4 +38,7 @@
 // `text-readability` through `internal/mdx`.
 //
 // [text-readability]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-text-readability/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

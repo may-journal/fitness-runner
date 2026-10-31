@@ -57,4 +57,7 @@
 //   - Pass: every pattern line is directly preceded by a non-empty explanatory `#` comment.
 //   - Fail: reports `.gitignore:<lineNumber>: pattern "<text>" has no explanatory # comment on the line above` for each offending pattern.
 //   - `filesChecked` is 1 whenever `.gitignore` is present.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

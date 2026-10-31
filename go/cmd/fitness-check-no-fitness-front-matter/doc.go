@@ -17,4 +17,7 @@
 // Test fixtures are out of scope. Files under a `testdata` or
 // `tests/examples` folder are never judged, so fixture repos may keep their
 // blocks as test data.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

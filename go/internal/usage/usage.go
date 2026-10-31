@@ -1,5 +1,8 @@
 // Package usage warns about flags a subcommand was given but does not
 // read, so a flag never silently does nothing.
+//
+//fitness:container cli
+//fitness:component main The entry warns through it about flags a subcommand ignores.
 package usage
 
 import (

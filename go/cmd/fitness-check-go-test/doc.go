@@ -10,4 +10,7 @@
 //   - A missing Go toolchain reports info with a one-line install hint, never a failure.
 //   - A `go test` that could not start, was killed, hit sandbox text, or failed without an explaining line reports info quoting its output.
 //   - The time budget is 15 minutes, since a test suite can run long.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

@@ -5,6 +5,9 @@
 // Every finding fails, warnings included: Maven runs with warnings as
 // violations, and Gradle's warning lines are read as findings too. Each
 // becomes `file:line[:col] - message (Rule)`.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package checkstyle
 
 import (

@@ -1,3 +1,9 @@
+// Package requirement parses the requirement docs under docs/requirements:
+// each doc's ID, its acceptances with their Given and When lines, and the
+// sections the requirements check judges.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package requirement
 
 import (

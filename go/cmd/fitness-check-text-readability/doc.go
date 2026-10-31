@@ -49,4 +49,7 @@
 //	}
 //
 // [docs/research/0001-prose-cognitive-complexity.md]: https://github.com/may-journal/fitness-runner/blob/main/docs/research/0001-prose-cognitive-complexity.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

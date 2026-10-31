@@ -19,4 +19,7 @@
 //	changelog/2026-05-01-0000-readme.md:8: bullet must start with a semantic type (Feat:, Fix:, ...)
 //
 // [entry file]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-changelog/README.md#entry-files
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

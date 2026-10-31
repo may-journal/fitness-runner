@@ -64,4 +64,7 @@
 // [requirements]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-requirements/README.md
 // [template]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/architecture/templates/01-system-context.md
 // [Requirement 0074]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0074-checks-architecture-actors.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

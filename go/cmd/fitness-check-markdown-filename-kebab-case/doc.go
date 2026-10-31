@@ -61,4 +61,7 @@
 //   - Pass: every basename is a standard root doc, a name GitHub requires, or matches the enabled flavor's convention.
 //   - Fail: `path: filename must be <kebab-case|camelCase>` per non-conforming file.
 //   - `filesChecked` counts every `.md` file scanned.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

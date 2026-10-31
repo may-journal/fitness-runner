@@ -27,4 +27,7 @@
 //
 // A native Go engine (`go/ast` and `go/parser` from the standard library)
 // scores the code; no external tool is required.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

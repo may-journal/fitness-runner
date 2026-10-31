@@ -62,4 +62,7 @@
 // [LocalizedStringKey]: https://developer.apple.com/documentation/swiftui/localizedstringkey
 // [0097]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0097-checks-localized-text.md
 // [ADR 0009]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0009/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

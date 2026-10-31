@@ -4,6 +4,9 @@
 // the code, so every such error is a checkkit.Internal error that a check
 // reports as info. The package-level functions keep their older shape and
 // read a failure as empty. Every call runs under Deadline.
+//
+//fitness:container cli
+//fitness:component kit The runner and checks share its git calls.
 package gitx
 
 import (

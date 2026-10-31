@@ -28,6 +28,9 @@
 // contribute their lines — each line at most once per file, with each
 // clone's first occurrence staying free, exactly like jscpd counts a
 // clone pair's lines once.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package clonedetect
 
 import "github.com/may-journal/fitness-runner/go/internal/par"

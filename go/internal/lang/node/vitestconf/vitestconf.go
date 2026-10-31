@@ -11,6 +11,9 @@
 // earlier. One consequence: a config file that exists always wins as the
 // config source, where the TS fell through past files whose evaluation
 // crashed or produced null.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package vitestconf
 
 import (

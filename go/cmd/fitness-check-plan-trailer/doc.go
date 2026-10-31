@@ -25,4 +25,7 @@
 // own owner, and reads it from the repo it names.
 //
 // [issue-link-once]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-issue-link-once/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

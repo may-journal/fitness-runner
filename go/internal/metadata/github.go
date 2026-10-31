@@ -14,6 +14,8 @@
 // pre-push hook runs it before a push.
 //
 //fitness:topic github
+//fitness:container cli
+//fitness:component main It declares the checks each GitHub subcommand runs.
 package metadata
 
 import (

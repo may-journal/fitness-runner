@@ -30,6 +30,9 @@
 // are byte offsets where the original used UTF-16 code units — the two are
 // ordering-consistent (both strictly increase along the text), so
 // dedupe-by-position and document ordering behave identically.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package mermaid
 
 import (

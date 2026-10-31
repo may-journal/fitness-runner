@@ -37,4 +37,7 @@
 // `go/internal/metadata` supplies the same judgments to this check and the
 // Actions commands. Only Actions applies GitHub effects. The meta-check calls
 // judgments directly, so it cannot recursively run the suite.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

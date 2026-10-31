@@ -1,4 +1,7 @@
 // Package selection resolves explicit external policy without changing org defaults.
+//
+//fitness:container cli
+//fitness:component resolve It turns the run's arguments and policy into the checks to run.
 package selection
 
 import (

@@ -39,4 +39,7 @@
 //
 // [Conventional Commits]: https://www.conventionalcommits.org/
 // [conventional-commit-types]: https://github.com/commitizen/conventional-commit-types
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

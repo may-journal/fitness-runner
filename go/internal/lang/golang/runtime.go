@@ -2,6 +2,9 @@
 // runtime, names its requirement tests and sets the Go checks' options.
 // The toolchain package beside it finds modules and runs the go command
 // for the Go checks, and the coverage package measures entry coverage.
+//
+//fitness:container cli
+//fitness:component kit Its language's checks share it.
 package golang
 
 import (

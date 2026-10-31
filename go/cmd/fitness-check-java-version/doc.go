@@ -51,4 +51,7 @@
 //   - The running JDK is `JAVA_HOME`'s, as the build tools pick it, else `java` on `PATH`.
 //   - With no running JDK, the check fails with an install hint.
 //   - No Maven or Gradle build in the repo: passes clean with `filesChecked: 0`.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

@@ -12,4 +12,7 @@
 //   - Fail: one error per unchecked item, quoting its text.
 //
 // Items inside fenced code are examples, so they never count.
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

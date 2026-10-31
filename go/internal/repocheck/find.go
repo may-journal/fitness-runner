@@ -8,6 +8,8 @@
 // docs/local-checks.md is the guide for writing one.
 //
 //fitness:topic local-checks
+//fitness:container cli
+//fitness:component resolve It finds and builds the repo's own checks before the run.
 package repocheck
 
 import (

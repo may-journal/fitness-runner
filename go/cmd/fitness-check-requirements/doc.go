@@ -116,4 +116,7 @@
 // [actor]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-architecture-actors/README.md
 // [apple-ui-testing-library]: https://github.com/may-journal/apple-ui-testing-library
 // [Swift module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/swift/library.go
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

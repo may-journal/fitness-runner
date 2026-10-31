@@ -51,4 +51,7 @@
 //
 //   - Template literals are out of scope — only plain `'…'` and `"…"` literals count.
 //   - Thresholds and the idiomatic-token set are fixed in the binary; there is no inline marker and no enum-candidate detection yet (tracked in #44).
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

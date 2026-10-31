@@ -9,4 +9,7 @@
 // exempt.
 //
 // [markdown-filename-kebab-case]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-markdown-filename-kebab-case/README.md
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

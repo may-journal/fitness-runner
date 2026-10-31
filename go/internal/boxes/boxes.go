@@ -1,6 +1,9 @@
 // Package boxes draws a run's `fitness --json` report as a static HTML box
 // diagram: one box per check, sized by its runtime, binary size, or error
 // lines. See docs/ci.md#box-diagram.
+//
+//fitness:container cli
+//fitness:component output It draws a run's report as a box diagram.
 package boxes
 
 import (

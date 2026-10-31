@@ -14,4 +14,7 @@
 // with neither are skipped and don't count toward `filesChecked`.
 //
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28
+//
+//fitness:container cli
+//fitness:component check Each check is its own package, built into the fitness binary.
 package check

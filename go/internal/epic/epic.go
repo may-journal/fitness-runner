@@ -2,6 +2,9 @@
 // needs to happen` section lists in run order, and the rules each item keeps.
 // The epic-structure check judges the list, and `fitness issue-check`
 // compares its references with the epic's GitHub sub-issues.
+//
+//fitness:container cli
+//fitness:component kit Checks share it as one engine, so no check keeps its own copy.
 package epic
 
 import (
