@@ -39,7 +39,7 @@ func Main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	if !node.Applies(root) {
+	if !node.Applies(root) || !node.HasSource(root) {
 		return checkkit.Pass(0), nil
 	}
 	return runVitest(root)

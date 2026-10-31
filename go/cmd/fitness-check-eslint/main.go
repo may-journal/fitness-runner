@@ -85,7 +85,7 @@ func buildExecCheckResult(exitCode int, errs []string, filesChecked int) (checkk
 // a scoped run at least one changed file it lints, so a run with none skips
 // ESLint instead of linting the whole repo.
 func applies(root string) bool {
-	if !node.Applies(root) {
+	if !node.Applies(root) || !node.HasSource(root) {
 		return false
 	}
 	changed := checkkit.ChangedFiles()

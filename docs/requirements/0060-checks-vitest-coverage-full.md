@@ -13,7 +13,7 @@ JavaScript projects checked
 ## Requirements
 
 - 0060.1
-    - Given Developer has a repo with no `package.json`
+    - Given Developer has a repo without JavaScript or TypeScript source, even with a `package.json` for formatting tools
         - When vitest-coverage-full runs
             - Then it passes having checked 0 files
 - 0060.2

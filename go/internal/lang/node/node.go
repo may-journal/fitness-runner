@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -26,6 +27,23 @@ func Manifests(root string) []string {
 // have something to judge. It is the one place that rule lives.
 func Applies(root string) bool {
 	return len(Manifests(root)) > 0
+}
+
+// HasSource reports whether root tracks JavaScript or TypeScript source, so
+// ESLint and Vitest have code to judge. A package.json used only for
+// formatting tools does not count, and neither does a tool config such as
+// eslint.config.mjs or vitest.config.ts.
+func HasSource(root string) bool {
+	return slices.ContainsFunc(walkfs.FilesByExt(root, LintableExts...), func(p string) bool {
+		return !isToolConfig(filepath.Base(p))
+	})
+}
+
+// isToolConfig reports whether a file name is a tool config, such as
+// eslint.config.mjs, which configures the tools rather than being product code.
+func isToolConfig(name string) bool {
+	ext := filepath.Ext(name)
+	return strings.HasSuffix(strings.TrimSuffix(name, ext), ".config")
 }
 
 // Ancestors lists root, made absolute when it can be, and each folder above
