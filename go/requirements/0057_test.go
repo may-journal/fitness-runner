@@ -3,6 +3,7 @@ package requirements
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -120,6 +121,9 @@ func Test0057_3(t *testing.T) {
 	rp, out, code := swiftlintRun(t, repo, swiftlintClean)
 	swiftlintAsked(t, rp)
 	sees(t, out, code, 0, "All 1 checks passed")
+	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "swiftlint")) {
+		t.Errorf("swiftlint must pass with 1 file, got row %q", row(out, "swiftlint"))
+	}
 }
 
 func Test0057_4(t *testing.T) {
