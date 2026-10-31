@@ -25,6 +25,6 @@ issues closed as completed with unchecked items
         - When close-check runs
             - Then the issue stays closed
 - 0015.4
-    - Given Developer has an issue closed with every item ticked
+    - Given Developer has an issue with no parent, closed with every item ticked
         - When close-check runs
             - Then the issue stays closed

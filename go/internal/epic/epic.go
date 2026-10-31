@@ -112,6 +112,11 @@ func leadRef(text string) string {
 	return ""
 }
 
+// Lead is the reference text opens with, or "" when it opens with none.
+func Lead(text string) string {
+	return leadRef(text)
+}
+
 // parse reads one item's checkbox, reference and note.
 func parse(text string) Item {
 	it := Item{Text: text}

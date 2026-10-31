@@ -125,7 +125,7 @@ With `pr-check: true` the same job then runs `fitness pr-check` on the PR's titl
 
 ## close-check
 
-[close-check.yml](close-check.yml) runs `fitness close-check` when an issue closes, so unfinished work stays open. Other repos call [close-check-reusable.yml](close-check-reusable.yml).
+[close-check.yml](close-check.yml) runs `fitness close-check` when an issue closes, so unfinished work stays open. A parent closes when every child, a sub-issue or listed reference, closed as completed. Other repos call [close-check-reusable.yml](close-check-reusable.yml).
 
 ```mermaid
 flowchart TD
