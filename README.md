@@ -90,7 +90,7 @@ Commands:
   fitness plan-check
       Judges Plan issues only, as issue-check does, in GitHub Actions.
   fitness close-check
-      Reopens an issue closed with unchecked items, in GitHub Actions.
+      Reopens an issue closed with unchecked items, or closes the parent it finishes, in GitHub Actions.
   fitness dupe-check
       Notes when a new issue resembles an older one, in GitHub Actions.
   fitness comment-check --blob <text>

@@ -76,6 +76,7 @@ flowchart TB
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
     perfRecord[(32 Performance record<br/>Req 0089)]:::system
+    closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
 
     dev --> install
     install --> terminal
@@ -109,6 +110,7 @@ flowchart TB
     ciRun --> resolveConfig
     ciRun --> prCheck
     ciRun --> release
+    ciRun --> closeParents
     resultsTable --> perfRecord
     release --> perfRecord
 
@@ -163,3 +165,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 36  | `fitness docs [topic]`.             | Action  | An agent reads the protocol, config and GitHub commands from the binary, as the code documents them. |
 | 37  | A check README or `fitness --help`. | Action  | A person reads the same documentation the binary prints, generated from the same code. |
 | 38  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
+| 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |

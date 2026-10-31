@@ -3,7 +3,8 @@ name: Close check (reusable)
 # Reusable across the org: a consumer repo calls this from an `issues: closed`
 # caller. It installs the published fitness checks and runs `fitness
 # close-check`, which reopens an issue closed as completed while its checklist
-# still has unchecked items, and comments once naming them. Issue events cannot
+# still has unchecked items, and comments once naming them. It also closes a
+# parent whose last child just closed as completed. Issue events cannot
 # run as org required workflows, so every repo with Issues needs the caller.
 # fitness-runner keeps its own build-from-source close-check to test unreleased
 # changes.

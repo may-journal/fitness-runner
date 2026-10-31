@@ -39,7 +39,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `fitness pr-check`: Judges pull request titles and descriptions, in GitHub Actions.
 - `fitness issue-check`: Judges an issue by its kind label and comments the result, in GitHub Actions.
 - `fitness plan-check`: Judges Plan issues only, as issue-check does, in GitHub Actions.
-- `fitness close-check`: Reopens an issue closed with unchecked items, in GitHub Actions.
+- `fitness close-check`: Reopens an issue closed with unchecked items, or closes the parent it finishes, in GitHub Actions.
 - `fitness dupe-check`: Notes when a new issue resembles an older one, in GitHub Actions.
 - `fitness comment-check --blob <text>` or `fitness comment-check`: Judges a drafted comment, where - or no text reads stdin, or judges issue and PR comments and reply, in GitHub Actions.
 

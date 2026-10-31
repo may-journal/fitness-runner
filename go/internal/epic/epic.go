@@ -104,8 +104,8 @@ func Key(ref, repo string) string {
 	return strings.ToLower(ref)
 }
 
-// leadRef is the reference text opens with, or "".
-func leadRef(text string) string {
+// Lead is the reference text opens with, or "".
+func Lead(text string) string {
 	if loc := refRe.FindStringIndex(text); loc != nil && loc[0] == 0 {
 		return text[:loc[1]]
 	}
@@ -119,7 +119,7 @@ func parse(text string) Item {
 	if loc := checkboxRe.FindStringIndex(text); loc != nil {
 		it.Checkbox, rest = true, text[loc[1]:]
 	}
-	it.Lead = leadRef(rest)
+	it.Lead = Lead(rest)
 	m := plainRe.FindStringSubmatch(rest)
 	if m == nil {
 		return it
