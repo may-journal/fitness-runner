@@ -115,6 +115,7 @@ func Test0134_2(t *testing.T) {
 	closedParent0134(t, rp, 30)
 }
 
+// Test0134_3 expects one comment on the parent that names the child once.
 func Test0134_3(t *testing.T) {
 	t.Parallel()
 	rp, out, code := closeParents0134(t, parentOf0134(21, 30), []response{

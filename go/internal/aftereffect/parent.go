@@ -263,7 +263,7 @@ func (g Client) subParent(n int) (*Ref, error) {
 // mentions are the open issues in this repo whose body mentions issue n.
 func (g Client) mentions(n int) ([]Ref, error) {
 	q := fmt.Sprintf(`repo:%s is:issue is:open "#%d" in:body`, g.repo, n)
-	out, err := g.gh("api", "--jq", `.items[] | {number}`, "search/issues?q="+url.QueryEscape(q))
+	out, err := g.gh("api", "--paginate", "--jq", `.items[] | {number}`, "search/issues?per_page=100&q="+url.QueryEscape(q))
 	if err != nil {
 		return nil, err
 	}

@@ -23,7 +23,7 @@ parents whose children were all closed as completed
 - 0134.3
     - Given Developer has a parent that lists its last child both as a sub-issue and in the list
         - When its last child closes
-            - Then it comments that child once with its close reason and closes the parent
+            - Then it closes the parent with one comment naming that child and its close reason
 - 0134.4
     - Given Developer has a parent whose own parent has no other open child
         - When its last child closes
