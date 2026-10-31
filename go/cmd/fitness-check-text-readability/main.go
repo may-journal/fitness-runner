@@ -5,7 +5,6 @@ package check
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
@@ -54,21 +53,12 @@ func run(root string, args []string) (checkkit.Result, error) {
 // walkFiles scores every in-scope markdown file. A file it cannot read is
 // skipped and named as info.
 func walkFiles(root string, th thresholds, report bool) checkkit.Result {
-	files := walkfs.InScope(walkfs.FilesByExt(root, ".md"))
-	var errs, skipped []string
-	for _, rel := range files {
-		alarm, skip := judgeFile(root, rel, th, report)
-		errs = append(errs, alarm...)
-		if skip != "" {
-			skipped = append(skipped, skip)
-		}
+	result := walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+		return judgeContent(rel, content, th, report)
+	})
+	if len(result.Errors) > 0 {
+		result.Errors = append(result.Errors, guidance()...)
 	}
-	read := len(files) - len(skipped)
-	result := checkkit.Pass(read)
-	if len(errs) > 0 {
-		result = checkkit.Fail(read, append(errs, guidance()...)...)
-	}
-	result.Info = skipped
 	return result
 }
 
@@ -116,16 +106,6 @@ func hasFlag(args []string, flag string) bool {
 		}
 	}
 	return false
-}
-
-// judgeFile scores one markdown file and returns its alarm, if any, or the
-// note that it could not be read.
-func judgeFile(root, rel string, th thresholds, report bool) (alarm []string, skipped string) {
-	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-	if err != nil {
-		return nil, walkfs.Unreadable(rel, err)
-	}
-	return judgeContent(rel, string(raw), th, report), ""
 }
 
 // judgeContent scores already-read markdown content under name and returns its

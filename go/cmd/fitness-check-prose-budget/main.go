@@ -2,8 +2,6 @@ package check
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -62,23 +60,9 @@ func run(root string, args []string) (checkkit.Result, error) {
 
 // walkFiles applies the budget to every in-scope .md file under root.
 func walkFiles(root string, lim limits) checkkit.Result {
-	files := walkfs.InScope(walkfs.FilesByExt(root, ".md"))
-	var errs, skipped []string
-	for _, rel := range files {
-		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			skipped = append(skipped, walkfs.Unreadable(rel, err))
-			continue
-		}
-		errs = append(errs, check(rel, string(raw), lim)...)
-	}
-	read := len(files) - len(skipped)
-	result := checkkit.Pass(read)
-	if len(errs) > 0 {
-		result = checkkit.Fail(read, errs...)
-	}
-	result.Info = skipped
-	return result
+	return walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+		return check(rel, content, lim)
+	})
 }
 
 // settings resolves the limits: defaults with every positive config value

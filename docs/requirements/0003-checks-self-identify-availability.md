@@ -37,6 +37,10 @@ checks in the catalog
         - When fitness runs go-complexity
             - Then it fails on the parse error and names the unreadable file as info
 - 0003.7
-    - Given Developer has a requirement doc the requirements check cannot read, or git history it cannot replay
+    - Given Developer has a requirement doc the requirements check cannot read
         - When fitness runs requirements
-            - Then it names what it skipped as info and judges the rest
+            - Then it names the doc as info and does not judge ownership without it
+- 0003.8
+    - Given Developer has git history the requirements check cannot replay
+        - When fitness runs requirements
+            - Then it names the failure as info and passes

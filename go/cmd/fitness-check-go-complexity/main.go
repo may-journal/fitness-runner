@@ -5,13 +5,10 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
-	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -28,25 +25,9 @@ func Main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	max := maxComplexity(root)
-	sources := walkfs.InScope(walkfs.FilesByExt(root, golang.Ext))
-	count := len(sources)
-	perFile := par.Map(count, 0, func(i int) fileResult {
-		return scanFile(root, sources[i], max)
-	})
-	var errs, skipped []string
-	for _, fr := range perFile {
-		errs = append(errs, fr.errs...)
-		if fr.skipped != "" {
-			skipped = append(skipped, fr.skipped)
-		}
-	}
-	read := count - len(skipped)
-	result := checkkit.Pass(read)
-	if len(errs) > 0 {
-		result = checkkit.Fail(read, errs...)
-	}
-	result.Info = skipped
-	return result, nil
+	return walkfs.ScanFiles(root, []string{golang.Ext}, func(relPath, src string) []string {
+		return scanFile(relPath, src, max)
+	}), nil
 }
 
 // maxComplexity resolves the ceiling: the .fitnessrc.json goComplexity.max
@@ -58,23 +39,13 @@ func maxComplexity(root string) int {
 	return defaultMax
 }
 
-// fileResult is one file's findings, or the note that it could not be read.
-type fileResult struct {
-	errs    []string
-	skipped string
-}
-
-// scanFile reads and parses one file and reports every function over the
-// ceiling. A file it cannot read is skipped; one that does not parse fails.
-func scanFile(root, relPath string, max int) fileResult {
-	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(relPath)))
-	if err != nil {
-		return fileResult{skipped: walkfs.Unreadable(relPath, err)}
-	}
+// scanFile parses one file's source and reports every function over the
+// ceiling. A file that does not parse fails with the parser's error.
+func scanFile(relPath, src string, max int) []string {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, root+"/"+relPath, src, 0)
+	f, err := parser.ParseFile(fset, relPath, src, 0)
 	if err != nil {
-		return fileResult{errs: []string{fmt.Sprintf("%s: %v", relPath, err)}}
+		return []string{fmt.Sprintf("%s: %v", relPath, err)}
 	}
 	var found []finding
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -100,7 +71,7 @@ func scanFile(root, relPath string, max int) fileResult {
 				relPath, fd.line, fd.name, fd.complexity, max))
 		}
 	}
-	return fileResult{errs: errs}
+	return errs
 }
 
 type finding struct {

@@ -261,8 +261,12 @@ func Test0003_7(t *testing.T) {
 	repo := example(t, "happyRepo", goRepo())
 	mustDo(t, os.Chmod(filepath.Join(repo, "docs", "requirements", "0001-adds-numbers.md"), 0o000))
 	out, code := fitness(t, repo, nil, "requirements")
-	sees(t, out, code, 1, "docs/requirements/0001-adds-numbers.md: skipped, cannot be read (permission denied)")
-	repo = example(t, "happyRepo", goRepo())
+	showsInfo(t, out, code, "requirements", "docs/requirements/0001-adds-numbers.md: skipped, cannot be read (permission denied)")
+}
+
+func Test0003_8(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", goRepo())
 	head, err := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
 	mustDo(t, err)
 	keep := strings.TrimSpace(string(head))
@@ -272,6 +276,6 @@ func Test0003_7(t *testing.T) {
 		}
 		return err
 	}))
-	out, code = fitness(t, repo, nil, "requirements")
+	out, code := fitness(t, repo, nil, "requirements")
 	showsInfo(t, out, code, "requirements", "requirement IDs were not checked against git history")
 }

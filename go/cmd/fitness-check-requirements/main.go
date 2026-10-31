@@ -58,6 +58,10 @@ func run(root string, args []string) (checkkit.Result, error) {
 func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) (errs, notes []string, err error) {
 	docs, errs, skipped := requirement.Load(root, paths)
 	notes = skipped
+	if len(skipped) > 0 {
+		// A doc left out would leave its tests unowned and its IDs unknown.
+		return errs, append(notes, "ownership and history were not judged without every doc"), nil
+	}
 	for _, d := range docs {
 		if d.SourceLine > 0 {
 			notes = append(notes, requirement.At(d.Path, d.SourceLine, sourceNote))
