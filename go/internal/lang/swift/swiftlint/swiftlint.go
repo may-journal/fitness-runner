@@ -49,7 +49,7 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	if len(all) == 0 {
 		return checkkit.Pass(0), nil
 	}
-	paths := lintPaths(root, all)
+	paths, count := lintPaths(root, all)
 	if len(paths) == 0 {
 		return checkkit.Pass(0), nil
 	}
@@ -57,21 +57,22 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, checkkit.Internal(errors.New(notInstalled))
 	}
-	return judge(execSwiftlint(bin, root, paths))
+	return judge(execSwiftlint(bin, root, paths), count)
 }
 
-// lintPaths is what SwiftLint lints: the whole tree, or a scoped run's
-// changed Swift files among all, none when it changed no Swift file.
-func lintPaths(root string, all []string) []string {
+// lintPaths is what SwiftLint lints and how many Swift files that covers:
+// the whole tree, or a scoped run's changed Swift files among all, none when
+// it changed no Swift file.
+func lintPaths(root string, all []string) ([]string, int) {
 	if checkkit.ChangedFiles() == nil || includes(root) {
-		return []string{"."}
+		return []string{"."}, len(all)
 	}
 	changed := walkfs.InScope(all)
 	if len(changed) == 0 {
-		return nil
+		return nil, 0
 	}
-	// SwiftLint lints a named path even when the config excludes it.
-	return append([]string{"--force-exclude"}, changed...)
+	// --force-exclude drops a named path the config excludes.
+	return append([]string{"--force-exclude"}, changed...), len(changed)
 }
 
 // includedKey is a top-level `included:` list in a SwiftLint config.
@@ -98,7 +99,7 @@ func execSwiftlint(bin, root string, paths []string) checkkit.Outcome {
 // printed command-not-found is an internal error with the install hint,
 // no-lintable-files passes with zero files, and otherwise the exec result is
 // judged like buildExecCheckResult.
-func judge(o checkkit.Outcome) (checkkit.Result, error) {
+func judge(o checkkit.Outcome, count int) (checkkit.Result, error) {
 	if err := o.EnvErr("swiftlint"); err != nil {
 		return checkkit.Result{}, err
 	}
@@ -108,21 +109,21 @@ func judge(o checkkit.Outcome) (checkkit.Result, error) {
 	if strings.Contains(o.Stdout, noLintableFilesMarker) {
 		return checkkit.Pass(0), nil
 	}
-	return judgeExecResult(o.Code, parseViolations(o.Stdout), o.Stdout)
+	return judgeExecResult(o.Code, parseViolations(o.Stdout), o.Stdout, count)
 }
 
 // judgeExecResult judges the exec outcome like the TS buildExecCheckResult:
 // ok only on exit 0 with no parsed violations, else the violations
 // themselves. A failure that parsed nothing is an internal error quoting
 // what SwiftLint printed, since it named nothing to fix.
-func judgeExecResult(exitCode int, violations []string, output string) (checkkit.Result, error) {
+func judgeExecResult(exitCode int, violations []string, output string, count int) (checkkit.Result, error) {
 	if exitCode == 0 && len(violations) == 0 {
-		return checkkit.Pass(0), nil
+		return checkkit.Pass(count), nil
 	}
 	if len(violations) == 0 {
 		return checkkit.Result{}, checkkit.NoVerdict("swiftlint lint --strict", exitCode, output)
 	}
-	return checkkit.Fail(0, violations...), nil
+	return checkkit.Fail(count, violations...), nil
 }
 
 // parseViolations parses the JSON reporter's violation array; malformed

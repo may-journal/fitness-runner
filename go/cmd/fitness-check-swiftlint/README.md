@@ -7,7 +7,7 @@ Runs SwiftLint over the repo through the Swift language module, which owns the t
 ## Behavior
 
 - Runs: `swiftlint lint --strict --reporter json --quiet .` from repo root.
-- Pass: no violations.
+- Pass: no violations, reporting the Swift files it is asked to lint (a pull request counts only its changed files).
 - Fail: any violation — reported as `file:line[:col] - reason (rule_id)`.
 - No Swift files in the repo: passes clean (`filesChecked: 0`) instead of erroring, so it is safe in every repo.
 - SwiftLint is not an npm package but a system binary (`brew install swiftlint`), resolved from PATH at runtime, never `node_modules`.

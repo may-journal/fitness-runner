@@ -23,7 +23,7 @@ Swift repos checked
 - 0057.3
     - Given Developer has clean Swift files
         - When fitness runs swiftlint
-            - Then it passes
+            - Then it passes, reporting 1 file checked
 - 0057.4
     - Given Developer has a repo `.swiftlint.yml` that disables a found rule
         - When fitness runs swiftlint
@@ -43,4 +43,4 @@ Swift repos checked
 - 0057.9
     - Given Developer has a pull request that changes one of two Swift files
         - When fitness runs swiftlint on the pull request
-            - Then it lints only that file, or the whole tree when the config lists `included:` paths
+            - Then it lints only that file, or the whole tree when the config lists `included:` paths, reporting the files it was given
