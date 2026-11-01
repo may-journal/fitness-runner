@@ -69,6 +69,7 @@ func Test0139_6(t *testing.T) {
 	files := inComments("Retries just once, since the first call warms the cache.")
 	files["app/state.go"] = "package main\n\n// Maps each state → its next state on every tick.\nvar next = map[int]int{}\n"
 	files["app/expiry.ts"] = "export {};\n\n// The cache no longer expires once it holds a value.\nexport const keep = true;\n"
+	files["app/store.go"] = "package main\n\n// Returns the previously stored value.\nfunc stored() int { return 0 }\n"
 	files["README.md"] = readme + "\nIt basically worked previously. 🚀\n\n-----\n"
 	out, code := proseBudget(t, files)
 	sees(t, out, code, 0)

@@ -56,13 +56,18 @@ func slopErrors(name string, b comments.Block, blocks []block) []string {
 	return errs
 }
 
-// matched quotes the first match of re in prose followed by what, or returns "".
+// matched quotes the first match of re in prose that no participle follows, followed by what, or returns "".
 func matched(re *regexp.Regexp, prose, what string) string {
-	if m := re.FindString(prose); m != "" {
-		return fmt.Sprintf("%q %s", m, what)
+	for _, m := range re.FindAllStringSubmatchIndex(prose, -1) {
+		if !participle.MatchString(prose[m[1]:]) {
+			return fmt.Sprintf("%q %s", prose[m[0]:m[1]], what)
+		}
 	}
 	return ""
 }
+
+// participle opens text with a past participle, as in "previously stored" or "actually written", which describes today.
+var participle = regexp.MustCompile(`^\s+[a-z]{3,}(ed|en)\b`)
 
 // proseOf joins a comment's paragraphs and list items with code spans and quoted literals masked.
 func proseOf(blocks []block) string {
@@ -74,15 +79,15 @@ func proseOf(blocks []block) string {
 			parts = append(parts, bl.text)
 		}
 	}
-	return mdx.MaskInline(masked(strings.Join(parts, "\n"), "quote"))
+	return masked(strings.Join(parts, "\n"))
 }
 
-// codeSpan is a Markdown code span.
-var codeSpan = regexp.MustCompile("`[^`]*`")
+// singleQuoted is a one-line single-quoted literal, opened after a space so an apostrophe opens none.
+var singleQuoted = regexp.MustCompile(`(^|[\s(])'[^'\n]*'`)
 
-// masked replaces each code span and one-line quoted literal in text with word.
-func masked(text, word string) string {
-	return quoted.ReplaceAllString(codeSpan.ReplaceAllString(text, word), word)
+// masked is text with each code span, link and quoted literal replaced by one word.
+func masked(text string) string {
+	return mdx.MaskInline(singleQuoted.ReplaceAllString(quoted.ReplaceAllString(text, "quote"), "${1}quote"))
 }
 
 // narration matches words that tell how code changed rather than how it works.
@@ -94,9 +99,9 @@ var hedge = regexp.MustCompile(`(?i:\b(basically|simply|essentially|obviously|ac
 // banner matches a run of five or more of one decoration character.
 var banner = regexp.MustCompile(`={5,}|-{5,}|\*{5,}|#{5,}`)
 
-// decorated names the emoji, box drawing or banner in text outside quotes and code spans, or returns "".
+// decorated names the emoji, box drawing or banner in text's judged rows outside quotes and code spans, or returns "".
 func decorated(text string) string {
-	text = masked(text, "quote")
+	text = masked(strings.Join(judgedRows(text), "\n"))
 	if why := symbol(text); why != "" {
 		return why
 	}
@@ -122,8 +127,13 @@ func symbol(text string) string {
 // runeRange is an inclusive range of code points.
 type runeRange struct{ lo, hi rune }
 
-// pictographs are the emoji and dingbat blocks, stopping before the dingbat arrows so → and ➔ read as prose.
-var pictographs = []runeRange{{0x1F000, 0x1FAFF}, {0x2600, 0x2793}, {0x2B50, 0x2B50}, {0x2B55, 0x2B55}}
+// pictographs are the emoji, dingbat and emoji-styled symbol code points; arrows such as → and ➔ stay prose.
+var pictographs = []runeRange{
+	{0x1F000, 0x1FAFF}, {0x2600, 0x2793}, {0x2B50, 0x2B50}, {0x2B55, 0x2B55},
+	{0x203C, 0x203C}, {0x2049, 0x2049}, {0x2139, 0x2139}, {0x231A, 0x231B}, {0x2328, 0x2328},
+	{0x23CF, 0x23CF}, {0x23E9, 0x23F3}, {0x23F8, 0x23FA}, {0x24C2, 0x24C2}, {0x3030, 0x3030},
+	{0x303D, 0x303D}, {0x3297, 0x3297}, {0x3299, 0x3299}, {0xFE0F, 0xFE0F},
+}
 
 // boxDrawing is the Unicode box-drawing block.
 var boxDrawing = []runeRange{{0x2500, 0x257F}}
@@ -149,11 +159,10 @@ var codeLine = regexp.MustCompile(`^(` +
 	`return(\s+[\w.]+(\(.*\))?)?;?` +
 	`)$`)
 
-// keywords are code words that never make a line read as prose.
+// keywords are code words that neither count toward prose nor break a run of prose words.
 var keywords = map[string]bool{
 	"if": true, "else": true, "for": true, "return": true, "range": true, "func": true, "var": true,
-	"let": true, "const": true, "case": true, "not": true, "and": true, "or": true, "in": true,
-	"of": true, "go": true, "defer": true, "new": true, "await": true, "async": true, "import": true,
+	"let": true, "const": true, "case": true, "go": true, "defer": true, "await": true, "async": true, "import": true,
 }
 
 // readsAsProse reports a line holding three plain words in a row, or two pairs of them.
@@ -173,7 +182,7 @@ func readsAsProse(row string) bool {
 // wordRuns returns the lengths of a line's runs of plain words outside quotes; keywords neither count nor break a run.
 func wordRuns(row string) []int {
 	runs := []int{0}
-	for _, w := range strings.Fields(masked(row, "x()")) {
+	for _, w := range strings.Fields(masked(row)) {
 		w = strings.TrimRight(w, ",.;:!?")
 		switch {
 		case keywords[strings.ToLower(w)]:
@@ -231,15 +240,12 @@ func judgedRow(row string, fenced bool) bool {
 	return !fenced && strings.TrimSpace(row) != "" && strings.TrimLeft(row, " \t") == row && !strings.HasPrefix(row, "```")
 }
 
-// looksLikeCode reports a line shaped like code and not like a sentence.
+// looksLikeCode reports a line shaped like code and not like a sentence, parsing Go only when no pattern matches.
 func looksLikeCode(lang, row string) bool {
 	if readsAsProse(row) {
 		return false
 	}
-	if lang == "go" && parsesAsGo(row) {
-		return true
-	}
-	return codeLine.MatchString(strings.TrimSpace(row))
+	return codeLine.MatchString(strings.TrimSpace(row)) || lang == "go" && parsesAsGo(row)
 }
 
 // parsesAsGo reports a line that parses as Go statements holding code punctuation, labels excluded.
@@ -262,18 +268,21 @@ func labeled(file *ast.File) bool {
 	return found
 }
 
-// restates says why an own-line one-line comment of few words repeats the next code line, or returns "".
+// restates says why a one-line body comment of few words repeats the next code line, or returns "".
 func restates(b comments.Block) string {
+	if !oneLiner(b) {
+		return ""
+	}
 	words := wordsOf(b.Text)
-	if !oneLiner(b) || len(words) > maxRestateWords || !allIn(words, codeWords(b.Next)) {
+	if len(words) > maxRestateWords || !allIn(words, codeWords(b.Next)) {
 		return ""
 	}
 	return "every word repeats the next code line"
 }
 
-// oneLiner reports a one-line comment on its own line above code.
+// oneLiner reports a one-line comment on its own line above code in a function body, where no doc convention applies.
 func oneLiner(b comments.Block) bool {
-	return b.Kind == comments.Doc && b.Next != "" && !strings.Contains(b.Text, "\n")
+	return b.Kind == comments.Doc && b.InBody && b.Next != "" && !strings.Contains(b.Text, "\n")
 }
 
 // allIn reports words, at least one, each an article or a word of code.
@@ -296,18 +305,18 @@ var operatorWords = map[string][]string{
 
 // wordsOf returns the lower-case words of a comment.
 func wordsOf(text string) []string {
-	var words []string
-	for _, w := range strings.FieldsFunc(text, func(r rune) bool { return !mdx.IsAlnum(r) && r != '_' }) {
-		words = append(words, strings.ToLower(w))
+	words := names(text)
+	for i, w := range words {
+		words[i] = strings.ToLower(w)
 	}
 	return words
 }
 
-// codeWords returns the stemmed words of a code line, splitting camelCase and snake_case names, with its operators named.
+// codeWords returns the stemmed names of a code line with their camelCase and snake_case parts, and its operators named.
 func codeWords(code string) map[string]bool {
 	words := operatorNames(code)
-	for _, name := range strings.FieldsFunc(code, func(r rune) bool { return !mdx.IsAlnum(r) }) {
-		for _, part := range append(camelParts(name), name) {
+	for _, name := range names(code) {
+		for _, part := range append(nameParts(name), name) {
 			words[stem(strings.ToLower(part))] = true
 		}
 	}
@@ -323,6 +332,15 @@ func operatorNames(code string) map[string]bool {
 		}
 	}
 	return words
+}
+
+// nameParts splits a name at each underscore and each lower-to-upper case change.
+func nameParts(name string) []string {
+	var parts []string
+	for _, snake := range strings.Split(name, "_") {
+		parts = append(parts, camelParts(snake)...)
+	}
+	return parts
 }
 
 // camelParts splits a name at each lower-to-upper case change.

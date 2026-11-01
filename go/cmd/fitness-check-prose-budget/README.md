@@ -47,12 +47,12 @@ Two more rules keep every comment terse:
 Five rules fail what a comment should not hold, each naming what to delete or say instead:
 
 - `commented-out-code` fails a block when at least half its unindented lines look like code in the file's language.
-- `restates-code` fails a one-line comment of five words or fewer whose words all appear in the next code line.
+- `restates-code` fails a one-line body comment of five words or fewer whose words all appear in the next code line.
 - `decoration` fails an emoji, a box-drawing character, or a run of five or more `=`, `-`, `*` or `#`; arrows pass.
 - `change-narration` fails history words: `previously`, `used to` after a subject or before `be`, and `we changed`.
 - `hedging` fails filler: `basically`, `simply`, `essentially`, `obviously`, `actually` and `I think`.
 
-A word or symbol inside quotes or a code span passes these rules, and Markdown files meet none of them.
+A history or filler word before a past participle, as in `previously stored`, passes. A word or symbol inside quotes, a code span or an indented example passes too, and Markdown files meet none of these rules.
 
 ## Configuration
 

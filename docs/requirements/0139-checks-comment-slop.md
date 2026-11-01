@@ -33,7 +33,7 @@ Comment blocks judged
         - When prose-budget checks the repo
             - Then it fails as `hedging` and says to drop the word
 - 0139.6
-    - Given Developer has comments with "just" as only, an arrow, or "no longer", and sloppy Markdown
+    - Given Developer has comments with "just" as only, an arrow, "no longer" or "previously stored", and sloppy Markdown
         - When prose-budget checks the repo
             - Then it passes
 - 0139.7
