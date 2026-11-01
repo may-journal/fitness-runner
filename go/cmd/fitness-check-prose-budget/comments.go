@@ -40,12 +40,17 @@ var identifier = regexp.MustCompile(`^(\w+(\.\w+)+|\w*[a-z][A-Z]\w*|\w+_\w+)$`)
 // literal such as "- [ ]" whose stops end no sentence.
 var quoted = regexp.MustCompile(`"[^"\n]*"`)
 
-// statements splits a comment paragraph into its sentences, as the limits
-// do, after it masks quoted literals. A lone ?, ! or . names an operator,
-// which ends no sentence, so it is dropped.
+// codeName is a code span that holds one name, such as `New` or `a.b`.
+var codeName = regexp.MustCompile("`([\\w.]+)`")
+
+// statements splits a comment paragraph into sentences for the fragment
+// and one-statement rules. It keeps a code span's name, masks quoted
+// literals, and drops a lone ?, ! or ., which names an operator. The
+// Markdown limits split sentences without these steps.
 func statements(text string) []string {
+	text = quoted.ReplaceAllString(codeName.ReplaceAllString(text, "$1"), "quote")
 	var words []string
-	for _, w := range strings.Fields(quoted.ReplaceAllString(text, "quote")) {
+	for _, w := range strings.Fields(text) {
 		if strings.Trim(w, ".!?") != "" {
 			words = append(words, w)
 		}
@@ -59,19 +64,29 @@ func statements(text string) []string {
 func commentErrors(b comments.Block, name, markdown string, lim limits) []string {
 	blocks := parse(markdown)
 	errs := append(paragraphErrors(name, blocks, lim), listErrors(name, blocks, lim)...)
-	errs = append(errs, fragmentErrors(name, b, blocks)...)
-	return append(errs, statementErrors(name, b, blocks)...)
+	paragraphs, items := split(blocks)
+	errs = append(errs, fragmentErrors(name, b, paragraphs)...)
+	return append(errs, statementErrors(name, b, paragraphs, items)...)
+}
+
+// split returns each paragraph's sentences, as statements splits them, and
+// the number of list items.
+func split(blocks []block) (paragraphs [][]string, items int) {
+	for _, bl := range blocks {
+		if bl.isList {
+			items += len(bl.items)
+		} else {
+			paragraphs = append(paragraphs, statements(bl.text))
+		}
+	}
+	return paragraphs, items
 }
 
 // fragmentErrors reports each sentence of a comment's paragraphs that is a
 // fragment, which belongs in the sentence before it.
-func fragmentErrors(name string, b comments.Block, blocks []block) []string {
+func fragmentErrors(name string, b comments.Block, paragraphs [][]string) []string {
 	var errs []string
-	for _, bl := range blocks {
-		if bl.isList {
-			continue
-		}
-		sentences := statements(bl.text)
+	for _, sentences := range paragraphs {
 		for i, s := range sentences {
 			if why := fragment(b, s, i == len(sentences)-1); why != "" {
 				errs = append(errs, fmt.Sprintf("%s: %s: a sentence %s; join it to the sentence before it or drop it: %q",
@@ -124,17 +139,13 @@ func holdsWord(code, word string) bool {
 // statementErrors reports a comment inside a function body or after code
 // that holds more sentences than one statement needs. Each list item counts
 // as one sentence.
-func statementErrors(name string, b comments.Block, blocks []block) []string {
+func statementErrors(name string, b comments.Block, paragraphs [][]string, items int) []string {
 	if !b.InBody {
 		return nil
 	}
-	n := 0
-	for _, bl := range blocks {
-		if bl.isList {
-			n += len(bl.items)
-		} else {
-			n += len(statements(bl.text))
-		}
+	n := items
+	for _, sentences := range paragraphs {
+		n += len(sentences)
 	}
 	if n <= maxBodySentences {
 		return nil

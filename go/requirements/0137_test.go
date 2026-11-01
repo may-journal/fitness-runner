@@ -135,6 +135,8 @@ func Test0137_6(t *testing.T) {
 	out, code = proseBudget(t, files)
 	want := "comment-one-statement: a comment in a function body or after code has 3 sentences (max 2); condense it to one statement"
 	sees(t, out, code, 1, append(atEachBody(want), "app/tail.go:3: "+want)...)
+	out, code = proseBudget(t, map[string]string{"app/fence.ts": "export {};\n\n// - Builds it:\n//   ```\n//   npm run build\n//   ```\n// So it ends.\nexport const y = 2;\n"})
+	sees(t, out, code, 1, `app/fence.ts:3: comment-fragment: a sentence starts with "So"`)
 }
 
 func Test0137_7(t *testing.T) {
@@ -143,7 +145,8 @@ func Test0137_7(t *testing.T) {
 	for path, src := range inBodies("Retries the request once, since the first call after a deploy warms the cache that every later call reads from.") {
 		files[path] = src
 	}
-	files["app/old.go"] = "package main\n\n// Deprecated: Use main.\nfunc old() {}\n\n// helper is unused.\nfunc helper() {}\n"
+	files["app/old.go"] = "package main\n\n// Deprecated: Use main.\nfunc old() {}\n\n// `helper` runs.\nfunc helper() {}\n"
+	files["app/svc.ts"] = "export class Svc {\n  // " + strings.Join(threeSentences, "\n  // ") + "\n  run(x: number): number {\n    return x;\n  }\n}\n"
 	files["app/list.go"] = "package main\n\n// Codes:\n//\n//   - 1: a check found problems, or the run could not start, such as a bad\n//     config.\n//\n// unwraps reads the ? or ! of a?.b, and \"- [ ]\" or \"1. [ ]\" items.\nfunc unwraps() {}\n"
 	files["README.md"] = readme + "\nThe cache warms. So it works.\n"
 	out, code := proseBudget(t, files)

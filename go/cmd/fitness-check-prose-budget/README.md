@@ -44,7 +44,7 @@ Two more rules judge comments only, so an agent cannot pass the sentence limit b
 
 A short Go doc heading such as `Deprecated:` passes. A short doc line led by an identifier passes, and so does a lead-in that ends in a colon.
 
-A doc comment on a declaration, a file or a package keeps the paragraph limits. Go finds its function bodies through its parser, and other languages go by indent, doc marker and the next line of code.
+A doc comment on a declaration, a file or a package keeps the paragraph limits. Go finds its function bodies through its parser. Other languages with braces find them by the header before each brace, and a shell script goes by indent.
 
 ## Configuration
 

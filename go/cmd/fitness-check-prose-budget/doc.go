@@ -62,8 +62,9 @@
 // by an identifier passes, and so does a lead-in that ends in a colon.
 //
 // A doc comment on a declaration, a file or a package keeps the paragraph
-// limits. Go finds its function bodies through its parser, and other
-// languages go by indent, doc marker and the next line of code.
+// limits. Go finds its function bodies through its parser. Other languages
+// with braces find them by the header before each brace, and a shell
+// script goes by indent.
 //
 // [text-readability]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-text-readability/README.md
 package check

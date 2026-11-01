@@ -17,13 +17,19 @@ import (
 // named `path:line` and its text as Markdown. Each source file with a
 // judged block counts as one more file checked.
 func Judge(res checkkit.Result, root string, judge func(name, markdown string) []string) checkkit.Result {
-	return JudgeEach(res, root, func(_ Block, name, markdown string) []string { return judge(name, markdown) })
+	blocks, err := Judged(root)
+	return judgeBlocks(res, blocks, err, func(_ Block, name, markdown string) []string { return judge(name, markdown) })
 }
 
-// JudgeEach is Judge for a judge that also reads the block itself, such as
-// where the block sits.
+// JudgeEach is Judge for a judge that also reads each block, as Place sets
+// it. Place reads only the files of the judged blocks.
 func JudgeEach(res checkkit.Result, root string, judge func(b Block, name, markdown string) []string) checkkit.Result {
 	blocks, err := Judged(root)
+	return judgeBlocks(res, blocks, errors.Join(err, Place(root, blocks)), judge)
+}
+
+// judgeBlocks adds to res what judge finds in blocks, and err as info.
+func judgeBlocks(res checkkit.Result, blocks []Block, err error, judge func(b Block, name, markdown string) []string) checkkit.Result {
 	if err != nil {
 		res.Info = append(res.Info, err.Error())
 	}
@@ -120,11 +126,14 @@ func (w *markdown) isCode(item, indented bool) bool {
 }
 
 // authored reports a line inside a fence the comment writes, its opening
-// line included, which passes through unchanged.
+// and closing lines included, which passes through unchanged. A fence ends
+// any open list, so no later line joins the fence.
 func (w *markdown) authored(line string) bool {
 	if strings.HasPrefix(strings.TrimSpace(line), "```") {
 		w.fence(false)
 		w.author = !w.author
+		w.list = false
+		return true
 	}
 	return w.author
 }

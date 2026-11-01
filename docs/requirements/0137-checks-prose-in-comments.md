@@ -33,11 +33,11 @@ Comment blocks judged
         - When prose-budget runs on the staged change
             - Then it judges only the changed comment, and a full scan lists both
 - 0137.6
-    - Given Developer has comments with a "So" sentence, a three-word sentence, or three sentences in a function body
+    - Given Developer has comments with a "So" sentence, even after a fence, a three-word sentence, or three body sentences
         - When prose-budget checks the repo
             - Then it fails naming each comment's path, line and rule, and says to join, drop or condense it
 - 0137.7
-    - Given Developer has a 20-word body comment, a three-sentence doc comment, a wrapped list item, and Markdown with "So"
+    - Given Developer has a 20-word body comment, three-sentence doc comments, a wrapped list item, and Markdown with "So"
         - When prose-budget checks the repo
             - Then it passes, since doc comments keep the paragraph limits and Markdown meets neither rule
 - 0137.8

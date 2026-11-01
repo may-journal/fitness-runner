@@ -33,9 +33,10 @@ type Block struct {
 	Text string
 	// InBody marks a comment inside a function body or after code. A doc
 	// comment on a declaration, a file or a package is never in a body.
+	// Only Place sets it.
 	InBody bool
 	// Next is the first line of code after a comment on lines of its own,
-	// trimmed, which a doc comment names.
+	// trimmed, which a doc comment names. Only Place sets it.
 	Next string
 }
 
@@ -56,17 +57,26 @@ var langs = map[string]string{
 	".sh": "shell", ".bash": "shell", ".zsh": "shell", ".yml": "yaml", ".yaml": "yaml",
 }
 
+// lexers holds the lexer settings of each C-style language.
+var lexers = map[string]Lexer{
+	"typescript": {Templates: true},
+	"javascript": {Templates: true},
+	"java":       {},
+	"kotlin":     {Nested: true},
+	"rust":       {Nested: true, Lifetimes: true, RawStrings: true},
+}
+
 // readers reads each language's comments.
 var readers = map[string]func(src []byte) []note{
 	"go":         goNotes,
 	"swift":      swiftNotes,
 	"shell":      shellNotes,
 	"yaml":       yamlNotes,
-	"typescript": cReader(Lexer{Templates: true}),
-	"javascript": cReader(Lexer{Templates: true}),
-	"java":       cReader(Lexer{}),
-	"kotlin":     cReader(Lexer{Nested: true}),
-	"rust":       cReader(Lexer{Nested: true, Lifetimes: true, RawStrings: true}),
+	"typescript": cReader(lexers["typescript"]),
+	"javascript": cReader(lexers["javascript"]),
+	"java":       cReader(lexers["java"]),
+	"kotlin":     cReader(lexers["kotlin"]),
+	"rust":       cReader(lexers["rust"]),
 }
 
 // shebang names a shell interpreter on a file's first line, which makes a
@@ -117,10 +127,8 @@ func Source(rel string, src []byte) []Block {
 		return nil
 	}
 	blocks := withoutLicense(join(read(src)))
-	place := placer(lang, src)
 	for i := range blocks {
 		blocks[i].Path, blocks[i].Lang = rel, lang
-		place(&blocks[i])
 	}
 	return blocks
 }
