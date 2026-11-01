@@ -60,3 +60,10 @@ func Test0140_5(t *testing.T) {
 	out, code := withPartner(t, repo, "duplicate-code")
 	sees(t, out, code, 0, "All 2 checks passed")
 }
+
+func Test0140_6(t *testing.T) {
+	t.Parallel()
+	workflow := "name: CI\non: push\njobs: # cspell:ignore foo\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: make test # cspell:disable-line\n"
+	out, code := withPartner(t, example(t, "happyRepo", map[string]string{".github/workflows/ci.yml": workflow}), "workflow-reporting")
+	sees(t, out, code, 1, ".github/workflows/ci.yml:4: job test has no step")
+}

@@ -64,7 +64,7 @@ var lexers = map[string]Lexer{
 	"typescript": {Templates: true},
 	"javascript": {Templates: true},
 	"java":       {},
-	"groovy":     {},
+	"groovy":     {TripleSingle: true},
 	"kotlin":     {Nested: true},
 	"rust":       {Nested: true, Lifetimes: true, RawStrings: true},
 }

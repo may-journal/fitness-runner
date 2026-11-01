@@ -81,7 +81,7 @@ func ShareViews(root string, files []string) Shared {
 // reader covers gets none, as it is its own code view.
 func buildViews(root, rel string) built {
 	info, data, ok := readViewed(root, rel)
-	if !ok {
+	if !ok || path.Ext(rel) != ".md" && Lang(rel, data) == "" {
 		return built{}
 	}
 	b := built{rel: rel, info: info, code: CodeView(rel, data)}

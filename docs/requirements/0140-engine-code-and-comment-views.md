@@ -32,3 +32,7 @@ Commented-out lines in the repo
     - Given Developer wraps code duplicated in two files in duplicate-code ignore markers
         - When duplicate-code checks the repo with another check
             - Then it passes, since the code view keeps the markers
+- 0140.6
+    - Given Developer has a workflow job with no summary step and a cspell directive after `jobs:`
+        - When workflow-reporting checks the repo with another check
+            - Then it names the job, since the directive is no YAML

@@ -43,7 +43,9 @@ type Lexer struct {
 	// RawStrings reads Rust raw strings, r"..." and r#"..."#, which have
 	// no escapes.
 	RawStrings bool
-	depth      int
+	// TripleSingle reads Groovy's '''...''' strings, which may run over lines.
+	TripleSingle bool
+	depth        int
 	// closer ends the string literal open over lines, if any.
 	closer string
 	raw    bool
@@ -107,17 +109,27 @@ var openers = []opener{
 	{`"`, func(_ *Lexer, text string, i int) Span {
 		return Span{Part: Literal, From: i, To: literalEnd(text, i+1)}
 	}},
-	{"'", func(l *Lexer, text string, i int) Span {
-		if l.lifetime(text, i) {
-			return Span{Part: Code, From: i, To: i + 1}
+	{"'''", func(l *Lexer, text string, i int) Span {
+		if !l.TripleSingle {
+			return quote(l, text, i)
 		}
-		return Span{Part: Code, From: i, To: runeEnd(text, i)}
+		l.closer = "'''"
+		return Span{Part: Literal, From: i, To: l.until(text, i+3)}
 	}},
+	{"'", quote},
 	{"`", func(l *Lexer, text string, i int) Span {
 		l.raw = true
 		return Span{Part: Code, From: i, To: l.rawEnd(text, i+1)}
 	}},
 	{"r", (*Lexer).rawString},
+}
+
+// quote reads a character literal at i, kept whole, or a Rust lifetime.
+func quote(l *Lexer, text string, i int) Span {
+	if l.lifetime(text, i) {
+		return Span{Part: Code, From: i, To: i + 1}
+	}
+	return Span{Part: Code, From: i, To: runeEnd(text, i)}
 }
 
 // until moves past the end of the open string's closer, clearing it when

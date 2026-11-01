@@ -30,7 +30,7 @@ func CodeView(rel string, src []byte) []byte {
 	text := strings.ReplaceAll(string(src), "\r\n", "\n")
 	var view string
 	if path.Ext(rel) == ".md" {
-		view = withoutHTML(text, blank)
+		view = withoutHTML(text, blankHTML)
 	} else if read, ok := readers[Lang(rel, []byte(text))]; ok {
 		view = without(text, read([]byte(text)), blank)
 	} else {
@@ -111,13 +111,13 @@ func WithoutHTMLComments(md string) string {
 }
 
 // withoutHTML is md with fill applied to each HTML comment a reader never
-// sees, except a tool directive such as a duplicate-code marker.
+// sees.
 func withoutHTML(md string, fill func(string) string) string {
 	var out strings.Builder
 	for i, part := range fenceSplit(md) {
 		if i%2 == 0 {
 			part = mdComment.ReplaceAllStringFunc(part, func(m string) string {
-				if !strings.HasPrefix(m, "<!--") || directive(htmlBody(m)) {
+				if !strings.HasPrefix(m, "<!--") {
 					return m
 				}
 				return fill(m)
@@ -126,6 +126,15 @@ func withoutHTML(md string, fill func(string) string) string {
 		out.WriteString(part)
 	}
 	return out.String()
+}
+
+// blankHTML blanks an HTML comment in a code view, except a tool directive
+// such as a duplicate-code marker.
+func blankHTML(m string) string {
+	if directive(htmlBody(m)) {
+		return m
+	}
+	return blank(m)
 }
 
 // htmlBody is an HTML comment's text without its markers, read as a #

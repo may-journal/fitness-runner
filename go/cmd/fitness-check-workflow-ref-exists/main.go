@@ -37,8 +37,9 @@ const askBudget = 20 * time.Second
 var (
 	// usesRe matches a `uses:` key and its value, quoted or not.
 	usesRe = regexp.MustCompile(`^\s*(?:-\s+)?uses:\s*['"]?([^'"\s]+)`)
-	// blockRe matches a line whose value is a `|` or `>` block scalar, such as a `run:` script.
-	blockRe = regexp.MustCompile(`:\s*[|>][-+0-9]*\s*$`)
+	// blockRe matches a `|` or `>` block scalar header, such as a `run:`
+	// script's, before any directive the code view keeps.
+	blockRe = regexp.MustCompile(`:\s*[|>][-+0-9]*\s*(?:#.*)?$`)
 	// shaRe matches a full commit sha.
 	shaRe = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
 )
