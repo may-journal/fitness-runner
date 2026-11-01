@@ -5,8 +5,8 @@ import (
 	"fmt"
 )
 
-// internalError marks an error from the check's environment rather than a
-// finding in the repo, such as a missing tool or an unreachable service.
+// internalError marks an environment error, such as a missing tool or
+// unreachable service, rather than a repo finding.
 type internalError struct{ err error }
 
 func (e *internalError) Error() string { return e.err.Error() }

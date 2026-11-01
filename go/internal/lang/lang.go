@@ -1,11 +1,5 @@
-// Package lang defines what a language module brings to a run, and orders
-// what the modules claim against what is installed or embedded. A module
-// names how to spot its language, the files it reads and writes, the tools
-// it runs, its checks, its spell dictionaries, the words that name it as a
-// technology, and how it proves a runtime. Everything no module claims is
-// repo-wide, so a new repo-wide check or dictionary needs no list entry. The
-// modules themselves live in the langs package, and each language's own code
-// in a folder named for it beside that package.
+// Package lang defines what a language module brings to a run and orders what
+// modules claim against what is installed or embedded.
 //
 //fitness:topic languages
 package lang
@@ -57,9 +51,8 @@ type Module struct {
 	// Runtime reads the language's manifests and sources for the runtimes
 	// a repo ships.
 	Runtime runtimes.Reader
-	// Views reads the language's sources for the architecture views:
-	// declarations and relations for the code view, and, when set, the
-	// references that prove the components view's edges.
+	// Views reads the language's sources for the architecture views: code
+	// declarations and relations, and any references proving components edges.
 	Views codemodel.Reader
 	// Inventory are the source endings the architecture views list as the
 	// language's sources.
@@ -110,14 +103,13 @@ type Tests struct {
 	// file or run that uses a tool the language's requirement tests may
 	// not use.
 	Tools func(root string, files []string) ([]string, error)
-	// Reads reports a tracked file Scan or Tools may read, so a copy of the
-	// repo made only to judge its tests can hold just those files.
+	// Reads reports a tracked file Scan or Tools may read, so a test-judging
+	// copy of the repo holds only those.
 	Reads func(file string) bool
 }
 
-// TestPrefix is how a module whose test names carry IDs names them: the
-// prefix, then the acceptance ID with _ for its dot, so Test0001_1 or
-// test0001_1 owns 0001.1.
+// TestPrefix names tests that carry IDs: the prefix, then the acceptance ID
+// with _ for its dot, so Test0001_1 owns 0001.1.
 type TestPrefix string
 
 // prefixedID reads the ID after a test name's prefix: 0001_1 is 0001.1.
@@ -265,9 +257,8 @@ func Ignored() []string {
 	return names
 }
 
-// IgnoredWhy is the reason the ignores folder gives for keeping check out
-// of the default catalog, its comment lines joined, or "" when it names
-// no such check.
+// IgnoredWhy is the reason the ignores folder gives for keeping check out of
+// the default catalog, or "" when it names none.
 func IgnoredWhy(check string) string {
 	body, err := fs.ReadFile(ignores, path.Join("ignores", check))
 	if err != nil {
@@ -345,9 +336,8 @@ var otherLockfiles = sync.OnceValue(func() []string {
 	return out
 })
 
-// Catalog orders the default checks: the installed checks no module claims
-// and no ignore file names, sorted, then each module's claimed checks,
-// sorted, in registry order.
+// Catalog orders the default checks: unclaimed, unignored installed checks
+// sorted, then each module's claimed checks in registry order.
 func Catalog(installed []string, modules []Module) []string {
 	return order(installed, Ignored(), modules, func(m Module) []string { return m.Checks })
 }
@@ -368,9 +358,8 @@ func Lockfiles(modules []Module) []string {
 	return append(out, otherLockfiles()...)
 }
 
-// IsLockfile returns a test, built once, of whether a file's base name is
-// a lockfile a package manager writes, by any module's names or patterns
-// or the lockfiles folder.
+// IsLockfile returns a test of whether a file's base name is a package
+// manager's lockfile, by any module's patterns or the lockfiles folder.
 func IsLockfile(modules []Module) func(file string) bool {
 	patterns := Lockfiles(modules)
 	return func(file string) bool {
@@ -382,9 +371,8 @@ func IsLockfile(modules []Module) func(file string) bool {
 	}
 }
 
-// IsToolWritten returns a test, built once, of whether a file is one a
-// tool writes and a repo commits as written: a lockfile, or a build
-// wrapper file any module names. Its words and repeats are the tool's.
+// IsToolWritten returns a test of whether a file is a lockfile or a module's
+// build wrapper file, which a repo commits as written.
 func IsToolWritten(modules []Module) func(file string) bool {
 	lockfile := IsLockfile(modules)
 	var wrappers []string

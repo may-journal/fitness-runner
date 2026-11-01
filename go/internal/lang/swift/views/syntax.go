@@ -309,8 +309,7 @@ func (p *swiftParser) thrown(fn *swiftScope) {
 }
 
 // typeRef reads a type, records its names as uses, and returns the name it
-// states, such as Store or Outer.Inner; "" for a tuple, array, or function
-// type.
+// states, else "" for a tuple, array or function.
 func (p *swiftParser) typeRef(s *swiftScope) string {
 	r := &typeReader{p: p, s: s, line: p.peek().line}
 	for p.more() && r.continues(p.peek()) {

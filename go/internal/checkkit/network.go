@@ -26,10 +26,8 @@ const unreachablePrefix = "unreachable:"
 const ProbeTimeout = 2 * time.Second
 
 // Probe opens one connection to target's host and closes it, through the
-// proxy the environment names for it, within ProbeTimeout. Through an HTTP
-// or HTTPS proxy it asks the proxy to CONNECT and waits for its answer. A
-// nil error means the host answered. A proxy of another kind, such as
-// SOCKS, counts as answering, so the reads go ahead as before.
+// environment's proxy within ProbeTimeout. A nil error means the host answered,
+// and a proxy of another kind, such as SOCKS, counts as answering.
 func Probe(target *url.URL) error {
 	ctx, cancel := context.WithTimeout(context.Background(), ProbeTimeout)
 	defer cancel()
@@ -66,9 +64,8 @@ func UnreachableEnv(host string) string {
 	return NetworkEnv + "=" + unreachablePrefix + host
 }
 
-// Offline is the info note for a check that skips its network reads,
-// named by skipped, because the runner's probe found GitHub's API host
-// unreachable; empty when the reads should go ahead.
+// Offline is the info note naming skipped reads when GitHub's API host is
+// unreachable, and empty otherwise.
 func Offline(skipped string) string {
 	host := Unreachable()
 	if host == "" {

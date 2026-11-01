@@ -70,8 +70,8 @@ func (r *reader) bracket(j int) int {
 	return brackets[r.Word(j)]
 }
 
-// close returns the token closing the bracket group token i opens, the
-// last token when it stays open, or i when it opens none.
+// close returns the token closing the bracket group token i opens, else the
+// last token or i.
 func (r *reader) close(i int) int {
 	return r.matching(i, r.bracket)
 }
@@ -101,9 +101,8 @@ func (r *reader) group(j int) int {
 	return j
 }
 
-// generic reports whether the < at token i opens type arguments: what
-// follows up to its matching > holds only names, dots, commas, brackets,
-// wildcards, bounds and annotations. Otherwise it compares.
+// generic reports whether the < at token i opens type arguments, holding only
+// names and type punctuation up to its matching >.
 func (r *reader) generic(i int) bool {
 	depth := 0
 	for j := i; j < len(r.tokens); j++ {
@@ -140,9 +139,8 @@ func (r *reader) skipAngle(k int) int {
 	return k
 }
 
-// typeEnd returns the token after the type starting at token j: a dotted
-// name with type arguments, then array brackets or the dots of variable
-// arity. A token that starts no name starts no type, so typeEnd returns j.
+// typeEnd returns the token after the type starting at token j, or j
+// when none starts there.
 func (r *reader) typeEnd(j int) int {
 	if !r.Ident(j) {
 		return j
@@ -165,9 +163,8 @@ func (r *reader) typePart(k int) int {
 	return k
 }
 
-// typeParts read what may follow a type's first name: type arguments, a
-// dot and a name, a pair of array brackets, or the dots of variable
-// arity. Each returns the token after its part, or k.
+// typeParts read what may follow a type's first name, each returning the token
+// after its part, or k.
 var typeParts = []func(r *reader, k int) int{
 	func(r *reader, k int) int {
 		if r.is(k, "<") && r.generic(k) {
@@ -193,9 +190,8 @@ func (r *reader) after(k int, texts ...string) int {
 	return k
 }
 
-// statementEnd returns the last token of the declaration or statement
-// starting at token i: its semicolon, its body's closing brace, or the
-// token before the brace that closes the body around it.
+// statementEnd returns the last token of the statement starting at token i,
+// before any brace closing the body around it.
 func (r *reader) statementEnd(i int) int {
 	for j := i; j < len(r.tokens); j = r.group(j) + 1 {
 		switch {
@@ -210,9 +206,8 @@ func (r *reader) statementEnd(i int) int {
 	return len(r.tokens) - 1
 }
 
-// initializerEnd returns the comma or semicolon that ends a field's
-// declarator from token k, stepping over groups and type arguments, or
-// the token before the body's closing brace.
+// initializerEnd returns the comma or semicolon ending a field's declarator from
+// token k, else the token before the body's closing brace.
 func (r *reader) initializerEnd(k int) int {
 	for j := k; j < len(r.tokens); j = r.typeStep(j) + 1 {
 		switch {

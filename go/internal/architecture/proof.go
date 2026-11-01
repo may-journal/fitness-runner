@@ -9,9 +9,8 @@ import (
 
 var word = regexp.MustCompile(`[a-z0-9][a-z0-9.+-]*`)
 
-// prove checks each evidence link an edge row of the components view
-// makes: the file belongs to the edge's source, and it names the target.
-// An edge row without a link allows the edge; a linked one requires it.
+// prove checks each evidence link of a components edge row: the file belongs
+// to the edge's source and names the target.
 func (c *components) prove() {
 	for _, ev := range c.m.Evidence {
 		if from, to, ok := c.edgeSubject(ev.Subject); ok {
@@ -79,9 +78,8 @@ func (c *components) reaches(r codemodel.Reference, to string) bool {
 	return false
 }
 
-// proveExternal requires the linked lines to name the external system,
-// by a word of its name, technology, or description, outside the comments
-// its language's reader strips.
+// proveExternal requires the linked lines to name the external system by a
+// word of its name, technology or description, outside stripped comments.
 func (c *components) proveExternal(ev Evidence, e Element, reader codemodel.Reader) {
 	words := longWords(e.Name + " " + e.Technology + " " + e.Description)
 	for i, code := range reader.Strip(c.m.repo.read(ev.Path)) {

@@ -39,11 +39,8 @@ func (r repository) addFolders(file string) {
 	}
 }
 
-// candidate reports whether text names a repository path: no spaces or
-// scheme, and either . for the repo root, a slash after a first segment
-// that is a tracked top-level folder, or, when bare names count, a
-// tracked root-level source. Other text, such as a path in a consumer's
-// install folder or an untracked file name, is prose.
+// candidate reports whether spaceless text without a scheme names the root, a
+// tracked top-level path, or a tracked root source.
 func (r repository) candidate(text string, bare bool) (string, bool) {
 	text = strings.Trim(text, "()[]{},;:'\"")
 	if prose(text) {

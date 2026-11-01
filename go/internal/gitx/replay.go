@@ -13,9 +13,7 @@ import (
 var replayHeads = []string{"MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"}
 
 // Replaying reports whether a local commit replays changes judged where they
-// were first made: a merge, cherry-pick, or revert in progress, or an amend
-// of a merge commit, whose second parent brought them. A pull request run,
-// with GITHUB_BASE_REF set, never replays, so its whole diff is judged.
+// were first made, as in a merge, cherry-pick, revert, or merge amend.
 func Replaying(root string) bool {
 	if os.Getenv("GITHUB_BASE_REF") != "" {
 		return false
@@ -32,9 +30,8 @@ func Amending() bool {
 	return os.Getenv("FITNESS_COMMIT_AMEND") == "1"
 }
 
-// CommitChanges is what the commit or pull request changes: its diff, nil
-// for a full scan or a `--dir` folder, or for an amend everything staged
-// since the amended commit's parent.
+// CommitChanges is what the commit or pull request changes, nil for a full
+// scan or `--dir` folder.
 func CommitChanges(root string) []string {
 	if !Amending() {
 		return checkkit.DiffFiles()

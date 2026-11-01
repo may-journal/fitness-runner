@@ -1,7 +1,5 @@
-// Package aftereffect holds what a GitHub command does after its checks judge
-// a blob: comment a verdict, label it, hide outdated verdicts, or reopen an
-// issue. Each command names its effect by code reference, so every GitHub
-// reaction lives here and the checks stay pure judgments.
+// Package aftereffect holds every GitHub reaction to a check's verdict, such as
+// commenting, labeling or reopening, so checks stay pure judgments.
 package aftereffect
 
 import (
@@ -101,8 +99,8 @@ type Verdict struct {
 	Author   author `json:"author"`
 }
 
-// author is a comment's writer as GraphQL reports it: an app's login comes
-// without the [bot] suffix REST gives it, and its type is Bot.
+// author is a comment's writer as GraphQL reports it, where an app's login
+// lacks the [bot] suffix REST gives.
 type author struct {
 	Login string `json:"login"`
 	Type  string `json:"__typename"`
@@ -229,17 +227,16 @@ func goneREST(stderr string) bool {
 	return strings.Contains(s, "http 404") || strings.Contains(s, "http 410")
 }
 
-// ghEnvText is gh output that names its environment, not the request: no
-// login or a rejected token, or a network that cannot reach GitHub.
+// ghEnvText is gh output blaming its environment, not the request: missing
+// login, a rejected token, or an unreachable network.
 var ghEnvText = []string{
 	"gh auth login", "http 401", "bad credentials", "authentication required",
 	"dial tcp", "no such host", "could not resolve host", "connection refused",
 	"network is unreachable", "i/o timeout", "tls handshake timeout", "error connecting to",
 }
 
-// GHEnvironment reports whether a failed gh run says nothing about the
-// repository: gh could not start, a signal ended it, or its output shows an
-// auth or network failure.
+// GHEnvironment reports whether a failed gh run blames its environment: no
+// start, a signal, or an auth or network failure.
 func GHEnvironment(o checkkit.Outcome) bool {
 	if o.EnvErr("gh") != nil {
 		return true
@@ -248,9 +245,8 @@ func GHEnvironment(o checkkit.Outcome) bool {
 	return slices.ContainsFunc(ghEnvText, func(s string) bool { return strings.Contains(text, s) })
 }
 
-// GHErr is a gh run's error: nil on success, a checkkit.Internal error when
-// ctx ran out, gh is missing, or GHEnvironment holds, and the run's own
-// error otherwise, such as a 404 or a 422.
+// GHErr returns a gh run's error: nil on success, checkkit.Internal for
+// environment failures, and the run's own error otherwise.
 func GHErr(ctx context.Context, o checkkit.Outcome) error {
 	switch {
 	case o.Err == nil:
@@ -298,9 +294,8 @@ type IssueView struct {
 	Comments []IssueComment `json:"comments"`
 }
 
-// IssueComment is one comment on an issue: its text, its author's login,
-// and the author's association with the repo as GitHub reports it, such as
-// OWNER, MEMBER or NONE.
+// IssueComment is one issue comment: its text, its author's login, and the
+// author's repo association such as OWNER, MEMBER or NONE.
 type IssueComment struct {
 	Body        string `json:"body"`
 	Author      string `json:"author"`
@@ -318,9 +313,8 @@ func (v IssueView) Repo() string {
 }
 
 // ViewIssue reads issue n of repo, an owner/repo slug, or of the working
-// directory's repository when repo is empty. It reads the body, labels and
-// comments with their authors in one `gh issue view`. The stderr of gh stays out of the
-// caller's output.
+// directory's repository when repo is empty. It uses one `gh issue view` and
+// keeps stderr of gh out of the output.
 func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
 	args := []string{"issue", "view", n}
 	if repo != "" {
@@ -450,10 +444,8 @@ const verdictsQuery = `query($owner: String!, $name: String!, $number: Int!, $en
   }
 }`
 
-// Verdicts returns the issue-check verdict comments for kind, oldest first.
-// A verdict is known by its body-version marker, and counts only when the
-// fitness bot wrote it, so a marker another author pastes is never edited,
-// hidden, or taken as the live verdict.
+// Verdicts returns kind's issue-check verdict comments, oldest first, counting
+// only the fitness bot's so pasted markers are never trusted.
 func (g Client) Verdicts(n int, kind string) ([]Verdict, error) {
 	owner, name, _ := strings.Cut(g.repo, "/")
 	var tests []string
@@ -518,10 +510,8 @@ func (g Client) Reopen(n int) error {
 	return err
 }
 
-// closingPRQuery reads the latest closed event's closer. Only GraphQL
-// exposes it; REST names the actor but not the closing pull request. A merge
-// records either the PR or its merge commit as the closer, so a commit is
-// traced back to its PR.
+// closingPRQuery reads the latest closed event's closer, which only GraphQL
+// exposes, and a merge commit is traced back to its PR.
 const closingPRQuery = `query($owner: String!, $name: String!, $n: Int!) {
   repository(owner: $owner, name: $name) {
     issue(number: $n) {

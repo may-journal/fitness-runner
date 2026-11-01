@@ -46,12 +46,8 @@ var (
 	simctl = regexp.MustCompile(`"simctl"|\bsimctl\s+(?:boot|shutdown|erase|create|clone|delete|install|uninstall|launch|terminate|spawn|privacy|push|io|list)\b`)
 )
 
-// tools judges each Swift test file's imports and APIs. A requirement test
-// runs on Swift Testing with UITestingLibrary in the app's process, never
-// on XCTest, Xcode UI tests, a simulator, or another UI test framework.
-// Only a file that imports UITestingLibrarySystem, the opt-in end-to-end
-// mode, may use XCTest and simctl; it drives the app through that
-// library's SystemSession, never XCUIApplication itself.
+// tools judges each Swift test file's imports and APIs: requirement tests run
+// on Swift Testing with UITestingLibrary, and only end-to-end files use XCTest.
 func tools(root string, files []string) ([]string, error) {
 	if len(files) == 0 {
 		return nil, nil
@@ -97,9 +93,8 @@ func importErrors(file, code string, imports map[string]int, e2e bool) []string 
 	return errs
 }
 
-// callErrors fails the first Xcode UI test type, and outside an end-to-end
-// test the first XCTestCase subclass and the first simctl run, which a
-// string literal names.
+// callErrors fails the first Xcode UI test type and, outside an end-to-end
+// test, the first XCTestCase subclass and simctl run.
 func callErrors(file, src, code string, e2e bool) []string {
 	var errs []string
 	if m := xcuiType.FindStringIndex(code); m != nil {

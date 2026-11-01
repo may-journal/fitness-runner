@@ -21,10 +21,8 @@ const checkLink = "link:fitness"
 // bundle binary that hangs fails the install instead of stalling it.
 const listTimeout = 30 * time.Second
 
-// linkChecks gives a one-binary bundle a fitness-check-<name> link to its
-// fitness binary for every check `fitness check --list` names, so a caller
-// that runs a check by its own program name keeps working. An older bundle
-// already ships a fitness-check-<name> binary per check and gets no links.
+// linkChecks links a fitness-check-<name> name to the fitness binary for every
+// listed check, so callers using a program name keep working.
 func linkChecks(directory string, hashes map[string]string) error {
 	if shipsCheckBinaries(hashes) {
 		return nil

@@ -6,11 +6,8 @@ type Rect struct {
 	Left, Top, Width, Height float64
 }
 
-// layout splits a width-by-height area into one rect per value, each with an
-// area in proportion to its value. Values must be positive and sorted
-// largest first. It fills rows along the shorter side, one at a time, and
-// starts a new row once the next box would make that row's boxes less
-// square, which keeps every box near square.
+// layout splits an area into one rect per value, positive and sorted largest
+// first, each sized in proportion and kept near square.
 func layout(values []float64, width, height float64) []Rect {
 	total := sum(values)
 	if total <= 0 {
@@ -33,8 +30,8 @@ func layout(values []float64, width, height float64) []Rect {
 	return rects
 }
 
-// rowLength is how many of the leading areas share one row along a side of
-// the given length before adding another makes the row less square.
+// rowLength is how many leading areas share one row along a side before adding
+// another makes it less square.
 func rowLength(areas []float64, side float64) int {
 	n := 1
 	for n < len(areas) && worst(areas[:n+1], side) <= worst(areas[:n], side) {

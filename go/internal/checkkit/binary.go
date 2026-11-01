@@ -42,9 +42,8 @@ func Builtin(name string) (Program, error) {
 	return Program{Path: self, Name: BinPrefix + name}, nil
 }
 
-// Self returns the program that starts the running check again: this
-// executable, under the name it was started with, since one fitness
-// executable holds every check and the name picks which one runs.
+// Self returns the program that restarts the running check: this executable
+// under its start name, since one fitness executable holds every check.
 func Self() (Program, error) {
 	self, err := os.Executable()
 	if err != nil {
@@ -54,11 +53,8 @@ func Self() (Program, error) {
 }
 
 // Beside maps the name of each fitness-check-<name> program beside the
-// running fitness executable to its path. An installed bundle links every
-// built-in check there to fitness itself; those links are the built-in
-// checks, so they are left out. Any other program there adds a check, or
-// replaces the built-in check of its name. None is no error, as after
-// `go install`.
+// running fitness executable to its path. It leaves out the links to fitness
+// that an installed bundle makes for built-in checks.
 func Beside() map[string]string {
 	self, err := os.Executable()
 	if err != nil {

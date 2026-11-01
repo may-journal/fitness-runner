@@ -22,10 +22,9 @@ type testGroup struct {
 	Stable   bool
 }
 
-// audit measures each tested package from its prebuilt binary. Up to
-// par.Processes() packages run side by side, and all their runs share as
-// many process slots. A failure stops only later packages, so the earliest
-// failing package is reported.
+// audit measures each tested package from its prebuilt binary, running up to
+// par.Processes() packages side by side. A failure stops only later packages,
+// so the earliest failing package is reported.
 func (r runner) audit(packages []Package, parallel map[string]map[string]bool) ([]testGroup, error) {
 	tested := testedPackages(packages)
 	r.slots = make(chan struct{}, par.Processes())
@@ -63,9 +62,8 @@ type packageAudit struct {
 	groups   []testGroup
 }
 
-// auditSuite follows go test's order for one package: shared setup, the
-// serial tests in sequence, the t.Parallel() tests side by side, then shared
-// setup again.
+// auditSuite follows go test's order for one package: setup, serial tests,
+// parallel tests side by side, then setup again.
 func (r runner) auditSuite(s suite) ([]testGroup, error) {
 	baseline, err := r.measureBinary(s, "^$")
 	if err != nil {

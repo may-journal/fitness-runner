@@ -14,9 +14,8 @@ type relations struct {
 	seen []observed
 }
 
-// relate has each module's reader observe the relations between concrete
-// nodes in its own files, in registry order, then compares them with the
-// drawn edges both ways.
+// relate compares each module reader's observed relations between concrete
+// nodes with the drawn edges, both ways.
 func (c *code) relate() {
 	r := &relations{c: c, seen: c.observe()}
 	for _, e := range c.m.Relationships {

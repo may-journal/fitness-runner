@@ -1,39 +1,5 @@
-// Package views reads Swift sources for the architecture views: each
-// file's declarations lexically, the relations between the code view's
-// nodes by name, and every product file parsed as one module whose names
-// resolve to the files declaring them, as the compiler's index would.
-//
-// The code view's reader strips comments and strings, counts braces, and
-// keeps #if conditions. It relates names of other classes, Type.member
-// calls, and inheritance clauses, where a protocol is conformance. A
-// type's extensions add members, and the view covers types marked public
-// or open. Overloads fail as one name declared twice until a line link or
-// signature picks one. Swift is read lexically, not by a compiler index,
-// so a call through a variable, such as store.save(), relates nothing,
-// and neither does a call through a helper.
-//
-// The components view's references come from the parser ADR 0005
-// describes. It reads every product file as one module and resolves a
-// name the way the compiler would:
-//
-//   - A local name, such as a parameter or a binding in a body, hides any
-//     declaration and reaches nothing.
-//   - In a type or extension body, that type's members, from any file,
-//     come before file-level declarations.
-//   - A member after a dot is looked up on its base's type, with members
-//     from extensions and inherited protocols.
-//   - The base's type is known for a type name, self, a literal, or a
-//     value whose type is stated or initialized.
-//   - A base of unknown type, or an implicit member such as .loaded,
-//     reaches nothing.
-//   - A call keeps the overloads its argument labels fit; candidates left
-//     in two files reach none.
-//   - A call of a type also reaches the initializer its labels pick.
-//   - In an #if group whose branches leave a brace open, as alternative
-//     headers do, only the first branch is read.
-//
-// A name inside a string interpolation is a reference. A reference under
-// #if keeps that condition, so an error says under #if DEBUG.
+// Package views reads Swift sources for the architecture views: declarations
+// lexically, and every product file parsed as one module whose names resolve.
 package views
 
 import (
@@ -213,9 +179,8 @@ func memberKind(d *codemodel.Decl, member string) string {
 	return d.Kind
 }
 
-// header joins what follows a declaration's name, which leaves out its
-// attributes, with the next lines until its parentheses balance, so a
-// signature split over lines still reads whole.
+// header joins what follows a declaration's name with the next lines until its
+// parentheses balance, so a split signature reads whole.
 func (r *swiftDecls) header(rest string, i int) string {
 	text := rest
 	for j := i + 1; j < len(r.code) && strings.Count(text, "(") > strings.Count(text, ")"); j++ {

@@ -1,9 +1,5 @@
-// Package changelog finds the changelog/ entry files a branch, a staged
-// commit, a pull request, or a release adds, and reads their dated
-// "### yyyy.mm.dd.HHMM" headings. The commit gate and pr-check share it, so
-// both agree that a pull request carries one entry file, which later commits
-// amend. The release tool reads the entry files a tag adds to write that
-// release's notes. CHANGELOG.md is no part of it.
+// Package changelog finds the changelog/ entry files a branch, commit, pull
+// request or release adds, and reads their dated headings.
 package changelog
 
 import (
@@ -40,10 +36,9 @@ func New(before, after []string) []string {
 	return added
 }
 
-// forkPoint is the commit the current branch's own commits start from: the
-// parent of the oldest commit no other origin branch holds. A branch stacked
-// on another pushed branch so starts where that branch ends. It is not found
-// on the default branch, on a detached HEAD, or without origin refs.
+// forkPoint is the parent of the oldest commit no other origin branch holds.
+// It is not found on the default branch, a detached HEAD, or without origin
+// refs.
 func forkPoint(root string) (string, bool) {
 	branch := gitOut(root, "symbolic-ref", "--short", "-q", "HEAD")
 	base := gitx.DefaultBase(root)

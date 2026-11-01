@@ -29,9 +29,8 @@ type Reader struct {
 	// Read adds the declarations of the repo's sources that are not tests
 	// to x, and returns how to relate them.
 	Read func(repo Repo, x *Index) Code
-	// References, when set, lists each line of a product source that
-	// reaches another path, so the components view can prove its edges,
-	// with an error per source it cannot read.
+	// References, when set, lists each product source line that reaches another
+	// path, with an error per unreadable source.
 	References func(repo Repo) ([]Reference, []string)
 	// Strip, set with References, returns a file's lines with comments
 	// removed, so a word in a comment proves nothing.

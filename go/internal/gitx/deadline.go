@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// Deadline is how long one git call may run before it is stopped. Ten
-// seconds covers `git ls-files` on a monorepo. A call past it is stalled,
-// such as one on a network file system or on an index another process holds.
+// Deadline is how long one git call may run before it is stopped; ten seconds
+// covers `git ls-files` on a monorepo. A call past it is stalled, such as one
+// on a network file system or on an index another process holds.
 const Deadline = 10 * time.Second
 
 // StalledError is a git call stopped at Deadline. It names the call, so the
@@ -38,9 +38,8 @@ func (r Repo) TrackedFiles() ([]string, error) {
 	return nulList(out), nil
 }
 
-// IndexEntry is one index entry as `git ls-files --stage` prints it: the
-// path's mode, such as 100644, 120000 for a symlink or 160000 for a
-// submodule, and its slash-separated path relative to the repo.
+// IndexEntry is one index entry as `git ls-files --stage` prints it, with a
+// mode and a slash-separated repo path.
 type IndexEntry struct {
 	Mode string
 	Path string

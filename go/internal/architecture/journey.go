@@ -7,7 +7,7 @@ import (
 )
 
 // maxLabelIDs is the most requirement IDs one journey label may name, so a
-// step that fulfils more is split into steps a reader can follow.
+// step that fulfils more is split.
 const maxLabelIDs = 8
 
 // labelID is a requirement number, or an acceptance ID, written in a
@@ -40,11 +40,8 @@ func (m *Model) JourneyFiles() int {
 	return count
 }
 
-// JourneyErrors compares the requirement IDs the journey diagrams name with
-// every requirement doc, in both directions, and requires every behavior
-// node to name one. Only diagram labels count: node, subgraph, and edge
-// labels. Without a journey view there is nothing to judge; the contract
-// names the missing view.
+// JourneyErrors compares requirement IDs named in journey labels with
+// requirement docs, both ways, and requires each behavior node to name one.
 func (m *Model) JourneyErrors() []string {
 	if m.journeyAt == (Location{}) {
 		return nil
@@ -83,9 +80,8 @@ func (j *journey) fail(at Location, format string, args ...any) {
 	j.errs = append(j.errs, at.String()+": "+fmt.Sprintf(format, args...))
 }
 
-// label reads the requirement IDs one label names. owner is the element the
-// label belongs to; an edge label has none. A label that names any ID
-// covers its node, so a mistyped ID fails once, as unknown.
+// label reads the requirement IDs one label names for its owner element. A
+// label that names any ID covers its node, so a mistyped ID fails once.
 func (j *journey) label(owner, text string, at Location) {
 	ids := uniqueIDs(labelID.FindAllString(entityCode.ReplaceAllString(text, ""), -1))
 	if len(ids) > maxLabelIDs {

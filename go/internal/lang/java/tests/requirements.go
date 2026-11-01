@@ -12,19 +12,14 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/java/views"
 )
 
-// Requirements finds Java requirement tests: a method test0001_1() owns
-// 0001.1. A test is a method in a test source set's folder, such as
-// src/test/java, that the frameworks folder's test annotations mark, or a
-// public method with no annotation of its own in a class its class
-// annotations mark. Methods are read from tokens, so a name in a comment
-// or string is no test.
+// Requirements finds Java requirement tests, methods in a test source set that
+// the frameworks folder's annotations mark, read from tokens.
 var Requirements = lang.Tests{Scan: scan, Name: naming.Name, Source: java.Fixture, Reads: reads}
 
 // naming names Java requirement tests: test0001_1 owns 0001.1.
 const naming = lang.TestPrefix("test")
 
-// scan reads the tests of every Java source in a test source set's
-// folder; a repo with a Java project is written in Java.
+// scan reads the tests of every Java source in a test source set's folder.
 func scan(root string) ([]lang.Test, []string, bool, error) {
 	var tests []lang.Test
 	var files []string
@@ -54,9 +49,8 @@ func fileTests(file, src string) []lang.Test {
 	return out
 }
 
-// runs reports a method a framework runs as a test: one its own test
-// annotation marks, or a public method without annotations in a class a
-// class annotation marks.
+// runs reports a method a framework runs as a test, by its own annotation
+// or by the annotation of its class.
 func runs(m views.Method) bool {
 	if marked(m.Annotations, func(f framework) []string { return f.tests }) {
 		return true
@@ -71,9 +65,7 @@ func marked(annotations []string, names func(framework) []string) bool {
 	})
 }
 
-// reads reports a file Scan reads: a Java source in a test source set's
-// folder, or a build file, which says whether the repo holds a Java
-// project.
+// reads reports a file Scan reads: a Java test source or a build file.
 func reads(file string) bool {
 	return java.Fixture(file) && path.Ext(file) == java.Ext || slices.Contains(java.Manifests(), path.Base(file))
 }

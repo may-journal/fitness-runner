@@ -15,10 +15,8 @@ func blankComments(src string) string {
 	return code
 }
 
-// blanked copies src with every comment, and every string literal unless
-// keepStrings is set, turned to spaces, and lists each literal it passes,
-// inner ones in an interpolation before the literal holding them.
-// Newlines stay, so offsets and line numbers still match.
+// blanked copies src with comments and, unless keepStrings is set, string
+// literals turned to spaces, and lists each literal, keeping newlines.
 func blanked(src string, keepStrings bool) (string, []Literal) {
 	out := []byte(src)
 	blank := func(start, end int) {

@@ -25,12 +25,8 @@ type token struct {
 	pos  int
 }
 
-// lex splits a Java source into tokens, as JLS chapter 3 describes:
-// white space and comments separate tokens and are dropped, string, text
-// block, character and number literals are whole tokens, and every other
-// character that starts no name is one punctuation token. So >> closes
-// two type argument lists, and ... is three dots. Unicode escapes are
-// not translated.
+// lex splits a Java source into tokens per JLS chapter 3, dropping white space
+// and comments and keeping literals whole.
 func lex(src string) []token {
 	var out []token
 	for i := 0; i < len(src); {
@@ -43,8 +39,8 @@ func lex(src string) []token {
 	return out
 }
 
-// rule reads one kind of token: match tests the source from a token's
-// first character, and read returns the offset after it, with its kind.
+// rule reads one kind of token, where match tests its first character and read
+// returns the offset after it.
 type rule struct {
 	match func(rest string, r rune) bool
 	read  func(src string, i, size int) (int, kind)
@@ -113,10 +109,8 @@ func numberStart(rest string, r rune) bool {
 	return unicode.IsDigit(r) || (r == '.' && len(rest) > 1 && unicode.IsDigit(rune(rest[1])))
 }
 
-// number returns the offset after a number literal starting at offset i:
-// digits, letters, underscores and dots, and a sign right after an
-// exponent's letter. A hexadecimal literal's exponent letter is p, since
-// e is one of its digits, so 0xE+n is a literal, a plus and a name.
+// number returns the offset after a number literal at offset i, a hex literal's
+// exponent letter being p because e is a digit.
 func number(src string, i int) int {
 	exponents := "eEpP"
 	if strings.EqualFold(src[i:min(i+2, len(src))], "0x") {

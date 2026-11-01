@@ -29,11 +29,8 @@ type Span struct {
 	Open     bool
 }
 
-// Lexer splits source in the common C-style syntax into spans, a line at a
-// time: // and /* */ comments, "..." and """...""" strings, '...'
-// character literals, and spans in backticks. Literals are always read, so
-// a // or /* inside one starts no comment. An open block comment, text
-// block, or span in backticks carries over to the next line.
+// Lexer splits C-style source into comment, string and literal spans a line at
+// a time, carrying open blocks to the next line.
 type Lexer struct {
 	// Nested lets block comments nest, as Swift, Kotlin and Rust do.
 	Nested bool

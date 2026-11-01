@@ -7,9 +7,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
 )
 
-// Actor is a person declared in the system context. Name is its label
-// without the callout number; ID is its Mermaid ID, the one alias the
-// diagram already declares. System and legend nodes are never actors.
+// Actor is a person declared in the system context, with its Mermaid ID and
+// its label as Name without the callout number.
 type Actor struct {
 	ID, Name string
 	At       Location
@@ -61,9 +60,8 @@ func (m *Model) roster() roster {
 	return r
 }
 
-// CheckGivens requires every acceptance's Given to start with one or more
-// declared actors joined by "and", by full name or ID, and names the Given
-// line and the context line on each failure.
+// CheckGivens requires every acceptance's Given to start with declared actors
+// joined by "and", naming the Given and context lines on each failure.
 func (m *Model) CheckGivens() []string {
 	r := m.roster()
 	var errs []string
@@ -111,7 +109,7 @@ func (r roster) actor(c *clause) []string {
 }
 
 // cutWord removes word from the start of text when it ends the text or
-// stops at a space, and returns what follows the space.
+// precedes a space, returning the rest.
 func cutWord(text, word string) (string, bool) {
 	rest, ok := strings.CutPrefix(text, word)
 	if !ok || (rest != "" && !strings.HasPrefix(rest, " ")) {

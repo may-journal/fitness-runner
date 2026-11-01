@@ -17,17 +17,12 @@ const Technology = "Java"
 // application is the kind of product a main method proves.
 const application = "Java application"
 
-// mainRe matches a main method the java launcher can start, over any
-// lines: static or, since JDK 25 (JEP 512), an instance method, taking
-// nothing or one String array, of fixed or variable arity. Its first group
-// holds the modifiers, since a private main starts nothing.
+// mainRe matches a main method the java launcher can start, its first group
+// holding the modifiers so a private main is ruled out.
 var mainRe = regexp.MustCompile(`((?:\b(?:public|protected|private|static|final|synchronized|strictfp)\s+)*)\bvoid\s+main\s*\(\s*(?:final\s+)?(?:String\s*(?:\[\s*\]|\.\.\.)\s*\w+|String\s+\w+\s*\[\s*\])?\s*\)`)
 
-// Runtime reads Java product sources for applications: a product .java
-// file declaring a main method proves one application per Java project,
-// whose container names Java. The application is built from the
-// project's folder and the main file's folder, so a container may claim
-// either, or take the project folder's name.
+// Runtime reads Java product sources, where a file declaring a main method
+// proves one application per Java project.
 var Runtime = runtimes.Reader{Sources: map[string]func(*runtimes.Finder, string){Ext: entry}}
 
 // entry records the Java project holding file as one application the
@@ -56,9 +51,8 @@ func mainLine(f *runtimes.Finder, file string) int {
 	return 0
 }
 
-// projectDir is the folder of the deepest Java project holding file: the
-// nearest folder above it with a tracked build file, or the file's own
-// folder outside every project.
+// projectDir is the nearest folder above file with a tracked build file, else
+// the file's own folder.
 func projectDir(f *runtimes.Finder, file string) string {
 	for dir := path.Dir(file); ; dir = path.Dir(dir) {
 		if builds(f, dir) {

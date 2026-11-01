@@ -15,12 +15,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/java/views"
 )
 
-// report is a JaCoCo XML report's own totals: the counters directly under
-// <report>. JaCoCo counts a source line once even when several classes or
-// methods share it, so the report's totals are read as written and never
-// summed from its packages, classes or methods. Maven's aggregate report
-// writes one group per module, named by artifact id, while Gradle's
-// aggregate report and every module report list packages directly.
+// report is a JaCoCo XML report, whose own totals are read as written because
+// summing its classes would count a shared line twice.
 type report struct {
 	Counters []counter `xml:"counter"`
 	Groups   []struct {
@@ -38,9 +34,8 @@ type javaPackage struct {
 	} `xml:"sourcefile"`
 }
 
-// listing is what aggregate reports list: Maven's module groups by
-// artifact id, and the source files Gradle's list without groups, by
-// package path and file name.
+// listing is what aggregate reports list: Maven's module groups by artifact id
+// and Gradle's source files by package path.
 type listing struct {
 	groups, sources map[string]bool
 }
@@ -79,14 +74,8 @@ func coverage(root string, p java.Project, start time.Time) (findings []string, 
 	return findings, len(files) > 0
 }
 
-// reports lists the reports to judge: each project's own when the build
-// wrote no aggregate report, else every aggregate and the own report of
-// each project that no aggregate covers. An aggregate leaves out the
-// projects it does not depend on, and by default the project that writes
-// it. An own report that lists no class is left out then, as for a project
-// of tests alone, whose code the build compiles in no language. An
-// aggregate that does not parse is named alone, since what it covers is
-// unknown.
+// reports lists the reports to judge: the aggregates and the own report of each
+// project they leave uncovered.
 func reports(root string, p java.Project, start time.Time) []string {
 	members := java.Members(root, p)
 	aggregates := fresh(root, members, func(b *java.Build) []string { return b.Aggregate }, start)
@@ -123,11 +112,8 @@ func listed(files []string) (listing, bool) {
 	return l, true
 }
 
-// uncovered lists the members of build root p that no aggregate covers.
-// Maven's aggregate covers a module it holds a group for. Gradle's lists
-// no groups, so it covers a project when it lists one of the project's
-// Java sources: an aggregate takes a project's compiled classes whole, and
-// an unlisted source is a class the build's own filters leave out.
+// uncovered lists the members of root p no aggregate covers, by module group
+// for Maven and listed sources for Gradle.
 func uncovered(root string, p java.Project, members []java.Project, l listing) []java.Project {
 	covered := map[java.Project]bool{}
 	for _, q := range members {
@@ -153,17 +139,15 @@ func artifactID(root string, q java.Project) string {
 	return pom.ArtifactID
 }
 
-// lists reports whether sources holds the tracked Java source as a JaCoCo
-// report names it: by the package it declares and its file name. A source
-// that cannot be read is not listed.
+// lists reports whether sources holds the tracked Java source by the package it
+// declares and its file name.
 func lists(sources map[string]bool, root, file string) bool {
 	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 	return err == nil && sources[path.Join(views.Package(string(body)), path.Base(file))]
 }
 
-// judgeReport reads one report's totals and names those short of the goal,
-// or the report itself when it does not parse or counts no lines, as for
-// classes compiled without debug information.
+// judgeReport names the totals of one report short of the goal, or the whole
+// report if it is unusable.
 func judgeReport(root, file string) []string {
 	rel := java.Relative(root, ".", file)
 	var r report

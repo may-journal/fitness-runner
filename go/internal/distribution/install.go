@@ -10,10 +10,8 @@ import (
 	"runtime"
 )
 
-// Installer holds typed release, transport, and cache settings. The command
-// uses public HTTPS endpoints; tests inject a local HTTP server. Client
-// downloads the bundle; Lookup asks for the latest release and the hash
-// manifest, which have a fallback or are small, so it gives up sooner.
+// Installer holds the release, transport, and cache settings, with Lookup
+// giving up sooner than Client.
 type Installer struct {
 	Version, Platform, Cache, ReleaseURL, LatestURL string
 	Hashes                                          map[string]string

@@ -7,9 +7,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 )
 
-// statedName reads a class label or member as the code view states it: a
-// qualified name, and for a function its parameters and an optional
-// result, such as render.Table([]Row, int, Palette) string.
+// statedName reads a class label or member as the code view states it, such as
+// render.Table([]Row, int, Palette) string.
 var statedName = regexp.MustCompile(`^([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\s*(.*)$`)
 
 // stated is what one label or member says about a declaration.
@@ -108,9 +107,8 @@ func sameTypes(a, b []string) bool {
 	return true
 }
 
-// statedMember reads a class body line: a visibility mark, then a method such as
-// Run(string) error, or a field as name, name: Type, or Type name, where
-// the type is one word but for spaces inside its type arguments.
+// statedMember reads a class body line, a visibility mark then a method like
+// Run(string) error or a field like name: Type.
 func statedMember(text string) (stated, string, bool) {
 	text = generics(strings.TrimRight(strings.TrimLeft(strings.TrimSpace(text), "+-#~"), "$* "))
 	if strings.Contains(text, "(") {
@@ -143,10 +141,8 @@ func oneWord(typ string) bool {
 // angleDepth is how an angle bracket changes the type argument depth.
 var angleDepth = map[rune]int{'<': 1, '>': -1}
 
-// generics reads Mermaid's tilde generics as angle brackets, so
-// Promise~boolean~ states Promise<boolean>. A tilde before a name or a
-// wildcard's ? opens a list. A tilde before an opening bracket opens one only outside a list,
-// so List~Item~[] states List<Item>[]. Any other tilde closes one.
+// generics reads Mermaid's tilde generics as angle brackets, so Promise~boolean~
+// states Promise<boolean> and List~Item~[] states List<Item>[].
 func generics(text string) string {
 	b := []byte(text)
 	depth := 0

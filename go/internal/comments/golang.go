@@ -34,9 +34,8 @@ func goNotes(src []byte) []note {
 // exampleOutput opens the comment that states what a Go example prints.
 var exampleOutput = regexp.MustCompile(`(?im)^\s*(unordered )?output:`)
 
-// goCodeGroups lists the comment groups the Go toolchain reads as code. One
-// is a cgo preamble above `import "C"`. Another is an example's output
-// comment, which `go test` checks.
+// goCodeGroups lists the comment groups the Go toolchain reads as code, a cgo
+// preamble above `import "C"` or an example's output comment.
 func goCodeGroups(file *ast.File) map[*ast.CommentGroup]bool {
 	kept := map[*ast.CommentGroup]bool{}
 	for _, group := range file.Comments {

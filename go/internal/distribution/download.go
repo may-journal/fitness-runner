@@ -19,8 +19,8 @@ const maxMetadataBytes = 1 << 20
 // network that drops traffic delays a commit by seconds, not minutes.
 const lookupTimeout = 5 * time.Second
 
-// announce prints the host a read is about to ask and how long it waits, so
-// a wait on the network is never silent.
+// announce prints the host a read asks and its timeout, so a network
+// wait is never silent.
 func (i *Installer) announce(client *http.Client, what string, request *http.Request) {
 	fmt.Fprintf(i.Log, "fitness: asking %s for %s (gives up after %s)\n", request.URL.Host, what, client.Timeout)
 }

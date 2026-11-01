@@ -26,9 +26,8 @@ var (
 	lineCommentRe  = regexp.MustCompile(`(?m)(^|\s)//.*$`)
 )
 
-// jdkParents are the folders, relative to the user's home, whose children
-// are JDKs that Gradle's toolchain detection finds: its own downloads,
-// SDKMAN, asdf, jabba, IntelliJ and the macOS user folder.
+// jdkParents are the folders under the user's home whose children are JDKs
+// Gradle's toolchain detection finds.
 var jdkParents = []string{
 	".gradle/jdks",
 	".sdkman/candidates/java",
@@ -62,9 +61,8 @@ type jdk struct {
 	j9     bool
 }
 
-// machineJDKs lists the JDKs every build on this machine may use, without
-// starting Gradle: JAVA_HOME's, the children of the folders above and
-// macOS's list. It reads folders and files only.
+// machineJDKs lists the JDKs every build on this machine may use, from JAVA_HOME,
+// the folders above and macOS's list.
 func machineJDKs() []jdk {
 	out := listedJDKs()
 	homes := []string{os.Getenv("JAVA_HOME")}
@@ -183,9 +181,8 @@ func splitList(list string) []string {
 	return out
 }
 
-// canDownload reports whether Gradle may download a missing JDK for the
-// build: auto-download is not turned off, and a settings or init script
-// registers a toolchain download repository.
+// canDownload reports whether auto-download is on and a settings or init script
+// registers a toolchain repository.
 func canDownload(root string, build java.Project, props map[string]string) bool {
 	if props["org.gradle.java.installations.auto-download"] == "false" {
 		return false

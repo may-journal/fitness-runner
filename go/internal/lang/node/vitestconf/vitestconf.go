@@ -1,16 +1,5 @@
-// Package vitestconf locates and scans Vitest configuration for coverage
-// exclude patterns — the Go port of the vitest-config helpers in
-// @mayjournal/fitness-shared. The TS helpers evaluated JS/TS config files
-// (require for .cjs/.js, jiti for the rest); Go cannot execute JavaScript,
-// so this package scans the config source textually: comments are stripped
-// string-aware and the string literals of the first coverage object carrying
-// a direct exclude array are collected. Entries built from variables,
-// spreads, imports, concatenation, or template expressions are unresolvable
-// and skipped — the TS check ignored non-string entries at runtime, so
-// skipping unresolvable expressions is the same judgment applied one level
-// earlier. One consequence: a config file that exists always wins as the
-// config source, where the TS fell through past files whose evaluation
-// crashed or produced null.
+// Package vitestconf scans Vitest config source text, since Go cannot run
+// JavaScript, for coverage exclude patterns and skips entries it cannot resolve.
 package vitestconf
 
 import (
@@ -34,9 +23,8 @@ var ConfigNames = []string{
 const packageJSON = "package.json"
 const cspellJSON = "cspell.json"
 
-// LoadExclude resolves the coverage exclude list the way the TS check's
-// loadVitestConfig(root, getFitnessRunnerRoot()) call did: from root when it
-// has a config source, else from the fitness-runner fallback root.
+// LoadExclude resolves the coverage exclude list from root, else from the
+// fallback root of fitness-runner.
 func LoadExclude(root string) []string {
 	if exclude, found := LoadExcludeFromRoot(root); found {
 		return exclude
@@ -45,10 +33,8 @@ func LoadExclude(root string) []string {
 	return exclude
 }
 
-// LoadExcludeFromRoot resolves the coverage exclude list from a single
-// directory: the first vitest.config.* file present (in ConfigNames order)
-// is the config source, else the package.json "vitest" object. found is
-// false when the directory has no config source at all.
+// LoadExcludeFromRoot resolves the coverage exclude list from one directory's
+// first vitest.config.* file, else its package.json "vitest" object.
 func LoadExcludeFromRoot(root string) (exclude []string, found bool) {
 	for _, name := range ConfigNames {
 		data, err := os.ReadFile(filepath.Join(root, name))
@@ -61,10 +47,8 @@ func LoadExcludeFromRoot(root string) (exclude []string, found bool) {
 	return excludeFromPackageJSON(filepath.Join(root, packageJSON))
 }
 
-// excludeFromPackageJSON reads the "vitest" object from a package.json,
-// mirroring the TS tryLoadPackageJsonVitest plus getCoverageBlock: the
-// coverage block is test.coverage when present and non-null, else the
-// top-level coverage; only string entries of an array exclude count.
+// excludeFromPackageJSON reads the string entries of the coverage exclude array
+// in a package.json "vitest" object.
 func excludeFromPackageJSON(path string) ([]string, bool) {
 	cfg, ok := readVitestObject(path)
 	if !ok {
@@ -81,9 +65,8 @@ func excludeFromPackageJSON(path string) ([]string, bool) {
 	return stringEntries(list), true
 }
 
-// readVitestObject reads the "vitest" object of the package.json at path;
-// ok is false when the file is unreadable or malformed or the key does not
-// hold an object — the TS tryLoadPackageJsonVitest contract.
+// readVitestObject reads the "vitest" object of the package.json at path, with
+// ok false when it is missing or not an object.
 func readVitestObject(path string) (map[string]any, bool) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -109,13 +92,8 @@ func stringEntries(list []any) []string {
 	return out
 }
 
-// FitnessRunnerRoot mirrors the TS getFitnessRunnerRoot: resolve the
-// installed @mayjournal/fitness-shared package's "./cspell" export and
-// return the outermost ancestor of that config directory containing
-// cspell.json. The TS resolved the package from its own module URL; this
-// binary is not Node, so it walks up from root through node_modules — same
-// install, same answer. When no usable install is found it falls back to
-// the outermost cspell.json ancestor of root, as the TS did with cwd.
+// FitnessRunnerRoot returns the outermost cspell.json ancestor of the installed
+// @mayjournal/fitness-shared config directory, else of root.
 func FitnessRunnerRoot(root string) string {
 	if dir := sharedConfigDir(root); dir != "" {
 		return outermostCspellAncestor(dir)
@@ -123,9 +101,8 @@ func FitnessRunnerRoot(root string) string {
 	return outermostCspellAncestor(root)
 }
 
-// sharedConfigDir walks up from root for the nearest installed
-// node_modules/@mayjournal/fitness-shared and resolves its "./cspell"
-// export's directory; empty when no install (or no usable export) exists.
+// sharedConfigDir resolves the "./cspell" export directory of the nearest
+// installed @mayjournal/fitness-shared, or empty.
 func sharedConfigDir(root string) string {
 	dir, err := filepath.Abs(root)
 	if err != nil {
@@ -186,10 +163,8 @@ func exportTarget(entry any) string {
 	return ""
 }
 
-// outermostCspellAncestor mirrors the TS walkUpWhile/findConfigRoot pair:
-// walk up from start remembering the last directory containing cspell.json;
-// start itself when no ancestor (start included) has one. The filesystem
-// root is never tested, exactly like the TS loop.
+// outermostCspellAncestor returns the highest directory above start holding
+// cspell.json, else start itself.
 func outermostCspellAncestor(start string) string {
 	dir, err := filepath.Abs(start)
 	if err != nil {
@@ -205,9 +180,8 @@ func outermostCspellAncestor(start string) string {
 	return last
 }
 
-// CoverageExclude scans JS/TS config source text for the first coverage
-// object literal carrying a direct exclude array and returns the array's
-// clean string literals; found reports whether such an array exists.
+// CoverageExclude returns the clean string literals of the first coverage
+// object's direct exclude array in JS/TS config source.
 func CoverageExclude(src string) (exclude []string, found bool) {
 	tokens := javascript.Lex(src)
 	for i := 0; i+2 < len(tokens); i++ {
@@ -267,10 +241,8 @@ func tokenDepthDelta(t javascript.Token) int {
 	return 0
 }
 
-// arrayStrings collects the clean string-literal elements of an array (start
-// is the index just past its opening bracket): a literal counts only when it
-// sits directly between element delimiters — anything wrapped in a call,
-// spread, or operator expression is unresolvable and skipped.
+// arrayStrings collects the string literals sitting directly between element
+// delimiters of the array opened before start.
 func arrayStrings(tokens []javascript.Token, start int) []string {
 	var out []string
 	depth := 1
@@ -286,9 +258,8 @@ func arrayStrings(tokens []javascript.Token, start int) []string {
 	return out
 }
 
-// isArrayElement reports whether tokens[i] is a clean string literal sitting
-// directly between array element delimiters: the opening bracket or a comma
-// before it, a comma or the closing bracket after it.
+// isArrayElement reports whether tokens[i] is a clean string literal directly
+// between array element delimiters.
 func isArrayElement(tokens []javascript.Token, i int) bool {
 	t := tokens[i]
 	if t.Kind != javascript.String || !t.Lit || i+1 >= len(tokens) {
@@ -297,9 +268,7 @@ func isArrayElement(tokens []javascript.Token, i int) bool {
 	return isPunctEither(tokens[i-1], "[", ",") && isPunctEither(tokens[i+1], ",", "]")
 }
 
-// isKey reports whether token i is an object key named name: an identifier
-// or plain string literal in key position (start of input, or right after an
-// opening brace or comma).
+// isKey reports whether token i is an object key named name in key position.
 func isKey(tokens []javascript.Token, i int, name string) bool {
 	t := tokens[i]
 	return isKeyToken(t) && t.Text == name && inKeyPosition(tokens, i)

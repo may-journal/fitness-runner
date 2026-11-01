@@ -45,10 +45,9 @@ type Notice struct {
 	Body string `json:"body"`
 }
 
-// BotLogin is the account fitness posts as. Its verdicts, close-check notes,
-// and comment-check replies count only when this account wrote them, so a
-// pasted marker never does. FITNESS_BOT_LOGIN overrides the Actions token's
-// login.
+// BotLogin is the account fitness posts as, and only its verdicts, notes and
+// replies count, so a pasted marker never does. FITNESS_BOT_LOGIN overrides
+// the Actions token's login.
 func BotLogin() string {
 	if login := os.Getenv("FITNESS_BOT_LOGIN"); login != "" {
 		return login
@@ -144,8 +143,8 @@ func (g Client) notice(n int, c Comment) (*Notice, error) {
 	return g.markedComment(c.kind(), n, noticePrefix+strconv.FormatInt(c.ID, 10)+":")
 }
 
-// markedComment is the bot's first comment on issue or PR n, under kind
-// (issues or pulls), whose body holds prefix, or nil when none does.
+// markedComment returns the bot's first comment on issue or PR n, under kind,
+// whose body holds prefix, or nil.
 func (g Client) markedComment(kind string, n int, prefix string) (*Notice, error) {
 	jq := fmt.Sprintf(`.[] | select(.user.login == %q and (.body // "" | contains(%q))) | {id, body}`, BotLogin(), prefix)
 	out, err := g.api("--paginate", "--jq", jq, fmt.Sprintf("%s/%d/comments?per_page=100", kind, n))

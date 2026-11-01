@@ -11,16 +11,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
-// Tests finds vitest and jest requirement tests: test("0001.1 saves
-// offline", …) owns 0001.1. A test is one it or test call in a *.test.*,
-// *.spec.*, or __tests__/ script whose first argument is a title opening
-// with the acceptance ID. A describe title never names a test, so each it
-// or test inside one owns its own ID. The .skip, .only, and .todo
-// modifiers keep a test, and it.each(rows)("0001.1 …") is one test. A call
-// without a leading title, such as Playwright's test.skip(condition,
-// "reason"), or a comment, string, re.test(…), or test method is no test.
-// A tool config such as vite.config.ts or .eslintrc.cjs is no code. Reads keeps
-// the test scripts.
+// Tests finds vitest and jest tests whose title opens with an acceptance ID, as
+// in test("0001.1 saves offline", …).
 var Tests = lang.Tests{Scan: scanTests, Name: func(id string) string { return `test("` + id + ` …")` }, Reads: ScriptTest}
 
 // scanTests reads every script test file's tests; a repo with any script
@@ -85,11 +77,8 @@ func scriptFileTests(file, src string) []lang.Test {
 	return tests
 }
 
-// testCall reports whether tokens[i] starts a call that declares one test,
-// such as it("…"), test.skip("…"), or it.each(rows)("…"), and returns its
-// title. Only a call whose first argument is a title string declares a test,
-// so Playwright's test.skip(condition, "reason") and a typed method
-// test(value: string) declare none.
+// testCall reports whether tokens[i] starts a call declaring one test and
+// returns its title, which must be the first argument.
 func testCall(tokens []javascript.Token, i int) (javascript.Token, bool) {
 	if !namesTest(tokens, i) {
 		return javascript.Token{}, false
@@ -181,9 +170,8 @@ func closing(tokens []javascript.Token, open int) int {
 	return len(tokens) - 1
 }
 
-// definesMethod reports a parameter list followed by a body or a return
-// type, as in a method test(value) { … } or an interface member
-// test(value): boolean;, which declares no test.
+// definesMethod reports a parameter list followed by a body or return type,
+// which declares no test.
 func definesMethod(tokens []javascript.Token, open int) bool {
 	end := closing(tokens, open)
 	return end+1 < len(tokens) && (isPunct(tokens[end+1], "{") || isPunct(tokens[end+1], ":"))

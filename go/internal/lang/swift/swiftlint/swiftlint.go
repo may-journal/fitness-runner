@@ -1,12 +1,5 @@
-// Package swiftlint runs SwiftLint's strict JSON reporter over a repo for
-// the swiftlint check. The tool is a system binary (brew, never
-// node_modules): it is resolved from PATH at runtime, and a missing binary
-// reports info with the same install hint the TypeScript check printed. The
-// TS check shelled out with `2>&1`; this port feeds one combined
-// stdout+stderr buffer to the same judgment: a "command not found" output is
-// the install hint, "No lintable files found" passes clean, and otherwise
-// the JSON violation array becomes `file:line[:col] - reason (rule_id)`
-// lines. A failure where nothing parses reports info quoting the output.
+// Package swiftlint runs SwiftLint's strict JSON reporter over a repo for the
+// swiftlint check, resolving the binary from PATH.
 package swiftlint
 
 import (
@@ -60,9 +53,8 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	return judge(execSwiftlint(bin, root, paths), count)
 }
 
-// lintPaths is what SwiftLint lints and how many Swift files that covers:
-// the whole tree, or a scoped run's changed Swift files among all, none when
-// it changed no Swift file.
+// lintPaths is what SwiftLint lints and how many Swift files that covers: the
+// whole tree, or a scoped run's changed Swift files.
 func lintPaths(root string, all []string) ([]string, int) {
 	if checkkit.ChangedFiles() == nil || includes(root) {
 		return []string{"."}, len(all)
@@ -86,19 +78,16 @@ func includes(root string) bool {
 	return err == nil && includedKey.Match(config)
 }
 
-// execSwiftlint runs `swiftlint lint --strict --reporter json --quiet` on
-// paths in root; returns its outcome with stdout and stderr in one buffer,
-// mirroring the TS execSyncResult (which redirected with `2>&1`).
+// execSwiftlint runs `swiftlint lint --strict --reporter json --quiet` on paths
+// in root, returning its outcome with stdout and stderr in one buffer.
 func execSwiftlint(bin, root string, paths []string) checkkit.Outcome {
 	cmd := exec.Command(bin, append([]string{"lint", "--strict", "--reporter", "json", "--quiet"}, paths...)...)
 	cmd.Dir = root
 	return checkkit.ExecCombined(cmd)
 }
 
-// judge ports the TS check: a run that could not start, was killed, or
-// printed command-not-found is an internal error with the install hint,
-// no-lintable-files passes with zero files, and otherwise the exec result is
-// judged like buildExecCheckResult.
+// judge turns a run that could not start into an internal error with the
+// install hint, and otherwise judges the exec result.
 func judge(o checkkit.Outcome, count int) (checkkit.Result, error) {
 	if err := o.EnvErr("swiftlint"); err != nil {
 		return checkkit.Result{}, err

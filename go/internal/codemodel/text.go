@@ -8,9 +8,8 @@ import (
 )
 
 // Scanner strips comments, and string literals when Literals is set, from
-// source in the common C-style syntax that comments.Lexer reads. Neither
-// comments nor literals can create a dependency. A span in backticks, which
-// may run over lines, is kept whole.
+// source in the C-style syntax that comments.Lexer reads. It keeps a backtick
+// span whole even when it runs over lines.
 type Scanner struct {
 	Literals bool
 	lex      comments.Lexer

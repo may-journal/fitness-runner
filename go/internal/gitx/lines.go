@@ -13,9 +13,9 @@ type Lines struct{ From, To int }
 // and, when not 1, its count.
 var hunkHeader = regexp.MustCompile(`^@@ -\S+ \+(\d+)(?:,(\d+))? @@`)
 
-// ChangedLines maps each file the work tree changes since rev to the lines
-// it adds or rewrites. They are numbered as the work tree holds them. A
-// moved file counts only the lines its move edits.
+// ChangedLines maps each file the work tree changes since rev to the lines it
+// adds or rewrites, numbered as in the work tree. A moved file counts only the
+// lines its move edits.
 func (r Repo) ChangedLines(rev string) (map[string][]Lines, error) {
 	out, err := r.run("diff", "-U0", "-M", "--no-color", "--no-ext-diff",
 		"--src-prefix=a/", "--dst-prefix=b/", rev)
@@ -41,9 +41,8 @@ func parseHunks(patch string) map[string][]Lines {
 	return changed
 }
 
-// fileHeader reads the path a `+++ ` line names. Only a line right after
-// a `--- ` line is a header, so an added line that starts with `++` is
-// not. Git ends a path that holds a space with a tab.
+// fileHeader reads the path a `+++ ` line names, but only right after a `--- `
+// line. Git ends a path that holds a space with a tab.
 func fileHeader(prev, line string) (string, bool) {
 	name, ok := strings.CutPrefix(line, "+++ ")
 	if !ok || !strings.HasPrefix(prev, "--- ") {

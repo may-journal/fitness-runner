@@ -169,9 +169,8 @@ func readCacheFile(path string, limit int64) ([]byte, error) {
 	return readBounded(file, limit)
 }
 
-// recordHashes saves a bundle generation's file hashes, taken from the
-// verified archive, beside it, so later runs can check the installed files
-// without reading or unpacking the archive again.
+// recordHashes saves a generation's verified file hashes beside it, so later
+// runs check installed files without unpacking the archive.
 func recordHashes(key, generation string, hashes map[string]string) error {
 	data, err := json.Marshal(hashes)
 	if err != nil {
@@ -180,9 +179,8 @@ func recordHashes(key, generation string, hashes map[string]string) error {
 	return writeAtomic(filepath.Join(key, generation+".hashes.json"), data)
 }
 
-// recordedBundle returns the current bundle when every installed file still
-// matches the hashes recorded at publish time, or "" so the caller verifies
-// and unpacks the archive. A damaged file fails the match.
+// recordedBundle returns the current bundle when every installed file matches
+// its recorded hash, or "" so the caller unpacks the archive.
 func recordedBundle(key string) string {
 	target, err := os.Readlink(filepath.Join(key, "current"))
 	if err != nil || !generationPattern.MatchString(target) {

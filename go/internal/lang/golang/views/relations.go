@@ -15,9 +15,8 @@ type use struct {
 	Kind   string
 }
 
-// Import satisfies types.Importer. A folder of this repository is checked
-// from source; any other import is an empty package, so its uses resolve
-// to nothing and never to a declaration here.
+// Import satisfies types.Importer: a folder of this repository is checked from
+// source, and any other import is an empty package.
 func (g *goIndex) Import(p string) (*types.Package, error) {
 	if pkg, ok := g.packages[p]; ok {
 		return pkg, nil
@@ -53,9 +52,8 @@ func (g *goIndex) check(folder string) *types.Package {
 	return pkg
 }
 
-// relate reads the uses in each Go node's lines through go/types, so
-// comments, strings, and a name that merely matches never relate two
-// nodes.
+// relate reads the uses in each Go node's lines through go/types, so comments
+// and strings never relate two nodes.
 func (g *goIndex) relate(gr *codemodel.Graph) {
 	for _, s := range gr.Spans() {
 		if path.Ext(s.File) == golang.Ext {
@@ -73,9 +71,8 @@ func (g *goIndex) span(gr *codemodel.Graph, s codemodel.Span) {
 	}
 }
 
-// follow relates a node to the node a use reaches. A call to a function
-// the view does not show is followed into that function, so a diagram may
-// leave helpers out; the relation is reported at the node's own line.
+// follow relates a node to the node a use reaches, following a call into a
+// hidden function and reporting at the node's line.
 func (g *goIndex) follow(gr *codemodel.Graph, n *codemodel.Node, u use, at codemodel.Location, visited map[*codemodel.Decl]bool) {
 	if to := gr.Owner(u.To); to != nil {
 		gr.Observe(n, to, u.Kind, at)

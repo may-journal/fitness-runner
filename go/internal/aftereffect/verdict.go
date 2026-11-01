@@ -31,9 +31,8 @@ func kindOf(t Target) string {
 // the legacy plan-structure marker.
 const planKind = "Plan"
 
-// postVerdict keeps one live verdict per body version. A pass that follows a
-// pass edits that comment in place with a timestamp; anything else posts a
-// new one. Every older verdict is then hidden as outdated.
+// postVerdict keeps one live verdict per body version. A pass after a pass is
+// edited in place, anything else posts anew, and older verdicts are hidden.
 func postVerdict(gh Client, t Target, errs []string) error {
 	kind := kindOf(t)
 	prior, err := gh.Verdicts(t.Number, kind)
@@ -47,10 +46,8 @@ func postVerdict(gh Client, t Target, errs []string) error {
 	return hideOlder(gh, prior, keep)
 }
 
-// liveVerdict returns the index of the verdict judging this body version,
-// writing it first when none does; -1 means a new comment was posted. The
-// first marker is the one a new verdict carries; the rest are earlier names
-// for it.
+// liveVerdict returns the index of this body version's verdict, writing one
+// when none exists, or -1 for a new comment.
 func liveVerdict(gh Client, n int, kind string, errs, marks []string, prior []Verdict) (int, error) {
 	if i := indexOfMarker(prior, marks); i >= 0 {
 		return i, nil
@@ -155,9 +152,8 @@ func HasLabel(labels []string, name string) bool {
 }
 
 // MarkerPrefixes are the comment-marker prefixes that name a kind's
-// verdicts: `fitness:issue-check:<kind>:`, and for Plan also the earlier
-// `fitness:plan-structure:`, so verdicts posted before issue-check still
-// count and are hidden in turn.
+// verdicts, including the earlier `fitness:plan-structure:` for Plan so
+// older verdicts still count.
 func MarkerPrefixes(kind string) []string {
 	prefixes := []string{"fitness:issue-check:" + KindID(kind) + ":"}
 	if kind == planKind {
@@ -172,8 +168,8 @@ func KindID(kind string) string {
 	return strings.Join(strings.Fields(strings.ToLower(kind)), "-")
 }
 
-// markers tag a comment with a hash of the body it judged, one per marker
-// prefix; the first is the one a new verdict carries.
+// markers tag a comment with a hash of the body it judged, one per prefix, led
+// by the one new verdicts carry.
 func markers(kind, body string) []string {
 	hash := shortHash(body)
 	var marks []string

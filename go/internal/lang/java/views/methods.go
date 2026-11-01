@@ -2,10 +2,8 @@ package views
 
 import "github.com/may-journal/fitness-runner/go/internal/codemodel"
 
-// Method is a method a Java source declares: whether it is public or a
-// constructor, and
-// the simple names of the annotations on it and on the type declaring it,
-// such as Test for @org.junit.jupiter.api.Test.
+// Method is a method a Java source declares, with the simple names of the
+// annotations on it and on its type.
 type Method struct {
 	Name        string
 	Line        int

@@ -1,6 +1,5 @@
 // Package javascript tokenizes JavaScript and TypeScript source without running
-// it, so checks can read config literals and test calls the way the
-// language would.
+// it, so checks can read config literals and test calls.
 package javascript
 
 import (
@@ -21,10 +20,9 @@ const (
 	Regex
 )
 
-// Token is one lexed unit of JS/TS source. For strings, Text is the decoded
-// value and Lit is false when a template literal held a ${…} expression —
-// present but unresolvable. Pos is the byte offset where the token starts.
-// Comments never become tokens.
+// Token is one lexed unit of JS/TS source, and comments never become tokens.
+// For strings, Text is the decoded value and Lit is false when a template held
+// a ${…} expression.
 type Token struct {
 	Kind Kind
 	Text string
@@ -40,15 +38,14 @@ var regexKeywords = map[string]bool{
 	"throw": true, "typeof": true, "void": true, "yield": true,
 }
 
-// Lex tokenizes JS/TS source, dropping whitespace and comments while keeping
-// string contents intact — the string-aware comment stripping the TS
-// evaluation got for free from the JavaScript engine.
+// Lex tokenizes JS/TS source, dropping whitespace and comments while
+// keeping string contents intact.
 func Lex(src string) []Token {
 	return lex(src, false)
 }
 
-// LexJSX tokenizes TSX or JSX source as Lex does, except that a slash
-// right after a < closes a tag, as in </b>, and never starts a regex.
+// LexJSX tokenizes TSX or JSX source as Lex does, but a slash after a < closes
+// a tag and never starts a regex.
 func LexJSX(src string) []Token {
 	return lex(src, true)
 }
@@ -75,8 +72,8 @@ func isSpace(c byte) bool {
 	return c == ' ' || c == '\t' || c == '\r' || c == '\n'
 }
 
-// lexAt lexes the comment or token starting at the non-whitespace byte at i,
-// returning the extended token slice and the index just past it.
+// lexAt lexes the comment or token at the non-whitespace byte i, returning the
+// extended tokens and the next index.
 func lexAt(src string, i int, tokens []Token, jsx bool) ([]Token, int) {
 	switch c := src[i]; {
 	case c == '/':
@@ -92,9 +89,7 @@ func lexAt(src string, i int, tokens []Token, jsx bool) ([]Token, int) {
 	}
 }
 
-// lexSlash handles a slash: a line or block comment, a regex literal when
-// one can follow the tokens so far, or a plain punctuation token (division
-// or, in JSX, a closing tag's slash).
+// lexSlash lexes a slash as a comment, a regex literal, or a punctuation token.
 func lexSlash(src string, i int, tokens []Token, jsx bool) ([]Token, int) {
 	switch {
 	case i+1 < len(src) && (src[i+1] == '/' || src[i+1] == '*'):
@@ -106,8 +101,8 @@ func lexSlash(src string, i int, tokens []Token, jsx bool) ([]Token, int) {
 	}
 }
 
-// regexStarts reports a slash at i that starts a regex: one can follow
-// the tokens so far, and in JSX the slash does not close a tag.
+// regexStarts reports whether the slash at i starts a regex rather than
+// closing a JSX tag.
 func regexStarts(i int, tokens []Token, jsx bool) bool {
 	return regexCanFollow(tokens) && !(jsx && closingTag(i, tokens))
 }
@@ -171,10 +166,8 @@ func scanNumber(src string, i int) int {
 	return i
 }
 
-// regexCanFollow reports whether a slash at the current position starts a
-// regex literal: yes at the start of input and after operators or opening
-// punctuation; no after a value (identifier, string, number, regex, or
-// closing punctuation) — the standard division heuristic.
+// regexCanFollow reports whether a slash starts a regex: yes at the input start
+// and after operators, no after a value.
 func regexCanFollow(tokens []Token) bool {
 	if len(tokens) == 0 {
 		return true
@@ -223,9 +216,8 @@ func skipRegexBody(src string, i int) (end int, closed bool) {
 	return i, false
 }
 
-// skipRegexClass advances past a regex character class, starting just after
-// its opening bracket, honoring backslash escapes; an unterminated class
-// runs to the end of input.
+// skipRegexClass advances past a regex character class that starts after
+// its bracket, honoring escapes.
 func skipRegexClass(src string, i int) int {
 	for i < len(src) {
 		switch src[i] {
@@ -269,7 +261,7 @@ func scanQuoted(src string, i int) (string, int) {
 // scanTemplate decodes a template literal starting at i. hasExpr is true
 // when the template held a ${…} expression, making its value unresolvable.
 func scanTemplate(src string, i int) (value string, hasExpr bool, next int) {
-	i++ // opening backtick
+	i++ // skip the opening backtick
 	var b strings.Builder
 	for i < len(src) {
 		c := src[i]
@@ -343,9 +335,8 @@ var namedEscapes = map[byte]string{
 	'f': "\f", 'v': "\v", '0': "\x00", '\n': "",
 }
 
-// decodeEscape decodes the escape sequence at i (which points at the
-// backslash) with JavaScript semantics: named escapes, \xHH, \uHHHH,
-// \u{…}, line continuations; any other escaped character is itself.
+// decodeEscape decodes the escape sequence at the backslash i with the
+// semantics that JavaScript gives it.
 func decodeEscape(src string, i int) (string, int) {
 	if i+1 >= len(src) {
 		return "", i + 1
@@ -398,9 +389,8 @@ func decodeUnicodeEscape(src string, i int) (string, int, bool) {
 	return "", 0, false
 }
 
-// decodeBracedUnicode decodes the \u{…} escape at i (pointing at the
-// backslash); ok is false when the braces are unclosed or empty or the hex
-// inside is malformed — the plain \uHHHH form is never retried.
+// decodeBracedUnicode decodes the \u{…} escape at the backslash i, with ok false
+// when the braces are unclosed, empty or malformed.
 func decodeBracedUnicode(src string, i int) (string, int, bool) {
 	end := strings.IndexByte(src[i+3:], '}')
 	if end <= 0 {

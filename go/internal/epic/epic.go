@@ -74,9 +74,8 @@ func sectionLines(body string) []string {
 	return out
 }
 
-// Refs returns the references the section lists, in order, including those
-// behind a checkbox or before other text, so the sub-issue match sees every
-// issue named.
+// Refs returns the section's references in order, including those behind a
+// checkbox or before other text.
 func Refs(body string) []string {
 	var refs []string
 	for _, it := range Items(body) {
@@ -132,7 +131,7 @@ func parse(text string) Item {
 }
 
 // bounds returns the section heading's line and the next level-2 heading's
-// line, 0 when the section runs to the end; start is 0 with no section.
+// line, with 0 for no section or none after.
 func bounds(body string) (start, end int) {
 	for _, h := range mdx.Headings(body) {
 		if h.Level != 2 {
@@ -148,10 +147,8 @@ func bounds(body string) (start, end int) {
 	return start, 0
 }
 
-// Validate returns the list's findings: each item that is not a plain
-// reference, a repeated reference, an item listed before one it runs after,
-// and a table anywhere. repo, when known, reads a bare #number as one in it,
-// so both spellings of one issue match. prose-budget caps the list's length.
+// Validate returns the list's findings, such as non-references, repeats,
+// items out of order and tables.
 func Validate(body, repo string) []string {
 	start, _ := bounds(body)
 	if start == 0 {

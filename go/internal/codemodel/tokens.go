@@ -22,9 +22,8 @@ func (l LineIndex) Line(pos int) int {
 	return sort.SearchInts(l, pos+1)
 }
 
-// Tokens is one file's tokens as a lexical reader reads them, so the
-// relations between the code view's nodes come from names, never from
-// comments or literals.
+// Tokens is one file's tokens as a lexical reader reads them, so relations
+// come from names, never from comments or literals.
 type Tokens interface {
 	// Len is the number of tokens.
 	Len() int
@@ -46,10 +45,9 @@ func RelateTokens(g *Graph, file string, t Tokens) {
 	}
 }
 
-// relateToken relates the node holding token j. A type header reads the
-// types it extends and implements once, at its line's first token, and
-// relates nothing else. Tokens after the body's brace relate as names,
-// even on a declaration's first line.
+// relateToken relates the node holding token j. A type header reads the types
+// it extends once at its line's first token, and tokens after the body's brace
+// relate as names.
 func relateToken(g *Graph, t Tokens, j int, at Location) {
 	from := g.Owner(at)
 	switch d := g.Header(at); {

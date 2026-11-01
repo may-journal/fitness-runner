@@ -27,10 +27,9 @@ func sourceFile(file string) bool {
 	return contains(sourceExtensions, path.Ext(file))
 }
 
-// inventory lists every tracked source with its category and the elements
-// whose claims cover it. Unowned sources stay listed; the component check
-// decides which must have an owner. Only sources and manifests are
-// classed, as no other file can be product code.
+// inventory lists every tracked source or manifest with its category and the
+// elements whose claims cover it. The component check decides which unowned
+// sources need an owner.
 func (m *Model) inventory(root string, files []string) {
 	classed := inventoried(files)
 	var sources []string
@@ -71,9 +70,8 @@ func category(file string, kept, dev bool) string {
 	return "product"
 }
 
-// tool reports a script in a language the sources folder lists as tools,
-// or a root-level file a language module names a tool config. A config
-// module deeper down is product code.
+// tool reports a script in a tools language of the sources folder, or a root
+// file a language module names a tool config.
 func tool(file string) bool {
 	if contains(otherSources["tool"], path.Ext(file)) {
 		return true
@@ -106,9 +104,8 @@ func (m *Model) owners(file string) []string {
 	return owners
 }
 
-// ProductCode lists the product files of every language module that need
-// architecture views: tracked, not generated, not tests, not a module's tool
-// config, and not a file only manifest scripts run.
+// ProductCode lists tracked product files of language modules needing
+// architecture views, excluding generated files, tests and tool config.
 func ProductCode(root string) []string {
 	dev := runtimes.DevScripts(root, walkfs.FilesByExt(root, ""), readers)
 	var out []string

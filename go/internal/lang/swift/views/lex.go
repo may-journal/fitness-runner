@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-// Swift token kinds.
+// The Swift token kinds the lexer emits.
 const (
 	swiftName   = 'i'
 	swiftString = 's'
@@ -23,10 +23,9 @@ type swiftToken struct {
 	under string
 }
 
-// swiftLexer splits Swift source into tokens. Comments, which may nest,
-// make none. A string literal makes one token after the tokens of its
-// interpolations, so a name inside \( ) is still read. Groups holds the
-// token index each branch of the open #if groups starts at.
+// swiftLexer splits Swift source into tokens and drops comments, which may
+// nest. A string literal makes one token after the tokens of its
+// interpolations, so a name inside \( ) is still read.
 type swiftLexer struct {
 	src    string
 	i      int
@@ -179,9 +178,8 @@ func (l *swiftLexer) branch(text string) {
 	}
 }
 
-// endGroup closes an #if group. When a branch leaves a brace open, as
-// alternative declaration headers do, only the first branch is kept, so
-// the braces still pair up as the compiler sees them.
+// endGroup closes an #if group, keeping only the first branch when a branch
+// leaves a brace open.
 func (l *swiftLexer) endGroup() {
 	if len(l.groups) == 0 {
 		return

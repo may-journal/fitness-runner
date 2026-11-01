@@ -21,8 +21,8 @@ import (
 // NotInstalled is the info a check reports when Go is missing from PATH.
 const NotInstalled = "Go not installed: see https://go.dev/dl"
 
-// Missing is the internal error for a Go toolchain missing from PATH: the
-// check could not judge, so it reports info with the install hint.
+// Missing is the internal error for a Go toolchain missing from PATH, reported
+// as info with the install hint.
 func Missing() error { return checkkit.Internal(errors.New(NotInstalled)) }
 
 // Modules returns the slash-separated directories, relative to root, that
@@ -41,9 +41,8 @@ func Modules(root string) []string {
 // Applies reports whether the repo at root holds a Go module of its own.
 func Applies(root string) bool { return len(Modules(root)) > 0 }
 
-// Unchanged reports whether a scoped run changes no Go file (.go, go.mod, or
-// go.sum), so go-test and go-vet, which work on whole packages, can skip it.
-// An unscoped run is never unchanged.
+// Unchanged reports whether a scoped run changes no Go file, letting whole-package
+// checks skip it; an unscoped run is never unchanged.
 func Unchanged() bool {
 	changed := checkkit.ChangedFiles()
 	if changed == nil {
@@ -83,11 +82,8 @@ func Fixture(rel string) bool {
 	return false
 }
 
-// Exec runs bin with args in root/dir and returns its exit code, combined
-// output, and envErr, a checkkit.Internal error when the environment rather
-// than the code failed the run: bin could not start, a signal ended it, or a
-// failing run printed sandbox text such as `dial tcp`. A run that fails
-// without an exit code maps to 1.
+// Exec runs bin with args in root/dir and returns its exit code, its output,
+// and a checkkit.Internal error when the environment failed it.
 func Exec(root, dir, bin string, args ...string) (code int, out string, envErr error) {
 	cmd := exec.Command(bin, args...)
 	cmd.Dir = filepath.Join(root, filepath.FromSlash(dir))
@@ -101,7 +97,7 @@ func Exec(root, dir, bin string, args ...string) (code int, out string, envErr e
 }
 
 // SandboxErr is the internal error for a failing go run whose output shows
-// the sandbox stopped it; nil for exit 0 or output without sandbox text.
+// the sandbox stopped it, else nil.
 func SandboxErr(name string, code int, out string) error {
 	if code == 0 {
 		return nil
@@ -120,9 +116,8 @@ var hookVars = map[string]bool{
 	"GIT_COMMON_DIR": true, "GIT_OBJECT_DIRECTORY": true, "GIT_PREFIX": true,
 }
 
-// CleanEnv returns env without git's hook variables, so a toolchain run from
-// a git hook cannot touch the repository through them, and without the
-// runner's FITNESS_* context, so a repo's own tests never inherit a scope.
+// CleanEnv returns env without git's hook variables and the runner's FITNESS_*
+// context, so toolchain runs never touch the repository or inherit a scope.
 func CleanEnv(env []string) []string {
 	var out []string
 	for _, kv := range env {
@@ -135,9 +130,7 @@ func CleanEnv(env []string) []string {
 }
 
 // EachModule judges every module dir in mods with judge and returns the
-// check's Result: failed with every module's findings, else passed,
-// counting the modules. The first internal error ends the run, since the
-// check could not judge.
+// check's Result, ending at the first internal error.
 func EachModule(mods []string, judge func(dir string) ([]string, error)) (checkkit.Result, error) {
 	var errs []string
 	for _, dir := range mods {

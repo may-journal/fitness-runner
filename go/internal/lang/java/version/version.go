@@ -1,17 +1,5 @@
-// Package version checks a Java repo pins the JDK it builds with, and that
-// the machine's JDKs satisfy each pin, for the java-version check.
-//
-// A pin is a version file at the repo root, the ones setup-java reads
-// (.java-version, .sdkmanrc and .tool-versions), or a build's own target:
-// Maven's maven.compiler.release or compiler release, one ${property} deep,
-// or a Gradle toolchain's languageVersion. A pom that names no release
-// takes the one its parents outside the repo name, read from the local
-// Maven repository, with the properties of the pom and its parents in the
-// repo first. The running JDK satisfies a pin when its feature release is
-// at least the pinned one, since a newer JDK builds for an older release.
-// The running JDK is JAVA_HOME's, as the build tools pick it, else the
-// one on PATH. A Gradle toolchain asks for its exact release, which an
-// installed JDK must match, else a toolchain resolver must download.
+// Package version checks that a Java repo pins its JDK and that the machine's
+// JDKs satisfy each pin.
 package version
 
 // cspell:ignore sdkmanrc
@@ -34,9 +22,8 @@ const noPin = "no JDK version is pinned; add a .java-version file naming the rel
 	"or set <maven.compiler.release>21</maven.compiler.release> in pom.xml, " +
 	"or java { toolchain { languageVersion = JavaLanguageVersion.of(21) } } in the Gradle build"
 
-// pin is one place the repo names the JDK release it needs. Toolchain is
-// the Gradle build root that must find or download exactly this release,
-// or the zero Project for a pin any newer JDK satisfies.
+// pin is one place the repo names the JDK release it needs, with the Gradle
+// toolchain root that must supply exactly it.
 type pin struct {
 	file, version string
 	// vendor is the lower-case text a toolchain looks for in the JDK's vendor,
@@ -174,8 +161,8 @@ func versionFiles(root string) []pin {
 	return out
 }
 
-// readVersionFile returns the first version read gives for a line of the
-// file that is not blank or a comment, or empty for none.
+// readVersionFile returns the first version read gives for a content line of
+// the file, or empty for none.
 func readVersionFile(file string, read func(fields []string, line string) string) string {
 	body, err := os.ReadFile(file)
 	if err != nil {

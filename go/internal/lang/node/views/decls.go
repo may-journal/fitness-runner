@@ -1,27 +1,5 @@
-// Package views reads TypeScript sources for the architecture code view:
-// each file's declarations and the relations between the view's nodes,
-// from tokens, so comments never count and strings stay whole.
-//
-// The reader takes .ts and .tsx product files, leaving out tests and tool
-// configs. It keeps top-level classes, interfaces, functions, enums, and
-// type aliases, and the fields and methods of class and interface bodies.
-//
-//   - A parameter's type is what it states; one with none matches its
-//     name alone.
-//   - A result is the stated return annotation; an inferred result states
-//     none.
-//   - A get accessor is a field of its result type.
-//   - A class's members are those its own file declares.
-//   - In .tsx, a slash right after < closes a tag rather than starting a
-//     regex.
-//   - Without semicolons, a line ending in a postfix !, ++, or -- ends its
-//     statement.
-//
-// It relates names of other classes, Type.member calls, extends, and
-// implements, which is conformance. The view covers a class its file
-// exports, by keyword or export list. The reader is lexical, without
-// imports, so a function stored in a const is no declaration. It reads no
-// references, so the components view takes no TypeScript evidence.
+// Package views lexically reads TypeScript product sources for the architecture
+// code view: declarations and the relations between the view's nodes.
 package views
 
 import (
@@ -82,10 +60,10 @@ var tsStatements = map[string]func(r *tsReader, start, i int, exported bool) int
 	"{":        (*tsReader).exportList,
 }
 
-// tsReader reads one TypeScript file from its tokens, so comments never
-// count and strings stay whole. It keeps top-level classes, interfaces,
-// functions, enums, and type aliases, with the fields and methods of class
-// and interface bodies. Anything inside a body is ignored.
+// tsReader reads one TypeScript file from its tokens, so comments never count
+// and strings stay whole. It keeps top-level classes, interfaces, functions,
+// enums and type aliases, with the fields and methods of class and interface
+// bodies.
 type tsReader struct {
 	x       *codemodel.Index
 	file    string
@@ -338,9 +316,7 @@ func (r *tsReader) field(owner, name string, start, k int) int {
 	return last + 1
 }
 
-// finish returns the last token of a member whose type ends before token
-// i: an initializer runs to its statement's end; a semicolon or comma
-// closes it.
+// finish returns the last token of a member whose type ends before token i.
 func (r *tsReader) finish(i int) int {
 	switch {
 	case r.is(i, "="):

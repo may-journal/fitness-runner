@@ -34,9 +34,8 @@ func newFolders(repo codemodel.Repo) *goFolders {
 	return g
 }
 
-// references reads each product Go file's imports of folders in this
-// repository and every use of their names, so each line that reaches
-// another folder is known. A file that does not parse is an error.
+// references reads each product Go file's imports of this repository's folders
+// and their uses; a file that does not parse is an error.
 func references(repo codemodel.Repo) ([]codemodel.Reference, []string) {
 	g := newFolders(repo)
 	files := codemodel.FilesWith(repo.Product, golang.Ext)

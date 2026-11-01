@@ -35,10 +35,8 @@ type Block struct {
 	Next string
 }
 
-// note is one comment as written, markers included, before notes on
-// adjacent lines join into blocks. Col is the byte it starts at on its
-// first line. Code marks a comment a toolchain reads, such as a cgo
-// preamble.
+// note is one comment as written, markers included, before adjacent notes join
+// into blocks; Code marks a comment a toolchain reads.
 type note struct {
 	line, end, col int
 	text           string

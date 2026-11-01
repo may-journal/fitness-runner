@@ -7,9 +7,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 )
 
-// Runtime is one product the repository ships and the container that owns
-// it: the container whose claims cover the product's folder or whose name
-// is the product's name.
+// Runtime is one shipped product with its owning container, whose claims cover
+// the product's folder or whose name matches.
 type Runtime struct {
 	runtimes.Product
 	Owner string
@@ -102,10 +101,8 @@ func (c *containers) owners(p runtimes.Product) []Element {
 	return owners
 }
 
-// names reports whether owner's text names a package product. A code
-// span or label may name the package or a path covering an entry point,
-// such as dist/esm for dist/esm/index.js; a description word must be an
-// entry point itself. Entry points are often build output nobody tracks.
+// names reports whether owner's text names a package product, letting spans
+// name a covering path since entry points are untracked.
 func (c *containers) names(owner string, p runtimes.Product) bool {
 	if !p.Package {
 		return false
