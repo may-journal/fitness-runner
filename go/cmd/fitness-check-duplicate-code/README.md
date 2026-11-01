@@ -22,7 +22,7 @@ An unscoped run reads every tracked file. The 1% threshold applies to the lines 
 
 ## Comments
 
-Comments never count as duplication. The lexer drops each comment, from `//`, `#`, `/*` or `<!--` to its end, before it compares tokens. Two files sharing only identical comments pass, as a real run in requirement 0139 shows.
+Comments never count as duplication. The lexer drops each comment, from `//`, `#`, `/*` or `<!--` to its end, before it compares tokens. Two files sharing only identical comments pass, as a real run in requirement 0139 shows. Only the ignore markers below act, as directives that count as code.
 
 ## Templates
 

@@ -17,6 +17,9 @@ type listed struct {
 	Name    string `json:"name"`
 	Summary string `json:"summary"`
 	Scope   string `json:"scope"`
+	// Comments is how the check treats code comments, as its describe
+	// handshake declares.
+	Comments string `json:"comments"`
 	// BudgetMs is the time the check may run before it is stopped.
 	BudgetMs int64 `json:"budgetMs"`
 	// Enabled says whether this repo's config runs the check.
@@ -136,7 +139,7 @@ func listRowFor(name string, byName map[string]resolved, missing map[string]stri
 		return listed{Name: name, Enabled: enabled, Note: note}
 	}
 	c := byName[name]
-	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
+	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Comments: c.desc.Comments, BudgetMs: timeoutFor(c).Milliseconds(),
 		Enabled: enabled, Blob: c.desc.Blob, Note: cmp.Or(c.needs, c.describeErr)}
 }
 

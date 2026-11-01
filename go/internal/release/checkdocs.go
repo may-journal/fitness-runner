@@ -1,5 +1,3 @@
-// cspell:ignore Elts
-
 package release
 
 import (
@@ -9,9 +7,11 @@ import (
 	"go/doc/comment"
 	"go/parser"
 	"go/token"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -68,62 +68,67 @@ var commentTreatments = map[string]string{
 	"CommentsNotApplicable": checkkit.CommentsNotApplicable,
 }
 
-// describedComments reads the Comments field of the checkkit.Describe that
-// the package in dir declares. A package that sets no checkkit Comments
-// constant is an error, so no check ships without one.
+// describedComments reads the Comments field of every checkkit.Describe
+// literal in the package in dir. Each must set the same checkkit constant,
+// so no check ships without one or declares two.
 func describedComments(dir, folder string) (string, error) {
 	files, err := parseSources(token.NewFileSet(), dir, parser.SkipObjectResolution)
 	if err != nil {
 		return "", err
 	}
+	var values []string
 	for _, file := range files {
-		if value, ok := commentsField(file); ok {
-			return value, nil
-		}
+		values = append(values, describeLiterals(file)...)
 	}
-	return "", fmt.Errorf("go/cmd/%s: its checkkit.Describe must set Comments to checkkit.CommentsJudged, CommentsStripped or CommentsNotApplicable", folder)
+	if unique := slices.Compact(slices.Sorted(slices.Values(values))); len(unique) != 1 || unique[0] == "" {
+		return "", fmt.Errorf("go/cmd/%s: every checkkit.Describe must set Comments to one of %s", folder, treatmentNames())
+	}
+	return values[0], nil
 }
 
-// commentsField is the treatment the first checkkit.Describe literal in file
-// declares, with ok false when none declares one.
-func commentsField(file *ast.File) (value string, ok bool) {
+// treatmentNames lists the checkkit Comments constants, sorted and joined
+// for an error message.
+func treatmentNames() string {
+	names := slices.Sorted(maps.Keys(commentTreatments))
+	for i, name := range names {
+		names[i] = "checkkit." + name
+	}
+	return strings.Join(names, ", ")
+}
+
+// describeLiterals lists the treatment each checkkit.Describe literal in
+// file declares, with "" for a literal that declares none.
+func describeLiterals(file *ast.File) []string {
+	var values []string
 	ast.Inspect(file, func(n ast.Node) bool {
-		if !ok {
-			value, ok = describeComments(n)
+		if lit, ok := n.(*ast.CompositeLit); ok && isSelector(lit.Type, "checkkit", "Describe") {
+			values = append(values, describeComments(lit))
 		}
-		return !ok
+		return true
 	})
-	return value, ok
+	return values
 }
 
-// describeComments is the treatment n declares when it is a
-// checkkit.Describe literal that sets Comments.
-func describeComments(n ast.Node) (string, bool) {
-	lit, isLit := n.(*ast.CompositeLit)
-	if !isLit || !isSelector(lit.Type, "checkkit", "Describe") {
-		return "", false
-	}
-	for _, elt := range lit.Elts {
-		if value, ok := commentsValue(elt); ok {
-			return value, true
+// describeComments is the treatment a checkkit.Describe literal sets in its
+// Comments field, or "" when it sets no checkkit Comments constant.
+func describeComments(lit *ast.CompositeLit) string {
+	value := ""
+	ast.Inspect(lit, func(n ast.Node) bool {
+		if kv, ok := n.(*ast.KeyValueExpr); ok && isIdent(kv.Key, "Comments") {
+			value = treatment(kv.Value)
 		}
-	}
-	return "", false
+		return value == ""
+	})
+	return value
 }
 
-// commentsValue is the treatment elt sets when it is a Comments field naming
-// a checkkit Comments constant.
-func commentsValue(elt ast.Expr) (string, bool) {
-	kv, isKV := elt.(*ast.KeyValueExpr)
-	if !isKV || !isIdent(kv.Key, "Comments") {
-		return "", false
+// treatment is the value of the checkkit Comments constant expr names, or
+// "" when it names none.
+func treatment(expr ast.Expr) string {
+	if sel, ok := expr.(*ast.SelectorExpr); ok && isIdent(sel.X, "checkkit") {
+		return commentTreatments[sel.Sel.Name]
 	}
-	sel, isSel := kv.Value.(*ast.SelectorExpr)
-	if !isSel || !isIdent(sel.X, "checkkit") {
-		return "", false
-	}
-	value, ok := commentTreatments[sel.Sel.Name]
-	return value, ok
+	return ""
 }
 
 // isSelector reports whether expr is pkg.name.

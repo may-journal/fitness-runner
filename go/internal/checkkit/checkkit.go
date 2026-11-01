@@ -92,10 +92,11 @@ const (
 // The comment treatments a check declares: how code comments count when it
 // judges a repo.
 const (
-	// CommentsJudged means comment text can fail the check.
+	// CommentsJudged means comment text can change the check's verdict.
 	CommentsJudged = "judged"
-	// CommentsStripped means the check reads code but drops its comments
-	// first, so a comment never changes the verdict.
+	// CommentsStripped means the check drops comments before it judges code.
+	// Tool directives in comment form, such as `//go:build`, still count as
+	// code.
 	CommentsStripped = "stripped"
 	// CommentsNotApplicable means the check reads no code comments, only
 	// Markdown, manifests, history or GitHub.

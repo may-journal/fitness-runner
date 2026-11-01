@@ -12,18 +12,22 @@ import (
 // commentTreatments are the values a check may declare for code comments.
 var commentTreatments = []string{"judged", "stripped", "not applicable"}
 
-// commentTreatment is the comments field `fitness explain --json` gives
-// check in repo.
-func commentTreatment(t *testing.T, repo, check string) string {
+// treatedCheck is one check as `fitness list --json` gives it, with its
+// comment treatment.
+type treatedCheck struct{ Name, Summary, Scope, Comments string }
+
+// listTreatments runs `fitness list --json` in repo and decodes every check
+// it lists after the installer's own lines.
+func listTreatments(t *testing.T, repo string) []treatedCheck {
 	t.Helper()
-	out, code := fitness(t, repo, nil, "explain", check, "--json")
-	start := strings.Index(out, "\n{")
+	out, code := fitness(t, repo, nil, "list", "--json")
+	start := strings.Index(out, "\n[")
 	if code != 0 || start < 0 {
-		t.Fatalf("fitness explain %s --json (exit %d) printed no object:\n%s", check, code, out)
+		t.Fatalf("fitness list --json (exit %d) printed no check list:\n%s", code, out)
 	}
-	var got struct{ Comments string }
-	mustDo(t, json.Unmarshal([]byte(out[start+1:]), &got))
-	return got.Comments
+	var checks []treatedCheck
+	mustDo(t, json.Unmarshal([]byte(out[start+1:]), &checks))
+	return checks
 }
 
 // commentedOut puts marker before every line of code, so the whole of it
@@ -53,13 +57,12 @@ func typoComments(head string) map[string]string {
 func Test0139_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	for _, check := range listJSON(t, repo) {
-		treatment := commentTreatment(t, repo, check.Name)
-		if !slices.Contains(commentTreatments, treatment) {
-			t.Errorf("fitness explain --json gives %s the comments %q, want one of %q", check.Name, treatment, commentTreatments)
+	for _, check := range listTreatments(t, repo) {
+		if !slices.Contains(commentTreatments, check.Comments) {
+			t.Errorf("fitness list --json gives %s the comments %q, want one of %q", check.Name, check.Comments, commentTreatments)
 		}
 		out, code := fitness(t, repo, nil, "explain", check.Name)
-		sees(t, out, code, 0, "Scope: "+check.Scope+" · Comments: "+treatment+" ·")
+		sees(t, out, code, 0, "Scope: "+check.Scope+" · Comments: "+check.Comments+" ·")
 	}
 }
 
@@ -67,8 +70,8 @@ func Test0139_2(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	index := repoFile(t, "docs/checks.md")
-	for _, check := range listJSON(t, repo) {
-		row := "| " + check.Summary + " | " + commentTreatment(t, repo, check.Name) + " |"
+	for _, check := range listTreatments(t, repo) {
+		row := "| " + strings.ReplaceAll(check.Summary, "|", `\|`) + " | " + check.Comments + " |"
 		if !strings.Contains(index, "/README.md) "+row) {
 			t.Errorf("docs/checks.md has no %s row ending %q", check.Name, row)
 		}
@@ -92,7 +95,7 @@ func Test0139_3(t *testing.T) {
 	}
 	write(t, root, map[string]string{source: omitted})
 	out, code = releaseToolRun(t, root, nil, "checks")
-	sees(t, out, code, 1, "go/cmd/fitness-check-node-version: its checkkit.Describe must set Comments to checkkit.CommentsJudged, CommentsStripped or CommentsNotApplicable")
+	sees(t, out, code, 1, "go/cmd/fitness-check-node-version: every checkkit.Describe must set Comments to one of checkkit.CommentsJudged, checkkit.CommentsNotApplicable, checkkit.CommentsStripped")
 }
 
 func Test0139_4(t *testing.T) {

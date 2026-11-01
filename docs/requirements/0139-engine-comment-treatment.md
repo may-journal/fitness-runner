@@ -15,15 +15,15 @@ Checks that read code
 - 0139.1
     - Given AI agent wants to know how a check treats code comments
         - When it runs `fitness explain` for every check `fitness list` names
-            - Then each states judged, stripped or not applicable, as its JSON does
+            - Then each states judged, stripped or not applicable, as `fitness list --json` does
 - 0139.2
     - Given AI agent reads the check index in docs/checks.md
-        - When it runs `fitness explain --json` for every listed check
+        - When it reads each check's comments field in `fitness list --json`
             - Then the index row's Comments column says the same
 - 0139.3
     - Given Developer adds a check whose describe omits the comments field
         - When they run `fitness-release checks` to generate the docs
-            - Then it fails naming the check and the three allowed constants
+            - Then it fails naming the check and the allowed constants
 - 0139.4
     - Given Developer misspells a word in a Go, Swift, TypeScript and shell comment
         - When cspell checks the repo

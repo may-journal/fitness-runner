@@ -54,7 +54,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [issue-checklist](../go/cmd/fitness-check-issue-checklist/README.md) | Fails an issue body whose task list still has unchecked items, so closing it would close unfinished work. | not applicable |
 | [issue-link-once](../go/cmd/fitness-check-issue-link-once/README.md) | Keeps each Issue's timeline readable (#153). | not applicable |
 | [java-test](../go/cmd/fitness-check-java-test/README.md) | Runs Java tests once per build root and judges their JUnit XML results and JaCoCo coverage. | stripped |
-| [java-version](../go/cmd/fitness-check-java-version/README.md) | Checks a Java repo pins its JDK and that the machine's JDKs satisfy the pin, through the Java language module. | stripped |
+| [java-version](../go/cmd/fitness-check-java-version/README.md) | Checks a Java repo pins its JDK and that the machine's JDKs satisfy the pin, through the Java language module. | judged |
 | [local-branch](../go/cmd/fitness-check-local-branch/README.md) | Runs PR and Plan judgments locally. | not applicable |
 | [localized-text](../go/cmd/fitness-check-localized-text/README.md) | Fails SwiftUI text and requirement test literals that skip the app's String Catalog (#527). | stripped |
 | [markdown-filename-camel-case](../go/cmd/fitness-check-markdown-filename-camel-case/README.md) | Requires every markdown file name to be camelCase, standard root docs exempt. | not applicable |
