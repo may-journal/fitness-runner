@@ -39,6 +39,14 @@
 //	to fix: split sentences over ~25 words (semicolon and em-dash chains count as ONE sentence — end them with periods); wrap identifiers, file names, and check names in backticks (code spans are masked to one short word before scoring, so unbackticked notation reads as very long words); move quoted tool output and name lists into fenced code blocks, which are never scored
 //	methodology: go/cmd/fitness-check-text-readability/README.md (behavior, masking spec, bands) and docs/research/0001-prose-cognitive-complexity.md (why these formulas, calibration on this repo, their limits)
 //
+// # Code comments
+//
+// The check also scores each code comment block that `fitness comments`
+// lists, read as [prose-budget] reads it. A block under 100 prose words is
+// not judged, as for a file. A commit or pull request run scores only the
+// blocks that touch a changed line, and a full scan scores every block.
+// Each alarm names the block as `path:line`.
+//
 // # Bands
 //
 // Optional bands in `.fitnessrc.json`, where any positive value overrides
@@ -48,5 +56,6 @@
 //	  "textReadability": { "maxGrade": 18, "maxLix": 60, "minWords": 100 }
 //	}
 //
+// [prose-budget]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-prose-budget/README.md
 // [docs/research/0001-prose-cognitive-complexity.md]: https://github.com/may-journal/fitness-runner/blob/main/docs/research/0001-prose-cognitive-complexity.md
 package check

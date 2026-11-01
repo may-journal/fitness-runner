@@ -37,5 +37,17 @@
 // It shares its prose extraction and sentence splitting with
 // `text-readability` through `internal/mdx`.
 //
+// # Code comments
+//
+// The check also judges each code comment block that `fitness comments`
+// lists, by the same limits except the section ones. A comment has no
+// headings, so it holds no sections. Its markers are removed first, and an
+// indented line that carries on no list item is code, which is skipped.
+//
+// A commit or pull request run judges only the blocks that touch a changed
+// line. A full scan, such as `fitness --all prose-budget`, judges every
+// block. Each error names the block as `path:line`, the line it starts on.
+// Tool directives, license headers and generated files are never judged.
+//
 // [text-readability]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-text-readability/README.md
 package check

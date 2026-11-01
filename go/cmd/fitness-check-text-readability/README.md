@@ -30,6 +30,10 @@ to fix: split sentences over ~25 words (semicolon and em-dash chains count as ON
 methodology: go/cmd/fitness-check-text-readability/README.md (behavior, masking spec, bands) and docs/research/0001-prose-cognitive-complexity.md (why these formulas, calibration on this repo, their limits)
 ```
 
+## Code comments
+
+The check also scores each code comment block that `fitness comments` lists, read as [prose-budget](../fitness-check-prose-budget/README.md) reads it. A block under 100 prose words is not judged, as for a file. A commit or pull request run scores only the blocks that touch a changed line, and a full scan scores every block. Each alarm names the block as `path:line`.
+
 ## Bands
 
 Optional bands in `.fitnessrc.json`, where any positive value overrides its default:

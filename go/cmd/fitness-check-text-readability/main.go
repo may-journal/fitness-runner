@@ -9,6 +9,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -50,12 +51,13 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return walkFiles(root, loadThresholds(root), hasFlag(args, "--report")), nil
 }
 
-// walkFiles scores every in-scope markdown file. A file it cannot read is
-// skipped and named as info.
+// walkFiles scores every in-scope markdown file, then each comment block
+// the run judges. A file it cannot read is skipped and named as info.
 func walkFiles(root string, th thresholds, report bool) checkkit.Result {
-	result := walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+	judge := func(rel, content string) []string {
 		return judgeContent(rel, content, th, report)
-	})
+	}
+	result := comments.Judge(walkfs.ScanFiles(root, []string{".md"}, judge), root, judge)
 	if len(result.Errors) > 0 {
 		result.Errors = append(result.Errors, guidance()...)
 	}
