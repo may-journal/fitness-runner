@@ -221,15 +221,50 @@ func ownBudget(t *testing.T) (string, int) {
 
 func Test0001_15(t *testing.T) {
 	t.Parallel()
-	for _, repo := range []string{example(t, "happyRepo", architectedRepo()), generatedTree(t, architectedRepo(), 3000)} {
+	for _, repo := range []string{linkedRepo(t), generatedTree(t, architectedRepo(), 3000)} {
 		path, calls := loggedGit(t)
 		out, code := fitness(t, repo, []string{path})
 		sees(t, out, code, 0, allPassed())
-		if n := occurrences(calls, "ls-files -z --cached"); n != 1 {
-			t.Errorf("git must list the tracked files once for the whole run, but listed them %d times", n)
+		if n := occurrences(calls, "ls-files -z --stage"); n != 1 {
+			t.Errorf("git must list the tracked files once, and the runner stat them once, for the whole run, but listed them %d times", n)
+		}
+		if n := occurrences(calls, "ls-files -z --cached"); n != 0 {
+			t.Errorf("every check must use the shared list, but %d listed their own", n)
 		}
 	}
+	hugeProductCommit(t)
 	stalledGitStops(t)
+}
+
+// linkedRepo is architectedRepo with a tracked symlink to an untracked
+// doc holding bold text, and a tracked doc deleted from disk. The shared
+// list drops both, so no check reads the bold text or misses the doc.
+func linkedRepo(t *testing.T) string {
+	t.Helper()
+	repo := example(t, "happyRepo", with(architectedRepo(), map[string]string{"docs/gone.md": "# Gone\n\nA doc.\n"}))
+	mustDo(t, os.Symlink("../notes.txt", filepath.Join(repo, "docs", "linked.md")))
+	git(t, repo, "add", "docs/linked.md")
+	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "docs(linked): link the notes")
+	write(t, repo, map[string]string{"notes.txt": "# Notes\n\nSome **bold** text.\n", "docs/gone.md": ""})
+	return repo
+}
+
+// hugeProductCommit asserts that in a repo of 500,000 tracked files a
+// commit editing one product file passes, every architecture check inside
+// its budget, since the runner stats the tracked files once for all six.
+func hugeProductCommit(t *testing.T) {
+	t.Helper()
+	repo := generatedTree(t, architectedRepo(), 500000)
+	defer os.RemoveAll(repo)
+	got, code := fitness(t, repo, installerEnv(t), "init")
+	sees(t, got, code, 0, "fitness init: installed hooks")
+	out, code, _ := productCommit(t, repo)
+	sees(t, out, code, 0)
+	for _, check := range architectureChecks {
+		if !strings.Contains(row(out, check), "│ passed") {
+			t.Errorf("a product commit in a 500,000-file repo must pass %s in its budget, got row %q", check, row(out, check))
+		}
+	}
 }
 
 // loggedGit returns a PATH setting whose git logs each call's arguments to
@@ -574,7 +609,7 @@ func gone(pid int, within time.Duration) bool {
 func stalledGitStops(t *testing.T) {
 	t.Helper()
 	for call, named := range map[string]string{
-		"ls-files": "git ls-files -z --cached did not finish within 10s",
+		"ls-files": "git ls-files -z --stage did not finish within 10s",
 		"diff":     "git diff --cached --name-only did not finish within 10s",
 	} {
 		path, pidFile := promptingTools(t, call)

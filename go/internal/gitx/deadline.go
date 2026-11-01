@@ -38,6 +38,34 @@ func (r Repo) TrackedFiles() ([]string, error) {
 	return nulList(out), nil
 }
 
+// IndexEntry is one index entry as `git ls-files --stage` prints it: the
+// path's mode, such as 100644, 120000 for a symlink or 160000 for a
+// submodule, and its slash-separated path relative to the repo.
+type IndexEntry struct {
+	Mode string
+	Path string
+}
+
+// IndexEntries returns every index entry with its mode, as `git ls-files
+// -z --stage` prints them, one per stage of an unmerged path. Git reads the
+// modes from the index, so it stats no file.
+func (r Repo) IndexEntries() ([]IndexEntry, error) {
+	out, err := r.run("ls-files", "-z", "--stage")
+	if err != nil {
+		return nil, err
+	}
+	lines := nulList(out)
+	entries := make([]IndexEntry, 0, len(lines))
+	for _, line := range lines {
+		meta, path, ok := strings.Cut(line, "\t")
+		mode, _, _ := strings.Cut(meta, " ")
+		if ok {
+			entries = append(entries, IndexEntry{Mode: mode, Path: path})
+		}
+	}
+	return entries, nil
+}
+
 // GitPath returns the absolute path git uses for name inside the git
 // directory, such as index or hooks/commit-msg.
 func (r Repo) GitPath(name string) (string, error) {

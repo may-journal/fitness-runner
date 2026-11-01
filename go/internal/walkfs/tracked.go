@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // TrackedFilesEnv names the variable through which the runner hands every
@@ -31,19 +32,22 @@ type trackedEntry struct {
 	list trackedList
 }
 
-// trackedList is one root's `git ls-files` answer; ok is false outside a
-// git work tree.
+// trackedList is one root's tracked paths; ok is false outside a git work
+// tree. onDisk is true for a list the runner shared, which holds only the
+// regular files on disk, so no check stats its paths again.
 type trackedList struct {
-	files []string
-	ok    bool
+	files  []string
+	ok     bool
+	onDisk bool
 }
 
 // trackedFiles returns root's tracked paths, slash-separated and relative to
-// root, as `git ls-files --cached` prints them, including any deleted from
-// the work tree. ok is false when root is not inside a git work tree or git
-// is missing. A current list the runner shared for root is used first;
-// otherwise git is asked once per root for the life of the process.
-func trackedFiles(root string) (files []string, ok bool) {
+// root. A current list the runner shared for root is used first, holding
+// only regular files on disk. Otherwise git is asked once per root for the
+// life of the process, and its `git ls-files --cached` paths include any
+// deleted from the work tree. ok is false when root is not inside a git
+// work tree or git is missing.
+func trackedFiles(root string) trackedList {
 	key := filepath.Clean(root)
 	trackedMemo.Lock()
 	entry := trackedMemo.roots[key]
@@ -58,7 +62,7 @@ func trackedFiles(root string) (files []string, ok bool) {
 			entry.list, _ = listTracked(key)
 		}
 	})
-	return entry.list.files, entry.list.ok
+	return entry.list
 }
 
 // listTracked asks git for root's tracked paths, returning git's error when
@@ -80,8 +84,9 @@ type Shared struct {
 	Remove func()
 }
 
-// ShareTracked lists root's tracked files once and writes them to a
-// temporary file for the checks of one run. Outside a git work tree, or
+// ShareTracked lists root's tracked files once and writes the regular
+// files on disk to a temporary file for the checks of one run, so no check
+// stats them again. Outside a git work tree, or
 // when the index or the file cannot be read or written, it shares no list,
 // and each check lists its own files as it does when run alone. A git call
 // stopped at its deadline returns that gitx.StalledError instead.
@@ -115,11 +120,43 @@ func trackedSnapshot(root string) ([]byte, int, error) {
 	// The stamp is read before the listing, so an index rewritten in
 	// between only makes checks list their own files.
 	stamp, ok := indexStamp(index)
-	l, err := listTracked(root)
+	entries, err := gitx.Repo(root).IndexEntries()
 	if err != nil || !ok {
 		return nil, 0, stalledOnly(err)
 	}
-	return encodeTracked([]string{root, index, stamp}, l.files), len(l.files), nil
+	files := onDisk(root, regularEntries(entries))
+	return encodeTracked([]string{root, index, stamp}, files), len(files), nil
+}
+
+// regularEntries keeps the paths whose index mode is a regular file, once
+// each, dropping symlinks and submodules by mode alone. An unmerged path's
+// later stages follow its first, so only the first is kept.
+func regularEntries(entries []gitx.IndexEntry) []string {
+	paths := make([]string, 0, len(entries))
+	for i, e := range entries {
+		if regularMode(e.Mode) && (i == 0 || entries[i-1].Path != e.Path) {
+			paths = append(paths, e.Path)
+		}
+	}
+	return paths
+}
+
+// regularMode reports whether an index mode names a regular file.
+func regularMode(mode string) bool {
+	return mode == "100644" || mode == "100755"
+}
+
+// onDisk keeps the paths that are still regular files under root, stating
+// them in parallel workers, one per CPU, in their input order.
+func onDisk(root string, paths []string) []string {
+	present := par.Map(len(paths), 0, func(i int) bool { return RegularFile(root, paths[i]) })
+	kept := make([]string, 0, len(paths))
+	for i, path := range paths {
+		if present[i] {
+			kept = append(kept, path)
+		}
+	}
+	return kept
 }
 
 // stalledOnly keeps err when it is a git call stopped at its deadline, and
@@ -184,7 +221,7 @@ func parseShared(root string, data []byte) (trackedList, bool) {
 	if stamp, ok := indexStamp(string(entries[1])); !ok || stamp != string(entries[2]) {
 		return trackedList{}, false
 	}
-	return trackedList{files: splitNUL(entries[3]), ok: true}, true
+	return trackedList{files: splitNUL(entries[3]), ok: true, onDisk: true}, true
 }
 
 // splitNUL splits git's NUL-terminated `-z` output into its entries,
