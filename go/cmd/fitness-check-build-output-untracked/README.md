@@ -15,7 +15,7 @@ Rule A covers the `dist` directory and the output each language module names:
 
 ## No imports from build output
 
-Rule B scans every tracked `.ts`, `.mts`, and `.cts` file, test and spec files included. It flags any `from '…'`, `import('…')`, or `require('…')` whose specifier reaches into a `dist/` path, such as `../dist/x.js`, and reports it as `path:line`.
+Rule B scans every tracked `.ts`, `.mts`, and `.cts` file, test and spec files included. It flags any `from '…'`, `import('…')`, or `require('…')` whose specifier reaches into a `dist/` path, such as `../dist/x.js`, and reports it as `path:line`. It reads each file's code view, so a commented-out import never counts.
 
 ## Notes
 

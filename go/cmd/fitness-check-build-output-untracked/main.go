@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -56,11 +57,12 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(len(files) + 1), nil
 }
 
-// importErrors reports rule B over every scanned source file.
+// importErrors reports rule B over the code view of every scanned source
+// file, so a commented-out import never counts.
 func importErrors(root string, files []string) ([]string, error) {
 	var errors []string
 	for _, file := range files {
-		raw, err := os.ReadFile(filepath.Join(root, file))
+		raw, err := comments.CodeFile(root, file)
 		if err != nil {
 			return nil, err
 		}

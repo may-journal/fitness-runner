@@ -6,7 +6,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
 	"github.com/may-journal/fitness-runner/go/internal/runtimes"
 )
 
@@ -26,8 +25,8 @@ var mainRe = regexp.MustCompile(`((?:\b(?:public|protected|private|static|final|
 var Runtime = runtimes.Reader{Sources: map[string]func(*runtimes.Finder, string){Ext: entry}}
 
 // entry records the Java project holding file as one application the
-// first time a product file in it declares a main method. Comments are
-// stripped first, so a commented-out main proves nothing.
+// first time a product file's code view declares a main method. A
+// commented-out main proves nothing.
 func entry(f *runtimes.Finder, file string) {
 	dir := projectDir(f, file)
 	if f.Known(application, dir) {
@@ -42,7 +41,7 @@ func entry(f *runtimes.Finder, file string) {
 // 0.
 func mainLine(f *runtimes.Finder, file string) int {
 	lines, _ := f.Lines(file)
-	code := strings.Join(codemodel.Strip(lines), "\n")
+	code := strings.Join(lines, "\n")
 	for _, m := range mainRe.FindAllStringSubmatchIndex(code, -1) {
 		if !strings.Contains(code[m[2]:m[3]], "private") {
 			return strings.Count(code[:m[0]], "\n") + 1

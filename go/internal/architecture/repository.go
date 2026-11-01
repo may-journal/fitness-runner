@@ -5,6 +5,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 )
 
 // repository answers path questions about tracked files. kept holds the
@@ -85,9 +87,10 @@ func anyCovered(pattern string, paths map[string]bool) bool {
 	return false
 }
 
-// read returns a tracked file's lines; nil when it cannot be read.
+// read returns the lines of a tracked file's code view, or nil when it
+// cannot be read. A word in a comment proves nothing.
 func (r repository) read(file string) []string {
-	body, err := os.ReadFile(filepath.Join(r.root, filepath.FromSlash(file)))
+	body, err := comments.CodeFile(r.root, file)
 	if err != nil {
 		return nil
 	}

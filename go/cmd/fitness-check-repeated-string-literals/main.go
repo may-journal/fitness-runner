@@ -2,13 +2,12 @@ package check
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"sort"
 	"strings"
 	"unicode/utf8"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
@@ -77,7 +76,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	scanned := make([]scannedFile, 0, len(files))
 	var skipped []string
 	for _, file := range files {
-		content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+		content, err := comments.CodeFile(root, file)
 		if err != nil {
 			skipped = append(skipped, walkfs.Unreadable(file, err))
 			continue
@@ -194,7 +193,7 @@ type cursor struct {
 	word     string // identifier currently being read
 }
 
-// scanStringLiterals extracts quoted string literals from source, skipping comments, regex and template literals, and module specifiers.
+// scanStringLiterals extracts quoted string literals from a code view, skipping the directives it keeps, regex and template literals, and module specifiers.
 func scanStringLiterals(content string) []literal {
 	cur := &cursor{content: content, line: 1}
 	for cur.i < len(content) {

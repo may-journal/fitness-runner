@@ -2,13 +2,12 @@ package swift
 
 import (
 	"fmt"
-	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -58,7 +57,7 @@ func tools(root string, files []string) ([]string, error) {
 	}
 	var errs []string
 	for _, f := range files {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
+		data, err := comments.CodeFile(root, f)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +105,7 @@ func callErrors(file, src, code string, e2e bool) []string {
 	if offset := xcTestCaseClass(code); offset >= 0 {
 		errs = append(errs, at(file, code, offset, "subclasses XCTestCase; "+hosted))
 	}
-	if m := simctl.FindStringIndex(blankComments(src)); m != nil {
+	if m := simctl.FindStringIndex(src); m != nil {
 		errs = append(errs, at(file, code, m[0], "boots a simulator through simctl outside the end-to-end mode; "+hosted))
 	}
 	return errs
@@ -152,7 +151,7 @@ func importLines(code string) map[string]int {
 func libraryImporters(root string, sources []string) ([]string, error) {
 	var out []string
 	for _, f := range sources {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
+		data, err := comments.CodeFile(root, f)
 		if err != nil {
 			return nil, err
 		}

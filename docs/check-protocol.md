@@ -115,3 +115,19 @@ A run of several checks lists tracked files once, in a temporary file that `FITN
 
 A check uses the list only when its root matches `--root` and the index stamp is unchanged, and then stats no file. Otherwise, as when run alone or outside git, it lists its own files and stats each tracked path it matches. Each check process lists a root at most once, and asks `check-attr` about each file's `linguist-generated` mark at most once, batching each walk. Checks run with `GIT_OPTIONAL_LOCKS=0`, so their own `git status` never rewrites the index.
 
+## Code view and comment view
+
+A run of several checks reads each file once, through the shared reader in `go/internal/comments`. It writes two views of each to a temporary folder that `FITNESS_VIEWS_DIR` names. The code view blanks every comment to spaces, so lines and columns stay put. It keeps what a tool reads in a comment:
+
+- Go directives, the generated-file line, cgo preambles and Go example output.
+- `cspell:` and `shellcheck disable=` directives, and ESLint and SwiftLint ones.
+- `duplicate-code:` and `jscpd:` markers, and shebangs.
+
+The comment view lists each comment block as prose, placed beside the code it describes.
+
+Every code check reads the code view through `comments.CodeFile`, so commented-out code never counts. The prose checks read the comment view through `comments.Judge`, with the limits Markdown has. A view counts only while its file keeps the time it was read at. Otherwise, as when it runs alone, a check builds both views from the same reader.
+
+## Checks that read whole files
+
+A few checks hand whole files to a tool that reads comments the way the compiler does, so no view can stand in. These are gofmt, go-vet, go-test, go-test-coverage, go-complexity through Go's parser, eslint, prettier, swiftlint, checkstyle, spotless, java-test and the Vitest run of vitest-coverage-full. cspell spells each whole file, which is both views laid over each other, so its `cspell:` directives still cover the comments. gitignore-why judges whether a comment sits above each entry, which neither view holds alone.
+

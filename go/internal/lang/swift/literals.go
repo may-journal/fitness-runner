@@ -11,11 +11,11 @@ type Literal struct {
 	Source, Text     string
 }
 
-// Literals returns src with its comments and string literals blanked, and
+// Literals returns a code view with its string literals blanked, and
 // every literal in source order. A literal inside another's interpolation
 // is listed too, after the literal holding it opens.
 func Literals(src string) (code string, literals []Literal) {
-	code, literals = blanked(src, false)
+	code, literals = blanked(src)
 	sort.SliceStable(literals, func(i, j int) bool { return literals[i].Start < literals[j].Start })
 	line, at := 1, 0
 	for i := range literals {

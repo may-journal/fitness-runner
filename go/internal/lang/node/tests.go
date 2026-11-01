@@ -2,11 +2,10 @@ package node
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
@@ -36,11 +35,12 @@ var (
 	tableModifiers = map[string]bool{"each": true, "for": true, "skipIf": true, "runIf": true}
 )
 
-// scanScripts reads every vitest or jest test file and returns its tests.
+// scanScripts reads the code view of every vitest or jest test file and
+// returns its tests.
 func scanScripts(root string, files []string) ([]lang.Test, error) {
 	var tests []lang.Test
 	for _, f := range files {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
+		data, err := comments.CodeFile(root, f)
 		if err != nil {
 			return nil, err
 		}

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
@@ -21,9 +22,6 @@ var (
 	// repository: the Foojay plugin, or a Java repository in
 	// toolchainManagement.
 	resolverRe = regexp.MustCompile(`foojay|javaRepositories\s*\{[^}]*\brepository\b`)
-	// blockCommentRe and lineCommentRe read the comments of a Gradle script.
-	blockCommentRe = regexp.MustCompile(`(?s)/\*.*?\*/`)
-	lineCommentRe  = regexp.MustCompile(`(?m)(^|\s)//.*$`)
 )
 
 // jdkParents are the folders under the user's home whose children are JDKs
@@ -188,7 +186,6 @@ func canDownload(root string, build java.Project, props map[string]string) bool 
 		return false
 	}
 	for _, body := range scripts(root, build) {
-		body = lineCommentRe.ReplaceAllString(blockCommentRe.ReplaceAllString(body, ""), "$1")
 		if resolverRe.MatchString(body) {
 			return true
 		}
@@ -196,8 +193,8 @@ func canDownload(root string, build java.Project, props map[string]string) bool 
 	return false
 }
 
-// scripts reads the build's settings scripts and the init scripts of the
-// Gradle user home.
+// scripts reads the code view of the build's settings scripts and the init
+// scripts of the Gradle user home.
 func scripts(root string, build java.Project) []string {
 	var files []string
 	for _, name := range []string{"settings.gradle", "settings.gradle.kts"} {
@@ -209,7 +206,7 @@ func scripts(root string, build java.Project) []string {
 	initD, _ := filepath.Glob(java.GradleUserFile("init.d", "*"))
 	var out []string
 	for _, f := range append(files, initD...) {
-		if body, err := os.ReadFile(f); err == nil {
+		if body, err := comments.CodeFile("", f); err == nil {
 			out = append(out, string(body))
 		}
 	}

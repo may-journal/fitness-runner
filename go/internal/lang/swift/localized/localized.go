@@ -4,12 +4,11 @@ package localized
 
 import (
 	"fmt"
-	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -66,7 +65,7 @@ func prepare(root string, catalogs []string) (entries, config, []string, error) 
 func judgeFiles(root string, files []string, known entries, cfg config) ([]string, error) {
 	var findings []string
 	for _, file := range files {
-		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+		src, err := comments.CodeFile(root, file)
 		if err != nil {
 			return nil, err
 		}

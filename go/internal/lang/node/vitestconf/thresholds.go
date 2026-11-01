@@ -1,11 +1,11 @@
 package vitestconf
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/goal"
 )
 
@@ -16,8 +16,8 @@ const fullThreshold = goal.Percent
 // thresholdKeys are the four coverage threshold keys the TS check demanded.
 var thresholdKeys = []string{"branches", "functions", "lines", "statements"}
 
-// thresholdPatterns match `key:\s*100\b` per threshold key against the raw
-// config text, comments included.
+// thresholdPatterns match `key:\s*100\b` per threshold key against the
+// config's code view, so a commented-out threshold never counts.
 var thresholdPatterns = buildThresholdPatterns()
 
 func buildThresholdPatterns() []*regexp.Regexp {
@@ -46,12 +46,12 @@ func HasFullThresholds(root, fallbackRoot string) bool {
 func fullThresholdsFromRoot(root string) (full, decided bool) {
 	sawConfigFile := false
 	for _, name := range ConfigNames {
-		data, err := os.ReadFile(filepath.Join(root, name))
+		data, err := comments.CodeFile(root, name)
 		if err != nil {
 			continue
 		}
 		sawConfigFile = true
-		if rawHasFullThresholds(string(data)) {
+		if hasFullThresholds(string(data)) {
 			return true, true
 		}
 	}
@@ -61,9 +61,9 @@ func fullThresholdsFromRoot(root string) (full, decided bool) {
 	return fullThresholdsFromPackageJSON(filepath.Join(root, packageJSON))
 }
 
-// rawHasFullThresholds is the TS contentHasAllThresholds: every threshold
-// key appears as `key: 100` somewhere in the raw text.
-func rawHasFullThresholds(content string) bool {
+// hasFullThresholds is the TS contentHasAllThresholds: every threshold
+// key appears as `key: 100` somewhere in the code view.
+func hasFullThresholds(content string) bool {
 	for _, re := range thresholdPatterns {
 		if !re.MatchString(content) {
 			return false

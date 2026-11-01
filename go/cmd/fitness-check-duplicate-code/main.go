@@ -3,13 +3,12 @@ package check
 import (
 	"fmt"
 	"maps"
-	"os"
 	"path"
-	"path/filepath"
 	"slices"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/clonedetect"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
@@ -100,10 +99,10 @@ func lexTargets(root string, paths []string) []clonedetect.File {
 	return files
 }
 
-// lexOne reads and lexes a single path for the parallel pool; nil marks a
+// lexOne reads and lexes one path's code view for the parallel pool; nil marks a
 // binary or vanished file (skipped, not scanned).
 func lexOne(root, rel string) *clonedetect.File {
-	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	raw, err := comments.CodeFile(root, rel)
 	if err != nil || isBinary(raw) {
 		return nil
 	}

@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
@@ -94,7 +95,7 @@ func parentPom(root, at string, own bool, p parent) (body, next string, stillOwn
 	if rel, in := repoParent(root, at, p); in {
 		return readOr(root, rel), rel, false, true
 	}
-	pom, err := os.ReadFile(localPom(root, p))
+	pom, err := comments.CodeFile("", localPom(root, p))
 	return string(pom), "", own, err == nil
 }
 
@@ -175,7 +176,7 @@ func localRepository(root string) string {
 	} else if m != nil {
 		return filepath.Join(root, m[1])
 	}
-	settings, _ := os.ReadFile(filepath.Join(home, ".m2", "settings.xml"))
+	settings, _ := comments.CodeFile("", filepath.Join(home, ".m2", "settings.xml"))
 	if m := settingsLocalRe.FindStringSubmatch(string(settings)); m != nil {
 		return strings.ReplaceAll(m[1], "${user.home}", home)
 	}

@@ -6,14 +6,13 @@ package version
 
 import (
 	"fmt"
-	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
@@ -116,9 +115,10 @@ func pins(root string) ([]pin, []string) {
 	return out, unread
 }
 
-// read returns a tracked file's text, or false when it is missing.
+// read returns a tracked file's code view, or false when it is missing, so
+// a commented-out pin never counts.
 func read(root, file string) (string, bool) {
-	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	body, err := comments.CodeFile(root, file)
 	return string(body), err == nil
 }
 
@@ -154,17 +154,17 @@ func versionFiles(root string) []pin {
 		}},
 	}
 	for _, r := range readers {
-		if v := readVersionFile(filepath.Join(root, r.name), r.read); v != "" {
+		if v := readVersionFile(root, r.name, r.read); v != "" {
 			out = append(out, pin{file: r.name, version: v})
 		}
 	}
 	return out
 }
 
-// readVersionFile returns the first version read gives for a content line of
-// the file, or empty for none.
-func readVersionFile(file string, read func(fields []string, line string) string) string {
-	body, err := os.ReadFile(file)
+// readVersionFile returns the first version read gives for a line of the
+// file's code view, or empty for none.
+func readVersionFile(root, file string, read func(fields []string, line string) string) string {
+	body, err := comments.CodeFile(root, file)
 	if err != nil {
 		return ""
 	}
@@ -176,11 +176,11 @@ func readVersionFile(file string, read func(fields []string, line string) string
 	return ""
 }
 
-// contentLines lists body's trimmed lines that are not blank or comments.
+// contentLines lists body's trimmed lines that are not blank.
 func contentLines(body string) []string {
 	var out []string
 	for _, line := range strings.Split(body, "\n") {
-		if line = strings.TrimSpace(line); line != "" && !strings.HasPrefix(line, "#") {
+		if line = strings.TrimSpace(line); line != "" {
 			out = append(out, line)
 		}
 	}

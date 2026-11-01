@@ -4,7 +4,6 @@ import (
 	"context"
 	"embed"
 	"io/fs"
-	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -14,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
@@ -145,11 +145,11 @@ func importRe(prefix string) *regexp.Regexp {
 	return regexp.MustCompile(`(?m)^\s*import\s+(?:static\s+)?` + regexp.QuoteMeta(prefix) + `\b`)
 }
 
-// readAll joins the text of the tracked files, one per line.
+// readAll joins the code views of the tracked files, one per line.
 func readAll(root string, files []string) string {
 	var b strings.Builder
 	for _, f := range files {
-		if body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f))); err == nil {
+		if body, err := comments.CodeFile(root, f); err == nil {
 			b.Write(body)
 			b.WriteString("\n")
 		}

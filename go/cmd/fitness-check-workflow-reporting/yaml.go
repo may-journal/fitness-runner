@@ -135,7 +135,7 @@ func fault(l *srcLine, msg string) error {
 	return &syntaxError{line: l.num, msg: msg}
 }
 
-// peek is the next line that holds YAML, past blank and comment lines, or
+// peek is the next line that holds YAML, past blank lines, or
 // nil at the end. A line indented with a tab ends the read with a fault.
 func (p *parser) peek() *srcLine {
 	for ; p.pos < len(p.lines); p.pos++ {
@@ -146,7 +146,8 @@ func (p *parser) peek() *srcLine {
 	return nil
 }
 
-// holdsYAML reports whether a line holds more than blanks or a comment.
+// holdsYAML reports a code view line holding more than blanks or a
+// directive, such as `# cspell:ignore`, which a code view keeps.
 func holdsYAML(text string) bool {
 	t := strings.TrimSpace(text)
 	return t != "" && !strings.HasPrefix(t, "#")
@@ -269,16 +270,10 @@ func splitKey(text string) (key, rest string, ok bool) {
 		return quotedKey(text)
 	}
 	m := keyRe.FindStringSubmatch(text)
-	if m == nil || notKey(text, m[1]) {
+	if m == nil || isItem(text) {
 		return "", "", false
 	}
 	return strings.TrimSpace(m[1]), strings.TrimSpace(text[len(m[0]):]), true
-}
-
-// notKey reports whether a match of keyRe is a list item or a comment
-// rather than a key.
-func notKey(text, key string) bool {
-	return isItem(text) || strings.Contains(key, " #")
 }
 
 // quotedKey reads a key written in quotes.
@@ -324,7 +319,7 @@ var scalarReaders = map[byte]func(p *parser, owner *srcLine, rest string) (*node
 // a key's value, which may be a list at the key's own indent.
 func (p *parser) value(owner *srcLine, rest string, keyed bool) (*node, error) {
 	rest = strings.TrimSpace(rest)
-	if rest == "" || strings.HasPrefix(rest, "#") {
+	if rest == "" {
 		return p.nested(owner, keyed)
 	}
 	if rest[0] == '&' {
@@ -355,20 +350,12 @@ func (p *parser) alias(owner *srcLine, rest string) (*node, error) {
 
 // plain reads a plain scalar and the deeper lines that continue it.
 func (p *parser) plain(owner *srcLine, rest string) *node {
-	parts := []string{cutComment(rest)}
+	parts := []string{strings.TrimSpace(rest)}
 	for l := p.peek(); l != nil && l.indent > owner.indent; l = p.peek() {
-		parts = append(parts, cutComment(l.text))
+		parts = append(parts, strings.TrimSpace(l.text))
 		p.pos++
 	}
 	return &node{kind: scalarNode, line: owner.num, text: strings.Join(parts, " ")}
-}
-
-// cutComment drops a ` #` comment from a plain scalar.
-func cutComment(text string) string {
-	if i := strings.Index(text, " #"); i >= 0 {
-		text = text[:i]
-	}
-	return strings.TrimSpace(text)
 }
 
 // quoted reads a quoted scalar, which may run over several lines.
@@ -382,7 +369,7 @@ func (p *parser) quoted(owner *srcLine, rest string) (*node, error) {
 		p.pos++
 	}
 	end := closingQuote(text)
-	if after := strings.TrimSpace(text[end+1:]); after != "" && !strings.HasPrefix(after, "#") {
+	if after := strings.TrimSpace(text[end+1:]); after != "" {
 		return nil, fault(owner, "text follows the closing quote")
 	}
 	return &node{kind: scalarNode, line: owner.num, text: text[1:end]}, nil
@@ -391,7 +378,7 @@ func (p *parser) quoted(owner *srcLine, rest string) (*node, error) {
 // blockScalar reads a `|` or `>` scalar: every following line indented
 // deeper than its owner, blank lines included.
 func (p *parser) blockScalar(owner *srcLine, rest string) (*node, error) {
-	if !blockHeaderRe.MatchString(cutComment(rest)) {
+	if !blockHeaderRe.MatchString(strings.TrimSpace(rest)) {
 		return nil, fault(owner, fmt.Sprintf("%q is not a block scalar header such as | or >-", rest))
 	}
 	var body []string

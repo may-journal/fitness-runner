@@ -7,22 +7,12 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/comments"
 )
 
-// Scanner strips comments, and string literals when Literals is set, from
-// source in the C-style syntax that comments.Lexer reads. It keeps a backtick
-// span whole even when it runs over lines.
+// Scanner strips the directives a code view keeps, and string literals when
+// Literals is set, from C-style source that comments.Lexer
+// reads. It keeps a backtick span whole even when it runs over lines.
 type Scanner struct {
 	Literals bool
 	lex      comments.Lexer
-}
-
-// Strip returns the lines with comments removed and literals kept.
-func Strip(lines []string) []string {
-	sc := &Scanner{}
-	out := make([]string, len(lines))
-	for i, line := range lines {
-		out[i] = sc.Line(line)
-	}
-	return out
 }
 
 // Line returns one line's code, carrying an open comment, text block, or

@@ -38,14 +38,14 @@ func (c *components) draws(from, to string) bool {
 
 func (c *components) proveEdge(ev Evidence, from, to string) {
 	owner := c.owners[ev.Path]
-	reader, supported := codemodel.Of(referenceReaders, ev.Path)
+	_, supported := codemodel.Of(referenceReaders, ev.Path)
 	switch {
 	case !supported:
 		c.fail(ev.At, "unsupported evidence %s; %s sources only", ev, codemodel.Series(referenceReaders, "and"))
 	case !c.within(owner, from):
 		c.fail(ev.At, "evidence %s is owned by %s, not %s", ev, ownerName(owner), from)
 	case external(c.elements[to].Kind):
-		c.proveExternal(ev, c.elements[to], reader)
+		c.proveExternal(ev, c.elements[to])
 	case !c.names(ev, to):
 		c.fail(ev.At, "evidence %s names nothing %s owns", ev, to)
 	}
@@ -79,10 +79,10 @@ func (c *components) reaches(r codemodel.Reference, to string) bool {
 }
 
 // proveExternal requires the linked lines to name the external system by a
-// word of its name, technology or description, outside stripped comments.
-func (c *components) proveExternal(ev Evidence, e Element, reader codemodel.Reader) {
+// word of its name, technology or description in their code view.
+func (c *components) proveExternal(ev Evidence, e Element) {
 	words := longWords(e.Name + " " + e.Technology + " " + e.Description)
-	for i, code := range reader.Strip(c.m.repo.read(ev.Path)) {
+	for i, code := range c.m.repo.read(ev.Path) {
 		if ev.holds(i+1) && namesAny(code, words) {
 			return
 		}

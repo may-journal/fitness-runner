@@ -14,7 +14,7 @@ A pass requires all three of:
 - The fitness-runner shared config carries the same 100% thresholds.
 - `vitest run --coverage` exits 0 in the project root.
 
-Both configs are checked statically, as text. Neither side may lower thresholds to pass.
+Both configs are checked statically, through their code views, so a commented-out threshold never counts. Neither side may lower thresholds to pass.
 
 - Threshold and exclude settings come from the project's vitest config, else the shared `vitest.config.mjs` (installed `@mayjournal/fitness-shared` package or the binary's embedded copy).
 - When the project has no local vitest config, `vitest run --coverage` runs with `--config` pointing at that resolved file.
