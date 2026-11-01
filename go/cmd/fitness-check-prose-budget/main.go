@@ -23,10 +23,7 @@ type limits struct {
 	words              int
 }
 
-// defaults are calibrated for tight technical docs: short sentences, small
-// paragraphs and sections, and bounded lists — held about a quarter tighter
-// than the check's first cut. conf.Defaults holds them, so the config
-// schema shows the same values.
+// defaults are the tight technical-doc limits conf.Defaults holds, so the config schema shows them too.
 var defaults = limits{
 	sentenceWords:      conf.Defaults.ProseBudget.MaxSentenceWords,
 	paragraphSentences: conf.Defaults.ProseBudget.MaxParagraphSentences,
@@ -60,15 +57,13 @@ func run(root string, args []string) (checkkit.Result, error) {
 }
 
 // walkFiles applies the budget to every in-scope .md file under root, then
-// to each comment block the run judges. A comment has no headings, so it
-// skips the section limits.
+// to each comment block the run judges with commentErrors.
 func walkFiles(root string, lim limits) checkkit.Result {
 	res := walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
 		return check(rel, content, lim)
 	})
-	return comments.Judge(res, root, func(name, markdown string) []string {
-		blocks := parse(markdown)
-		return append(paragraphErrors(name, blocks, lim), listErrors(name, blocks, lim)...)
+	return comments.JudgeEach(res, root, func(b comments.Block, name, markdown string) []string {
+		return commentErrors(b, name, markdown, lim)
 	})
 }
 
@@ -221,10 +216,7 @@ func snippet(s string) string {
 	return s
 }
 
-// nestingErrors caps each level of a list at half the level above, rounding
-// down from the top-level cap: with 8 top-level items, each item holds at
-// most 4 children, each child at most 2, and each of those 1. A level whose
-// cap reaches 0 allows no items.
+// nestingErrors caps each list level at half the level above, rounded down, so 8 top items allow 4 children each.
 func nestingErrors(rel string, bl block, max int) []string {
 	var errs []string
 	counts := map[int]int{}

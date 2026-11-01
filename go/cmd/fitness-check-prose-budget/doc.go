@@ -49,5 +49,13 @@
 // block. Each error names the block as `path:line`, the line it starts on.
 // Tool directives, license headers and generated files are never judged.
 //
+// # Comment statements
+//
+// Two more rules keep every comment terse:
+//
+//   - `comment-fragment` fails a sentence that starts with So, And, But, Then, Also, Thus, Hence, Because, Which or Plus.
+//   - `comment-fragment` fails a sentence of three words or fewer, but a doc heading, identifier-led doc line or colon lead-in passes.
+//   - `comment-one-statement` fails a comment of more than two sentences, doc comments included; only a Go package comment keeps the paragraph limits.
+//
 // [text-readability]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-text-readability/README.md
 package check
