@@ -313,9 +313,8 @@ func (v IssueView) Repo() string {
 }
 
 // ViewIssue reads issue n of repo, an owner/repo slug, or of the working
-// directory's repository when repo is empty. It reads the body, labels and
-// comments with their authors in one `gh issue view`. The stderr of gh stays out of the
-// caller's output.
+// directory's repository when repo is empty. It uses one `gh issue view` and
+// keeps stderr of gh out of the output.
 func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
 	args := []string{"issue", "view", n}
 	if repo != "" {
@@ -511,10 +510,8 @@ func (g Client) Reopen(n int) error {
 	return err
 }
 
-// closingPRQuery reads the latest closed event's closer. Only GraphQL
-// exposes it; REST names the actor but not the closing pull request. A merge
-// records either the PR or its merge commit as the closer, so a commit is
-// traced back to its PR.
+// closingPRQuery reads the latest closed event's closer, which only GraphQL
+// exposes, and a merge commit is traced back to its PR.
 const closingPRQuery = `query($owner: String!, $name: String!, $n: Int!) {
   repository(owner: $owner, name: $name) {
     issue(number: $n) {

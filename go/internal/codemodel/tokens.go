@@ -45,10 +45,9 @@ func RelateTokens(g *Graph, file string, t Tokens) {
 	}
 }
 
-// relateToken relates the node holding token j. A type header reads the
-// types it extends and implements once, at its line's first token, and
-// relates nothing else. Tokens after the body's brace relate as names,
-// even on a declaration's first line.
+// relateToken relates the node holding token j. A type header reads the types
+// it extends once at its line's first token, and tokens after the body's brace
+// relate as names.
 func relateToken(g *Graph, t Tokens, j int, at Location) {
 	from := g.Owner(at)
 	switch d := g.Header(at); {

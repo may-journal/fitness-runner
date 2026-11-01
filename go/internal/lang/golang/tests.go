@@ -14,11 +14,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// Tests finds go test requirement tests: func Test0001_1(t *testing.T)
-// owns 0001.1. Tests are read with go/ast, so only real top-level test
-// functions count; TestMain and helpers are not tests. A file such as
-// 0003_0004_test.go is named for both requirements, and one such as
-// tools_test.go for none. Reads keeps only the test files.
+// Tests finds go test requirement tests: func Test0001_1(t *testing.T) owns
+// 0001.1, read with go/ast so only real top-level test functions count. A file
+// such as 0003_0004_test.go is named for both requirements, one such as
+// tools_test.go for none.
 var Tests = lang.Tests{
 	Scan:    scan,
 	Name:    naming.Name,

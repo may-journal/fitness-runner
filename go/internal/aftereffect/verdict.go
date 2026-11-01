@@ -31,9 +31,8 @@ func kindOf(t Target) string {
 // the legacy plan-structure marker.
 const planKind = "Plan"
 
-// postVerdict keeps one live verdict per body version. A pass that follows a
-// pass edits that comment in place with a timestamp; anything else posts a
-// new one. Every older verdict is then hidden as outdated.
+// postVerdict keeps one live verdict per body version. A pass after a pass is
+// edited in place, anything else posts anew, and older verdicts are hidden.
 func postVerdict(gh Client, t Target, errs []string) error {
 	kind := kindOf(t)
 	prior, err := gh.Verdicts(t.Number, kind)

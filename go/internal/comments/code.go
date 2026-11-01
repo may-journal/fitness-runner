@@ -8,13 +8,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-// Uncommented is src without its comments, each line trimmed and blank
-// lines dropped, so versions that differ only in comments read the same.
-// Spacing inside a line, and line breaks between code, still count.
-// Directives, shebangs, and comments a toolchain reads stay.
-//
-// Markdown loses its HTML comments. It reports false when nothing covers
-// rel.
+// Uncommented is src without its comments, each line trimmed and blank lines
+// dropped, so versions differing only in comments read the same. Directives,
+// shebangs and toolchain comments stay, and it reports false when nothing
+// covers rel.
 func Uncommented(rel string, src []byte) (string, bool) {
 	text := strings.ReplaceAll(string(src), "\r\n", "\n")
 	if path.Ext(rel) == ".md" {

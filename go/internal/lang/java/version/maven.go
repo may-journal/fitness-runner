@@ -34,10 +34,9 @@ type parent struct {
 	group, artifact, version, relative string
 }
 
-// chain is the poms a pom inherits from, nearest first, itself included.
-// The first pins of them name the pom's own release: itself and the
-// parents outside the repo above it. A parent in the repo names its own,
-// so it and those above it lend only their properties.
+// chain is the poms a pom inherits from, nearest first, itself included. The
+// first pins of them name the pom's own release, and a parent in the repo
+// lends only its properties.
 type chain struct {
 	poms []string
 	pins int

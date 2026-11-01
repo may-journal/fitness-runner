@@ -60,10 +60,10 @@ var tsStatements = map[string]func(r *tsReader, start, i int, exported bool) int
 	"{":        (*tsReader).exportList,
 }
 
-// tsReader reads one TypeScript file from its tokens, so comments never
-// count and strings stay whole. It keeps top-level classes, interfaces,
-// functions, enums, and type aliases, with the fields and methods of class
-// and interface bodies. Anything inside a body is ignored.
+// tsReader reads one TypeScript file from its tokens, so comments never count
+// and strings stay whole. It keeps top-level classes, interfaces, functions,
+// enums and type aliases, with the fields and methods of class and interface
+// bodies.
 type tsReader struct {
 	x       *codemodel.Index
 	file    string

@@ -17,10 +17,8 @@ type Location struct {
 
 func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) }
 
-// Declaration kinds the code view covers. Local bindings inside a function
-// body are never declarations here. An extension adds members and the
-// types it inherits to a type declared elsewhere, but declares none
-// itself.
+// Declaration kinds the code view covers, where local bindings inside a
+// function body are never declarations and an extension declares none itself.
 const (
 	KindType      = "type"
 	KindInterface = "interface"

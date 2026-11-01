@@ -2,11 +2,10 @@ package swift
 
 import "sort"
 
-// Literal is one string literal in Swift source. Start and End are its
-// byte offsets, delimiters and raw-string hashes included, and Line is the
-// line it opens on. Source is the literal as written, and Text holds its
-// words: the characters between the delimiters, without its
-// interpolations and with escapes read.
+// Literal is one string literal in Swift source, with its byte offsets as
+// Start and End and its opening line as Line. Source is the literal as
+// written, and Text holds its words without interpolations and with escapes
+// read.
 type Literal struct {
 	Start, End, Line int
 	Source, Text     string

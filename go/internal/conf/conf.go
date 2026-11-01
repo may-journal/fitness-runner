@@ -21,16 +21,16 @@ type Config struct {
 	// External lets a repo pick, replace, and turn off checks; org runs every
 	// check as the shared bar.
 	Policy string `json:"policy" enum:"org,external"`
-	// LegacyChecks optionally selects checks in external mode. Org ignores it.
+	// LegacyChecks optionally selects checks in external mode, which org ignores.
 	LegacyChecks []string `json:"checks"`
 	// TimeoutMs replaces the default per-check budget for checks that declare
 	// none of their own.
 	TimeoutMs int `json:"timeoutMs"`
 	// LocalChecks names a repo directory of the repo's own check programs,
-	// searched before the bundled ones. See ADR 0009.
+	// searched before the bundled ones, as ADR 0009 describes.
 	LocalChecks string `json:"localChecks"`
-	// DisabledChecks names checks external policy leaves out; org policy
-	// refuses it. See ADR 0009.
+	// DisabledChecks names checks external policy leaves out and org policy
+	// refuses, as ADR 0009 describes.
 	DisabledChecks []string `json:"disabledChecks"`
 	// PlanApprovers lists the GitHub logins whose `I approve` comment
 	// approves a Plan for the pre-push gate, under either policy. Unset, the
@@ -126,8 +126,8 @@ func MaxListItems(root string) int {
 	return DefaultMaxListItems
 }
 
-// Load reads root's config. A missing file returns (nil, nil): the caller
-// falls back to the defaults. A config that still sets a retired exclusion
+// Load reads root's config, and a missing file returns (nil, nil) so the
+// caller falls back to defaults. A config that still sets a retired exclusion
 // key returns an error naming each one.
 func Load(root string) (*Config, error) {
 	return configSection.Load(root)

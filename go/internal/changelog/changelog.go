@@ -36,10 +36,9 @@ func New(before, after []string) []string {
 	return added
 }
 
-// forkPoint is the commit the current branch's own commits start from: the
-// parent of the oldest commit no other origin branch holds. A branch stacked
-// on another pushed branch so starts where that branch ends. It is not found
-// on the default branch, on a detached HEAD, or without origin refs.
+// forkPoint is the parent of the oldest commit no other origin branch holds.
+// It is not found on the default branch, a detached HEAD, or without origin
+// refs.
 func forkPoint(root string) (string, bool) {
 	branch := gitOut(root, "symbolic-ref", "--short", "-q", "HEAD")
 	base := gitx.DefaultBase(root)

@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// Deadline is how long one git call may run before it is stopped. Ten
-// seconds covers `git ls-files` on a monorepo. A call past it is stalled,
-// such as one on a network file system or on an index another process holds.
+// Deadline is how long one git call may run before it is stopped; ten seconds
+// covers `git ls-files` on a monorepo. A call past it is stalled, such as one
+// on a network file system or on an index another process holds.
 const Deadline = 10 * time.Second
 
 // StalledError is a git call stopped at Deadline. It names the call, so the

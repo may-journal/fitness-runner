@@ -167,7 +167,7 @@ func (c *code) declaresType(name string) bool {
 }
 
 // candidates lists declarations with the name and owner, in files when
-// given, whose package matches the qualifier. Extensions declare nothing.
+// given, whose package matches the qualifier, skipping extensions.
 func (c *code) candidates(name, owner, pkg string, files []string) []*codemodel.Decl {
 	var found []*codemodel.Decl
 	for _, d := range c.x.Named(name, owner, files) {

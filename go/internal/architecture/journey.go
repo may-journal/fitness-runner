@@ -80,9 +80,8 @@ func (j *journey) fail(at Location, format string, args ...any) {
 	j.errs = append(j.errs, at.String()+": "+fmt.Sprintf(format, args...))
 }
 
-// label reads the requirement IDs one label names. owner is the element the
-// label belongs to; an edge label has none. A label that names any ID
-// covers its node, so a mistyped ID fails once, as unknown.
+// label reads the requirement IDs one label names for its owner element. A
+// label that names any ID covers its node, so a mistyped ID fails once.
 func (j *journey) label(owner, text string, at Location) {
 	ids := uniqueIDs(labelID.FindAllString(entityCode.ReplaceAllString(text, ""), -1))
 	if len(ids) > maxLabelIDs {

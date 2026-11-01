@@ -20,9 +20,8 @@ var Reader = codemodel.Reader{
 
 // cspell:ignore strictfp
 
-// modifiers precede a declaration and change nothing the view states.
-// Public is read apart, since it marks coverage. A sealed or non-sealed
-// class names its permitted subclasses, which relate nothing here.
+// modifiers precede a declaration and change nothing the view states, except
+// that public is read apart because it marks coverage.
 var modifiers = strings.Fields("public protected private abstract static final sealed strictfp transient volatile synchronized native default")
 
 // typeKinds are the keywords that declare a type, by the kind the view

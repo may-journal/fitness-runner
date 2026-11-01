@@ -57,10 +57,9 @@ func parenAt(c byte, j int) int {
 	return -1
 }
 
-// labeled matches an argument that starts with a label, such as
-// systemImage: or verbatim:, and captures the label. A ternary's colon
-// follows an expression, so only a name straight after the parenthesis is
-// a label. Only a verbatim: argument is shown as words.
+// labeled matches an argument that starts with a label, such as systemImage:
+// or verbatim:, and captures the label. A ternary's colon follows an
+// expression, so only a name straight after the parenthesis is a label.
 var labeled = regexp.MustCompile(`^\s*([\p{L}_][\p{L}\p{N}_]*)[ \t]*:`)
 
 // anchors returns the offset whose context decides what shows each literal:

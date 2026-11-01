@@ -21,9 +21,8 @@ func Run(args []string, validate func(body string) []string) (checkkit.Result, e
 const BlobEnv = "FITNESS_BLOB"
 
 // RunIf is Run for a check that judges one kind of body. Under `fitness
-// --blob`, a text applies rejects passes inert with zero files, so the runner
-// lists the check as not applying. Every other caller names the body's kind
-// itself, so the check always judges it.
+// --blob`, a text that applies rejects passes inert, so the runner lists the
+// check as not applying.
 func RunIf(args []string, applies func(body string) bool, validate func(body string) []string) (checkkit.Result, error) {
 	body, ok, err := resolveBody(args)
 	if err != nil {

@@ -20,10 +20,9 @@ const (
 	Regex
 )
 
-// Token is one lexed unit of JS/TS source. For strings, Text is the decoded
-// value and Lit is false when a template literal held a ${…} expression —
-// present but unresolvable. Pos is the byte offset where the token starts.
-// Comments never become tokens.
+// Token is one lexed unit of JS/TS source, and comments never become tokens.
+// For strings, Text is the decoded value and Lit is false when a template held
+// a ${…} expression.
 type Token struct {
 	Kind Kind
 	Text string
@@ -262,7 +261,7 @@ func scanQuoted(src string, i int) (string, int) {
 // scanTemplate decodes a template literal starting at i. hasExpr is true
 // when the template held a ${…} expression, making its value unresolvable.
 func scanTemplate(src string, i int) (value string, hasExpr bool, next int) {
-	i++ // opening backtick
+	i++ // skip the opening backtick
 	var b strings.Builder
 	for i < len(src) {
 		c := src[i]

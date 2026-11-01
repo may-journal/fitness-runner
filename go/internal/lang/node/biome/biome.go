@@ -114,11 +114,9 @@ type Finding struct {
 	Message string
 }
 
-// Check runs `biome <command>` with flags on paths in root and turns its
-// findings into the check's result: each finding rendered by show fails. A
-// failure that names no finding fails with fallback and Biome's last lines. A
-// missing binary fails with the install hint, and a Biome before 1.8 with its
-// version.
+// Check runs `biome <command>` with flags on paths in root and fails each
+// finding rendered by show. A failure naming no finding, a missing binary, or
+// a Biome before 1.8 fails with fallback, the install hint, or its version.
 func Check(root, command string, flags, paths []string, fallback string, show func(Finding) string) checkkit.Result {
 	bin, capFlag, failure := usable(root)
 	if failure != "" {

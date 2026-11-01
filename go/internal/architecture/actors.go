@@ -7,9 +7,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
 )
 
-// Actor is a person declared in the system context. Name is its label
-// without the callout number; ID is its Mermaid ID, the one alias the
-// diagram already declares. System and legend nodes are never actors.
+// Actor is a person declared in the system context, with its Mermaid ID and
+// its label as Name without the callout number.
 type Actor struct {
 	ID, Name string
 	At       Location

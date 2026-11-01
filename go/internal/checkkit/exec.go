@@ -9,10 +9,8 @@ import (
 	"strings"
 )
 
-// Outcome is what one tool run left behind. Code is the exit code, or 1
-// when the process ended without one, so a caller that only reads Code sees
-// any failure. SpawnErr and Signaled tell a broken environment apart from a
-// tool that ran and judged.
+// Outcome is what one tool run left behind. SpawnErr and Signaled tell a broken
+// environment apart from a tool that ran and judged.
 type Outcome struct {
 	// Code is the exit code, or 1 when the process ended without one.
 	Code int

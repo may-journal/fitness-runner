@@ -27,10 +27,9 @@ func sourceFile(file string) bool {
 	return contains(sourceExtensions, path.Ext(file))
 }
 
-// inventory lists every tracked source with its category and the elements
-// whose claims cover it. Unowned sources stay listed; the component check
-// decides which must have an owner. Only sources and manifests are
-// classed, as no other file can be product code.
+// inventory lists every tracked source or manifest with its category and the
+// elements whose claims cover it. The component check decides which unowned
+// sources need an owner.
 func (m *Model) inventory(root string, files []string) {
 	classed := inventoried(files)
 	var sources []string

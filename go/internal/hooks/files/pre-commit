@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared may-journal git hook. The logic lives in the fitness Go binary;
+# Shared may-journal git hook whose logic lives in the fitness Go binary;
 # re-run `fitness init` to update. Repo-specific build/tests go in an
 # executable .githooks/pre-commit.local, which this runs last.
 exec "${FITNESS_INSTALL_DIR:-$HOME/.local/share/fitness}/fitness-install" --version latest -- hook pre-commit

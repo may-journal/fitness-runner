@@ -10,10 +10,8 @@ import (
 // moving major tag v1 or the Go module tag go/v1.14.0.
 const releaseTagGlob = "v[0-9]*.[0-9]*.[0-9]*"
 
-// PreviousTag is the newest release tag reachable from tag's parent. It is
-// "" only for a first release: tag's commit has no parent, or no release
-// tag comes before it. A missing tag or a shallow clone, which hides the
-// history, is an error rather than a first release.
+// PreviousTag is the newest release tag reachable from tag's parent, or "" for
+// a first release. A missing tag or a shallow clone is an error.
 func PreviousTag(root, tag string) (string, error) {
 	shallow, err := gitRun(root, "rev-parse", "--is-shallow-repository")
 	if err != nil {
@@ -42,10 +40,9 @@ func NewestTag(root, ref string) (string, error) {
 	return strings.TrimSpace(newest), err
 }
 
-// StagedReleasedEdits names each entry file the index edits or deletes
-// that the newest release tag reachable from HEAD already holds, with that
-// tag. A repo without release tags has none. An edit that only drops front
-// matter leaves the published notes as they were, so it is not named.
+// StagedReleasedEdits names each entry file the index edits or deletes that
+// the newest release tag reachable from HEAD already holds, with that tag. It
+// skips an edit that only drops front matter.
 func StagedReleasedEdits(root string) ([]string, error) {
 	tag, err := headReleaseTag(root)
 	if err != nil || tag == "" {
