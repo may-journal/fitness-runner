@@ -42,6 +42,7 @@ flowchart TB
     runBlob(29 Check a draft text<br/>Req 0077):::action
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
+    listComments(40 List code comments<br/>Req 0136):::action
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
@@ -87,6 +88,7 @@ flowchart TB
     terminal --> runBlob
     terminal --> runComment
     terminal --> stripFront
+    terminal --> listComments
     terminal --> listChecks
     listChecks --> explainCheck
     terminal --> readDocs
@@ -166,3 +168,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 37  | A check README or `fitness --help`. | Action  | A person reads the same documentation the binary prints, generated from the same code. |
 | 38  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
 | 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |
+| 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |

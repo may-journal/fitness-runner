@@ -174,7 +174,7 @@ func runCheckCommand(args []string) int {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `check`, `list`, `explain`, `docs`) before falling through to the check runner, so the
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `comments`, `check`, `list`, `explain`, `docs`) before falling through to the check runner, so the
 // git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
@@ -235,6 +235,10 @@ func init() {
 		// any block they leave empty.
 		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,
+		// Prints each code comment block of the named or tracked files, with
+		// its line, language and kind, as the checks read it.
+		//fitness:usage comments [path...]
+		"comments": runComments,
 		// Judges this branch's PR and the issues it closes locally, posting
 		// nothing.
 		//fitness:usage branch-check

@@ -81,6 +81,8 @@ Commands:
       Draws a --json report as an HTML box diagram.
   fitness strip-front-matter
       Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
+  fitness comments [path...]
+      Prints each code comment block of the named or tracked files, with its line, language and kind, as the checks read it.
   fitness branch-check
       Judges this branch's PR and the issues it closes locally, posting nothing.
   fitness pr-check

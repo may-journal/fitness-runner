@@ -1,7 +1,10 @@
-// Package comments reads the doc comments in Go source, so the text fitness
-// prints about its own types comes from the code and cannot drift from it.
-// Its surface stays small on purpose: a shared generator of docs from
-// comments can sit behind it later without changing its callers.
+// Package comments reads the comments of source files, so every check
+// reads them the same way. Source returns a file's comment blocks with
+// path, line, language and kind: Go through go/parser; Swift, TypeScript,
+// JavaScript, Java, Kotlin and Rust through one C-style lexer, which the
+// code scanners also use to strip comments; shell and YAML through their #
+// lines. Types reads Go type docs, so the text fitness prints about its own
+// types comes from the code.
 package comments
 
 import (
