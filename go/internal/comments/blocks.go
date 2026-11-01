@@ -21,9 +21,7 @@ const (
 	Inline Kind = "inline"
 )
 
-// Block is one comment block of a source file. Line and End are the lines
-// it starts and ends on, counted from 1. Text is its words without the
-// comment markers, one line of text per line of comment.
+// Block is one comment block, its 1-based first and last lines, and its text without markers.
 type Block struct {
 	Path string
 	Line int
@@ -31,12 +29,9 @@ type Block struct {
 	Lang string
 	Kind Kind
 	Text string
-	// InBody marks a comment inside a function body or after code. A doc
-	// comment on a declaration, a file or a package is never in a body.
-	// Only Place sets it.
+	// InBody marks a comment in a function body or after code, as Place sets it.
 	InBody bool
-	// Next is the first line of code after a comment on lines of its own,
-	// trimmed, which a doc comment names. Only Place sets it.
+	// Next is the trimmed code line after an own-line comment, as Place sets it.
 	Next string
 }
 
@@ -93,9 +88,7 @@ func Lang(rel string, src []byte) string {
 	return langs[ext]
 }
 
-// Files returns the comment blocks of the files under root at the
-// slash-separated paths, in path order, leaving out generated files as
-// walkfs.WithoutGenerated defines them and files no reader covers.
+// Files returns the comment blocks of paths under root in path order, skipping generated and unread files.
 func Files(root string, paths []string) ([]Block, error) {
 	var blocks []Block
 	for _, rel := range walkfs.WithoutGenerated(root, paths) {
@@ -273,9 +266,7 @@ func kind(n note) Kind {
 	return Doc
 }
 
-// goDirective is a Go-style directive: // then a word and a colon with no
-// space, as //go:build or //go:generate, or a //line, //export or //extern
-// comment.
+// goDirective matches a Go directive such as //go:build, //line, //export or //extern.
 var goDirective = regexp.MustCompile(`^//([a-z0-9]+:[a-z0-9]|line |export |extern )`)
 
 // toolDirectives open a comment that speaks to a tool, not a reader.

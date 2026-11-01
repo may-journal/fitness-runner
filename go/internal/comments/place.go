@@ -11,9 +11,7 @@ import (
 	"strings"
 )
 
-// Place sets InBody and Next on each block, reading each block's file under
-// root once. The blocks of one file sit next to each other, as Files
-// returns them.
+// Place sets InBody and Next on blocks in Files order, reading each file once.
 func Place(root string, blocks []Block) error {
 	var errs []error
 	for i := 0; i < len(blocks); {
@@ -40,9 +38,7 @@ func placeFile(root string, blocks []Block) error {
 	return nil
 }
 
-// placer returns the function that sets a block's InBody and Next from the
-// source the block was read from. An inline comment sits after code, so it
-// is always in a body.
+// placer returns the function that places a block of src, an inline one always in a body.
 func placer(lang string, src []byte) func(b *Block) {
 	rows := lines(src)
 	inBody := bodyTest(lang, src, rows)
@@ -56,9 +52,7 @@ func placer(lang string, src []byte) func(b *Block) {
 	}
 }
 
-// bodyTest returns the test for a comment on lines of its own inside a
-// function body. A language with braces finds its bodies through its code,
-// a shell script goes by indent, and YAML has no bodies.
+// bodyTest returns the in-body test: braces where a language has them, indent for shell, never for YAML.
 func bodyTest(lang string, src []byte, rows []string) func(b *Block) bool {
 	if found, ok := bodies(lang, src, rows); ok {
 		return func(b *Block) bool { return found.holds(b.Line) }
@@ -66,9 +60,7 @@ func bodyTest(lang string, src []byte, rows []string) func(b *Block) bool {
 	return func(b *Block) bool { return lang == "shell" && isIndented(rows[b.Line-1]) }
 }
 
-// bodies returns the function bodies of a file in a language with braces.
-// Go reads them through its parser, falling back to its braces when the
-// parser rejects the file.
+// bodies returns a brace language's function bodies, through the parser for Go that parses.
 func bodies(lang string, src []byte, rows []string) (spans, bool) {
 	if lang == "go" {
 		if found, ok := goBodies(src); ok {
@@ -83,7 +75,7 @@ func bodies(lang string, src []byte, rows []string) (spans, bool) {
 	return braceBodies(lexedCode(rows, lex)), ok
 }
 
-// span is the lines of one function body's braces, counted from 1.
+// span holds the 1-based lines of a function body's braces.
 type span struct{ from, to int }
 
 // spans are the function bodies of one file.
@@ -99,8 +91,7 @@ func (s spans) holds(line int) bool {
 	return false
 }
 
-// goBodies returns the bodies of a Go file's functions and function
-// literals, or false when the parser rejects the file.
+// goBodies returns a Go file's function bodies, or false when it does not parse.
 func goBodies(src []byte) (spans, bool) {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "", src, parser.SkipObjectResolution)
@@ -128,8 +119,7 @@ func funcBody(n ast.Node) *ast.BlockStmt {
 	return nil
 }
 
-// lexedCode returns rows with every comment and literal blanked, as lex
-// reads them, joined by newlines.
+// lexedCode joins rows with every comment and literal lex finds blanked.
 func lexedCode(rows []string, lex Lexer) string {
 	out := make([]string, len(rows))
 	for i, row := range rows {
@@ -144,8 +134,7 @@ func lexedCode(rows []string, lex Lexer) string {
 	return strings.Join(out, "\n")
 }
 
-// swiftCode returns Swift source with every comment and string blanked,
-// keeping its newlines.
+// swiftCode returns Swift source with comments and strings blanked, newlines kept.
 func swiftCode(src []byte) string {
 	code := []byte(strings.ReplaceAll(string(src), "\r\n", "\n"))
 	blank := func(start, end int) {
@@ -159,9 +148,7 @@ func swiftCode(src []byte) string {
 	return string(code)
 }
 
-// braceBodies returns the function bodies of code whose comments and
-// literals are blanked. A brace opens a function body when the header
-// before it declares a function and no body holds it yet.
+// braceBodies returns the outermost braces of blanked code whose header declares a function.
 func braceBodies(code string) spans {
 	s := &braceScan{line: 1}
 	for i := 0; i < len(code); i++ {
@@ -170,8 +157,7 @@ func braceBodies(code string) spans {
 	return s.found
 }
 
-// braceScan tracks the open braces, the line, and where the header of the
-// next brace starts.
+// braceScan tracks open braces, the line, and where the next header starts.
 type braceScan struct {
 	open  []brace
 	found spans
@@ -179,8 +165,7 @@ type braceScan struct {
 	start int
 }
 
-// brace is one open brace: its line, whether a function body holds it, and
-// whether it opened that body itself.
+// brace is an open brace's line, whether a body holds it, and whether it opened one.
 type brace struct {
 	line          int
 	inBody, opens bool
@@ -221,19 +206,16 @@ func (s *braceScan) pop() {
 	}
 }
 
-// control opens a header whose brace holds a branch or a loop, not a
-// function.
+// control opens the header of a branch or loop brace.
 var control = regexp.MustCompile(`^(else|if|for|while|switch|catch|guard|do|try|with|repeat|when|match|loop|finally|synchronized)\b`)
 
-// typeHeader declares a type, whose brace holds members, not statements.
+// typeHeader declares a type, whose brace holds members.
 var typeHeader = regexp.MustCompile(`\b(class|struct|enum|interface|object|protocol|extension|impl|trait|record|namespace|module)\b`)
 
-// function ends a header that declares a function: a keyword, an arrow, or
-// a closing parenthesis with an optional return type.
+// function marks a function header by keyword, arrow, or closing parenthesis and return type.
 var function = regexp.MustCompile(`\b(func|function|fn|fun|init|deinit|constructor|get|set|willSet|didSet)\b|=>$|\)\s*(async\s*)?(throws\s*|rethrows\s*)?((->|:)[^{}]*)?$`)
 
-// opensFunction reports a header, read from its last line of code, that
-// declares a function.
+// opensFunction reports a header whose last code line declares a function.
 func opensFunction(header string) bool {
 	h := lastCodeLine(header)
 	return !control.MatchString(h) && !typeHeader.MatchString(h) && function.MatchString(h)
@@ -250,12 +232,10 @@ func lastCodeLine(text string) string {
 	return ""
 }
 
-// codeMarkers open a line that holds no code a comment documents: another
-// comment, or an attribute such as `@MainActor`, `#[derive]` or `#if`.
+// codeMarkers open a comment or attribute line, such as `@MainActor` or `#if`.
 var codeMarkers = []string{"//", "/*", "#", "@"}
 
-// nextCode returns the first line of code after line end, trimmed, or ""
-// when the file ends first.
+// nextCode returns the first trimmed code line after line end, or "".
 func nextCode(rows []string, end int) string {
 	for _, row := range rows[min(end, len(rows)):] {
 		t := strings.TrimSpace(row)

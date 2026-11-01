@@ -5,9 +5,7 @@ import (
 	"testing"
 )
 
-// inComments writes one comment, given as its lines of text, into a Go,
-// a Swift and a TypeScript file. Each file uses its own marker. The comment
-// starts on line 3 of each file.
+// inComments writes a doc comment of lines on line 3 of a Go, a Swift and a TypeScript file.
 func inComments(lines ...string) map[string]string {
 	mark := func(marker, code string, lines []string) string {
 		var b strings.Builder
@@ -23,14 +21,12 @@ func inComments(lines ...string) map[string]string {
 	}
 }
 
-// atEachFile are the want lines naming line 3 of each file inComments writes,
-// followed by message.
+// atEachFile names line 3 of each inComments file, followed by message.
 func atEachFile(message string) []string {
 	return []string{"app/App.swift:3: " + message, "app/index.ts:3: " + message, "app/main.go:3: " + message}
 }
 
-// hardToRead is a comment of 104 words, each sentence within its limit,
-// whose long words read past every alarm band.
+// hardToRead holds 104 long words in sentences within their limit.
 var hardToRead = strings.Repeat("Configuration interdependencies necessitate comprehensive documentation regarding initialization sequencing, synchronization guarantees, and serialization compatibility. ", 8)
 
 func Test0137_1(t *testing.T) {
@@ -59,7 +55,8 @@ func Test0137_4(t *testing.T) {
 	files := inComments("Retries once, since the first call warms the cache.")
 	files["app/main.go"] = "//go:build " + strings.Repeat("linux && ", 29) + "darwin\n\n" + files["app/main.go"]
 	files["app/build.go"] = "package main\n\n// cspell:ignore " + words + "\n\n// Runs the build:\n//\n//\t" + words + "\nfunc build() {}\n"
-	files["app/Build.swift"] = "// cspell:ignore " + words + "\n/// " + strings.Repeat("One short paragraph here.\n///\n/// ", 7) + "The end is here.\nfunc build() {}\n"
+	files["app/Build.swift"] = "// cspell:ignore " + words + "\n/// Builds the app once.\nfunc build() {}\n"
+	files["app/doc.go"] = "// " + strings.Repeat("One short paragraph here.\n//\n// ", 7) + "The end is here.\npackage main\n"
 	files["app/build.ts"] = "// cspell:ignore " + words + "\n// Runs:\n//\n//     " + words + "\nexport const y = 2;\n"
 	out, code := fitness(t, example(t, "happyRepo", files), nil,
 		"--policy=external", "--checks=prose-budget,text-readability,no-contrastive-reframing")
@@ -85,9 +82,7 @@ func Test0137_5(t *testing.T) {
 	sees(t, out, code, 1, "app/run main.go:3: a sentence has 30 words (max 23)", "app/run main.go:6: a sentence has 31 words (max 23)")
 }
 
-// inBodies writes one comment, given as its lines of text, inside a
-// function body of a Go, a Swift and a TypeScript file. The comment starts
-// on line 4 of each file.
+// inBodies writes a comment of lines on line 4, inside a Go, a Swift and a TypeScript function.
 func inBodies(lines ...string) map[string]string {
 	mark := func(indent, before, after string) string {
 		var b strings.Builder
@@ -104,14 +99,12 @@ func inBodies(lines ...string) map[string]string {
 	}
 }
 
-// atEachBody are the want lines naming line 4 of each file inBodies
-// writes, followed by message.
+// atEachBody names line 4 of each inBodies file, followed by message.
 func atEachBody(message string) []string {
 	return []string{"app/Body.swift:4: " + message, "app/body.go:4: " + message, "app/body.ts:4: " + message}
 }
 
-// split is the comment PR #746 passed with: one sentence, then a fragment
-// that carries it on.
+// split is the sentence and fragment PR #746 passed with.
 var split = []string{
 	"run reads the whole model and every requirement doc unless the run is architecture.Unmoved.",
 	"So a removed actor fails even when no requirement changed.",
@@ -132,22 +125,25 @@ func Test0137_6(t *testing.T) {
 	sees(t, out, code, 1, atEachFile("comment-fragment: a sentence has 3 words (min 4)")...)
 	files := inBodies(threeSentences...)
 	files["app/tail.go"] = "package main\n\nvar x = 1 // Holds one on every run. The value never changes. Tests read it directly.\n"
+	for path, src := range inComments(threeSentences...) {
+		files[path] = src
+	}
 	out, code = proseBudget(t, files)
-	want := "comment-one-statement: a comment in a function body or after code has 3 sentences (max 2); condense it to one statement"
-	sees(t, out, code, 1, append(atEachBody(want), "app/tail.go:3: "+want)...)
+	want := "comment-one-statement: a comment has 3 sentences (max 2); condense it to one statement"
+	sees(t, out, code, 1, append(append(atEachBody(want), atEachFile(want)...), "app/tail.go:3: "+want)...)
 	out, code = proseBudget(t, map[string]string{"app/fence.ts": "export {};\n\n// - Builds it:\n//   ```\n//   npm run build\n//   ```\n// So it ends.\nexport const y = 2;\n"})
 	sees(t, out, code, 1, `app/fence.ts:3: comment-fragment: a sentence starts with "So"`)
 }
 
 func Test0137_7(t *testing.T) {
 	t.Parallel()
-	files := inComments(threeSentences...)
+	files := inComments(threeSentences[:2]...)
 	for path, src := range inBodies("Retries the request once, since the first call after a deploy warms the cache that every later call reads from.") {
 		files[path] = src
 	}
 	files["app/old.go"] = "package main\n\n// Deprecated: Use main.\nfunc old() {}\n\n// `helper` runs.\nfunc helper() {}\n"
-	files["app/svc.ts"] = "export class Svc {\n  // " + strings.Join(threeSentences, "\n  // ") + "\n  run(x: number): number {\n    return x;\n  }\n}\n"
-	files["app/list.go"] = "package main\n\n// Codes:\n//\n//   - 1: a check found problems, or the run could not start, such as a bad\n//     config.\n//\n// unwraps reads the ? or ! of a?.b, and \"- [ ]\" or \"1. [ ]\" items.\nfunc unwraps() {}\n"
+	files["app/svc.ts"] = "export class Svc {\n  // " + strings.Join(threeSentences[:2], "\n  // ") + "\n  run(x: number): number {\n    return x;\n  }\n}\n"
+	files["app/list.go"] = "package main\n\n// Codes:\n//\n//   - 1: a check found problems, or the run could not start, such as a bad\n//     config.\nvar codes = 1\n\n// unwraps reads the ? or ! of a?.b, and \"- [ ]\" or \"1. [ ]\" items.\nfunc unwraps() {}\n"
 	files["README.md"] = readme + "\nThe cache warms. So it works.\n"
 	out, code := proseBudget(t, files)
 	sees(t, out, code, 0)

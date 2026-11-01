@@ -36,15 +36,11 @@ A commit or pull request run judges only the blocks that touch a changed line. A
 
 ## Comment statements
 
-Two more rules judge comments only, so an agent cannot pass the sentence limit by cutting a sentence in two:
+Two more rules keep every comment terse:
 
 - `comment-fragment` fails a sentence that starts with So, And, But, Then, Also, Thus, Hence, Because, Which or Plus.
-- `comment-fragment` fails a sentence of three words or fewer; join it to the sentence before it or drop it.
-- `comment-one-statement` fails a comment in a function body or after code that holds more than two sentences.
-
-A short Go doc heading such as `Deprecated:` passes. A short doc line led by an identifier passes, and so does a lead-in that ends in a colon.
-
-A doc comment on a declaration, a file or a package keeps the paragraph limits. Go finds its function bodies through its parser. Other languages with braces find them by the header before each brace, and a shell script goes by indent.
+- `comment-fragment` fails a sentence of three words or fewer, but a doc heading, identifier-led doc line or colon lead-in passes.
+- `comment-one-statement` fails a comment of more than two sentences, doc comments included; only a Go package comment keeps the paragraph limits.
 
 ## Configuration
 

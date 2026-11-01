@@ -12,17 +12,13 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// Judge adds to res what judge finds in each comment block the run
-// judges, as a prose check reads a Markdown file. judge gets the block
-// named `path:line` and its text as Markdown. Each source file with a
-// judged block counts as one more file checked.
+// Judge adds what judge finds in each judged block, named `path:line` and read as Markdown, to res.
 func Judge(res checkkit.Result, root string, judge func(name, markdown string) []string) checkkit.Result {
 	blocks, err := Judged(root)
 	return judgeBlocks(res, blocks, err, func(_ Block, name, markdown string) []string { return judge(name, markdown) })
 }
 
-// JudgeEach is Judge for a judge that also reads each block, as Place sets
-// it. Place reads only the files of the judged blocks.
+// JudgeEach is Judge for a judge that reads each block after Place places it.
 func JudgeEach(res checkkit.Result, root string, judge func(b Block, name, markdown string) []string) checkkit.Result {
 	blocks, err := Judged(root)
 	return judgeBlocks(res, blocks, errors.Join(err, Place(root, blocks)), judge)
@@ -45,9 +41,7 @@ func judgeBlocks(res checkkit.Result, blocks []Block, err error, judge func(b Bl
 	return res
 }
 
-// Judged returns the comment blocks of the run's in-scope files. A commit
-// or pull request run keeps the blocks that touch a line it changes. So it
-// judges the comments it writes and no older one.
+// Judged returns the in-scope comment blocks, only those touching a changed line in a commit or pull request run.
 func Judged(root string) ([]Block, error) {
 	blocks, err := Files(root, walkfs.InScope(walkfs.FilesByExt(root, "")))
 	if checkkit.DiffFiles() == nil {
@@ -81,9 +75,7 @@ func touches(changed []gitx.Lines, b Block) bool {
 	return false
 }
 
-// Markdown is a block's text as the Markdown a prose check reads. An
-// indented line that carries on no list item is code, which goes in a
-// fence, so no check scores it. A fence the comment writes stays as is.
+// Markdown is a block's text as Markdown, with indented code fenced so no check scores it.
 func Markdown(text string) string {
 	w := &markdown{}
 	for _, line := range strings.Split(text, "\n") {
@@ -100,9 +92,7 @@ type markdown struct {
 	code, list, author bool
 }
 
-// line adds one line. An indented line carries on an open list, joining
-// the item it wraps, else it is code. A blank or unindented line ends the
-// list.
+// line adds one line, joining an indented one to an open list item and fencing other indented code.
 func (w *markdown) line(line string) {
 	if w.authored(line) {
 		w.out = append(w.out, line)
@@ -125,9 +115,7 @@ func (w *markdown) isCode(item, indented bool) bool {
 	return indented && !item && !w.list
 }
 
-// authored reports a line inside a fence the comment writes, its opening
-// and closing lines included, which passes through unchanged. A fence ends
-// any open list, so no later line joins the fence.
+// authored reports a line of a fence the comment writes, markers included, and ends any open list at a marker.
 func (w *markdown) authored(line string) bool {
 	if strings.HasPrefix(strings.TrimSpace(line), "```") {
 		w.fence(false)
