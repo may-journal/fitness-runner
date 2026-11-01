@@ -61,28 +61,26 @@ func Test0137_4(t *testing.T) {
 	files["app/build.go"] = "package main\n\n// cspell:ignore " + words + "\n\n// Runs the build:\n//\n//\t" + words + "\nfunc build() {}\n"
 	files["app/Build.swift"] = "// cspell:ignore " + words + "\n/// " + strings.Repeat("One short paragraph.\n///\n/// ", 7) + "The end.\nfunc build() {}\n"
 	files["app/build.ts"] = "// cspell:ignore " + words + "\n// Runs:\n//\n//     " + words + "\nexport const y = 2;\n"
-	repo := example(t, "happyRepo", files)
-	for _, check := range []string{"prose-budget", "text-readability", "no-contrastive-reframing"} {
-		out, code := fitness(t, repo, nil, check)
-		sees(t, out, code, 0, "All 1 checks passed")
-	}
+	out, code := fitness(t, example(t, "happyRepo", files), nil,
+		"--policy=external", "--checks=prose-budget,text-readability,no-contrastive-reframing")
+	sees(t, out, code, 0, "All 3 checks passed")
 }
 
 func Test0137_5(t *testing.T) {
 	t.Parallel()
 	long := strings.TrimSpace(longSentence)
 	repo := example(t, "happyRepo", map[string]string{
-		"app/main.go": "package main\n\n// " + long + "\nfunc old() {}\n\n// Runs.\nfunc main() {}\n",
+		"app/run main.go": "package main\n\n// " + long + "\nfunc old() {}\n\n// Runs.\nfunc main() {}\n",
 	})
 	write(t, repo, map[string]string{
-		"app/main.go": "package main\n\n// " + long + "\nfunc old() {}\n\n// Runs " + long + "\nfunc main() {}\n",
+		"app/run main.go": "package main\n\n// " + long + "\nfunc old() {}\n\n// Runs " + long + "\nfunc main() {}\n",
 	})
 	git(t, repo, "add", "-A")
 	out, code := fitness(t, repo, nil, "prose-budget")
-	sees(t, out, code, 1, "app/main.go:6: a sentence has 31 words (max 23)")
-	if strings.Contains(out, "app/main.go:3:") {
+	sees(t, out, code, 1, "app/run main.go:6: a sentence has 31 words (max 23)")
+	if strings.Contains(out, "app/run main.go:3:") {
 		t.Errorf("the hook judged a comment the change left alone:\n%s", out)
 	}
 	out, code = fitness(t, repo, nil, "--all", "prose-budget")
-	sees(t, out, code, 1, "app/main.go:3: a sentence has 30 words (max 23)", "app/main.go:6: a sentence has 31 words (max 23)")
+	sees(t, out, code, 1, "app/run main.go:3: a sentence has 30 words (max 23)", "app/run main.go:6: a sentence has 31 words (max 23)")
 }

@@ -1,6 +1,7 @@
 package comments
 
 import (
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -37,10 +38,11 @@ func Judge(res checkkit.Result, root string, judge func(name, markdown string) [
 // judges the comments it writes and no older one.
 func Judged(root string) ([]Block, error) {
 	blocks, err := Files(root, walkfs.InScope(walkfs.FilesByExt(root, "")))
-	if err != nil || checkkit.DiffFiles() == nil {
+	if checkkit.DiffFiles() == nil {
 		return blocks, err
 	}
-	return onChangedLines(root, blocks)
+	kept, diffErr := onChangedLines(root, blocks)
+	return kept, errors.Join(err, diffErr)
 }
 
 // onChangedLines keeps the blocks that touch a line changed since the
@@ -69,7 +71,7 @@ func touches(changed []gitx.Lines, b Block) bool {
 
 // Markdown is a block's text as the Markdown a prose check reads. An
 // indented line that carries on no list item is code, which goes in a
-// fence, so no check scores it.
+// fence, so no check scores it. A fence the comment writes stays as is.
 func Markdown(text string) string {
 	w := &markdown{}
 	for _, line := range strings.Split(text, "\n") {
@@ -82,18 +84,38 @@ func Markdown(text string) string {
 // markdown collects a comment's lines, tracking an open code fence and an
 // open list.
 type markdown struct {
-	out        []string
-	code, list bool
+	out                []string
+	code, list, author bool
 }
 
 // line adds one line. An indented line carries on an open list, else it
 // is code; a blank or unindented line ends the list.
 func (w *markdown) line(line string) {
+	if w.authored(line) {
+		w.out = append(w.out, line)
+		return
+	}
 	_, item := mdx.ListItem(strings.TrimSpace(line))
 	indented := isIndented(line)
-	w.fence(indented && !item && !w.list)
+	w.fence(w.isCode(item, indented))
 	w.list = item || indented && w.list
 	w.out = append(w.out, line)
+}
+
+// isCode reports an indented line that neither starts nor carries on a
+// list item.
+func (w *markdown) isCode(item, indented bool) bool {
+	return indented && !item && !w.list
+}
+
+// authored reports a line inside a fence the comment writes, its opening
+// line included, which passes through unchanged.
+func (w *markdown) authored(line string) bool {
+	if strings.HasPrefix(strings.TrimSpace(line), "```") {
+		w.fence(false)
+		w.author = !w.author
+	}
+	return w.author
 }
 
 // fence opens or closes the code fence so it is open exactly when code is.

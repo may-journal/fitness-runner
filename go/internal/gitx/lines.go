@@ -28,17 +28,28 @@ func (r Repo) ChangedLines(rev string) (map[string][]Lines, error) {
 // parseHunks reads the new side of each hunk in a `git diff -U0` patch.
 func parseHunks(patch string) map[string][]Lines {
 	changed := map[string][]Lines{}
-	var file string
+	var file, prev string
 	for _, line := range strings.Split(patch, "\n") {
-		if name, ok := strings.CutPrefix(line, "+++ "); ok {
-			file = strings.TrimPrefix(unquote(name), "b/")
-			continue
-		}
-		if lines, ok := hunkLines(line); ok {
+		header, isHeader := fileHeader(prev, line)
+		prev = line
+		if isHeader {
+			file = header
+		} else if lines, ok := hunkLines(line); ok {
 			changed[file] = append(changed[file], lines)
 		}
 	}
 	return changed
+}
+
+// fileHeader reads the path a `+++ ` line names. Only a line right after
+// a `--- ` line is a header, so an added line that starts with `++` is
+// not. Git ends a path that holds a space with a tab.
+func fileHeader(prev, line string) (string, bool) {
+	name, ok := strings.CutPrefix(line, "+++ ")
+	if !ok || !strings.HasPrefix(prev, "--- ") {
+		return "", false
+	}
+	return strings.TrimPrefix(unquote(strings.TrimSuffix(name, "\t")), "b/"), true
 }
 
 // hunkLines reads the lines a hunk header adds; ok is false for any other

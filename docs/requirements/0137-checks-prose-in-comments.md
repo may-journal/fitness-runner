@@ -29,6 +29,6 @@ Comment blocks judged
         - When the prose checks run
             - Then they pass, since directives and code are no prose and a comment has no sections
 - 0137.5
-    - Given Developer stages a change to one comment in a file whose other comment runs on
+    - Given Developer stages a change to one comment in a file, named with a space, whose other comment runs on
         - When prose-budget runs on the staged change
             - Then it judges only the changed comment, and a full scan lists both
