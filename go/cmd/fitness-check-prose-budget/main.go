@@ -23,10 +23,8 @@ type limits struct {
 	words              int
 }
 
-// defaults are calibrated for tight technical docs: short sentences, small
-// paragraphs and sections, and bounded lists.
-// They are held about a quarter tighter than the check's first cut.
-// conf.Defaults holds them, so the config schema shows the same values.
+// defaults suit tight technical docs, a quarter tighter than the first cut,
+// and live in conf.Defaults so the schema matches.
 var defaults = limits{
 	sentenceWords:      conf.Defaults.ProseBudget.MaxSentenceWords,
 	paragraphSentences: conf.Defaults.ProseBudget.MaxParagraphSentences,
@@ -221,11 +219,8 @@ func snippet(s string) string {
 	return s
 }
 
-// nestingErrors caps each level of a list at half the level above, rounding
-// down from the top-level cap.
-// With 8 top-level items, each item holds at most 4 children, each child at
-// most 2, and each of those 1.
-// A level whose cap reaches 0 allows no items.
+// nestingErrors caps each list level at half the level above, rounded down,
+// so 8 top-level items allow 4, 2, then 1.
 func nestingErrors(rel string, bl block, max int) []string {
 	var errs []string
 	counts := map[int]int{}

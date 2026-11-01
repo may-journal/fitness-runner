@@ -29,11 +29,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	})
 }
 
-// test runs go test in one module and returns the lines that explain a
-// failure.
-// A run that could not start, was killed, or failed without a line that
-// explains it is an internal error.
-// No test judged the code in that case.
+// test runs go test in one module and returns the failure lines, or an
+// internal error when no line explains the failure.
 func test(root, dir, bin string) ([]string, error) {
 	code, out, envErr := toolchain.Exec(root, dir, bin, "test", "./...")
 	if envErr != nil || code == 0 {
@@ -58,8 +55,7 @@ func failureLines(dir, out string) []string {
 	return errs
 }
 
-// failureLine reports whether a go test output line explains a failure.
-// That covers a failing test or package, a panic, a build error, or a test's own message.
+// failureLine reports a failing test or package, panic, build error or message.
 func failureLine(l string) bool {
 	t := strings.TrimSpace(l)
 	for _, p := range []string{"--- FAIL", "FAIL", "panic:"} {

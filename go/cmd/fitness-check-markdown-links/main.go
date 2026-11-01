@@ -110,8 +110,8 @@ func resolvable(target string) (string, bool) {
 	if i := strings.IndexByte(target, '#'); i >= 0 {
 		target = target[:i]
 	}
-	// A link may percent-encode its path (a space as %20).
-	// Check the file it names, falling back to the raw text when it does not decode.
+	// Decode a percent-encoded path (a space as %20), keeping the raw text
+	// when it does not decode.
 	if decoded, err := url.PathUnescape(target); err == nil {
 		target = decoded
 	}

@@ -1,8 +1,8 @@
 # fitness
 
-fitness runs a repo's fitness checks. Checks are small programs that each judge one rule, such as spelling, formatting, tests, or the shape of a pull request. One binary holds every built-in check; a repo may add local checks. Each check decides whether it applies, so any repo runs the same suite with nothing to configure.
+fitness runs a repo's fitness checks, small programs that each judge one rule, such as spelling or tests. One binary holds every built-in check; a repo may add local checks. Each check decides whether it applies, so any repo runs the same suite with nothing to configure.
 
-A run resolves the checks, runs them side by side with per-check time budgets, and prints a results table. A row is passed, failed, or info, and info never fails a run. With files staged it judges only those files; --all judges every tracked file.
+A run judges staged files, or every tracked file with --all, side by side within time budgets. Its table marks each check passed, failed, or info, which never fails a run.
 
 ## Exit codes
 

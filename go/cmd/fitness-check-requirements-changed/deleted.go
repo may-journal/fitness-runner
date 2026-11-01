@@ -8,10 +8,8 @@ import (
 	"slices"
 )
 
-// leftBehind fails the deletion of file when a requirement doc still names
-// it.
-// This applies when neither that doc nor any of its tests changed with it.
-// A deletion no doc names is a pure deletion, and passes.
+// leftBehind fails deleting a file a requirement doc names when neither the
+// doc nor its tests changed with it.
 func leftBehind(root, file string, tests testSet, changed map[string]bool) []string {
 	docs := namingDocs(root, file)
 	proving := provingTests(docs, tests)

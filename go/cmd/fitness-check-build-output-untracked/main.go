@@ -69,10 +69,8 @@ func importErrors(root string, files []string) ([]string, error) {
 	return errors, nil
 }
 
-// scope reads what the repo gives the check to judge.
-// That is the source files it scans for imports and whether the dist rules apply.
-// It also reads the tracked files
-// under the build output the language modules name.
+// scope reads the source files to scan for imports, whether dist rules apply,
+// and tracked files under the language modules' build output.
 func scope(root string) (files []string, dist bool, output []string) {
 	files = collectSourceFiles(root)
 	return files, applies(root, files), trackedOutput(root)
@@ -167,9 +165,8 @@ func collectSourceFiles(root string) []string {
 	return walkfs.FilesByExt(root, lang.ScanExts(langs.All, name)...)
 }
 
-// scanFileForDistImports reports rule B.
-// It gives a `path:line imports build output` error for every import specifier on any line that reaches into dist.
-// The specifier is quoted exactly like JSON.stringify did.
+// scanFileForDistImports reports rule B: `path:line imports build output` for
+// each import reaching into dist, quoted like JSON.stringify.
 func scanFileForDistImports(relPath, content string) []string {
 	var errors []string
 	for index, line := range strings.Split(content, "\n") {

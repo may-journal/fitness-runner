@@ -83,11 +83,8 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return buildExecResult(o.Code, parsed, prettierErrors(output), filesChecked(parsed, paths))
 }
 
-// preflight resolves the Prettier binary, or the verdict that ends the run
-// first.
-// That verdict is a failure for any repo with a .prettierignore.
-// Next comes a pass for a repo with no package.json.
-// Last comes Biome's verdict in a repo that chose it.
+// preflight resolves the Prettier binary, or an early verdict for a
+// .prettierignore, a missing package.json, or Biome.
 //
 // Without Prettier installed it returns no binary and no verdict.
 func preflight(root string, args []string) (bin string, res checkkit.Result, done bool) {
@@ -104,12 +101,8 @@ func preflight(root string, args []string) (bin string, res checkkit.Result, don
 	return bin, checkkit.Result{}, false
 }
 
-// formatWithBiome checks the same paths with `biome format` in a repo that
-// chose Biome (ADR 0006), naming each file Biome would reformat.
-// Passthrough args are Prettier's, so biomeFormatArgs translates them.
-// The paths among them replace the checked paths.
-// A flag Biome has no counterpart for fails by name instead of reaching Biome
-// as a path.
+// formatWithBiome runs `biome format` in a repo that chose Biome (ADR 0006),
+// translating Prettier args and naming any flag Biome lacks.
 func formatWithBiome(root string, args []string) checkkit.Result {
 	flags, given, unknown := biomeFormatArgs(args)
 	if len(unknown) > 0 {
@@ -179,10 +172,8 @@ func nodeModulesDirs(root string) []string {
 	return dirs
 }
 
-// withNodePath returns env with root's node_modules folders prepended to
-// NODE_PATH.
-// The shared config, materialized outside the repo, can then load the plugins
-// the repo installs.
+// withNodePath prepends root's node_modules folders to NODE_PATH, so the
+// shared config outside the repo loads its plugins.
 func withNodePath(env []string, root string) []string {
 	dirs := nodeModulesDirs(root)
 	if len(dirs) == 0 {
@@ -230,19 +221,8 @@ func hasPrettierConfig(root string) bool {
 	return hasPrettierInPackageJSON(root)
 }
 
-// resolveConfigPath returns "" when the consumer has its own config, else the
-// shared prettier.config.cjs.
-// That is an installed @mayjournal/fitness-shared when present, the embedded
-// copy materialized from this binary otherwise.
-// This is sharedconf.Resolve, whose repo-local step never fires here because
-// hasPrettierConfig already ruled a root-level prettier.config.cjs out.
-// It returns "" again only when even the fallback fails to materialize,
-// running Prettier on its defaults.
-//
-// The path has its symlinks resolved, as Node resolves the config's own
-// __dirname.
-// So the config's override globs, which Prettier matches from the --config
-// folder, count the same ../ steps.
+// resolveConfigPath returns "" for a consumer's own config, else the shared
+// one with symlinks resolved so its globs count the same ../ steps.
 func resolveConfigPath(root string) string {
 	if hasPrettierConfig(root) {
 		return ""
@@ -254,21 +234,16 @@ func resolveConfigPath(root string) string {
 	return p
 }
 
-// scopedPaths returns the paths to hand Prettier, and false when a scoped run
-// changed no file still on disk.
-// Such a run skips instead of checking the whole repo.
-// Passthrough args always run.
+// scopedPaths returns the paths to hand Prettier, and false to skip a scoped
+// run with no args and no changed file on disk.
 func scopedPaths(root string, args []string) ([]string, bool) {
 	changed := checkkit.ChangedFiles()
 	paths := pathsToCheck(root, changed)
 	return paths, changed == nil || len(paths) > 0 || len(args) > 0
 }
 
-// pathsToCheck returns the changed paths still on disk as regular files, or
-// every tracked file when the run is unscoped.
-// A symbolic link is left out, since Prettier refuses one named on its command
-// line.
-// Its target is checked as its own file.
+// pathsToCheck returns every tracked file when unscoped, else the changed
+// regular files, since Prettier refuses a named symlink.
 func pathsToCheck(root string, changed []string) []string {
 	if len(changed) == 0 {
 		return walkfs.FilesByExt(root, "")
@@ -282,10 +257,8 @@ func pathsToCheck(root string, changed []string) []string {
 	return out
 }
 
-// prettierArgv builds Prettier's argv: --config when a shared config applies,
-// the flags that make Prettier ignore nothing it can parse.
-// Then come either the passthrough args verbatim (no --check) or --check plus
-// the paths.
+// prettierArgv builds Prettier's argv to ignore nothing it can parse, ending
+// with passthrough args or --check and the paths.
 func prettierArgv(configPath string, passthrough, paths []string) []string {
 	var argv []string
 	if configPath != "" {
@@ -298,9 +271,8 @@ func prettierArgv(configPath string, passthrough, paths []string) []string {
 	return append(append(argv, "--check"), paths...)
 }
 
-// execPrettier runs the resolved binary in root and returns its outcome,
-// with stdout and stderr in one buffer.
-// This mirrors the TS execSyncResult (which redirected with `2>&1`).
+// execPrettier runs the binary in root with stdout and stderr in one buffer,
+// as the TS check's `2>&1` did.
 func execPrettier(bin, root string, env, argv []string) checkkit.Outcome {
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root

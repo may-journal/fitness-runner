@@ -24,9 +24,8 @@ type pairs struct {
 	numbers map[string][]string
 }
 
-// newPairs pairs every doc and test file by number.
-// A test file proves the numbers in its name and those of the tests it holds.
-// A changed file that is gone still pairs by its name.
+// newPairs pairs every doc and test file by the numbers in its name and tests,
+// a deleted changed file by its name.
 func newPairs(docPaths, testFiles []string, tests []reqTest, changed []string) pairs {
 	p := pairs{docs: map[string][]string{}, tests: map[string][]string{}, numbers: map[string][]string{}}
 	for _, f := range append(slices.Clone(docPaths), changed...) {
@@ -38,9 +37,8 @@ func newPairs(docPaths, testFiles []string, tests []reqTest, changed []string) p
 	return p
 }
 
-// addTestFiles pairs each file by the numbers in its name.
-// A file in a fitness/req-NNNN check pairs by that number.
-// Then each test named for an acceptance pairs by its number.
+// addTestFiles pairs each file by its name's numbers or its req-NNNN folder,
+// and each acceptance test by its number.
 func (p pairs) addTestFiles(files []string, tests []reqTest) {
 	for _, f := range files {
 		for _, n := range fileNumbers(f) {
@@ -88,11 +86,8 @@ func docNumber(f string) string {
 	return ""
 }
 
-// judge flags each changed requirement test whose docs all stayed unchanged,
-// unless fixed reports it failed this check at the base.
-// It also flags each changed doc whose tests all stayed unchanged.
-// A reformatted doc needs no test change, yet still counts as changed for its
-// tests.
+// judge flags each changed test or non-reformatted doc whose partners all
+// stayed unchanged, sparing tests that failed at base.
 func (p pairs) judge(changed []string, reformatted map[string]bool, fixed func(string) bool) []string {
 	isChanged := map[string]bool{}
 	for _, f := range changed {
@@ -141,9 +136,7 @@ func unchangedPartners(numbers []string, partners map[string][]string, changed m
 	return all
 }
 
-// pairErrors judges a scoped run's changed files.
-// These are the staged files at commit time, or a pull request's diff against
-// the current merge base with its base branch.
+// pairErrors judges the staged files, or a pull request's merge-base diff.
 // A full scan, and a local merge, cherry-pick, or revert, judge no pairs.
 func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []string {
 	changed := gitx.CommitChanges(root)

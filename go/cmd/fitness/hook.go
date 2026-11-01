@@ -14,12 +14,11 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-// runHook dispatches a `fitness hook <name>` invocation. The installed hooks
-// are one-line shims that call this, so the orchestration lives here in Go
-// and each repo's Bash holds none.
+// runHook dispatches `fitness hook <name>` from the one-line hook shims, so
+// the orchestration lives in Go, not each repo's Bash.
 //
-// A hook owns the terminal. So every git, ssh and gh it starts, the pre-push
-// gate's too, fails instead of asking for a password.
+// A hook owns the terminal, so every git, ssh and gh it starts fails instead
+// of asking for a password.
 func runHook(name string, args []string) int {
 	if err := chdirToplevel(); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness hook: "+err.Error())
@@ -64,9 +63,8 @@ func hookCommitMsg(args []string) int {
 	return runMessageChecks(commitMsgChecks(), msg)
 }
 
-// runMessageChecks resolves each named check as a single-check run would,
-// then runs those that read the message from the environment at once.
-// It runs any others one by one as before. No names run nothing.
+// runMessageChecks runs the named checks that read the message from the
+// environment at once, and any others one by one.
 func runMessageChecks(names []string, msg string) int {
 	if len(names) == 0 {
 		return 0
@@ -98,10 +96,8 @@ func runPooledMessage(root string, pooled []resolved, msg string) int {
 	return runChecks(root, "", pooled, nil, append(env, "FITNESS_CTX_MESSAGE="+msg), func() {})
 }
 
-// splitByMessageArg separates the checks that read the message from
-// FITNESS_CTX_MESSAGE, which the runner sets for any check naming a
-// context argument. The others, such as a repo's own override, take
-// --message on their command line and so run one at a time.
+// splitByMessageArg pools checks that read FITNESS_CTX_MESSAGE apart from
+// those, such as overrides, that take --message alone.
 func splitByMessageArg(checks []resolved) (pooled, alone []resolved) {
 	for _, check := range checks {
 		if check.desc.ContextInlineArg != "" {

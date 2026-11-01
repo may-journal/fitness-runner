@@ -25,11 +25,8 @@ func testName(written []lang.Module, id string) string {
 	return strings.Join(names, " or ")
 }
 
-// ownershipErrors flags acceptances that no test or several tests own.
-// It also flags tests named for an acceptance no doc defines, and tests that
-// name no acceptance at all.
-// A doc that proven names has a check in fitness/req-NNNN/ that proves it.
-// So its acceptances need no test.
+// ownershipErrors flags acceptances owned by no test or several, and tests
+// naming no defined acceptance, skipping docs in proven.
 func ownershipErrors(docs []requirement.Document, tests []reqTest, written []lang.Module, proven map[string]bool) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}
@@ -83,9 +80,8 @@ func testError(t reqTest, current map[string]bool) []string {
 	return nil
 }
 
-// toolErrors asks each written module that judges test tools about the
-// files its tests are in.
-// An example is a Swift test that imports XCTest.
+// toolErrors asks each written module that judges test tools about its test
+// files, such as a Swift test importing XCTest.
 func toolErrors(root string, tests []reqTest, written []lang.Module) ([]string, error) {
 	var errs []string
 	for _, m := range written {

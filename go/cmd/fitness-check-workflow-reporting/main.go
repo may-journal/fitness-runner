@@ -101,9 +101,8 @@ func appendFinding(list []checkkit.Finding, f *checkkit.Finding) []checkkit.Find
 	return append(list, *f)
 }
 
-// judgeJob judges one job. A job without steps, such as one that calls a
-// reusable workflow, has nothing to report from.
-// A matrix job is one definition, so it is judged once.
+// judgeJob judges a job with steps once, even a matrix, since a reusable
+// workflow call has nothing to report from.
 func judgeJob(file string, job entry) *checkkit.Finding {
 	steps := job.val.get("steps")
 	if steps == nil || hasReporter(steps) {

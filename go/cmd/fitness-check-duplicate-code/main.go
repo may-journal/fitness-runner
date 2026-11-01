@@ -47,9 +47,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(len(files)), nil
 }
 
-// scanTargets lists the candidates under root.
-// It drops those .gitattributes marks linguist-generated.
-// It also drops the lockfiles and build wrapper files tools write, and the templates doc-template makes docs repeat.
+// scanTargets lists the candidates minus generated and tool-written files and
+// the templates doc-template makes docs repeat.
 func scanTargets(root string) []string {
 	var out []string
 	toolWritten := lang.IsToolWritten(langs.All)
@@ -61,12 +60,8 @@ func scanTargets(root string) []string {
 	return out
 }
 
-// candidates lists the tracked files a run may compare.
-// An unscoped run takes every tracked file (the empty suffix matches all).
-// The check compares files of one format.
-//
-// So a scoped run takes only the tracked files sharing an ending with a changed file.
-// The changed files are among them.
+// candidates lists every tracked file, or in a scoped run those sharing an
+// ending with a changed file, since clones share a format.
 func candidates(root string) []string {
 	changed := checkkit.ChangedFiles()
 	if changed == nil {
@@ -81,8 +76,8 @@ func candidates(root string) []string {
 	})
 }
 
-// ending is the format key the check groups a file by.
-// That is its extension, or its whole name when it has none, such as Makefile.
+// ending is a file's format key: its extension, or its whole name when it has
+// none, such as Makefile.
 func ending(file string) string {
 	if ext := path.Ext(file); ext != "" {
 		return ext
@@ -90,9 +85,8 @@ func ending(file string) string {
 	return path.Base(file)
 }
 
-// lexTargets reads and lexes each path, skipping binary files and files
-// that vanish mid-scan.
-// What remains is what "scanned" means, so its length is the check's filesChecked.
+// lexTargets lexes each path, skipping binary and vanished files, and its
+// length is the check's filesChecked.
 func lexTargets(root string, paths []string) []clonedetect.File {
 	lexed := par.Map(len(paths), 0, func(i int) *clonedetect.File {
 		return lexOne(root, paths[i])

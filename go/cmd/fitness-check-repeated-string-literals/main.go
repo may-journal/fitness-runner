@@ -164,9 +164,8 @@ func formatDuplicate(value string, locs []location) string {
 	return fmt.Sprintf("\"%s\" appears %d times (%s) — extract a shared constant", value, len(locs), where)
 }
 
-// findDuplicates returns one error message per non-allowed value that occurs
-// >= minOccurrences times across all files.
-// The order is most-repeated first, then alphabetical by value for stable output.
+// findDuplicates returns an error per non-allowed value seen minOccurrences
+// times, most-repeated first, then alphabetical.
 func findDuplicates(scanned []scannedFile, allow map[string]bool) []string {
 	byValue, order := groupByValue(scanned)
 	var duplicated []string
@@ -199,11 +198,8 @@ type cursor struct {
 	word     string // identifier currently being read
 }
 
-// scanStringLiterals extracts single- and double-quoted string literals from
-// source, skipping line/block comments, regex literals, and template
-// literals.
-// It drops module specifiers (the string after import/require/from).
-// Template literals are out of scope in v1.
+// scanStringLiterals extracts quoted string literals from source, skipping
+// comments, regex and template literals, and module specifiers.
 func scanStringLiterals(content string) []literal {
 	cur := &cursor{content: content, line: 1}
 	for cur.i < len(content) {
@@ -293,10 +289,8 @@ func classAfter(inClass bool, ch byte) bool {
 	return inClass
 }
 
-// scanRegexChar consumes one byte of a regex body, updating the char-class
-// state.
-// It reports done at the closing `/` (consumed) or at a newline (left
-// unconsumed, the unterminated-body bail).
+// scanRegexChar consumes one regex body byte, reporting done at the closing
+// `/` or, unconsumed, at a newline.
 func (cur *cursor) scanRegexChar(inClass *bool) (done bool) {
 	ch := cur.content[cur.i]
 	if ch == '\\' {
@@ -346,10 +340,8 @@ func (cur *cursor) recordLiteral(value string, line int, isModule bool) {
 	cur.out = append(cur.out, literal{line: line, value: value})
 }
 
-// readEscape consumes a backslash escape inside a string literal, appending
-// the escaped byte to value raw.
-// The lexer never decodes escape sequences.
-// A trailing backslash at EOF appends nothing.
+// readEscape appends a string literal's escaped byte undecoded, and nothing
+// for a trailing backslash at EOF.
 func (cur *cursor) readEscape(value *strings.Builder) {
 	if cur.i+1 < len(cur.content) {
 		value.WriteByte(cur.content[cur.i+1])

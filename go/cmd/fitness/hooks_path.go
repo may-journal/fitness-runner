@@ -16,9 +16,8 @@ const (
 	installedHooksDir = ".githooks"
 )
 
-// shippedHooksDir names the hook folder HEAD tracks, newest first. It returns
-// "" when HEAD tracks neither, as in a repo with no commit yet. It also returns
-// "" when git fails or stalls past its deadline.
+// shippedHooksDir names the hook folder HEAD tracks, newest first, or "" when
+// it tracks neither or git fails.
 func shippedHooksDir(root string) string {
 	for _, dir := range []string{syncedHooksDir, installedHooksDir} {
 		tracked, err := gitx.Repo(root).TracksDir(dir)
@@ -32,12 +31,8 @@ func shippedHooksDir(root string) string {
 	return ""
 }
 
-// repairHooksPath points a stale core.hooksPath at the folder HEAD ships.
-// A clone set up before the folder moved then runs the shipped hooks from its
-// next commit on. An unset path, as with --install-hook, is left alone.
-//
-// It reports on stderr so the hook's own output is unchanged. A hook runs it
-// from the working-tree root.
+// repairHooksPath points a stale, set core.hooksPath at the folder HEAD ships,
+// reporting on stderr to keep hook output unchanged.
 func repairHooksPath() {
 	root, _ := os.Getwd()
 	current := hooksPath(root)

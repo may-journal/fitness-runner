@@ -12,9 +12,8 @@ func Main() {
 	})
 }
 
-// run reads the whole model and every requirement doc unless the run is
-// architecture.Unmoved.
-// So a removed actor fails even when no requirement changed.
+// run reads the whole model and every requirement doc unless
+// architecture.Unmoved, to fail a removed actor even when no requirement changed.
 func run(root string, _ []string) (checkkit.Result, error) {
 	model, err := architecture.Load(root)
 	if err != nil || len(model.Files) == 0 {

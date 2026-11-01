@@ -97,7 +97,7 @@ func Test0137_7(t *testing.T) {
 	t.Parallel()
 	installer(t)
 	out, code := fitness(t, filepath.Join("..", ".."), nil, "explain", "go-complexity")
-	sees(t, out, code, 0, "mirroring the house eslint rule (`complexity: max 5`) that gates JavaScript and TypeScript")
+	sees(t, out, code, 0, "Enforces a cyclomatic complexity ceiling on Go functions, mirroring the house eslint rule (`complexity: max 5`) that gates JavaScript and TypeScript.")
 }
 
 func Test0137_8(t *testing.T) {

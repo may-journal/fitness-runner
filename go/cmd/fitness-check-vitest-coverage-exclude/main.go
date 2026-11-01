@@ -26,11 +26,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return judge(loadExclude(root)), nil
 }
 
-// loadExclude resolves the coverage exclude list the way the TS check's
-// loadVitestConfig(root, getFitnessRunnerRoot()) call did. It reads from root
-// when root has a config source, else from the shared config directory.
-// That directory comes from sharedconf.ResolveDir, installed package first,
-// embedded copy last.
+// loadExclude reads the coverage exclude list from root's config, else from
+// sharedconf.ResolveDir, as the TS loadVitestConfig did.
 func loadExclude(root string) []string {
 	if exclude, found := vitestconf.LoadExcludeFromRoot(root); found {
 		return exclude

@@ -9,8 +9,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// listMarker is a bullet or ordered-list marker at the start of a line.
-// A formatter may rewrite it, as `*` to `-` or `1)` to `1.`.
+// listMarker is a line's leading list marker, which a formatter may rewrite,
+// as `*` to `-` or `1)` to `1.`.
 var listMarker = regexp.MustCompile(`(?m)^(\s*)(?:[-*+]|\d+[.)])(\s)`)
 
 // sourceLine is a `Source:` line older docs end their Measurement with.
@@ -33,12 +33,8 @@ func reformats(root, base string, changed []string) map[string]bool {
 	return found
 }
 
-// reformatted reports whether doc f holds the same wording at base and in
-// the scope being judged.
-// That scope is HEAD for a pull request, else the index, which holds what a
-// commit records.
-// A doc renamed since base is compared with the base doc of its number, since
-// a number is never reused.
+// reformatted reports whether doc f, or the base doc of its never-reused
+// number, kept its wording in HEAD or the index.
 func reformatted(root, base, f string) bool {
 	now := ":" + f
 	if os.Getenv("GITHUB_BASE_REF") != "" {
@@ -80,15 +76,8 @@ func gitShow(root, object string) (string, bool) {
 	return string(out), err == nil
 }
 
-// wording is a doc's words in order, without its front matter, and with
-// list markers made alike.
-// It is what is left when a formatter's choices are set aside.
-// Those choices are blank lines, indents, line breaks, spacing, quotes in the
-// front matter, and list markers.
-// At base only, a leftover Source line is set aside too.
-//
-// Setting them aside makes deleting one no change.
-// Adding or editing one still counts as a change.
+// wording is a doc's words in order without front matter, formatting, list
+// marker style or, at base only, a Source line.
 // The doc check judges the structure.
 func wording(doc string, dropSource bool) string {
 	body := mdx.StripFrontMatter(doc)

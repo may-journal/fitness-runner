@@ -10,10 +10,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// eslintDisableRe matches any eslint disable directive form (file, block,
-// `-line`, and `-next-line`).
-// The alternation order makes the match token the full directive, exactly like
-// the TS regex.
+// eslintDisableRe matches every eslint disable directive form, its order
+// making the match the full directive as in TS.
 var eslintDisableRe = regexp.MustCompile(`eslint-disable(-next-line|-line)?`)
 
 func Main() {
@@ -27,9 +25,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return walkfs.ScanFiles(root, node.SourceExts, scanContent), nil
 }
 
-// scanContent returns one "path:line: directive" error per line in content
-// that contains an eslint disable directive.
-// It takes the first match per line and uses 1-based line numbers.
+// scanContent returns one "path:line: directive" error, 1-based, for each
+// line holding an eslint disable directive.
 func scanContent(relPath, content string) []string {
 	var errs []string
 	for i, line := range strings.Split(content, "\n") {

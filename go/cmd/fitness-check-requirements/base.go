@@ -24,11 +24,8 @@ func gitLine(root string, args ...string) string {
 	return strings.TrimSpace(string(out))
 }
 
-// failedAtBase lists the files the requirements check failed at the base
-// commit rev.
-// This same check judges a checkout of rev, outside any hook or scope.
-// A file fails when an error names it.
-// The list is empty when rev is empty or the checkout cannot be judged.
+// failedAtBase lists the files this check's errors name at base commit rev,
+// or none when rev cannot be judged.
 func failedAtBase(root, rev string) map[string]bool {
 	failed := map[string]bool{}
 	if rev == "" {
@@ -47,9 +44,7 @@ func failedAtBase(root, rev string) map[string]bool {
 	return failed
 }
 
-// baseErrors checks out rev into dir and returns what this check reports
-// there.
-// It runs as a full scan with no pull request or commit scope.
+// baseErrors checks out rev into dir and returns an unscoped run's errors.
 func baseErrors(root, rev, dir string) []string {
 	self, err := checkkit.Self()
 	if err != nil || checkout(root, rev, dir) != nil {
@@ -65,10 +60,8 @@ func baseErrors(root, rev, dir string) []string {
 	return res.Errors
 }
 
-// checkout writes the files of rev's tree this check reads into dir, as a
-// repository of its own that borrows root's objects.
-// Root's index and work tree stay untouched.
-// A huge repo's other files are never copied.
+// checkout writes only the files this check reads from rev into a repo in dir
+// that borrows root's objects, leaving root untouched.
 func checkout(root, rev, dir string) error {
 	if err := gitIn(dir, nil, "init", "-q"); err != nil {
 		return err
@@ -87,10 +80,8 @@ func checkout(root, rev, dir string) error {
 	return gitIn(dir, nil, "checkout-index", "-a")
 }
 
-// judgedEntries lists, as `git ls-tree -r -z` prints them, the entries of
-// rev's tree this check reads.
-// These are the requirement docs, the files a language module finds tests in,
-// and the .gitattributes files that mark files generated.
+// judgedEntries lists rev's requirement docs, test files and .gitattributes
+// files as `git ls-tree -r -z` prints them.
 func judgedEntries(root, rev string) ([]byte, error) {
 	out, err := exec.Command("git", "-C", root, "ls-tree", "-r", "-z", "--full-tree", rev).Output()
 	if err != nil {

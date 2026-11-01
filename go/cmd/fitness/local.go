@@ -30,9 +30,8 @@ var localBins map[string]repocheck.Check
 // such as `go build`, meets every minFitness.
 var version string
 
-// built memoizes each Go local check's build for the run. A check that
-// resolves twice, as `fitness list` and a suite run do, builds once.
-// Checks build side by side.
+// built memoizes each Go local check's build, so a check resolved twice, as
+// `fitness list` does, builds once.
 var built = struct {
 	sync.Mutex
 	builds map[string]*build
@@ -79,8 +78,8 @@ func noSubcommand(checks map[string]repocheck.Check) error {
 	return nil
 }
 
-// programFor finds the program of each check name resolves, failing on a
-// missing one. A local check says why, and any other is not installed.
+// programFor finds a check's program, failing a missing one with the local
+// check's reason or as not installed.
 func programFor(name string) (checkkit.Program, error) {
 	prog, err := findCheckBinary(name)
 	if _, local := localBins[name]; err != nil && !local {
@@ -113,8 +112,8 @@ func buildCheck(c repocheck.Check) (string, error) {
 	return repocheck.Build(c, cache, version, os.Stderr)
 }
 
-// prebuild builds the Go local checks among names side by side. A run
-// of several then waits on the slowest build, not their sum.
+// prebuild builds the named Go local checks side by side, so a run waits on
+// the slowest build, not their sum.
 func prebuild(names []string) {
 	par.Map(len(names), par.Processes(), func(i int) error {
 		if c, ok := localBins[names[i]]; ok {
@@ -125,13 +124,10 @@ func prebuild(names []string) {
 	})
 }
 
-// asLocal applies the local check rules to a check's handshake. A local
-// check that declares no scope shows scope local, and an older fitness than
-// its minFitness is noted.
+// asLocal defaults a local check's scope to local and notes unmet minFitness.
 //
-// A folder check's handshake is optional. The folder names it, a handshake it
-// does not answer is no info, and its README gives the summary the handshake
-// leaves out.
+// A folder check's handshake is optional, since the folder names it and its
+// README gives the summary.
 func asLocal(r resolved) resolved {
 	c, ok := localBins[r.name]
 	if !ok {
@@ -187,13 +183,11 @@ func newEnough(checks []resolved) error {
 	return nil
 }
 
-// findCheckBinary returns the program for a check name. That is the repo's
-// local check when one has that name. Failing that, it is a program of that
-// name beside fitness. Failing that, it is the built-in check, run from this
-// fitness executable.
+// findCheckBinary returns the local check of that name, else a program beside
+// fitness, else the built-in check.
 //
-// A program beside fitness that replaces a built-in check says so on stderr.
-// So a stale one left from an older install does not run unnoticed.
+// A program beside fitness replacing a built-in says so on stderr, so a stale
+// install never runs unnoticed.
 func findCheckBinary(name string) (checkkit.Program, error) {
 	if c, ok := localBins[name]; ok {
 		return localProgram(c)
@@ -291,8 +285,8 @@ func builtIn(name string) bool {
 	return slices.Contains(allChecks, name) || slices.Contains(lang.Ignored(), name)
 }
 
-// runGH runs a GitHub command with the repo's check settings. An issue or
-// PR body then meets the same local and disabled checks as the repo's files.
+// runGH runs a GitHub command with the repo's check settings, so a body meets
+// the same checks as the repo's files.
 func runGH(name string) int {
 	if err := useRepoChecks(); err != nil {
 		report.Error("fitness "+name, err)
@@ -301,8 +295,8 @@ func runGH(name string) int {
 	return metadata.RunGH(name)
 }
 
-// useRepoChecks checks the repo's settings under ADR 0009, as a suite run
-// does. It then points the GitHub commands at its local and disabled checks.
+// useRepoChecks checks the repo's settings under ADR 0009 and points the
+// GitHub commands at its local and disabled checks.
 func useRepoChecks() error {
 	_, cfg, _, err := blobConfig()
 	if err != nil {

@@ -30,9 +30,8 @@ func jsonPath(argv []string) (path string, rest []string, err error) {
 	return oneValueFlag(argv, jsonFlag, "<file>")
 }
 
-// oneValueFlag pulls every `flag` and `flag=<value>` out of argv. It accepts
-// none, returning an empty value, or exactly one that has a value.
-// Anything else is an error naming the form, such as `use --json=<file> once`.
+// oneValueFlag pulls every `flag` out of argv, accepting none or one with a
+// value, else failing with `use flag=form once`.
 func oneValueFlag(argv []string, flag, form string) (value string, rest []string, err error) {
 	flags, rest := splitFlag(argv, flag)
 	if len(flags) == 0 {
@@ -64,8 +63,7 @@ func wantsPerf(path string) bool {
 	return path != "" || isGitHubActions()
 }
 
-// perfFor builds the report only when a `--json` file or the CI job summary
-// reads it. A plain local run then never stats the binaries.
+// perfFor builds the report only when wanted, sparing a plain local run.
 func perfFor(wanted bool, checks []resolved, outcomes []outcome, rows []render.Row, elapsedMs int64) perfReport {
 	if !wanted {
 		return perfReport{}

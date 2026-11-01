@@ -32,15 +32,15 @@ const org = "may-journal"
 // workflowDir holds the workflow files the check reads.
 const workflowDir = ".github/workflows/"
 
-// askBudget bounds every GitHub read in a run, well inside the check's
-// timeout. A stalled network then ends in a note rather than a timeout.
+// askBudget bounds a run's GitHub reads well inside the check's timeout, so a
+// stalled network ends in a note.
 const askBudget = 20 * time.Second
 
 var (
 	// usesRe matches a `uses:` key and its value, quoted or not.
 	usesRe = regexp.MustCompile(`^\s*(?:-\s+)?uses:\s*['"]?([^'"\s]+)`)
-	// blockRe matches a line whose value is a `|` or `>` block scalar, such
-	// as a `run:` script. The lines of such a block are text rather than keys.
+	// blockRe matches a `|` or `>` block scalar, such as a `run:` script,
+	// whose lines are text.
 	blockRe = regexp.MustCompile(`:\s*[|>][-+0-9]*\s*(?:#.*)?$`)
 	// shaRe matches a full commit sha.
 	shaRe = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
@@ -63,8 +63,8 @@ func (c call) at(msg string) string {
 	return fmt.Sprintf("%s: line %d: %s: %s", c.file, c.line, c.value, msg)
 }
 
-// verdict is what GitHub says about one call. It holds a finding when the path
-// is missing, a note when the call was skipped, or neither when the call holds.
+// verdict is GitHub's word on one call: a finding for a missing path, a note
+// for a skipped call, or neither.
 type verdict struct {
 	finding, note string
 }
@@ -226,11 +226,8 @@ type github struct {
 	answers map[string]answer
 }
 
-// answer is one cached `gh api` result. found is false on HTTP 404, and
-// notFound keeps GitHub's message for it.
-//
-// refused holds any other answer GitHub gave about this one request, such as
-// a 403 or 422. err holds a failure to reach GitHub at all.
+// answer is one cached `gh api` result: notFound keeps a 404's message,
+// refused another refusal such as a 403, err an unreachable GitHub.
 type answer struct {
 	body     []byte
 	found    bool
@@ -313,8 +310,8 @@ func (g *github) judgeRef(c call) (verdict, error) {
 	return g.atRef(c)
 }
 
-// notTag explains a ref that is not a tag. A branch is out of scope.
-// A ref that is neither fails, unless the repo itself cannot be read.
+// notTag passes a branch and fails a ref that is neither tag nor branch,
+// unless the repo cannot be read.
 func (g *github) notTag(c call, err error) (verdict, error) {
 	if err != nil {
 		return verdict{}, err
@@ -326,8 +323,8 @@ func (g *github) notTag(c call, err error) (verdict, error) {
 	return g.missing(c, fmt.Sprintf("%s is not a tag, a branch, or a full commit sha", c.ref))
 }
 
-// atRef judges whether the call's path exists at its ref. It tells a sha
-// that names no commit apart from a path missing at a real one.
+// atRef judges whether the call's path exists at its ref, telling a sha with
+// no commit apart from a missing path.
 func (g *github) atRef(c call) (verdict, error) {
 	found, err := g.pathExists(c)
 	if err != nil || found {
@@ -344,9 +341,8 @@ func contentsAPI(c call) string {
 	return path.Join("repos", c.repo, "contents", c.dir) + "?ref=" + url.QueryEscape(c.ref)
 }
 
-// missing is the finding for something GitHub answered 404. It is a note
-// when the repo itself answers 404. GitHub hides a repo the token cannot
-// read, so its missing paths prove nothing.
+// missing turns a 404 into a finding, or a note when the repo itself is hidden
+// from the token and proves nothing.
 func (g *github) missing(c call, finding string) (verdict, error) {
 	repo, err := g.read("repos/" + c.repo)
 	if err != nil {

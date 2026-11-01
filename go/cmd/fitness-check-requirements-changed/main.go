@@ -36,9 +36,8 @@ func skips(root string) bool {
 	return gitx.CommitChanges(root) == nil || gitx.Replaying(root) || len(requirementDocs(root)) == 0
 }
 
-// judge fails each changed product file whose test or requirement doc did
-// not change with it.
-// It also fails each deleted one whose doc and tests stay behind.
+// judge fails each changed product file whose test or doc did not change with
+// it, or whose deletion leaves them behind.
 func judge(root string, changes []change) (checkkit.Result, error) {
 	tests, err := scanTests(root)
 	if err != nil {
@@ -56,9 +55,8 @@ func judge(root string, changes []change) (checkkit.Result, error) {
 	return checkkit.Pass(len(product)), nil
 }
 
-// problem is what is wrong with one product change.
-// It is an edit with no test or doc beside it, or a deletion that leaves its
-// doc and tests behind.
+// problem reports an edit with no test or doc beside it, or a deletion that
+// leaves its doc and tests behind.
 func (c change) problem(root string, tests testSet, changed map[string]bool) []string {
 	if c.deleted {
 		return leftBehind(root, c.path, tests, changed)

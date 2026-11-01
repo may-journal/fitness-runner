@@ -6,19 +6,19 @@ Fails a declared npm dependency behind its latest published version, since an up
 
 ## Behavior
 
-- Queries the npm registry over HTTPS (`dist-tags` latest) for each dependency declared in the root `package.json` and its workspaces. No npm binary.
+- Queries the npm registry over HTTPS (`dist-tags` latest), without npm, for each dependency the root `package.json` and its workspaces declare.
 - Direct declared deps only, since you can only bump what you declare.
-- The registry URL comes from the nearest `.npmrc` `registry=` entry (repo root, then home). It defaults to the public registry.
+- The registry URL comes from the nearest `.npmrc` `registry=` entry (repo root, then home), else the public registry.
 - Pass: every dependency is at its latest published version.
-- Fail: one or more dependencies are behind. It reports `name: current → latest` per dep, and identical lines collapse to one.
+- Fail: each behind dependency reports `name: current → latest`, with identical lines collapsed to one.
 - A declared-but-uninstalled dep reads as `name: missing → latest`.
-- Internal `@mayjournal/*` workspace packages are skipped, since they are versioned in-repo and never published to the registry.
-- Registry unreachable or answering an error or garbage: no finding for that package. Info counts the packages it could not query.
+- Internal `@mayjournal/*` workspace packages are skipped, since they are versioned in-repo and never published.
+- A registry that is unreachable or answers with an error or garbage gives no finding, and info counts those packages.
 
 One proxy blocks GitHub and the registry alike. So when the runner's probe finds GitHub's API host unreachable, the check reads no registry and reports info naming the host and proxy.
 
 ## Notes
 
 - `filesChecked` counts the tracked `package.json` manifests.
-- Reports against `latest`, not `wanted`. A dependency inside its declared semver range but behind the newest release is still flagged.
+- Reports against `latest`, not `wanted`, so a dependency inside its semver range but behind the newest release is still flagged.
 - The point is to stay current, not merely in-range.

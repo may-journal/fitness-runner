@@ -32,8 +32,8 @@ const lead = "Dependencies behind their latest published version — update them
 // fetchWorkers bounds the concurrent registry requests.
 const fetchWorkers = 8
 
-// fetchBudget caps the whole fetch phase inside the check's 30s timeout.
-// So a slow registry degrades to info instead of the runner killing us.
+// fetchBudget keeps the fetch phase inside the 30s timeout, so a slow registry
+// degrades to info instead of being killed.
 const fetchBudget = 25 * time.Second
 
 // requestTimeout caps one registry request within the overall budget.
@@ -41,8 +41,8 @@ const requestTimeout = 10 * time.Second
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		// The registry answers one request per dependency.
-		// On a cold cache that can exceed the default 5s budget, so keep the TS check's 30s.
+		// One registry request per dependency can pass 5s on a cold cache,
+		// so keep the TS check's 30s.
 		Describe: checkkit.Describe{Name: "dependency-currency", Scope: checkkit.ScopeFiles, TimeoutMs: 30000},
 		Run:      run,
 	})
@@ -258,10 +258,8 @@ func outdatedErrors(manifests []manifest, latest map[string]string) []string {
 	return out
 }
 
-// registryFrom resolves the registry URL from the nearest .npmrc "registry="
-// entry.
-// It looks in the repo root first, then the home directory.
-// It defaults to the public npm registry.
+// registryFrom resolves the registry URL from the repo's, then home's, .npmrc
+// "registry=" entry, else the public npm registry.
 func registryFrom(root string) string {
 	paths := []string{filepath.Join(root, ".npmrc")}
 	if home, err := os.UserHomeDir(); err == nil {
@@ -310,12 +308,8 @@ func isNpmrcComment(line string) bool {
 	return line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, ";")
 }
 
-// fetchLatest resolves each name's dist-tags.latest from the registry with
-// bounded concurrency.
-// Any failure (network error, non-200, garbage body) leaves that name out of
-// the map.
-// So a fully unreachable registry yields an empty map.
-// The check then reports info counting the names left out.
+// fetchLatest fetches each name's dist-tags.latest concurrently, leaving out
+// any name that fails so info can count it.
 func fetchLatest(registry string, names []string) map[string]string {
 	ctx, cancel := context.WithTimeout(context.Background(), fetchBudget)
 	defer cancel()

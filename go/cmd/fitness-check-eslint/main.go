@@ -81,9 +81,8 @@ func buildExecCheckResult(exitCode int, errs []string, filesChecked int) (checkk
 	return checkkit.Fail(filesChecked, errs...), nil
 }
 
-// applies reports whether ESLint has anything to judge.
-// That needs a JS project, and in a scoped run at least one changed file it lints.
-// So a run with none skips ESLint instead of linting the whole repo.
+// applies reports a JS project with, in a scoped run, a changed lintable file,
+// so ESLint never lints the whole repo for nothing.
 func applies(root string) bool {
 	if !node.Applies(root) || !node.HasSource(root) {
 		return false
@@ -133,16 +132,8 @@ func hasLintableExt(p string) bool {
 	return false
 }
 
-// runEslint execs the CLI twin of the TS Node-API invocation.
-// The cwd is root, and the resolved shared config is forced via --config.
-// That config is a repo-local file, installed @mayjournal/fitness-shared, or
-// the embedded copy materialized on demand (sharedconf.Resolve).
-//
-// Unmatched patterns are tolerated, and the output is JSON.
-// In the vanishingly rare case nothing materializes, eslint runs on its own
-// config discovery instead.
-// A run that could not start, was killed, crashed, or printed no JSON is an
-// internal error quoting what ESLint printed.
+// runEslint execs ESLint with the sharedconf.Resolve config and JSON output,
+// treating a crash or missing JSON as an internal error.
 func runEslint(root, bin string, paths []string) (errs []string, exitCode, filesChecked int, err error) {
 	var args []string
 	if cfg := sharedconf.Resolve(root, eslintConfigMjs); cfg != "" {
@@ -163,9 +154,8 @@ func runEslint(root, bin string, paths []string) (errs []string, exitCode, files
 	return nil, 0, 0, checkkit.Internal(fmt.Errorf("%s (exit %d) Output: %s", eslintFallbackMessage, o.Code, snippet(o)))
 }
 
-// lintExit reports whether the process ended with a lint verdict (exit 0 or
-// 1).
-// Anything else is a tool crash and takes the fallback path.
+// lintExit reports a lint verdict (exit 0 or 1), since anything else is a
+// crash that takes the fallback path.
 func lintExit(o checkkit.Outcome) bool {
 	return o.EnvErr("eslint") == nil && o.Code <= 1
 }
@@ -199,9 +189,8 @@ func parseResults(out []byte) ([]eslintResult, bool) {
 	return results, true
 }
 
-// summarize folds parsed results into the TS shape.
-// Every message is formatted (an ignored-file notice included, as a failure).
-// The exit is 1 when any file has errors or was ignored, and files = results.
+// summarize formats every message, ignored-file notices included, and exits 1
+// when any file has errors, as the TS check did.
 func summarize(results []eslintResult) (errs []string, exitCode, filesChecked int) {
 	for _, r := range results {
 		if r.ErrorCount > 0 {

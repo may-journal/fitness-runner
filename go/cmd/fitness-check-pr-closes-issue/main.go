@@ -24,23 +24,16 @@ func Main() {
 	})
 }
 
-// closingKeywords is GitHub's fixed set of nine issue-closing keywords, as one
-// case-insensitive alternation.
-// GitHub auto-closes a linked issue on merge for exactly these.
-// Nothing else counts as a closure.
-//
-// The pr-check workflow parses a Plan's closed issues through this same binary
-// (--emit-closed).
-// So the Plan side and PR side share this one list.
+// closingKeywords is GitHub's nine issue-closing keywords, which pr-check also
+// reads Plans with via --emit-closed.
 const closingKeywords = `close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved`
 
 // closingIssueRe matches a closing keyword linking an issue number, e.g.
 // `Closes #12` or `Fixes: #12`.
 var closingIssueRe = regexp.MustCompile(`(?i)\b(?:` + closingKeywords + `)[:\s]+#(\d+)`)
 
-// implementedIssueRe matches a claim that the PR implements an issue.
-// Examples are `Implements #12`, `implemented #12`, or a `Plan #12` line.
-// A closing keyword for that same issue must back the claim.
+// implementedIssueRe matches `Implements #12` or `Plan #12`, a claim a closing
+// keyword for that issue must back.
 var implementedIssueRe = regexp.MustCompile(`(?i)\b(?:implement(?:s|ed)?|plan)[:\s]+#(\d+)`)
 
 func run(_ string, args []string) (checkkit.Result, error) {
@@ -50,9 +43,8 @@ func run(_ string, args []string) (checkkit.Result, error) {
 	})
 }
 
-// validate reports the PR body's closure violations.
-// These are the base rules, plus any required underlying issue (from a closed
-// Plan) the PR does not itself close.
+// validate reports the base rules' violations and each issue a closed Plan
+// closes that the PR does not.
 func validate(body string, required []int) []string {
 	body = mdx.StripCode(body)
 	closed := closedIssues(body)
@@ -83,11 +75,8 @@ func baseErrors(body string, closed map[int]bool) []string {
 	return errors
 }
 
-// emitClosedMode is the workflow utility path.
-// With --emit-closed it prints the body's closed issue numbers as an ascending
-// JSON array and reports handled.
-// The pr-check workflow then reads a Plan's closed issues with this same
-// keyword set and no divergent copy.
+// emitClosedMode prints the body's closed issues as a sorted JSON array for
+// --emit-closed, so pr-check shares this keyword set.
 func emitClosedMode(argv []string) bool {
 	if !hasFlag(argv, "--emit-closed") {
 		return false

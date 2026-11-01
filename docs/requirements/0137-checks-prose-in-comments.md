@@ -39,7 +39,7 @@ Comment blocks judged
 - 0137.7
     - Given Developer reads a check's summary that a command comment feeds
         - When Developer asks the runner to explain that check
-            - Then the summary keeps its whole first sentence after the comment is split
+            - Then the summary keeps its whole first sentence after the comment is condensed
 - 0137.8
     - Given Developer reads the summary of a check whose comment held a clause in parentheses
         - When Developer asks the runner to explain that check
