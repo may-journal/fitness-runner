@@ -15,7 +15,7 @@
 //	  }
 //	}
 //
-// A module without commands needs a declared entry. Unknown entries fail.
+// A module without commands needs a declared entry, and unknown entries fail.
 // Entries add to discovered commands; they cannot hide a command package.
 //
 // # Results

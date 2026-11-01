@@ -2,7 +2,7 @@
 
 # mermaid-callout-why
 
-Requires each numbered callout table to carry a "Why" column, and flags numbered rows whose "Why" cell is empty. So tables explain why each element exists, not just what it is. It is part of the mermaid diagram and callout table fitness-function set ([#28](https://github.com/may-journal/fitness-runner/issues/28)).
+Requires each numbered callout table to carry a "Why" column, and flags numbered rows whose "Why" cell is empty. It is part of the mermaid diagram and callout table fitness-function set ([#28](https://github.com/may-journal/fitness-runner/issues/28)).
 
 ## Behavior
 

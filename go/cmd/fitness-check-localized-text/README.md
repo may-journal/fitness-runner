@@ -2,7 +2,7 @@
 
 # localized-text
 
-Fails SwiftUI text and requirement test literals that skip the app's [String Catalog](https://developer.apple.com/documentation/xcode/localizing-and-varying-text-with-a-string-catalog) ([#527](https://github.com/may-journal/fitness-runner/issues/527)). The Swift language module owns the reading and its judgment. A literal passed to `Text` compiles as a [LocalizedStringKey](https://developer.apple.com/documentation/swiftui/localizedstringkey), so a missing entry only shows in another language. Requirements: [0097](../../../docs/requirements/0097-checks-localized-text.md).
+Fails SwiftUI text and requirement test literals that skip the app's [String Catalog](https://developer.apple.com/documentation/xcode/localizing-and-varying-text-with-a-string-catalog) ([#527](https://github.com/may-journal/fitness-runner/issues/527)). The Swift language module owns the reading and its judgment. A literal passed to `Text` compiles as a [LocalizedStringKey](https://developer.apple.com/documentation/swiftui/localizedstringkey), so a missing entry only shows in another language.
 
 ## Views
 
@@ -54,6 +54,10 @@ Each failure names the file, line, and literal, the call or catalog entry, and t
 ```
 
 Org repos cannot turn the check off, as [ADR 0009](../../../fitness/adr-0009/README.md) decides.
+
+## Requirements
+
+[Requirement 0097](../../../docs/requirements/0097-checks-localized-text.md) has one installed-command test per acceptance.
 
 ## Configuration
 

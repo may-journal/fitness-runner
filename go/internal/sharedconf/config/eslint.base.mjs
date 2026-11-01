@@ -29,8 +29,8 @@ const rules = {
 };
 
 /**
- * Shared ESLint flat config. Every block parses syntactically — no enabled rule is type-aware.
- * It ignores nothing: the eslint check hands it every tracked file.
+ * createEslintConfig returns the shared flat config, whose enabled rules parse syntax and none is type-aware.
+ * It ignores nothing, since the eslint check hands it every tracked file.
  */
 export function createEslintConfig() {
   return [

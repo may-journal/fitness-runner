@@ -80,12 +80,9 @@ func silentListener(t *testing.T) string {
 	return "http://" + ln.Addr().String()
 }
 
-// generatedTree copies happyRepo with files written over it, as example
-// does, adds n more tracked files under tree/, and commits them all. The
-// files are plain text no check judges, a thousand to a folder, and live
-// only in the test's temporary folder. They share one blob: git stages
-// them all in one update-index call and writes them with checkout-index,
-// so even 500,000 files take seconds.
+// generatedTree copies happyRepo with files written over it, adds n tracked text
+// files under tree/ that no check judges, and commits them all. The files share
+// one blob staged in one update-index call, so even 500,000 take seconds.
 func generatedTree(t *testing.T, files map[string]string, n int) string {
 	t.Helper()
 	repo := example(t, "happyRepo", files)

@@ -1,14 +1,14 @@
 # fitness
 
-fitness runs a repo's fitness checks: small programs that each judge one rule, such as spelling, formatting, tests, or the shape of a pull request. One binary holds every built-in check; a repo may add local checks. Each check decides whether it applies, so any repo runs the same suite with nothing to configure.
+fitness runs a repo's fitness checks: small programs that each judge one rule, such as spelling, tests, or pull request shape. One binary holds every built-in check; a repo may add local checks. Each check decides whether it applies, so any repo runs the same suite with nothing to configure.
 
-A run resolves the checks, runs them side by side with per-check time budgets, and prints a results table: passed, failed, or info, which never fails a run. With files staged it judges only those files; --all judges every tracked file.
+A run resolves the checks, runs them side by side under time budgets, and prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges every tracked file.
 
 ## Exit codes
 
 - 0: every check passed, or a command succeeded.
 - 1: a check found problems, or the run could not start, such as a bad config.
-- 2: a command got arguments it does not take, or `fitness explain` or `fitness docs` was asked for a check or topic that does not exist.
+- 2: a command got arguments it does not take, or explain or docs named an unknown check or topic.
 
 ## Learn the rest
 
@@ -63,13 +63,13 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `comment-structure`: Judges one GitHub issue or PR comment, so a reply stays short, readable, and free of agent noise.
 - `commit-attribution`: Requires a commit message to disclose AI use in "AI-Tools:" and "AI-Models:" git trailers.
 - `cspell`: Fails unknown words in the checked files.
-- `dependency-currency`: Fails a declared npm dependency that is behind its latest published version — an installable update means the project isn't at peak fitness.
+- `dependency-currency`: Fails a declared npm dependency behind its latest published version — an installable update means the project isn't at peak fitness.
 - `doc-template`: Makes each markdown document match the shape of a template that governs it.
 - `duplicate-code`: Fails a repo whose duplicated lines pass 1% of its scanned lines.
 - `epic-structure`: Validates that an epic follows the Epic issue template, or the repo's own template labeled `Epic`.
 - `eslint`: Runs ESLint over the repo with the shared flat config, by executing the real ESLint binary.
 - `gitignore-why`: Requires every .gitignore pattern to follow a `#` comment explaining why it exists.
-- `go-complexity`: Enforces a cyclomatic complexity ceiling on Go functions — the Go-native counterpart of the house eslint rule (`complexity: max 5`) that gates JavaScript and TypeScript.
+- `go-complexity`: Enforces a cyclomatic complexity ceiling on Go functions, the Go-native counterpart of the house eslint rule (`complexity: max 5`).
 - `go-test`: Runs `go test ./...` in every Go module of the repo and reports the failing tests.
 - `go-test-coverage`: Measures entry coverage and test overlap.
 - `go-vet`: Runs `go vet ./...` in every Go module of the repo, catching suspicious code the compiler accepts.
@@ -86,7 +86,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `markdown-no-bold-italic`: Fails bold and italic emphasis in markdown files: `**bold**`, `__bold__`, `*italic*`, or `_italic_`.
 - `mermaid-callout-why`: Requires each numbered callout table to carry a "Why" column, and flags numbered rows whose "Why" cell is empty.
 - `mermaid-callouts`: Requires every mermaid diagram with callouts to have a callout table whose callouts match it one to one.
-- `mermaid-diagram-prose`: Fails edge labels that carry prose beyond a callout, a number or a letter, in a diagram paired with a callout table.
+- `mermaid-diagram-prose`: Fails edge labels that carry prose beyond a callout, number or letter, in a diagram paired with a callout table.
 - `mermaid-diagram-table-gap`: Flags loose markdown prose wedged between a numbered mermaid diagram (or its legend block) and the callout table that follows it.
 - `mermaid-legend`: Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend.
 - `mermaid-level-bleed`: Warns when a callout description at one C4 level repeats the previous level verbatim.
@@ -113,7 +113,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `text-readability`: Fails a markdown file whose prose scores as hard to read.
 - `vitest-coverage-exclude`: Fails any Vitest coverage exclude entry, so coverage measures every file.
 - `vitest-coverage-full`: Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`.
-- `workflow-ref-exists`: Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet (#485).
+- `workflow-ref-exists`: Fails a workflow calling a may-journal workflow or action at a tag or sha lacking that path (#485).
 - `workflow-reporting`: Fails a workflow job that can fail without a report on its run page (#181).
 
 ## Topics

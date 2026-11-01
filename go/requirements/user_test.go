@@ -124,10 +124,9 @@ func started(t *testing.T, build func() *exec.Cmd, run func(*exec.Cmd) error) *e
 	}
 }
 
-// placeRunner puts the installed runner at dst, on its own. A hard link has
-// no open write handle for a parallel test's fork to inherit and keeps dst as
-// the runner's own path. Where linking fails, it writes a temporary file,
-// closes it, and renames it into place.
+// placeRunner hard-links the installed runner at dst, so no parallel test's fork
+// inherits an open write handle. Where linking fails, it writes, closes and
+// renames a temporary file into place.
 func placeRunner(t *testing.T, installed, dst string) {
 	t.Helper()
 	if os.Link(installed, dst) == nil {

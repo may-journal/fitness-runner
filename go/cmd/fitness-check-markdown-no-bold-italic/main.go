@@ -1,6 +1,5 @@
-// The italic patterns carry JavaScript look-behind and look-ahead assertions
-// the TS original relied on, so their scan is hand-rolled here; the flagged
-// snippet is quoted byte-for-byte like JSON.stringify.
+// The italic scan is hand-rolled because the TS original relied on JavaScript look-around assertions.
+// The flagged snippet is quoted byte-for-byte like JSON.stringify.
 
 package check
 
@@ -98,15 +97,7 @@ func findDisallowedEmphasis(content string) []hit {
 	return out
 }
 
-// singleDelimiterMatches scans for single-delimiter emphasis spans the way
-// the JS patterns /(?<!\*)\*[^*\n]+\*(?!\*)/ and /(?<!_)_[^_]+_(?!_)/ do:
-// an opening delimiter not preceded by the same delimiter, a non-empty body
-// free of the delimiter, and a closing delimiter not followed by another.
-// Go's RE2 has no look-behind or look-ahead, so the exec-loop semantics
-// (advance one position on failure, resume after a match) are reproduced by
-// hand.
-// excludeNewline mirrors the asterisk body class [^*\n]+ — asterisk italic
-// must not span lines, which is what exempts * list markers.
+// singleDelimiterMatches scans single-delimiter emphasis spans like the JS look-around patterns, by hand because RE2 lacks look-around; excludeNewline keeps asterisk italic on one line.
 func singleDelimiterMatches(s string, delim byte, excludeNewline bool) []string {
 	var out []string
 	for i := 0; i < len(s); i++ {
@@ -129,9 +120,7 @@ func opensEmphasis(s string, i int, delim byte) bool {
 	return s[i] == delim && (i == 0 || s[i-1] != delim)
 }
 
-// emphasisBodyEnd scans the span body from i+1 and returns the index of the
-// first delimiter — or newline when excludeNewline, the asterisk body class
-// [^*\n]+ — or len(s) when the body never closes.
+// emphasisBodyEnd returns the index of the first delimiter after i, or of a newline when excludeNewline is set, else len(s).
 func emphasisBodyEnd(s string, i int, delim byte, excludeNewline bool) int {
 	j := i + 1
 	for j < len(s) && s[j] != delim && !(excludeNewline && s[j] == '\n') {
@@ -140,9 +129,7 @@ func emphasisBodyEnd(s string, i int, delim byte, excludeNewline bool) int {
 	return j
 }
 
-// closesEmphasis reports whether j closes a span opened at i: a non-empty
-// body, the closing delimiter reached, and no doubled delimiter after it
-// (the JS look-ahead).
+// closesEmphasis reports whether j closes a span opened at i with a non-empty body and no doubled delimiter.
 func closesEmphasis(s string, i, j int, delim byte) bool {
 	if j == i+1 || j == len(s) || s[j] != delim {
 		return false
@@ -200,9 +187,7 @@ func plainReleaseScopes(content string) string {
 	return strings.Join(lines, "\n")
 }
 
-// jsonStringify quotes s exactly as JavaScript's JSON.stringify does:
-// unlike json.Marshal it leaves <, >, and & unescaped, and unlike
-// strconv.Quote it escapes U+2028/U+2029 and nothing else above ASCII.
+// jsonStringify quotes s as JavaScript's JSON.stringify does, leaving <, >, and & unescaped and escaping only U+2028/U+2029 above ASCII.
 func jsonStringify(s string) string {
 	var buf bytes.Buffer
 	enc := json.NewEncoder(&buf)

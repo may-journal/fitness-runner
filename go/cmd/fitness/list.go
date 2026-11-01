@@ -28,9 +28,8 @@ type listed struct {
 	Note string `json:"note,omitempty"`
 }
 
-// runList handles `fitness list [--json]`: every check this repo can run,
-// built-in, beside the runner or local, in catalog order, with what its
-// describe handshake says and whether the repo's config enables it.
+// runList handles `fitness list [--json]`: every check this repo can run, in
+// catalog order, with its handshake data and whether the config enables it.
 func runList(args []string) int {
 	asJSON, err := listFlags(args)
 	if err != nil {
@@ -81,9 +80,8 @@ func seconds(ms int64) string {
 }
 
 // listChecks describes every check in the catalog and marks the ones the
-// repo's config selects. A check whose program is missing, or whose
-// handshake failed, still gets its row, with a note saying why, so one broken
-// check never hides the rest.
+// repo's config selects. A check with a missing program or failed handshake
+// still gets a row with a note.
 func listChecks() ([]listed, error) {
 	_, cfg, suite, err := blobConfig()
 	if err != nil {
@@ -142,8 +140,8 @@ func listRowFor(name string, byName map[string]resolved, missing map[string]stri
 		Enabled: enabled, Blob: c.desc.Blob, Note: cmp.Or(c.needs, c.describeErr)}
 }
 
-// printList writes one aligned row per check: name, scope, budget, whether
-// it is enabled, and its summary, or the note saying why it has none.
+// printList writes one aligned row per check: name, scope, budget, enabled,
+// and its summary or the note saying why it has none.
 func printList(w io.Writer, checks []listed) {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(tw, "CHECK\tSCOPE\tBUDGET\tENABLED\tSUMMARY")

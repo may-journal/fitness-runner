@@ -1,16 +1,8 @@
 name: Comment check (reusable)
 
-# Reusable across the org: a consumer repo calls this from an `issue_comment`,
-# `pull_request_review` submitted and `pull_request_review_comment` edited
-# caller. A submitted review is judged in one run, comments and all, so ten
-# review comments bill one minute instead of ten. It installs the published fitness
-# checks and runs `fitness comment-check`, which judges the comment with the
-# Plan and PR prose checks plus comment-structure and mermaid-syntax. A
-# failing comment gets one reply naming its author and a thumbs-down
-# reaction; a fixed one turns that reply into a passing note. Every author
-# but fitness's known bots is judged; `ignore-authors` replaces that list.
-# fitness-runner
-# keeps its own build-from-source comment-check to test unreleased changes.
+# On comments and reviews, the published `fitness comment-check` replies once to
+# a failing comment and updates that reply when fixed. A submitted review is judged in one run, so ten review comments
+# bill one minute instead of ten.
 on:
   workflow_call:
     inputs:
@@ -30,10 +22,9 @@ permissions:
 
 jobs:
   comment-check:
-    # Skip a known bot's comment before a runner starts, so it bills nothing.
-    # The list is KnownBots in go/internal/metadata/comments.go, which
-    # ignore-authors replaces; fitness's own login always skips. A list the
-    # check cannot match here still runs, and fitness comment-check skips it.
+    # A known bot's comment skips before a runner starts, using KnownBots in
+    # go/internal/metadata/comments.go or the ignore-authors input. An author
+    # this filter misses still runs, and fitness comment-check skips it.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       ((github.event.comment.user.login || github.event.review.user.login) != 'github-actions[bot]' &&

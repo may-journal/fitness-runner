@@ -1,5 +1,5 @@
 // Command fitness-check-mermaid-diagram-prose fails edge labels that carry
-// prose beyond a callout, a number or a letter, in a diagram paired with a
+// prose beyond a callout, number or letter, in a diagram paired with a
 // callout table. Diagram labels must not duplicate callout table prose. It is
 // part of the mermaid diagram and callout table fitness-function set ([#28]).
 //

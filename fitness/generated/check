@@ -1,6 +1,6 @@
 #!/bin/sh
-# Local fitness check: fails when a file `go generate` writes from the code
-# is stale or edited by hand. See fitness/generated/README.md.
+# This local check fails when a file `go generate` writes is stale or edited by
+# hand, as fitness/generated/README.md explains.
 set -eu
 if [ "${1:-}" = "--describe" ]; then
   # The same handshake fitness-release gives, answered here because compiling

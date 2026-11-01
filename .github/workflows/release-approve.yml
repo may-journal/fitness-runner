@@ -1,17 +1,12 @@
 # cspell:ignore slurpfile
 name: Release approve
-# Reusable across the org. release-please-reusable.yml calls it after each
-# run that leaves a release PR open, and this repo's CI does the same. A
-# repo's pull_request caller passes kind: dependency for build(deps) PRs.
-# The org ruleset needs one approval, and a bot cannot approve its own PR.
-# The approver, a machine user with write access, approves with its token
-# APPROVER_TOKEN, since only an approval from someone with write access
-# counts toward the review the ruleset requires (may-journal/.github#125).
-# It approves a release PR only when the automation App authored it and its
-# diff is the release files alone. It approves a dependency bump only when
-# its diff is a patch or minor bump of dev dependencies in package.json and
-# package-lock.json. Either way its checks must be green. Any other PR is
-# left for a person.
+# A machine user with write access approves with APPROVER_TOKEN, since a bot
+# cannot approve its own PR and only writers count (may-journal/.github#125).
+# It approves a green release PR per
+# https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0093-github-release-approve.md
+# or dev bump per
+# https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0094-github-dependency-approve.md
+# and leaves every other PR to a person.
 on:
   workflow_call:
     inputs:
@@ -44,18 +39,15 @@ jobs:
       statuses: read
     # Checks may take a while; the wait below gives up after 20 minutes.
     timeout-minutes: 25
-    # A newer run waits for the running one, which finds the head moved and
-    # approves nothing, rather than cancelling it partway through its wait.
+    # A newer run waits for the running one to finish its wait, which then finds
+    # the head moved and approves nothing.
     concurrency:
       group: release-approve-${{ inputs.pr }}
       cancel-in-progress: false
     steps:
-      # A repo without the approver's token leaves its release PRs to a
-      # person, so a missing secret skips the approval instead of failing the
-      # release. A kind other than release or dependency is a caller bug, so
-      # it fails. A token GitHub rejects, or one that cannot see this repo,
-      # fails here, before the 20-minute wait; another error names itself. The
-      # approver's login read with the token names its reviews below.
+      # A missing token skips the approval and leaves the PR to a person. An
+      # unknown kind or a token GitHub rejects fails here, before the 20-minute
+      # wait, and the token's login names the approver's reviews below.
       - name: Check the approver token
         id: secrets
         env:
@@ -111,10 +103,9 @@ jobs:
             exit 0
           fi
           printf 'sha=%s\n' "$(jq -r .headRefOid <<< "$view")" >> "$GITHUB_OUTPUT"
-      # Only a build(deps) PR whose files are package.json and its lockfile
-      # qualifies. Comparing base and head, package.json may change only
-      # existing devDependencies, and the lockfile only dev-only packages.
-      # Every version that moves must keep its major number.
+      # A build(deps) PR qualifies when it changes only existing dev packages in
+      # package.json and its lockfile. Every version that moves must keep its
+      # major number.
       - name: Check the dependency bump
         id: bump
         if: ${{ steps.secrets.outputs.ready == 'true' && inputs.kind == 'dependency' }}

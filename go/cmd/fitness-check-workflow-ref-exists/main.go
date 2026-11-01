@@ -32,15 +32,13 @@ const org = "may-journal"
 // workflowDir holds the workflow files the check reads.
 const workflowDir = ".github/workflows/"
 
-// askBudget bounds every GitHub read in a run, well inside the check's
-// timeout, so a stalled network ends in a note rather than a timeout.
+// askBudget bounds every GitHub read in a run, inside the check's timeout, so a stalled network ends in a note.
 const askBudget = 20 * time.Second
 
 var (
 	// usesRe matches a `uses:` key and its value, quoted or not.
 	usesRe = regexp.MustCompile(`^\s*(?:-\s+)?uses:\s*['"]?([^'"\s]+)`)
-	// blockRe matches a line whose value is a `|` or `>` block scalar, such
-	// as a `run:` script, whose lines are text rather than keys.
+	// blockRe matches a line whose value is a `|` or `>` block scalar, such as a `run:` script.
 	blockRe = regexp.MustCompile(`:\s*[|>][-+0-9]*\s*(?:#.*)?$`)
 	// shaRe matches a full commit sha.
 	shaRe = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
@@ -63,8 +61,7 @@ func (c call) at(msg string) string {
 	return fmt.Sprintf("%s: line %d: %s: %s", c.file, c.line, c.value, msg)
 }
 
-// verdict is what GitHub says about one call: a finding when its path is
-// missing, a note when it was skipped, or neither when it holds.
+// verdict is what GitHub says about one call: a finding if its path is missing, a note if skipped, else neither.
 type verdict struct {
 	finding, note string
 }
@@ -103,10 +100,7 @@ func workflowFiles(root string) []string {
 	return out
 }
 
-// judge checks every call against GitHub and fails each missing path. When
-// GitHub stops answering, it keeps the findings so far and notes the calls
-// it could not verify. When the runner's probe found GitHub's API host
-// unreachable, it asks nothing and notes that instead.
+// judge checks every call against GitHub and fails each missing path, keeping findings so far and noting calls it could not verify.
 func judge(files int, calls []call, gh *github) checkkit.Result {
 	if note := checkkit.Offline("the workflow ref reads"); note != "" {
 		return checkkit.Info(files, note)
@@ -226,10 +220,7 @@ type github struct {
 	answers map[string]answer
 }
 
-// answer is one cached `gh api` result. found is false on HTTP 404, and
-// notFound keeps GitHub's message for it; refused holds any other answer
-// GitHub gave about this one request, such as a 403 or 422; err holds a
-// failure to reach GitHub at all.
+// answer is one cached `gh api` result: found is false on a 404, refused holds other refusals, and err a failure to reach GitHub.
 type answer struct {
 	body     []byte
 	found    bool
@@ -276,8 +267,7 @@ func firstLine(stderr string, err error) string {
 	return fmt.Sprint(err)
 }
 
-// verify judges one call. A ref that is not a full sha must be a tag; the
-// path must then exist at it. An error means GitHub cannot answer.
+// verify judges one call: a ref that is no full sha must be a tag, and the path must exist at it.
 func (g *github) verify(c call) (verdict, error) {
 	v, err := g.judgeRef(c)
 	var refused refusal
@@ -312,8 +302,7 @@ func (g *github) judgeRef(c call) (verdict, error) {
 	return g.atRef(c)
 }
 
-// notTag explains a ref that is not a tag: a branch is out of scope, and a
-// ref that is neither fails, unless the repo itself cannot be read.
+// notTag explains a non-tag ref: a branch is out of scope, and any other ref fails unless the repo is hidden.
 func (g *github) notTag(c call, err error) (verdict, error) {
 	if err != nil {
 		return verdict{}, err
@@ -325,8 +314,7 @@ func (g *github) notTag(c call, err error) (verdict, error) {
 	return g.missing(c, fmt.Sprintf("%s is not a tag, a branch, or a full commit sha", c.ref))
 }
 
-// atRef judges whether the call's path exists at its ref, telling a sha
-// that names no commit apart from a path missing at a real one.
+// atRef judges whether the call's path exists at its ref, telling a sha naming no commit from a missing path.
 func (g *github) atRef(c call) (verdict, error) {
 	found, err := g.pathExists(c)
 	if err != nil || found {
@@ -343,9 +331,7 @@ func contentsAPI(c call) string {
 	return path.Join("repos", c.repo, "contents", c.dir) + "?ref=" + url.QueryEscape(c.ref)
 }
 
-// missing is the finding for something GitHub answered 404, or a note when
-// the repo itself answers 404: GitHub hides a repo the token cannot read,
-// so its missing paths prove nothing.
+// missing is the finding for a 404 answer, or a note when the repo answers 404, since GitHub hides unreadable repos.
 func (g *github) missing(c call, finding string) (verdict, error) {
 	repo, err := g.read("repos/" + c.repo)
 	if err != nil {

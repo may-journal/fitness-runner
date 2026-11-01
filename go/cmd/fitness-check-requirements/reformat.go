@@ -10,8 +10,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// listMarker is a bullet or ordered-list marker at the start of a line,
-// which a formatter may rewrite, as `*` to `-` or `1)` to `1.`.
+// listMarker is a bullet or ordered-list marker at a line start that a formatter may rewrite, as `*` to `-`.
 var listMarker = regexp.MustCompile(`(?m)^(\s*)(?:[-*+]|\d+[.)])(\s)`)
 
 // sourceLine is a `Source:` line older docs end their Measurement with.
@@ -68,11 +67,7 @@ func renamedFrom(root, base, f string) string {
 	return f
 }
 
-// wording is a doc's words in order, without its front matter or HTML
-// comments. At base only, a leftover Source line is dropped, so deleting one
-// is no change but adding or editing one is. Spacing, line breaks, and list
-// markers are made alike, as a formatter may change them. The doc check
-// judges the structure.
+// wording is a doc's words in order without front matter, HTML comments, a base Source line, or formatter-changeable spacing and markers.
 func wording(doc string, dropSource bool) string {
 	body := comments.WithoutHTMLComments(mdx.StripFrontMatter(doc))
 	if dropSource {

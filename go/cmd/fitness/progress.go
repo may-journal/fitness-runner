@@ -31,8 +31,8 @@ func (c liveCheck) line() string {
 	return fmt.Sprintf("  … %s  running: %s (budget %s)\n", span(time.Since(c.start)), c.name, span(c.budget))
 }
 
-// span renders a duration the way a person reads it: tenths of a second
-// below ten seconds, whole seconds below a minute, then minutes.
+// span renders a duration as tenths of a second below ten seconds, whole
+// seconds below a minute, then minutes.
 func span(d time.Duration) string {
 	if d >= time.Minute {
 		d = d.Round(time.Second)
@@ -107,9 +107,8 @@ func warnHalfway(c liveCheck, heartbeat bool) (cancel func()) {
 	return func() { t.Stop() }
 }
 
-// stream holds one check's stderr. Once the check is the last one running,
-// it also passes the stderr to the runner's own as it arrives, so a long
-// final check is never silent.
+// stream holds one check's stderr. Once the check runs last, it passes the
+// stderr on as it arrives.
 type stream struct {
 	mu   sync.Mutex
 	buf  bytes.Buffer

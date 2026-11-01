@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Blocks a push unless the branch traces to an approved Plan Issue, through the
-# same Go hook every consumer repo runs. The Plan may be named by a pushed
-# commit, an earlier branch commit, or the branch's open PR. Chore and docs
-# pushes are exempt. Requires the `gh` CLI to resolve approval.
+# The Go hook blocks a push unless a branch commit or the open PR names
+# an approved Plan, except chore and docs pushes. It needs the `gh` CLI to
+# read approval.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 exec go/bin/fitness hook pre-push

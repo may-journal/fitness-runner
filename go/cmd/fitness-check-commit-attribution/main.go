@@ -60,9 +60,8 @@ func anyTrailer(text string) bool {
 	return false
 }
 
-// resolveMessage returns the commit message under validation: the runner's
-// context-inline message when provided — even empty, which deliberately does
-// not fall back — otherwise the HEAD commit message ("" when git fails).
+// resolveMessage returns the runner's inline message when provided, even if
+// empty, otherwise the HEAD commit message (empty when git fails).
 func resolveMessage(root string) string {
 	if message, ok := checkkit.CtxMessage(); ok {
 		return message
@@ -70,9 +69,8 @@ func resolveMessage(root string) string {
 	return gitx.HeadMessage(root)
 }
 
-// judge validates one commit message, mirroring the TS check: a blank
-// subject fails with msgEmpty, merge/revert subjects are exempt, and each
-// missing required trailer reports its own error.
+// judge validates one commit message: a blank subject fails with msgEmpty,
+// merge and revert subjects pass, and each missing trailer errors.
 func judge(message string) checkkit.Result {
 	subject := firstLine(message)
 	if strings.TrimSpace(subject) == "" {

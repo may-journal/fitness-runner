@@ -22,8 +22,7 @@ const (
 		"thresholds set to 100 for branches, functions, lines, and statements."
 )
 
-// missingVitestHint is this port's own info: the TS check ran through npx,
-// which fetched vitest on demand; the direct exec asks for an install.
+// missingVitestHint is this port's own info, since the TS check fetched vitest through npx and the direct exec asks for an install.
 const missingVitestHint = "vitest not found in node_modules/.bin (walking up from root) " +
 	"or on PATH. Install it (npm install -D vitest) to run the vitest-coverage-full check"
 
@@ -63,9 +62,7 @@ func runVitest(root string) (checkkit.Result, error) {
 	return judgeRun(execVitest(bin, root, vitestArgs(root, frRoot)))
 }
 
-// judgeRun judges a finished vitest run: a pass on exit 0, the last line of
-// output when Vitest judged the code, and an internal error when it could
-// not start, was killed, or failed without a verdict.
+// judgeRun judges a finished vitest run: a pass on exit 0, the last output line on a verdict, else an internal error.
 func judgeRun(o checkkit.Outcome) (checkkit.Result, error) {
 	if err := o.EnvErr("vitest"); err != nil {
 		return checkkit.Result{}, err
@@ -85,12 +82,7 @@ func judgeRun(o checkkit.Outcome) (checkkit.Result, error) {
 // such as a missing coverage provider, never judged it.
 var verdict = regexp.MustCompile(`does not meet (global )?threshold|\b\d+ failed\b`)
 
-// vitestArgs is the TS buildVitestCoverageCmd: plain `run --coverage` when
-// the consumer has a local vitest.config.*, else with --config pointing at
-// the fitness-runner fallback — frRoot, the sharedconf-resolved config
-// directory (the TS resolveFitnessConfigPath: a local vitest.config.mjs
-// would win, but by then no local config exists). The TS shell-quoted the
-// path for execSync; args exec directly here, unquoted.
+// vitestArgs ports buildVitestCoverageCmd: plain `run --coverage` with a local vitest.config.*, else --config pointing at the frRoot fallback.
 func vitestArgs(root, frRoot string) []string {
 	args := []string{"run", "--coverage"}
 	for _, name := range vitestconf.ConfigNames {

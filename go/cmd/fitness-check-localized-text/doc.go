@@ -2,7 +2,7 @@
 // test literals that skip the app's [String Catalog] ([#527]). The Swift
 // language module owns the reading and its judgment. A literal passed to
 // `Text` compiles as a [LocalizedStringKey], so a missing entry only shows in
-// another language. Requirements: [0097].
+// another language.
 //
 // # Views
 //
@@ -57,9 +57,13 @@
 //
 // Org repos cannot turn the check off, as [ADR 0009] decides.
 //
+// # Requirements
+//
+// [Requirement 0097] has one installed-command test per acceptance.
+//
 // [String Catalog]: https://developer.apple.com/documentation/xcode/localizing-and-varying-text-with-a-string-catalog
 // [#527]: https://github.com/may-journal/fitness-runner/issues/527
 // [LocalizedStringKey]: https://developer.apple.com/documentation/swiftui/localizedstringkey
-// [0097]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0097-checks-localized-text.md
+// [Requirement 0097]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0097-checks-localized-text.md
 // [ADR 0009]: https://github.com/may-journal/fitness-runner/blob/main/fitness/adr-0009/README.md
 package check

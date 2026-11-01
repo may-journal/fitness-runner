@@ -32,11 +32,7 @@ func checkGenerated(args []string) {
 	checkkit.Main(checkkit.Check{Describe: generatedDescribe, Run: judgeGenerated})
 }
 
-// judgeGenerated fails each generated file whose content differs from what
-// `go generate` writes now, and a local program whose describe line drifts
-// from generatedDescribe. Code the generator cannot read, such as a check
-// package without a doc comment, fails the check with the reason. A scoped
-// run that changes no generator input skips the work.
+// judgeGenerated fails each generated file differing from what `go generate` writes now, and each program whose describe line drifts.
 func judgeGenerated(root string, _ []string) (checkkit.Result, error) {
 	if !touchesInputs(checkkit.ChangedFiles()) {
 		return checkkit.Pass(0), nil

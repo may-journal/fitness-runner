@@ -1,11 +1,8 @@
 name: Release Please (reusable)
-# Reusable across the org: may-journal/.github syncs a short caller into each
-# repo that opts in to releases, which runs on pushes to main and calls this
-# with `secrets: inherit`. It lives here because this repo is public: public
-# repos cannot call a private repo's workflows. Each caller keeps its own
-# release-please-config.json, .release-please-manifest.json and version.txt.
-# Release Please keeps a release PR open from conventional commits on main.
-# Merging it tags vX.Y.Z, publishes the release, and moves vX to it.
+# Org repos that release call this public workflow on pushes to main, each with
+# its own Release Please config, manifest and version.txt.
+# Release Please keeps a release PR open, and merging it tags vX.Y.Z,
+# publishes the release and moves vX to it.
 on:
   workflow_call:
     secrets:
@@ -58,10 +55,9 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      # pr-check wants plain bullets under "## Changelog" and no bold scopes.
-      # Release Please writes a "## 1.0.0" heading on a first release, which
-      # has no compare link, and bold scopes. Demote the headings below the
-      # header and strip the bold.
+      # pr-check wants plain bullets under "## Changelog" with no bold scopes.
+      # This step demotes the headings Release Please writes and strips its
+      # bold.
       - name: Shape the release PR notes
         id: shape
         if: ${{ steps.release.outputs.pr != '' }}
@@ -110,9 +106,9 @@ jobs:
           Closes #$issue."
                echo "edited=true" >> "$GITHUB_OUTPUT" ;;
           esac
-      # pr-check runs when a PR opens or reopens but not when its body is
-      # edited, so it judged the body Release Please first wrote. Reopen the PR
-      # after a rewrite so the check reads the shaped body.
+      # pr-check skips body edits, so it judged the body Release Please first
+      # wrote. Reopening the PR after a rewrite lets the check read the shaped
+      # body.
       - name: Rerun pr-check on the shaped body
         if: ${{ steps.release.outputs.pr != '' && (steps.shape.outputs.edited == 'true' || steps.link.outputs.edited == 'true') }}
         env:
@@ -153,11 +149,10 @@ jobs:
           fi
           printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
 
-  # The approver approves the release PR once its checks are green. Its job
-  # reads the PR and its checks with the run token.
-  # `$/` names this repo at the commit running, even when another repo
-  # calls this workflow; `./` would name the caller's workspace. See
+  # The approver approves the release PR once its checks are green, reading
+  # them with the run token. `$/` names this repo at the running commit, as
   # https://github.blog/changelog/2026-07-30-reference-same-repository-actions-with-self-repository-syntax
+  # explains.
   approve:
     needs: release-please
     if: ${{ needs.release-please.outputs.pr != '' }}

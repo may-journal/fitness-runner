@@ -20,7 +20,7 @@ Every command package is an entry and must reach 100% statement coverage. Declar
 }
 ```
 
-A module without commands needs a declared entry. Unknown entries fail. Entries add to discovered commands; they cannot hide a command package.
+A module without commands needs a declared entry, and unknown entries fail. Entries add to discovered commands; they cannot hide a command package.
 
 ## Results
 

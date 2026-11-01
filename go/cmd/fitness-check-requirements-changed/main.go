@@ -51,8 +51,7 @@ func skips(root string) bool {
 	return gitx.CommitChanges(root) == nil || gitx.Replaying(root) || len(requirementDocs(root)) == 0
 }
 
-// judge fails each changed product file whose test or requirement doc did
-// not change with it, and each deleted one whose doc and tests stay behind.
+// judge fails each changed product file whose test or doc did not change, and each deleted one whose doc and tests stay.
 func judge(root string, tests testSet, changes []change) checkkit.Result {
 	product := productChanges(root, tests, changes)
 	changed := changedSet(changes)
@@ -66,17 +65,14 @@ func judge(root string, tests testSet, changes []change) checkkit.Result {
 	return checkkit.Pass(len(product))
 }
 
-// withoutCommentOnly drops each edit whose code, comments aside, is the
-// same as at base. It changes no behavior, so it neither needs a test and
-// doc nor counts as one. Only a run that changes product code compares.
+// withoutCommentOnly drops each edit whose code, comments aside, matches base, since it changes no behavior and needs no test or doc.
 func withoutCommentOnly(root, base string, changes []change) []change {
 	return slices.DeleteFunc(slices.Clone(changes), func(c change) bool {
 		return !c.deleted && comments.CommentOnly(root, base, c.from, c.path)
 	})
 }
 
-// problem is what is wrong with one product change: an edit with no test or
-// doc beside it, or a deletion that leaves its doc and tests behind.
+// problem names what is wrong with one product change: an edit lacking a test or doc, or a deletion leaving them behind.
 func (c change) problem(root string, tests testSet, changed map[string]bool) []string {
 	if c.deleted {
 		return leftBehind(root, c.path, tests, changed)

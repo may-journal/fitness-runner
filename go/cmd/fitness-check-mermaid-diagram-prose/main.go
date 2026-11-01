@@ -1,7 +1,4 @@
-// The shared parser lives in internal/mermaid; the JS \s class and the
-// styling-line pattern it uses are unexported there, so that small residue
-// (jsWS, isJSSpace, trimJS, styleLine) is duplicated here instead of
-// modifying the frozen package.
+// The shared parser lives in internal/mermaid, which keeps its JS space and styling patterns unexported, so this package duplicates them.
 
 package check
 
@@ -143,9 +140,7 @@ func proseLabels(diagram *mermaid.DiagramBlock) []string {
 	return found
 }
 
-// validateDoc flags relationship/edge labels that carry prose beyond a
-// callout when a diagram is paired with a callout table —
-// descriptions belong in the table.
+// validateDoc flags edge labels that carry prose beyond a callout in a diagram with a callout table.
 func validateDoc(file, content string) []string {
 	errors := []string{}
 	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content)).Pairs {

@@ -13,7 +13,7 @@ func Main() {
 }
 
 // run reads the whole model unless the run is architecture.Unmoved, so a
-// change to only the code or only the view still meets the other side.
+// change to one side still meets the other.
 func run(root string, _ []string) (checkkit.Result, error) {
 	model, err := architecture.Load(root)
 	if err != nil || len(model.Files) == 0 {

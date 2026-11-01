@@ -46,10 +46,7 @@ func cellAt(row []string, i int) string {
 	return ""
 }
 
-// isNumberedRowMissingWhy reports whether a row carries a callout label — a
-// node number such as "1" or "[1]", or connector letters such as "A" — but
-// leaves its Why cell blank. The parser hands cells over already trimmed, so
-// the TS `.trim()` reduces to an emptiness test.
+// isNumberedRowMissingWhy reports whether a row has a callout label, such as "1", "[1]" or "A", but a blank Why cell.
 func isNumberedRowMissingWhy(row []string, whyIndex int) bool {
 	return mermaid.RowLabel(row) != "" && cellAt(row, whyIndex) == ""
 }

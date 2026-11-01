@@ -45,7 +45,7 @@ Reaching a component declared under another runtime's container fails at the ref
 
 ## Scope
 
-A test, changelog or doc change cannot move the views. So a scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole model and every product source, so a change to one side still meets the other.
+A test, changelog or doc change cannot move the views. A scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole model and every product source, so a change to one side still meets the other.
 
 ## Requirements
 

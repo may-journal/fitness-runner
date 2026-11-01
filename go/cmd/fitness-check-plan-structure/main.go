@@ -25,8 +25,7 @@ var planSpec = mdtemplate.Spec{
 	BanOpenQuestions: true,
 }
 
-// run judges the body by the repo's Plan template when it has one, else
-// planSpec, so a repo's own template is the one source of its sections.
+// run judges the body by the repo's Plan template when it has one, else planSpec.
 func run(root string, args []string) (checkkit.Result, error) {
 	return bodycheck.RunIf(args, bodycheck.PlanBody, func(body string) []string {
 		return mdtemplate.Validate(body, mdtemplate.SpecFor(root, "Plan", planSpec))

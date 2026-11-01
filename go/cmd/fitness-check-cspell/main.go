@@ -60,8 +60,8 @@ func walkFiles(root string) checkkit.Result {
 }
 
 // targets lists the files to spell-check: the changed files, or every
-// tracked file when the run is unscoped, minus lockfiles, build wrapper
-// scripts, and those .gitattributes marks linguist-generated.
+// tracked file when unscoped, minus lockfiles, build wrappers, and
+// linguist-generated files.
 func targets(root string) []string {
 	files, scanned := stagedPaths(root)
 	if !scanned {
@@ -79,8 +79,8 @@ func targets(root string) []string {
 	return walkfs.WithoutGenerated(root, kept)
 }
 
-// stagedPaths returns the changed files to check and whether a scope exists
-// at all: only paths that no longer exist on disk are dropped.
+// stagedPaths returns the changed files to check, minus deleted paths, and
+// whether a scope exists.
 func stagedPaths(root string) (files []string, staged bool) {
 	stagedFiles := checkkit.ChangedFiles()
 	if len(stagedFiles) == 0 {
@@ -94,9 +94,9 @@ func stagedPaths(root string) (files []string, staged bool) {
 	return files, true
 }
 
-// newChecker builds the spell.Checker used by both the file walk and body
-// mode: the embedded base dictionaries with the resolved cspell.json words and
-// ignoreWords layered on so project terms always win.
+// newChecker builds the spell.Checker for both file walk and body mode,
+// layering resolved cspell.json words and ignoreWords over the embedded base
+// dictionaries.
 func newChecker(cfg config) *spell.Checker {
 	checker := spell.NewEmbeddedChecker()
 	checker.AddWords(cfg.Words)
@@ -125,18 +125,17 @@ func errorLine(f checkkit.Finding) string {
 	return fmt.Sprintf("%s:%d:%d - %s", f.File, f.Line, f.Column, f.Message)
 }
 
-// checkContent scans one in-memory document (never reading from disk) with the
-// same per-line/word pass checkFiles applies per file: its unknown words,
-// then each flagWords match.
+// checkContent scans one in-memory document, never reading from disk, with the
+// pass checkFiles applies per file: unknown words, then each flagWords match.
 func checkContent(name, content string, checker *spell.Checker, flags []string) []checkkit.Finding {
 	found := findings(name, unknown, checker.CheckText(content))
 	return append(found, findings(name, forbidden, spell.FindPhrases(content, flags))...)
 }
 
-// checkFiles scans each file as the cspell CLI run from the root would.
-// The cspell.json files that list the flagWords are never checked for them.
-// A file it cannot read is skipped and named in skipped, so the other files
-// are still judged.
+// checkFiles scans each file as the cspell CLI run from the root would,
+// never flagging the cspell.json files that list flagWords.
+// A file it cannot read is skipped and named in skipped, so the others are
+// still judged.
 func checkFiles(root string, files []string, checker *spell.Checker, cfg config) (found []checkkit.Finding, skipped []string) {
 	perFile := par.Map(len(files), 0, func(i int) fileResult {
 		flags := cfg.FlagWords
@@ -160,9 +159,8 @@ type fileResult struct {
 	skipped string
 }
 
-// fileIssues scans one file and returns its findings: a read failure yields
-// a skip note, binary files yield nothing (counted as checked, never
-// spelled).
+// fileIssues returns one file's findings: a read failure yields a skip note,
+// and binary files yield nothing yet count as checked.
 func fileIssues(root, rel string, checker *spell.Checker, flags []string) fileResult {
 	data, binary, err := readText(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
@@ -177,9 +175,8 @@ func fileIssues(root, rel string, checker *spell.Checker, flags []string) fileRe
 // probeBytes is how much of a file the binary probe reads.
 const probeBytes = 8192
 
-// readText reads the file at name unless a NUL byte in its first
-// probeBytes marks it binary, so a large binary file costs one small read,
-// never a whole one.
+// readText reads the file at name unless a NUL in its first probeBytes marks
+// it binary, costing large binaries one small read.
 func readText(name string) (data []byte, binary bool, err error) {
 	f, err := os.Open(name)
 	if err != nil {
@@ -214,7 +211,7 @@ func findings(rel string, kind spelling, issues []spell.Issue) []checkkit.Findin
 }
 
 // config is the subset of cspell.json this check reads; path is the
-// resolved file it came from. IgnorePaths is read only to reject it.
+// resolved file it came from. IgnorePaths is read only to reject it, and
 // FlagWords are words or phrases no checked text may contain.
 type config struct {
 	Words       []string        `json:"words"`
@@ -224,11 +221,9 @@ type config struct {
 	path        string
 }
 
-// loadConfig reads the resolved cspell.json — repo-local, installed
-// @mayjournal/fitness-shared, or the embedded copy materialized on demand
-// (the sharedconf.Resolve contract); when even the fallback fails to
-// materialize (or the file is unreadable) the embedded dictionaries stand
-// alone.
+// loadConfig reads the cspell.json that sharedconf.Resolve finds, falling back
+// to the embedded dictionaries alone when it cannot materialize or read the
+// file.
 func loadConfig(root string) config {
 	var cfg config
 	p := sharedconf.Resolve(root, "cspell.json")

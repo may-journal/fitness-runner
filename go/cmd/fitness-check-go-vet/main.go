@@ -31,8 +31,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // vet runs go vet in one module and returns its findings; package header
 // lines ("# pkg") are dropped since each finding names its file. A run that
-// could not start, was killed, or failed without naming a .go file is an
-// internal error, since go vet never judged the code.
+// could not start, was killed, or failed without naming a file is an
+// internal error, since go vet judged nothing.
 func vet(root, dir, bin string) ([]string, error) {
 	code, out, envErr := toolchain.Exec(root, dir, bin, "vet", "./...")
 	if envErr != nil || code == 0 {

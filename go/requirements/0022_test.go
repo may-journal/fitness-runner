@@ -13,9 +13,9 @@ import (
 
 // The packages these tests declare, each with its saved latest version.
 const (
-	dcLeftPad  = "left-pad"        // latest 1.3.0
-	dcIsNumber = "is-number"       // latest 7.0.0
-	dcTypes    = "@types/left-pad" // latest 1.2.0
+	dcLeftPad  = "left-pad"        // the saved latest version is 1.3.0
+	dcIsNumber = "is-number"       // the saved latest version is 7.0.0
+	dcTypes    = "@types/left-pad" // the saved latest version is 1.2.0
 	dcInternal = "@mayjournal/fitness-shared"
 )
 
@@ -73,11 +73,10 @@ func dcNpmrc(registry string) string {
 	return "registry=" + registry + "\n"
 }
 
-// dependencyCurrency runs `fitness-install -- dependency-currency` on
-// happyRepo with files written over it. Like a real repo, it tracks its
-// manifests and ignores the installed node_modules. GitHub's API is a local
-// listener, so the runner's probe of it connects without the network; env
-// may name another.
+// dependencyCurrency runs `fitness-install -- dependency-currency` on happyRepo
+// with files written over it, ignoring node_modules as a real repo does. A local
+// listener stands in for GitHub's API so the probe needs no network, and env may
+// name another.
 func dependencyCurrency(t *testing.T, files map[string]string, env ...string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", with(map[string]string{".gitignore": "node_modules\n"}, files))

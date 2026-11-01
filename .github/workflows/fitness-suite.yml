@@ -1,16 +1,8 @@
 name: Fitness suite
 
-# Required in every org repo: the may-journal/.github ruleset
-# rulesets/fitness-suite-workflow.json injects this file on each pull request.
-# It runs ci-reusable, which installs swiftlint when the repo has Swift sources.
-# The full `uses:` path matters: an injected workflow resolves `./` in the
-# target repo. Only fitness-runner skips the job, since its own CI builds the
-# checks from source. The skip is a job condition rather than a separate job,
-# because GitHub bills every job at least one minute.
-# The same job runs fitness pr-check, which the separate pr-check ruleset
-# workflow ran in a second job. So it also runs on an edit, which reruns the
-# suite too: the edit reports the same check on the same commit, so a skipped
-# suite would turn an earlier failure green.
+# The org ruleset injects this into every repo's pull requests, running
+# ci-reusable and pr-check in one job by its full `uses:` path. An edit reruns
+# the whole suite, since a skipped suite would turn an earlier failure green.
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]

@@ -83,10 +83,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return buildExecResult(o.Code, parsed, prettierErrors(output), filesChecked(parsed, paths))
 }
 
-// preflight resolves the Prettier binary, or the verdict that ends the run
-// first: a failure for any repo with a .prettierignore, then a pass for a
-// repo with no package.json, then Biome's verdict in a repo that chose it.
-// Without Prettier installed it returns no binary and no verdict.
+// preflight resolves the Prettier binary, or the early verdict: fail on .prettierignore, pass without package.json, or defer to Biome.
 func preflight(root string, args []string) (bin string, res checkkit.Result, done bool) {
 	if _, err := os.Stat(filepath.Join(root, prettierIgnoreFile)); err == nil {
 		return "", checkkit.Fail(0, prettierIgnoreFile+" exists; Prettier checks every tracked file, so delete it and fix the findings instead"), true
@@ -101,11 +98,7 @@ func preflight(root string, args []string) (bin string, res checkkit.Result, don
 	return bin, checkkit.Result{}, false
 }
 
-// formatWithBiome checks the same paths with `biome format` in a repo that
-// chose Biome (ADR 0006), naming each file Biome would reformat. Passthrough
-// args are Prettier's, so biomeFormatArgs translates them: the paths among
-// them replace the checked paths, and a flag Biome has no counterpart for
-// fails by name instead of reaching Biome as a path.
+// formatWithBiome checks the same paths with `biome format` in a Biome repo (ADR 0006). It translates Prettier's passthrough args, failing by name on a flag Biome lacks.
 func formatWithBiome(root string, args []string) checkkit.Result {
 	flags, given, unknown := biomeFormatArgs(args)
 	if len(unknown) > 0 {
@@ -143,9 +136,7 @@ func biomeFormatArgs(args []string) (flags, paths, unknown []string) {
 	return flags, paths, unknown
 }
 
-// prettierToBiome maps the Prettier flags Biome can honor to Biome's own.
-// --write writes in place. --check and --list-different are Biome's default,
-// and --ignore-unknown is always on, so they map to nothing.
+// prettierToBiome maps the Prettier flags Biome honors to Biome's own, with check-style flags mapping to nothing as Biome's default.
 var prettierToBiome = map[string][]string{
 	"--write": {"--write"}, "-w": {"--write"},
 	"--check": nil, "-c": nil,
@@ -175,9 +166,7 @@ func nodeModulesDirs(root string) []string {
 	return dirs
 }
 
-// withNodePath returns env with root's node_modules folders prepended to
-// NODE_PATH, so the shared config, materialized outside the repo, can load
-// the plugins the repo installs.
+// withNodePath returns env with root's node_modules folders prepended to NODE_PATH, so the shared config loads the repo's plugins.
 func withNodePath(env []string, root string) []string {
 	dirs := nodeModulesDirs(root)
 	if len(dirs) == 0 {
@@ -225,15 +214,7 @@ func hasPrettierConfig(root string) bool {
 	return hasPrettierInPackageJSON(root)
 }
 
-// resolveConfigPath returns "" when the consumer has its own config, else the
-// shared prettier.config.cjs — an installed @mayjournal/fitness-shared when
-// present, the embedded copy materialized from this binary otherwise
-// (sharedconf.Resolve; its repo-local step never fires here because
-// hasPrettierConfig already ruled a root-level prettier.config.cjs out). ""
-// again only when even the fallback fails to materialize, running Prettier on
-// its defaults. The path has its symlinks resolved, as Node resolves the
-// config's own __dirname, so the config's override globs, which Prettier
-// matches from the --config folder, count the same ../ steps.
+// resolveConfigPath returns "" when the consumer has its own config or the shared one cannot materialize. Otherwise it returns the shared prettier.config.cjs with symlinks resolved.
 func resolveConfigPath(root string) string {
 	if hasPrettierConfig(root) {
 		return ""
@@ -245,9 +226,7 @@ func resolveConfigPath(root string) string {
 	return p
 }
 
-// scopedPaths returns the paths to hand Prettier, and false when a scoped run
-// changed no file still on disk, so it skips instead of checking the whole
-// repo. Passthrough args always run.
+// scopedPaths returns the paths to hand Prettier, and false when a scoped run changed no file on disk. Passthrough args always run.
 func scopedPaths(root string, args []string) ([]string, bool) {
 	changed := checkkit.ChangedFiles()
 	paths := pathsToCheck(root, changed)
@@ -255,9 +234,7 @@ func scopedPaths(root string, args []string) ([]string, bool) {
 }
 
 // pathsToCheck returns the changed paths still on disk as regular files, or
-// every tracked file when the run is unscoped. A symbolic link is left out,
-// since Prettier refuses one named on its command line and its target is
-// checked as its own file.
+// every tracked file when the run is unscoped. A symbolic link is left out because Prettier refuses one on its command line.
 func pathsToCheck(root string, changed []string) []string {
 	if len(changed) == 0 {
 		return walkfs.FilesByExt(root, "")
@@ -271,9 +248,7 @@ func pathsToCheck(root string, changed []string) []string {
 	return out
 }
 
-// prettierArgv builds Prettier's argv: --config when a shared config applies,
-// the flags that make Prettier ignore nothing it can parse, then either the
-// passthrough args verbatim (no --check) or --check plus the paths.
+// prettierArgv builds Prettier's argv from the shared config, the ignore-nothing flags, and either the passthrough args or --check with paths.
 func prettierArgv(configPath string, passthrough, paths []string) []string {
 	var argv []string
 	if configPath != "" {
@@ -286,9 +261,7 @@ func prettierArgv(configPath string, passthrough, paths []string) []string {
 	return append(append(argv, "--check"), paths...)
 }
 
-// execPrettier runs the resolved binary in root and returns its outcome,
-// with stdout and stderr in one buffer, mirroring the TS execSyncResult
-// (which redirected with `2>&1`).
+// execPrettier runs the resolved binary in root and returns its outcome with stdout and stderr combined.
 func execPrettier(bin, root string, env, argv []string) checkkit.Outcome {
 	cmd := exec.Command(bin, argv...)
 	cmd.Dir = root

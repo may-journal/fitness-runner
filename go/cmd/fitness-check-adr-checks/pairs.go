@@ -8,12 +8,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-// changeErrors fails each ADR whose decision changed while no other file
-// of its check did. The check's own part of its README, and the check's
-// code alone, may change freely, since the decision still holds. A README
-// that held no decision at the base, such as one an ADR just moved into,
-// is new. A retired ADR pairs with nothing, and a run that changes
-// nothing, such as a full scan, judges no pairs.
+// changeErrors fails each ADR whose decision changed while no other file of
+// its check did. The package doc's Rules list the exceptions.
 func changeErrors(root string, decisions []adr, changed []string) []string {
 	alone := readmeAlone(decisions, changed)
 	if len(alone) == 0 {

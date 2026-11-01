@@ -149,7 +149,7 @@ func runs0092(t *testing.T, name string, outputs map[string]string) bool {
 func readsEmptyPR(t *testing.T, name string) bool {
 	t.Helper()
 	for _, m := range fromJSON0092.FindAllStringSubmatch(section0092(t, name), -1) {
-		arg := "" // steps.release.outputs.pr is empty
+		arg := "" // the value when steps.release.outputs.pr is empty
 		if _, fallback, ok := strings.Cut(m[1], " || '"); ok {
 			arg, _, _ = strings.Cut(fallback, "'")
 		}

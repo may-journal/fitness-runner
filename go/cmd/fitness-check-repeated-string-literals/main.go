@@ -30,12 +30,9 @@ const minOccurrences = 3
 // error line readable.
 const maxLocations = 5
 
-// idiomaticValues are JS/Node tokens where the literal IS the clearest
-// spelling — extracting a constant would hurt readability. Closed sets only:
-// buffer encodings, child_process stdio modes, and typeof results. Anything
-// domain-specific is still flagged.
+// idiomaticValues are JS/Node tokens whose literal is the clearest spelling, limited to buffer encodings, stdio modes and typeof results.
 var idiomaticValues = map[string]bool{
-	// Buffer/stream encodings (BufferEncoding)
+	// These are the Buffer and stream encodings
 	"ascii":     true,
 	"base64":    true,
 	"base64url": true,
@@ -51,7 +48,7 @@ var idiomaticValues = map[string]bool{
 	"ignore":     true,
 	"overlapped": true,
 	"pipe":       true,
-	// typeof results
+	// These are the results of typeof
 	"bigint":    true,
 	"boolean":   true,
 	"function":  true,
@@ -164,9 +161,7 @@ func formatDuplicate(value string, locs []location) string {
 	return fmt.Sprintf("\"%s\" appears %d times (%s) — extract a shared constant", value, len(locs), where)
 }
 
-// findDuplicates returns one error message per non-allowed value that occurs
-// >= minOccurrences times across all files, most-repeated first, then
-// alphabetical by value for stable output.
+// findDuplicates returns one error per non-allowed value occurring at least minOccurrences times, most-repeated first, then alphabetical.
 func findDuplicates(scanned []scannedFile, allow map[string]bool) []string {
 	byValue, order := groupByValue(scanned)
 	var duplicated []string
@@ -199,10 +194,7 @@ type cursor struct {
 	word     string // identifier currently being read
 }
 
-// scanStringLiterals extracts single- and double-quoted string literals from
-// source, skipping line/block comments, regex literals, and template
-// literals, and dropping module specifiers (the string after
-// import/require/from). Template literals are out of scope in v1.
+// scanStringLiterals extracts quoted string literals from source, skipping comments, regex and template literals, and module specifiers.
 func scanStringLiterals(content string) []literal {
 	cur := &cursor{content: content, line: 1}
 	for cur.i < len(content) {
@@ -292,9 +284,7 @@ func classAfter(inClass bool, ch byte) bool {
 	return inClass
 }
 
-// scanRegexChar consumes one byte of a regex body, updating the char-class
-// state; reports done at the closing `/` (consumed) or at a newline (left
-// unconsumed — the unterminated-body bail).
+// scanRegexChar consumes one byte of a regex body and reports done at the closing slash or at a newline, which it leaves unconsumed.
 func (cur *cursor) scanRegexChar(inClass *bool) (done bool) {
 	ch := cur.content[cur.i]
 	if ch == '\\' {
@@ -302,7 +292,7 @@ func (cur *cursor) scanRegexChar(inClass *bool) (done bool) {
 		return false
 	}
 	if ch == '\n' {
-		return true // unterminated — bail safely
+		return true // an unterminated body bails out safely
 	}
 	cur.i++
 	if ch == '/' && !*inClass {
@@ -326,7 +316,7 @@ func (cur *cursor) scanRegexBody() {
 
 // skipRegex advances past a regex literal and its flags.
 func (cur *cursor) skipRegex() {
-	cur.i++ // opening /
+	cur.i++ // skip the opening slash
 	cur.scanRegexBody()
 	for cur.i < len(cur.content) && isFlag(cur.content[cur.i]) {
 		cur.i++
@@ -344,9 +334,7 @@ func (cur *cursor) recordLiteral(value string, line int, isModule bool) {
 	cur.out = append(cur.out, literal{line: line, value: value})
 }
 
-// readEscape consumes a backslash escape inside a string literal, appending
-// the escaped byte to value raw (the lexer never decodes escape sequences; a
-// trailing backslash at EOF appends nothing).
+// readEscape consumes a backslash escape inside a string literal and appends the escaped byte raw, since the lexer never decodes escapes.
 func (cur *cursor) readEscape(value *strings.Builder) {
 	if cur.i+1 < len(cur.content) {
 		value.WriteByte(cur.content[cur.i+1])
@@ -374,7 +362,7 @@ func (cur *cursor) readString() {
 		value.WriteByte(cur.content[cur.i])
 		cur.i++
 	}
-	cur.i++ // closing quote
+	cur.i++ // skip the closing quote
 	cur.prev = quote
 	cur.lastWord = ""
 	cur.recordLiteral(value.String(), startLine, isModule)

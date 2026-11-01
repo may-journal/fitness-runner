@@ -37,7 +37,7 @@ Not every actor needs a Given; the check constrains the roles requirements use.
 
 ## Scope
 
-A test, changelog or doc change cannot move the views. So a scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads every requirement doc and the whole model, so a removed actor fails even when no requirement changed.
+A test, changelog or doc change cannot move the views. A scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads every requirement doc and the whole model, so a removed actor fails even when no requirement changed.
 
 ## Behavior
 

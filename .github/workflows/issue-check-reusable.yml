@@ -1,14 +1,8 @@
 name: Issue check (reusable)
 
-# Reusable across the org: a consumer repo calls this from an `issues`-triggered
-# caller. It installs the published fitness checks and validates the calling
-# repo's issue(s) by kind label — the shape of the kind's issue template, the
-# kind's own checks, and the prose/markdown checks on the body — keeping one
-# verdict comment and label per Issue. An issue with no kind label passes.
-# The same job then runs dupe-check, so one issue event starts one runner,
-# which bills one minute where two jobs billed two.
-# fitness-runner keeps its own build-from-source issue-check so it still tests
-# its own unreleased changes.
+# Org repos call this to judge each issue by its kind label, keeping one verdict
+# comment and label per Issue. The
+# same job runs dupe-check, so one issue event bills one runner minute.
 on:
   workflow_call:
     inputs:

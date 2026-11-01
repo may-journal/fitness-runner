@@ -35,10 +35,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return judge(strings.TrimSpace(string(raw)), current), nil
 }
 
-// judge compares the .nvmrc requirement against the current version string,
-// mirroring the TS check: major-version comparison, current >= required
-// passes, and an unparsable requirement reports "NaN" exactly like
-// JavaScript did.
+// judge passes when the current major version is at least the .nvmrc requirement, reporting "NaN" for an unparsable one.
 func judge(required, current string) checkkit.Result {
 	requiredMajor, requiredOk := versionMajor(required)
 	currentMajor, currentOk := versionMajor(current)
@@ -71,9 +68,7 @@ func versionMajor(version string) (int, bool) {
 // nodeMissing is the info a run without node on PATH reports.
 const nodeMissing = "node not found on PATH. Install Node.js (e.g. via nvm) to run the node-version check"
 
-// currentNodeVersion runs `node --version`. A missing node, or one that
-// could not start, crashed or was killed, is an internal error, since no
-// version was read to judge.
+// currentNodeVersion runs `node --version`. A missing, crashed or killed node is an internal error, since no version was read.
 func currentNodeVersion() (string, error) {
 	bin, err := exec.LookPath("node")
 	if err != nil {
