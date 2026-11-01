@@ -49,5 +49,21 @@
 // block. Each error names the block as `path:line`, the line it starts on.
 // Tool directives, license headers and generated files are never judged.
 //
+// # Comment statements
+//
+// Two more rules judge comments only, so an agent cannot pass the sentence
+// limit by cutting a sentence in two:
+//
+//   - `comment-fragment` fails a sentence that starts with So, And, But, Then, Also, Thus, Hence, Because, Which or Plus.
+//   - `comment-fragment` fails a sentence of three words or fewer; join it to the sentence before it or drop it.
+//   - `comment-one-statement` fails a comment in a function body or after code that holds more than two sentences.
+//
+// A short Go doc heading such as `Deprecated:` passes. A short doc line led
+// by an identifier passes, and so does a lead-in that ends in a colon.
+//
+// A doc comment on a declaration, a file or a package keeps the paragraph
+// limits. Go finds its function bodies through its parser, and other
+// languages go by indent, doc marker and the next line of code.
+//
 // [text-readability]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-text-readability/README.md
 package check

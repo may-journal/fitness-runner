@@ -17,6 +17,12 @@ import (
 // named `path:line` and its text as Markdown. Each source file with a
 // judged block counts as one more file checked.
 func Judge(res checkkit.Result, root string, judge func(name, markdown string) []string) checkkit.Result {
+	return JudgeEach(res, root, func(_ Block, name, markdown string) []string { return judge(name, markdown) })
+}
+
+// JudgeEach is Judge for a judge that also reads the block itself, such as
+// where the block sits.
+func JudgeEach(res checkkit.Result, root string, judge func(b Block, name, markdown string) []string) checkkit.Result {
 	blocks, err := Judged(root)
 	if err != nil {
 		res.Info = append(res.Info, err.Error())
@@ -24,7 +30,7 @@ func Judge(res checkkit.Result, root string, judge func(name, markdown string) [
 	files := map[string]bool{}
 	for _, b := range blocks {
 		files[b.Path] = true
-		if errs := judge(fmt.Sprintf("%s:%d", b.Path, b.Line), Markdown(b.Text)); len(errs) > 0 {
+		if errs := judge(b, fmt.Sprintf("%s:%d", b.Path, b.Line), Markdown(b.Text)); len(errs) > 0 {
 			res.Ok = false
 			res.Errors = append(res.Errors, errs...)
 		}

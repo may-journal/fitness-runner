@@ -31,6 +31,12 @@ type Block struct {
 	Lang string
 	Kind Kind
 	Text string
+	// InBody marks a comment inside a function body or after code. A doc
+	// comment on a declaration, a file or a package is never in a body.
+	InBody bool
+	// Next is the first line of code after a comment on lines of its own,
+	// trimmed, which a doc comment names.
+	Next string
 }
 
 // note is one comment as written, markers included, before notes on
@@ -111,8 +117,10 @@ func Source(rel string, src []byte) []Block {
 		return nil
 	}
 	blocks := withoutLicense(join(read(src)))
+	place := placer(lang, src)
 	for i := range blocks {
 		blocks[i].Path, blocks[i].Lang = rel, lang
+		place(&blocks[i])
 	}
 	return blocks
 }

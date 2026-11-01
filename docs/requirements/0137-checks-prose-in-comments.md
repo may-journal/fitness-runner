@@ -2,7 +2,7 @@
 
 ## Why
 
-My code comments read as easily as my docs, because the prose checks judge them by the same limits. A commit judges only the comments it writes.
+My code comments read as easily as my docs, because the prose checks judge them by the same limits. A commit judges only the comments it writes. Each comment says one thing in one statement, so cutting a sentence in two never passes.
 
 ## Measurement
 
@@ -32,3 +32,15 @@ Comment blocks judged
     - Given Developer stages a change to one comment in a file, named with a space, whose other comment runs on
         - When prose-budget runs on the staged change
             - Then it judges only the changed comment, and a full scan lists both
+- 0137.6
+    - Given Developer has comments with a "So" sentence, a three-word sentence, or three sentences in a function body
+        - When prose-budget checks the repo
+            - Then it fails naming each comment's path, line and rule, and says to join, drop or condense it
+- 0137.7
+    - Given Developer has a 20-word body comment, a three-sentence doc comment, and Markdown with a "So" sentence
+        - When prose-budget checks the repo
+            - Then it passes, since doc comments keep the paragraph limits and Markdown meets neither rule
+- 0137.8
+    - Given Developer stages a comment with a "So" sentence in a file whose other comment is a fragment too
+        - When prose-budget runs on the staged fragment
+            - Then it judges only the changed fragment, and a full scan lists both
