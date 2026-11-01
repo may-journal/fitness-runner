@@ -1,6 +1,6 @@
 // The banner is display, not judgment: enabled names come from FITNESS_ENABLED_CHECKS, and a standalone run prints the table-less form.
 //
-// The table mirrors the cli-table3 output, as the check README describes.
+// The table mirrors the cli-table3 output, with its widths in tableWidths and its colors in palette.
 
 package check
 

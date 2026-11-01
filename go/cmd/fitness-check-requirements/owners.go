@@ -26,6 +26,7 @@ func testName(written []lang.Module, id string) string {
 }
 
 // ownershipErrors flags acceptances that no test or several tests own, and tests naming an undefined or no acceptance.
+// A doc that proven names is proved by its fitness/req-NNNN check, so its acceptances need no test.
 func ownershipErrors(docs []requirement.Document, tests []reqTest, written []lang.Module, proven map[string]bool) []string {
 	current := map[string]bool{}
 	owners := map[string][]string{}

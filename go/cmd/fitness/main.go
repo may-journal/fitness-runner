@@ -754,7 +754,8 @@ func signalRunning(sig syscall.Signal) {
 }
 
 // stopOnInterrupt passes an interrupt, hangup, or terminate signal to the
-// running checks and runs cleanup, and the returned func stops listening.
+// running checks, runs cleanup, then ends the run as the signal would have. A
+// signal ignored at start stays ignored, and the returned func stops listening.
 func stopOnInterrupt(cleanup func()) (stop func()) {
 	var caught []os.Signal
 	for _, s := range []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP} {
@@ -900,8 +901,9 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	return outcomes
 }
 
-// startOrder lists check indices by descending declared budget, counting an
-// undeclared one as the default. Equal budgets keep catalog order.
+// startOrder lists check indices by descending declared budget, keeping catalog
+// order for ties. A repo config budget never moves a check, since it says
+// nothing about cost.
 func startOrder(checks []resolved) []int {
 	order := make([]int, len(checks))
 	for i := range order {

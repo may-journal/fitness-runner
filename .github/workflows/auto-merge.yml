@@ -1,9 +1,8 @@
 name: Auto-merge
-# The org ruleset runs this public workflow in every repo to turn on squash
-# auto-merge for each ready pull request. The
-# rules it meets are in
-# https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0091-github-auto-merge.md
-# and auto-merge-on-ready.yml covers the events the ruleset never sends.
+# The org ruleset runs this workflow, public so private repos can call it, to
+# turn on squash auto-merge for each ready pull request. It uses the automation
+# App token because GitHub starts no workflows from GITHUB_TOKEN pushes, and
+# auto-merge-on-ready.yml adds the events the ruleset skips.
 on:
   pull_request:
     types: [opened, reopened, synchronize]
@@ -48,11 +47,10 @@ jobs:
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
-      # A ready native stack merges through its top PR, and a branch chain
-      # passes with one note until GitHub moves it onto main. The
-      # stack rules are in
-      # https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0095-github-auto-merge-stacks.md
-      # and any other refusal fails with GitHub's answer.
+      # A ready native stack merges through its top PR without pushing,
+      # rebasing or bypassing rules, so no approval is dismissed. A branch chain
+      # passes with one note until GitHub moves it onto main, and any other
+      # refusal fails with GitHub's answer.
       - name: Enable squash auto-merge
         id: merge
         env:

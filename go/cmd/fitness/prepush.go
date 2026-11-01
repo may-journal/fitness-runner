@@ -19,9 +19,9 @@ const zeroSha = "0000000000000000000000000000000000000000"
 // deadline.
 var planReads *metadata.PushPlans
 
-// hookPrePush reads git's push ref updates on stdin and blocks the push unless
-// every non-chore/docs update traces to an approved Plan Issue. Every GitHub
-// read ends within one deadline, and an unanswered probe reports info.
+// hookPrePush blocks each push update, chore and docs aside, that traces to no
+// approved Plan named by a branch commit or PR. Reads
+// share one deadline, and an unanswered probe reports info and allows the push.
 func hookPrePush() int {
 	ctx, cancel := metadata.PushContext()
 	defer cancel()
@@ -117,8 +117,9 @@ func pushedCommits(local, remote string) (subjects []string, messages string, er
 	return readCommits(commits)
 }
 
-// commitsOf lists the commits a ref update pushes that no origin ref holds.
-// A failed run reads as none.
+// commitsOf lists the commits a ref update pushes that no origin ref holds,
+// keeping commits merged in from main out of the gate. A failed run reads
+// as none, and a stalled one returns its error.
 func commitsOf(local, remote string) ([]string, error) {
 	if remote == zeroSha {
 		remote = ""

@@ -1,6 +1,6 @@
 // Command fitness-check-markdown-filename-kebab-case requires every markdown
-// file name to be kebab-case, keeping doc trees predictable for links and CI.
-// Standard root docs
+// file name to be kebab-case, standard root docs exempt. Kebab-case keeps doc
+// trees predictable for links and CI, and the standard root docs
 // (`README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`,
 // `LICENSE.md`, `SECURITY.md`) are always exempt.
 //

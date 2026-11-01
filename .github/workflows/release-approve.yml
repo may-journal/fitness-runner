@@ -1,9 +1,12 @@
 # cspell:ignore slurpfile
 name: Release approve
-# A machine user's APPROVER_TOKEN approves a green release PR or dev bump, since
-# a bot cannot approve its own PR. The rules are in
+# A machine user with write access approves with APPROVER_TOKEN, since a bot
+# cannot approve its own PR and only writers count (may-journal/.github#125).
+# It approves a green release PR per
 # https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0093-github-release-approve.md
-# and every other PR is left for a person.
+# or dev bump per
+# https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0094-github-dependency-approve.md
+# and leaves every other PR to a person.
 on:
   workflow_call:
     inputs:
