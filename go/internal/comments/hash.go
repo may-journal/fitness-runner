@@ -5,8 +5,9 @@ import (
 	"strings"
 )
 
-// heredoc opens a shell here-document and captures its end word.
-var heredoc = regexp.MustCompile(`<<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?`)
+// heredoc opens a shell here-document and captures its end word. A third
+// < makes a here-string, which opens none.
+var heredoc = regexp.MustCompile(`(?:^|[^<])<<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)`)
 
 // shellToken matches a quoted string, which may stay open past the line's
 // end, an escaped byte, or a #.
@@ -36,9 +37,25 @@ func (r *shellRead) line(n int, line string) {
 		return
 	}
 	code := r.comment(n, line)
-	if m := heredoc.FindStringSubmatch(code); m != nil && r.quote == "" {
-		r.end = m[1]
+	if r.quote == "" {
+		r.end = heredocEnd(code)
 	}
+}
+
+// heredocEnd is the end word of a here-document code opens, or "". A <<
+// inside quotes or $(( )) is a string or a shift.
+func heredocEnd(code string) string {
+	m := heredoc.FindStringSubmatchIndex(code)
+	if m == nil || inside(code[:m[0]+strings.Index(code[m[0]:], "<<")]) {
+		return ""
+	}
+	return code[m[2]:m[3]]
+}
+
+// inside reports a quote or (( left open at the end of prefix.
+func inside(prefix string) bool {
+	_, quote := shellHash(prefix)
+	return quote != "" || strings.Count(prefix, "((") > strings.Count(prefix, "))")
 }
 
 func (r *shellRead) endHeredoc(line string) {

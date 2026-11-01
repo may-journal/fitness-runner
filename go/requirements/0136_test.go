@@ -2,6 +2,7 @@ package requirements
 
 import (
 	"maps"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -53,7 +54,7 @@ let raw = #"// inside a string"#
 let mixed = "\("// inside a string")" // after a string
 `,
 		"ts/app.ts": "const url = \"https://example.com // inside a string\";\nconst text = " +
-			backtick + "/* inside a string */ ${url}" + backtick + "; // after a template\n",
+			backtick + "/* inside a string */ \\" + backtick + " // inside a string ${url}" + backtick + "; // after a template\n",
 		"js/app.js": `const quote = 'it\'s // inside a string';
 // Prints the quote.
 console.log(quote);
@@ -70,6 +71,7 @@ console.log(quote);
 `,
 		"rust/main.rs": `fn first<'a>(s: &'a str) -> &'a str { s } // takes a lifetime
 fn main() { let u = "http://x // inside a string"; }
+let r = r#"a "q" // inside a string"#; // after a raw string
 `,
 	})
 	listsExactly(t, out, code,
@@ -78,6 +80,7 @@ fn main() { let u = "http://x // inside a string"; }
 		"js/app.js:2: javascript doc: Prints the quote.",
 		"kotlin/App.kt:4: kotlin doc: outer /* nested */ still outer",
 		"rust/main.rs:1: rust inline: takes a lifetime",
+		"rust/main.rs:3: rust inline: after a raw string",
 		"swift/App.swift:3: swift inline: after a string",
 		"ts/app.ts:2: typescript inline: after a template",
 	)
@@ -137,7 +140,10 @@ cat <<EOF
 # inside a here-document
 EOF
 size=${#HOME} # length
+n=$((1 << SHIFT)) # shifted
+# after the shift
 `,
+		"bin/deploy": "#!/usr/bin/env bash\n# Deploys the site.\n",
 		"config/app.yml": `# App settings.
 name: "a # inside quotes" # the name
 url: http://example.com/#anchor
@@ -148,11 +154,14 @@ list:
 `,
 	})
 	listsExactly(t, out, code,
+		"bin/deploy:2: shell doc: Deploys the site.",
 		"config/app.yml:1: yaml doc: App settings.",
 		"config/app.yml:2: yaml inline: the name",
 		"scripts/run.sh:2: shell doc: Runs the build.",
 		"scripts/run.sh:3: shell inline: after echo",
 		"scripts/run.sh:7: shell inline: length",
+		"scripts/run.sh:8: shell inline: shifted",
+		"scripts/run.sh:9: shell doc: after the shift",
 	)
 }
 
@@ -180,5 +189,21 @@ var zorp = 1
 		"scripts/lint.sh:3: shell inline: keeps this one",
 		"swift/Lint.swift:2: swift inline: keeps this one",
 		"ts/lint.ts:2: typescript inline: keeps this one",
+	)
+}
+
+func Test0136_5(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{
+		"go/a/a.go":   "// Package a is in the folder.\npackage a\n",
+		"go/b/b.go":   "// Package b is in the folder too.\npackage b\n",
+		"ts/named.ts": "// Named by its absolute path.\nexport {};\n",
+		"ts/other.ts": "// Named by no path.\nexport {};\n",
+	})
+	out, code := fitness(t, repo, nil, "comments", "go", filepath.Join(repo, "ts", "named.ts"))
+	listsExactly(t, out, code,
+		"go/a/a.go:1: go doc: Package a is in the folder.",
+		"go/b/b.go:1: go doc: Package b is in the folder too.",
+		"ts/named.ts:1: typescript doc: Named by its absolute path.",
 	)
 }

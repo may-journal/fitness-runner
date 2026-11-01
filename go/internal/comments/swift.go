@@ -77,11 +77,13 @@ func (w *swiftWalker) comment(start int) {
 // commentDelta consumes one byte or comment mark and returns how it changes
 // the nesting depth.
 func (w *swiftWalker) commentDelta() int {
-	for mark, delta := range map[string]int{"/*": 1, "*/": -1} {
-		if w.at(mark) {
-			w.i += len(mark)
-			return delta
-		}
+	switch {
+	case w.at("/*"):
+		w.i += 2
+		return 1
+	case w.at("*/"):
+		w.i += 2
+		return -1
 	}
 	w.i++
 	return 0

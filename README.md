@@ -82,7 +82,7 @@ Commands:
   fitness strip-front-matter
       Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
   fitness comments [path...]
-      Prints each code comment block of the named or tracked files, with its line, language and kind, as the checks read it.
+      Prints each code comment block of the tracked files, or of those under the named paths, with its line, language and kind.
   fitness branch-check
       Judges this branch's PR and the issues it closes locally, posting nothing.
   fitness pr-check

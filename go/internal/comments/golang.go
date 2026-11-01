@@ -15,11 +15,12 @@ func goNotes(src []byte) []note {
 		return cNotes(lines(src), Lexer{})
 	}
 	text := string(src)
+	offs := newOffsets(text)
 	var notes []note
 	for _, group := range file.Comments {
 		for _, c := range group.List {
 			start := fset.Position(c.Pos()).Offset
-			notes = append(notes, offsetNote(text, start, start+goCommentLen(text[start:], c.Text)))
+			notes = append(notes, offs.note(start, start+goCommentLen(text[start:], c.Text)))
 		}
 	}
 	return notes

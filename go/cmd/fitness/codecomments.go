@@ -12,7 +12,7 @@ import (
 )
 
 // runComments runs `fitness comments [path...]`: it prints each comment
-// block of the named files, or of every tracked file, one per line as
+// block of the tracked files, or of those the paths name, one per line as
 // `path:line: language kind: text`, the block's lines joined by spaces.
 func runComments(args []string) int {
 	blocks, err := readComments(args)
@@ -26,21 +26,55 @@ func runComments(args []string) int {
 	return 0
 }
 
-// readComments reads the blocks of the files args name, relative to the
-// working directory, or of every tracked file when args is empty.
+// readComments reads the blocks of the tracked files args name, or of
+// every tracked file when args is empty.
 func readComments(args []string) ([]comments.Block, error) {
 	root, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	files := make([]string, len(args))
-	for i, arg := range args {
-		files[i] = filepath.ToSlash(filepath.Clean(arg))
+	files, err := walkfs.AllFiles(root)
+	if err == nil && len(args) > 0 {
+		files, err = named(root, files, args)
 	}
-	if len(files) == 0 {
-		if files, err = walkfs.AllFiles(root); err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 	return comments.Files(root, files)
+}
+
+// named keeps the tracked files each arg names: the file itself, or the
+// files under a folder. An arg naming no tracked file is an error.
+func named(root string, tracked, args []string) ([]string, error) {
+	var out []string
+	for _, arg := range args {
+		picked := under(tracked, relArg(root, arg))
+		if len(picked) == 0 {
+			return nil, fmt.Errorf("%s names no tracked file", arg)
+		}
+		out = append(out, picked...)
+	}
+	return out, nil
+}
+
+// relArg is arg relative to root, slash-separated; an absolute arg is
+// resolved through symlinks first, as root is.
+func relArg(root, arg string) string {
+	if filepath.IsAbs(arg) {
+		if rel, err := filepath.Rel(realPath(root), realPath(arg)); err == nil {
+			arg = rel
+		}
+	}
+	return filepath.ToSlash(filepath.Clean(arg))
+}
+
+// under keeps the tracked files at rel or below it.
+func under(tracked []string, rel string) []string {
+	var out []string
+	for _, f := range tracked {
+		if rel == "." || f == rel || strings.HasPrefix(f, rel+"/") {
+			out = append(out, f)
+		}
+	}
+	return out
 }

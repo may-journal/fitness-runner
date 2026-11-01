@@ -235,8 +235,8 @@ func init() {
 		// any block they leave empty.
 		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,
-		// Prints each code comment block of the named or tracked files, with
-		// its line, language and kind, as the checks read it.
+		// Prints each code comment block of the tracked files, or of those
+		// under the named paths, with its line, language and kind.
 		//fitness:usage comments [path...]
 		"comments": runComments,
 		// Judges this branch's PR and the issues it closes locally, posting

@@ -1,6 +1,10 @@
 package comments
 
-import "strings"
+import (
+	"regexp"
+	"strings"
+	"unicode"
+)
 
 // Part is what one span of C-style source holds.
 type Part int
@@ -36,8 +40,16 @@ type Lexer struct {
 	// Lifetimes reads a ' before a name as a Rust lifetime, which opens no
 	// character literal.
 	Lifetimes bool
-	depth     int
-	text, raw bool
+	// Templates lets a backslash escape a backtick inside a span in
+	// backticks, as in a JavaScript template literal.
+	Templates bool
+	// RawStrings reads Rust raw strings, r"..." and r#"..."#, which have
+	// no escapes.
+	RawStrings bool
+	depth      int
+	// closer ends the string literal open over lines, if any.
+	closer string
+	raw    bool
 }
 
 // Line returns the spans of one line, in order, covering all of it.
@@ -59,10 +71,10 @@ func (l *Lexer) step(text string, i int) Span {
 	switch {
 	case l.depth > 0:
 		return l.block(text, i, i)
-	case l.text:
-		return Span{Part: Literal, From: i, To: skipTo(text, i, `"""`, &l.text)}
+	case l.closer != "":
+		return Span{Part: Literal, From: i, To: l.until(text, i)}
 	case l.raw:
-		return Span{Part: Code, From: i, To: skipTo(text, i, "`", &l.raw)}
+		return Span{Part: Code, From: i, To: l.rawEnd(text, i)}
 	}
 	return l.code(text, i)
 }
@@ -92,8 +104,8 @@ var openers = []opener{
 		return l.block(text, i, i+2)
 	}},
 	{`"""`, func(l *Lexer, text string, i int) Span {
-		l.text = true
-		return Span{Part: Literal, From: i, To: skipTo(text, i+3, `"""`, &l.text)}
+		l.closer = `"""`
+		return Span{Part: Literal, From: i, To: l.until(text, i+3)}
 	}},
 	{`"`, func(_ *Lexer, text string, i int) Span {
 		return Span{Part: Literal, From: i, To: literalEnd(text, i+1)}
@@ -106,8 +118,50 @@ var openers = []opener{
 	}},
 	{"`", func(l *Lexer, text string, i int) Span {
 		l.raw = true
-		return Span{Part: Code, From: i, To: skipTo(text, i+1, "`", &l.raw)}
+		return Span{Part: Code, From: i, To: l.rawEnd(text, i+1)}
 	}},
+	{"r", (*Lexer).rawString},
+}
+
+// until moves past the end of the open string's closer, clearing it when
+// found.
+func (l *Lexer) until(text string, i int) int {
+	end := strings.Index(text[i:], l.closer)
+	if end < 0 {
+		return len(text)
+	}
+	to := i + end + len(l.closer)
+	l.closer = ""
+	return to
+}
+
+// rawEnd moves past the backtick closing a span, clearing raw when found.
+func (l *Lexer) rawEnd(text string, i int) int {
+	for ; i < len(text); i++ {
+		if text[i] == '\\' && l.Templates {
+			i++
+			continue
+		}
+		if text[i] == '`' {
+			l.raw = false
+			return i + 1
+		}
+	}
+	return len(text)
+}
+
+// rustRaw opens a Rust raw string and captures its hashes.
+var rustRaw = regexp.MustCompile(`^r(#*)"`)
+
+// rawString reads a Rust raw string at i, or the r as code when none opens
+// there or the r ends a name.
+func (l *Lexer) rawString(text string, i int) Span {
+	m := rustRaw.FindStringSubmatch(text[i:])
+	if !l.RawStrings || m == nil || i > 0 && nameByte(text[i-1]) {
+		return Span{Part: Code, From: i, To: i + 1}
+	}
+	l.closer = `"` + m[1]
+	return Span{Part: Literal, From: i, To: l.until(text, i+len(m[0]))}
 }
 
 // block moves through a block comment from j, which started at from,
@@ -140,17 +194,7 @@ func (l *Lexer) lifetime(text string, i int) bool {
 }
 
 func nameByte(c byte) bool {
-	return c == '_' || 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z'
-}
-
-// skipTo moves past the end of close, clearing flag when it is found.
-func skipTo(text string, i int, close string, flag *bool) int {
-	end := strings.Index(text[i:], close)
-	if end < 0 {
-		return len(text)
-	}
-	*flag = false
-	return i + end + len(close)
+	return c == '_' || unicode.IsLetter(rune(c)) || unicode.IsDigit(rune(c))
 }
 
 // runeEnd moves past a character literal, kept whole so a quote or //

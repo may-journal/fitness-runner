@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -54,16 +55,16 @@ var readers = map[string]func(src []byte) []note{
 	"swift":      swiftNotes,
 	"shell":      shellNotes,
 	"yaml":       yamlNotes,
-	"typescript": cReader(Lexer{}),
-	"javascript": cReader(Lexer{}),
+	"typescript": cReader(Lexer{Templates: true}),
+	"javascript": cReader(Lexer{Templates: true}),
 	"java":       cReader(Lexer{}),
 	"kotlin":     cReader(Lexer{Nested: true}),
-	"rust":       cReader(Lexer{Nested: true, Lifetimes: true}),
+	"rust":       cReader(Lexer{Nested: true, Lifetimes: true, RawStrings: true}),
 }
 
 // shebang names a shell interpreter on a file's first line, which makes a
 // file with no extension a shell script.
-var shebang = regexp.MustCompile(`^#!\S*\b(sh|bash|zsh)\b`)
+var shebang = regexp.MustCompile(`^#!.*\b(sh|bash|zsh)\b`)
 
 // Lang names the language of the file at rel holding src, or "" when no
 // reader covers it.
@@ -81,6 +82,9 @@ func Lang(rel string, src []byte) string {
 func Files(root string, paths []string) ([]Block, error) {
 	var blocks []Block
 	for _, rel := range walkfs.WithoutGenerated(root, paths) {
+		if !covered(rel) {
+			continue
+		}
 		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 		if err != nil {
 			return blocks, err
@@ -88,6 +92,13 @@ func Files(root string, paths []string) ([]Block, error) {
 		blocks = append(blocks, Source(rel, src)...)
 	}
 	return blocks, nil
+}
+
+// covered reports a path whose extension a reader covers, or one with
+// none, which a shebang may make a shell script.
+func covered(rel string) bool {
+	ext := path.Ext(rel)
+	return ext == "" || langs[ext] != ""
 }
 
 // Source returns the comment blocks of one file. It skips tool directives
@@ -134,6 +145,9 @@ func cNotes(src []string, lex Lexer) []note {
 			r.span(i+1, line, sp)
 		}
 	}
+	if r.open != nil {
+		r.notes = append(r.notes, *r.open)
+	}
 	return r.notes
 }
 
@@ -166,20 +180,37 @@ func (r *cRead) block(n int, line string, sp Span) {
 	}
 }
 
-// offsetNote is the note for the comment from byte start to end of src.
-func offsetNote(src string, start, end int) note {
-	line := strings.Count(src[:start], "\n") + 1
-	lineStart := strings.LastIndexByte(src[:start], '\n') + 1
-	text := src[start:end]
-	return note{line: line, end: line + strings.Count(text, "\n"), text: text, inline: codeBefore(src[lineStart:], start-lineStart)}
+// offsets turns byte offsets of src into notes, through the offset each
+// line starts at.
+type offsets struct {
+	src    string
+	starts []int
+}
+
+func newOffsets(src string) offsets {
+	starts := []int{0}
+	for i := range len(src) {
+		if src[i] == '\n' {
+			starts = append(starts, i+1)
+		}
+	}
+	return offsets{src: src, starts: starts}
+}
+
+// note is the note for the comment from byte start to end.
+func (o offsets) note(start, end int) note {
+	line := sort.SearchInts(o.starts, start+1)
+	lineStart := o.starts[line-1]
+	text := o.src[start:end]
+	return note{line: line, end: line + strings.Count(text, "\n"), text: text, inline: codeBefore(o.src[lineStart:], start-lineStart)}
 }
 
 // swiftNotes reads the comments of Swift source through WalkSwift.
 func swiftNotes(src []byte) []note {
-	text := string(src)
+	offs := newOffsets(string(src))
 	var notes []note
-	WalkSwift(text, SwiftVisitor{
-		Comment: func(start, end int) { notes = append(notes, offsetNote(text, start, end)) },
+	WalkSwift(offs.src, SwiftVisitor{
+		Comment: func(start, end int) { notes = append(notes, offs.note(start, end)) },
 		String:  func(int, int, string) {},
 	})
 	return notes
