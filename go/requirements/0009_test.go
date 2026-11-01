@@ -10,9 +10,8 @@ import (
 	"testing"
 )
 
-// installerEnv puts the installer where a user's setup does, with no fitness on
-// the PATH, and returns the environment the hooks need to find it, a saved
-// release lookup, and a private cache.
+// installerEnv puts the installer where a user's setup does, without fitness on
+// the PATH, and returns the environment the hooks need.
 func installerEnv(t *testing.T) []string {
 	t.Helper()
 	dir := t.TempDir()
@@ -21,10 +20,8 @@ func installerEnv(t *testing.T) []string {
 	return slices.Concat([]string{"FITNESS_INSTALL_DIR=" + dir}, lookups.env, fiPrivateCache(t))
 }
 
-// hooked copies happyRepo with files over it, puts the installer where a
-// user's setup does (and no fitness on the PATH), and runs `fitness init`. It
-// returns the repo and the environment the hooks need to find the installer,
-// a saved release lookup, and a private cache.
+// hooked copies happyRepo with files over it, runs `fitness init` with the
+// installer placed by installerEnv, and returns the repo and that environment.
 func hooked(t *testing.T, files map[string]string) (string, []string) {
 	t.Helper()
 	repo := example(t, "happyRepo", files)
@@ -34,8 +31,8 @@ func hooked(t *testing.T, files map[string]string) (string, []string) {
 	return repo, env
 }
 
-// user runs git in repo the way a person at the terminal does, with hooks,
-// and returns what it printed and its exit code.
+// user runs git in repo as a person at the terminal does, with hooks, returning
+// its output and exit code.
 func user(t *testing.T, repo string, env []string, args ...string) (string, int) {
 	t.Helper()
 	cmd := exec.Command("git", append([]string{"-c", "user.name=t", "-c", "user.email=t@t"}, args...)...)
@@ -99,9 +96,8 @@ func Test0009_4(t *testing.T) {
 	localHookStops(t)
 }
 
-// localHookStops asserts a pre-commit.local whose git waits for a password,
-// and which ignores the stop signal, is killed with that git at the 2s
-// budget timeoutMs sets, and the commit is refused.
+// localHookStops asserts a pre-commit.local ignoring the stop signal, with git
+// awaiting a password, is killed at the 2s timeoutMs and the commit refused.
 func localHookStops(t *testing.T) {
 	t.Helper()
 	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"timeoutMs": 2000}` + "\n"})

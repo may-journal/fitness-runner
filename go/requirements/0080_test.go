@@ -137,8 +137,7 @@ func javaVersionVendorJDK(release, vendor, variant string) string {
 }
 
 // javaVersionGradleRun runs java-version on repo with home as the user's
-// home and a Gradle stand-in that fails if called, and returns what it
-// printed and its exit code. It fails the test if Gradle ran.
+// home and a Gradle stand-in, failing the test if Gradle ran.
 func javaVersionGradleRun(t *testing.T, repo, home string) (string, int) {
 	t.Helper()
 	rp := standIn(t, map[string][]response{"java": {javaJDK}, "gradle": {javaVersionNoGradle}})

@@ -26,9 +26,9 @@ const (
 	dtTemplates = dtViews + "templates/"
 )
 
-// dtShipped is what a user has after following the architecture-contract
-// README: each view in docs/architecture started as a copy of its shipped
-// template, and no copy of the templates.
+// dtShipped is a user's docs/architecture after following the
+// architecture-contract README: each view copied from its template, templates
+// left behind.
 func dtShipped(t *testing.T) map[string]string {
 	t.Helper()
 	files := map[string]string{}

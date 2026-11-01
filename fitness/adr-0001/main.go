@@ -1,6 +1,5 @@
-// Command adr-0001 keeps ADR 0001: each budget a built-in check declares
-// names the external cost that needs it, and the repo raises no budget for
-// all checks.
+// Command adr-0001 keeps ADR 0001: each budget a built-in check declares names
+// the external cost that needs it.
 package main
 
 import (

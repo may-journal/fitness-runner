@@ -16,9 +16,8 @@ import (
 	"time"
 )
 
-// standIns are the external programs fitness calls that tests replace with
-// saved responses: GitHub's CLI, the JavaScript and Swift tools, the JDK
-// and the Java build tools with their wrappers, and Docker.
+// standIns are the external programs tests replace with saved responses: gh,
+// the JavaScript and Swift tools, the JDK, Java build tools and Docker.
 var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew", "docker"}
 
 // TestMain lets this test binary stand in for those programs. Run under one
@@ -49,10 +48,8 @@ func keepHostGitOut() {
 	_ = os.Setenv("GIT_CONFIG_COUNT", fmt.Sprint(len(repoGitConfig)))
 }
 
-// response is one saved answer: when every Match string appears in the
-// call's arguments, the stand-in writes Files, relative to the folder it
-// runs in, prints Stdout and Stderr and exits with Exit. An empty Match
-// answers any call.
+// response is one saved answer: when every Match string appears in the call's
+// arguments, the stand-in writes Files, prints Stdout and exits.
 type response struct {
 	Match  []string          `json:"match"`
 	Files  map[string]string `json:"files"`
@@ -97,10 +94,8 @@ func replay(name string, args []string) int {
 	return 97
 }
 
-// eventPR answers a gh read of the pull request the Actions event carries,
-// when no saved response does, with the number, title and body the event
-// holds: GitHub holds the PR as the event shows it unless a test saves
-// another answer, as a re-run of a stale event does.
+// eventPR answers a gh read of the event's pull request with the event's
+// number, title and body unless a saved response overrides it.
 func eventPR(name, call string) (string, bool) {
 	pr := savedEventPR()
 	if name != "gh" || pr == nil {
@@ -169,15 +164,15 @@ func logCall(path, call string) {
 	fmt.Fprintln(f, strings.ReplaceAll(call, "\n", `\n`))
 }
 
-// replays is a test's set of stand-ins: the environment that puts them first
-// on PATH, and the folder holding their saved responses and call logs.
+// replays is a test's stand-ins: the environment putting them first on PATH and
+// the folder holding their saved responses and call logs.
 type replays struct {
 	env []string
 	dir string
 }
 
-// standIn puts a stand-in for each named program first on PATH, answering
-// from its saved responses, and returns the environment to run fitness with.
+// standIn puts a stand-in for each named program first on PATH, answering from
+// saved responses, and returns the environment to run fitness with.
 func standIn(t *testing.T, saved map[string][]response) replays {
 	t.Helper()
 	self, err := os.Executable()

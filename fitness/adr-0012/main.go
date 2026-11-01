@@ -1,6 +1,5 @@
-// Command adr-0012 keeps ADR 0012: fitness keeps each of its own checks in
-// a fitness/<name>/ folder, found with no config, and no flat check program
-// anywhere else.
+// Command adr-0012 keeps ADR 0012: each fitness check lives in a fitness/<name>/
+// folder, with no flat check program anywhere else.
 package main
 
 import (

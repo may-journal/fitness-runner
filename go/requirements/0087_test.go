@@ -19,7 +19,7 @@ const (
 )
 
 // listed0087 is one issue as the issue list prints it through fitness's
-// filter: open unless closedAt is set, under parent when it is not 0.
+// filter: open unless closedAt is set, under parent unless 0.
 func listed0087(n int, title, body string, parent int, closedAt string) string {
 	state := "open"
 	if closedAt != "" {

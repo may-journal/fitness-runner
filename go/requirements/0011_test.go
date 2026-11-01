@@ -49,10 +49,8 @@ func Test0011_3(t *testing.T) {
 // the note proves the probe path.
 const offlineNote = "api.github.com did not answer within 2s through proxy http://127.0.0.1:"
 
-// silentCommit commits msg in repo behind a proxy that never answers, with
-// the real gh asking GitHub's own API host, and fails when the commit takes
-// offlineWithin or more. The installer's release lookup was recorded just
-// now, so it asks nothing.
+// silentCommit commits msg in repo behind a silent proxy with the real gh, and
+// fails when the commit takes offlineWithin or more.
 func silentCommit(t *testing.T, repo string, env []string, msg string) (string, int) {
 	t.Helper()
 	env = append(append(env, silentGitHub(t)...), "GITHUB_API_URL=https://api.github.com")

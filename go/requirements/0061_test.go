@@ -11,8 +11,8 @@ import (
 	"testing"
 )
 
-// fiRun runs the candidate `fitness-install <args>` in dir with env added,
-// as a user types it, and returns what it printed and its exit code.
+// fiRun runs the candidate `fitness-install <args>` in dir with env added
+// and returns its output and exit code.
 func fiRun(t *testing.T, dir string, env []string, args ...string) (string, int) {
 	t.Helper()
 	cmd := exec.Command(installer(t), args...)

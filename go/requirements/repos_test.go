@@ -133,9 +133,8 @@ func planBody(task string) string {
 	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
 }
 
-// planView is the saved gh answer to the pre-push gate's one read of issue n
-// in repo0014: its URL, body, label names and comments, each written by the
-// repo's owner.
+// planView is the saved gh answer to the pre-push gate's read of issue n in
+// repo0014: URL, body, labels and the owner's comments.
 func planView(t *testing.T, n int, body string, labels []string, comments ...string) response {
 	t.Helper()
 	by := make([]comment, len(comments))

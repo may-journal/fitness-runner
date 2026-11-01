@@ -34,8 +34,8 @@ func forkedRepo(t *testing.T, base string) string {
 	return repo
 }
 
-// fork adds an inherited bad subject to repo the way a fetch does, without
-// running hooks, records it as origin/<base>, and checks out a fresh branch.
+// fork commits an inherited bad subject to repo without hooks, as a fetch
+// does, records it as origin/<base>, and branches fresh.
 func fork(t *testing.T, repo, base string) {
 	t.Helper()
 	out, err := exec.Command("git", "-C", repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit-tree", "HEAD^{tree}", "-p", "HEAD", "-m", inherited).Output()

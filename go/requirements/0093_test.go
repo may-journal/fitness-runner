@@ -29,11 +29,8 @@ func section0093(t *testing.T, name string) string {
 	return section
 }
 
-// run0093 runs the named step's script as Actions does, with bash -e and
-// pipefail, for release PR 23 checked at commit abc123 in Actions run 99.
-// GitHub's CLI answers from gh, and env adds to or
-// overrides the step's environment. It returns the stand-ins, the output,
-// the exit code, and what the step wrote to GITHUB_OUTPUT.
+// run0093 runs the named step's script as Actions does for release PR 23 at
+// commit abc123 in run 99, with env overriding.
 func run0093(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
 	t.Helper()
 	_, script, ok := strings.Cut(section0093(t, name), "run: |\n")
@@ -204,9 +201,8 @@ func Test0093_5(t *testing.T) {
 
 var output0093 = regexp.MustCompile(`(?:steps\.(\w+)\.outputs|inputs)\.(\w+)`)
 
-// runs0093 evaluates the step's `if:` as Actions does, given the earlier
-// steps' outputs keyed step.output and its inputs keyed inputs.name; a
-// missing value is empty.
+// runs0093 evaluates the step's `if:` as Actions does, given earlier steps'
+// outputs keyed step.output and inputs keyed inputs.name, missing ones empty.
 func runs0093(t *testing.T, name string, outputs map[string]string) bool {
 	t.Helper()
 	_, cond, ok := strings.Cut(section0093(t, name), "if: ${{ ")
@@ -228,9 +224,8 @@ func runs0093(t *testing.T, name string, outputs map[string]string) bool {
 	return exec.Command("bash", "-c", "[[ "+strings.ReplaceAll(cond, "'", `"`)+" ]]").Run() == nil
 }
 
-// skipsAllButReport0093 asserts that with no step outputs set, as when the
-// token is missing, every step after the token check skips but the
-// report.
+// skipsAllButReport0093 asserts that every step after the token check skips
+// but the report when the token is missing.
 func skipsAllButReport0093(t *testing.T) {
 	t.Helper()
 	for _, step := range []string{"Check the release PR", "Check the dependency bump", "Wait for green checks", "Approve the PR"} {

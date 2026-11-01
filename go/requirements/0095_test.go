@@ -22,15 +22,14 @@ func view0095(n int, review, conclusion string) response {
 	}
 }
 
-// stackPRs0095 lists stack 7 as GitHub does: PR 1 already merged, PR 2
-// on its branch, and PR 3 on top of PR 2 at head bbb.
+// stackPRs0095 lists stack 7 as GitHub does: PR 1 merged, PR 2 open, PR 3 on
+// PR 2 at head bbb.
 const stackPRs0095 = `[{"number":1,"state":"closed","head":{"ref":"s0","sha":"zzz"},"base":{"ref":"main"}},` +
 	`{"number":2,"state":"open","head":{"ref":"s1","sha":"aaa"},"base":{"ref":"s0"}},` +
 	`{"number":3,"state":"open","head":{"ref":"s2","sha":"bbb"},"base":{"ref":"s1"}}]`
 
-// stack0095 runs the auto-merge step on PR 2, the bottom open PR of native
-// stack 7 whose top is PR 3 at head bbb. GitHub shows PRs 2 and 3 as views
-// does, then answers the top PR's merge with merge and its poll with poll.
+// stack0095 runs the auto-merge step on PR 2, bottom of stack 7 topped by PR
+// 3, answering with views, merge and poll.
 func stack0095(t *testing.T, views []response, merge, poll response) (replays, string, int) {
 	t.Helper()
 	merge.Match = []string{"-X PUT " + pulls0095 + "/3/merge-async"}
@@ -73,8 +72,8 @@ func waits0095(t *testing.T, rp replays, out string, code int, why string) {
 	notedAll0095(t, rp, "Auto-merge waits: stack #7 (#2 #3) merges into `main` once every PR in it is approved, green and mergeable. Waiting: "+why+".")
 }
 
-// refused0095 checks that a stack GitHub would not merge failed the job
-// naming GitHub's answer, and that only its top PR got a note on why.
+// refused0095 checks that an unmergeable stack failed the job naming GitHub's
+// answer, and only its top PR got a note on why.
 func refused0095(t *testing.T, rp replays, out string, code int, why, note string) {
 	t.Helper()
 	sees(t, out, code, 1, "::error::GitHub "+why+" stack #7 through #3", "Required workflows 'Fitness suite' failed")

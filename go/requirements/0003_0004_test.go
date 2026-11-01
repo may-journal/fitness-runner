@@ -40,8 +40,8 @@ func Test0003_2(t *testing.T) {
 	}
 }
 
-// catalogRows is the order the result rows print in: the repo-wide checks,
-// sorted, then the Go, Swift, Node and Java modules' checks, each sorted.
+// catalogRows is the result row order: sorted repo-wide checks, then each
+// sorted Go, Swift, Node and Java module's checks.
 const catalogRows = `
 adr-checks
 architecture-actors architecture-code architecture-components
@@ -112,8 +112,8 @@ func Test0003_4(t *testing.T) {
 	}
 }
 
-// inActions runs the one-liner in repo as a GitHub Actions job does, and
-// returns what it printed, its exit code, and the job summary it wrote.
+// inActions runs the one-liner in repo as a GitHub Actions job does, returning
+// its output, exit code and job summary.
 func inActions(t *testing.T, repo string) (string, int, string) {
 	t.Helper()
 	summary := filepath.Join(t.TempDir(), "summary.md")
@@ -203,8 +203,8 @@ func Test0004_7(t *testing.T) {
 // unknownWord is a word no dictionary holds, built so cspell never reads it here.
 var unknownWord = strings.Repeat("q", 3) + "xw" + strings.Repeat("v", 3)
 
-// lockedChecks are the file-reading checks beside one finding each, one
-// readable file that the check must still judge, and one file it cannot read.
+// lockedChecks are the file-reading checks, each paired with one readable file
+// it must still judge and one it cannot read.
 var lockedChecks = []struct {
 	check, finding, locked string
 	files                  map[string]string

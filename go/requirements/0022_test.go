@@ -161,11 +161,8 @@ type dcBroken struct {
 	env       []string
 }
 
-// dcBrokenRegistries are an unreachable registry, one answering an error,
-// one answering garbage, and one that never answers, in the repo .npmrc.
-// Then garbage in the home one, and a registry behind a proxy that never
-// answers, which shows info at once: GitHub's API, probed through that
-// proxy, does not answer either.
+// dcBrokenRegistries are unreachable, erroring, garbage-answering and silent
+// registries, set in the repo or home .npmrc or behind a proxy.
 func dcBrokenRegistries(t *testing.T) []dcBroken {
 	failing, failHits := dcAnswer(t, http.StatusInternalServerError, `{"error":"Internal Server Error"}`)
 	garbage, garbageHits := dcAnswer(t, http.StatusOK, "<html>proxy login</html>")
@@ -208,9 +205,8 @@ func dcAgainst(t *testing.T, broken dcBroken) (string, int) {
 	return dependencyCurrency(t, files, append([]string{"HOME=" + home}, broken.env...)...)
 }
 
-// dcSilentWithin bounds a run whose registry never answers: the check's
-// ten-second request timeout plus the install and the run around it, well
-// under the 25-second fetch phase and the 30-second budget.
+// dcSilentWithin bounds a run whose registry never answers: the ten-second
+// request timeout plus install, well under the 30-second budget.
 const dcSilentWithin = 20 * time.Second
 
 func Test0022_8(t *testing.T) {

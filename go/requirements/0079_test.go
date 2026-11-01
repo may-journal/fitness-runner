@@ -73,9 +73,8 @@ func Test0079_1(t *testing.T) {
 	}
 }
 
-// checkstyleGradleWarning is Gradle's answer for one warning in the Java
-// source of repo: a plain Checkstyle line, and a passing build, since
-// warnings alone do not fail Gradle's Checkstyle tasks.
+// checkstyleGradleWarning is Gradle's answer for one Checkstyle warning in
+// repo's Java source, passing the build because warnings do not fail it.
 func checkstyleGradleWarning(repo string) response {
 	return response{
 		Match: []string{"checkstyleMain"},

@@ -25,11 +25,8 @@
 //
 //	func main() { check.Main(Rule) }
 //
-// Main speaks the check protocol (docs/check-protocol.md): --root,
-// --describe, the JSON result, the exit code, and a panic or an error,
-// which report info and never fail a run. Judge runs a check in a unit
-// test, on a repo Repo writes, and Test runs it on the repo the test runs
-// in. docs/local-checks.md is the guide.
+// Main speaks the check protocol (docs/check-protocol.md), and Judge and Test
+// run a check in a unit test (docs/local-checks.md).
 package check
 
 import (
@@ -71,9 +68,8 @@ type Context struct {
 	// Args are the arguments after the check's name, as in `fitness
 	// <name> --fix`.
 	Args []string
-	// Changed lists the files the run is scoped to, relative to Root: the
-	// staged files at commit time, a pull request's changes in CI, or a
-	// `--dir` folder's files. Nil means the run judges every file.
+	// Changed lists the files the run is scoped to, relative to Root; nil means
+	// the run judges every file.
 	Changed []string
 	// Dir is the check's own folder relative to Root, such as
 	// fitness/no-todo, or "" when the check runs outside fitness.
@@ -104,11 +100,8 @@ func (c Check) kit() checkkit.Check {
 	}
 }
 
-// Files lists the repo's tracked files whose base names end in any of
-// exts, such as .swift or _test.go, as slash-separated paths relative to
-// Root, sorted. No exts lists every
-// tracked file. In a fitness run the list is shared, so a check runs no git
-// command of its own.
+// Files lists the repo's tracked files ending in any of exts, as sorted slash
+// paths relative to Root; no exts lists every file.
 func (ctx *Context) Files(exts ...string) []string {
 	if len(exts) == 0 {
 		exts = []string{""}

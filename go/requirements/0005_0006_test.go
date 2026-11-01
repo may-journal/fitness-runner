@@ -98,9 +98,8 @@ func Test0005_16(t *testing.T) {
 	sees(t, out, code, 1, swiftTest+" changed without its requirement doc "+pairedDoc+"; change both together")
 }
 
-// unformatted is requirementDoc as it read before a formatter rewrote it:
-// other quotes in its front matter, its Why wrapped across two lines, the
-// Measurement's - with no blank lines, and four-space nesting.
+// unformatted is requirementDoc before a formatter rewrote its quotes, wrapping,
+// blank lines and nesting.
 var unformatted = strings.NewReplacer(
 	"two numbers without", "two numbers\nwithout",
 	`['../../.fitnessrc.json']`, `["../../.fitnessrc.json"]`,
@@ -163,8 +162,8 @@ func commented0005(t *testing.T) {
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
 }
 
-// renamed0005 proves a doc renamed with its number and wording kept needs no
-// test change, while a renamed doc with new wording still needs one.
+// renamed0005 proves a renamed doc keeping its number and wording needs no test
+// change, unlike one with new wording.
 func renamed0005(t *testing.T) {
 	t.Helper()
 	const renamed = "docs/requirements/0001-sums-numbers.md"

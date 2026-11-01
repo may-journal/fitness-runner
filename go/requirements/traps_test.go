@@ -24,15 +24,8 @@ const promptedRemote = "https://git.example.invalid/app.git"
 // ssh asks the password.
 const sshRemote = "git@git.example.invalid:app.git"
 
-// promptingTools returns a PATH setting whose git and ssh wait for a
-// password as the real tools do on a terminal, and the file where the
-// waiting tool writes its process ID. Git waits on any command that reaches
-// a remote and runs the real git otherwise, or when named an ssh remote, so
-// the real git runs ssh. Each fails at once, with the
-// real tool's message, when the no-prompt setting is on: git under
-// GIT_TERMINAL_PROMPT=0 and ssh under BatchMode=yes. Git also waits,
-// whatever the no-prompt setting, on each subcommand stalls names, as a
-// call on an index another process holds does.
+// promptingTools returns a PATH whose git and ssh wait for a password, failing
+// at once under GIT_TERMINAL_PROMPT=0 or BatchMode=yes, and a PID file.
 func promptingTools(t *testing.T, stalls ...string) (path, pidFile string) {
 	t.Helper()
 	real, err := exec.LookPath("git")
@@ -57,10 +50,8 @@ func promptingTools(t *testing.T, stalls ...string) (path, pidFile string) {
 	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH"), pidFile
 }
 
-// silentListener starts a TCP listener on this machine that accepts every
-// connection and never answers, as a proxy that drops traffic does, and
-// returns its address as a URL. It serves as HTTPS_PROXY or as a registry.
-// The test's end closes it and every connection it holds.
+// silentListener starts a TCP listener that accepts connections and never
+// answers, as a proxy dropping traffic does, and returns its URL.
 func silentListener(t *testing.T) string {
 	t.Helper()
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
@@ -127,10 +118,8 @@ func gitInput(t *testing.T, repo, stdin string, args ...string) string {
 // tree is slow to check.
 const treeSizesEnv = "FITNESS_TREE_SIZES"
 
-// timesTrees logs, as one Markdown table, how long each check takes on an
-// unscoped run of a generatedTree of every size treeSizesEnv names, and how
-// long a commit that edits one test file and one that edits one product
-// file take. Each tree is deleted once timed.
+// timesTrees logs one Markdown table of check and commit times on a
+// generatedTree of every size treeSizesEnv names.
 func timesTrees(t *testing.T) {
 	t.Helper()
 	sizes := strings.FieldsFunc(os.Getenv(treeSizesEnv), func(r rune) bool { return r == ',' })
@@ -151,9 +140,8 @@ func timesTrees(t *testing.T) {
 	t.Log("\n" + timesTable(sizes, cells))
 }
 
-// treeTimes times one generatedTree of n files: each check's row on an
-// unscoped run, the run itself, and the two commits of commitTimes, with
-// their timedRows rows.
+// treeTimes times a generatedTree of n files: each check's row on an unscoped
+// run, the run itself, and the two commits of commitTimes.
 func treeTimes(t *testing.T, n int) map[string]string {
 	t.Helper()
 	repo := generatedTree(t, staleTest(), n)
@@ -179,9 +167,8 @@ func treeTimes(t *testing.T, n int) map[string]string {
 	return times
 }
 
-// commitTimes makes fixingCommit in repo, which edits one test file, then
-// productCommit, which edits one product file, and returns each commit's
-// times as commitRows names them.
+// commitTimes makes fixingCommit, editing one test file, then productCommit,
+// editing one product file, in repo and returns each commit's times as commitRows.
 func commitTimes(t *testing.T, repo string) map[string]string {
 	t.Helper()
 	out, code, took := fixingCommit(t, repo)
@@ -224,10 +211,8 @@ func rowTime(line string) string {
 	return took[1] + " ms"
 }
 
-// productCommit commits, as a user does after fixingCommit, an edited
-// comment in the store's product file, a test and requirement doc beside it,
-// and a changelog entry that says so.
-// It returns what timedCommit does.
+// productCommit commits, after fixingCommit, an edited comment in the store's
+// product file with its test, doc and changelog entry.
 func productCommit(t *testing.T, repo string) (string, int, int64) {
 	t.Helper()
 	store := architectedRepo()["src/store/store.go"]
@@ -240,20 +225,16 @@ func productCommit(t *testing.T, repo string) (string, int, int64) {
 	return timedCommit(t, repo, installerEnv(t), edit, "fix(store): say the store keeps saved records")
 }
 
-// staleTest is architectedRepo with a store test named for no acceptance,
-// so the requirements check fails the store test file until a commit fixes
-// it.
+// staleTest is architectedRepo with a store test named for no acceptance, so the
+// requirements check fails that file until a commit fixes it.
 func staleTest() map[string]string {
 	files := architectedRepo()
 	files["src/store/store_test.go"] = testFile("store", "Test0001_1", "Test0001_9")
 	return files
 }
 
-// fixingCommit installs the hooks in a staleTest repo and commits, as a
-// user does, the store test without its stale test and a changelog entry
-// that says so. The requirements check judges the base commit to see the
-// test file was failing there. It returns the output, the exit code and
-// the commit's milliseconds.
+// fixingCommit installs the hooks in a staleTest repo and commits the store test
+// without its stale test, so the check judges the base.
 func fixingCommit(t *testing.T, repo string) (string, int, int64) {
 	t.Helper()
 	env := installerEnv(t)
@@ -266,9 +247,8 @@ func fixingCommit(t *testing.T, repo string) (string, int, int64) {
 	return timedCommit(t, repo, env, fix, "test(store): drop the stale store test")
 }
 
-// timedCommit writes and stages files in repo, commits them with message
-// as a user does, with env for the hooks, and returns the output, the exit
-// code and the commit's milliseconds.
+// timedCommit commits files in repo with message and env for the hooks and
+// returns the output, exit code and milliseconds.
 func timedCommit(t *testing.T, repo string, env []string, files map[string]string, message string) (string, int, int64) {
 	t.Helper()
 	write(t, repo, files)

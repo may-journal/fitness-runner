@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-// reviewComments is review 70's ten inline comments on PR 9, as the review
-// comment list prints them: ids 31 and 32 are sloppy, the rest pass.
+// reviewComments is review 70's ten inline comments on PR 9; ids 31 and 32 are
+// sloppy, the rest pass.
 func reviewComments() string {
 	var lines strings.Builder
 	for id := 31; id <= 40; id++ {

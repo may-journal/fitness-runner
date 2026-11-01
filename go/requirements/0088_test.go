@@ -14,9 +14,8 @@ import (
 	"time"
 )
 
-// rlLookups is a saved releases API. It answers every latest release lookup
-// with one status, naming one release when the status is 200, and keeps the
-// Authorization header each lookup sent.
+// rlLookups is a saved releases API answering latest release lookups with
+// one status, naming a release on 200, and keeping each Authorization header.
 type rlLookups struct {
 	env  []string
 	mu   sync.Mutex
@@ -160,7 +159,7 @@ func Test0088_4(t *testing.T) {
 }
 
 // rlSilentBudget is how long a run may take when the releases API never
-// answers: the five-second lookup, then an install from the private cache.
+// answers: the five-second lookup, then a private-cache install.
 const rlSilentBudget = 10 * time.Second
 
 func Test0088_6(t *testing.T) {

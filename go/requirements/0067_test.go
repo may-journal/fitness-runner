@@ -93,7 +93,7 @@ func Test0067_3(t *testing.T) {
 	branchReadOnce(t, rp)
 	pushAsked(t, rp, "11", "comments")
 	// The gate's read takes 25 of the push's 30 seconds, so a valid PR's
-	// 10-second discovery, well inside a deadline of its own, runs out.
+	// 10-second discovery runs out.
 	repo, env, rp := stalledPushRepo(t, "test(app): add one file", 25, 10)
 	start := time.Now()
 	out, code = user(t, repo, env, "push", "origin", "HEAD:work")

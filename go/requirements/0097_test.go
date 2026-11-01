@@ -5,9 +5,8 @@ import (
 	"testing"
 )
 
-// localizedCatalog is the fixture app's String Catalog: a live verb, a
-// noun with plural forms, a stale word the code no longer uses, and the
-// empty key Xcode keeps.
+// localizedCatalog is the fixture app's String Catalog: a live verb, a plural
+// noun, a stale word, and Xcode's empty key.
 const localizedCatalog = `{
   "sourceLanguage" : "en",
   "strings" : {

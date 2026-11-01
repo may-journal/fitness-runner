@@ -24,9 +24,8 @@ func planCheck(t *testing.T, event string, payload map[string]any, saved []respo
 	return ghRun(t, "plan-check", event, payload, nil, saved)
 }
 
-// ghRun runs a GitHub command the way its Actions step does, in happyRepo
-// with files written over it, on the event payload GitHub would deliver,
-// with gh answering from saved responses.
+// ghRun runs a GitHub command as its Actions step does, in happyRepo with files
+// over it, on GitHub's event payload and saved replies.
 func ghRun(t *testing.T, command, event string, payload map[string]any, files map[string]string, saved []response) (string, int, replays) {
 	t.Helper()
 	repo := example(t, "happyRepo", files)
@@ -54,8 +53,8 @@ func bodyEdit(issue map[string]any) map[string]any {
 	return map[string]any{"action": "edited", "issue": issue, "changes": map[string]any{"body": map[string]any{"from": "An earlier body."}}}
 }
 
-// idleEdits are the issues events for Plan 7 that cannot change its
-// verdict: an edit to the title alone, and each label in labels added.
+// idleEdits are Plan 7's issues events that cannot change its verdict: a title
+// edit and each added label.
 func idleEdits(labels ...string) []map[string]any {
 	issue := map[string]any{"number": 7, "title": "t", "body": brokenPlan, "labels": []map[string]string{{"name": "Plan"}}}
 	events := []map[string]any{{"action": "edited", "issue": issue, "changes": map[string]any{"title": map[string]any{"from": "s"}}}}
@@ -84,9 +83,8 @@ func planGitHub(verdicts string, labels ...string) []response {
 	return issueGitHub(planIssue, "fitness:plan-structure:", verdicts, append([]string{"Plan"}, labels...)...)
 }
 
-// issueGitHub is the saved GitHub that holds issue n's verdict comments,
-// found by a query naming marker, as the verdicts query prints them, and
-// its labels. Every write succeeds.
+// issueGitHub is the saved GitHub holding issue n's labels and verdict comments,
+// found by a query naming marker, where every write succeeds.
 func issueGitHub(n, marker, verdicts string, labels ...string) []response {
 	issue, _ := json.Marshal(map[string]any{"body": "", "labels": labels})
 	return []response{
@@ -100,14 +98,14 @@ func issueGitHub(n, marker, verdicts string, labels ...string) []response {
 	}
 }
 
-// planVerdict is one verdict comment the fitness bot wrote, as the verdicts
-// query prints it: id 11, starting with text and marked as judging body.
+// planVerdict is one fitness bot verdict comment, id 11, starting with text and
+// marked as judging body.
 func planVerdict(text, body string) string {
 	return verdictBy("github-actions", "Bot", 11, text, body)
 }
 
-// verdictBy is planVerdict with comment id, written by login, an account of
-// kind, as GraphQL names them: an app's login has no [bot] suffix.
+// verdictBy is planVerdict with comment id, written by login, an account of kind,
+// where an app's login has no [bot] suffix.
 func verdictBy(login, kind string, id int, text, body string) string {
 	sum := sha256.Sum256([]byte(body))
 	mark := "<!-- fitness:plan-structure:" + hex.EncodeToString(sum[:])[:12] + " -->"

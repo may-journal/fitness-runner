@@ -67,8 +67,8 @@ func Test0131_5(t *testing.T) {
 	unitTested(t, repo)
 }
 
-// unitTested asserts that go test in repo's fitness folder passes the
-// check's fixture test and fails its test of the repo on the finding.
+// unitTested asserts that go test in repo's fitness folder passes the check's
+// fixture test and fails its repo test on the finding.
 func unitTested(t *testing.T, repo string) {
 	t.Helper()
 	out, failed := goTestFitness(t, repo)

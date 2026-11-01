@@ -49,8 +49,8 @@ func Test0032_1(t *testing.T) {
 	}
 }
 
-// Test0032_12 puts a block of 3 lines in one pair and a block of 18 tokens
-// in another, each under one of the two minimums.
+// Test0032_12 puts a 3-line block in one pair and an 18-token block in
+// another, each under one minimum.
 func Test0032_12(t *testing.T) {
 	t.Parallel()
 	files := dupPair("src/a.js", "src/b.js", dupBlock("w", 3, 20))
@@ -60,10 +60,8 @@ func Test0032_12(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-// Test0032_13 tracks a doc holding a copied block, then commits the block
-// in a script, which duplicate-code never compares with a doc, or in a second doc.
-// Each commit reads only the files of its staged format: the script, or
-// the README, the changelog and both docs.
+// Test0032_13 commits a copied block in a script, which duplicate-code never
+// compares with a doc, then in a second doc.
 func Test0032_13(t *testing.T) {
 	t.Parallel()
 	passedWith(t, dupCommit(t, "src/copy.js"), "duplicate-code", "1")
@@ -74,8 +72,7 @@ func Test0032_13(t *testing.T) {
 }
 
 // dupCommit tracks a doc holding dupClone in a hooked repo, stages file
-// holding it too, commits as a user does, and returns what the commit
-// printed.
+// holding it too, and returns what the commit printed.
 func dupCommit(t *testing.T, file string) string {
 	t.Helper()
 	repo, env := hooked(t, map[string]string{"docs/guide.md": dupClone + dupBlock("fg", 24, 3)})
@@ -128,9 +125,8 @@ func Test0032_10(t *testing.T) {
 	sees(t, out, code, 1, "ERROR: duplicate code is 7.4% of scanned lines, over the 1.0% threshold")
 }
 
-// Test0032_15 wraps the copied block in each marker spelling: the current
-// duplicate-code markers in one pair and the deprecated jscpd ones in the
-// other, so a repo written before the rename keeps passing.
+// Test0032_15 wraps the block in current markers in one pair and deprecated
+// jscpd ones in the other, so older repos keep passing.
 func Test0032_15(t *testing.T) {
 	t.Parallel()
 	current := "// duplicate-code:ignore-start\n" + dupClone + "// duplicate-code:ignore-end\n"

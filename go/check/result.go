@@ -6,9 +6,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-// Result is a check's verdict: whether it passed, an error line per
-// problem, how many files it judged, its findings, and info notes that
-// never fail a run.
+// Result is a check's verdict: whether it passed, its error lines, findings
+// and file count, and info notes that never fail a run.
 type Result = checkkit.Result
 
 // Finding is one problem in a shape an agent acts on without parsing

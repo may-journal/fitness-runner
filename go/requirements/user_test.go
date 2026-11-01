@@ -1,7 +1,5 @@
-// Package requirements proves docs/requirements the way a user meets them:
-// each test copies an example repo, runs the documented one-line installer
-// command in it, and asserts what that acceptance's Then promises. Tests run
-// the candidate installer at FITNESS_INSTALL, which the release build makes.
+// Package requirements proves docs/requirements as a user meets them: each test
+// runs the installer at FITNESS_INSTALL in a copied example repo.
 package requirements
 
 import (
@@ -97,9 +95,7 @@ func piped(t *testing.T, repo, stdin string, env []string, args ...string) (stri
 }
 
 // execute runs the command build makes and returns its output, color codes
-// dropped, and exit code. A process that never starts fails the test with the
-// start error. A busy binary, still open for writing in a parallel test's
-// fork, is retried for a bounded time, since only a fresh command can retry.
+// dropped, and exit code, retrying a busy binary briefly.
 func execute(t *testing.T, build func() *exec.Cmd) (string, int) {
 	t.Helper()
 	var out []byte
@@ -169,8 +165,8 @@ func installer(t *testing.T) string {
 	return path
 }
 
-// read returns text as a person reads it: the table's borders dropped and its
-// wrapped lines joined, so a message reads as one line.
+// read returns text as a person reads it, table borders dropped and wrapped
+// lines joined into one.
 func read(text string) string {
 	return strings.Join(strings.Fields(strings.ReplaceAll(text, "│", " ")), " ")
 }
@@ -217,7 +213,7 @@ func passedWithNoFiles(t *testing.T, out, check string) {
 }
 
 // showsInfo asserts the run exited 0 printing every want, with check's row
-// showing info: the check could not judge, so it never fails the run.
+// showing info because the check could not judge.
 func showsInfo(t *testing.T, out string, code int, check string, want ...string) {
 	t.Helper()
 	sees(t, out, code, 0, want...)

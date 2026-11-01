@@ -98,8 +98,7 @@ func Test0078_5(t *testing.T) {
 }
 
 // spotlessGradleNoJDK is Gradle's answer, saved from a real run, when the
-// build's toolchain asks for a JDK the machine lacks: the failure, then
-// the causes it nests under it.
+// toolchain needs a JDK the machine lacks.
 var spotlessGradleNoJDK = response{
 	Match: []string{"spotlessCheck"},
 	Stdout: "FAILURE: Build failed with an exception.\n\n* What went wrong:\n" +

@@ -32,10 +32,8 @@ func section0092(t *testing.T, name string) string {
 	return section
 }
 
-// run0092 runs the named step's script as Actions does, with bash -e, for
-// release PR 23 and release v1 at commit abc123, GitHub's CLI answering
-// from saved responses. It returns the stand-ins, the output, the exit code,
-// and what the step wrote to GITHUB_OUTPUT.
+// run0092 runs the named step's script as Actions does for release PR 23 at
+// commit abc123, with gh answering from saved responses.
 func run0092(t *testing.T, name string, gh []response) (replays, string, int, string) {
 	t.Helper()
 	_, script, ok := strings.Cut(section0092(t, name), "run: |\n")

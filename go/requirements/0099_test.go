@@ -8,8 +8,8 @@ import (
 	"testing"
 )
 
-// onboardingSkill links the skills into a new folder with the installer, as an
-// agent does, and returns the text of the onboarding skill found there.
+// onboardingSkill links the skills into a new folder with the installer, as
+// an agent does, and returns the onboarding skill's text.
 func onboardingSkill(t *testing.T) string {
 	t.Helper()
 	folder := filepath.Join(t.TempDir(), "skills")

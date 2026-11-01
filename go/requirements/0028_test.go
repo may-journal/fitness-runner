@@ -27,8 +27,8 @@ func gtcCommand(test string) map[string]string {
 // gtcEntryTest is a command test that runs every statement.
 const gtcEntryTest = "package main\n\nimport \"testing\"\n\nfunc TestEntry(t *testing.T) { main() }\n"
 
-// gtcLibrary is a Go module with one library package of two statements, a
-// config written over happyRepo's, and a test that runs only One.
+// gtcLibrary is a Go module with a two-statement library package, a config
+// written over happyRepo's, and a test running only One.
 func gtcLibrary(config string) map[string]string {
 	return map[string]string{
 		".fitnessrc.json": config,
@@ -92,8 +92,8 @@ func Test0028_9(t *testing.T) {
 // counts and the other for odd ones.
 const gtcFlip = "package main\n\nfunc flip(n int) int {\n\tif n%2 == 0 {\n\t\treturn 1\n\t}\n\treturn 2\n}\n"
 
-// gtcFlipTest covers the command fully in TestEntry, while TestFlip takes the
-// other branch of flip each time it runs, counted in a file it appends to.
+// gtcFlipTest covers the command in TestEntry, while TestFlip takes the other
+// branch of flip on each run, counted in a file.
 const gtcFlipTest = `package main
 
 import (
@@ -164,8 +164,8 @@ type gtcRun struct {
 	start, end int64
 }
 
-// gtcAuditRuns reads runs.log and keeps the runs whose process ran one test,
-// as each audit run does; the module-wide run logs several per process.
+// gtcAuditRuns reads runs.log and keeps the audit runs whose process ran one
+// test, since the module-wide run logs several per process.
 func gtcAuditRuns(t *testing.T, repo string) []gtcRun {
 	t.Helper()
 	data, err := os.ReadFile(filepath.Join(repo, "runs.log"))
@@ -217,7 +217,7 @@ func gtcOverlaps(runs []gtcRun) map[string]int {
 }
 
 // gtcPairKind names what an overlap of runs a and b shows: "forbidden"
-// within one serial package or one test, else the two runs' sides.
+// within one serial package or test, else the runs' sides.
 func gtcPairKind(a, b gtcRun) string {
 	if a.pkg == b.pkg && (a.test == b.test || a.pkg != "parallel") {
 		return "forbidden"
