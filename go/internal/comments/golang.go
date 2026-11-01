@@ -1,8 +1,10 @@
 package comments
 
 import (
+	"go/ast"
 	"go/parser"
 	"go/token"
+	"regexp"
 	"strings"
 )
 
@@ -16,14 +18,45 @@ func goNotes(src []byte) []note {
 	}
 	text := string(src)
 	offs := newOffsets(text)
+	kept := goCodeGroups(file)
 	var notes []note
 	for _, group := range file.Comments {
 		for _, c := range group.List {
 			start := fset.Position(c.Pos()).Offset
-			notes = append(notes, offs.note(start, start+goCommentLen(text[start:], c.Text)))
+			n := offs.note(start, start+goCommentLen(text[start:], c.Text))
+			n.code = kept[group]
+			notes = append(notes, n)
 		}
 	}
 	return notes
+}
+
+// exampleOutput opens the comment that states what a Go example prints.
+var exampleOutput = regexp.MustCompile(`(?im)^\s*(unordered )?output:`)
+
+// goCodeGroups lists the comment groups the Go toolchain reads as code. One
+// is a cgo preamble above `import "C"`. Another is an example's output
+// comment, which `go test` checks.
+func goCodeGroups(file *ast.File) map[*ast.CommentGroup]bool {
+	kept := map[*ast.CommentGroup]bool{}
+	for _, group := range file.Comments {
+		kept[group] = exampleOutput.MatchString(group.Text())
+	}
+	for _, decl := range file.Decls {
+		if gen, ok := decl.(*ast.GenDecl); ok && gen.Tok == token.IMPORT {
+			keepPreamble(kept, gen)
+		}
+	}
+	return kept
+}
+
+// keepPreamble marks the comments above an `import "C"` as code.
+func keepPreamble(kept map[*ast.CommentGroup]bool, gen *ast.GenDecl) {
+	for _, s := range gen.Specs {
+		if spec := s.(*ast.ImportSpec); spec.Path.Value == `"C"` {
+			kept[gen.Doc], kept[spec.Doc] = true, true
+		}
+	}
 }
 
 // goCommentLen is the length in the source of a comment the parser holds

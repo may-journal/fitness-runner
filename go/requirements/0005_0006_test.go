@@ -152,6 +152,15 @@ func commented0005(t *testing.T) {
 	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
 	out, code = prRun(t, pairedRepo(), map[string]string{pairedTest: edited(rewritten)}, "test(reqs): check sums twice")
 	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
+	out, code = stagedRun(t, pairedRepo(), with(noted, map[string]string{pairedTest: edited(rewritten)}))
+	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
+	out, code = stagedRun(t, pairedRepo(), map[string]string{pairedTest: rewritten, pairedDoc: reworded(requirementDoc("0001.1"))})
+	sees(t, out, code, 1, pairedDoc+" changed without its requirement test "+pairedTest+"; change both together")
+	out, code = stagedRun(t, pairedRepo(), map[string]string{"reqs/sums_test.go": rewritten, pairedTest: ""})
+	sees(t, out, code, 0)
+	shown := with(pairedRepo(), map[string]string{pairedDoc: requirementDoc("0001.1") + "\n```html\n<!-- a -->\n```\n"})
+	out, code = stagedRun(t, shown, map[string]string{pairedDoc: requirementDoc("0001.1") + "\n```html\n<!-- b -->\n```\n"})
+	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
 }
 
 // renamed0005 proves a doc renamed with its number and wording kept needs no

@@ -23,19 +23,47 @@ func ScopeBase(root string) string {
 	return strings.TrimSpace(out)
 }
 
-// Show returns the content of a git object such as rev:path, and whether
-// git found it. A rev of ":" names the index.
-func Show(root, object string) (string, bool) {
+// Show returns the file at path, slash-separated from the repo root, as
+// commit rev holds it, and whether rev holds it. An empty rev holds none.
+func Show(root, rev, path string) (string, bool) {
+	if rev == "" {
+		return "", false
+	}
+	return show(root, rev+":"+path)
+}
+
+// FileAt is Show without the found flag: empty when rev lacks the file.
+func FileAt(root, rev, path string) string {
+	out, _ := Show(root, rev, path)
+	return out
+}
+
+// Judged returns the file at path as a scoped run judges it. A pull request
+// reads it at HEAD; a commit reads the index, which holds what it records.
+func Judged(root, path string) (string, bool) {
+	if os.Getenv("GITHUB_BASE_REF") != "" {
+		return show(root, "HEAD:"+path)
+	}
+	return show(root, ":"+path)
+}
+
+func show(root, object string) (string, bool) {
 	out, err := Repo(root).run("show", object)
 	return out, err == nil
 }
 
-// FileAt returns the file at path, slash-separated from the repo root, as
-// commit rev holds it. It is empty when rev is empty or lacks the file.
-func FileAt(root, rev, path string) string {
-	if rev == "" {
-		return ""
+// Renames maps each path the scoped run renames since base to its path at
+// base: a pull request's commits, or else the index.
+func Renames(root, base string) map[string]string {
+	args := []string{"diff", "-z", "--name-status", "-M", "--diff-filter=R", "--cached", base}
+	if os.Getenv("GITHUB_BASE_REF") != "" {
+		args = []string{"diff", "-z", "--name-status", "-M", "--diff-filter=R", base, "HEAD"}
 	}
-	out, _ := Repo(root).run("show", rev+":"+path)
-	return out
+	out, _ := Repo(root).run(args...)
+	fields := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
+	renames := map[string]string{}
+	for i := 0; i+2 < len(fields); i += 3 {
+		renames[fields[i+2]] = fields[i+1]
+	}
+	return renames
 }

@@ -1,11 +1,11 @@
 package check
 
 import (
-	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
@@ -35,22 +35,17 @@ func reformats(root, base string, changed []string) map[string]bool {
 }
 
 // reformatted reports whether doc f holds the same wording at base and in
-// the scope being judged: HEAD for a pull request, else the index, which
-// holds what a commit records. A doc renamed since base is compared with
-// the base doc of its number, since a number is never reused.
+// the scope being judged. A doc renamed since base is compared with the
+// base doc of its number, since a number is never reused.
 func reformatted(root, base, f string) bool {
-	now := ":" + f
-	if os.Getenv("GITHUB_BASE_REF") != "" {
-		now = "HEAD:" + f
-	}
-	before, ok := gitx.Show(root, base+":"+f)
+	before, ok := gitx.Show(root, base, f)
 	if !ok {
-		before, ok = gitx.Show(root, base+":"+renamedFrom(root, base, f))
+		before, ok = gitx.Show(root, base, renamedFrom(root, base, f))
 	}
 	if !ok {
 		return false
 	}
-	after, ok := gitx.Show(root, now)
+	after, ok := gitx.Judged(root, f)
 	return ok && wording(before, true) == wording(after, false)
 }
 
@@ -73,16 +68,13 @@ func renamedFrom(root, base, f string) string {
 	return f
 }
 
-// htmlComment is an HTML comment, which a reader of the doc never sees.
-var htmlComment = regexp.MustCompile(`(?s)<!--.*?-->`)
-
 // wording is a doc's words in order, without its front matter or HTML
 // comments. At base only, a leftover Source line is dropped, so deleting one
 // is no change but adding or editing one is. Spacing, line breaks, and list
 // markers are made alike, as a formatter may change them. The doc check
 // judges the structure.
 func wording(doc string, dropSource bool) string {
-	body := htmlComment.ReplaceAllString(mdx.StripFrontMatter(doc), " ")
+	body := comments.WithoutHTMLComments(mdx.StripFrontMatter(doc))
 	if dropSource {
 		body = sourceLine.ReplaceAllString(body, "")
 	}

@@ -45,4 +45,4 @@ changed requirement tests and docs
 - 0005.17
   - Given Developer has a test changed only in comments, or a doc changed only in formatting, comments, name, or a deleted Source line
     - When fitness judges my commit or pull request
-      - Then it passes without its partner, while editing a Source line still needs one
+      - Then it needs no partner and counts as none, while editing a Source line still needs one

@@ -14,8 +14,9 @@
 //
 // A file counts as changed only when its lines change beyond whitespace, so
 // a pure rename or a reformat changes nothing. Nor does a file whose code,
-// with comments removed, is the same before and after. Directives such as
-// `//go:build` and a shebang count as code.
+// with comments removed, is the same before and after. That holds for tests
+// and docs too. Directives, a shebang, a cgo preamble, and a Go example's
+// output comment count as code.
 //
 // # Passes
 //

@@ -1,6 +1,7 @@
 package check
 
 import (
+	"cmp"
 	"fmt"
 	"path"
 	"regexp"
@@ -90,9 +91,9 @@ func docNumber(f string) string {
 }
 
 // judge flags each changed requirement test whose docs all stayed
-// unchanged, unless fixed excuses it. It flags each changed doc whose tests
-// all stayed unchanged. A reformatted doc needs no test change, yet still
-// counts as changed for its tests, as an excused test does for its docs.
+// unchanged, unless fixed reports it failed this check at the base. It
+// flags each changed doc whose tests all stayed unchanged. A reformatted doc
+// needs no test change, yet still counts as changed for its tests.
 func (p pairs) judge(changed []string, reformatted map[string]bool, fixed func(string) bool) []string {
 	isChanged := map[string]bool{}
 	for _, f := range changed {
@@ -109,7 +110,7 @@ func (p pairs) judge(changed []string, reformatted map[string]bool, fixed func(s
 }
 
 // unpairedTest flags file when it proves requirements whose docs all stayed
-// unchanged, unless fixed excuses it.
+// unchanged, unless it failed this check at the base.
 func (p pairs) unpairedTest(file string, changed map[string]bool, fixed func(string) bool) []string {
 	missing := unpaired(file, p.numbers[file], p.docs, "requirement doc", changed)
 	if len(missing) == 0 || fixed(file) {
@@ -150,18 +151,28 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 		return nil
 	}
 	base := gitx.ScopeBase(root)
-	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), excused(root, base))
+	p := newPairs(docPaths, testFiles, tests, changed)
+	changed = p.withoutCommentOnly(root, base, changed)
+	errs := p.judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
 	sort.Strings(errs)
 	return errs
 }
 
-// excused reports whether a changed test file needs no doc change. Its code
-// may be the same with comments set aside, or it may fix a failure at base.
-func excused(root, base string) func(string) bool {
-	fixed := fixedAtBase(root, base)
-	return func(file string) bool {
-		return comments.CommentOnly(root, base, file, file) || fixed(file)
-	}
+// withoutCommentOnly drops each changed test or doc whose code, comments
+// aside, is the same as at base. It neither needs a partner nor counts as
+// one.
+func (p pairs) withoutCommentOnly(root, base string, changed []string) []string {
+	var renames map[string]string
+	return slices.DeleteFunc(slices.Clone(changed), func(f string) bool {
+		if len(p.numbers[f]) == 0 && docNumber(f) == "" {
+			return false
+		}
+		if renames == nil {
+			renames = gitx.Renames(root, base)
+		}
+		from := cmp.Or(renames[f], f)
+		return comments.CommentOnly(root, base, from, f)
+	})
 }
 
 // fixedAtBase reports whether a changed test file failed this check at the

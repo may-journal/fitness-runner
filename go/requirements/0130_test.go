@@ -120,36 +120,56 @@ func rcCommented() string {
 }
 
 // rcScript is a shell script, product code, with comments to rewrite.
-const rcScript = "#!/bin/sh\n# greet says hello.\necho \"# not a comment\" # says it\n"
+const rcScript = "#!/bin/sh\n# greet says hello.\necho \"# not a comment\" # says it\necho done\n"
+
+// rcGiven is goRepo with a shell script, a file behind a build tag, and a
+// cgo preamble, which the toolchain reads as code.
+func rcGiven() map[string]string {
+	return with(goRepo(), map[string]string{
+		"greet.sh": rcScript,
+		"tag.go":   "//go:build darwin\n\npackage adder\n",
+		"cgo.go":   "package adder\n\n// int three(void) { return 3; }\nimport \"C\"\n",
+	})
+}
 
 // rcCommentOnly proves that edits to comments alone, in Go and shell,
 // pass staged and on a pull request.
 func rcCommentOnly(t *testing.T) {
 	t.Helper()
-	given := with(goRepo(), map[string]string{"greet.sh": rcScript})
 	files := map[string]string{
 		"adder.go": rcCommented(),
-		"greet.sh": "#!/bin/sh\n# greet prints a greeting.\n\necho \"# not a comment\"    # prints it\n",
+		"greet.sh": "#!/bin/sh\n# greet prints a greeting.\n\necho \"# not a comment\" # prints it\n  echo done\n",
 	}
-	out, code := rcStaged(t, given, files)
+	out, code := rcStaged(t, rcGiven(), files)
 	sees(t, out, code, 0, rcPassed)
-	out, code = rcPull(t, given, files)
+	out, code = rcPull(t, rcGiven(), files)
 	sees(t, out, code, 0, rcPassed)
 }
 
-// rcCodeWithComments proves that a code or directive change beside comment
-// edits still fails, staged and on a pull request.
+// rcCodeWithComments proves that a change to code, a directive, or a cgo
+// preamble beside comment edits still fails, staged and in a pull.
+// Joined lines and a changed string count as code, and so does a test or
+// doc changed only in its comments.
 func rcCodeWithComments(t *testing.T) {
 	t.Helper()
-	given := with(goRepo(), map[string]string{"greet.sh": rcScript, "tag.go": "//go:build darwin\n\npackage adder\n"})
-	for file, body := range map[string]string{
-		"adder.go": strings.Replace(rcCommented(), "a + b", "b + a", 1),
-		"greet.sh": strings.Replace(rcScript, "# not a comment\"", "# still not a comment\"", 1),
-		"tag.go":   "//go:build linux\n\n// Package adder builds on Linux.\npackage adder\n",
+	greeting := strings.Replace(rcScript, "says hello", "prints a greeting", 1)
+	for _, c := range []struct{ file, body string }{
+		{"adder.go", strings.Replace(rcCommented(), "a + b", "b + a", 1)},
+		{"greet.sh", strings.Replace(greeting, "# not a comment\"", "# still not a comment\"", 1)},
+		{"greet.sh", strings.Replace(greeting, "# says it\necho", "echo", 1)},
+		{"tag.go", "//go:build linux\n\n// Package adder builds on Linux.\npackage adder\n"},
+		{"cgo.go", "package adder\n\n// int three(void) { return 4; }\nimport \"C\"\n"},
 	} {
-		out, code := rcStaged(t, given, map[string]string{file: body})
-		sees(t, out, code, 1, file+" changed without a test and a requirement doc; change both with it")
-		out, code = rcPull(t, given, map[string]string{file: body})
-		sees(t, out, code, 1, file+" changed without a test and a requirement doc")
+		out, code := rcStaged(t, rcGiven(), map[string]string{c.file: c.body})
+		sees(t, out, code, 1, c.file+" changed without a test and a requirement doc; change both with it")
+		out, code = rcPull(t, rcGiven(), map[string]string{c.file: c.body})
+		sees(t, out, code, 1, c.file+" changed without a test and a requirement doc")
 	}
+	partners := map[string]string{
+		"adder.go":      rcAdder(),
+		"adder_test.go": withComment(goRepo()["adder_test.go"]),
+		pairedDoc:       goRepo()[pairedDoc] + "\n<!-- Sums stay small. -->\n",
+	}
+	out, code := rcStaged(t, rcGiven(), partners)
+	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc; change both with it")
 }

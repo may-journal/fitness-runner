@@ -15,7 +15,7 @@ changes to product code
 ## Requirements
 
 - 0130.1
-  - Given Developer has changed product code or a directive, with or without comment edits, and no test or requirement doc
+  - Given Developer has changed product code, a directive, or a cgo preamble, with tests and docs changed at most in comments
     - When requirements-changed checks the commit or its pull request
       - Then it fails naming the file and the missing half
 - 0130.2

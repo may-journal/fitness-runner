@@ -35,11 +35,12 @@ type Block struct {
 
 // note is one comment as written, markers included, before notes on
 // adjacent lines join into blocks. Col is the byte it starts at on its
-// first line.
+// first line. Code marks a comment a toolchain reads, such as a cgo
+// preamble.
 type note struct {
 	line, end, col int
 	text           string
-	inline         bool
+	inline, code   bool
 }
 
 // langs maps a file extension to its language name.
