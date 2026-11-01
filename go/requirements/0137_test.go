@@ -123,6 +123,8 @@ func Test0137_6(t *testing.T) {
 	sees(t, out, code, 1, atEachFile(`comment-fragment: a sentence starts with "So"; join it to the sentence before it or drop it`)...)
 	out, code = proseBudget(t, inComments("Retries once on a cold cache.", "Cache warms first."))
 	sees(t, out, code, 1, atEachFile("comment-fragment: a sentence has 3 words (min 4)")...)
+	out, code = proseBudget(t, inComments("See [the doc](../docs/a.md)."))
+	sees(t, out, code, 1, atEachFile("comment-fragment: a sentence has 3 words (min 4)")...)
 	files := inBodies(threeSentences...)
 	files["app/tail.go"] = "package main\n\nvar x = 1 // Holds one on every run. The value never changes. Tests read it directly.\n"
 	for path, src := range inComments(threeSentences...) {
@@ -145,6 +147,13 @@ func Test0137_7(t *testing.T) {
 	files["app/svc.ts"] = "export class Svc {\n  // " + strings.Join(threeSentences[:2], "\n  // ") + "\n  run(x: number): number {\n    return x;\n  }\n}\n"
 	files["app/list.go"] = "package main\n\n// Codes:\n//\n//   - 1: a check found problems, or the run could not start, such as a bad\n//     config.\nvar codes = 1\n\n// unwraps reads the ? or ! of a?.b, and \"- [ ]\" or \"1. [ ]\" items.\nfunc unwraps() {}\n"
 	files["README.md"] = readme + "\nThe cache warms. So it works.\n"
+	for path, src := range inComments("[0008 Other devices](../docs/requirements/0008-other-devices.md)") {
+		files[strings.Replace(path, "app/", "app/link/", 1)] = src
+	}
+	for path, src := range inComments(`"1 Oct 2025 · 8:10a".`) {
+		files[strings.Replace(path, "app/", "app/quote/", 1)] = src
+	}
+	files["app/run.sh"] = "#!/bin/sh\n# \"Go to Mon, Sep 28, 9:15 AM\"\necho hi\n"
 	out, code := proseBudget(t, files)
 	sees(t, out, code, 0)
 }

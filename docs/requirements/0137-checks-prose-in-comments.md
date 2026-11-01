@@ -37,9 +37,9 @@ Comment blocks judged
         - When prose-budget checks the repo
             - Then it fails naming each comment's path, line and rule, and says to join, drop or condense it
 - 0137.7
-    - Given Developer has a 20-word body comment, two-sentence doc comments, a wrapped list item, and Markdown with "So"
+    - Given Developer has a 20-word body comment, two-sentence doc comments, a lone link or quote, a wrapped list item, and Markdown with "So"
         - When prose-budget checks the repo
-            - Then it passes, since a comment may hold two sentences and Markdown meets neither rule
+            - Then it passes, since none breaks a comment rule and Markdown meets neither rule
 - 0137.8
     - Given Developer stages a comment with a "So" sentence in a file whose other comment is a fragment too
         - When prose-budget runs on the staged fragment
