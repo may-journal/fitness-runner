@@ -304,7 +304,7 @@ func blobSelection(suite, selected []string) ([]string, error) {
 // named in --checks always judges the text.
 func blobEnv(checks []resolved, chosen bool) []string {
 	env := os.Environ()
-	for _, name := range []string{"FITNESS_CHANGED_FILES", checkkit.ScopeFileEnv, "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE", bodycheck.BlobEnv} {
+	for _, name := range []string{changedFilesEnv, checkkit.ScopeFileEnv, "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE", bodycheck.BlobEnv} {
 		env = withoutVar(env, name)
 	}
 	names := make([]string, len(checks))

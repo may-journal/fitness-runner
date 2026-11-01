@@ -73,6 +73,14 @@ A check that compares files cuts its corpus to what the change can alter. duplic
 
 `fitness --dir=<folder>` leaves it unset too. It names a file in `FITNESS_SCOPE_FILE` that lists the folder's files, one per line. `checkkit.ChangedFiles` reads either list, and `checkkit.DiffFiles` reads only the changes.
 
+## Pull request stages
+
+A pull request run of the whole suite takes two stages. Stage 1 sets the list and reports its table, and a failure ends the run. Stage 2 runs the suite again with the list unset and fails on any finding. It then lists the files the pull request does not change apart from the changed ones.
+
+A named check, `--dir`, or a diff git cannot compute keeps one stage, so check out with `fetch-depth: 0`. The `--json` report and `--format=json` hold the last stage run. The git hooks never run stage 2.
+
+A repo too large to scan whole on each pull request sets `"scopedPullRequests": true` in `.fitnessrc.json`. Its pull requests run stage 1 alone, and a push to main still scans every file.
+
 ## Config
 
 Optional `.fitnessrc.json` at repo root:

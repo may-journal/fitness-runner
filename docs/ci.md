@@ -131,7 +131,7 @@ jobs:
 
 The action downloads the native installer and checks its hash, then invokes it. Go handles action inputs, outputs, caching, and check execution. Use a full action commit SHA if your team requires a fixed source ref.
 
-Findings fail the job with error annotations. A check that cannot run, such as one missing its tool, adds a `::notice` and a line in the job summary's Info section. Info never fails the job.
+Findings fail the job with error annotations. A pull request checks its changed files first, then scans every file once they pass, as [pull request stages](check-protocol.md#pull-request-stages) explains. A check that cannot run, such as one missing its tool, adds a `::notice` and a line in the job summary's Info section. Info never fails the job.
 
 ## Commit hook
 

@@ -6,9 +6,28 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 var sourceLocation = regexp.MustCompile(`^([^:\r\n]+):(?:(\d+)(?::\d+)?(?:\s|:|$)|\s)`)
+
+// FindingFile is a finding's File, else the path its message starts with,
+// as an annotation locates it, else "".
+func FindingFile(f checkkit.Finding) string {
+	path := f.File
+	if path == "" {
+		match := sourceLocation.FindStringSubmatch(f.Message)
+		if match == nil {
+			return ""
+		}
+		path = match[1]
+	}
+	if repoPath := sourcePath(path); repoPath != "" {
+		return repoPath
+	}
+	return f.File
+}
 
 func location(message string) string {
 	match := sourceLocation.FindStringSubmatch(message)
