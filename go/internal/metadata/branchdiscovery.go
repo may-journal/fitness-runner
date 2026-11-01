@@ -67,10 +67,8 @@ func branchPulls(ctx context.Context, root, path string) ([]byte, error) {
 	return branchOutput(ctx, root, "api", "--paginate", "--jq", filter, path)
 }
 
-// oneUnresolvedRemote reports whether the checkout has exactly one remote and
-// `gh repo set-default` never chose one. Only then do `gh repo view` and the
-// {owner}/{repo} placeholders of `gh api` surely name the same repo, so the
-// pulls read may start before gh repo view answers.
+// oneUnresolvedRemote reports whether the checkout has one remote and no
+// `gh repo set-default`, so the pulls read may start before `gh repo view`.
 func oneUnresolvedRemote(ctx context.Context, root string) bool {
 	out, err := exec.CommandContext(ctx, "git", "-C", root, "config", "--get-regexp", `^remote\.`).Output()
 	return err == nil && os.Getenv("GH_REPO") == "" && remoteURLs(string(out)) == 1

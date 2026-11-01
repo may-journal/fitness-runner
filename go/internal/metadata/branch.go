@@ -41,9 +41,8 @@ func LocalBranch(root string, args []string) (checkkit.Result, error) {
 	return result, nil
 }
 
-// skipBranch is local-branch's result without reading GitHub, and true, when
-// the repo has no local GitHub branch context, which passes, or the runner's
-// probe found GitHub's API host unreachable, which is info.
+// skipBranch is local-branch's result without reading GitHub when the repo has
+// no branch context or the runner found GitHub's API unreachable.
 func skipBranch(root string) (checkkit.Result, bool) {
 	if !localBranchApplicable(root) {
 		fmt.Fprintln(os.Stderr, "local-branch: no local GitHub branch context; skipped.")
@@ -59,8 +58,8 @@ func localBranchApplicable(root string) bool {
 	return !report.Enabled() && os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" && gitx.OriginSlug(root) != ""
 }
 
-// repoClients holds one client per repo, so the branches of one push share
-// their issue reads and the gate's handoff is read once per repo.
+// repoClients holds one client per repo, so one push's branches share issue
+// reads and the gate's handoff is read once.
 type repoClients map[string]aftereffect.Client
 
 func (c repoClients) get(ctx context.Context, repo string) aftereffect.Client {
@@ -99,8 +98,8 @@ func checkBranch(ctx context.Context, root string, branch gitx.BranchContext, cl
 	return checkkit.Result{Ok: len(errs) == 0, Errors: errs, FilesChecked: 1 + len(issues) + otherChecked}
 }
 
-// judgeOtherPlans reads and judges the Plans the branch names in other repos
-// of its owner, each from the repo that holds it, in repo order.
+// judgeOtherPlans judges the Plans the branch names in other repos of its
+// owner, each read from its own repo, in repo order.
 func judgeOtherPlans(ctx context.Context, others map[string][]int, clients repoClients, b blobChecker) ([]string, int) {
 	var errs []string
 	checked := 0
@@ -160,12 +159,8 @@ func judgeBranchPlans(issues []linkedIssue, repo string, b blobChecker) []string
 	return errs
 }
 
-// currentBase is the base commit GitHub will diff from once the tip is
-// pushed. The API's base commit only moves when the PR's head is pushed, so
-// after the base branch advances and the branch rebases, it would count other
-// PRs' commits as this branch's. The fetched base branch replaces it when it
-// already contains that commit. A fork's origin is not the base repository,
-// so a fork PR keeps the API's commit.
+// currentBase is the base commit GitHub will diff from once pushed, replaced by
+// the fetched base branch since the API's moves on push.
 func currentBase(ctx context.Context, root, repo string, pr *branchPR) string {
 	if pr.BaseSHA == "" || !strings.EqualFold(pr.Source, repo) {
 		return pr.BaseSHA
@@ -195,10 +190,8 @@ func branchPlans(ctx context.Context, root, repo, tip string, pr *branchPR) ([]g
 	return gitx.PlanNumbers(string(out)), nil
 }
 
-// localPlans splits the branch's Plans into the issue numbers of repo, which
-// join the PR's closed issues, and the Plans other repos of repo's owner
-// hold, grouped by repo. A Plan of another owner is left out, since the push
-// gate refuses it.
+// localPlans splits the branch's Plans into repo's issue numbers and its owner's
+// other-repo Plans, omitting other owners the push gate refuses.
 func localPlans(plans []gitx.PlanRef, repo string) ([]int, map[string][]int) {
 	var nums []int
 	others := map[string][]int{}
@@ -243,10 +236,8 @@ func uniqueIssues(nums []int) []int {
 	return unique
 }
 
-// branchOutput includes the actionable gh auth/network error without hiding
-// the command's failure, and shares the whole run's remote-read deadline.
-// A timeout, a missing gh, or an auth or network failure is a
-// checkkit.Internal error, so it reads as the environment, not a finding.
+// branchOutput runs gh under the whole run's remote-read deadline, reporting a
+// timeout, missing gh, or auth or network failure as checkkit.Internal.
 func branchOutput(ctx context.Context, root string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	cmd.Dir = root

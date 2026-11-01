@@ -61,13 +61,8 @@ func releaseHeading(body string) (string, error) {
 	return strings.TrimSpace(heading), nil
 }
 
-// FormatBody rewrites a release PR body to the PR template. Between Release
-// Please's delimiters it keeps only the version heading, which Release Please
-// reads back at merge; only its version matters there. Every link resolves
-// at sha, the release PR's head, before the release tag exists: the compare
-// view runs from the previous tag to sha, and each entry file in added, the
-// ones added since that tag, is linked at sha. A first release, with no
-// previous tag, links the entry folder at sha.
+// FormatBody rewrites a release PR body to the PR template, keeping only the
+// version heading Release Please reads and linking at sha.
 func FormatBody(body string, issueNumber int, repo, sha string, added []string) (string, error) {
 	heading, err := releaseHeading(body)
 	if err != nil {
@@ -111,8 +106,8 @@ func sinceTag(body string) string {
 	return ""
 }
 
-// addedEntries are the entry files that head, the release PR's head commit,
-// added since tag since, newest name first, or none for a first release.
+// addedEntries are the entry files head added since tag since, newest name
+// first, or none for a first release.
 func (c Client) addedEntries(since, head string) ([]string, error) {
 	if since == "" {
 		return nil, nil

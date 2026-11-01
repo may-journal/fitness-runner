@@ -30,10 +30,8 @@ type topicDoc struct {
 	Body string
 }
 
-// topics reads every package under go/internal, outside the folders the go
-// tool ignores, whose doc comment carries a topic directive, in topic name
-// order. Two packages naming one topic, or a topic package without a doc
-// comment, is an error.
+// topics reads packages under go/internal whose doc comment carries a topic
+// directive, in name order, erroring on duplicate or undocumented topics.
 func (c Config) topics() ([]topicDoc, error) {
 	var topics []topicDoc
 	err := filepath.WalkDir(filepath.Join(c.Root, "go", "internal"), func(path string, entry fs.DirEntry, err error) error {
@@ -144,9 +142,8 @@ func directive(group *ast.CommentGroup) string {
 	return ""
 }
 
-// topicMarkdown renders a package's doc comment, then each exported
-// constant and variable group, type with its methods, and function with its
-// doc comment, as Markdown.
+// topicMarkdown renders a package's doc comment and its exported declarations'
+// doc comments as Markdown.
 func topicMarkdown(pkg *doc.Package) string {
 	var b strings.Builder
 	b.WriteString(markdown(pkg, pkg.Doc))
@@ -204,9 +201,8 @@ func exported(names []string) []string {
 	return out
 }
 
-// fieldDocs lists a struct type's exported fields, nested ones by their path
-// such as proseBudget.maxWords, with their JSON keys and doc comments, as a
-// doc comment list, or "" for any other type.
+// fieldDocs lists a struct type's exported fields, nested ones by path such as
+// proseBudget.maxWords, or "" for any other type.
 func fieldDocs(decl *ast.GenDecl) string {
 	var b strings.Builder
 	for _, spec := range decl.Specs {
@@ -235,8 +231,8 @@ func writeFields(b *strings.Builder, t ast.Expr, prefix string) {
 	}
 }
 
-// fieldNames are the exported names a field declares: its JSON key when it
-// has one, else each Go name, or for an embedded field its type's name.
+// fieldNames are a field's exported names: its JSON key, else each Go name or
+// an embedded type's name.
 func fieldNames(field *ast.Field) []string {
 	if key := tag(field, "json"); key != "" && key != "-" {
 		return []string{key}
@@ -264,8 +260,8 @@ func embeddedName(t ast.Expr) string {
 	return ""
 }
 
-// orUndocumented is a field's doc comment on one line, as explain shows
-// config keys, opening with name in place of its key, or undocumented.
+// orUndocumented is a field's doc comment on one line, opening with name in
+// place of its key, or undocumented.
 func orUndocumented(field *ast.Field, name string) string {
 	text := fieldDoc(field)
 	if text == "" {

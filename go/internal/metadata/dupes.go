@@ -96,10 +96,8 @@ func eventDupes(ev ghEvent, pool []entry, cfg dupeConfig, repo string) ([]target
 	return []target{t}, nil
 }
 
-// skipDupe reports whether dupe-check leaves the event's issue alone: it is
-// closed, or a known bot sent the event, as when it opens a release
-// tracking issue that repeats one template. The pool never holds issues a
-// known bot opened, so a person's later edit to one finds no such twin.
+// skipDupe reports whether dupe-check leaves the event's issue alone because it
+// is closed or a known bot sent the event.
 func skipDupe(ev ghEvent, t target) bool {
 	if t.State == "closed" || slices.Contains(KnownBots, ev.Sender.Login) {
 		fmt.Printf("Skipped #%d: it is closed or a known bot changed it.\n", t.Number)
@@ -108,10 +106,8 @@ func skipDupe(ev ghEvent, t target) bool {
 	return false
 }
 
-// closes reports whether the best match is open and reaches the close
-// score, when the repo turned the close tier on. Only a newly opened issue
-// closes, so a person who reopens one is never overruled, and never against
-// a closed issue, such as a fixed bug it may report again.
+// closes reports whether the best match is open and reaches the close score,
+// for a newly opened issue only.
 func closes(found []aftereffect.Dupe, cfg dupeConfig) bool {
 	return cfg.CloseScore > 0 && len(found) > 0 && found[0].Open && found[0].Score >= cfg.CloseScore
 }
@@ -135,8 +131,8 @@ func corpus(all []target, since, repo string) []entry {
 	return pool
 }
 
-// inPool reports whether t is open or closed at or after since, and neither
-// opened by a known bot nor closed as a duplicate, a thread that ended.
+// inPool reports whether t is open or closed since the cutoff, and neither
+// opened by a known bot nor closed as a duplicate.
 func inPool(t target, since string) bool {
 	return (t.State == "open" || t.ClosedAt >= since) && !slices.Contains(KnownBots, t.Opener) && t.StateReason != "duplicate"
 }
@@ -175,9 +171,8 @@ func refNumber(m []string, repo string) int {
 	return n
 }
 
-// relation says why a pair is never flagged: one is the other's parent or
-// sub-issue, both are sub-issues of one parent, as an epic's templated
-// Plans are, or one names the other. It is "" for unrelated issues.
+// relation says why a pair is never flagged, as parent, sibling or named issues,
+// or is "" for unrelated issues.
 func relation(a, b entry) string {
 	switch {
 	case nested(a, b):
@@ -239,8 +234,8 @@ type pairRow struct {
 	tier         string
 }
 
-// printMatrix prints every pair scoring at least half the warn score, best
-// first, with the tier each reaches, to the log and the job summary.
+// printMatrix prints each pair scoring at least half the warn score, best first,
+// to the log and job summary.
 func printMatrix(pool []entry, cfg dupeConfig) {
 	rows := scorePairs(pool, cfg)
 	var b strings.Builder

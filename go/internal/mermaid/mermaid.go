@@ -1,35 +1,5 @@
-// Package mermaid parses the mermaid diagrams and numbered callout tables
-// out of a markdown document — the Go port of the TypeScript shared
-// mermaid.ts plus its runMermaidDocCheck.ts driver. The six mermaid checks
-// (mermaid-callouts, mermaid-callout-why, mermaid-diagram-prose,
-// mermaid-diagram-table-gap, mermaid-legend, mermaid-level-bleed) build on
-// this API:
-//
-//   - ParseDoc returns the document's blocks in order: *DiagramBlock (a
-//     ```mermaid fenced block) and *CalloutTableBlock (a GFM table whose
-//     first header cell is #/No/Callout/Ref). Discriminate with a type
-//     switch or the Kind method (DiagramKind / TableKind).
-//   - ExtractCallouts returns a diagram body's callouts in document order,
-//     duplicates preserved, each marked as a node or a connector callout.
-//     Nodes carry numbers; connectors carry letters (A–Z, then AA–ZZ, then
-//     AAA…). ParseDoc sorts them into the DiagramBlock fields.
-//   - IsCalloutHeader reports whether split header cells mark a numbered
-//     callout table.
-//   - PairDiagramsWithTables associates each diagram with callouts with the
-//     callout table that follows it; legend diagrams (no callouts) are
-//     invisible to pairing, and tables before any such diagram are orphans.
-//   - RunDocCheck walks every .md under root and runs a validator over each
-//     file with at least one parsed block; block-free files are skipped and
-//     do not count toward filesChecked.
-//
-// The TypeScript callout patterns use lookahead assertions, which RE2 lacks;
-// each
-// (?=…) is emulated by matching the core pattern and testing the following
-// rune by hand, preserving JS matchAll resumption (a lookahead consumes
-// nothing; a failed lookahead retries at the next character). Positions
-// are byte offsets where the original used UTF-16 code units — the two are
-// ordering-consistent (both strictly increase along the text), so
-// dedupe-by-position and document ordering behave identically.
+// Package mermaid parses mermaid diagrams and callout tables from markdown for
+// the mermaid checks, emulating the JS look-ahead patterns RE2 lacks by hand.
 package mermaid
 
 import (
@@ -85,9 +55,8 @@ type DiagramBlock struct {
 // Kind reports DiagramKind.
 func (*DiagramBlock) Kind() Kind { return DiagramKind }
 
-// HasCallouts reports whether the diagram carries any node or connector
-// callout. A diagram without one is a legend or a plain diagram. Labels
-// that break the doubling do not count, since a label like OK is prose.
+// HasCallouts reports whether the diagram has a node or connector callout,
+// ignoring labels that break the doubling, such as the prose word OK.
 func (b *DiagramBlock) HasCallouts() bool {
 	return len(b.Numbers)+len(b.Letters)+len(b.EdgeNumbers) > 0
 }
@@ -115,9 +84,8 @@ type CalloutTableBlock struct {
 // Kind reports TableKind.
 func (*CalloutTableBlock) Kind() Kind { return TableKind }
 
-// jsWS is the JavaScript \s character class (ASCII whitespace incl. \v,
-// Unicode spaces, line separators, and the BOM) as an RE2 class body, so the
-// ported patterns match exactly what the JS regexes matched.
+// jsWS is the JavaScript \s class as an RE2 class body, so ported patterns
+// match exactly what the JS regexes matched.
 const jsWS = `\t\n\v\f\r \x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}`
 
 // isJSSpace reports whether r is in the JavaScript \s class — the rune-level
@@ -162,13 +130,8 @@ const (
 	sideEdge
 )
 
-// calloutPattern is one JS callout regex split into its RE2-safe core and
-// the (?=…) lookahead emulated as a follower predicate (nil when the
-// original had none). The greedy \d+ and [A-Z]+ never backtrack usefully —
-// every follower class excludes digits and letters — so the core's match
-// extent is exactly the JS engine's. side classifies the match by where it
-// starts, and whole, for letter patterns, reports a label that ends right
-// after the letters.
+// calloutPattern splits a JS callout regex into an RE2 core and a follower
+// predicate emulating its lookahead, whose classes exclude digits and letters.
 type calloutPattern struct {
 	core    *regexp.Regexp
 	follows func(line string, end int) bool
@@ -177,9 +140,8 @@ type calloutPattern struct {
 }
 
 // calloutPatterns locate a callout as the leading number or letters of a
-// label. The label's absolute position dedupes matches that overlap across
-// patterns. Numbers mark nodes; numbers on connectors are read too, so the
-// check can reject them. Letters mark connectors only.
+// label, deduping overlapping matches by absolute position. Numbers on
+// connectors are read too so the check can reject them; letters mark connectors only.
 var calloutPatterns = []calloutPattern{
 	{regexp.MustCompile(`["'](\d+)`), spaceOrQuoteFollows, quotedSide(sideNode), nil},                  // quoted label: "1 Check", "6"
 	{regexp.MustCompile(`[([{>][` + jsWS + `]*(\d+)`), spaceFollows, always(sideNode), nil},            // node-shape label: [2 Screen], ((1 Persona)), [(4 System)]
@@ -205,8 +167,8 @@ func always(s side) func(string, int) side {
 	return func(string, int) side { return s }
 }
 
-// quotedSide classifies a quoted label: a connector's when it opens a pipe
-// or inline link label or is a C4 Rel call's label, otherwise other.
+// quotedSide classifies a quoted label as a connector's when it labels a pipe,
+// inline link or C4 Rel call, otherwise other.
 func quotedSide(other side) func(string, int) side {
 	return func(line string, start int) side {
 		before := strings.TrimRightFunc(line[:start], isJSSpace)
@@ -246,9 +208,8 @@ func pipeSide(line string, start int) side {
 	return sideNone
 }
 
-// colonSide classifies a colon label: a connector's when an arrow comes
-// before it, as in A --> B : 5 or A ->> B: 5, otherwise other, as in a
-// state description or a note.
+// colonSide classifies a colon label as a connector's when an arrow precedes
+// it, otherwise other, as in a state description or note.
 func colonSide(other side) func(string, int) side {
 	return func(line string, start int) side {
 		if arrow.MatchString(line[:start]) {
@@ -350,12 +311,8 @@ func collectCalloutPositions(line string, offset int, byPosition map[int]Callout
 	}
 }
 
-// scan records the pattern's callouts on line into byPosition, keyed by each
-// label's absolute position (line offset + in-line index). Matching mirrors
-// JS matchAll: a successful match resumes after the consumed core (the
-// lookahead consumes nothing); a rejected match abandons that start and
-// scans again from the next character, exactly where the JS engine's scan
-// would resume.
+// scan records the pattern's callouts on line into byPosition by absolute
+// position, resuming exactly where the JS matchAll would.
 func (p calloutPattern) scan(line string, offset int, byPosition map[int]Callout) {
 	pos := 0
 	for {
@@ -392,14 +349,8 @@ func (p calloutPattern) needsWhole(label string) bool {
 	return p.whole != nil && isLetters(label) && !IsLetterCallout(label)
 }
 
-// ExtractCallouts returns the callouts referenced in a mermaid diagram body.
-// Heuristic: the leading number or letters of each node/edge label — quoted
-// (`"1 Check"`, `Rel(a, b, "A")`), inside a node shape (`[2 Screen]`,
-// `((1 …))`), or as an edge label (`: B`, `|C|`, `-- D --`). Each callout is
-// marked as a node's or a connector's. Styling lines are skipped so hex
-// colors and stroke widths aren't mistaken for callouts. Callouts come back
-// in document order, preserving duplicates at distinct positions, each with
-// its byte offset in body.
+// ExtractCallouts returns a diagram body's callouts in document order with byte
+// offsets, skipping styling lines so hex colors are not mistaken for callouts.
 func ExtractCallouts(body string) []Callout {
 	byPosition := map[int]Callout{}
 	offset := 0
@@ -479,10 +430,8 @@ func RowLabel(row []string) string {
 	return ""
 }
 
-// RowLabelOffset returns the byte offset in a raw table row line where its
-// first-column label starts, past the outer pipe, the cell's padding, and
-// an opening bracket. The label RowLabel reads from the split row starts
-// there.
+// RowLabelOffset returns the byte offset where a raw table row's first-column
+// label starts, past the outer pipe, padding and opening bracket.
 func RowLabelOffset(line string) int {
 	rest := strings.TrimPrefix(trimStartJS(line), "|")
 	rest = strings.TrimPrefix(trimStartJS(rest), "[")
@@ -508,8 +457,7 @@ func (t *CalloutTableBlock) readRows() {
 var fenceOpen = regexp.MustCompile(`(?i)^[` + jsWS + "]*(`{3,}|~{3,})[" + jsWS + `]*mermaid\b`)
 
 // parseDiagramBlock parses a mermaid fence opened at start and returns the
-// block plus the index after its closing fence (a line whose trimmed start
-// begins with the same marker).
+// block with the index after its closing fence.
 func parseDiagramBlock(lines []string, start int, marker string) (*DiagramBlock, int) {
 	var body []string
 	i := start + 1
@@ -523,9 +471,8 @@ func parseDiagramBlock(lines []string, start int, marker string) (*DiagramBlock,
 	return block, i + 1 // skip the closing fence
 }
 
-// parseTableBlock reads a GFM table at start (header at start, separator at
-// start+1) and returns the block — nil when not a callout table — plus the
-// index after the table's rows.
+// parseTableBlock reads a GFM table at start and returns the block, nil when
+// not a callout table, with the index after its rows.
 func parseTableBlock(lines []string, start int) (*CalloutTableBlock, int) {
 	header := splitRow(lines[start])
 	var rows [][]string
@@ -590,12 +537,8 @@ type PairResult struct {
 	Pairs []DiagramTablePair
 }
 
-// PairDiagramsWithTables associates each numbered diagram with the callout
-// table that follows it before the next numbered diagram. Legend diagrams
-// (those with no callouts) are exempt: they carry no callouts, so
-// they neither require a table nor consume the table that belongs to a
-// preceding numbered diagram — the documented layout is diagram, legend,
-// then table. Tables appearing before any diagram are orphans.
+// PairDiagramsWithTables pairs each numbered diagram with the callout table
+// following it, ignoring legends and orphaning tables before any diagram.
 func PairDiagramsWithTables(blocks []DocBlock) PairResult {
 	result := PairResult{OrphanTables: []*CalloutTableBlock{}, Pairs: []DiagramTablePair{}}
 	var pending *DiagramBlock
@@ -613,10 +556,8 @@ func PairDiagramsWithTables(blocks []DocBlock) PairResult {
 	return result
 }
 
-// pairDiagram folds a diagram block into the pairing state and returns the
-// new pending diagram: a legend diagram (no callouts) is invisible to
-// pairing and leaves pending unchanged; a diagram with callouts flushes any
-// pending diagram as a table-less pair and becomes pending itself.
+// pairDiagram folds a diagram into the pairing state and returns the new pending
+// diagram, flushing the old one as a table-less pair.
 func pairDiagram(result *PairResult, pending, b *DiagramBlock) *DiagramBlock {
 	if !b.HasCallouts() {
 		return pending
@@ -627,9 +568,8 @@ func pairDiagram(result *PairResult, pending, b *DiagramBlock) *DiagramBlock {
 	return b
 }
 
-// pairTable folds a callout table into the pairing state and returns the new
-// pending diagram: the table completes the pending diagram's pair (clearing
-// pending), or becomes an orphan when no numbered diagram precedes it.
+// pairTable completes the pending diagram's pair with the table, or orphans the
+// table when no numbered diagram precedes it.
 func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) *DiagramBlock {
 	if pending == nil {
 		result.OrphanTables = append(result.OrphanTables, b)
@@ -639,12 +579,8 @@ func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) 
 	return nil
 }
 
-// RunDocCheck runs a per-document validator over every in-scope .md file
-// under root that contains at least one mermaid diagram or callout table; files with
-// neither are skipped and don't count toward filesChecked. Shared by the
-// mermaid diagram + callout table checks so each supplies only its own
-// validate rule. A file read error aborts the check (the caller crashes,
-// matching the TS driver's thrown readFileSync error).
+// RunDocCheck runs a validator over each in-scope .md file under root holding
+// a diagram or callout table, aborting on a read error.
 func RunDocCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
 	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
 		raw, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))

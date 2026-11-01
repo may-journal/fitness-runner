@@ -10,12 +10,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-// Shape is the whole shape a named template sets for the one doc it governs:
-// the opening level-2 sections in order, per section its diagram and legend
-// types, its callout table columns, and the caption above that table, and
-// the palette of its C4 and class diagrams. The opening, before any level-2
-// heading, is the section named "". Front matter is optional, so the shape
-// never reads it.
+// Shape is what a template sets for its doc: ordered level-2 sections, each
+// section's diagram, legend and callout table, and the diagram palette.
 type Shape struct {
 	path     string
 	sections []string
@@ -23,9 +19,8 @@ type Shape struct {
 	palette  palette
 }
 
-// part is what one template section holds: the Mermaid types of its first
-// diagram and its legend, and the columns and caption of its first callout
-// table. Empty means none.
+// part is what one template section holds: its first diagram type, legend
+// type, and first callout table's columns and caption.
 type part struct {
 	diagram string
 	legend  string
@@ -64,9 +59,8 @@ func ShapeFromTemplate(path, body string) Shape {
 	return s
 }
 
-// Validate returns every way body drifts from the shape: the opening
-// sections, then each shared section's diagrams and tables, then the
-// palette of every diagram.
+// Validate returns every way body drifts from the shape: opening sections,
+// shared sections' diagrams and tables, and diagram palettes.
 func (s Shape) Validate(body string) []Finding {
 	var out []Finding
 	have := h2s(body)
@@ -187,9 +181,8 @@ func (v view) tablesIn(section string) []table {
 	return out
 }
 
-// readView finds the diagrams and callout tables of a doc. A legend is a
-// diagram with no callout numbers, one titled Legend, or one under a Legend
-// heading, as the architecture checks read them.
+// readView finds a doc's diagrams and callout tables, reading a legend the
+// way the architecture checks do.
 func readView(body string) view {
 	lines := strings.Split(body, "\n")
 	headings := mdx.Headings(body)
@@ -260,8 +253,8 @@ func captionAbove(lines []string, header int) string {
 
 var htmlComment = regexp.MustCompile(`<!--.*?-->`)
 
-// inParagraph reports whether a line is prose: not blank, and no heading,
-// fence, table row, or line of its own opening or closing a comment.
+// inParagraph reports whether a line is prose, not blank, a heading, fence,
+// table row, or comment delimiter.
 func inParagraph(line string) bool {
 	t := strings.TrimSpace(line)
 	return t != "" && t != "-->" && !slices.ContainsFunc(notProse, func(p string) bool { return strings.HasPrefix(t, p) })
@@ -280,8 +273,8 @@ func skippable(lines []string, i *int) bool {
 	return ok
 }
 
-// blankOrComment reports whether line i is blank or closes a comment that
-// opens a line of its own, and the line that comment opens on.
+// blankOrComment reports whether line i is blank or closes a comment, plus the
+// line that comment opens on.
 func blankOrComment(lines []string, i int) (int, bool) {
 	t := strings.TrimSpace(lines[i])
 	if t == "" {
@@ -309,9 +302,8 @@ var (
 	blockItem = regexp.MustCompile(`^\s*-\s+(.+?)\s*$`)
 )
 
-// front is a doc's parsed front matter: its top-level keys in order, each
-// key's list items, flow or block, and the raw value of each key that holds
-// a scalar. Indented keys belong to a value and are not keys of their own.
+// front is a doc's parsed front matter: ordered top-level keys, list items,
+// scalar values, with indented keys belonging to a value.
 type front struct {
 	keys    []string
 	lists   map[string][]string

@@ -27,10 +27,8 @@ type configKey struct {
 	Fields []configKey
 }
 
-// configKeys reads every struct field tagged `check:"<name>"` in the Go
-// sources under go/internal, by check name. A tagged field or one of its
-// nested fields without a doc comment is an error, so every key a check
-// reads is explained.
+// configKeys reads struct fields tagged `check:"<name>"` under go/internal by
+// check name, erroring on any without a doc comment.
 func (c Config) configKeys() (map[string][]configKey, error) {
 	keys := map[string][]configKey{}
 	fset := token.NewFileSet()
@@ -57,8 +55,8 @@ func (c Config) readTagged(fset *token.FileSet, path string, keys map[string][]c
 	return taggedFields(fset, file, keys)
 }
 
-// structOf is the struct type t names directly, or as the element of a
-// slice, array, pointer, or map value, so a list of objects shows its keys.
+// structOf is the struct type t names, directly or as an element, so a list of
+// objects shows its keys.
 func structOf(t ast.Expr) (*ast.StructType, bool) {
 	switch t := t.(type) {
 	case *ast.StructType:
@@ -143,9 +141,8 @@ func tag(field *ast.Field, key string) string {
 	return name
 }
 
-// configMarkdown renders a check's config keys as a Markdown section, or ""
-// when it reads none. Each key is a paragraph, and the keys nested in it a
-// flat list below it, so no list nests past the depth prose-budget allows.
+// configMarkdown renders a check's config keys as a section, each key a
+// paragraph with nested keys in a flat list, or "" for none.
 func configMarkdown(keys []configKey) string {
 	if len(keys) == 0 {
 		return ""
@@ -162,9 +159,8 @@ func configMarkdown(keys []configKey) string {
 	return b.String()
 }
 
-// writeNested writes each nested key as an item of one flat list, a deeper
-// key named by its path from the first level, as allow.pattern, so no list
-// nests past the depth prose-budget allows.
+// writeNested writes nested keys as one flat list, naming deeper keys by path
+// such as allow.pattern, so no list nests past prose-budget's depth.
 func writeNested(b *strings.Builder, keys []configKey, prefix string) {
 	for _, key := range keys {
 		path := prefix + key.Key

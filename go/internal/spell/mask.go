@@ -9,17 +9,8 @@ import (
 	"unicode"
 )
 
-// ignorePatterns are the RE2 ports of the cspell default ignoreRegExpList
-// (Urls, Email, CommitHash, hash forms, UUID) that stay regexps. The
-// lookahead-dependent Base64/PublicKey/SshRsa patterns are deliberately not
-// replicated; commit-hash "must contain a digit" is enforced in code below.
-// The simpler patterns (hex forms, Unicode refs, escapes) are exact scanners
-// in scan.go.
-//
-// Each pattern pairs with mayMatch, an exact test that holds on every line
-// the regexp can match, so a line that fails it skips the regexp and the
-// mask never changes. Under (?i), Go folds k and s to the Kelvin sign and
-// long s, so the run tests count every non-ASCII byte as a possible member.
+// ignorePattern pairs a cspell default ignore regexp with mayMatch, a cheap pre-check
+// treating non-ASCII bytes as members because (?i) folds k and s.
 type ignorePattern struct {
 	re       *regexp.Regexp
 	mayMatch func(line string) bool
@@ -86,14 +77,8 @@ func maskHexRuns(text string, masked []bool) {
 // spell-checker:, …); what follows decides the directive.
 var directiveRe = regexp.MustCompile(`(?i)\bc?spell(?:-?checker)?::?[ \t]*`)
 
-// maskDirectives handles in-document cspell directives line by line: ignore
-// lists feed the returned word set, disable-line/disable-next/disable…enable
-// mask regions, and every recognized directive masks its own text. Unknown
-// text after a bare "cspell:" is left alone, exactly like cspell.
-//
-// Every directive holds "pell" in some case (Go folds the s of spell to a
-// long s too), so only lines holding it are matched, and a text without it
-// returns at once. lines are the text's line offsets.
+// maskDirectives masks in-document cspell directives line by line and returns
+// their ignore words, matching only lines holding "pell".
 func maskDirectives(text string, masked []bool, lines []int) map[string]struct{} {
 	at := indexPell(text)
 	if at < 0 {
@@ -120,9 +105,8 @@ func maskDirectives(text string, masked []bool, lines []int) map[string]struct{}
 	return d.words
 }
 
-// directiveMasker carries the state of one maskDirectives pass: the text and
-// mask being written, the text's line offsets, the collected ignore words,
-// and the start of an open disable…enable block (-1 when none is open).
+// directiveMasker carries the state of one maskDirectives pass, with blockStart
+// the open disable block's start or -1.
 type directiveMasker struct {
 	text       string
 	masked     []bool
@@ -131,15 +115,14 @@ type directiveMasker struct {
 	blockStart int
 }
 
-// directiveAt locates one recognized directive: its line index, the line's
-// byte range, and the byte offsets of the directive prefix (dirStart) and of
-// the text following it (restStart).
+// directiveAt locates one recognized directive by line index, line range, prefix
+// offset dirStart and following-text offset restStart.
 type directiveAt struct {
 	n, lineStart, lineEnd, dirStart, restStart int
 }
 
-// lineSpan returns the [start, end) byte range of line n, where end includes
-// the trailing newline (or is the end of text for the last line).
+// lineSpan returns the [start, end) byte range of line n, where end is past
+// the trailing newline of that line.
 func (d *directiveMasker) lineSpan(n int) (start, end int) {
 	end = len(d.text)
 	if n+1 < len(d.lines) {
@@ -209,8 +192,8 @@ func (d *directiveMasker) maskNextLine(dir directiveAt) {
 	}
 }
 
-// closeBlock ends an open disable…enable block by masking the whole block, or
-// masks just the enable keyword when no block is open, exactly like cspell.
+// closeBlock masks the open disable…enable block, or just the enable keyword
+// when none is open, like cspell.
 func (d *directiveMasker) closeBlock(dir directiveAt) {
 	if d.blockStart >= 0 {
 		mark(d.masked, d.blockStart, dir.lineEnd)
@@ -220,9 +203,8 @@ func (d *directiveMasker) closeBlock(dir directiveAt) {
 	mark(d.masked, dir.dirStart, dir.restStart+len("enable"))
 }
 
-// keyword reports whether rest starts with kw at a word boundary, mirroring
-// the \b in cspell's guard regexps ("disable-next-line" matches disable-next,
-// "disabled" matches nothing).
+// keyword reports whether rest starts with kw at a word boundary, mirroring the
+// \b in cspell's guard regexps.
 func keyword(rest, kw string) bool {
 	if !strings.HasPrefix(rest, kw) {
 		return false

@@ -10,10 +10,8 @@ import (
 // leading v.
 var release = regexp.MustCompile(`^v?(\d+)\.(\d+)\.(\d+)$`)
 
-// NeedsNewer says why the running fitness is too old for a check that
-// declares minFitness, naming the upgrade, or "" when it is new enough. A
-// running fitness without a release version, as from `go build`, meets
-// every minimum; a minimum that is no version is named as such.
+// NeedsNewer says why the running fitness is too old for a check's minFitness,
+// or "" when new enough or unversioned.
 func NeedsNewer(check, minimum, running string) string {
 	if minimum == "" || running == "" {
 		return ""

@@ -14,8 +14,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-// Record is one release's cost on this host: the size of every asset and
-// how long the installer takes to set up the bundle from an empty cache.
+// Record is one release's cost on this host: asset sizes and install time
+// from an empty cache.
 type Record struct {
 	Version   string        `json:"version"`
 	Platform  string        `json:"platform"`
@@ -29,8 +29,8 @@ type AssetRecord struct {
 	Bytes int64  `json:"bytes"`
 }
 
-// Record measures the release in out, prints it as JSON on w, and adds a
-// size table to the job summary in GitHub Actions.
+// Record measures the release in out, printing JSON to w and a size table to
+// the GitHub Actions job summary.
 func (c Config) Record(ctx context.Context, w io.Writer) error {
 	metadata, err := c.Metadata()
 	if err != nil {

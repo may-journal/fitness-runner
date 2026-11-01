@@ -28,9 +28,8 @@ type usageEntry struct {
 	Summary string
 }
 
-// usageDoc is the documented command line: the forms that run checks, the
-// subcommands in the order the subcommands table lists them, and the
-// runner's package doc comment.
+// usageDoc is the documented command line: check-running forms, subcommands in
+// table order, and the runner's package doc comment.
 type usageDoc struct {
 	Runner, Commands []usageEntry
 	// Intro is the runner's package doc comment as Markdown.
@@ -205,8 +204,8 @@ func entriesSource(entries []usageEntry) string {
 	return b.String() + "}"
 }
 
-// llmsPage is one page that teaches an AI the whole CLI: what fitness is,
-// its exit codes, every command, every built-in check, and the docs topics.
+// llmsPage is one page teaching an AI the whole CLI: exit codes, commands,
+// built-in checks, and docs topics.
 func llmsPage(u usageDoc, checks []checkDoc, topics []topicDoc) string {
 	var b strings.Builder
 	b.WriteString("# fitness\n\n" + u.Intro)

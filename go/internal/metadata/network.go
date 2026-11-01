@@ -8,9 +8,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
-// GitHubAPI is the address of GitHub's API: GITHUB_API_URL, which Actions
-// and the release lookup use, else api.github.com for github.com, else
-// GitHubHost itself, where GitHub Enterprise Server serves its API.
+// GitHubAPI is the address of GitHub's API: GITHUB_API_URL, else api.github.com
+// for github.com, else GitHubHost itself, as GitHub Enterprise Server serves it.
 func GitHubAPI() *url.URL {
 	if u, err := url.Parse(os.Getenv("GITHUB_API_URL")); err == nil && u.Host != "" {
 		return u
@@ -31,9 +30,8 @@ var probeGitHub = sync.OnceValue(func() string {
 	return ""
 })
 
-// UnreachableGitHub probes GitHub's API host, once per process however
-// often it is asked, and returns the host when it did not answer, else
-// empty. The pre-push gate and the runner share the one answer.
+// UnreachableGitHub probes GitHub's API host once per process and returns it
+// when silent, sharing one answer with the gate and runner.
 func UnreachableGitHub() string {
 	return probeGitHub()
 }

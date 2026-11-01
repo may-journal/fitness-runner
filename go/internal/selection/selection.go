@@ -153,9 +153,8 @@ func resolvedNames(policy string, names, known []string, optional ...string) (st
 	return policy, names, validateNames(policy, names, append(append([]string{}, known...), optional...))
 }
 
-// AllowReplacements applies ADR 0009 to local checks that share a built-in
-// check's name: org policy is the org's shared bar, so it refuses them;
-// external policy lets a repo own its bar and allows them.
+// AllowReplacements refuses local checks named like a built-in under org policy,
+// since the built-ins are the shared bar (ADR 0009).
 func AllowReplacements(policy string, replaced []string) error {
 	if len(replaced) == 0 || policy == External {
 		return nil
@@ -164,10 +163,8 @@ func AllowReplacements(policy string, replaced []string) error {
 		strings.Join(replaced, ", "))
 }
 
-// Disable applies ADR 0009 to disabledChecks: org policy refuses it, as it
-// would lower the shared bar; external policy drops each named check from
-// names. Every disabled name must be a known check, listed once, and at
-// least one check must remain.
+// Disable drops each disabled check from names under external policy and
+// refuses it under org policy, which lowers the shared bar (ADR 0009).
 func Disable(policy string, names, disabled, known []string) ([]string, error) {
 	if len(disabled) == 0 {
 		return names, nil

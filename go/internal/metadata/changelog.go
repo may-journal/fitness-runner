@@ -23,10 +23,8 @@ func changelogErrors(t target, gh aftereffect.Client) []string {
 	return append(errs, oneEntryErrors(addedEntries(files), t.Body)...)
 }
 
-// releasedErrors fails each entry file the PR edits or deletes that the
-// newest release's tag already holds: its notes are published, so a new
-// entry file carries the change. It reads GitHub only when the PR edits or
-// deletes an entry file.
+// releasedErrors fails each entry file the PR edits or deletes that the newest
+// release's tag already holds, since its notes are published.
 func releasedErrors(files []aftereffect.FileChange, gh aftereffect.Client) []string {
 	changed := editedEntries(files)
 	if len(changed) == 0 {
@@ -98,8 +96,8 @@ func addedEntries(files []aftereffect.FileChange) []aftereffect.FileChange {
 	return added
 }
 
-// addedEntryErrors fails an entry file whose name lacks its heading's date,
-// and a description that does not link it or copies one of its bullets.
+// addedEntryErrors fails an entry file whose name lacks its heading's date or
+// whose description neither links it nor copies its bullets.
 func addedEntryErrors(f aftereffect.FileChange, body string) []string {
 	var errs []string
 	if msg := changelog.NameError(f.Filename, changelog.AddedText(f.Patch)); msg != "" {
@@ -146,8 +144,8 @@ func copyErrors(file string, bullets []string, body string) []string {
 	return errs
 }
 
-// branchEntryFiles are the entry files the local tip changes against the
-// PR's base commit, with the status and diff GitHub will show once pushed.
+// branchEntryFiles are the entry files the local tip changes against the PR's
+// base commit, with the status and diff GitHub will show.
 func branchEntryFiles(ctx context.Context, root, tip string, pr *branchPR) ([]aftereffect.FileChange, error) {
 	span := pr.BaseSHA + "..." + tip
 	out, err := exec.CommandContext(ctx, "git", "-C", root, "diff", "--name-status", "--no-renames", span, "--", changelog.EntryDir).Output()

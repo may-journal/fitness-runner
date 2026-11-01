@@ -1,8 +1,5 @@
-// Package mdtemplate validates a markdown document — a GitHub Issue or PR
-// body — against a fixed template shape: a one-line blockquote pitch, an exact
-// set of level-2 sections, and a per-section content rule. It is shared by the
-// plan-structure and pr-structure checks so the pitch, required-section, and
-// "no other sections" rules live in one place.
+// Package mdtemplate validates an Issue or PR body against a template shape,
+// shared by plan-structure and pr-structure.
 package mdtemplate
 
 import (
@@ -32,9 +29,8 @@ type Section struct {
 	Requires Content
 }
 
-// Spec is a template shape: the noun naming the document in messages, the
-// pitch placeholder, the required sections in order, and whether an "Open
-// questions" section earns a pointed message instead of the generic one.
+// Spec is a template shape: the document noun, pitch placeholder, ordered
+// required sections, and whether "Open questions" earns a pointed message.
 type Spec struct {
 	Noun             string
 	Placeholder      string
@@ -75,10 +71,8 @@ var contentRules = map[Content]contentRule{
 // section carries to tell a person or bot what belongs there.
 var commentRe = regexp.MustCompile(`<!--`)
 
-// SpecFromTemplate derives a Spec from a template file's own shape: its
-// level-2 headings become the required sections (presence only, order aside),
-// and the pitch rule is on only when the template itself opens with a
-// blockquote. noun names the document in messages.
+// SpecFromTemplate derives a Spec from a template's level-2 headings, requiring
+// a pitch only when the template opens with a blockquote.
 func SpecFromTemplate(body, noun string) Spec {
 	headings := mdx.Headings(body)
 	var sections []Section
@@ -91,9 +85,8 @@ func SpecFromTemplate(body, noun string) Spec {
 	return Spec{Noun: noun, Sections: sections, NoPitch: !hasPitch}
 }
 
-// TemplateLabels returns the labels a GitHub issue template gives each new
-// issue, from its `labels` front matter: one name, a comma-separated list,
-// a `[a, b]` flow list, or a block list.
+// TemplateLabels returns the labels from a GitHub issue template's `labels`
+// front matter, as one name, comma list, flow list or block list.
 func TemplateLabels(body string) []string {
 	f := parseFront(body)
 	if labels := f.lists["labels"]; len(labels) > 0 {
@@ -120,10 +113,8 @@ func IssueTemplates(root string) map[string]string {
 	return out
 }
 
-// KindSpec is the shape an issue template sets for its kind: its sections
-// and pitch, as SpecFromTemplate reads them, with a REPLACE-ME placeholder,
-// no Open questions section, and a checklist required in each section whose
-// template shows a task-list item.
+// KindSpec is SpecFromTemplate with a REPLACE-ME placeholder, no Open questions
+// section, and a checklist wherever the template shows a task-list item.
 func KindSpec(template, noun string) Spec {
 	spec := SpecFromTemplate(template, noun)
 	spec.Placeholder, spec.BanOpenQuestions = "REPLACE-ME", true
@@ -136,8 +127,8 @@ func KindSpec(template, noun string) Spec {
 	return spec
 }
 
-// SpecFor is the kind's shape from root's issue template labeled label, or
-// fallback when root has none, so the template stays the one source.
+// SpecFor is the shape from root's issue template labeled label, else
+// fallback, keeping the template the one source.
 func SpecFor(root, label string, fallback Spec) Spec {
 	if template, ok := IssueTemplates(root)[label]; ok {
 		return KindSpec(template, fallback.Noun)
@@ -156,9 +147,8 @@ func scalarLabels(value string) []string {
 	return labels
 }
 
-// MissingCommentSections returns the level-2 headings of a template whose
-// section body carries no HTML comment, so a template must guide every
-// section rather than leave one bare.
+// MissingCommentSections returns the level-2 headings whose section carries no
+// HTML comment, so every section is guided.
 func MissingCommentSections(body string) []string {
 	headings := mdx.Headings(body)
 	var out []string
@@ -170,10 +160,8 @@ func MissingCommentSections(body string) []string {
 	return out
 }
 
-// Validate returns one message per violation of spec, in order: the pitch,
-// then each required section (missing, then its content rule), then every
-// unexpected level-2 heading in document order. An empty result means the body
-// matches the template.
+// Validate returns one message per violation of spec: the pitch, each required
+// section, then unexpected level-2 headings; empty means the body matches.
 func Validate(body string, spec Spec) []string {
 	headings := mdx.Headings(body)
 	var errs []string
@@ -221,9 +209,8 @@ func sectionError(body string, headings []mdx.Heading, s Section) string {
 	return ""
 }
 
-// extraSectionErrors flags every level-2 heading that is not one of the spec's
-// sections, with a pointed message for an "Open questions" section when the
-// spec bans it.
+// extraSectionErrors flags each level-2 heading outside the spec's sections,
+// pointedly for a banned "Open questions" section.
 func extraSectionErrors(headings []mdx.Heading, spec Spec) []string {
 	allowed := allowedSet(spec)
 	var errs []string
@@ -235,9 +222,8 @@ func extraSectionErrors(headings []mdx.Heading, spec Spec) []string {
 	return errs
 }
 
-// extraSectionError returns the message for one heading when it is an
-// unexpected level-2 section, or "" when it is allowed or not a level-2
-// heading.
+// extraSectionError returns the message for an unexpected level-2 heading, or ""
+// when it is allowed or not level 2.
 func extraSectionError(h mdx.Heading, allowed map[string]bool, spec Spec) string {
 	if h.Level != 2 || allowed[h.Text] {
 		return ""
@@ -288,9 +274,8 @@ func pitchLine(body string, headings []mdx.Heading) (string, bool) {
 	return "", false
 }
 
-// sectionHasMatch reports whether the section headed by heading (from its
-// heading to the next level-2 heading or end of document) has a line matching
-// re, ignoring fenced code.
+// sectionHasMatch reports whether the section under heading has a line
+// matching re, ignoring fenced code.
 func sectionHasMatch(body string, headings []mdx.Heading, heading string, re *regexp.Regexp) bool {
 	start, end := sectionBounds(headings, heading)
 	if start == 0 {
@@ -308,8 +293,8 @@ func inSection(n, start, end int) bool {
 	return n > start && (end == 0 || n < end)
 }
 
-// sectionBounds returns the 1-based line of the given level-2 heading and the
-// line of the next level-2 heading after it (0 when it runs to end of doc).
+// sectionBounds returns the 1-based line of a level-2 heading and of the next
+// one, which is 0 at the document's end.
 func sectionBounds(headings []mdx.Heading, text string) (start, end int) {
 	i := indexOfH2(headings, text)
 	if i < 0 {

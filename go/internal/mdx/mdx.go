@@ -1,7 +1,5 @@
-// Package mdx holds the small markdown parsing primitives the markdown and
-// mermaid checks share: front matter extraction, fenced-block scanning, and
-// GFM table row splitting. Semantics mirror the TypeScript helpers the
-// checks were ported from.
+// Package mdx holds the markdown parsing primitives the markdown and mermaid
+// checks share, mirroring the TypeScript helpers they were ported from.
 package mdx
 
 import (
@@ -37,9 +35,8 @@ type Fence struct {
 
 var fenceOpen = regexp.MustCompile("^\\s*(`{3,}|~{3,})\\s*(.*)$")
 
-// Fences returns every fenced code block in document order. A block closes
-// at the first line whose trimmed start begins with the same marker; an
-// unterminated block runs to the end of the document.
+// Fences returns every fenced code block in document order, an unterminated
+// one running to the end of the document.
 func Fences(content string) []Fence {
 	lines := strings.Split(content, "\n")
 	var out []Fence
@@ -99,9 +96,8 @@ type Heading struct {
 
 var atxHeading = regexp.MustCompile(`^(#{1,6})\s+(.*)$`)
 
-// Headings returns every ATX heading in document order, skipping any line
-// inside a fenced code block so a "## foo" in a code sample is not counted as
-// a heading.
+// Headings returns every ATX heading in document order, skipping fenced
+// code, so a "## foo" sample is not counted.
 func Headings(content string) []Heading {
 	var out []Heading
 	for i, line := range blankFenced(content) {
@@ -122,10 +118,8 @@ type TextLine struct {
 	Text string
 }
 
-// NonFencedLines returns one TextLine per line of content, with any line
-// inside a fenced code block emptied out (its Text set to "") so line-oriented
-// scans skip fenced content while line numbers stay accurate. A trailing CR is
-// trimmed.
+// NonFencedLines returns one TextLine per line, emptying fenced lines so scans
+// skip them while line numbers stay accurate.
 func NonFencedLines(content string) []TextLine {
 	blanked := blankFenced(content)
 	out := make([]TextLine, len(blanked))
@@ -135,8 +129,8 @@ func NonFencedLines(content string) []TextLine {
 	return out
 }
 
-// StripCode returns content with fenced code blocks blanked and inline code
-// spans replaced by a space, so a scan for issue references sees only prose.
+// StripCode returns content with fenced blocks blanked and inline code spans
+// replaced by a space, so issue-reference scans see only prose.
 func StripCode(content string) string {
 	return codeSpanRe.ReplaceAllString(strings.Join(blankFenced(content), "\n"), " ")
 }
@@ -165,11 +159,8 @@ func blankFenced(content string) []string {
 	return lines
 }
 
-// --- Prose extraction ---
-//
-// Prose and WordCount reduce a markdown document to its prose and
-// count its words under one frozen masking spec, shared by the readability
-// smoke detector (text-readability) and the volume budget (prose-budget).
+// Prose extraction: Prose and WordCount share one frozen masking spec between
+// the text-readability and prose-budget checks.
 
 var (
 	htmlCommentRe   = regexp.MustCompile(`(?s)<!--.*?-->`)
@@ -212,11 +203,8 @@ func protectAbbrev(text string) string {
 	return text
 }
 
-// Prose extracts the prose from raw markdown under the frozen masking
-// spec: HTML comments and front matter dropped; fenced code, headings, and
-// tables skipped; every block end becomes a sentence boundary; inline code
-// spans become a placeholder word; links keep their text; URLs and version
-// tokens are dropped.
+// Prose extracts the prose from raw markdown under the frozen masking spec,
+// ending each block as a sentence.
 func Prose(content string) string {
 	content = htmlCommentRe.ReplaceAllString(content, " ")
 	e := &proseExtractor{}
@@ -272,9 +260,8 @@ func IsAlnum(r rune) bool {
 	return (lower >= 'a' && lower <= 'z') || (r >= '0' && r <= '9')
 }
 
-// MaskInline applies the inline masks to prose: inline code spans become a
-// short placeholder word, links keep their text, and URLs and version tokens
-// are dropped. Apply it to one paragraph or list item before counting words.
+// MaskInline applies the inline masks to a paragraph or list item before the
+// words in it are counted.
 func MaskInline(s string) string {
 	s = codeSpanRe.ReplaceAllString(s, "code")
 	s = linkRe.ReplaceAllString(s, "$1")
@@ -316,10 +303,8 @@ func DashOnly(t string) bool {
 	return t != "" && strings.Trim(t, "-") == ""
 }
 
-// ListItem returns a list item line's text without its marker or its task
-// checkbox, ticked or not, so ticking a box never adds a word; ok is false
-// for a line that is not a list item. Every word count of list items reads
-// item text through it.
+// ListItem returns a list item's text without marker or checkbox, so ticking
+// a box adds no word; ok is false for other lines.
 func ListItem(line string) (text string, ok bool) {
 	m := listItemRe.FindStringSubmatch(line)
 	if m == nil {

@@ -13,16 +13,15 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 )
 
-// kindRule is what a kind adds beyond its template's shape: checks that
-// judge the body, and links, which judge what the body points at on GitHub.
+// kindRule is what a kind adds beyond its template's shape: body checks and
+// links that judge what the body points at.
 type kindRule struct {
 	checks []string
 	links  func(t target, gh aftereffect.Client) []string
 }
 
-// kindRules are the rules each kind label adds. A kind with no entry is
-// judged by its template's shape and the doc checks alone, so a new kind is
-// one template file.
+// kindRules are the rules each kind label adds, so a kind with no entry needs
+// only a template file.
 var kindRules = map[string]kindRule{
 	"Plan": {checks: []string{"plan-structure"}},
 	"Epic": {checks: []string{"epic-structure"}, links: subIssueErrors},
@@ -31,19 +30,16 @@ var kindRules = map[string]kindRule{
 // planChecks are the checks a Plan body gets, for branch-check.
 var planChecks = slices.Concat(kindRules["Plan"].checks, docChecks)
 
-// issueKind is one kind of labeled issue: the label that marks it, the shape
-// its template gives when no check of its own judges that, and its rule.
+// issueKind is one kind of labeled issue: its label, its template's shape when
+// no check judges that, and its rule.
 type issueKind struct {
 	label string
 	spec  *mdtemplate.Spec
 	rule  kindRule
 }
 
-// discoverKinds reads the kinds root's issue templates name, keyed by each
-// template's first label, beside every kind in kindRules a repo has no
-// template for. A kind whose rule names checks leaves its template's shape to
-// them, as plan-structure and epic-structure read the same template, so one
-// source sets the sections and no two specs disagree.
+// discoverKinds reads the kinds root's issue templates keyed by first label,
+// leaving a template's shape to the checks a kind's rule names.
 func discoverKinds(root string) map[string]issueKind {
 	kinds := map[string]issueKind{}
 	for label, rule := range kindRules {
@@ -130,10 +126,8 @@ func issueTargets(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, e
 // notVerdictLabel is true for any label but those issue-check keeps.
 func notVerdictLabel(name string) bool { return !aftereffect.IsVerdictLabel(name) }
 
-// idleEvent says why an issues event cannot change a verdict, or "" when it
-// can: an edit that left the body as it was, or a label relevant rejects.
-// The reusable workflows skip the same events at job level, so they start
-// no runner, and a direct run skips them alike.
+// idleEvent says why an issues event cannot change a verdict, or "" when it can,
+// matching the reusable workflows' job-level skips.
 func idleEvent(ev ghEvent, relevant func(label string) bool) string {
 	switch {
 	case ev.Issue == nil:
@@ -212,9 +206,8 @@ func planTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, er
 	return ts, err
 }
 
-// subIssueErrors compares an epic's listed issues with its GitHub
-// sub-issues: every listed issue must be a sub-issue and exist, and every
-// sub-issue must be listed.
+// subIssueErrors fails an epic whose listed issues and GitHub sub-issues
+// differ, since each must be both.
 func subIssueErrors(t target, gh aftereffect.Client) []string {
 	subs, err := gh.SubIssues(t.Number)
 	if err != nil {

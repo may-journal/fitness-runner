@@ -123,5 +123,5 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `fitness docs github`: Package metadata shares GitHub judgments between local checks and Actions.
 - `fitness docs hooks`: Package hooks embeds the canonical may-journal git hooks that `fitness init` installs into a consumer repo.
 - `fitness docs languages`: Package lang defines what a language module brings to a run, and orders what the modules claim against what is installed or embedded.
-- `fitness docs local-checks`: Package repocheck finds a repo's own checks, as ADR 0009 and ADR 0012 decide, and builds the ones written in Go.
+- `fitness docs local-checks`: Package repocheck finds a repo's own checks (ADR 0009, ADR 0012) and builds the Go ones, as docs/local-checks.md describes.
 - `fitness docs protocol`: Package checkkit is the contract between the fitness runner and a check binary, plus the main-function scaffolding every check builds on.

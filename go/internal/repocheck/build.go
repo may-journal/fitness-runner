@@ -13,12 +13,8 @@ import (
 	"strings"
 )
 
-// Build returns the program for a Go check: the one in cache built from the
-// same source, or a new one, built with `go build` in the check's module.
-// The cache key holds every Go source, go.mod and go.sum file in the
-// module, Go's version and platform, and version, the running fitness's, so
-// a warm run costs one hash and no build. Cold, it says on log that it
-// builds. A missing go names how to get one.
+// Build returns the cached program for a Go check or builds one, keyed by its
+// sources, Go version, platform and fitness version.
 func Build(c Check, cache, version string, log io.Writer) (string, error) {
 	if c.Source == "" {
 		return c.Path, nil
@@ -38,9 +34,8 @@ func Build(c Check, cache, version string, log io.Writer) (string, error) {
 	return out, goBuild(c, out)
 }
 
-// goBuild builds the check's package into out, through a temporary file
-// renamed into place, so a run beside it never starts a half-written
-// program.
+// goBuild builds the check into out through a renamed temporary file, so a
+// concurrent run never starts a half-written program.
 func goBuild(c Check, out string) error {
 	if err := os.MkdirAll(filepath.Dir(out), 0o755); err != nil {
 		return err

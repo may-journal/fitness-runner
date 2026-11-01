@@ -1,6 +1,5 @@
-// Package par is the tiny deterministic worker pool the file-scanning
-// checks share: results come back in input order regardless of completion
-// order, so parallelism never changes a check's output.
+// Package par is the worker pool the file-scanning checks share, returning
+// results in input order so parallelism never changes output.
 package par
 
 import (
@@ -93,9 +92,8 @@ func (s *stopper) finish(i int, err error) {
 	}
 }
 
-// Processes is the pool size for work that starts child processes: the
-// runner's handshakes and check pool and the coverage audit's test runs all
-// use it. Each child is its own process, so every core takes one.
+// Processes is the pool size for work that starts child processes, with one
+// process for every core.
 func Processes() int { return runtime.NumCPU() }
 
 // clampWorkers bounds the pool: NumCPU by default, never more than items.

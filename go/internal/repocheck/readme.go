@@ -5,9 +5,8 @@ import (
 	"strings"
 )
 
-// Doc returns a folder check's README as `fitness explain` prints it: the
-// text after its title line, or "" for a flat program or a README that
-// cannot be read.
+// Doc returns a folder check's README text after its title line, as `fitness
+// explain` prints it, or "" when unreadable.
 func Doc(c Check) string {
 	if c.Readme == "" {
 		return ""

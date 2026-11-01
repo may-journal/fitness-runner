@@ -9,10 +9,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
-// palette is the one look a template gives its C4 and class diagrams: the
-// element kinds they use, and the style statement each styled kind carries.
-// A template with no such diagram has no kinds, and its palette judges
-// nothing.
+// palette is a template's one look for C4 and class diagrams: element kinds and
+// their style statements; with none it judges nothing.
 type palette struct {
 	path   string
 	kinds  []string
@@ -82,9 +80,8 @@ func (p palette) allFindings(diagrams []diagram) []Finding {
 	return out
 }
 
-// findings judges one doc diagram against the palette: every element is a
-// kind the template uses and carries exactly its kind's style, and no other
-// style statement or color appears.
+// findings judges one diagram against the palette: each element has a used kind
+// with its exact style, and no stray style appears.
 func (p palette) findings(d diagram) []Finding {
 	if len(p.kinds) == 0 || !styledType(d.kind) {
 		return nil
@@ -165,9 +162,8 @@ type facts struct {
 	depth    int
 }
 
-// element is one declared C4 element or boundary, or one class. kind is
-// its macro with Db and Queue forms folded into their base, and an outside
-// person folded into Person; every class is kind class.
+// element is one declared C4 element, boundary or class, its kind folding Db,
+// Queue and outside-person forms into their base.
 type element struct {
 	alias, macro, kind string
 	line               int
@@ -254,9 +250,8 @@ func (f *facts) c4Call(name string, args []string, t string, at int) {
 	}
 }
 
-// c4Role sorts a C4 macro: UpdateElementStyle styles an element, any other
-// style macro or color argument is a stray, an element or boundary macro
-// declares one, and the rest, such as Rel or Lay_R, do neither.
+// c4Role sorts a C4 macro as a style, a stray style or color, an element
+// declaration, or neither, as Rel and Lay_R are.
 func c4Role(name string, args []string) string {
 	switch {
 	case name == "UpdateElementStyle":
