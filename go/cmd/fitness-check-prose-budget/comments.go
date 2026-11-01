@@ -36,14 +36,18 @@ var identifier = regexp.MustCompile(`^(\w+(\.\w+)+|\w*[a-z][A-Z]\w*|\w+_\w+)$`)
 // quoted is a one-line double-quoted literal, whose stops end no sentence.
 var quoted = regexp.MustCompile(`"[^"\n]*"`)
 
-// lone is a paragraph of one Markdown link or one quoted literal, which holds no sentence to join.
-var lone = regexp.MustCompile(`^(?:"[^"\n]*"|\[[^\]\n]+\]\([^)\s]+\))[.!?]?$`)
+// lone is a whole paragraph of one quoted literal, curly or straight, or one inline, reference or auto link.
+var lone = regexp.MustCompile(`^(?:` + quoted.String() + `|“[^”\n]*”|\[[^\]]*\]\([^)]*\)|\[[^\]]+\]\[[^\]]*\]|<https?://[^>\s]+>)$`)
 
 // codeName is a code span holding one name, such as `New`.
 var codeName = regexp.MustCompile("`([\\w.]+)`")
 
 // statements splits a comment paragraph into sentences, unmasking code names and dropping literals and lone stops.
+// A paragraph of one link or one quote holds no sentence, so it yields none.
 func statements(text string) []string {
+	if lone.MatchString(strings.TrimRight(strings.TrimSpace(text), ".!?")) {
+		return nil
+	}
 	text = quoted.ReplaceAllString(codeName.ReplaceAllString(text, "$1"), "quote")
 	var words []string
 	for _, w := range strings.Fields(text) {
@@ -64,33 +68,22 @@ func commentErrors(b comments.Block, name, markdown string, lim limits) []string
 	return append(errs, slopErrors(name, b, blocks)...)
 }
 
-// paragraph is a comment paragraph's sentences, and whether it is one lone link or quote.
-type paragraph struct {
-	sentences []string
-	lone      bool
-}
-
-// split returns each paragraph and the count of list items.
-func split(blocks []block) (paragraphs []paragraph, items int) {
+// split returns each paragraph's sentences and the count of list items.
+func split(blocks []block) (paragraphs [][]string, items int) {
 	for _, bl := range blocks {
 		if bl.isList {
 			items += len(bl.items)
 		} else {
-			lonely := lone.MatchString(strings.Join(strings.Fields(bl.text), " "))
-			paragraphs = append(paragraphs, paragraph{statements(bl.text), lonely})
+			paragraphs = append(paragraphs, statements(bl.text))
 		}
 	}
 	return paragraphs, items
 }
 
-// fragmentErrors reports each paragraph sentence that is a fragment, passing a lone link or quote.
-func fragmentErrors(name string, b comments.Block, paragraphs []paragraph) []string {
+// fragmentErrors reports each paragraph sentence that is a fragment.
+func fragmentErrors(name string, b comments.Block, paragraphs [][]string) []string {
 	var errs []string
-	for _, p := range paragraphs {
-		if p.lone {
-			continue
-		}
-		sentences := p.sentences
+	for _, sentences := range paragraphs {
 		for i, s := range sentences {
 			if why := fragment(b, s, i == len(sentences)-1); why != "" {
 				errs = append(errs, fmt.Sprintf("%s: %s: a sentence %s; join it to the sentence before it or drop it: %q",
@@ -147,13 +140,13 @@ func packageClause(b comments.Block) bool {
 }
 
 // statementErrors reports a comment holding more than two sentences, counting each list item as one.
-func statementErrors(name string, b comments.Block, paragraphs []paragraph, items int) []string {
+func statementErrors(name string, b comments.Block, paragraphs [][]string, items int) []string {
 	if packageClause(b) {
 		return nil
 	}
 	n := items
-	for _, p := range paragraphs {
-		n += len(p.sentences)
+	for _, sentences := range paragraphs {
+		n += len(sentences)
 	}
 	if n <= maxCommentSentences {
 		return nil
