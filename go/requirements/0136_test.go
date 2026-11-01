@@ -207,3 +207,17 @@ func Test0136_5(t *testing.T) {
 		"ts/named.ts:1: typescript doc: Named by its absolute path.",
 	)
 }
+
+func Test0136_6(t *testing.T) {
+	t.Parallel()
+	out, code := listComments(t, map[string]string{
+		"scripts/prose.sh":  "#!/bin/sh\n# shellCheck is a repo.\n# It keeps its second line.\n# shellcheck disable=SC2086\n# shellcheck  source=lib.sh\necho $1\n",
+		"go/spell.go":       "// cSpell:ignore zorp\npackage spell\n\n// Spell keeps a note.\nvar zorp = 1\n",
+		"swift/Prose.swift": "// SwiftLint is a linter.\nlet a = 1\n// swiftlint:disable force_cast\nlet b = 2\n",
+	})
+	listsExactly(t, out, code,
+		"go/spell.go:4: go doc: Spell keeps a note.",
+		"scripts/prose.sh:2: shell doc: shellCheck is a repo. It keeps its second line.",
+		"swift/Prose.swift:1: swift doc: SwiftLint is a linter.",
+	)
+}
