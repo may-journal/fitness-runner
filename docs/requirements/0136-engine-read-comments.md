@@ -32,3 +32,7 @@ Comment blocks in the files
     - Given Developer names a folder and the absolute path of a file
         - When `fitness comments <paths>` runs
             - Then it lists the comments of the tracked files under them
+- 0136.6
+    - Given Developer has comments that only start with a tool name, such as `shellCheck is` and `SwiftLint is`
+        - When `fitness comments` runs
+            - Then it lists them whole and still skips a real `# shellcheck disable=` line

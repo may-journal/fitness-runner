@@ -128,9 +128,8 @@ func Test0131_8(t *testing.T) {
 // houseReadme is a folder check's README: a title, the rule, and the fix.
 const houseReadme = "# House rule\n\nKeeps the house in order. Each room stays tidy.\n\n## Fix\n\nTidy the room the error names.\n"
 
-// shellCheck is a repo whose fitness folder holds one shell check, name,
-// with a README; the check answers --describe with describe, else it ignores the
-// handshake. It prints verdict when it runs, and an empty verdict makes it hang.
+// shellCheck is a repo with one shell check, name, and a README.
+// The check answers --describe with describe, else ignores the handshake, and prints verdict; an empty verdict hangs.
 func shellCheck(name, describe, verdict string) map[string]string {
 	script := verdictScript(verdict)
 	if describe != "" {

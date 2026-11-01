@@ -270,9 +270,13 @@ func kind(n note) Kind {
 var goDirective = regexp.MustCompile(`^//([a-z0-9]+:[a-z0-9]|line |export |extern )`)
 
 // toolDirectives open a comment that speaks to a tool, not a reader.
+// Each is matched in the case and form the tool reads, so prose that
+// only starts with a tool name stays.
 var toolDirectives = []string{
 	"cspell:", "spell-checker:", "swiftlint:", "eslint-disable", "eslint-enable",
-	"prettier-ignore", "jscpd:", "shellcheck ", "@ts-", "+build", "yaml-language-server:",
+	"prettier-ignore", "jscpd:", "shellcheck disable=", "shellcheck enable=", "shellcheck source=",
+	"shellcheck source-path=", "shellcheck shell=", "shellcheck external-sources=",
+	"@ts-", "+build", "yaml-language-server:",
 }
 
 // directive reports a comment that is a tool directive or a shebang.
@@ -280,7 +284,7 @@ func directive(text string) bool {
 	if goDirective.MatchString(text) || strings.HasPrefix(text, "#!") {
 		return true
 	}
-	words := strings.ToLower(strings.TrimSpace(strings.Split(strip(text), "\n")[0]))
+	words := strings.TrimSpace(strings.Split(strip(text), "\n")[0])
 	for _, d := range toolDirectives {
 		if strings.HasPrefix(words, d) {
 			return true
