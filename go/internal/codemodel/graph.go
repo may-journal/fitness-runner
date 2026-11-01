@@ -54,8 +54,7 @@ func NewGraph(x *Index, language func(file string) string) *Graph {
 	return &Graph{x: x, language: language, named: map[string][]*Node{}, headers: map[Location]*Decl{}}
 }
 
-// Add makes d a node: its own lines and, for a type, its methods and
-// extensions belong to it, and its name reaches it.
+// Add makes d a node that owns its lines and, for a type, its methods.
 func (g *Graph) Add(d *Decl) *Node {
 	n := &Node{Decl: d}
 	g.add(n, d, 0)
@@ -96,8 +95,8 @@ func (g *Graph) add(n *Node, d *Decl, inherited int) {
 	g.spans = append(g.spans, Span{Node: n, File: d.File, From: d.Line, To: d.End, weight: 2*(d.End-d.Line) + inherited})
 }
 
-// memberKey is the name source reaches d by: Type.member, by the last
-// name of a nested owner, as code names it, or the name alone.
+// memberKey is the name source reaches d by: Type.member using the last owner
+// name, or the name alone.
 func memberKey(d *Decl) string {
 	if d.Owner == "" {
 		return d.Name
@@ -160,9 +159,8 @@ func (g *Graph) Observe(from, to *Node, kind string, at Location) {
 	}
 }
 
-// Supers relates a type to each node the header on the line names: an
-// interface a type implements is conformance, and a supertype is
-// inheritance, or conformance when the type adopts an interface.
+// Supers relates a type to each node its header names, as inheritance or,
+// for an interface, conformance.
 func (g *Graph) Supers(from *Node, d *Decl, at Location) {
 	x := g.headerDecl(d, at)
 	if x == nil {

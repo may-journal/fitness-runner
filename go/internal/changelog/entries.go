@@ -10,9 +10,8 @@ import (
 	"strings"
 )
 
-// EntryDir is the folder that holds one entry file per pull request, the
-// only way to add an entry, so two open pull requests never edit the same
-// lines.
+// EntryDir is the folder holding one entry file per pull request, so two open
+// pull requests never edit the same lines.
 const EntryDir = "changelog"
 
 // Entry is one entry file: its slash path from the repo root and its text.
@@ -30,10 +29,8 @@ var (
 	datePrefixRe = regexp.MustCompile(`^\d{4}(-\d{2}){0,2}(-\d{4})?(-|$)`)
 )
 
-// NameError says why the entry file at p, holding text, is misnamed: its
-// name must start with its first dated heading's stamp, dots read as
-// hyphens, then the change. It names the expected file and is "" when the
-// name fits or text has no dated heading.
+// NameError says why entry file p, holding text, is misnamed against its first
+// dated heading's stamp, or is empty when it fits.
 func NameError(p, text string) string {
 	stamps := Headings(text)
 	if len(stamps) == 0 {

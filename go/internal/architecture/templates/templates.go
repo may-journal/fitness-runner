@@ -1,6 +1,5 @@
 // Package templates ships the five architecture view templates inside the
-// binary, so doc-template judges every repo's views against them, whether
-// or not the repo keeps a copy of its own.
+// binary, so doc-template judges every repo's views against them.
 package templates
 
 import (

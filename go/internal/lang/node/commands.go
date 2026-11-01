@@ -18,9 +18,8 @@ var valueFlags = strings.Fields("-r --require --import --loader --experimental-l
 // launchers start the command after them, as in "npx tsx scripts/a.ts".
 var launchers = strings.Fields("npx exec env pnpm yarn dlx")
 
-// scriptRuns lists the files each script of one package.json runs, Start
-// for the start script and Dev for the others, and its published entries.
-// The containers check reports a package.json it cannot parse.
+// scriptRuns lists the files that each script of one package.json runs,
+// plus its published entries.
 func scriptRuns(root, file string) runtimes.Runs {
 	var runs runtimes.Runs
 	pkg, _, err := readPackage(root, file)
@@ -40,9 +39,8 @@ func scriptRuns(root, file string) runtimes.Runs {
 	return runs
 }
 
-// commandRuns lists the program each command in a script line runs:
-// the first word past launchers and variables, or the file a runner
-// such as node runs.
+// commandRuns lists the program each command in a script line runs,
+// past launchers and variables.
 func commandRuns(line string) []string {
 	for _, op := range []string{"&&", "||", "|", ";", "&", "(", ")"} {
 		line = strings.ReplaceAll(line, op, "\n")
@@ -67,8 +65,7 @@ func program(words []string) string {
 	return ""
 }
 
-// scan reads a command word by word: runner is set past node or another
-// runner, and value while a runner flag waits for its value.
+// scan reads a command word by word, tracking a runner and a pending flag value.
 type scan struct{ runner, value bool }
 
 // next returns word when it is the program.

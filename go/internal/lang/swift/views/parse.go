@@ -43,12 +43,8 @@ func setOf(words ...string) map[string]bool {
 	return set
 }
 
-// swiftSymbol is one Swift declaration: a type, function, initializer,
-// value, or enum case, at file level or a member of owner. Labels are a
-// callable's argument labels, "_" where it has none. Typ is a value's
-// stated type, a function's result, or a type alias's target; a value
-// with none takes the type of its initializer. A local symbol lives in a
-// body and is seen only by the names after it.
+// swiftSymbol is one Swift declaration, at file level or a member of owner,
+// with a callable's argument labels and its stated type.
 type swiftSymbol struct {
 	file, name, owner, kind, typ string
 	labels                       []string
@@ -113,11 +109,8 @@ func (s *swiftScope) visible(u *swiftUse) *swiftSymbol {
 	return nil
 }
 
-// swiftUse is one name in Swift code: unqualified, a member after a dot
-// with the expression before it as base, or an implicit member such as
-// .loaded whose type the context decides. A call records its argument
-// labels and trailing closures. A literal is no name; it gives its base
-// the literal's type.
+// swiftUse is one name in Swift code: unqualified, a member after a dot, or an
+// implicit member whose type the context decides.
 type swiftUse struct {
 	file, name, under, literal string
 	line, at, trailing         int

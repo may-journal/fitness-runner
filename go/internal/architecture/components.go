@@ -17,10 +17,8 @@ type Components struct {
 	Files  int
 }
 
-// Components gives every product source one owner among the view's
-// components, requires every reference between owners to be drawn, proves
-// the evidence edge rows link, and keeps each runtime to the components
-// under its own container boundary.
+// Components gives every product source one owner, requires every reference
+// between owners to be drawn, and proves the evidence edge rows link.
 func (m *Model) Components() Components {
 	c := newComponents(m)
 	for _, s := range m.Sources {
@@ -135,8 +133,8 @@ func (c *components) pathOwners(p string) []string {
 	return c.folderOwners[p]
 }
 
-// index sorts the owned files once and groups their owners by folder, so a
-// reference to a folder costs one lookup instead of a sort of every file.
+// index sorts the owned files once and groups owners by folder, so a folder
+// reference costs one lookup instead of a sort.
 func (c *components) index() {
 	c.ownedFiles = sortedKeys(c.owners)
 	c.folderOwners = map[string][]string{}
@@ -186,9 +184,8 @@ func (c *components) edge(from, to string, r codemodel.Reference) {
 	}
 }
 
-// relation finds a drawn edge from an element enclosing from to one
-// enclosing to; an edge between boundaries allows every edge between their
-// members.
+// relation finds a drawn edge between elements enclosing from and to, where a
+// boundary edge covers its members' edges.
 func (c *components) relation(from, to string) *Relationship {
 	for i := range c.m.Relationships {
 		r := &c.m.Relationships[i]

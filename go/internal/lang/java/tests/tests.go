@@ -1,23 +1,5 @@
-// Package tests runs each Java build root's tests once for the java-test
-// check, then judges what the run wrote: the JUnit XML of every test, and
-// the JaCoCo XML coverage totals against the shared coverage goal.
-//
-// Most Java test frameworks run on the JUnit Platform or through Surefire,
-// so one JUnit XML reader serves them all, and JaCoCo measures whichever
-// ran. The frameworks folder holds one file per framework the check spots
-// from build files and imports, to explain a build whose tests ran none and
-// to ask for what a framework needs before the run, such as Docker.
-//
-// Only reports written during the run count, so a stale report never
-// passes. Clean rules make Gradle run the test and report tasks every
-// time; its build cache then restores, and so rewrites, the outputs of
-// tests whose inputs are unchanged, unless the build turns caching off.
-// Gradle runs only the test task, so another test task counts when the
-// test or report task depends on it. A failing test is reported before
-// coverage, since a failed run's coverage says little.
-//
-// Requirements finds the tests named for requirement acceptances, which
-// the requirements check reads.
+// Package tests runs each Java build root's tests once, then judges the JUnit
+// XML and the JaCoCo coverage against the goal.
 package tests
 
 // cspell:ignore jacoco
@@ -69,20 +51,14 @@ func plugin(start time.Time) java.Plugin {
 	}
 }
 
-// mavenArgs runs the build through verify, so Surefire, Failsafe and the
-// JaCoCo reports bound there all run, and lets the run go on past failing
-// tests so their reports and the coverage report are written.
+// mavenArgs runs the build through verify and past failing tests, so
+// every report is written.
 func mavenArgs(string, java.Project) []string {
 	return []string{"verify", "-D", "maven.test.failure.ignore=true"}
 }
 
-// gradleArgs reruns the test task and the coverage report task, the
-// aggregate one when the build applies aggregation, and goes on past a
-// failing task. Each task's clean rule deletes its outputs first, so the
-// task runs again on any Gradle version, where the --rerun option needs
-// Gradle 7.6. The build cache then restores the outputs of tests whose
-// inputs are unchanged, written afresh, instead of running them again,
-// unless the build turns caching off.
+// gradleArgs reruns the test and coverage report tasks past failures, cleaning
+// them first because --rerun needs Gradle 7.6.
 func gradleArgs(root string, p java.Project) []string {
 	report := "jacocoTestReport"
 	if java.Declares(root, p, aggregationRe) {
@@ -95,10 +71,8 @@ func gradleArgs(root string, p java.Project) []string {
 	return args
 }
 
-// cachingAllowed reports whether the build leaves the build cache to
-// fitness: no org.gradle.caching set in its gradle.properties, the Gradle
-// user home's, GRADLE_OPTS or JAVA_OPTS, or one set to true. Gradle reads
-// any other value as off.
+// cachingAllowed reports whether no source sets org.gradle.caching, or one
+// sets it to true.
 func cachingAllowed(root string, p java.Project) bool {
 	value, set := java.GradleProperties(root, p)[cachingProperty]
 	for _, opts := range []string{os.Getenv("JAVA_OPTS"), os.Getenv("GRADLE_OPTS")} {
@@ -111,10 +85,8 @@ func cachingAllowed(root string, p java.Project) bool {
 	return !set || strings.EqualFold(strings.TrimSpace(value), "true")
 }
 
-// judge names each failing test and each report that does not parse; else
-// the build's own reason for a failed
-// run; else a missing test run for a root with product code; else each
-// coverage total short of the goal, or the missing coverage report.
+// judge names the failing tests, else the failed build's reason, else the
+// missing tests, else the coverage short of the goal.
 func judge(root string, p java.Project, o checkkit.Outcome, start time.Time) []string {
 	r := readResults(root, p, start)
 	if problems := slices.Concat(r.failed, r.unreadable); len(problems) > 0 {
@@ -133,9 +105,8 @@ func judge(root string, p java.Project, o checkkit.Outcome, start time.Time) []s
 	return findings
 }
 
-// noTests explains a run that ran no test: none for a root without product
-// code, the detected frameworks' hints for a root with test files, and a
-// request for tests otherwise.
+// noTests explains a run that ran no test, with the detected frameworks' hints
+// for a root that has test files.
 func noTests(root string, p java.Project) []string {
 	product := productFiles(root, p)
 	if len(product) == 0 {

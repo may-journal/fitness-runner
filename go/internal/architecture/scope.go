@@ -10,11 +10,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// Unmoved reports a scoped run whose changed files cannot move the views:
-// none is a view, a requirement doc, a product or tool source, a manifest,
-// or a .gitattributes file. A test, changelog or plain doc change is such a
-// run, so Load returns an empty model and each check passes with zero
-// files. An unscoped run is never unmoved.
+// Unmoved reports a scoped run whose changed files, such as tests, cannot move
+// the views, so Load returns an empty model.
 func Unmoved(root string) bool {
 	changed := checkkit.ChangedFiles()
 	if changed == nil || slices.ContainsFunc(changed, movesByName) {
@@ -23,8 +20,8 @@ func Unmoved(root string) bool {
 	return !slices.ContainsFunc(walkfs.WithoutGenerated(root, changed), shippedSource)
 }
 
-// movesByName reports a file whose name alone says it can move the views:
-// a view, a requirement doc, a manifest, or a .gitattributes file.
+// movesByName reports a file whose name alone can move the views, such as a
+// view, requirement doc, manifest or .gitattributes.
 func movesByName(file string) bool {
 	return viewFile(file) != "" || requirementFile(file) || runtimes.Manifest(file, readers) || path.Base(file) == ".gitattributes"
 }

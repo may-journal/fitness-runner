@@ -19,9 +19,8 @@ var (
 	ignoreEnds   = []string{"duplicate-code:ignore-end", "jscpd:ignore-end"}
 )
 
-// lexer is the scan state for Lex: the input, a byte cursor, the current
-// 1-based line, the tokens emitted so far, and whether an ignore-start
-// region is suppressing emission.
+// lexer is the scan state for Lex: input, byte cursor, current line, emitted
+// tokens, and whether an ignore region suppresses emission.
 type lexer struct {
 	src      string
 	i        int
@@ -30,9 +29,8 @@ type lexer struct {
 	ignoring bool
 }
 
-// Lex tokenizes source generically per the package-comment boundaries:
-// comments stripped (and scanned for the ignore markers), strings and
-// numbers collapsed to $str/$num, identifiers and punctuation verbatim.
+// Lex tokenizes source generically, stripping comments and collapsing numbers
+// to $num and strings to $str.
 func Lex(src string) []Token {
 	lx := &lexer{src: src, line: 1}
 	for lx.i < len(src) {
@@ -41,9 +39,8 @@ func Lex(src string) []Token {
 	return lx.out
 }
 
-// step consumes one lexical element at the cursor, dispatching on its
-// leading byte to the branch family that owns it; comment openers and
-// verbatim runes share the default branch (scanOther).
+// step consumes one lexical element at the cursor, dispatching on its leading
+// byte, with comment openers and verbatim runes sharing scanOther.
 func (lx *lexer) step() {
 	c := lx.src[lx.i]
 	switch {
@@ -76,9 +73,8 @@ func (lx *lexer) skipSpace() {
 	lx.i++
 }
 
-// scanString consumes the string literal opening at the cursor, emitting
-// one $str token (quote style dropped, content kept) and counting any
-// lines a backtick literal spans.
+// scanString consumes the string literal at the cursor, emitting one $str token
+// and counting the lines a backtick literal spans.
 func (lx *lexer) scanString() {
 	end := stringEnd(lx.src, lx.i)
 	lx.emit("$str:" + stringBody(lx.src, lx.i, end))
@@ -193,10 +189,8 @@ func blockEnd(src string, from int, close string) int {
 	return len(src)
 }
 
-// stringBody extracts the literal's content between the quotes (escape
-// sequences stay raw): quote style normalizes away, content does not —
-// fully collapsing strings would manufacture clones jscpd never
-// reports (e.g. Go import blocks differing only in import paths).
+// stringBody returns the literal's raw content between the quotes, because
+// collapsing it would manufacture clones jscpd never reports.
 func stringBody(src string, i, end int) string {
 	body := src[i+1 : end]
 	if len(body) > 0 && body[len(body)-1] == src[i] {
@@ -205,10 +199,8 @@ func stringBody(src string, i, end int) string {
 	return body
 }
 
-// stringEnd returns the index just past the string literal opening at i.
-// Backslash escapes the next byte; single- and double-quoted strings close
-// implicitly at end of line (the newline is left for the caller), backtick
-// strings span lines; unterminated strings run to len(src).
+// stringEnd returns the index past the string literal opening at i, where
+// non-backtick strings close at end of line.
 func stringEnd(src string, i int) int {
 	quote := src[i]
 	for j := i + 1; j < len(src); j++ {
@@ -223,9 +215,8 @@ func stringEnd(src string, i int) int {
 	return len(src)
 }
 
-// stringClose reports whether byte c at index j terminates a string opened
-// with quote, returning the index just past the literal — for the implicit
-// newline close of non-backtick strings, the newline stays unconsumed.
+// stringClose reports whether byte c at j ends a string opened with quote,
+// returning the index past the literal.
 func stringClose(quote, c byte, j int) (int, bool) {
 	if c == quote {
 		return j + 1, true

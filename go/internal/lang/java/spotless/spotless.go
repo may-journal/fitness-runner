@@ -61,9 +61,8 @@ func judge(root string, p java.Project, o checkkit.Outcome) []string {
 	return java.Fallback(o, "Spotless reported an error; run "+apply[p.Build]+" or the check by hand")
 }
 
-// listed reads the files under Spotless's violations header: lines that
-// name a file in the repo, past the diff lines Spotless prints beneath
-// each.
+// listed reads the files under Spotless's violations header, skipping the diff
+// lines printed beneath each.
 func listed(root string, p java.Project, output string) []string {
 	var out []string
 	_, list, found := strings.Cut(output, violationsHeader)
@@ -78,8 +77,8 @@ func listed(root string, p java.Project, output string) []string {
 	return out
 }
 
-// repoFile reads a line that names nothing but a file in the repo, with
-// Maven's [ERROR] prefix stripped, as a path relative to root.
+// repoFile reads a line naming only a repo file, minus Maven's [ERROR] prefix,
+// as a path relative to root.
 func repoFile(root string, p java.Project, line string) (string, bool) {
 	text := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(line), "[ERROR]"))
 	if text == "" || strings.ContainsAny(text, " \t") {

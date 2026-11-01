@@ -21,9 +21,8 @@ var (
 	scriptTest = regexp.MustCompile(`\.(?:test|spec)\.[cm]?[jt]sx?$|(?:^|/)__tests__/`)
 )
 
-// Scripts lists the TypeScript and JavaScript files a project writes: every
-// tracked file with a script extension, except those .gitattributes marks
-// generated and tool config files such as vite.config.ts or .eslintrc.cjs.
+// Scripts lists the tracked script files a project writes, excluding generated
+// files and tool configs.
 func Scripts(root string) []string {
 	var out []string
 	for _, f := range walkfs.WithoutGenerated(root, walkfs.FilesByExt(root, ScriptExts...)) {
@@ -40,9 +39,7 @@ func ToolConfig(file string) bool {
 	return toolConfig.MatchString(path.Base(file))
 }
 
-// ScriptTest reports whether file is a test file vitest or jest runs by
-// default: its name ends in .test or .spec before a script extension, or it
-// sits in a __tests__ folder.
+// ScriptTest reports whether file is a test file vitest or jest runs by default.
 func ScriptTest(file string) bool {
 	return scriptTest.MatchString(file)
 }

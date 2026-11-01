@@ -11,11 +11,8 @@ import (
 	"time"
 )
 
-// LinkSkills links every skill in the installed bundle into each folder, so an
-// agent that reads the folder sees the skill. A missing or broken link, or one
-// to an earlier bundle of this tool, is written again, and a link to a skill
-// a later release dropped is removed. A real folder or a link someone else
-// made stays as it is.
+// LinkSkills links every installed skill into each folder, rewriting stale links
+// and leaving real folders and links someone else made alone.
 func LinkSkills(bundle string, folders []string, log io.Writer) error {
 	skills, err := os.ReadDir(filepath.Join(bundle, skillsFolder))
 	if os.IsNotExist(err) {
@@ -75,8 +72,8 @@ func linkSkill(bundle, link, target string, log io.Writer) error {
 	return nil
 }
 
-// keepReason says why a skill's link stays as it is, or "" when it is missing,
-// broken, or points into an earlier bundle of this tool and so gets written again.
+// keepReason says why a skill's link stays, or "" when it is missing, broken, or
+// stale and gets written again.
 func keepReason(bundle, link, target string) string {
 	current, err := os.Readlink(link)
 	if err != nil {
@@ -107,9 +104,8 @@ func replaceable(bundle, link, current string) bool {
 	return ownedLink(bundle, current)
 }
 
-// ownedLink reports whether the target is a skill inside a bundle generation
-// that sits in the same cache as the installed bundle, so a bundle another
-// tool unpacked with a similar name is never touched.
+// ownedLink reports whether the target is a skill in the installed bundle's own
+// cache, so another tool's bundle is never touched.
 func ownedLink(bundle, current string) bool {
 	skills := filepath.Dir(filepath.Clean(current))
 	generation := filepath.Dir(skills)

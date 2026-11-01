@@ -28,8 +28,8 @@ func (s subject) name() string {
 	return s.edge.From + "->" + s.edge.To
 }
 
-// diagram is one model diagram while it is read: its declared elements, its
-// edges, and the callout numbers that bind table rows to them.
+// diagram is one model diagram while read, holding its declared elements,
+// edges, and the callout numbers binding table rows to them.
 type diagram struct {
 	m           *Model
 	file, view  string

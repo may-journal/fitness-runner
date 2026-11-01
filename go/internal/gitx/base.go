@@ -5,10 +5,8 @@ import (
 	"strings"
 )
 
-// ScopeBase is the commit a scoped run's changes replace: the merge base
-// with a pull request's base branch, the parent of an amended commit, or
-// HEAD for staged files. It is empty when there is none, as in a first
-// commit.
+// ScopeBase is the commit a scoped run's changes replace, or empty when there
+// is none, as in a first commit.
 func ScopeBase(root string) string {
 	r := Repo(root)
 	var out string

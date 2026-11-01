@@ -38,9 +38,8 @@ func (r Repo) TrackedFiles() ([]string, error) {
 	return nulList(out), nil
 }
 
-// IndexEntry is one index entry as `git ls-files --stage` prints it: the
-// path's mode, such as 100644, 120000 for a symlink or 160000 for a
-// submodule, and its slash-separated path relative to the repo.
+// IndexEntry is one index entry as `git ls-files --stage` prints it, with a
+// mode and a slash-separated repo path.
 type IndexEntry struct {
 	Mode string
 	Path string

@@ -119,9 +119,8 @@ func (r *tsReader) end(i int) int {
 	return j
 }
 
-// ends reports a statement ending at token j: on a semicolon, before the
-// enclosing body's closing brace, or at a line break that automatic
-// semicolon insertion ends it on.
+// ends reports a statement ending at token j, by semicolon, closing brace
+// or automatic semicolon insertion.
 func (r *tsReader) ends(j int) bool {
 	return r.is(j, ";") || r.bracket(j+1) < 0 || r.breaks(j+1)
 }
@@ -141,10 +140,8 @@ func (r *tsReader) typeEnd(i int) int {
 	return j
 }
 
-// typeStops reports token j ending the type that starts at token i: a
-// body's brace after a complete type, an = that is no arrow, a line the
-// type does not continue on, or a closing token. A type starts after a
-// colon, so a brace that starts it opens an object type.
+// typeStops reports token j ending the type that starts at token i, where a
+// leading brace opens an object type.
 func (r *tsReader) typeStops(i, j int) bool {
 	switch {
 	case r.is(j, "{"):

@@ -1,10 +1,5 @@
-// Package localized judges the localized-text check: in an app that
-// ships a String Catalog, every word a SwiftUI view shows comes from the
-// catalog, and the requirement tests read the same entries. A view that
-// passes a string literal to Text, Label, Button, Section, or a title,
-// accessibility, alert or dialog modifier fails. So does a test literal
-// that types an entry's words. Each finding names the file, line and
-// literal, and the reference to use instead.
+// Package localized judges the localized-text check: in an app with a String
+// Catalog, every word a view or test shows comes from it.
 package localized
 
 import (
@@ -128,9 +123,7 @@ func shownFinding(_, code string, lit swift.Literal, at int, known entries, cfg 
 }
 
 // shownBy returns the view or modifier a literal at start is the first
-// argument of, unlabeled or labeled verbatim, or "" when it is none. A
-// branch of a ternary or ?? expression there counts as the argument.
-// code has its comments and literals blanked, so only code is read.
+// argument of, counting ternary or ?? branches, else "".
 func shownBy(code string, start int) string {
 	i, ok := callOpen(code, start)
 	if !ok {
@@ -144,8 +137,8 @@ func shownBy(code string, start int) string {
 	return name
 }
 
-// callOpen returns just after the parenthesis of the call a literal at
-// start is the first argument of, directly or as a branch of a ternary.
+// callOpen returns just after the parenthesis of the call a literal at start
+// opens, directly or as a ternary branch.
 func callOpen(code string, start int) (int, bool) {
 	i, ok := argumentStart(code, start)
 	if ok && !opensCall(code, i) {
@@ -196,9 +189,8 @@ func isASCIIAlnum(c byte) bool {
 	return c >= '0' && c <= '9' || (c|0x20) >= 'a' && (c|0x20) <= 'z'
 }
 
-// isTestFile reports a file of a test target: one in a folder whose name
-// ends in Tests, as Xcode and SwiftPM name test targets, or one named
-// like a test file.
+// isTestFile reports a file of a test target: one in a folder named like Tests
+// or named like a test file.
 func isTestFile(file string) bool {
 	if strings.HasSuffix(path.Base(file), "Tests.swift") {
 		return true

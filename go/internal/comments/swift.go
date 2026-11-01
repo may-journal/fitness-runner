@@ -2,12 +2,8 @@ package comments
 
 import "strings"
 
-// SwiftVisitor receives what WalkSwift finds, by byte offsets into the
-// source. String gets each string literal's span, delimiters and
-// raw-string hashes included, with its words: the characters between the
-// delimiters, without interpolations and with escapes read. A literal
-// inside another's interpolation arrives before the literal holding it.
-// Both funcs must be set.
+// SwiftVisitor receives the comments and string literals WalkSwift finds, by
+// byte offsets, and needs both funcs set.
 type SwiftVisitor struct {
 	Comment func(start, end int)
 	String  func(start, end int, text string)
@@ -124,10 +120,8 @@ func (w *swiftWalker) body(close, escape string) string {
 	return text.String()
 }
 
-// stringChar consumes one character of string content, an escape, or a
-// whole \( … ) interpolation, and returns the text it adds to the
-// literal's words: the character, an escaped quote or backslash, and
-// nothing for an interpolation or another escape.
+// stringChar consumes one character, escape or interpolation and returns the
+// text it adds to the literal's words.
 func (w *swiftWalker) stringChar(escape string) string {
 	if !w.at(escape) {
 		w.i++
@@ -150,8 +144,8 @@ func (w *swiftWalker) stringChar(escape string) string {
 	return escapedWords[w.src[w.i-1]]
 }
 
-// escapedWords is the text an escaped character adds to a literal's words:
-// a quote or backslash stands for itself, and a control character for none.
+// escapedWords is the text an escaped character adds to a literal's words,
+// where quotes and backslashes stand for themselves.
 var escapedWords = map[byte]string{'"': `"`, '\'': "'", '\\': `\`}
 
 // interpolation consumes balanced parentheses, skipping nested strings and

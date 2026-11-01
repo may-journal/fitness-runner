@@ -13,9 +13,8 @@ var escapes = map[byte]byte{'t': '\t', 'n': '\n', 'r': '\r', 'f': '\f'}
 // blanks are the whitespace characters a properties file skips.
 const blanks = " \t\f"
 
-// Properties reads a Java properties file the way java.util.Properties
-// does, or none for a missing file: comments, `=` `:` and whitespace
-// separators, backslash continuations and escapes.
+// Properties reads a Java properties file the way java.util.Properties does,
+// or none for a missing file.
 func Properties(file string) map[string]string {
 	body, err := os.ReadFile(file)
 	if err != nil {
@@ -45,8 +44,8 @@ type joiner struct {
 	open    bool
 }
 
-// add takes the next physical line: a comment or blank line is skipped, and
-// a line ending in an odd run of backslashes continues on the next.
+// add takes the next physical line, skipping comments and continuing after an
+// odd run of trailing backslashes.
 func (j *joiner) add(raw string) {
 	line := strings.TrimLeft(strings.TrimRight(raw, "\r"), blanks)
 	if !j.open && blankOrComment(line) {
@@ -76,8 +75,7 @@ func trailingBackslashes(line string) int {
 }
 
 // splitProperty splits a logical line at its first unescaped `=`, `:` or
-// whitespace, taking one `=` or `:` and the blanks around it as the
-// separator.
+// whitespace, which with surrounding blanks is the separator.
 func splitProperty(line string) (key, value string) {
 	i := keyEnd(line)
 	rest := strings.TrimLeft(line[i:], blanks)

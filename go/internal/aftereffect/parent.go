@@ -59,9 +59,8 @@ func CloseParents(gh Client, child Ref) error {
 	return s.climb(child)
 }
 
-// sweep is one climb up the parents of a closed issue. closed holds the
-// issues known closed as completed: the one that started it and each
-// parent it closed, which also stops a cycle of parents.
+// sweep climbs a closed issue's parents, with closed holding the issues known
+// closed as completed, which also stops cycles.
 type sweep struct {
 	gh     Client
 	closed map[Ref]bool

@@ -7,9 +7,8 @@ import (
 	"sync"
 )
 
-// section is one package's keys in the config file: a value of the Go type
-// that reads them, holding each key's default, and the Go source declaring
-// that type, whose doc comments describe each key.
+// section is one package's config keys: a defaults value of the reading type
+// and the Go source whose doc comments describe each key.
 type section struct {
 	defaults reflect.Value
 	source   []byte
@@ -28,12 +27,8 @@ var sections = struct {
 // the schema does not describe.
 type Section[T any] struct{}
 
-// Register declares the keys a package reads from the config file: their Go
-// type T, a T holding each key's default, and the Go source that declares
-// T. The schema, `fitness config`, and its descriptions all come from these.
-// A package keeps the returned Section in a package variable and loads its
-// keys with it. A key that another section already declares panics, since
-// one key must mean one thing.
+// Register declares the keys a package reads from the config file, panicking
+// when another section already declares a key.
 func Register[T any](defaults T, source []byte) *Section[T] {
 	t := reflect.TypeFor[T]()
 	sections.Lock()

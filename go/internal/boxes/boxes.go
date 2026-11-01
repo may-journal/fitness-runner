@@ -1,6 +1,5 @@
-// Package boxes draws a run's `fitness --json` report as a static HTML box
-// diagram: one box per check, sized by its runtime, binary size, or error
-// lines. See docs/ci.md#box-diagram.
+// Package boxes draws a `fitness --json` report as a static HTML diagram with
+// one box per check, as docs/ci.md#box-diagram describes.
 package boxes
 
 import (
@@ -21,8 +20,7 @@ type Report struct {
 }
 
 // Check is one check's cost: wall time against its budget, files judged,
-// the size of its binary, and how many lines of errors it reported. A check
-// may spend several lines on one problem, so this counts lines, not problems.
+// binary size, and error lines reported.
 type Check struct {
 	Name         string `json:"name"`
 	Ok           bool   `json:"ok"`
@@ -62,11 +60,11 @@ var measures = []measure{
 }
 
 // diagramWidth and diagramHeight give the layout the page's 16:10 shape, so
-// boxes come out as square on screen as they are in the layout.
+// boxes stay square on screen.
 const diagramWidth, diagramHeight = 160.0, 100.0
 
-// view is one measure laid out: a box per check with a value, and the checks
-// with none, which get equal small boxes below the diagram.
+// view is one measure laid out, a box per valued check plus equal small boxes
+// below for checks with none.
 type view struct {
 	measure
 	Boxes []box

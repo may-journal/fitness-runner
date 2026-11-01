@@ -22,9 +22,8 @@ func (l LineIndex) Line(pos int) int {
 	return sort.SearchInts(l, pos+1)
 }
 
-// Tokens is one file's tokens as a lexical reader reads them, so the
-// relations between the code view's nodes come from names, never from
-// comments or literals.
+// Tokens is one file's tokens as a lexical reader reads them, so relations
+// come from names, never from comments or literals.
 type Tokens interface {
 	// Len is the number of tokens.
 	Len() int

@@ -1,33 +1,5 @@
-// Package views reads Java sources for the architecture code view: each
-// file's declarations and the relations between the view's nodes, from
-// tokens, so comments never count and literals stay whole.
-//
-// The reader takes the .java product files the views list, so sources in
-// a test source set's folder, such as src/test, and generated files stay
-// out. It keeps each file's package and its classes, interfaces, enums,
-// records and annotation types, nested ones too, with their fields,
-// methods and constructors, as JLS chapters 7 to 9 declare them.
-//
-//   - A label's qualifier may name the package, such as com.example.Store.
-//   - A nested type is a member of the type around it, named as
-//     Outer.Inner, and a type's members are those its body declares.
-//   - An interface and an annotation type are interfaces; a class, an
-//     enum and a record are types.
-//   - A record's components are its fields, and an enum's constants are
-//     fields of the enum's own type.
-//   - A constructor is a method named for its type, with no result. A
-//     record's compact constructor takes the record's components.
-//   - A parameter's type is what it states, with ... for variable arity.
-//     Array brackets after a name join its type.
-//   - Annotations and modifiers state nothing the view compares, and a
-//     receiver parameter is no parameter.
-//
-// It relates names of other classes, Type.member calls, extends, which is
-// inheritance, and implements, which is conformance. The view covers a
-// top-level public type. The reader is lexical, without imports, so a
-// call through a variable, such as store.save(), relates nothing, and
-// overloads differ only by their stated signatures. It reads no
-// references, so the components view takes no Java evidence.
+// Package views reads Java product sources for the architecture code view
+// lexically from tokens, so calls through variables relate nothing.
 package views
 
 import (
@@ -195,11 +167,8 @@ func (r *reader) typeName(j int) int {
 	return j + 1
 }
 
-// container reads a type from its keyword at token j: its name, type
-// parameters, record components, the types it extends and implements,
-// and its body. Start is the first
-// token of its annotations and modifiers. Only a top-level type can be
-// public for coverage.
+// container reads a type from its keyword at token j, including heritage and
+// body, with start as its first modifier token.
 func (r *reader) container(start, j int, owner string, public bool) int {
 	keyword, n := r.Word(j), r.typeName(j)
 	if !r.Ident(n) {
@@ -219,9 +188,8 @@ func (r *reader) container(start, j int, owner string, public bool) int {
 	return close + 1
 }
 
-// body is a type whose body is read: its declaration, which owns the
-// members by its key, and the parenthesis opening a record's components,
-// or -1.
+// body is a type whose body is read: its declaration and the parenthesis
+// opening a record's components, or -1.
 type body struct {
 	d          *codemodel.Decl
 	components int
@@ -267,8 +235,8 @@ func (r *reader) heritage(k int) heritage {
 	return h
 }
 
-// clause reads token k of a heritage clause: a keyword starts a list,
-// and each item's name joins it without its qualifier or type arguments.
+// clause reads token k of a heritage clause, where a keyword starts a list and
+// each item joins it by bare name.
 func (h *heritage) clause(r *reader, k int, list *[]string) *[]string {
 	if start := clauses[r.Word(k)]; start != nil {
 		return start(h)

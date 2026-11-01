@@ -1,8 +1,5 @@
-// Package bodycheck wires the body-oriented fitness checks (plan-structure,
-// epic-structure, pr-structure) that validate one GitHub Issue or PR body
-// rather than walking files. It resolves the body from a `--body-file` path (`-` meaning stdin),
-// the runner's context-inline `--body` value, or piped stdin, and turns a
-// validator's messages into a checkkit.Result.
+// Package bodycheck wires the fitness checks that validate one GitHub Issue or
+// PR body, read from `--body-file`, `--body` or stdin.
 package bodycheck
 
 import (
@@ -14,9 +11,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/epic"
 )
 
-// Run resolves the target body and validates it. With no input it passes with
-// zero files checked, so the check stays inert under the file runner;
-// otherwise it reports one file whose errors are validate's messages.
+// Run validates the resolved body, passing with zero files checked when no
+// input exists so it stays inert under the file runner.
 func Run(args []string, validate func(body string) []string) (checkkit.Result, error) {
 	return RunIf(args, func(string) bool { return true }, validate)
 }
@@ -48,8 +44,8 @@ func inert(ok bool, body string, applies func(string) bool) bool {
 	return !ok || os.Getenv(BlobEnv) != "" && !applies(body)
 }
 
-// PlanBody reports whether body is a Plan issue: it has the Plan template's
-// checklist section, and its steps are not an epic's issue references.
+// PlanBody reports whether body is a Plan issue, with the Plan template's
+// checklist section and no epic issue-reference steps.
 func PlanBody(body string) bool {
 	return hasHeading(body, epic.Section) && !epic.Looks(body)
 }
@@ -72,10 +68,8 @@ func Closing(string) bool {
 	return false
 }
 
-// hasHeading reports whether body has a heading naming title outside a
-// fenced code block, at any level, in any case, with or without a trailing
-// colon, so the structure check names a wrong level or colon. A text with no
-// such heading is of another kind, and the check does not apply.
+// hasHeading reports whether body has a heading naming title outside fenced
+// code, matching any level, case or colon to name wrong ones.
 func hasHeading(body, title string) bool {
 	fenced := false
 	for _, line := range strings.Split(body, "\n") {
@@ -100,12 +94,8 @@ func headingText(line string) string {
 	return strings.Trim(text, "# :")
 }
 
-// RunDoc runs a file-walking doc check in body mode when an explicit
-// `--body-file` document is supplied, resolving config from root exactly as
-// the file walk would. It returns handled=false when no `--body-file` is
-// present, so the caller falls back to its normal file walk — the trigger is
-// explicit only, never the ambient stdin or context message the suite may
-// carry, so a normal suite run keeps walking files.
+// RunDoc runs a doc check in body mode only for an explicit `--body-file`,
+// returning handled=false otherwise so the caller walks files.
 func RunDoc(root string, args []string, validate func(root, content string) []string) (result checkkit.Result, handled bool, err error) {
 	content, ok, err := BodyFile(args)
 	if err != nil {
@@ -120,11 +110,8 @@ func RunDoc(root string, args []string, validate func(root, content string) []st
 	return checkkit.Pass(1), true, nil
 }
 
-// BodyFile resolves a document only from an explicit `--body-file` path (`-`
-// meaning stdin), returning ok=false when the flag is absent. Unlike
-// resolveBody it never falls back to the context message or ambient stdin, so
-// doc checks enter body mode only when a caller deliberately points them at a
-// file.
+// BodyFile resolves a document only from an explicit `--body-file` path,
+// returning ok=false when absent, with no context or stdin fallback.
 func BodyFile(args []string) (content string, ok bool, err error) {
 	path, has := bodyFileArg(args)
 	if !has {
@@ -137,10 +124,8 @@ func BodyFile(args []string) (content string, ok bool, err error) {
 	return string(raw), true, readErr
 }
 
-// resolveBody returns the body text and whether any input was supplied, in
-// priority order: --body-file (- means stdin), the context-inline body
-// (FITNESS_CTX_MESSAGE), then piped stdin. A terminal stdin is treated as no
-// input so the check stays non-blocking under the file runner and in tests.
+// resolveBody returns the body and whether input was supplied, from --body-file,
+// the context body, or stdin unless that is a terminal.
 func resolveBody(args []string) (string, bool, error) {
 	if path, ok := bodyFileArg(args); ok {
 		if path == "-" {

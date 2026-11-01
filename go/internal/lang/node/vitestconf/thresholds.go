@@ -16,9 +16,8 @@ const fullThreshold = goal.Percent
 // thresholdKeys are the four coverage threshold keys the TS check demanded.
 var thresholdKeys = []string{"branches", "functions", "lines", "statements"}
 
-// thresholdPatterns are the TS contentHasAllThresholds regexes — one
-// `key:\s*100\b` per threshold key — matched against raw config text,
-// comments included, exactly like the TS fast path.
+// thresholdPatterns match `key:\s*100\b` per threshold key against the raw
+// config text, comments included.
 var thresholdPatterns = buildThresholdPatterns()
 
 func buildThresholdPatterns() []*regexp.Regexp {
@@ -29,16 +28,8 @@ func buildThresholdPatterns() []*regexp.Regexp {
 	return out
 }
 
-// HasFullThresholds reports whether the Vitest coverage thresholds resolved
-// from root — falling back to fallbackRoot when root has no config source —
-// are all exactly 100: the Go port of the TS hasFullCoverageThresholds.
-// Config files are judged textually: the TS raw-text fast path is the whole
-// verdict, so values reachable only by evaluating JavaScript (variables,
-// spreads, imports) are unresolvable and count as not-100. package.json
-// "vitest" configs are judged from their JSON numbers. Matching this
-// package's standing judgment, a config file that exists always decides its
-// directory's verdict, where the TS fell through past files whose
-// evaluation crashed. Pass fallbackRoot "" for no fallback.
+// HasFullThresholds reports whether the Vitest coverage thresholds from root,
+// or fallbackRoot when root has no config source, are all exactly 100.
 func HasFullThresholds(root, fallbackRoot string) bool {
 	if full, decided := fullThresholdsFromRoot(root); decided {
 		return full
@@ -50,10 +41,8 @@ func HasFullThresholds(root, fallbackRoot string) bool {
 	return full
 }
 
-// fullThresholdsFromRoot judges one directory. decided is false when the
-// directory has no config source at all — no readable vitest.config.* file
-// and no package.json "vitest" object — letting the caller fall back, the
-// way the TS null config did.
+// fullThresholdsFromRoot judges one directory, with decided false when it has
+// no config source so the caller can fall back.
 func fullThresholdsFromRoot(root string) (full, decided bool) {
 	sawConfigFile := false
 	for _, name := range ConfigNames {
@@ -83,10 +72,8 @@ func rawHasFullThresholds(content string) bool {
 	return true
 }
 
-// fullThresholdsFromPackageJSON judges the "vitest" object of a
-// package.json: decided only when that key holds an object (the TS
-// tryLoadPackageJsonVitest contract), full only when its coverage block
-// carries a thresholds object with all four keys at exactly 100.
+// fullThresholdsFromPackageJSON judges the "vitest" object of a package.json,
+// full only when all four thresholds are exactly 100.
 func fullThresholdsFromPackageJSON(path string) (full, decided bool) {
 	vitest, ok := readVitestObject(path)
 	if !ok {

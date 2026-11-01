@@ -1,35 +1,5 @@
-// Package clonedetect is the native engine behind the duplicate-code
-// check: a generic code lexer, a rolling-hash window detector whose
-// min-lines/min-tokens semantics are modeled on jscpd's, and the
-// scan-scope helpers the check needs (doublestar ignore globs, batched
-// .gitignore filtering).
-//
-// The lexer is deliberately generic, not per-language. Its boundaries:
-//   - Comments stripped: // and # line comments, /* */ and <!-- --> block
-//     comments (C-family, shell/Python, and HTML/XML syntaxes). SQL/Lua
-//     "--" line comments are NOT stripped — they collide with the
-//     decrement operator.
-//   - String literals ('…', "…", `…`) normalize to one $str token whose
-//     value keeps the literal's content but drops the quote style; content
-//     is deliberately NOT collapsed away — jscpd distinguishes string
-//     values, and full collapse manufactures clones it never reports
-//     (e.g. Go import blocks differing only in import paths). Single- and
-//     double-quoted strings implicitly close at end of line, backtick
-//     strings span lines, backslash escapes are honored but stay raw.
-//   - Numbers collapse to a single $num token (a digit then any run of
-//     [0-9A-Za-z_.], which covers hex, exponents, and digit separators).
-//   - Identifiers and punctuation survive verbatim; whitespace vanishes.
-//   - Regions between duplicate-code:ignore-start and
-//     duplicate-code:ignore-end comment markers produce no tokens (the
-//     escape hatch). The older jscpd: markers are deprecated aliases.
-//
-// Duplicated-line accounting is modeled on jscpd: every window of MinTokens
-// normalized tokens is hashed; a window whose hash was seen earlier (same
-// or another file) marks its occurrence as duplicated, contiguous marked
-// windows merge into spans, and spans of at least MinLines lines
-// contribute their lines — each line at most once per file, with each
-// clone's first occurrence staying free, exactly like jscpd counts a
-// clone pair's lines once.
+// Package clonedetect is the native duplicate-code engine: a generic lexer and
+// rolling-hash window detector whose line accounting is modeled on jscpd.
 package clonedetect
 
 import "github.com/may-journal/fitness-runner/go/internal/par"
@@ -71,13 +41,8 @@ func (s Stats) Percentage() float64 {
 	return float64(s.DuplicatedLines) * 100 / float64(s.TotalLines)
 }
 
-// Detect finds duplicated regions across files (same-file and cross-file
-// clones both count) and returns the line accounting. Files are processed
-// in slice order; the first occurrence of any window is the "original"
-// and never contributes duplicated lines. Window hashing is pure per-file
-// work (tokens hash directly, no shared intern table), so it fans out on
-// the par pool; the cheap counting and marking passes below run serially
-// over the in-order results, keeping the outcome deterministic.
+// Detect returns the duplicated-line accounting across files in slice order,
+// where each window's first occurrence stays free.
 func Detect(files []File, opt Options) Stats {
 	k := opt.MinTokens
 	hashes := par.Map(len(files), 0, func(i int) []uint64 {
@@ -112,11 +77,8 @@ func countWindows(hashes [][]uint64) map[uint64]int {
 	return counts
 }
 
-// dupWindows returns the positions (ascending) of windows in hs whose hash
-// occurs at least twice across all files, skipping each hash's first
-// occurrence — the "original" copy stays free. It records a first sighting
-// by setting the hash's count to -1, which persists across the per-file
-// calls, so no second map is filled.
+// dupWindows returns the ascending positions in hs of repeated hashes, marking
+// each first sighting with count -1 so the original copy stays free.
 func dupWindows(hs []uint64, counts map[uint64]int) []int {
 	var dup []int
 	for pos, h := range hs {
@@ -136,18 +98,8 @@ const hashBase = 1099511628211
 // fnvOffset is the FNV-64 offset basis.
 const fnvOffset uint64 = 14695981039346656037
 
-// windowHashes hashes each token value independently and returns the
-// rolling polynomial hash of every k-token window, or nil when the file
-// is shorter than one window. It touches no shared state, so files hash
-// in parallel.
-//
-// Only hash equality matters to detection: equal token sequences always
-// produce equal window hashes, exactly as under the old intern table. A
-// spurious match now additionally requires two distinct token values
-// sharing one FNV-1a 64 value (previously intern ids were distinct by
-// construction), but that is birthday-bounded — even a million distinct
-// token values collide with probability under 10^-7 — so, like the
-// polynomial hash itself, token collisions stay effectively impossible.
+// windowHashes returns the rolling hash of every k-token window, or nil when
+// the file is shorter, using no shared state.
 func windowHashes(tokens []Token, k int) []uint64 {
 	if len(tokens) < k {
 		return nil
@@ -170,8 +122,7 @@ func windowHashes(tokens []Token, k int) []uint64 {
 	return out
 }
 
-// tokenHashes maps each token to the FNV-1a 64 hash of its value; equal
-// values hash equal everywhere, so no cross-file intern table is needed.
+// tokenHashes maps each token to the FNV-1a 64 hash of its value.
 func tokenHashes(tokens []Token) []uint64 {
 	vals := make([]uint64, len(tokens))
 	for i, t := range tokens {
@@ -191,9 +142,8 @@ func fnv1a(s string) uint64 {
 	return h
 }
 
-// dupLineCount merges contiguous duplicated windows (ascending positions)
-// into spans, keeps spans of at least minLines lines, and returns how many
-// distinct lines those spans cover — no line counts twice per file.
+// dupLineCount returns the distinct lines covered by merged duplicate spans of
+// at least minLines lines, so no line counts twice per file.
 func dupLineCount(tokens []Token, wins []int, k, minLines int) int {
 	lines := make(map[int]bool)
 	for i := 0; i < len(wins); {

@@ -1,13 +1,5 @@
-// Package frontmatter reads a Markdown file's leading front matter for the
-// fitness keys, `fitnessFunctions` and `relatedConfigurations`. No check
-// reads either key. `fitness strip-front-matter` deletes them with Strip,
-// and the no-fitness-front-matter check fails a file that still holds one,
-// found with HasFitnessKeys.
-//
-// A block is a leading `---` block, or the same block inside an HTML
-// comment that opens on the first line, the form a PR template carries.
-// A byte order mark may come first, and lines may end in CRLF. A leading
-// `---` followed by prose is a horizontal rule, never front matter.
+// Package frontmatter finds and strips the fitness keys in a Markdown file's
+// leading front matter, which no check reads.
 package frontmatter
 
 import (
@@ -16,9 +8,8 @@ import (
 	"strings"
 )
 
-// FitnessKeys are the front matter keys only fitness ever read. Both go
-// from every block; any other key belongs to a tool that may still need it,
-// such as GitHub's issue template fields, and stays.
+// FitnessKeys are the front matter keys only fitness ever read, removed from
+// every block while other tools' keys stay.
 var FitnessKeys = []string{"fitnessFunctions", "relatedConfigurations"}
 
 var (
@@ -67,12 +58,8 @@ func HasFitnessKeys(content string) bool {
 	return ok && fitness
 }
 
-// Strip returns content with the fitness keys gone from its front matter.
-// A block left with no key, or empty to begin with, goes whole. When other
-// keys stay, it returns the block without the fitness keys and names the
-// keys that stay. Content without fitness keys, or whose leading --- opens
-// a rule rather than front matter, comes back unchanged with no names. A
-// BOM before the block stays at the top of the body.
+// Strip returns content without the fitness keys in its front matter, dropping
+// a block left empty and naming the other keys that stay.
 func Strip(content string) (string, []string) {
 	bom := ""
 	if strings.HasPrefix(content, byteOrderMark) {
@@ -89,8 +76,8 @@ func Strip(content string) (string, []string) {
 	return bom + content[:b.start] + kept + content[b.stop:], others
 }
 
-// innerSpan is where the lines between a matched block's --- markers start
-// and end; an empty block has none, so both sit at the block's start.
+// innerSpan is where the lines between a block's --- markers start and end,
+// both at the block's start when it is empty.
 func innerSpan(m []int) (int, int) {
 	if m[2] < 0 {
 		return m[0], m[0]
@@ -98,8 +85,8 @@ func innerSpan(m []int) (int, int) {
 	return m[2], m[3]
 }
 
-// sortEntries joins the text of every entry that stays, names the other
-// tools' keys among them, and reports whether a fitness key was there.
+// sortEntries joins the text of kept entries, names other tools' keys, and
+// reports whether a fitness key was present.
 func sortEntries(entries []entry) (kept string, others []string, fitness bool) {
 	for _, e := range entries {
 		if slices.Contains(FitnessKeys, e.name) {
@@ -121,11 +108,8 @@ type entry struct {
 	text string
 }
 
-// frontEntries splits the lines between a block's --- markers into its
-// top-level entries in order. Indented lines, list items, comments and
-// blank lines belong to the entry above; those before the first key form an
-// entry with no name. It reports false when a line is neither an entry nor
-// a continuation, as with prose between two horizontal rules.
+// frontEntries splits the lines between a block's --- markers into top-level
+// entries, reporting false when a line is neither an entry nor a continuation.
 func frontEntries(inner string) ([]entry, bool) {
 	var entries []entry
 	for _, line := range strings.SplitAfter(inner, "\n") {

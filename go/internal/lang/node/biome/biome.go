@@ -30,9 +30,8 @@ const packageName = "@biomejs/biome"
 // configNames are the root config files that mark a repo as using Biome.
 var configNames = []string{"biome.json", "biome.jsonc"}
 
-// Chosen reports whether the repo at root lints and formats with Biome: a
-// Biome config at the root and @biomejs/biome among its package.json
-// dependencies or devDependencies.
+// Chosen reports whether the repo at root has a Biome config and declares
+// @biomejs/biome in its package.json dependencies.
 func Chosen(root string) bool {
 	return hasConfig(root) && declared(root)
 }
@@ -150,10 +149,8 @@ func usable(root string) (bin, capFlag, failure string) {
 	return bin, v.maxDiagnostics(), ""
 }
 
-// run execs bin in root as `biome <command>` with the GitHub reporter and
-// capFlag, which lifts the diagnostics cap for its version,
-// tolerating paths Biome does not handle, then args. It returns every error
-// and warning finding, the exit code, and the last lines of output.
+// run execs bin in root with the GitHub reporter and capFlag, returning the
+// findings, exit code and output tail.
 func run(root, bin, capFlag, command string, args []string) (findings []Finding, exitCode int, tail []string) {
 	argv := append([]string{command, "--reporter=github", capFlag, "--no-errors-on-unmatched", "--files-ignore-unknown=true"}, args...)
 	cmd := exec.Command(bin, argv...)

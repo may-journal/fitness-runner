@@ -11,12 +11,8 @@ import (
 // a hash of the note's text follows it.
 const dupePrefix = MarkerPrefix + "dupe-check:"
 
-// DupeComment keeps one note on an issue listing the older issues it
-// resembles, edited in place as the issue changes, and closes the issue as
-// a duplicate when the command asks. It closes first, so a failed close
-// never leaves a note saying it closed. An issue that never resembled
-// another gets nothing; one that stops resembling them gets its note
-// cleared.
+// DupeComment keeps one note listing the older issues an issue resembles, and
+// closes it as a duplicate first when asked.
 func DupeComment(gh Client, t Target, _ []string) error {
 	prior, err := gh.markedComment("issues", t.Number, dupePrefix)
 	if err != nil {
@@ -40,8 +36,8 @@ func writeDupeNote(gh Client, t Target, prior *Notice) error {
 	return putNote(gh, t.Number, prior, text, dupePrefix+shortHash(text)+" -->")
 }
 
-// putNote edits prior to text under mark, or posts it on issue n when there
-// is no prior note, unless prior already carries mark.
+// putNote edits prior to text under mark or posts it on issue n, unless
+// prior already carries mark.
 func putNote(gh Client, n int, prior *Notice, text, mark string) error {
 	switch {
 	case prior == nil:

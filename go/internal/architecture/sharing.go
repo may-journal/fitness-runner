@@ -1,9 +1,7 @@
 package architecture
 
-// share walks each runtime from the components its product folders are
-// built from, along the observed edges, and fails a component declared
-// under another runtime's container. A component outside every container
-// boundary is shared and may be reached by any runtime.
+// share walks each runtime from its product folders' components along observed
+// edges, failing a component declared under another runtime's container.
 func (c *components) share() {
 	for _, rt := range c.m.Containers().Runtimes {
 		c.runtime(rt)

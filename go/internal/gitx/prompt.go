@@ -7,16 +7,12 @@ import (
 	"strings"
 )
 
-// batchSSH is the ssh command git runs when the user set none: BatchMode
-// makes ssh fail instead of asking for a password or passphrase.
+// batchSSH is the ssh command git runs when the user set none, failing instead
+// of asking for a password.
 const batchSSH = "ssh -o BatchMode=yes"
 
-// NoPrompt returns the settings that make git, ssh and gh fail at once
-// instead of waiting for a password: GIT_TERMINAL_PROMPT=0,
-// GH_PROMPT_DISABLED=1, and a batch-mode GIT_SSH_COMMAND. The ssh command is
-// left out when the user set GIT_SSH_COMMAND, GIT_SSH or, for the repo at
-// dir, core.sshCommand, so their own command still runs. A credential helper
-// or password helper program is untouched and still answers.
+// NoPrompt returns the settings that make git, ssh and gh fail instead of
+// waiting for a password, keeping the user's own ssh command.
 func NoPrompt(dir string) []string {
 	env := []string{"GIT_TERMINAL_PROMPT=0", "GH_PROMPT_DISABLED=1"}
 	if !ownSSH(dir) {
@@ -37,8 +33,7 @@ func ownSSH(dir string) bool {
 }
 
 // DisablePrompts sets NoPrompt's settings in this process's environment, so
-// every git, ssh and gh it starts fails at once instead of waiting for a
-// password.
+// every git, ssh and gh it starts fails instead of waiting.
 func DisablePrompts(dir string) {
 	for _, kv := range NoPrompt(dir) {
 		name, value, _ := strings.Cut(kv, "=")
@@ -46,8 +41,8 @@ func DisablePrompts(dir string) {
 	}
 }
 
-// refusedPrompt matches the line git or ssh prints when it would have asked
-// for a password but may not: git's names the remote URL, ssh's the host.
+// refusedPrompt matches the line git or ssh prints when a password prompt is
+// refused, naming the remote URL or host.
 var refusedPrompt = regexp.MustCompile(`for '([^']+)': terminal prompts disabled|(\S+): Permission denied \(`)
 
 // RefusedPrompt returns the remote a refused password prompt in text names,

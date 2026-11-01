@@ -9,8 +9,8 @@ import (
 	"sort"
 )
 
-// testScan is what one parse of every test file finds: named-helper
-// failures and, per package, which tests the audit may run side by side.
+// testScan is what one parse of every test file finds: named-helper failures
+// and each package's parallel tests.
 type testScan struct {
 	failures []string
 	parallel map[string]map[string]bool

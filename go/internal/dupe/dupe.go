@@ -1,9 +1,7 @@
 // cspell:ignore Jaccard
 
-// Package dupe scores how alike two issues read: the share of words their
-// titles and bodies have in common, once markdown, code, links and filler
-// words are gone. `fitness dupe-check` comments when a new issue scores high
-// against an older one.
+// Package dupe scores how alike two issues read by the share of words their
+// titles and bodies have in common.
 package dupe
 
 import (
@@ -85,8 +83,8 @@ func counts(w string) bool {
 	return utf8.RuneCountInString(w) >= minLength && !filler[w] && strings.TrimFunc(w, unicode.IsDigit) != ""
 }
 
-// Score is the Jaccard index of a and b: the words they share over the words
-// either has, from 0 for none to 1 for the same set.
+// Score is the Jaccard index of a and b, from 0 for no shared words to 1
+// for the same set.
 func Score(a, b Words) float64 {
 	shared := 0
 	for w := range a {

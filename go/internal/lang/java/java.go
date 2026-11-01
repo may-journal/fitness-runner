@@ -1,23 +1,5 @@
-// Package java is the Java language module's home. It holds what the Java
-// checks share: when a repo counts as a Java project, which Maven and
-// Gradle builds it holds, how a check finds the build tool and the JDK, and
-// how it runs a build tool plugin once per build.
-//
-// A Java project is a folder with a Maven pom.xml or a Gradle build or
-// settings script. Files in a test source set's folder, such as
-// src/test/resources or src/it, are test fixtures, never a project. A build
-// root is a project no other project builds: Maven builds the modules a pom
-// lists, and Gradle builds the folders below a settings script that hold no
-// settings script of their own. One run from each root covers its modules.
-// The build output git must not track is target/ for Maven, build/ and
-// .gradle/ for Gradle, and compiled .class files outside fixtures. The
-// packages in this folder hold each check's own logic: spotless, checkstyle,
-// version and tests, and views reads sources for the architecture views. A
-// product source's main method proves an application runtime. The module
-// brings no spell dictionary: a Java repo adds the Java and framework words
-// it uses, such as a framework's package names, to its own cspell config.
-// The spell and duplicate checks skip each build tool's wrapper files,
-// which the tool writes.
+// Package java finds a repo's Maven and Gradle build roots and runs each build
+// tool plugin once per root.
 package java
 
 // cspell:ignore mvnw gradlew jacoco junitreports
@@ -50,9 +32,8 @@ type Build struct {
 	Scripts []string
 	// Wrapper is the script a repo commits to pin the tool's version.
 	Wrapper string
-	// WrapperFiles are the other files the tool's wrapper writes, and a
-	// repo commits as written: its Windows twin, the properties naming
-	// the version, and any helper older wrappers wrote.
+	// WrapperFiles are the other files the tool's wrapper writes, which a
+	// repo commits as written.
 	WrapperFiles []string
 	// Command is the tool's name on PATH.
 	Command string
@@ -285,18 +266,16 @@ func output(projects []Project, file string) bool {
 	})
 }
 
-// Declares reports whether a build script of build root p matches the
-// plugin pattern: one in p's folder or below it, outside fixtures and the
-// other build roots nested there.
+// Declares reports whether a build script that root p owns matches the plugin
+// pattern, fixtures left out.
 func Declares(root string, p Project, plugin *regexp.Regexp) bool {
 	return slices.ContainsFunc(Owned(root, p, p.Build.Scripts...), func(f string) bool {
 		return !Fixture(f) && matches(root, f, plugin)
 	})
 }
 
-// Owned lists the tracked files with the given endings that build root p
-// owns: those in its folder or below it, outside the other build roots of
-// its tool nested there.
+// Owned lists the tracked files with the given endings in build root p's folder,
+// leaving out those of nested roots.
 func Owned(root string, p Project, exts ...string) []string {
 	roots := Roots(root)
 	var out []string
@@ -308,9 +287,8 @@ func Owned(root string, p Project, exts ...string) []string {
 	return out
 }
 
-// Members lists the projects build root p builds, p included: those of its
-// tool in its folder or below it, outside the other build roots nested
-// there.
+// Members lists the projects build root p builds, p included, leaving out
+// those of nested roots.
 func Members(root string, p Project) []Project {
 	roots := Roots(root)
 	var out []Project
@@ -322,8 +300,7 @@ func Members(root string, p Project) []Project {
 	return out
 }
 
-// Nearest is the project of tool b among projects nearest above file, such
-// as the build root that owns it or the module it belongs to.
+// Nearest is the project of tool b among projects closest above file.
 func Nearest(projects []Project, b *Build, file string) Project {
 	var best Project
 	for _, r := range projects {
@@ -345,9 +322,8 @@ func matches(root, file string, pattern *regexp.Regexp) bool {
 	return err == nil && pattern.Match(body)
 }
 
-// Tool resolves the command that runs p's build: the wrapper in its folder
-// or any folder above it up to root, then the tool on PATH. ok is false
-// when neither exists.
+// Tool resolves the command that runs p's build: the nearest wrapper up to
+// root, else the tool on PATH.
 func Tool(root string, p Project) (bin string, ok bool) {
 	if w, ok := wrapper(root, p); ok {
 		return w, true
@@ -385,10 +361,8 @@ func Run(root, bin string, p Project, args ...string) checkkit.Outcome {
 	return checkkit.ExecCombined(cmd)
 }
 
-// ToolErrors lists the lines a failed build gave as its reason: Maven's
-// [ERROR] lines, or every line Gradle printed under "What went wrong", up
-// to the blank line that ends it, so the causes it nests under the
-// failure stay.
+// ToolErrors lists the lines a failed build gave as its reason: Maven's [ERROR]
+// lines or Gradle's "What went wrong" block.
 func ToolErrors(output string) []string {
 	var out []string
 	cause := false
@@ -401,8 +375,8 @@ func ToolErrors(output string) []string {
 	return out
 }
 
-// reason reads the failure reason a trimmed line gives, or empty for
-// none, and whether the next line still sits under "What went wrong".
+// reason reads the failure reason a trimmed line gives, and whether the next line
+// still sits under "What went wrong".
 func reason(line string, cause bool) (string, bool) {
 	switch {
 	case line == "* What went wrong:":

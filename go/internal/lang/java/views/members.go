@@ -11,9 +11,8 @@ func (r *reader) components(owner string, open int) {
 	}
 }
 
-// constants reads an enum's constants from token i up to the semicolon
-// that ends them or the enum's end, and returns the token where its
-// members start.
+// constants reads an enum's constants from token i and returns the token
+// where its members start.
 func (r *reader) constants(enum *codemodel.Decl, i, close int) int {
 	for i < close && !r.is(i, ";") {
 		if i = r.constant(enum, i); r.is(i, ",") {
@@ -23,9 +22,8 @@ func (r *reader) constants(enum *codemodel.Decl, i, close int) int {
 	return i
 }
 
-// constant reads one enum constant from token i, with its annotations,
-// arguments and body, as a field of the enum's type, and returns the
-// token after it.
+// constant reads one enum constant from token i as a field of the enum's type
+// and returns the token after it.
 func (r *reader) constant(enum *codemodel.Decl, i int) int {
 	_, j := r.modifiers(i)
 	if !r.Ident(j) {
@@ -47,8 +45,7 @@ func (r *reader) groupAfter(j int, open string) int {
 }
 
 // member reads one member of t's body from token i and returns the token
-// after it: an initializer block, a nested type, a constructor, a
-// record's compact constructor, or a typed member.
+// after the member ends.
 func (r *reader) member(t body, i, close int) int {
 	_, j := r.modifiers(i)
 	switch {
@@ -118,8 +115,7 @@ func (r *reader) signature(d *codemodel.Decl, open, close int) {
 }
 
 // methodEnd returns the last token of a method from token k after its
-// parameters, past a throws clause or an annotation element's default:
-// its body's closing brace, or its semicolon.
+// parameters, either its body's closing brace or its semicolon.
 func (r *reader) methodEnd(k, close int) int {
 	for k < close && !r.is(k, "{") && !r.is(k, ";") {
 		k = r.typeStep(k) + 1
@@ -136,8 +132,8 @@ func (r *reader) dims(typ string, k int) (string, int) {
 	return typ, k
 }
 
-// fields reads each declarator of a field declaration from its first
-// name at token i, with array brackets after a name and an initializer.
+// fields reads each declarator of a field declaration from its first name,
+// which sits at token i.
 func (r *reader) fields(owner, typ string, start, i int) int {
 	for {
 		t, k := r.dims(typ, i+1)

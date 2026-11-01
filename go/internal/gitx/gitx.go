@@ -48,8 +48,8 @@ func gitResult(ctx context.Context, o checkkit.Outcome, args []string) (string, 
 	return o.Stdout, nil
 }
 
-// gitReason names the remote when git or ssh refused to ask for a password,
-// else it is git's own last stderr line, else the run error.
+// gitReason names the remote when git refused to prompt, else git's last
+// stderr line, else the run error.
 func gitReason(o checkkit.Outcome) string {
 	if remote, ok := RefusedPrompt(o.Stderr); ok {
 		return PromptNote(remote)
@@ -135,9 +135,8 @@ func (r Repo) detached() bool {
 	return err == nil
 }
 
-// OriginSlug returns origin's GitHub owner/repo in lower case; empty without
-// an error when origin is not on GitHub, and an error when there is no
-// origin.
+// OriginSlug returns origin's lower-case GitHub owner/repo, empty when origin
+// is not on GitHub, and an error without origin.
 func (r Repo) OriginSlug() (string, error) {
 	out, err := r.run("remote", "get-url", "origin")
 	if err != nil {
@@ -156,9 +155,8 @@ type Health struct {
 	NoGit, NotRepo, Shallow, NoOrigin, Detached bool
 }
 
-// Probe checks, in order, that git runs, root is a work tree, the clone has
-// full history, origin exists, and HEAD is on a branch. A clone git cannot
-// read reports only the first failure.
+// Probe checks in order that git runs, root is a work tree, history is full,
+// origin exists, and HEAD is on a branch.
 func (r Repo) Probe() Health {
 	if _, err := exec.LookPath("git"); err != nil {
 		return Health{NoGit: true}
@@ -217,9 +215,8 @@ func StagedSince(root, rev string) []string {
 	return files
 }
 
-// ChangedSince returns the paths HEAD changes since its merge base with base
-// (`git diff --name-only base...HEAD`); nil
-// on any git failure, such as a base ref the clone never fetched.
+// ChangedSince returns the paths HEAD changes since its merge base with base,
+// or nil on any git failure.
 func ChangedSince(root, base string) []string {
 	files, _ := Repo(root).ChangedSince(base)
 	return files
@@ -266,11 +263,8 @@ func knownDefaultBase(root string) string {
 	return ""
 }
 
-// OwnCommits returns the commits reachable from tip that no origin branch
-// other than origin/<branch> holds, newest first, so a branch stacked on a
-// pushed branch, such as an epic branch, starts where that branch ends.
-// Branch is the branch's name on origin. Without a branch or a pushed
-// default branch it falls back to BranchCommits.
+// OwnCommits returns the newest-first commits from tip that no origin branch
+// other than origin/<branch> holds, falling back to BranchCommits without one.
 func OwnCommits(root, tip, branch string) []string {
 	branch = strings.TrimPrefix(branch, "refs/heads/")
 	if branch == "" || !exists(root, DefaultBase(root)) {
@@ -279,9 +273,8 @@ func OwnCommits(root, tip, branch string) []string {
 	return notOnOrigin(root, tip, branch)
 }
 
-// notOnOrigin returns the commits reachable from tip that no origin branch
-// holds, newest first, leaving origin/<keep> out of that set when keep is
-// set; nil on any git failure.
+// notOnOrigin returns the newest-first commits from tip that no origin branch
+// holds, excluding origin/<keep>, or nil on any git failure.
 func notOnOrigin(root, tip, keep string) []string {
 	args := []string{"rev-list", tip, "--not"}
 	if keep != "" {
@@ -291,13 +284,8 @@ func notOnOrigin(root, tip, keep string) []string {
 	return commits
 }
 
-// BranchOwnCommits returns the commits the checked-out work adds over its
-// base, newest first, and whether a base was found. A pull request run in
-// GitHub Actions starts from the fetched GITHUB_BASE_REF branch, as the
-// local-branch check does. Locally, a branch counts the commits no other
-// origin branch holds, whatever the default branch is called. The default
-// branch, a detached HEAD, or any branch while the default is unknown
-// counts only the commits origin lacks. Without origin refs, ok is false.
+// BranchOwnCommits returns the newest-first commits the checked-out work adds
+// over its base, with ok false when there are no origin refs.
 func BranchOwnCommits(root string) (commits []string, ok bool) {
 	if base := FetchedBase(context.Background(), root, os.Getenv("GITHUB_BASE_REF")); base != "" {
 		return BranchCommits(root, "HEAD", base), true
@@ -340,8 +328,8 @@ func exists(root, ref string) bool {
 	return err == nil
 }
 
-// BranchCommits returns the commits reachable from tip but not from base,
-// newest first; nil on any git failure, such as a base the clone lacks.
+// BranchCommits returns the newest-first commits from tip but not base, or nil
+// on any git failure.
 func BranchCommits(root, tip, base string) []string {
 	commits, _ := Repo(root).BranchCommits(tip, base)
 	return commits

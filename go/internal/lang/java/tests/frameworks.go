@@ -17,15 +17,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/java"
 )
 
-// frameworkFiles holds one file per test framework or test library the
-// check spots. Each says in comments how the framework reaches the build's
-// JUnit XML, then gives `key: value` lines: its name, the build coordinate
-// groups and import prefixes that reveal it, the endings of test files it
-// runs, a hint for a build whose tests ran none, and a command that must
-// succeed before its tests can run, with the finding when it fails. A
-// framework of Java tests also names the annotations that mark a test
-// method, and those that mark a class whose public methods all run as
-// tests.
+// frameworkFiles holds one `key: value` file per test framework or library the
+// check spots, with comments on how it reaches the build's JUnit XML.
 //
 //go:embed frameworks
 var frameworkFiles embed.FS
@@ -91,8 +84,8 @@ func parse(body string) framework {
 	return f
 }
 
-// testEndings are the endings of the test files the check reads for
-// imports and counts as tests: Java sources and each framework's own files.
+// testEndings are the endings of the test files the check reads: Java sources
+// and each framework's own files.
 func testEndings() []string {
 	out := []string{java.Ext}
 	for _, f := range frameworks() {

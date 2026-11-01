@@ -8,7 +8,7 @@ import (
 )
 
 // suite is one package's prebuilt coverage test binary, its top-level test
-// names in list order, and the ones the audit may run side by side.
+// names in list order, and which may run in parallel.
 type suite struct {
 	pkg      Package
 	bin      string
@@ -27,8 +27,8 @@ func testedPackages(packages []Package) []Package {
 	return tested
 }
 
-// suite compiles pkg's test binary to bin with the same coverage flags as
-// the module-wide run and lists its top-level tests, holding a process slot.
+// suite compiles pkg's test binary to bin with the module-wide run's coverage
+// flags and lists its top-level tests, holding a process slot.
 func (r runner) suite(pkg Package, bin string, parallel map[string]bool) (suite, error) {
 	release, err := r.slot(pkg.ImportPath + " test build")
 	if err != nil {
@@ -56,8 +56,7 @@ func testNames(out string) []string {
 var testName = regexp.MustCompile(`^Test[\pL\pN_]*$`)
 
 // measureBinary runs the suite's binary once for pattern in a process slot,
-// from the package directory as go test would, with a fresh profile and child
-// coverage dir.
+// from the package directory, with a fresh profile.
 func (r runner) measureBinary(s suite, pattern string) (Profile, error) {
 	release, err := r.slot(s.pkg.ImportPath + " test coverage")
 	if err != nil {

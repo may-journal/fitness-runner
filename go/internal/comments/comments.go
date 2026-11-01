@@ -1,10 +1,5 @@
-// Package comments reads the comments of source files, so every check
-// reads them the same way. Source returns a file's comment blocks with
-// path, line, language and kind: Go through go/parser; Swift, TypeScript,
-// JavaScript, Java, Kotlin and Rust through one C-style lexer, which the
-// code scanners also use to strip comments; shell and YAML through their #
-// lines. Types reads Go type docs, so the text fitness prints about its own
-// types comes from the code.
+// Package comments reads the comment blocks of source files, so every check
+// reads them the same way.
 package comments
 
 import (
@@ -14,11 +9,8 @@ import (
 	"strings"
 )
 
-// Types maps each type declared in src, and each of its struct fields, to
-// its doc comment as one line of text. A type is keyed by its name and a
-// field as Type.Field; a field of a struct nested in another field adds
-// that field's name, as Type.Field.Inner. A field with no comment above it
-// takes its line comment.
+// Types maps each type in src, keyed Type, and each struct field, keyed
+// Type.Field.Inner, to its doc comment as one line.
 func Types(src []byte) (map[string]string, error) {
 	file, err := parser.ParseFile(token.NewFileSet(), "", src, parser.ParseComments)
 	if err != nil {

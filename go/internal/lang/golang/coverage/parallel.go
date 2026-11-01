@@ -3,9 +3,7 @@ package coverage
 import "go/ast"
 
 // callsParallel reports whether a statement of fn's own body calls Parallel()
-// on fn's testing parameter. go test runs only such tests alongside others;
-// a call nested in a branch or a helper is not counted, so that test stays
-// serial.
+// on its testing parameter; nested calls and helpers do not count.
 func callsParallel(fn *ast.FuncDecl) bool {
 	param := testParam(fn)
 	if param == "" {

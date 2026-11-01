@@ -8,8 +8,7 @@ import (
 )
 
 // Plugin is a build tool plugin a check runs once from each build root.
-// The repo's build declares it, so the build decides its version and
-// config, and a build without it fails with the snippet that adds it.
+// The repo's build declares it and decides its version and config.
 type Plugin struct {
 	// Name labels the plugin in messages.
 	Name string
@@ -35,10 +34,8 @@ type Use struct {
 	Args func(root string, p Project) []string
 }
 
-// Check runs the plugin over the repo at root: a pass with no files in a
-// repo without Java, a failure with no JDK, and otherwise one run per build
-// root, each failing with its snippet when its build lacks the plugin.
-// filesChecked counts the tracked Java sources.
+// Check runs the plugin once per build root of the repo at root, failing a
+// root whose build lacks it.
 func (pl Plugin) Check(root string) (checkkit.Result, error) {
 	roots := Roots(root)
 	if len(roots) == 0 {
@@ -88,8 +85,7 @@ func (pl Plugin) run(root string, p Project) ([]string, error) {
 	return pl.Judge(root, p, o), nil
 }
 
-// prepare finds the command that runs p's build, or what stops the run: a
-// build without the plugin, no build tool, or what the machine lacks.
+// prepare finds the command that runs p's build, or what stops the run.
 func (pl Plugin) prepare(root string, p Project, use Use) (bin string, lacks []string) {
 	if !Declares(root, p, use.Declared) {
 		return "", []string{pl.missing(p, use)}
@@ -109,8 +105,7 @@ func (pl Plugin) missing(p Project, use Use) string {
 	return pl.Name + " is not in the " + p.Build.Name + " build at " + p.Dir + "; add it: " + use.Snippet
 }
 
-// Fallback is the finding for a failed run that named nothing: the tool's
-// own reason, else a hint to run the plugin by hand.
+// Fallback is the finding for a failed run: the tool's own reason, else a hint.
 func Fallback(o checkkit.Outcome, hint string) []string {
 	if o.Code == 0 {
 		return nil

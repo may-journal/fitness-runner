@@ -17,10 +17,8 @@ type Code struct {
 	Files  int
 }
 
-// Code resolves each class of the code view to one declaration by its
-// linked file, name, kind, and signature, checks its stated members,
-// requires a node for each exported type of a folder the view shows, and
-// keeps the relations between declarations to the edges the view draws.
+// Code resolves each code view class to one declaration, checks its stated
+// members, and keeps relations to drawn edges.
 func (m *Model) Code() Code {
 	c := newCode(m)
 	for _, n := range c.order {

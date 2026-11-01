@@ -41,10 +41,8 @@ func (r runner) run(label string, env []string, args ...string) ([]byte, error) 
 	return r.exec(r.bin, r.dir, label, env, args...)
 }
 
-// exec runs bin with args in dir and returns its combined output. A failure is
-// labeled; it is a checkkit.Internal error when the environment stopped the
-// run (the binary could not start, a signal other than the deadline ended it,
-// or sandbox text), while the run's deadline stays a plain error.
+// exec runs bin with args in dir and returns its combined output, failing as
+// checkkit.Internal when the environment stopped it.
 func (r runner) exec(bin, dir, label string, env []string, args ...string) ([]byte, error) {
 	cmd := exec.CommandContext(r.ctx, bin, args...)
 	cmd.Dir = dir

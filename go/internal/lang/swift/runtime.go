@@ -20,16 +20,8 @@ const Ext = ".swift"
 // xcodeGenProject is the XcodeGen manifest that generates an Xcode project.
 const xcodeGenProject = "project.yml"
 
-// Runtime reads XcodeGen and Xcode projects for targets, and Swift product
-// sources for platform services. An XcodeGen project.yml target of type
-// application, *extension, or tool, its own or from targetTemplates, or a
-// project.pbxproj native target of those types, proves an app, extension,
-// or tool target whose container names Swift. A template source may name
-// ${target_name}; other template attributes are not substituted. Xcode
-// frameworks, libraries, and test bundles are source types, never
-// products, and project.pbxproj is read even when marked
-// linguist-generated. A product file importing CloudKit, StoreKit,
-// HealthKit, or WeatherKit uses a platform service.
+// Runtime reads XcodeGen and Xcode projects for app, extension and tool
+// targets, and Swift product sources for platform services.
 var Runtime = runtimes.Reader{
 	Manifests: map[string]func(*runtimes.Finder, string){xcodeGenProject: xcodegen, "project.pbxproj": pbxproj},
 	Sources:   map[string]func(*runtimes.Finder, string){Ext: platformServices},
@@ -109,9 +101,8 @@ func xcodegen(f *runtimes.Finder, file string) {
 	}
 }
 
-// yamlTargets reads the targets and targetTemplates sections by
-// indentation: section keys at 0, target names at 2, fields at 4, and
-// list items at the first item's indent.
+// yamlTargets reads the targets and targetTemplates sections by indentation:
+// section keys at 0, target names at 2, fields at 4.
 type yamlTargets struct {
 	file       string
 	section    string
@@ -236,7 +227,7 @@ func flowSequence(value string) []string {
 }
 
 // resolve gives a target the type and sources of the templates it names,
-// with ${target_name} in a template source replaced by the target's name.
+// replacing ${target_name} with the target's name.
 func (r *yamlTargets) resolve(t *target) {
 	for _, name := range t.templates {
 		tmpl := r.templates[name]

@@ -7,10 +7,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
 )
 
-// branchStart returns where the first argument of a call begins when the
-// expression before i makes a literal a branch of it: after a ternary's
-// ? or :, or a ?? . ok is false for a literal that is no branch, or whose
-// expression is not a call's first argument.
+// branchStart returns where a call's first argument begins when the expression
+// before i makes a literal a ternary or ?? branch of it.
 func branchStart(code string, i int) (int, bool) {
 	if i == 0 || !strings.ContainsRune("?:", rune(code[i-1])) {
 		return 0, false
@@ -65,12 +63,8 @@ func parenAt(c byte, j int) int {
 // a label. Only a verbatim: argument is shown as words.
 var labeled = regexp.MustCompile(`^\s*([\p{L}_][\p{L}\p{N}_]*)[ \t]*:`)
 
-// anchors returns, for each literal, the offset whose context decides
-// what shows it: the literal's own start, or for a branch of a ternary
-// or ?? inside another literal's interpolation, the start of that
-// outermost literal, since the words appear where it does. Another
-// literal inside an interpolation, such as a dictionary key, gets -1: it
-// is data, not words the view shows.
+// anchors returns the offset whose context decides what shows each literal:
+// its start, its outermost host's, or -1 for data.
 func anchors(src string, literals []swift.Literal) []int {
 	at := make([]int, len(literals))
 	host := -1
@@ -115,10 +109,8 @@ func labelColon(code string, i int) bool {
 	return label != "" && before > 0 && strings.ContainsRune("(,", rune(code[before-1]))
 }
 
-// isData reports a test literal used as plain data rather than as a label
-// to find: one assigned with =, or passed under an argument label, such as
-// caption: "Photo". A comparison, a subscript and a positional argument
-// still read as labels.
+// isData reports a test literal used as plain data, assigned or passed under
+// an argument label, rather than as a label to find.
 func isData(src string, start int) bool {
 	i := skipSpaceBack(src, start)
 	if i == 0 {

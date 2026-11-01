@@ -66,9 +66,8 @@ func UnreachableEnv(host string) string {
 	return NetworkEnv + "=" + unreachablePrefix + host
 }
 
-// Offline is the info note for a check that skips its network reads,
-// named by skipped, because the runner's probe found GitHub's API host
-// unreachable; empty when the reads should go ahead.
+// Offline is the info note naming skipped reads when GitHub's API host is
+// unreachable, and empty otherwise.
 func Offline(skipped string) string {
 	host := Unreachable()
 	if host == "" {

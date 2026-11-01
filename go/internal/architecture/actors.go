@@ -61,9 +61,8 @@ func (m *Model) roster() roster {
 	return r
 }
 
-// CheckGivens requires every acceptance's Given to start with one or more
-// declared actors joined by "and", by full name or ID, and names the Given
-// line and the context line on each failure.
+// CheckGivens requires every acceptance's Given to start with declared actors
+// joined by "and", naming the Given and context lines on each failure.
 func (m *Model) CheckGivens() []string {
 	r := m.roster()
 	var errs []string
@@ -111,7 +110,7 @@ func (r roster) actor(c *clause) []string {
 }
 
 // cutWord removes word from the start of text when it ends the text or
-// stops at a space, and returns what follows the space.
+// precedes a space, returning the rest.
 func cutWord(text, word string) (string, bool) {
 	rest, ok := strings.CutPrefix(text, word)
 	if !ok || (rest != "" && !strings.HasPrefix(rest, " ")) {

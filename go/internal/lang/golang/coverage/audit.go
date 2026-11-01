@@ -63,9 +63,8 @@ type packageAudit struct {
 	groups   []testGroup
 }
 
-// auditSuite follows go test's order for one package: shared setup, the
-// serial tests in sequence, the t.Parallel() tests side by side, then shared
-// setup again.
+// auditSuite follows go test's order for one package: setup, serial tests,
+// parallel tests side by side, then setup again.
 func (r runner) auditSuite(s suite) ([]testGroup, error) {
 	baseline, err := r.measureBinary(s, "^$")
 	if err != nil {

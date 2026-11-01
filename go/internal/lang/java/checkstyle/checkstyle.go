@@ -1,10 +1,5 @@
-// Package checkstyle runs the Checkstyle plugin from each Java build root
-// for the checkstyle check, main and test sources alike. The repo's build
-// declares the plugin and its Checkstyle config owns the rules, but that
-// config must set the cyclomatic complexity ceiling every language here has.
-// Every finding fails, warnings included: Maven runs with warnings as
-// violations, and Gradle's warning lines are read as findings too. Each
-// becomes `file:line[:col] - message (Rule)`.
+// Package checkstyle runs the repo's Checkstyle plugin over main and test
+// sources, failing on warnings and on a config without the complexity ceiling.
 package checkstyle
 
 import (
@@ -76,8 +71,8 @@ func Run(root string, _ []string) (checkkit.Result, error) {
 	return res, nil
 }
 
-// mavenArgs runs the check goal over test sources too, failing on warnings,
-// with the repo's config when the build names none of its own.
+// mavenArgs runs the check goal over test sources, failing on warnings, with the
+// repo's config when the build names none.
 func mavenArgs(root string, _ java.Project) []string {
 	args := []string{"checkstyle:check", "-D", "checkstyle.violationSeverity=warning", "-D", "checkstyle.includeTestSourceDirectory=true"}
 	if config, ok := mainConfig(configs(root)); ok {

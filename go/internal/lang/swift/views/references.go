@@ -7,11 +7,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
 )
 
-// swiftModule is every product Swift file parsed as one module: the
-// declarations at file level by name, the members of each type by owner,
-// each type's inheritance from its declaration and extensions, the first
-// type its own declaration inherits, which super names, and the names the
-// code uses.
+// swiftModule is every product Swift file parsed as one module: declarations
+// by name, members by owner, inheritance, and the names the code uses.
 type swiftModule struct {
 	top, members map[string][]*swiftSymbol
 	supers       map[string][]string
@@ -23,9 +20,8 @@ type swiftModule struct {
 // initializers and bases.
 const maxTypeHops = 16
 
-// references parses every product Swift file, then resolves each name the
-// code uses to the declarations it means, as the compiler's index would,
-// and reports the ones in another file. Comments name nothing.
+// references parses every product Swift file, resolves each used name to the
+// declarations it means, and reports those in another file.
 func references(repo codemodel.Repo) ([]codemodel.Reference, []string) {
 	mod := &swiftModule{top: map[string][]*swiftSymbol{}, members: map[string][]*swiftSymbol{}, supers: map[string][]string{}, bases: map[string]string{}}
 	for _, file := range codemodel.FilesWith(repo.Product, swift.Ext) {
@@ -89,9 +85,8 @@ func (m *swiftModule) resolve(u *swiftUse) []*swiftSymbol {
 	return found
 }
 
-// meaning finds what a use names. A member is looked up on its base's
-// type; an implicit member's type comes from context the parser does not
-// read, so it means nothing.
+// meaning finds what a use names, looking a member up on its base's type;
+// an implicit member means nothing.
 func (m *swiftModule) meaning(u *swiftUse, hops int) []*swiftSymbol {
 	switch {
 	case u.implicit || swiftSelf[u.name] || u.name == "":
@@ -163,8 +158,7 @@ func (m *swiftModule) withInits(found []*swiftSymbol, u *swiftUse) []*swiftSymbo
 	return append(found, m.pick(named(m.members[qualify(found[0].owner, found[0].name)], "init"), u)...)
 }
 
-// pick keeps the symbols a call's labels fit, and only when they sit in
-// one file: overloads the labels cannot tell apart resolve to none.
+// pick keeps the symbols a call's labels fit, only when they sit in one file.
 func (m *swiftModule) pick(symbols []*swiftSymbol, u *swiftUse) []*swiftSymbol {
 	var fit []*swiftSymbol
 	for _, sym := range symbols {
@@ -204,8 +198,7 @@ func matchLabels(labels []string, sym *swiftSymbol) (int, int) {
 }
 
 // typeOf infers the type of the value a use names: a literal's, the
-// enclosing type for self, or the type its symbol states or initializes.
-// "" means unknown.
+// enclosing type for self, or its symbol's, else "".
 func (m *swiftModule) typeOf(u *swiftUse, hops int) string {
 	if u == nil || hops > maxTypeHops {
 		return ""
@@ -240,8 +233,8 @@ func first(values []string) string {
 	return values[0]
 }
 
-// symbolType is the type a symbol gives the use naming it: a type itself,
-// a called function's result, or a value's stated or initialized type.
+// symbolType is the type a symbol gives the use naming it: itself, a called
+// function's result, or a value's type.
 func (m *swiftModule) symbolType(sym *swiftSymbol, u *swiftUse, hops int) string {
 	if sym.kind == swiftType && sym.typ == "" {
 		return qualify(sym.owner, sym.name)

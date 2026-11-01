@@ -179,9 +179,8 @@ func (l *swiftLexer) branch(text string) {
 	}
 }
 
-// endGroup closes an #if group. When a branch leaves a brace open, as
-// alternative declaration headers do, only the first branch is kept, so
-// the braces still pair up as the compiler sees them.
+// endGroup closes an #if group, keeping only the first branch when a branch
+// leaves a brace open.
 func (l *swiftLexer) endGroup() {
 	if len(l.groups) == 0 {
 		return

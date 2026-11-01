@@ -1,13 +1,5 @@
 // Package checkkit is the contract between the fitness runner and a check
-// binary, plus the main-function scaffolding every check builds on.
-//
-// Protocol: the runner execs `fitness-check-<name> --root <dir> [args…]` with
-// cwd = root and context in FITNESS_* environment variables. The check prints
-// exactly one JSON Result on stdout; anything meant for humans (banners, tool
-// passthrough) goes to stderr. Exit code 0 when the check passed and 1 when
-// it found problems. Exit 3 means the check could not judge (a panic or an
-// internal error) and the Result carries that as info, which never fails a
-// run. `--describe` prints a Describe JSON and exits without running.
+// binary, which prints one JSON Result on stdout.
 //
 //fitness:topic protocol
 package checkkit
@@ -65,8 +57,8 @@ func ExplainCommand(check string) string {
 	return "fitness explain " + check
 }
 
-// Found builds a Result from findings: failing with one error line each,
-// rendered by line in the check's own words, or passing with none.
+// Found builds a Result from findings: it fails with one error line for each
+// finding, or passes when there are none.
 func Found(filesChecked int, line func(Finding) string, findings ...Finding) Result {
 	if len(findings) == 0 {
 		return Pass(filesChecked)
@@ -158,10 +150,8 @@ func StagedFiles() []string {
 // holds, so the runner hands them over in a file.
 const ScopeFileEnv = "FITNESS_SCOPE_FILE"
 
-// ChangedFiles returns the paths the runner scoped this run to: the staged
-// files at commit time, a pull request's diff against its base, or the files
-// under a `--dir` folder. Nil means the run is unscoped and every file is
-// judged.
+// ChangedFiles returns the paths the runner scoped this run to, or nil when
+// the run is unscoped and every file is judged.
 func ChangedFiles() []string {
 	if changed := DiffFiles(); changed != nil {
 		return changed
@@ -169,9 +159,8 @@ func ChangedFiles() []string {
 	return scopeFiles()
 }
 
-// DiffFiles returns the paths a commit or pull request changes. Nil means
-// the run changes nothing, as in a full scan or a `--dir` folder, so a
-// check that pairs changes, such as requirements, judges no pairs.
+// DiffFiles returns the paths a commit or pull request changes, or nil when
+// the run changes nothing, so pairing checks judge no pairs.
 func DiffFiles() []string {
 	return splitLines(os.Getenv("FITNESS_CHANGED_FILES"))
 }
@@ -307,10 +296,8 @@ func parseArgs(argv []string) (root string, args []string, describe bool) {
 	return root, args, describe
 }
 
-// rootFlagValue interprets argv[i] as a --root flag in either form
-// (--root <dir> or --root=<dir>): it returns the root value, how many argv
-// entries the flag spanned, and whether argv[i] was a root flag at all.
-// A trailing --root with no value is not a root flag (it passes through).
+// rootFlagValue interprets argv[i] as a --root flag in either form, returning
+// its value, span and whether it matched.
 func rootFlagValue(argv []string, i int) (value string, consumed int, ok bool) {
 	a := argv[i]
 	if a == "--root" && i+1 < len(argv) {

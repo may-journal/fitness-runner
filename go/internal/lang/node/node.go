@@ -1,8 +1,5 @@
-// Package node is the Node language module's home. It holds what the Node
-// checks share: when a repo counts as a JavaScript project, where an
-// installed tool's binary is, which files are scripts, and the script
-// extension sets each check reads. The packages in its folder hold the Node
-// tools' own logic: biome, javascript, sharedconf and vitestconf.
+// Package node holds what the Node checks share: JavaScript project detection,
+// tool binary lookup, script files and extension sets.
 package node
 
 import (
@@ -68,9 +65,8 @@ func Ancestors(root string) []string {
 	}
 }
 
-// FindTool resolves an installed tool's binary the way npx would, without
-// npx: the first executable node_modules/.bin/<name> walking up from root,
-// then <name> on PATH. ok is false when neither has it.
+// FindTool resolves a tool's binary without npx: the first node_modules/.bin
+// walking up from root, then PATH.
 func FindTool(root, name string) (bin string, ok bool) {
 	for _, dir := range Ancestors(root) {
 		if p := filepath.Join(dir, "node_modules", ".bin", name); executable(p) {
@@ -89,8 +85,8 @@ func executable(p string) bool {
 	return err == nil && !info.IsDir() && info.Mode()&0o111 != 0
 }
 
-// The extension sets below are named subsets of ScriptExts, so every check
-// reads from one definition while keeping the files it has always read.
+// The extension sets below are named subsets of ScriptExts, so every
+// check shares one definition.
 var (
 	// TypeScriptExts are the TypeScript source endings, without TSX.
 	TypeScriptExts = subset(".cts", ".mts", ".ts")

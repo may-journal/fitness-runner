@@ -156,8 +156,8 @@ func (i *Installer) newestInstalled() string {
 	return newest
 }
 
-// installed is the version a cache entry holds intact, or "" when the entry
-// is no bundle for this platform or a file in it is damaged.
+// installed is the version a cache entry holds intact, or "" when it is no
+// bundle for this platform or is damaged.
 func (i *Installer) installed(pattern *regexp.Regexp, name string) string {
 	match := pattern.FindStringSubmatch(name)
 	if match == nil || recordedBundle(filepath.Join(i.Cache, name)) == "" {

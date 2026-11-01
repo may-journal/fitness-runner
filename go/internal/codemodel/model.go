@@ -1,8 +1,5 @@
-// Package codemodel is the language-neutral model the architecture views
-// read code through: declarations, their members, the references between
-// files, and the relations between declarations a code view shows. Each
-// language module brings a Reader that fills it; this package and the views
-// that use it know no language.
+// Package codemodel is the language-neutral model the architecture views read
+// code through, filled by each language module's Reader.
 package codemodel
 
 import (
@@ -48,12 +45,8 @@ type Param struct {
 	Name, Type string
 }
 
-// Decl is one declaration: a type, function, method, field, or top-level
-// value. Owner is the enclosing or receiver type of a member. Package is
-// the namespace a label may qualify the name with, empty when the language
-// has none. Scope groups the declarations whose members join: a member
-// belongs to the type of its owner's name in the same scope. Condition is
-// the build condition it sits under. Line and End bound it in its file.
+// Decl is one declaration, whose members join the type of their owner's
+// name within one Scope.
 type Decl struct {
 	File, Name, Owner, Kind, Package, Scope, Condition string
 	Line, End                                          int
@@ -86,9 +79,8 @@ func (d *Decl) Full() string {
 	return strings.Join(kept, ".")
 }
 
-// Key is the name its members give as their owner: Owner.Name for a
-// nested type, so two nested types of one name keep their own members,
-// else the name.
+// Key is the name its members give as their owner, Owner.Name for a nested
+// type and the name otherwise.
 func (d *Decl) Key() string {
 	if d.Owner == "" {
 		return d.Name
@@ -170,9 +162,8 @@ func (x *Index) Members(t *Decl) []*Decl {
 	return found
 }
 
-// Reference is one source line that reaches another path: an import of a
-// folder, or a use of a symbol declared in a file. Condition is the build
-// condition the line sits under, or empty.
+// Reference is one source line that reaches another path by importing a folder
+// or using a symbol declared in a file.
 type Reference struct {
 	At                    Location
 	To, Symbol, Condition string

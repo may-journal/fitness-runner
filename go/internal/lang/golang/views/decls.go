@@ -1,22 +1,5 @@
-// Package views reads Go sources for the architecture views: declarations
-// from syntax, the uses between them and interface satisfaction through
-// go/types, and each line that imports another folder of the repository.
-//
-// The code view reads declarations with go/parser and relations with
-// go/types: calls, references, embedding, and interface satisfaction.
-// Every folder of the repository is checked from source, and other
-// imports are left empty. A label's qualifier may name a Go package. The
-// view covers types with an exported name. A Go type states no interface
-// it satisfies, so go/types decides a realization, and its link must hold
-// the type or one of its methods. A call into a function the view does
-// not show is followed into that function, so a diagram may leave helpers
-// out. A declaration redeclared under two build conditions resolves its
-// uses to the first one go/types sees.
-//
-// The components view's references are each import of a folder in the
-// repository, resolved through the nearest tracked go.mod, and each pkg.X
-// use of it. A reference under //go:build keeps that condition, so an
-// error says under go:build linux. A file that does not parse fails.
+// Package views reads Go sources for the architecture views: declarations from
+// syntax, and uses and interface satisfaction through go/types.
 package views
 
 import (

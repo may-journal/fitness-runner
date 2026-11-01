@@ -96,9 +96,8 @@ func (o Outcome) EnvErr(name string) error {
 // quotes; the last few name the cause.
 const noVerdictLines = 5
 
-// NoVerdict is the internal error for a tool that exited code, other than
-// 0, without a finding the check could parse, such as a crash or a config
-// it could not load. It quotes the last lines of output, so the cause shows.
+// NoVerdict is the internal error for a tool that exited nonzero without a
+// parseable finding, quoting its last output.
 func NoVerdict(name string, code int, output string) error {
 	var lines []string
 	for _, line := range strings.Split(output, "\n") {
@@ -113,8 +112,7 @@ func NoVerdict(name string, code int, output string) error {
 	return Internal(fmt.Errorf("%s exited %d without a finding: %s", name, code, strings.Join(lines, " | ")))
 }
 
-// sandboxText is output a tool prints when its environment, such as a
-// sandbox without network or write access, stopped it rather than the code.
+// sandboxText is output a tool prints when its sandbox, not the code, stopped it.
 var sandboxText = []string{"dial tcp", "permission denied", "operation not permitted", "no required module"}
 
 // SandboxText returns the first sandbox phrase in output, matched without

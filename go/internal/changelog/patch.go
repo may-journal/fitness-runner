@@ -29,10 +29,8 @@ var regionAfter = map[[2]int]int{
 	{tailRegion, blankDrop}:     tailRegion,
 }
 
-// DropsOnlyFrontMatter reports whether patch, the unified diff of one
-// file, adds nothing and deletes only lines of the leading front matter
-// and the blank lines after it. Such an edit leaves the notes an entry
-// file publishes as they were. The patch may carry git's file headers.
+// DropsOnlyFrontMatter reports whether patch, a file's unified diff, adds
+// nothing and deletes only leading front matter and the blank lines after it.
 func DropsOnlyFrontMatter(patch string) bool {
 	_, hunk, found := strings.Cut("\n"+patch, "\n@@ -1,")
 	_, body, _ := strings.Cut(hunk, "\n")

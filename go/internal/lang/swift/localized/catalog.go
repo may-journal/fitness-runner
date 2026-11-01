@@ -36,8 +36,8 @@ type localization struct {
 	Variations map[string]map[string]localization `json:"variations"`
 }
 
-// entries maps each source-language form of every live catalog entry to
-// its key, the first key in order when two entries share a form.
+// entries maps each source-language form of a live catalog entry to its key,
+// the first when forms collide.
 type entries map[string]string
 
 // readCatalogs reads every catalog file into one entries map.

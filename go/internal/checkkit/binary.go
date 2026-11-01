@@ -42,9 +42,8 @@ func Builtin(name string) (Program, error) {
 	return Program{Path: self, Name: BinPrefix + name}, nil
 }
 
-// Self returns the program that starts the running check again: this
-// executable, under the name it was started with, since one fitness
-// executable holds every check and the name picks which one runs.
+// Self returns the program that restarts the running check: this executable
+// under its start name, since one fitness executable holds every check.
 func Self() (Program, error) {
 	self, err := os.Executable()
 	if err != nil {

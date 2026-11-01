@@ -28,9 +28,8 @@ var (
 // maxParents bounds a parent chain, so a pom that names itself ends.
 const maxParents = 16
 
-// parent is a pom's parent: its coordinates, and the path to its pom
-// from the child's folder, empty when Maven looks it up only in a
-// repository.
+// parent is a pom's parent: its coordinates and the relative path to its pom,
+// empty when Maven uses only a repository.
 type parent struct {
 	group, artifact, version, relative string
 }
@@ -71,9 +70,8 @@ func filePins(file string, versions []string) []pin {
 	return out
 }
 
-// inherited reads the chain of the pom at file: each parent from the repo
-// when its relative path names it there, else from the local Maven
-// repository.
+// inherited reads the chain of the pom at file, each parent from the repo if
+// found there, else from the local Maven repository.
 func inherited(root, file, body string) chain {
 	c := chain{poms: []string{body}, pins: 1}
 	at, own := file, true
@@ -91,9 +89,8 @@ func inherited(root, file, body string) chain {
 	return c
 }
 
-// parentPom reads p, named by the pom at at: from the repo, which ends
-// the poms that pin the chain's own release, else from the local Maven
-// repository. at becomes the parent's path in the repo, or empty.
+// parentPom reads p, named by the pom at at, from the repo, else from
+// the local Maven repository.
 func parentPom(root, at string, own bool, p parent) (body, next string, stillOwn, found bool) {
 	if rel, in := repoParent(root, at, p); in {
 		return readOr(root, rel), rel, false, true
@@ -140,9 +137,8 @@ func tag(block, name string) string {
 	return m[1]
 }
 
-// repoParent finds the parent's pom in the repo, as Maven does: at its
-// relative path from the pom at file, inside the repo, and naming the
-// parent's artifact.
+// repoParent finds the parent's pom in the repo as Maven does, by
+// relative path and artifact.
 func repoParent(root, file string, p parent) (string, bool) {
 	rel, ok := relativePom(file, p)
 	if !ok {
@@ -152,8 +148,8 @@ func repoParent(root, file string, p parent) (string, bool) {
 	return rel, ok && tag(parentRe.ReplaceAllString(body, ""), "artifactId") == p.artifact
 }
 
-// relativePom is the repo path p's relative path names from the pom at
-// file, or false when there is none or it leaves the repo.
+// relativePom is the repo path p names from the pom at file, or false when
+// it leaves the repo.
 func relativePom(file string, p parent) (string, bool) {
 	if file == "" || p.relative == "" {
 		return "", false
@@ -170,9 +166,8 @@ func localPom(root string, p parent) string {
 	return filepath.Join(localRepository(root), filepath.FromSlash(strings.ReplaceAll(p.group, ".", "/")), p.artifact, p.version, p.artifact+"-"+p.version+".pom")
 }
 
-// localRepository is the local Maven repository the build uses: the one
-// the repo's .mvn/maven.config or MAVEN_OPTS sets, else the user
-// settings' localRepository, else ~/.m2/repository.
+// localRepository is the one the repo's maven.config, MAVEN_OPTS or the user
+// settings set, else ~/.m2/repository.
 func localRepository(root string) string {
 	home, _ := os.UserHomeDir()
 	config := readOr(root, ".mvn/maven.config") + " " + os.Getenv("MAVEN_OPTS")

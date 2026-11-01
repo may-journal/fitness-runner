@@ -132,8 +132,8 @@ func oddSkillEntry(h *tar.Header, top string) bool {
 	return h.Typeflag != tar.TypeReg || !skillPattern.MatchString(name)
 }
 
-// writeBundleFile writes a binary executable readable only by the installing
-// user, and a skill file any agent may read, creating the skill's folder first.
+// writeBundleFile writes a binary private to the installing user, or a skill
+// file any agent may read.
 func writeBundleFile(directory, name string, data []byte) error {
 	path := filepath.Join(directory, name)
 	if !strings.HasPrefix(name, skillsFolder+"/") {

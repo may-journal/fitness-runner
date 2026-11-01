@@ -24,9 +24,8 @@ var (
 	implementationRe = regexp.MustCompile(`JvmImplementation\.(\w+)`)
 )
 
-// vendorNames maps a JvmVendorSpec constant to the text Gradle looks for
-// in a JDK's vendor, where it is not the constant in lower case without
-// underscores.
+// vendorNames maps a JvmVendorSpec constant to the vendor text Gradle looks for
+// when that is not the constant lowercased.
 var vendorNames = map[string]string{"HEWLETT_PACKARD": "hewlett"}
 
 // gradlePins reads the toolchain releases a Gradle script names, each to
@@ -84,11 +83,8 @@ func vendorText(constant string) string {
 	return strings.ToLower(strings.ReplaceAll(constant, "_", ""))
 }
 
-// toolchainErrors names each toolchain no installed JDK matches, when the
-// build configures no way to download one. A release the running JDK has
-// needs no lookup unless the toolchain names a vendor or implementation,
-// since Gradle always detects the JDK it runs on. The check reads folders
-// and files and never starts Gradle.
+// toolchainErrors names each toolchain no installed JDK matches when the build
+// cannot download one, reading folders and files without starting Gradle.
 func toolchainErrors(root string, have int, pins []pin) []string {
 	var errors []string
 	look := lookups{root: root, machine: sync.OnceValue(machineJDKs), builds: map[java.Project]buildJDKs{}}
@@ -101,9 +97,8 @@ func toolchainErrors(root string, have int, pins []pin) []string {
 	return errors
 }
 
-// wantsInstalled reports whether p is a toolchain that needs a JDK found
-// on the machine: another release than the running JDK's, or the running
-// release from a named vendor or implementation.
+// wantsInstalled reports whether p needs a JDK found on the machine, as another
+// release or a named vendor does.
 func wantsInstalled(p pin, need, have int) bool {
 	if p.toolchain == (java.Project{}) {
 		return false

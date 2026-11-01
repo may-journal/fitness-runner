@@ -12,9 +12,8 @@ import (
 // for each language the evidence proves, from the language modules.
 var technologyWords = lang.TechnologyWords(langs.All)
 
-// namesTechnology reports whether a container's technology string, such
-// as a language name with a version and a framework, names the evidence's
-// language by one of its module's words.
+// namesTechnology reports whether a container's technology string, such as a
+// language and framework, names the evidence's language by a module word.
 func namesTechnology(technology, language string) bool {
 	for _, word := range technologyTokens(technology) {
 		if contains(technologyWords[language], word) {

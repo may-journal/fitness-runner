@@ -12,9 +12,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/comments"
 )
 
-// Key is one key the config file may set, as the registered sections
-// declare it: its JSON path, its JSON type, the doc comment on its Go
-// field, and its default.
+// Key is one key the config file may set, as a registered section declares it.
 type Key struct {
 	// Path is the key's dotted JSON path, such as proseBudget.maxWords.
 	Path string `json:"key"`
@@ -62,8 +60,8 @@ func keysOf(v reflect.Value, docPrefix, pathPrefix string, docs map[string]strin
 	return out
 }
 
-// keyOf describes one field: an object lists its own keys, and any other
-// key carries its default when that is not the zero value.
+// keyOf describes one field, listing an object's own keys and a default when
+// it is not the zero value.
 func keyOf(v reflect.Value, field reflect.StructField, docKey, path string, docs map[string]string) Key {
 	k := Key{Path: path, Type: jsonType(field.Type), Enum: enum(field), Description: describe(field.Name, docs[docKey])}
 	switch field.Type.Kind() {
@@ -78,8 +76,8 @@ func keyOf(v reflect.Value, field reflect.StructField, docKey, path string, docs
 	return k
 }
 
-// structDocs is where a struct field's own fields keep their docs: under
-// the struct's type name when it has one, else under the field.
+// structDocs returns where a struct field's own fields keep their docs: the
+// type name, else the field.
 func structDocs(t reflect.Type, docKey string) string {
 	if t.Name() != "" {
 		return t.Name()
@@ -87,9 +85,8 @@ func structDocs(t reflect.Type, docKey string) string {
 	return docKey
 }
 
-// describe turns a Go field's doc comment into a key's description: it
-// drops the field's own name when the comment starts with it, as Go doc
-// comments do, and an "is" after it.
+// describe turns a Go field's doc comment into a key's description by dropping
+// the leading field name and "is".
 func describe(name, doc string) string {
 	rest, ok := strings.CutPrefix(doc, name+" ")
 	if !ok || rest == "" {
@@ -132,9 +129,7 @@ func jsonType(t reflect.Type) string {
 const SchemaURL = "https://json-schema.org/draft/2020-12/schema"
 
 // Schema is a JSON Schema for the config file, built from the registered
-// sections: one property per key, each with its type, description, and
-// default. A key no section declares fails it, except `$schema`, which
-// names the schema for an editor.
+// sections with one property per key.
 func Schema() (map[string]any, error) {
 	keys, err := Keys()
 	if err != nil {
@@ -199,9 +194,8 @@ type Setting struct {
 	Description string `json:"description"`
 }
 
-// Settings lists each key in root's config file with its value and where
-// that came from, in Keys order, objects flattened to their keys. An
-// invalid file fails as Load does.
+// Settings lists each key in root's config file with its value and source,
+// in the same order that Keys lists them.
 func Settings(root string) ([]Setting, error) {
 	if _, err := Load(root); err != nil {
 		return nil, err

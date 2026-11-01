@@ -7,7 +7,7 @@ import (
 )
 
 // maxLabelIDs is the most requirement IDs one journey label may name, so a
-// step that fulfils more is split into steps a reader can follow.
+// step that fulfils more is split.
 const maxLabelIDs = 8
 
 // labelID is a requirement number, or an acceptance ID, written in a
@@ -40,11 +40,8 @@ func (m *Model) JourneyFiles() int {
 	return count
 }
 
-// JourneyErrors compares the requirement IDs the journey diagrams name with
-// every requirement doc, in both directions, and requires every behavior
-// node to name one. Only diagram labels count: node, subgraph, and edge
-// labels. Without a journey view there is nothing to judge; the contract
-// names the missing view.
+// JourneyErrors compares requirement IDs named in journey labels with
+// requirement docs, both ways, and requires each behavior node to name one.
 func (m *Model) JourneyErrors() []string {
 	if m.journeyAt == (Location{}) {
 		return nil

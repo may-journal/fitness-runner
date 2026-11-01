@@ -20,10 +20,8 @@ var views = map[string]string{
 
 var heading = regexp.MustCompile(`^#{1,6}\s+(.*?)\s*#*$`)
 
-// Load reads every view and its connected sources, including in scoped runs,
-// so a change on one side still meets the unchanged other side. A scoped
-// run whose changes cannot move the views, as Unmoved decides, reads
-// nothing and returns an empty model.
+// Load reads every view and its connected sources, returning an empty model
+// for a scoped run Unmoved decides cannot move them.
 func Load(root string) (Model, error) {
 	if Unmoved(root) {
 		return Model{}, nil

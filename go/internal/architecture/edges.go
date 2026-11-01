@@ -30,9 +30,8 @@ var accepted = map[string][]string{
 	edgeRealization: {codemodel.RelConforms},
 }
 
-// drawn checks one code view edge. An edge that touches an abstract node
-// is allowed and needs no use; an edge between two concrete nodes is
-// required and must be shown by the source.
+// drawn checks one code view edge, which needs no use at an abstract node but
+// must be shown between concrete nodes.
 func (r *relations) drawn(e Relationship) {
 	from, to := r.c.nodes[e.From], r.c.nodes[e.To]
 	if e.View == codeView && from != nil && to != nil {
@@ -83,10 +82,8 @@ func (r *relations) required(e Relationship, class string, from, to *codeNode) {
 	}
 }
 
-// proved finds a relation the edge class allows, within the linked lines
-// when evidence is given. A language whose types satisfy an interface
-// without stating it has its reader decide a realization, and its
-// evidence must hold the type or one of its methods.
+// proved finds a relation the edge class allows, within the linked lines when
+// evidence is given, deciding realizations by the language reader.
 func (r *relations) proved(class string, from, to *codeNode, ev *Evidence) bool {
 	if realizes := r.realizes(class, from); realizes != nil {
 		return r.realized(realizes, from, to, ev)
