@@ -144,8 +144,8 @@ func Test0001_14(t *testing.T) {
 	timesTrees(t)
 }
 
-// promptsTimeOut asserts a check whose git or ssh awaits a password times out red
-// at its budget and the tool is stopped.
+// promptsTimeOut asserts a check that turns git prompts back on times out red
+// at its budget, and its waiting tool is stopped.
 func promptsTimeOut(t *testing.T) {
 	t.Helper()
 	for _, call := range []string{"GIT_TERMINAL_PROMPT=1 git fetch origin", "ssh git@git.example.invalid true"} {

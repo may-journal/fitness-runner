@@ -24,8 +24,8 @@ const config = {
   singleQuote: true,
   tabWidth: 2,
   trailingComma: 'es5',
-  // Prettier matches override globs relative to this file's cache folder, so
-  // the globs start at the repo root.
+  // These files sync from may-journal/.github with Prettier defaults, so the
+  // globs start at the repo root, not this cache folder.
   overrides: [
     {
       files: ['.github/ISSUE_TEMPLATE/**/*.md', '.github/fitness-setup.md'].map(fromRepoRoot),

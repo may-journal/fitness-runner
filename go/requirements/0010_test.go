@@ -17,8 +17,8 @@ var (
 	reviewer = func(body string) comment { return comment{Body: body, Author: "reviewer-bot", Association: "NONE"} }
 )
 
-// pushPlans are saved GitHub answers about issues a trailer may name: Plans
-// approved by owner #218, passer-by #151, reviewer #307, member #308.
+// pushPlans are saved GitHub answers about issues a trailer may name: #218
+// owner-approved, #196 a bug, #151 passer-by, #307 reviewer, #308 member.
 func pushPlans(t *testing.T) []response {
 	t.Helper()
 	plan, labels := planBody("- [ ] Ship it."), []string{"Plan"}

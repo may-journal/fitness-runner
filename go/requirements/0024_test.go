@@ -142,8 +142,8 @@ const biomePackage = "{\"name\": \"app\", \"private\": true, \"devDependencies\"
 // the cap that lifts its default of 20 diagnostics.
 const biomeFlags = "--reporter=github --max-diagnostics=%s --no-errors-on-unmatched --files-ignore-unknown=true"
 
-// biomeMajors pairs the declared version, the installed binary's version and
-// its cap, since a spec such as `latest` hides the version.
+// biomeMajors pairs declared version, installed version and cap: Biome 1.8
+// takes at most 65535, and `latest` hides the version.
 var biomeMajors = [][3]string{{"2.4.15", "2.4.15", "none"}, {"^1.9.4", "1.9.4", "none"}, {"latest", "1.8.3", "65535"}}
 
 // biomeTooOld is a Biome before 1.8, whose CLI rejects `--reporter=github`,

@@ -25,8 +25,8 @@
 //
 //	func main() { check.Main(Rule) }
 //
-// Main speaks the check protocol (docs/check-protocol.md), and Judge and Test
-// run a check in a unit test (docs/local-checks.md).
+// Main speaks the check protocol (docs/check-protocol.md) and reports a panic
+// as info; Judge and Test run a check in a unit test (docs/local-checks.md).
 package check
 
 import (
@@ -100,8 +100,8 @@ func (c Check) kit() checkkit.Check {
 	}
 }
 
-// Files lists the repo's tracked files ending in any of exts, as sorted slash
-// paths relative to Root; no exts lists every file.
+// Files lists the tracked files whose base name ends in any of exts, from the
+// run's shared list; no exts lists every file.
 func (ctx *Context) Files(exts ...string) []string {
 	if len(exts) == 0 {
 		exts = []string{""}
