@@ -15,7 +15,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "requirements", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "requirements", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsStripped},
 		Run:      run,
 	})
 }

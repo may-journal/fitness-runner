@@ -19,7 +19,7 @@ const batch = 200
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "gofmt", Scope: checkkit.ScopeFiles, TimeoutMs: 60000},
+		Describe: checkkit.Describe{Name: "gofmt", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsJudged, TimeoutMs: 60000},
 		Run:      run,
 	})
 }

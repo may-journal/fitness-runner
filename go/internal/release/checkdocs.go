@@ -1,3 +1,5 @@
+// cspell:ignore Elts
+
 package release
 
 import (
@@ -13,6 +15,8 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // checkDoc is what the generator reads from one check package's code.
@@ -27,6 +31,9 @@ type checkDoc struct {
 	// Body is the whole package doc comment as Markdown, without that
 	// opening.
 	Body string
+	// Comments is how the check treats code comments, as its
+	// checkkit.Describe declares.
+	Comments string
 }
 
 // readCheckDoc parses the Go package in dir, leaving out tests, and reads
@@ -46,7 +53,83 @@ func readCheckDoc(dir string) (checkDoc, error) {
 		return checkDoc{}, fmt.Errorf("go/cmd/%s: the package doc comment must open with %q", folder, opening)
 	}
 	rest = capitalize(rest)
-	return checkDoc{Name: name, Folder: folder, Summary: synopsis(pkg, rest), Body: markdown(pkg, rest)}, nil
+	comments, err := describedComments(dir, folder)
+	if err != nil {
+		return checkDoc{}, err
+	}
+	return checkDoc{Name: name, Folder: folder, Summary: synopsis(pkg, rest), Body: markdown(pkg, rest), Comments: comments}, nil
+}
+
+// commentTreatments maps each checkkit constant a check may declare to its
+// value.
+var commentTreatments = map[string]string{
+	"CommentsJudged":        checkkit.CommentsJudged,
+	"CommentsStripped":      checkkit.CommentsStripped,
+	"CommentsNotApplicable": checkkit.CommentsNotApplicable,
+}
+
+// describedComments reads the Comments field of the checkkit.Describe that
+// the package in dir declares. A package that sets no checkkit Comments
+// constant is an error, so no check ships without one.
+func describedComments(dir, folder string) (string, error) {
+	files, err := parseSources(token.NewFileSet(), dir, parser.SkipObjectResolution)
+	if err != nil {
+		return "", err
+	}
+	for _, file := range files {
+		if value, ok := commentsField(file); ok {
+			return value, nil
+		}
+	}
+	return "", fmt.Errorf("go/cmd/%s: its checkkit.Describe must set Comments to checkkit.CommentsJudged, CommentsStripped or CommentsNotApplicable", folder)
+}
+
+// commentsField is the treatment the first checkkit.Describe literal in file
+// declares, with ok false when none declares one.
+func commentsField(file *ast.File) (value string, ok bool) {
+	ast.Inspect(file, func(n ast.Node) bool {
+		if !ok {
+			value, ok = describeComments(n)
+		}
+		return !ok
+	})
+	return value, ok
+}
+
+// describeComments is the treatment n declares when it is a
+// checkkit.Describe literal that sets Comments.
+func describeComments(n ast.Node) (string, bool) {
+	lit, isLit := n.(*ast.CompositeLit)
+	if !isLit || !isSelector(lit.Type, "checkkit", "Describe") {
+		return "", false
+	}
+	for _, elt := range lit.Elts {
+		if value, ok := commentsValue(elt); ok {
+			return value, true
+		}
+	}
+	return "", false
+}
+
+// commentsValue is the treatment elt sets when it is a Comments field naming
+// a checkkit Comments constant.
+func commentsValue(elt ast.Expr) (string, bool) {
+	kv, isKV := elt.(*ast.KeyValueExpr)
+	if !isKV || !isIdent(kv.Key, "Comments") {
+		return "", false
+	}
+	sel, isSel := kv.Value.(*ast.SelectorExpr)
+	if !isSel || !isIdent(sel.X, "checkkit") {
+		return "", false
+	}
+	value, ok := commentTreatments[sel.Sel.Name]
+	return value, ok
+}
+
+// isSelector reports whether expr is pkg.name.
+func isSelector(expr ast.Expr, pkg, name string) bool {
+	sel, ok := expr.(*ast.SelectorExpr)
+	return ok && isIdent(sel.X, pkg) && sel.Sel.Name == name
 }
 
 // synopsis is the first doc sentence as plain text, stripping brackets from

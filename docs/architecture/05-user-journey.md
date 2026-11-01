@@ -44,7 +44,7 @@ flowchart TB
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listComments(40 List code comments<br/>Req 0136):::action
     listChecks(34 List the checks<br/>Req 0110):::action
-    explainCheck(35 Explain a check<br/>Req 0111):::action
+    explainCheck(35 Explain a check<br/>Req 0111, 0139):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
     readReadme(37 Read a check README<br/>Req 0114):::action
     readLLMs(38 Read the llms page<br/>Req 0113):::action

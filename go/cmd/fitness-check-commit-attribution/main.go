@@ -21,6 +21,7 @@ func Main() {
 		Describe: checkkit.Describe{
 			Name:             "commit-attribution",
 			Scope:            checkkit.ScopeGit,
+			Comments:         checkkit.CommentsNotApplicable,
 			ContextInlineArg: "--message",
 		},
 		Run: run,

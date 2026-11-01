@@ -21,7 +21,7 @@ const questionLine2 = `specifically all "Fitness Checks" that are enabled via @m
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "read-repo-first", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "read-repo-first", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsNotApplicable},
 		Run:      run,
 	})
 }

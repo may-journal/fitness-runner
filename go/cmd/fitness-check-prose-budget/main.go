@@ -41,7 +41,7 @@ var htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "prose-budget", Scope: checkkit.ScopeFiles, Blob: true},
+		Describe: checkkit.Describe{Name: "prose-budget", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsJudged, Blob: true},
 		Run:      run,
 	})
 }

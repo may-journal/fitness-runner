@@ -111,7 +111,7 @@ func (c Config) addMarkdown(files map[string][]byte, s sources) error {
 	for _, d := range s.checks {
 		files["go/cmd/"+d.Folder+"/README.md"] = checkReadme(d)
 	}
-	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment", checkIndex(s.checks))
+	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment and checkkit.Describe", checkIndex(s.checks))
 	if err != nil {
 		return err
 	}

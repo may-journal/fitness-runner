@@ -195,8 +195,8 @@ func init() {
 		// repo enables it.
 		//fitness:usage list [--json]
 		"list": runList,
-		// Prints why a check exists, what it judges, and the config keys it
-		// reads.
+		// Prints why a check exists, what it judges, how code comments count,
+		// and the config keys it reads.
 		//fitness:usage explain <check> [--json]
 		"explain": runExplain,
 		// Lists the guide topics, or prints one, from the code's doc comments.

@@ -11,7 +11,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "mermaid-callout-why", Scope: checkkit.ScopeFiles, Blob: true},
+		Describe: checkkit.Describe{Name: "mermaid-callout-why", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsNotApplicable, Blob: true},
 		Run:      run,
 	})
 }

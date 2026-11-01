@@ -18,7 +18,7 @@ var defaultMax = golang.Defaults.Complexity.Max
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "go-complexity", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "go-complexity", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsStripped},
 		Run:      run,
 	})
 }

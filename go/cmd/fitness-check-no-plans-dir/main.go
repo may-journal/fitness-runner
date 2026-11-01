@@ -13,7 +13,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "no-plans-dir", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "no-plans-dir", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsNotApplicable},
 		Run:      run,
 	})
 }

@@ -7,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "local-branch", Scope: checkkit.ScopeGitHub, TimeoutMs: 35000},
+		Describe: checkkit.Describe{Name: "local-branch", Scope: checkkit.ScopeGitHub, Comments: checkkit.CommentsNotApplicable, TimeoutMs: 35000},
 		Run:      metadata.LocalBranch,
 	})
 }

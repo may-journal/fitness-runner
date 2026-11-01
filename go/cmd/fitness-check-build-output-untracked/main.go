@@ -36,7 +36,7 @@ var distSpecifierRe = regexp.MustCompile(`(^|/)dist/|\.\./dist`)
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: name, Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: name, Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsJudged},
 		Run:      run,
 	})
 }

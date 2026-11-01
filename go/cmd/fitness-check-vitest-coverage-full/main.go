@@ -32,7 +32,7 @@ const fitnessVitestConfig = "vitest.config.mjs"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "vitest-coverage-full", Scope: checkkit.ScopeFiles, TimeoutMs: 120000},
+		Describe: checkkit.Describe{Name: "vitest-coverage-full", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsJudged, TimeoutMs: 120000},
 		Run:      run,
 	})
 }

@@ -89,6 +89,19 @@ const (
 	ScopeGitHub = "github"
 )
 
+// The comment treatments a check declares: how code comments count when it
+// judges a repo.
+const (
+	// CommentsJudged means comment text can fail the check.
+	CommentsJudged = "judged"
+	// CommentsStripped means the check reads code but drops its comments
+	// first, so a comment never changes the verdict.
+	CommentsStripped = "stripped"
+	// CommentsNotApplicable means the check reads no code comments, only
+	// Markdown, manifests, history or GitHub.
+	CommentsNotApplicable = "not applicable"
+)
+
 // Describe is the metadata a check prints for `--describe`.
 type Describe struct {
 	// Name is the check name, as `fitness <name>` runs it.
@@ -99,6 +112,10 @@ type Describe struct {
 	Summary string `json:"summary,omitempty"`
 	// Scope is one of the Scope constants: what the check reads.
 	Scope string `json:"scope,omitempty"`
+	// Comments is one of the Comments constants: how code comments count.
+	// Every built-in check declares it, and `go generate` fails one that
+	// does not.
+	Comments string `json:"comments,omitempty"`
 	// TimeoutMs is the check's execution budget; 0 means the runner default.
 	TimeoutMs int `json:"timeoutMs,omitempty"`
 	// ContextInlineArg names a flag (e.g. "--message") whose value the runner

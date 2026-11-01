@@ -12,7 +12,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "requirements-changed", Scope: checkkit.ScopeGit, ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "requirements-changed", Scope: checkkit.ScopeGit, Comments: checkkit.CommentsStripped, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }

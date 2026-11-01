@@ -17,7 +17,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "comment-structure", Scope: checkkit.ScopeBlob, Blob: true, ContextInlineArg: "--body"},
+		Describe: checkkit.Describe{Name: "comment-structure", Scope: checkkit.ScopeBlob, Comments: checkkit.CommentsNotApplicable, Blob: true, ContextInlineArg: "--body"},
 		Run:      run,
 	})
 }

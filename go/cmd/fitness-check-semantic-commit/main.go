@@ -11,7 +11,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "semantic-commit", Scope: checkkit.ScopeGit, ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "semantic-commit", Scope: checkkit.ScopeGit, Comments: checkkit.CommentsNotApplicable, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }

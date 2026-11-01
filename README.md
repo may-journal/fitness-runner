@@ -64,7 +64,7 @@ Commands:
   fitness list [--json]
       Names every check with its summary, scope, budget, and whether this repo enables it.
   fitness explain <check> [--json]
-      Prints why a check exists, what it judges, and the config keys it reads.
+      Prints why a check exists, what it judges, how code comments count, and the config keys it reads.
   fitness docs [topic]
       Lists the guide topics, or prints one, from the code's doc comments.
   fitness check --list

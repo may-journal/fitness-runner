@@ -32,7 +32,7 @@ const ignoredFileNotice = "File ignored because of a matching ignore pattern"
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "eslint", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "eslint", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsJudged},
 		Run:      run,
 	})
 }

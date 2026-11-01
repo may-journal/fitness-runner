@@ -20,7 +20,7 @@ var semverPattern = regexp.MustCompile(`^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "release-changelog", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "release-changelog", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsNotApplicable},
 		Run:      run,
 	})
 }

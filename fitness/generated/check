@@ -5,7 +5,7 @@ set -eu
 if [ "${1:-}" = "--describe" ]; then
   # The same handshake fitness-release gives, answered here because compiling
   # that tool can outlast the handshake's 2-second budget.
-  echo '{"name":"generated","summary":"Fails when a file `go generate` writes from doc comments is stale, or a check package has no doc comment.","scope":"files","timeoutMs":120000}'
+  echo '{"name":"generated","summary":"Fails when a file `go generate` writes from doc comments is stale, or a check package lacks a doc comment or a comments treatment.","scope":"files","comments":"judged","timeoutMs":120000}'
   exit 0
 fi
 exec go -C "$(dirname "$0")/../../go" run ./cmd/fitness-release generated "$@"

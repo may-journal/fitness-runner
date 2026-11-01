@@ -24,7 +24,7 @@ import (
 const maxIssuesPerFile = 100
 
 var check = checkkit.Check{
-	Describe: checkkit.Describe{Name: "cspell", Scope: checkkit.ScopeFiles, Blob: true},
+	Describe: checkkit.Describe{Name: "cspell", Scope: checkkit.ScopeFiles, Comments: checkkit.CommentsJudged, Blob: true},
 	Run:      run,
 }
 

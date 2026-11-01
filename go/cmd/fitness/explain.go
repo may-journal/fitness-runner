@@ -17,6 +17,9 @@ type explained struct {
 	Name    string `json:"name"`
 	Summary string `json:"summary"`
 	Scope   string `json:"scope"`
+	// Comments is how the check treats code comments, as its describe
+	// handshake declares.
+	Comments string `json:"comments"`
 	// BudgetMs is the time the check may run before it is stopped.
 	BudgetMs int64 `json:"budgetMs"`
 	// Note says why the check's describe handshake gave no metadata.
@@ -57,7 +60,8 @@ func printExplained(e explained, asJSON bool) int {
 	if asJSON {
 		return writeJSON(os.Stdout, e)
 	}
-	fmt.Printf("# %s\n\nScope: %s · Budget: %ss\n\n%s%s", e.Name, orDash(e.Scope), seconds(e.BudgetMs), noteLine(e.Note), e.Body)
+	fmt.Printf("# %s\n\nScope: %s · Comments: %s · Budget: %ss\n\n%s%s", e.Name, orDash(e.Scope), orDash(e.Comments),
+		seconds(e.BudgetMs), noteLine(e.Note), e.Body)
 	return 0
 }
 
@@ -120,7 +124,7 @@ func explainCheck(cfg *conf.Config, name string) (explained, error) {
 	if !ok || replaced(name) {
 		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}
-	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
+	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Comments: c.desc.Comments, BudgetMs: timeoutFor(c).Milliseconds(),
 		Note: cmp.Or(c.needs, c.describeErr), Body: body}, nil
 }
 

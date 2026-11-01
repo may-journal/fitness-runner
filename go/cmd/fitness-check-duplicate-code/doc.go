@@ -24,6 +24,13 @@
 // An unscoped run reads every tracked file. The 1% threshold applies to the
 // lines read, so a scoped verdict can be stricter than an unscoped one.
 //
+// # Comments
+//
+// Comments never count as duplication. The lexer drops each comment, from
+// `//`, `#`, `/*` or `<!--` to its end, before it compares tokens. Two files
+// sharing only identical comments pass, as a real run in requirement 0139
+// shows.
+//
 // # Templates
 //
 // A doc must repeat its template, so templates are left out. Any file

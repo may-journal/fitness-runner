@@ -1,6 +1,6 @@
 # generated
 
-Fails when a file `go generate` writes is stale or edited by hand. It also fails when the generator cannot read the code, such as a check package with no doc comment.
+Fails when a file `go generate` writes is stale or edited by hand. It also fails when the generator cannot read the code, such as a check package with no doc comment or no comments treatment.
 
 - Usage: `fitness generated`, or as part of `fitness`.
 - Inputs: the Go packages under `go/cmd/fitness-check-*` and their doc comments, and the `usage` constant of `go/cmd/fitness`.

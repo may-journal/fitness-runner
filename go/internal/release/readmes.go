@@ -59,13 +59,13 @@ const docsChecksFile = "docs/checks.md"
 // readmeFile holds the command list, relative to the repository root.
 const readmeFile = "README.md"
 
-// checkIndex is the table of every check, linking its README, with the
-// summary its doc comment opens with.
+// checkIndex is the table of every check: its README link, the summary its
+// doc comment opens with, and how it treats code comments.
 func checkIndex(docs []checkDoc) string {
 	var b strings.Builder
-	b.WriteString("| Check | Summary |\n| --- | --- |\n")
+	b.WriteString("| Check | Summary | Comments |\n| --- | --- | --- |\n")
 	for _, d := range docs {
-		fmt.Fprintf(&b, "| [%s](../go/cmd/%s/README.md) | %s |\n", d.Name, d.Folder, strings.ReplaceAll(d.Summary, "|", `\|`))
+		fmt.Fprintf(&b, "| [%s](../go/cmd/%s/README.md) | %s | %s |\n", d.Name, d.Folder, strings.ReplaceAll(d.Summary, "|", `\|`), d.Comments)
 	}
 	return b.String()
 }
