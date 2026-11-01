@@ -16,20 +16,17 @@ type Literal struct {
 // every literal in source order. A literal inside another's interpolation
 // is listed too, after the literal holding it opens.
 func Literals(src string) (code string, literals []Literal) {
-	b := &blanker{src: src, out: []byte(src)}
-	for b.i < len(b.src) {
-		b.step()
-	}
-	sort.SliceStable(b.literals, func(i, j int) bool { return b.literals[i].Start < b.literals[j].Start })
+	code, literals = blanked(src, false)
+	sort.SliceStable(literals, func(i, j int) bool { return literals[i].Start < literals[j].Start })
 	line, at := 1, 0
-	for i := range b.literals {
-		for ; at < b.literals[i].Start; at++ {
+	for i := range literals {
+		for ; at < literals[i].Start; at++ {
 			if src[at] == '\n' {
 				line++
 			}
 		}
-		b.literals[i].Line = line
-		b.literals[i].Source = src[b.literals[i].Start:b.literals[i].End]
+		literals[i].Line = line
+		literals[i].Source = src[literals[i].Start:literals[i].End]
 	}
-	return string(b.out), b.literals
+	return code, literals
 }
