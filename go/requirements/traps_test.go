@@ -193,7 +193,7 @@ func commitTimes(t *testing.T, repo string) map[string]string {
 
 // timedRows are the checks whose rows each timed commit reports: those
 // that compare files or read the whole repo, and requirements.
-var timedRows = append([]string{"jscpd", "requirements"}, architectureChecks...)
+var timedRows = append([]string{"duplicate-code", "requirements"}, architectureChecks...)
 
 // commitRows names one commit's time and each timedRows row's, all marked
 // failed when they failed, and logs the output of a failed commit.

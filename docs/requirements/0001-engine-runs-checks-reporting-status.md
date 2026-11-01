@@ -29,7 +29,7 @@ runs
         - When fitness runs
             - Then they overlap, longest budget first, progress shows each one's time and budget, the last streams live, and the table keeps catalog order
 - 0001.14
-    - Given Developer has a check past the budget it declares or timeoutMs sets, or whose git or ssh waits for a password
+    - Given Developer has a check, like `duplicate-code` on 20,000 files, past its budget or timeoutMs, or whose git or ssh awaits a password
         - When fitness runs
             - Then it and its children stop, by force if needed, showing red as timed out with last output, file count and scope hint
 - 0001.15

@@ -11,15 +11,17 @@ type Token struct {
 	Line int
 }
 
-// jscpd's escape-hatch markers; recognized inside any comment.
-const (
-	ignoreStart = "jscpd:ignore-start"
-	ignoreEnd   = "jscpd:ignore-end"
+// The escape-hatch markers, recognized inside any comment. The jscpd:
+// spellings are deprecated aliases that repos written before the rename
+// still carry, so both open and close a region.
+var (
+	ignoreStarts = []string{"duplicate-code:ignore-start", "jscpd:ignore-start"}
+	ignoreEnds   = []string{"duplicate-code:ignore-end", "jscpd:ignore-end"}
 )
 
 // lexer is the scan state for Lex: the input, a byte cursor, the current
-// 1-based line, the tokens emitted so far, and whether a
-// jscpd:ignore-start region is suppressing emission.
+// 1-based line, the tokens emitted so far, and whether an ignore-start
+// region is suppressing emission.
 type lexer struct {
 	src      string
 	i        int
@@ -114,14 +116,24 @@ func (lx *lexer) scanOther() {
 // state from its text and the line count from any newlines it spans.
 func (lx *lexer) skipComment(end int) {
 	text := lx.src[lx.i:end]
-	if strings.Contains(text, ignoreStart) {
+	if containsAny(text, ignoreStarts) {
 		lx.ignoring = true
 	}
-	if strings.Contains(text, ignoreEnd) {
+	if containsAny(text, ignoreEnds) {
 		lx.ignoring = false
 	}
 	lx.line += strings.Count(text, "\n")
 	lx.i = end
+}
+
+// containsAny reports whether text holds any of the markers.
+func containsAny(text string, markers []string) bool {
+	for _, m := range markers {
+		if strings.Contains(text, m) {
+			return true
+		}
+	}
+	return false
 }
 
 // commentSpan returns the index just past the comment opening at i, or
@@ -183,7 +195,7 @@ func blockEnd(src string, from int, close string) int {
 
 // stringBody extracts the literal's content between the quotes (escape
 // sequences stay raw): quote style normalizes away, content does not —
-// fully collapsing strings would manufacture clones real jscpd never
+// fully collapsing strings would manufacture clones jscpd never
 // reports (e.g. Go import blocks differing only in import paths).
 func stringBody(src string, i, end int) string {
 	body := src[i+1 : end]

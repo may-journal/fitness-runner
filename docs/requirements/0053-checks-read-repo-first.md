@@ -27,7 +27,7 @@ runs of read-repo-first
 - 0053.4
     - Given Developer has a run that enables only some checks
         - When read-repo-first prints its table
-            - Then it lists exactly those checks beside their README paths
+            - Then it lists exactly those checks, such as `duplicate-code`, beside their README paths
 - 0053.5
     - Given Developer has a check name or path too long for its column
         - When read-repo-first prints its table

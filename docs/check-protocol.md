@@ -69,7 +69,7 @@ Org mode runs every check, so each owes the runner one more rule. In a repo it d
 
 A scoped run lists changed files in `FITNESS_CHANGED_FILES`: the staged files locally, or a pull request's diff against its base. A push to `main` or `fitness --all` leaves it unset, so every file is checked.
 
-A check that compares files cuts its corpus to what the change can alter. jscpd compares the changed files with tracked files sharing their endings, as it compares only files of one format. The six `architecture-*` checks read nothing when no changed file is a view, requirement doc, product or tool source, manifest or `.gitattributes`. An unscoped run keeps every check's full walk.
+A check that compares files cuts its corpus to what the change can alter. duplicate-code compares the changed files with tracked files sharing their endings, as it compares only files of one format. The six `architecture-*` checks read nothing when no changed file is a view, requirement doc, product or tool source, manifest or `.gitattributes`. An unscoped run keeps every check's full walk.
 
 `fitness --dir=<folder>` leaves it unset too. It names a file in `FITNESS_SCOPE_FILE` that lists the folder's files, one per line. `checkkit.ChangedFiles` reads either list, and `checkkit.DiffFiles` reads only the changes.
 

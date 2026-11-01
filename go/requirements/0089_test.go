@@ -328,8 +328,8 @@ func Test0089_8(t *testing.T) {
 		t.Errorf("the report must mark markdown-no-bold-italic failed:\n%s", raw)
 	}
 	for _, c := range report.Checks {
-		if c.Name == "jscpd" {
-			t.Errorf("the report lists jscpd, which needs files and never judged the text:\n%s", raw)
+		if c.Name == "duplicate-code" {
+			t.Errorf("the report lists duplicate-code, which needs files and never judged the text:\n%s", raw)
 		}
 	}
 }

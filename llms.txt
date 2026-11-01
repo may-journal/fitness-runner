@@ -64,6 +64,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `cspell`: Fails unknown words in the checked files.
 - `dependency-currency`: Fails a declared npm dependency that is behind its latest published version — an installable update means the project isn't at peak fitness.
 - `doc-template`: Makes each markdown document match the shape of a template that governs it.
+- `duplicate-code`: Fails a repo whose duplicated lines pass 1% of its scanned lines.
 - `epic-structure`: Validates that an epic follows the Epic issue template, or the repo's own template labeled `Epic`.
 - `eslint`: Runs ESLint over the repo with the shared flat config, by executing the real ESLint binary.
 - `gitignore-why`: Requires every .gitignore pattern to follow a `#` comment explaining why it exists.
@@ -76,7 +77,6 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `issue-link-once`: Keeps each Issue's timeline readable (#153).
 - `java-test`: Runs Java tests once per build root and judges their JUnit XML results and JaCoCo coverage.
 - `java-version`: Checks a Java repo pins its JDK and that the machine's JDKs satisfy the pin, through the Java language module.
-- `jscpd`: Fails a repo whose duplicated lines pass 1% of its scanned lines, with jscpd semantics.
 - `local-branch`: Runs PR and Plan judgments locally.
 - `localized-text`: Fails SwiftUI text and requirement test literals that skip the app's String Catalog (#527).
 - `markdown-filename-camel-case`: Requires every markdown file name to be camelCase, standard root docs exempt.

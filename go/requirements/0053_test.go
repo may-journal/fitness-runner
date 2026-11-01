@@ -44,8 +44,8 @@ func Test0053_3(t *testing.T) {
 
 func Test0053_4(t *testing.T) {
 	t.Parallel()
-	out, code := readRepoFirstChosen(t, "jscpd")
-	sees(t, out, code, 0, "Check │ Src", "jscpd │ go/cmd/fitness-check-jscpd/README.md")
+	out, code := readRepoFirstChosen(t, "duplicate-code")
+	sees(t, out, code, 0, "Check │ Src", "duplicate-code │ go/cmd/fitness-check-duplicate-code")
 	if strings.Contains(out, "fitness-check-gofmt") {
 		t.Errorf("table lists gofmt, which this run did not enable:\n%s", out)
 	}

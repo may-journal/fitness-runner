@@ -45,8 +45,8 @@ adr-checks
 architecture-actors architecture-code architecture-components
 architecture-containers architecture-contract architecture-journey
 build-output-untracked changelog changelog-bullets changelog-updated
-comment-structure commit-attribution cspell doc-template epic-structure
-gitignore-why issue-checklist issue-link-once jscpd local-branch
+comment-structure commit-attribution cspell doc-template duplicate-code
+epic-structure gitignore-why issue-checklist issue-link-once local-branch
 markdown-filename-camel-case
 markdown-filename-kebab-case markdown-links
 markdown-no-bold-italic mermaid-callout-why mermaid-callouts
