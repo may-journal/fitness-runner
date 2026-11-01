@@ -4,7 +4,9 @@ package requirements
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -196,4 +198,84 @@ func Test0004_7(t *testing.T) {
 	if len(written) > 1<<20 {
 		t.Errorf("summary is %d bytes, over the 1 MiB limit", len(written))
 	}
+}
+
+// unknownWord is a word no dictionary holds, built so cspell never reads it here.
+var unknownWord = strings.Repeat("q", 3) + "xw" + strings.Repeat("v", 3)
+
+// lockedChecks are the file-reading checks beside one finding each, one
+// readable file that the check must still judge, and one file it cannot read.
+var lockedChecks = []struct {
+	check, finding, locked string
+	files                  map[string]string
+}{
+	{"no-eslint-disable", "src/open.ts:1: eslint-disable", "src/locked.ts", map[string]string{
+		"src/open.ts": "/* eslint-disable */\n", "src/locked.ts": "export const a = 1;\n"}},
+	{"repeated-string-literals", "shared-literal-value", "src/locked.ts", map[string]string{
+		"src/a.ts":      "export const a = 'shared-literal-value';\nexport const b = 'shared-literal-value';\n",
+		"src/b.ts":      "export const c = 'shared-literal-value';\n",
+		"src/locked.ts": "export const d = 1;\n"}},
+	{"cspell", "Unknown word (" + unknownWord + ")", "locked.txt", map[string]string{
+		"open.txt": unknownWord + "\n", "locked.txt": "hello\n"}},
+	{"prose-budget", "docs/open.md", "docs/locked.md", map[string]string{
+		"docs/open.md":   "# Open\n\n" + strings.Repeat("This sentence has some words in it. ", 40) + "\n",
+		"docs/locked.md": "# Locked\n\nShort.\n"}},
+	{"text-readability", "docs/open.md", "docs/locked.md", map[string]string{
+		"docs/open.md":   "# Open\n\n" + strings.Repeat("Notwithstanding interdepartmental organizational responsibilities institutional administrators characteristically misunderstand straightforwardly communicated recommendations notwithstanding counterrevolutionary disproportionately uncharacteristically incomprehensible institutionalization. ", 10) + "\n",
+		"docs/locked.md": "# Locked\n\nShort.\n"}},
+	{"go-complexity", "open.go", "locked.go", map[string]string{
+		"go.mod":    "module example.com/m\n\ngo 1.22\n",
+		"open.go":   "package m\n\nfunc Open(a int) int {\n\tif a > 1 {\n\t\treturn 1\n\t}\n\tif a > 2 {\n\t\treturn 2\n\t}\n\tif a > 3 {\n\t\treturn 3\n\t}\n\tif a > 4 {\n\t\treturn 4\n\t}\n\tif a > 5 {\n\t\treturn 5\n\t}\n\tif a > 6 {\n\t\treturn 6\n\t}\n\treturn 0\n}\n",
+		"locked.go": "package m\n"}},
+}
+
+func Test0003_5(t *testing.T) {
+	t.Parallel()
+	for _, c := range lockedChecks {
+		t.Run(c.check, func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", c.files)
+			mustDo(t, os.Chmod(filepath.Join(repo, filepath.FromSlash(c.locked)), 0o000))
+			out, code := fitness(t, repo, nil, c.check)
+			sees(t, out, code, 1, c.locked+": skipped, cannot be read (permission denied)", c.finding)
+			if !strings.Contains(row(out, c.check), "failed") {
+				t.Errorf("the readable file's finding must still fail, got row %q", row(out, c.check))
+			}
+		})
+	}
+}
+
+func Test0003_6(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{"go.mod": "module example.com/m\n\ngo 1.22\n", "open.go": "package m\n\nfunc Open( {\n", "locked.go": "package m\n"})
+	mustDo(t, os.Chmod(filepath.Join(repo, "locked.go"), 0o000))
+	out, code := fitness(t, repo, nil, "go-complexity")
+	sees(t, out, code, 1, "locked.go: skipped, cannot be read (permission denied)", "open.go: ")
+	if !strings.Contains(row(out, "go-complexity"), "failed") {
+		t.Errorf("a file that does not parse must still fail, got row %q", row(out, "go-complexity"))
+	}
+}
+
+func Test0003_7(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", goRepo())
+	mustDo(t, os.Chmod(filepath.Join(repo, "docs", "requirements", "0001-adds-numbers.md"), 0o000))
+	out, code := fitness(t, repo, nil, "requirements")
+	showsInfo(t, out, code, "requirements", "docs/requirements/0001-adds-numbers.md: skipped, cannot be read (permission denied)")
+}
+
+func Test0003_8(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", goRepo())
+	head, err := exec.Command("git", "-C", repo, "rev-parse", "HEAD").Output()
+	mustDo(t, err)
+	keep := strings.TrimSpace(string(head))
+	mustDo(t, filepath.WalkDir(filepath.Join(repo, ".git", "objects"), func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() && filepath.Base(filepath.Dir(p))+filepath.Base(p) != keep {
+			err = os.Remove(p)
+		}
+		return err
+	}))
+	out, code := fitness(t, repo, nil, "requirements")
+	showsInfo(t, out, code, "requirements", "requirement IDs were not checked against git history")
 }

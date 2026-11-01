@@ -9,7 +9,6 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
-	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -26,23 +25,9 @@ func Main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	max := maxComplexity(root)
-	sources := walkfs.InScope(walkfs.FilesByExt(root, golang.Ext))
-	count := len(sources)
-	perFile := par.Map(count, 0, func(i int) []string {
-		fileErrs, err := scanFile(root, sources[i], max)
-		if err != nil {
-			return []string{err.Error()}
-		}
-		return fileErrs
-	})
-	var errs []string
-	for _, fe := range perFile {
-		errs = append(errs, fe...)
-	}
-	if len(errs) > 0 {
-		return checkkit.Fail(count, errs...), nil
-	}
-	return checkkit.Pass(count), nil
+	return walkfs.ScanFiles(root, []string{golang.Ext}, func(relPath, src string) []string {
+		return scanFile(relPath, src, max)
+	}), nil
 }
 
 // maxComplexity resolves the ceiling: the .fitnessrc.json goComplexity.max
@@ -54,12 +39,13 @@ func maxComplexity(root string) int {
 	return defaultMax
 }
 
-// scanFile parses one file and reports every function over the ceiling.
-func scanFile(root, relPath string, max int) ([]string, error) {
+// scanFile parses one file's source and reports every function over the
+// ceiling. A file that does not parse fails with the parser's error.
+func scanFile(relPath, src string, max int) []string {
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, root+"/"+relPath, nil, 0)
+	f, err := parser.ParseFile(fset, relPath, src, 0)
 	if err != nil {
-		return []string{fmt.Sprintf("%s: %v", relPath, err)}, nil
+		return []string{fmt.Sprintf("%s: %v", relPath, err)}
 	}
 	var found []finding
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -85,7 +71,7 @@ func scanFile(root, relPath string, max int) ([]string, error) {
 				relPath, fd.line, fd.name, fd.complexity, max))
 		}
 	}
-	return errs, nil
+	return errs
 }
 
 type finding struct {

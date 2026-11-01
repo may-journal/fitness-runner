@@ -1,6 +1,7 @@
 package check
 
 import (
+	"errors"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -16,19 +17,40 @@ type history struct {
 var historyLine = regexp.MustCompile(`^([+-])(?:# (\d{4}) |- (\d{4}\.\d+)\s*$)`)
 
 // readHistory replays every commit that touched docsDir, oldest first. It is
-// empty outside git or before the first commit.
-func readHistory(root string) history {
-	h := history{removed: map[string]bool{}}
+// empty outside git or before the first commit. When git fails for
+// any other reason, the history is empty and the note says why, so the check reports
+// the gap as info rather than judging reused IDs against nothing.
+func readHistory(root string) (h history, note string) {
+	h = history{removed: map[string]bool{}}
 	out, err := exec.Command("git", "-C", root, "log", "--reverse", "--no-color", "--no-ext-diff",
 		"-U0", "--format=%x00", "-p", "--", docsDir).Output()
 	if err != nil {
-		return h
+		if why := gitFailure(err); !noHistory.MatchString(why) {
+			return h, "requirement IDs were not checked against git history: " + why
+		}
+		return h, ""
 	}
 	live := map[string]int{}
 	for _, commit := range strings.Split(string(out), "\x00") {
 		h.apply(live, commitNet(commit))
 	}
-	return h
+	return h, ""
+}
+
+// noHistory matches git's complaint outside a repo or before the first commit,
+// where there is no history to read.
+var noHistory = regexp.MustCompile(`not a git repository|does not have any commits`)
+
+// gitFailure names why a git command failed: its error text, else the Go
+// error.
+func gitFailure(err error) string {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
+		if msg := strings.Join(strings.Fields(string(exitErr.Stderr)), " "); msg != "" {
+			return msg
+		}
+	}
+	return err.Error()
 }
 
 // commitNet counts each ID's added minus removed lines in one commit, so an

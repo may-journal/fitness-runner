@@ -56,9 +56,11 @@ func run(root string, args []string) (checkkit.Result, error) {
 // with no doc fails. It also returns a note for each leftover Source line,
 // which never fails.
 func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) (errs, notes []string, err error) {
-	docs, errs, err := requirement.Load(root, paths)
-	if err != nil {
-		return nil, nil, err
+	docs, errs, skipped := requirement.Load(root, paths)
+	notes = skipped
+	if len(skipped) > 0 {
+		// A doc left out would leave its tests unowned and its IDs unknown.
+		return errs, append(notes, "ownership and history were not judged without every doc"), nil
 	}
 	for _, d := range docs {
 		if d.SourceLine > 0 {
@@ -66,7 +68,11 @@ func docErrors(root string, paths []string, tests []reqTest, written []lang.Modu
 		}
 	}
 	errs = append(errs, missingDocs(paths)...)
-	errs = append(errs, idErrors(docs, readHistory(root))...)
+	hist, historyNote := readHistory(root)
+	if historyNote != "" {
+		notes = append(notes, historyNote)
+	}
+	errs = append(errs, idErrors(docs, hist)...)
 	errs = append(errs, overlapErrors(docs)...)
 	errs = append(errs, ownershipErrors(docs, tests, written, proven)...)
 	errs = append(errs, orphanChecks(docs, proven)...)
@@ -80,7 +86,8 @@ func dropSources(root string, paths, args []string) error {
 	if !slices.Contains(args, fixFlag) {
 		return nil
 	}
-	docs, _, err := requirement.Load(root, paths)
+	docs, _, _ := requirement.Load(root, paths)
+	var err error
 	for _, d := range docs {
 		err = errors.Join(err, requirement.DropSource(root, d))
 	}

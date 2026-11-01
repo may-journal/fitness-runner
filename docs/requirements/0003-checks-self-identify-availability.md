@@ -28,3 +28,19 @@ checks in the catalog
     - Given Developer has a check that asks a service, and the service cannot answer
         - When fitness runs that check
             - Then it passes with an info note naming what it could not judge and why
+- 0003.5
+    - Given Developer has a file that no-eslint-disable, repeated-string-literals, cspell, prose-budget, text-readability, or go-complexity cannot read
+        - When fitness runs that check
+            - Then it skips that file, names it as info, and still judges the other files
+- 0003.6
+    - Given Developer has a Go file that does not parse beside a file go-complexity cannot read
+        - When fitness runs go-complexity
+            - Then it fails on the parse error and names the unreadable file as info
+- 0003.7
+    - Given Developer has a requirement doc the requirements check cannot read
+        - When fitness runs requirements
+            - Then it names the doc as info and does not judge ownership without it
+- 0003.8
+    - Given Developer has git history the requirements check cannot replay
+        - When fitness runs requirements
+            - Then it names the failure as info and passes
