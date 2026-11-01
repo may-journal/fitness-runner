@@ -3,13 +3,12 @@ package check
 import (
 	"errors"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 )
 
@@ -24,7 +23,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if !node.Applies(root) {
 		return checkkit.Pass(0), nil
 	}
-	raw, err := os.ReadFile(filepath.Join(root, ".nvmrc"))
+	raw, err := comments.CodeFile(root, ".nvmrc")
 	if err != nil {
 		return checkkit.Fail(1, "missing .nvmrc"), nil
 	}

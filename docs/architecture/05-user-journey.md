@@ -52,7 +52,7 @@ flowchart TB
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
     resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102, 0131)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
-    executeChecks[(7 Execute checks<br/>Req 0001)]:::system
+    executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
 
     subgraph checks["Check families"]
         commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system

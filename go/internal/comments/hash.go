@@ -164,3 +164,51 @@ func yamlHash(line string) int {
 func spaceBefore(line string, i int) bool {
 	return i == 0 || line[i-1] == ' ' || line[i-1] == '\t'
 }
+
+// lineNotes returns a reader of the comments in a settings file, such as
+// `.npmrc`. A comment is a line whose first text is one of marks.
+func lineNotes(marks ...string) func(src []byte) []note {
+	return func(src []byte) []note {
+		var notes []note
+		for i, line := range lines(src) {
+			text := strings.TrimLeft(line, " \t")
+			for _, m := range marks {
+				if strings.HasPrefix(text, m) {
+					notes = append(notes, at(i+1, line, len(line)-len(text), len(line)))
+					break
+				}
+			}
+		}
+		return notes
+	}
+}
+
+// xmlNotes reads the <!-- --> comments of XML, such as a Maven pom. A
+// comment may run over lines, and a CDATA section holds none.
+func xmlNotes(src []byte) []note {
+	offs := newOffsets(string(src))
+	var notes []note
+	for i := 0; i < len(offs.src); {
+		rest := offs.src[i:]
+		switch {
+		case strings.HasPrefix(rest, "<![CDATA["):
+			i += xmlEnd(rest, "]]>")
+		case strings.HasPrefix(rest, "<!--"):
+			end := xmlEnd(rest, "-->")
+			notes = append(notes, offs.note(i, i+end))
+			i += end
+		default:
+			i++
+		}
+	}
+	return notes
+}
+
+// xmlEnd is the length of rest up to and past closer, or all of rest when
+// nothing closes it.
+func xmlEnd(rest, closer string) int {
+	if end := strings.Index(rest[1:], closer); end >= 0 {
+		return 1 + end + len(closer)
+	}
+	return len(rest)
+}

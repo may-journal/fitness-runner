@@ -32,9 +32,6 @@ type Reader struct {
 	// References, when set, lists each product source line that reaches another
 	// path, with an error per unreadable source.
 	References func(repo Repo) ([]Reference, []string)
-	// Strip, set with References, returns a file's lines with comments
-	// removed, so a word in a comment proves nothing.
-	Strip func(lines []string) []string
 }
 
 // Code is what a reader keeps from reading declarations, to relate them.

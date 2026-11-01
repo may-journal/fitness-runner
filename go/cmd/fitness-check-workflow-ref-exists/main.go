@@ -6,16 +6,15 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"os/exec"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -38,7 +37,8 @@ const askBudget = 20 * time.Second
 var (
 	// usesRe matches a `uses:` key and its value, quoted or not.
 	usesRe = regexp.MustCompile(`^\s*(?:-\s+)?uses:\s*['"]?([^'"\s]+)`)
-	// blockRe matches a line whose value is a `|` or `>` block scalar, such as a `run:` script.
+	// blockRe matches a `|` or `>` block scalar header, such as a `run:`
+	// script's, before any directive the code view keeps.
 	blockRe = regexp.MustCompile(`:\s*[|>][-+0-9]*\s*(?:#.*)?$`)
 	// shaRe matches a full commit sha.
 	shaRe = regexp.MustCompile(`(?i)^[0-9a-f]{40}$`)
@@ -140,10 +140,10 @@ func skipNote(calls []call, i int, err error) string {
 	return fmt.Sprintf("workflow refs from %s line %d on were not verified: %v", calls[i].file, calls[i].line, err)
 }
 
-// readCalls returns the may-journal `uses:` lines of one workflow file,
+// readCalls returns the may-journal `uses:` lines of one workflow's code view,
 // pinned to a literal ref, skipping the text of block scalars.
 func readCalls(root, file string) ([]call, error) {
-	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	content, err := comments.CodeFile(root, file)
 	if err != nil {
 		return nil, err
 	}

@@ -146,7 +146,8 @@ func (p *parser) peek() *srcLine {
 	return nil
 }
 
-// holdsYAML reports whether a line holds more than blanks or a comment.
+// holdsYAML reports whether a line holds more than blanks or a comment. The
+// code view keeps directives such as `# cspell:ignore`, so a # still reads.
 func holdsYAML(text string) bool {
 	t := strings.TrimSpace(text)
 	return t != "" && !strings.HasPrefix(t, "#")

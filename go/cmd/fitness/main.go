@@ -42,6 +42,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
@@ -341,6 +342,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 		report.Error("fitness setup", err)
 		return stageResult{code: 1}
 	}
+	tracked, env = withViews(root, checks, env, tracked)
 	defer tracked.Remove()
 	defer stopOnInterrupt(tracked.Remove)()
 	hint := scopeHint(env, tracked.Files)
@@ -816,7 +818,7 @@ func contextEnv(root string, checks []resolved, all bool, scope []string, msg st
 		return nil, err
 	}
 	env := os.Environ()
-	for _, name := range []string{changedFilesEnv, walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
+	for _, name := range []string{changedFilesEnv, walkfs.TrackedFilesEnv, comments.ViewsEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
 		env = withoutVar(env, name)
 	}
 	// A check's `git status` would otherwise refresh and rewrite the index,

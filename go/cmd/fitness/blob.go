@@ -11,6 +11,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
@@ -304,7 +305,7 @@ func blobSelection(suite, selected []string) ([]string, error) {
 // named in --checks always judges the text.
 func blobEnv(checks []resolved, chosen bool) []string {
 	env := os.Environ()
-	for _, name := range []string{changedFilesEnv, checkkit.ScopeFileEnv, "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE", bodycheck.BlobEnv} {
+	for _, name := range []string{changedFilesEnv, checkkit.ScopeFileEnv, comments.ViewsEnv, "FITNESS_STAGED_FILES", "FITNESS_CTX_MESSAGE", bodycheck.BlobEnv} {
 		env = withoutVar(env, name)
 	}
 	names := make([]string, len(checks))

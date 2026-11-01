@@ -25,17 +25,29 @@ func Place(root string, blocks []Block) error {
 	return errors.Join(errs...)
 }
 
-// placeFile places the blocks of one file.
+// placeFile places the blocks of one file, unless the runner's views
+// placed them.
 func placeFile(root string, blocks []Block) error {
+	if blocks[0].placed {
+		return nil
+	}
 	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(blocks[0].Path)))
 	if err != nil {
 		return err
+	}
+	placeSource(blocks, src)
+	return nil
+}
+
+// placeSource places the blocks of one file holding src.
+func placeSource(blocks []Block, src []byte) {
+	if len(blocks) == 0 {
+		return
 	}
 	place := placer(blocks[0].Lang, src)
 	for i := range blocks {
 		place(&blocks[i])
 	}
-	return nil
 }
 
 // placer returns the function that places a block of src, an inline one always in a body.

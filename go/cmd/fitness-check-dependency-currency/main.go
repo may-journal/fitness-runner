@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 )
 
@@ -273,10 +274,10 @@ func registryFrom(root string) string {
 	return defaultRegistry
 }
 
-// npmrcRegistry returns the "registry" value from one .npmrc, trailing
-// slash trimmed; empty when the file or the key is absent.
+// npmrcRegistry returns the "registry" value from one .npmrc's code view,
+// trailing slash trimmed; empty when the file or the key is absent.
 func npmrcRegistry(path string) string {
-	raw, err := os.ReadFile(path)
+	raw, err := comments.CodeFile("", path)
 	if err != nil {
 		return ""
 	}
@@ -289,23 +290,13 @@ func npmrcRegistry(path string) string {
 }
 
 // registryValue extracts the trimmed, slash-trimmed "registry" value from
-// one .npmrc line; empty for comments, blanks, other keys, or empty values.
+// one .npmrc line; empty for blanks, other keys, or empty values.
 func registryValue(line string) string {
-	line = strings.TrimSpace(line)
-	if isNpmrcComment(line) {
-		return ""
-	}
 	key, value, found := strings.Cut(line, "=")
 	if !found || strings.TrimSpace(key) != "registry" {
 		return ""
 	}
 	return strings.TrimRight(strings.TrimSpace(value), "/")
-}
-
-// isNpmrcComment reports whether a trimmed .npmrc line carries no key=value:
-// blank lines and #- or ;-prefixed comments.
-func isNpmrcComment(line string) bool {
-	return line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, ";")
 }
 
 // fetchLatest resolves each name's dist-tags.latest from the registry with

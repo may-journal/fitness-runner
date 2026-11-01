@@ -10,6 +10,8 @@ Checks a Java repo pins its JDK and that the machine's JDKs satisfy the pin, thr
 - Maven's `maven.compiler.release` or compiler `release`, one `${property}` deep.
 - A Gradle toolchain's `JavaLanguageVersion.of(N)`.
 
+Each file is read through its code view, so a commented-out pin never counts.
+
 A pom that names no release takes one from its parents outside the repo, read from the local Maven repository. That is the one `.mvn/maven.config` or `MAVEN_OPTS` sets, else the user settings' `localRepository`, else `~/.m2/repository`. The properties of the pom and its parents in the repo come first, so a parent may map a property the pom sets. A parent the local repository lacks fails, when nothing else pins a release, asking to run the build once.
 
 ## Toolchains

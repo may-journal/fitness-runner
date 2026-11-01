@@ -8,6 +8,7 @@
 // # Behavior
 //
 //   - Scans every tracked file with min-lines 5, min-tokens 50, tests, Markdown, and JSON included.
+//   - Reads each file's code view, so commented-out code never counts and only the ignore markers below stay.
 //   - Binary files are skipped, since they have no lines to compare.
 //   - Files the repo's `.gitattributes` marks `linguist-generated` are left out.
 //   - Lockfiles and build wrapper files are left out, as each [language module] or the [lockfiles] folder names them.

@@ -3,12 +3,11 @@ package swift
 import (
 	"fmt"
 	"maps"
-	"os"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -46,12 +45,12 @@ var (
 
 // scanSwift reads every Swift file and returns its tests: XCTest methods named
 // test… in a class that inherits XCTestCase, and functions marked @Test.
-// Comments and string literals are blanked first, so a name inside them is
-// never a test.
+// It reads each file's code view and blanks its strings, so a name in a
+// comment or a string is never a test.
 func scanSwift(root string, files []string) ([]lang.Test, error) {
 	var tests []lang.Test
 	for _, f := range files {
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
+		data, err := comments.CodeFile(root, f)
 		if err != nil {
 			return nil, err
 		}

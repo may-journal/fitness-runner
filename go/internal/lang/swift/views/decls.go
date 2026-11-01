@@ -16,7 +16,6 @@ var Reader = codemodel.Reader{
 	Exts:       []string{swift.Ext},
 	Read:       read,
 	References: references,
-	Strip:      codemodel.Strip,
 }
 
 // cspell:ignore fileprivate nonmutating nonisolated typealias

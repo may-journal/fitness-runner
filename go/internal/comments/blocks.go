@@ -1,5 +1,7 @@
 package comments
 
+// cspell:ignore sdkmanrc
+
 import (
 	"os"
 	"path"
@@ -33,6 +35,8 @@ type Block struct {
 	InBody bool
 	// Next is the trimmed code line after an own-line comment, as Place sets it.
 	Next string
+	// placed marks a block that came placed from the runner's views.
+	placed bool
 }
 
 // note is one comment as written, markers included, before adjacent notes join
@@ -50,6 +54,9 @@ var langs = map[string]string{
 	".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
 	".java": "java", ".kt": "kotlin", ".kts": "kotlin", ".rs": "rust",
 	".sh": "shell", ".bash": "shell", ".zsh": "shell", ".yml": "yaml", ".yaml": "yaml",
+	".gradle": "groovy", ".groovy": "groovy", ".xml": "xml",
+	".java-version": "config", ".sdkmanrc": "config", ".tool-versions": "config",
+	".nvmrc": "config", ".node-version": "config", ".npmrc": "ini",
 }
 
 // lexers holds the lexer settings of each C-style language.
@@ -57,6 +64,7 @@ var lexers = map[string]Lexer{
 	"typescript": {Templates: true},
 	"javascript": {Templates: true},
 	"java":       {},
+	"groovy":     {TripleSingle: true},
 	"kotlin":     {Nested: true},
 	"rust":       {Nested: true, Lifetimes: true, RawStrings: true},
 }
@@ -70,8 +78,12 @@ var readers = map[string]func(src []byte) []note{
 	"typescript": cReader(lexers["typescript"]),
 	"javascript": cReader(lexers["javascript"]),
 	"java":       cReader(lexers["java"]),
+	"groovy":     cReader(lexers["groovy"]),
 	"kotlin":     cReader(lexers["kotlin"]),
 	"rust":       cReader(lexers["rust"]),
+	"xml":        xmlNotes,
+	"config":     lineNotes("#"),
+	"ini":        lineNotes("#", ";"),
 }
 
 // shebang names a shell interpreter on a file's first line, which makes a
@@ -88,11 +100,17 @@ func Lang(rel string, src []byte) string {
 	return langs[ext]
 }
 
-// Files returns the comment blocks of paths under root in path order, skipping generated and unread files.
+// Files returns the comment view of paths under root in path order,
+// skipping generated and unread files. It reads the runner's shared views
+// where they match.
 func Files(root string, paths []string) ([]Block, error) {
 	var blocks []Block
 	for _, rel := range walkfs.WithoutGenerated(root, paths) {
 		if !covered(rel) {
+			continue
+		}
+		if shared, ok := sharedBlocks(root, rel); ok {
+			blocks = append(blocks, shared...)
 			continue
 		}
 		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
@@ -266,14 +284,15 @@ func kind(n note) Kind {
 	return Doc
 }
 
-// goDirective matches a Go directive such as //go:build, //line, //export or //extern.
-var goDirective = regexp.MustCompile(`^//([a-z0-9]+:[a-z0-9]|line |export |extern )`)
+// goDirective matches a Go directive such as //go:build, //line, //export or
+// //extern, or the line that marks a generated file, which tools read.
+var goDirective = regexp.MustCompile(`^//([a-z0-9]+:[a-z0-9]|line |export |extern | Code generated .* DO NOT EDIT\.$)`)
 
 // toolDirectives open a comment that speaks to a tool, not a reader.
 // Each is matched in the case and form the tool reads, so prose that
 // only starts with a tool name stays.
 var toolDirectives = []string{
-	"swiftlint:", "eslint-disable", "eslint-enable", "prettier-ignore", "jscpd:",
+	"swiftlint:", "eslint-disable", "eslint-enable", "prettier-ignore", "jscpd:", "duplicate-code:",
 	"@ts-", "+build", "yaml-language-server:",
 }
 
@@ -320,11 +339,14 @@ func strip(text string) string {
 	if body, ok := strings.CutPrefix(text, "/*"); ok {
 		return stripBlock(strings.TrimSuffix(body, "*/"))
 	}
+	if body, ok := strings.CutPrefix(text, "<!--"); ok {
+		return stripBlock(strings.TrimSuffix(body, "-->"))
+	}
 	body, ok := strings.CutPrefix(text, "//")
 	if ok {
 		body = strings.TrimLeft(body, "/!")
 	} else {
-		body = strings.TrimPrefix(text, "#")
+		body = strings.TrimPrefix(strings.TrimPrefix(text, ";"), "#")
 	}
 	return strings.TrimRight(strings.TrimPrefix(body, " "), " \t\r")
 }

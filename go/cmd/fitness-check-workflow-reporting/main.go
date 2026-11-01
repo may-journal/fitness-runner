@@ -3,11 +3,10 @@ package check
 import (
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -64,9 +63,9 @@ func workflowFiles(root string) []string {
 	return out
 }
 
-// judgeFile reads one workflow and judges each job, giving one finding at the line where YAML reading stopped.
+// judgeFile reads one workflow's code view and judges each job, giving one finding at the line where YAML reading stopped.
 func judgeFile(root, file string) ([]checkkit.Finding, error) {
-	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	content, err := comments.CodeFile(root, file)
 	if err != nil {
 		return nil, err
 	}

@@ -4,11 +4,11 @@ package runtimes
 
 import (
 	"fmt"
-	"os"
 	"path"
-	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 )
 
 // Location is a one-based line in tracked repository content.
@@ -141,9 +141,10 @@ func (f *Finder) Fail(at Location, format string, args ...any) {
 	f.Errors = append(f.Errors, at.String()+": "+fmt.Sprintf(format, args...))
 }
 
-// Lines reads a tracked file as lines; an unreadable file is an error.
+// Lines reads a tracked file's code view as lines, so commented-out code
+// proves nothing; an unreadable file is an error.
 func (f *Finder) Lines(file string) ([]string, bool) {
-	body, err := os.ReadFile(filepath.Join(f.root, filepath.FromSlash(file)))
+	body, err := comments.CodeFile(f.root, file)
 	if err != nil {
 		f.Fail(Location{file, 1}, "cannot read: %v", err)
 		return nil, false

@@ -20,7 +20,6 @@ var Reader = codemodel.Reader{
 	Exts:       []string{golang.Ext},
 	Read:       read,
 	References: references,
-	Strip:      codemodel.Strip,
 }
 
 // goIndex reads Go declarations from syntax and resolves uses with

@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -108,7 +109,7 @@ var moduleRe = regexp.MustCompile(`<module>\s*([^<\s]+)\s*</module>`)
 
 // listsModule reports whether parent's pom lists p's folder as a module.
 func listsModule(root string, parent, p Project) bool {
-	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(parent.Dir), "pom.xml"))
+	body, err := comments.CodeFile(root, path.Join(parent.Dir, "pom.xml"))
 	if err != nil {
 		return false
 	}
@@ -316,9 +317,9 @@ func inProject(p Project, file string) bool {
 	return p.Dir == "." || strings.HasPrefix(file, p.Dir+"/")
 }
 
-// matches reports whether the tracked file's text matches pattern.
+// matches reports whether the tracked file's code view matches pattern.
 func matches(root, file string, pattern *regexp.Regexp) bool {
-	body, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+	body, err := comments.CodeFile(root, file)
 	return err == nil && pattern.Match(body)
 }
 

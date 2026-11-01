@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/javascript"
 )
 
@@ -37,7 +38,7 @@ func LoadExclude(root string) []string {
 // first vitest.config.* file, else its package.json "vitest" object.
 func LoadExcludeFromRoot(root string) (exclude []string, found bool) {
 	for _, name := range ConfigNames {
-		data, err := os.ReadFile(filepath.Join(root, name))
+		data, err := comments.CodeFile(root, name)
 		if err != nil {
 			continue
 		}

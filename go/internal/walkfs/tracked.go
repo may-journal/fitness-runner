@@ -67,11 +67,12 @@ func listTracked(root string) (trackedList, error) {
 	return trackedList{files: files, ok: true}, nil
 }
 
-// Shared is one run's tracked-file list: Env hands it to checks, Files counts
-// its paths, and Remove deletes it.
+// Shared is one run's tracked-file list. Env hands it to checks, Files counts
+// its paths, Paths lists them for the runner, and Remove deletes it.
 type Shared struct {
 	Env    []string
 	Files  int
+	Paths  []string
 	Remove func()
 }
 
@@ -79,7 +80,7 @@ type Shared struct {
 // check stats them again; on failure checks list their own.
 func ShareTracked(root string) (Shared, error) {
 	none := Shared{Remove: func() {}}
-	content, files, err := trackedSnapshot(filepath.Clean(root))
+	content, paths, err := trackedSnapshot(filepath.Clean(root))
 	if content == nil {
 		return none, err
 	}
@@ -93,25 +94,25 @@ func ShareTracked(root string) (Shared, error) {
 		remove()
 		return none, nil
 	}
-	return Shared{Env: []string{TrackedFilesEnv + "=" + f.Name()}, Files: files, Remove: remove}, nil
+	return Shared{Env: []string{TrackedFilesEnv + "=" + f.Name()}, Files: len(paths), Paths: paths, Remove: remove}, nil
 }
 
-// trackedSnapshot is the shared file's content for root and its path count, or
+// trackedSnapshot is the shared file's content for root and its paths, or
 // nil when git or the index cannot be read.
-func trackedSnapshot(root string) ([]byte, int, error) {
+func trackedSnapshot(root string) ([]byte, []string, error) {
 	index, err := gitx.Repo(root).GitPath("index")
 	if err != nil {
-		return nil, 0, stalledOnly(err)
+		return nil, nil, stalledOnly(err)
 	}
 	// The stamp is read before the listing, so an index rewritten in
 	// between only makes checks list their own files.
 	stamp, ok := indexStamp(index)
 	entries, err := gitx.Repo(root).IndexEntries()
 	if err != nil || !ok {
-		return nil, 0, stalledOnly(err)
+		return nil, nil, stalledOnly(err)
 	}
 	files := onDisk(root, regularEntries(entries))
-	return encodeTracked([]string{root, index, stamp}, files), len(files), nil
+	return encodeTracked([]string{root, index, stamp}, files), files, nil
 }
 
 // regularEntries keeps the paths whose index mode is a regular file, once

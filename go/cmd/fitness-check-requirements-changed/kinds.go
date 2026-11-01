@@ -1,13 +1,12 @@
 package check
 
 import (
-	"os"
 	"path"
-	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -147,11 +146,12 @@ func isProductPath(f string) bool {
 	})
 }
 
-// isGeneratedGo reports whether a Go file on disk says it is generated.
+// isGeneratedGo reports whether a Go file's code view keeps the line that
+// marks it generated.
 func isGeneratedGo(root, f string) bool {
 	if path.Ext(f) != ".go" {
 		return false
 	}
-	data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(f)))
+	data, err := comments.CodeFile(root, f)
 	return err == nil && generatedGo.Match(data)
 }

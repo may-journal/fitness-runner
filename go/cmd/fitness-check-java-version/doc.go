@@ -10,6 +10,9 @@
 //   - Maven's `maven.compiler.release` or compiler `release`, one `${property}` deep.
 //   - A Gradle toolchain's `JavaLanguageVersion.of(N)`.
 //
+// Each file is read through its code view, so a commented-out pin never
+// counts.
+//
 // A pom that names no release takes one from its parents outside the repo,
 // read from the local Maven repository. That is the one `.mvn/maven.config`
 // or `MAVEN_OPTS` sets, else the user settings' `localRepository`, else
