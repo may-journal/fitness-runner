@@ -2,9 +2,8 @@
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 
-# Build the toolchain (fast when warm) and gate the commit on the fitness
-# suite. The suite's gofmt, go-vet, and go-test checks cover the CI gate, so
-# `make check` is not run twice. exec keeps git as the parent process, so
-# the hook can tell an amend apart.
+# The hook builds the toolchain and gates the commit on the fitness suite, whose
+# Go checks already cover `make check`. exec keeps git as the parent process,
+# so the hook can tell an amend apart.
 make build
 exec go/bin/fitness hook pre-commit

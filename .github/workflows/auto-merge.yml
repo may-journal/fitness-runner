@@ -1,18 +1,9 @@
 name: Auto-merge
-# Runs in every may-journal repo as a required workflow, from the org ruleset
-# in may-journal/.github (rulesets/auto-merge-workflow.json). It lives here
-# because this repo is public: public repos cannot run a private repo's
-# workflows, and private repos can run a public one's. It turns on squash
-# auto-merge for each ready pull request, so it merges once approved and
-# green. It acts as the may-journal-automation GitHub App, so the timeline
-# names automation rather than a person or Claude's bot. GitHub starts no
-# workflows from GITHUB_TOKEN pushes, so an App token keeps CI running on main.
-#
-# The ruleset starts it only on opened, reopened, and synchronize, whatever
-# types are listed. GitHub refuses auto-merge on a draft, so a draft marked
-# ready needs the auto-merge-on-ready.yml caller, which calls this workflow.
-# That caller also calls it on an approval, so a native stack can merge.
-# The org's copy of that caller also calls it when a PR's base changes.
+# The org ruleset runs this public workflow in every repo to turn on squash
+# auto-merge for each ready pull request. The
+# rules it meets are in
+# https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0091-github-auto-merge.md
+# and auto-merge-on-ready.yml covers the events the ruleset never sends.
 on:
   pull_request:
     types: [opened, reopened, synchronize]
@@ -23,9 +14,9 @@ permissions:
 
 jobs:
   auto-merge:
-    # Only an open, ready PR without auto-merge yet needs it turned on, so
-    # every other push skips before a runner starts and bills nothing.
-    # Closing a PR turns its auto-merge off, so a reopen always runs.
+    # Only an open, ready PR without auto-merge needs it, so other pushes skip
+    # before a runner starts. Closing a PR turns its auto-merge off, so a
+    # reopen always runs.
     if: >-
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.draft == false &&
@@ -57,18 +48,11 @@ jobs:
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
-      # GitHub refuses auto-merge on a stacked PR. A native stack, from
-      # `gh stack`, merges whole: once every PR in it is approved, green and
-      # mergeable, the job asks GitHub's asynchronous merge for the top PR,
-      # which lands the PRs below it too, and polls the answer. It never
-      # pushes, rebases or bypasses rules, so no approval is dismissed.
-      # A branch chain, a PR based on another PR's branch with no stack,
-      # cannot merge that way: merging a child into its parent pushes to the
-      # parent and dismisses its approval. Its PR passes with one comment,
-      # the note, saying so. Once GitHub moves it onto the default branch,
-      # the next run turns auto-merge on and edits the note to say so. Any
-      # other refusal fails the job with GitHub's answer. It reads the event
-      # file, as a test can.
+      # A ready native stack merges through its top PR, and a branch chain
+      # passes with one note until GitHub moves it onto main. The
+      # stack rules are in
+      # https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0095-github-auto-merge-stacks.md
+      # and any other refusal fails with GitHub's answer.
       - name: Enable squash auto-merge
         id: merge
         env:

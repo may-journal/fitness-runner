@@ -10,9 +10,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// eslintDisableRe matches any eslint disable directive form (file, block,
-// `-line`, and `-next-line`); the alternation order makes the match token
-// the full directive, exactly like the TS regex.
+// eslintDisableRe matches any eslint disable directive form, with alternation order making the match the full directive.
 var eslintDisableRe = regexp.MustCompile(`eslint-disable(-next-line|-line)?`)
 
 func Main() {

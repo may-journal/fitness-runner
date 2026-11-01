@@ -1,6 +1,4 @@
-// Unlike its four siblings this check does not use the RunDocCheck driver,
-// since it compares level files with each other rather than judging each
-// file alone.
+// Unlike its four siblings this check skips the RunDocCheck driver, because it compares level files with each other.
 
 package check
 
@@ -31,9 +29,7 @@ var levelFile = regexp.MustCompile(`(?:^|/)architecture/(\d+)[^/]*\.md$`)
 // descriptionHeader matches a table header cell naming the description column.
 var descriptionHeader = regexp.MustCompile(`(?i)^description$`)
 
-// jsWS is the JavaScript \s character class as an RE2 class body — the
-// residue of internal/mermaid's unexported twin, needed here because the TS
-// check normalizes descriptions with .trim() and .replace(/\s+/g, ' ').
+// jsWS is the JavaScript \s class as an RE2 class body, copied from internal/mermaid's unexported twin.
 const jsWS = `\t\n\v\f\r \x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}`
 
 // jsSpaceRun matches one or more JavaScript whitespace characters.

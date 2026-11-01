@@ -1,10 +1,8 @@
 name: Auto-merge on ready
-# The org ruleset never starts auto-merge.yml on ready_for_review, so a draft
-# marked ready would not get auto-merge. This caller runs it on that event.
-# pull_request_target runs the base branch's copy and checks out no PR code.
-# An approval runs it too, so a native stack merges once its last PR is
-# approved. GitHub has no pull_request_target form of a review event, and a
-# fork's PR gets no secrets, so only approvals of this repo's branches run.
+# This caller runs auto-merge.yml on two events the org ruleset skips: a draft
+# marked ready, and an approval of a native stack. Its
+# pull_request_target event checks out no PR code, and only approvals of this
+# repo's branches run, since a fork's PR gets no secrets.
 on:
   pull_request_target:
     types: [ready_for_review]

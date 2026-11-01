@@ -14,11 +14,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-// runHook dispatches a `fitness hook <name>` invocation. The installed hooks
-// are one-line shims that call this, so the orchestration lives here in Go
-// rather than in each repo's Bash. A hook owns the terminal, so every git,
-// ssh and gh it starts, the pre-push gate's too, fails instead of asking for
-// a password.
+// runHook dispatches a `fitness hook <name>` call from the one-line shims.
+// Every git, ssh and gh a hook starts fails instead of asking for a password.
 func runHook(name string, args []string) int {
 	if err := chdirToplevel(); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness hook: "+err.Error())
@@ -49,11 +46,8 @@ func chdirToplevel() error {
 	return os.Chdir(top)
 }
 
-// hookCommitMsg validates the proposed commit message with semantic-commit,
-// plan-trailer, and issue-link-once — the message file is the first
-// argument. It also runs requirements-changed on the staged files. An amend
-// is judged against the amended commit's parent. The four run in one pool, sharing one table, and any failure fails
-// the hook.
+// hookCommitMsg runs semantic-commit, plan-trailer, issue-link-once and
+// requirements-changed in one pool, judging an amend against its parent.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)
 	if !ok {
@@ -63,9 +57,8 @@ func hookCommitMsg(args []string) int {
 	return runMessageChecks(commitMsgChecks(), msg)
 }
 
-// runMessageChecks resolves each named check as a single-check run would,
-// then runs those that read the message from the environment at once, and
-// any others one by one as before. No names run nothing.
+// runMessageChecks resolves each named check as a single-check run would, runs
+// environment readers together and the others one by one.
 func runMessageChecks(names []string, msg string) int {
 	if len(names) == 0 {
 		return 0
@@ -97,10 +90,8 @@ func runPooledMessage(root string, pooled []resolved, msg string) int {
 	return runChecks(root, "", pooled, nil, append(env, "FITNESS_CTX_MESSAGE="+msg), func() {})
 }
 
-// splitByMessageArg separates the checks that read the message from
-// FITNESS_CTX_MESSAGE, which the runner sets for any check naming a
-// context argument, from those, such as a repo's own override, that take
-// --message on their command line and so run one at a time.
+// splitByMessageArg separates checks reading FITNESS_CTX_MESSAGE from those, such
+// as a repo override, that take --message and run one at a time.
 func splitByMessageArg(checks []resolved) (pooled, alone []resolved) {
 	for _, check := range checks {
 		if check.desc.ContextInlineArg != "" {
@@ -196,11 +187,8 @@ func hookPreCommit() int {
 	return runLocalHook()
 }
 
-// runLocalHook runs .githooks/pre-commit.local when it is present and
-// executable, so a repo adds its own build without forking the shared hook.
-// It gets the budget of a check that declares none, so timeoutMs tunes it.
-// Past the budget its process group is stopped, as a check's is, and the
-// commit is refused.
+// runLocalHook runs an executable .githooks/pre-commit.local so a repo adds its
+// own build, and refuses the commit once the timeoutMs budget stops it.
 func runLocalHook() int {
 	const path = ".githooks/pre-commit.local"
 	info, err := os.Stat(path)

@@ -64,9 +64,7 @@ func workflowFiles(root string) []string {
 	return out
 }
 
-// judgeFile reads one workflow and judges each of its jobs. A file YAML
-// cannot read is one finding at the line where reading stopped. An error
-// means the file could not be read at all.
+// judgeFile reads one workflow and judges each job, giving one finding at the line where YAML reading stopped.
 func judgeFile(root, file string) ([]checkkit.Finding, error) {
 	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 	if err != nil {
@@ -101,9 +99,7 @@ func appendFinding(list []checkkit.Finding, f *checkkit.Finding) []checkkit.Find
 	return append(list, *f)
 }
 
-// judgeJob judges one job. A job without steps, such as one that calls a
-// reusable workflow, has nothing to report from; a matrix job is one
-// definition, so it is judged once.
+// judgeJob judges one job once, even a matrix job, and a job without steps, such as a workflow call, reports nothing.
 func judgeJob(file string, job entry) *checkkit.Finding {
 	steps := job.val.get("steps")
 	if steps == nil || hasReporter(steps) {

@@ -16,8 +16,8 @@
 //   - `04-code.md`: classes and functions.
 //   - `05-user-journey.md`: journey steps and the requirement IDs they fulfil.
 //
-// No views means a pass with zero files, unless the repo has product code in
-// a [language module]'s sources. Then the check fails and asks for all five.
+// No views passes with zero files, but a repo with product code in a
+// [language module]'s sources fails and asks for all five.
 // Product code is any such tracked file except tests, tool configs, and files
 // marked `linguist-generated`. Each module names its own tests and tool
 // configs.
@@ -27,7 +27,7 @@
 //
 // # Scope
 //
-// A test, changelog or doc change cannot move the views. So a scoped run
+// A test, changelog or doc change cannot move the views. A scoped run
 // with no changed view, requirement doc, product or tool source, manifest
 // or `.gitattributes` passes with zero files.
 // Every other run reads the whole model.

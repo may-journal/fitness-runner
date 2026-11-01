@@ -39,16 +39,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # Full history and the PR head (not the merge commit) so
-          # changelog-updated, semantic-commit, and plan-trailer see a real
-          # commit and its ancestry, and a pull request can diff against its
-          # base branch to check only the files it changes.
+          # Full history at the PR head lets the commit checks see real commits
+          # and their ancestry. A pull request then diffs against its base to
+          # check only the files it changes.
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      # Go repos: the Go the repo's go.mod names, the root one or else the
-      # shallowest, so setup-go uses the runner's copy instead of
-      # downloading the newest stable release for 9-16 s. A repo's Go checks
-      # in fitness/ count too: fitness/go.mod gets the Go that builds them.
+      # Go repos use the Go their root or shallowest go.mod names, so setup-go
+      # takes the runner's copy instead of a 9-16 s download. A fitness/go.mod
+      # picks the Go that builds the repo's own Go checks.
       - name: Find the Go module file
         id: go-module
         if: ${{ inputs.ref != '' || hashFiles('**/go.mod') != '' }}
@@ -63,8 +61,8 @@ jobs:
           # A source build of fitness keeps the newest stable Go it needs.
           go-version: ${{ (inputs.ref != '' || steps.go-module.outputs.file == '') && 'stable' || '' }}
           go-version-file: ${{ inputs.ref == '' && steps.go-module.outputs.file || '' }}
-          # No org repo has a go.sum to key on, so setup-go's cache would
-          # only log a warning; the next step caches the build instead.
+          # No org repo has a go.sum for setup-go's cache to key on. The next
+          # step caches the build instead.
           cache: false
       # go-test and go-vet compile for 26-28 s with a cold build cache. Each
       # run saves the cache under its source hash, so the PR's next push
@@ -88,10 +86,9 @@ jobs:
       - name: Install npm packages
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npm ci
-      # Java repos: the spotless, checkstyle, java-version, and java-test
-      # checks run the build with the JDK a root version file pins, in the
-      # java-version check's order. A .sdkmanrc or .tool-versions counts
-      # only with a java line, since it may pin other tools alone.
+      # Java repos build with the JDK a root version file pins, read in the
+      # java-version check's order. A .sdkmanrc or .tool-versions counts only
+      # with a java line, since it may pin other tools alone.
       - name: Find the JDK version file
         id: jdk
         if: ${{ hashFiles('.java-version', '.sdkmanrc', '.tool-versions') != '' }}
@@ -153,8 +150,8 @@ jobs:
       # exists at its tag or sha; without a token it skips with a note.
       - name: Run fitness
         id: report-step-2
-        # A caller may run this workflow from several jobs, which all share
-        # one job name here, so a random id keeps each artifact name unique.
+        # Several caller jobs may share this one job name, so a random id
+        # keeps each artifact name unique.
         run: |
           printf 'FITNESS_PERFORMANCE_ID=%s\n' "$RANDOM$RANDOM$RANDOM" >> "$GITHUB_ENV"
           fitness --json="$RUNNER_TEMP/fitness-performance/fitness.json"

@@ -70,8 +70,8 @@ func runBlob(argv []string) int {
 	return judgeBlob(root, req, run, skipped, blobEnv(run, req.checks != nil))
 }
 
-// blobConfig reads the repo's config and local checks, and returns the suite
-// they leave, so a text meets the same checks as the repo's files.
+// blobConfig returns the suite the repo's config and local checks leave, so a
+// text meets the same checks as the repo's files.
 func blobConfig() (string, *conf.Config, []string, error) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -106,9 +106,8 @@ func configuredChecks(cfg *conf.Config) (string, []string, error) {
 	return policy, names, err
 }
 
-// judgeBlob saves the text where the checks read it with --body-file, runs
-// them with env, prints the usual summary with the skipped checks named, and
-// writes the --json report when asked.
+// judgeBlob saves the text for --body-file, runs the checks with env, and
+// prints the summary naming skipped checks plus any --json report.
 func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []string) int {
 	file, err := metadata.WriteBody(req.text)
 	if err != nil {
@@ -178,8 +177,8 @@ func parseBlob(argv []string, stdin io.Reader) (blobRequest, error) {
 	return withText(req, req.values[0], stdin)
 }
 
-// take consumes argv[i], a --blob value, a --checks list, or a --json file,
-// and returns how many tokens it used; anything else is a usage error.
+// take consumes argv[i] as a --blob value, --checks list, or --json file and
+// returns the tokens used; anything else is a usage error.
 func (r *blobRequest) take(argv []string, i int) (int, error) {
 	if v, consumed, ok := blobValue(argv, i); ok {
 		r.values = append(r.values, v)
@@ -250,9 +249,8 @@ func withText(req blobRequest, value string, stdin io.Reader) (blobRequest, erro
 	return req, nil
 }
 
-// blobChecks resolves the suite, or the --checks selection, and splits it
-// into the checks that declare blob input and the names of those that need
-// files.
+// blobChecks resolves the suite or the --checks selection, splitting it into
+// blob-capable checks and the names of those that need files.
 func blobChecks(suite, selected []string) (run []resolved, skipped []string, err error) {
 	names, err := blobSelection(suite, selected)
 	if err != nil {
@@ -285,9 +283,8 @@ func splitBlob(checks []resolved) (run []resolved, skipped []string) {
 	return run, skipped
 }
 
-// blobSelection returns the names to consider: every check under the repo's
-// local checks and disabledChecks, or the --checks list when it names only
-// known checks, each once.
+// blobSelection returns each name to consider once: the checks left by local
+// checks and disabledChecks, or a --checks list of only known checks.
 func blobSelection(suite, selected []string) ([]string, error) {
 	if selected == nil {
 		return suite, nil

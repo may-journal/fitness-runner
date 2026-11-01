@@ -22,8 +22,8 @@ type topic struct {
 }
 
 // runDocs handles `fitness docs [topic]`: with no topic it lists them, and
-// with one it prints that topic. An unknown topic, more than one, or a flag
-// such as --help exits 2: a flag with the usage, a name with the topics.
+// with one it prints that topic. An unknown topic, extra topics, or a flag
+// such as --help exits 2, with the usage or the topics.
 func runDocs(args []string) int {
 	switch {
 	case len(args) == 0:

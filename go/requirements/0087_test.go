@@ -33,7 +33,7 @@ func listed0087(n int, title, body string, parent int, closedAt string) string {
 }
 
 // dupeGitHub is the saved GitHub that lists issues and holds note, the bot's
-// earlier note on issue n as the lookup prints it. Every write succeeds.
+// earlier note on issue n as the lookup prints it. Every write to it succeeds.
 func dupeGitHub(n int, note string, issues ...string) []response {
 	var open, closed string
 	for _, line := range issues {

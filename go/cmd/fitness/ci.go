@@ -35,9 +35,8 @@ func isGitHubActions() bool {
 }
 
 // emitCIReport writes the job summary and prints error annotations when
-// running under GitHub Actions. It never changes the process result — the
-// exit code still comes from the check outcomes — so it is additive to the
-// terminal table a local run prints.
+// running under GitHub Actions. It never changes the exit code, which still
+// comes from the check outcomes, and adds to the terminal table.
 func emitCIReport(rows []render.Row, found [][]checkkit.Finding, perf perfReport, t render.Totals) {
 	writeStepSummary(ciSummaryMarkdown(rows, found, t) + timingMarkdown(perf))
 	if t.Failure > 0 {
@@ -56,9 +55,8 @@ func writeStepSummary(md string) {
 	report.WriteSummary(md)
 }
 
-// ciSummaryMarkdown renders the results as a markdown job summary: a
-// status table, then a section per failing check listing its errors and an
-// Info section for checks that could not judge.
+// ciSummaryMarkdown renders the job summary: a status table, a section per
+// failing check, and Info for checks that could not judge.
 func ciSummaryMarkdown(rows []render.Row, found [][]checkkit.Finding, t render.Totals) string {
 	var b strings.Builder
 	b.WriteString("## Fitness checks\n\n")
@@ -95,9 +93,8 @@ func budgetShare(c perfCheck) int64 {
 	return c.Ms * 100 / c.TimeoutMs
 }
 
-// headline is the one-line aggregate atop the summary: a positive line when
-// every check passed, otherwise a count of what passed with the failures and
-// info rows named. Both forms name the files scanned and total time.
+// headline is the summary's one-line aggregate: a positive line when all
+// passed, else the pass count with failures and info rows named.
 func headline(t render.Totals) string {
 	total := t.Success + t.Failure + t.Info
 	if t.Failure == 0 && t.Info == 0 {

@@ -129,9 +129,8 @@ func Test0131_8(t *testing.T) {
 const houseReadme = "# House rule\n\nKeeps the house in order. Each room stays tidy.\n\n## Fix\n\nTidy the room the error names.\n"
 
 // shellCheck is a repo whose fitness folder holds one shell check, name,
-// with a README. describe, when set, is the JSON it answers --describe
-// with; otherwise it ignores the handshake. verdict is what it prints when
-// it runs, and an empty verdict makes it hang.
+// with a README; the check answers --describe with describe, else it ignores the
+// handshake. It prints verdict when it runs, and an empty verdict makes it hang.
 func shellCheck(name, describe, verdict string) map[string]string {
 	script := verdictScript(verdict)
 	if describe != "" {
@@ -149,10 +148,9 @@ func verdictScript(verdict string) string {
 	return "#!/bin/sh\necho '" + verdict + "'\n"
 }
 
-// goCheck is a repo whose fitness folder holds one Go check, name, built
-// on the check SDK from this checkout. It fails each Markdown file that
-// holds a TODO. marker goes into its source, so a test that needs a cold
-// build gets source no other test built.
+// goCheck is a repo with one Go check, built on this checkout's SDK, that fails
+// each Markdown file holding a TODO. marker goes into its source, so a test that
+// needs a cold build gets source no other test built.
 func goCheck(t *testing.T, name, marker string) map[string]string {
 	t.Helper()
 	sdk, err := filepath.Abs("..")

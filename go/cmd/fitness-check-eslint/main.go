@@ -81,9 +81,8 @@ func buildExecCheckResult(exitCode int, errs []string, filesChecked int) (checkk
 	return checkkit.Fail(filesChecked, errs...), nil
 }
 
-// applies reports whether ESLint has anything to judge: a JS project, and in
-// a scoped run at least one changed file it lints, so a run with none skips
-// ESLint instead of linting the whole repo.
+// applies reports whether ESLint has anything to judge: a JS project plus,
+// when scoped, at least one changed file it lints.
 func applies(root string) bool {
 	if !node.Applies(root) || !node.HasSource(root) {
 		return false
@@ -133,13 +132,10 @@ func hasLintableExt(p string) bool {
 	return false
 }
 
-// runEslint execs the CLI twin of the TS Node-API invocation: cwd root, the
-// resolved shared config forced via --config (repo-local file, installed
-// @mayjournal/fitness-shared, or the embedded copy materialized on demand —
-// sharedconf.Resolve), unmatched patterns tolerated, JSON out. In the
-// vanishingly rare case nothing materializes, eslint runs on its own config
-// discovery instead. A run that could not start, was killed, crashed, or
-// printed no JSON is an internal error quoting what ESLint printed.
+// runEslint execs the CLI twin of the TS Node-API call, forcing the resolved
+// shared config via --config when one materializes.
+// A run that could not start, was killed, crashed, or printed no JSON is an
+// internal error quoting what ESLint printed.
 func runEslint(root, bin string, paths []string) (errs []string, exitCode, filesChecked int, err error) {
 	var args []string
 	if cfg := sharedconf.Resolve(root, eslintConfigMjs); cfg != "" {
@@ -161,7 +157,7 @@ func runEslint(root, bin string, paths []string) (errs []string, exitCode, files
 }
 
 // lintExit reports whether the process ended with a lint verdict (exit 0 or
-// 1); anything else is a tool crash and takes the fallback path.
+// 1), else a tool crash.
 func lintExit(o checkkit.Outcome) bool {
 	return o.EnvErr("eslint") == nil && o.Code <= 1
 }
@@ -195,9 +191,8 @@ func parseResults(out []byte) ([]eslintResult, bool) {
 	return results, true
 }
 
-// summarize folds parsed results into the TS shape: every message formatted
-// (an ignored-file notice included, as a failure), exit 1 when any file has
-// errors or was ignored, files = results.
+// summarize folds parsed results into the TS shape, exiting 1 when any file
+// has errors or was ignored.
 func summarize(results []eslintResult) (errs []string, exitCode, filesChecked int) {
 	for _, r := range results {
 		if r.ErrorCount > 0 {

@@ -8,10 +8,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/hooks"
 )
 
-// runInit points git at the hook folder the repo ships, .fitness-hooks, or
-// else installs the shared git hooks into .githooks and points git at them,
-// so a consumer repo adopts the canonical hooks by running `fitness init`
-// rather than copying files.
+// runInit points git at the shipped .fitness-hooks folder, or installs the
+// shared hooks into .githooks, so a repo adopts them without copying files.
 func runInit(_ []string) int {
 	root, err := os.Getwd()
 	if err != nil {

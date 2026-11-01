@@ -6,7 +6,7 @@ Keeps the user journey diagram and the requirement docs covering each other. Eve
 
 ## Scope
 
-A test, changelog or doc change cannot move the views. So a scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole journey view and every requirement doc.
+A test, changelog or doc change cannot move the views. A scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole journey view and every requirement doc.
 
 ## Requirement IDs in the diagram
 

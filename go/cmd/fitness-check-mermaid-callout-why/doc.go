@@ -1,8 +1,6 @@
 // Command fitness-check-mermaid-callout-why requires each numbered callout
 // table to carry a "Why" column, and flags numbered rows whose "Why" cell is
-// empty. So tables explain why each element exists, not just what it is. It
-// is part of the mermaid diagram and callout table fitness-function set
-// ([#28]).
+// empty. It is part of the mermaid diagram and callout table fitness-function set ([#28]).
 //
 // # Behavior
 //

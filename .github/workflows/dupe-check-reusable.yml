@@ -1,13 +1,8 @@
 name: Dupe check (reusable)
 
-# Reusable across the org: a consumer repo calls this from an `issues` caller
-# with a manual sweep. It installs the published fitness checks and runs
-# `fitness dupe-check`, which keeps one note on a new issue listing the older
-# issues it resembles, and on a manual run prints every pair's score and
-# writes nothing. Its checkout supplies the repo's `.fitnessrc.json` scores.
-# issue-check-reusable now runs dupe-check in its own job, so this one only
-# answers a manual sweep: an issue event here would note twice and bill a
-# second minute. It stays until no repo carries a dupe-check caller.
+# This runs the published `fitness dupe-check` for a manual sweep, printing every
+# issue pair's score and writing nothing. Issue events get dupe-check from
+# issue-check-reusable, and this file stays until no repo carries its caller.
 on:
   workflow_call:
     inputs:
@@ -26,8 +21,8 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 5
-    # Runs for one Issue queue, so an edit never cancels the opened run,
-    # the only one that can close the Issue as a duplicate.
+    # One queue per Issue keeps an edit from cancelling the opened run, which
+    # alone can close the Issue as a duplicate.
     concurrency:
       group: dupe-check-${{ github.repository }}-${{ github.event.issue.number || github.run_id }}
       cancel-in-progress: false

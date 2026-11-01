@@ -79,8 +79,8 @@ jobs:
           draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
           case "$draft" in true|false) ;; *) exit 1 ;; esac
           printf 'draft=%s\n' "$draft" >> "$GITHUB_OUTPUT"
-      # The notes go on while the release is a draft, so a failure here leaves
-      # it unpublished, and GoReleaser keeps them when it publishes.
+      # Writing the notes on the draft means a failure leaves it unpublished.
+      # GoReleaser keeps the notes when it publishes.
       - name: Write the release notes from changelog entry files
         if: ${{ steps.publication.outputs.draft == 'true' }}
         id: report-step-1

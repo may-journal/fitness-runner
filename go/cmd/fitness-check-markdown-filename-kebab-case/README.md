@@ -2,7 +2,7 @@
 
 # markdown-filename-kebab-case
 
-Requires every markdown file name to be kebab-case, standard root docs exempt. So doc trees stay predictable for links, tooling, and case-sensitive CI. Standard root docs (`README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE.md`, `SECURITY.md`) are always exempt.
+Requires every markdown file name to be kebab-case, keeping doc trees predictable for links and CI. Standard root docs (`README.md`, `CHANGELOG.md`, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `LICENSE.md`, `SECURITY.md`) are always exempt.
 
 Two check binaries share one validation core (`go/internal/mdfilename`) — two flavors of the same fitness function, each pinned to one convention:
 

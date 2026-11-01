@@ -33,9 +33,9 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// repoGitConfig is the git config every test repo gets, whatever the host's.
-// A signed tag needs a message no test gives. Background maintenance after a
-// commit can still be writing a pack when the test removes the repo.
+// repoGitConfig is the git config every test repo gets, whatever the host's,
+// since a signed tag needs a message no test gives. Background maintenance after
+// a commit can still be writing a pack when the test removes the repo.
 var repoGitConfig = [][2]string{{"tag.gpgSign", "false"}, {"maintenance.auto", "false"}, {"gc.auto", "0"}}
 
 // keepHostGitOut puts repoGitConfig in the environment, so every git the

@@ -47,9 +47,9 @@ func judgeComment(t *testing.T, comment map[string]any, saved []response, extra 
 	return commentCheck(t, "issue_comment", map[string]any{"action": "created", "issue": issue, "comment": comment}, saved, extra...)
 }
 
-// commentGitHub is the saved GitHub holding notice, the bot's reply to
-// comment 31 as the lookup prints it, and its thumbs-down, id 55. Every
-// write succeeds.
+// commentGitHub is the saved GitHub holding notice, the bot's reply to comment
+// 31 as the lookup prints it, and its thumbs-down, id 55. Every write to it
+// succeeds.
 func commentGitHub(notice string) []response {
 	return []response{
 		{Match: []string{"-X POST"}},

@@ -80,9 +80,8 @@ type finding struct {
 	complexity int
 }
 
-// score computes the complexity of one function body and, recursively, of
-// every function literal nested inside it — each literal scored on its own,
-// its branches excluded from the enclosing function.
+// score computes one function body's complexity and, recursively, each nested
+// literal's, which the enclosing function excludes.
 func score(fset *token.FileSet, name string, pos token.Pos, body *ast.BlockStmt) []finding {
 	c := 1
 	var nested []finding

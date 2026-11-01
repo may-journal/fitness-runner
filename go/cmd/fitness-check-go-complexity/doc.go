@@ -1,6 +1,6 @@
 // Command fitness-check-go-complexity enforces a cyclomatic complexity
-// ceiling on Go functions — the Go-native counterpart of the house eslint
-// rule (`complexity: max 5`) that gates JavaScript and TypeScript.
+// ceiling on Go functions, the Go-native counterpart of the house eslint
+// rule (`complexity: max 5`).
 //
 // # Behavior
 //

@@ -80,8 +80,7 @@ func explainArgs(args []string) (name string, asJSON bool, err error) {
 
 // repoConfig loads this repo's config and local checks, so a local check
 // explains itself too, with the repo's budgets. A config or local check
-// folder that cannot load is an error, as it is for `fitness list`, and so
-// is an install that found no checks.
+// folder that cannot load is an error, as is an install with no checks.
 func repoConfig() (*conf.Config, error) {
 	if installErr != nil {
 		return nil, installErr
@@ -97,8 +96,8 @@ func repoConfig() (*conf.Config, error) {
 	return cfg, loadLocalChecks(cfg, root)
 }
 
-// knownChecks are the names explain answers for: the repo's catalog, and
-// every built-in check, even one a language ignore file leaves out of runs.
+// knownChecks are the names explain answers for: the repo's catalog and every
+// built-in check, even one a language ignore file skips.
 func knownChecks() []string {
 	names := checkCatalog()
 	for name := range builtins {
@@ -109,10 +108,8 @@ func knownChecks() []string {
 	return names
 }
 
-// explainCheck describes the check and reads its documentation: a folder
-// check's README, the generated docs of a built-in check, else the summary
-// its handshake gives. A failed handshake, or a minFitness this fitness
-// does not meet, comes back as the note saying why.
+// explainCheck describes the check from its README, generated docs, or
+// handshake summary. A failed handshake or an unmet minFitness returns a note.
 func explainCheck(cfg *conf.Config, name string) (explained, error) {
 	checks, err := resolveList([]string{name})
 	if err != nil {

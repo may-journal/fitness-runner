@@ -381,9 +381,9 @@ type stamps string
 // span is when one step of one check started and ended.
 type span struct{ start, end time.Time }
 
-// phase returns each check's span for step, read from its log. A retried
-// describe keeps its last try. A check that logged no start or end for
-// step fails the test, so no comparison runs on a missing time.
+// phase returns each check's span for step from its log, keeping a retried
+// describe's last try. A check that logged no start or end for step fails the
+// test, so no comparison runs on a missing time.
 func (s stamps) phase(t *testing.T, step string, checks map[string]int) map[string]span {
 	t.Helper()
 	spans := map[string]span{}
@@ -493,9 +493,9 @@ const progressOn = "FITNESS_PROGRESS=1"
 // before and after it waits.
 const slowFirst, slowLast = "compiling 1 of 3", "compiling 3 of 3"
 
-// slowCheck runs a local check, slow, beside a quick one. Slow declares
-// budgetMs, writes slowFirst to stderr, runs wait, then writes slowLast and
-// passes. It returns the output and exit code.
+// slowCheck runs a local check, slow, beside a quick one and returns the output
+// and exit code. Slow declares budgetMs, writes slowFirst to stderr, runs wait,
+// then writes slowLast and passes.
 func slowCheck(t *testing.T, budgetMs int, wait string, env ...string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", map[string]string{

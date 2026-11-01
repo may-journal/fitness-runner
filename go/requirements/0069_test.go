@@ -284,10 +284,10 @@ func entryAllResolve(t *testing.T, repo, sent string) {
 	}
 }
 
-// entryPending is a repo whose v1.0.0 tag holds entryOldFile and whose main
-// adds two entry files since, with no v1.1.0 tag yet. Release Please's
-// branch adds one version commit, whose hash it returns too. Main then
-// gains a third entry file the release branch lacks.
+// entryPending is a repo whose v1.0.0 tag holds entryOldFile, whose main adds
+// two entry files and then a third, and which has no v1.1.0 tag. Release
+// Please's branch lacks the third file and adds one version commit, whose hash
+// it returns too.
 func entryPending(t *testing.T) (string, string) {
 	t.Helper()
 	repo := entryTagged(t, true)

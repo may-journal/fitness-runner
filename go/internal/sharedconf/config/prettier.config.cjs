@@ -11,8 +11,7 @@ const literal = (text) => text.replace(/[()[\]{}*?!+@\\]/g, '\\$&');
 const fromRepoRoot = (glob) =>
   path.posix.join(literal(path.relative(__dirname, process.cwd()).split(path.sep).join('/')), glob);
 
-/** @type {import('prettier').Config} */
-// package.json sorted via sort-package-json (conventional order); JSON keys sorted recursively.
+/** @type {import('prettier').Config} sorts package.json in sort-package-json's conventional order and JSON keys recursively. */
 const config = {
   jsonRecursiveSort: true,
   plugins: [

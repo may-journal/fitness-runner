@@ -39,9 +39,8 @@ var stagedDiff = func(root string) string {
 }
 
 // replayInProgress reports whether Git is mid-merge, mid-cherry-pick, or
-// mid-revert. Such a commit replays historical entry additions rather than
-// authoring a new entry, so the freshness gates must not apply. A variable so
-// tests can pin it.
+// mid-revert, which replays old entry additions the freshness gates must skip.
+// It is a variable so tests can pin it.
 var replayInProgress = func(root string) bool {
 	for _, ref := range []string{"MERGE_HEAD", "CHERRY_PICK_HEAD", "REVERT_HEAD"} {
 		if gitStateFileExists(root, ref) {
@@ -51,9 +50,8 @@ var replayInProgress = func(root string) bool {
 	return false
 }
 
-// gitStateFileExists reports whether Git's <ref> state file exists, resolving
-// its path with `git rev-parse --git-path` so it holds when the .git entry is
-// a file, not a directory.
+// gitStateFileExists reports whether Git's <ref> state file exists, found with
+// `git rev-parse --git-path` so a .git file works too.
 func gitStateFileExists(root, ref string) bool {
 	cmd := exec.Command("git", "rev-parse", "--git-path", ref)
 	cmd.Dir = root
@@ -90,9 +88,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return judge(parseStagedDiff(stagedDiff(root))), nil
 }
 
-// entryErrors fails a commit that edits an entry file a release holds, then
-// one that adds a second entry file to its branch, then one that adds an
-// entry file not named for its heading's date.
+// entryErrors fails a commit that edits an entry file a release holds.
+// It also fails one adding a second entry file to its branch, or one named
+// for the wrong date.
 func entryErrors(root string) ([]string, error) {
 	if released, err := changelog.StagedReleasedEdits(root); err != nil || len(released) > 0 {
 		return released, err
@@ -103,8 +101,8 @@ func entryErrors(root string) ([]string, error) {
 	return changelog.StagedNameErrors(root), nil
 }
 
-// checkOneEntry keeps a branch to one entry file: once an earlier commit on
-// the branch added one, a later commit amends it and adds none. The message
+// checkOneEntry keeps a branch to one entry file: after an earlier commit
+// added one, a later commit amends it and adds none. The message
 // names the branch's first entry file and every one the commit adds.
 func checkOneEntry(root string) (msg string, ok bool) {
 	own := changelog.BranchEntryFiles(root)
@@ -134,10 +132,8 @@ type diffFile struct {
 	added []string
 }
 
-// parseStagedDiff walks raw `git diff --cached` output preserving the TS
-// parser's quirks exactly: "+++ " headers set the current file (trimmed, one
-// leading "b/" stripped), and added lines — "+" but not "++" — accumulate
-// space-joined per file.
+// parseStagedDiff walks `git diff --cached` output with the TS parser's
+// quirks: "+++ " headers set the file, and "+" lines join per file.
 func parseStagedDiff(diff string) []diffFile {
 	var files []diffFile
 	index := map[string]int{}
@@ -160,11 +156,9 @@ func isAddedLine(current, line string) bool {
 	return current != "" && strings.HasPrefix(line, "+") && !strings.HasPrefix(line, "++")
 }
 
-// accumulateAdded appends one added line's text to path's entry in files —
-// created on first sight — using index (path → position in files) to keep
-// first-appearance order. Empty lines before the first text are dropped, so
-// the parts space-join to what the TS parser's concatenation built, without
-// copying the whole file per line.
+// accumulateAdded appends an added line's text to path's entry in files,
+// creating it on first sight and keeping order via index.
+// Leading empty lines are dropped to match the TS parser's concatenation.
 func accumulateAdded(files []diffFile, index map[string]int, path, text string) []diffFile {
 	i, seen := index[path]
 	if !seen {
@@ -226,10 +220,10 @@ func splitDiff(files []diffFile) (changelogAdded string, restParts []string) {
 	return strings.Join(entryParts, " "), restParts
 }
 
-// judgeOverlap passes when the changelog additions share at least minOverlap
-// distinct words with the rest of the staged diff; otherwise it reports the
-// shortfall (first five overlapping words) and suggests the first
-// suggestWords rest-diff words.
+// judgeOverlap passes when changelog additions share at least minOverlap
+// distinct words with the staged diff.
+// Otherwise it reports the first five shared words and suggests the first
+// suggestWords diff words.
 func judgeOverlap(changelogWords, restWords []string) checkkit.Result {
 	overlap := overlapWords(changelogWords, restWords)
 	if len(overlap) >= minOverlap {

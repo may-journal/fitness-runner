@@ -26,9 +26,9 @@ runs:
       with:
         go-version-file: go/go.mod
         cache: false
-    # One key scheme: family, OS, arch, Go version, then the source hash. Each
-    # part ends in a dash, so no prefix matches another family or arch. The
-    # hash covers every file under go/, so embedded assets count too.
+    # The key is family, OS, arch, Go version, then a hash of every file under
+    # go/, embedded assets included. Each part ends in a dash, so no prefix
+    # matches another family or arch.
     - id: key
       if: ${{ inputs.cache-key != '' }}
       shell: bash

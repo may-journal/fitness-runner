@@ -6,10 +6,7 @@ import (
 	"strings"
 )
 
-// This file reads the YAML a workflow file is written in, keeping the line
-// each value starts on. It reads the block style workflows use: mappings,
-// lists, plain, quoted and block scalars, anchors and aliases. A flow value
-// such as `[a, b]` is kept as its text, since no rule here looks inside one.
+// This file reads the block-style YAML of workflow files, keeping the line each value starts on, and keeps flow values as text.
 
 // kind is what a node holds.
 type kind int
@@ -180,9 +177,7 @@ func (p *parser) collection(l *srcLine) (*node, error) {
 	return p.mapping(l.indent)
 }
 
-// nested reads a value written on the lines after a key or a dash at
-// indent: a list at the same indent after a key, any collection deeper, or
-// an empty value.
+// nested reads a value on the lines after a key or dash at indent: a same-indent list, a deeper collection, or empty.
 func (p *parser) nested(owner *srcLine, keyed bool) (*node, error) {
 	if l := p.peek(); opens(l, owner, keyed) {
 		return p.collection(l)
@@ -255,9 +250,7 @@ func (p *parser) listItem(l *srcLine, indent int) (*node, error) {
 	return p.item(l)
 }
 
-// item reads one list item. An item that opens a mapping or a list on the
-// dash's own line moves that line's indent past the dash, so the
-// collection reads as if it started there.
+// item reads one list item, moving the indent past the dash when it opens a mapping or list on the dash's line.
 func (p *parser) item(l *srcLine) (*node, error) {
 	rest := strings.TrimLeft(strings.TrimPrefix(l.text, "-"), " ")
 	if _, _, keyed := splitKey(rest); keyed || isItem(rest) {

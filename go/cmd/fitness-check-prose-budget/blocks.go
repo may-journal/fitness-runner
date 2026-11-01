@@ -6,8 +6,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// block is one prose unit: a paragraph (isList false, text set) or a list
-// (isList true, items set), tagged with the section it falls under.
+// block is one prose unit, a paragraph with text or a list with items, tagged with its section.
 type block struct {
 	section     int
 	sectionName string
@@ -77,10 +76,7 @@ func (b *builder) fenceToggle(t string) bool {
 	return false
 }
 
-// breakLine handles the lines that contribute no prose — headings (which also
-// open a new section), blanks, and table rows end a block, and a dash-only
-// line such as a Measurement's `-` is skipped — and reports whether the line
-// was one.
+// breakLine handles lines that add no prose: headings, blanks and table rows end a block, and dash-only lines are skipped. It reports whether the line was one.
 func (b *builder) breakLine(t string) bool {
 	switch {
 	case mdx.DashOnly(t):
@@ -96,9 +92,7 @@ func (b *builder) breakLine(t string) bool {
 	return true
 }
 
-// item adds one content line: a list marker closes any open paragraph and
-// starts or extends the list; anything else closes any open list and extends
-// the paragraph.
+// item adds one content line, extending the list for a list marker and the paragraph otherwise.
 func (b *builder) item(raw, t string) {
 	if text, ok := mdx.ListItem(t); ok {
 		b.flushPara()
@@ -110,9 +104,7 @@ func (b *builder) item(raw, t string) {
 	b.para = append(b.para, strings.TrimPrefix(t, "> "))
 }
 
-// depth returns the nesting level of an item indented by indent, tracking
-// the open levels' indents: a deeper indent opens a level, a shallower one
-// closes levels back to it.
+// depth returns the nesting level of an item at indent, opening a level for a deeper indent and closing levels for a shallower.
 func (b *builder) depth(indent int) int {
 	for len(b.indents) > 0 && b.indents[len(b.indents)-1] > indent {
 		b.indents = b.indents[:len(b.indents)-1]

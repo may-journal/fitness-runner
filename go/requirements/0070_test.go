@@ -17,9 +17,9 @@ const (
 	acEvidence  = "#L3)"
 )
 
-// acView writes a view as people already do: a heading, a diagram, and its
-// callout table. Nothing is added for the check. The diagram starts on line
-// 4, so its Nth line is line N+3; the first row sits on line count+8.
+// acView writes a view as people already do, with a heading, a diagram and its
+// callout table, and nothing added for the check. The diagram's Nth line is line
+// N+3, and the first row sits on line count+8.
 func acView(diagram string, rows ...string) string {
 	body := "# View\n\n```mermaid\n" + diagram + "\n```\n\n| # | Description | Why |\n| --- | --- | --- |\n"
 	for i, row := range rows {

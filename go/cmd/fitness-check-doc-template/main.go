@@ -95,10 +95,9 @@ func templatesByDir(docs []doc) map[string][]doc {
 	return m
 }
 
-// judge holds an architecture view with no copy of its template to the
-// shipped one. Otherwise it walks up from the doc's folder to the first
-// folder with a template that governs it, and judges it there. A doc no
-// template governs passes, as in a repo with no templates.
+// judge holds an architecture view without its own template to the shipped
+// one; other docs meet the first governing template above them.
+// A doc no template governs passes.
 func judge(d doc, byDir map[string][]doc, named map[string]bool) []string {
 	if t, ok := shipped(d, named); ok {
 		return shapeErrors(d, t)
@@ -122,8 +121,7 @@ func shipped(d doc, named map[string]bool) (doc, bool) {
 
 // judgeAt holds a doc to the named template whose namesake it is, else to any
 // one of the folder's other templates. A named template governs only its
-// namesake, so false means none of templates governs the doc, as when all
-// are named for other docs.
+// namesake, so false means no template governs the doc.
 func judgeAt(d doc, templates []doc, named map[string]bool) ([]string, bool) {
 	var rest []doc
 	for _, t := range templates {

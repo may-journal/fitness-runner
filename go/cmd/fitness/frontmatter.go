@@ -11,9 +11,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// runStripFrontMatter runs `fitness strip-front-matter`: it deletes the
-// fitness keys from every tracked Markdown file's front matter, drops a
-// block left with no key, and prints one line per file it changed.
+// runStripFrontMatter runs `fitness strip-front-matter`: it deletes fitness keys
+// from tracked Markdown front matter, dropping empty blocks, and prints changed files.
 func runStripFrontMatter(args []string) int {
 	root, err := os.Getwd()
 	if err == nil && len(args) > 0 {

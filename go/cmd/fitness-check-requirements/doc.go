@@ -92,7 +92,7 @@
 //   - Helpers: a test file that names and holds no requirement pairs with nothing.
 //   - No exemptions: there is no trailer, flag, or body text that lets an unpaired change through.
 //
-// Which changes are judged depends on the run:
+// The run decides which changes are judged:
 //
 //   - Commits: the `pre-commit` hook judges the staged files, and HEAD is their base.
 //   - Amends: an amended commit is judged on everything it changes since its parent, which is their base.

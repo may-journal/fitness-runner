@@ -31,8 +31,8 @@
 //   - Scope: a full scan judges no changes; a commit judges its staged
 //     files, and a pull request its diff.
 //
-// A paired check that judges no files fails as a broken scan. So an ADR
-// check whose file list goes empty never passes by reading nothing.
+// A paired check that judges no files fails as a broken scan, so none
+// passes by reading nothing.
 //
 // [local checks guide]: https://github.com/may-journal/fitness-runner/blob/main/docs/local-checks.md
 package check

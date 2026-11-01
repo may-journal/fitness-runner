@@ -17,8 +17,8 @@
 //
 // # Scope
 //
-// The check compares files of one format. So a scoped run, such as a commit,
-// reads the changed files and the tracked files sharing their endings. A
+// The check compares files of one format, so a scoped run reads the changed
+// files and tracked files sharing their endings. A
 // file's ending is its extension, or its whole name when it has none.
 //
 // An unscoped run reads every tracked file. The 1% threshold applies to the

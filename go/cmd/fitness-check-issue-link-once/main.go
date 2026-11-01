@@ -21,7 +21,7 @@ func Main() {
 }
 
 // amendEnv is set by the commit-msg hook when the commit amends HEAD, so HEAD
-// is the commit being replaced rather than an earlier one.
+// is the commit being replaced.
 const amendEnv = "FITNESS_COMMIT_AMEND"
 
 // rewriteHint tells a CI failure how to clear it.
@@ -63,9 +63,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(0), nil
 }
 
-// MessageLinks returns the distinct Issue links a commit message makes, as
-// `owner/repo#NN` keys, leaving out the lines git drops. A bare `#NN`
-// belongs to repo. The runner asks it whether a message reads the network.
+// MessageLinks returns the distinct Issue links a commit message makes, minus
+// lines git drops, as `owner/repo#NN` keys, a bare `#NN` belonging to repo.
+// The runner asks it whether a message reads the network.
 func MessageLinks(msg, repo string) []string {
 	return links(stripComments(msg), repo)
 }
@@ -227,8 +227,8 @@ func describeCommits(root string, shas []string) []earlier {
 	return out
 }
 
-// branchPR returns the current branch's open PR through the gh CLI, or nil
-// with a warning when there is none or gh cannot answer. It returns only
+// branchPR returns the current branch's open PR through gh, or nil with a
+// warning when none exists or gh cannot answer. It returns only
 // open PRs, and the proposed commit is always newer, so opened stays zero.
 func branchPR() *openPR {
 	out, err := exec.Command("gh", "pr", "view", "--json", "number,state,body").Output()

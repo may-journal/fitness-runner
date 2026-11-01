@@ -24,9 +24,7 @@ type scope struct {
 	base string
 }
 
-// diffScope is the change a run judges. A pull request diffs from its merge
-// base with the base branch. An amend diffs its staged files from the
-// amended commit's parent, and a commit diffs them from HEAD.
+// diffScope is the change judged: a pull request diffs from the merge base, an amend from its parent, a commit from HEAD.
 func diffScope(root string) (scope, error) {
 	if branch := os.Getenv("GITHUB_BASE_REF"); branch != "" {
 		base, err := gitOut(root, "merge-base", "HEAD", "origin/"+branch)
@@ -39,9 +37,7 @@ func diffScope(root string) (scope, error) {
 	return scope{args: []string{"--cached"}, base: "HEAD"}, nil
 }
 
-// readChanges lists the files the diff changes beyond whitespace. Git drops
-// a reformatted file when told to ignore whitespace and blank lines, and a
-// pure rename, with status R100, changes no line, so both drop out.
+// readChanges lists the files the diff changes beyond whitespace, so a reformatted file and a pure R100 rename drop out.
 func readChanges(root string, args []string) ([]change, error) {
 	out, err := gitOut(root, append([]string{"diff", "-z", "--name-status", "-M", "-w", "--ignore-blank-lines"}, args...)...)
 	if err != nil {

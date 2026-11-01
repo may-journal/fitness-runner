@@ -2,7 +2,7 @@
 
 # dependency-currency
 
-Fails a declared npm dependency that is behind its latest published version — an installable update means the project isn't at peak fitness. It runs in every repo and passes clean without a `package.json`.
+Fails a declared npm dependency behind its latest published version — an installable update means the project isn't at peak fitness. It runs in every repo and passes clean without a `package.json`.
 
 ## Behavior
 
@@ -15,7 +15,7 @@ Fails a declared npm dependency that is behind its latest published version — 
 - Internal `@mayjournal/*` workspace packages are skipped, since they are versioned in-repo, not published to the registry.
 - Registry unreachable or answering an error or garbage: no finding for that package, and info counts the packages it could not query.
 
-One proxy blocks GitHub and the registry alike. So when the runner's probe finds GitHub's API host unreachable, the check reads no registry and reports info naming the host and proxy.
+One proxy blocks GitHub and the registry alike. When the runner's probe finds GitHub's API host unreachable, the check reads no registry and reports info naming the host and proxy.
 
 ## Notes
 

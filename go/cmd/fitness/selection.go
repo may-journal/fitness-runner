@@ -32,11 +32,8 @@ func selectedChecks(root string, argv []string) ([]resolved, []string, error) {
 	return checks, passthrough, err
 }
 
-// commitChecks excludes branch metadata from a pre-commit run, including
-// installer hooks. It also excludes semantic-commit and requirements-changed
-// when a commit-msg hook will judge the new message. Without one, as with
-// the installer's hook, semantic-commit judges the branch's earlier commits.
-// All stay enabled, so docs may still name them.
+// commitChecks excludes branch metadata from a pre-commit run, and also
+// semantic-commit and requirements-changed when a commit-msg hook judges the message.
 func commitChecks(checks []resolved) ([]resolved, error) {
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-commit" {
 		return checks, nil

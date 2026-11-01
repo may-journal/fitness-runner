@@ -243,7 +243,7 @@ func javaVersionResolverCases(t *testing.T) {
 	// download the JDK.
 	javaVersionPasses(t, build(settings(javaVersionResolver)), t.TempDir())
 	javaVersionPasses(t, build(settings("plugins { id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0' }\n")), t.TempDir())
-	// So does one in an init script of the Gradle user home.
+	// A resolver in an init script of the Gradle user home passes too.
 	javaVersionPasses(t, build(nil), javaVersionHome(t, map[string]string{".gradle/init.d/resolver.gradle": javaVersionResolver}))
 	// An empty block registers none, and a commented-out one is no block.
 	javaVersionFails(t, build(settings("toolchainManagement { jvm { } }\n")), t.TempDir())
@@ -265,7 +265,7 @@ func javaVersionVendorCases(t *testing.T) {
 	// A toolchain that names a vendor needs a JDK from it.
 	javaVersionPasses(t, adoptium(), home("Eclipse Adoptium", "Hotspot"))
 	javaVersionFails(t, adoptium(), home("Amazon.com Inc.", "Hotspot"))
-	// So does one that asks for the J9 implementation.
+	// A build that asks for the J9 implementation fails too.
 	j9 := func() string {
 		return javaVersionBuild(t, "languageVersion = JavaLanguageVersion.of(30); implementation = JvmImplementation.J9", nil)
 	}

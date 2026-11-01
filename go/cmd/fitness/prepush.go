@@ -20,12 +20,8 @@ const zeroSha = "0000000000000000000000000000000000000000"
 var planReads *metadata.PushPlans
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
-// every non-chore/docs update traces to an approved Plan Issue. Commits link a
-// Plan once per branch (issue-link-once), so the Plan may be named by an
-// earlier branch commit instead of a pushed commit. Every GitHub read of the
-// push, local-branch's too, ends within one deadline. When GitHub's API host
-// does not answer the runner's probe, the gate and local-branch report info
-// instead of reading, and the push goes on.
+// every non-chore/docs update traces to an approved Plan Issue. Every GitHub
+// read ends within one deadline, and an unanswered probe reports info.
 func hookPrePush() int {
 	ctx, cancel := metadata.PushContext()
 	defer cancel()
@@ -121,10 +117,8 @@ func pushedCommits(local, remote string) (subjects []string, messages string, er
 	return readCommits(commits)
 }
 
-// commitsOf lists the commits a ref update pushes: those not already on origin.
-// Excluding every origin ref, not just the remote tip, keeps commits merged in
-// from another branch (say main) out of the gate. A failed run reads as no
-// commits, and a stalled one returns its error.
+// commitsOf lists the commits a ref update pushes that no origin ref holds.
+// A failed run reads as none.
 func commitsOf(local, remote string) ([]string, error) {
 	if remote == zeroSha {
 		remote = ""
@@ -168,10 +162,8 @@ func readCommits(commits []string) ([]string, string, error) {
 	return subjects, messages.String(), nil
 }
 
-// logCommits formats exactly the given commits, in order, in one git run.
-// --no-walk reads only those commits, not their ancestors, and --stdin takes
-// them however many a push holds. A failed run reads as no output, and a
-// stalled one returns its error.
+// logCommits formats exactly the given commits, in order, in one git run using
+// --no-walk and --stdin; a failed run reads as no output.
 func logCommits(commits []string, format string) (string, error) {
 	return stalledOnly(gitx.Repo(".").Log(commits, format))
 }
@@ -185,9 +177,8 @@ func planCandidates(messages, local string) ([]gitx.PlanRef, error) {
 	return planRefs(gitx.BranchCommits(".", local, gitx.DefaultBase(".")))
 }
 
-// checkPlanApproval passes when any candidate names an approved Plan Issue.
-// A qualified Plan counts only from the pushing repo's own owner. Once the
-// push's deadline passes, it refuses the push without asking about the rest.
+// checkPlanApproval passes when a candidate names an approved Plan Issue from the
+// repo's owner, and refuses the push once the deadline passes.
 func checkPlanApproval(plans []gitx.PlanRef) int {
 	if len(plans) == 0 {
 		fmt.Fprintln(os.Stderr, "pre-push: no 'Plan #NN' trailer on the branch.")
@@ -267,9 +258,8 @@ func planName(p gitx.PlanRef) string {
 	return p.Number
 }
 
-// ownPlan reports whether p may approve a push to a repo of owner: a bare
-// Plan always may, and a qualified one only from the same owner, compared
-// case-insensitively.
+// ownPlan reports whether p may approve a push to a repo of owner. A bare Plan
+// always may, and a qualified one only from the same owner.
 func ownPlan(p gitx.PlanRef, owner string) bool {
 	return !p.Qualified() || (owner != "" && strings.EqualFold(p.Owner, owner))
 }

@@ -16,7 +16,7 @@
 //
 // A pull request adds its entry as its own
 // `changelog/<yyyy-mm-dd-HHMM>-<change>.md` file, with the change in
-// kebab-case. So two open pull requests never edit the same lines. It holds
+// kebab-case. Two open pull requests never edit the same lines that way. It holds
 // one `### yyyy.mm.dd.HHMM` heading and its bullets. The name's date is that
 // heading's, dots read as hyphens, so the folder lists in release order.
 //

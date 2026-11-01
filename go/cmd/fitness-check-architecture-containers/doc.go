@@ -54,7 +54,7 @@
 //
 // # Scope
 //
-// A test, changelog or doc change cannot move the views. So a scoped run
+// A test, changelog or doc change cannot move the views. A scoped run
 // with no changed view, requirement doc, product or tool source, manifest
 // or `.gitattributes` passes with zero files.
 // Every other run reads every view and every product, so a change on either
