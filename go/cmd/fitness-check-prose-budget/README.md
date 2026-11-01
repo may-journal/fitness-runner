@@ -42,6 +42,18 @@ Two more rules keep every comment terse:
 - `comment-fragment` fails a sentence of three words or fewer, but a doc heading, identifier-led doc line or colon lead-in passes.
 - `comment-one-statement` fails a comment of more than two sentences, doc comments included; only a Go package comment keeps the paragraph limits.
 
+## Comment slop
+
+Five rules fail what a comment should not hold, each naming what to delete or say instead:
+
+- `commented-out-code` fails a block when at least half its unindented lines look like code in the file's language.
+- `restates-code` fails a one-line comment of five words or fewer whose words all appear in the next code line.
+- `decoration` fails an emoji, a box-drawing character, or a run of five or more `=`, `-`, `*` or `#`; arrows pass.
+- `change-narration` fails history words: `previously`, `used to` after a subject or before `be`, and `we changed`.
+- `hedging` fails filler: `basically`, `simply`, `essentially`, `obviously`, `actually` and `I think`.
+
+A word or symbol inside quotes or a code span passes these rules, and Markdown files meet none of them.
+
 ## Configuration
 
 These `.fitnessrc.json` keys tune the check.

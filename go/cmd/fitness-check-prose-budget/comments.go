@@ -57,7 +57,8 @@ func commentErrors(b comments.Block, name, markdown string, lim limits) []string
 	errs := append(paragraphErrors(name, blocks, lim), listErrors(name, blocks, lim)...)
 	paragraphs, items := split(blocks)
 	errs = append(errs, fragmentErrors(name, b, paragraphs)...)
-	return append(errs, statementErrors(name, b, paragraphs, items)...)
+	errs = append(errs, statementErrors(name, b, paragraphs, items)...)
+	return append(errs, slopErrors(name, b, blocks)...)
 }
 
 // split returns each paragraph's sentences and the count of list items.

@@ -57,7 +57,8 @@ flowchart TB
     subgraph checks["Check families"]
         commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085, 0137)]:::system
+        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085)]:::system
+        commentChecks[(41 Code comments<br/>Req 0137, 0139)]:::system
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
         architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
@@ -169,3 +170,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 38  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
 | 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |
 | 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
+| 41  | Code comment checks.                | System  | Comments meet the prose limits and hold no dead code, echoes, decoration, history or filler. |
