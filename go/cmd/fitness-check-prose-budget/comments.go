@@ -57,7 +57,8 @@ func commentErrors(b comments.Block, name, markdown string, lim limits) []string
 	errs := append(paragraphErrors(name, blocks, lim), listErrors(name, blocks, lim)...)
 	paragraphs, items := split(blocks)
 	errs = append(errs, fragmentErrors(name, b, paragraphs)...)
-	return append(errs, statementErrors(name, b, paragraphs, items)...)
+	errs = append(errs, statementErrors(name, b, paragraphs, items)...)
+	return append(errs, slopErrors(name, b, blocks)...)
 }
 
 // split returns each paragraph's sentences and the count of list items.
@@ -113,12 +114,17 @@ func identifierLed(b comments.Block, first string) bool {
 
 // holdsWord reports word as a whole word of a code line.
 func holdsWord(code, word string) bool {
-	for _, w := range strings.FieldsFunc(code, func(r rune) bool { return !mdx.IsAlnum(r) && r != '_' }) {
+	for _, w := range names(code) {
 		if w == word {
 			return true
 		}
 	}
 	return false
+}
+
+// names splits text into its words and snake_case names.
+func names(text string) []string {
+	return strings.FieldsFunc(text, func(r rune) bool { return !mdx.IsAlnum(r) && r != '_' })
 }
 
 // packageClause reports a Go package comment, which keeps the paragraph limits alone.
