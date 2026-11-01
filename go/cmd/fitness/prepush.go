@@ -21,11 +21,12 @@ var planReads *metadata.PushPlans
 
 // hookPrePush reads git's push ref updates on stdin and blocks the push unless
 // every non-chore/docs update traces to an approved Plan Issue. Commits link a
-// Plan once per branch (issue-link-once), so the Plan may be named by an
-// earlier branch commit instead of a pushed commit. Every GitHub read of the
-// push, local-branch's too, ends within one deadline. When GitHub's API host
-// does not answer the runner's probe, the gate and local-branch report info
-// instead of reading, and the push goes on.
+// Plan once per branch (issue-link-once). So an earlier branch commit may name
+// the Plan instead of a pushed commit.
+//
+// Every GitHub read of the push, local-branch's too, ends within one deadline.
+// When GitHub's API host does not answer the runner's probe, the gate and
+// local-branch report info instead of reading. The push goes on.
 func hookPrePush() int {
 	ctx, cancel := metadata.PushContext()
 	defer cancel()
@@ -267,8 +268,8 @@ func planName(p gitx.PlanRef) string {
 	return p.Number
 }
 
-// ownPlan reports whether p may approve a push to a repo of owner: a bare
-// Plan always may, and a qualified one only from the same owner, compared
+// ownPlan reports whether p may approve a push to a repo of owner. A bare
+// Plan always may. A qualified one may only from the same owner, compared
 // case-insensitively.
 func ownPlan(p gitx.PlanRef, owner string) bool {
 	return !p.Qualified() || (owner != "" && strings.EqualFold(p.Owner, owner))

@@ -15,11 +15,13 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// Defaults calibrated to this repo's baseline: well-written technical prose
-// runs grade 11-15 and LIX 40-48, so the alarm bands sit far above the norm
-// and only genuine outliers fire. Lower scores are NOT better — these are
-// ceilings on absurdity, not targets to optimize. conf.Defaults holds them,
-// so the config schema shows the same values.
+// Defaults calibrated to this repo's baseline. Well-written technical prose
+// runs grade 11-15 and LIX 40-48, so the alarm bands sit far above the norm.
+// Only genuine outliers fire.
+//
+// Lower scores are NOT better. These are ceilings on absurdity, not targets
+// to optimize. conf.Defaults holds them, so the config schema shows the same
+// values.
 var (
 	defaultMaxGrade = conf.Defaults.TextReadability.MaxGrade
 	defaultMaxLix   = conf.Defaults.TextReadability.MaxLix
@@ -64,9 +66,9 @@ func walkFiles(root string, th thresholds, report bool) checkkit.Result {
 	return result
 }
 
-// guidance follows the per-file alarms once per failing run: what each
-// formula measures, which edits lower it, and where the methodology lives —
-// structured so an LLM (or human) can fix the prose without external context.
+// guidance follows the per-file alarms once per failing run. It says what each
+// formula measures, which edits lower it, and where the methodology lives.
+// It is structured so an LLM (or human) can fix the prose without external context.
 func guidance() []string {
 	return []string{
 		"formulas: Coleman-Liau = 5.88(letters/word) - 29.6(sentences/word) - 15.8; ARI = 4.71(letters/word) + 0.5(words/sentence) - 21.43; LIX = words/sentence + 100(share of 7+ letter words); all three rise with long words and long sentences, and a file fails when 2 of 3 exceed their band",
@@ -111,7 +113,7 @@ func hasFlag(args []string, flag string) bool {
 }
 
 // judgeContent scores already-read markdown content under name and returns its
-// alarm, if any — the read-free core shared by the file walk and body mode.
+// alarm, if any. It is the read-free core shared by the file walk and body mode.
 func judgeContent(name, content string, th thresholds, report bool) []string {
 	c := measure(mdx.Prose(content))
 	if report {
@@ -169,9 +171,9 @@ type counts struct {
 }
 
 // formulas computes Coleman-Liau, ARI, and LIX from counts. Both grade
-// formulas use alphanumeric character counts (the house variant — scores
-// are implementation-defined, so thresholds are calibrated against this
-// implementation, never copied from literature).
+// formulas use alphanumeric character counts (the house variant).
+// Scores are implementation-defined, so thresholds are calibrated against
+// this implementation, never copied from literature.
 func formulas(c counts) (cli, ari, lix float64) {
 	w, s, l := float64(c.words), float64(c.sentences), float64(c.letters)
 	cli = 0.0588*(l/w*100) - 0.296*(s/w*100) - 15.8

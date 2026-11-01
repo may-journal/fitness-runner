@@ -51,8 +51,9 @@ var notProductDirs = []string{"vendor", "third_party", "Pods", "Carthage", "node
 // generatedGo matches the line Go's convention puts in a generated file.
 var generatedGo = regexp.MustCompile(`(?m)^// Code generated .* DO NOT EDIT\.$`)
 
-// testSet is what the language modules know of the repo's tests: the files
-// that declare tests, and the test files that prove each requirement number.
+// testSet is what the language modules know of the repo's tests.
+// It holds the files that declare tests, and the test files that prove each
+// requirement number.
 type testSet struct {
 	files   map[string]bool
 	numbers map[string][]string
@@ -95,9 +96,10 @@ func (s testSet) prove(file string, numbers ...string) {
 	}
 }
 
-// isTest reports whether f is a test: a file a module finds tests in, a Go
-// test file, or a Swift file in a test target's `…Tests` folder, which still
-// counts once deleted.
+// isTest reports whether f is a test.
+// A test is a file a module finds tests in, or a Go test file.
+// A Swift file in a test target's `…Tests` folder also counts.
+// It still counts once deleted.
 func (s testSet) isTest(f string) bool {
 	return s.files[f] || lang.IsTestSource(langs.All, f) || swiftTestTarget(f)
 }

@@ -85,7 +85,8 @@ func adrFolder(name string) bool {
 }
 
 // strays fails each numbered ADR kept in a folder named adr, apart from its
-// check: its one home is the README of its fitness/adr-NNNN folder.
+// check.
+// Its one home is the README of its fitness/adr-NNNN folder.
 func strays(root string) []string {
 	var errs []string
 	for _, f := range walkfs.FilesByExt(root, ".md") {

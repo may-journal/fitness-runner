@@ -16,9 +16,10 @@ import (
 
 // runHook dispatches a `fitness hook <name>` invocation. The installed hooks
 // are one-line shims that call this, so the orchestration lives here in Go
-// rather than in each repo's Bash. A hook owns the terminal, so every git,
-// ssh and gh it starts, the pre-push gate's too, fails instead of asking for
-// a password.
+// and each repo's Bash holds none.
+//
+// A hook owns the terminal. So every git, ssh and gh it starts, the pre-push
+// gate's too, fails instead of asking for a password.
 func runHook(name string, args []string) int {
 	if err := chdirToplevel(); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness hook: "+err.Error())
@@ -64,8 +65,8 @@ func hookCommitMsg(args []string) int {
 }
 
 // runMessageChecks resolves each named check as a single-check run would,
-// then runs those that read the message from the environment at once, and
-// any others one by one as before. No names run nothing.
+// then runs those that read the message from the environment at once.
+// It runs any others one by one as before. No names run nothing.
 func runMessageChecks(names []string, msg string) int {
 	if len(names) == 0 {
 		return 0
@@ -99,7 +100,7 @@ func runPooledMessage(root string, pooled []resolved, msg string) int {
 
 // splitByMessageArg separates the checks that read the message from
 // FITNESS_CTX_MESSAGE, which the runner sets for any check naming a
-// context argument, from those, such as a repo's own override, that take
+// context argument. The others, such as a repo's own override, take
 // --message on their command line and so run one at a time.
 func splitByMessageArg(checks []resolved) (pooled, alone []resolved) {
 	for _, check := range checks {

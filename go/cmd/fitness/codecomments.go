@@ -11,9 +11,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// runComments runs `fitness comments [path...]`: it prints each comment
-// block of the tracked files, or of those the paths name, one per line as
-// `path:line: language kind: text`, the block's lines joined by spaces.
+// runComments runs `fitness comments [path...]`. It prints each comment
+// block of the tracked files, or of those the paths name, one per line.
+// Each line reads `path:line: language kind: text`, with the block's lines
+// joined by spaces.
 func runComments(args []string) int {
 	blocks, err := readComments(args)
 	if err != nil {

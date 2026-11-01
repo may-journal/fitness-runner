@@ -181,8 +181,8 @@ func (p *parser) collection(l *srcLine) (*node, error) {
 }
 
 // nested reads a value written on the lines after a key or a dash at
-// indent: a list at the same indent after a key, any collection deeper, or
-// an empty value.
+// indent. That value is a list at the same indent after a key, any
+// collection deeper, or an empty value.
 func (p *parser) nested(owner *srcLine, keyed bool) (*node, error) {
 	if l := p.peek(); opens(l, owner, keyed) {
 		return p.collection(l)
@@ -256,8 +256,8 @@ func (p *parser) listItem(l *srcLine, indent int) (*node, error) {
 }
 
 // item reads one list item. An item that opens a mapping or a list on the
-// dash's own line moves that line's indent past the dash, so the
-// collection reads as if it started there.
+// dash's own line moves that line's indent past the dash.
+// So the collection reads as if it started there.
 func (p *parser) item(l *srcLine) (*node, error) {
 	rest := strings.TrimLeft(strings.TrimPrefix(l.text, "-"), " ")
 	if _, _, keyed := splitKey(rest); keyed || isItem(rest) {

@@ -165,8 +165,8 @@ func formatDuplicate(value string, locs []location) string {
 }
 
 // findDuplicates returns one error message per non-allowed value that occurs
-// >= minOccurrences times across all files, most-repeated first, then
-// alphabetical by value for stable output.
+// >= minOccurrences times across all files.
+// The order is most-repeated first, then alphabetical by value for stable output.
 func findDuplicates(scanned []scannedFile, allow map[string]bool) []string {
 	byValue, order := groupByValue(scanned)
 	var duplicated []string
@@ -201,8 +201,9 @@ type cursor struct {
 
 // scanStringLiterals extracts single- and double-quoted string literals from
 // source, skipping line/block comments, regex literals, and template
-// literals, and dropping module specifiers (the string after
-// import/require/from). Template literals are out of scope in v1.
+// literals.
+// It drops module specifiers (the string after import/require/from).
+// Template literals are out of scope in v1.
 func scanStringLiterals(content string) []literal {
 	cur := &cursor{content: content, line: 1}
 	for cur.i < len(content) {
@@ -293,8 +294,9 @@ func classAfter(inClass bool, ch byte) bool {
 }
 
 // scanRegexChar consumes one byte of a regex body, updating the char-class
-// state; reports done at the closing `/` (consumed) or at a newline (left
-// unconsumed — the unterminated-body bail).
+// state.
+// It reports done at the closing `/` (consumed) or at a newline (left
+// unconsumed, the unterminated-body bail).
 func (cur *cursor) scanRegexChar(inClass *bool) (done bool) {
 	ch := cur.content[cur.i]
 	if ch == '\\' {
@@ -345,8 +347,9 @@ func (cur *cursor) recordLiteral(value string, line int, isModule bool) {
 }
 
 // readEscape consumes a backslash escape inside a string literal, appending
-// the escaped byte to value raw (the lexer never decodes escape sequences; a
-// trailing backslash at EOF appends nothing).
+// the escaped byte to value raw.
+// The lexer never decodes escape sequences.
+// A trailing backslash at EOF appends nothing.
 func (cur *cursor) readEscape(value *strings.Builder) {
 	if cur.i+1 < len(cur.content) {
 		value.WriteByte(cur.content[cur.i+1])

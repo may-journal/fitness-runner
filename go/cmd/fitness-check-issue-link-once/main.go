@@ -20,8 +20,8 @@ func Main() {
 	})
 }
 
-// amendEnv is set by the commit-msg hook when the commit amends HEAD, so HEAD
-// is the commit being replaced rather than an earlier one.
+// amendEnv is set by the commit-msg hook when the commit amends HEAD.
+// So HEAD is the commit being replaced, and no earlier commit.
 const amendEnv = "FITNESS_COMMIT_AMEND"
 
 // rewriteHint tells a CI failure how to clear it.
@@ -227,9 +227,10 @@ func describeCommits(root string, shas []string) []earlier {
 	return out
 }
 
-// branchPR returns the current branch's open PR through the gh CLI, or nil
-// with a warning when there is none or gh cannot answer. It returns only
-// open PRs, and the proposed commit is always newer, so opened stays zero.
+// branchPR returns the current branch's open PR through the gh CLI.
+// It returns nil with a warning when there is none or gh cannot answer.
+// It returns only open PRs, and the proposed commit is always newer.
+// So opened stays zero.
 func branchPR() *openPR {
 	out, err := exec.Command("gh", "pr", "view", "--json", "number,state,body").Output()
 	if err != nil {

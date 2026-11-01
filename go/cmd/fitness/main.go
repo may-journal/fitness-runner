@@ -1,12 +1,12 @@
-// Command fitness runs a repo's fitness checks: small programs that each
-// judge one rule, such as spelling, formatting, tests, or the shape of a
-// pull request. One binary holds every built-in check; a repo may add local
+// Command fitness runs a repo's fitness checks. Checks are small programs
+// that each judge one rule, such as spelling, formatting, tests, or the shape
+// of a pull request. One binary holds every built-in check; a repo may add local
 // checks. Each check decides whether it applies, so any repo runs the same
 // suite with nothing to configure.
 //
 // A run resolves the checks, runs them side by side with per-check time
-// budgets, and prints a results table: passed, failed, or info, which never
-// fails a run. With files staged it judges only those files; --all judges
+// budgets, and prints a results table. A row is passed, failed, or info, and
+// info never fails a run. With files staged it judges only those files; --all judges
 // every tracked file.
 //
 // # Exit codes
@@ -58,11 +58,14 @@ import (
 // allChecks is the org default and the catalog for explicit external lists.
 // Org checks self-gate when their language, tool, config, or input is absent.
 // External policy also defaults to the full catalog, with optional selection.
-// It is every check built into this executable or installed beside it,
-// minus the ignored ones, in the order the language registry gives:
-// repo-wide checks, then each module's. installErr says why no checks were
-// found; a run stops on it. main sets both when it runs as the runner, so a
-// process started as one check skips the work.
+//
+// The catalog is every check built into this executable or installed beside
+// it, minus the ignored ones. Its order is the one the language registry
+// gives: repo-wide checks, then each module's.
+//
+// installErr says why no checks were found, and a run stops on it. main sets
+// both when it runs as the runner, so a process started as one check skips
+// the work.
 var (
 	allChecks  []string
 	installErr error
@@ -114,8 +117,8 @@ type outcome struct {
 	ms  int64
 	// stderr holds what the check wrote there, which may have streamed live.
 	stderr *stream
-	// timedOut marks a budget kill; crashed says how a check that printed
-	// no result ended, exit is its protocol exit code, and startErr says why
+	// timedOut marks a budget kill. crashed says how a check that printed
+	// no result ended. exit is its protocol exit code, and startErr says why
 	// the check could not start.
 	timedOut bool
 	crashed  string
@@ -126,7 +129,7 @@ type outcome struct {
 //go:generate go run ../fitness-release checks --root ../../..
 
 // main runs a built-in check when started under its fitness-check-<name>
-// program name, as the runner and the installed links start it; otherwise it
+// program name, as the runner and the installed links start it. Otherwise it
 // is the runner.
 func main() {
 	metadata.RepoChecks.Find = builtinProgram
@@ -174,8 +177,10 @@ func runCheckCommand(args []string) int {
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
-// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`, `comment-check`, `boxes`, `strip-front-matter`, `comments`, `check`, `list`, `explain`, `docs`) before falling through to the check runner, so the
-// git hooks and workflow steps stay one line.
+// `pr-check`, `issue-check`, `plan-check`, `close-check`, `dupe-check`,
+// `comment-check`, `boxes`, `strip-front-matter`, `comments`, `check`, `list`,
+// `explain`, `docs`). Anything else falls through to the check runner.
+// So the git hooks and workflow steps stay one line.
 func dispatch(args []string) int {
 	if isHelp(args) {
 		return printUsage()
@@ -325,9 +330,9 @@ func runSelected(s setup, argv []string) int {
 	return runChecks(s.root, s.perfPath, checks, passthrough, env, s.cleanup)
 }
 
-// runChecks runs checks in one pool with env and passthrough, prints the
-// summary table, writes the `--json` report when perfPath names one, and
-// returns the run's exit code. cleanup removes the caller's shared files
+// runChecks runs checks in one pool with env and passthrough. It prints the
+// summary table and writes the `--json` report when perfPath names one.
+// It returns the run's exit code. cleanup removes the caller's shared files
 // when the run ends or is interrupted.
 func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
 	checks, tracked, err := prepareRun(root, checks, cleanup)
@@ -374,9 +379,9 @@ func prepareRun(root string, checks []resolved, cleanup func()) (kept []resolved
 	return kept, tracked, nil
 }
 
-// scopeHint is the line a timed-out row adds on an unscoped run: how many
-// files the repo tracks, when the run listed them, and how to judge fewer.
-// A run scoped to a commit or a `--dir` folder adds none.
+// scopeHint is the line a timed-out row adds on an unscoped run. It says how
+// many files the repo tracks, when the run listed them, and how to judge
+// fewer. A run scoped to a commit or a `--dir` folder adds none.
 func scopeHint(env []string, files int) string {
 	if slices.ContainsFunc(env, scopes) {
 		return ""
@@ -423,7 +428,7 @@ func runSetup(argv []string) (s setup, rest []string, err error) {
 	return s, rest, err
 }
 
-// withPerfReport writes the `--json` report when one was asked for; a report
+// withPerfReport writes the `--json` report when one was asked for. A report
 // that cannot be written fails the run, since the caller relies on it.
 func withPerfReport(path string, perf perfReport, code int) int {
 	if path == "" {
@@ -492,8 +497,9 @@ func summarize(checks []resolved, outcomes []outcome, hint string) ([]render.Row
 }
 
 // rowFor builds the table row for one outcome. A budget kill fails as timed
-// out, with hint. A check that could not judge (it did not start, printed no result, or
-// exited other than 0 or 1) becomes an info row, which never fails the run.
+// out, with hint. A check that could not judge becomes an info row, which
+// never fails the run. Such a check did not start, printed no result, or
+// exited other than 0 or 1.
 func rowFor(c resolved, o outcome, hint string) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
 	if o.timedOut {
@@ -505,9 +511,9 @@ func rowFor(c resolved, o outcome, hint string) render.Row {
 	return promptRow(row, o)
 }
 
-// promptRow makes a row that did not pass info naming the remote when the
-// check's git or ssh refused to ask for a password: the clone lacks a saved
-// credential, which says nothing about the code.
+// promptRow makes a row that did not pass info naming the remote. It does so
+// when the check's git or ssh refused to ask for a password. The clone lacks a
+// saved credential, which says nothing about the code.
 func promptRow(row render.Row, o outcome) render.Row {
 	if row.Ok && len(row.Info) == 0 {
 		return row
@@ -520,9 +526,9 @@ func promptRow(row render.Row, o outcome) render.Row {
 	return render.Row{Name: row.Name, Ok: true, FilesChecked: -1, Ms: row.Ms, Info: appendNote(row.Info, gitx.PromptNote(remote))}
 }
 
-// timedOutErrors are a timed-out row's error lines: the budget it ran past,
-// then the last line it wrote to stderr, which says where it stopped,
-// then hint, when set.
+// timedOutErrors are a timed-out row's error lines. First comes the budget it
+// ran past. Then comes the last line it wrote to stderr, which says where it
+// stopped. Then comes hint, when set.
 func timedOutErrors(c resolved, o outcome, hint string) []string {
 	errs := []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}
 	if last := o.stderr.lastLine(); last != "" {
@@ -535,8 +541,8 @@ func timedOutErrors(c resolved, o outcome, hint string) []string {
 }
 
 // internalNote reports whether the check could not judge and says why. A
-// printed result with ok false is a finding whatever the exit code, and a
-// check that exits 3 with its own info needs no further note.
+// printed result with ok false is a finding whatever the exit code.
+// A check that exits 3 with its own info needs no further note.
 func internalNote(o outcome) (string, bool) {
 	switch {
 	case o.startErr != "":
@@ -549,8 +555,8 @@ func internalNote(o outcome) (string, bool) {
 	return exitNote(o), true
 }
 
-// exitNote says why a check that printed a result exited other than 0 or 1;
-// exit 3 with the check's own info needs no further note.
+// exitNote says why a check that printed a result exited other than 0 or 1.
+// Exit 3 with the check's own info needs no further note.
 func exitNote(o outcome) string {
 	if o.exit == checkkit.ExitInternal && len(o.res.Info) > 0 {
 		return ""
@@ -639,9 +645,10 @@ var errNotInstalled = errors.New("Check binary not installed")
 
 // resolveList resolves each name, in order. Every binary is found first, so
 // a missing one fails before any process starts. The --describe handshakes
-// then run side by side and come back in catalog order. A compiled check
-// whose handshake overran in that crowd gets a second try, so a slow first
-// start after an install does not drop its own budget.
+// then run side by side and come back in catalog order.
+//
+// A compiled check whose handshake overran in that crowd gets a second try.
+// So a slow first start after an install does not drop its own budget.
 func resolveList(names []string) ([]resolved, error) {
 	prebuild(names)
 	progs := make([]checkkit.Program, len(names))
@@ -662,8 +669,8 @@ func resolveList(names []string) ([]resolved, error) {
 }
 
 // retryOverran runs once more, side by side, the handshake of each compiled
-// check that overran in the crowd, so the retries cost one budget at most.
-// A script never gets a retry: it starts no slower after an install, so an
+// check that overran in the crowd. So the retries cost one budget at most.
+// A script never gets a retry. It starts no slower after an install, so an
 // overrun means it ignores --describe, and its work must not run twice.
 func retryOverran(checks []resolved) {
 	var again []int
@@ -701,8 +708,10 @@ func describeCheck(name string, prog checkkit.Program) resolved {
 
 // describe asks a check binary for its metadata. On any failure it returns
 // the zero value, so the check runs with defaults, and an info note saying
-// why. The handshake gets its own short budget and process-group kill — a
-// local script that ignores --describe and starts real work must not hang
+// why.
+//
+// The handshake gets its own short budget and process-group kill. A local
+// script that ignores --describe and starts real work must not hang
 // resolution. overran reports a handshake killed at its budget.
 func describe(prog checkkit.Program) (d checkkit.Describe, note string, overran bool) {
 	const failed = "--describe gave no metadata, so the check ran with defaults: "
@@ -749,7 +758,7 @@ func shareTrackedFiles(root string, checks []resolved) (walkfs.Shared, error) {
 	return walkfs.ShareTracked(root)
 }
 
-// running holds the process group of every check still running, so an
+// running holds the process group of every check still running. So an
 // interrupt can stop them with the runner, and the heartbeat can name them.
 var running = struct {
 	sync.Mutex
@@ -779,9 +788,9 @@ func signalRunning(sig syscall.Signal) {
 }
 
 // stopOnInterrupt makes an interrupt, hangup, or terminate signal pass to
-// the running checks and run cleanup, then end the run as the signal would
-// have. A signal the runner was started with ignored stays ignored. The
-// returned func stops listening.
+// the running checks and run cleanup. It then ends the run as the signal
+// would have. A signal the runner was started with ignored stays ignored.
+// The returned func stops listening.
 func stopOnInterrupt(cleanup func()) (stop func()) {
 	var caught []os.Signal
 	for _, s := range []os.Signal{syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP} {
@@ -812,13 +821,16 @@ func stopOnInterrupt(cleanup func()) (stop func()) {
 }
 
 // contextEnv is the environment every check receives. FITNESS_CHANGED_FILES
-// is set only for a scoped run, and the tracked-file and `--dir` lists only
-// by run, so an inherited value never leaks into a full scan or another
-// repo. A `--dir` scope, the env entry from shareScope, replaces the diff,
-// so no check reads the folder as changes. The staged files are read once
-// for both variables. A stalled git call returns its error. A run with a
-// network check, or a commit message that links an Issue, probes GitHub's
-// API host first, as networkEnv says.
+// is set only for a scoped run. The tracked-file and `--dir` lists are set
+// only by run. So an inherited value never leaks into a full scan or another
+// repo.
+//
+// A `--dir` scope, the env entry from shareScope, replaces the diff, so no
+// check reads the folder as changes. The staged files are read once for both
+// variables. A stalled git call returns its error.
+//
+// A run with a network check, or a commit message that links an Issue, probes
+// GitHub's API host first, as networkEnv says.
 func contextEnv(root string, checks []resolved, all bool, scope []string, msg string) ([]string, error) {
 	staged, err := stalledOnly(gitx.Repo(root).StagedFiles())
 	if err != nil {
@@ -841,8 +853,8 @@ func contextEnv(root string, checks []resolved, all bool, scope []string, msg st
 	return append(env, "FITNESS_ENABLED_CHECKS="+strings.Join(checkNames(checks), "\n")), nil
 }
 
-// scopeEnv is the env entry that scopes the run: the `--dir` one when set,
-// else the changed files, else none for a full scan.
+// scopeEnv is the env entry that scopes the run. It is the `--dir` one when
+// set, else the changed files, else none for a full scan.
 func scopeEnv(root string, all bool, scope, staged []string) ([]string, error) {
 	if len(scope) > 0 {
 		return scope, nil
@@ -864,7 +876,7 @@ func checkNames(checks []resolved) []string {
 }
 
 // stalledOnly passes on a git answer, keeping its error only when the call
-// stalled: any other failure reads as an empty answer, as before.
+// stalled. Any other failure reads as an empty answer, as before.
 func stalledOnly[T any](v T, err error) (T, error) {
 	if gitx.Stalled(err) {
 		return v, err
@@ -889,8 +901,8 @@ func extractInline(args []string, argName string) (value string, remaining []str
 }
 
 // inlineMatch matches args[i] against `--arg=value` or `--arg value`,
-// returning the value and how many tokens the match consumed (0 means no
-// match; a lone `--arg` consumes 1 with an empty value).
+// returning the value and how many tokens the match consumed. 0 means no
+// match, and a lone `--arg` consumes 1 with an empty value.
 func inlineMatch(args []string, i int, argName string) (value string, consumed int) {
 	a := args[i]
 	if strings.HasPrefix(a, argName+"=") {
@@ -907,9 +919,11 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 
 // runPool executes every check with bounded parallelism, printing the
 // progress line as each starts, and the heartbeat while they run. Checks
-// start by the budget they declare, largest first, so a slow one never
-// waits behind the quick ones; outcomes stay in catalog order. The last
-// check still running streams its stderr live.
+// start by the budget they declare, largest first. So a slow one never
+// waits behind the quick ones.
+//
+// Outcomes stay in catalog order. The last check still running streams its
+// stderr live.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
 	outcomes := make([]outcome, len(checks))
 	out := newStreams(len(checks))
@@ -950,9 +964,9 @@ func startOrder(checks []resolved) []int {
 	return order
 }
 
-// runOne execs a single check in its own process group with a timeout that
-// kills the whole group (TERM, then KILL after a grace period). Its stderr
-// goes to w's stream, and off the heartbeat it is named at half its budget.
+// runOne execs a single check in its own process group with a timeout. The
+// timeout kills the whole group (TERM, then KILL after a grace period). Its stderr
+// goes to w's stream. Off the heartbeat it is named at half its budget.
 func runOne(root string, c resolved, passthrough, env []string, w watch) outcome {
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
@@ -1013,7 +1027,7 @@ func exitedWithin(done <-chan error, grace time.Duration) bool {
 }
 
 // decodeOutcome parses the check's protocol result from stdout and keeps its
-// exit code; a non-JSON tail marks the outcome crashed with how the process
+// exit code. A non-JSON tail marks the outcome crashed with how the process
 // ended, such as "exit status 2" or "signal: killed".
 func decodeOutcome(o outcome, cmd *exec.Cmd, stdout []byte) outcome {
 	o.exit = cmd.ProcessState.ExitCode()

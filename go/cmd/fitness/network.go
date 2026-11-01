@@ -14,12 +14,13 @@ import (
 )
 
 // networkEnv probes GitHub's API host when a check that reads the network
-// will run, and returns the env entries that tell every check it did not
-// answer: checkkit.NetworkEnv, and GOPROXY=off so a Go check missing a
-// module fails at once with Go's own message. One proxy blocks GitHub and
-// the npm registry alike, so the one probe stands for both. msg is the
-// commit-msg hook's proposed message, empty in any other run. A run without
-// such a check, as a plain commit, makes no connection.
+// will run. It returns the env entries that tell every check the host did not
+// answer. Those are checkkit.NetworkEnv, and GOPROXY=off so a Go check missing
+// a module fails at once with Go's own message.
+//
+// One proxy blocks GitHub and the npm registry alike, so the one probe stands
+// for both. msg is the commit-msg hook's proposed message, empty in any other
+// run. A run without such a check, as a plain commit, makes no connection.
 func networkEnv(root string, checks []resolved, msg string) []string {
 	if !slices.ContainsFunc(checks, func(c resolved) bool { return readsNetwork(root, c, msg) }) {
 		return nil
@@ -31,10 +32,12 @@ func networkEnv(root string, checks []resolved, msg string) []string {
 	return []string{checkkit.UnreachableEnv(host), "GOPROXY=off"}
 }
 
-// readsNetwork reports whether check reads the network in this run: a check
-// that judges live GitHub metadata, unless pre-commit leaves it out,
-// dependency-currency in a repo with a root package.json to look up, or
-// issue-link-once judging a message that links an Issue, which reads the
+// readsNetwork reports whether check reads the network in this run. Three
+// kinds of check do.
+//
+// One judges live GitHub metadata, unless pre-commit leaves it out. Another is
+// dependency-currency in a repo with a root package.json to look up. The last
+// is issue-link-once judging a message that links an Issue, which reads the
 // branch's open PR.
 func readsNetwork(root string, check resolved, msg string) bool {
 	switch check.name {

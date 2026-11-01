@@ -17,8 +17,9 @@ import (
 const dirFlag = "--dir"
 
 // dirScope pulls `--dir=<folder>` out of argv and lists the repo files under
-// it, tracked or new but not ignored, so neither check selection nor a single
-// check's passthrough sees the flag. A run without the flag returns nil files.
+// it, tracked or new but not ignored. Neither check selection nor a single
+// check's passthrough then sees the flag. A run without the flag returns nil
+// files.
 func dirScope(root string, argv []string) (files, rest []string, err error) {
 	dir, rest, err := oneValueFlag(argv, dirFlag, "<folder>")
 	if err != nil || dir == "" {
@@ -29,7 +30,7 @@ func dirScope(root string, argv []string) (files, rest []string, err error) {
 }
 
 // folderFiles lists the files under dir, relative to root. A folder that is
-// missing, outside the repo, or holds no files is an error: an empty scope
+// missing, outside the repo, or holds no files is an error. An empty scope
 // would otherwise read as no scope and judge the whole repo.
 func folderFiles(root, dir string) ([]string, error) {
 	rel, err := folderInRepo(root, dir)

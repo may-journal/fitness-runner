@@ -32,3 +32,7 @@ Comment blocks judged
     - Given Developer stages a change to one comment in a file, named with a space, whose other comment runs on
         - When prose-budget runs on the staged change
             - Then it judges only the changed comment, and a full scan lists both
+- 0137.6
+    - Given Developer has the runner's own command code under `go/cmd`
+        - When the prose checks run on that folder
+            - Then every comment passes, so the runner lives by the limits it enforces

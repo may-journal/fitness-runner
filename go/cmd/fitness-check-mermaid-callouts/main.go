@@ -50,8 +50,9 @@ func judge(root string) (checkkit.Result, error) {
 const doublingRule = "use A to Z, then AA to ZZ, then AAA"
 
 // counts tallies each callout label's occurrences, preserving first-seen
-// order — the port of the TypeScript Map-based counts (Map iteration follows
-// insertion order, so error ordering depends on it).
+// order.
+// It is the port of the TypeScript Map-based counts.
+// Map iteration follows insertion order, so error ordering depends on it.
 type counts struct {
 	byLabel map[string]int
 	order   []string
@@ -84,9 +85,10 @@ func numberLabels(numbers []int) []string {
 	return labels
 }
 
-// diagramLabels lists every callout a diagram carries: node numbers, then
-// connector callouts as written, numbers and broken letters included so
-// each is matched once and reported only for its form.
+// diagramLabels lists every callout a diagram carries.
+// It lists node numbers, then connector callouts as written.
+// Numbers and broken letters are included so each is matched once and reported
+// only for its form.
 func diagramLabels(d *mermaid.DiagramBlock, t *mermaid.CalloutTableBlock) []string {
 	labels := append(numberLabels(d.Numbers), d.Letters...)
 	labels = append(labels, numberLabels(d.EdgeNumbers)...)
@@ -136,9 +138,9 @@ func missingErrors(from, other counts, format func(label string) string) []strin
 	return errors
 }
 
-// formErrors reports connector callouts written in the wrong form: a number
-// where a letter belongs, or letters that break the doubling, in the diagram
-// or the table.
+// formErrors reports connector callouts written in the wrong form.
+// That means a number where a letter belongs, or letters that break the
+// doubling, in the diagram or the table.
 func formErrors(file string, diagram *mermaid.DiagramBlock, table *mermaid.CalloutTableBlock) []string {
 	var errors []string
 	for _, n := range diagram.EdgeNumbers {
@@ -180,10 +182,10 @@ func compareCallouts(file string, diagram *mermaid.DiagramBlock, table *mermaid.
 	return errors
 }
 
-// validateDoc checks the 1-1 callout rule for one document: every diagram
-// with callouts has an associated callout table with a bijective set of
-// callouts, and every connector callout is a letter that follows the
-// doubling.
+// validateDoc checks the 1-1 callout rule for one document.
+// Every diagram with callouts has an associated callout table with a bijective
+// set of callouts.
+// Every connector callout is a letter that follows the doubling.
 func validateDoc(file, content string) []string {
 	result := mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content))
 	var errors []string

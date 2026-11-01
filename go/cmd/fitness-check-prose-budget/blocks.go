@@ -6,8 +6,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// block is one prose unit: a paragraph (isList false, text set) or a list
-// (isList true, items set), tagged with the section it falls under.
+// block is one prose unit.
+// It is a paragraph (isList false, text set) or a list (isList true, items set).
+// It is tagged with the section it falls under.
 type block struct {
 	section     int
 	sectionName string
@@ -31,7 +32,8 @@ func (b block) words() int {
 }
 
 // parse splits markdown into paragraph and list blocks, dropping HTML
-// comments and front matter and skipping fenced code, tables, and headings.
+// comments and front matter.
+// It also skips fenced code, tables, and headings.
 func parse(content string) []block {
 	content = htmlCommentRe.ReplaceAllString(content, " ")
 	b := &builder{}
@@ -77,10 +79,10 @@ func (b *builder) fenceToggle(t string) bool {
 	return false
 }
 
-// breakLine handles the lines that contribute no prose — headings (which also
-// open a new section), blanks, and table rows end a block, and a dash-only
-// line such as a Measurement's `-` is skipped — and reports whether the line
-// was one.
+// breakLine handles the lines that contribute no prose, and reports whether the
+// line was one.
+// Headings (which also open a new section), blanks, and table rows end a block.
+// A dash-only line such as a Measurement's `-` is skipped.
 func (b *builder) breakLine(t string) bool {
 	switch {
 	case mdx.DashOnly(t):
@@ -96,9 +98,9 @@ func (b *builder) breakLine(t string) bool {
 	return true
 }
 
-// item adds one content line: a list marker closes any open paragraph and
-// starts or extends the list; anything else closes any open list and extends
-// the paragraph.
+// item adds one content line.
+// A list marker closes any open paragraph and starts or extends the list.
+// Anything else closes any open list and extends the paragraph.
 func (b *builder) item(raw, t string) {
 	if text, ok := mdx.ListItem(t); ok {
 		b.flushPara()
@@ -111,8 +113,8 @@ func (b *builder) item(raw, t string) {
 }
 
 // depth returns the nesting level of an item indented by indent, tracking
-// the open levels' indents: a deeper indent opens a level, a shallower one
-// closes levels back to it.
+// the open levels' indents.
+// A deeper indent opens a level, and a shallower one closes levels back to it.
 func (b *builder) depth(indent int) int {
 	for len(b.indents) > 0 && b.indents[len(b.indents)-1] > indent {
 		b.indents = b.indents[:len(b.indents)-1]

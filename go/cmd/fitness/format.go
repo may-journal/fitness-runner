@@ -11,9 +11,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// formatFlag picks how a run prints its results: `--format=json` prints
-// every check's result and findings to stdout as one JSON object, and moves
-// the table people read to stderr.
+// formatFlag picks how a run prints its results. `--format=json` prints
+// every check's result and findings to stdout as one JSON object. It also
+// moves the table people read to stderr.
 const formatFlag = "--format"
 
 // formatJSON is set when the run prints its results as JSON. run sets it
@@ -126,8 +126,8 @@ func findingsFor(name string, o outcome, row render.Row) []checkkit.Finding {
 }
 
 // ownFindings returns a copy of the check's own findings when its row shows
-// the errors it printed, and otherwise one finding per error line, ruled by
-// the check's name.
+// the errors it printed. Otherwise it returns one finding per error line,
+// ruled by the check's name.
 func ownFindings(name string, o outcome, row render.Row) []checkkit.Finding {
 	if len(o.res.Findings) > 0 && slices.Equal(o.res.Errors, row.Errors) {
 		return slices.Clone(o.res.Findings)

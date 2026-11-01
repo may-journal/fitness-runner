@@ -81,10 +81,11 @@ func goFiles(root string) []string {
 	return files
 }
 
-// unformatted runs gofmt -l over files and turns each path it lists on
-// stdout, and each syntax error it prints on stderr, into a finding. A run
-// that could not start, was killed, or failed with neither is an internal
-// error, since gofmt never judged the files.
+// unformatted runs gofmt -l over files.
+// It turns each path it lists on stdout, and each syntax error it prints on
+// stderr, into a finding.
+// A run that could not start, was killed, or failed with neither is an
+// internal error, since gofmt never judged the files.
 func unformatted(root, bin string, files []string) ([]checkkit.Finding, error) {
 	cmd := exec.Command(bin, append([]string{"-l"}, files...)...)
 	cmd.Dir = root

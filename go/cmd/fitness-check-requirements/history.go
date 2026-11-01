@@ -17,9 +17,11 @@ type history struct {
 var historyLine = regexp.MustCompile(`^([+-])(?:# (\d{4}) |- (\d{4}\.\d+)\s*$)`)
 
 // readHistory replays every commit that touched docsDir, oldest first. It is
-// empty outside git or before the first commit. When git fails for
-// any other reason, the history is empty and the note says why, so the check reports
-// the gap as info rather than judging reused IDs against nothing.
+// empty outside git or before the first commit.
+// When git fails for any other reason, the history is empty and the note says
+// why.
+// The check then reports the gap as info and never judges reused IDs against
+// nothing.
 func readHistory(root string) (h history, note string) {
 	h = history{removed: map[string]bool{}}
 	out, err := exec.Command("git", "-C", root, "log", "--reverse", "--no-color", "--no-ext-diff",

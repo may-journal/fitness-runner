@@ -73,7 +73,8 @@ var grammars = map[string]grammar{
 }
 
 // balancedTypes are the other mermaid diagram types; only their brackets
-// and quotes are checked, since a full grammar for each is out of reach.
+// and quotes are checked.
+// A full grammar for each is out of reach.
 var balancedTypes = map[string]bool{
 	"classDiagram": true, "classDiagram-v2": true, "stateDiagram": true, "stateDiagram-v2": true,
 	"journey": true, "gantt": true, "pie": true, "quadrantChart": true, "requirementDiagram": true,
@@ -85,7 +86,8 @@ var balancedTypes = map[string]bool{
 
 // headerOnlyTypes are known types whose syntax leaves brackets unpaired,
 // such as erDiagram's `||--o{` cardinality, mindmap's `)cloud(` shape, or
-// block-beta's `>flag]` shape, so only the header is checked.
+// block-beta's `>flag]` shape.
+// Only the header is checked.
 var headerOnlyTypes = map[string]bool{"erDiagram": true, "mindmap": true, "block-beta": true, "block": true}
 
 // parseDiagram judges one diagram body.

@@ -35,10 +35,12 @@ func withoutVar(env []string, name string) []string {
 
 // changedScope picks the files a run judges, or nil for a full scan. A pull
 // request in GitHub Actions scopes to its diff against the base branch, and a
-// local run to the staged files. A push to main, --all, a run with nothing
-// staged, or a diff git cannot compute all scan everything, so the full
-// suite still runs after merge. staged is the run's staged files, already
-// read once by the caller. A stalled git call returns its error.
+// local run to the staged files.
+//
+// A push to main, --all, a run with nothing staged, or a diff git cannot
+// compute all scan everything. So the full suite still runs after merge.
+// staged is the run's staged files, already read once by the caller. A
+// stalled git call returns its error.
 func changedScope(root string, all bool, staged []string) ([]string, error) {
 	if all {
 		return nil, nil

@@ -1,6 +1,6 @@
 // Command fitness-check-workflow-ref-exists fails a workflow that calls a
-// may-journal workflow or action at a tag or sha where that path does not
-// exist yet ([#485]). Such a caller fails every event in its repo with a
+// may-journal workflow or action at a tag or sha. That path does not
+// exist there yet ([#485]). Such a caller fails every event in its repo with a
 // missing-workflow error, as fitness-runner#249 did.
 //
 // # Behavior

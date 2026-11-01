@@ -36,9 +36,9 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return checkkit.Pass(filesChecked), nil
 }
 
-// jsWS is the JavaScript \s character class as an RE2 class body — a copy of
-// internal/mermaid's unexported constant, so the ported patterns match
-// exactly what the JS regexes matched.
+// jsWS is the JavaScript \s character class as an RE2 class body.
+// It is a copy of internal/mermaid's unexported constant.
+// The ported patterns then match exactly what the JS regexes matched.
 const jsWS = `\t\n\v\f\r \x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}`
 
 // isJSSpace reports whether r is in the JavaScript \s class — the rune-level
@@ -61,7 +61,8 @@ var (
 	// classDefLine is the TS CLASSDEF pattern: a classDef legend declaration.
 	classDefLine = regexp.MustCompile(`^[` + jsWS + `]*classDef[` + jsWS + `]+\w+`)
 	// nodeDef is the TS NODE_DEF pattern: a node definition whose label opens
-	// with a callout number — id, shape opener, then digits at a boundary.
+	// with a callout number.
+	// It matches an id, a shape opener, then digits at a boundary.
 	nodeDef = regexp.MustCompile(
 		`^[` + jsWS + `]*(\w[\w-]*)[` + jsWS + `]*(?:\(\(|\[\(|\[|\(|\{|>)[` + jsWS + `]*(\d+)\b`)
 	// classStmt is the TS CLASS_STMT pattern: `class id1,id2 styleClass`.
@@ -172,8 +173,8 @@ func legendErrorsForDiagram(file string, block *mermaid.DiagramBlock) []string {
 }
 
 // validateDoc flags numbered flowchart callout nodes that carry no style
-// class, and diagrams with callouts but no classDef legend — so callouts
-// render consistently and map to a legend.
+// class, and diagrams with callouts but no classDef legend.
+// Callouts then render consistently and map to a legend.
 func validateDoc(file, content string) []string {
 	var errors []string
 	for _, block := range mermaid.ParseDoc(content) {

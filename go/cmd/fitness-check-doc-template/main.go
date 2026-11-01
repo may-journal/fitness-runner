@@ -121,9 +121,9 @@ func shipped(d doc, named map[string]bool) (doc, bool) {
 }
 
 // judgeAt holds a doc to the named template whose namesake it is, else to any
-// one of the folder's other templates. A named template governs only its
-// namesake, so false means none of templates governs the doc, as when all
-// are named for other docs.
+// one of the folder's other templates.
+// A named template governs only its namesake.
+// So false means none of templates governs the doc, as when all are named for other docs.
 func judgeAt(d doc, templates []doc, named map[string]bool) ([]string, bool) {
 	var rest []doc
 	for _, t := range templates {

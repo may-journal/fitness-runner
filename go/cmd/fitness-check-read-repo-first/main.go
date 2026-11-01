@@ -1,10 +1,13 @@
-// The banner is display, not judgment. Enabled names come from
-// FITNESS_ENABLED_CHECKS; a standalone run with no context prints the
-// table-less form, and Src is always go/cmd/fitness-check-<name>/README.md.
-// Table geometry and coloring mirror the cli-table3 output: column widths 28
-// and max(20, max(70, width-8)-34) including one space of padding per side,
-// gray borders and red header regardless of tty (unless NO_COLOR), and
-// chalk-style bold/cyan/yellow only on a terminal.
+// The banner is display, not judgment.
+// Enabled names come from FITNESS_ENABLED_CHECKS.
+// A standalone run with no context prints the table-less form.
+// Src is always go/cmd/fitness-check-<name>/README.md.
+//
+// Table geometry and coloring mirror the cli-table3 output.
+// Column widths are 28 and max(20, max(70, width-8)-34), including one space
+// of padding per side.
+// Borders are gray and the header red regardless of tty (unless NO_COLOR).
+// Chalk-style bold/cyan/yellow appears only on a terminal.
 
 package check
 
@@ -63,7 +66,8 @@ func newPalette() palette {
 
 // buildContextFeedback renders the boxed banner: the bold familiarization
 // question, the enabled-check table (omitted when no checks are known), and
-// the yellow --no-verify note, between full-width cyan horizontal rules.
+// the yellow --no-verify note.
+// Full-width cyan horizontal rules sit between them.
 func buildContextFeedback(names []string, cols int, p palette) string {
 	ruleWidth := cols
 	if ruleWidth < 20 {

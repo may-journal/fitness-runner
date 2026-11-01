@@ -17,8 +17,9 @@ const adr0004 = "https://github.com/may-journal/fitness-runner/blob/main/fitness
 const minOverlap = 0.3
 
 // minShared is the fewest words two similar Givens share. Short Givens meet
-// minOverlap with one word, and one word, such as the rest of a multi-word
-// actor, says too little about an area.
+// minOverlap with one word.
+// One word, such as the rest of a multi-word actor, says too little about an
+// area.
 const minShared = 2
 
 // overlapErrors flags each pair of docs holding acceptances with the same

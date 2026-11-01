@@ -40,13 +40,13 @@ Each row links the check's README and gives the first sentence of its Go package
 | [comment-structure](../go/cmd/fitness-check-comment-structure/README.md) | Judges one GitHub issue or PR comment, so a reply stays short, readable, and free of agent noise. |
 | [commit-attribution](../go/cmd/fitness-check-commit-attribution/README.md) | Requires a commit message to disclose AI use in "AI-Tools:" and "AI-Models:" git trailers. |
 | [cspell](../go/cmd/fitness-check-cspell/README.md) | Fails unknown words in the checked files. |
-| [dependency-currency](../go/cmd/fitness-check-dependency-currency/README.md) | Fails a declared npm dependency that is behind its latest published version — an installable update means the project isn't at peak fitness. |
+| [dependency-currency](../go/cmd/fitness-check-dependency-currency/README.md) | Fails a declared npm dependency that is behind its latest published version. |
 | [doc-template](../go/cmd/fitness-check-doc-template/README.md) | Makes each markdown document match the shape of a template that governs it. |
 | [duplicate-code](../go/cmd/fitness-check-duplicate-code/README.md) | Fails a repo whose duplicated lines pass 1% of its scanned lines. |
 | [epic-structure](../go/cmd/fitness-check-epic-structure/README.md) | Validates that an epic follows the Epic issue template, or the repo's own template labeled `Epic`. |
 | [eslint](../go/cmd/fitness-check-eslint/README.md) | Runs ESLint over the repo with the shared flat config, by executing the real ESLint binary. |
 | [gitignore-why](../go/cmd/fitness-check-gitignore-why/README.md) | Requires every .gitignore pattern to follow a `#` comment explaining why it exists. |
-| [go-complexity](../go/cmd/fitness-check-go-complexity/README.md) | Enforces a cyclomatic complexity ceiling on Go functions — the Go-native counterpart of the house eslint rule (`complexity: max 5`) that gates JavaScript and TypeScript. |
+| [go-complexity](../go/cmd/fitness-check-go-complexity/README.md) | Enforces a cyclomatic complexity ceiling on Go functions. |
 | [go-test](../go/cmd/fitness-check-go-test/README.md) | Runs `go test ./...` in every Go module of the repo and reports the failing tests. |
 | [go-test-coverage](../go/cmd/fitness-check-go-test-coverage/README.md) | Measures entry coverage and test overlap. |
 | [go-vet](../go/cmd/fitness-check-go-vet/README.md) | Runs `go vet ./...` in every Go module of the repo, catching suspicious code the compiler accepts. |
@@ -63,7 +63,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [markdown-no-bold-italic](../go/cmd/fitness-check-markdown-no-bold-italic/README.md) | Fails bold and italic emphasis in markdown files: `**bold**`, `__bold__`, `*italic*`, or `_italic_`. |
 | [mermaid-callout-why](../go/cmd/fitness-check-mermaid-callout-why/README.md) | Requires each numbered callout table to carry a "Why" column, and flags numbered rows whose "Why" cell is empty. |
 | [mermaid-callouts](../go/cmd/fitness-check-mermaid-callouts/README.md) | Requires every mermaid diagram with callouts to have a callout table whose callouts match it one to one. |
-| [mermaid-diagram-prose](../go/cmd/fitness-check-mermaid-diagram-prose/README.md) | Fails edge labels that carry prose beyond a callout, a number or a letter, in a diagram paired with a callout table. |
+| [mermaid-diagram-prose](../go/cmd/fitness-check-mermaid-diagram-prose/README.md) | Fails edge labels that carry prose beyond a callout. |
 | [mermaid-diagram-table-gap](../go/cmd/fitness-check-mermaid-diagram-table-gap/README.md) | Flags loose markdown prose wedged between a numbered mermaid diagram (or its legend block) and the callout table that follows it. |
 | [mermaid-legend](../go/cmd/fitness-check-mermaid-legend/README.md) | Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend. |
 | [mermaid-level-bleed](../go/cmd/fitness-check-mermaid-level-bleed/README.md) | Warns when a callout description at one C4 level repeats the previous level verbatim. |
@@ -90,7 +90,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [text-readability](../go/cmd/fitness-check-text-readability/README.md) | Fails a markdown file whose prose scores as hard to read. |
 | [vitest-coverage-exclude](../go/cmd/fitness-check-vitest-coverage-exclude/README.md) | Fails any Vitest coverage exclude entry, so coverage measures every file. |
 | [vitest-coverage-full](../go/cmd/fitness-check-vitest-coverage-full/README.md) | Requires Vitest coverage thresholds of 100 in the repo and the shared config, then runs `vitest run --coverage`. |
-| [workflow-ref-exists](../go/cmd/fitness-check-workflow-ref-exists/README.md) | Fails a workflow that calls a may-journal workflow or action at a tag or sha where that path does not exist yet (#485). |
+| [workflow-ref-exists](../go/cmd/fitness-check-workflow-ref-exists/README.md) | Fails a workflow that calls a may-journal workflow or action at a tag or sha. |
 | [workflow-reporting](../go/cmd/fitness-check-workflow-reporting/README.md) | Fails a workflow job that can fail without a report on its run page (#181). |
 
 <!-- end check index -->

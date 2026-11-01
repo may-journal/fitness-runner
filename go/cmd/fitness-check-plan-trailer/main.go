@@ -18,8 +18,8 @@ func Main() {
 
 var (
 	// planRefRe matches a line that is entirely a plan reference: `Plan`
-	// followed by separators, an optional repo or issue URL, and a number,
-	// and nothing else. It will not match body prose like "Plan the rollout
+	// followed by separators, an optional repo or issue URL, and a number.
+	// Nothing else may be on the line. It will not match body prose like "Plan the rollout
 	// in 3 steps".
 	planRefRe = regexp.MustCompile(`(?mi)^\s*plan[ :#]+\s*(?:https?://\S+/|[\w.-]+/[\w.-]+\s*#?\s*)?\d+\s*$`)
 	// validPlanRe is the three accepted spellings: a Plan of this repo, a

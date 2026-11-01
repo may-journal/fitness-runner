@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -83,4 +84,11 @@ func Test0137_5(t *testing.T) {
 	}
 	out, code = fitness(t, repo, nil, "--all", "prose-budget")
 	sees(t, out, code, 1, "app/run main.go:3: a sentence has 30 words (max 23)", "app/run main.go:6: a sentence has 31 words (max 23)")
+}
+
+func Test0137_6(t *testing.T) {
+	t.Parallel()
+	installer(t)
+	out, code := fitness(t, filepath.Join("..", ".."), nil, "--policy=external", "--checks=prose-budget,text-readability,no-contrastive-reframing", "--dir=go/cmd")
+	sees(t, out, code, 0, "All 3 checks passed")
 }

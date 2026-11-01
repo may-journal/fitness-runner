@@ -41,10 +41,10 @@ func judgeCommits(root string, commits []string) checkkit.Result {
 	return result
 }
 
-// messageArg extracts an explicit --message value (either form) from args, so
-// the check can validate a subject passed directly — e.g. a PR title from the
-// pr-check workflow, which runs the binary without the runner's context-inline
-// extraction.
+// messageArg extracts an explicit --message value (either form) from args.
+// The check can then validate a subject passed directly, such as a PR title
+// from the pr-check workflow.
+// That workflow runs the binary without the runner's context-inline extraction.
 func messageArg(args []string) (string, bool) {
 	for i, a := range args {
 		if v, ok := strings.CutPrefix(a, "--message="); ok {
@@ -69,10 +69,10 @@ var semanticRe = regexp.MustCompile(`^(` + strings.Join(semanticTypes, "|") + `)
 // msgEmpty is the failure when there is no subject line to validate.
 const msgEmpty = "No commit message to validate; use type(scope): description"
 
-// judge validates one subject line, mirroring the TS check: a blank subject
-// fails with msgEmpty, a semantic (or Merge) subject passes, and anything
-// else fails quoting the subject and the accepted types. filesChecked is
-// always 1 — the one commit message.
+// judge validates one subject line, mirroring the TS check.
+// A blank subject fails with msgEmpty, and a semantic (or Merge) subject passes.
+// Anything else fails quoting the subject and the accepted types.
+// filesChecked is always 1, the one commit message.
 func judge(subject string) checkkit.Result {
 	if strings.TrimSpace(subject) == "" {
 		return checkkit.Fail(1, msgEmpty)

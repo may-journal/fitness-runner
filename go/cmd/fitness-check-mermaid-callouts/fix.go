@@ -141,8 +141,8 @@ func skipReason(pair mermaid.DiagramTablePair, numbered []mermaid.Callout) strin
 }
 
 // calloutSkip says why one numbered connector callout cannot become a
-// letter: its number also marks a node, marks another connector, or has no
-// single row.
+// letter.
+// Its number also marks a node, marks another connector, or has no single row.
 func calloutSkip(d *mermaid.DiagramBlock, t *mermaid.CalloutTableBlock, label string) string {
 	n, _ := strconv.Atoi(label)
 	switch {
