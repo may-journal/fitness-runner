@@ -69,8 +69,7 @@ func releaseToolBundles(platforms []string) map[string]string {
 }
 
 // releaseToolOutputs returns both GoReleaser passes for platforms: bundle
-// archives in out/bundles, and installers, verifiers, and the checksums that
-// list installers and archives in out/tools.
+// archives in out/bundles, and installers, verifiers and checksums in out/tools.
 func releaseToolOutputs(platforms []string) map[string]string {
 	files, sums := releaseToolBundles(platforms), ""
 	for _, platform := range platforms {

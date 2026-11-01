@@ -43,9 +43,9 @@ func javaRepo(t *testing.T, files map[string]string) string {
 	return example(t, "happyRepo", all)
 }
 
-// javaRun runs `fitness-install -- <check>` on repo with a JDK 21 and the
-// build tools answering saved responses, and JAVA_HOME unset so the JDK on
-// PATH is the one that runs. env adds to the run's environment.
+// javaRun runs `fitness-install -- <check>` on repo with a JDK 21 and build
+// tools answering saved responses, JAVA_HOME unset so the JDK on PATH runs.
+// env adds to the run's environment.
 func javaRun(t *testing.T, repo, check string, saved map[string][]response, env ...string) (replays, string, int) {
 	t.Helper()
 	all := map[string][]response{"java": {javaJDK}}
@@ -57,8 +57,8 @@ func javaRun(t *testing.T, repo, check string, saved map[string][]response, env 
 	return rp, out, code
 }
 
-// javaWrapper puts the stand-in at the root of repo as the build wrapper
-// name, so a run of the wrapper answers from its saved responses.
+// javaWrapper puts the stand-in at the root of repo as the build wrapper, to
+// answer from its saved responses.
 func javaWrapper(t *testing.T, repo, name string) {
 	t.Helper()
 	self, err := os.Executable()

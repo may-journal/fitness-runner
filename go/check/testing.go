@@ -37,9 +37,8 @@ func writeFiles(t testing.TB, root string, files map[string]string) {
 	}
 }
 
-// Judge runs the check on the repo at root, as fitness would in a full
-// run, with args after its name, and returns its verdict. An error from the
-// check fails the test.
+// Judge runs the check on the repo at root with args and returns its verdict;
+// an error fails the test.
 func Judge(t testing.TB, c Check, root string, args ...string) Result {
 	t.Helper()
 	result, err := c.Run(&Context{Root: root, Args: args})
@@ -49,9 +48,8 @@ func Judge(t testing.TB, c Check, root string, args ...string) Result {
 	return result
 }
 
-// Test runs the check on the repo the test runs in, as a Go test: each
-// error line fails the test, and each info note is logged. So `go test`
-// in the fitness folder judges the repo as `fitness <name>` does.
+// Test runs the check on the repo the test runs in, failing on each error line
+// and logging each info note.
 func Test(t testing.TB, c Check) {
 	t.Helper()
 	result := Judge(t, c, repoRoot(t))

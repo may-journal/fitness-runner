@@ -15,8 +15,8 @@ func rcStaged(t *testing.T, given, files map[string]string) (string, int) {
 	return fitness(t, repo, nil, "requirements-changed")
 }
 
-// rcPull commits files on top of a fresh copy of given, as a pull request
-// branch off main, and runs requirements-changed on the pull request.
+// rcPull commits files on a pull request branch off main in a fresh copy of
+// given, and runs requirements-changed on it.
 func rcPull(t *testing.T, given, files map[string]string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", given)

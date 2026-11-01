@@ -39,8 +39,7 @@ func installed0094(version string, dev bool) map[string]any {
 type side0094 struct{ manifest, lock map[string]any }
 
 // at0094 is a commit with zod and parser in package.json, installed as
-// zodLock and parserLock, with the dev-only tiny at 0.3.5, plus extra
-// installed packages that replace any of those.
+// zodLock and parserLock, plus dev-only tiny 0.3.5 and extra packages.
 func at0094(zod, parser, zodLock, parserLock string, extra map[string]any) side0094 {
 	m := manifest0094(zod, parser)
 	packages := map[string]any{
@@ -65,10 +64,8 @@ func contents0094(t *testing.T, file, ref string, body map[string]any) response 
 	return response{Match: []string{"contents/" + file + "?ref=" + ref}, Stdout: string(raw)}
 }
 
-// bump0094 runs the dependency check on PR 23, titled title, at head
-// abc123 on a base branch at tip000, whose merge base is base000. Its files
-// are listed by files, and its package.json and lockfile read as base0094
-// at base000 and head at abc123.
+// bump0094 runs the dependency check on PR 23, titled title, at head abc123
+// on base tip000 with merge base base000, listing files.
 func bump0094(t *testing.T, title string, files response, head side0094) (replays, string, int, string) {
 	t.Helper()
 	view := response{Match: []string{"pr view 23 --json title"},

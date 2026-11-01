@@ -30,8 +30,8 @@ type jsonRun struct {
 	} `json:"checks"`
 }
 
-// asJSON runs the full suite with `--format=json` in repo the way an agent
-// does, keeping stdout apart from the table on stderr, and decodes stdout.
+// asJSON runs the suite with `--format=json` in repo as an agent does,
+// keeping stdout apart from the stderr table, and decodes stdout.
 func asJSON(t *testing.T, repo string) jsonRun {
 	t.Helper()
 	var stdout, stderr bytes.Buffer

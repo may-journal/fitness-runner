@@ -8,9 +8,8 @@ import (
 	"testing"
 )
 
-// pathWithout returns a PATH setting that holds every real tool on the
-// caller's PATH except names, so a run meets a machine without them. A
-// plain /usr/bin:/bin is not enough: Linux runners keep Go and Node there.
+// pathWithout returns a PATH holding every real tool on the caller's PATH
+// except names, since Linux runners keep Go and Node in /usr/bin.
 func pathWithout(t *testing.T, names ...string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -20,9 +19,8 @@ func pathWithout(t *testing.T, names ...string) string {
 	return "PATH=" + dir
 }
 
-// killedVet returns a PATH setting whose go kills the check that runs
-// `go vet`, as an out-of-memory kill would, and runs the real go otherwise.
-// So go-vet ends without a verdict while every other check judges as usual.
+// killedVet returns a PATH whose go kills `go vet` as an out-of-memory kill
+// would, and runs the real go otherwise.
 func killedVet(t *testing.T) string {
 	t.Helper()
 	real, err := exec.LookPath("go")
@@ -32,9 +30,8 @@ func killedVet(t *testing.T) string {
 	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH")
 }
 
-// brokenTool returns a PATH setting whose name runs script, a shell body,
-// ahead of every real tool on the caller's PATH, so one tool misbehaves as
-// a crashed or broken install does while the rest work.
+// brokenTool returns a PATH whose name runs the shell script ahead of the real
+// tools, so one tool misbehaves like a broken install.
 func brokenTool(t *testing.T, name, script string) string {
 	t.Helper()
 	dir := t.TempDir()
@@ -42,9 +39,8 @@ func brokenTool(t *testing.T, name, script string) string {
 	return "PATH=" + dir + string(os.PathListSeparator) + os.Getenv("PATH")
 }
 
-// crashingGo returns a PATH setting whose go prints message and exits 2,
-// as a crashed toolchain does, when its first argument is sub, and runs
-// the real go otherwise.
+// crashingGo returns a PATH whose go prints message and exits 2 when its first
+// argument is sub, else runs the real go.
 func crashingGo(t *testing.T, sub, message string) string {
 	t.Helper()
 	real, err := exec.LookPath("go")

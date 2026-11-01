@@ -62,13 +62,8 @@ func Test0001_18(t *testing.T) {
 // the runner's two-second probe plus the hooks around it.
 const offlineWithin = 10 * time.Second
 
-// offlineCommitAndPush commits and pushes a feature in a JavaScript repo with
-// a GitHub origin, behind a proxy that accepts connections and never
-// answers. Each step must finish within offlineWithin, with the registry
-// check, the Plan gate and local-branch reporting info that names GitHub's
-// API host and the proxy. The push lands in a local bare repo. The
-// installer's latest release lookup was recorded minutes ago, as by an
-// online run, so the installer asks nothing.
+// offlineCommitAndPush commits and pushes in a JavaScript repo with a GitHub
+// origin behind a silent proxy, each step within offlineWithin.
 func offlineCommitAndPush(t *testing.T) {
 	t.Helper()
 	repo, env := hooked(t, map[string]string{"package.json": `{"dependencies": {"left-pad": "^1.0.0"}}` + "\n",
@@ -105,11 +100,8 @@ func recordedNow(t *testing.T, env []string) {
 	mustDo(t, os.WriteFile(filepath.Join(strings.TrimPrefix(env[i], "FITNESS_CACHE_DIR="), "latest-release.json"), []byte(record), 0o600))
 }
 
-// describeFails runs check in repo with a copy of the installed runner, after
-// swapping that check for one whose --describe fails and whose run is the
-// real one, as a user who replaced one check would. The runner is placed in
-// the bundle by hard link or copy, never a symlink, which Linux resolves back
-// to the install folder. It returns the output and exit code.
+// describeFails runs check in repo after swapping it for one whose --describe
+// fails, linking or copying the runner because Linux resolves symlinks back.
 func describeFails(t *testing.T, repo, check string) (string, int) {
 	t.Helper()
 	bin := "fitness-check-" + check
@@ -152,9 +144,8 @@ func Test0001_14(t *testing.T) {
 	timesTrees(t)
 }
 
-// promptsTimeOut asserts a check whose git or ssh waits for a password times
-// out red at its budget, and the waiting tool is stopped. Git waits only in a
-// check that turns its prompts back on, since 0001.18 turns them off.
+// promptsTimeOut asserts a check that turns git prompts back on times out red
+// at its budget, and its waiting tool is stopped.
 func promptsTimeOut(t *testing.T) {
 	t.Helper()
 	for _, call := range []string{"GIT_TERMINAL_PROMPT=1 git fetch origin", "ssh git@git.example.invalid true"} {
@@ -173,10 +164,8 @@ func promptTimesOut(t *testing.T, call string) {
 	processStopped(t, pidFile)
 }
 
-// prompted runs, under a 0.5s timeoutMs, a local check that runs call with
-// git and ssh waiting for a password, as on a machine with no credentials
-// saved, and env added to the user's environment. It returns the output, the
-// exit code and the file holding the waiting tool's process ID.
+// prompted runs a local check under a 0.5s timeoutMs whose git and ssh await a
+// password, returning output, exit code and process-ID file.
 func prompted(t *testing.T, call string, env ...string) (string, int, string) {
 	t.Helper()
 	path, pidFile := promptingTools(t)
@@ -202,8 +191,8 @@ func promptsRefused(t *testing.T) {
 	}
 }
 
-// ownBudget runs, beside the installed checks, one that declares a 0.3s
-// budget in --describe and then hangs, and returns the output and exit code.
+// ownBudget runs, beside the installed checks, one that declares a 0.3s budget
+// in --describe and then hangs.
 func ownBudget(t *testing.T) (string, int) {
 	t.Helper()
 	installed, bundle := installOnly(t), t.TempDir()
@@ -249,9 +238,8 @@ func linkedRepo(t *testing.T) string {
 	return repo
 }
 
-// hugeProductCommit asserts that in a repo of 500,000 tracked files a
-// commit editing one product file passes, every architecture check inside
-// its budget, since the runner stats the tracked files once for all six.
+// hugeProductCommit asserts that in a repo of 500,000 tracked files a one-file
+// commit passes every architecture check inside its budget.
 func hugeProductCommit(t *testing.T) {
 	t.Helper()
 	repo := generatedTree(t, architectedRepo(), 500000)
@@ -267,8 +255,8 @@ func hugeProductCommit(t *testing.T) {
 	}
 }
 
-// loggedGit returns a PATH setting whose git logs each call's arguments to
-// the returned file, one line each, and then runs the real git.
+// loggedGit returns a PATH setting whose git logs each call's arguments to the
+// returned file, one line each, before running the real git.
 func loggedGit(t *testing.T) (path, calls string) {
 	t.Helper()
 	real, err := exec.LookPath("git")
@@ -310,9 +298,8 @@ func Test0001_16(t *testing.T) {
 
 func Test0001_13(t *testing.T) {
 	t.Parallel()
-	// slow-zz has the longest budget of any check. It sits after one slow
-	// check per pool slot and the installed suite, so catalog order alone
-	// would hold it until another check ends.
+	// slow-zz has the longest budget but sits last in catalog order, so it
+	// would wait for a free pool slot.
 	budgets := map[string]int{"slow-zz": 1800000}
 	for i := range runtime.NumCPU() {
 		budgets[fmt.Sprintf("slow-%02d", i)] = 30000
@@ -345,10 +332,8 @@ func keepsCatalogOrder(t *testing.T, out string, want []string) {
 // ends.
 const timedPrefix = "fitness-check-slow-"
 
-// timedRun adds one slow check per budget to a copy of the installed suite,
-// each this test binary under the check's name, and runs fitness on a
-// passing repo. It returns the output, the exit code and the times each
-// slow check logged.
+// timedRun adds one slow check per budget to the installed suite, runs fitness
+// on a passing repo, and returns the logged times.
 func timedRun(t *testing.T, budgets map[string]int) (string, int, stamps) {
 	t.Helper()
 	installed, bundle, logs := installOnly(t), t.TempDir(), t.TempDir()
@@ -369,8 +354,8 @@ func timedRun(t *testing.T, budgets map[string]int) (string, int, stamps) {
 	return out, code, stamps(logs)
 }
 
-// timedCheck is one slow check: it logs its step's start, pauses, logs the
-// end, then answers --describe with its budget or a run with a pass.
+// timedCheck is one slow check that logs its step's start and end around a
+// pause, answering --describe with its budget.
 func timedCheck(name string, args []string) int {
 	check := strings.TrimPrefix(name, "fitness-check-")
 	dir := os.Getenv("FITNESS_TIMED")
@@ -465,7 +450,7 @@ func showsProgress(t *testing.T) {
 }
 
 // timeoutNamesLastLine asserts a timed-out check's row shows its last stderr
-// line, and that off a terminal it was named once at half its budget.
+// line, named once at half its budget off a terminal.
 func timeoutNamesLastLine(t *testing.T) {
 	t.Helper()
 	out, code := slowCheck(t, 1000, "exec /bin/sleep 30")
@@ -475,10 +460,8 @@ func timeoutNamesLastLine(t *testing.T) {
 	}
 }
 
-// hugeTreeHints asserts that in a repo of 20,000 tracked files a commit,
-// scoped to its staged files, passes, while an unscoped run under a 0.1s
-// timeoutMs times out the checks that read every file, each row naming the
-// tracked-file count and how to scope the run.
+// hugeTreeHints asserts that in 20,000 tracked files a scoped commit passes and
+// an unscoped run times out, its rows naming the count.
 func hugeTreeHints(t *testing.T) {
 	t.Helper()
 	repo := generatedTree(t, staleTest(), 20000)
@@ -603,9 +586,8 @@ func gone(pid int, within time.Duration) bool {
 	return false
 }
 
-// stalledGitStops asserts a run whose git call listing tracked or staged
-// files stalls, under no-prompt mode, ends at the call's ten-second deadline
-// as a setup error naming it, and the stalled git is stopped.
+// stalledGitStops asserts a stalled git file listing ends at its ten-second
+// deadline as a setup error, and the git is stopped.
 func stalledGitStops(t *testing.T) {
 	t.Helper()
 	for call, named := range map[string]string{

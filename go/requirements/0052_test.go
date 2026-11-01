@@ -34,7 +34,7 @@ const prettierShared = "const greeting = 'hi';\n"
 const prettierPackageField = "{\n  \"prettier\": {\n    \"singleQuote\": true\n  }\n}\n"
 
 // What Prettier 3 prints: `--check` on formatted files, `--check` naming
-// app.js, the same in a CI job that colors the [warn] prefix, and `--write`.
+// app.js, the same with a colored [warn] prefix, and `--write`.
 var (
 	prettierClean = response{Stdout: "Checking formatting...\nAll matched files use Prettier code style!\n"}
 	prettierWarn  = response{

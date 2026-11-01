@@ -1,11 +1,6 @@
 #!/bin/sh
-# Builds the candidate installer for this host's platform only, as the
-# release build does for all four, and runs the requirement suite against
-# it, 32 tests at once: they wait on subprocesses, not the CPU, and 32 keeps
-# the process count well under the OS limit. No test leaves the machine:
-# GitHub, npm, and tool answers are saved. With FITNESS_COVER set, the
-# candidate is built with coverage and the run ends with coverage by package
-# and in total.
+# Builds the host's candidate installer and runs the requirement suite against
+# it, 32 tests at once since they wait on subprocesses.
 set -eu
 cd "$(dirname "$0")/.."
 goos="$(go env GOOS)"

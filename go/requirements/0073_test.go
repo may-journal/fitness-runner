@@ -19,10 +19,8 @@ const (
 // names after the module path's last element.
 var accRootCommand = map[string]string{"go.mod": "module example.com/tool\n\ngo 1.26\n", "main.go": "package main\n"}
 
-// accNative is a native app with Node development tools: XcodeGen declares
-// an app, two extensions through a template, and a test bundle, and the
-// view declares the three runtimes by path or by name. The Notify target
-// starts on line 17 of project.yml.
+// accNative is a native app with Node tools whose XcodeGen project puts the
+// Notify target on line 17 of project.yml.
 func accNative() map[string]string {
 	files := acFixture(acRoot)
 	files["src/cmd/service/main.go"] = "package service\n\n// Service is a library.\n"
@@ -203,9 +201,8 @@ func Test0073_9(t *testing.T) {
 	sees(t, out, code, 0)
 }
 
-// accLibrary is an npm library that ships only built files: main on line
-// 3, module, exports with types, files, and the build script that makes
-// them.
+// accLibrary is an npm library shipping only built files, with main on line
+// 3 and a build script making them.
 const accLibrary = "{\n  \"name\": \"@acme/kit\",\n  \"main\": \"dist/cjs/index.js\",\n  \"module\": \"dist/esm/index.js\",\n  \"exports\": {\n    \".\": {\n      \"types\": \"./dist/types/index.d.ts\",\n      \"import\": \"./dist/esm/index.js\"\n    }\n  },\n  \"files\": [\"dist\"],\n  \"scripts\": {\n    \"build\": \"rollup -c\"\n  }\n}\n"
 
 // accKit adds a kit container with label and description to the library.

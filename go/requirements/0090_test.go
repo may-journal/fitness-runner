@@ -95,8 +95,8 @@ func Test0090_8(t *testing.T) {
 	sees(t, out, code, 1, "disabledChecks turns off markdown-no-bold-italic, and org policy runs every check as the shared bar")
 }
 
-// allPassedWith is the summary of a run where every check passed, with extra
-// checks beyond the bundled catalog (negative when some are turned off).
+// allPassedWith is the summary of an all-passing run with extra checks beyond
+// the bundled catalog (negative when some are off).
 func allPassedWith(extra int) string {
 	return fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows))+extra)
 }

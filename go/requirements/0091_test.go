@@ -67,11 +67,8 @@ func note0091(body string) []response {
 	}
 }
 
-// autoMerge0091 runs the workflow's auto-merge step as Actions does, with
-// bash -e and pipefail, on a pull_request event for PR 2 based on base in a
-// repo whose default branch is main. GitHub answers merge with answer and
-// lists note as the bot's earlier note, answers comment writes from writes,
-// and accepts any other call.
+// autoMerge0091 runs the auto-merge step as Actions does for PR 2 on base,
+// GitHub answering merge with answer and listing note.
 func autoMerge0091(t *testing.T, base string, answer response, note string, writes ...response) (replays, string, int) {
 	t.Helper()
 	answer.Match = []string{"pr merge --auto --squash"}
@@ -189,11 +186,8 @@ var (
 	null0091     = regexp.MustCompile(`\bnull\b`)
 )
 
-// runs0091 evaluates the job's `if:` as Actions does for a pull_request
-// event whose fields, keyed by their path under github.event, hold event.
-// Bash compares strings and Actions compares typed values, so the event
-// must give every field the condition reads: "" for null, and "on" for an
-// enabled auto_merge.
+// runs0091 evaluates the job's `if:` for a pull_request event holding every
+// field it reads, with "" for null and "on" for auto_merge.
 func runs0091(t *testing.T, event map[string]string) bool {
 	t.Helper()
 	_, cond, ok := strings.Cut(workflowText0091(t), "    if: >-\n")
@@ -203,9 +197,8 @@ func runs0091(t *testing.T, event map[string]string) bool {
 	return holds0091(t, strings.ReplaceAll(block0091(cond), "\n", " "), event)
 }
 
-// holds0091 evaluates an Actions condition cond for an event whose fields,
-// keyed by their path under github.event, hold event; "event_name" names
-// the event itself.
+// holds0091 evaluates an Actions condition cond for event, whose fields are
+// keyed by path under github.event, "event_name" naming the event.
 func holds0091(t *testing.T, cond string, event map[string]string) bool {
 	t.Helper()
 	cond = strings.ReplaceAll(cond, "github.event_name", "github.event.event_name")

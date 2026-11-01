@@ -35,8 +35,8 @@ type checkState struct {
 	Reason  string `json:"reason"`
 }
 
-// stdoutOf runs the one-liner with args in repo, keeping stdout apart from
-// stderr, and decodes stdout as JSON into v, failing unless it exits 0.
+// stdoutOf runs the one-liner with args in repo, decodes stdout apart from
+// stderr as JSON into v, failing unless it exits 0.
 func stdoutOf(t *testing.T, repo string, v any, args ...string) {
 	t.Helper()
 	var stdout, stderr bytes.Buffer
@@ -150,9 +150,8 @@ func describedKeys(prefix string, schema schemaKey) map[string]string {
 	return out
 }
 
-// keysFitnessReads lists every config key path fitness's own source reads:
-// the JSON keys of each type a conf.Register call names, found in that
-// package. Only a registered Section loads keys, so these are all it reads.
+// keysFitnessReads lists the JSON keys of each type a conf.Register call
+// names, since only a registered Section loads keys.
 func keysFitnessReads(t *testing.T) []string {
 	t.Helper()
 	var keys []string
@@ -203,9 +202,8 @@ func readSource(t *testing.T, file string, types map[string]*ast.StructType) []s
 	return calls
 }
 
-// registerType returns the type a Register[T] call names, if n is one. A
-// Register call that leaves T to inference fails the test: the search reads
-// T from the source, so the call must name it.
+// registerType returns the type a Register[T] call names, failing the test if
+// T is inferred, which source search cannot read.
 func registerType(t *testing.T, file string, n ast.Node) []string {
 	if call, ok := n.(*ast.CallExpr); ok && strings.HasSuffix(exprName(call.Fun), "Register") {
 		t.Errorf("%s: name the type a Register call reads, as conf.Register[T]", file)

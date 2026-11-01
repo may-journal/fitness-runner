@@ -8,9 +8,8 @@ import (
 	"time"
 )
 
-// Comment authors on the saved Plans: the repo's owner, a passer-by with no
-// tie to the repo, an org member, and a reviewer a repo may list in
-// planApprovers.
+// Comment authors on the saved Plans: the repo's owner, a passer-by, an org
+// member, and a reviewer listed in planApprovers.
 var (
 	owner    = func(body string) comment { return comment{Body: body, Author: "example-owner", Association: "OWNER"} }
 	passerby = func(body string) comment { return comment{Body: body, Author: "passerby", Association: "NONE"} }
@@ -18,10 +17,8 @@ var (
 	reviewer = func(body string) comment { return comment{Body: body, Author: "reviewer-bot", Association: "NONE"} }
 )
 
-// pushPlans are GitHub's saved answers about the issues a trailer may name:
-// #218 is a Plan the repo's owner approved, #151 is a Plan only called
-// approved or approved by a passer-by, #196 is a bug, #307 is a Plan the
-// reviewer approved, and #308 is a Plan an org member approved.
+// pushPlans are saved GitHub answers about issues a trailer may name: #218
+// owner-approved, #196 a bug, #151 passer-by, #307 reviewer, #308 member.
 func pushPlans(t *testing.T) []response {
 	t.Helper()
 	plan, labels := planBody("- [ ] Ship it."), []string{"Plan"}
@@ -166,8 +163,8 @@ func Test0010_6(t *testing.T) {
 	sees(t, out, code, 0, "[deleted]", "topic")
 }
 
-// silentGitHub is the environment of the real gh behind a proxy that
-// accepts connections and never answers, with a token so it asks GitHub.
+// silentGitHub is the environment of the real gh, with a token, behind a
+// silent proxy.
 func silentGitHub(t *testing.T) []string {
 	t.Helper()
 	if _, err := exec.LookPath("gh"); err != nil {
@@ -216,10 +213,8 @@ func orgPlanView(t *testing.T, repo string, n int, labels []string, comments ...
 	return r
 }
 
-// orgPlans are GitHub's saved answers about Plans in other repos:
-// may-journal/.github#144 is approved however its owner is cased,
-// may-journal/.github#141 is not, and
-// other-org/.github#7 is approved but belongs to another owner.
+// orgPlans are GitHub's saved answers about other repos' Plans: .github#144
+// approved in any owner case, #141 not, other-org/.github#7 by another owner.
 func orgPlans(t *testing.T) []response {
 	t.Helper()
 	return []response{

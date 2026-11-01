@@ -17,9 +17,8 @@ func hpShims(dir string) map[string]string {
 	return files
 }
 
-// hpStale copies happyRepo with every folder in shipped committed as hook
-// shims, puts the installer where a user's setup does, and leaves the clone's
-// core.hooksPath at stale, as a clone set up before the folder moved has it.
+// hpStale copies happyRepo with hook shims committed and core.hooksPath left
+// at stale, as a clone set up before the folder moved.
 func hpStale(t *testing.T, stale string, shipped ...string) (string, []string) {
 	t.Helper()
 	files := map[string]string{}

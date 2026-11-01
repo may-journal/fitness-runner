@@ -20,8 +20,8 @@ const (
 // entryCompare is the compare view of release 1.1.0.
 const entryCompare = "https://github.com/" + repo0014 + "/compare/v1.0.0...v1.1.0"
 
-// entryCommits is a branch off main, with files over it, with one commit
-// per set of changelog files, and GitHub's saved answer for its open PR.
+// entryCommits is a branch off main with files, one commit per set of
+// changelog files, and GitHub's saved answer for its PR.
 func entryCommits(t *testing.T, files map[string]string, body string, commits ...map[string]string) (string, response) {
 	t.Helper()
 	repo := branchRepo(t, files)
@@ -52,10 +52,8 @@ func entryApply(t *testing.T, repo string, commits []map[string]string) {
 	}
 }
 
-// entryActions runs pr-check in Actions on repo's branch, its PR described
-// by body. GitHub answers the PR's files with the branch's changed entry
-// files, as its files API sends them, and nothing for any other files read.
-// It answers released first, then that the repo has no release.
+// entryActions runs pr-check in Actions on repo's branch, GitHub answering
+// with the branch's changed entry files, then the released responses.
 func entryActions(t *testing.T, repo, body string, released ...response) (string, int) {
 	t.Helper()
 	files := response{Match: []string{"repos/" + repo0014 + "/pulls/1/files"}}
@@ -68,7 +66,7 @@ func entryActions(t *testing.T, repo, body string, released ...response) (string
 }
 
 // entryPatch is the branch's diff of path as GitHub's files API sends it:
-// from the first hunk on, empty when the branch leaves path alone.
+// from the first hunk on, empty if unchanged.
 func entryPatch(t *testing.T, repo, path string) string {
 	t.Helper()
 	diff, err := exec.Command("git", "-C", repo, "diff", "origin/main...HEAD", "--", path).Output()
@@ -306,9 +304,8 @@ func entryPending(t *testing.T) (string, string) {
 // pages: the page kind, then its refs and path.
 var entryLinks = regexp.MustCompile(`https://github\.com/` + regexp.QuoteMeta(repo0014) + `/(compare|tree|blob)/([^)\s"\\]+)`)
 
-// entryResolves reports whether GitHub would show a page of kind for spec
-// in repo: both ends of a compare view are commits, and a tree or blob
-// path exists at its ref.
+// entryResolves reports whether GitHub would show a page of kind for spec in
+// repo: commits for compare, existing paths otherwise.
 func entryResolves(repo, kind, spec string) bool {
 	exists := func(object string) bool {
 		return exec.Command("git", "-C", repo, "cat-file", "-e", object).Run() == nil
@@ -356,7 +353,7 @@ func Test0069_23(t *testing.T) {
 }
 
 // entryFrontDropped runs pr-check and branch-check on a PR that only drops
-// the front matter of the shipped entryOldFile, and fails if either names it.
+// the front matter of the shipped entryOldFile, failing if either names it.
 func entryFrontDropped(t *testing.T) {
 	t.Helper()
 	const item = "Feat: ship the old file."

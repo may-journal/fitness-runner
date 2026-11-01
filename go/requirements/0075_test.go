@@ -32,9 +32,8 @@ func aoTooling(component, row string) map[string]string {
 	return files
 }
 
-// aoComponents is the components view with the entry owning its folder,
-// inside added to the service boundary, after added past the edge, and
-// rows added past row 4. The diagram starts on line 4.
+// aoComponents is the components view starting on line 4, with inside added to
+// the service boundary and after and rows appended.
 func aoComponents(inside, after string, rows ...string) string {
 	diagram := "C4Component\nContainer_Boundary(service, \"1 Service (src/cmd/service)\") {\n" + aoEntry + "Component(store, \"3 Store\", \"Go\", \"src/store\")\n" + inside + "}\n" + aoEdge + after
 	return acView(diagram, append([]string{"The service.", "`src/cmd/service` starts it.", "Keeps records.", aoSaves}, rows...)...)
@@ -214,9 +213,8 @@ func Test0075_5(t *testing.T) {
 	sees(t, out, code, 1, row+"evidence src/cmd/service/main.go#L5 names nothing store owns")
 }
 
-// aoWorker adds a worker command whose job reads the store to the Go
-// architecture. The service boundary opens on line 5; the worker boundary
-// opens on line 10, or line 11 once the store moves to a shared boundary.
+// aoWorker adds a worker command whose job reads the store, its boundary
+// opening on line 10, or 11 once the store moves.
 func aoWorker() map[string]string {
 	files := aoFixture()
 	files[acRoot+acContainer] = strings.Replace(files[acRoot+acContainer], "}\nRel", "Container(worker, \"5 Worker\", \"Go\", \"src/cmd/worker\")\n}\nRel", 1)
@@ -244,11 +242,8 @@ func Test0075_6(t *testing.T) {
 	sees(t, out, code, 0)
 }
 
-// aoResolved is the native app with a sync component beside the model:
-// each declares a load overload and a save extension member on the
-// model's store. The screen loads through the model's overload, saves
-// through both extensions. The model's save, past alternative #if headers
-// and a < operator, calls the sync one from an if body after a closure.
+// aoResolved is the native app with a sync component beside the model, each
+// declaring a load overload and save extension.
 func aoResolved(line7 string) map[string]string {
 	files := aoEdit(aoNative(), aoModel+"}", aoModel+"Component(sync, \"9 Sync\", \"Swift\", \"App/Sync\")\n}")
 	files = aoEdit(files, "Rel(ui, model, \"8\")", "Rel(ui, model, \"8\")\nRel(sync, model, \"10\")")
@@ -276,9 +271,8 @@ func Test0075_11(t *testing.T) {
 	passedWith(t, out, aoCheck, "1")
 }
 
-// aoScripts is a package whose scripts run development tools past runner
-// flags, beside a start script, a published entry, a published folder,
-// and an exports pattern, which dev scripts also run.
+// aoScripts is a package whose scripts run tools past runner flags, beside a
+// start script, a published entry, folder and exports pattern.
 const aoScripts = "{\n  \"main\": \"tools/build.mjs\",\n  \"files\": [\"lib\"],\n  \"exports\": {\n    \"./x/*\": \"./pub/*.mjs\"\n  },\n  \"scripts\": {\n" +
 	"    \"analyze\": \"node scripts/analyze.mjs\",\n    \"gen\": \"npx tsx tools/gen.ts && echo done\",\n    \"seed\": \"MODE=dev node -r dotenv/config seed.mjs\",\n" +
 	"    \"build\": \"node tools/build.mjs\",\n    \"start\": \"node --require dotenv/config scripts/server.mjs\",\n    \"dev\": \"node --watch scripts/server.mjs\",\n" +

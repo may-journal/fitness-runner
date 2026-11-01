@@ -43,8 +43,8 @@ func withComment(body string) string {
 	return body + "\n// One more line.\n"
 }
 
-// reworded is a requirement doc with one more word in its Why, a change to
-// what it says and not only to its formatting.
+// reworded is a requirement doc with one more word in its Why, changing what
+// it says, not only its formatting.
 func reworded(doc string) string {
 	return strings.Replace(doc, "by hand.", "by hand at all.", 1)
 }
@@ -59,9 +59,8 @@ func stagedRun(t *testing.T, given, files map[string]string) (string, int) {
 	return fitness(t, repo, nil, "requirements")
 }
 
-// prRun commits files with message on top of a fresh copy of given, as a
-// pull request branch off main, and runs the requirements check on the pull
-// request's changes.
+// prRun commits files with message on a pull request branch off a fresh copy
+// of given and runs the requirements check on it.
 func prRun(t *testing.T, given, files map[string]string, message string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", given)
@@ -75,12 +74,8 @@ func prRun(t *testing.T, given, files map[string]string, message string) (string
 // prEnv is the GitHub Actions environment of a pull request into main.
 var prEnv = []string{"GITHUB_ACTIONS=true", "GITHUB_BASE_REF=main"}
 
-// replayed runs one replay of an unpaired test change in a repo with the
-// hooks committed: a side branch rewords the test alone, skipping the hooks
-// as a user with --no-verify would, while the first branch changes the same
-// line with its doc. The replay conflicts,
-// takes the replayed side, and commits with each finish in turn. It returns
-// what the first failing commit, or else the last one, printed.
+// replayed replays an unpaired --no-verify test change over the same line
+// changed with its doc, returning what the first failing commit printed.
 func replayed(t *testing.T, replay []string, finish ...[]string) (out string, code int) {
 	t.Helper()
 	repo, env := hooked(t, pairedRepo())

@@ -20,10 +20,8 @@ const (
 	cvAllowIt = " edge that allows it"
 )
 
-// cvCode is the Go code view: a record type with its field and the save
-// function returning it. The diagram starts on line 4, so the record sits
-// on line 5, save on line 8, and the edge on line 9; extra lines and rows
-// follow them.
+// cvCode is the Go code view; the record sits on line 5, save on 8, the edge
+// on 9.
 func cvCode(extra string, rows ...string) string {
 	diagram := "classDiagram\nclass Record[\"1 store.Record\"] {\n+ID\n}\n" + cvSave + "\n" + cvEdge + extra
 	return acView(diagram, append([]string{"A saved record, " + cvLink, "Writes one record, " + cvLink, "Save returns the record."}, rows...)...)
@@ -38,10 +36,8 @@ func cvFixture() map[string]string {
 	})
 }
 
-// cvNative is a Swift app whose code view shows a protocol, the store that
-// conforms to it, and the screen that makes a store. The diagram starts on
-// line 4: Saving on line 5, Store on 8, HomeScreen on 9, and the edges on
-// lines 10 and 11.
+// cvNative is a Swift app's code view: Saving on line 5, Store 8, HomeScreen
+// 9, edges 10 and 11.
 func cvNative() map[string]string {
 	files := acFixture(acRoot)
 	files[cvModel] = "import Foundation\n\nprotocol Saving {\n    func save(_ id: String) -> Bool\n}\n\nfinal class Store: Saving {\n    func save(_ id: String) -> Bool { true }\n}\n"
@@ -259,12 +255,8 @@ const (
 	cvTSView  = "src/store/panel.tsx"
 )
 
-// cvScript is a TypeScript repository whose code view matches its source:
-// an interface, the class implementing it, a subclass with a header over
-// two lines, the function it calls, a class exported by an export list,
-// and the TSX panel. The diagram starts on line 4, so the store's members
-// sit on lines 10 and 11, the subclass on 13, and the edges on lines 18 to
-// 20.
+// cvScript is a TypeScript repository matching its code view: store members
+// on lines 10 and 11, subclass 13, edges 18 to 20.
 func cvScript() map[string]string {
 	files := acFixture(acRoot)
 	files[cvTSStore] = "import { Sink } from './sink';\n\n// Saving writes records.\nexport interface Saving {\n  save(id: string): boolean;\n}\n\n" +
@@ -285,9 +277,8 @@ func cvScript() map[string]string {
 	return files
 }
 
-// cvPanel is TSX without semicolons: a one-line alias that names Store, a
-// component whose closing tags hold braces, and a class after statements
-// and a field that end in ! or ++, with a < in a parameter default.
+// cvPanel is TSX without semicolons: a Store alias, braces in closing tags,
+// and a class after ! or ++ with a < default.
 const cvPanel = "import { Store } from './store'\n\nexport type Handler = (s: Store) => void\n\nlet renders = 0\n\n" +
 	"export function Title(props: { show: boolean }) {\n  return <h1>{props.show && <b>Records</b>}</h1>\n}\n\n" +
 	"const root = document.getElementById('root')!\nrenders++\nexport class Panel {\n  host = root!\n  rows: Array<string>[] = []\n\n" +
@@ -341,12 +332,8 @@ func Test0076_10(t *testing.T) {
 // cvJavaDir holds the Java sources of cvJava.
 const cvJavaDir = "src/main/java/shop/"
 
-// cvJava is a Java repository whose code view matches its source: an
-// interface, the class implementing it with a nested record, a subclass
-// with a header over two lines, and the static method it calls. A class
-// that is not public and a public test class need no node. The diagram
-// starts on line 4, so the store's members sit on lines 10 and 11, the
-// record's on 19 and 20, and the edges on lines 22 to 25.
+// cvJava is a Java repository matching its code view: store members 10 and
+// 11, record members 19 and 20, edges 22 to 25.
 func cvJava() map[string]string {
 	files := acFixture(acRoot)
 	files[cvJavaDir+"Saving.java"] = "package shop;\n\n// Saving writes records.\npublic interface Saving {\n  boolean save(String id);\n}\n"

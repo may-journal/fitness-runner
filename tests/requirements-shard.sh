@@ -1,14 +1,7 @@
 #!/bin/sh
-# Runs one shard of the requirement tests, so CI splits them across jobs.
-#
-# Usage: sh tests/requirements-shard.sh SHARD COUNT [go test flags...]
-#
-# Inputs: SHARD, from 1 to COUNT, picks every COUNT-th test of the sorted
-# list, starting at test SHARD. FITNESS_INSTALL names the candidate
-# fitness-install, and FITNESS_CACHE_DIR a cache its verifier's smoke run
-# seeded, as tests/requirements.sh sets them. Output: go test's own output
-# for the shard's tests, 32 at once, and its exit code; exit 2 when SHARD is
-# out of range or the shard holds no tests.
+# Runs shard SHARD of COUNT of the requirement tests, so CI splits them across jobs.
+# Usage: sh tests/requirements-shard.sh SHARD COUNT [go test flags...]; exit 2
+# when SHARD is out of range or holds no tests.
 set -eu
 cd "$(dirname "$0")/.."
 shard="$1"
