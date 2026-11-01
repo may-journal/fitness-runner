@@ -68,7 +68,7 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | 3   | `fitness` — the runner and every check. It runs each check as its own process, started as `fitness-check-<name>`. | One file to ship and load; checks still cannot share state. |
 | 4   | The installer and the release tool.                                                              | Shipped beside the bundle; not part of any run.             |
 | 5   | Optional `.fitnessrc.json` with per-check options, and the files checks lint, format, or scan.   | Every check runs on every tracked file; no path is ignored. |
-| 6   | Tool-wrapper checks exec these when installed; native engines (cspell, jscpd souls) need none.   | Peer tools resolved at runtime, never bundled.              |
+| 6   | Tool-wrapper checks exec these when installed; native engines (cspell, duplicate-code) need none. | Peer tools resolved at runtime, never bundled.              |
 | 7   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
 | 8   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |
 | 9   | Release bundles and tool binaries, one archive per platform holding the one fitness binary.      | Artifacts ship through GitHub Releases and the Go proxy.    |
@@ -90,6 +90,6 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | Fitness binary on PATH          | None           | Every check; one that does not apply passes clean |
 | Above + per-check options       | Tune one check | Every check, the tuned one with your options      |
 
-There is no list of checks to keep in sync: each check detects whether its language, tool, config, or input is present. A leftover `checks` key is ignored with a one-line warning. The cspell and jscpd checks are native engines needing no external tool. A language module's tool-wrapper checks exec the real tool and fail clearly when it is missing.
+There is no list of checks to keep in sync: each check detects whether its language, tool, config, or input is present. A leftover `checks` key is ignored with a one-line warning. The cspell and duplicate-code checks are native engines needing no external tool. A language module's tool-wrapper checks exec the real tool and fail clearly when it is missing.
 
 Install and usage: [README.md](../../README.md). Artifacts ship through GitHub Releases and the public Go module proxy — see the README's Distribution section.

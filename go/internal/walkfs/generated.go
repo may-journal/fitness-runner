@@ -13,7 +13,7 @@ const generatedAttr = "linguist-generated"
 
 // WithoutGenerated drops the files root's .gitattributes marks
 // linguist-generated, such as lock files. It is the one way a repo keeps a
-// file from a check that cannot judge generated content (cspell, jscpd).
+// file from a check that cannot judge generated content (cspell, duplicate-code).
 // Outside a git repo, or when git fails, it drops only files an earlier
 // answer in this process marked.
 func WithoutGenerated(root string, files []string) []string {

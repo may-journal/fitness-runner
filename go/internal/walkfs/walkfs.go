@@ -28,8 +28,8 @@ import (
 // InScope narrows files to the run's changed files, keeping all of them when
 // the run is unscoped. A check that judges each file on its own passes its
 // walk through InScope; one that compares files cuts the walk to what the
-// change can alter, as jscpd does, and one that only detects whether a file
-// type exists keeps the full walk.
+// change can alter, as duplicate-code does, and one that only detects
+// whether a file type exists keeps the full walk.
 func InScope(files []string) []string {
 	changed := checkkit.ChangedFiles()
 	if changed == nil {

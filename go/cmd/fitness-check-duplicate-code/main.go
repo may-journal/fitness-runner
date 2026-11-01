@@ -17,8 +17,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// jscpd's thresholds as the TS check passes them: --threshold 1
-// --min-lines 5 --min-tokens 50.
+// The thresholds, modeled on jscpd's --threshold 1 --min-lines 5
+// --min-tokens 50.
 const (
 	threshold = 1.0
 	minLines  = 5
@@ -27,7 +27,7 @@ const (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "jscpd", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "duplicate-code", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }
@@ -37,7 +37,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	stats := clonedetect.Detect(files, clonedetect.Options{MinLines: minLines, MinTokens: minTokens})
 	if pct := stats.Percentage(); pct > threshold {
 		errs := []string{fmt.Sprintf(
-			"ERROR: jscpd found too many duplicates (%.1f%%) over threshold (%.1f%%)",
+			"ERROR: duplicate code is %.1f%% of scanned lines, over the %.1f%% threshold",
 			pct, threshold)}
 		for _, f := range stats.Files {
 			errs = append(errs, fmt.Sprintf("%s: %d duplicated lines", f.Path, f.Lines))
@@ -62,9 +62,10 @@ func scanTargets(root string) []string {
 }
 
 // candidates lists the tracked files a run may compare. An unscoped run
-// takes every tracked file (the empty suffix matches all). jscpd compares
-// files of one format, so a scoped run takes only the tracked files sharing
-// an ending with a changed file, the changed files among them.
+// takes every tracked file (the empty suffix matches all). The check
+// compares files of one format, so a scoped run takes only the tracked
+// files sharing an ending with a changed file, the changed files among
+// them.
 func candidates(root string) []string {
 	changed := checkkit.ChangedFiles()
 	if changed == nil {
@@ -79,7 +80,7 @@ func candidates(root string) []string {
 	})
 }
 
-// ending is the format key jscpd groups a file by: its extension, or its
+// ending is the format key the check groups a file by: its extension, or its
 // whole name when it has none, such as Makefile.
 func ending(file string) string {
 	if ext := path.Ext(file); ext != "" {

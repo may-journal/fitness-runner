@@ -488,7 +488,7 @@ func hugeTreeHints(t *testing.T) {
 	out, code = fitness(t, repo, nil)
 	hint := fmt.Sprintf("Hint: the repo tracks %d files; scope the run with fitness --dir=<folder>, or commit to check only the staged files", trackedCount(t, repo))
 	sees(t, out, code, 1, "Check timed out after 0.1s", hint)
-	for _, check := range []string{"cspell", "jscpd"} {
+	for _, check := range []string{"cspell", "duplicate-code"} {
 		if !strings.Contains(row(out, check), "failed") {
 			t.Errorf("%s reads all 20,000 files, so it must time out under a 0.1s budget, got row %q", check, row(out, check))
 		}

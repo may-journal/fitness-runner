@@ -8,7 +8,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
     - `issue-check` picks each issue's checks by its kind label and `.github/ISSUE_TEMPLATE`; `plan-check` is its Plan-only alias
     - `dupe-check` runs no check; it notes when a new issue's words repeat an older issue's
 - Parsers and network: the `architecture-*` checks, `issue-link-once`, `workflow-ref-exists`, and the mermaid diagram/callout checks
-- Native engines: `cspell` (embedded dictionaries, ~217k words) and `jscpd` (token-based clone detection) — no external tool needed
+- Native engines: `cspell` (embedded dictionaries, ~217k words) and `duplicate-code` (token-based clone detection) — no external tool needed
 - Language checks: each [language module](../go/internal/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
@@ -42,6 +42,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [cspell](../go/cmd/fitness-check-cspell/README.md) | Fails unknown words in the checked files. |
 | [dependency-currency](../go/cmd/fitness-check-dependency-currency/README.md) | Fails a declared npm dependency that is behind its latest published version — an installable update means the project isn't at peak fitness. |
 | [doc-template](../go/cmd/fitness-check-doc-template/README.md) | Makes each markdown document match the shape of a template that governs it. |
+| [duplicate-code](../go/cmd/fitness-check-duplicate-code/README.md) | Fails a repo whose duplicated lines pass 1% of its scanned lines. |
 | [epic-structure](../go/cmd/fitness-check-epic-structure/README.md) | Validates that an epic follows the Epic issue template, or the repo's own template labeled `Epic`. |
 | [eslint](../go/cmd/fitness-check-eslint/README.md) | Runs ESLint over the repo with the shared flat config, by executing the real ESLint binary. |
 | [gitignore-why](../go/cmd/fitness-check-gitignore-why/README.md) | Requires every .gitignore pattern to follow a `#` comment explaining why it exists. |
@@ -54,7 +55,6 @@ Each row links the check's README and gives the first sentence of its Go package
 | [issue-link-once](../go/cmd/fitness-check-issue-link-once/README.md) | Keeps each Issue's timeline readable (#153). |
 | [java-test](../go/cmd/fitness-check-java-test/README.md) | Runs Java tests once per build root and judges their JUnit XML results and JaCoCo coverage. |
 | [java-version](../go/cmd/fitness-check-java-version/README.md) | Checks a Java repo pins its JDK and that the machine's JDKs satisfy the pin, through the Java language module. |
-| [jscpd](../go/cmd/fitness-check-jscpd/README.md) | Fails a repo whose duplicated lines pass 1% of its scanned lines, with jscpd semantics. |
 | [local-branch](../go/cmd/fitness-check-local-branch/README.md) | Runs PR and Plan judgments locally. |
 | [localized-text](../go/cmd/fitness-check-localized-text/README.md) | Fails SwiftUI text and requirement test literals that skip the app's String Catalog (#527). |
 | [markdown-filename-camel-case](../go/cmd/fitness-check-markdown-filename-camel-case/README.md) | Requires every markdown file name to be camelCase, standard root docs exempt. |
@@ -109,7 +109,7 @@ A scope, declared in the check's `checkkit.Describe`, says what it reads: `files
 
 ## Every tracked file
 
-Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and jscpd also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.
+Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and duplicate-code also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.
 
 ## Front matter
 

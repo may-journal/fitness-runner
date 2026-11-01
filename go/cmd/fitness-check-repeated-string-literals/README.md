@@ -4,9 +4,9 @@
 
 Fails a string literal that appears three or more times across the repo's JS and TS sources. It should be a shared constant. When the repeats are a small closed set like `'active'` and `'pending'`, a union type or enum fits better. It is on by default.
 
-## Why not just ESLint or jscpd
+## Why not just ESLint or duplicate-code
 
-- `jscpd` finds duplicated multi-line blocks (`--min-lines 5`); a single repeated literal is one token on one line, so it never sees it.
+- `duplicate-code` finds copied blocks of 5+ lines; a single repeated literal is one token on one line, so it never sees it.
 - `sonarjs/no-duplicate-string` (ESLint) only flags strings of 10+ chars containing a separator, which excludes the short, identifier-like tokens (`'active'`, `'GET'`) this check targets.
 
 ## What passes and fails

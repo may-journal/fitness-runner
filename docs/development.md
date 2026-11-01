@@ -37,7 +37,7 @@ CI splits the tests over two `requirements` jobs per platform with [tests/requir
 
 ### Large trees
 
-To time every check on large trees, run `FITNESS_TREE_SIZES=10000,100000,500000 sh tests/requirements.sh -run 'Test0001_14$' -v -timeout 90m`. Its `timesTrees` helper times an unscoped run on each size's `generatedTree`, logging milliseconds per check. It then times a commit editing one test file and one editing one product file. Each commit logs its `jscpd`, `requirements` and six `architecture-*` rows.
+To time every check on large trees, run `FITNESS_TREE_SIZES=10000,100000,500000 sh tests/requirements.sh -run 'Test0001_14$' -v -timeout 90m`. Its `timesTrees` helper times an unscoped run on each size's `generatedTree`, logging milliseconds per check. It then times a commit editing one test file and one editing one product file. Each commit logs its `duplicate-code`, `requirements` and six `architecture-*` rows.
 
 `generatedTree` stages a tree in one `update-index` call and writes it with `checkout-index`, so 500,000 files take seconds.
 

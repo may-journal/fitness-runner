@@ -15,7 +15,7 @@ blob runs
 - 0077.1
     - Given Developer has a draft text and a repo with a file finding
         - When I run fitness with the text after `--blob`
-            - Then the blob checks that apply judge only the text and pass, and each check that needs files is listed as skipped
+            - Then the blob checks that apply judge only the text and pass, and checks needing files, like `duplicate-code`, are listed as skipped
 - 0077.2
     - Given Developer has a draft text the chosen checks accept
         - When I run fitness `--blob` with `--checks` naming them and a check that needs files

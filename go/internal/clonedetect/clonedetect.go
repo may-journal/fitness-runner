@@ -1,7 +1,8 @@
-// Package clonedetect is the native engine behind the jscpd check: a
-// generic code lexer, a rolling-hash window detector with jscpd's
-// min-lines/min-tokens semantics, and the scan-scope helpers the check
-// needs (doublestar ignore globs, batched .gitignore filtering).
+// Package clonedetect is the native engine behind the duplicate-code
+// check: a generic code lexer, a rolling-hash window detector whose
+// min-lines/min-tokens semantics are modeled on jscpd's, and the
+// scan-scope helpers the check needs (doublestar ignore globs, batched
+// .gitignore filtering).
 //
 // The lexer is deliberately generic, not per-language. Its boundaries:
 //   - Comments stripped: // and # line comments, /* */ and <!-- --> block
@@ -10,7 +11,7 @@
 //     decrement operator.
 //   - String literals ('…', "…", `…`) normalize to one $str token whose
 //     value keeps the literal's content but drops the quote style; content
-//     is deliberately NOT collapsed away — real jscpd distinguishes string
+//     is deliberately NOT collapsed away — jscpd distinguishes string
 //     values, and full collapse manufactures clones it never reports
 //     (e.g. Go import blocks differing only in import paths). Single- and
 //     double-quoted strings implicitly close at end of line, backtick
@@ -18,10 +19,11 @@
 //   - Numbers collapse to a single $num token (a digit then any run of
 //     [0-9A-Za-z_.], which covers hex, exponents, and digit separators).
 //   - Identifiers and punctuation survive verbatim; whitespace vanishes.
-//   - Regions between jscpd:ignore-start and jscpd:ignore-end comment
-//     markers produce no tokens (the escape hatch).
+//   - Regions between duplicate-code:ignore-start and
+//     duplicate-code:ignore-end comment markers produce no tokens (the
+//     escape hatch). The older jscpd: markers are deprecated aliases.
 //
-// Duplicated-line accounting follows jscpd: every window of MinTokens
+// Duplicated-line accounting is modeled on jscpd: every window of MinTokens
 // normalized tokens is hashed; a window whose hash was seen earlier (same
 // or another file) marks its occurrence as duplicated, contiguous marked
 // windows merge into spans, and spans of at least MinLines lines

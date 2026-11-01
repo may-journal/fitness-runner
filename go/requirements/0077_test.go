@@ -18,17 +18,17 @@ func Test0077_1(t *testing.T) {
 	for _, check := range []string{"cspell", "markdown-no-bold-italic", "prose-budget"} {
 		passedWith(t, out, check, "1")
 	}
-	sees(t, out, code, 0, "Skipped (needs files):", "jscpd", "go-test", "markdown-links")
-	if row(out, "jscpd") != "" {
-		t.Errorf("jscpd needs files and must be skipped, not run:\n%s", out)
+	sees(t, out, code, 0, "Skipped (needs files):", "duplicate-code", "go-test", "markdown-links")
+	if row(out, "duplicate-code") != "" {
+		t.Errorf("duplicate-code needs files and must be skipped, not run:\n%s", out)
 	}
 }
 
 func Test0077_2(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	out, code := fitness(t, repo, nil, "--blob="+cleanText, "--checks=cspell,markdown-no-bold-italic,jscpd")
-	sees(t, out, code, 0, "All 2 checks passed", "Skipped (needs files): jscpd")
+	out, code := fitness(t, repo, nil, "--blob="+cleanText, "--checks=cspell,markdown-no-bold-italic,duplicate-code")
+	sees(t, out, code, 0, "All 2 checks passed", "Skipped (needs files): duplicate-code")
 	passedWith(t, out, "cspell", "1")
 	if row(out, "prose-budget") != "" {
 		t.Errorf("--checks must narrow the run to the named checks:\n%s", out)
@@ -95,7 +95,7 @@ func Test0077_4(t *testing.T) {
 		{"--blob", cleanText, "--all"},
 		{"cspell", "--blob", cleanText},
 		{"--blob", "--checks=cspell"},
-		{"--blob", cleanText, "--checks=jscpd"},
+		{"--blob", cleanText, "--checks=duplicate-code"},
 	} {
 		out, code := fitness(t, repo, nil, args...)
 		sees(t, out, code, 2, "fitness --blob")

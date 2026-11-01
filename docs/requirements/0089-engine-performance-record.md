@@ -43,4 +43,4 @@ runs asked for a record
 - 0089.8
     - Given Developer has a draft text
         - When fitness runs with `--blob` and `--json=<file>`
-            - Then the file lists each blob check that judged the text, with its result
+            - Then the file lists each blob check that judged the text, with its result, and no check that needs files, such as `duplicate-code`
