@@ -19,18 +19,12 @@ import (
 // sorted lowercase words that the binary search relies on.
 //
 // Every file in dict/ is embedded, so a new wordlist needs no list entry.
-// Lookup binary-searches each list's text in place: no parsing, no index
-// build, and no per-word allocation. The lists are read once, on the first
-// lookup, so a process that spells nothing never touches them.
 
 //go:embed dict/*.txt
 var dictFiles embed.FS
 
-// embeddedDicts reads the wordlists the language registry names: the
-// repo-wide lists no module claims, and each module's. They are searched
-// biggest first, so en-us, which resolves most natural-language lookups,
-// leads. A word found in any list is known, so the order changes speed,
-// never a verdict.
+// embeddedDicts reads the wordlists the language registry names, biggest first.
+// A word found in any list is known, so the order changes only speed.
 var embeddedDicts = sync.OnceValue(func() []string {
 	matches, err := fs.Glob(dictFiles, "dict/*.txt")
 	if err != nil {
@@ -55,7 +49,7 @@ var embeddedDicts = sync.OnceValue(func() []string {
 // embeddedDict looks words up in the embedded wordlists, memoizing in a
 // sync.Map, since a mutex-guarded map measured ~40x slower in parallel.
 type embeddedDict struct {
-	memo sync.Map // word -> bool
+	memo sync.Map // maps each word to whether the lists know it
 }
 
 // embeddedBase is the process-wide embedded dictionary; its zero value is

@@ -55,9 +55,8 @@ type DiagramBlock struct {
 // Kind reports DiagramKind.
 func (*DiagramBlock) Kind() Kind { return DiagramKind }
 
-// HasCallouts reports whether the diagram carries any node or connector
-// callout. A diagram without one is a legend or a plain diagram. Labels
-// that break the doubling do not count, since a label like OK is prose.
+// HasCallouts reports whether the diagram has a node or connector callout,
+// ignoring labels that break the doubling, such as the prose word OK.
 func (b *DiagramBlock) HasCallouts() bool {
 	return len(b.Numbers)+len(b.Letters)+len(b.EdgeNumbers) > 0
 }
@@ -141,9 +140,8 @@ type calloutPattern struct {
 }
 
 // calloutPatterns locate a callout as the leading number or letters of a
-// label. The label's absolute position dedupes matches that overlap across
-// patterns. Numbers mark nodes; numbers on connectors are read too, so the
-// check can reject them. Letters mark connectors only.
+// label, deduping overlapping matches by absolute position. Numbers on
+// connectors are read too so the check can reject them; letters mark connectors only.
 var calloutPatterns = []calloutPattern{
 	{regexp.MustCompile(`["'](\d+)`), spaceOrQuoteFollows, quotedSide(sideNode), nil},                  // quoted label: "1 Check", "6"
 	{regexp.MustCompile(`[([{>][` + jsWS + `]*(\d+)`), spaceFollows, always(sideNode), nil},            // node-shape label: [2 Screen], ((1 Persona)), [(4 System)]

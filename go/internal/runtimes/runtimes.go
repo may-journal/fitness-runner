@@ -19,11 +19,8 @@ type Location struct {
 
 func (l Location) String() string { return fmt.Sprintf("%s:%d", l.Path, l.Line) }
 
-// Product is one runtime the repository builds, such as a command, an app
-// target, or a published package. Paths are the folders it is built from;
-// Technology is the language its container must name. Entries are the
-// paths a package publishes, built or not. Package marks a product a
-// container may name by its package name or an entry path.
+// Product is one runtime the repository builds: a command, an app, or a
+// package a container may name by package or entry path.
 type Product struct {
 	Kind, Name, Technology string
 	Paths, Entries         []string

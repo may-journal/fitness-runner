@@ -89,11 +89,8 @@ func oneComment(ev ghEvent) ([]target, error) {
 // the comment-check workflows repeat this list, so change both.
 var KnownBots = []string{"github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"}
 
-// skipReason says why comment-check leaves t alone, or "" to judge it: a
-// known bot wrote it. Fitness posts its verdicts and replies as
-// aftereffect.BotLogin, which is always ignored, so their markers need no
-// skip of their own. A marker from anyone else is judged, and
-// comment-structure flags it.
+// skipReason says why comment-check leaves t alone, or "" to judge it. Fitness
+// posts as aftereffect.BotLogin, which is always ignored; a marker from anyone else is judged.
 func skipReason(t target, ignored []string) string {
 	if slices.Contains(ignored, t.Comment.Author) {
 		return "its author is a known bot"

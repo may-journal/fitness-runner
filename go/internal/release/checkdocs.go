@@ -68,10 +68,8 @@ func markdown(pkg *doc.Package, text string) string {
 	return blocks(codeSpans(string(printer.Markdown(pkg.Parser().Parse(text)))))
 }
 
-// blocks writes the printer's code blocks and lists the way the repo's own
-// Markdown writes them. A run of tab-indented code lines, with any blank
-// lines inside it, becomes a fenced block, which the prose checks mask as
-// code. A list item loses the indent the printer puts before its marker.
+// blocks fences the printer's code blocks so the prose checks mask them, and
+// strips the indent the printer puts before a list marker.
 func blocks(md string) string {
 	lines := strings.Split(md, "\n")
 	var out []string
@@ -118,9 +116,8 @@ func unindentItem(line string) string {
 var numberedItem = regexp.MustCompile(`^ [0-9]+\. `)
 
 // codeSpans turns the backticks a doc comment writes around code into
-// Markdown code spans. The printer escapes them, since a doc comment has no
-// code spans, and escapes punctuation inside them, which a code span would
-// show. Indented code blocks keep their text.
+// Markdown code spans, undoing the escapes the printer adds inside them. Indented
+// code blocks keep their text.
 func codeSpans(md string) string {
 	lines := strings.Split(md, "\n")
 	for i, line := range lines {

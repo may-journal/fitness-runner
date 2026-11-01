@@ -160,9 +160,8 @@ func Resolve(root, filename string) string {
 
 // ResolveDir returns the directory holding the full shared config set: the
 // nearest installed node_modules/@mayjournal/fitness-shared/config walking up
-// from root, else the materialized embedded copy. There is no <root> step —
-// callers that honor a repo-local config check the root themselves before
-// asking for the shared directory. Empty only when materialization fails.
+// from root, else the materialized embedded copy.
+// It is empty only when materialization fails; callers check the repo root first.
 func ResolveDir(root string) string {
 	if p := installedPath(root, ""); p != "" {
 		return p

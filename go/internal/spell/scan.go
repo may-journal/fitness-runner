@@ -87,7 +87,7 @@ func hexColorEnd(line string, i int) int {
 	return i + 1 + n
 }
 
-// unicodeRefEnd matches \bU\+[0-9a-f]{4,5}(?:-[0-9a-f]{4,5})? at i.
+// unicodeRefEnd returns the end of the Unicode reference starting at i, for example U+1F600 or U+1F600-1F64F.
 func unicodeRefEnd(line string, i int) int {
 	if wordByteAt(line, i-1) || byteAt(line, i+1) != '+' {
 		return i

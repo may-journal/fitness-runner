@@ -61,13 +61,8 @@ func (c *Checker) AddWords(words []string) {
 	}
 }
 
-// CheckText spell-checks one document and returns its unknown words in
-// document order.
-//
-// Directives can span lines, so their mask is built over the whole text
-// first. Everything after is line-local: no ignore pattern, extended token or
-// word crosses a newline. So a text over chunkSize is checked in line-aligned
-// chunks in parallel, and their issues join in chunk order.
+// CheckText returns a document's unknown words in order, masking directives over
+// the whole text and checking line-aligned chunks in parallel past chunkSize.
 func (c *Checker) CheckText(text string) []Issue {
 	text = strings.TrimPrefix(text, "\ufeff")
 	masked := make([]bool, len(text))

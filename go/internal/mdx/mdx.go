@@ -159,10 +159,8 @@ func blankFenced(content string) []string {
 	return lines
 }
 
-// --- Prose extraction ---
-//
-// Prose and WordCount share one frozen masking spec between the
-// text-readability and prose-budget checks.
+// Prose extraction: Prose and WordCount share one frozen masking spec between
+// the text-readability and prose-budget checks.
 
 var (
 	htmlCommentRe   = regexp.MustCompile(`(?s)<!--.*?-->`)
