@@ -47,6 +47,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 }
 
 // docErrors judges every doc's shape, IDs, shared areas, test ownership and tools, and returns a note for each unreadable doc.
+// A doc that proven names needs no test, since its fitness/req-NNNN check proves it.
 func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) (errs, notes []string, err error) {
 	docs, errs, skipped := requirement.Load(root, paths)
 	notes = skipped
