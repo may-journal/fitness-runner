@@ -5,6 +5,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -89,12 +90,10 @@ func Lang(rel string, src []byte) string {
 }
 
 // Files returns the comment blocks of paths under root in path order, skipping generated and unread files.
+// It asks git about generated marks only for covered paths, so a tree of data files costs no git call.
 func Files(root string, paths []string) ([]Block, error) {
 	var blocks []Block
-	for _, rel := range walkfs.WithoutGenerated(root, paths) {
-		if !covered(rel) {
-			continue
-		}
+	for _, rel := range walkfs.WithoutGenerated(root, slices.DeleteFunc(slices.Clone(paths), uncovered)) {
 		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 		if err != nil {
 			return blocks, err
@@ -109,6 +108,11 @@ func Files(root string, paths []string) ([]Block, error) {
 func covered(rel string) bool {
 	ext := path.Ext(rel)
 	return ext == "" || langs[ext] != ""
+}
+
+// uncovered reports a path no reader covers.
+func uncovered(rel string) bool {
+	return !covered(rel)
 }
 
 // Source returns the comment blocks of one file. It skips tool directives

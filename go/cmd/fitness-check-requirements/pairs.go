@@ -151,17 +151,20 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 
 // withoutCommentOnly drops each changed test or doc whose code, comments
 // aside, is the same as at base. It neither needs a partner nor counts as
-// one.
+// one, and reads renames only for a file base lacks.
 func (p pairs) withoutCommentOnly(root, base string, changed []string) []string {
 	var renames map[string]string
 	return slices.DeleteFunc(slices.Clone(changed), func(f string) bool {
 		if len(p.numbers[f]) == 0 && docNumber(f) == "" {
 			return false
 		}
-		if renames == nil {
-			renames = gitx.Renames(root, base)
+		from := f
+		if _, atBase := gitx.Show(root, base, f); !atBase {
+			if renames == nil {
+				renames = gitx.Renames(root, base)
+			}
+			from = cmp.Or(renames[f], f)
 		}
-		from := cmp.Or(renames[f], f)
 		return comments.CommentOnly(root, base, from, f)
 	})
 }

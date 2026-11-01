@@ -35,7 +35,7 @@ runs
 - 0001.15
     - Given Developer has 500,000 tracked files, symlinks or deleted ones, or a git call listing tracked or staged files that stalls
         - When fitness runs every check, or I commit one product file
-            - Then the runner stats them once, architecture checks pass in budget, and a stalled call stops in ten seconds naming it
+            - Then it stats them once, a commit diffs only its files, architecture checks pass in budget, and stalled calls stop within 10s, named
 - 0001.16
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo

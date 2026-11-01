@@ -239,13 +239,14 @@ func linkedRepo(t *testing.T) string {
 }
 
 // hugeProductCommit asserts that in a repo of 500,000 tracked files a one-file
-// commit passes every architecture check inside its budget.
+// commit passes every architecture check inside its budget. No check may diff the whole work tree.
 func hugeProductCommit(t *testing.T) {
 	t.Helper()
 	repo := generatedTree(t, architectedRepo(), 500000)
 	defer os.RemoveAll(repo)
 	got, code := fitness(t, repo, installerEnv(t), "init")
 	sees(t, got, code, 0, "fitness init: installed hooks")
+	stagedOnlyDiffs(t, repo)
 	out, code, _ := productCommit(t, repo)
 	sees(t, out, code, 0)
 	for _, check := range architectureChecks {
@@ -253,6 +254,34 @@ func hugeProductCommit(t *testing.T) {
 			t.Errorf("a product commit in a 500,000-file repo must pass %s in its budget, got row %q", check, row(out, check))
 		}
 	}
+}
+
+// stagedOnlyDiffs stages productEdit in repo and runs `fitness hook pre-commit`
+// through a git that logs each call. Git puts its own folder first on a hook's
+// PATH, so only a direct run reaches the logger.
+func stagedOnlyDiffs(t *testing.T, repo string) {
+	t.Helper()
+	edit := productEdit()
+	write(t, repo, edit)
+	git(t, repo, append([]string{"add"}, slices.Collect(maps.Keys(edit))...)...)
+	path, calls := loggedGit(t)
+	out, code := fitness(t, repo, []string{path}, "hook", "pre-commit")
+	sees(t, out, code, 0)
+	if n := wholeTreeDiffs(calls); n != 0 {
+		t.Errorf("a staged product edit must diff only the files it changed, but %d diffs read all 500,000 files", n)
+	}
+}
+
+// wholeTreeDiffs counts the logged `git diff -U0` calls that name no path.
+func wholeTreeDiffs(calls string) int {
+	raw, _ := os.ReadFile(calls)
+	n := 0
+	for _, call := range strings.Split(string(raw), "\n") {
+		if strings.Contains(call, "diff -U0") && !strings.Contains(call, " -- ") {
+			n++
+		}
+	}
+	return n
 }
 
 // loggedGit returns a PATH setting whose git logs each call's arguments to the
