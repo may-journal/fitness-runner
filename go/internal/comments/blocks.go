@@ -273,11 +273,15 @@ var goDirective = regexp.MustCompile(`^//([a-z0-9]+:[a-z0-9]|line |export |exter
 // Each is matched in the case and form the tool reads, so prose that
 // only starts with a tool name stays.
 var toolDirectives = []string{
-	"cspell:", "spell-checker:", "swiftlint:", "eslint-disable", "eslint-enable",
-	"prettier-ignore", "jscpd:", "shellcheck disable=", "shellcheck enable=", "shellcheck source=",
-	"shellcheck source-path=", "shellcheck shell=", "shellcheck external-sources=",
+	"swiftlint:", "eslint-disable", "eslint-enable", "prettier-ignore", "jscpd:",
 	"@ts-", "+build", "yaml-language-server:",
 }
+
+// spellDirective matches cspell in any case, as cSpell is its usual spelling.
+var spellDirective = regexp.MustCompile(`^(?i:cspell|spell-checker):`)
+
+// shellDirective matches ShellCheck's lower-case `shellcheck key=` form.
+var shellDirective = regexp.MustCompile(`^shellcheck\s+(disable|enable|source|source-path|shell|external-sources)=`)
 
 // directive reports a comment that is a tool directive or a shebang.
 func directive(text string) bool {
@@ -285,6 +289,11 @@ func directive(text string) bool {
 		return true
 	}
 	words := strings.TrimSpace(strings.Split(strip(text), "\n")[0])
+	return spellDirective.MatchString(words) || shellDirective.MatchString(words) || toolPrefix(words)
+}
+
+// toolPrefix reports a first line that opens with one of toolDirectives.
+func toolPrefix(words string) bool {
 	for _, d := range toolDirectives {
 		if strings.HasPrefix(words, d) {
 			return true

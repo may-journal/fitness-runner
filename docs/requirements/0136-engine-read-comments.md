@@ -35,4 +35,4 @@ Comment blocks in the files
 - 0136.6
     - Given Developer has comments that only start with a tool name, such as `shellCheck is` and `SwiftLint is`
         - When `fitness comments` runs
-            - Then it lists them whole and still skips a real `# shellcheck disable=` line
+            - Then it lists them whole and still skips real `cSpell:` and `# shellcheck` directives
