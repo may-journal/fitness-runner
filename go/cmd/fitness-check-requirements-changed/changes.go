@@ -10,31 +10,33 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-// change is one file whose lines changed beyond whitespace.
+// change is one file whose lines changed beyond whitespace. From is its
+// path before a rename or copy, else its path.
 type change struct {
-	path    string
-	deleted bool
+	path, from string
+	deleted    bool
 }
 
 // scope is what a run diffs: the arguments that give `git diff` the change,
-// and, for a pull request, the merge base it starts from.
+// and the revision it starts from.
 type scope struct {
 	args []string
 	base string
 }
 
-// diffScope is the change a run judges: a pull request's diff from its merge
-// base with the base branch, an amend's staged files since the amended
-// commit's parent, or else the staged files.
+// diffScope is the change a run judges. A pull request diffs from its merge
+// base with the base branch. An amend diffs its staged files from the
+// amended commit's parent, and a commit diffs them from HEAD.
 func diffScope(root string) (scope, error) {
 	if branch := os.Getenv("GITHUB_BASE_REF"); branch != "" {
 		base, err := gitOut(root, "merge-base", "HEAD", "origin/"+branch)
 		return scope{args: []string{base, "HEAD"}, base: base}, err
 	}
 	if gitx.Amending() {
-		return scope{args: []string{"--cached", gitx.AmendParent(root)}}, nil
+		parent := gitx.AmendParent(root)
+		return scope{args: []string{"--cached", parent}, base: parent}, nil
 	}
-	return scope{args: []string{"--cached"}}, nil
+	return scope{args: []string{"--cached"}, base: "HEAD"}, nil
 }
 
 // readChanges lists the files the diff changes beyond whitespace. Git drops
@@ -54,7 +56,7 @@ func parseStatus(out string) []change {
 	fields := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 	var changes []change
 	for i := 0; i+1 < len(fields); i += 2 {
-		status, c := fields[i], change{path: fields[i+1], deleted: fields[i] == "D"}
+		status, c := fields[i], change{path: fields[i+1], from: fields[i+1], deleted: fields[i] == "D"}
 		if strings.ContainsAny(status[:1], "RC") && i+2 < len(fields) {
 			i++
 			c.path = fields[i+1]

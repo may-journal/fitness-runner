@@ -13,13 +13,17 @@
 //   - Requirement docs: `docs/requirements/NNNN-*.md`.
 //
 // A file counts as changed only when its lines change beyond whitespace, so
-// a pure rename or a reformat changes nothing.
+// a pure rename or a reformat changes nothing. Nor does a file whose code,
+// with comments removed, is the same before and after. That holds for tests
+// and docs too. Directives, a shebang, a cgo preamble, and a Go example's
+// output comment count as code.
 //
 // # Passes
 //
 //   - Product code changes beside a changed test and a changed requirement doc.
 //   - No product code changed, as in a docs-only, config-only, or `CHANGELOG.md`-only change.
 //   - A pure rename or a whitespace-only edit.
+//   - A comment-only edit, and the spacing it moves.
 //   - A local merge, cherry-pick, or revert, or an amended merge, is not judged again. Its pull request diff still is.
 //   - A repo with no `docs/requirements/NNNN-*.md` doc yet.
 //   - A full scan, or a `--dir` folder, judges nothing.

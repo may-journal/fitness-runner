@@ -2,9 +2,11 @@ package check
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
@@ -27,7 +29,20 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	return judge(root, changes)
+	tests, err := scanTests(root)
+	if err != nil {
+		return checkkit.Result{}, err
+	}
+	return judgeCode(root, scope.base, tests, changes), nil
+}
+
+// judgeCode judges changes once comment-only edits are set aside. With no
+// product code changed, it passes before comparing any file.
+func judgeCode(root, base string, tests testSet, changes []change) checkkit.Result {
+	if len(productChanges(root, tests, changes)) == 0 {
+		return checkkit.Pass(0)
+	}
+	return judge(root, tests, withoutCommentOnly(root, base, changes))
 }
 
 // skips reports a run with nothing to judge: a full scan, a replay, or a
@@ -38,11 +53,7 @@ func skips(root string) bool {
 
 // judge fails each changed product file whose test or requirement doc did
 // not change with it, and each deleted one whose doc and tests stay behind.
-func judge(root string, changes []change) (checkkit.Result, error) {
-	tests, err := scanTests(root)
-	if err != nil {
-		return checkkit.Result{}, err
-	}
+func judge(root string, tests testSet, changes []change) checkkit.Result {
 	product := productChanges(root, tests, changes)
 	changed := changedSet(changes)
 	var errs []string
@@ -50,9 +61,18 @@ func judge(root string, changes []change) (checkkit.Result, error) {
 		errs = append(errs, c.problem(root, tests, changed)...)
 	}
 	if len(errs) > 0 {
-		return checkkit.Fail(len(product), errs...), nil
+		return checkkit.Fail(len(product), errs...)
 	}
-	return checkkit.Pass(len(product)), nil
+	return checkkit.Pass(len(product))
+}
+
+// withoutCommentOnly drops each edit whose code, comments aside, is the
+// same as at base. It changes no behavior, so it neither needs a test and
+// doc nor counts as one. Only a run that changes product code compares.
+func withoutCommentOnly(root, base string, changes []change) []change {
+	return slices.DeleteFunc(slices.Clone(changes), func(c change) bool {
+		return !c.deleted && comments.CommentOnly(root, base, c.from, c.path)
+	})
 }
 
 // problem is what is wrong with one product change: an edit with no test or
