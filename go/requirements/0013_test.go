@@ -77,8 +77,8 @@ func skipsIdle(t *testing.T, command string, events []map[string]any) {
 	}
 }
 
-// planGitHub is the saved GitHub that holds the Plan's verdict comments, as
-// the verdicts query prints them, and its labels. Every write succeeds.
+// planGitHub is the saved GitHub holding the Plan's verdict comments, as the
+// verdicts query prints them, and its labels, with every write succeeding.
 func planGitHub(verdicts string, labels ...string) []response {
 	return issueGitHub(planIssue, "fitness:plan-structure:", verdicts, append([]string{"Plan"}, labels...)...)
 }

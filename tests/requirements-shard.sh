@@ -1,10 +1,7 @@
 #!/bin/sh
-# Runs one shard of the requirement tests, so CI splits them across jobs.
-#
-# Usage: sh tests/requirements-shard.sh SHARD COUNT [go test flags...]
-#
-# Exit 2 means SHARD is out of range or holds no tests; tests/requirements.sh
-# sets FITNESS_INSTALL and FITNESS_CACHE_DIR.
+# Runs shard SHARD of COUNT of the requirement tests, so CI splits them across jobs.
+# Usage: sh tests/requirements-shard.sh SHARD COUNT [go test flags...]; exit 2
+# when SHARD is out of range or holds no tests.
 set -eu
 cd "$(dirname "$0")/.."
 shard="$1"
