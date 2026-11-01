@@ -32,8 +32,14 @@ const (
 	twoTest    = "reqs/0001_0002_test.go"
 )
 
-// edited is body with one more line, a change that keeps it valid.
+// edited is body with one more function, a code change that keeps Go and
+// Swift valid.
 func edited(body string) string {
+	return body + "\nfunc oneMore() {}\n"
+}
+
+// withComment is body with one more comment line, a change to no code.
+func withComment(body string) string {
 	return body + "\n// One more line.\n"
 }
 

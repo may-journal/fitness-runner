@@ -42,6 +42,7 @@ func Test0130_1(t *testing.T) {
 	sees(t, out, code, 1, "adder.go changed without a requirement doc; change one with it")
 	out, code = rcPull(t, goRepo(), adder)
 	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc")
+	rcCodeWithComments(t)
 }
 
 func Test0130_2(t *testing.T) {
@@ -67,6 +68,7 @@ func Test0130_3(t *testing.T) {
 		out, code := rcStaged(t, goRepo(), files)
 		sees(t, out, code, 0, rcPassed)
 	}
+	rcCommentOnly(t)
 }
 
 func Test0130_4(t *testing.T) {
@@ -109,4 +111,45 @@ func Test0130_8(t *testing.T) {
 	user(t, repo, env, "add", "-A")
 	out, code := user(t, repo, env, "commit", "-m", "feat(adder): double numbers\n\nRequirements: none, a helper no user calls yet")
 	sees(t, out, code, 1, "adder.go changed without a test and a requirement doc; change both with it")
+}
+
+// rcCommented is goRepo's adder.go with every comment rewritten and one
+// added after code. Its body is indented anew, as a comment edit may leave it.
+func rcCommented() string {
+	return "// Package adder sums numbers.\npackage adder\n\n// Add returns a plus b,\n// in either order.\nfunc Add(a, b int) int {\n    return a + b // the sum\n}\n"
+}
+
+// rcScript is a shell script, product code, with comments to rewrite.
+const rcScript = "#!/bin/sh\n# greet says hello.\necho \"# not a comment\" # says it\n"
+
+// rcCommentOnly proves that edits to comments alone, in Go and shell,
+// pass staged and on a pull request.
+func rcCommentOnly(t *testing.T) {
+	t.Helper()
+	given := with(goRepo(), map[string]string{"greet.sh": rcScript})
+	files := map[string]string{
+		"adder.go": rcCommented(),
+		"greet.sh": "#!/bin/sh\n# greet prints a greeting.\n\necho \"# not a comment\"    # prints it\n",
+	}
+	out, code := rcStaged(t, given, files)
+	sees(t, out, code, 0, rcPassed)
+	out, code = rcPull(t, given, files)
+	sees(t, out, code, 0, rcPassed)
+}
+
+// rcCodeWithComments proves that a code or directive change beside comment
+// edits still fails, staged and on a pull request.
+func rcCodeWithComments(t *testing.T) {
+	t.Helper()
+	given := with(goRepo(), map[string]string{"greet.sh": rcScript, "tag.go": "//go:build darwin\n\npackage adder\n"})
+	for file, body := range map[string]string{
+		"adder.go": strings.Replace(rcCommented(), "a + b", "b + a", 1),
+		"greet.sh": strings.Replace(rcScript, "# not a comment\"", "# still not a comment\"", 1),
+		"tag.go":   "//go:build linux\n\n// Package adder builds on Linux.\npackage adder\n",
+	} {
+		out, code := rcStaged(t, given, map[string]string{file: body})
+		sees(t, out, code, 1, file+" changed without a test and a requirement doc; change both with it")
+		out, code = rcPull(t, given, map[string]string{file: body})
+		sees(t, out, code, 1, file+" changed without a test and a requirement doc")
+	}
 }

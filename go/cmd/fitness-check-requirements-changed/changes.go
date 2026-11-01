@@ -10,10 +10,11 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
-// change is one file whose lines changed beyond whitespace.
+// change is one file whose lines changed beyond whitespace. From is its
+// path before a rename or copy, else its path.
 type change struct {
-	path    string
-	deleted bool
+	path, from string
+	deleted    bool
 }
 
 // scope is what a run diffs: the arguments that give `git diff` the change,
@@ -54,7 +55,7 @@ func parseStatus(out string) []change {
 	fields := strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 	var changes []change
 	for i := 0; i+1 < len(fields); i += 2 {
-		status, c := fields[i], change{path: fields[i+1], deleted: fields[i] == "D"}
+		status, c := fields[i], change{path: fields[i+1], from: fields[i+1], deleted: fields[i] == "D"}
 		if strings.ContainsAny(status[:1], "RC") && i+2 < len(fields) {
 			i++
 			c.path = fields[i+1]

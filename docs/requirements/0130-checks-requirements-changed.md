@@ -15,7 +15,7 @@ changes to product code
 ## Requirements
 
 - 0130.1
-  - Given Developer has changed product code without a test or requirement doc
+  - Given Developer has changed product code or a directive, with or without comment edits, and no test or requirement doc
     - When requirements-changed checks the commit or its pull request
       - Then it fails naming the file and the missing half
 - 0130.2
@@ -23,8 +23,8 @@ changes to product code
     - When requirements-changed checks the staged commit
       - Then it passes
 - 0130.3
-  - Given Developer has staged only docs, config, changelog, a rename, or a whitespace edit
-    - When requirements-changed checks the staged commit
+  - Given Developer has only docs, config, changelog, a rename, a whitespace edit, or a comment edit
+    - When requirements-changed checks the commit or its pull request
       - Then it passes
 - 0130.4
   - Given Developer has a merge in progress that replays a product code change

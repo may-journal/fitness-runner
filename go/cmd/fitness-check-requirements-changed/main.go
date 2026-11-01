@@ -2,9 +2,11 @@ package check
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
@@ -43,7 +45,7 @@ func judge(root string, changes []change) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	product := productChanges(root, tests, changes)
+	product := withoutCommentOnly(root, productChanges(root, tests, changes))
 	changed := changedSet(changes)
 	var errs []string
 	for _, c := range product {
@@ -53,6 +55,15 @@ func judge(root string, changes []change) (checkkit.Result, error) {
 		return checkkit.Fail(len(product), errs...), nil
 	}
 	return checkkit.Pass(len(product)), nil
+}
+
+// withoutCommentOnly drops each edit whose code, comments aside, is the
+// same as at the scope's base, since it changes no behavior.
+func withoutCommentOnly(root string, product []change) []change {
+	base := gitx.ScopeBase(root)
+	return slices.DeleteFunc(product, func(c change) bool {
+		return !c.deleted && comments.CommentOnly(root, base, c.from, c.path)
+	})
 }
 
 // problem is what is wrong with one product change: an edit with no test or

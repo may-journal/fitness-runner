@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
@@ -89,9 +90,9 @@ func docNumber(f string) string {
 }
 
 // judge flags each changed requirement test whose docs all stayed
-// unchanged, unless fixed reports it failed this check at the base, and each
-// changed doc whose tests all stayed unchanged. A reformatted doc needs no
-// test change, yet still counts as changed for its tests.
+// unchanged, unless fixed excuses it. It flags each changed doc whose tests
+// all stayed unchanged. A reformatted doc needs no test change, yet still
+// counts as changed for its tests, as an excused test does for its docs.
 func (p pairs) judge(changed []string, reformatted map[string]bool, fixed func(string) bool) []string {
 	isChanged := map[string]bool{}
 	for _, f := range changed {
@@ -108,7 +109,7 @@ func (p pairs) judge(changed []string, reformatted map[string]bool, fixed func(s
 }
 
 // unpairedTest flags file when it proves requirements whose docs all stayed
-// unchanged, unless it failed this check at the base.
+// unchanged, unless fixed excuses it.
 func (p pairs) unpairedTest(file string, changed map[string]bool, fixed func(string) bool) []string {
 	missing := unpaired(file, p.numbers[file], p.docs, "requirement doc", changed)
 	if len(missing) == 0 || fixed(file) {
@@ -149,9 +150,18 @@ func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []st
 		return nil
 	}
 	base := gitx.ScopeBase(root)
-	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
+	errs := newPairs(docPaths, testFiles, tests, changed).judge(changed, reformats(root, base, changed), excused(root, base))
 	sort.Strings(errs)
 	return errs
+}
+
+// excused reports whether a changed test file needs no doc change. Its code
+// may be the same with comments set aside, or it may fix a failure at base.
+func excused(root, base string) func(string) bool {
+	fixed := fixedAtBase(root, base)
+	return func(file string) bool {
+		return comments.CommentOnly(root, base, file, file) || fixed(file)
+	}
 }
 
 // fixedAtBase reports whether a changed test file failed this check at the

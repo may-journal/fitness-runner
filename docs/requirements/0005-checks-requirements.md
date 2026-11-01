@@ -43,6 +43,6 @@ changed requirement tests and docs
     - When I fix the test without changing its doc
       - Then my commit, amend, or pull request passes, while a test that passed at its base still fails without its doc
 - 0005.17
-  - Given Developer has a requirement doc changed only in formatting, such as indents, by deleting its Source line, or in its file name
+  - Given Developer has a test changed only in comments, or a doc changed only in formatting, comments, name, or a deleted Source line
     - When fitness judges my commit or pull request
-      - Then it passes without a test change, while editing a Source line still needs one
+      - Then it passes without its partner, while editing a Source line still needs one

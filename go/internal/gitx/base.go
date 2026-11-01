@@ -23,6 +23,13 @@ func ScopeBase(root string) string {
 	return strings.TrimSpace(out)
 }
 
+// Show returns the content of a git object such as rev:path, and whether
+// git found it. A rev of ":" names the index.
+func Show(root, object string) (string, bool) {
+	out, err := Repo(root).run("show", object)
+	return out, err == nil
+}
+
 // FileAt returns the file at path, slash-separated from the repo root, as
 // commit rev holds it. It is empty when rev is empty or lacks the file.
 func FileAt(root, rev, path string) string {

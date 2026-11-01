@@ -34,11 +34,12 @@ type Block struct {
 }
 
 // note is one comment as written, markers included, before notes on
-// adjacent lines join into blocks.
+// adjacent lines join into blocks. Col is the byte it starts at on its
+// first line.
 type note struct {
-	line, end int
-	text      string
-	inline    bool
+	line, end, col int
+	text           string
+	inline         bool
 }
 
 // langs maps a file extension to its language name.
@@ -125,7 +126,7 @@ func lines(src []byte) []string {
 
 // at is the note for the comment from byte from to to of line n.
 func at(n int, line string, from, to int) note {
-	return note{line: n, end: n, text: line[from:to], inline: codeBefore(line, from)}
+	return note{line: n, end: n, col: from, text: line[from:to], inline: codeBefore(line, from)}
 }
 
 // codeBefore reports code before byte at on its line.
@@ -203,7 +204,7 @@ func (o offsets) note(start, end int) note {
 	line := sort.SearchInts(o.starts, start+1)
 	lineStart := o.starts[line-1]
 	text := o.src[start:end]
-	return note{line: line, end: line + strings.Count(text, "\n"), text: text, inline: codeBefore(o.src[lineStart:], start-lineStart)}
+	return note{line: line, end: line + strings.Count(text, "\n"), col: start - lineStart, text: text, inline: codeBefore(o.src[lineStart:], start-lineStart)}
 }
 
 // swiftNotes reads the comments of Swift source through WalkSwift.

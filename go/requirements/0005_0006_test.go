@@ -132,6 +132,26 @@ func Test0005_17(t *testing.T) {
 	out, code = stagedRun(t, sourced, cited)
 	sees(t, out, code, 1, pairedDoc+" changed without its requirement test")
 	renamed0005(t)
+	commented0005(t)
+}
+
+// commented0005 proves a test or doc changed only in comments needs no
+// partner change. A code change beside the comments still needs one.
+func commented0005(t *testing.T) {
+	t.Helper()
+	test := testFile("reqs", "Test0001_1")
+	rewritten := strings.Replace(withComment(test), "func Test0001_1", "// Test0001_1 proves the sum.\nfunc Test0001_1", 1)
+	noted := map[string]string{pairedDoc: requirementDoc("0001.1") + "\n<!-- Sums stay small. -->\n"}
+	for _, files := range []map[string]string{{pairedTest: rewritten}, noted} {
+		out, code := stagedRun(t, pairedRepo(), files)
+		sees(t, out, code, 0)
+		out, code = prRun(t, pairedRepo(), files, "docs(reqs): reword comments")
+		sees(t, out, code, 0)
+	}
+	out, code := stagedRun(t, pairedRepo(), map[string]string{pairedTest: edited(rewritten)})
+	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
+	out, code = prRun(t, pairedRepo(), map[string]string{pairedTest: edited(rewritten)}, "test(reqs): check sums twice")
+	sees(t, out, code, 1, pairedTest+" changed without its requirement doc "+pairedDoc+"; change both together")
 }
 
 // renamed0005 proves a doc renamed with its number and wording kept needs no

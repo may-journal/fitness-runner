@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
@@ -42,14 +43,14 @@ func reformatted(root, base, f string) bool {
 	if os.Getenv("GITHUB_BASE_REF") != "" {
 		now = "HEAD:" + f
 	}
-	before, ok := gitShow(root, base+":"+f)
+	before, ok := gitx.Show(root, base+":"+f)
 	if !ok {
-		before, ok = gitShow(root, base+":"+renamedFrom(root, base, f))
+		before, ok = gitx.Show(root, base+":"+renamedFrom(root, base, f))
 	}
 	if !ok {
 		return false
 	}
-	after, ok := gitShow(root, now)
+	after, ok := gitx.Show(root, now)
 	return ok && wording(before, true) == wording(after, false)
 }
 
@@ -72,19 +73,16 @@ func renamedFrom(root, base, f string) string {
 	return f
 }
 
-// gitShow returns the content of a git object such as rev:path.
-func gitShow(root, object string) (string, bool) {
-	out, err := exec.Command("git", "-C", root, "show", object).Output()
-	return string(out), err == nil
-}
+// htmlComment is an HTML comment, which a reader of the doc never sees.
+var htmlComment = regexp.MustCompile(`(?s)<!--.*?-->`)
 
-// wording is a doc's words in order, without its front matter, and with
-// list markers made alike: what is left when a formatter's choices of
-// blank lines, indents, line breaks, spacing, quotes in the front matter,
-// list markers, and, at base only, a leftover Source line are set aside, so deleting one is no change but adding or editing one is. The doc check
+// wording is a doc's words in order, without its front matter or HTML
+// comments. At base only, a leftover Source line is dropped, so deleting one
+// is no change but adding or editing one is. Spacing, line breaks, and list
+// markers are made alike, as a formatter may change them. The doc check
 // judges the structure.
 func wording(doc string, dropSource bool) string {
-	body := mdx.StripFrontMatter(doc)
+	body := htmlComment.ReplaceAllString(mdx.StripFrontMatter(doc), " ")
 	if dropSource {
 		body = sourceLine.ReplaceAllString(body, "")
 	}
