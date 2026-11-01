@@ -9,8 +9,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// listMarker is a bullet or ordered-list marker at the start of a line,
-// which a formatter may rewrite, as `*` to `-` or `1)` to `1.`.
+// listMarker is a bullet or ordered-list marker at the start of a line.
+// A formatter may rewrite it, as `*` to `-` or `1)` to `1.`.
 var listMarker = regexp.MustCompile(`(?m)^(\s*)(?:[-*+]|\d+[.)])(\s)`)
 
 // sourceLine is a `Source:` line older docs end their Measurement with.
@@ -34,9 +34,11 @@ func reformats(root, base string, changed []string) map[string]bool {
 }
 
 // reformatted reports whether doc f holds the same wording at base and in
-// the scope being judged: HEAD for a pull request, else the index, which
-// holds what a commit records. A doc renamed since base is compared with
-// the base doc of its number, since a number is never reused.
+// the scope being judged.
+// That scope is HEAD for a pull request, else the index, which holds what a
+// commit records.
+// A doc renamed since base is compared with the base doc of its number, since
+// a number is never reused.
 func reformatted(root, base, f string) bool {
 	now := ":" + f
 	if os.Getenv("GITHUB_BASE_REF") != "" {
@@ -79,10 +81,15 @@ func gitShow(root, object string) (string, bool) {
 }
 
 // wording is a doc's words in order, without its front matter, and with
-// list markers made alike: what is left when a formatter's choices of
-// blank lines, indents, line breaks, spacing, quotes in the front matter,
-// list markers, and, at base only, a leftover Source line are set aside, so deleting one is no change but adding or editing one is. The doc check
-// judges the structure.
+// list markers made alike.
+// It is what is left when a formatter's choices are set aside.
+// Those choices are blank lines, indents, line breaks, spacing, quotes in the
+// front matter, and list markers.
+// At base only, a leftover Source line is set aside too.
+//
+// Setting them aside makes deleting one no change.
+// Adding or editing one still counts as a change.
+// The doc check judges the structure.
 func wording(doc string, dropSource bool) string {
 	body := mdx.StripFrontMatter(doc)
 	if dropSource {

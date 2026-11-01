@@ -46,11 +46,13 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return res, nil
 }
 
-// docErrors judges every doc's shape, its IDs against history, docs that
-// share an area, which tests own its acceptances, and the tools
-// the tests use. A doc whose number proven names has a requirement check
-// in fitness/req-NNNN/, which owns acceptances no test does, and a check
-// with no doc fails. It also returns a note for each doc it could not read.
+// docErrors judges every doc's shape, its IDs against history, and docs that
+// share an area.
+// It also judges which tests own its acceptances, and the tools the tests use.
+//
+// A doc whose number proven names has a requirement check in fitness/req-NNNN/.
+// That check owns acceptances no test does, and a check with no doc fails.
+// It also returns a note for each doc it could not read.
 func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) (errs, notes []string, err error) {
 	docs, errs, skipped := requirement.Load(root, paths)
 	notes = skipped
@@ -94,8 +96,8 @@ func result(files int, errs []string) checkkit.Result {
 }
 
 // collectTests reads every module's tests and the files that hold them, in
-// registry order, and lists the modules whose language the repo is written
-// in.
+// registry order.
+// It also lists the modules whose language the repo is written in.
 func collectTests(root string, modules []lang.Module) ([]reqTest, []string, []lang.Module, error) {
 	var tests []reqTest
 	var files []string

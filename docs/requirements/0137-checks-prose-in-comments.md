@@ -36,3 +36,11 @@ Comment blocks judged
     - Given Developer has the runner's own command code under `go/cmd`
         - When the prose checks run on that folder
             - Then every comment passes, so the runner lives by the limits it enforces
+- 0137.7
+    - Given Developer reads a check's summary that a command comment feeds
+        - When Developer asks the runner to explain that check
+            - Then the summary keeps its whole first sentence after the comment is split
+- 0137.8
+    - Given Developer reads the summary of a check whose comment held a clause in parentheses
+        - When Developer asks the runner to explain that check
+            - Then the summary keeps that clause

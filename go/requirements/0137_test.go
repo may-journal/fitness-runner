@@ -92,3 +92,17 @@ func Test0137_6(t *testing.T) {
 	out, code := fitness(t, filepath.Join("..", ".."), nil, "--policy=external", "--checks=prose-budget,text-readability,no-contrastive-reframing", "--dir=go/cmd")
 	sees(t, out, code, 0, "All 3 checks passed")
 }
+
+func Test0137_7(t *testing.T) {
+	t.Parallel()
+	installer(t)
+	out, code := fitness(t, filepath.Join("..", ".."), nil, "explain", "go-complexity")
+	sees(t, out, code, 0, "mirroring the house eslint rule (`complexity: max 5`) that gates JavaScript and TypeScript")
+}
+
+func Test0137_8(t *testing.T) {
+	t.Parallel()
+	installer(t)
+	out, code := fitness(t, filepath.Join("..", ".."), nil, "explain", "mermaid-diagram-prose")
+	sees(t, out, code, 0, "beyond a callout (a number or a letter) in a diagram paired with a callout table")
+}

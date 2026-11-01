@@ -2,7 +2,7 @@
 
 # dependency-currency
 
-Fails a declared npm dependency that is behind its latest published version. An installable update means the project isn't at peak fitness. It runs in every repo and passes clean without a `package.json`.
+Fails a declared npm dependency behind its latest published version, since an update means the project isn't at peak fitness. It runs in every repo and passes clean without a `package.json`.
 
 ## Behavior
 
