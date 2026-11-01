@@ -46,7 +46,7 @@ const boldFinding = "README.md: disallowed **bold**"
 func Test0138_1(t *testing.T) {
 	t.Parallel()
 	out, code, summary := prChanges(t, prBase(t, map[string]string{"README.md": boldReadme}), noteGuide(t))
-	sees(t, out, code, 1, "Stage 1 of 2: checking the 1 files", allPassed(), "Stage 2 of 2: the changes pass",
+	sees(t, out, code, 1, "Stage 1 of 2: checking the files this pull request changes: 1", allPassed(), "Stage 2 of 2: the changes pass",
 		boldFinding, "Stage 2 failed", "Files this pull request does not change:", "- README.md (markdown-no-bold-italic)")
 	sees(t, summary, code, 1, "## Stage 1 of 2", "## Stage 2 failed", "- README.md (markdown-no-bold-italic)")
 }
@@ -68,6 +68,21 @@ func Test0138_3(t *testing.T) {
 		"Stage 2 skipped: .fitnessrc.json sets scopedPullRequests, so only a push to main scans every file")
 	if strings.Contains(out, boldFinding) || strings.Contains(out, "Stage 2 of") {
 		t.Errorf("the run judged a file the pull request does not change:\n%s", out)
+	}
+}
+
+func Test0138_5(t *testing.T) {
+	t.Parallel()
+	repo, env := hooked(t, nil)
+	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
+	write(t, repo, noteGuide(t))
+	git(t, repo, "add", "CHANGELOG.md")
+	git(t, repo, "-c", "core.hooksPath=", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "docs(changelog): note the guide")
+	write(t, repo, map[string]string{"README.md": readme + "\nMore words.\n"})
+	git(t, repo, "add", "README.md")
+	out, _ := user(t, repo, append(env, prEnv...), "commit", "-q", "-m", "docs(readme): add words")
+	if !strings.Contains(out, "Running checks:") || strings.Contains(out, "Stage 1 of") {
+		t.Errorf("the pre-commit hook must run the checks once, in no stages:\n%s", out)
 	}
 }
 

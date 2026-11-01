@@ -15,14 +15,18 @@ var sourceLocation = regexp.MustCompile(`^([^:\r\n]+):(?:(\d+)(?::\d+)?(?:\s|:|$
 // FindingFile is a finding's File, else the path its message starts with,
 // as an annotation locates it, else "".
 func FindingFile(f checkkit.Finding) string {
-	if f.File != "" {
-		return f.File
+	path := f.File
+	if path == "" {
+		match := sourceLocation.FindStringSubmatch(f.Message)
+		if match == nil {
+			return ""
+		}
+		path = match[1]
 	}
-	match := sourceLocation.FindStringSubmatch(f.Message)
-	if match == nil {
-		return ""
+	if repoPath := sourcePath(path); repoPath != "" {
+		return repoPath
 	}
-	return sourcePath(match[1])
+	return f.File
 }
 
 func location(message string) string {

@@ -28,3 +28,7 @@ pull requests merged
     - Given Developer has a pull request whose changed file fails
         - When fitness runs the pull request in GitHub Actions
             - Then stage 1 fails with that file's errors, stage 2 does not run, and the run exits 1
+- 0138.5
+    - Given Developer has the hooks and a branch with a commit of its own
+        - When I commit inside a pull request's GitHub Actions job
+            - Then the pre-commit hook runs the checks once, in no stages, since the hooks never run the full scan

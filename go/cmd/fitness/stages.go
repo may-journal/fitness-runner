@@ -5,6 +5,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -28,16 +29,17 @@ func pullRequestChanges(s setup, argv, env []string) []string {
 }
 
 // wholeSuitePullRequest reports whether the run is a pull request's whole
-// suite: no named check, --all or --dir.
+// suite outside a git hook: no named check, --all or --dir.
 func wholeSuitePullRequest(s setup, argv []string) bool {
 	spec, _ := parseArgv(argv)
-	return os.Getenv("GITHUB_BASE_REF") != "" && spec == "" && !hasAllFlag(argv) && len(s.scope) == 0
+	outsideHook := os.Getenv("FITNESS_INTERNAL_HOOK") == ""
+	return outsideHook && os.Getenv("GITHUB_BASE_REF") != "" && spec == "" && !hasAllFlag(argv) && len(s.scope) == 0
 }
 
 // runStages judges the changed files, then scans every file, so a pull
 // request fails while the repo does. scopedPullRequests skips the scan.
 func runStages(s setup, checks []resolved, env, changed []string) int {
-	scoped := fmt.Sprintf("checking the %d files this pull request changes", len(changed))
+	scoped := "checking the files this pull request changes: " + strconv.Itoa(len(changed))
 	if scopedPullRequests(s.root) {
 		announce("Stage 1 of 1: " + scoped)
 		code := runStage(s.root, s.perfPath, checks, nil, env, s.cleanup, true).code
@@ -48,7 +50,7 @@ func runStages(s setup, checks []resolved, env, changed []string) int {
 	}
 	announce("Stage 1 of 2: " + scoped)
 	if code := runStage(s.root, s.perfPath, checks, nil, env, s.cleanup, false).code; code != 0 {
-		announce("Stage 2 skipped: stage 1 failed, so fix its findings first")
+		announce("Stage 2 skipped: stage 1 failed")
 		return code
 	}
 	announce("Stage 2 of 2: the changes pass, so every tracked file is scanned")

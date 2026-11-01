@@ -399,7 +399,7 @@ const scopeAdvice = "scope the run with fitness --dir=<folder>, or commit to che
 
 // scopes reports whether an env entry scopes the run to fewer files.
 func scopes(entry string) bool {
-	return strings.HasPrefix(entry, "FITNESS_CHANGED_FILES=") || strings.HasPrefix(entry, checkkit.ScopeFileEnv+"=")
+	return strings.HasPrefix(entry, changedFilesEnv+"=") || strings.HasPrefix(entry, checkkit.ScopeFileEnv+"=")
 }
 
 // setup is what a run reads from argv before it selects checks.
@@ -816,7 +816,7 @@ func contextEnv(root string, checks []resolved, all bool, scope []string, msg st
 		return nil, err
 	}
 	env := os.Environ()
-	for _, name := range []string{"FITNESS_CHANGED_FILES", walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
+	for _, name := range []string{changedFilesEnv, walkfs.TrackedFilesEnv, checkkit.ScopeFileEnv, checkkit.NetworkEnv, "GIT_TERMINAL_PROMPT", "GH_PROMPT_DISABLED"} {
 		env = withoutVar(env, name)
 	}
 	// A check's `git status` would otherwise refresh and rewrite the index,
@@ -838,7 +838,7 @@ func scopeEnv(root string, all bool, scope, staged []string) ([]string, error) {
 	if len(changed) == 0 {
 		return nil, err
 	}
-	return []string{"FITNESS_CHANGED_FILES=" + strings.Join(changed, "\n")}, nil
+	return []string{changedFilesEnv + "=" + strings.Join(changed, "\n")}, nil
 }
 
 // checkNames lists the checks' names, in order.
