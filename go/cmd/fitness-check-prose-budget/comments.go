@@ -36,6 +36,23 @@ var docHeading = regexp.MustCompile(`^(Deprecated|BUG\(\w+\)):`)
 // PascalCase name with a hump, or a snake_case name.
 var identifier = regexp.MustCompile(`^(\w+(\.\w+)+|\w*[a-z][A-Z]\w*|\w+_\w+)$`)
 
+// quoted is a double-quoted span on one line, which a comment writes for a
+// literal such as "- [ ]" whose stops end no sentence.
+var quoted = regexp.MustCompile(`"[^"\n]*"`)
+
+// statements splits a comment paragraph into its sentences, as the limits
+// do, after it masks quoted literals. A lone ?, ! or . names an operator,
+// which ends no sentence, so it is dropped.
+func statements(text string) []string {
+	var words []string
+	for _, w := range strings.Fields(quoted.ReplaceAllString(text, "quote")) {
+		if strings.Trim(w, ".!?") != "" {
+			words = append(words, w)
+		}
+	}
+	return mdx.Sentences(mdx.MaskInline(strings.Join(words, " ")))
+}
+
 // commentErrors judges one comment block by the paragraph and list limits.
 // A comment has no headings, so it skips the section limits. It then meets
 // the fragment and one-statement rules, which Markdown files never meet.
@@ -54,7 +71,7 @@ func fragmentErrors(name string, b comments.Block, blocks []block) []string {
 		if bl.isList {
 			continue
 		}
-		sentences := mdx.Sentences(mdx.MaskInline(bl.text))
+		sentences := statements(bl.text)
 		for i, s := range sentences {
 			if why := fragment(b, s, i == len(sentences)-1); why != "" {
 				errs = append(errs, fmt.Sprintf("%s: %s: a sentence %s; join it to the sentence before it or drop it: %q",
@@ -116,7 +133,7 @@ func statementErrors(name string, b comments.Block, blocks []block) []string {
 		if bl.isList {
 			n += len(bl.items)
 		} else {
-			n += len(mdx.Sentences(mdx.MaskInline(bl.text)))
+			n += len(statements(bl.text))
 		}
 	}
 	if n <= maxBodySentences {

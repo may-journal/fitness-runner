@@ -94,8 +94,9 @@ type markdown struct {
 	code, list, author bool
 }
 
-// line adds one line. An indented line carries on an open list, else it
-// is code; a blank or unindented line ends the list.
+// line adds one line. An indented line carries on an open list, joining
+// the item it wraps, else it is code. A blank or unindented line ends the
+// list.
 func (w *markdown) line(line string) {
 	if w.authored(line) {
 		w.out = append(w.out, line)
@@ -103,8 +104,12 @@ func (w *markdown) line(line string) {
 	}
 	_, item := mdx.ListItem(strings.TrimSpace(line))
 	indented := isIndented(line)
+	if indented && !item && w.list {
+		w.out[len(w.out)-1] += " " + strings.TrimSpace(line)
+		return
+	}
 	w.fence(w.isCode(item, indented))
-	w.list = item || indented && w.list
+	w.list = item
 	w.out = append(w.out, line)
 }
 

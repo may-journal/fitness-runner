@@ -144,6 +144,7 @@ func Test0137_7(t *testing.T) {
 		files[path] = src
 	}
 	files["app/old.go"] = "package main\n\n// Deprecated: Use main.\nfunc old() {}\n\n// helper is unused.\nfunc helper() {}\n"
+	files["app/list.go"] = "package main\n\n// Codes:\n//\n//   - 1: a check found problems, or the run could not start, such as a bad\n//     config.\n//\n// unwraps reads the ? or ! of a?.b, and \"- [ ]\" or \"1. [ ]\" items.\nfunc unwraps() {}\n"
 	files["README.md"] = readme + "\nThe cache warms. So it works.\n"
 	out, code := proseBudget(t, files)
 	sees(t, out, code, 0)
