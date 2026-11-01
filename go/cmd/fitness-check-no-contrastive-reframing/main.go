@@ -4,6 +4,7 @@ import (
 	"regexp"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -15,8 +16,10 @@ func Main() {
 	})
 }
 
+// run judges every in-scope markdown file, then each comment block the run
+// judges.
 func run(root string, _ []string) (checkkit.Result, error) {
-	return walkfs.ScanFiles(root, []string{".md"}, fileErrors), nil
+	return comments.Judge(walkfs.ScanFiles(root, []string{".md"}, fileErrors), root, fileErrors), nil
 }
 
 var (

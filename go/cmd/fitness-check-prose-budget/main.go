@@ -7,6 +7,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
@@ -58,10 +59,16 @@ func run(root string, args []string) (checkkit.Result, error) {
 	return walkFiles(root, lim), nil
 }
 
-// walkFiles applies the budget to every in-scope .md file under root.
+// walkFiles applies the budget to every in-scope .md file under root, then
+// to each comment block the run judges. A comment has no headings, so it
+// skips the section limits.
 func walkFiles(root string, lim limits) checkkit.Result {
-	return walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+	res := walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
 		return check(rel, content, lim)
+	})
+	return comments.Judge(res, root, func(name, markdown string) []string {
+		blocks := parse(markdown)
+		return append(paragraphErrors(name, blocks, lim), listErrors(name, blocks, lim)...)
 	})
 }
 

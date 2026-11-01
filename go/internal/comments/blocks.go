@@ -21,12 +21,13 @@ const (
 	Inline Kind = "inline"
 )
 
-// Block is one comment block of a source file. Line is the line it starts
-// on, counted from 1, and Text is its words with the comment markers
-// removed, one line of text per line of comment.
+// Block is one comment block of a source file. Line and End are the lines
+// it starts and ends on, counted from 1. Text is its words without the
+// comment markers, one line of text per line of comment.
 type Block struct {
 	Path string
 	Line int
+	End  int
 	Lang string
 	Kind Kind
 	Text string
@@ -227,9 +228,11 @@ func join(notes []note) []Block {
 			continue
 		}
 		if continues(prev, n) {
-			blocks[len(blocks)-1].Text += "\n" + strip(n.text)
+			last := &blocks[len(blocks)-1]
+			last.Text += "\n" + strip(n.text)
+			last.End = n.end
 		} else {
-			blocks = append(blocks, Block{Line: n.line, Kind: kind(n), Text: strip(n.text)})
+			blocks = append(blocks, Block{Line: n.line, End: n.end, Kind: kind(n), Text: strip(n.text)})
 		}
 		prev = n
 	}

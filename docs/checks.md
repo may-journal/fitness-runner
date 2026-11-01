@@ -68,7 +68,7 @@ Each row links the check's README and gives the first sentence of its Go package
 | [mermaid-legend](../go/cmd/fitness-check-mermaid-legend/README.md) | Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend. |
 | [mermaid-level-bleed](../go/cmd/fitness-check-mermaid-level-bleed/README.md) | Warns when a callout description at one C4 level repeats the previous level verbatim. |
 | [mermaid-syntax](../go/cmd/fitness-check-mermaid-syntax/README.md) | Fails a mermaid diagram that would not render, so a broken diagram never reaches a reader. |
-| [no-contrastive-reframing](../go/cmd/fitness-check-no-contrastive-reframing/README.md) | Flags the "not X, it's Y" reframing in markdown prose, where a sentence rejects a claim and then restates the real point. |
+| [no-contrastive-reframing](../go/cmd/fitness-check-no-contrastive-reframing/README.md) | Flags the "not X, it's Y" reframing in markdown prose. |
 | [no-eslint-disable](../go/cmd/fitness-check-no-eslint-disable/README.md) | Fails any JS or TS source file that holds an ESLint disable directive, in file, block, `-line`, or `-next-line` form. |
 | [no-fitness-front-matter](../go/cmd/fitness-check-no-fitness-front-matter/README.md) | Fails a Markdown file whose front matter still holds `fitnessFunctions` or `relatedConfigurations`. |
 | [no-plans-dir](../go/cmd/fitness-check-no-plans-dir/README.md) | Keeps plans and temporary design work out of the repo. |

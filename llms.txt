@@ -91,7 +91,7 @@ A run resolves the checks, runs them side by side with per-check time budgets, a
 - `mermaid-legend`: Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend.
 - `mermaid-level-bleed`: Warns when a callout description at one C4 level repeats the previous level verbatim.
 - `mermaid-syntax`: Fails a mermaid diagram that would not render, so a broken diagram never reaches a reader.
-- `no-contrastive-reframing`: Flags the "not X, it's Y" reframing in markdown prose, where a sentence rejects a claim and then restates the real point.
+- `no-contrastive-reframing`: Flags the "not X, it's Y" reframing in markdown prose.
 - `no-eslint-disable`: Fails any JS or TS source file that holds an ESLint disable directive, in file, block, `-line`, or `-next-line` form.
 - `no-fitness-front-matter`: Fails a Markdown file whose front matter still holds `fitnessFunctions` or `relatedConfigurations`.
 - `no-plans-dir`: Keeps plans and temporary design work out of the repo.
