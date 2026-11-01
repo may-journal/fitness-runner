@@ -312,6 +312,9 @@ func runSelected(s setup, argv []string) int {
 		report.Error("fitness setup", err)
 		return 1
 	}
+	if changed := pullRequestChanges(s, argv, env); len(changed) > 0 {
+		return runStages(s, checks, env, changed)
+	}
 	return runChecks(s.root, s.perfPath, checks, passthrough, env, s.cleanup)
 }
 
@@ -319,10 +322,24 @@ func runSelected(s setup, argv []string) int {
 // summary table, writes any `--json` report, and returns the exit code.
 // cleanup removes the caller's shared files when the run ends.
 func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
+	return runStage(root, perfPath, checks, passthrough, env, cleanup, true).code
+}
+
+// stageResult is what one pass over the checks found: the exit code, the
+// table rows, and each row's findings.
+type stageResult struct {
+	code  int
+	rows  []render.Row
+	found [][]checkkit.Finding
+}
+
+// runStage runs checks as runChecks says and returns what it found. Any
+// JSON the run asks for prints for its last stage, or a failed earlier one.
+func runStage(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func(), last bool) stageResult {
 	checks, tracked, err := prepareRun(root, checks, cleanup)
 	if err != nil {
 		report.Error("fitness setup", err)
-		return 1
+		return stageResult{code: 1}
 	}
 	defer tracked.Remove()
 	defer stopOnInterrupt(tracked.Remove)()
@@ -337,10 +354,12 @@ func runChecks(root, perfPath string, checks []resolved, passthrough, env []stri
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals)
 	found := allFindings(checks, outcomes, rows)
-	printJSON(rows, found, totals)
+	if last || totals.Failure > 0 {
+		printJSON(rows, found, totals)
+	}
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
 	code := finish(rows, found, perf, totals)
-	return withPerfReport(perfPath, perf, code)
+	return stageResult{code: withPerfReport(perfPath, perf, code), rows: rows, found: found}
 }
 
 // prepareRun drops the checks a commit leaves out and shares the

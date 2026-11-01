@@ -37,6 +37,9 @@ type Config struct {
 	// repo's owner and its org's members may approve, as GitHub reports each
 	// comment author's association.
 	PlanApprovers []string `json:"planApprovers"`
+	// ScopedPullRequests true skips a pull request's full scan, for a huge
+	// repo. A push to main still scans every file.
+	ScopedPullRequests bool `json:"scopedPullRequests"`
 	// RepeatedStringLiterals holds options for that check.
 	RepeatedStringLiterals struct {
 		// Allow lists exact values the check never flags, for the rare

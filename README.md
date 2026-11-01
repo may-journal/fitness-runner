@@ -114,11 +114,17 @@ In a consumer repo, run `fitness init` once. It points Git at the `.fitness-hook
 - pre-commit: checks the staged files, then a repo's own `.githooks/pre-commit.local`. It skips `semantic-commit` when a commit-msg hook will judge the new message.
 - pre-push: blocks the push unless the branch or its PR names an approved `Plan` Issue, via `gh`; chore/docs pushes are exempt.
 
+Neither hook runs the full scan a pull request adds, so a red main never blocks a commit or a push. Run `fitness --all` for it locally.
+
 A full run, such as `fitness --all`, has `semantic-commit` judge only the branch's own commits. See [its README](go/cmd/fitness-check-semantic-commit/README.md#which-message-it-judges) for how it finds the base.
 
 ## GitHub Actions
 
 Some checks also run as GitHub Actions workflows. They extend the same rules to non-file targets like plan Issues and pull request descriptions. Each workflow step is one `fitness` call. See [.github/workflows/README.md](.github/workflows/README.md).
+
+A pull request runs in two stages. Stage 1 checks the changed files and stops the run when it fails. Stage 2 then scans every file, so a pull request fails while the repo does, and it lists findings outside the change apart.
+
+A huge repo sets `"scopedPullRequests": true` in `.fitnessrc.json` to skip stage 2; a push to main still scans every file. See [pull request stages](docs/check-protocol.md#pull-request-stages).
 
 ## Release updates
 
