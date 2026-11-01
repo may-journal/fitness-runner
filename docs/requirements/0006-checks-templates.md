@@ -43,4 +43,4 @@ requirement docs
 - 0006.11
     - Given Developer has a doc whose Measurement ends in a Source line citing code that moved
         - When I run `fitness requirements --fix` and commit
-            - Then the check notes the line, deletes it, and passes with no test change
+            - Then the check fails naming the line, and once the fix deletes it, passes with no test change

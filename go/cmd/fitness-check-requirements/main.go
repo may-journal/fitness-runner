@@ -27,9 +27,6 @@ const docsDir = "docs/requirements/"
 // judges, so `fitness requirements --fix` converts a repo's docs.
 const fixFlag = "--fix"
 
-// sourceNote is the info a leftover Measurement Source line gets.
-const sourceNote = "delete this `Source:` line, or run `fitness requirements " + fixFlag + "`; a later release fails it"
-
 func run(root string, args []string) (checkkit.Result, error) {
 	paths := docPaths(root)
 	if err := dropSources(root, paths, args); err != nil {
@@ -53,19 +50,13 @@ func run(root string, args []string) (checkkit.Result, error) {
 // share an area, which tests own its acceptances, and the tools
 // the tests use. A doc whose number proven names has a requirement check
 // in fitness/req-NNNN/, which owns acceptances no test does, and a check
-// with no doc fails. It also returns a note for each leftover Source line,
-// which never fails.
+// with no doc fails. It also returns a note for each doc it could not read.
 func docErrors(root string, paths []string, tests []reqTest, written []lang.Module, proven map[string]bool) (errs, notes []string, err error) {
 	docs, errs, skipped := requirement.Load(root, paths)
 	notes = skipped
 	if len(skipped) > 0 {
 		// A doc left out would leave its tests unowned and its IDs unknown.
 		return errs, append(notes, "ownership and history were not judged without every doc"), nil
-	}
-	for _, d := range docs {
-		if d.SourceLine > 0 {
-			notes = append(notes, requirement.At(d.Path, d.SourceLine, sourceNote))
-		}
 	}
 	errs = append(errs, missingDocs(paths)...)
 	hist, historyNote := readHistory(root)
