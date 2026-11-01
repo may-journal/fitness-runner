@@ -42,9 +42,8 @@ var Camel = Convention{
 // AGENTS.md, CODE_OF_CONDUCT.md, ...), which are exempt from the convention.
 var capsDoc = regexp.MustCompile(`^[A-Z0-9_]+\.md$`)
 
-// githubName reports whether a markdown path is a lowercase template name
-// GitHub requires, in a folder where GitHub looks for it: the root, docs, or
-// .github. A repo cannot rename these files, so the convention exempts them.
+// githubName reports whether a markdown path is a template name GitHub requires
+// in the root, docs or .github, which a repo cannot rename.
 func githubName(relPath string) bool {
 	switch path.Dir(relPath) {
 	case ".", "docs", ".github":
@@ -70,10 +69,8 @@ func Validate(relPath string, c Convention) string {
 	return fmt.Sprintf("%s: filename must be %s", relPath, c.Label)
 }
 
-// Detect returns the convention most of the markdown basenames follow. A
-// hyphenated name counts for kebab-case and a name with capitals for
-// camelCase; plain lowercase names fit both and capitalized docs are exempt,
-// so neither counts. Kebab-case wins a tie, including a repo with no votes.
+// Detect returns the convention most markdown basenames follow, with kebab-case
+// winning a tie, since plain lowercase and capitalized names cast no vote.
 func Detect(files []string) Convention {
 	kebab, camel := 0, 0
 	for _, f := range files {
@@ -91,7 +88,7 @@ func Detect(files []string) Convention {
 }
 
 // leaning returns the label of the one convention a basename matches, or ""
-// when it is an exempt capitalized doc or fits both or neither.
+// for an exempt doc or a name fitting both.
 func leaning(base string) string {
 	if capsDoc.MatchString(base) {
 		return ""
@@ -106,11 +103,8 @@ func leaning(base string) string {
 	return Camel.Label
 }
 
-// Run applies one convention to every in-scope .md file under root
-// (capitalized doc basenames exempt), but only when it is the repo's detected
-// convention; otherwise the other flavor judges and this one passes with zero
-// files. Detection always reads every markdown file, so a scoped run judges by
-// the whole repo's convention. filesChecked is the number of files judged.
+// Run judges in-scope .md files under root by c only when c is the convention
+// detected from the whole repo.
 func Run(root string, c Convention) checkkit.Result {
 	all := walkfs.FilesByExt(root, ".md")
 	if Detect(all).Label != c.Label {

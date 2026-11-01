@@ -1,17 +1,5 @@
-// Package spell is the native engine behind the cspell fitness check: the
-// soul of cspell — no unknown words, and the project dictionary always wins —
-// without the cspell engine underneath.
-//
-// The pipeline mirrors what cspell observably does: in-document directives
-// (cspell:ignore, cspell:disable/enable, …) and the default ignore patterns
-// (URLs, emails, hex runs, hashes, …) mask regions of the text; the rest
-// splits into extended tokens (letters, digits, ., +, -, _, quotes) whose
-// compound dictionary entries win whole (prettier-plugin-packagejson), then
-// into words on non-letter boundaries and camelCase transitions with
-// English-suffix handling for ALL-CAPS runs (URLs, APIs). Words shorter than
-// four runes are never flagged; lookup is case-insensitive against the
-// embedded base dictionaries plus any added project words, tolerating a
-// trailing possessive ('s).
+// Package spell is the native engine behind the cspell fitness check, mirroring
+// cspell's observable pipeline without the cspell engine underneath.
 package spell
 
 import (
@@ -34,10 +22,8 @@ type Issue struct {
 	Col  int
 }
 
-// Checker holds the dictionary a text is checked against. Words are stored
-// lowercased with curly apostrophes normalized to ASCII; base, when set, is
-// an extra dictionary consulted in place (the embedded wordlists in
-// production — see NewEmbeddedChecker).
+// Checker holds the dictionary a text is checked against, with words stored
+// lowercased and curly apostrophes normalized, plus an optional base dictionary.
 type Checker struct {
 	words map[string]struct{}
 	base  baseDict
@@ -101,8 +87,8 @@ func (c *Checker) CheckText(text string) []Issue {
 	return issues
 }
 
-// chunkSize is the text each goroutine checks: large enough that starting
-// one is noise, small enough that a 2 MB wordlist spreads over every core.
+// chunkSize is the text each goroutine checks, small enough that a 2 MB
+// wordlist spreads over every core.
 const chunkSize = 64 << 10
 
 // lineChunks splits text into spans of about size bytes, each ending just
@@ -141,9 +127,8 @@ func (c *Checker) checkChunk(text string, masked []bool, chunk span, docWords ma
 	return issues
 }
 
-// checkToken judges one word token: known as a whole (or as an ALL-CAPS word
-// with an English suffix), or judged sub-word by sub-word after camelCase
-// splitting.
+// checkToken judges a word token as a whole, or sub-word by sub-word once
+// camelCase splitting has run.
 func (c *Checker) checkToken(text string, tok span, docWords map[string]struct{}, lines []int) []Issue {
 	token := text[tok.start:tok.end]
 	if c.tokenExempt(token, docWords) {
@@ -312,15 +297,13 @@ func tokenSpans(text string, masked []bool) []span {
 }
 
 // unmaskedLetter reports whether the rune r at byte i is an unmasked letter,
-// the only thing that can start (or plainly continue) a word token.
+// the only kind that can start a word token.
 func unmaskedLetter(masked []bool, i int, r rune) bool {
 	return !masked[i] && unicode.IsLetter(r)
 }
 
-// tokenExtends reports whether an already-started token continues through the
-// non-letter rune r (of byte width size) at byte i: unmasked combining marks
-// always extend, an unmasked apostrophe extends when an unmasked letter
-// follows.
+// tokenExtends reports whether a started token continues through the non-letter
+// rune r at byte i, as unmasked marks and apostrophes do.
 func tokenExtends(text string, masked []bool, i int, r rune, size int) bool {
 	if masked[i] {
 		return false
@@ -348,11 +331,8 @@ var camelSuffixes = map[string]bool{
 	"s": true, "ing": true, "ies": true, "es": true, "ings": true, "ed": true, "ning": true,
 }
 
-// splitSubWords splits a token at camelCase boundaries, mirroring cspell's
-// break rules: before an Upper that follows a lower (myWord -> my Word) and
-// before the last Upper of an Upper run followed by a lower (HTMLElement ->
-// HTML Element) unless what follows is just an English suffix. Byte spans
-// are relative to the token.
+// splitSubWords splits a token at camelCase boundaries as cspell does, returning
+// byte spans relative to the token.
 func splitSubWords(token string) []span {
 	runes := []rune(token)
 	offs := runeOffsets(runes)
@@ -377,8 +357,8 @@ func runeOffsets(runes []rune) []int {
 	return offs
 }
 
-// camelBreakAt reports whether cspell breaks a token before runes[k] (k >= 1):
-// at an Upper following a lower, or at the Upper ending an Upper run.
+// camelBreakAt reports whether cspell breaks a token before runes[k], at an
+// Upper after a lower or ending an Upper run.
 func camelBreakAt(runes []rune, k int) bool {
 	if !isUpper(runes[k]) {
 		return false
@@ -386,9 +366,8 @@ func camelBreakAt(runes []rune, k int) bool {
 	return unicode.IsLower(runes[k-1]) || upperRunEnd(runes, k)
 }
 
-// upperRunEnd reports whether runes[k] is the last Upper of an Upper run
-// followed by a lower that is more than an English suffix (HTMLElement breaks
-// before Element; LSTMs keeps Ms attached).
+// upperRunEnd reports whether runes[k] ends an Upper run before a lower beyond
+// an English suffix, so HTMLElement breaks but LSTMs does not.
 func upperRunEnd(runes []rune, k int) bool {
 	return isUpper(runes[k-1]) && k+1 < len(runes) && unicode.IsLower(runes[k+1]) &&
 		!camelSuffixes[lowerRun(runes[k+1:])]
@@ -427,10 +406,8 @@ func position(text string, lines []int, offset int) (line, col int) {
 	return i + 1, utf8.RuneCountInString(text[lines[i]:offset]) + 1
 }
 
-// FindPhrases returns each case-insensitive, whole-word match of any phrase
-// in text, in phrase order; a space in a phrase matches any whitespace run,
-// and no letter, digit, or underscore may touch either end.
-// Issue.Word is the phrase as listed.
+// FindPhrases returns each case-insensitive whole-word match of any phrase in
+// text, where a space matches any whitespace run.
 func FindPhrases(text string, phrases []string) []Issue {
 	lines := lineOffsets(text)
 	var issues []Issue
@@ -456,8 +433,8 @@ func wordRuneAt(text string, i int) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
-// phraseRe matches a phrase in any case after a non-word rune or the start,
-// any whitespace run between its words; nil for a blank phrase.
+// phraseRe matches a phrase in any case after a non-word rune or the start, or
+// is nil for a blank phrase.
 func phraseRe(phrase string) *regexp.Regexp {
 	words := strings.Fields(phrase)
 	if len(words) == 0 {

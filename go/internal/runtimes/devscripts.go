@@ -12,10 +12,8 @@ type devRun struct {
 	published           []string
 }
 
-// DevScripts lists the tracked files that are tools by how a repository
-// runs them: files under the top-level scripts folder, and files only
-// manifest scripts run, as each reader's Scripts finds them. A file the
-// start script runs, or one the package publishes, stays product code.
+// DevScripts lists tracked files that are tools by how the repo runs them,
+// not files the start script runs or the package publishes.
 func DevScripts(root string, files []string, readers []Reader) map[string]bool {
 	r := newDevRun(files)
 	for _, file := range files {
@@ -65,9 +63,8 @@ func (r *devRun) mark(paths []string, into map[string]bool) {
 	}
 }
 
-// published reports a file an entry names: the entry itself, a file in
-// a published folder such as lib, or one under an exports pattern such
-// as ./lib/* before its star.
+// published reports whether an entry names the file, directly, by folder, or
+// by an exports pattern up to its star.
 func published(file string, entries []string) bool {
 	for _, entry := range entries {
 		if star := strings.Index(entry, "*"); star >= 0 {

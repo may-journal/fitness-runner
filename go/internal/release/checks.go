@@ -17,10 +17,8 @@ import (
 // the repository root.
 const checksFile = "go/cmd/fitness/checks.go"
 
-// WriteChecks rewrites every file Generated returns, so the fitness binary
-// builds in every go/cmd/fitness-check-<name> package with the docs its code
-// comments hold, each check README and the check index say the same, and
-// no one keeps them by hand.
+// WriteChecks rewrites every file Generated returns, so no one keeps the
+// registry, READMEs and check index by hand.
 func (c Config) WriteChecks() error {
 	files, err := c.Generated()
 	if err != nil {
@@ -34,11 +32,8 @@ func (c Config) WriteChecks() error {
 	return nil
 }
 
-// Stale lists each generated file, relative to the root, whose content
-// differs from what WriteChecks would write, and how many files it writes.
-// An error means the code holds something the generator cannot read, such
-// as a check package without a doc comment, or a generated file it cannot
-// read for a reason other than its absence.
+// Stale lists each generated file differing from what WriteChecks would
+// write, with the total; an error means the generator cannot read something.
 func (c Config) Stale() (stale []string, total int, err error) {
 	files, err := c.Generated()
 	if err != nil {
@@ -96,9 +91,8 @@ func (c Config) readSources() (s sources, err error) {
 	return s, err
 }
 
-// render lays out every generated file: the Go sources the fitness binary
-// is built with, the llms page, and the Markdown written from the same
-// comments.
+// render lays out every generated file, meaning the Go sources, the llms
+// page, and the Markdown.
 func (c Config) render(s sources) (map[string][]byte, error) {
 	page := llmsPage(s.usage, s.checks, s.topics)
 	registry, checksErr := checksSource(s.checks)
@@ -111,9 +105,8 @@ func (c Config) render(s sources) (map[string][]byte, error) {
 	return files, c.addMarkdown(files, s)
 }
 
-// addMarkdown adds each check's README, and the files that hold a generated
-// region among hand-written text: the check index in docs/checks.md, and the
-// command list in the README.
+// addMarkdown adds each check's README plus the generated regions in
+// docs/checks.md and the README command list.
 func (c Config) addMarkdown(files map[string][]byte, s sources) error {
 	for _, d := range s.checks {
 		files["go/cmd/"+d.Folder+"/README.md"] = checkReadme(d)
@@ -223,9 +216,8 @@ func checkAlias(name string) string {
 	return strings.Join(words, "") + "Check"
 }
 
-// Input reports whether a changed repository path can change what the
-// generator writes: a Go source, which holds the doc comments it reads, or a
-// Markdown file it writes whole or in part.
+// Input reports whether a changed path can change the generator's output: a Go
+// source it reads or a Markdown file it writes.
 func Input(path string) bool {
 	if strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile {
 		return true

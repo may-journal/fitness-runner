@@ -1,7 +1,5 @@
-// Package minutes totals what GitHub Actions bills per workflow: each job
-// that ran, rounded up to a whole minute, as GitHub bills private repos.
-// fitness-release minutes prints its table, so a CI change is measured by
-// the jobs it started and the minutes they billed.
+// Package minutes totals what GitHub Actions bills per workflow, rounding each
+// job up to a whole minute as private repos are billed.
 package minutes
 
 import (
@@ -33,8 +31,8 @@ type Job struct {
 	Seconds  int
 }
 
-// Billed is the whole minutes GitHub bills a job that ran for seconds: every
-// started job bills at least one, even one that ended within its first second.
+// Billed is the whole minutes GitHub bills for a job that ran seconds,
+// never fewer than one.
 func Billed(seconds int) int {
 	return max(1, (seconds+59)/60)
 }
@@ -123,8 +121,8 @@ func runJobs(ctx context.Context, repo, id, workflow string) ([]Job, error) {
 	return jobs, nil
 }
 
-// jobSeconds reads one job's conclusion, start and end, tab-separated, and
-// reports its wall time and whether it ran: skipped or unfinished jobs did not.
+// jobSeconds reads one tab-separated job line and reports its wall time and
+// whether it ran, since skipped or unfinished jobs did not.
 func jobSeconds(line string) (int, bool, error) {
 	fields := strings.Split(line, "\t")
 	if len(fields) != 3 {
@@ -181,8 +179,8 @@ func lines(out []byte) []string {
 	return found
 }
 
-// Print collects the jobs of repos, or of org's private repos when repos is
-// empty, over the last days days, and writes their table to w.
+// Print writes to w the billed table for repos, or for org's private repos
+// when repos is empty, over the last days days.
 func Print(ctx context.Context, w io.Writer, org string, repos []string, days int) error {
 	if days <= 0 {
 		return fmt.Errorf("--days must be a positive number of days, not %d", days)

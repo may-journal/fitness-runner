@@ -32,11 +32,8 @@ var docChecks = []string{
 // target is one issue or PR a GitHub command judges.
 type target = aftereffect.Target
 
-// RepoChecks applies a repo's own check settings to the GitHub commands:
-// Find returns a check's program and Off names a check the repo turns off.
-// The fitness executable sets Find to its built-in checks when it starts,
-// and to the repo's checks from .fitnessrc.json before RunGH. Left nil, no
-// check runs, so each one fails closed with no result.
+// RepoChecks applies a repo's own check settings to the GitHub commands, and
+// left nil, no check runs, so each fails closed.
 var RepoChecks struct {
 	Find func(name string) (checkkit.Program, error)
 	Off  func(name string) bool
@@ -122,9 +119,8 @@ type linkedIssue struct {
 	labels []string
 }
 
-// prLinks judges what a PR points at: its title as a semantic-commit
-// subject, its one changelog entry, its closing keywords, and the checklist
-// of each issue it closes.
+// prLinks judges what a PR points at: its title, changelog entry, closing
+// keywords, and the checklist of each issue it closes.
 func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 	errs := b.errorsOf("semantic-commit", "--message", t.Title)
 	errs = append(errs, changelogErrors(t, gh)...)

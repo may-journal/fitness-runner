@@ -1,11 +1,5 @@
-// Package repocheck finds a repo's own checks, as ADR 0009 and ADR 0012
-// decide, and builds the ones written in Go. Each folder `fitness/<name>/`
-// is one check, with a README.md and either an executable `check` or Go
-// source that fitness builds with `fitness/go.mod` into the user cache. The
-// folder `localChecks` names in .fitnessrc.json is read the same way, and
-// may also hold flat `fitness-check-<name>` programs.
-//
-// docs/local-checks.md is the guide for writing one.
+// Package repocheck finds a repo's own checks (ADR 0009, ADR 0012) and builds
+// the Go ones, as docs/local-checks.md describes.
 //
 //fitness:topic local-checks
 package repocheck
@@ -41,8 +35,8 @@ var checkName = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
 // architecture decision, and req-NNNN proves a requirement.
 var paired = regexp.MustCompile(`^(adr|req)-\d{4}$`)
 
-// Paired reports whether a local check of this name keeps an ADR or proves
-// a requirement, so judging no files means its scan is broken.
+// Paired reports whether a check of this name keeps an ADR or proves a
+// requirement, where judging no files means a broken scan.
 func Paired(name string) bool {
 	return paired.MatchString(name)
 }
@@ -61,8 +55,8 @@ type Check struct {
 	// Shown is where the check lives, relative to the repo root, as a
 	// person reads it in a message.
 	Shown string
-	// Folder is a folder check's folder relative to the repo root, as the
-	// check reads it in FITNESS_CHECK_DIR, or empty for a flat program.
+	// Folder is a folder check's folder relative to the repo root, or empty
+	// for a flat program.
 	Folder string
 	// Readme is the check's README.md, or empty for a flat program.
 	Readme string
@@ -73,11 +67,8 @@ type Check struct {
 	Module string
 }
 
-// Find maps each check the repo at root holds, by name: every folder of
-// root's fitness/ folder, then each check in the localChecks folder
-// configured names, when set. A configured folder must sit inside the repo
-// and hold at least one check. A fitness/ folder is optional; one that
-// holds no check is an error, as is a name found twice.
+// Find maps by name each check in root's fitness/ and configured localChecks
+// folders, failing on an empty folder or duplicate name.
 func Find(root, configured string) (map[string]Check, error) {
 	checks := map[string]Check{}
 	if err := addDefault(checks, root, configured); err != nil {
@@ -139,8 +130,8 @@ func addEntry(checks map[string]Check, root, dir, shown string, entry os.DirEntr
 	return nil
 }
 
-// entryCheck reads one entry of a checks folder: a folder check, a flat
-// program, or neither, as is a superseded ADR's folder with no program.
+// entryCheck reads one checks-folder entry as a folder check or a flat program,
+// or neither for a superseded ADR folder.
 func entryCheck(root, dir, shown string, entry os.DirEntry) (Check, bool, error) {
 	path := filepath.Join(dir, entry.Name())
 	if !entry.IsDir() {
@@ -233,9 +224,8 @@ func hasGo(folder string) bool {
 	return slices.ContainsFunc(paths, func(p string) bool { return !strings.HasSuffix(p, "_test.go") })
 }
 
-// localDir resolves the configured folder against root and refuses one
-// outside the repo or missing, since a check the repo does not track cannot
-// run the same way in CI.
+// localDir resolves the configured folder against root and refuses one outside
+// the repo or missing, since CI cannot run untracked checks.
 func localDir(root, configured string) (string, error) {
 	if !filepath.IsLocal(filepath.FromSlash(configured)) {
 		return "", outsideRepo(configured)

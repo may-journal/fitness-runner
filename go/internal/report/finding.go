@@ -8,10 +8,8 @@ import (
 )
 
 // FindingAnnotation returns the error annotation for one finding of check.
-// A finding that names its file points there, at its line and column, with
-// the check and rule as its title, and says how to fix it and where to read
-// why. A finding with no file, such as an error line a check reported
-// without findings, is located from its message text instead.
+// A finding without a file is located from its message text, as for an error
+// line a check reported without findings.
 func FindingAnnotation(check string, f checkkit.Finding) string {
 	if f.File == "" {
 		return Annotation(check, f.Message, true)
@@ -32,9 +30,8 @@ func findingProperties(check string, f checkkit.Finding) string {
 	return properties + ",title=" + escapeProperty(check+" ("+f.Rule+")")
 }
 
-// FindingMarkdown returns one finding as a job summary list item: where it
-// is, what is wrong, then how to fix it and where to read why, nested
-// under it.
+// FindingMarkdown returns one finding as a job summary list item, with its
+// fix and rationale nested under it.
 func FindingMarkdown(f checkkit.Finding) string {
 	if f.File == "" {
 		return "- " + EscapeMarkdown(f.Message) + "\n"
@@ -61,8 +58,8 @@ func findingText(f checkkit.Finding) string {
 	return text
 }
 
-// notes are the lines that follow a finding's message: how to fix it, and
-// the command that says why its check exists, each when the finding has it.
+// notes are the lines after a finding's message: its fix and the command
+// explaining why its check exists, when present.
 func notes(f checkkit.Finding) []string {
 	var out []string
 	if f.Fix != "" {

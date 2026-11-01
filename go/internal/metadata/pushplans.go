@@ -20,8 +20,8 @@ import (
 // local-branch the Plans it read.
 const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
 
-// approvalRe matches a comment whose first line starts with `I approve`, in
-// any case, so a mere mention of approval, such as "not approved", is none.
+// approvalRe matches a comment whose first line starts with `I approve` in any
+// case, so a mere mention such as "not approved" is none.
 var approvalRe = regexp.MustCompile(`(?i)^[ \t]*I approve\b`)
 
 // defaultApprovers are the associations GitHub gives the repo's owner and
@@ -56,8 +56,8 @@ type planRead struct {
 	view   aftereffect.IssueView
 }
 
-// handoff is what the gate hands local-branch: its own process ID, which
-// must be local-branch's parent, the push's deadline, and the Plans it read.
+// handoff is what the gate hands local-branch: its process ID, which must be
+// local-branch's parent, the push's deadline, and the Plans it read.
 type handoff struct {
 	Gate     int        `json:"gate"`
 	Deadline time.Time  `json:"deadline"`
@@ -87,11 +87,8 @@ func (p *PushPlans) TimedOut() string {
 	return fmt.Sprintf("%s did not answer within %s", GitHubHost(), PushDeadline)
 }
 
-// Approved reports whether the Plan ref names carries the exact `Plan` label
-// and a comment whose first line starts with `I approve` by an allowed
-// approver, reading it from GitHub until a read succeeds. A qualified ref is
-// read from the repo it names; a bare one from this repo. Approvers lists the
-// logins allowed; with none, the repo's owner and its org's members are.
+// Approved reports whether the Plan ref names has the `Plan` label and an
+// `I approve` comment by an allowed approver.
 func (p *PushPlans) Approved(ref gitx.PlanRef, approvers []string) bool {
 	key := strings.ToLower(ref.String())
 	r, ok := p.reads[key]
@@ -103,9 +100,8 @@ func (p *PushPlans) Approved(ref gitx.PlanRef, approvers []string) bool {
 	})
 }
 
-// allowed reports whether c's author may approve: a login approvers lists,
-// compared case-insensitively, or with no list the repo's owner or an org
-// member.
+// allowed reports whether c's author may approve, as a listed login or, with no
+// list, the repo's owner or an org member.
 func allowed(c aftereffect.IssueComment, approvers []string) bool {
 	if len(approvers) == 0 {
 		return slices.Contains(defaultApprovers, c.Association)
@@ -187,9 +183,8 @@ func pushDeadline() time.Time {
 	return own
 }
 
-// trustedHandoff reads the gate's handoff inside pre-push. It trusts only a
-// private file written by this process's parent, so a file set up by hand
-// for a plain local-branch run hands over nothing.
+// trustedHandoff reads the gate's handoff inside pre-push, trusting only a
+// private file written by this process's parent.
 func trustedHandoff() handoff {
 	path := os.Getenv(pushPlansEnv)
 	if os.Getenv("FITNESS_INTERNAL_HOOK") != "pre-push" || !privateFile(path) {

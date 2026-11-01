@@ -5,10 +5,8 @@ import (
 	"strings"
 )
 
-// IsTemplate reports whether a slash path names a markdown template of any
-// kind: one that governs its neighbors, or a GitHub PR or Issue template.
-// doc-template judges docs against these, and duplicate-code skips them,
-// since a doc must repeat its template by design.
+// IsTemplate reports whether a slash path names a markdown template, which
+// duplicate-code skips since a doc must repeat its template.
 func IsTemplate(p string) bool {
 	return strings.HasSuffix(p, ".md") && (IsConformanceTemplate(p) || isGithubTemplate(p))
 }

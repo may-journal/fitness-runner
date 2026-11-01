@@ -4,9 +4,8 @@ package spell
 
 import "strings"
 
-// scanExact masks the default ignore patterns simple enough to match
-// without a regexp, each exactly as its cspell regexp would under Go's
-// leftmost-first FindAll:
+// scanExact masks the simple default ignore patterns without a regexp, each
+// exactly as its case-insensitive cspell regexp would match:
 //
 //	\[[0-9a-f]{7,}\]                          bracketed hash
 //	\b0x[0-9a-f_]+n?\b                        hex literal
@@ -14,8 +13,8 @@ import "strings"
 //	\bU\+[0-9a-f]{4,5}(?:-[0-9a-f]{4,5})?     Unicode reference
 //	\\(?:[anrvtbf]|[xu][0-9a-f]+)             string escape
 //
-// All are case-insensitive. A string escape is masked because cspell's word
-// splitter treats \n in "\nconst" as a break, so "const" is judged alone.
+// A string escape is masked since cspell's splitter treats \n in "\nconst"
+// as a word break.
 func scanExact(line string, masked []bool) {
 	scanAt(line, masked, '[', bracketHashEnd)
 	scanAt(line, masked, '0', hexLiteralEnd)
@@ -25,9 +24,8 @@ func scanExact(line string, masked []bool) {
 	scanAt(line, masked, '\\', escapeEnd)
 }
 
-// scanAt tries a match at each occurrence of the byte that starts it.
-// matchEnd returns the end of the match starting at i, or i when none does;
-// after a match the scan resumes at its end, as FindAll does.
+// scanAt tries matchEnd at each occurrence of first, resuming after each
+// match as FindAll does.
 func scanAt(line string, masked []bool, first byte, matchEnd func(line string, i int) int) {
 	for i := 0; i < len(line); {
 		j := strings.IndexByte(line[i:], first)
@@ -66,8 +64,8 @@ func hexLiteralEnd(line string, i int) int {
 	return hexLiteralBoundary(line, i, i+2+n)
 }
 
-// hexLiteralBoundary ends a hex literal at i whose digits end at end: past
-// an n suffix or at end, whichever a word boundary follows, else at i.
+// hexLiteralBoundary ends a hex literal at i past an n suffix or at end,
+// whichever a word boundary follows, else at i.
 func hexLiteralBoundary(line string, i, end int) int {
 	if lower(byteAt(line, end)) == 'n' && !wordByteAt(line, end+1) {
 		return end + 1

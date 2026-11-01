@@ -1,13 +1,6 @@
 // Package walkfs lists a repo's files by extension for the fitness checks.
-// Inside a git repo it lists every tracked file still on disk, so only
-// untracked files stay out; outside one it walks every file except .git.
-// No directory name, config key, or tool ignore list removes a file.
-//
-// A run of several checks shares one list, which ShareTracked writes. It
-// drops symlinks and submodules by their index mode, stats the rest once
-// in parallel, and holds only the regular files on disk. A check using a
-// current shared list stats nothing; one listing its own files, as a check
-// run alone does, stats each matching path.
+// Inside a git repo it lists tracked files still on disk; outside one it walks
+// every file except .git. No ignore list removes a file.
 package walkfs
 
 import (
@@ -26,10 +19,7 @@ import (
 )
 
 // InScope narrows files to the run's changed files, keeping all of them when
-// the run is unscoped. A check that judges each file on its own passes its
-// walk through InScope; one that compares files cuts the walk to what the
-// change can alter, as duplicate-code does, and one that only detects
-// whether a file type exists keeps the full walk.
+// the run is unscoped.
 func InScope(files []string) []string {
 	changed := checkkit.ChangedFiles()
 	if changed == nil {
@@ -48,11 +38,8 @@ func InScope(files []string) []string {
 	return out
 }
 
-// ScanFiles runs scan over every in-scope file under root matching exts —
-// the read-loop shared by the file-scanning checks — and returns the check's
-// Result: failed with the collected messages, else passed, counting the
-// files read. A file that cannot be read is skipped and named as info, so
-// the other files are still judged.
+// ScanFiles runs scan over every in-scope file under root matching exts,
+// skipping and naming as info any file it cannot read.
 func ScanFiles(root string, exts []string, scan func(relPath, content string) []string) checkkit.Result {
 	errs, read, info := scanAll(root, exts, scan)
 	result := checkkit.Pass(read)
@@ -72,9 +59,8 @@ func ScanFindings(root string, exts []string, line func(checkkit.Finding) string
 	return result
 }
 
-// scanAll scans every in-scope file matching exts in parallel, returning
-// what scan found in file order, how many files it read, and an info note
-// for each file it could not read.
+// scanAll scans in-scope files matching exts in parallel, returning findings in
+// file order, the read count, and a note per unreadable file.
 func scanAll[T any](root string, exts []string, scan func(relPath, content string) []T) (found []T, read int, info []string) {
 	files := InScope(FilesByExt(root, exts...))
 	results := par.Map(len(files), 0, func(i int) scanResult[T] {
@@ -98,9 +84,8 @@ type scanResult[T any] struct {
 	skipped string
 }
 
-// Unreadable is the info note for a file a check skipped because reading
-// it failed, naming the file by its relative path and the reason, such as
-// permission denied.
+// Unreadable is the info note for a file a check skipped, naming its relative
+// path and why reading failed.
 func Unreadable(rel string, err error) string {
 	var pathErr *fs.PathError
 	if errors.As(err, &pathErr) {
@@ -118,11 +103,8 @@ func scanOne[T any](root, file string, scan func(relPath, content string) []T) s
 	return scanResult[T]{found: scan(file, string(content))}
 }
 
-// FilesByExt returns the sorted slash-separated relative paths of files
-// under root whose name ends in any of exts (suffix match, not glob — ".md"
-// matches "x.custom.md" too; "" matches every file). Inside a git repo the
-// candidates are the tracked files that still exist on disk; outside one
-// they are every file except those under .git.
+// FilesByExt returns the sorted relative paths under root whose name ends in
+// any of exts, where "" matches every file and ".md" matches "x.custom.md".
 func FilesByExt(root string, exts ...string) []string {
 	list := trackedFiles(root)
 	if !list.ok {
@@ -138,12 +120,8 @@ func FilesByExt(root string, exts ...string) []string {
 	return out
 }
 
-// AllFiles returns every path under root a check judges by name, sorted and
-// slash-separated. Inside a git work tree it is every regular file in the index that
-// is on disk, so a staged addition or a rename's target counts before its commit; outside one
-// it is every regular file except those under .git. Unlike FilesByExt, it
-// returns an error when git or the walk cannot list the files, so a check
-// never passes on a list it could not read.
+// AllFiles returns every sorted path under root, erroring when listing fails so
+// a check never passes on an unread list.
 func AllFiles(root string) ([]string, error) {
 	if list := trackedFiles(root); list.ok {
 		out := listedOnDisk(root, list)
@@ -158,8 +136,8 @@ func AllFiles(root string) ([]string, error) {
 	return files, err
 }
 
-// listedOnDisk returns a copy of the list paths that are regular files on disk,
-// checking the disk only when the list has not been checked already.
+// listedOnDisk returns a copy of the list's regular files on disk, stating them
+// only when the list has not been checked.
 func listedOnDisk(root string, list trackedList) []string {
 	if list.onDisk {
 		return slices.Clone(list.files)
@@ -173,27 +151,21 @@ func insideWorkTree(root string) bool {
 	return err == nil && strings.TrimSpace(string(out)) == "true"
 }
 
-// wanted reports whether rel ends in one of exts and, when stat is set, is
-// still a regular file on disk. The cheap name test runs first, so only a
-// matching path costs an lstat. A walked path, or one from the runner's
-// shared list, is already a regular file, so stat is unset for it.
+// wanted reports whether rel ends in one of exts and, if stat is set, is a
+// regular file; the name test runs first.
 func wanted(root, rel string, exts []string, stat bool) bool {
 	return hasAnySuffix(filepath.Base(rel), exts) && (!stat || RegularFile(root, rel))
 }
 
-// RegularFile reports whether the slash-separated rel under root is a
-// regular file on disk: a tracked path deleted from the work tree, a
-// submodule directory, or a symlink is not. A symlink's tracked content is
-// its target path, and the target is judged as its own file.
+// RegularFile reports whether rel under root is a regular file on disk, so a
+// deleted path, submodule directory or symlink is not.
 func RegularFile(root, rel string) bool {
 	info, err := os.Lstat(filepath.Join(root, filepath.FromSlash(rel)))
 	return err == nil && info.Mode().IsRegular()
 }
 
-// walkedFiles walks root outside a git repo, collecting every file's
-// slash-separated relative path, skipping symlinks and pruning only .git
-// directories.
-// Unreadable subtrees are skipped, never fatal.
+// walkedFiles walks root outside a git repo, skipping symlinks, .git
+// directories, and unreadable subtrees.
 func walkedFiles(root string) []string {
 	files, _ := walkFiles(root, false)
 	return files

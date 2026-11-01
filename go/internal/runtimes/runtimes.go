@@ -1,7 +1,5 @@
-// Package runtimes finds what a repository ships: the runtime products its
-// build targets, entry points, and deploy files prove, and the platform
-// services its code uses. A dependency manifest alone proves nothing. Each
-// language module brings a Reader; this package knows no language itself.
+// Package runtimes finds the runtime products and services a repository ships
+// through a Reader per language, since a dependency manifest proves nothing.
 package runtimes
 
 import (

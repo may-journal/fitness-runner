@@ -15,13 +15,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 )
 
-// The embedded base dictionaries are committed plain-text wordlists derived
-// from the cspell dictionary packages; each file's '#'-prefixed provenance
-// header names its sources and licenses. The Node generator was removed in the
-// npm-free migration — a Go regeneration tool is deferred (see
-// docs/plans/archive/02-npm-free.md). Each file is that header followed by the
-// words: lowercased, deduplicated, sorted, one per line — the committed lists
-// are pre-sorted, which is the guarantee the binary search below relies on.
+// The embedded dictionaries are committed cspell wordlists: a '#' header, then
+// sorted lowercase words that the binary search relies on.
 //
 // Every file in dict/ is embedded, so a new wordlist needs no list entry.
 // Lookup binary-searches each list's text in place: no parsing, no index
@@ -57,11 +52,8 @@ var embeddedDicts = sync.OnceValue(func() []string {
 	return lists
 })
 
-// embeddedDict looks words up directly in the embedded wordlists, memoizing
-// results because natural language repeats heavily. The memo is a sync.Map:
-// the engine runs lookups concurrently under par.Map, and the read-mostly,
-// write-once-per-key pattern is exactly its sweet spot — a mutex-guarded map ties
-// it serially but measured ~40x slower under parallel lookups.
+// embeddedDict looks words up in the embedded wordlists, memoizing in a
+// sync.Map, since a mutex-guarded map measured ~40x slower in parallel.
 type embeddedDict struct {
 	memo sync.Map // word -> bool
 }
@@ -99,10 +91,8 @@ func searchEmbedded(word string) bool {
 	return false
 }
 
-// searchLines reports whether target is exactly one of data's sorted lines:
-// classic binary search over byte offsets — probe the middle, snap to the
-// containing line, and narrow. lo is always a line start, so the containing
-// line never begins before lo and the range always shrinks.
+// searchLines reports whether target is one of data's sorted lines, by binary
+// search over byte offsets snapped to line starts.
 func searchLines(data, target string) bool {
 	lo, hi := 0, len(data)
 	for lo < hi {
@@ -118,9 +108,8 @@ func searchLines(data, target string) bool {
 }
 
 // lineBelow reports whether a probed line sorts strictly before target.
-// Header comments ('#'-prefixed) appear only before the first word and words
-// never start with '#', so ranking them below every target keeps the
-// predicate monotone; blank lines never occur but would rank below too.
+// Header lines starting with '#' rank below every target, which keeps the
+// predicate monotone because they precede the words.
 func lineBelow(line, target string) bool {
 	return line == "" || line[0] == '#' || line < target
 }
@@ -133,8 +122,8 @@ func lineStart(data string, i int) int {
 	return i
 }
 
-// lineEnd returns the offset just past the last byte of the line starting at
-// start (its '\n', or end of data for an unterminated final line).
+// lineEnd returns the offset of the '\n' ending the line at start, or the end
+// of data for an unterminated final line.
 func lineEnd(data string, start int) int {
 	if n := strings.IndexByte(data[start:], '\n'); n >= 0 {
 		return start + n

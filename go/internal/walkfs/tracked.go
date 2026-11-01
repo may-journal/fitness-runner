@@ -12,15 +12,12 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
-// TrackedFilesEnv names the variable through which the runner hands every
-// check the file it wrote with ShareTracked, so a run lists tracked files
-// once instead of once per check.
+// TrackedFilesEnv names the variable handing every check the file ShareTracked
+// wrote, so a run lists tracked files once.
 const TrackedFilesEnv = "FITNESS_TRACKED_FILES"
 
-// trackedMemo holds each root's tracked-file list for the life of the
-// process, so a check that walks the repo for several file types asks git
-// once. The lock guards only the map; each root fills its own entry, so a
-// walk of one root never waits on git for another.
+// trackedMemo holds each root's tracked-file list for the process, so a walk
+// never waits on git for another root and asks git once.
 var trackedMemo = struct {
 	sync.Mutex
 	roots map[string]*trackedEntry
@@ -32,21 +29,16 @@ type trackedEntry struct {
 	list trackedList
 }
 
-// trackedList is one root's tracked paths; ok is false outside a git work
-// tree. onDisk is true for a list the runner shared, which holds only the
-// regular files on disk, so no check stats its paths again.
+// trackedList is one root's tracked paths; ok is false outside git, and onDisk
+// marks a list needing no stat.
 type trackedList struct {
 	files  []string
 	ok     bool
 	onDisk bool
 }
 
-// trackedFiles returns root's tracked paths, slash-separated and relative to
-// root. A current list the runner shared for root is used first, holding
-// only regular files on disk. Otherwise git is asked once per root for the
-// life of the process, and its `git ls-files --cached` paths include any
-// deleted from the work tree. ok is false when root is not inside a git
-// work tree or git is missing.
+// trackedFiles returns root's slash-separated tracked paths, preferring the
+// runner's shared list; ok is false outside a git work tree.
 func trackedFiles(root string) trackedList {
 	key := filepath.Clean(root)
 	trackedMemo.Lock()
@@ -75,21 +67,16 @@ func listTracked(root string) (trackedList, error) {
 	return trackedList{files: files, ok: true}, nil
 }
 
-// Shared is one run's tracked-file list as ShareTracked wrote it: Env is
-// the TrackedFilesEnv entry that hands it to checks, Files how many paths
-// it lists, and Remove deletes it. With no list, Env is empty and Files 0.
+// Shared is one run's tracked-file list: Env hands it to checks, Files counts
+// its paths, and Remove deletes it.
 type Shared struct {
 	Env    []string
 	Files  int
 	Remove func()
 }
 
-// ShareTracked lists root's tracked files once and writes the regular
-// files on disk to a temporary file for the checks of one run, so no check
-// stats them again. Outside a git work tree, or
-// when the index or the file cannot be read or written, it shares no list,
-// and each check lists its own files as it does when run alone. A git call
-// stopped at its deadline returns that gitx.StalledError instead.
+// ShareTracked writes root's tracked regular files to a temporary file so no
+// check stats them again; on failure checks list their own.
 func ShareTracked(root string) (Shared, error) {
 	none := Shared{Remove: func() {}}
 	content, files, err := trackedSnapshot(filepath.Clean(root))
@@ -109,9 +96,8 @@ func ShareTracked(root string) (Shared, error) {
 	return Shared{Env: []string{TrackedFilesEnv + "=" + f.Name()}, Files: files, Remove: remove}, nil
 }
 
-// trackedSnapshot is the shared file's content for root and how many paths
-// it lists, or nil when git or the index cannot be read. The error is set
-// only for a stalled git call.
+// trackedSnapshot is the shared file's content for root and its path count, or
+// nil when git or the index cannot be read.
 func trackedSnapshot(root string) ([]byte, int, error) {
 	index, err := gitx.Repo(root).GitPath("index")
 	if err != nil {
@@ -159,8 +145,8 @@ func onDisk(root string, paths []string) []string {
 	return kept
 }
 
-// stalledOnly keeps err when it is a git call stopped at its deadline, and
-// drops any other failure, which only means checks list their own files.
+// stalledOnly keeps err only when git stalled at its deadline, since any other
+// failure just means checks list their own files.
 func stalledOnly(err error) error {
 	if gitx.Stalled(err) {
 		return err
@@ -168,10 +154,8 @@ func stalledOnly(err error) error {
 	return nil
 }
 
-// indexStamp names the index's current version by its inode, modification
-// time in nanoseconds, and size. Git writes a new index file and renames it
-// into place, so even a same-size rewrite within one mtime tick gets a new
-// inode and a new stamp.
+// indexStamp names the index's version by inode, mtime and size, because git
+// renames a new index into place.
 func indexStamp(index string) (string, bool) {
 	info, err := os.Stat(index)
 	if err != nil {
@@ -196,9 +180,8 @@ func encodeTracked(header, files []string) []byte {
 	return b.Bytes()
 }
 
-// sharedTracked reads the runner's list when it names root and the index
-// has not changed since. A list for another root, such as one inherited by
-// a test's nested run, is ignored, as is a stale, missing, or malformed one.
+// sharedTracked reads the runner's list when it names root and the index is
+// unchanged, ignoring any other.
 func sharedTracked(root string) (trackedList, bool) {
 	path := os.Getenv(TrackedFilesEnv)
 	if path == "" {

@@ -30,10 +30,8 @@ func WithoutGenerated(root string, files []string) []string {
 	return kept
 }
 
-// generatedMemo keeps each root's linguist-generated answers for the life
-// of the process, true for a generated file and false for one git said is
-// not, so a check that walks several times asks about each file once. The
-// lock guards only the maps, never a git call.
+// generatedMemo keeps each root's linguist-generated answers for the process,
+// letting a check that walks often ask git about each file once.
 var generatedMemo = struct {
 	sync.Mutex
 	roots map[string]map[string]bool
@@ -102,10 +100,8 @@ func askGenerated(root string, files []string) map[string]bool {
 	return answers
 }
 
-// parseCheckAttr reads `git check-attr -z` output — path, attribute, value
-// triples, each NUL-terminated — keeping the paths whose value turns the
-// attribute on ("set" for a bare name, or "true"). Git prints no empty
-// field, so dropping empty entries keeps the triples aligned.
+// parseCheckAttr keeps the paths whose value in `git check-attr -z` output is
+// "set" or "true", dropping empty fields so the triples stay aligned.
 func parseCheckAttr(out []byte) map[string]bool {
 	fields := splitNUL(out)
 	set := make(map[string]bool)

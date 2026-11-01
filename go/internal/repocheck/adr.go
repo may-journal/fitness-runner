@@ -8,9 +8,8 @@ import (
 	"strings"
 )
 
-// ADRPrefix starts the name of a check folder that holds an architecture
-// decision record: its README.md is the ADR, beside the check that keeps
-// it.
+// ADRPrefix starts the name of a check folder whose README.md is an
+// architecture decision record, beside the check that keeps it.
 const ADRPrefix = "adr-"
 
 // superseded matches a status line that retires the decision, such as
@@ -24,9 +23,8 @@ func Retired(text string) bool {
 	return superseded.MatchString(text)
 }
 
-// notCheck reports whether a folder in a checks folder holds no check: a
-// hidden or `_` folder, Go's shared-code and fixture folders, or a
-// superseded ADR with no program.
+// notCheck reports whether a checks subfolder is hidden, shared code, fixtures,
+// or a superseded ADR, so it holds no check.
 func notCheck(folder string) bool {
 	name := filepath.Base(folder)
 	return strings.HasPrefix(name, ".") || strings.HasPrefix(name, "_") || slices.Contains(skipped, name) || retiredADR(folder)

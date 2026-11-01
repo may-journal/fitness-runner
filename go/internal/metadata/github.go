@@ -1,18 +1,8 @@
 // Package metadata shares GitHub judgments between local checks and Actions.
 //
-// In GitHub Actions, `fitness pr-check` judges a pull request's title, body,
-// closed issues and changelog link. `fitness issue-check` judges an issue by
-// its kind label, and `fitness plan-check` judges Plan issues only. `fitness
-// close-check` reopens an issue closed with unchecked items or closes the
-// parent whose last child it was, `fitness
-// dupe-check` notes an issue that reads like an older one, and `fitness
-// comment-check` replies once to a comment that breaks the comment rules.
-// Each reads the Actions event, runs the body checks on the text, and then
-// its after-effect comments, labels, reopens or closes.
-//
-// Locally, `fitness branch-check` runs the same judgments on this branch's
-// open PR and the issues it closes, without posting anything, and the
-// pre-push hook runs it before a push.
+// Actions run pr-check, issue-check, plan-check, close-check, dupe-check and
+// comment-check on each event, while branch-check runs the same judgments
+// locally without posting anything.
 //
 //fitness:topic github
 package metadata
@@ -28,10 +18,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
-// ghCommand declares one GitHub command: which targets an event names, the
-// checks that judge each target's body blob, and the after-effect, named by
-// code reference, that reacts on GitHub. runGH runs every declaration the
-// same way, so a command adds no plumbing of its own.
+// ghCommand declares one GitHub command's targets, body checks and
+// after-effect, run by runGH so a command adds no plumbing.
 type ghCommand struct {
 	// kind is the URL segment for target links: "issues" or "pull".
 	kind    string
@@ -48,8 +36,8 @@ type ghCommand struct {
 	failOnFindings bool
 	// hint ends a run summary with findings, such as how to re-check locally.
 	hint string
-	// describe, when set, reports each target by what the command found
-	// on it, as a notice that never fails the run, instead of by findings.
+	// describe, when set, reports each target as a notice that never fails
+	// the run, instead of by findings.
 	describe func(t target) string
 }
 
@@ -135,10 +123,8 @@ func (c ghCommand) kindsAt(root string) map[string]issueKind {
 	return c.kinds(root)
 }
 
-// check judges one target, reacts, and reports whether it failed. A target
-// that left the repository, such as an issue moved to another repo, is
-// noted and does not fail, as is an issue with no kind label when the
-// command judges kinds.
+// check judges one target, reacts, and reports whether it failed, only noting a
+// target that left the repository or lacks a kind label.
 func (c ghCommand) check(gh aftereffect.Client, b blobChecker, rep *targetReport, t target, kinds map[string]issueKind) (bool, error) {
 	if t.Gone {
 		rep.gone(t.Number)

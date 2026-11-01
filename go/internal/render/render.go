@@ -1,10 +1,5 @@
-// Package render draws the results table the fitness suite has always
-// printed: box-drawn, columns Check/Status/Files/Time, a full-width
-// word-wrapped error block per failed check, and a bold totals line.
-// Geometry and coloring mirror the TypeScript cli-table3 output: column
-// widths 28/10/8/max(10, terminal-51) including one space of padding per
-// side, gray borders and red header regardless of tty (unless NO_COLOR),
-// chalk-style status colors only on a terminal.
+// Package render draws the box-drawn results table with an error block per
+// failed check and a totals line, mirroring the TypeScript cli-table3 output.
 package render
 
 import (
@@ -61,10 +56,8 @@ type Palette struct {
 	boldGreenOff            string
 }
 
-// ColorsEnabled reports the two color gates every fitness surface shares:
-// decoration (borders/header; off only under NO_COLOR, even when piped,
-// exactly like cli-table3) and chalk-style colors (a terminal on stderr or
-// FORCE_COLOR).
+// ColorsEnabled reports the two shared color gates: decoration, off only under
+// NO_COLOR, and chalk-style colors on a stderr terminal or FORCE_COLOR.
 func ColorsEnabled() (decoration, chalk bool) {
 	if os.Getenv("NO_COLOR") != "" {
 		return false, false
@@ -115,8 +108,8 @@ func TermCols() int {
 	return 80
 }
 
-// sttyCols parses the column count out of `stty size` output; 0 when stty
-// failed or its output is not "<rows> <cols>" with a positive column count.
+// sttyCols parses the column count from `stty size`, or 0 when it fails or the
+// output is not "<rows> <cols>".
 func sttyCols() int {
 	out, err := exec.Command("stty", "size").Output()
 	if err != nil {
@@ -153,9 +146,8 @@ func Table(rows []Row, cols int, p Palette) string {
 	return strings.TrimSuffix(b.String(), "\n")
 }
 
-// tableWidths returns the four column widths for a terminal cols wide: fixed
-// Check/Status/Files columns plus a Time column absorbing the remainder,
-// never narrower than 10.
+// tableWidths returns four column widths for a terminal cols wide, the Time
+// column absorbing the remainder at no less than 10.
 func tableWidths(cols int) []int {
 	timeW := cols - 51
 	if timeW < 10 {
@@ -340,9 +332,8 @@ func joinWord(line, word string) string {
 	return line + " " + word
 }
 
-// breakLongWord flushes line (when non-empty) to out, hard-breaks word into
-// width-rune chunks, and returns the grown slice plus the leftover tail,
-// which becomes the caller's new current line.
+// breakLongWord flushes line to out, hard-breaks word into width-rune
+// chunks, and returns the leftover tail as the caller's new line.
 func breakLongWord(out []string, line, word string, width int) ([]string, string) {
 	if line != "" {
 		out = append(out, line)

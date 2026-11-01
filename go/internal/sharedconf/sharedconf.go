@@ -1,25 +1,5 @@
-// Package sharedconf ships the shared tool configuration directory inside
-// the check binaries — the npm-free successor to the config/ directory the
-// @mayjournal/fitness-shared npm package used to publish. The six files
-// (constants.cjs, cspell.json, eslint.base.mjs, eslint.config.mjs,
-// prettier.config.cjs, vitest.config.mjs) are embedded as frozen data and
-// materialized on demand to a content-keyed cache directory — the whole
-// directory at once, so the configs' relative imports ('./eslint.base.mjs',
-// './constants.cjs', './cspell.json') keep working from the cache.
-//
-// Resolution contract (Resolve, ResolveDir): a consumer repo's own file wins;
-// an installed node_modules/@mayjournal/fitness-shared/config, walking up
-// from the root, comes second — existing npm installs keep winning; the
-// embedded copy, materialized, is the fallback that makes every check work in
-// a repo with no npm anywhere.
-//
-// Concurrency: Materialize is lock-free. The cache directory name is keyed by
-// a hash of the embedded content, so a directory that exists under that name
-// already holds exactly this content and racing writers all produce identical
-// bytes. Each file is written to a temp file inside the cache directory and
-// renamed into place; rename is atomic, so a reader never observes a partial
-// file, and the per-file exists-check merely skips work another process has
-// already finished.
+// Package sharedconf embeds the shared tool configs and materializes them to
+// a content-keyed cache, the fallback after a repo's own and npm copies.
 package sharedconf
 
 import (
@@ -48,9 +28,8 @@ var installedRel = filepath.Join("node_modules", "@mayjournal", "fitness-shared"
 // a scratch directory.
 var userCacheDir = os.UserCacheDir
 
-// cacheKey is the short content hash naming the cache directory: any change
-// to the embedded files lands in a fresh directory, never mutating one an
-// older binary may be reading.
+// cacheKey is the content hash naming the cache directory, so changed files
+// land in a fresh one an older binary is not reading.
 var cacheKey = sync.OnceValue(func() string {
 	h := sha256.New()
 	for _, name := range fileNames() {
@@ -77,12 +56,8 @@ func fileNames() []string {
 	return names
 }
 
-// Materialize writes the embedded config directory to
-// <user cache>/fitness/sharedconf-<content hash>/ (os.TempDir when no user
-// cache dir resolves) and returns the directory path. Files are written 0644;
-// files already present are left alone — the content-keyed directory name
-// guarantees they hold the right bytes — which makes repeat calls cheap and
-// concurrent calls safe (see the package comment).
+// Materialize writes the embedded config directory to a content-keyed cache
+// directory and returns its path, taking no lock since writers agree on bytes.
 func Materialize() (string, error) {
 	dir := filepath.Join(cacheBase(), "sharedconf-"+cacheKey())
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -96,9 +71,8 @@ func Materialize() (string, error) {
 	return dir, nil
 }
 
-// materializeFile writes the embedded config file name into dir unless it is
-// already present — the content-keyed directory name guarantees an existing
-// file already holds the right bytes.
+// materializeFile writes the embedded config file name into dir unless present,
+// since the content-keyed directory guarantees existing bytes are right.
 func materializeFile(dir, name string) error {
 	dst := filepath.Join(dir, name)
 	if _, err := os.Stat(dst); err == nil {
@@ -111,8 +85,8 @@ func materializeFile(dir, name string) error {
 	return writeViaRename(dir, dst, data)
 }
 
-// cacheBase is the parent of every materialized config directory: the user
-// cache dir, or the system temp dir when none resolves (HOME unset, say).
+// cacheBase is the parent of every materialized config directory, falling back
+// to the system temp dir when no user cache dir resolves.
 func cacheBase() string {
 	base, err := userCacheDir()
 	if err != nil {
@@ -140,8 +114,7 @@ func writeViaRename(dir, dst string, data []byte) error {
 }
 
 // writeTempFile creates a temp file in dir named after dst, fills it with
-// data at mode 0644, and returns its path; on any failure the temp file is
-// removed.
+// data, and returns its path, removing it on failure.
 func writeTempFile(dir, dst string, data []byte) (string, error) {
 	tmp, err := os.CreateTemp(dir, filepath.Base(dst)+".tmp*")
 	if err != nil {
@@ -155,8 +128,8 @@ func writeTempFile(dir, dst string, data []byte) (string, error) {
 	return name, nil
 }
 
-// fillAndClose writes data to tmp, sets mode 0644, and closes it; the file
-// is closed even when the write or chmod fails (removal is the caller's job).
+// fillAndClose writes data to tmp, sets mode 0644, and closes it even on
+// failure, leaving removal to the caller.
 func fillAndClose(tmp *os.File, data []byte) error {
 	if _, err := tmp.Write(data); err != nil {
 		tmp.Close()
@@ -169,12 +142,8 @@ func fillAndClose(tmp *os.File, data []byte) error {
 	return tmp.Close()
 }
 
-// Resolve returns the path a consumer check should hand its tool for the
-// shared config file named filename: <root>/<filename> when the repo carries
-// its own copy, else the nearest installed copy under
-// node_modules/@mayjournal/fitness-shared/config walking up from root, else
-// the embedded copy materialized to the cache. Empty only when that fallback
-// materialization fails — callers degrade to their tool's own defaults.
+// Resolve returns the path of config file filename: the repo's copy, else the
+// nearest installed one, else the materialized embedded copy.
 func Resolve(root, filename string) string {
 	if p := filepath.Join(root, filename); regularFileExists(p) {
 		return p
@@ -205,9 +174,8 @@ func ResolveDir(root string) string {
 	return dir
 }
 
-// installedPath walks up from root (made absolute first) probing each
-// ancestor's installed shared-config directory for filename — or for the
-// directory itself when filename is empty. Empty when no install has it.
+// installedPath walks up from root probing each ancestor's installed shared
+// config for filename, or the directory when empty, returning "" if none has it.
 func installedPath(root, filename string) string {
 	dir := root
 	if abs, err := filepath.Abs(root); err == nil {

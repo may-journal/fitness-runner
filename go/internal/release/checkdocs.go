@@ -49,9 +49,8 @@ func readCheckDoc(dir string) (checkDoc, error) {
 	return checkDoc{Name: name, Folder: folder, Summary: synopsis(pkg, rest), Body: markdown(pkg, rest)}, nil
 }
 
-// synopsis is the first sentence of doc comment text as plain text. Go cuts
-// the sentence before it reads the link definitions at the comment's end,
-// so a link there would keep its brackets; synopsis shows its text alone.
+// synopsis is the first doc sentence as plain text, stripping brackets from
+// links Go cuts before reading their definitions.
 func synopsis(pkg *doc.Package, text string) string {
 	summary := pkg.Synopsis(text)
 	for _, def := range pkg.Parser().Parse(text).Links {
@@ -60,9 +59,8 @@ func synopsis(pkg *doc.Package, text string) string {
 	return summary
 }
 
-// markdown renders doc comment text as Markdown, its headings at level 2,
-// with no IDs, which GitHub derives from the heading text itself,
-// below the title an explanation or README puts above them.
+// markdown renders doc comment text with level-2 headings and no IDs, since
+// GitHub derives them, below the title a README puts above.
 func markdown(pkg *doc.Package, text string) string {
 	printer := pkg.Printer()
 	printer.HeadingLevel = 2
@@ -93,8 +91,8 @@ func blocks(md string) string {
 	return strings.Join(out, "\n")
 }
 
-// codeEnd is the index just past the code block starting at lines[start]:
-// past its last tab-indented line, so the blank lines after it stay out.
+// codeEnd is the index past the code block at lines[start], after its last
+// tab-indented line so trailing blanks stay out.
 func codeEnd(lines []string, start int) int {
 	end := start + 1
 	for j := start + 1; j < len(lines); j++ {
@@ -176,9 +174,8 @@ func parseDoc(dir string) (*doc.Package, error) {
 	return doc.NewFromFiles(fset, files, "github.com/may-journal/fitness-runner/go/cmd/"+filepath.Base(dir))
 }
 
-// parseSources parses each package source in dir in mode, such as the
-// package clause and its doc comment alone when the generator needs only
-// the doc comment.
+// parseSources parses each package source in dir in mode, such as only the
+// package clause and doc comment.
 func parseSources(fset *token.FileSet, dir string, mode parser.Mode) ([]*ast.File, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

@@ -85,11 +85,8 @@ func oneComment(ev ghEvent) ([]target, error) {
 	})}, nil
 }
 
-// KnownBots are the org's automation accounts, whose comments no one can
-// fix by hand: the Actions token, the org App, Release Please, and
-// Dependabot. This is the one list; FITNESS_COMMENT_IGNORE_AUTHORS replaces
-// it for a caller that needs another. The comment-check workflows' job
-// conditions repeat it, so a bot comment starts no runner; change both.
+// KnownBots are the org's automation accounts, whose comments no one can fix;
+// the comment-check workflows repeat this list, so change both.
 var KnownBots = []string{"github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"}
 
 // skipReason says why comment-check leaves t alone, or "" to judge it: a
