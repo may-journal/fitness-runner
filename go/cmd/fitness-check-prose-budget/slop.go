@@ -20,6 +20,7 @@ const (
 	ruleDecoration   = "decoration"
 	ruleNarration    = "change-narration"
 	ruleHedging      = "hedging"
+	ruleTutorial     = "tutorial-tone"
 )
 
 // maxRestateWords is the most words a comment may hold for `restates-code` to judge it.
@@ -41,6 +42,9 @@ var slopRules = []slopRule{
 	}},
 	{ruleHedging, "drop the word or state the fact", func(_ comments.Block, prose string) string {
 		return matched(hedge, prose, "hedges")
+	}},
+	{ruleTutorial, "state the rule plainly", func(_ comments.Block, prose string) string {
+		return tutorial(prose)
 	}},
 }
 
@@ -90,6 +94,17 @@ var narration = regexp.MustCompile(`(?i)\b(previously|we changed|(it|this|that|w
 
 // hedge matches filler that softens a statement without adding a fact.
 var hedge = regexp.MustCompile(`(?i:\b(basically|simply|essentially|obviously|actually)\b)|\bI think\b`)
+
+// lesson matches a sentence that opens by walking a reader through code, such as `Note that` or `Let's`.
+var lesson = regexp.MustCompile(`(?im)(?:^|[.!?:;]\s+)(note that|let['’]s|as you can see|first,? we)\b`)
+
+// tutorial quotes the lesson opener that starts a sentence of prose, or returns "".
+func tutorial(prose string) string {
+	if m := lesson.FindStringSubmatch(prose); m != nil {
+		return fmt.Sprintf("%q opens a sentence like a tutorial", m[1])
+	}
+	return ""
+}
 
 // banner matches a run of five or more of one decoration character.
 var banner = regexp.MustCompile(`={5,}|-{5,}|\*{5,}|#{5,}`)
