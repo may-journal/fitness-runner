@@ -38,6 +38,9 @@ func Test0021_2(t *testing.T) {
 	if strings.Contains(out, "Unknown word ("+cspellRepoWord+")") {
 		t.Errorf("the repo's own word must be accepted:\n%s", out)
 	}
+	if strings.Contains(out, "Unknown word (jasonvanderslice)") || strings.Contains(out, "Unknown word (Vanderbot)") {
+		t.Errorf("the owner and agent names must be accepted:\n%s", out)
+	}
 }
 
 func Test0021_5(t *testing.T) {

@@ -21,7 +21,7 @@ checked files
 - 0021.2
     - Given Developer has a repo `cspell.json` beside an installed shared one
         - When cspell runs
-            - Then only the repo's words are accepted, and the owner and agent names
+            - Then only the repo's words are accepted, plus the owner and agent names built into fitness
 - 0021.5
     - Given Developer has a `cspell.json` that sets `ignorePaths`
         - When cspell runs
