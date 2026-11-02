@@ -176,7 +176,7 @@ func compareCallouts(file string, diagram *mermaid.DiagramBlock, table *mermaid.
 
 // validateDoc checks the 1-1 callout rule: each diagram's callouts match its callout table, and connector callouts are doubling letters.
 func validateDoc(file, content string) []string {
-	result := mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content))
+	result := mermaid.PairDiagramsWithTables(mermaid.ParseFile(file, content))
 	var errors []string
 	for _, table := range result.OrphanTables {
 		errors = append(errors, fmt.Sprintf(

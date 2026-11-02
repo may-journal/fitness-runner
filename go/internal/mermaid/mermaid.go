@@ -3,7 +3,9 @@
 package mermaid
 
 import (
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -11,8 +13,27 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
+
+// DiagramExts are the endings of a file that is one mermaid diagram.
+var DiagramExts = []string{".mmd", ".mermaid"}
+
+// DocExts are the endings of every file that can hold a mermaid diagram: each
+// Markdown ending and the diagram files.
+var DocExts = append(append([]string{}, mdx.Exts...), DiagramExts...)
+
+// IsDiagramFile reports whether rel is a whole-file diagram.
+func IsDiagramFile(rel string) bool {
+	ext := strings.ToLower(path.Ext(rel))
+	for _, e := range DiagramExts {
+		if ext == e {
+			return true
+		}
+	}
+	return false
+}
 
 // Kind discriminates the two DocBlock implementations — the port of the
 // TypeScript DIAGRAM_KIND/TABLE_KIND literals.
@@ -36,7 +57,8 @@ type DocBlock interface {
 type DiagramBlock struct {
 	// Body is the raw mermaid source, fences stripped.
 	Body string
-	// Line is the 1-based line of the opening fence.
+	// Line is the 1-based line of the opening fence, or 0 when the whole
+	// file is the diagram.
 	Line int
 	// Numbers are the node callout numbers referenced, in document order
 	// (may contain duplicates).
@@ -54,6 +76,15 @@ type DiagramBlock struct {
 
 // Kind reports DiagramKind.
 func (*DiagramBlock) Kind() Kind { return DiagramKind }
+
+// At names the opening fence for an error, as " (diagram at line N)".
+// A whole-file diagram gets nothing, since its lines are the file's.
+func (b *DiagramBlock) At() string {
+	if b.Line == 0 {
+		return ""
+	}
+	return fmt.Sprintf(" (diagram at line %d)", b.Line)
+}
 
 // HasCallouts reports whether the diagram has a node or connector callout,
 // ignoring labels that break the doubling, such as the prose word OK.
@@ -495,10 +526,22 @@ func isTableStart(lines []string, i int) bool {
 	return strings.Contains(lines[i], "|") && i+1 < len(lines) && tableSeparator.MatchString(lines[i+1])
 }
 
+// ParseFile parses the file at rel. A diagram file is one diagram whose
+// body is the whole file; any other file is a markdown document.
+func ParseFile(rel, content string) []DocBlock {
+	if !IsDiagramFile(rel) {
+		return ParseDoc(content)
+	}
+	block := &DiagramBlock{Body: content}
+	block.sort(ExtractCallouts(content))
+	return []DocBlock{block}
+}
+
 // ParseDoc parses a markdown document into ordered mermaid diagrams and
-// numbered callout tables. Non-callout tables and prose are ignored.
+// numbered callout tables, quoted ones included. Non-callout tables and
+// prose are ignored.
 func ParseDoc(content string) []DocBlock {
-	lines := strings.Split(content, "\n")
+	lines := strings.Split(mdx.Unquote(content), "\n")
 	var blocks []DocBlock
 	i := 0
 	for i < len(lines) {
@@ -579,16 +622,16 @@ func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) 
 	return nil
 }
 
-// RunDocCheck runs a validator over each in-scope .md file under root holding
-// a diagram or callout table, aborting on a read error.
+// RunDocCheck runs a validator over each in-scope Markdown or diagram file
+// under root that holds a block, aborting on a read error.
 func RunDocCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, DocExts...)) {
 		raw, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if readErr != nil {
 			return nil, 0, readErr
 		}
 		content := string(raw)
-		if len(ParseDoc(content)) == 0 {
+		if len(ParseFile(file, content)) == 0 {
 			continue
 		}
 		filesChecked++

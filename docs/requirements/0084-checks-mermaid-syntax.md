@@ -16,10 +16,6 @@ mermaid diagrams
     - Given Developer has valid flowcharts, graphs, sequence diagrams, and other types, with inline edge labels, description blocks, and shapes that leave brackets unpaired
         - When mermaid-syntax checks the doc
             - Then it passes
-- 0084.2
-    - Given Developer has a flowchart node label with unquoted brackets
-        - When mermaid-syntax checks the doc
-            - Then it fails naming the node and its line
 - 0084.3
     - Given Developer has a flowchart with an edge missing its target and an unclosed subgraph
         - When mermaid-syntax checks the doc
@@ -44,3 +40,7 @@ mermaid diagrams
     - Given Developer has docs with no mermaid diagrams
         - When mermaid-syntax runs
             - Then it passes having checked no files
+- 0084.9
+    - Given Developer has a label with unquoted brackets in a doc, in a quote, in a `.markdown` doc and in a `.mmd` file
+        - When mermaid-syntax checks the repo
+            - Then it fails naming each node and its line

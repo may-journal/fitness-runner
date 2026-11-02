@@ -85,7 +85,7 @@ func whyColumnIndex(header []string) int {
 // markdown document.
 func validateDoc(file, content string) []string {
 	var errors []string
-	for _, block := range mermaid.ParseDoc(content) {
+	for _, block := range mermaid.ParseFile(file, content) {
 		if table, ok := block.(*mermaid.CalloutTableBlock); ok {
 			errors = append(errors, whyErrorsForTable(file, table)...)
 		}

@@ -6,7 +6,7 @@
 //
 // # Behavior
 //
-// For each `.md` file, diagrams (fenced `mermaid` blocks) are paired with the
+// For each Markdown file, diagrams (fenced `mermaid` blocks) are paired with the
 // callout table that follows them. That table is a GFM table whose first
 // header cell is `#`, `No`, `Callout`, or `Ref`.
 //
@@ -62,7 +62,7 @@
 //
 // # Scope
 //
-// Runs on every `.md` file that contains a diagram or callout table. Files
+// Runs on every Markdown file that contains a diagram or callout table. Files
 // with neither are skipped and don't count toward `filesChecked`.
 //
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28

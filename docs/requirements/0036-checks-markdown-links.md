@@ -40,3 +40,7 @@ relative links checked
     - Given Developer has a percent-encoded link to a file with a space in its name
         - When markdown-links checks the repo
             - Then it passes
+- 0036.8
+    - Given Developer has a `.markdown` doc and an `.mdx` doc each linking to a missing file
+        - When markdown-links checks the repo
+            - Then it fails naming both files, since every Markdown ending is a doc

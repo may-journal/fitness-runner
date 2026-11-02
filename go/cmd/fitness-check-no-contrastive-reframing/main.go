@@ -19,7 +19,7 @@ func Main() {
 // run judges every in-scope markdown file, then each comment block the run
 // judges.
 func run(root string, _ []string) (checkkit.Result, error) {
-	return comments.Judge(walkfs.ScanFiles(root, []string{".md"}, fileErrors), root, fileErrors), nil
+	return comments.Judge(walkfs.ScanFiles(root, mdx.Exts, fileErrors), root, fileErrors), nil
 }
 
 var (

@@ -47,7 +47,7 @@ Only the basename is validated, so directory casing is ignored — `SomeDir/api-
 
 ## Behavior
 
-- Discovers every tracked `.md` file; no directory is skipped.
+- Discovers every tracked Markdown file; no directory is skipped.
 - Pass: every basename is a standard root doc, a name GitHub requires, or matches the enabled flavor's convention.
 - Fail: `path: filename must be <kebab-case|camelCase>` per non-conforming file.
-- `filesChecked` counts every `.md` file scanned.
+- `filesChecked` counts every Markdown file scanned.

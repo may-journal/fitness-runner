@@ -6,7 +6,7 @@ Requires every mermaid diagram with callouts to have a callout table whose callo
 
 ## Behavior
 
-For each `.md` file, diagrams (fenced `mermaid` blocks) are paired with the callout table that follows them. That table is a GFM table whose first header cell is `#`, `No`, `Callout`, or `Ref`.
+For each Markdown file, diagrams (fenced `mermaid` blocks) are paired with the callout table that follows them. That table is a GFM table whose first header cell is `#`, `No`, `Callout`, or `Ref`.
 
 Nodes carry number callouts and connectors carry letter callouts, so a reader tells them apart at a glance ([#583](https://github.com/may-journal/fitness-runner/issues/583)). Letters run `A` to `Z`, then double: `AA`, `BB`, up to `ZZ`, then `AAA`. The table's `#` column holds the same letters for connector rows.
 
@@ -47,4 +47,4 @@ A skipped diagram still fails, so fix it by hand.
 
 ## Scope
 
-Runs on every `.md` file that contains a diagram or callout table. Files with neither are skipped and don't count toward `filesChecked`.
+Runs on every Markdown file that contains a diagram or callout table. Files with neither are skipped and don't count toward `filesChecked`.

@@ -111,6 +111,8 @@ A scope, declared in the check's `checkkit.Describe`, says what it reads: `files
 
 Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and duplicate-code also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.
 
+A Markdown check reads every ending GitHub renders as Markdown, plus MDX, as [mdx.Exts](../go/internal/mdx/mdx.go) lists them. The mermaid checks also read `.mmd` and `.mermaid` files as one diagram each, and a fence inside a blockquote, since GitHub renders it.
+
 ## Front matter
 
 A Markdown file needs no front matter. Never add `fitnessFunctions` or `relatedConfigurations`: no check reads them, and each check finds its files by path. `fitness strip-front-matter` deletes both keys where they remain, as the [strip-front-matter skill](../skills/strip-front-matter/SKILL.md) shows. Front matter another tool reads, such as an issue template's `name` and `labels`, stays.

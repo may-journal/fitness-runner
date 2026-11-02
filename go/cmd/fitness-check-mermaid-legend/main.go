@@ -171,7 +171,7 @@ func legendErrorsForDiagram(file string, block *mermaid.DiagramBlock) []string {
 // validateDoc flags numbered callout nodes without a style class and diagrams with callouts but no classDef legend.
 func validateDoc(file, content string) []string {
 	var errors []string
-	for _, block := range mermaid.ParseDoc(content) {
+	for _, block := range mermaid.ParseFile(file, content) {
 		if diagram, ok := block.(*mermaid.DiagramBlock); ok {
 			errors = append(errors, legendErrorsForDiagram(file, diagram)...)
 		}

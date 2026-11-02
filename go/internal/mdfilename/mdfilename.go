@@ -12,6 +12,7 @@ import (
 	"regexp"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -106,7 +107,7 @@ func leaning(base string) string {
 // Run judges in-scope .md files under root by c only when c is the convention
 // detected from the whole repo.
 func Run(root string, c Convention) checkkit.Result {
-	all := walkfs.FilesByExt(root, ".md")
+	all := walkfs.FilesByExt(root, mdx.Exts...)
 	if Detect(all).Label != c.Label {
 		return checkkit.Pass(0)
 	}

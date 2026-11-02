@@ -11,6 +11,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/architecture/templates"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -28,7 +29,7 @@ type doc struct {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	docs, err := readAll(root, walkfs.FilesByExt(root, ".md"))
+	docs, err := readAll(root, walkfs.FilesByExt(root, mdx.Exts...))
 	if err != nil {
 		return checkkit.Result{}, err
 	}

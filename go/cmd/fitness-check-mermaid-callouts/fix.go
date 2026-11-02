@@ -44,7 +44,7 @@ func fixDocs(root string, args []string) ([]string, error) {
 	}
 	var notes []string
 	changed := 0
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, mermaid.DocExts...)) {
 		fileNotes, wrote, err := fixFile(root, file)
 		if err != nil {
 			return nil, err
@@ -80,7 +80,7 @@ func convertDoc(file, content string) (string, []conversion, []string) {
 	var edits []edit
 	var conversions []conversion
 	var notes []string
-	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content)).Pairs {
+	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseFile(file, content)).Pairs {
 		pairEdits, pairConversions, skipped := convertPair(lines, starts, pair)
 		edits = append(edits, pairEdits...)
 		conversions = append(conversions, pairConversions...)

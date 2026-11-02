@@ -9,6 +9,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 )
 
@@ -67,8 +68,8 @@ var captionLine = regexp.MustCompile(`(?i)^numbers\b.*\bmatch the callout table\
 // between a numbered diagram (or its trailing legend block) and its callout
 // table. Prose before the diagram and after the table is left alone.
 func validateDoc(file, content string) []string {
-	lines := strings.Split(content, "\n")
-	blocks := mermaid.ParseDoc(content)
+	lines := strings.Split(mdx.Unquote(content), "\n")
+	blocks := mermaid.ParseFile(file, content)
 	paired := pairedTables(blocks)
 	var errors []string
 	for i := range blocks {

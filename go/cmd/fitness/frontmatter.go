@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/frontmatter"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -35,7 +36,7 @@ func runStripFrontMatter(args []string) int {
 // changed.
 func stripAll(root string) (int, error) {
 	stripped := 0
-	for _, rel := range walkfs.FilesByExt(root, ".md") {
+	for _, rel := range walkfs.FilesByExt(root, mdx.Exts...) {
 		changed, err := stripFile(root, rel)
 		if err != nil {
 			return stripped, err

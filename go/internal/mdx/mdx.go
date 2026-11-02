@@ -1,11 +1,46 @@
+// cspell:ignore mkdn mdwn
+
 // Package mdx holds the markdown parsing primitives the markdown and mermaid
 // checks share, mirroring the TypeScript helpers they were ported from.
 package mdx
 
 import (
+	"path"
 	"regexp"
 	"strings"
 )
+
+// Exts are the file endings GitHub renders as Markdown, plus MDX, so a check
+// about Markdown reads every document and not only `.md`.
+var Exts = []string{".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn", ".mdx"}
+
+// IsMarkdown reports whether rel has one of Exts, in any letter case.
+func IsMarkdown(rel string) bool {
+	ext := strings.ToLower(path.Ext(rel))
+	for _, e := range Exts {
+		if ext == e {
+			return true
+		}
+	}
+	return false
+}
+
+// quoteMarkers matches the blockquote markers that open a line: each `>`
+// with the spaces around it.
+var quoteMarkers = regexp.MustCompile(`^[ \t]*(>[ \t]?)+`)
+
+// Unquote returns content with each line's leading blockquote markers turned
+// to spaces, byte for byte. A fence or table inside a quote then parses as
+// the reader sees it, and every offset still points into the original text.
+func Unquote(content string) string {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		if loc := quoteMarkers.FindStringIndex(line); loc != nil {
+			lines[i] = strings.ReplaceAll(line[:loc[1]], ">", " ") + line[loc[1]:]
+		}
+	}
+	return strings.Join(lines, "\n")
+}
 
 // FrontMatter returns the YAML front matter body (the lines between the
 // leading "---" fence pair) and whether the document has one. The opening

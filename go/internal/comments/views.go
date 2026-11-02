@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"sync"
 
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
@@ -81,11 +81,11 @@ func ShareViews(root string, files []string) Shared {
 // reader covers gets none, as it is its own code view.
 func buildViews(root, rel string) built {
 	info, data, ok := readViewed(root, rel)
-	if !ok || path.Ext(rel) != ".md" && Lang(rel, data) == "" {
+	if !ok || !mdx.IsMarkdown(rel) && Lang(rel, data) == "" {
 		return built{}
 	}
 	b := built{rel: rel, info: info, code: CodeView(rel, data)}
-	if path.Ext(rel) != ".md" {
+	if !mdx.IsMarkdown(rel) {
 		blocks := Source(rel, data)
 		placeSource(blocks, data)
 		b.comments, _ = json.Marshal(blocks)
@@ -96,7 +96,7 @@ func buildViews(root, rel string) built {
 // readViewed reads the regular file at rel when its views differ from its
 // text: Markdown, or a file a comment reader covers.
 func readViewed(root, rel string) (fs.FileInfo, []byte, bool) {
-	if path.Ext(rel) != ".md" && !covered(rel) {
+	if !mdx.IsMarkdown(rel) && !covered(rel) {
 		return nil, nil, false
 	}
 	src := filepath.Join(root, filepath.FromSlash(rel))

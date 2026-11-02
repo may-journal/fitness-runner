@@ -2,7 +2,7 @@
 
 # text-readability
 
-Fails a markdown file whose prose scores as hard to read. It is a document-level readability smoke detector. Each `.md` file is scored with three character-based formulas — Coleman-Liau, ARI, and LIX. A file fails only when at least two of the three sit in alarm territory.
+Fails a markdown file whose prose scores as hard to read. It is a document-level readability smoke detector. Each Markdown file is scored with three character-based formulas — Coleman-Liau, ARI, and LIX. A file fails only when at least two of the three sit in alarm territory.
 
 The bands, the ensemble vote, and the masking rules come from this repo's own corpus in [docs/research/0001-prose-cognitive-complexity.md](../../../docs/research/0001-prose-cognitive-complexity.md). Well-written technical prose here runs grade 11-15 and LIX 40-48. The alarms fire on genuine outliers — a 60-word run-on, notation masquerading as prose — never on ordinary dense prose.
 
