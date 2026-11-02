@@ -36,11 +36,18 @@ var identifier = regexp.MustCompile(`^(\w+(\.\w+)+|\w*[a-z][A-Z]\w*|\w+_\w+)$`)
 // quoted is a one-line double-quoted literal, whose stops end no sentence.
 var quoted = regexp.MustCompile(`"[^"\n]*"`)
 
+// lone is a whole paragraph of one quoted literal, curly or straight, or one inline, reference or auto link.
+var lone = regexp.MustCompile(`^(?:` + quoted.String() + `|“[^”\n]*”|\[[^\]]*\]\([^)]*\)|\[[^\]]+\]\[[^\]]*\]|<https?://[^>\s]+>)$`)
+
 // codeName is a code span holding one name, such as `New`.
 var codeName = regexp.MustCompile("`([\\w.]+)`")
 
 // statements splits a comment paragraph into sentences, unmasking code names and dropping literals and lone stops.
+// A paragraph of one link or one quote holds no sentence, so it yields none.
 func statements(text string) []string {
+	if lone.MatchString(strings.TrimRight(strings.TrimSpace(text), ".!?")) {
+		return nil
+	}
 	text = quoted.ReplaceAllString(codeName.ReplaceAllString(text, "$1"), "quote")
 	var words []string
 	for _, w := range strings.Fields(text) {

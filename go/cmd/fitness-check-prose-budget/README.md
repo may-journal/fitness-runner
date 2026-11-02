@@ -40,6 +40,7 @@ Two more rules keep every comment terse:
 
 - `comment-fragment` fails a sentence that starts with So, And, But, Then, Also, Thus, Hence, Because, Which or Plus.
 - `comment-fragment` fails a sentence of three words or fewer, but a doc heading, identifier-led doc line or colon lead-in passes.
+- `comment-fragment` passes a paragraph that is only one Markdown link or one quoted literal, since it holds no sentence.
 - `comment-one-statement` fails a comment of more than two sentences, doc comments included; only a Go package comment keeps the paragraph limits.
 
 ## Comment slop
