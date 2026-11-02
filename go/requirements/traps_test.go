@@ -208,18 +208,22 @@ func rowTime(line string) string {
 	return took[1] + " ms"
 }
 
-// productCommit commits, after fixingCommit, an edited comment in the store's
-// product file with its test, doc and changelog entry.
+// productCommit commits, after fixingCommit, the productEdit files.
 func productCommit(t *testing.T, repo string) (string, int, int64) {
 	t.Helper()
+	return timedCommit(t, repo, installerEnv(t), productEdit(), "fix(store): say the store keeps saved records")
+}
+
+// productEdit is an edited comment in the store's product file with its test,
+// doc and changelog entry.
+func productEdit() map[string]string {
 	store := architectedRepo()["src/store/store.go"]
-	edit := map[string]string{
+	return map[string]string{
 		"src/store/store.go":      strings.Replace(store, "keeps records.", "keeps saved records.", 1),
 		"src/store/store_test.go": edited(testFile("store", "Test0001_1")),
 		acDoc:                     strings.Replace(acDocWith("User opens the app"), "I open the app.", "I open the app and see saved records.", 1),
 		"changelog/2026-10-26-1300-store-comment.md": bareEntryText("2026.10.26.1300", "Fix: the store comment says it keeps saved records."),
 	}
-	return timedCommit(t, repo, installerEnv(t), edit, "fix(store): say the store keeps saved records")
 }
 
 // staleTest is architectedRepo with a store test named for no acceptance, so the

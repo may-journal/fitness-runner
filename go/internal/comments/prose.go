@@ -52,17 +52,31 @@ func Judged(root string) ([]Block, error) {
 }
 
 // onChangedLines keeps the blocks that touch a line changed since the
-// run's base. With no base, as in a first commit, every line is new.
+// run's base, asking git nothing when no block is left. With no base, as in a first commit, every line is new.
 func onChangedLines(root string, blocks []Block) ([]Block, error) {
+	if len(blocks) == 0 {
+		return blocks, nil
+	}
 	base := gitx.ScopeBase(root)
 	if base == "" {
 		return blocks, nil
 	}
-	changed, err := gitx.Repo(root).ChangedLines(base)
+	changed, err := gitx.Repo(root).ChangedLines(base, paths(blocks)...)
 	if err != nil {
 		return nil, err
 	}
 	return slices.DeleteFunc(blocks, func(b Block) bool { return !touches(changed[b.Path], b) }), nil
+}
+
+// paths lists the files blocks come from, once each.
+func paths(blocks []Block) []string {
+	var out []string
+	for _, b := range blocks {
+		if len(out) == 0 || out[len(out)-1] != b.Path {
+			out = append(out, b.Path)
+		}
+	}
+	return out
 }
 
 // touches reports a run of changed lines inside block b.

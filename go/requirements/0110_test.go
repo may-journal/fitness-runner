@@ -2,8 +2,12 @@ package requirements
 
 import (
 	"encoding/json"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 // listedCheck is one check as `fitness list --json` gives it.
@@ -100,4 +104,35 @@ func Test0110_4(t *testing.T) {
 	if row := listRow(out, "house-rule"); !strings.Contains(row, "(--describe gave no metadata") {
 		t.Errorf("fitness list shows the broken local check as %q, want a note saying why", row)
 	}
+}
+
+func Test0110_5(t *testing.T) {
+	t.Parallel()
+	out, code := runnerGoneAtBuild(t)
+	sees(t, out, code, 0, "fitness: building fitness/go-rule with go", "Lists Go files that gofmt would change.")
+	if fields := strings.Fields(listRow(out, "gofmt")); len(fields) < 2 || fields[1] != "files" {
+		t.Errorf("fitness list shows gofmt as %q, want the files scope its metadata declares", listRow(out, "gofmt"))
+	}
+	if strings.Contains(out, "--describe gave no metadata") {
+		t.Errorf("built-in checks must list their metadata without starting a process, got:\n%s", out)
+	}
+}
+
+// runnerGoneAtBuild runs `fitness list` from a bundle in a repo with a Go check.
+// Its build, before any handshake, runs a go that removes the bundle's runner.
+func runnerGoneAtBuild(t *testing.T) (string, int) {
+	t.Helper()
+	installed := installOnly(t)
+	bundle, tools := t.TempDir(), t.TempDir()
+	runner := filepath.Join(bundle, "fitness")
+	placeRunner(t, filepath.Join(installed, "fitness"), runner)
+	real, err := exec.LookPath("go")
+	mustDo(t, err)
+	write(t, tools, map[string]string{"go": "#!/bin/sh\nrm -f \"" + runner + "\"\nexec \"" + real + "\" \"$@\"\n"})
+	repo := example(t, "happyRepo", goCheck(t, "go-rule", t.Name()+time.Now().String()))
+	return execute(t, func() *exec.Cmd {
+		cmd := exec.Command(runner, "list")
+		cmd.Dir, cmd.Env = repo, append(userEnv(), "PATH="+tools+string(os.PathListSeparator)+os.Getenv("PATH"))
+		return cmd
+	})
 }

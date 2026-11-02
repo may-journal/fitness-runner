@@ -28,3 +28,7 @@ checks in the catalog
     - Given AI agent has a repo with a local check whose describe handshake fails
         - When it runs `fitness list`
             - Then that check shows with a note saying why, and every other check still shows
+- 0110.5
+    - Given AI agent has a repo whose own Go check build removes the runner's file
+        - When it runs `fitness list`
+            - Then every built-in check still shows its summary and scope, read without starting it

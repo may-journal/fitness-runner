@@ -2,6 +2,7 @@ package gitx
 
 import (
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -14,15 +15,44 @@ type Lines struct{ From, To int }
 var hunkHeader = regexp.MustCompile(`^@@ -\S+ \+(\d+)(?:,(\d+))? @@`)
 
 // ChangedLines maps each file the work tree changes since rev to the lines it
-// adds or rewrites, numbered as in the work tree. A moved file counts only the
-// lines its move edits.
-func (r Repo) ChangedLines(rev string) (map[string][]Lines, error) {
-	out, err := r.run("diff", "-U0", "-M", "--no-color", "--no-ext-diff",
-		"--src-prefix=a/", "--dst-prefix=b/", rev)
+// adds or rewrites, numbered as in the work tree. It covers the files in only, or
+// every file when only is empty, and a moved file counts only its edits.
+func (r Repo) ChangedLines(rev string, only ...string) (map[string][]Lines, error) {
+	args := []string{"diff", "-U0", "-M", "--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/", rev}
+	if r.allAt(rev, only) {
+		args = append(append(args, "--"), literal(only)...)
+	}
+	out, err := r.run(args...)
 	if err != nil {
 		return nil, err
 	}
 	return parseHunks(out), nil
+}
+
+// maxPaths caps the paths one diff names, keeping the command line short.
+const maxPaths = 500
+
+// allAt reports whether rev holds every file in only, so none is a move's target.
+// A diff naming just those files then finds the same lines and stats no other file.
+func (r Repo) allAt(rev string, only []string) bool {
+	if len(only) == 0 || len(only) > maxPaths {
+		return false
+	}
+	out, err := r.run(append([]string{"ls-tree", "-r", "-z", "--name-only", rev, "--"}, literal(only)...)...)
+	if err != nil {
+		return false
+	}
+	held := strings.Split(out, "\x00")
+	return !slices.ContainsFunc(only, func(f string) bool { return !slices.Contains(held, f) })
+}
+
+// literal marks each path so git reads none of its characters as a pattern.
+func literal(paths []string) []string {
+	out := make([]string, len(paths))
+	for i, p := range paths {
+		out[i] = ":(literal)" + p
+	}
+	return out
 }
 
 // parseHunks reads the new side of each hunk in a `git diff -U0` patch.

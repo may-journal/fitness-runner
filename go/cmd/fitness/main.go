@@ -642,8 +642,8 @@ func resolveSingle(spec string) ([]resolved, error) {
 // errNotInstalled marks a name with no check binary beside the runner.
 var errNotInstalled = errors.New("Check binary not installed")
 
-// resolveList resolves each name in order, finding every binary first and then
-// running the --describe handshakes side by side. A compiled check whose handshake overran gets a retry.
+// resolveList resolves each name in order through describeAll, finding every
+// binary first. A compiled check whose handshake overran gets a retry.
 func resolveList(names []string) ([]resolved, error) {
 	prebuild(names)
 	progs := make([]checkkit.Program, len(names))
@@ -654,9 +654,7 @@ func resolveList(names []string) ([]resolved, error) {
 		}
 		progs[i] = prog
 	}
-	checks := par.Map(len(names), par.Processes(), func(i int) resolved {
-		return describeCheck(names[i], progs[i])
-	})
+	checks := describeAll(names, progs)
 	if len(checks) > 1 {
 		retryOverran(checks)
 	}
@@ -697,6 +695,42 @@ func isScript(bin string) bool {
 func describeCheck(name string, prog checkkit.Program) resolved {
 	desc, describeErr, overran := describe(prog)
 	return asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
+}
+
+// describeAll resolves each named program: a built-in check in this process,
+// and every other through its --describe handshake, side by side.
+func describeAll(names []string, progs []checkkit.Program) []resolved {
+	checks := make([]resolved, len(names))
+	var spawned []int
+	for i, name := range names {
+		if c, ok := describeBuiltin(name, progs[i]); ok {
+			checks[i] = c
+			continue
+		}
+		spawned = append(spawned, i)
+	}
+	described := par.Map(len(spawned), par.Processes(), func(k int) resolved {
+		return describeCheck(names[spawned[k]], progs[spawned[k]])
+	})
+	for k, i := range spawned {
+		checks[i] = described[k]
+	}
+	return checks
+}
+
+// describeBuiltin reads a built-in check's metadata in this process, since
+// this executable holds the check. ok is false for any other program.
+func describeBuiltin(name string, prog checkkit.Program) (resolved, bool) {
+	main, builtin := builtins[name]
+	if !builtin || prog.Name != checkkit.BinPrefix+name {
+		return resolved{}, false
+	}
+	desc, ok := checkkit.DescribeOf(main)
+	if !ok {
+		return resolved{}, false
+	}
+	desc.Summary = cmp.Or(desc.Summary, builtinSummaries[name])
+	return resolved{name: name, prog: prog, desc: desc}, true
 }
 
 // describe asks a check binary for its metadata, returning the zero value and
