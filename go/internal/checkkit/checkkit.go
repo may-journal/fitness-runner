@@ -211,9 +211,26 @@ func Document(summary string) {
 	documented = summary
 }
 
+// describing, while DescribeOf runs, takes the Describe that Main receives
+// so the runner reads a built-in check's metadata without starting it.
+var describing func(Describe)
+
+// DescribeOf returns the Describe main hands Main without running the
+// check, or ok false when main never reached Main. Calls must not overlap.
+func DescribeOf(main func()) (d Describe, ok bool) {
+	describing = func(got Describe) { d, ok = got, true }
+	defer func() { describing = nil }()
+	main()
+	return d, ok
+}
+
 // Main is the entry point every check binary delegates to: it parses
 // --root/--describe, runs the check, and emits the protocol JSON.
 func Main(c Check) {
+	if describing != nil {
+		describing(c.Describe)
+		return
+	}
 	shareCPUs()
 	os.Exit(runMain(c, os.Args[1:], os.Stdout))
 }
