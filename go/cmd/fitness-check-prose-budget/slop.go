@@ -101,14 +101,18 @@ var narration = regexp.MustCompile(`(?i)\b(previously|we changed|(it|this|that|w
 var hedge = regexp.MustCompile(`(?i:\b(basically|simply|essentially|obviously|actually)\b)|\bI think\b`)
 
 // lesson matches a sentence that opens by walking a reader through code, such as `Note that` or `Let's`.
-var lesson = regexp.MustCompile(`(?im)(?:^|[.!?:;]\s+)(note that|let['’]s|as you can see|first,? we)\b`)
+var lesson = regexp.MustCompile(`(?im)(?:^|[.!?]\s+)(note that|let['’]s|as you can see|first we)\b`)
 
-// tutorial quotes the lesson opener that starts a sentence of prose, or returns "".
+// tutorial quotes each lesson opener that starts a sentence of prose, or returns "".
 func tutorial(prose string) string {
-	if m := lesson.FindStringSubmatch(prose); m != nil {
-		return fmt.Sprintf("%q opens a sentence like a tutorial", m[1])
+	var found []string
+	for _, m := range lesson.FindAllStringSubmatch(prose, -1) {
+		found = append(found, fmt.Sprintf("%q", m[1]))
 	}
-	return ""
+	if len(found) == 0 {
+		return ""
+	}
+	return strings.Join(found, ", ") + " opens a sentence like a tutorial"
 }
 
 // banner matches a run of five or more of one decoration character.

@@ -17,6 +17,6 @@ Comment blocks judged
         - When prose-budget checks the repo
             - Then it fails each as `tutorial-tone` and says to state the rule plainly
 - 0141.2
-    - Given Developer has comments holding "a note that", "lets", or a quoted "Let's go", and a Markdown file saying "Note that"
+    - Given Developer has comments with "a note that", "lets", "; note that" or a quoted "Let's go", and a Markdown file with "Note that"
         - When prose-budget checks the repo
             - Then it passes

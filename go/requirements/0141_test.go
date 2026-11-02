@@ -18,7 +18,7 @@ func Test0141_1(t *testing.T) {
 func Test0141_2(t *testing.T) {
 	t.Parallel()
 	files := inComments("Writes a note that names the cache.")
-	files["app/plan.go"] = "package main\n\n// Lets the caller retry once on a miss.\nfunc plan() {}\n"
+	files["app/plan.go"] = "package main\n\n// Lets the caller retry once on a miss; note that empty keys fail.\nfunc plan() {}\n"
 	files["app/greet.ts"] = "export {};\n\n// Prints \"Let's go\" when the run starts.\nexport const greet = 1;\n"
 	files["README.md"] = readme + "\nNote that it works. Let's see.\n"
 	out, code := proseBudget(t, files)
