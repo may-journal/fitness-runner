@@ -18,17 +18,18 @@ func noEslintDisableCheck(t *testing.T, files map[string]string) (string, int) {
 const noEslintDisableNext = "// eslint-disable-next-line no-console\n"
 
 // noEslintDisableExts are the extensions the check scans.
-var noEslintDisableExts = []string{".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx"}
+var noEslintDisableExts = []string{".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".jsx", ".tsx"}
 
-func Test0045_1(t *testing.T) {
+func Test0045_9(t *testing.T) {
 	t.Parallel()
 	legacy := "export const x = 1;\n" + noEslintDisableNext + "console.log(x);\n" +
 		"const y = 2; // eslint-disable-line\n/* eslint-disable */\n"
-	out, code := noEslintDisableCheck(t, map[string]string{"src/legacy.ts": legacy})
+	out, code := noEslintDisableCheck(t, map[string]string{"src/legacy.ts": legacy, "src/view.jsx": "export const v = <p />;\n/* eslint-disable */\n"})
 	sees(t, out, code, 1,
 		"src/legacy.ts:2: eslint-disable-next-line",
 		"src/legacy.ts:4: eslint-disable-line",
-		"src/legacy.ts:5: eslint-disable")
+		"src/legacy.ts:5: eslint-disable",
+		"src/view.jsx:2: eslint-disable")
 }
 
 func Test0045_2(t *testing.T) {
@@ -49,7 +50,7 @@ func Test0045_3(t *testing.T) {
 		want = append(want, "src/f"+ext+":1: eslint-disable-next-line")
 	}
 	out, code := noEslintDisableCheck(t, files)
-	sees(t, out, code, 1, append(want, "7 files scanned")...)
+	sees(t, out, code, 1, append(want, "8 files scanned")...)
 }
 
 func Test0045_4(t *testing.T) {

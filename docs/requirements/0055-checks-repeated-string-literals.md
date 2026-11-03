@@ -12,10 +12,6 @@ values used three or more times in source
 
 ## Requirements
 
-- 0055.1
-    - Given Developer has a string used three times across source files
-        - When fitness runs repeated-string-literals
-            - Then it fails naming the value, its count, and each location
 - 0055.2
     - Given Developer has a string used only twice
         - When fitness runs repeated-string-literals
@@ -44,3 +40,7 @@ values used three or more times in source
     - Given Developer has a repeated value listed in `repeatedStringLiterals.allow`
         - When fitness runs repeated-string-literals
             - Then it passes
+- 0055.9
+    - Given Developer has a string used three times across source files, one of them `.jsx`
+        - When fitness runs repeated-string-literals
+            - Then it fails naming the value, its count, and each location

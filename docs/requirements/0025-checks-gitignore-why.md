@@ -36,3 +36,7 @@ I know why every file is ignored, because each `.gitignore` pattern carries its 
     - Given Developer has a repo with no `.gitignore`
         - When gitignore-why runs
             - Then it passes with 0 files checked
+- 0025.7
+    - Given Developer has a nested `.gitignore` with a pattern and no comment above it
+        - When gitignore-why runs
+            - Then it fails naming that file, the line and the pattern

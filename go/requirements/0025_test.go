@@ -49,3 +49,14 @@ func Test0025_6(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWithNoFiles(t, out, "gitignore-why")
 }
+
+func Test0025_7(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{
+		".gitignore":        "# dependencies\nnode_modules/\n",
+		"app/.gitignore":    "# build output\ndist\ncoverage/\n",
+		"app/.gitignore.md": "coverage/\n",
+	})
+	out, code := fitness(t, repo, nil, "gitignore-why")
+	sees(t, out, code, 1, `app/.gitignore:3: pattern "coverage/" `+gitignoreWhyNoComment)
+}

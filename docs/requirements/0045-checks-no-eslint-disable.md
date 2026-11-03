@@ -12,10 +12,6 @@ source files checked
 
 ## Requirements
 
-- 0045.1
-    - Given Developer has a source file with file, line, and next-line disable directives
-        - When no-eslint-disable checks the repo
-            - Then it fails listing each file, line, and directive
 - 0045.2
     - Given Developer has source files with no disable directive
         - When no-eslint-disable checks the repo
@@ -44,3 +40,7 @@ source files checked
     - Given Developer has a committed directive and a clean staged file
         - When no-eslint-disable runs without `--all`
             - Then it passes judging only the staged file
+- 0045.9
+    - Given Developer has a `.ts` file and a `.jsx` file with file, line, and next-line disable directives
+        - When no-eslint-disable checks the repo
+            - Then it fails listing each file, line, and directive

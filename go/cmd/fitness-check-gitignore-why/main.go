@@ -3,10 +3,12 @@ package check
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // noComment is the violation message tail, verbatim from the TS enUS catalog.
@@ -19,19 +21,33 @@ func Main() {
 	})
 }
 
+// run judges every tracked `.gitignore`, in any folder, since git reads each
+// one; a repo with none passes with no file checked.
 func run(root string, _ []string) (checkkit.Result, error) {
-	raw, err := os.ReadFile(filepath.Join(root, ".gitignore"))
-	if os.IsNotExist(err) {
-		return checkkit.Pass(0), nil
+	var violations []string
+	files := walkfs.InScope(gitignoreFiles(root))
+	for _, file := range files {
+		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
+		if err != nil {
+			return checkkit.Result{}, err
+		}
+		violations = append(violations, findViolations(file, string(raw))...)
 	}
-	if err != nil {
-		return checkkit.Result{}, err
-	}
-	violations := findViolations(string(raw))
 	if len(violations) > 0 {
-		return checkkit.Fail(1, violations...), nil
+		return checkkit.Fail(len(files), violations...), nil
 	}
-	return checkkit.Pass(1), nil
+	return checkkit.Pass(len(files)), nil
+}
+
+// gitignoreFiles lists the tracked files named `.gitignore` under root.
+func gitignoreFiles(root string) []string {
+	var out []string
+	for _, file := range walkfs.FilesByExt(root, ".gitignore") {
+		if path.Base(file) == ".gitignore" {
+			out = append(out, file)
+		}
+	}
+	return out
 }
 
 // lineKind classifies one raw .gitignore line: blank, a `#` comment, or an
@@ -66,10 +82,10 @@ func isExplanatoryComment(line string) bool {
 		strings.TrimSpace(strings.TrimLeft(trimmed, "#")) != ""
 }
 
-// findViolations returns a violation message for every pattern line not
-// immediately preceded by an explanatory `#` comment, mirroring the TS
-// message template exactly.
-func findViolations(content string) []string {
+// findViolations names every pattern line of the `.gitignore` at file that
+// no explanatory `#` comment precedes, mirroring the TS message template
+// exactly.
+func findViolations(file, content string) []string {
 	lines := strings.Split(content, "\n")
 	var errors []string
 	for i, line := range lines {
@@ -82,7 +98,7 @@ func findViolations(content string) []string {
 		}
 		if !isExplanatoryComment(above) {
 			errors = append(errors, fmt.Sprintf(
-				".gitignore:%d: pattern \"%s\" %s", i+1, strings.TrimSpace(line), noComment))
+				"%s:%d: pattern \"%s\" %s", file, i+1, strings.TrimSpace(line), noComment))
 		}
 	}
 	return errors

@@ -91,8 +91,8 @@ var (
 	// TypeScriptExts are the TypeScript source endings, without TSX.
 	TypeScriptExts = subset(".cts", ".mts", ".ts")
 	// SourceExts are the TypeScript and JavaScript source endings scanned
-	// for directives and literals, without JSX.
-	SourceExts = subset(".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".tsx")
+	// for directives and literals, JSX included.
+	SourceExts = subset(".cts", ".mts", ".ts", ".cjs", ".js", ".mjs", ".jsx", ".tsx")
 	// LintableExts are the endings ESLint lints.
 	LintableExts = subset(".cjs", ".js", ".mjs", ".ts", ".tsx")
 	// InventoryExts are the endings the architecture views list as

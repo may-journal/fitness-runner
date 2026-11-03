@@ -17,13 +17,13 @@ func rslLines(value string, n int) string {
 	return strings.Repeat("use('"+value+"');\n", n)
 }
 
-func Test0055_1(t *testing.T) {
+func Test0055_9(t *testing.T) {
 	t.Parallel()
 	out, code := repeatedStringLiterals(t, map[string]string{
-		"src/a.ts": rslLines("active", 2),
-		"src/b.ts": rslLines("active", 1),
+		"src/a.ts":  rslLines("active", 2),
+		"src/b.jsx": rslLines("active", 1),
 	})
-	sees(t, out, code, 1, `"active" appears 3 times (src/a.ts:1, src/a.ts:2, src/b.ts:1) — extract a shared constant`)
+	sees(t, out, code, 1, `"active" appears 3 times (src/a.ts:1, src/a.ts:2, src/b.jsx:1) — extract a shared constant`)
 }
 
 func Test0055_2(t *testing.T) {
