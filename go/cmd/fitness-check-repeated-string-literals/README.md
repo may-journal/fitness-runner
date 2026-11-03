@@ -28,7 +28,7 @@ It fails with:
 
 ## Behavior
 
-- Scans every tracked `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts` file, test, spec, and bench files included.
+- Scans every tracked `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.mts`, `.cts` file, test, spec, and bench files included.
 - A hand lexer reads each file's code view for single- and double-quoted literals, skipping regex and template literals.
 - It drops module specifiers, after `import`, `require` or `from`, and the directives a code view keeps.
 - Counts identical values repo-wide; flags any at or above the threshold (3). Values under the length floor (3) are ignored.

@@ -1,6 +1,9 @@
 package requirements
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // gitignoreWhy runs `fitness-install -- gitignore-why` on happyRepo with
 // the given .gitignore; an empty one means the repo has none.
@@ -58,5 +61,8 @@ func Test0025_7(t *testing.T) {
 		"app/.gitignore.md": "coverage/\n",
 	})
 	out, code := fitness(t, repo, nil, "gitignore-why")
-	sees(t, out, code, 1, `app/.gitignore:3: pattern "coverage/" `+gitignoreWhyNoComment)
+	sees(t, out, code, 1, `app/.gitignore:3: pattern "coverage/" `+gitignoreWhyNoComment, "2 files scanned")
+	if strings.Contains(read(out), ".gitignore.md") {
+		t.Errorf("only a file named .gitignore is one:\n%s", out)
+	}
 }

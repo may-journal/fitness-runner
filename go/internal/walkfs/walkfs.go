@@ -120,6 +120,19 @@ func FilesByExt(root string, exts ...string) []string {
 	return out
 }
 
+// FilesNamed returns the sorted relative paths under root whose base name is
+// name, such as every `.gitignore`. A suffix match alone would also take
+// `foo.gitignore`.
+func FilesNamed(root, name string) []string {
+	var out []string
+	for _, rel := range FilesByExt(root, name) {
+		if filepath.Base(rel) == name {
+			out = append(out, rel)
+		}
+	}
+	return out
+}
+
 // AllFiles returns every sorted path under root, erroring when listing fails so
 // a check never passes on an unread list.
 func AllFiles(root string) ([]string, error) {

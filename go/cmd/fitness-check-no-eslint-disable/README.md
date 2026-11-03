@@ -45,7 +45,7 @@ Detection is a plain line scan (grep-like), so the directive text is flagged eve
 const hint = 'prefix a line with eslint-disable-next-line to skip a rule';
 ```
 
-Reword the rare case rather than suppressing it. Scanned extensions are `.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.mts`, `.cts`, and test and spec files are included. The policy is zero-config and strict, with no allowlist.
+Reword the rare case rather than suppressing it. Scanned extensions are `.ts`, `.tsx`, `.js`, `.jsx`, `.mjs`, `.cjs`, `.mts`, `.cts`, and test and spec files are included. The policy is zero-config and strict, with no allowlist.
 
 ## Behavior
 

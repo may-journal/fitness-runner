@@ -3,7 +3,6 @@ package check
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -25,7 +24,7 @@ func Main() {
 // one; a repo with none passes with no file checked.
 func run(root string, _ []string) (checkkit.Result, error) {
 	var violations []string
-	files := walkfs.InScope(gitignoreFiles(root))
+	files := walkfs.InScope(walkfs.FilesNamed(root, ".gitignore"))
 	for _, file := range files {
 		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if err != nil {
@@ -37,17 +36,6 @@ func run(root string, _ []string) (checkkit.Result, error) {
 		return checkkit.Fail(len(files), violations...), nil
 	}
 	return checkkit.Pass(len(files)), nil
-}
-
-// gitignoreFiles lists the tracked files named `.gitignore` under root.
-func gitignoreFiles(root string) []string {
-	var out []string
-	for _, file := range walkfs.FilesByExt(root, ".gitignore") {
-		if path.Base(file) == ".gitignore" {
-			out = append(out, file)
-		}
-	}
-	return out
 }
 
 // lineKind classifies one raw .gitignore line: blank, a `#` comment, or an
