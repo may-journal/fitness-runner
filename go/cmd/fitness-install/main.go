@@ -55,8 +55,8 @@ func runInstalled(bin string, options distribution.Options) int {
 	if options.InstallHook {
 		return installHook(options)
 	}
-	if len(options.LinkSkills) > 0 {
-		return linkSkills(bin, options)
+	if options.SetsUpAgents() {
+		return setUpAgents(bin, options)
 	}
 	return runChecks(bin, options)
 }
@@ -76,11 +76,19 @@ func runChecks(bin string, options distribution.Options) int {
 	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), runnerEnvironment(bin)))
 }
 
-func linkSkills(bin string, options distribution.Options) int {
-	if err := distribution.LinkSkills(bin, options.LinkSkills, os.Stdout); err != nil {
-		return failure(err)
+func setUpAgents(bin string, options distribution.Options) int {
+	if len(options.LinkSkills) > 0 {
+		if err := distribution.LinkSkills(bin, options.LinkSkills, os.Stdout); err != nil {
+			return failure(err)
+		}
+		report.Outcome("fitness-install", "Linked the Fitness skills successfully.")
 	}
-	report.Outcome("fitness-install", "Linked the Fitness skills successfully.")
+	if len(options.ClaudeSettings) > 0 {
+		if err := distribution.WriteClaudeSettings(bin, options.ClaudeSettings, os.Stdout); err != nil {
+			return failure(err)
+		}
+		report.Outcome("fitness-install", "Added the Fitness hooks to Claude Code successfully.")
+	}
 	return 0
 }
 

@@ -53,6 +53,8 @@ Run checks:
       Runs every blob-capable check on a text instead of the repo; - reads the text from stdin.
   fitness --dir=<folder>
       Judges only the files under one folder.
+  fitness --file=<path>
+      Judges only the named file; repeat it to name more.
   fitness --json=<file>
       Names the file that receives the run's performance report: each check's time, budget, files, binary size, and error lines, as JSON.
   fitness --policy=external --checks=<name,name>
@@ -98,6 +100,8 @@ Commands:
   fitness comment-check --blob <text>
   fitness comment-check
       Judges a drafted comment, where - or no text reads stdin, or judges issue and PR comments and reply, in GitHub Actions.
+  fitness claude-hook
+      Judges what a Claude Code hook event on stdin names.
 ```
 
 <!-- end fitness usage -->

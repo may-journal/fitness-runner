@@ -43,6 +43,7 @@ flowchart TB
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listComments(40 List code comments<br/>Req 0136):::action
+    claudeHooks(42 Edit, post or stop in Claude Code<br/>Req 0142):::action
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
@@ -90,6 +91,8 @@ flowchart TB
     terminal --> runComment
     terminal --> stripFront
     terminal --> listComments
+    dev --> claudeHooks
+    claudeHooks --> executeChecks
     terminal --> listChecks
     listChecks --> explainCheck
     terminal --> readDocs
@@ -171,3 +174,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |
 | 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
 | 41  | Code comment checks.                | System  | Comments meet the prose limits and hold no dead code, echoes, decoration, history, filler or tutorial tone. |
+| 42  | `fitness claude-hook`.              | Action  | Claude meets a failing check right after an edit, before a `gh` post, or as it stops, and fixes it that turn. |

@@ -88,7 +88,7 @@ jobs:
       pull-requests: write
 ```
 
-Agents run `fitness comment-check --blob -` on a draft before posting, so a failing reply should be rare.
+Agents run `fitness comment-check --blob -` on a draft before posting, so a failing reply should be rare. In Claude Code, [the fitness skill's hooks](../skills/fitness/SKILL.md#hooks-in-claude-code) run that check before each `gh` post.
 
 ## Duplicate issues
 

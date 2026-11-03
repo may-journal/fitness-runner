@@ -103,6 +103,18 @@ func (r Repo) FilesUnder(dir string) ([]string, error) {
 	return r.names("ls-files", "-co", "--exclude-standard", "--", dir)
 }
 
+// Uncommitted returns the files that differ from HEAD, staged or not, and
+// the new files git does not ignore. A repo with no commit yet lists every
+// file it would add.
+func (r Repo) Uncommitted() ([]string, error) {
+	changed, err := r.names("diff", "--name-only", "HEAD")
+	if err != nil {
+		return r.names("ls-files", "-co", "--exclude-standard")
+	}
+	added, err := r.names("ls-files", "-o", "--exclude-standard")
+	return append(changed, added...), err
+}
+
 // BranchCommits returns the commits reachable from tip but not from base,
 // newest first.
 func (r Repo) BranchCommits(tip, base string) ([]string, error) {

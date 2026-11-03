@@ -255,6 +255,10 @@ func init() {
 		//fitness:usage comment-check --blob <text>
 		//fitness:usage comment-check
 		"comment-check": runCommentCheck,
+		// Judges what a Claude Code hook event on stdin names. That is an
+		// edited file, a gh body before it posts, or the changed files at a stop.
+		//fitness:usage claude-hook
+		"claude-hook": runClaudeHook,
 	}
 }
 
@@ -412,9 +416,10 @@ type setup struct {
 	cleanup func()
 }
 
-// runSetup finds the repo root and takes the `--json` report path and the
-// `--dir` folder out of argv, returning the rest. The folder's files are
-// shared once here, so the caller removes them with the setup's cleanup.
+// runSetup finds the repo root and takes the scope flags and the `--json`
+// report path out of argv, returning the rest. The
+// scoped files are shared once here, so the caller removes them with the
+// setup's cleanup.
 func runSetup(argv []string) (s setup, rest []string, err error) {
 	s.root, err = os.Getwd()
 	if err != nil {
@@ -424,7 +429,7 @@ func runSetup(argv []string) (s setup, rest []string, err error) {
 	if err != nil {
 		return s, nil, err
 	}
-	only, rest, err := dirScope(s.root, rest)
+	only, rest, err := runScope(s.root, rest)
 	if err != nil {
 		return s, nil, err
 	}
