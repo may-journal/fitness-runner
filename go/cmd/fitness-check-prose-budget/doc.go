@@ -39,10 +39,14 @@
 //
 // # GitHub bodies and commit messages
 //
-// Given `--body-file`, the check judges one issue, PR or comment body by the
-// budgets above and the slop rules below, named `(description)`. Given
+// Given `--body-file`, the check judges one issue, PR or comment body. It
+// applies the budgets above and the prose slop rules below, `change-narration`,
+// `hedging` and `tutorial-tone`, named `(description)`. The block rules stay with code
+// comments: a body carries no code line, and its footer is no decoration.
+//
+// Given
 // `--message`, as the commit-msg hook passes it, it judges the commit message
-// by the slop rules alone, named `(commit message)`. One rule set then holds
+// by the prose slop rules alone, named `(commit message)`. One rule set then holds
 // wherever an agent writes.
 //
 // # Code comments

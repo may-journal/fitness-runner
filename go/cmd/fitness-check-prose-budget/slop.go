@@ -27,32 +27,48 @@ const (
 const maxRestateWords = 5
 
 // slopRule is one slop rule: its ID, the fix it names, and what it finds in a comment and its masked prose.
+// A prose rule reads the words alone, so it judges a GitHub body or a commit message too.
 type slopRule struct {
 	id, fix string
 	find    func(b comments.Block, prose string) string
+	prose   bool
 }
 
 // slopRules are the slop rules in the order a comment's errors list them.
 var slopRules = []slopRule{
-	{ruleCommentedOut, "delete it, since git keeps old code", func(b comments.Block, _ string) string { return commentedOut(b) }},
-	{ruleRestates, "delete it or say why", func(b comments.Block, _ string) string { return restates(b) }},
-	{ruleDecoration, "delete it", func(b comments.Block, _ string) string { return decorated(b.Text) }},
+	{ruleCommentedOut, "delete it, since git keeps old code", func(b comments.Block, _ string) string { return commentedOut(b) }, false},
+	{ruleRestates, "delete it or say why", func(b comments.Block, _ string) string { return restates(b) }, false},
+	{ruleDecoration, "delete it", func(b comments.Block, _ string) string { return decorated(b.Text) }, false},
 	{ruleNarration, "say what holds today, since git keeps history", func(_ comments.Block, prose string) string {
 		return matched(narration, prose, "narrates a change")
-	}},
+	}, true},
 	{ruleHedging, "drop the word or state the fact", func(_ comments.Block, prose string) string {
 		return matched(hedge, prose, "hedges")
-	}},
+	}, true},
 	{ruleTutorial, "state the rule plainly", func(_ comments.Block, prose string) string {
 		return tutorial(prose)
-	}},
+	}, true},
 }
 
 // slopErrors reports each slop rule a comment breaks, reading prose from its Markdown blocks.
 func slopErrors(name string, b comments.Block, blocks []block) []string {
+	return ruleErrors(name, b, proseOf(blocks), false)
+}
+
+// proseSlop reports each prose slop rule a GitHub body or commit message breaks.
+// The block rules stay with code comments: a body carries no code line to restate,
+// and its attribution footer is no decoration.
+func proseSlop(name, text string) []string {
+	return ruleErrors(name, comments.Block{Text: text}, proseOf(parse(text)), true)
+}
+
+// ruleErrors formats each rule b and prose break, every rule or the prose rules alone.
+func ruleErrors(name string, b comments.Block, prose string, proseOnly bool) []string {
 	var errs []string
-	prose := proseOf(blocks)
 	for _, rule := range slopRules {
+		if proseOnly && !rule.prose {
+			continue
+		}
 		if why := rule.find(b, prose); why != "" {
 			errs = append(errs, fmt.Sprintf("%s: %s: %s; %s: %q", name, rule.id, why, rule.fix, snippet(b.Text)))
 		}
