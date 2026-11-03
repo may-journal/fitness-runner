@@ -48,12 +48,29 @@ func Main() {
 
 func run(root string, args []string) (checkkit.Result, error) {
 	lim := settings(root)
+	if msg, ok := bodycheck.Message(args); ok {
+		return messageResult(msg), nil
+	}
 	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
-		return check(descriptionName, content, lim)
+		return append(check(descriptionName, content, lim), writingSlop(descriptionName, content)...)
 	}); handled || err != nil {
 		return res, err
 	}
 	return walkFiles(root, lim), nil
+}
+
+// writingSlop judges a body or a commit message by the slop rules a code
+// comment meets. One rule set then holds wherever an agent writes.
+func writingSlop(name, text string) []string {
+	return slopErrors(name, comments.Block{Text: text}, parse(text))
+}
+
+// messageResult judges one commit message's slop, for the commit-msg hook.
+func messageResult(msg string) checkkit.Result {
+	if errs := writingSlop("(commit message)", msg); len(errs) > 0 {
+		return checkkit.Fail(1, errs...)
+	}
+	return checkkit.Pass(1)
 }
 
 // walkFiles applies the budget to every in-scope .md file under root, then

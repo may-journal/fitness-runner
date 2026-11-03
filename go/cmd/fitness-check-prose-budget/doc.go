@@ -37,6 +37,14 @@
 // It shares its prose extraction and sentence splitting with
 // `text-readability` through `internal/mdx`.
 //
+// # GitHub bodies and commit messages
+//
+// Given `--body-file`, the check judges one issue, PR or comment body by the
+// budgets above and the slop rules below, named `(description)`. Given
+// `--message`, as the commit-msg hook passes it, it judges the commit message
+// by the slop rules alone, named `(commit message)`. One rule set then holds
+// wherever an agent writes.
+//
 // # Code comments
 //
 // The check also judges each code comment block that `fitness comments`

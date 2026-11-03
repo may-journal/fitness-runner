@@ -87,7 +87,7 @@ func Test0083_2(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, code := fitness(t, repo, nil, "comment-check", "--blob=The parser now handles tabs.\n\n"+numbered)
-	sees(t, out, code, 0, "All 11 checks passed")
+	sees(t, out, code, 0, "All 12 checks passed")
 }
 
 func Test0083_3(t *testing.T) {

@@ -17,6 +17,21 @@ func Run(args []string, validate func(body string) []string) (checkkit.Result, e
 	return RunIf(args, func(string) bool { return true }, validate)
 }
 
+// Message returns the commit message a check is given: `--message=<text>` or
+// `--message <text>` in args, else the runner's context. A prose check then
+// judges a commit message as the commit-msg hook hands it.
+func Message(args []string) (string, bool) {
+	for i, arg := range args {
+		if text, ok := strings.CutPrefix(arg, "--message="); ok {
+			return text, true
+		}
+		if arg == "--message" && i+1 < len(args) {
+			return args[i+1], true
+		}
+	}
+	return checkkit.CtxMessage()
+}
+
 // BlobEnv is set by `fitness --blob`, which judges a draft text of any kind.
 const BlobEnv = "FITNESS_BLOB"
 

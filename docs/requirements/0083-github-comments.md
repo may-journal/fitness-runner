@@ -19,7 +19,7 @@ failing comments
 - 0083.2
     - Given Developer has a drafted comment whose numbered diagram matches its callout table
         - When I run fitness comment-check with the draft after `--blob`
-            - Then every check passes and it exits 0
+            - Then every check passes, no-contrastive-reframing among them, and it exits 0
 - 0083.3
     - Given Developer has a failing comment on an issue with no reply yet
         - When comment-check judges the comment event

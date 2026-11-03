@@ -20,6 +20,7 @@ var docChecks = []string{
 	"prose-budget",
 	"text-readability",
 	"markdown-no-bold-italic",
+	"no-contrastive-reframing",
 	"mermaid-callouts",
 	"mermaid-callout-why",
 	"mermaid-diagram-prose",

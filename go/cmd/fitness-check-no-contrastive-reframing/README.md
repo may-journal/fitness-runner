@@ -20,6 +20,10 @@ Flags the "not X, it's Y" reframing in markdown prose. Such a sentence rejects a
 - Pass: no prose sentence matches, or the match sits in code or quotes.
 - Fail: a sentence matches one of the two forms — one error per match, quoting the snippet.
 
+## GitHub bodies and commit messages
+
+Given `--body-file`, the check judges one issue, PR or comment body, named `(description)`, and every GitHub body check runs it. Given `--message`, as the commit-msg hook passes it, it judges the commit message, named `(commit message)`.
+
 ## Code comments
 
 The check also reads each code comment block that `fitness comments` lists, as [prose-budget](../fitness-check-prose-budget/README.md) reads it. A commit or pull request run reads only the blocks that touch a changed line, and a full scan reads every block. Each error names the block as `path:line`.

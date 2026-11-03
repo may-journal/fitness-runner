@@ -28,6 +28,10 @@ A paragraph is a run of consecutive prose lines. A section runs from one heading
 
 It shares its prose extraction and sentence splitting with `text-readability` through `internal/mdx`.
 
+## GitHub bodies and commit messages
+
+Given `--body-file`, the check judges one issue, PR or comment body by the budgets above and the slop rules below, named `(description)`. Given `--message`, as the commit-msg hook passes it, it judges the commit message by the slop rules alone, named `(commit message)`. One rule set then holds wherever an agent writes.
+
 ## Code comments
 
 The check also judges each code comment block that `fitness comments` lists, by the same limits except the section ones. A comment has no headings, so it holds no sections. Its markers are removed first, and an indented line that carries on no list item is code, which is skipped.

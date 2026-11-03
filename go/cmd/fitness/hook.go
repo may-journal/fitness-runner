@@ -133,7 +133,7 @@ func resolveEach(root string, names []string) ([]resolved, error) {
 // commitMsgChecks lists the checks the commit-msg hook runs, without any
 // that an external policy's disabledChecks turns off.
 func commitMsgChecks() []string {
-	checks := []string{"semantic-commit", "plan-trailer", "issue-link-once", "requirements-changed"}
+	checks := []string{"semantic-commit", "plan-trailer", "issue-link-once", "requirements-changed", "prose-budget", "no-contrastive-reframing"}
 	cfg, err := loadConfig(".")
 	if err != nil {
 		return checks

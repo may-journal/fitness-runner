@@ -3,6 +3,7 @@ package check
 import (
 	"regexp"
 
+	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
@@ -11,15 +12,31 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "no-contrastive-reframing", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "no-contrastive-reframing", Scope: checkkit.ScopeFiles, Blob: true},
 		Run:      run,
 	})
 }
 
-// run judges every in-scope markdown file, then each comment block the run
-// judges.
-func run(root string, _ []string) (checkkit.Result, error) {
+// run judges a commit message or a GitHub body when given one. Otherwise it
+// judges every in-scope markdown file, then each comment block of the run.
+func run(root string, args []string) (checkkit.Result, error) {
+	if msg, ok := bodycheck.Message(args); ok {
+		return textResult("(commit message)", msg), nil
+	}
+	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
+		return fileErrors("(description)", content)
+	}); handled || err != nil {
+		return res, err
+	}
 	return comments.Judge(walkfs.ScanFiles(root, []string{".md"}, fileErrors), root, fileErrors), nil
+}
+
+// textResult judges one text under name as a file would be.
+func textResult(name, text string) checkkit.Result {
+	if errs := fileErrors(name, text); len(errs) > 0 {
+		return checkkit.Fail(1, errs...)
+	}
+	return checkkit.Pass(1)
 }
 
 var (
