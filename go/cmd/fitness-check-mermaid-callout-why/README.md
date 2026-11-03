@@ -8,4 +8,4 @@ Requires each numbered callout table to carry a "Why" column, and flags numbered
 
 For each numbered callout table, it requires a `Why` column (case-insensitive) in the header. It warns when a callout row leaves its `Why` cell empty. A callout row opens with a node number, such as `1`, or a connector letter, such as `A`, as [mermaid-callouts](../fitness-check-mermaid-callouts/README.md) reads them.
 
-It runs on every `.md` file with a mermaid diagram or callout table; files with neither are skipped and don't count toward `filesChecked`.
+It runs on every Markdown file with a mermaid diagram or callout table; files with neither are skipped and don't count toward `filesChecked`.

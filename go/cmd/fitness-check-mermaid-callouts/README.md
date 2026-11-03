@@ -2,26 +2,28 @@
 
 # mermaid-callouts
 
-Requires every mermaid diagram with callouts to have a callout table whose callouts match it one to one. Orphan callouts, orphan rows, and duplicates fail. It is the foundational check of the mermaid diagram and callout table fitness-function set ([#28](https://github.com/may-journal/fitness-runner/issues/28)).
+Requires every mermaid diagram but a legend to carry callouts, and a callout table whose callouts match it one to one. Orphan callouts, orphan rows, and duplicates fail. It is the foundational check of the mermaid diagram and callout table fitness-function set ([#28](https://github.com/may-journal/fitness-runner/issues/28)).
 
 ## Behavior
 
-For each `.md` file, diagrams (fenced `mermaid` blocks) are paired with the callout table that follows them. That table is a GFM table whose first header cell is `#`, `No`, `Callout`, or `Ref`.
+For each Markdown file, diagrams (fenced `mermaid` blocks) are paired with the callout table that follows them. That table is a GFM table whose first header cell is `#`, `No`, `Callout`, or `Ref`.
 
 Nodes carry number callouts and connectors carry letter callouts, so a reader tells them apart at a glance ([#583](https://github.com/may-journal/fitness-runner/issues/583)). Letters run `A` to `Z`, then double: `AA`, `BB`, up to `ZZ`, then `AAA`. The table's `#` column holds the same letters for connector rows.
 
-- Pass: every callout in the diagram maps to exactly one table row, and vice versa. Diagrams without callouts need no table.
-- Fail (orphan callout): `diagram callout N has no matching table row`.
-- Fail (orphan row): `callout table row N has no matching diagram callout`.
+- Pass: every callout in the diagram maps to exactly one table row, and vice versa.
+- Fail (unnumbered): `mermaid diagram has no numbered callouts`, for any diagram but a legend right after a numbered diagram.
+- Fail (orphan): `diagram callout N has no matching table row`, or `callout table row N has no matching diagram callout`.
 - Fail (duplicate): `diagram callout N appears K times` or `callout table row N appears K times`.
 - Fail (numbered connector): `connector callout N must be a letter; numbers are for nodes; run fitness mermaid-callouts --fix`.
 - Fail (broken doubling): `connector callout AB breaks the letter doubling`, or the same for a table row. A label such as YES that no row lists is prose.
 - Fail (unpaired diagram): `mermaid diagram … has callouts but no associated callout table`.
 - Fail (unpaired table): `callout table … has no preceding mermaid diagram`.
 
+A diagram after the callout table is no legend. A type with no label to number, such as a git graph or timeline, needs no callouts.
+
 ## Reading callouts
 
-A node callout is the leading integer of a node label: quoted (`Container(x, "3", …)`, `A["1 Check"]`) or inside a node shape (`A[2 Screen]`).
+A node callout is the leading integer of a node label: quoted (`Container(x, "3", …)`, `A["1 Check"]`) or inside a node shape (`A[2 Screen]`). A wardley-beta map numbers its annotations instead, as in `annotation 1,[0.40, 0.35] "text"`.
 
 A connector callout is the leading label of an edge, in any of these forms:
 
@@ -47,4 +49,4 @@ A skipped diagram still fails, so fix it by hand.
 
 ## Scope
 
-Runs on every `.md` file that contains a diagram or callout table. Files with neither are skipped and don't count toward `filesChecked`.
+Runs on every Markdown file that contains a diagram or callout table. Files with neither are skipped and don't count toward `filesChecked`.

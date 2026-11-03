@@ -4,7 +4,7 @@
 // [markdown-filename-kebab-case] for behavior and conventions covering both
 // flavors.
 //
-// This flavor pins the camelCase convention: every `.md` basename must match
+// This flavor pins the camelCase convention: every Markdown basename must match
 // `^[a-z][a-zA-Z0-9]*\.md$`, standard root docs and names GitHub requires
 // exempt.
 //

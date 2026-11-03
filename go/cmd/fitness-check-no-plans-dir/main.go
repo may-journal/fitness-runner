@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -111,7 +112,7 @@ func artifactName(rel string) (finding, bool) {
 // issue templates live, holding a Plan's checklist. A file that cannot be
 // read holds none; the checks that read Markdown name it.
 func holdsPlan(root, rel string) bool {
-	if !strings.HasSuffix(strings.ToLower(rel), ".md") || strings.HasPrefix(rel, ".github/") {
+	if !mdx.IsMarkdown(strings.ToLower(rel)) || strings.HasPrefix(rel, ".github/") {
 		return false
 	}
 	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))

@@ -72,6 +72,15 @@ func Test0039_14(t *testing.T) {
 		mermaidCalloutsDiagram(`Container(web, "4", "UI")`, `Rel(web, api, "D", "HTTPS")`),
 		mermaidCalloutsDiagram(`Person(p, "Person")`, `System(s, "System")`, `Rel(p, s, "uses")`),
 		mermaidCalloutsTable("4", "D"),
+		mermaidCalloutsDiagram(
+			"wardley-beta",
+			"  anchor User [0.99, 0.66]",
+			"  component code [0.60, 0.35]",
+			`  annotation 5,[0.40, 0.35] "Genesis: code"`,
+			"  User -> code",
+		),
+		mermaidCalloutsTable("5"),
+		mermaidCalloutsDiagram("gitGraph", "  commit", "  branch dev", "  commit"),
 	))
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "mermaid-callouts")) {
@@ -90,8 +99,16 @@ func Test0039_13(t *testing.T) {
 			mermaidCalloutsTable("A"),
 			mermaidCalloutsDiagram(`Rel(a, b, "A")`),
 		}, "\n"),
+		"docs/plain.md": strings.Join([]string{
+			mermaidCalloutsDiagram("flowchart LR", "Login --> Home"),
+			mermaidCalloutsDiagram("flowchart LR", "a[1 A] --> b[2 B]"),
+			mermaidCalloutsTable("1", "2"),
+			mermaidCalloutsDiagram("flowchart TD", "Fetch -->|then parse| Save"),
+		}, "\n"),
 	})
 	sees(t, out, code, 1,
+		"docs/plain.md: line 1: mermaid diagram has no numbered callouts; number its nodes, as in A[1 Step]",
+		"docs/plain.md: line 16: mermaid diagram has no numbered callouts",
 		"docs/flow.md: diagram callout 1 appears 2 times (line 1)",
 		"docs/flow.md: callout table row A appears 2 times (line 9)",
 		"docs/flow.md: diagram callout C has no matching table row (line 1)",

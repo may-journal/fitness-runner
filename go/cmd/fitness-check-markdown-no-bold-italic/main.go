@@ -15,6 +15,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -38,7 +39,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 func walkFiles(root string) (checkkit.Result, error) {
 	var found []checkkit.Finding
 	filesChecked := 0
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, mdx.Exts...)) {
 		filesChecked++
 		raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if err != nil {

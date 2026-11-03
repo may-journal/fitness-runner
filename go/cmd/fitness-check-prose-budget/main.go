@@ -59,7 +59,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 // walkFiles applies the budget to every in-scope .md file under root, then
 // to each comment block the run judges with commentErrors.
 func walkFiles(root string, lim limits) checkkit.Result {
-	res := walkfs.ScanFiles(root, []string{".md"}, func(rel, content string) []string {
+	res := walkfs.ScanFiles(root, mdx.Exts, func(rel, content string) []string {
 		return check(rel, content, lim)
 	})
 	return comments.JudgeEach(res, root, func(b comments.Block, name, markdown string) []string {

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -44,7 +45,7 @@ func fixDocs(root string, args []string) ([]string, error) {
 	}
 	var notes []string
 	changed := 0
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, mdx.WithMDX...)) {
 		fileNotes, wrote, err := fixFile(root, file)
 		if err != nil {
 			return nil, err
@@ -75,12 +76,13 @@ func fixFile(root, file string) ([]string, int, error) {
 // table row, into the next free letter of its diagram. A diagram it cannot
 // convert keeps every byte and gets a note naming why.
 func convertDoc(file, content string) (string, []conversion, []string) {
-	lines := strings.Split(content, "\n")
+	doc := mermaid.ReadDoc(content)
+	lines := doc.Lines
 	starts := lineStarts(lines)
 	var edits []edit
 	var conversions []conversion
 	var notes []string
-	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content)).Pairs {
+	for _, pair := range mermaid.PairDiagramsWithTables(doc.Blocks).Pairs {
 		pairEdits, pairConversions, skipped := convertPair(lines, starts, pair)
 		edits = append(edits, pairEdits...)
 		conversions = append(conversions, pairConversions...)

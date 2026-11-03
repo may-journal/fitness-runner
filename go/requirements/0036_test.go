@@ -61,3 +61,12 @@ func Test0036_7(t *testing.T) {
 	out, code := markdownLinks(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 }
+
+func Test0036_8(t *testing.T) {
+	t.Parallel()
+	out, code := markdownLinks(t, map[string]string{
+		"docs/guide.markdown": "# Guide\n\nSee [setup](setup.md).\n",
+		"docs/intro.mdx":      "# Intro\n\nSee [the guide](gone.mdx).\n",
+	})
+	sees(t, out, code, 1, "docs/guide.markdown:3: broken relative link: setup.md", "docs/intro.mdx:3: broken relative link: gone.mdx")
+}

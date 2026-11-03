@@ -82,7 +82,7 @@ Commands:
   fitness boxes <report.json> <page.html>
       Draws a --json report as an HTML box diagram.
   fitness strip-front-matter
-      Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
+      Deletes the fitness keys from tracked Markdown files' front matter, and any block they leave empty.
   fitness comments [path...]
       Prints each code comment block of the tracked files, or of those under the named paths, with its line, language and kind.
   fitness branch-check

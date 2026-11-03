@@ -2,7 +2,10 @@
 
 package requirements
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 // mermaidSyntax runs `fitness-install -- mermaid-syntax <args>` on happyRepo
 // with files written over it.
@@ -27,10 +30,28 @@ func Test0084_1(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0084_2(t *testing.T) {
+// Test0084_9 puts one bad label in the README on line 11 and quoted on line
+// 16. Two more files hold it too.
+func Test0084_9(t *testing.T) {
 	t.Parallel()
-	out, code := mermaidSyntax(t, mermaidLegendDoc(mermaidLegendDiagram("flowchart TD", "A[Start (x)] --> B")))
-	sees(t, out, code, 1, `README.md: line 11: node A: label "Start (x)" has brackets or quotes; wrap it in double quotes (diagram at line 9)`)
+	bad := mermaidLegendDiagram("flowchart TD", "A[Start (x)] --> B")
+	files := mermaidLegendDoc(bad, "> ```mermaid\n> flowchart TD\n> A[Start (x)] --> B\n> ```\n")
+	files["docs/guide.markdown"] = "# Guide\n\n" + bad
+	files["docs/flow.mmd"] = "flowchart TD\nA[Start (x)] --> B\n"
+	files["docs/reply.md"] = "> ```mermaid\n> flowchart TD\n> A --> B\n\nAfter the quote.\n\n" + bad
+	files["docs/how-to.md"] = "# How\n\nQuote a diagram like this:\n\n````markdown\n> ```mermaid\n> flowchart TD\n> A[Start (x)] --> B\n> ```\n````\n"
+	out, code := mermaidSyntax(t, files)
+	label := `node A: label "Start (x)" has brackets or quotes; wrap it in double quotes`
+	sees(t, out, code, 1, "README.md: line 11: "+label+" (diagram at line 9)",
+		"README.md: line 16: "+label+" (diagram at line 14)",
+		"docs/guide.markdown: line 5: "+label+" (diagram at line 3)",
+		"docs/flow.mmd: line 2: "+label,
+		"docs/reply.md: line 9: "+label+" (diagram at line 7)")
+	for _, unwanted := range []string{"docs/flow.mmd: line 2: " + label + " (diagram", "docs/how-to.md", "docs/reply.md: line 5"} {
+		if strings.Contains(read(out), unwanted) {
+			t.Errorf("a whole-file diagram names no fence, and a quoted example in a code block is code:\n%s", out)
+		}
+	}
 }
 
 func Test0084_3(t *testing.T) {

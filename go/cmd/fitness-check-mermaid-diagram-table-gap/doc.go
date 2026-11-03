@@ -23,7 +23,7 @@
 //
 // # Scope
 //
-// It runs on every `.md` file with a mermaid diagram or callout table; files
+// It runs on every Markdown file with a mermaid diagram or callout table; files
 // with neither are skipped and don't count toward `filesChecked`.
 //
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28

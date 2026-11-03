@@ -1,11 +1,109 @@
+// cspell:ignore mkdn mdwn
+
 // Package mdx holds the markdown parsing primitives the markdown and mermaid
 // checks share, mirroring the TypeScript helpers they were ported from.
 package mdx
 
 import (
+	"path"
 	"regexp"
 	"strings"
 )
+
+// Exts are the file endings GitHub renders as Markdown, so a check about
+// Markdown reads every document and not only `.md`.
+var Exts = []string{".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn"}
+
+// WithMDX is Exts plus MDX, for checks that judge a document's links,
+// diagrams or front matter. MDX also holds imports, JSX and JSX comments,
+// so prose and file name checks read only Exts.
+var WithMDX = append(append([]string{}, Exts...), ".mdx")
+
+// IsMarkdown reports whether rel has one of Exts.
+func IsMarkdown(rel string) bool {
+	return HasExt(rel, Exts)
+}
+
+// HasExt reports whether rel ends in one of exts, matched by case as the
+// file walkers match them.
+func HasExt(rel string, exts []string) bool {
+	ext := path.Ext(rel)
+	for _, e := range exts {
+		if ext == e {
+			return true
+		}
+	}
+	return false
+}
+
+// quoteMarkers matches the blockquote markers that open a line: each `>`
+// with the spaces around it.
+var quoteMarkers = regexp.MustCompile(`^[ \t]*(>[ \t]?)+`)
+
+// Unquote returns content with each line's leading blockquote markers turned
+// to spaces, byte for byte. A quoted fence or table then parses as the reader
+// sees it, and every offset still points into the original text.
+func Unquote(content string) string {
+	lines, _ := UnquoteLines(content)
+	return strings.Join(lines, "\n")
+}
+
+// UnquoteLines is Unquote split into lines, with whether each was quoted, so
+// a parser can end a quoted block with its quote.
+func UnquoteLines(content string) (lines []string, quoted []bool) {
+	lines = strings.Split(content, "\n")
+	quoted = make([]bool, len(lines))
+	var state quoteState
+	for i, line := range lines {
+		lines[i], quoted[i] = state.next(line)
+	}
+	return lines, quoted
+}
+
+// quoteState tracks the open fence while Unquote walks a document, and
+// whether a quote opened it. A line inside an unquoted fence is code.
+type quoteState struct {
+	fence  string
+	quoted bool
+}
+
+// next returns line unquoted, unless it sits inside a fence opened outside
+// a quote, and whether it was quoted.
+func (s *quoteState) next(line string) (string, bool) {
+	if s.fence != "" && !s.quoted {
+		s.fence = closeFence(s.fence, line)
+		return line, false
+	}
+	loc := quoteMarkers.FindStringIndex(line)
+	if loc != nil {
+		line = strings.ReplaceAll(line[:loc[1]], ">", " ") + line[loc[1]:]
+	}
+	s.track(line, loc != nil)
+	return line, loc != nil
+}
+
+// track closes the open fence when line ends it, or opens the one line
+// begins. Only a quote opened a fence still open here, and as in CommonMark
+// that fence ends with its quote.
+func (s *quoteState) track(line string, quoted bool) {
+	if !quoted {
+		s.fence = ""
+	}
+	if s.fence != "" {
+		s.fence = closeFence(s.fence, line)
+	} else if m := fenceOpen.FindStringSubmatch(line); m != nil {
+		s.fence, s.quoted = m[1], quoted
+	}
+}
+
+// closeFence returns "" when line closes the fence opened by marker, else
+// marker.
+func closeFence(marker, line string) string {
+	if strings.HasPrefix(strings.TrimLeft(line, " \t"), marker) {
+		return ""
+	}
+	return marker
+}
 
 // FrontMatter returns the YAML front matter body (the lines between the
 // leading "---" fence pair) and whether the document has one. The opening

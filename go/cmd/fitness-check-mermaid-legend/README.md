@@ -10,4 +10,4 @@ A class is inline `:::class` or a `class` or `style` statement. The check flags 
 
 Connectors carry letter callouts, not numbers, as [mermaid-callouts](../fitness-check-mermaid-callouts/README.md) requires. Links take `linkStyle`, not a class, so this check skips connector letters.
 
-It runs on every `.md` file with a mermaid diagram or callout table; files with neither are skipped and don't count toward `filesChecked`.
+It runs on every Markdown file with a mermaid diagram or callout table, and on every `.mmd` or `.mermaid` file. Files with neither are skipped and don't count toward `filesChecked`.

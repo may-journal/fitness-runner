@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -29,7 +30,7 @@ func Main() {
 }
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	return walkfs.ScanFindings(root, []string{".md"}, errorLine, func(rel, content string) []checkkit.Finding {
+	return walkfs.ScanFindings(root, mdx.WithMDX, errorLine, func(rel, content string) []checkkit.Finding {
 		return scan(root, rel, content)
 	}), nil
 }

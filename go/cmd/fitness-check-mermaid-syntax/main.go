@@ -25,7 +25,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 	}); err != nil || handled {
 		return res, err
 	}
-	errors, filesChecked, err := mermaid.RunDocCheck(root, validateDoc)
+	errors, filesChecked, err := mermaid.RunDiagramCheck(root, validateDoc)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
@@ -39,10 +39,10 @@ func run(root string, args []string) (checkkit.Result, error) {
 // problem with its document line.
 func validateDoc(file, content string) []string {
 	var errors []string
-	for _, block := range mermaid.ParseDoc(content) {
+	for _, block := range mermaid.ParseFile(file, content) {
 		if d, ok := block.(*mermaid.DiagramBlock); ok {
 			for _, p := range parseDiagram(d.Body) {
-				errors = append(errors, fmt.Sprintf("%s: line %d: %s (diagram at line %d)", file, d.Line+p.line, p.msg, d.Line))
+				errors = append(errors, fmt.Sprintf("%s: line %d: %s%s", file, d.Line+p.line, p.msg, d.At()))
 			}
 		}
 	}

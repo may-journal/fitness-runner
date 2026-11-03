@@ -3,7 +3,7 @@
 // density. Where that check asks whether prose is dense, this one asks
 // whether there is too much of it.
 //
-// Each `.md` file is masked the same way `text-readability` masks it. Front
+// Each Markdown file is masked the same way `text-readability` masks it. Front
 // matter, fenced code, tables, headings, and dash-only lines such as a
 // Measurement's `-` are dropped. Only flowing paragraphs, blockquotes, and
 // list items remain. The check then enforces six
@@ -31,7 +31,7 @@
 //
 //   - Pass: every masked paragraph, section, and list in the file is within all six limits.
 //   - Fail: one error per limit crossed, naming the file, the offending element, and its count versus the limit.
-//   - Every tracked `.md` file is judged, `CHANGELOG.md` included; there is no exempt list.
+//   - Every tracked Markdown file is judged, `CHANGELOG.md` included; there is no exempt list.
 //   - A `.fitnessrc.json` that sets `proseBudget.exempt` fails the run.
 //
 // It shares its prose extraction and sentence splitting with

@@ -14,4 +14,4 @@ A sibling check, `mermaid-diagram-prose`, owns the different rule of prose insid
 
 ## Scope
 
-It runs on every `.md` file with a mermaid diagram or callout table; files with neither are skipped and don't count toward `filesChecked`.
+It runs on every Markdown file with a mermaid diagram or callout table; files with neither are skipped and don't count toward `filesChecked`.

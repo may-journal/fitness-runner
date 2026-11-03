@@ -7,7 +7,7 @@
 //
 //   - Pass: no tracked .md file's leading front matter holds either key.
 //   - Fail: one error per file holding one, naming the file and telling you to run `fitness strip-front-matter`.
-//   - `filesChecked` counts the .md files judged, test fixtures left out.
+//   - `filesChecked` counts the Markdown files judged, test fixtures left out.
 //
 // It reads a leading `---` block, or the same block inside a leading HTML
 // comment, as a PR template carries it. A byte order mark or CRLF line

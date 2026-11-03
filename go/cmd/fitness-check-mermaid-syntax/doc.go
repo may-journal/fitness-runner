@@ -16,8 +16,9 @@
 //   - `erDiagram`, `mindmap`, and `block-beta`: the header only, since their syntax leaves brackets unpaired.
 //   - An unknown diagram type fails.
 //
-// It runs on every `.md` file with a mermaid diagram and, given
-// `--body-file`, on one Plan, PR, or comment body. Files with no diagram are
+// It runs on every Markdown file with a mermaid diagram, fences inside a
+// blockquote included, and on every `.mmd` or `.mermaid` file. Given
+// `--body-file`, it judges one Plan, PR, or comment body. Files with no diagram are
 // skipped and don't count toward `filesChecked`.
 //
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28

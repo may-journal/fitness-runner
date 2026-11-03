@@ -7,6 +7,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/frontmatter"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -30,7 +31,7 @@ const fix = "run `fitness strip-front-matter` from the repo root and commit the 
 func run(root string, _ []string) (checkkit.Result, error) {
 	var found []checkkit.Finding
 	judged := 0
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, ".md")) {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, mdx.WithMDX...)) {
 		if fixture(file) {
 			continue
 		}

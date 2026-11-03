@@ -1,11 +1,11 @@
 package comments
 
 import (
-	"path"
 	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
 // Uncommented is src without its comments, each line trimmed and blank lines
@@ -14,7 +14,7 @@ import (
 // covers rel.
 func Uncommented(rel string, src []byte) (string, bool) {
 	text := strings.ReplaceAll(string(src), "\r\n", "\n")
-	if path.Ext(rel) == ".md" {
+	if mdx.IsMarkdown(rel) {
 		return trimLines(WithoutHTMLComments(text)), true
 	}
 	read, ok := readers[Lang(rel, []byte(text))]
@@ -29,7 +29,7 @@ func Uncommented(rel string, src []byte) (string, bool) {
 func CodeView(rel string, src []byte) []byte {
 	text := strings.ReplaceAll(string(src), "\r\n", "\n")
 	var view string
-	if path.Ext(rel) == ".md" {
+	if mdx.IsMarkdown(rel) {
 		view = withoutHTML(text, blankHTML)
 	} else if read, ok := readers[Lang(rel, []byte(text))]; ok {
 		view = without(text, read([]byte(text)), blank)

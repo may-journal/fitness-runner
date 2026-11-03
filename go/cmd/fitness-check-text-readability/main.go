@@ -53,7 +53,7 @@ func walkFiles(root string, th thresholds, report bool) checkkit.Result {
 	judge := func(rel, content string) []string {
 		return judgeContent(rel, content, th, report)
 	}
-	result := comments.Judge(walkfs.ScanFiles(root, []string{".md"}, judge), root, judge)
+	result := comments.Judge(walkfs.ScanFiles(root, mdx.Exts, judge), root, judge)
 	if len(result.Errors) > 0 {
 		result.Errors = append(result.Errors, guidance()...)
 	}

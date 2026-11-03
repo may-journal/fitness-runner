@@ -6,9 +6,9 @@ I read each arrow's meaning once, in the callout table, so a diagram never repea
 
 ## Measurement
 
-paired diagrams whose relationship labels hold only callout numbers
+diagrams whose relationship labels hold only callouts
 -
-paired diagrams checked
+diagrams checked
 
 ## Requirements
 
@@ -28,10 +28,10 @@ paired diagrams checked
     - Given Developer has a paired diagram with only bare number labels, comments, and style colors
         - When mermaid-diagram-prose checks the doc
             - Then it passes
-- 0040.5
-    - Given Developer has a diagram with prose labels but no callout table
+- 0040.9
+    - Given Developer has a diagram with no callout table whose edge label has prose after its number or letter
         - When mermaid-diagram-prose checks the doc
-            - Then it passes
+            - Then it fails quoting the label, as in a paired diagram
 - 0040.6
     - Given Developer has a paired diagram whose node names carry prose
         - When mermaid-diagram-prose checks the doc

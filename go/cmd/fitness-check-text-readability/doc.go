@@ -2,7 +2,7 @@
 
 // Command fitness-check-text-readability fails a markdown file whose prose
 // scores as hard to read. It is a document-level readability smoke detector.
-// Each `.md` file is scored with three character-based formulas —
+// Each Markdown file is scored with three character-based formulas —
 // Coleman-Liau, ARI, and LIX. A file fails only when at least two of the
 // three sit in alarm territory.
 //
