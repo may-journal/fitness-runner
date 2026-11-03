@@ -10,9 +10,14 @@ import (
 	"strings"
 )
 
-// Exts are the file endings GitHub renders as Markdown, plus MDX, so a check
-// about Markdown reads every document and not only `.md`.
-var Exts = []string{".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn", ".mdx"}
+// Exts are the file endings GitHub renders as Markdown, so a check about
+// Markdown reads every document and not only `.md`.
+var Exts = []string{".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn"}
+
+// WithMDX is Exts plus MDX, for checks that judge a document's links,
+// diagrams or front matter. MDX also holds imports, JSX and JSX comments,
+// so prose and file name checks read only Exts.
+var WithMDX = append(append([]string{}, Exts...), ".mdx")
 
 // IsMarkdown reports whether rel has one of Exts.
 func IsMarkdown(rel string) bool {
@@ -39,12 +44,20 @@ var quoteMarkers = regexp.MustCompile(`^[ \t]*(>[ \t]?)+`)
 // to spaces, byte for byte. A quoted fence or table then parses as the reader
 // sees it, and every offset still points into the original text.
 func Unquote(content string) string {
-	lines := strings.Split(content, "\n")
+	lines, _ := UnquoteLines(content)
+	return strings.Join(lines, "\n")
+}
+
+// UnquoteLines is Unquote split into lines, with whether each was quoted, so
+// a parser can end a quoted block with its quote.
+func UnquoteLines(content string) (lines []string, quoted []bool) {
+	lines = strings.Split(content, "\n")
+	quoted = make([]bool, len(lines))
 	var state quoteState
 	for i, line := range lines {
-		lines[i] = state.next(line)
+		lines[i], quoted[i] = state.next(line)
 	}
-	return strings.Join(lines, "\n")
+	return lines, quoted
 }
 
 // quoteState tracks the open fence while Unquote walks a document, and
@@ -55,23 +68,27 @@ type quoteState struct {
 }
 
 // next returns line unquoted, unless it sits inside a fence opened outside
-// a quote.
-func (s *quoteState) next(line string) string {
+// a quote, and whether it was quoted.
+func (s *quoteState) next(line string) (string, bool) {
 	if s.fence != "" && !s.quoted {
 		s.fence = closeFence(s.fence, line)
-		return line
+		return line, false
 	}
 	loc := quoteMarkers.FindStringIndex(line)
 	if loc != nil {
 		line = strings.ReplaceAll(line[:loc[1]], ">", " ") + line[loc[1]:]
 	}
 	s.track(line, loc != nil)
-	return line
+	return line, loc != nil
 }
 
 // track closes the open fence when line ends it, or opens the one line
-// begins.
+// begins. Only a quote opened a fence still open here, and as in CommonMark
+// that fence ends with its quote.
 func (s *quoteState) track(line string, quoted bool) {
+	if !quoted {
+		s.fence = ""
+	}
 	if s.fence != "" {
 		s.fence = closeFence(s.fence, line)
 	} else if m := fenceOpen.FindStringSubmatch(line); m != nil {

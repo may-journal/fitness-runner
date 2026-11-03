@@ -3,12 +3,14 @@ package mdtemplate
 import (
 	"path"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
 // IsTemplate reports whether a slash path names a markdown template, which
 // duplicate-code skips since a doc must repeat its template.
 func IsTemplate(p string) bool {
-	return strings.HasSuffix(p, ".md") && (IsConformanceTemplate(p) || isGithubTemplate(p))
+	return mdx.IsMarkdown(p) && (IsConformanceTemplate(p) || isGithubTemplate(p))
 }
 
 // IsConformanceTemplate reports whether the file names a template that

@@ -17,13 +17,16 @@
 // same letters for connector rows.
 //
 //   - Pass: every callout in the diagram maps to exactly one table row, and vice versa.
-//   - Fail (unnumbered diagram): `line N: mermaid diagram has no numbered callouts`, unless it is the legend right after a numbered diagram. One after the table is no legend.
+//   - Fail (unnumbered): `mermaid diagram has no numbered callouts`, for any diagram but a legend right after a numbered diagram.
 //   - Fail (orphan): `diagram callout N has no matching table row`, or `callout table row N has no matching diagram callout`.
 //   - Fail (duplicate): `diagram callout N appears K times` or `callout table row N appears K times`.
 //   - Fail (numbered connector): `connector callout N must be a letter; numbers are for nodes; run fitness mermaid-callouts --fix`.
 //   - Fail (broken doubling): `connector callout AB breaks the letter doubling`, or the same for a table row. A label such as YES that no row lists is prose.
 //   - Fail (unpaired diagram): `mermaid diagram … has callouts but no associated callout table`.
 //   - Fail (unpaired table): `callout table … has no preceding mermaid diagram`.
+//
+// A diagram after the callout table is no legend. A type with no label to
+// number, such as a git graph or timeline, needs no callouts.
 //
 // # Reading callouts
 //

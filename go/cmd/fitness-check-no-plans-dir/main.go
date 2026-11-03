@@ -112,7 +112,7 @@ func artifactName(rel string) (finding, bool) {
 // issue templates live, holding a Plan's checklist. A file that cannot be
 // read holds none; the checks that read Markdown name it.
 func holdsPlan(root, rel string) bool {
-	if !mdx.IsMarkdown(rel) || strings.HasPrefix(rel, ".github/") {
+	if !mdx.IsMarkdown(strings.ToLower(rel)) || strings.HasPrefix(rel, ".github/") {
 		return false
 	}
 	content, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))

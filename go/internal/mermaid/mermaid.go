@@ -20,8 +20,8 @@ import (
 var DiagramExts = []string{".mmd", ".mermaid"}
 
 // DocExts are the endings of every file that can hold a mermaid diagram: each
-// Markdown ending and the diagram files.
-var DocExts = append(append([]string{}, mdx.Exts...), DiagramExts...)
+// Markdown or MDX ending and the diagram files.
+var DocExts = append(append([]string{}, mdx.WithMDX...), DiagramExts...)
 
 // IsDiagramFile reports whether rel is a whole-file diagram.
 func IsDiagramFile(rel string) bool {
@@ -76,7 +76,16 @@ func (b *DiagramBlock) At() string {
 	if b.Line == 0 {
 		return ""
 	}
-	return fmt.Sprintf(" (diagram at line %d)", b.Line)
+	return " (" + b.Name() + ")"
+}
+
+// Name names the diagram for an error: by its opening fence line, or as the
+// whole file for a diagram file.
+func (b *DiagramBlock) Name() string {
+	if b.Line == 0 {
+		return "the diagram file"
+	}
+	return fmt.Sprintf("diagram at line %d", b.Line)
 }
 
 // HasCallouts reports whether the diagram has a node or connector callout,
@@ -489,18 +498,34 @@ func (t *CalloutTableBlock) readRows() {
 var fenceOpen = regexp.MustCompile(`(?i)^[` + jsWS + "]*(`{3,}|~{3,})[" + jsWS + `]*mermaid\b`)
 
 // parseDiagramBlock parses a mermaid fence opened at start and returns the
-// block with the index after its closing fence.
-func parseDiagramBlock(lines []string, start int, marker string) (*DiagramBlock, int) {
+// block with the index after its closing fence. A fence opened in a quote
+// also ends where the quote does, before the first unquoted line.
+func parseDiagramBlock(doc Doc, start int, marker string) (*DiagramBlock, int) {
 	var body []string
 	i := start + 1
-	for i < len(lines) && !strings.HasPrefix(trimStartJS(lines[i]), marker) {
-		body = append(body, lines[i])
+	for i < len(doc.Lines) && !closesDiagram(doc, start, i, marker) {
+		body = append(body, doc.Lines[i])
 		i++
 	}
 	joined := strings.Join(body, "\n")
 	block := &DiagramBlock{Body: joined, Line: start + 1}
 	block.sort(ExtractCallouts(joined))
-	return block, i + 1 // skip the closing fence
+	return block, i + closingFence(doc, start, i)
+}
+
+// closingFence is 1 when line i is the closing fence the parser skips. It is
+// 0 when the quote or the document ended first.
+func closingFence(doc Doc, start, i int) int {
+	if i >= len(doc.Lines) || doc.Quoted[start] && !doc.Quoted[i] {
+		return 0
+	}
+	return 1
+}
+
+// closesDiagram reports whether line i ends the diagram opened at start: its
+// closing fence, or the end of the quote that opened it.
+func closesDiagram(doc Doc, start, i int, marker string) bool {
+	return doc.Quoted[start] && !doc.Quoted[i] || strings.HasPrefix(trimStartJS(doc.Lines[i]), marker)
 }
 
 // parseTableBlock reads a GFM table at start and returns the block, nil when
@@ -538,31 +563,48 @@ func ParseFile(rel, content string) []DocBlock {
 	return []DocBlock{block}
 }
 
+// Doc is a markdown document as ParseDoc reads it: its lines with blockquote
+// markers turned to spaces, and whether each line was quoted.
+type Doc struct {
+	Lines  []string
+	Quoted []bool
+	Blocks []DocBlock
+}
+
 // ParseDoc parses a markdown document into ordered mermaid diagrams and
 // numbered callout tables, quoted ones included. Non-callout tables and
 // prose are ignored.
 func ParseDoc(content string) []DocBlock {
-	lines := strings.Split(mdx.Unquote(content), "\n")
-	var blocks []DocBlock
-	i := 0
-	for i < len(lines) {
-		if m := fenceOpen.FindStringSubmatch(lines[i]); m != nil {
-			block, next := parseDiagramBlock(lines, i, m[1])
-			blocks = append(blocks, block)
-			i = next
-			continue
-		}
-		if isTableStart(lines, i) {
-			block, next := parseTableBlock(lines, i)
-			if block != nil {
-				blocks = append(blocks, block)
-			}
-			i = next
-			continue
-		}
-		i++
+	return ReadDoc(content).Blocks
+}
+
+// ReadDoc is ParseDoc keeping the unquoted lines, so a caller that reads
+// the text between blocks unquotes it once.
+func ReadDoc(content string) Doc {
+	var doc Doc
+	doc.Lines, doc.Quoted = mdx.UnquoteLines(content)
+	for i := 0; i < len(doc.Lines); {
+		i = doc.readBlock(i)
 	}
-	return blocks
+	return doc
+}
+
+// readBlock appends the block that opens at line i, if any, and returns the
+// index after it.
+func (doc *Doc) readBlock(i int) int {
+	if m := fenceOpen.FindStringSubmatch(doc.Lines[i]); m != nil {
+		block, next := parseDiagramBlock(*doc, i, m[1])
+		doc.Blocks = append(doc.Blocks, block)
+		return next
+	}
+	if !isTableStart(doc.Lines, i) {
+		return i + 1
+	}
+	block, next := parseTableBlock(doc.Lines, i)
+	if block != nil {
+		doc.Blocks = append(doc.Blocks, block)
+	}
+	return next
 }
 
 // UnnumberedHint tells the reader how to number a diagram that has no
@@ -594,16 +636,51 @@ func Judged(blocks []DocBlock) []*DiagramBlock {
 	return out
 }
 
-// Unnumbered returns every diagram in blocks that has no callouts and is no
-// legend, in order.
+// Unnumbered returns, in order, every diagram in blocks with no callouts
+// that is no legend and whose type can carry them.
 func Unnumbered(blocks []DocBlock) []*DiagramBlock {
 	var out []*DiagramBlock
 	for _, d := range Judged(blocks) {
-		if !d.HasCallouts() {
+		if !d.HasCallouts() && numberedTypes[d.Type()] {
 			out = append(out, d)
 		}
 	}
 	return out
+}
+
+// numberedTypes are the diagram types whose node labels and links the
+// callout reader reads. A git graph or timeline has no such label, so it
+// need not be numbered.
+var numberedTypes = map[string]bool{
+	"flowchart": true, "graph": true, "flowchart-elk": true, "sequenceDiagram": true,
+	"classDiagram": true, "classDiagram-v2": true, "stateDiagram": true, "stateDiagram-v2": true,
+	"C4Context": true, "C4Container": true, "C4Component": true, "C4Dynamic": true,
+	"C4Deployment": true, "wardley-beta": true,
+}
+
+// Type returns the diagram's type, the first word past front matter, blank
+// lines and %% comments, or "" when it has none.
+func (b *DiagramBlock) Type() string {
+	lines := strings.Split(b.Body, "\n")
+	for _, line := range lines[frontMatterEnd(lines):] {
+		if f := strings.Fields(line); len(f) > 0 && !strings.HasPrefix(f[0], "%%") {
+			return f[0]
+		}
+	}
+	return ""
+}
+
+// frontMatterEnd is the index after a leading `---` front matter block, or 0.
+func frontMatterEnd(lines []string) int {
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return 0
+	}
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "---" {
+			return i + 1
+		}
+	}
+	return 0
 }
 
 // DiagramTablePair is a mermaid diagram and the callout table that
@@ -668,7 +745,7 @@ func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) 
 // that holds a block, aborting on a read error. A callout table lives only
 // in Markdown, so the table checks read nothing else.
 func RunDocCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	return runFiles(root, mdx.Exts, validate)
+	return runFiles(root, mdx.WithMDX, validate)
 }
 
 // RunDiagramCheck is RunDocCheck over the diagram files too, for a check

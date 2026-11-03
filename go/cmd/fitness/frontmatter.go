@@ -36,7 +36,7 @@ func runStripFrontMatter(args []string) int {
 // changed.
 func stripAll(root string) (int, error) {
 	stripped := 0
-	for _, rel := range walkfs.FilesByExt(root, mdx.Exts...) {
+	for _, rel := range walkfs.FilesByExt(root, mdx.WithMDX...) {
 		changed, err := stripFile(root, rel)
 		if err != nil {
 			return stripped, err

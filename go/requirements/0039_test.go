@@ -80,6 +80,7 @@ func Test0039_14(t *testing.T) {
 			"  User -> code",
 		),
 		mermaidCalloutsTable("5"),
+		mermaidCalloutsDiagram("gitGraph", "  commit", "  branch dev", "  commit"),
 	))
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "mermaid-callouts")) {
