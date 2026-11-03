@@ -90,8 +90,16 @@ func Test0039_13(t *testing.T) {
 			mermaidCalloutsTable("A"),
 			mermaidCalloutsDiagram(`Rel(a, b, "A")`),
 		}, "\n"),
+		"docs/plain.md": strings.Join([]string{
+			mermaidCalloutsDiagram("flowchart LR", "Login --> Home"),
+			mermaidCalloutsDiagram("flowchart LR", "a[1 A] --> b[2 B]"),
+			mermaidCalloutsTable("1", "2"),
+			mermaidCalloutsDiagram("flowchart TD", "Fetch -->|then parse| Save"),
+		}, "\n"),
 	})
 	sees(t, out, code, 1,
+		"docs/plain.md: line 1: mermaid diagram has no numbered callouts; number its nodes, as in A[1 Step]",
+		"docs/plain.md: line 16: mermaid diagram has no numbered callouts",
 		"docs/flow.md: diagram callout 1 appears 2 times (line 1)",
 		"docs/flow.md: callout table row A appears 2 times (line 9)",
 		"docs/flow.md: diagram callout C has no matching table row (line 1)",

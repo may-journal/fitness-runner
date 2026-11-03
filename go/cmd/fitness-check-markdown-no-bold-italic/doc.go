@@ -4,8 +4,8 @@
 //
 // # Behavior
 //
-//   - Pass: no .md files, or no markdown file contains bold (double asterisk or double underscore) or italic (single asterisk or single underscore) emphasis.
-//   - Fail: any .md file contains disallowed emphasis; one error per occurrence with file path and snippet.
+//   - Pass: no Markdown files, or no Markdown file contains bold (double asterisk or double underscore) or italic (single asterisk or single underscore) emphasis.
+//   - Fail: any Markdown file contains disallowed emphasis; one error per occurrence with file path and snippet.
 //
 // Scans every tracked Markdown file, `CHANGELOG.md` included. Use bold or italic
 // only when explicitly required. Ignores emphasis inside fenced code, inline

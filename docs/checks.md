@@ -62,8 +62,8 @@ Each row links the check's README and gives the first sentence of its Go package
 | [markdown-links](../go/cmd/fitness-check-markdown-links/README.md) | Requires every relative link in every markdown file to resolve to an existing file or directory. |
 | [markdown-no-bold-italic](../go/cmd/fitness-check-markdown-no-bold-italic/README.md) | Fails bold and italic emphasis in markdown files: `**bold**`, `__bold__`, `*italic*`, or `_italic_`. |
 | [mermaid-callout-why](../go/cmd/fitness-check-mermaid-callout-why/README.md) | Requires each numbered callout table to carry a "Why" column, and flags numbered rows whose "Why" cell is empty. |
-| [mermaid-callouts](../go/cmd/fitness-check-mermaid-callouts/README.md) | Requires every mermaid diagram with callouts to have a callout table whose callouts match it one to one. |
-| [mermaid-diagram-prose](../go/cmd/fitness-check-mermaid-diagram-prose/README.md) | Fails edge labels that carry prose beyond a callout, number or letter, in a diagram paired with a callout table. |
+| [mermaid-callouts](../go/cmd/fitness-check-mermaid-callouts/README.md) | Requires every mermaid diagram but a legend to carry callouts, and a callout table whose callouts match it one to one. |
+| [mermaid-diagram-prose](../go/cmd/fitness-check-mermaid-diagram-prose/README.md) | Fails edge labels that carry prose beyond a callout, number or letter, in any mermaid diagram. |
 | [mermaid-diagram-table-gap](../go/cmd/fitness-check-mermaid-diagram-table-gap/README.md) | Flags loose markdown prose wedged between a numbered mermaid diagram (or its legend block) and the callout table that follows it. |
 | [mermaid-legend](../go/cmd/fitness-check-mermaid-legend/README.md) | Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend. |
 | [mermaid-level-bleed](../go/cmd/fitness-check-mermaid-level-bleed/README.md) | Warns when a callout description at one C4 level repeats the previous level verbatim. |

@@ -140,17 +140,15 @@ func proseLabels(diagram *mermaid.DiagramBlock) []string {
 	return found
 }
 
-// validateDoc flags edge labels that carry prose beyond a callout in a diagram with a callout table.
+// validateDoc flags edge labels that carry prose beyond a callout in every
+// diagram but a legend.
 func validateDoc(file, content string) []string {
 	errors := []string{}
-	for _, pair := range mermaid.PairDiagramsWithTables(mermaid.ParseDoc(content)).Pairs {
-		if pair.Table == nil || !pair.Diagram.HasCallouts() {
-			continue
-		}
-		for _, label := range proseLabels(pair.Diagram) {
+	for _, diagram := range mermaid.Judged(mermaid.ParseDoc(content)) {
+		for _, label := range proseLabels(diagram) {
 			errors = append(errors, fmt.Sprintf(
 				`%s: diagram at line %d has a relationship label with prose ("%s") — put descriptions in the callout table`,
-				file, pair.Diagram.Line, label))
+				file, diagram.Line, label))
 		}
 	}
 	return errors

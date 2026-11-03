@@ -17,9 +17,9 @@ docs with a mermaid diagram or callout table
         - When mermaid-callouts checks the repo
             - Then it passes, counting only that doc
 - 0039.13
-    - Given Developer has a callout in only the diagram or only its table, a repeated callout, or an unpaired diagram or table
+    - Given Developer has a callout in only the diagram or table, a repeated callout, an unpaired block, or an unnumbered non-legend diagram
         - When mermaid-callouts checks the repo
-            - Then it fails naming each unmatched callout and its line, each repeated callout and its count, and each unpaired block's line
+            - Then it fails naming each unmatched callout and its line, each repeated callout and its count, and each unpaired or unnumbered block's line
 - 0039.8
     - Given Developer has an issue or PR body with a diagram callout missing its row
         - When mermaid-callouts checks it in body mode

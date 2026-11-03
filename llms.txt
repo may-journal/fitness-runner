@@ -35,7 +35,7 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `fitness init`: Installs the shared git hooks into this repo.
 - `fitness hook <name>`: Runs a git hook: commit-msg, pre-commit, or pre-push.
 - `fitness boxes <report.json> <page.html>`: Draws a --json report as an HTML box diagram.
-- `fitness strip-front-matter`: Deletes the fitness keys from tracked .md files' front matter, and any block they leave empty.
+- `fitness strip-front-matter`: Deletes the fitness keys from tracked Markdown files' front matter, and any block they leave empty.
 - `fitness comments [path...]`: Prints each code comment block of the tracked files, or of those under the named paths, with its line, language and kind.
 - `fitness branch-check`: Judges this branch's PR and the issues it closes locally, posting nothing.
 - `fitness pr-check`: Judges pull request titles and descriptions, in GitHub Actions.
@@ -87,8 +87,8 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `markdown-links`: Requires every relative link in every markdown file to resolve to an existing file or directory.
 - `markdown-no-bold-italic`: Fails bold and italic emphasis in markdown files: `**bold**`, `__bold__`, `*italic*`, or `_italic_`.
 - `mermaid-callout-why`: Requires each numbered callout table to carry a "Why" column, and flags numbered rows whose "Why" cell is empty.
-- `mermaid-callouts`: Requires every mermaid diagram with callouts to have a callout table whose callouts match it one to one.
-- `mermaid-diagram-prose`: Fails edge labels that carry prose beyond a callout, number or letter, in a diagram paired with a callout table.
+- `mermaid-callouts`: Requires every mermaid diagram but a legend to carry callouts, and a callout table whose callouts match it one to one.
+- `mermaid-diagram-prose`: Fails edge labels that carry prose beyond a callout, number or letter, in any mermaid diagram.
 - `mermaid-diagram-table-gap`: Flags loose markdown prose wedged between a numbered mermaid diagram (or its legend block) and the callout table that follows it.
 - `mermaid-legend`: Requires numbered flowchart callout nodes to carry a style class, and diagrams with callouts to declare a `classDef` legend.
 - `mermaid-level-bleed`: Warns when a callout description at one C4 level repeats the previous level verbatim.

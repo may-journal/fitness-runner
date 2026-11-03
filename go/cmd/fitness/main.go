@@ -222,7 +222,7 @@ func init() {
 		// Draws a --json report as an HTML box diagram.
 		//fitness:usage boxes <report.json> <page.html>
 		"boxes": runBoxes,
-		// Deletes the fitness keys from tracked .md files' front matter, and
+		// Deletes the fitness keys from tracked Markdown files' front matter, and
 		// any block they leave empty.
 		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,

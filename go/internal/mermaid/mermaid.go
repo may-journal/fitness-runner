@@ -557,6 +557,47 @@ func ParseDoc(content string) []DocBlock {
 	return blocks
 }
 
+// UnnumberedHint tells the reader how to number a diagram that has no
+// callouts.
+const UnnumberedHint = "mermaid diagram has no numbered callouts; number its nodes, as in A[1 Step], and add a # | Element | Description | Why table"
+
+// IsLegend reports whether blocks[i] is a legend: a diagram with no callouts
+// right after a numbered diagram, before its callout table. Only a legend may
+// go unnumbered, so one after the table is a diagram of its own.
+func IsLegend(blocks []DocBlock, i int) bool {
+	d, ok := blocks[i].(*DiagramBlock)
+	return ok && !d.HasCallouts() && i > 0 && numbered(blocks[i-1])
+}
+
+// numbered reports whether b is a diagram with callouts.
+func numbered(b DocBlock) bool {
+	d, ok := b.(*DiagramBlock)
+	return ok && d.HasCallouts()
+}
+
+// Judged returns every diagram in blocks but the legends, in order.
+func Judged(blocks []DocBlock) []*DiagramBlock {
+	var out []*DiagramBlock
+	for i, b := range blocks {
+		if d, ok := b.(*DiagramBlock); ok && !IsLegend(blocks, i) {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+// Unnumbered returns every diagram in blocks that has no callouts and is no
+// legend, in order.
+func Unnumbered(blocks []DocBlock) []*DiagramBlock {
+	var out []*DiagramBlock
+	for _, d := range Judged(blocks) {
+		if !d.HasCallouts() {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
 // DiagramTablePair is a mermaid diagram and the callout table that
 // immediately follows it, if any.
 type DiagramTablePair struct {

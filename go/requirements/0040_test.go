@@ -53,10 +53,10 @@ func Test0040_4(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-func Test0040_5(t *testing.T) {
+func Test0040_9(t *testing.T) {
 	t.Parallel()
 	out, code := mdpCheck(t, map[string]string{"docs/arch.md": mdpDiagram(`Rel(app, api, "6 Uses over HTTP")`)})
-	sees(t, out, code, 0, "All 1 checks passed")
+	sees(t, out, code, 1, mdpError("6 Uses over HTTP"))
 }
 
 func Test0040_6(t *testing.T) {
