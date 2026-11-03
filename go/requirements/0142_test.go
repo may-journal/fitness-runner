@@ -7,27 +7,39 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
 )
 
-// releaseLine is the line the installer prints before it runs fitness.
-var releaseLine = regexp.MustCompile(`(?m)^fitness: version=.*$`)
-
 // misspelledNote is a note cspell fails.
 const misspelledNote = "A mispeled wrd.\n"
 
-// hookEvent pipes one Claude Code hook event, as JSON, into
-// `fitness claude-hook` run from repo, and returns what it printed and its
-// exit code.
+// hookEvent pipes one Claude Code hook event, as JSON, into the installed
+// `fitness claude-hook` run from repo, as the settings hooks run it. It
+// asserts stdout holds nothing but the JSON Claude Code parses, and returns
+// stdout and stderr and the exit code.
 func hookEvent(t *testing.T, repo string, event map[string]any) (string, int) {
 	t.Helper()
 	event["cwd"] = repo
 	raw, err := json.Marshal(event)
 	mustDo(t, err)
-	return piped(t, repo, string(raw), nil, "claude-hook")
+	cmd := exec.Command(filepath.Join(installOnly(t), "fitness"), "claude-hook")
+	cmd.Dir, cmd.Env, cmd.Stdin = repo, userEnv(), strings.NewReader(string(raw))
+	var stdout, stderr strings.Builder
+	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	_ = cmd.Run()
+	onlyJSON(t, stdout.String())
+	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode()
+}
+
+// onlyJSON asserts out is empty or one JSON object and nothing else.
+func onlyJSON(t *testing.T, out string) {
+	t.Helper()
+	var verdict map[string]any
+	if out != "" && json.Unmarshal([]byte(out), &verdict) != nil {
+		t.Errorf("stdout must hold only the hook's JSON:\n%s", out)
+	}
 }
 
 // editEvent is the PostToolUse event for a Write of file in repo.
@@ -45,11 +57,10 @@ func stopEvent(active bool) map[string]any {
 	return map[string]any{"hook_event_name": "Stop", "stop_hook_active": active}
 }
 
-// silentPass asserts the hook let the event pass without a word beyond the
-// release line the installer prints.
+// silentPass asserts the hook let the event pass without a word.
 func silentPass(t *testing.T, out string, code int) {
 	t.Helper()
-	if code != 0 || strings.TrimSpace(releaseLine.ReplaceAllString(out, "")) != "" {
+	if code != 0 || out != "" {
 		t.Errorf("want a silent pass, got exit %d:\n%s", code, out)
 	}
 }
@@ -60,6 +71,12 @@ func Test0142_1(t *testing.T) {
 	write(t, repo, map[string]string{"notes.md": misspelledNote})
 	out, code := hookEvent(t, repo, editEvent(repo, "notes.md"))
 	sees(t, out, code, 0, `"decision":"block"`, "fitness: cspell failed on notes.md", "[cspell] notes.md:1", "mispeled")
+	write(t, repo, map[string]string{"pages/[id].md": misspelledNote, "pages/i.md": misspelledNote})
+	out, code = hookEvent(t, repo, editEvent(repo, "pages/[id].md"))
+	sees(t, out, code, 0, "[cspell] pages/[id].md:1")
+	if strings.Contains(out, "pages/i.md") {
+		t.Errorf("an edit to pages/[id].md judged pages/i.md too:\n%s", out)
+	}
 }
 
 func Test0142_2(t *testing.T) {
@@ -102,8 +119,10 @@ func Test0142_3(t *testing.T) {
 	sees(t, out, code, 0, `"permissionDecision":"deny"`, "failed on the pr body", "[markdown-no-bold-italic]")
 	out, code = hookEvent(t, repo, bashEvent(body(cleanText)))
 	silentPass(t, out, code)
-	write(t, repo, map[string]string{"body.md": "Some **bold** text.\n"})
+	write(t, repo, map[string]string{"body.md": "Some **bold** text.\n", "sub/body.md": "Some **bold** text.\n"})
 	for _, command := range []string{
+		"cd sub && /opt/homebrew/bin/gh -R owner/repo pr create --title t -F body.md",
+		"gh pr comment 5 --body-file - <<-EOF\n\tSome **bold** text.\n\tEOF\n",
 		`gh pr create --title t --body='Some **bold** text.'`,
 		`gh pr edit 5 -b "Some **bold** \"text\"."`,
 		"gh pr create --title t --body-file - <<< 'Some **bold** text.'",
@@ -120,7 +139,13 @@ func Test0142_3(t *testing.T) {
 func Test0142_4(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	for _, command := range []string{"ls -la && gh pr view 5 --json body", `gh pr create --title t --body "$BODY"`} {
+	write(t, repo, map[string]string{"fresh.md": "Some **bold** text.\n"})
+	for _, command := range []string{
+		"ls -la && gh pr view 5 --json body",
+		`gh pr create --title t --body "$BODY"`,
+		"gh pr create --title t --body-file - <<EOF\nSee $(cat notes.md)\nEOF\n",
+		"printf 'Fine.' > fresh.md && gh pr create --title t -F fresh.md",
+	} {
 		out, code := hookEvent(t, repo, bashEvent(command))
 		silentPass(t, out, code)
 	}
@@ -129,9 +154,9 @@ func Test0142_4(t *testing.T) {
 func Test0142_5(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	write(t, repo, map[string]string{"notes.md": misspelledNote})
+	write(t, repo, map[string]string{"notes.md": misspelledNote, "café.md": misspelledNote})
 	out, code := hookEvent(t, repo, stopEvent(false))
-	sees(t, out, code, 0, `"decision":"block"`, "fitness: cspell failed on the changed files", "[cspell] notes.md:1")
+	sees(t, out, code, 0, `"decision":"block"`, "fitness: cspell failed on the changed files", "[cspell] notes.md:1", "[cspell] café.md:1")
 	out, code = hookEvent(t, repo, stopEvent(true))
 	silentPass(t, out, code)
 }

@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -65,6 +66,7 @@ func runClaudeHook(args []string) int {
 		fmt.Fprintln(os.Stderr, "fitness claude-hook: takes no arguments; Claude Code sends the event on stdin")
 		return usageExit
 	}
+	withBundlePath()
 	in, err := readHookInput(os.Stdin)
 	verdict := ""
 	if err == nil {
@@ -75,6 +77,14 @@ func runClaudeHook(args []string) int {
 		return 1
 	}
 	return writeBlock(os.Stdout, in.Event, verdict)
+}
+
+// withBundlePath puts this fitness's folder first on PATH, as the installer
+// does, so checks find the tools the bundle ships.
+func withBundlePath() {
+	if exe, err := os.Executable(); err == nil {
+		_ = os.Setenv("PATH", filepath.Dir(exe)+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
 }
 
 // readHookInput decodes the hook event JSON from r.
@@ -340,24 +350,39 @@ func firstDelivery(raw []byte) bool {
 	}
 	sum := sha256.Sum256(raw)
 	mark := filepath.Join(dir, hex.EncodeToString(sum[:]))
-	if f, err := os.OpenFile(mark, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600); err == nil {
-		_ = f.Close()
-		pruneMarks(dir)
+	lock, err := os.OpenFile(mark+".lock", os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
 		return true
 	}
-	if info, err := os.Stat(mark); err == nil && time.Since(info.ModTime()) < duplicateWindow {
+	defer lock.Close()
+	// The lock makes reading and renewing the mark one step, so of two
+	// copies at once exactly one finds no fresh mark.
+	if syscall.Flock(int(lock.Fd()), syscall.LOCK_EX) != nil {
+		return true
+	}
+	defer pruneMarks(dir)
+	return renewMark(mark)
+}
+
+// renewMark reports whether mark was missing or older than the duplicate
+// window, and stamps it now.
+func renewMark(mark string) bool {
+	info, err := os.Stat(mark)
+	if err == nil && time.Since(info.ModTime()) < duplicateWindow {
 		return false
 	}
+	_ = os.WriteFile(mark, nil, 0o600)
 	now := time.Now()
 	_ = os.Chtimes(mark, now, now)
 	return true
 }
 
-// pruneMarks deletes the delivery marks older than the duplicate window.
+// pruneMarks deletes the marks and locks older than twice the duplicate
+// window, which no copy of an event still reads.
 func pruneMarks(dir string) {
 	entries, _ := os.ReadDir(dir)
 	for _, entry := range entries {
-		if info, err := entry.Info(); err == nil && time.Since(info.ModTime()) > duplicateWindow {
+		if info, err := entry.Info(); err == nil && time.Since(info.ModTime()) > 2*duplicateWindow {
 			_ = os.Remove(filepath.Join(dir, entry.Name()))
 		}
 	}

@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -98,21 +99,31 @@ func (r Repo) ChangedSince(base string) ([]string, error) {
 }
 
 // FilesUnder returns the tracked and new, not ignored, files under dir
-// (`git ls-files -co --exclude-standard -- dir`).
+// (`git ls-files -z -co --exclude-standard -- dir`), each path as its bytes.
 func (r Repo) FilesUnder(dir string) ([]string, error) {
-	return r.names("ls-files", "-co", "--exclude-standard", "--", dir)
+	return r.rawNames("ls-files", "-z", "-co", "--exclude-standard", "--", dir)
 }
 
 // Uncommitted returns the files that differ from HEAD, staged or not, and
 // the new files git does not ignore. A repo with no commit yet lists every
 // file it would add.
 func (r Repo) Uncommitted() ([]string, error) {
-	changed, err := r.names("diff", "--name-only", "HEAD")
+	changed, err := r.rawNames("diff", "--name-only", "-z", "HEAD")
 	if err != nil {
-		return r.names("ls-files", "-co", "--exclude-standard")
+		return r.rawNames("ls-files", "-z", "-co", "--exclude-standard")
 	}
-	added, err := r.names("ls-files", "-o", "--exclude-standard")
+	added, err := r.rawNames("ls-files", "-z", "-o", "--exclude-standard")
 	return append(changed, added...), err
+}
+
+// rawNames runs a git command that prints NUL-separated paths with -z, so
+// a path keeps its bytes instead of git's quoting.
+func (r Repo) rawNames(args ...string) ([]string, error) {
+	out, err := r.run(args...)
+	if err != nil {
+		return nil, err
+	}
+	return slices.DeleteFunc(strings.Split(out, "\x00"), func(name string) bool { return name == "" }), nil
 }
 
 // BranchCommits returns the commits reachable from tip but not from base,

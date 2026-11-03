@@ -53,6 +53,10 @@ func namedFiles(root string, flags []string) ([]string, error) {
 	return files, nil
 }
 
+// literalPathspec makes git read a path as written, not as a glob, so a
+// file named app/[id].jsx names only itself.
+const literalPathspec = ":(literal)"
+
 // namedFile lists path when git tracks it or would add it.
 func namedFile(root, path string) ([]string, error) {
 	if path == "" || path == fileFlag {
@@ -62,7 +66,7 @@ func namedFile(root, path string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	listed, err := gitx.Repo(root).FilesUnder(rel)
+	listed, err := gitx.Repo(root).FilesUnder(literalPathspec + rel)
 	if err != nil {
 		return nil, fmt.Errorf("--file %s: %w", path, err)
 	}

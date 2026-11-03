@@ -21,10 +21,11 @@ type shellCall struct {
 
 // heredocInQuotes matches the $(cat <<'EOF' ... EOF) form agents use to pass
 // a long body inside double quotes, capturing the delimiter.
-var heredocInQuotes = regexp.MustCompile(`^\$\(cat <<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?\n`)
+var heredocInQuotes = regexp.MustCompile(`^\$\(cat <<(-?)\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)['"]?\n`)
 
-// heredocStart matches a heredoc redirection, capturing its delimiter.
-var heredocStart = regexp.MustCompile(`^<<-?\s*['"]?([A-Za-z_][A-Za-z0-9_]*)['"]?`)
+// heredocStart matches a heredoc redirection, capturing its dash, its
+// opening quote and its delimiter.
+var heredocStart = regexp.MustCompile(`^<<(-?)\s*(['"]?)([A-Za-z_][A-Za-z0-9_]*)['"]?`)
 
 // expandStarts are the bytes that, after $, start a shell expansion.
 const expandStarts = "{(_@*#?$!abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -57,10 +58,11 @@ type shellParser struct {
 	pending []pendingHeredoc
 }
 
-// pendingHeredoc is a heredoc whose body follows the current line.
+// pendingHeredoc is a heredoc whose body follows the current line, and the
+// call that reads it.
 type pendingHeredoc struct {
-	delim string
-	call  int
+	heredoc
+	call int
 }
 
 // topLevel handles the bytes with a meaning outside quotes, and inWord those
@@ -142,8 +144,8 @@ func (p *shellParser) newline() {
 	p.endCall()
 	p.i++
 	for _, h := range p.pending {
-		body, after, ok := heredocBody(p.src, p.i, h.delim)
-		p.calls[h.call].stdin = &shellWord{text: body, known: ok}
+		body, after := h.read(p.src, p.i)
+		p.calls[h.call].stdin = &body
 		p.i = after
 	}
 	p.pending = nil
@@ -209,15 +211,15 @@ func (p *shellParser) quotedDollar() {
 // quotedHeredoc reads a $(cat <<'EOF' ... EOF) body inside double quotes.
 func (p *shellParser) quotedHeredoc() {
 	m := heredocInQuotes.FindStringSubmatch(p.src[p.i:])
-	body, after, ok := heredocBody(p.src, p.i+len(m[0]), m[1])
+	body, after := heredocOf(m).read(p.src, p.i+len(m[0]))
 	end := strings.IndexByte(p.src[after:], ')')
-	if !ok || end < 0 || strings.TrimSpace(p.src[after:after+end]) != "" {
+	if !body.known || end < 0 || strings.TrimSpace(p.src[after:after+end]) != "" {
 		p.unknown()
 		p.i = len(p.src)
 		return
 	}
 	// Command substitution drops the body's trailing newlines.
-	p.add(strings.TrimRight(body, "\n"))
+	p.add(strings.TrimRight(body.text, "\n"))
 	p.i = after + end + 1
 }
 
@@ -292,23 +294,47 @@ func (p *shellParser) heredoc() {
 		return
 	}
 	p.i += len(m[0])
-	p.pending = append(p.pending, pendingHeredoc{delim: m[1], call: len(p.calls)})
+	p.pending = append(p.pending, pendingHeredoc{heredoc: heredocOf(m), call: len(p.calls)})
 }
 
-// heredocBody reads lines from start up to the line that is delim alone. It
-// returns the body with its newlines and the index after that line.
-func heredocBody(src string, start int, delim string) (body string, after int, ok bool) {
+// heredoc is one heredoc's redirection: its delimiter, whether a dash
+// strips leading tabs, and whether a quoted delimiter keeps the body literal.
+type heredoc struct {
+	delim         string
+	strip, quoted bool
+}
+
+// heredocOf reads the heredoc a heredocStart or heredocInQuotes match names.
+func heredocOf(m []string) heredoc {
+	return heredoc{delim: m[3], strip: m[1] == "-", quoted: m[2] != ""}
+}
+
+// read reads the body from start to the delimiter line, and returns it with
+// the index after that line. A body the shell would
+// expand, or one with no end, is unknown.
+func (h heredoc) read(src string, start int) (body shellWord, after int) {
+	var lines []string
 	for i := start; i < len(src); {
-		line, next := src[i:], len(src)
-		if end := strings.IndexByte(src[i:], '\n'); end >= 0 {
-			line, next = src[i:i+end], i+end+1
+		line, next := lineAt(src, i)
+		if h.strip {
+			line = strings.TrimLeft(line, "\t")
 		}
-		if strings.TrimLeft(line, "\t") == delim {
-			return src[start:i], next, true
+		if line == h.delim {
+			text := strings.Join(append(lines, ""), "\n")
+			return shellWord{text: text, known: h.quoted || !strings.ContainsAny(text, "$`\\")}, next
 		}
-		i = next
+		lines, i = append(lines, line), next
 	}
-	return src[start:], len(src), false
+	return shellWord{}, len(src)
+}
+
+// lineAt is the line of src that starts at i, without its newline, and the
+// index of the next line.
+func lineAt(src string, i int) (line string, next int) {
+	if end := strings.IndexByte(src[i:], '\n'); end >= 0 {
+		return src[i : i+end], i + end + 1
+	}
+	return src[i:], len(src)
 }
 
 // byteAt is src[i], or 0 past its end.

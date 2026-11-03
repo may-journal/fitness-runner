@@ -15,7 +15,7 @@ hook events on red work
 - 0142.1
     - Given Developer has a fitness repo and Claude wrote a file that fails a check
         - When Claude Code runs `fitness claude-hook` after the edit
-            - Then it blocks with that check's findings for the file
+            - Then it blocks with that check's findings for that file alone, even when its name holds a glob
 - 0142.2
     - Given Developer has a fitness repo with a failing Go test, and Claude edited a file
         - When Claude Code runs `fitness claude-hook` after the edit
@@ -23,13 +23,13 @@ hook events on red work
 - 0142.3
     - Given Developer has a fitness repo and Claude drafted a red PR body or comment
         - When Claude Code runs `fitness claude-hook` before the `gh` call posts it
-            - Then it denies the call with the findings, however the shell passes the body
+            - Then it denies the call with the findings, wherever and however the shell passes the body
 - 0142.4
     - Given Developer has a fitness repo
-        - When Claude Code runs `fitness claude-hook` before a call that posts nothing or a body from a variable
+        - When Claude Code runs `fitness claude-hook` before a call that posts nothing, or a body the shell builds
             - Then it exits 0 with no output
 - 0142.5
-    - Given Developer has a fitness repo with an uncommitted file that fails a check
+    - Given Developer has a fitness repo with uncommitted files, any name, that fail a check
         - When Claude Code runs `fitness claude-hook` as Claude stops, then again with the stop hook active
             - Then the first blocks with the findings and the second lets Claude stop
 - 0142.6
