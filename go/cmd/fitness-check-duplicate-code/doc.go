@@ -27,6 +27,13 @@
 //
 // # Templates
 //
+// A doc must repeat its legend too, so three kinds of Markdown line never
+// count ([#782]).
+//
+//   - A legend diagram: one with no callouts right after a numbered diagram.
+//   - A style statement inside any mermaid block, such as `classDef` or `UpdateElementStyle`.
+//   - A GFM table separator row.
+//
 // A doc must repeat its template, so templates are left out. Any file
 // [doc-template] treats as a template is skipped, in any folder. Docs built
 // from one template are still compared with each other and with every other
@@ -46,6 +53,7 @@
 // as deprecated aliases, so repos that carry them keep passing.
 //
 // [jscpd]: https://github.com/kucherenko/jscpd
+// [#782]: https://github.com/may-journal/fitness-runner/issues/782
 // [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
 // [lockfiles]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/lockfiles
 // [doc-template]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-doc-template/README.md#what-is-a-template

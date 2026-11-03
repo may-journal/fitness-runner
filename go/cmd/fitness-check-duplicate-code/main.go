@@ -12,6 +12,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
+	"github.com/may-journal/fitness-runner/go/internal/mdx"
 	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -107,6 +108,9 @@ func lexOne(root, rel string) *clonedetect.File {
 		return nil
 	}
 	content := string(raw)
+	if mdx.IsMarkdown(rel) {
+		content = markdownView(content)
+	}
 	return &clonedetect.File{
 		Path:   rel,
 		Tokens: clonedetect.Lex(content),

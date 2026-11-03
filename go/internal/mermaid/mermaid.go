@@ -70,6 +70,22 @@ type DiagramBlock struct {
 // Kind reports DiagramKind.
 func (*DiagramBlock) Kind() Kind { return DiagramKind }
 
+// styleStatements open the mermaid statements that only style a diagram,
+// which every diagram of a level repeats for its palette.
+var styleStatements = []string{"classDef ", "class ", "style ", "linkStyle ",
+	"UpdateElementStyle(", "UpdateRelStyle(", "UpdateBoundaryStyle(", "UpdateLayoutConfig("}
+
+// IsStyleStatement reports whether a diagram line only styles the diagram.
+func IsStyleStatement(line string) bool {
+	line = strings.TrimSpace(line)
+	for _, s := range styleStatements {
+		if strings.HasPrefix(line, s) {
+			return true
+		}
+	}
+	return false
+}
+
 // At names the opening fence for an error, as " (diagram at line N)".
 // A whole-file diagram gets nothing, since its lines are the file's.
 func (b *DiagramBlock) At() string {

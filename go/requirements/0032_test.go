@@ -49,13 +49,16 @@ func Test0032_1(t *testing.T) {
 	}
 }
 
-// Test0032_12 puts a 3-line block in one pair and an 18-token block in
-// another, each under one minimum.
-func Test0032_12(t *testing.T) {
+// Test0032_17 puts a 3-line block in one pair and an 18-token block in
+// another, each under one minimum. Two docs share a 60-dash separator row.
+func Test0032_17(t *testing.T) {
 	t.Parallel()
 	files := dupPair("src/a.js", "src/b.js", dupBlock("w", 3, 20))
 	files["src/c.js"] = dupBlock("s", 6, 3) + dupBlock("fc", 24, 3)
 	files["src/d.js"] = dupBlock("s", 6, 3) + dupBlock("fd", 24, 3)
+	separator := "| " + strings.Repeat("-", 60) + " | " + strings.Repeat("-", 60) + " |\n"
+	files["docs/a.md"] = "# A\n\n| Name | Why |\n" + separator + "| a | b |\n" + dupBlock("da", 24, 3)
+	files["docs/b.md"] = "# B\n\n| Name | Why |\n" + separator + "| c | d |\n" + dupBlock("db", 24, 3)
 	out, code := dupRun(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 }
@@ -115,15 +118,61 @@ func Test0032_14(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-// Test0032_10 adds a template to Test0032_1's two copies. The share stays
-// 7.4%, so only the two docs count: the template is not scanned.
-func Test0032_10(t *testing.T) {
+// Test0032_16 adds a template to Test0032_1's two copies and two level docs
+// whose legend and style lines match. A third doc is committed, so
+// duplicate-code scopes to Markdown, and only notes.md is named.
+func Test0032_16(t *testing.T) {
 	t.Parallel()
 	files := dupPair("docs/guide.md", "docs/notes.md", dupClone)
 	files["docs/templates/guide.md"] = dupClone + dupBlock("ft", 24, 3)
-	out, code := dupRun(t, files)
-	sees(t, out, code, 1, "ERROR: duplicate code is 7.4% of scanned lines, over the 1.0% threshold")
+	files["docs/architecture/02-containers.md"] = dupLevelDoc("ca")
+	files["docs/architecture/03-components.md"] = dupLevelDoc("cb")
+	repo, env := hooked(t, files)
+	write(t, repo, map[string]string{"docs/new.md": "# New\n\n" + dupBlock("fn", 24, 3)})
+	user(t, repo, env, "add", "docs/new.md")
+	out, _ := user(t, repo, env, "commit", "-m", "docs(new): add a doc")
+	dupNames(t, out, []string{"ERROR: duplicate code is ", "docs/notes.md: 6 duplicated lines"},
+		[]string{"docs/architecture/02-containers.md:", "docs/architecture/03-components.md:", "docs/guide.md:"})
 }
+
+// dupNames asserts out holds each of wants and none of the clean paths, which
+// hold only lines a doc must repeat.
+func dupNames(t *testing.T, out string, wants, clean []string) {
+	t.Helper()
+	for _, want := range wants {
+		if !strings.Contains(read(out), want) {
+			t.Errorf("the commit output is missing %q:\n%s", want, out)
+		}
+	}
+	for _, path := range clean {
+		if regexp.MustCompile(regexp.QuoteMeta(path) + ` \d+ duplicated lines`).MatchString(read(out)) {
+			t.Errorf("%s holds no duplicated line:\n%s", path, out)
+		}
+	}
+}
+
+// dupLevelDoc is one C4 level doc: a numbered diagram, the shared legend
+// and table, then prose of its own.
+func dupLevelDoc(prefix string) string {
+	return "# Level\n\n" + dupLevelDiagram(prefix) + dupLegend + dupTable(prefix) + "\n" + dupBlock(prefix, 24, 3)
+}
+
+// dupTable is a level's callout rows, which name the level.
+func dupTable(prefix string) string {
+	return "| 1 | The " + prefix + " user | Starts " + prefix + " |\n| 2 | The " + prefix + " app | Serves " + prefix + " |\n| A | Opens " + prefix + " | Daily |\n"
+}
+
+// dupLevelDiagram is a numbered C4 diagram whose only repeated lines are
+// its style statements.
+func dupLevelDiagram(prefix string) string {
+	return "```mermaid\nC4Container\n    Person(" + prefix + ", \"1 " + prefix + " user\")\n    Container(" + prefix + "2, \"2 " + prefix + " app\", \"Go\", \"Runs " + prefix + "\")\n" +
+		"    Rel(" + prefix + ", " + prefix + "2, \"A\")\n" +
+		"    UpdateElementStyle(" + prefix + ", $bgColor=\"#334155\", $borderColor=\"#1e293b\", $fontColor=\"#ffffff\")\n" +
+		"    UpdateElementStyle(" + prefix + "2, $bgColor=\"#0f766e\", $borderColor=\"#115e59\", $fontColor=\"#ffffff\")\n```\n\n"
+}
+
+// dupLegend is the legend diagram every C4 level repeats, with its table.
+const dupLegend = "```mermaid\nC4Container\n    title Legend\n\n    Person(p, \"Person\", \"Human or agent actor\")\n    System_Boundary(b, \"System boundary\") {\n        Container(c, \"Container\", \"Tech\", \"Runnable or deployable unit\")\n    }\n    System_Ext(e, \"External\", \"Outside our boundary\")\n\n    UpdateElementStyle(p, $bgColor=\"#334155\", $borderColor=\"#1e293b\", $fontColor=\"#ffffff\")\n    UpdateElementStyle(c, $bgColor=\"#0f766e\", $borderColor=\"#115e59\", $fontColor=\"#ffffff\")\n    UpdateElementStyle(e, $bgColor=\"#64748b\", $borderColor=\"#475569\", $fontColor=\"#ffffff\")\n```\n\nNumbers on nodes and letters on arrows match the callout table.\n\n| # | Description | Why |\n| --- | --- | --- |\n"
 
 // Test0032_15 wraps the block in current markers in one pair and deprecated
 // jscpd ones in the other, so older repos keep passing.
