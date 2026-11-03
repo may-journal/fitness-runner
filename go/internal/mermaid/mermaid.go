@@ -5,7 +5,6 @@ package mermaid
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -26,13 +25,7 @@ var DocExts = append(append([]string{}, mdx.Exts...), DiagramExts...)
 
 // IsDiagramFile reports whether rel is a whole-file diagram.
 func IsDiagramFile(rel string) bool {
-	ext := strings.ToLower(path.Ext(rel))
-	for _, e := range DiagramExts {
-		if ext == e {
-			return true
-		}
-	}
-	return false
+	return mdx.HasExt(rel, DiagramExts)
 }
 
 // Kind discriminates the two DocBlock implementations — the port of the
@@ -622,10 +615,23 @@ func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) 
 	return nil
 }
 
-// RunDocCheck runs a validator over each in-scope Markdown or diagram file
-// under root that holds a block, aborting on a read error.
+// RunDocCheck runs a validator over each in-scope Markdown file under root
+// that holds a block, aborting on a read error. A callout table lives only
+// in Markdown, so the table checks read nothing else.
 func RunDocCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, DocExts...)) {
+	return runFiles(root, mdx.Exts, validate)
+}
+
+// RunDiagramCheck is RunDocCheck over the diagram files too, for a check
+// that judges a diagram on its own.
+func RunDiagramCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
+	return runFiles(root, DocExts, validate)
+}
+
+// runFiles runs validate over each in-scope file with one of exts that
+// holds a block.
+func runFiles(root string, exts []string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
+	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, exts...)) {
 		raw, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 		if readErr != nil {
 			return nil, 0, readErr

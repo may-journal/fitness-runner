@@ -14,7 +14,8 @@
 // requires. Links take `linkStyle`, not a class, so this check skips
 // connector letters.
 //
-// It runs on every Markdown file with a mermaid diagram or callout table; files
+// It runs on every Markdown file with a mermaid diagram or callout table, and
+// on every `.mmd` or `.mermaid` file. Files
 // with neither are skipped and don't count toward `filesChecked`.
 //
 // [#28]: https://github.com/may-journal/fitness-runner/issues/28

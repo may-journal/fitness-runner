@@ -14,10 +14,16 @@ import (
 // about Markdown reads every document and not only `.md`.
 var Exts = []string{".md", ".markdown", ".mdown", ".mkdn", ".mkd", ".mdwn", ".mdx"}
 
-// IsMarkdown reports whether rel has one of Exts, in any letter case.
+// IsMarkdown reports whether rel has one of Exts.
 func IsMarkdown(rel string) bool {
-	ext := strings.ToLower(path.Ext(rel))
-	for _, e := range Exts {
+	return HasExt(rel, Exts)
+}
+
+// HasExt reports whether rel ends in one of exts, matched by case as the
+// file walkers match them.
+func HasExt(rel string, exts []string) bool {
+	ext := path.Ext(rel)
+	for _, e := range exts {
 		if ext == e {
 			return true
 		}
@@ -30,16 +36,56 @@ func IsMarkdown(rel string) bool {
 var quoteMarkers = regexp.MustCompile(`^[ \t]*(>[ \t]?)+`)
 
 // Unquote returns content with each line's leading blockquote markers turned
-// to spaces, byte for byte. A fence or table inside a quote then parses as
-// the reader sees it, and every offset still points into the original text.
+// to spaces, byte for byte. A quoted fence or table then parses as the reader
+// sees it, and every offset still points into the original text.
 func Unquote(content string) string {
 	lines := strings.Split(content, "\n")
+	var state quoteState
 	for i, line := range lines {
-		if loc := quoteMarkers.FindStringIndex(line); loc != nil {
-			lines[i] = strings.ReplaceAll(line[:loc[1]], ">", " ") + line[loc[1]:]
-		}
+		lines[i] = state.next(line)
 	}
 	return strings.Join(lines, "\n")
+}
+
+// quoteState tracks the open fence while Unquote walks a document, and
+// whether a quote opened it. A line inside an unquoted fence is code.
+type quoteState struct {
+	fence  string
+	quoted bool
+}
+
+// next returns line unquoted, unless it sits inside a fence opened outside
+// a quote.
+func (s *quoteState) next(line string) string {
+	if s.fence != "" && !s.quoted {
+		s.fence = closeFence(s.fence, line)
+		return line
+	}
+	loc := quoteMarkers.FindStringIndex(line)
+	if loc != nil {
+		line = strings.ReplaceAll(line[:loc[1]], ">", " ") + line[loc[1]:]
+	}
+	s.track(line, loc != nil)
+	return line
+}
+
+// track closes the open fence when line ends it, or opens the one line
+// begins.
+func (s *quoteState) track(line string, quoted bool) {
+	if s.fence != "" {
+		s.fence = closeFence(s.fence, line)
+	} else if m := fenceOpen.FindStringSubmatch(line); m != nil {
+		s.fence, s.quoted = m[1], quoted
+	}
+}
+
+// closeFence returns "" when line closes the fence opened by marker, else
+// marker.
+func closeFence(marker, line string) string {
+	if strings.HasPrefix(strings.TrimLeft(line, " \t"), marker) {
+		return ""
+	}
+	return marker
 }
 
 // FrontMatter returns the YAML front matter body (the lines between the

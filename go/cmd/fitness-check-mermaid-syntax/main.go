@@ -25,7 +25,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 	}); err != nil || handled {
 		return res, err
 	}
-	errors, filesChecked, err := mermaid.RunDocCheck(root, validateDoc)
+	errors, filesChecked, err := mermaid.RunDiagramCheck(root, validateDoc)
 	if err != nil {
 		return checkkit.Result{}, err
 	}

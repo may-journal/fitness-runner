@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
@@ -21,7 +22,7 @@ import (
 type Convention struct {
 	// Label appears in the error message, e.g. "kebab-case".
 	Label string
-	// Pattern is the regexp the full basename (including ".md") must match.
+	// Pattern is the regexp the full basename, Markdown ending included, must match.
 	Pattern *regexp.Regexp
 }
 
@@ -29,19 +30,19 @@ type Convention struct {
 // hyphens, e.g. api-design.md.
 var Kebab = Convention{
 	Label:   "kebab-case",
-	Pattern: regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*\.md$`),
+	Pattern: regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*` + mdExt),
 }
 
 // Camel is camelCase: starts lowercase, then letters/digits, e.g.
 // releaseNotes.md, adr001.md.
 var Camel = Convention{
 	Label:   "camelCase",
-	Pattern: regexp.MustCompile(`^[a-z][a-zA-Z0-9]*\.md$`),
+	Pattern: regexp.MustCompile(`^[a-z][a-zA-Z0-9]*` + mdExt),
 }
 
 // capsDoc matches capitalized doc basenames (README.md, LICENSE.md,
 // AGENTS.md, CODE_OF_CONDUCT.md, ...), which are exempt from the convention.
-var capsDoc = regexp.MustCompile(`^[A-Z0-9_]+\.md$`)
+var capsDoc = regexp.MustCompile(`^[A-Z0-9_]+` + mdExt)
 
 // githubName reports whether a markdown path is a template name GitHub requires
 // in the root, docs or .github, which a repo cannot rename.
@@ -122,4 +123,17 @@ func Run(root string, c Convention) checkkit.Result {
 		return checkkit.Fail(len(files), errors...)
 	}
 	return checkkit.Pass(len(files))
+}
+
+// mdExt matches one Markdown ending at the end of a basename, so each
+// convention reads every ending mdx.Exts lists.
+var mdExt = `\.(?:` + strings.Join(bareExts(), "|") + `)$`
+
+// bareExts lists mdx.Exts without their dots, quoted for a regexp.
+func bareExts() []string {
+	out := make([]string, len(mdx.Exts))
+	for i, e := range mdx.Exts {
+		out[i] = regexp.QuoteMeta(strings.TrimPrefix(e, "."))
+	}
+	return out
 }

@@ -26,7 +26,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 	} else if handled {
 		return res, nil
 	}
-	errors, filesChecked, err := mermaid.RunDocCheck(root, validateDoc)
+	errors, filesChecked, err := mermaid.RunDiagramCheck(root, validateDoc)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
@@ -131,8 +131,8 @@ func unstyledNodeErrors(
 	for _, node := range nodes {
 		if !node.styledInline && !styledIds[node.id] {
 			errors = append(errors, fmt.Sprintf(
-				"%s: callout %d (%s) has no style class (diagram at line %d)",
-				file, node.number, node.id, block.Line))
+				"%s: callout %d (%s) has no style class%s",
+				file, node.number, node.id, block.At()))
 		}
 	}
 	return errors
@@ -163,7 +163,7 @@ func legendErrorsForDiagram(file string, block *mermaid.DiagramBlock) []string {
 	var errors []string
 	if !hasClassDef(lines) {
 		errors = append(errors, fmt.Sprintf(
-			"%s: diagram at line %d has numbered callouts but no classDef legend", file, block.Line))
+			"%s: %s has numbered callouts but no classDef legend", file, where(block)))
 	}
 	return append(errors, unstyledNodeErrors(file, block, nodes, styledIds)...)
 }
@@ -177,4 +177,13 @@ func validateDoc(file, content string) []string {
 		}
 	}
 	return errors
+}
+
+// where names a diagram for an error: by its opening fence line, or as the
+// whole file for a diagram file.
+func where(block *mermaid.DiagramBlock) string {
+	if block.Line == 0 {
+		return "the diagram file"
+	}
+	return fmt.Sprintf("diagram at line %d", block.Line)
 }

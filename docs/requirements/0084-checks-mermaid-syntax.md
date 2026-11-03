@@ -41,6 +41,6 @@ mermaid diagrams
         - When mermaid-syntax runs
             - Then it passes having checked no files
 - 0084.9
-    - Given Developer has a label with unquoted brackets in a doc, in a quote, in a `.markdown` doc and in a `.mmd` file
+    - Given Developer has an unquoted bracket in a doc, a quote, a `.markdown` doc and a `.mmd` file, and a quoted code example
         - When mermaid-syntax checks the repo
-            - Then it fails naming each node and its line
+            - Then it fails naming each real node and its line
