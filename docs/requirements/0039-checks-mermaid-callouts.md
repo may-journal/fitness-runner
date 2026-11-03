@@ -13,7 +13,7 @@ docs with a mermaid diagram or callout table
 ## Requirements
 
 - 0039.14
-    - Given Developer has callouts matching their table one to one, beside prose such as YES and HTTPS and a legend diagram
+    - Given Developer has callouts matching their table one to one in flowchart, C4 and wardley maps, beside YES, HTTPS and a legend
         - When mermaid-callouts checks the repo
             - Then it passes, counting only that doc
 - 0039.13

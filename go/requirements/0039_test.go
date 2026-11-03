@@ -72,6 +72,14 @@ func Test0039_14(t *testing.T) {
 		mermaidCalloutsDiagram(`Container(web, "4", "UI")`, `Rel(web, api, "D", "HTTPS")`),
 		mermaidCalloutsDiagram(`Person(p, "Person")`, `System(s, "System")`, `Rel(p, s, "uses")`),
 		mermaidCalloutsTable("4", "D"),
+		mermaidCalloutsDiagram(
+			"wardley-beta",
+			"  anchor User [0.99, 0.66]",
+			"  component code [0.60, 0.35]",
+			`  annotation 5,[0.40, 0.35] "Genesis: code"`,
+			"  User -> code",
+		),
+		mermaidCalloutsTable("5"),
 	))
 	sees(t, out, code, 0, "All 1 checks passed")
 	if !regexp.MustCompile(`│ passed\s+│ 1\s+│`).MatchString(row(out, "mermaid-callouts")) {

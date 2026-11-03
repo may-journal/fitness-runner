@@ -21,7 +21,7 @@ Nodes carry number callouts and connectors carry letter callouts, so a reader te
 
 ## Reading callouts
 
-A node callout is the leading integer of a node label: quoted (`Container(x, "3", …)`, `A["1 Check"]`) or inside a node shape (`A[2 Screen]`).
+A node callout is the leading integer of a node label: quoted (`Container(x, "3", …)`, `A["1 Check"]`) or inside a node shape (`A[2 Screen]`). A wardley-beta map numbers its annotations instead, as in `annotation 1,[0.40, 0.35] "text"`.
 
 A connector callout is the leading label of an edge, in any of these forms:
 

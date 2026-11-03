@@ -46,6 +46,12 @@ wardley-beta
   User -> "features, bugs"
 ```
 
+| # | Element | Description | Why |
+| --- | --- | --- | --- |
+| 1 | AI context | Genesis AI context: rules, LLM, writing | Rules and writing sit near 0.3 evolution, close to genesis. |
+| 2 | Custom middle | Code and code review | Code and review sit at 0.35 and 0.50 evolution, between genesis and commodity. |
+| 3 | Commodity pipeline | CI CD and quality checks | Both sit at 0.75 evolution, near commodity. |
+
 ## Context with fitness-runner
 
 ```mermaid
@@ -99,6 +105,13 @@ wardley-beta
   User -> "features, bugs"
 ```
 
+| # | Element | Description | Why |
+| --- | --- | --- | --- |
+| 1 | AI context | Genesis AI context: the intent layer | Rules and writing stay near 0.3 evolution, as in the Context map. |
+| 2 | Enforcement gap | fitness-runner bridges rules and checks | Rules, code and CI CD feed fitness-runner, which feeds quality checks. |
+| 3 | Commodity pipeline | Not yet unified with agents | The Local vs CI drift deaccelerator sits beside the pipeline. |
+| 4 | Evolve arrows | They point to the Evolved map | Rules, code, fitness-runner and quality checks each carry an arrow to where Evolved draws them. |
+
 ## Evolved
 
 ```mermaid
@@ -145,6 +158,13 @@ wardley-beta
   User -> "features, bugs"
 ```
 
+| # | Element | Description | Why |
+| --- | --- | --- | --- |
+| 1 | Rules | Rules matured into an enforceable product | Rules move from 0.30 to 0.45 evolution, where the last map's arrow points. |
+| 2 | fitness-runner | The runner standardized a check contract | It moves from 0.48 to 0.60 evolution. |
+| 3 | Fitness checks | Quality checks became fitness checks | The node is renamed and moves from 0.75 to 0.88 evolution. |
+| 4 | Code | Consistent product-stage patterns | Code moves from 0.35 to 0.50 evolution. |
+
 ## Before AI
 
 ```mermaid
@@ -177,3 +197,9 @@ wardley-beta
 
   User -> "features, bugs"
 ```
+
+| # | Element | Description | Why |
+| --- | --- | --- | --- |
+| 1 | Writing | No AI context layer: writing is typing code | The map has no LLM or rules node, and writing feeds only code. |
+| 2 | Closed chain | Code review, CI CD and quality checks | Review feeds CI CD, which feeds quality checks, in one line. |
+| 3 | Code | No enforcement gap | With no rules node, no rule waits on a check. |

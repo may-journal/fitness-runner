@@ -330,10 +330,18 @@ func spaceOrPipeFollows(line string, end int) bool {
 // collectCalloutPositions records each callout's absolute label position for
 // one (non-style) line by scanning it with every callout pattern.
 func collectCalloutPositions(line string, offset int, byPosition map[int]Callout) {
+	if loc := wardleyAnnotation.FindStringSubmatchIndex(line); loc != nil {
+		at := offset + loc[2]
+		byPosition[at] = Callout{Label: line[loc[2]:loc[3]], Offset: at}
+	}
 	for _, p := range calloutPatterns {
 		p.scan(line, offset, byPosition)
 	}
 }
+
+// wardleyAnnotation matches a wardley-beta annotation, `annotation 1,[x, y]
+// "text"`, whose number the map draws as a node callout.
+var wardleyAnnotation = regexp.MustCompile(`^[` + jsWS + `]*annotation[` + jsWS + `]+(\d+)[` + jsWS + `]*,[` + jsWS + `]*\[`)
 
 // scan records the pattern's callouts on line into byPosition by absolute
 // position, resuming exactly where the JS matchAll would.
