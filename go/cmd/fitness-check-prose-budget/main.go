@@ -41,7 +41,7 @@ var htmlCommentRe = regexp.MustCompile(`(?s)<!--.*?-->`)
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "prose-budget", Scope: checkkit.ScopeFiles, Blob: true},
+		Describe: checkkit.Describe{Name: "prose-budget", Scope: checkkit.ScopeFiles, Blob: true, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }
@@ -49,7 +49,7 @@ func Main() {
 func run(root string, args []string) (checkkit.Result, error) {
 	lim := settings(root)
 	if msg, ok := bodycheck.Message(args); ok {
-		return messageResult(msg), nil
+		return bodycheck.Text("(commit message)", msg, proseSlop), nil
 	}
 	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
 		return append(check(descriptionName, content, lim), proseSlop(descriptionName, content)...)
@@ -57,14 +57,6 @@ func run(root string, args []string) (checkkit.Result, error) {
 		return res, err
 	}
 	return walkFiles(root, lim), nil
-}
-
-// messageResult judges one commit message's slop, for the commit-msg hook.
-func messageResult(msg string) checkkit.Result {
-	if errs := proseSlop("(commit message)", msg); len(errs) > 0 {
-		return checkkit.Fail(1, errs...)
-	}
-	return checkkit.Pass(1)
 }
 
 // walkFiles applies the budget to every in-scope .md file under root, then

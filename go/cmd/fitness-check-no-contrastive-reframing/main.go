@@ -12,7 +12,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "no-contrastive-reframing", Scope: checkkit.ScopeFiles, Blob: true},
+		Describe: checkkit.Describe{Name: "no-contrastive-reframing", Scope: checkkit.ScopeFiles, Blob: true, ContextInlineArg: "--message"},
 		Run:      run,
 	})
 }
@@ -21,7 +21,7 @@ func Main() {
 // judges every in-scope markdown file, then each comment block of the run.
 func run(root string, args []string) (checkkit.Result, error) {
 	if msg, ok := bodycheck.Message(args); ok {
-		return textResult("(commit message)", msg), nil
+		return bodycheck.Text("(commit message)", msg, fileErrors), nil
 	}
 	if res, handled, err := bodycheck.RunDoc(root, args, func(_, content string) []string {
 		return fileErrors("(description)", content)
@@ -29,14 +29,6 @@ func run(root string, args []string) (checkkit.Result, error) {
 		return res, err
 	}
 	return comments.Judge(walkfs.ScanFiles(root, []string{".md"}, fileErrors), root, fileErrors), nil
-}
-
-// textResult judges one text under name as a file would be.
-func textResult(name, text string) checkkit.Result {
-	if errs := fileErrors(name, text); len(errs) > 0 {
-		return checkkit.Fail(1, errs...)
-	}
-	return checkkit.Pass(1)
 }
 
 var (
@@ -102,8 +94,8 @@ func stripQuoted(s string) string {
 
 // msgFor builds the failure message, quoting a trimmed snippet.
 func msgFor(rel, snippet string) string {
-	if len(snippet) > 80 {
-		snippet = snippet[:80] + "…"
+	if runes := []rune(snippet); len(runes) > 80 {
+		snippet = string(runes[:80]) + "…"
 	}
 	return rel + `: rewrite as a direct statement, not the "not X, it's Y" pattern: "` + snippet + `"`
 }

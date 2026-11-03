@@ -30,7 +30,7 @@ It shares its prose extraction and sentence splitting with `text-readability` th
 
 ## GitHub bodies and commit messages
 
-Given `--body-file`, the check judges one issue, PR or comment body. It applies the budgets above and the prose slop rules below, `change-narration`, `hedging` and `tutorial-tone`, named `(description)`. The block rules stay with code comments: a body carries no code line, and its footer is no decoration.
+Given `--body-file`, the check judges one issue, PR or comment body. It applies the budgets above and the prose slop rules below, `hedging` and `tutorial-tone`, named `(description)`. The other slop rules stay with code comments. A body carries no code line, its footer is no decoration, and it may tell what changed.
 
 Given `--message`, as the commit-msg hook passes it, it judges the commit message by the prose slop rules alone, named `(commit message)`. One rule set then holds wherever an agent writes.
 

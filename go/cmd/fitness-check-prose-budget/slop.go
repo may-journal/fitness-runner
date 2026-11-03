@@ -41,7 +41,7 @@ var slopRules = []slopRule{
 	{ruleDecoration, "delete it", func(b comments.Block, _ string) string { return decorated(b.Text) }, false},
 	{ruleNarration, "say what holds today, since git keeps history", func(_ comments.Block, prose string) string {
 		return matched(narration, prose, "narrates a change")
-	}, true},
+	}, false},
 	{ruleHedging, "drop the word or state the fact", func(_ comments.Block, prose string) string {
 		return matched(hedge, prose, "hedges")
 	}, true},
@@ -55,9 +55,9 @@ func slopErrors(name string, b comments.Block, blocks []block) []string {
 	return ruleErrors(name, b, proseOf(blocks), false)
 }
 
-// proseSlop reports each prose slop rule a GitHub body or commit message breaks.
-// The block rules stay with code comments: a body carries no code line to restate,
-// and its attribution footer is no decoration.
+// proseSlop reports each prose slop rule a GitHub body or commit message breaks:
+// hedging and tutorial tone. The block rules stay with code comments, and so does
+// change narration, since a body or a message may tell what changed.
 func proseSlop(name, text string) []string {
 	return ruleErrors(name, comments.Block{Text: text}, proseOf(parse(text)), true)
 }

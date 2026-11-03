@@ -46,8 +46,9 @@ func chdirToplevel() error {
 	return os.Chdir(top)
 }
 
-// hookCommitMsg runs semantic-commit, plan-trailer, issue-link-once and
-// requirements-changed in one pool, judging an amend against its parent.
+// hookCommitMsg runs semantic-commit, plan-trailer, issue-link-once,
+// requirements-changed, prose-budget and no-contrastive-reframing in one
+// pool, judging an amend against its parent.
 func hookCommitMsg(args []string) int {
 	msg, ok := readMessage(args)
 	if !ok {

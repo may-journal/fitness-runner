@@ -28,7 +28,7 @@ func Test0142_2(t *testing.T) {
 func Test0142_3(t *testing.T) {
 	t.Parallel()
 	repo, env := hooked(t, nil)
-	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "docs(note): add a note\n\nPreviously it used to miss. It's not a fix. It's a feature.")
-	sees(t, out, code, 1, `(commit message): change-narration: "Previously" narrates a change`,
+	out, code := user(t, repo, env, "commit", "--allow-empty", "-m", "docs(note): add a note\n\nThis basically fixes it. It's not a fix. It's a feature.")
+	sees(t, out, code, 1, `(commit message): hedging: "basically" hedges`,
 		`(commit message): rewrite as a direct statement, not the "not X, it's Y"`)
 }

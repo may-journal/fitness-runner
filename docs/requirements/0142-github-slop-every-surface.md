@@ -21,6 +21,6 @@ GitHub texts and commit messages judged
         - When I run fitness comment-check with the reply after `--blob`
             - Then it fails naming `tutorial-tone` and the reframing
 - 0142.3
-    - Given Developer commits with a message whose body says "Previously it used to" and "It's not a fix. It's a feature."
+    - Given Developer commits with a message whose body says "basically" and "It's not a fix. It's a feature."
         - When I commit
-            - Then the commit-msg hook fails naming `change-narration` and the reframing
+            - Then the commit-msg hook fails naming `hedging` and the reframing

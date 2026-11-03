@@ -23,13 +23,41 @@ func Run(args []string, validate func(body string) []string) (checkkit.Result, e
 func Message(args []string) (string, bool) {
 	for i, arg := range args {
 		if text, ok := strings.CutPrefix(arg, "--message="); ok {
-			return text, true
+			return withoutGitComments(text), true
 		}
 		if arg == "--message" && i+1 < len(args) {
-			return args[i+1], true
+			return withoutGitComments(args[i+1]), true
 		}
 	}
-	return checkkit.CtxMessage()
+	msg, ok := checkkit.CtxMessage()
+	return withoutGitComments(msg), ok
+}
+
+// scissors opens the diff `git commit -v` appends below the message.
+const scissors = "# ------------------------ >8"
+
+// withoutGitComments drops the `#` lines git strips from a commit message,
+// and everything below the scissors line. A check then reads what git keeps.
+func withoutGitComments(msg string) string {
+	var kept []string
+	for _, line := range strings.Split(msg, "\n") {
+		if strings.HasPrefix(line, scissors) {
+			break
+		}
+		if !strings.HasPrefix(line, "#") {
+			kept = append(kept, line)
+		}
+	}
+	return strings.Join(kept, "\n")
+}
+
+// Text judges one text under name, a body or a commit message, as a file.
+// It counts one file and fails on any error.
+func Text(name, text string, validate func(name, text string) []string) checkkit.Result {
+	if errs := validate(name, text); len(errs) > 0 {
+		return checkkit.Fail(1, errs...)
+	}
+	return checkkit.Pass(1)
 }
 
 // BlobEnv is set by `fitness --blob`, which judges a draft text of any kind.
