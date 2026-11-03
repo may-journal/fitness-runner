@@ -20,6 +20,7 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `fitness --all`: Forces a full scan even when files are staged.
 - `fitness --blob <text>`: Runs every blob-capable check on a text instead of the repo; - reads the text from stdin.
 - `fitness --dir=<folder>`: Judges only the files under one folder.
+- `fitness --file=<path>`: Judges only the named file; repeat it to name more.
 - `fitness --json=<file>`: Names the file that receives the run's performance report: each check's time, budget, files, binary size, and error lines, as JSON.
 - `fitness --policy=external --checks=<name,name>`: Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
 
@@ -43,6 +44,7 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `fitness close-check`: Reopens an issue closed with unchecked items, or closes the parent it finishes, in GitHub Actions.
 - `fitness dupe-check`: Notes when a new issue resembles an older one, in GitHub Actions.
 - `fitness comment-check --blob <text>` or `fitness comment-check`: Judges a drafted comment, where - or no text reads stdin, or judges issue and PR comments and reply, in GitHub Actions.
+- `fitness claude-hook`: Judges what a Claude Code hook event on stdin names.
 
 ## Checks
 

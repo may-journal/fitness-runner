@@ -1,6 +1,24 @@
 ---
 name: fitness
 description: Fix any failing fitness check by reading its own docs. Use when a check fails or you need to know what a check requires.
+hooks:
+  PostToolUse:
+    - matcher: "Edit|Write|MultiEdit|NotebookEdit"
+      hooks:
+        - type: command
+          command: fitness claude-hook
+          timeout: 30
+  PreToolUse:
+    - matcher: "Bash"
+      hooks:
+        - type: command
+          command: fitness claude-hook
+          timeout: 30
+  Stop:
+    - hooks:
+        - type: command
+          command: fitness claude-hook
+          timeout: 900
 ---
 
 # Fix a failing fitness check
@@ -28,3 +46,17 @@ Open [docs/architecture](../../docs/architecture) for where the check sits. [The
 ## Fix and rerun
 
 Fix the code or doc the error points at, never the check. Run `fitness <name>` from the repo root. Exit 0 means it passes.
+
+## Hooks in Claude Code
+
+`fitness claude-hook` judges Claude's work as it goes and hands any findings back to fix in the same turn:
+
+- After an edit tool writes a file, it runs the file checks on that one file.
+- Only checks within the default budget run there. Tests, vet, linters and network checks wait for the stop.
+- Before a `gh` issue or PR call posts a body, it judges that body as `fitness --blob` does.
+- A red body denies the call: create, edit, comment or review.
+- When Claude stops, it runs every file and git check on the uncommitted files, and blocks the stop once when red.
+
+Commit and push stay with the git hooks. A repo with no `.fitnessrc.json` and no fitness git hooks passes silently.
+
+This skill's front matter declares the hooks for the session that uses it. `fitness-install --claude-settings ~/.claude/settings.json` adds them to every session, run by the installed fitness; run it again after an upgrade. [Requirement 0142](../../docs/requirements/0142-hooks-claude-hooks.md) states each rule.

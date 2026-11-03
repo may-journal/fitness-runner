@@ -34,7 +34,9 @@ type Options struct {
 	GitHubAction bool
 	InstallHook  bool
 	LinkSkills   []string
-	Args         []string
+	// ClaudeSettings are the Claude Code settings files that get the Fitness hooks.
+	ClaudeSettings []string
+	Args           []string
 }
 
 func ParseOptions(args []string, version string, output io.Writer) (Options, error) {
@@ -45,6 +47,10 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
 	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
+	flags.Func("claude-settings", "add the Fitness hooks to this Claude Code settings file, repeatable, without running checks", func(file string) error {
+		options.ClaudeSettings = append(options.ClaudeSettings, file)
+		return nil
+	})
 	flags.Func("link-skills", "link the release skills into this folder, repeatable, without running checks", func(folder string) error {
 		options.LinkSkills = append(options.LinkSkills, folder)
 		return nil
@@ -117,13 +123,19 @@ func (options Options) validate() error {
 }
 
 func (options Options) validateLinkSkills() error {
-	if len(options.LinkSkills) == 0 {
+	if !options.SetsUpAgents() {
 		return nil
 	}
 	if len(options.Args) > 0 || options.otherMode() {
-		return errors.New("link-skills does not combine with other modes or runner arguments")
+		return errors.New("link-skills does not combine with other modes or runner arguments, and neither does claude-settings")
 	}
 	return nil
+}
+
+// SetsUpAgents reports whether the run links skills or writes Claude hooks
+// instead of running checks.
+func (options Options) SetsUpAgents() bool {
+	return len(options.LinkSkills) > 0 || len(options.ClaudeSettings) > 0
 }
 
 func (options Options) otherMode() bool {
