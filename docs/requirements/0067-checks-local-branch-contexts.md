@@ -21,7 +21,7 @@ entry points exercised
         - When I request its describe metadata
             - Then it names the check and declares its timeout without GitHub reads
 - 0067.3
-    - Given Developer has an approved feature Plan and an invalid linked PR, or a PR read outlasting the push's remaining deadline
+    - Given Developer has an approved feature Plan and an invalid linked PR, or a docs branch whose PR read outlasts the push's deadline
         - When I push with the shared hook
             - Then local-branch runs once and refuses the push
 - 0067.5

@@ -116,7 +116,7 @@ In a consumer repo, run `fitness init` once. It points Git at the `.fitness-hook
 
 - commit-msg: runs `semantic-commit`, `plan-trailer`, and `issue-link-once` on the message being written.
 - pre-commit: checks the staged files, then a repo's own `.githooks/pre-commit.local`. It skips `semantic-commit` when a commit-msg hook will judge the new message.
-- pre-push: blocks the push unless the branch or its PR names an approved `Plan` Issue, via `gh`; chore/docs pushes are exempt.
+- pre-push: blocks a push whose open PR closes no approved `Plan` Issue, via `gh`. Chore/docs pushes and branches with no PR pass.
 
 Neither hook runs the full scan a pull request adds, so a red main never blocks a commit or a push. Run `fitness --all` for it locally.
 

@@ -14,14 +14,14 @@ import (
 
 const zeroSha = "0000000000000000000000000000000000000000"
 
-// planReads holds the push's Plan reads, so each Plan is read once and
+// planReads holds the push's PR and Plan reads, so each is read once and
 // local-branch judges the same reads. hookPrePush opens it with the push's
 // deadline.
 var planReads *metadata.PushPlans
 
-// hookPrePush blocks each push update, chore and docs aside, that traces to no
-// approved Plan named by a branch commit or PR. Reads
-// share one deadline, and an unanswered probe reports info and allows the push.
+// hookPrePush blocks each push update, chore and docs aside, whose branch has
+// an open PR closing no approved Plan. Reads share one deadline, and an
+// unanswered probe reports info and allows the push.
 func hookPrePush() int {
 	ctx, cancel := metadata.PushContext()
 	defer cancel()
@@ -63,7 +63,7 @@ func checkPushedBranches(updates []string) int {
 }
 
 // gateRef applies the Plan gate to one ref update, unless external
-// disabledChecks turned plan-trailer off: the gate enforces that trailer.
+// disabledChecks turned plan-trailer off, which turns the gate off too.
 func gateRef(gated bool, line string) int {
 	if !gated {
 		return 0
@@ -79,14 +79,13 @@ func disabledCheck(name string) bool {
 }
 
 // checkRefUpdate gates one "local_ref local_sha remote_ref remote_sha" line: a
-// deletion or an all-chore/docs push passes; otherwise it needs an approved
-// Plan.
+// deletion or an all-chore/docs push passes, and any other goes to gatePlans.
 func checkRefUpdate(line string) int {
 	f := strings.Fields(line)
 	if len(f) < 4 || f[1] == zeroSha {
 		return 0
 	}
-	subjects, messages, err := pushedCommits(f[1], f[3])
+	subjects, err := pushedSubjects(f[1], f[3])
 	if err != nil {
 		report.Error("fitness setup", err)
 		return 1
@@ -94,27 +93,47 @@ func checkRefUpdate(line string) int {
 	if allChoreDocsSubjects(subjects) {
 		return 0
 	}
-	return gatePlans(messages, f[1])
+	return gatePlans(f[2])
 }
 
-// gatePlans passes when the push traces to an approved Plan Issue.
-func gatePlans(messages, local string) int {
-	plans, err := planCandidates(messages, local)
+// gatePlans passes when the pushed branch's open PR closes an approved Plan
+// Issue. A branch with no open PR yet passes, as does a tag, since the PR
+// check gates the Plan later.
+func gatePlans(remoteRef string) int {
+	branch, ok := strings.CutPrefix(remoteRef, "refs/heads/")
+	if !ok {
+		return 0
+	}
+	plans, pr, err := planReads.PRPlans(".", branch)
 	if err != nil {
-		report.Error("fitness setup", err)
+		return unreadPR(branch, err)
+	}
+	if pr == "" {
+		fmt.Fprintln(os.Stderr, "pre-push: info: "+branch+" has no open PR yet, so its PR check gates the Plan.")
+		return 0
+	}
+	return checkPlanApproval(plans, pr)
+}
+
+// unreadPR refuses a push whose PR read failed. Past the deadline it prints
+// one line naming the host, else the read's error.
+func unreadPR(branch string, err error) int {
+	if late := planReads.TimedOut(); late != "" {
+		fmt.Fprintln(os.Stderr, "pre-push: "+late+"; check the network or proxy, then push again.")
 		return 1
 	}
-	return checkPlanApproval(plans)
+	fmt.Fprintf(os.Stderr, "pre-push: cannot read the open PR for %s: %v\n", branch, err)
+	return 1
 }
 
-// pushedCommits reads the subjects and messages of the commits a ref update
-// pushes; none means nothing to gate. A stalled git call returns its error.
-func pushedCommits(local, remote string) (subjects []string, messages string, err error) {
+// pushedSubjects reads the subjects of the commits a ref update pushes;
+// none means nothing to gate. A stalled git call returns its error.
+func pushedSubjects(local, remote string) ([]string, error) {
 	commits, err := commitsOf(local, remote)
 	if len(commits) == 0 {
-		return nil, "", err
+		return nil, err
 	}
-	return readCommits(commits)
+	return readSubjects(commits)
 }
 
 // commitsOf lists the commits a ref update pushes that no origin ref holds,
@@ -139,28 +158,24 @@ func allChoreDocsSubjects(subjects []string) bool {
 	return true
 }
 
-// readCommits returns each commit's subject line, in order, and all their
-// messages, from one git run. A commit git cannot read gets an empty
-// subject, which is never exempt.
-func readCommits(commits []string) ([]string, string, error) {
-	log, err := logCommits(commits, "%H%x1f%s%x1f%B%x1e")
+// readSubjects returns each commit's subject line, in order, from one git
+// run. A commit git cannot read gets an empty subject, which is never exempt.
+func readSubjects(commits []string) ([]string, error) {
+	log, err := logCommits(commits, "%H%x1f%s%x1e")
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	byHash := map[string]string{}
-	var messages strings.Builder
 	for _, record := range strings.Split(log, "\x1e") {
-		f := strings.SplitN(strings.TrimLeft(record, "\n"), "\x1f", 3)
-		if len(f) == 3 {
-			byHash[f[0]] = strings.TrimSpace(f[1])
-			messages.WriteString(f[2] + "\n")
+		if hash, subject, ok := strings.Cut(strings.TrimLeft(record, "\n"), "\x1f"); ok {
+			byHash[hash] = strings.TrimSpace(subject)
 		}
 	}
 	subjects := make([]string, len(commits))
 	for i, c := range commits {
 		subjects[i] = byHash[c]
 	}
-	return subjects, messages.String(), nil
+	return subjects, nil
 }
 
 // logCommits formats exactly the given commits, in order, in one git run using
@@ -169,21 +184,12 @@ func logCommits(commits []string, format string) (string, error) {
 	return stalledOnly(gitx.Repo(".").Log(commits, format))
 }
 
-// planCandidates returns the Plans a push may trace to: those in the pushed
-// commits' messages, else those anywhere on the branch.
-func planCandidates(messages, local string) ([]gitx.PlanRef, error) {
-	if plans := gitx.PlanNumbers(messages); len(plans) > 0 {
-		return plans, nil
-	}
-	return planRefs(gitx.BranchCommits(".", local, gitx.DefaultBase(".")))
-}
-
-// checkPlanApproval passes when a candidate names an approved Plan Issue from the
-// repo's owner, and refuses the push once the deadline passes.
-func checkPlanApproval(plans []gitx.PlanRef) int {
+// checkPlanApproval passes when the PR at pr closes an approved Plan Issue of
+// the repo's owner. It refuses the push once the deadline passes.
+func checkPlanApproval(plans []gitx.PlanRef, pr string) int {
 	if len(plans) == 0 {
-		fmt.Fprintln(os.Stderr, "pre-push: no 'Plan #NN' trailer on the branch.")
-		fmt.Fprintln(os.Stderr, "  Add a 'Plan #NN' trailer to the branch's first commit, or 'Plan <owner>/<repo>#NN' for a Plan in another repo of this owner.")
+		fmt.Fprintln(os.Stderr, "pre-push: "+pr+" closes no Plan.")
+		fmt.Fprintln(os.Stderr, "  The PR body must close the approved Plan: 'Closes #NN', or 'Closes <owner>/<repo>#NN' for a Plan in another repo of this owner.")
 		fmt.Fprintln(os.Stderr, "  Or push only chore/docs commits.")
 		return 1
 	}
@@ -263,14 +269,4 @@ func planName(p gitx.PlanRef) string {
 // always may, and a qualified one only from the same owner.
 func ownPlan(p gitx.PlanRef, owner string) bool {
 	return !p.Qualified() || (owner != "" && strings.EqualFold(p.Owner, owner))
-}
-
-// planRefs returns the distinct Plans referenced across the commits, so a
-// trailer on main never stands in for the branch's own.
-func planRefs(commits []string) ([]gitx.PlanRef, error) {
-	if len(commits) == 0 {
-		return nil, nil
-	}
-	log, err := logCommits(commits, "%B")
-	return gitx.PlanNumbers(log), err
 }

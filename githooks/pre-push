@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# The Go hook blocks a push unless a branch commit or the open PR names
-# an approved Plan, except chore and docs pushes. It needs the `gh` CLI to
-# read approval.
+# The Go hook blocks a push whose branch has an open PR closing no
+# approved Plan, except chore and docs pushes. It needs the `gh` CLI to
+# read the PR and approval.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
 exec go/bin/fitness hook pre-push

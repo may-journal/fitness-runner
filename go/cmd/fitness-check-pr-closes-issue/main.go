@@ -11,6 +11,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
@@ -25,7 +26,8 @@ func Main() {
 }
 
 // closingKeywords is GitHub's fixed set of nine issue-closing keywords, shared by the Plan side through --emit-closed and the PR side.
-const closingKeywords = `close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved`
+// The pre-push gate reads the same set, so it lives in gitx.
+const closingKeywords = gitx.ClosingKeywords
 
 // closingIssueRe matches a closing keyword linking an issue number, e.g.
 // `Closes #12` or `Fixes: #12`.
