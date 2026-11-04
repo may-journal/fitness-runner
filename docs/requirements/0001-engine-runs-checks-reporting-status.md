@@ -31,7 +31,7 @@ runs
 - 0001.14
     - Given Developer has a check, like `duplicate-code` on 20,000 files, past its budget or timeoutMs, or whose git or ssh awaits a password
         - When fitness runs
-            - Then it and its children stop, by force if needed, showing red as timed out with last output, file count and scope hint
+            - Then it and any children stop, by force if needed, showing red as timed out with last output, file count and scope hint
 - 0001.15
     - Given Developer has 500,000 tracked files, symlinks or deleted ones, or a git call listing tracked or staged files that stalls
         - When fitness runs every check, or I commit one product file

@@ -118,13 +118,16 @@ func with(base map[string]string, overrides map[string]string) map[string]string
 }
 
 // hungTool is a JavaScript repo whose own prettier runs prelude, then hangs
-// after starting a child process that records its PID in prettier.pid.
+// after starting a child process. The child names prettier.pid on its command
+// line until it has moved its PID into that file, so processStopped finds it
+// either way.
 func hungTool(timeoutMs, prelude string) map[string]string {
+	child := `/bin/sh -c 'echo $$ > "$1.tmp" && mv "$1.tmp" "$1" && exec /bin/sleep 30' child "$PWD/prettier.pid"`
 	return map[string]string{
 		".fitnessrc.json":            `{"timeoutMs": ` + timeoutMs + "}\n",
 		"package.json":               "{\"name\": \"app\", \"private\": true}\n",
 		"app.js":                     "const a = 1;\n",
-		"node_modules/.bin/prettier": "#!/bin/sh\n" + prelude + "/bin/sleep 30 >/dev/null 2>&1 &\necho $! > \"$PWD/prettier.pid\"\nwait\n",
+		"node_modules/.bin/prettier": "#!/bin/sh\n" + prelude + child + " >/dev/null 2>&1 &\nwait\n",
 	}
 }
 
