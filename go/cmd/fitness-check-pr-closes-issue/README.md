@@ -10,11 +10,11 @@ It runs in [pr-check.yml](../../../.github/workflows/pr-check.yml) beside `pr-st
 
 Three rules run over the PR description:
 
-- Every PR carries a closing keyword, such as `close`, `fix`, or `resolve`, followed by `#NN`. A body with only references fails.
+- Every PR closes an issue with a keyword such as `close`, `fix` or `resolve`, before `#NN`, `owner/repo#NN` or an issue URL.
 - Every issue the PR says it implements (`Implements #NN` or `Plan #NN`) must be among the closed issues; an unclosed one fails, named individually.
 - When the PR closes a `Plan`, every issue that Plan closes must be closed by the PR too, via `--require-close`.
 
-The full closing-keyword set is `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. References like `addresses #12`, `part of #12`, or a bare `#12` never count as a closure. Nor does a keyword quoted in inline or fenced code.
+The full closing-keyword set is `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`. A body with only references, like `addresses #12` or a bare `#12`, fails. A keyword in code or an HTML comment never closes, nor does `Closes # 12`. The pre-push gate reads closes by the same rules.
 
 There is no chore or docs exemption — every PR is held to the first rule.
 
@@ -24,4 +24,4 @@ A PR must not close an issue whose checklist is unfinished ([#141](https://githu
 
 Tick each item as it is delivered, or stop closing the issue. After merge, `fitness close-check` reopens any issue that still closed with unchecked items.
 
-The closing-keyword list is GitHub's fixed set; keep it in sync in `closingKeywords` if GitHub's set ever changes.
+The closing-keyword list is GitHub's fixed set; keep it in sync in `gitx.ClosingKeywords` if GitHub's set ever changes.

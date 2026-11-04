@@ -233,6 +233,12 @@ func StripCode(content string) string {
 	return codeSpanRe.ReplaceAllString(strings.Join(blankFenced(content), "\n"), " ")
 }
 
+// StripComments returns content with each HTML comment replaced by a space,
+// since GitHub renders none of it.
+func StripComments(content string) string {
+	return htmlCommentRe.ReplaceAllString(content, " ")
+}
+
 // blankFenced returns content's lines with every line inside a fenced code
 // block replaced by "" (line indices preserved). Fence detection mirrors
 // Fences: a block closes at the first line whose trimmed start begins with the
@@ -304,7 +310,7 @@ func protectAbbrev(text string) string {
 // Prose extracts the prose from raw markdown under the frozen masking spec,
 // ending each block as a sentence.
 func Prose(content string) string {
-	content = htmlCommentRe.ReplaceAllString(content, " ")
+	content = StripComments(content)
 	e := &proseExtractor{}
 	for _, ln := range strings.Split(StripFrontMatter(content), "\n") {
 		e.line(ln)

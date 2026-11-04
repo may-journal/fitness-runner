@@ -7,19 +7,20 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// issueSpellings are the three ways to name an issue: `#NN`,
+// repoSpellings are the two ways to name an issue of a named repo:
 // `owner/repo#NN` and `https://github.com/owner/repo/issues/NN`.
-const issueSpellings = `(?:#\s*(\d+)|([\w.-]+)/([\w.-]+)#(\d+)|https://github\.com/([\w.-]+)/([\w.-]+)/issues/(\d+))`
+const repoSpellings = `([\w.-]+)/([\w.-]+)#(\d+)|https://github\.com/([\w.-]+)/([\w.-]+)/issues/(\d+)`
 
 // ClosingKeywords is GitHub's fixed set of nine issue-closing keywords.
 const ClosingKeywords = `close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved`
 
-// planRe matches the three Plan trailer spellings, such as `Plan #NN`.
-var planRe = regexp.MustCompile(`(?i)plan ` + issueSpellings)
+// planRe matches the three Plan trailer spellings, such as `Plan #NN`. A
+// trailer may put space after the `#`.
+var planRe = regexp.MustCompile(`(?i)plan (?:#\s*(\d+)|` + repoSpellings + `)`)
 
-// closedRe matches a closing keyword before an issue in any spelling, such
-// as `Closes #NN` or `Fixes: owner/repo#NN`.
-var closedRe = regexp.MustCompile(`(?i)\b(?:` + ClosingKeywords + `)[:\s]+` + issueSpellings)
+// closedRe matches a closing keyword before an issue as GitHub reads one,
+// such as `Closes #NN` or `Fixes: owner/repo#NN`, with digits right after `#`.
+var closedRe = regexp.MustCompile(`(?i)\b(?:` + ClosingKeywords + `)[:\s]+(?:#(\d+)|` + repoSpellings + `)\b`)
 
 // PlanRef is one Plan a trailer or a PR's closing keyword names. Owner and
 // Repo are empty for a bare `#NN`, which names an issue of the pushing repo.
@@ -60,9 +61,10 @@ func PlanNumbers(text string) []PlanRef {
 }
 
 // ClosedRefs extracts the distinct issues a PR body closes with a closing
-// keyword, in first-seen order. A keyword quoted in code closes nothing.
+// keyword, in first-seen order. A keyword in code or an HTML comment closes
+// nothing, as on GitHub.
 func ClosedRefs(body string) []PlanRef {
-	return distinctRefs(closedRe, mdx.StripCode(body))
+	return distinctRefs(closedRe, mdx.StripComments(mdx.StripCode(body)))
 }
 
 // distinctRefs reads each match of re in text into its PlanRef, keeping
