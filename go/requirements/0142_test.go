@@ -28,16 +28,26 @@ func hookEvent(t *testing.T, repo string, event map[string]any) (string, int) {
 // hook writes its log.
 func hookEventIn(t *testing.T, repo, cache string, event map[string]any) (string, int) {
 	t.Helper()
+	out, code, _ := timedHook(t, filepath.Join(installOnly(t), "fitness"), repo, cache, event)
+	return out, code
+}
+
+// timedHook runs the hook event through runner and also returns how long
+// the hook alone took.
+func timedHook(t *testing.T, runner, repo, cache string, event map[string]any) (string, int, time.Duration) {
+	t.Helper()
 	event["cwd"] = repo
 	raw, err := json.Marshal(event)
 	mustDo(t, err)
-	cmd := exec.Command(filepath.Join(installOnly(t), "fitness"), "claude-hook")
+	cmd := exec.Command(runner, "claude-hook")
 	cmd.Dir, cmd.Env, cmd.Stdin = repo, hookEnv(t, cache), strings.NewReader(string(raw))
 	var stdout, stderr strings.Builder
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	start := time.Now()
 	_ = cmd.Run()
+	took := time.Since(start)
 	onlyJSON(t, stdout.String())
-	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode()
+	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode(), took
 }
 
 // hookEnv is the user's environment with the fitness cache folder cache.
@@ -108,16 +118,9 @@ func Test0142_2(t *testing.T) {
 	for i := range 3 {
 		file := fmt.Sprintf("note%d.md", i)
 		write(t, repo, map[string]string{file: "A short note.\n"})
-		raw, err := json.Marshal(map[string]any{"cwd": repo, "hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": map[string]any{"file_path": filepath.Join(repo, file)}})
-		mustDo(t, err)
-		cmd := exec.Command(runner, "claude-hook")
-		cmd.Dir, cmd.Env, cmd.Stdin = repo, hookEnv(t, t.TempDir()), strings.NewReader(string(raw))
-		start := time.Now()
-		out, err := cmd.CombinedOutput()
-		best = min(best, time.Since(start))
-		if err != nil || len(out) > 0 {
-			t.Fatalf("the edit hook on a clean note must pass silently: %v\n%s", err, out)
-		}
+		out, code, took := timedHook(t, runner, repo, t.TempDir(), editEvent(repo, file))
+		silentPass(t, out, code)
+		best = min(best, took)
 	}
 	if best > 300*time.Millisecond {
 		t.Errorf("the edit hook took %s at best; it must answer within 300ms", best)
