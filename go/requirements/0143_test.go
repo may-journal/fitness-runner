@@ -2,6 +2,7 @@ package requirements
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,10 +18,21 @@ func startEvent(source string) map[string]any {
 func Test0143_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	write(t, repo, map[string]string{"notes.md": misspelledNote})
-	out, code := hookEvent(t, repo, map[string]any{"hook_event_name": "SubagentStop", "stop_hook_active": false})
-	sees(t, out, code, 0, `"decision":"block"`, "fitness: cspell failed on the changed files", "[cspell] notes.md:1")
-	out, code = hookEvent(t, repo, map[string]any{"hook_event_name": "SubagentStop", "stop_hook_active": true})
+	write(t, repo, map[string]string{"notes.md": misspelledNote, "theirs.md": misspelledNote})
+	transcript := filepath.Join(t.TempDir(), "agent.jsonl")
+	edit := `{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"file_path":%q}}]}}`
+	mustDo(t, os.WriteFile(transcript, []byte(`{"type":"user","message":{"content":"Fix the notes."}}`+"\n"+fmt.Sprintf(edit, filepath.Join(repo, "notes.md"))+"\n"), 0o600))
+	stop := func(active bool, transcript string) map[string]any {
+		return map[string]any{"hook_event_name": "SubagentStop", "stop_hook_active": active, "agent_transcript_path": transcript}
+	}
+	out, code := hookEvent(t, repo, stop(false, transcript))
+	sees(t, out, code, 0, `"decision":"block"`, "fitness: cspell failed on the subagent's changed files", "[cspell] notes.md:1")
+	if strings.Contains(out, "theirs.md") {
+		t.Errorf("a subagent was blocked on a file it never edited:\n%s", out)
+	}
+	out, code = hookEvent(t, repo, stop(true, transcript))
+	silentPass(t, out, code)
+	out, code = hookEvent(t, repo, stop(false, filepath.Join(t.TempDir(), "none.jsonl")))
 	silentPass(t, out, code)
 }
 

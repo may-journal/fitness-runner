@@ -37,6 +37,9 @@ type claudeHookInput struct {
 	// started, resumed, cleared or compacted.
 	Session string `json:"session_id"`
 	Source  string `json:"source"`
+	// AgentTranscript is the stopping subagent's own transcript, which names
+	// the files it edited.
+	AgentTranscript string `json:"agent_transcript_path"`
 	// StopActive is true when Claude is already continuing because a Stop
 	// hook blocked it, so the hook lets it stop this time.
 	StopActive bool `json:"stop_hook_active"`
@@ -77,11 +80,11 @@ func runClaudeHook(args []string) int {
 	if err == nil {
 		result, err = judgeHookEvent(in)
 	}
+	logHookEvent(in, result, err, time.Since(start))
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "fitness claude-hook: "+err.Error())
 		return 1
 	}
-	logHookEvent(in, result, time.Since(start))
 	return writeBlock(os.Stdout, in.Event, result.reason)
 }
 
@@ -125,19 +128,22 @@ func judgeHookEvent(in claudeHookInput) (hookResult, error) {
 	return job.judge()
 }
 
+// hookJobs are the jobs each judged event asks for.
+var hookJobs = map[string]func(claudeHookInput) (hookJob, bool, error){
+	"PostToolUse":  editJob,
+	"PreToolUse":   postJob,
+	"Stop":         stopJob,
+	"SubagentStop": subagentJob,
+	"SessionStart": startJob,
+}
+
 // hookJobFor picks the job an event asks for, or false when it asks none.
 func hookJobFor(in claudeHookInput) (hookJob, bool, error) {
-	switch in.Event {
-	case "PostToolUse":
-		return editJob(in)
-	case "PreToolUse":
-		return postJob(in)
-	case "Stop", "SubagentStop":
-		return stopJob(in)
-	case "SessionStart":
-		return startJob(in)
+	job, ok := hookJobs[in.Event]
+	if !ok {
+		return hookJob{}, false, nil
 	}
-	return hookJob{}, false, nil
+	return job(in)
 }
 
 // editJob runs the fast file checks on the file an edit tool wrote.
@@ -186,9 +192,8 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	return hookJob{root: root, subject: "the " + post.kind + " body", args: args, stdin: post.body}, ok, nil
 }
 
-// stopJob runs every file and git check on the uncommitted files, as Claude
-// or a subagent stops. It blocks a stop once: a second try while a stop hook
-// already blocked passes.
+// stopJob runs every file and git check on the uncommitted files. It blocks
+// a stop once: a second try while a Stop hook already blocked passes.
 func stopJob(in claudeHookInput) (hookJob, bool, error) {
 	if in.StopActive {
 		return hookJob{}, false, nil
@@ -238,8 +243,8 @@ func (job hookJob) judge() (hookResult, error) {
 		args = append(args, "--policy=external", "--checks="+strings.Join(names, ","))
 	}
 	report, err := runChild(job.root, job.stdin, args)
-	_, lines := failedChecks(report)
-	return hookResult{reason: findings(job.subject, report), findings: len(lines), ran: true}, err
+	failed, lines := failedChecks(report)
+	return hookResult{reason: findings(job.subject, failed, lines), findings: max(len(lines), len(failed)), ran: true}, err
 }
 
 // hookChecks names the checks the repo enables that keep accepts.
@@ -283,10 +288,9 @@ func runChild(root, stdin string, args []string) (runReport, error) {
 	return result, nil
 }
 
-// findings renders the failed checks of a report for Claude, or "" when
-// none failed.
-func findings(subject string, result runReport) string {
-	failed, lines := failedChecks(result)
+// findings renders the failed checks and their error lines for Claude, or
+// "" when none failed.
+func findings(subject string, failed, lines []string) string {
 	if len(failed) == 0 {
 		return ""
 	}
@@ -362,18 +366,27 @@ func firstDelivery(raw []byte) bool {
 	}
 	sum := sha256.Sum256(raw)
 	mark := filepath.Join(dir, hex.EncodeToString(sum[:]))
-	lock, err := os.OpenFile(mark+".lock", os.O_CREATE|os.O_WRONLY, 0o600)
+	// The lock makes reading and renewing the mark one step, so of two
+	// copies at once exactly one finds no fresh mark.
+	lock, err := lockFile(mark + ".lock")
 	if err != nil {
 		return true
 	}
 	defer lock.Close()
-	// The lock makes reading and renewing the mark one step, so of two
-	// copies at once exactly one finds no fresh mark.
-	if syscall.Flock(int(lock.Fd()), syscall.LOCK_EX) != nil {
-		return true
-	}
 	defer pruneMarks(dir)
 	return renewMark(mark)
+}
+
+// lockFile opens path and holds an exclusive lock on it until it is closed.
+func lockFile(path string) (*os.File, error) {
+	lock, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX); err != nil {
+		return nil, errors.Join(err, lock.Close())
+	}
+	return lock, nil
 }
 
 // renewMark reports whether mark was missing or older than the duplicate

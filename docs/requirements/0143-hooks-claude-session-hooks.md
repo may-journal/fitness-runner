@@ -13,12 +13,12 @@ subagent stops and session starts with red work
 ## Requirements
 
 - 0143.1
-    - Given Developer has a fitness repo with uncommitted files that fail a check
-        - When Claude Code runs `fitness claude-hook` as a subagent stops, then again with the stop hook active
-            - Then the first blocks the subagent with the findings and the second lets it stop
+    - Given Developer has a fitness repo, and a subagent edited one of its uncommitted files that fail a check
+        - When Claude Code runs `fitness claude-hook` as a subagent stops, then with the stop hook active
+            - Then the first blocks it on the file it edited alone, and the second, or a subagent that edited nothing, passes
 - 0143.2
     - Given Developer has a fitness repo
-        - When Claude Code runs `fitness claude-hook` as a session starts, resumes or compacts
+        - When Claude Code runs `fitness claude-hook` as a session starts, resumes, clears or compacts
             - Then its best run adds the findings on uncommitted files to Claude's context within one second, and passing files add nothing
 - 0143.3
     - Given Developer has a fitness repo and a Claude session that edited files
