@@ -19,6 +19,21 @@ hooks:
         - type: command
           command: fitness claude-hook
           timeout: 900
+  SubagentStop:
+    - hooks:
+        - type: command
+          command: fitness claude-hook
+          timeout: 900
+  SessionStart:
+    - hooks:
+        - type: command
+          command: fitness claude-hook
+          timeout: 30
+  SessionEnd:
+    - hooks:
+        - type: command
+          command: fitness claude-hook
+          timeout: 30
 ---
 
 # Fix a failing fitness check
@@ -55,8 +70,10 @@ Fix the code or doc the error points at, never the check. Run `fitness <name>` f
 - Only checks within the default budget run there. Tests, vet, linters and network checks wait for the stop.
 - Before a `gh` issue or PR call posts a body, it judges that body as `fitness --blob` does.
 - A red body denies the call: create, edit, comment or review.
-- When Claude stops, it runs every file and git check on the uncommitted files, and blocks the stop once when red.
+- When Claude or a subagent stops, it runs the file and git checks on the uncommitted files, and blocks once when red.
+- When a session starts, resumes or compacts, it runs the edit checks on the uncommitted files and adds any findings to Claude's context.
+- Each judged event adds a line to `claude-hooks.jsonl` in the fitness cache folder, and SessionEnd adds the session's total per event.
 
 Commit and push stay with the git hooks. A repo with no `.fitnessrc.json` and no fitness git hooks passes silently.
 
-This skill's front matter declares the hooks for the session that uses it. `fitness-install --claude-settings ~/.claude/settings.json` adds them to every session, run by the installed fitness; run it again after an upgrade. [Requirement 0142](../../docs/requirements/0142-hooks-claude-hooks.md) states each rule.
+This skill's front matter declares the hooks for the session that uses it. `fitness-install --claude-settings ~/.claude/settings.json` adds them to every session, run by the installed fitness; run it again after an upgrade. Requirements [0142](../../docs/requirements/0142-hooks-claude-hooks.md) and [0143](../../docs/requirements/0143-hooks-claude-session-hooks.md) state each rule.

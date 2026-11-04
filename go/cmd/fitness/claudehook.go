@@ -33,6 +33,10 @@ type claudeHookInput struct {
 		NotebookPath string `json:"notebook_path"`
 		Command      string `json:"command"`
 	} `json:"tool_input"`
+	// Session and Source name the session and, for SessionStart, whether it
+	// started, resumed, cleared or compacted.
+	Session string `json:"session_id"`
+	Source  string `json:"source"`
 	// StopActive is true when Claude is already continuing because a Stop
 	// hook blocked it, so the hook lets it stop this time.
 	StopActive bool `json:"stop_hook_active"`
@@ -67,16 +71,18 @@ func runClaudeHook(args []string) int {
 		return usageExit
 	}
 	withBundlePath()
+	start := time.Now()
 	in, err := readHookInput(os.Stdin)
-	verdict := ""
+	var result hookResult
 	if err == nil {
-		verdict, err = judgeHookEvent(in)
+		result, err = judgeHookEvent(in)
 	}
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "fitness claude-hook: "+err.Error())
 		return 1
 	}
-	return writeBlock(os.Stdout, in.Event, verdict)
+	logHookEvent(in, result, time.Since(start))
+	return writeBlock(os.Stdout, in.Event, result.reason)
 }
 
 // withBundlePath puts this fitness's folder first on PATH, as the installer
@@ -101,12 +107,20 @@ func readHookInput(r io.Reader) (claudeHookInput, error) {
 	return in, nil
 }
 
-// judgeHookEvent returns the findings that block the event, or "" when it
-// passes or names nothing Fitness judges.
-func judgeHookEvent(in claudeHookInput) (string, error) {
+// hookResult is what judging one event found: the findings that block it,
+// or "" when it passes, their count, and whether any check ran.
+type hookResult struct {
+	reason   string
+	findings int
+	ran      bool
+}
+
+// judgeHookEvent judges the event, or passes it when it names nothing
+// Fitness judges.
+func judgeHookEvent(in claudeHookInput) (hookResult, error) {
 	job, ok, err := hookJobFor(in)
 	if err != nil || !ok || !firstDelivery(in.raw) {
-		return "", err
+		return hookResult{}, err
 	}
 	return job.judge()
 }
@@ -118,8 +132,10 @@ func hookJobFor(in claudeHookInput) (hookJob, bool, error) {
 		return editJob(in)
 	case "PreToolUse":
 		return postJob(in)
-	case "Stop":
+	case "Stop", "SubagentStop":
 		return stopJob(in)
+	case "SessionStart":
+		return startJob(in)
 	}
 	return hookJob{}, false, nil
 }
@@ -170,8 +186,9 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	return hookJob{root: root, subject: "the " + post.kind + " body", args: args, stdin: post.body}, ok, nil
 }
 
-// stopJob runs every file and git check on the uncommitted files. It blocks
-// a stop once: a second try while a Stop hook already blocked passes.
+// stopJob runs every file and git check on the uncommitted files, as Claude
+// or a subagent stops. It blocks a stop once: a second try while a stop hook
+// already blocked passes.
 func stopJob(in claudeHookInput) (hookJob, bool, error) {
 	if in.StopActive {
 		return hookJob{}, false, nil
@@ -209,19 +226,20 @@ func stopCheck(c listed) bool {
 	return c.Scope == checkkit.ScopeFiles || c.Scope == checkkit.ScopeGit
 }
 
-// judge runs the job's checks and returns the findings, or "" when every
-// check passed or none applies.
-func (job hookJob) judge() (string, error) {
+// judge runs the job's checks and returns their findings, with no reason
+// when every check passed or none applies.
+func (job hookJob) judge() (hookResult, error) {
 	args := job.args
 	if job.keep != nil {
 		names, err := hookChecks(job.root, job.keep)
 		if err != nil || len(names) == 0 {
-			return "", err
+			return hookResult{}, err
 		}
 		args = append(args, "--policy=external", "--checks="+strings.Join(names, ","))
 	}
-	result, err := runChild(job.root, job.stdin, args)
-	return findings(job.subject, result), err
+	report, err := runChild(job.root, job.stdin, args)
+	_, lines := failedChecks(report)
+	return hookResult{reason: findings(job.subject, report), findings: len(lines), ran: true}, err
 }
 
 // hookChecks names the checks the repo enables that keep accepts.
@@ -300,15 +318,9 @@ func writeBlock(out io.Writer, event, reason string) int {
 	if reason == "" {
 		return 0
 	}
-	var verdict any = map[string]string{"decision": "block", "reason": reason}
-	if event == "PreToolUse" {
-		verdict = map[string]any{"hookSpecificOutput": map[string]string{
-			"hookEventName": event, "permissionDecision": "deny", "permissionDecisionReason": reason,
-		}}
-	}
 	enc := json.NewEncoder(out)
 	enc.SetEscapeHTML(false)
-	if err := enc.Encode(verdict); err != nil {
+	if err := enc.Encode(verdictFor(event, reason)); err != nil {
 		fmt.Fprintln(os.Stderr, "fitness claude-hook: "+err.Error())
 		return 1
 	}

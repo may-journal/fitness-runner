@@ -43,4 +43,4 @@ hook events on red work
 - 0142.8
     - Given Developer has a Claude Code settings file with settings and hooks of my own
         - When I run `fitness-install --claude-settings` with that file, twice
-            - Then it holds the fitness skill's hooks once, run by the installed fitness, and mine stay
+            - Then it holds each of the fitness skill's hooks once, run by the installed fitness, and mine stay
