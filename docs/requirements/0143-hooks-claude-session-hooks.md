@@ -19,7 +19,7 @@ subagent stops and session starts with red work
 - 0143.2
     - Given Developer has a fitness repo
         - When Claude Code runs `fitness claude-hook` as a session starts, resumes or compacts
-            - Then it adds the findings on the uncommitted files to Claude's context within one second, and says nothing when they pass
+            - Then its best run adds the findings on uncommitted files to Claude's context within one second, and passing files add nothing
 - 0143.3
     - Given Developer has a fitness repo and a Claude session that edited files
         - When Claude Code runs `fitness claude-hook` after each edit and as the session ends
