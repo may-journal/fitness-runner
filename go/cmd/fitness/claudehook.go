@@ -21,6 +21,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // claudeHookInput is the part of a Claude Code hook's stdin JSON the hook
@@ -270,27 +271,32 @@ func (job hookJob) judge() (hookResult, error) {
 	return hookResult{reason: v.text(job.subject), failed: len(v.failed), lines: len(v.lines), ran: true}, err
 }
 
-// judgeParts judges each body of a post alone, and blocks with the findings
-// of every red one.
+// judgeParts judges each body of a post alone and side by side, and blocks
+// with the findings of every red one.
 func (job hookJob) judgeParts() (hookResult, error) {
 	var total hookResult
 	var reasons []string
-	for _, part := range slices.DeleteFunc(job.parts, emptyPart) {
-		job.subject, job.stdin, job.parts = part.subject, part.text, nil
-		result, err := job.judge()
-		if err != nil {
-			return total, err
+	results := par.Map(len(job.parts), par.Processes(), func(i int) partResult {
+		part := job
+		part.subject, part.stdin, part.parts = job.parts[i].subject, job.parts[i].text, nil
+		result, err := part.judge()
+		return partResult{result, err}
+	})
+	for _, r := range results {
+		if r.err != nil {
+			return total, r.err
 		}
-		reasons = append(reasons, result.reason)
-		total.failed, total.lines, total.ran = total.failed+result.failed, total.lines+result.lines, true
+		reasons = append(reasons, r.reason)
+		total.failed, total.lines, total.ran = total.failed+r.failed, total.lines+r.lines, true
 	}
 	total.reason = strings.Join(slices.DeleteFunc(reasons, func(r string) bool { return r == "" }), "\n")
 	return total, nil
 }
 
-// emptyPart reports whether a body holds no text, which no check judges.
-func emptyPart(part postPart) bool {
-	return strings.TrimSpace(part.text) == ""
+// partResult is what judging one body of a post found.
+type partResult struct {
+	hookResult
+	err error
 }
 
 // hookChecks names the checks the repo enables that keep accepts.

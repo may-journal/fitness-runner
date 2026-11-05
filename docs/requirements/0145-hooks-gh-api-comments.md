@@ -14,7 +14,7 @@ comments posted through gh api
 
 - 0145.1
     - Given Developer has a fitness repo and Claude drafted a red comment
-        - When Claude Code runs `fitness claude-hook` before a `gh api` call that posts or edits it on an issue or a PR line
+        - When Claude Code runs `fitness claude-hook` before a `gh api` call that posts or edits it on an issue, PR line, review or commit
             - Then it denies the call with the findings, whether a field or an @file gives the body
 - 0145.2
     - Given Developer has a fitness repo and Claude drafted a review with a red line comment
@@ -22,7 +22,7 @@ comments posted through gh api
             - Then it denies the call, naming that line comment, and a clean review passes
 - 0145.3
     - Given Developer has a fitness repo and Claude drafted a red comment
-        - When Claude Code runs `fitness claude-hook` before a GraphQL mutation with it as the body variable, or a close with it
+        - When Claude Code runs `fitness claude-hook` before a GraphQL comment mutation, by fields or `--input`, or a close with it
             - Then it denies the call with the findings
 - 0145.4
     - Given Developer has a fitness repo

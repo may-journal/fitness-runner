@@ -8,13 +8,13 @@ import (
 	"strings"
 )
 
-// commentEndpoint matches the REST paths that post or edit an issue comment,
-// a PR line comment or its reply, or a review.
-var commentEndpoint = regexp.MustCompile(`^/?repos/[^/]+/[^/]+/(issues/[^/]+/comments|issues/comments/[^/]+|pulls/[^/]+/comments|pulls/comments/[^/]+(/replies)?|pulls/[^/]+/reviews(/[^/]+)?)$`)
+// commentEndpoint matches the REST paths that post or edit comments on
+// issues, PR lines, replies, reviews and commits.
+var commentEndpoint = regexp.MustCompile(`^/?repos/[^/]+/[^/]+/(issues/[^/]+/comments|issues/comments/[^/]+|pulls/[^/]+/comments|pulls/comments/[^/]+(/replies)?|pulls/[^/]+/reviews(/[^/]+(/events)?)?|commits/[^/]+/comments|comments/[^/]+)$`)
 
 // commentMutation matches the GraphQL mutations that add or edit a comment,
-// a review or a review reply.
-var commentMutation = regexp.MustCompile(`\b(addComment|updateIssueComment|addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThreadReply|updatePullRequestReviewComment|updatePullRequestReview|submitPullRequestReview)\b`)
+// a review, a review thread or reply, or a discussion comment.
+var commentMutation = regexp.MustCompile(`\b(addComment|updateIssueComment|addPullRequestReview|addPullRequestReviewComment|addPullRequestReviewThread|addPullRequestReviewThreadReply|updatePullRequestReviewComment|updatePullRequestReview|submitPullRequestReview|addDiscussionComment|updateDiscussionComment)\b`)
 
 // apiValueFlags are the gh api flags that take a value Fitness does not read.
 var apiValueFlags = []string{"-H", "--header", "-q", "--jq", "-t", "--template", "-p", "--preview", "--hostname", "--cache"}
@@ -53,6 +53,7 @@ func apiPost(args []shellWord, call ghCall) (ghPost, bool) {
 		return ghPost{}, false
 	}
 	parts, ok := api.parts()
+	parts = slices.DeleteFunc(parts, emptyPart)
 	return ghPost{comment: true, parts: parts}, ok && len(parts) > 0
 }
 
@@ -121,19 +122,23 @@ func init() {
 	}
 }
 
+// apiHost is the URL prefix a gh api endpoint may carry.
+const apiHost = "https://api.github.com/"
+
 // endpoint records the first word that is no flag as the endpoint, without
 // its query string.
 func (r *apiReader) endpoint(word string) {
 	if !strings.HasPrefix(word, "-") && r.api.endpoint == "" {
-		r.api.endpoint = strings.SplitN(word, "?", 2)[0]
+		r.api.endpoint = strings.TrimPrefix(strings.SplitN(word, "?", 2)[0], apiHost)
 	}
 }
 
-// field records one key=value field; a typed @file value reads the file.
+// field records one key=value field. A typed @file value reads the file,
+// unless the shell builds its path.
 func (r *apiReader) field(name, value string, known bool) {
 	key, text, _ := strings.Cut(value, "=")
 	word := shellWord{text: text, known: known}
-	if slices.Contains(apiTypedFields, name) && strings.HasPrefix(text, "@") {
+	if known && slices.Contains(apiTypedFields, name) && strings.HasPrefix(text, "@") {
 		word = *r.fileWord(strings.TrimPrefix(text, "@"))
 	}
 	r.api.fields = append(r.api.fields, apiField{key: key, value: word})
@@ -177,70 +182,49 @@ func (api apiCall) parts() ([]postPart, bool) {
 	if api.input != nil {
 		return inputParts(*api.input)
 	}
-	return api.fieldParts("body")
+	bodies, bodiesKnown := api.values("body")
+	lines, linesKnown := api.values(reviewCommentKey)
+	return composeParts(bodies, lines), bodiesKnown && linesKnown
 }
 
-// graphQLParts reads the body variable of a comment mutation. A body written
-// inside the query is not read, so that call is not judged.
-func (api apiCall) graphQLParts() ([]postPart, bool) {
-	query, ok := api.field("query")
-	if !ok || !commentMutation.MatchString(query) {
-		return nil, false
-	}
-	return api.fieldParts("body")
-}
-
-// field is the text of the first field named key, when known.
-func (api apiCall) field(key string) (string, bool) {
+// values are the texts of every field named key, or false when one is
+// unknown.
+func (api apiCall) values(key string) ([]string, bool) {
+	var texts []string
 	for _, f := range api.fields {
-		if f.key == key {
-			return f.value.text, f.value.known
+		if f.key != key {
+			continue
 		}
-	}
-	return "", false
-}
-
-// fieldParts names the body field and each review line comment field.
-func (api apiCall) fieldParts(key string) ([]postPart, bool) {
-	var parts []postPart
-	for _, f := range api.fields {
-		part, ours := fieldPart(f, key, lineComments(parts))
-		if ours && !f.value.known {
+		if !f.value.known {
 			return nil, false
 		}
-		if ours {
-			parts = append(parts, part)
-		}
+		texts = append(texts, f.value.text)
 	}
-	return parts, true
+	return texts, true
 }
 
-// fieldPart names one field when it holds a body: the comment body, or the
-// nth review line comment.
-func fieldPart(f apiField, key string, n int) (postPart, bool) {
-	switch f.key {
-	case key:
-		return postPart{subject: commentSubject, text: f.value.text}, true
-	case reviewCommentKey:
-		return postPart{subject: fmt.Sprintf("review line comment %d", n+1), text: f.value.text}, true
+// composeParts names a call's comment bodies, then its review line comments
+// by their place.
+func composeParts(bodies, lines []string) []postPart {
+	var parts []postPart
+	for _, body := range bodies {
+		parts = append(parts, postPart{subject: commentSubject, text: body})
 	}
-	return postPart{}, false
-}
-
-// lineComments counts the review line comments among parts.
-func lineComments(parts []postPart) int {
-	n := 0
-	for _, part := range parts {
-		if part.subject != commentSubject {
-			n++
-		}
+	for i, line := range lines {
+		parts = append(parts, postPart{subject: fmt.Sprintf("review line comment %d", i+1), text: line})
 	}
-	return n
+	return parts
 }
 
 // commentSubject names a call's own comment body, apart from its review
 // line comments.
 const commentSubject = "the comment body"
+
+// emptyPart reports whether a body holds no text, such as a review sent with
+// line comments alone.
+func emptyPart(part postPart) bool {
+	return strings.TrimSpace(part.text) == ""
+}
 
 // apiInput is the part of a --input JSON body that holds comment text.
 type apiInput struct {
@@ -257,12 +241,72 @@ func inputParts(input shellWord) ([]postPart, bool) {
 	if !input.known || json.Unmarshal([]byte(input.text), &body) != nil {
 		return nil, false
 	}
-	var parts []postPart
+	var bodies, lines []string
 	if body.Body != nil {
-		parts = append(parts, postPart{subject: commentSubject, text: *body.Body})
+		bodies = []string{*body.Body}
 	}
-	for i, c := range body.Comments {
-		parts = append(parts, postPart{subject: fmt.Sprintf("review line comment %d", i+1), text: c.Body})
+	for _, c := range body.Comments {
+		lines = append(lines, c.Body)
 	}
-	return parts, true
+	return composeParts(bodies, lines), true
+}
+
+// bodyVariable matches a GraphQL body argument given as a variable,
+// capturing the variable's name.
+var bodyVariable = regexp.MustCompile(`\bbody\s*:\s*\$(\w+)`)
+
+// graphQLParts reads the body variables of a comment mutation. A body
+// written inside the query is not read, so that call is not judged.
+func (api apiCall) graphQLParts() ([]postPart, bool) {
+	query, vars, ok := api.graphQLRequest()
+	if !ok || !commentMutation.MatchString(query) {
+		return nil, false
+	}
+	bodies, ok := bodyValues(bodyVariable.FindAllStringSubmatch(query, -1), vars)
+	return composeParts(bodies, nil), ok
+}
+
+// bodyValues reads the variable each body argument names; false when there
+// is none, or one is unknown.
+func bodyValues(names [][]string, vars func(string) (string, bool)) ([]string, bool) {
+	var bodies []string
+	for _, m := range names {
+		text, ok := vars(m[1])
+		if !ok {
+			return nil, false
+		}
+		bodies = append(bodies, text)
+	}
+	return bodies, len(bodies) > 0
+}
+
+// graphQLRequest is a GraphQL call's query and a reader of its variables,
+// from --input JSON or from fields.
+func (api apiCall) graphQLRequest() (string, func(string) (string, bool), bool) {
+	if api.input != nil {
+		return inputGraphQL(*api.input)
+	}
+	query, ok := api.values("query")
+	vars := func(name string) (string, bool) {
+		texts, known := api.values(name)
+		return strings.Join(texts, ""), known && len(texts) == 1
+	}
+	return strings.Join(query, ""), vars, ok && len(query) == 1
+}
+
+// graphQLInput is a --input GraphQL request.
+type graphQLInput struct {
+	Query     string         `json:"query"`
+	Variables map[string]any `json:"variables"`
+}
+
+// inputGraphQL reads a --input GraphQL request's query and variables.
+func inputGraphQL(input shellWord) (string, func(string) (string, bool), bool) {
+	var request graphQLInput
+	ok := input.known && json.Unmarshal([]byte(input.text), &request) == nil
+	vars := func(name string) (string, bool) {
+		text, isText := request.Variables[name].(string)
+		return text, isText
+	}
+	return request.Query, vars, ok
 }
