@@ -114,7 +114,7 @@ func Test0068_5(t *testing.T) {
 	t.Parallel()
 	repo, env, _ := metadataPushRepo(t, "test(app): add one file")
 	checkoutMain(t, repo)
-	pr := pushedAnswer(t, repo, "renamed", "test(app): add one file", pr0014(12), 1)
+	pr := pushedAnswer(t, repo, "renamed", "test(app): add one file", pr0014(12)+"Closes #11\n", 1)
 	saved := append(pushedGitHub(t, brokenPlan, pr), issue0014(t, 12, "An ordinary issue."))
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := user(t, repo, pushEnv(env, rp), "push", "origin", "work:renamed")

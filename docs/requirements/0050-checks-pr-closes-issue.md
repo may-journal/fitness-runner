@@ -13,11 +13,11 @@ PR bodies checked
 ## Requirements
 
 - 0050.1
-    - Given Developer has a body that closes an issue with any of GitHub's nine closing keywords
+    - Given Developer has a body closing an issue with any of GitHub's nine closing keywords, as `#NN`, `owner/repo#NN` or its URL
         - When pr-closes-issue checks the body file
             - Then it passes
 - 0050.2
-    - Given Developer has a body that only references issues
+    - Given Developer has a body that only references issues, or puts space after the `#`, as `Closes # 12`
         - When pr-closes-issue checks the body file
             - Then it fails saying it has no closing keyword
 - 0050.3
@@ -25,7 +25,7 @@ PR bodies checked
         - When pr-closes-issue checks the body file
             - Then it fails naming each such issue
 - 0050.4
-    - Given Developer has a closing keyword only inside inline or fenced code
+    - Given Developer has a closing keyword only inside inline or fenced code or an HTML comment
         - When pr-closes-issue checks the body file
             - Then it fails saying it has no closing keyword
 - 0050.5

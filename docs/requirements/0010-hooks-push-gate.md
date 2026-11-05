@@ -2,24 +2,24 @@
 
 ## Why
 
-Every feature I push traces to a Plan a person approved, so no unplanned work reaches review. That Plan may live in another repo of my owner, such as an org-wide Plan in `.github`.
+Every feature I push traces to a Plan a person approved, so no unplanned work reaches review. My branch's open PR names that Plan by closing it. The Plan may live in another repo of my owner, such as an org-wide Plan in `.github`.
 
 ## Measurement
 
-feature pushes that name an approved Plan
+feature pushes whose open PR closes an approved Plan
 -
-feature pushes
+feature pushes with an open PR
 
 ## Requirements
 
 - 0010.1
-    - Given Developer has the shared hooks, no fitness on the PATH, and a feature commit naming a Plan an allowed approver approved
+    - Given Developer has the shared hooks, no fitness on the PATH, and a branch whose open PR closes an approved Plan
         - When I push it
             - Then the push goes through, with the repo's owner and org members allowed when planApprovers is unset
 - 0010.4
-    - Given Developer has a branch whose first pushed commit names an approved Plan
-        - When I push a later feature commit with no trailer
-            - Then the push goes through
+    - Given Developer has a feature branch with no open PR yet
+        - When I push it
+            - Then the push goes through with one info line, since the PR check gates the Plan later
 - 0010.6
     - Given Developer has pushed a branch
         - When I delete it from the remote
@@ -29,18 +29,18 @@ feature pushes
         - When I push them
             - Then the push goes through
 - 0010.11
-    - Given Developer has several feature commits naming one approved Plan, or three Plans behind a network that never answers
+    - Given Developer has feature commits on a branch whose PR closes one approved Plan twice, or a network that never answers
         - When I push them
             - Then the hook asks GitHub about that Plan once, or refuses once 30 seconds pass with one line naming the host
 - 0010.12
     - Given Developer has external policy with plan-trailer and local-branch in disabledChecks
-        - When I push a feature commit that names no Plan
-            - Then the push goes through
+        - When I push a feature branch whose open PR closes no Plan
+            - Then the push goes through without reading the PR
 - 0010.13
-    - Given Developer has a feature commit naming an approved Plan of another repo of origin's owner, as `Plan May-Journal/.github#144` or its URL
+    - Given Developer has a branch whose PR closes an approved Plan of origin's owner in another repo, as `Closes May-Journal/.github#144` or its URL
         - When I push it
             - Then the push goes through, having read that Plan once from the repo it names
 - 0010.14
-    - Given Developer has a feature commit naming no Plan, a non-Plan issue, another owner's Plan, or a Plan no allowed approver approved
+    - Given Developer has a branch whose PR closes no Plan despite a `Plan #NN` trailer, or a non-Plan issue, foreign or unapproved Plan
         - When I push it
-            - Then the push is refused naming that issue and who may approve, or the missing trailer with both spellings as the fix
+            - Then the push is refused naming that issue and who may approve, or that the PR body must close the Plan

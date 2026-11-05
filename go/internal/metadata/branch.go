@@ -73,9 +73,9 @@ func (c repoClients) get(ctx context.Context, repo string) aftereffect.Client {
 }
 
 func checkBranch(ctx context.Context, root string, branch gitx.BranchContext, clients repoClients) checkkit.Result {
-	pr, repo, err := discoverBranchPR(ctx, root, branch.Name)
+	pr, repo, err := pushedPR(ctx, root, branch.Name)
 	if err != nil || pr == nil {
-		return branchReadResult(err)
+		return noBranchPR(root, branch.Name, err)
 	}
 	pr.BaseSHA = currentBase(ctx, root, repo, pr)
 	gh := clients.get(ctx, repo)
@@ -117,6 +117,15 @@ func readBranchChangelog(ctx context.Context, root, tip string, pr *branchPR) er
 	files, err := branchEntryFiles(ctx, root, tip, pr)
 	pr.EntryFiles = &files
 	return err
+}
+
+// noBranchPR is the result for a branch whose PR read failed or found no
+// open PR, which skips the branch.
+func noBranchPR(root, branch string, err error) checkkit.Result {
+	if err == nil {
+		fmt.Fprintf(os.Stderr, "branch-check: no open PR for %s:%s; skipped.\n", gitx.OriginSlug(root), branch)
+	}
+	return branchReadResult(err)
 }
 
 func branchReadResult(err error) checkkit.Result {

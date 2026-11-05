@@ -122,7 +122,6 @@ func matchingPR(out []byte, source, branch string) (*branchPR, error) {
 func selectBranchPR(matches []*branchPR, source, branch string) (*branchPR, error) {
 	switch len(matches) {
 	case 0:
-		fmt.Fprintf(os.Stderr, "branch-check: no open PR for %s:%s; skipped.\n", source, branch)
 		return nil, nil
 	case 1:
 		return matches[0], nil

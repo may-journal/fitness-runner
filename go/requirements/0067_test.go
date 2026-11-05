@@ -57,16 +57,23 @@ func metadataPushRepo(t *testing.T, title string) (string, []string, replays) {
 }
 
 // stalledPushRepo is metadataPushRepo with GitHub stalling planWait seconds
-// before it answers the gate's Plan read and prWait before local-branch's
-// PR discovery.
-func stalledPushRepo(t *testing.T, title string, planWait, prWait int) (string, []string, replays) {
+// before it answers the gate's Plan read. With otherWait set, branch other
+// holds a docs commit whose PR discovery stalls otherWait seconds.
+func stalledPushRepo(t *testing.T, title string, planWait, otherWait int) (string, []string, replays) {
 	t.Helper()
 	repo := branchRepo(t, nil)
 	pr := branchAnswer(t, repo, title, pr0014(11))
-	pr.Wait = prWait
 	plan := planView(t, 11, planBody("- [x] Write the tests."), []string{"Plan"}, "I approve")
 	plan.Wait = planWait
 	saved := branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"), plan)
+	if otherWait > 0 {
+		other := pushedAnswer(t, repo, "other", "docs(readme): touch nothing", pr0014(11), 2)
+		other.Wait = otherWait
+		saved = append(saved, other)
+		git(t, repo, "switch", "-q", "-c", "other")
+		commit(t, repo, nil, "docs(readme): touch nothing")
+		git(t, repo, "switch", "-q", "work")
+	}
 	rp := standIn(t, map[string][]response{"gh": saved})
 	out, code := fitness(t, repo, nil, "init")
 	sees(t, out, code, 0, "installed hooks")
@@ -74,7 +81,7 @@ func stalledPushRepo(t *testing.T, title string, planWait, prWait int) (string, 
 	bare := t.TempDir()
 	git(t, bare, "init", "-q", "--bare")
 	git(t, repo, "remote", "set-url", "--push", "origin", bare)
-	out, code = user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add one file\n\nPlan #11")
+	out, code = user(t, repo, env, "commit", "--allow-empty", "-m", "feat(app): add one file")
 	sees(t, out, code, 0, "feat(app): add one file")
 	return repo, env, rp
 }
@@ -92,11 +99,11 @@ func Test0067_3(t *testing.T) {
 	sees(t, out, code, 1, `"added one file"`, "local-branch", "failed")
 	branchReadOnce(t, rp)
 	pushAsked(t, rp, "11", "comments")
-	// The gate's read takes 25 of the push's 30 seconds, so a valid PR's
-	// 10-second discovery runs out.
+	// The gate's Plan read takes 25 of the push's 30 seconds. The gate skips
+	// the docs branch, so local-branch's 10-second PR discovery runs out.
 	repo, env, rp := stalledPushRepo(t, "test(app): add one file", 25, 10)
 	start := time.Now()
-	out, code = user(t, repo, env, "push", "origin", "HEAD:work")
+	out, code = user(t, repo, env, "push", "origin", "HEAD:work", "other")
 	sees(t, out, code, 1, "local-branch", "GitHub reads timed out")
 	if took := time.Since(start); took > 34*time.Second {
 		t.Errorf("push took %s, past the 30-second deadline", took)

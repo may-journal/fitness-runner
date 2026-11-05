@@ -17,7 +17,7 @@ import (
 )
 
 // pushPlansEnv names the file through which the pre-push gate hands
-// local-branch the Plans it read.
+// local-branch the PRs and Plans it read.
 const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
 
 // approvalRe matches a comment whose first line starts with `I approve` in any
@@ -42,12 +42,20 @@ func GitHubHost() string {
 	return cmp.Or(os.Getenv("GH_HOST"), "github.com")
 }
 
-// PushPlans are the Plans one push read successfully, each read once. A
-// failed read is not kept, so a later ask tries GitHub again while the
-// push's deadline lasts.
+// PushPlans are the PRs and Plans one push read successfully, each read
+// once. A failed read is not kept, so a later ask tries GitHub again while
+// the push's deadline lasts.
 type PushPlans struct {
 	ctx   context.Context
 	reads map[string]planRead
+	prs   map[string]pushPR
+}
+
+// pushPR is the gate's read of one pushed branch: its open PR, nil when it
+// has none, and the base repo gh selects.
+type pushPR struct {
+	PR   *branchPR `json:"pr"`
+	Repo string    `json:"repo"`
 }
 
 // planRead is one successful read and the issue number it read.
@@ -62,6 +70,8 @@ type handoff struct {
 	Gate     int        `json:"gate"`
 	Deadline time.Time  `json:"deadline"`
 	Plans    []pushPlan `json:"plans"`
+	// PRs are the gate's PR reads, by pushed branch name.
+	PRs map[string]pushPR `json:"prs"`
 }
 
 // pushPlan is one handed-off read: the issue's repo, number, body and labels.
@@ -75,7 +85,25 @@ type pushPlan struct {
 // NewPushPlans starts a push with no Plans read, whose reads all end when
 // ctx, the push's deadline from PushContext, does.
 func NewPushPlans(ctx context.Context) *PushPlans {
-	return &PushPlans{ctx: ctx, reads: map[string]planRead{}}
+	return &PushPlans{ctx: ctx, reads: map[string]planRead{}, prs: map[string]pushPR{}}
+}
+
+// PRPlans finds the open PR from branch and returns the issues its body
+// closes, in any spelling, with the PR's URL. The URL is empty when the
+// branch has no open PR yet or origin is not on GitHub.
+func (p *PushPlans) PRPlans(root, branch string) ([]gitx.PlanRef, string, error) {
+	if gitx.OriginSlug(root) == "" {
+		return nil, "", nil
+	}
+	pr, repo, err := discoverBranchPR(p.ctx, root, branch)
+	if err != nil {
+		return nil, "", err
+	}
+	p.prs[branch] = pushPR{PR: pr, Repo: repo}
+	if pr == nil {
+		return nil, "", nil
+	}
+	return gitx.ClosedRefs(pr.Body), pr.URL, nil
 }
 
 // TimedOut is one line naming the GitHub host and the deadline once the
@@ -125,7 +153,7 @@ func (p *PushPlans) read(key string, ref gitx.PlanRef) (planRead, bool) {
 // names it for local-branch. The returned func removes the file.
 func (p *PushPlans) Handoff() (func(), error) {
 	deadline, _ := p.ctx.Deadline()
-	data, err := json.Marshal(handoff{Gate: os.Getpid(), Deadline: deadline, Plans: p.plans()})
+	data, err := json.Marshal(handoff{Gate: os.Getpid(), Deadline: deadline, Plans: p.plans(), PRs: p.prs})
 	if err != nil {
 		return nil, err
 	}
@@ -171,6 +199,15 @@ func seedPushIssues(gh aftereffect.Client, repo string) {
 // handedPlans are the Plans the gate read, from a trusted handoff.
 func handedPlans() []pushPlan {
 	return trustedHandoff().Plans
+}
+
+// pushedPR is the open PR from branch and its base repo: the gate's read
+// from a trusted handoff, else a read from GitHub.
+func pushedPR(ctx context.Context, root, branch string) (*branchPR, string, error) {
+	if read, ok := trustedHandoff().PRs[branch]; ok {
+		return read.PR, read.Repo, nil
+	}
+	return discoverBranchPR(ctx, root, branch)
 }
 
 // pushDeadline is when local-branch's GitHub reads must end: what is left

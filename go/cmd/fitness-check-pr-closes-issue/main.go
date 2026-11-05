@@ -11,6 +11,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
@@ -23,13 +24,6 @@ func Main() {
 		Run:      run,
 	})
 }
-
-// closingKeywords is GitHub's fixed set of nine issue-closing keywords, shared by the Plan side through --emit-closed and the PR side.
-const closingKeywords = `close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved`
-
-// closingIssueRe matches a closing keyword linking an issue number, e.g.
-// `Closes #12` or `Fixes: #12`.
-var closingIssueRe = regexp.MustCompile(`(?i)\b(?:` + closingKeywords + `)[:\s]+#(\d+)`)
 
 // implementedIssueRe matches an `Implements #12` or `Plan #12` claim, which needs a closing keyword for that same issue.
 var implementedIssueRe = regexp.MustCompile(`(?i)\b(?:implement(?:s|ed)?|plan)[:\s]+#(\d+)`)
@@ -59,7 +53,7 @@ func validate(body string, required []int) []string {
 // and every implemented issue closed.
 func baseErrors(body string, closed map[int]bool) []string {
 	var errors []string
-	if !closingIssueRe.MatchString(body) {
+	if len(gitx.ClosedRefs(body)) == 0 {
 		errors = append(errors,
 			"PR description has no GitHub closing keyword (close/fix/resolve + #NN) — every PR must close at least one issue on merge")
 	}
@@ -98,11 +92,12 @@ func hasFlag(argv []string, flag string) bool {
 	return false
 }
 
-// closedIssues is the set of issue numbers the body closes with a keyword.
+// closedIssues is the set of this repo's issue numbers the body closes, read
+// by gitx.ClosedRefs as the pre-push gate reads them.
 func closedIssues(body string) map[int]bool {
 	set := map[int]bool{}
-	for _, m := range closingIssueRe.FindAllStringSubmatch(body, -1) {
-		if n, err := strconv.Atoi(m[1]); err == nil {
+	for _, r := range gitx.ClosedRefs(body) {
+		if n, err := strconv.Atoi(r.Number); err == nil && !r.Qualified() {
 			set[n] = true
 		}
 	}

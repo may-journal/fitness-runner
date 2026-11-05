@@ -29,9 +29,9 @@ live branch updates pushed
         - When I delete it
             - Then the push succeeds without reading branch metadata
 - 0068.5
-    - Given Developer has a renamed push whose local tip names a malformed Plan
+    - Given Developer has a renamed push whose PR closes a malformed approved Plan
         - When I push from another checkout branch
-            - Then it finds the destination PR and fails the pushed tip's Plan
+            - Then it finds the destination PR and fails that Plan
 - 0068.6
     - Given Developer has two pushed branches whose PRs close one approved Plan
         - When I push both together

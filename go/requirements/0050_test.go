@@ -30,11 +30,15 @@ func Test0050_1(t *testing.T) {
 		out, code := fitness(t, repo, nil, "pr-closes-issue", "--body-file", keyword+".md")
 		sees(t, out, code, 0, "All 1 checks passed")
 	}
+	for _, body := range []string{"Closes May-Journal/.github#144\n", "Fixes https://github.com/may-journal/.github/issues/144\n"} {
+		out, code := prCloses(t, body)
+		sees(t, out, code, 0, "All 1 checks passed")
+	}
 }
 
 func Test0050_2(t *testing.T) {
 	t.Parallel()
-	out, code := prCloses(t, "This addresses #12, is part of #6, and follows #7.\n")
+	out, code := prCloses(t, "This addresses #12, is part of #6, and follows #7. Closes # 12, and closes #\n12.\n")
 	sees(t, out, code, 1, prClosesNoKeyword)
 }
 
@@ -48,7 +52,7 @@ func Test0050_3(t *testing.T) {
 
 func Test0050_4(t *testing.T) {
 	t.Parallel()
-	out, code := prCloses(t, "Merging `Closes #12` closed it.\n\n```\nFixes #12\n```\n")
+	out, code := prCloses(t, "Merging `Closes #12` closed it.\n\n```\nFixes #12\n```\n\n<!-- Resolves #12 -->\n")
 	sees(t, out, code, 1, prClosesNoKeyword)
 }
 
