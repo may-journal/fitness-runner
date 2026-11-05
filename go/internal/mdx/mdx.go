@@ -7,6 +7,7 @@ package mdx
 import (
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -182,6 +183,13 @@ func IsTableSeparator(line string) bool {
 	return tableSeparator.MatchString(line)
 }
 
+// IsTableHeader reports whether header and separator open a GFM table: a
+// row holding a pipe, then a separator row with as many cells.
+func IsTableHeader(header, separator string) bool {
+	return strings.Contains(header, "|") && !IsTableSeparator(header) && IsTableSeparator(separator) &&
+		len(SplitTableRow(header)) == len(SplitTableRow(separator))
+}
+
 // Heading is one ATX markdown heading found outside fenced code.
 type Heading struct {
 	// Level is the number of leading '#' (1-6).
@@ -197,8 +205,14 @@ var atxHeading = regexp.MustCompile(`^(#{1,6})\s+(.*)$`)
 // Headings returns every ATX heading in document order, skipping fenced
 // code, so a "## foo" sample is not counted.
 func Headings(content string) []Heading {
+	return HeadingsIn(blankFenced(content))
+}
+
+// HeadingsIn is Headings over lines that BlankFenced returned, for a caller
+// that already split the document.
+func HeadingsIn(lines []string) []Heading {
 	var out []Heading
-	for i, line := range blankFenced(content) {
+	for i, line := range lines {
 		if hm := atxHeading.FindStringSubmatch(strings.TrimRight(line, "\r")); hm != nil {
 			out = append(out, Heading{
 				Level: len(hm[1]),
@@ -239,12 +253,21 @@ func StripComments(content string) string {
 	return htmlCommentRe.ReplaceAllString(content, " ")
 }
 
-// blankFenced returns content's lines with every line inside a fenced code
-// block replaced by "" (line indices preserved). Fence detection mirrors
+// blankFenced is BlankFenced over content's lines.
+func blankFenced(content string) []string {
+	return blankFencedLines(strings.Split(content, "\n"))
+}
+
+// BlankFenced returns a copy of lines with every line inside a fenced code
+// block replaced by "", so line indices hold.
+func BlankFenced(lines []string) []string {
+	return blankFencedLines(slices.Clone(lines))
+}
+
+// blankFencedLines blanks fenced lines in place. Fence detection mirrors
 // Fences: a block closes at the first line whose trimmed start begins with the
 // same marker.
-func blankFenced(content string) []string {
-	lines := strings.Split(content, "\n")
+func blankFencedLines(lines []string) []string {
 	inFence := false
 	marker := ""
 	for i, line := range lines {

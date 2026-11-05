@@ -25,9 +25,9 @@ An unscoped run reads every tracked file. The 1% threshold applies to the lines 
 
 A doc must repeat its legend too, so three kinds of Markdown line never count ([#782](https://github.com/may-journal/fitness-runner/issues/782)).
 
-- A legend diagram: one with no callouts right after a numbered diagram.
-- A style statement inside any mermaid block, such as `classDef` or `UpdateElementStyle`.
-- A GFM table separator row.
+- A legend diagram: one titled `Legend` or under a `Legend` heading, as the architecture templates draw it.
+- A style statement inside any mermaid block, such as `classDef`, `cssClass` or `UpdateElementStyle`, but not `class`, which declares a class.
+- A GFM table separator row: the row under a table's header, outside fenced code.
 
 A doc must repeat its template, so templates are left out. Any file [doc-template](../fitness-check-doc-template/README.md#what-is-a-template) treats as a template is skipped, in any folder. Docs built from one template are still compared with each other and with every other file.
 

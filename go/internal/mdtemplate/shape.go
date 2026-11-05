@@ -198,21 +198,8 @@ func readView(body string) view {
 	return v
 }
 
-var titleLegend = regexp.MustCompile(`(?im)^\s*title\s+legend\s*$`)
-
 func isLegend(b *mermaid.DiagramBlock, headings []mdx.Heading) bool {
-	return !b.HasCallouts() || titleLegend.MatchString(b.Body) || strings.EqualFold(headingAbove(headings, b.Line), "Legend")
-}
-
-// headingAbove is the text of the nearest heading of any level above line.
-func headingAbove(headings []mdx.Heading, line int) string {
-	text := ""
-	for _, h := range headings {
-		if h.Line < line {
-			text = h.Text
-		}
-	}
-	return text
+	return !b.HasCallouts() || mermaid.IsNamedLegend(b, headings)
 }
 
 // diagramKind is a diagram's Mermaid type with its direction, such as

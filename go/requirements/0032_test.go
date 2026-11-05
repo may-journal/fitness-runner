@@ -50,18 +50,24 @@ func Test0032_1(t *testing.T) {
 }
 
 // Test0032_17 puts a 3-line block in one pair and an 18-token block in
-// another, each under one minimum. Two docs share a 60-dash separator row.
+// another, each under one minimum. Two docs share a 5-line run only because
+// it ends in a 120-dash separator row.
 func Test0032_17(t *testing.T) {
 	t.Parallel()
 	files := dupPair("src/a.js", "src/b.js", dupBlock("w", 3, 20))
 	files["src/c.js"] = dupBlock("s", 6, 3) + dupBlock("fc", 24, 3)
 	files["src/d.js"] = dupBlock("s", 6, 3) + dupBlock("fd", 24, 3)
-	separator := "| " + strings.Repeat("-", 60) + " | " + strings.Repeat("-", 60) + " |\n"
-	files["docs/a.md"] = "# A\n\n| Name | Why |\n" + separator + "| a | b |\n" + dupBlock("da", 24, 3)
-	files["docs/b.md"] = "# B\n\n| Name | Why |\n" + separator + "| c | d |\n" + dupBlock("db", 24, 3)
+	files["docs/a.md"] = "# A\n\n" + dupSeparatorTable + "a | b\n" + dupBlock("da", 24, 3)
+	files["docs/b.md"] = "# B\n\n" + dupSeparatorTable + "c | d\n" + dupBlock("db", 24, 3)
 	out, code := dupRun(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 }
+
+// dupSeparatorTable is two lines of prose and a table's header and separator
+// rows. Its 120 dashes carry it past 50 tokens and its last line ends a
+// 5-line run.
+var dupSeparatorTable = "Both docs list names.\nEach row says why.\n\n| Name | Why |\n| " +
+	strings.Repeat("-", 60) + " | " + strings.Repeat("-", 60) + " |\n"
 
 // Test0032_13 commits a copied block in a script, which duplicate-code never
 // compares with a doc, then in a second doc.
@@ -118,22 +124,32 @@ func Test0032_14(t *testing.T) {
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
-// Test0032_16 adds a template to Test0032_1's two copies and two level docs
-// whose legend and style lines match. A third doc is committed, so
-// duplicate-code scopes to Markdown, and only notes.md is named.
+// Test0032_16 adds a template, matching legends and a copied untitled
+// diagram to Test0032_1's two docs. A committed third doc scopes the run to
+// Markdown, and the exact share proves the template is not scanned.
 func Test0032_16(t *testing.T) {
 	t.Parallel()
 	files := dupPair("docs/guide.md", "docs/notes.md", dupClone)
 	files["docs/templates/guide.md"] = dupClone + dupBlock("ft", 24, 3)
 	files["docs/architecture/02-containers.md"] = dupLevelDoc("ca")
 	files["docs/architecture/03-components.md"] = dupLevelDoc("cb")
+	files["docs/flow-a.md"] = "# Flow\n\n" + dupCopiedDiagram + dupBlock("la", 24, 3)
+	files["docs/flow-b.md"] = "# Flow\n\n" + dupLevelDiagram("lb") + dupCopiedDiagram + dupBlock("lb", 24, 3)
 	repo, env := hooked(t, files)
 	write(t, repo, map[string]string{"docs/new.md": "# New\n\n" + dupBlock("fn", 24, 3)})
 	user(t, repo, env, "add", "docs/new.md")
-	out, _ := user(t, repo, env, "commit", "-m", "docs(new): add a doc")
-	dupNames(t, out, []string{"ERROR: duplicate code is ", "docs/notes.md: 6 duplicated lines"},
-		[]string{"docs/architecture/02-containers.md:", "docs/architecture/03-components.md:", "docs/guide.md:"})
+	out, code := user(t, repo, env, "commit", "-m", "docs(new): add a doc")
+	if code == 0 {
+		t.Errorf("the hook must reject the commit:\n%s", out)
+	}
+	dupNames(t, out, []string{"ERROR: duplicate code is 5.6% of scanned lines", "docs/notes.md: 6 duplicated lines", "docs/flow-b.md: 11 duplicated lines"},
+		[]string{"docs/architecture/02-containers.md:", "docs/architecture/03-components.md:", "docs/flow-a.md:", "docs/guide.md:", "docs/templates/guide.md:"})
 }
+
+// dupCopiedDiagram is an untitled diagram with no callouts, then a 48-token
+// line. The lexer reads the fenced block as one token, so only a copy whose
+// body stays reaches both minimums.
+var dupCopiedDiagram = "```mermaid\nflowchart TB\n" + dupBlock("m", 6, 3) + "```\n\n" + dupBlock("t", 1, 47)
 
 // dupNames asserts out holds each of wants and none of the clean paths, which
 // hold only lines a doc must repeat.

@@ -30,9 +30,9 @@
 // A doc must repeat its legend too, so three kinds of Markdown line never
 // count ([#782]).
 //
-//   - A legend diagram: one with no callouts right after a numbered diagram.
-//   - A style statement inside any mermaid block, such as `classDef` or `UpdateElementStyle`.
-//   - A GFM table separator row.
+//   - A legend diagram: one titled `Legend` or under a `Legend` heading, as the architecture templates draw it.
+//   - A style statement inside any mermaid block, such as `classDef`, `cssClass` or `UpdateElementStyle`, but not `class`, which declares a class.
+//   - A GFM table separator row: the row under a table's header, outside fenced code.
 //
 // A doc must repeat its template, so templates are left out. Any file
 // [doc-template] treats as a template is skipped, in any folder. Docs built

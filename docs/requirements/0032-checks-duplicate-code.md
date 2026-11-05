@@ -37,10 +37,10 @@ repos scanned
         - When `duplicate-code` runs
             - Then it passes, since both marker spellings leave the block out
 - 0032.16
-    - Given Developer has a template, a doc built from it and its copy, and two docs sharing a legend and style lines
+    - Given Developer has a template, its doc and a copy, two docs sharing a legend, and two sharing an untitled diagram
         - When I commit a third doc
-            - Then `duplicate-code` fails naming only the copy, since a doc must repeat its template and its legend
+            - Then `duplicate-code` fails at the share of the docs alone, naming only each second copy, since a doc repeats its template and legend
 - 0032.17
-    - Given Developer has two files sharing a block under 5 lines, two under 50 tokens, and two docs sharing a long separator row
+    - Given Developer has pairs sharing under 5 lines or under 50 tokens, and two docs sharing 5 lines ending in a separator row
         - When `duplicate-code` runs
             - Then it passes
