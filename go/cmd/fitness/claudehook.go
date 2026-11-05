@@ -21,6 +21,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
 // claudeHookInput is the part of a Claude Code hook's stdin JSON the hook
@@ -59,6 +60,8 @@ type hookJob struct {
 	keep          func(listed) bool
 	args          []string
 	stdin         string
+	// parts are the bodies a post holds, each judged alone.
+	parts []postPart
 	// once is a key that blocks at most once, or "" to block every time. A
 	// nonzero deadline ends the run in time for the hook's timeout.
 	once     string
@@ -200,7 +203,7 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	if post.comment {
 		args = append(args, commentChecks)
 	}
-	return hookJob{root: root, subject: "the " + post.kind + " body", args: args, stdin: post.body}, ok, nil
+	return hookJob{root: root, args: args, parts: post.parts}, ok, nil
 }
 
 // stopJob runs every file and git check on the uncommitted files. It blocks
@@ -252,6 +255,9 @@ func stopCheck(c listed) bool {
 // judge runs the job's checks and returns their findings, with no reason
 // when every check passed or none applies.
 func (job hookJob) judge() (hookResult, error) {
+	if len(job.parts) > 0 {
+		return job.judgeParts()
+	}
 	args := job.args
 	if job.keep != nil {
 		names, err := hookChecks(job.root, job.keep)
@@ -263,6 +269,34 @@ func (job hookJob) judge() (hookResult, error) {
 	report, err := runChild(job.root, job.stdin, args, job.deadline)
 	v := verdictOf(report)
 	return hookResult{reason: v.text(job.subject), failed: len(v.failed), lines: len(v.lines), ran: true}, err
+}
+
+// judgeParts judges each body of a post alone and side by side, and blocks
+// with the findings of every red one.
+func (job hookJob) judgeParts() (hookResult, error) {
+	var total hookResult
+	var reasons []string
+	results := par.Map(len(job.parts), par.Processes(), func(i int) partResult {
+		part := job
+		part.subject, part.stdin, part.parts = job.parts[i].subject, job.parts[i].text, nil
+		result, err := part.judge()
+		return partResult{result, err}
+	})
+	for _, r := range results {
+		if r.err != nil {
+			return total, r.err
+		}
+		reasons = append(reasons, r.reason)
+		total.failed, total.lines, total.ran = total.failed+r.failed, total.lines+r.lines, true
+	}
+	total.reason = strings.Join(slices.DeleteFunc(reasons, func(r string) bool { return r == "" }), "\n")
+	return total, nil
+}
+
+// partResult is what judging one body of a post found.
+type partResult struct {
+	hookResult
+	err error
 }
 
 // hookChecks names the checks the repo enables that keep accepts.

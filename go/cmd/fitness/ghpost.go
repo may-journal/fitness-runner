@@ -8,27 +8,39 @@ import (
 	"strings"
 )
 
-// ghPost is a gh call that posts a body: what it posts and the body.
+// ghPost is a gh call that posts text: whether that text is a comment, and
+// each body it posts.
 type ghPost struct {
-	// kind names what posts, such as "pr" or "issue comment".
-	kind string
-	// comment marks a comment or review, which meets the comment checks.
 	comment bool
-	body    string
+	parts   []postPart
 }
 
-// ghPostKinds maps each gh call that posts a body to whether that body is a
-// comment; the rest are issue or PR descriptions.
-var ghPostKinds = map[string]bool{
-	"issue create": false, "issue edit": false, "pr create": false, "pr edit": false,
-	"issue comment": true, "pr comment": true, "pr review": true,
+// postPart is one body a post holds, such as a review's summary or one of
+// its line comments, with a name for it.
+type postPart struct {
+	subject, text string
 }
 
-// ghInlineFlags give a body inline, and ghFileFlags name a file holding it.
+// ghKind is a gh command that posts a body. It says whether that is a
+// comment, and which flags give the body inline or name its file.
+type ghKind struct {
+	comment       bool
+	inline, files []string
+}
+
+// The flag sets gh commands give a body with.
 var (
-	ghInlineFlags = []string{"--body", "-b"}
-	ghFileFlags   = []string{"--body-file", "-F"}
+	bodyFlags    = ghKind{inline: []string{"--body", "-b"}, files: []string{"--body-file", "-F"}}
+	commentFlags = ghKind{comment: true, inline: bodyFlags.inline, files: bodyFlags.files}
+	closeFlags   = ghKind{comment: true, inline: []string{"--comment", "-c"}}
 )
+
+// ghPostKinds are the gh issue and PR commands that post a body.
+var ghPostKinds = map[string]ghKind{
+	"issue create": bodyFlags, "issue edit": bodyFlags, "pr create": bodyFlags, "pr edit": bodyFlags,
+	"issue comment": commentFlags, "pr comment": commentFlags, "pr review": commentFlags,
+	"issue close": closeFlags, "pr close": closeFlags,
+}
 
 // ghCall holds what reading one gh call's body needs. That is its folder,
 // its stdin, and the calls before it on the command line.
@@ -38,9 +50,9 @@ type ghCall struct {
 	earlier []shellCall
 }
 
-// ghPostIn finds the first gh issue or PR call in a shell command whose body
-// it can read in full. A body built from a variable or another command is
-// unknown until the shell runs, so that call is not judged.
+// ghPostIn finds the first issue, PR or api call in a shell command that
+// posts a body it can read in full. A body built from a variable or another
+// command is unknown until the shell runs, so that call is not judged.
 func ghPostIn(command, cwd string) (ghPost, bool) {
 	if !strings.Contains(command, "gh") {
 		return ghPost{}, false
@@ -75,14 +87,23 @@ func ghPostOf(words []shellWord, call ghCall) (ghPost, bool) {
 		return ghPost{}, false
 	}
 	words = skipRepoFlag(words[1:])
+	if len(words) > 0 && words[0].text == "api" {
+		return apiPost(words[1:], call)
+	}
+	return commandPost(words, call)
+}
+
+// commandPost reads the post a gh issue or PR command makes, from the words
+// after gh.
+func commandPost(words []shellWord, call ghCall) (ghPost, bool) {
 	if len(words) < 2 {
 		return ghPost{}, false
 	}
-	kind := words[0].text + " " + words[1].text
-	comment, posts := ghPostKinds[kind]
-	body, ok := ghBody(words[2:], call)
-	kind = strings.TrimSuffix(strings.TrimSuffix(kind, " create"), " edit")
-	return ghPost{kind: kind, comment: comment, body: body}, posts && ok
+	name := words[0].text + " " + words[1].text
+	kind, posts := ghPostKinds[name]
+	body, ok := ghBody(words[2:], call, kind)
+	subject := "the " + strings.TrimSuffix(strings.TrimSuffix(name, " create"), " edit") + " body"
+	return ghPost{comment: kind.comment, parts: []postPart{{subject, body}}}, posts && ok
 }
 
 // leadingCommand drops the variable assignments and the command or env
@@ -121,31 +142,33 @@ func repoFlagWidth(word string) int {
 
 // ghBody reads the body a gh call's flags give: inline, from a file, or from
 // the call's stdin when the file is -.
-func ghBody(args []shellWord, call ghCall) (string, bool) {
+func ghBody(args []shellWord, call ghCall, kind ghKind) (string, bool) {
+	flags := append(slices.Clone(kind.inline), kind.files...)
 	for i, arg := range args {
-		if name, value, ok := flagValue(args, i); arg.known && ok {
-			return flagBody(name, value, call)
+		if name, value, ok := flagValue(args, i, flags); arg.known && ok {
+			return flagBody(slices.Contains(kind.inline, name), value, call)
 		}
 	}
 	return "", false
 }
 
-// flagBody reads the body one flag gives, when its value is known.
-func flagBody(name string, value shellWord, call ghCall) (string, bool) {
+// flagBody reads the body one flag gives, when known. That is the value for
+// an inline flag, else the file it names.
+func flagBody(inline bool, value shellWord, call ghCall) (string, bool) {
 	if !value.known {
 		return "", false
 	}
-	if slices.Contains(ghInlineFlags, name) {
+	if inline {
 		return value.text, true
 	}
 	return call.bodyFile(value.text)
 }
 
-// flagValue reads args[i] as a body flag, given as --flag=value or as
+// flagValue reads args[i] as one of flags, given as --flag=value or as
 // --flag followed by its value.
-func flagValue(args []shellWord, i int) (name string, value shellWord, ok bool) {
+func flagValue(args []shellWord, i int, flags []string) (name string, value shellWord, ok bool) {
 	name, inline, hasValue := strings.Cut(args[i].text, "=")
-	if !slices.Contains(ghInlineFlags, name) && !slices.Contains(ghFileFlags, name) {
+	if !slices.Contains(flags, name) {
 		return "", shellWord{}, false
 	}
 	if hasValue {

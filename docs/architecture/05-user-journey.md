@@ -43,7 +43,7 @@ flowchart TB
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listComments(40 List code comments<br/>Req 0136):::action
-    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143):::action
+    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143, 0145):::action
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
