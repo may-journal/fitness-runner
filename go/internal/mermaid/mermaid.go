@@ -70,6 +70,12 @@ type DiagramBlock struct {
 // Kind reports DiagramKind.
 func (*DiagramBlock) Kind() Kind { return DiagramKind }
 
+// IsStyleStatement reports whether a diagram line only styles or directs the
+// diagram, which every diagram of a level repeats for its palette.
+func IsStyleStatement(line string) bool {
+	return styleLine.MatchString(line)
+}
+
 // At names the opening fence for an error, as " (diagram at line N)".
 // A whole-file diagram gets nothing, since its lines are the file's.
 func (b *DiagramBlock) At() string {
@@ -139,8 +145,9 @@ func trimStartJS(s string) string { return strings.TrimLeftFunc(s, isJSSpace) }
 func trimJS(s string) string { return strings.TrimFunc(s, isJSSpace) }
 
 // styleLine matches mermaid directive/style lines whose numbers (hex colors,
-// stroke widths) are not callouts.
-var styleLine = regexp.MustCompile(`^[` + jsWS + `]*(classDef|style|linkStyle|%%)`)
+// stroke widths) are not callouts. A `class` statement is left out, since in
+// a classDiagram it declares a class.
+var styleLine = regexp.MustCompile(`^[` + jsWS + `]*(classDef|cssClass|style|linkStyle|Update(Element|Rel|Boundary)Style|UpdateLayoutConfig|%%)`)
 
 // Callout is one callout label read from a diagram.
 type Callout struct {
@@ -617,6 +624,27 @@ const UnnumberedHint = "mermaid diagram has no numbered callouts; number its nod
 func IsLegend(blocks []DocBlock, i int) bool {
 	d, ok := blocks[i].(*DiagramBlock)
 	return ok && !d.HasCallouts() && i > 0 && numbered(blocks[i-1])
+}
+
+// titleLegend matches the title line of a diagram titled Legend.
+var titleLegend = regexp.MustCompile(`(?im)^[` + jsWS + `]*title[` + jsWS + `]+legend[` + jsWS + `]*$`)
+
+// IsNamedLegend reports whether b is titled Legend or sits under a heading
+// named Legend, as the architecture templates draw one. Headings come from
+// mdx.Headings.
+func IsNamedLegend(b *DiagramBlock, headings []mdx.Heading) bool {
+	return titleLegend.MatchString(b.Body) || strings.EqualFold(headingAbove(headings, b.Line), "Legend")
+}
+
+// headingAbove is the text of the nearest heading of any level above line.
+func headingAbove(headings []mdx.Heading, line int) string {
+	text := ""
+	for _, h := range headings {
+		if h.Line < line {
+			text = h.Text
+		}
+	}
+	return text
 }
 
 // numbered reports whether b is a diagram with callouts.
