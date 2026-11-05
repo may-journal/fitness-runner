@@ -3,6 +3,8 @@ package main
 import (
 	"bufio"
 	"cmp"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"os"
@@ -12,6 +14,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // hookLogName is the file in Fitness's cache folder that holds one JSON line
@@ -49,22 +52,46 @@ type sessionTotal struct {
 	Hooks   map[string]hookTally `json:"hooks"`
 }
 
-// startJob runs the edit checks on the uncommitted files whenever a session
-// starts, resumes, clears or compacts, so Claude knows what is red.
-// The checks run side by side within their budgets, so a big tree stays fast.
+// blockMarksName is the folder in Fitness's cache folder that marks each
+// block a key allows once.
+const blockMarksName = "claude-hook-blocks"
+
+// blockMarkAge is how long a block's mark lasts, which keeps the folder small.
+const blockMarkAge = 24 * time.Hour
+
+// subagentChecks is the longest budget a check may declare to run as a
+// subagent stops. Slower checks, such as the test suites, wait for Claude's stop.
+const subagentChecks = 4 * time.Minute
+
+// subagentDeadline stops the subagent's checks inside the hook's 300 s timeout,
+// so its findings still reach Claude.
+const subagentDeadline = subagentChecks + 30*time.Second
+
+// startJob runs the edit checks on the files the session's branch changed,
+// committed or not, whenever a session starts, resumes, clears or compacts.
+// On the default branch or a detached HEAD it adds nothing.
 func startJob(in claudeHookInput) (hookJob, bool, error) {
 	root, ok := fitnessRoot(in.Cwd)
-	if !ok {
+	if !ok || gitx.FeatureBranch(root) == "" {
 		return hookJob{}, false, nil
 	}
-	scope, err := uncommittedScope(root)
-	job := hookJob{root: root, subject: "the uncommitted files", keep: editCheck, args: scope}
+	scope, err := branchScope(root)
+	job := hookJob{root: root, subject: "the branch's changed files", keep: editCheck, args: scope}
 	return job, len(scope) > 0, err
 }
 
-// subagentJob runs every file and git check on the uncommitted files a
-// subagent edited, in the repo of its last edit. It blocks a stop once, and
-// passes a subagent that edited nothing.
+// branchScope is a `--file` argument per existing file that HEAD changes
+// since its merge base with origin's default branch, or leaves uncommitted.
+func branchScope(root string) ([]string, error) {
+	repo := gitx.Repo(root)
+	committed, err := repo.ChangedSince(gitx.DefaultBase(root))
+	uncommitted, err2 := repo.Uncommitted()
+	return fileScope(root, append(committed, uncommitted...)), errors.Join(err, err2)
+}
+
+// subagentJob runs the file and git checks that fit a subagent stop on the
+// uncommitted files it edited, in its last edit's repo. It blocks each
+// subagent once, and passes one that edited nothing.
 func subagentJob(in claudeHookInput) (hookJob, bool, error) {
 	edited := transcriptEdits(in.AgentTranscript)
 	if in.StopActive || len(edited) == 0 {
@@ -78,8 +105,41 @@ func subagentJob(in claudeHookInput) (hookJob, bool, error) {
 	scope = slices.DeleteFunc(scope, func(arg string) bool {
 		return !slices.Contains(edited, realPath(filepath.Join(root, strings.TrimPrefix(arg, fileFlag+"="))))
 	})
-	job := hookJob{root: root, subject: "the subagent's changed files", keep: stopCheck, args: scope}
+	agent := "SubagentStop\x00" + in.Session + "\x00" + cmp.Or(in.AgentID, in.AgentTranscript)
+	job := hookJob{root: root, subject: "the subagent's changed files", keep: subagentCheck, args: scope,
+		once: func(string) string { return agent }, deadline: subagentDeadline}
 	return job, len(scope) > 0, err
+}
+
+// subagentCheck keeps the stop's checks whose budget fits a subagent stop.
+func subagentCheck(c listed) bool {
+	return stopCheck(c) && c.BudgetMs <= subagentChecks.Milliseconds()
+}
+
+// blockOnce passes a block whose key Fitness already recorded, and records a
+// new one. Claude Code may not mark a repeat stop active, so this stops a loop.
+func (job hookJob) blockOnce(result hookResult) hookResult {
+	if job.once != nil && result.reason != "" && !firstBlock(job.once(result.reason)) {
+		result.reason = ""
+	}
+	return result
+}
+
+// firstBlock records key in the cache folder and reports whether it was new.
+// When no mark can be kept, every block counts as the first.
+func firstBlock(key string) bool {
+	cache, err := distribution.CacheDir()
+	dir := filepath.Join(cache, blockMarksName)
+	if err != nil || os.MkdirAll(dir, 0o700) != nil {
+		return true
+	}
+	defer pruneMarks(dir, blockMarkAge)
+	sum := sha256.Sum256([]byte(key))
+	mark, err := os.OpenFile(filepath.Join(dir, hex.EncodeToString(sum[:])), os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
+	if err == nil {
+		_ = mark.Close()
+	}
+	return !errors.Is(err, os.ErrExist)
 }
 
 // transcriptLine is the part of a transcript line that names a tool call.

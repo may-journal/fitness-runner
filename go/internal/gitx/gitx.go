@@ -317,12 +317,12 @@ func BranchOwnCommits(root string) (commits []string, ok bool) {
 	if len(strings.TrimSpace(out)) == 0 {
 		return nil, false
 	}
-	return notOnOrigin(root, "HEAD", featureBranch(root)), true
+	return notOnOrigin(root, "HEAD", FeatureBranch(root)), true
 }
 
-// featureBranch is the checked-out branch, or empty on the default branch, on
+// FeatureBranch is the checked-out branch, or empty on the default branch, on
 // a detached HEAD, or while the default branch is unknown.
-func featureBranch(root string) string {
+func FeatureBranch(root string) string {
 	branch, base := CurrentBranch(root), knownDefaultBase(root)
 	if base == "" || "origin/"+branch == base {
 		return ""

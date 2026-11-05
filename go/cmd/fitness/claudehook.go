@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -40,6 +41,8 @@ type claudeHookInput struct {
 	// AgentTranscript is the stopping subagent's own transcript, which names
 	// the files it edited.
 	AgentTranscript string `json:"agent_transcript_path"`
+	// AgentID names the stopping subagent, which the hook blocks at most once.
+	AgentID string `json:"agent_id"`
 	// StopActive is true when Claude is already continuing because a Stop
 	// hook blocked it, so the hook lets it stop this time.
 	StopActive bool `json:"stop_hook_active"`
@@ -54,6 +57,10 @@ type hookJob struct {
 	keep          func(listed) bool
 	args          []string
 	stdin         string
+	// once keys a block from its reason, so a key blocks once; nil blocks
+	// every time. A nonzero deadline stops the checks inside the hook's timeout.
+	once     func(reason string) string
+	deadline time.Duration
 }
 
 // editTools are the Claude tools whose edit the PostToolUse hook judges.
@@ -125,7 +132,8 @@ func judgeHookEvent(in claudeHookInput) (hookResult, error) {
 	if err != nil || !ok || !firstDelivery(in.raw) {
 		return hookResult{}, err
 	}
-	return job.judge()
+	result, err := job.judge()
+	return job.blockOnce(result), err
 }
 
 // hookJobs are the jobs each judged event asks for.
@@ -192,8 +200,8 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	return hookJob{root: root, subject: "the " + post.kind + " body", args: args, stdin: post.body}, ok, nil
 }
 
-// stopJob runs every file and git check on the uncommitted files. It blocks
-// a stop once: a second try while a Stop hook already blocked passes.
+// stopJob runs every file and git check on the uncommitted files. A session
+// blocks once on the same findings, and passes while a Stop hook is active.
 func stopJob(in claudeHookInput) (hookJob, bool, error) {
 	if in.StopActive {
 		return hookJob{}, false, nil
@@ -203,20 +211,27 @@ func stopJob(in claudeHookInput) (hookJob, bool, error) {
 		return hookJob{}, false, nil
 	}
 	scope, err := uncommittedScope(root)
-	job := hookJob{root: root, subject: "the changed files", keep: stopCheck, args: scope}
+	once := func(reason string) string { return "Stop\x00" + in.Session + "\x00" + reason }
+	job := hookJob{root: root, subject: "the changed files", keep: stopCheck, args: scope, once: once}
 	return job, len(scope) > 0, err
 }
 
 // uncommittedScope is a `--file` argument per uncommitted file that exists.
 func uncommittedScope(root string) ([]string, error) {
 	changed, err := gitx.Repo(root).Uncommitted()
+	return fileScope(root, changed), err
+}
+
+// fileScope is a `--file` argument per listed file that exists, each once.
+func fileScope(root string, files []string) []string {
 	var scope []string
-	for _, file := range changed {
-		if isFile(filepath.Join(root, file)) {
-			scope = append(scope, fileFlag+"="+file)
+	for _, file := range files {
+		arg := fileFlag + "=" + file
+		if isFile(filepath.Join(root, file)) && !slices.Contains(scope, arg) {
+			scope = append(scope, arg)
 		}
 	}
-	return scope, err
+	return scope
 }
 
 // editCheck keeps the checks an edit runs: file checks within the default
@@ -242,7 +257,7 @@ func (job hookJob) judge() (hookResult, error) {
 		}
 		args = append(args, "--policy=external", "--checks="+strings.Join(names, ","))
 	}
-	report, err := runChild(job.root, job.stdin, args)
+	report, err := runChild(job.root, job.stdin, args, job.deadline)
 	failed, lines := failedChecks(report)
 	return hookResult{reason: findings(job.subject, failed, lines), findings: max(len(lines), len(failed)), ran: true}, err
 }
@@ -269,23 +284,42 @@ func runnable(c listed) bool {
 }
 
 // runChild runs this fitness in root with args, feeding it stdin, and
-// returns its JSON report.
-func runChild(root, stdin string, args []string) (runReport, error) {
+// returns its JSON report. Past a nonzero deadline it stops the run, which
+// stops its checks, and reports that instead.
+func runChild(root, stdin string, args []string, deadline time.Duration) (runReport, error) {
 	var result runReport
 	exe, err := os.Executable()
 	if err != nil {
 		return result, err
 	}
-	cmd := exec.Command(exe, append([]string{formatFlag + "=json"}, args...)...)
+	ctx, cancel := childContext(deadline)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, exe, append([]string{formatFlag + "=json"}, args...)...)
+	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) }
+	cmd.WaitDelay = childGrace
 	cmd.Dir, cmd.Stdin = root, strings.NewReader(stdin)
 	cmd.Env = append(withoutVar(withoutVar(os.Environ(), "FORCE_COLOR"), "GITHUB_ACTIONS"), "NO_COLOR=1")
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	runErr := cmd.Run()
+	if ctx.Err() != nil {
+		return result, fmt.Errorf("the checks ran past the hook's %s budget", deadline)
+	}
 	if json.Unmarshal(stdout.Bytes(), &result) != nil {
 		return result, errors.New("fitness gave no report: " + strings.TrimSpace(cmp.Or(stderr.String(), fmt.Sprint(runErr))))
 	}
 	return result, nil
+}
+
+// childGrace is how long a stopped run may take to stop its checks.
+const childGrace = 10 * time.Second
+
+// childContext ends after deadline, or only when canceled for none.
+func childContext(deadline time.Duration) (context.Context, context.CancelFunc) {
+	if deadline == 0 {
+		return context.WithCancel(context.Background())
+	}
+	return context.WithTimeout(context.Background(), deadline)
 }
 
 // findings renders the failed checks and their error lines for Claude, or
@@ -373,7 +407,7 @@ func firstDelivery(raw []byte) bool {
 		return true
 	}
 	defer lock.Close()
-	defer pruneMarks(dir)
+	defer pruneMarks(dir, 2*duplicateWindow)
 	return renewMark(mark)
 }
 
@@ -402,12 +436,12 @@ func renewMark(mark string) bool {
 	return true
 }
 
-// pruneMarks deletes the marks and locks older than twice the duplicate
-// window, which no copy of an event still reads.
-func pruneMarks(dir string) {
+// pruneMarks deletes the marks and locks in dir older than age, which no
+// copy of an event or later stop still reads.
+func pruneMarks(dir string, age time.Duration) {
 	entries, _ := os.ReadDir(dir)
 	for _, entry := range entries {
-		if info, err := entry.Info(); err == nil && time.Since(info.ModTime()) > 2*duplicateWindow {
+		if info, err := entry.Info(); err == nil && time.Since(info.ModTime()) > age {
 			_ = os.Remove(filepath.Join(dir, entry.Name()))
 		}
 	}

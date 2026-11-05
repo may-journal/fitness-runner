@@ -26,7 +26,7 @@ var ClaudeHooks = []ClaudeHook{
 	{Event: "PostToolUse", Matcher: "Edit|Write|MultiEdit|NotebookEdit", Timeout: 30},
 	{Event: "PreToolUse", Matcher: "Bash", Timeout: 30},
 	{Event: "Stop", Timeout: 900},
-	{Event: "SubagentStop", Timeout: 900},
+	{Event: "SubagentStop", Timeout: 300},
 	{Event: "SessionStart", Timeout: 30},
 	{Event: "SessionEnd", Timeout: 30},
 }

@@ -23,7 +23,7 @@ hooks:
     - hooks:
         - type: command
           command: fitness claude-hook
-          timeout: 900
+          timeout: 300
   SessionStart:
     - hooks:
         - type: command
@@ -70,9 +70,9 @@ Fix the code or doc the error points at, never the check. Run `fitness <name>` f
 - Only checks within the default budget run there. Tests, vet, linters and network checks wait for the stop.
 - Before a `gh` issue or PR call posts a body, it judges that body as `fitness --blob` does.
 - A red body denies the call: create, edit, comment or review.
-- When Claude stops, it runs every file and git check on the uncommitted files, and blocks the stop once when red.
-- When a subagent stops, it runs them on the uncommitted files that subagent edited, and blocks it once when red.
-- When a session starts, resumes, clears or compacts, it adds the edit-check findings on uncommitted files to Claude's context.
+- When Claude stops, it runs every file and git check on the uncommitted files, and blocks the same findings once per session.
+- When a subagent stops, it runs those within four minutes on the files that subagent edited, and blocks each subagent once.
+- When a session on a feature branch starts, resumes, clears or compacts, it adds the edit-check findings on that branch's changed files.
 - Each judged event adds a line to `claude-hooks.jsonl` in the fitness cache folder, and SessionEnd adds the session's total per event.
 
 Commit and push stay with the git hooks. A repo with no `.fitnessrc.json` and no fitness git hooks passes silently.
