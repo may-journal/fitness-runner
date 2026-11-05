@@ -59,6 +59,8 @@ type hookJob struct {
 	keep          func(listed) bool
 	args          []string
 	stdin         string
+	// parts are the bodies a post holds, each judged alone.
+	parts []postPart
 	// once is a key that blocks at most once, or "" to block every time. A
 	// nonzero deadline ends the run in time for the hook's timeout.
 	once     string
@@ -200,7 +202,7 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	if post.comment {
 		args = append(args, commentChecks)
 	}
-	return hookJob{root: root, subject: "the " + post.kind + " body", args: args, stdin: post.body}, ok, nil
+	return hookJob{root: root, args: args, parts: post.parts}, ok, nil
 }
 
 // stopJob runs every file and git check on the uncommitted files. It blocks
@@ -252,6 +254,9 @@ func stopCheck(c listed) bool {
 // judge runs the job's checks and returns their findings, with no reason
 // when every check passed or none applies.
 func (job hookJob) judge() (hookResult, error) {
+	if len(job.parts) > 0 {
+		return job.judgeParts()
+	}
 	args := job.args
 	if job.keep != nil {
 		names, err := hookChecks(job.root, job.keep)
@@ -263,6 +268,29 @@ func (job hookJob) judge() (hookResult, error) {
 	report, err := runChild(job.root, job.stdin, args, job.deadline)
 	v := verdictOf(report)
 	return hookResult{reason: v.text(job.subject), failed: len(v.failed), lines: len(v.lines), ran: true}, err
+}
+
+// judgeParts judges each body of a post alone, and blocks with the findings
+// of every red one.
+func (job hookJob) judgeParts() (hookResult, error) {
+	var total hookResult
+	var reasons []string
+	for _, part := range slices.DeleteFunc(job.parts, emptyPart) {
+		job.subject, job.stdin, job.parts = part.subject, part.text, nil
+		result, err := job.judge()
+		if err != nil {
+			return total, err
+		}
+		reasons = append(reasons, result.reason)
+		total.failed, total.lines, total.ran = total.failed+result.failed, total.lines+result.lines, true
+	}
+	total.reason = strings.Join(slices.DeleteFunc(reasons, func(r string) bool { return r == "" }), "\n")
+	return total, nil
+}
+
+// emptyPart reports whether a body holds no text, which no check judges.
+func emptyPart(part postPart) bool {
+	return strings.TrimSpace(part.text) == ""
 }
 
 // hookChecks names the checks the repo enables that keep accepts.

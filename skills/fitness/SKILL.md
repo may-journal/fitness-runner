@@ -68,7 +68,7 @@ Fix the code or doc the error points at, never the check. Run `fitness <name>` f
 
 - After an edit tool writes a file, it runs the file checks on that one file.
 - Only checks within the default budget run there. Tests, vet, linters and network checks wait for the stop.
-- Before a `gh` issue or PR call posts a body, it judges that body as `fitness --blob` does.
+- Before a `gh` call posts a body, even through `gh api`, GraphQL or a close, it judges it as `fitness --blob` does.
 - A red body denies the call: create, edit, comment or review.
 - When Claude stops, it runs every file and git check on the uncommitted files, and blocks once per turn when red.
 - When a subagent stops, it runs those within four minutes on the files that subagent edited, and blocks each subagent once.
