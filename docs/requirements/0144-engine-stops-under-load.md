@@ -15,4 +15,4 @@ Timed-out checks
 - 0144.1
     - Given Developer has a check past its budget, whose tool starts children or ignores the stop signal, while every CPU is busy
         - When fitness runs
-            - Then the check ends within 1s past its budget, and none of its tools outlive that second
+            - Then the check ends within 1s past its budget, and none of its tools outlive the run

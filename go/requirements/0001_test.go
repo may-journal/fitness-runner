@@ -594,8 +594,15 @@ func stopped(t *testing.T, pidFile string, within time.Duration) bool {
 	if len(left) > 0 {
 		t.Fatalf("processes %v from %s are still running %s after fitness stopped them", left, filepath.Base(pidFile), within)
 	}
+	return pidWritten(pidFile)
+}
+
+// pidWritten reports whether the tool wrote pidFile, or only its .tmp file when
+// it was killed before moving it into place.
+func pidWritten(pidFile string) bool {
 	_, err := os.Stat(pidFile)
-	return err == nil
+	_, errTmp := os.Stat(pidFile + ".tmp")
+	return err == nil || errTmp == nil
 }
 
 // running lists the live processes whose ID pidFile holds, or whose command
@@ -607,10 +614,17 @@ func running(t *testing.T, pidFile string) []int {
 	if err != nil {
 		return pids
 	}
-	if pid, err := strconv.Atoi(strings.TrimSpace(string(raw))); err == nil && syscall.Kill(pid, 0) == nil && !slices.Contains(pids, pid) {
+	if pid, err := strconv.Atoi(strings.TrimSpace(string(raw))); err == nil && sleeping(pid) && !slices.Contains(pids, pid) {
 		pids = append(pids, pid)
 	}
 	return pids
+}
+
+// sleeping reports whether pid still runs a fixture tool's sleep. A process
+// ID the system has reused is never counted.
+func sleeping(pid int) bool {
+	out, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "args=").Output()
+	return err == nil && strings.Contains(string(out), "/bin/sleep")
 }
 
 // naming lists the processes whose command line names dir.
