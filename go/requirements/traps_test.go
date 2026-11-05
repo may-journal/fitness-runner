@@ -25,14 +25,16 @@ const promptedRemote = "https://git.example.invalid/app.git"
 const sshRemote = "git@git.example.invalid:app.git"
 
 // promptingTools returns a PATH whose git and ssh wait for a password, failing
-// at once under GIT_TERMINAL_PROMPT=0 or BatchMode=yes, and a PID file.
+// at once under GIT_TERMINAL_PROMPT=0 or BatchMode=yes, and a PID file. The
+// PID file sits beside the tools, whose paths a waiting tool's command line
+// names until it has written that file.
 func promptingTools(t *testing.T, stalls ...string) (path, pidFile string) {
 	t.Helper()
 	real, err := exec.LookPath("git")
 	mustDo(t, err)
 	dir := t.TempDir()
-	pidFile = filepath.Join(t.TempDir(), "prompt.pid")
-	wait := "echo $$ > \"" + pidFile + "\"\nexec /bin/sleep 600\n"
+	pidFile = filepath.Join(dir, "prompt.pid")
+	wait := "echo $$ > \"" + pidFile + ".tmp\" && mv \"" + pidFile + ".tmp\" \"" + pidFile + "\"\nexec /bin/sleep 600\n"
 	stall := ""
 	if len(stalls) > 0 {
 		stall = "for a in \"$@\"; do\n  case \"$a\" in " + strings.Join(stalls, "|") + ")\n" + wait + "  ;; esac\ndone\n"

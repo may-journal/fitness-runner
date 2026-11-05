@@ -560,22 +560,86 @@ func Test0001_5(t *testing.T) {
 	}
 }
 
-// childStopped asserts the hung prettier's child process is gone.
+// childStopped asserts nothing the hung prettier started still runs. Under
+// load its 0.3s budget can end before the check starts prettier at all, and
+// then nothing ran to stop.
 func childStopped(t *testing.T, repo string) {
 	t.Helper()
-	processStopped(t, filepath.Join(repo, "prettier.pid"))
+	stopped(t, filepath.Join(repo, "prettier.pid"), 3*time.Second)
 }
 
-// processStopped asserts the process whose ID pidFile holds is gone.
+// processStopped asserts a fixture tool started, and that neither it nor any
+// process it started still runs.
 func processStopped(t *testing.T, pidFile string) {
 	t.Helper()
-	raw, err := os.ReadFile(pidFile)
-	mustDo(t, err)
-	pid, _ := strconv.Atoi(strings.TrimSpace(string(raw)))
-	t.Cleanup(func() { _ = syscall.Kill(pid, syscall.SIGKILL) })
-	if !gone(pid, 3*time.Second) {
-		t.Fatalf("process %d from %s is still running after fitness stopped it", pid, filepath.Base(pidFile))
+	if !stopped(t, pidFile, 3*time.Second) {
+		t.Fatalf("the tool that writes %s never started, so nothing shows fitness stops it", filepath.Base(pidFile))
 	}
+}
+
+// stopped waits up to within until no process running finds for pidFile
+// remains, failing if one outlasts it. It reports whether the tool wrote
+// pidFile.
+func stopped(t *testing.T, pidFile string, within time.Duration) bool {
+	t.Helper()
+	deadline := time.Now().Add(within)
+	left := running(t, pidFile)
+	for len(left) > 0 && time.Now().Before(deadline) {
+		time.Sleep(50 * time.Millisecond)
+		left = running(t, pidFile)
+	}
+	for _, pid := range left {
+		_ = syscall.Kill(pid, syscall.SIGKILL)
+	}
+	if len(left) > 0 {
+		t.Fatalf("processes %v from %s are still running %s after fitness stopped them", left, filepath.Base(pidFile), within)
+	}
+	return pidWritten(pidFile)
+}
+
+// pidWritten reports whether the tool wrote pidFile, or only its .tmp file when
+// it was killed before moving it into place.
+func pidWritten(pidFile string) bool {
+	_, err := os.Stat(pidFile)
+	_, errTmp := os.Stat(pidFile + ".tmp")
+	return err == nil || errTmp == nil
+}
+
+// running lists the live processes whose ID pidFile holds, or whose command
+// line names its folder. A fixture tool's does until it writes pidFile.
+func running(t *testing.T, pidFile string) []int {
+	t.Helper()
+	pids := naming(t, filepath.Dir(pidFile))
+	raw, err := os.ReadFile(pidFile)
+	if err != nil {
+		return pids
+	}
+	if pid, err := strconv.Atoi(strings.TrimSpace(string(raw))); err == nil && sleeping(pid) && !slices.Contains(pids, pid) {
+		pids = append(pids, pid)
+	}
+	return pids
+}
+
+// sleeping reports whether pid still runs a fixture tool's sleep. A process
+// ID the system has reused is never counted.
+func sleeping(pid int) bool {
+	out, err := exec.Command("ps", "-p", strconv.Itoa(pid), "-o", "args=").Output()
+	return err == nil && strings.Contains(string(out), "/bin/sleep")
+}
+
+// naming lists the processes whose command line names dir.
+func naming(t *testing.T, dir string) []int {
+	t.Helper()
+	out, err := exec.Command("ps", "-A", "-ww", "-o", "pid=", "-o", "args=").Output()
+	mustDo(t, err)
+	var pids []int
+	for _, line := range strings.Split(string(out), "\n") {
+		id, args, _ := strings.Cut(strings.TrimSpace(line), " ")
+		if pid, err := strconv.Atoi(id); err == nil && strings.Contains(args, dir) {
+			pids = append(pids, pid)
+		}
+	}
+	return pids
 }
 
 // readme is happyRepo's README, for Givens that add to it.
@@ -603,16 +667,6 @@ func installOnly(t *testing.T) string {
 	mustDo(t, err)
 	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
 	return strings.TrimSpace(lines[len(lines)-1])
-}
-
-// gone polls until pid no longer exists or the deadline passes.
-func gone(pid int, within time.Duration) bool {
-	for deadline := time.Now().Add(within); time.Now().Before(deadline); time.Sleep(50 * time.Millisecond) {
-		if syscall.Kill(pid, 0) != nil {
-			return true
-		}
-	}
-	return false
 }
 
 // stalledGitStops asserts a stalled git file listing ends at its ten-second
