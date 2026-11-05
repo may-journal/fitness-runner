@@ -32,11 +32,14 @@ func Test0021_2(t *testing.T) {
 	out, code := cspellRun(t, map[string]string{
 		"cspell.json":   `{"words":["fitnessrc","` + cspellRepoWord + `"]}` + "\n",
 		cspellInstalled: `{"words":["fitnessrc","` + cspellSharedWord + `"]}` + "\n",
-		"notes.md":      cspellRepoWord + " and " + cspellSharedWord + "\n",
+		"notes.md":      cspellRepoWord + " and " + cspellSharedWord + "\n@jasonvanderslice from Vanderbot\n",
 	})
 	sees(t, out, code, 1, "notes.md:1:11 - Unknown word ("+cspellSharedWord+")")
 	if strings.Contains(out, "Unknown word ("+cspellRepoWord+")") {
 		t.Errorf("the repo's own word must be accepted:\n%s", out)
+	}
+	if strings.Contains(out, "Unknown word (jasonvanderslice)") || strings.Contains(out, "Unknown word (Vanderbot)") {
+		t.Errorf("the owner and agent names must be accepted:\n%s", out)
 	}
 }
 

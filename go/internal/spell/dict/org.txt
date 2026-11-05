@@ -1,0 +1,5 @@
+# org.txt — names of the people and agents in this org, accepted in every repo.
+# Hand-kept; the other wordlists here are frozen generated data.
+# Lowercased, sorted, one per line.
+jasonvanderslice
+vanderbot
