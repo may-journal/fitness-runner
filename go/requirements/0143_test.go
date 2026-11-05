@@ -2,9 +2,11 @@ package requirements
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -89,32 +91,40 @@ func Test0143_3(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	cache := t.TempDir()
+	long := fmt.Sprintf(`{"session":"s0","event":"Stop","error":%q}`, strings.Repeat("stderr ", 30000))
+	mustDo(t, os.WriteFile(filepath.Join(cache, "claude-hooks.jsonl"), []byte(long+"\nnot json\n"), 0o600))
 	write(t, repo, map[string]string{"notes.md": misspelledNote, "clean.md": "A short note.\n"})
 	for _, event := range []map[string]any{editEvent(repo, "notes.md"), editEvent(repo, "clean.md"), {"hook_event_name": "SessionEnd"}} {
 		event["session_id"] = "s1"
 		hookEventIn(t, repo, cache, event)
 	}
 	lines := strings.Split(strings.TrimSpace(fiFile(t, filepath.Join(cache, "claude-hooks.jsonl"))), "\n")
-	if !loggedEditsAndTotal(lines) {
-		t.Errorf("want two edit lines and a SessionEnd total of 2 runs, 1 block, got:\n%s", strings.Join(lines, "\n"))
+	if len(lines) != 5 || !loggedEditsAndTotal(lines[2:]) {
+		t.Errorf("want two edit lines and a SessionEnd total of 2 runs, 1 block, 1 failed check, 1 finding line, got:\n%s", strings.Join(lines[min(2, len(lines)):], "\n"))
 	}
 	if _, err := os.Stat(filepath.Join(repo, "claude-hooks.jsonl")); err == nil {
 		t.Error("the hook log must stay out of the repo")
 	}
 }
 
-// loggedEditsAndTotal reports whether the log holds two edit lines and then
-// a SessionEnd total of two edits, one of them blocked with findings.
+// hookCounts are a log line's or total's counts.
+type hookCounts struct {
+	Runs, Blocks int
+	Failed       int `json:"failedChecks"`
+	Lines        int `json:"findingLines"`
+}
+
+// loggedEditsAndTotal reports whether lines are a red and a clean edit and
+// then a SessionEnd total of both, one blocked with one finding.
 func loggedEditsAndTotal(lines []string) bool {
+	var red, clean hookCounts
 	var total struct {
 		Event string
-		Hooks map[string]struct{ Runs, Blocks, Findings int }
+		Hooks map[string]hookCounts
 	}
-	if len(lines) != 3 || json.Unmarshal([]byte(lines[2]), &total) != nil {
-		return false
-	}
-	edits := total.Hooks["PostToolUse"]
-	return total.Event == "SessionEnd" && edits == struct{ Runs, Blocks, Findings int }{2, 1, 1}
+	err := errors.Join(json.Unmarshal([]byte(lines[0]), &red), json.Unmarshal([]byte(lines[1]), &clean), json.Unmarshal([]byte(lines[2]), &total))
+	edits := hookCounts{Runs: 2, Blocks: 1, Failed: 1, Lines: 1}
+	return err == nil && red == hookCounts{Failed: 1, Lines: 1} && clean == hookCounts{} && total.Event == "SessionEnd" && total.Hooks["PostToolUse"] == edits
 }
 
 func Test0143_4(t *testing.T) {
@@ -157,21 +167,60 @@ func Test0143_5(t *testing.T) {
 	}
 }
 
-// claudeStop is Claude's Stop event in session s1, never marked active. Its
-// last message differs per try, as each real stop's does.
-func claudeStop(try int) map[string]any {
-	return map[string]any{"hook_event_name": "Stop", "session_id": "s1", "stop_hook_active": false, "last_assistant_message": fmt.Sprintf("Done, try %d.", try)}
+// claudeStop is Claude's Stop event in session s1 with its transcript, never
+// marked active. Its last message differs per try, as each real stop's does.
+func claudeStop(try int, transcript string) map[string]any {
+	return map[string]any{"hook_event_name": "Stop", "session_id": "s1", "transcript_path": transcript, "stop_hook_active": false,
+		"last_assistant_message": fmt.Sprintf("Done, try %d.", try)}
+}
+
+// addUserLine appends a user line of prompt to the transcript, as Claude
+// Code writes a prompt or a Stop hook's feedback.
+func addUserLine(t *testing.T, transcript, prompt, text string) {
+	t.Helper()
+	f, err := os.OpenFile(transcript, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	mustDo(t, err)
+	defer f.Close()
+	_, err = fmt.Fprintf(f, `{"type":"user","promptId":%q,"uuid":"%s-%d","message":{"role":"user","content":%q}}`+"\n", prompt, prompt, len(text), text)
+	mustDo(t, err)
 }
 
 func Test0143_6(t *testing.T) {
 	t.Parallel()
 	repo, cache := example(t, "happyRepo", nil), t.TempDir()
+	transcript := filepath.Join(t.TempDir(), "session.jsonl")
 	write(t, repo, map[string]string{"notes.md": misspelledNote})
-	out, code := hookEventIn(t, repo, cache, claudeStop(1))
+	addUserLine(t, transcript, "p1", "Fix the notes.")
+	out, code := hookEventIn(t, repo, cache, claudeStop(1, transcript))
 	sees(t, out, code, 0, `"decision":"block"`, "[cspell] notes.md:1")
-	out, code = hookEventIn(t, repo, cache, claudeStop(2))
+	addUserLine(t, transcript, "p1", "Stop hook feedback:\n"+out)
+	out, code = hookEventIn(t, repo, cache, claudeStop(2, transcript))
 	silentPass(t, out, code)
-	write(t, repo, map[string]string{"more.md": misspelledNote})
-	out, code = hookEventIn(t, repo, cache, claudeStop(3))
-	sees(t, out, code, 0, `"decision":"block"`, "[cspell] more.md:1")
+	addUserLine(t, transcript, "p2", "Now the readme.")
+	out, code = hookEventIn(t, repo, cache, claudeStop(3, transcript))
+	sees(t, out, code, 0, `"decision":"block"`, "[cspell] notes.md:1")
+}
+
+// slowChecks are local checks, four per processor, that each pass after
+// four seconds, so together they outlast the start hook's deadline.
+func slowChecks() map[string]string {
+	files := map[string]string{".fitnessrc.json": `{"localChecks": "checks"}` + "\n"}
+	for i := range 4 * runtime.NumCPU() {
+		name := fmt.Sprintf("slow-%d", i)
+		files["checks/fitness-check-"+name] = "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\":\"" + name +
+			"\",\"scope\":\"files\",\"timeoutMs\":4900}'; exit 0; }\nsleep 4\necho '" + passing + "'\n"
+	}
+	return files
+}
+
+func Test0143_7(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", slowChecks())
+	onBranch(t, repo)
+	write(t, repo, map[string]string{"notes.md": misspelledNote})
+	out, code, took := timedHook(t, filepath.Join(installOnly(t), "fitness"), repo, t.TempDir(), startEvent("startup"))
+	sees(t, out, code, 0, `"additionalContext"`, "[cspell] notes.md:1", "fitness: skipped slow-", "past the hook's deadline")
+	if took > 20*time.Second {
+		t.Errorf("the start hook took %s; past its deadline it must answer within 20 seconds", took)
+	}
 }

@@ -38,6 +38,8 @@ type claudeHookInput struct {
 	// started, resumed, cleared or compacted.
 	Session string `json:"session_id"`
 	Source  string `json:"source"`
+	// Transcript is the session's transcript, whose last prompt names the turn.
+	Transcript string `json:"transcript_path"`
 	// AgentTranscript is the stopping subagent's own transcript, which names
 	// the files it edited.
 	AgentTranscript string `json:"agent_transcript_path"`
@@ -57,9 +59,9 @@ type hookJob struct {
 	keep          func(listed) bool
 	args          []string
 	stdin         string
-	// once keys a block from its reason, so a key blocks once; nil blocks
-	// every time. A nonzero deadline stops the checks inside the hook's timeout.
-	once     func(reason string) string
+	// once is a key that blocks at most once, or "" to block every time. A
+	// nonzero deadline ends the run in time for the hook's timeout.
+	once     string
 	deadline time.Duration
 }
 
@@ -118,11 +120,12 @@ func readHookInput(r io.Reader) (claudeHookInput, error) {
 }
 
 // hookResult is what judging one event found: the findings that block it,
-// or "" when it passes, their count, and whether any check ran.
+// or "" when it passes, and whether any check ran.
 type hookResult struct {
-	reason   string
-	findings int
-	ran      bool
+	reason string
+	// failed counts the failed checks, and lines their error lines.
+	failed, lines int
+	ran           bool
 }
 
 // judgeHookEvent judges the event, or passes it when it names nothing
@@ -200,8 +203,8 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	return hookJob{root: root, subject: "the " + post.kind + " body", args: args, stdin: post.body}, ok, nil
 }
 
-// stopJob runs every file and git check on the uncommitted files. A session
-// blocks once on the same findings, and passes while a Stop hook is active.
+// stopJob runs every file and git check on the uncommitted files. It blocks
+// once per turn, and passes while a Stop hook is active.
 func stopJob(in claudeHookInput) (hookJob, bool, error) {
 	if in.StopActive {
 		return hookJob{}, false, nil
@@ -211,7 +214,7 @@ func stopJob(in claudeHookInput) (hookJob, bool, error) {
 		return hookJob{}, false, nil
 	}
 	scope, err := uncommittedScope(root)
-	once := func(reason string) string { return "Stop\x00" + in.Session + "\x00" + reason }
+	once := "Stop\x00" + cmp.Or(in.Session, in.Transcript, root) + "\x00" + turnOf(in.Transcript)
 	job := hookJob{root: root, subject: "the changed files", keep: stopCheck, args: scope, once: once}
 	return job, len(scope) > 0, err
 }
@@ -258,8 +261,8 @@ func (job hookJob) judge() (hookResult, error) {
 		args = append(args, "--policy=external", "--checks="+strings.Join(names, ","))
 	}
 	report, err := runChild(job.root, job.stdin, args, job.deadline)
-	failed, lines := failedChecks(report)
-	return hookResult{reason: findings(job.subject, failed, lines), findings: max(len(lines), len(failed)), ran: true}, err
+	v := verdictOf(report)
+	return hookResult{reason: v.text(job.subject), failed: len(v.failed), lines: len(v.lines), ran: true}, err
 }
 
 // hookChecks names the checks the repo enables that keep accepts.
@@ -284,8 +287,8 @@ func runnable(c listed) bool {
 }
 
 // runChild runs this fitness in root with args, feeding it stdin, and
-// returns its JSON report. Past a nonzero deadline it stops the run, which
-// stops its checks, and reports that instead.
+// returns its JSON report. A nonzero deadline cuts the checks still running
+// then, and stops a run that has not reported a grace period later.
 func runChild(root, stdin string, args []string, deadline time.Duration) (runReport, error) {
 	var result runReport
 	exe, err := os.Executable()
@@ -298,7 +301,7 @@ func runChild(root, stdin string, args []string, deadline time.Duration) (runRep
 	cmd.Cancel = func() error { return cmd.Process.Signal(syscall.SIGTERM) }
 	cmd.WaitDelay = childGrace
 	cmd.Dir, cmd.Stdin = root, strings.NewReader(stdin)
-	cmd.Env = append(withoutVar(withoutVar(os.Environ(), "FORCE_COLOR"), "GITHUB_ACTIONS"), "NO_COLOR=1")
+	cmd.Env = append(withoutVar(withoutVar(os.Environ(), "FORCE_COLOR"), "GITHUB_ACTIONS"), "NO_COLOR=1", deadlineVar(deadline))
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
 	runErr := cmd.Run()
@@ -311,43 +314,74 @@ func runChild(root, stdin string, args []string, deadline time.Duration) (runRep
 	return result, nil
 }
 
-// childGrace is how long a stopped run may take to stop its checks.
-const childGrace = 10 * time.Second
+// childGrace is how long past its deadline a run may take to report, and
+// then to stop its checks.
+const childGrace = 5 * time.Second
 
-// childContext ends after deadline, or only when canceled for none.
+// childContext ends a grace period after deadline, or only when canceled
+// for none.
 func childContext(deadline time.Duration) (context.Context, context.CancelFunc) {
 	if deadline == 0 {
 		return context.WithCancel(context.Background())
 	}
-	return context.WithTimeout(context.Background(), deadline)
+	return context.WithTimeout(context.Background(), deadline+childGrace)
 }
 
-// findings renders the failed checks and their error lines for Claude, or
-// "" when none failed.
-func findings(subject string, failed, lines []string) string {
-	if len(failed) == 0 {
-		return ""
+// deadlineVar is the environment entry that ends the run's checks after
+// deadline, or an empty entry for none.
+func deadlineVar(deadline time.Duration) string {
+	if deadline == 0 {
+		return deadlineEnv + "="
 	}
+	return fmt.Sprintf("%s=%d", deadlineEnv, time.Now().Add(deadline).UnixMilli())
+}
+
+// verdict is what a run's report found: the failed checks, their error
+// lines, and the checks its deadline cut.
+type verdict struct {
+	failed, lines, cut []string
+}
+
+// verdictOf reads a run's report into a verdict.
+func verdictOf(result runReport) verdict {
+	var v verdict
+	for _, c := range result.Checks {
+		switch {
+		case c.Status == "failed":
+			v.failed = append(v.failed, c.Name)
+			for _, e := range c.Errors {
+				v.lines = append(v.lines, "["+c.Name+"] "+e)
+			}
+		case slices.Contains(c.Info, cutNote):
+			v.cut = append(v.cut, c.Name)
+		}
+	}
+	return v
+}
+
+// text renders the verdict for Claude: the findings, then the checks the
+// deadline cut. It is "" when no check failed or was cut.
+func (v verdict) text(subject string) string {
+	var parts []string
+	if len(v.failed) > 0 {
+		parts = append(parts, v.findings(subject))
+	}
+	if len(v.cut) > 0 {
+		parts = append(parts, fmt.Sprintf("fitness: skipped %s on %s, past the hook's deadline; run `fitness` to judge them.",
+			strings.Join(v.cut, ", "), subject))
+	}
+	return strings.Join(parts, "\n")
+}
+
+// findings renders the failed checks and their error lines.
+func (v verdict) findings(subject string) string {
+	lines := v.lines
 	if len(lines) > findingLines {
-		lines = append(lines[:findingLines], fmt.Sprintf("… and %d more", len(lines)-findingLines))
+		lines = append(lines[:findingLines:findingLines], fmt.Sprintf("… and %d more", len(lines)-findingLines))
 	}
-	head := fmt.Sprintf("fitness: %s failed on %s.", strings.Join(failed, ", "), subject)
+	head := fmt.Sprintf("fitness: %s failed on %s.", strings.Join(v.failed, ", "), subject)
 	tail := "Fix what they name, never the check; `fitness explain <check>` says why each exists."
 	return head + "\n" + strings.Join(lines, "\n") + "\n" + tail
-}
-
-// failedChecks names the failed checks of a report and their error lines.
-func failedChecks(result runReport) (failed, lines []string) {
-	for _, c := range result.Checks {
-		if c.Status != "failed" {
-			continue
-		}
-		failed = append(failed, c.Name)
-		for _, e := range c.Errors {
-			lines = append(lines, "["+c.Name+"] "+e)
-		}
-	}
-	return failed, lines
 }
 
 // writeBlock prints the JSON that blocks event with reason, in the shape
