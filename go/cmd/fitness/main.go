@@ -111,6 +111,8 @@ type outcome struct {
 	// timedOut marks a budget kill and crashed says how a check with no result ended.
 	// exit is its protocol code, and startErr says why it could not start.
 	timedOut bool
+	// cut marks a check the run's deadline stopped or never let start.
+	cut      bool
 	crashed  string
 	exit     int
 	startErr string
@@ -505,11 +507,13 @@ func summarize(checks []resolved, outcomes []outcome, hint string) ([]render.Row
 	return rows, totals
 }
 
-// rowFor builds the table row for one outcome. A budget kill fails with hint,
-// and a check that could not judge becomes an info row.
+// rowFor builds the table row for one outcome. A budget kill fails with hint;
+// a deadline cut and a check that could not judge become info rows.
 func rowFor(c resolved, o outcome, hint string) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
-	if o.timedOut {
+	if o.cut {
+		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: []string{cutNote}}
+	} else if o.timedOut {
 		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms, Errors: timedOutErrors(c, o, hint)}
 	} else if note, internal := internalNote(o); internal {
 		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: appendNote(o.res.Info, note)}
@@ -987,7 +991,11 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	cmd.Stdout = &stdout
 	cmd.Stderr = w.stderr
 
-	live := liveCheck{name: c.name, start: time.Now(), budget: timeoutFor(c)}
+	budget, cut := deadlineBudget(timeoutFor(c))
+	if budget <= 0 {
+		return outcome{stderr: w.stderr, cut: true}
+	}
+	live := liveCheck{name: c.name, start: time.Now(), budget: budget}
 	if err := cmd.Start(); err != nil {
 		return outcome{stderr: w.stderr, startErr: err.Error()}
 	}
@@ -996,7 +1004,7 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	timedOut := waitWithBudget(cmd, live.budget)
 	ms := time.Since(live.start).Milliseconds()
 
-	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut}
+	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}
 	if timedOut {
 		return o
 	}

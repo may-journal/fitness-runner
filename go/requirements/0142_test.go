@@ -16,21 +16,44 @@ import (
 const misspelledNote = "A mispeled wrd.\n"
 
 // hookEvent pipes one Claude Code hook event, as JSON, into the installed
-// `fitness claude-hook` run from repo, as the settings hooks run it. It
-// asserts stdout holds nothing but the JSON Claude Code parses, and returns
-// stdout and stderr and the exit code.
+// `fitness claude-hook` run from repo with a cache folder of its own. It
+// asserts stdout holds only the JSON Claude Code parses, and returns the
+// output and exit code.
 func hookEvent(t *testing.T, repo string, event map[string]any) (string, int) {
+	t.Helper()
+	return hookEventIn(t, repo, t.TempDir(), event)
+}
+
+// hookEventIn is hookEvent with the fitness cache folder cache, where the
+// hook writes its log.
+func hookEventIn(t *testing.T, repo, cache string, event map[string]any) (string, int) {
+	t.Helper()
+	out, code, _ := timedHook(t, filepath.Join(installOnly(t), "fitness"), repo, cache, event)
+	return out, code
+}
+
+// timedHook runs the hook event through runner and also returns how long
+// the hook alone took.
+func timedHook(t *testing.T, runner, repo, cache string, event map[string]any) (string, int, time.Duration) {
 	t.Helper()
 	event["cwd"] = repo
 	raw, err := json.Marshal(event)
 	mustDo(t, err)
-	cmd := exec.Command(filepath.Join(installOnly(t), "fitness"), "claude-hook")
-	cmd.Dir, cmd.Env, cmd.Stdin = repo, userEnv(), strings.NewReader(string(raw))
+	cmd := exec.Command(runner, "claude-hook")
+	cmd.Dir, cmd.Env, cmd.Stdin = repo, hookEnv(t, cache), strings.NewReader(string(raw))
 	var stdout, stderr strings.Builder
 	cmd.Stdout, cmd.Stderr = &stdout, &stderr
+	start := time.Now()
 	_ = cmd.Run()
+	took := time.Since(start)
 	onlyJSON(t, stdout.String())
-	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode()
+	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode(), took
+}
+
+// hookEnv is the user's environment with the fitness cache folder cache.
+func hookEnv(t *testing.T, cache string) []string {
+	t.Helper()
+	return append(userEnv(), "FITNESS_CACHE_DIR="+cache)
 }
 
 // onlyJSON asserts out is empty or one JSON object and nothing else.
@@ -56,6 +79,10 @@ func bashEvent(command string) map[string]any {
 func stopEvent(active bool) map[string]any {
 	return map[string]any{"hook_event_name": "Stop", "stop_hook_active": active}
 }
+
+// hookEvents are the events the installer and the fitness skill register,
+// in order.
+var hookEvents = []string{"PostToolUse", "PreToolUse", "Stop", "SubagentStop", "SessionStart", "SessionEnd"}
 
 // silentPass asserts the hook let the event pass without a word.
 func silentPass(t *testing.T, out string, code int) {
@@ -91,16 +118,9 @@ func Test0142_2(t *testing.T) {
 	for i := range 3 {
 		file := fmt.Sprintf("note%d.md", i)
 		write(t, repo, map[string]string{file: "A short note.\n"})
-		raw, err := json.Marshal(map[string]any{"cwd": repo, "hook_event_name": "PostToolUse", "tool_name": "Edit", "tool_input": map[string]any{"file_path": filepath.Join(repo, file)}})
-		mustDo(t, err)
-		cmd := exec.Command(runner, "claude-hook")
-		cmd.Dir, cmd.Env, cmd.Stdin = repo, userEnv(), strings.NewReader(string(raw))
-		start := time.Now()
-		out, err := cmd.CombinedOutput()
-		best = min(best, time.Since(start))
-		if err != nil || len(out) > 0 {
-			t.Fatalf("the edit hook on a clean note must pass silently: %v\n%s", err, out)
-		}
+		out, code, took := timedHook(t, runner, repo, t.TempDir(), editEvent(repo, file))
+		silentPass(t, out, code)
+		best = min(best, took)
 	}
 	if best > 300*time.Millisecond {
 		t.Errorf("the edit hook took %s at best; it must answer within 300ms", best)
@@ -225,7 +245,7 @@ func Test0142_8(t *testing.T) {
 	if len(others) != 1 || others[0] != "my-check" {
 		t.Errorf("my own hook must stay once, got %v", others)
 	}
-	for _, event := range []string{"PostToolUse", "PreToolUse", "Stop"} {
+	for _, event := range hookEvents {
 		installedOnce(t, event, ours[event])
 	}
 	keptMode(t, file, 0o600)
@@ -246,7 +266,7 @@ func skillDeclares(t *testing.T, settings map[string]any) {
 	t.Helper()
 	hooks := settings["hooks"].(map[string]any)
 	want := "hooks:\n"
-	for _, event := range []string{"PostToolUse", "PreToolUse", "Stop"} {
+	for _, event := range hookEvents {
 		want += "  " + event + ":\n" + declared(hooks[event].([]any))
 	}
 	skill := fiFile(t, filepath.Join("..", "..", "skills", "fitness", "SKILL.md"))

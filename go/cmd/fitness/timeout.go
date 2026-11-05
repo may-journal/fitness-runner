@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/conf"
@@ -38,4 +40,23 @@ func declaredBudget(c resolved) time.Duration {
 		return time.Duration(c.desc.TimeoutMs) * time.Millisecond
 	}
 	return defaultTimeout
+}
+
+// deadlineEnv holds the Unix time in milliseconds by which a run must end.
+// A Claude hook sets it so the run reports inside the hook's timeout.
+const deadlineEnv = "FITNESS_INTERNAL_DEADLINE"
+
+// cutNote is the info line of a check the run's deadline stopped or never
+// let start.
+const cutNote = "skipped: the run's deadline passed"
+
+// deadlineBudget caps budget at the time left before the run's deadline, and
+// reports whether the deadline is the tighter limit.
+func deadlineBudget(budget time.Duration) (time.Duration, bool) {
+	ms, err := strconv.ParseInt(os.Getenv(deadlineEnv), 10, 64)
+	if err != nil {
+		return budget, false
+	}
+	left := time.Until(time.UnixMilli(ms))
+	return min(budget, left), left < budget
 }

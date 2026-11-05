@@ -19,7 +19,7 @@ hook events on red work
 - 0142.2
     - Given Developer has a fitness repo with a failing Go test, and Claude edited a file
         - When Claude Code runs `fitness claude-hook` after the edit
-            - Then no check over the default budget runs, and it answers within 300 ms
+            - Then no check over the default budget runs, and its best run answers within 300 ms
 - 0142.3
     - Given Developer has a fitness repo and Claude drafted a red PR body or comment
         - When Claude Code runs `fitness claude-hook` before the `gh` call posts it
@@ -43,4 +43,4 @@ hook events on red work
 - 0142.8
     - Given Developer has a Claude Code settings file with settings and hooks of my own
         - When I run `fitness-install --claude-settings` with that file, twice
-            - Then it holds the fitness skill's hooks once, run by the installed fitness, and mine stay
+            - Then it holds each of the fitness skill's hooks once, run by the installed fitness, and mine stay

@@ -20,12 +20,15 @@ type ClaudeHook struct {
 	Timeout int
 }
 
-// ClaudeHooks judge the edit tools after they write, Bash before a gh call
-// posts, and the stop. The fitness skill's front matter declares them too.
+// ClaudeHooks are the hooks the installer and the fitness skill's front
+// matter both register; each event's job is in `fitness claude-hook`.
 var ClaudeHooks = []ClaudeHook{
 	{Event: "PostToolUse", Matcher: "Edit|Write|MultiEdit|NotebookEdit", Timeout: 30},
 	{Event: "PreToolUse", Matcher: "Bash", Timeout: 30},
 	{Event: "Stop", Timeout: 900},
+	{Event: "SubagentStop", Timeout: 300},
+	{Event: "SessionStart", Timeout: 30},
+	{Event: "SessionEnd", Timeout: 30},
 }
 
 // claudeHookArg is the runner subcommand every hook runs, which also names
