@@ -22,10 +22,9 @@ jobs:
     # Dropped work may stay unfinished, so a not planned or duplicate close
     # skips before a runner starts, as fitness close-check does.
     if: ${{ !contains(fromJSON('["not_planned", "duplicate"]'), github.event.issue.state_reason) }}
-    # A private repo runs on the self-hosted Fitness runners, which bill no
-    # minutes against a hosted job's one-minute minimum. Their group admits
-    # private repos only, so a public repo's fork PR never reaches them.
-    runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted", "fitness"]') || 'ubuntu-24.04-arm' }}
+    # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
+    # Public repos and fork pull requests stay hosted, so outside code never reaches the Mac.
+    runs-on: ${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group": "fitness", "labels": "fitness"}') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     # A close that comes again supersedes the run judging the earlier one.
     concurrency:
