@@ -35,8 +35,8 @@ on:
 jobs:
   fitness:
     # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
-    # Public repos and fork pull requests stay hosted, so outside code never reaches the Mac.
-    runs-on: ${{ inputs.runs-on || github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group":"fitness","labels":"fitness"}') || 'ubuntu-24.04-arm' }}
+    # Public repos and any pull request whose head lives elsewhere, a deleted fork too, stay hosted.
+    runs-on: ${{ inputs.runs-on || github.event.repository.private && (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('{"group":"fitness","labels":"fitness"}') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -123,9 +123,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/fitness-swiftlint
-          key: swiftlint-${{ inputs.swiftlint-version }}-${{ runner.os }}-${{ runner.arch }}
+          key: swiftlint-zip-${{ inputs.swiftlint-version }}-${{ runner.os }}-${{ runner.arch }}
       # macOS gets portable_swiftlint, which loads SourceKit from Xcode. Each
-      # zip must match its published SHA-256 and lands under a unique name first.
+      # zip must match its published SHA-256 and lands under a versioned name.
       - name: Install swiftlint
         if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') }}
         env:
@@ -133,9 +133,15 @@ jobs:
           ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          zip="$HOME/.cache/fitness-swiftlint/${ASSET}.zip"
-          want=$(gh api "repos/realm/SwiftLint/releases/tags/${VERSION}" \
-            --jq ".assets[] | select(.name == \"${ASSET}.zip\") | .digest")
+          zip="$HOME/.cache/fitness-swiftlint/${ASSET}-${VERSION}.zip"
+          want=
+          for attempt in 1 2 3; do
+            if want=$(gh api "repos/realm/SwiftLint/releases/tags/${VERSION}" \
+              --jq ".assets[] | select(.name == \"${ASSET}.zip\") | .digest"); then
+              break
+            fi
+            sleep "$attempt"
+          done
           want="${want#sha256:}"
           if [ -z "$want" ]; then
             echo "::error::SwiftLint ${VERSION} publishes no SHA-256 for ${ASSET}.zip"
