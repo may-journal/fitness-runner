@@ -35,7 +35,7 @@ jobs:
       (github.event.action != 'labeled' || !contains(fromJSON('["fitness", "fitness-valid", "fitness-invalid"]'), github.event.label.name)))
     # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
     # Public repos and fork pull requests stay hosted, so outside code never reaches the Mac.
-    runs-on: ${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group": "fitness", "labels": "fitness"}') || 'ubuntu-24.04-arm' }}
+    runs-on: ${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group":"fitness","labels":"fitness"}') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     # One queue per Issue: an edit never cancels the opened run, the only one
     # that can close the Issue as a duplicate. A burst still ends in one
