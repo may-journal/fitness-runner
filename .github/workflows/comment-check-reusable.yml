@@ -30,7 +30,10 @@ jobs:
       ((github.event.comment.user.login || github.event.review.user.login) != 'github-actions[bot]' &&
       (inputs.ignore-authors != '' || !contains(fromJSON('["may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), (github.event.comment.user.login || github.event.review.user.login))) &&
       !contains(format(',{0},', inputs.ignore-authors), format(',{0},', (github.event.comment.user.login || github.event.review.user.login))))
-    runs-on: ubuntu-24.04-arm
+    # A private repo runs on the self-hosted Fitness runners, which bill no
+    # minutes against a hosted job's one-minute minimum. Their group admits
+    # private repos only, so a public repo's fork PR never reaches them.
+    runs-on: ${{ github.event.repository.private && fromJSON('["self-hosted", "fitness"]') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
     concurrency:
