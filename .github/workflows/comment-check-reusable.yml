@@ -30,7 +30,9 @@ jobs:
       ((github.event.comment.user.login || github.event.review.user.login) != 'github-actions[bot]' &&
       (inputs.ignore-authors != '' || !contains(fromJSON('["may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), (github.event.comment.user.login || github.event.review.user.login))) &&
       !contains(format(',{0},', inputs.ignore-authors), format(',{0},', (github.event.comment.user.login || github.event.review.user.login))))
-    runs-on: ubuntu-24.04-arm
+    # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
+    # Public repos and fork pull requests stay hosted, so outside code never reaches the Mac.
+    runs-on: ${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group": "fitness", "labels": "fitness"}') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     # Agents edit a comment in quick bursts; only the newest text needs a reply.
     concurrency:
