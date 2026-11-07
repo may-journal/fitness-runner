@@ -24,4 +24,6 @@ jobs:
   comment-check:
     uses: ./.github/workflows/comment-check-reusable.yml
     with:
-      ref: ${{ github.sha }}
+      # A review event's sha is a merge commit that go install cannot fetch, so
+      # a pull request builds its head commit.
+      ref: ${{ github.event.pull_request.head.sha || github.sha }}
