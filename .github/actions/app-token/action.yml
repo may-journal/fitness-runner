@@ -1,0 +1,40 @@
+name: Mint the automation App token
+description: >-
+  Check that the automation App's secrets reached this repo, then mint a
+  one-hour App token, so a missing secret fails with its name instead of a
+  vague error from the token action.
+inputs:
+  app-id:
+    description: The App's id, from the AUTOMATION_APP_ID secret.
+    required: true
+  private-key:
+    description: The App's private key, from the AUTOMATION_APP_KEY secret.
+    required: true
+outputs:
+  token:
+    description: The App token.
+    value: ${{ steps.mint.outputs.token }}
+  app-slug:
+    description: The App's slug, which names its bot login.
+    value: ${{ steps.mint.outputs.app-slug }}
+runs:
+  using: composite
+  steps:
+    - name: Check the App secrets
+      shell: bash
+      env:
+        APP_ID: ${{ inputs.app-id }}
+        APP_KEY: ${{ inputs.private-key }}
+      run: |
+        for name in APP_ID APP_KEY; do
+          if [ -z "${!name}" ]; then
+            echo "::error::AUTOMATION_${name} is not available to this repo"
+            exit 1
+          fi
+        done
+    - name: Mint the token
+      id: mint
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs.app-id }}
+        private-key: ${{ inputs.private-key }}

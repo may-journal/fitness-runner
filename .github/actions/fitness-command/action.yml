@@ -1,0 +1,56 @@
+name: Run Fitness commands
+description: >-
+  Install fitness, run one or more of its commands, then keep their reports and
+  annotate a failure they left without one. The reusable workflows run each
+  issue, comment, close and PR check through it.
+inputs:
+  command:
+    description: Space-separated fitness commands, such as close-check or "issue-check dupe-check". Each runs even when an earlier one failed.
+    required: true
+  ref:
+    description: Optional source ref to compile; empty installs the pinned bundle.
+    required: false
+    default: ''
+  token:
+    description: The token the commands read and write GitHub with, as GH_TOKEN.
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - name: Install fitness
+      id: install
+      uses: $/.github/actions/fitness-install
+      with:
+        ref: ${{ inputs.ref }}
+    # Every name is checked before any runs, so a typo runs nothing. A later
+    # command still runs after an earlier one fails, so one run lists both.
+    - name: Run the commands
+      id: run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        FITNESS_COMMANDS: ${{ inputs.command }}
+      run: |
+        # refuse annotates the bad input once and stops before any command.
+        refuse() {
+          printf '::error::The fitness-command action %s.\n' "$1"
+          printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
+          exit 1
+        }
+        read -ra commands <<< "$FITNESS_COMMANDS"
+        if [ "${#commands[@]}" -eq 0 ]; then refuse "needs at least one command"; fi
+        for command in "${commands[@]}"; do
+          if [[ ! "$command" =~ ^[a-z-]+$ ]]; then refuse "got $command, which is not a fitness command name"; fi
+        done
+        status=0
+        for command in "${commands[@]}"; do
+          fitness "$command" || status=1
+        done
+        exit "$status"
+    - name: Retain the reports
+      if: ${{ always() }}
+      uses: $/.github/actions/fitness-reports
+      with:
+        job-status: ${{ (steps.install.outcome == 'failure' || steps.run.outcome == 'failure') && 'failure' || 'success' }}
+        fitness-failed: ${{ steps.install.outcome == 'failure' || steps.run.outcome == 'failure' }}

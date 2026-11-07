@@ -8,6 +8,12 @@ on:
     types: [opened, edited, reopened, synchronize]
   workflow_dispatch:
 
+# A newer push or edit judges the PR again, so it cancels the run it supersedes
+# instead of billing both to the end.
+concurrency:
+  group: fitness-suite-${{ github.repository }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: read

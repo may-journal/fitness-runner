@@ -28,22 +28,11 @@ jobs:
       group: auto-merge-${{ github.workflow }}-${{ github.event.pull_request.number }}
       cancel-in-progress: true
     steps:
-      - name: Check the App secrets
-        id: report-step-1
-        env:
-          APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
-          APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
-        run: |
-          for name in APP_ID APP_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "::error::AUTOMATION_${name} is not available to this repo"
-              printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
-              exit 1
-            fi
-          done
+      # `$/` names this repo at the running commit, so the shared action
+      # matches this workflow's version.
       - name: Mint a one-hour App token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: $/.github/actions/app-token
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
@@ -99,7 +88,6 @@ jobs:
             local answer="${2//'%'/%25}"
             answer="${answer//$'\r'/%0D}"
             echo "::error::$1: ${answer//$'\n'/%0A}"
-            printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
             exit 1
           }
           # Only a native stack's PRs carry a stack object.
@@ -203,15 +191,6 @@ jobs:
             exit 0
           fi
           fail "GitHub refused auto-merge for this PR" "$answer"
-      # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
         if: ${{ always() }}
-        shell: bash
-        env:
-          REPORT_STATUS: ${{ job.status }}
-          REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure' || steps.merge.outcome == 'failure') }}
-        run: |
-          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
-            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
-          fi
-          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+        run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
