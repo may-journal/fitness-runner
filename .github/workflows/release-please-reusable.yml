@@ -29,22 +29,11 @@ jobs:
       group: release-please-reusable
       cancel-in-progress: false
     steps:
-      - name: Check the App secrets
-        id: report-step-1
-        env:
-          APP_ID: ${{ secrets.AUTOMATION_APP_ID }}
-          APP_KEY: ${{ secrets.AUTOMATION_APP_KEY }}
-        run: |
-          for name in APP_ID APP_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "::error::AUTOMATION_${name} is not available to this repo"
-              printf 'FITNESS_FAILURE_REPORTED=true\n' >> "$GITHUB_ENV"
-              exit 1
-            fi
-          done
+      # `$/` names this repo at the running commit, so the shared action
+      # matches this workflow's version.
       - name: Mint the automation App token
         id: app-token
-        uses: actions/create-github-app-token@v2
+        uses: $/.github/actions/app-token
         with:
           app-id: ${{ secrets.AUTOMATION_APP_ID }}
           private-key: ${{ secrets.AUTOMATION_APP_KEY }}
@@ -55,6 +44,12 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      # The steps below share the release PR's number and repo from here.
+      - name: Name the release PR
+        if: ${{ steps.release.outputs.pr != '' }}
+        env:
+          PR: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
+        run: printf 'PR=%s\nGH_REPO=%s\n' "$PR" "$GITHUB_REPOSITORY" >> "$GITHUB_ENV"
       # pr-check wants plain bullets under "## Changelog" with no bold scopes.
       # This step demotes the headings Release Please writes and strips its
       # bold.
@@ -63,8 +58,6 @@ jobs:
         if: ${{ steps.release.outputs.pr != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
         run: |
           body="$(gh pr view "$PR" --json body --jq .body)"
           shaped="$(printf '%s\n' "$body" | awk '
@@ -84,8 +77,6 @@ jobs:
         if: ${{ steps.release.outputs.pr != '' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
         # pipefail, so a failed lookup stops the step rather than opening a
         # second tracking issue. The title search finds the issue however
         # many others the repo holds; jq keeps only an exact match.
@@ -113,8 +104,6 @@ jobs:
         if: ${{ steps.release.outputs.pr != '' && (steps.shape.outputs.edited == 'true' || steps.link.outputs.edited == 'true') }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          GH_REPO: ${{ github.repository }}
-          PR: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
         run: |
           gh pr close "$PR"
           gh pr reopen "$PR"
@@ -136,18 +125,9 @@ jobs:
             echo "::error::Could not read tag $MAJOR: $found"
             exit 1
           fi
-      # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
         if: ${{ always() }}
-        shell: bash
-        env:
-          REPORT_STATUS: ${{ job.status }}
-          REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
-        run: |
-          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
-            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
-          fi
-          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+        run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
 
   # The approver approves the release PR once its checks are green, reading
   # them with the run token. `$/` names this repo at the running commit, as

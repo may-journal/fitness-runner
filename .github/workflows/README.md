@@ -2,9 +2,23 @@
 
 GitHub Actions workflows for this repo. The runner enforces the checks on commits; these workflows extend the same checks to places that are not files in the tree.
 
-All workflows follow [ADR 0003](../../fitness/adr-0003/README.md): native failure annotations, useful job summaries, and accurate source locations when available. Go commands share the reporter in `go/internal/report`. Each executable job has an always-run shell fallback for bootstrap failures.
+All workflows follow [ADR 0003](../../fitness/adr-0003/README.md): native failure annotations, useful job summaries, and accurate source locations when available. Go commands share the reporter in `go/internal/report`. Each executable job ends with an always-run `Report job outcome` step that writes its status and logs link to the summary.
 
-Overflow reports are uploaded as `fitness-reports` artifacts with job, matrix, and attempt suffixes. Job summaries link to run logs; the run artifact list holds complete reports. Reports are retained for seven days. Pinned releases gain command details when upgraded; fallback reports cover their job outcomes now.
+Each job that runs Fitness keeps its overflow reports through the [fitness-reports](#shared-actions) action. It uploads them as `fitness-reports` artifacts with job, attempt and random suffixes, retained for seven days, and links them from the job summary.
+
+## Shared actions
+
+The workflows share their repeated steps as composite actions under [.github/actions](../actions). A reusable workflow names one as `$/.github/actions/<name>`. GitHub reads it from this repo at the running commit, so a caller pinned to `@v1` gets matching actions. This repo's own workflows name them as `./.github/actions/<name>`.
+
+| Action | What it does |
+| --- | --- |
+| [fitness-install](../actions/fitness-install/action.yml) | Installs the pinned bundle, or builds `go/cmd/...` from a requested source ref. |
+| [fitness-command](../actions/fitness-command/action.yml) | Installs Fitness and runs its commands, each after a failed one too, then keeps their reports. |
+| [fitness-reports](../actions/fitness-reports/action.yml) | Draws the box diagram, keeps the reports and performance record, and annotates a failure Fitness left without one. |
+| [app-token](../actions/app-token/action.yml) | Checks the automation App's secrets, then mints its token. |
+| [setup-go-cache](#setup-go-cache) | Sets up Go with a build cache for builds from this checkout. |
+
+The issue, comment, close and PR check workflows each hold one fitness-command step. This repo's issue-check, comment-check and close-check call those reusable workflows with `ref` set to their commit, testing its source. pr-check-reusable skips this repo, so its own pr-check runs fitness-command on the PR head instead.
 
 ## Billing
 
@@ -122,6 +136,8 @@ The run id is in the check's details link, or in `gh api repos/<owner>/<repo>/ac
 A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on every org pull request. It calls `ci-reusable`, which installs swiftlint when the checkout has Swift files. A job condition skips fitness-runner, which builds checks from source, without starting a runner.
 
 With `pr-check: true` the same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit reruns the whole job, since it reports the same check on the same commit. `pr-check` findings still fail the job. The input defaults to off, since it needs `pull-requests` and `issues` read.
+
+A newer push or edit to the same PR cancels the run it supersedes, so only the newest run bills to the end.
 
 ## close-check
 
@@ -241,7 +257,7 @@ A comment that always passed gets no reply. The `.fitnessrc.json` `comment` key 
 
 ## setup-go-cache
 
-Every workflow here that needs Go uses the local [setup-go-cache](../actions/setup-go-cache/action.yml) action. It installs the Go version `go/go.mod` names, with setup-go's cache off, since no `go.sum` exists. Jobs that only build `./cmd/...` pass no cache family and build cold in seconds.
+Every workflow here that builds from its checkout uses the local [setup-go-cache](../actions/setup-go-cache/action.yml) action. It installs the Go version `go/go.mod` names, with setup-go's cache off, since no `go.sum` exists. Jobs that only build `./cmd/...` pass no cache family and build cold in seconds.
 
 The others restore `~/.cache/go-build` under `go-build-<family>-<os>-<arch>-go<version>-<hash of go/>`. A miss falls back only to that family, arch, and Go version.
 

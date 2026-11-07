@@ -1,5 +1,7 @@
 name: Comment check
 
+# This repo runs the reusable workflow it publishes, built from this commit, so
+# the code under review judges each comment.
 on:
   issue_comment:
     types: [created, edited]
@@ -17,50 +19,9 @@ permissions:
   pull-requests: write
 
 jobs:
+  # The called job's known-bot guard and per-comment concurrency apply here
+  # too, so a bot's comment still starts no runner.
   comment-check:
-    # Skip a known bot's comment before a runner starts, so it bills nothing.
-    # The list is KnownBots in go/internal/metadata/comments.go.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      !contains(fromJSON('["github-actions[bot]", "may-journal-automation[bot]", "release-please[bot]", "dependabot[bot]"]'), (github.event.comment.user.login || github.event.review.user.login))
-    runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
-    # Agents edit a comment in quick bursts; only the newest text needs a reply.
-    concurrency:
-      group: comment-check-${{ github.repository }}-${{ github.event_name }}-${{ github.event.comment.id || github.event.review.id || github.run_id }}
-      cancel-in-progress: true
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/setup-go-cache
-      - name: Build the checks
-        run: cd go && mkdir -p bin && go build -o bin ./cmd/...
-      - name: Validate comment(s), keep one reply, and react
-        id: report-step-1
-        run: go/bin/fitness comment-check
-        env:
-          GH_TOKEN: ${{ github.token }}
-      - name: Retain complete Fitness reports
-        id: fitness-reports
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: fitness-reports-${{ github.job }}-${{ strategy.job-index || 0 }}-${{ github.run_attempt }}-${{ env.FITNESS_REPORT_ID }}
-          path: ${{ runner.temp }}/fitness-reports/
-          if-no-files-found: ignore
-          retention-days: 7
-      # Bootstrap fallback must work even when checkout or tool setup failed.
-      - name: Report job outcome
-        if: ${{ always() }}
-        shell: bash
-        env:
-          REPORT_STATUS: ${{ job.status }}
-          REPORT_ARTIFACT_URL: ${{ steps.fitness-reports.outputs.artifact-url }}
-          REPORT_ALREADY_ANNOTATED: ${{ steps.fitness-reports.outcome != 'failure' && env.FITNESS_FAILURE_REPORTED == 'true' && (steps.report-step-1.outcome == 'failure') }}
-        run: |
-          if [ "$REPORT_STATUS" = failure ] && [ "$REPORT_ALREADY_ANNOTATED" != true ]; then
-            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
-          fi
-          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
-          if [ -n "$REPORT_ARTIFACT_URL" ]; then
-            printf '\n[Download complete Fitness reports](%s)\n' "$REPORT_ARTIFACT_URL" >> "$GITHUB_STEP_SUMMARY"
-          fi
+    uses: ./.github/workflows/comment-check-reusable.yml
+    with:
+      ref: ${{ github.sha }}

@@ -1,0 +1,34 @@
+name: Install Fitness
+description: >-
+  Put fitness and every check on PATH: the pinned bundle, or a build of an
+  explicitly requested source ref.
+inputs:
+  ref:
+    description: Optional source ref to compile; empty installs the pinned bundle.
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Install the pinned fitness bundle
+      if: ${{ inputs.ref == '' }}
+      uses: may-journal/fitness-runner@v1
+      with:
+        install-only: 'true'
+    # A source build keeps the newest stable Go it needs.
+    - name: Set up Go for the source build
+      if: ${{ inputs.ref != '' }}
+      uses: actions/setup-go@v5
+      with:
+        go-version: stable
+        # No go.sum exists to key on, so the cache would only log a warning.
+        cache: false
+    - name: Build an explicitly requested source ref
+      if: ${{ inputs.ref != '' }}
+      shell: bash
+      env:
+        GOPROXY: direct
+        FITNESS_SOURCE_REF: ${{ inputs.ref }}
+      run: |
+        go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
+        echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"

@@ -243,14 +243,6 @@ jobs:
           gh api -X POST "$reviews" -f event=APPROVE -f commit_id="$SHA" \
             -f body="Approved: this PR changes only what Release approve allows for its kind, and its checks are green." > /dev/null
           echo "Approved PR #$PR at $SHA."
-      # Bootstrap fallback must work even when checkout or tool setup failed.
       - name: Report job outcome
         if: ${{ always() }}
-        shell: bash
-        env:
-          REPORT_STATUS: ${{ job.status }}
-        run: |
-          if [ "$REPORT_STATUS" = failure ]; then
-            printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
-          fi
-          printf '### Job %s: %s\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "$REPORT_STATUS" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+        run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

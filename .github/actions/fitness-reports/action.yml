@@ -1,0 +1,73 @@
+name: Retain Fitness reports
+description: >-
+  Keep a job's complete Fitness reports and performance record as artifacts,
+  link the reports from the job summary, and annotate a failure that Fitness
+  left without one. Run it with if always() after the job's Fitness steps.
+inputs:
+  job-status:
+    description: The job's status so far; pass job.status, or failure when a Fitness step failed.
+    required: true
+  fitness-failed:
+    description: Pass true when a Fitness step failed, since Fitness annotates its own failures.
+    required: false
+    default: 'false'
+  fitness:
+    description: The fitness command that draws the box diagram, such as go/bin/fitness for a checkout build.
+    required: false
+    default: fitness
+runs:
+  using: composite
+  steps:
+    # The box diagram rides in the performance artifact: see
+    # docs/ci.md#box-diagram. Fitness may have died before it wrote the record.
+    - name: Draw the box diagram
+      if: ${{ !cancelled() }}
+      shell: bash
+      env:
+        FITNESS: ${{ inputs.fitness }}
+      run: |
+        record="$RUNNER_TEMP/fitness-performance/fitness.json"
+        if [ -f "$record" ]; then
+          "$FITNESS" boxes "$record" "$RUNNER_TEMP/fitness-performance/fitness.html"
+        fi
+    # Matrix legs and caller jobs may share one job name, so a random id keeps
+    # each artifact name unique.
+    - name: Name the artifacts
+      id: name
+      if: ${{ always() }}
+      shell: bash
+      run: printf 'suffix=%s-%s\n' "$GITHUB_RUN_ATTEMPT" "${FITNESS_REPORT_ID:-$RANDOM$RANDOM$RANDOM}" >> "$GITHUB_OUTPUT"
+    # The performance trail: see docs/ci.md#performance-record.
+    - name: Retain the performance record
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: fitness-performance-${{ github.job }}-${{ steps.name.outputs.suffix }}
+        path: ${{ runner.temp }}/fitness-performance/
+        if-no-files-found: ignore
+        retention-days: 90
+    - name: Retain complete Fitness reports
+      id: reports
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: fitness-reports-${{ github.job }}-${{ steps.name.outputs.suffix }}
+        path: ${{ runner.temp }}/fitness-reports/
+        if-no-files-found: ignore
+        retention-days: 7
+    # Bootstrap fallback: a failure Fitness did not annotate, or one whose
+    # reports were lost, still gets an annotation.
+    - name: Report the Fitness outcome
+      if: ${{ always() }}
+      shell: bash
+      env:
+        JOB_STATUS: ${{ inputs.job-status }}
+        ALREADY_ANNOTATED: ${{ inputs.fitness-failed == 'true' && env.FITNESS_FAILURE_REPORTED == 'true' && steps.reports.outcome != 'failure' }}
+        REPORTS_URL: ${{ steps.reports.outputs.artifact-url }}
+      run: |
+        if [ "$JOB_STATUS" = failure ] && [ "$ALREADY_ANNOTATED" != true ]; then
+          printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
+        fi
+        if [ -n "$REPORTS_URL" ]; then
+          printf '[Download complete Fitness reports](%s)\n' "$REPORTS_URL" >> "$GITHUB_STEP_SUMMARY"
+        fi
