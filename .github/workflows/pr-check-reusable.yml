@@ -27,7 +27,9 @@ jobs:
     # fitness-runner and the ruleset's injected run skip here, since the first
     # builds its own pr-check and the Fitness suite job already runs it.
     if: github.repository != 'may-journal/fitness-runner' && github.workflow != 'PR check (reusable)'
-    runs-on: ubuntu-24.04-arm
+    # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
+    # Public repos and fork pull requests stay hosted, so outside code never reaches the Mac.
+    runs-on: ${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group":"fitness","labels":"fitness"}') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     # Pushes and edits come in bursts; only the newest PR state needs a check.
     # The workflow name keeps a caller's run and the ruleset's apart.

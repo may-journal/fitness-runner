@@ -8,11 +8,11 @@ on:
   workflow_call:
     inputs:
       runs-on:
-        description: Runner label. The arm default bills 37% less a minute than x64 Linux and a tenth of macOS, and runs swiftlint too.
+        description: Runner label. Empty picks the self-hosted fitness runners in a private repo, and otherwise ubuntu-24.04-arm, which bills 37% less a minute than x64 Linux.
         type: string
-        default: ubuntu-24.04-arm
+        default: ''
       swift:
-        description: Always install swiftlint. It is also installed when the checkout has Swift files. Linux runners get the official Linux build.
+        description: Always install swiftlint. It is also installed when the checkout has Swift files. Each runner gets the official build for its platform.
         type: boolean
         default: false
       swiftlint-version:
@@ -34,7 +34,9 @@ on:
 
 jobs:
   fitness:
-    runs-on: ${{ inputs.runs-on }}
+    # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
+    # Public repos and fork pull requests stay hosted, so outside code never reaches the Mac.
+    runs-on: ${{ inputs.runs-on || github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group":"fitness","labels":"fitness"}') || 'ubuntu-24.04-arm' }}
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -64,11 +66,10 @@ jobs:
           # No org repo has a go.sum for setup-go's cache to key on. The next
           # step caches the build instead.
           cache: false
-      # go-test and go-vet compile for 26-28 s with a cold build cache. Each
-      # run saves the cache under its source hash, so the PR's next push
-      # restores it and compiles only what changed.
+      # go-test and go-vet compile for 26-28 s with a cold build cache. A
+      # hosted run saves it by source hash and a Mac keeps it on disk.
       - name: Restore the Go build cache
-        if: ${{ steps.go.outcome == 'success' }}
+        if: ${{ steps.go.outcome == 'success' && runner.environment == 'github-hosted' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/go-build
@@ -82,7 +83,8 @@ jobs:
         with:
           node-version-file: .nvmrc
           # npm ci then fills node_modules from the cached downloads.
-          cache: ${{ hashFiles('package-lock.json') != '' && 'npm' || '' }}
+          # A self-hosted runner keeps ~/.npm on its disk, so it skips the cache.
+          cache: ${{ runner.environment == 'github-hosted' && hashFiles('package-lock.json') != '' && 'npm' || '' }}
       - name: Install npm packages
         if: ${{ hashFiles('package-lock.json') != '' }}
         run: npm ci
@@ -113,27 +115,45 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
       # One pinned SwiftLint everywhere: "latest" let a release add a rule
-      # overnight that laptops had never seen. The zip is cached per version
-      # and platform, which saves its 2-5 s download on every later run.
+      # overnight that laptops had never seen. A hosted run caches the zip and
+      # a Mac keeps it on disk, saving a 2-5 s download.
       - name: Restore the SwiftLint download
         id: swiftlint-zip
-        if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') }}
+        if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') && runner.environment == 'github-hosted' }}
         uses: actions/cache@v4
         with:
           path: ~/.cache/fitness-swiftlint
           key: swiftlint-${{ inputs.swiftlint-version }}-${{ runner.os }}-${{ runner.arch }}
+      # macOS gets portable_swiftlint, which loads SourceKit from Xcode. Each
+      # zip must match its published SHA-256 and lands under a unique name first.
       - name: Install swiftlint
         if: ${{ (inputs.swift || hashFiles('**/*.swift') != '') }}
         env:
           VERSION: ${{ inputs.swiftlint-version }}
           ASSET: ${{ runner.os == 'macOS' && 'portable_swiftlint' || (runner.arch == 'ARM64' && 'swiftlint_linux_arm64' || 'swiftlint_linux_amd64') }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           zip="$HOME/.cache/fitness-swiftlint/${ASSET}.zip"
-          if [ ! -f "$zip" ]; then
-            mkdir -p "$(dirname "$zip")"
-            curl -fsSL -o "$zip" \
-              "https://github.com/realm/SwiftLint/releases/download/${VERSION}/${ASSET}.zip"
+          want=$(gh api "repos/realm/SwiftLint/releases/tags/${VERSION}" \
+            --jq ".assets[] | select(.name == \"${ASSET}.zip\") | .digest")
+          want="${want#sha256:}"
+          if [ -z "$want" ]; then
+            echo "::error::SwiftLint ${VERSION} publishes no SHA-256 for ${ASSET}.zip"
+            exit 1
           fi
+          if [ ! -f "$zip" ] || ! echo "$want  $zip" | shasum -a 256 -c - >/dev/null; then
+            mkdir -p "$(dirname "$zip")"
+            part="$zip.$GITHUB_RUN_ID.$GITHUB_JOB.$$"
+            curl -fsSL --retry 3 -o "$part" \
+              "https://github.com/realm/SwiftLint/releases/download/${VERSION}/${ASSET}.zip"
+            if ! echo "$want  $part" | shasum -a 256 -c -; then
+              rm -f "$part"
+              echo "::error::SwiftLint ${VERSION} ${ASSET}.zip does not match its published SHA-256"
+              exit 1
+            fi
+            mv -f "$part" "$zip"
+          fi
+          rm -rf "$RUNNER_TEMP/swiftlint"
           unzip -q -o "$zip" -d "$RUNNER_TEMP/swiftlint"
           chmod +x "$RUNNER_TEMP/swiftlint/swiftlint"
           echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"

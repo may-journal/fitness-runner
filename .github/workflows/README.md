@@ -24,7 +24,7 @@ The issue, comment, close and PR check workflows each hold one fitness-command s
 
 Each started job bills at least one minute, though a check takes seconds, so run count drives spend. A job whose `if` is false starts no runner and bills nothing. So each issue, comment, and PR job skips events that cannot change its result. Its command skips them too.
 
-Hosted Fitness jobs run on `ubuntu-24.04-arm`, which GitHub bills at $0.005 a minute against $0.008 for x64 Linux. The fitness bundle, SwiftLint, Node and the JDK all ship arm64 builds, so the checks are the same. Only the release and distribution matrices keep an x64 leg, to test that platform's assets. Private repos run comment, issue and close checks on the self-hosted macOS `fitness` runners, which bill nothing and admit no public repo.
+Hosted Fitness jobs run on `ubuntu-24.04-arm`, which GitHub bills at $0.005 a minute against $0.008 for x64 Linux. The fitness bundle, SwiftLint, Node and the JDK all ship arm64 builds, so the checks are the same. Only the release and distribution matrices keep an x64 leg, to test that platform's assets. Private repos run the suite and every check on the self-hosted macOS `fitness` runners, which bill nothing and admit no public repo.
 
 A per-issue or per-PR `concurrency` group cancels a superseded run, so a burst of edits ends in one verdict. issue-check queues instead, since only its opened run can close a duplicate, and GitHub keeps only the newest pending run.
 
@@ -137,7 +137,7 @@ A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on 
 
 With `pr-check: true` the same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit reruns the whole job, since it reports the same check on the same commit. `pr-check` findings still fail the job. The input defaults to off, since it needs `pull-requests` and `issues` read.
 
-A newer push or edit to the same PR cancels the run it supersedes, so only the newest run bills to the end.
+A newer push or edit to the same PR cancels the run it supersedes, so only the newest run bills to the end. In a private repo the job runs on the self-hosted `fitness` runners, which a fork's pull request never reaches. There it uses SwiftLint's macOS build, checked against its published SHA-256, and keeps its caches on disk.
 
 ## close-check
 
@@ -272,7 +272,7 @@ Only a push to `main` saves, when the job passes `save: true`. Pull requests res
 
 ### In other repos
 
-Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off. ci-reusable instead installs the Go the repo's `go.mod` names and caches `~/.cache/go-build` itself. Its key holds the platform, Go version and a hash of the Go sources. It saves on pull requests, since the suite runs on nothing else, so a PR's next push compiles only what changed.
+Reusable workflows run in other repos, which have no `go.sum` either, so their setup-go cache is off. ci-reusable instead installs the Go the repo's `go.mod` names and caches `~/.cache/go-build` itself on hosted runners. Its key holds the platform, Go version and a hash of the Go sources. It saves on pull requests, since the suite runs on nothing else, so a PR's next push compiles only what changed.
 
 ## auto-merge
 
