@@ -19,8 +19,13 @@ const (
 	RuleSections = "`## Context`, `## Decision` and `## Consequences` sections make the file an ADR"
 )
 
-// DecisionSections are the parts of an ADR that state its decision, in order.
+// DecisionSections are the parts of an ADR file that state its decision, in
+// order.
 var DecisionSections = []string{"Context", "Decision", "Consequences"}
+
+// IssueSections are an `ADR` issue's headings, in order, each holding the
+// file section at the same place in DecisionSections.
+var IssueSections = []string{"Background", "Decision", "Currently Known Consequences"}
 
 // issueURL matches one full GitHub issue URL.
 var issueURL = regexp.MustCompile(`https://github\.com/[\w.-]+/[\w.-]+/issues/\d+`)

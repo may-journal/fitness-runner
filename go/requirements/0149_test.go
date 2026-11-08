@@ -49,7 +49,21 @@ func migrateGitHub(listed string) []response {
 		{Match: []string{"issue create", "[ADR] Small files"}, Stdout: filesIssue + "\n"},
 		{Match: []string{"issue create", "[ADR] Old rule"}, Stdout: oldIssue + "\n"},
 		{Match: []string{"issue edit"}},
+		{Match: []string{"issue close"}},
 	}
+}
+
+// listedIssues is the `gh issue list` output for ADR issues, each URL with
+// the file its marker names, the body before it, and its state.
+func listedIssues(t *testing.T, issues ...[4]string) string {
+	t.Helper()
+	var out string
+	for _, i := range issues {
+		line, err := json.Marshal(map[string]string{"url": i[0], "body": i[2] + "\n\n<!-- fitness:adr-migrate:" + i[1] + " -->", "state": i[3]})
+		mustDo(t, err)
+		out += string(line) + "\n"
+	}
+	return out
 }
 
 // migrate runs `fitness adr-migrate` with args in repo against saved.
@@ -68,6 +82,7 @@ func Test0149_1(t *testing.T) {
 		`would open "[ADR] Use SQLite" from docs/architecture/adr/0001-use-sqlite.md`,
 		`would open "[ADR] Small files" from fitness/adr-0001/README.md`,
 		"would remove docs/architecture/adr/0002-sync.md",
+		"would close the issue for docs/architecture/adr/0002-sync.md as superseded",
 		"would rewrite docs/guide.md", "would rewrite fitness/adr-0001/README.md")
 	if calls := rp.calls("gh"); len(calls) != rp.count("gh", "repo view")+rp.count("gh", "issue list") {
 		t.Errorf("a dry run must only read GitHub, got gh calls %q", calls)
@@ -84,10 +99,19 @@ func Test0149_2(t *testing.T) {
 	sees(t, out, code, 0, "opened "+sqliteIssue+" from docs/architecture/adr/0001-use-sqlite.md",
 		"removed docs/architecture/adr/0001-use-sqlite.md", "rewrote docs/guide.md")
 	wantCall(t, rp, "an ADR issue opened with the file's sections", "issue create", "--label ADR", "[ADR] Use SQLite",
-		"## Status\\n\\nAccepted\\n\\n## Context\\n\\nWe sync offline.", "## Decision\\n\\nStore notes in SQLite", "## Consequences\\n\\nOne file holds every note.")
-	wantCall(t, rp, "the superseded ADR naming the issue that replaces it", "issue create", "[ADR] Sync whole files",
-		"Superseded by "+sqliteIssue, "## Context\\n\\nNotes change offline.")
-	wantCall(t, rp, "the superseded check naming the issue that replaces it", "issue create", "[ADR] Old rule", "Superseded by "+filesIssue)
+		"> Use SQLite\\n\\n## Background\\n\\nWe sync offline.", "## Decision\\n\\nStore notes in SQLite",
+		"## Currently Known Consequences\\n\\nOne file holds every note.")
+	if rp.called("gh", "issue create", "## Status") {
+		t.Errorf("want no Status section, as the issue's state is its status, got gh calls %q", rp.calls("gh"))
+	}
+	wantCall(t, rp, "the superseded ADR's issue opened with its sections", "issue create", "[ADR] Sync whole files", "## Background\\n\\nNotes change offline.")
+	wantCall(t, rp, "the superseded ADR's issue closed naming the issue that replaces it",
+		"issue close "+syncIssue, "--reason not planned", "Superseded by "+sqliteIssue)
+	wantCall(t, rp, "the superseded check's issue closed naming the issue that replaces it",
+		"issue close "+oldIssue, "--reason not planned", "Superseded by "+filesIssue)
+	if rp.called("gh", "issue close "+sqliteIssue) {
+		t.Errorf("want an accepted ADR's issue left open, got gh calls %q", rp.calls("gh"))
+	}
 	wantCall(t, rp, "the first issue's link to the second ADR pointed at its issue", "issue edit "+sqliteIssue, "as [ADR 0002]("+syncIssue+") says")
 	wantFiles(t, repo, map[string]string{
 		"docs/guide.md":                     "# Guide\n\nRead [the storage decision](" + sqliteIssue + ") and [small files](" + filesIssue + ").\n",
@@ -105,18 +129,20 @@ func Test0149_2(t *testing.T) {
 
 func Test0149_3(t *testing.T) {
 	t.Parallel()
-	body := "Synced as [ADR 0002](https://github.com/may-journal/example/blob/main/docs/architecture/adr/0002-sync.md#decision).\n\n" +
-		"<!-- fitness:adr-migrate:docs/architecture/adr/0001-use-sqlite.md -->"
-	line, err := json.Marshal(map[string]string{"url": sqliteIssue, "body": body})
-	mustDo(t, err)
-	listed := string(line) + "\n"
+	listed := listedIssues(t,
+		[4]string{sqliteIssue, "docs/architecture/adr/0001-use-sqlite.md",
+			"Synced as [ADR 0002](https://github.com/may-journal/example/blob/main/docs/architecture/adr/0002-sync.md#decision).", "OPEN"},
+		[4]string{syncIssue, "docs/architecture/adr/0002-sync.md", "Sync whole files.", "CLOSED"})
 	repo := example(t, "happyRepo", migrateRepo())
 	out, code, rp := migrate(t, repo, migrateGitHub(listed), "--repo=may-journal/example")
 	sees(t, out, code, 0, "kept docs/architecture/adr/0001-use-sqlite.md: "+sqliteIssue)
-	if rp.called("gh", "issue create", "[ADR] Use SQLite") {
-		t.Errorf("want the existing issue kept, not opened again, got gh calls %q", rp.calls("gh"))
+	if rp.called("gh", "issue create", "[ADR] Use SQLite") || rp.called("gh", "issue create", "[ADR] Sync whole files") {
+		t.Errorf("want the existing issues kept, not opened again, got gh calls %q", rp.calls("gh"))
 	}
 	wantCall(t, rp, "the kept issue's link to a moved ADR file pointed at its issue", "issue edit "+sqliteIssue, "Synced as [ADR 0002]("+syncIssue+").")
+	if rp.called("gh", "issue close "+syncIssue) {
+		t.Errorf("want a closed superseded issue left as it is, got gh calls %q", rp.calls("gh"))
+	}
 	out, code, rp = migrate(t, repo, migrateGitHub(listed), "--repo=may-journal/example")
 	sees(t, out, code, 0, "no ADR files to move")
 	if rp.called("gh", "issue create") {

@@ -182,4 +182,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 42  | `fitness claude-hook`.              | Action  | Claude meets a failing check right after an edit, before a `gh` post, as it or a subagent stops, or as a session starts, and fixes it that turn. |
 | 43  | `fitness adr-migrate`.              | Action  | Each ADR file becomes an `ADR` issue people can discuss, and links follow it. |
 | 44  | ADR file check.                     | System  | No decision hides in a file; each one is an `ADR` issue.                             |
-| 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Status, Context, Decision and Consequences alike. |
+| 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |

@@ -19,8 +19,8 @@ ADR files migrated
 - 0149.2
     - Given Developer has ADR files in an `adr` folder and a check README holding its decision
         - When fitness runs adr-migrate
-            - Then it opens one `[ADR]` issue per file, points each link at it, and removes or trims each file, keeping a superseded status
+            - Then it opens one `[ADR]` issue per file, points links at it, trims or removes the file, and closes a superseded one
 - 0149.3
     - Given Developer reruns adr-migrate after issues for its files exist
         - When fitness runs adr-migrate
-            - Then it keeps those issues, points their links at the new issues, and opens no duplicate
+            - Then it keeps those issues, points their links at the new issues, leaves a closed issue closed, and opens no duplicate

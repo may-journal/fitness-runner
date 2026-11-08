@@ -35,14 +35,14 @@ func CurrentRepo() (string, error) {
 	return gh("", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner")
 }
 
-// Issue is one `ADR` issue: its URL and body.
-type Issue struct{ URL, Body string }
+// Issue is one `ADR` issue: its URL, body and state, OPEN or CLOSED.
+type Issue struct{ URL, Body, State string }
 
 // Migrated maps each source file an `ADR` issue's marker names to the
 // issue, open or closed.
 func (g GitHub) Migrated() (map[string]Issue, error) {
 	out, err := gh("", "issue", "list", "--repo", g.Repo, "--label", Label, "--state", "all", "--limit", "1000",
-		"--json", "url,body", "--jq", ".[] | {url, body}")
+		"--json", "url,body,state", "--jq", ".[] | {url, body, state}")
 	if err != nil {
 		return nil, err
 	}
@@ -75,5 +75,11 @@ func (g GitHub) Open(title, body string) (string, error) {
 // Edit replaces the body of the issue at url.
 func (g GitHub) Edit(url, body string) error {
 	_, err := gh(body, "issue", "edit", url, "--body-file", "-")
+	return err
+}
+
+// Close closes the issue at url as not planned, with comment.
+func (g GitHub) Close(url, comment string) error {
+	_, err := gh("", "issue", "close", url, "--reason", "not planned", "--comment", comment)
 	return err
 }

@@ -39,6 +39,8 @@ type source struct {
 	opened string
 	// kept marks an issue an earlier migration opened.
 	kept bool
+	// closed marks an issue that is already closed.
+	closed bool
 }
 
 // Run migrates the ADR files among files, the repo's tracked paths.
@@ -97,7 +99,7 @@ func (m Migration) known() (map[string]Issue, error) {
 func (m Migration) open(sources []*source, issues map[string]Issue, urls map[string]string) error {
 	for _, s := range sources {
 		if issue, ok := issues[s.rel]; ok {
-			urls[s.rel], s.opened, s.kept = issue.URL, issue.Body, true
+			urls[s.rel], s.opened, s.kept, s.closed = issue.URL, issue.Body, true, issue.State == "CLOSED"
 			fmt.Fprintf(m.Out, "kept %s: %s\n", s.rel, issue.URL)
 			continue
 		}
@@ -125,17 +127,38 @@ func (m Migration) openOne(s *source, urls map[string]string) error {
 	return nil
 }
 
-// finish edits each issue whose links to ADR files now resolve to issues.
+// finish edits each issue whose links to ADR files now resolve to issues,
+// and closes each superseded ADR's issue.
 func (m Migration) finish(sources []*source, urls map[string]string) error {
 	for _, s := range sources {
-		body := m.finalBody(s, urls)
-		if body == "" {
-			continue
+		if body := m.finalBody(s, urls); body != "" {
+			if err := m.GitHub.Edit(urls[s.rel], body); err != nil {
+				return err
+			}
 		}
-		if err := m.GitHub.Edit(urls[s.rel], body); err != nil {
+		if err := m.retire(s, urls); err != nil {
 			return err
 		}
 	}
+	return nil
+}
+
+// retire closes a superseded ADR's open issue as not planned, since the
+// issue's state is its status. The comment names the issue that replaces it.
+func (m Migration) retire(s *source, urls map[string]string) error {
+	if !s.record.Superseded() || s.closed {
+		return nil
+	}
+	r := s.record
+	r.StatusNote = RewriteLinks(r.StatusNote, s.rel, func(target, _ string) (string, bool) { return issueFor(target, urls) })
+	if m.DryRun {
+		fmt.Fprintf(m.Out, "would close the issue for %s as superseded\n", s.rel)
+		return nil
+	}
+	if err := m.GitHub.Close(urls[s.rel], r.CloseComment()); err != nil {
+		return err
+	}
+	fmt.Fprintf(m.Out, "closed %s as superseded\n", urls[s.rel])
 	return nil
 }
 

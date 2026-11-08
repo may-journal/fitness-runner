@@ -19,7 +19,7 @@ It runs in every repo, the runner's own included.
 
 ## Moving existing ADRs
 
-`fitness adr-migrate` opens one `ADR` issue per file and rewrites each link to the file into the issue's full URL. It removes the file, or trims a check README to its title, summary, issue URL and `## Check`. Its `--dry-run` flag prints the plan and changes nothing, and a rerun reuses the issues it opened.
+`fitness adr-migrate` opens one `ADR` issue per file and rewrites each link to the file into the issue's full URL. It removes the file, or trims a check README to its title, summary, issue URL and `## Check`. An issue's state is its status, so a superseded ADR's issue is closed as not planned. Its `--dry-run` flag prints the plan and changes nothing, and a rerun reuses the issues it opened.
 
 When the migration cannot run yet, `adrAsIssue.allow` lists the paths still waiting, each glob with the reason it waits.
 

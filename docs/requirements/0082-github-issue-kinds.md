@@ -39,7 +39,7 @@ labeled issue edits
 - 0082.8
     - Given Developer has a manual issue-check workflow run
         - When issue-check runs
-            - Then it judges every open issue with a kind label, `ADR` included
+            - Then it judges every open issue with a kind label
 - 0082.9
     - Given Developer has an issue with no kind label, one moved away, one with only its title edited, or a verdict label added
         - When issue-check judges each event

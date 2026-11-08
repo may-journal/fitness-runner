@@ -29,48 +29,65 @@ func (r Record) IssueTitle() string {
 // notRecorded fills a decision section the file left out.
 const notRecorded = "Not recorded in the file this ADR came from."
 
-// IssueBody is the `ADR` issue body for r, from the file at rel. A status
-// note that links a newer ADR issue makes a Superseded status name it.
+// IssueBody is the `ADR` issue body for r, from the file at rel. The issue's
+// state carries its status, so the body holds no Status section.
 func (r Record) IssueBody(rel string) string {
 	pitch := r.Summary
 	if pitch == "" {
 		pitch = r.Title
 	}
 	var b strings.Builder
-	b.WriteString("> " + pitch + "\n\n## Status\n\n" + r.statusLine() + "\n")
-	for _, s := range DecisionSections {
-		b.WriteString("\n## " + s + "\n\n" + r.sectionText(s) + "\n")
+	b.WriteString("> " + pitch + "\n")
+	for i, s := range DecisionSections {
+		b.WriteString("\n## " + IssueSections[i] + "\n\n" + r.sectionText(s) + "\n")
 	}
 	b.WriteString("\n" + Marker(rel) + "\n")
 	return b.String()
 }
 
-// statusLine is r's one-word Status, or `Superseded by` and the issue URL
-// its note links.
+// Superseded reports whether r's file retired its decision, which closes its
+// issue as not planned.
+func (r Record) Superseded() bool {
+	return r.Status == "Superseded"
+}
+
+// CloseComment is the comment that closes a superseded ADR's issue, naming
+// the issue its status note links.
+func (r Record) CloseComment() string {
+	if url := r.supersededBy(); url != "" {
+		return "Superseded by " + url
+	}
+	return "Superseded, as the file it came from said."
+}
+
+// supersededBy is the issue URL a superseded ADR's `by` note links, or "".
+func (r Record) supersededBy() string {
+	if !r.Superseded() || !strings.HasPrefix(r.StatusNote, "by ") {
+		return ""
+	}
+	return FirstIssueURL(r.StatusNote)
+}
+
+// statusLine is r's Status as a check README keeps it, with `by` and the
+// issue URL its note links.
 func (r Record) statusLine() string {
-	if url := FirstIssueURL(r.StatusNote); r.Status == "Superseded" && url != "" {
+	if url := r.supersededBy(); url != "" {
 		return "Superseded by " + url
 	}
 	return r.Status
 }
 
-// sectionText is r's text for section s, with the status note closing the
-// Context, since an issue's Status holds one word.
+// sectionText is r's text for file section s, with a status note the
+// issue's state cannot hold closing the Context.
 func (r Record) sectionText(s string) string {
 	text := r.Sections[s]
 	if text == "" {
 		text = notRecorded
 	}
-	if s == "Context" && r.noteKept() {
+	if s == DecisionSections[0] && r.StatusNote != "" && r.supersededBy() == "" {
 		text += "\n\nStatus note from the file: " + r.StatusNote
 	}
 	return text
-}
-
-// noteKept reports whether r's status note says more than the Status line,
-// which already names the issue a `by` note links.
-func (r Record) noteKept() bool {
-	return r.StatusNote != "" && (r.statusLine() == r.Status || !strings.HasPrefix(r.StatusNote, "by "))
 }
 
 // Pointer is the README a runner ADR keeps once its decision is an issue. It
@@ -81,7 +98,7 @@ func (r Record) Pointer(title, url string) string {
 		parts = append(parts, r.Summary)
 	}
 	parts = append(parts, url)
-	if r.Status == "Superseded" {
+	if r.Superseded() {
 		parts = append(parts, "Status: "+r.statusLine())
 	}
 	if r.Check != "" {

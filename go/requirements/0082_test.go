@@ -157,4 +157,9 @@ func Test0082_8(t *testing.T) {
 	if !labeledOn(rp, planIssue, "fitness-valid") || !labeledOn(rp, kindIssue, "fitness-valid") {
 		t.Errorf("want both open kind issues judged, got gh calls %q", rp.calls("gh"))
 	}
+	for _, kind := range []string{"Plan", "Epic", "ADR"} {
+		if !rp.called("gh", "issues?labels="+kind+"&state=open") {
+			t.Errorf("want the open %s issues listed, as every kind is judged, got gh calls %q", kind, rp.calls("gh"))
+		}
+	}
 }
