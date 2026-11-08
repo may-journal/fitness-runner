@@ -72,23 +72,22 @@ func importErrors(root string, files []string) ([]string, error) {
 }
 
 // scope reads what the check judges: source files to scan, whether the dist
-// rules apply, and tracked files under the build output.
+// rules apply, and tracked build output, dist included.
 func scope(root string) (files []string, dist bool, output []string) {
 	files = collectSourceFiles(root)
-	return files, applies(root, files), trackedOutput(root)
+	tracked := trackedDistFiles(root)
+	return files, applies(root, files, tracked), dedupeSorted(tracked, trackedOutput(root))
 }
 
 // applies reports whether the dist rules have anything to judge: scanned
 // source, a dist directory on disk, or tracked dist files. A docs-only repo
 // has none, so the check passes clean there and is safe in the default list.
-func applies(root string, files []string) bool {
-	if len(files) > 0 {
+func applies(root string, files, tracked []string) bool {
+	if len(files) > 0 || len(tracked) > 0 {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(root, "dist")); err == nil {
-		return true
-	}
-	return len(trackedDistFiles(root)) > 0
+	_, err := os.Stat(filepath.Join(root, "dist"))
+	return err == nil
 }
 
 // trackingErrors reports rule A: dist must be git-ignored when its rules
@@ -100,9 +99,9 @@ func trackingErrors(root string, dist bool, output []string) []string {
 	if dist && !isDistIgnored(root) {
 		errors = append(errors, msgNotIgnored)
 	}
-	if tracked := dedupeSorted(trackedDistFiles(root), output); len(tracked) > 0 {
+	if len(output) > 0 {
 		errors = append(errors, fmt.Sprintf(
-			"%s %s (git rm --cached)", msgRemovePrefix, strings.Join(tracked, ", ")))
+			"%s %s (git rm --cached)", msgRemovePrefix, strings.Join(output, ", ")))
 	}
 	return errors
 }
@@ -121,13 +120,10 @@ func isDistIgnored(root string) bool {
 	return cmd.Run() == nil
 }
 
-// trackedDistFiles returns the git-tracked files under dist — the root-level
-// `dist` pathspec plus the literal nested `**/dist/**` one — deduped and
-// sorted.
+// trackedDistFiles returns the git-tracked files under dist, sorted. One
+// `git ls-files` call takes the root `dist` pathspec and the nested `**/dist/**` one.
 func trackedDistFiles(root string) []string {
-	direct := gitLines(root, "ls-files", "--", "dist")
-	nested := gitLines(root, "ls-files", "--", "**/dist/**")
-	return dedupeSorted(direct, nested)
+	return dedupeSorted(gitLines(root, "ls-files", "--", "dist", "**/dist/**"))
 }
 
 // gitLines runs git with cwd root and returns the trimmed, non-empty lines
