@@ -77,12 +77,11 @@ func Test0145_3(t *testing.T) {
 func Test0145_4(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	write(t, repo, map[string]string{"reply.md": redComment + "\n"})
 	passed(t, repo,
 		"gh api repos/o/r/pulls/5/comments",
 		"gh api -X GET repos/o/r/issues/5/comments -f per_page=100",
-		`gh api repos/o/r/issues/5/comments -f body="$BODY"`,
-		`gh api repos/o/r/issues/5/comments -F "body=@${DIR}reply.md"`,
+		"gh api -X DELETE repos/o/r/issues/comments/9",
+		"gh api -X POST repos/o/r/pulls/5/reviews/9/events -f event=APPROVE",
 		"gh api graphql -f query='query { viewer { login } }'",
 		"gh api repos/o/r/issues/5/labels -f 'labels[]=bug'",
 	)

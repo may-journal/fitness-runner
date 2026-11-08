@@ -41,6 +41,10 @@ type ghCommand struct {
 	describe func(t target) string
 }
 
+// PRBodyChecks are the checks pr-check gives a PR body, which the Claude
+// Code hook also gives a draft one.
+var PRBodyChecks = append([]string{"pr-structure"}, docChecks...)
+
 // ghCommands are the GitHub commands, by subcommand name.
 var ghCommands = map[string]ghCommand{
 	"issue-check": {
@@ -55,7 +59,7 @@ var ghCommands = map[string]ghCommand{
 	},
 	"pr-check": {
 		kind: "pull", targets: prTargets,
-		checks: append([]string{"pr-structure"}, docChecks...),
+		checks: PRBodyChecks,
 		links:  prLinks, failOnFindings: true,
 	},
 	"close-check": {

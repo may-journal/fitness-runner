@@ -189,21 +189,40 @@ func editedPath(in claudeHookInput) string {
 	return filepath.Join(in.Cwd, path)
 }
 
-// postJob judges the body of a gh issue, PR or comment call before it posts.
+// postJob judges every body a Bash command's gh calls, or a GitHub MCP
+// tool, would post. Each body meets the checks GitHub gives it, under the
+// target repo's config.
 func postJob(in claudeHookInput) (hookJob, bool, error) {
-	if in.Tool != "Bash" {
-		return hookJob{}, false, nil
+	var parts []postPart
+	for _, post := range postsOf(in) {
+		root := postRoot(post.dir, post.repo)
+		args := []string{blobFlag, "-", "--checks=" + strings.Join(post.checks, ",")}
+		for _, part := range post.parts {
+			part.root, part.args = root, args
+			parts = append(parts, part)
+		}
 	}
-	post, ok := ghPostIn(in.Input.Command, in.Cwd)
-	if !ok {
-		return hookJob{}, false, nil
+	return hookJob{parts: parts}, len(parts) > 0, nil
+}
+
+// postsOf is what the tool would post: a Bash command's gh calls, or an MCP
+// tool's GitHub post.
+func postsOf(in claudeHookInput) []ghPost {
+	if in.Tool == "Bash" {
+		return ghPostsIn(in.Input.Command, in.Cwd)
 	}
-	root, ok := fitnessRoot(in.Cwd)
-	args := []string{blobFlag, "-"}
-	if post.comment {
-		args = append(args, commentChecks)
+	return mcpPosts(in)
+}
+
+// postRoot is the repo whose config judges a post: the fitness repo the
+// call runs in, unless the post names another. Any other post meets the
+// org defaults, which "" stands for.
+func postRoot(dir, repo string) string {
+	root, ok := fitnessRoot(dir)
+	if !ok || repo != "" && repo != gitx.OriginSlug(root) {
+		return ""
 	}
-	return hookJob{root: root, args: args, parts: post.parts}, ok, nil
+	return root
 }
 
 // stopJob runs every file and git check on the uncommitted files. It blocks
@@ -270,16 +289,18 @@ func (job hookJob) judge() (hookResult, error) {
 	return hookResult{reason: v.text(job.subject), failed: len(v.failed), lines: len(v.lines), ran: true}, err
 }
 
-// judgeParts judges each body of a post alone and side by side, and blocks
-// with the findings of every red one.
+// judgeParts judges each body of a post alone and side by side. It blocks
+// with the findings of every red body and every one it can't read.
 func (job hookJob) judgeParts() (hookResult, error) {
+	defaults, err := os.MkdirTemp("", "fitness-org-defaults-")
+	if err != nil {
+		return hookResult{}, err
+	}
+	defer os.RemoveAll(defaults)
 	var total hookResult
 	var reasons []string
 	results := par.Map(len(job.parts), par.Processes(), func(i int) partResult {
-		part := job
-		part.subject, part.stdin, part.parts = job.parts[i].subject, job.parts[i].text, nil
-		result, err := part.judge()
-		return partResult{result, err}
+		return job.judgePart(job.parts[i], defaults)
 	})
 	for _, r := range results {
 		if r.err != nil {
@@ -290,6 +311,26 @@ func (job hookJob) judgeParts() (hookResult, error) {
 	}
 	total.reason = strings.Join(slices.DeleteFunc(reasons, func(r string) bool { return r == "" }), "\n")
 	return total, nil
+}
+
+// judgePart judges one body in its repo, or in defaults for the org
+// defaults. A body the hook can't read is denied before any check runs.
+func (job hookJob) judgePart(p postPart, defaults string) partResult {
+	if p.unread {
+		return partResult{hookResult: hookResult{reason: unreadReason(p.subject), failed: 1}}
+	}
+	part := job
+	part.root, part.args = cmp.Or(p.root, defaults), p.args
+	part.subject, part.stdin, part.parts = p.subject, p.text, nil
+	result, err := part.judge()
+	return partResult{result, err}
+}
+
+// unreadReason tells Claude why the hook denies a body the shell builds,
+// and how to post it so the hook can judge it.
+func unreadReason(subject string) string {
+	return fmt.Sprintf("fitness: can't read %s before it posts, so it can't judge it. "+
+		"Write the body to a file in an earlier command, then pass that file, such as with --body-file or -F body=@file.", subject)
 }
 
 // partResult is what judging one body of a post found.

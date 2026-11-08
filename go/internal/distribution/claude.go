@@ -31,7 +31,7 @@ const stopMargin = 30 * time.Second
 // matter both register; each event's job is in `fitness claude-hook`.
 var ClaudeHooks = []ClaudeHook{
 	{Event: "PostToolUse", Matcher: "Edit|Write|MultiEdit|NotebookEdit", Timeout: 30},
-	{Event: "PreToolUse", Matcher: "Bash", Timeout: 30},
+	{Event: "PreToolUse", Matcher: "Bash|mcp__.*", Timeout: 30},
 	{Event: "Stop", Timeout: int((checkkit.FastTotal + checkkit.TestsTotal + stopMargin) / time.Second)},
 	{Event: "SubagentStop", Timeout: 300},
 	{Event: "SessionStart", Timeout: 30},

@@ -26,5 +26,5 @@ comments posted through gh api
             - Then it denies the call with the findings
 - 0145.4
     - Given Developer has a fitness repo
-        - When Claude Code runs `fitness claude-hook` before a `gh api` call that reads, or posts a body the shell builds
+        - When Claude Code runs `fitness claude-hook` before a `gh api` call that reads, deletes or posts no comment
             - Then it exits 0 with no output
