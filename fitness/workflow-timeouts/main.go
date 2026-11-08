@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/check"
 )
@@ -16,10 +17,12 @@ import (
 const longTimeout = 10
 
 var (
-	// timeoutRe matches a `timeout-minutes:` key and its whole-number value.
-	timeoutRe = regexp.MustCompile(`^\s*timeout-minutes:\s*(\d+)\s*(#.*)?$`)
-	// citeRe matches a cited observed maximum and the date it was seen.
-	citeRe = regexp.MustCompile(`Observed max (\d+m)?\d+s on \d{4}-\d{2}-\d{2}`)
+	// timeoutRe matches a `timeout-minutes:` key and its whole-number value, bare or quoted.
+	timeoutRe = regexp.MustCompile(`^\s*timeout-minutes:\s*["']?(\d+)["']?\s*(#.*)?$`)
+	// citeRe matches a cited observed maximum, in hours, minutes or seconds, and the date it was seen.
+	citeRe = regexp.MustCompile(`(?i)Observed max (?:\d+h)?(?:\d+m)?(?:\d+s)? on (\d{4}-\d{2}-\d{2})`)
+	// durationRe matches the maximum itself, so a cite names at least one unit.
+	durationRe = regexp.MustCompile(`(?i)max \d+[hms]`)
 )
 
 // Rule is the check.
@@ -59,7 +62,7 @@ func judge(file string, lines []string) []check.Finding {
 		if ok && minutes >= longTimeout && !cited(lines, i) {
 			found = append(found, check.Finding{File: file, Line: i + 1, Rule: "timeout-observed-max",
 				Message: fmt.Sprintf("timeout-minutes %d cites no observed maximum and date", minutes),
-				Fix:     "add a comment above it such as `# Observed max 4m12s on 2026-11-08.`, or measure the job and set twice its maximum"})
+				Fix:     "measure the job's maximum and add a comment above it such as `# Observed max 4m12s on 2026-11-08.`"})
 		}
 	}
 	return found
@@ -77,13 +80,23 @@ func timeout(line string) (int, bool) {
 
 // cited reports whether line i, or the comment lines just above it, cite an observed maximum.
 func cited(lines []string, i int) bool {
-	if citeRe.MatchString(lines[i]) {
+	if cites(lines[i]) {
 		return true
 	}
 	for j := i - 1; j >= 0 && strings.HasPrefix(strings.TrimSpace(lines[j]), "#"); j-- {
-		if citeRe.MatchString(lines[j]) {
+		if cites(lines[j]) {
 			return true
 		}
 	}
 	return false
+}
+
+// cites reports whether line names an observed maximum and a real calendar date.
+func cites(line string) bool {
+	m := citeRe.FindStringSubmatch(line)
+	if m == nil || !durationRe.MatchString(m[0]) {
+		return false
+	}
+	_, err := time.Parse(time.DateOnly, m[1])
+	return err == nil
 }

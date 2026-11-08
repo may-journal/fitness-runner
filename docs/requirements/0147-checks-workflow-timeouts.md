@@ -20,3 +20,7 @@ workflow timeouts of 10 minutes or more
     - Given Developer has a workflow job whose long timeout cites its observed maximum and date, and a short one without a comment
         - When workflow-timeouts runs
             - Then it passes
+- 0147.3
+    - Given Developer has long timeouts that are quoted, cite hours, cite on their own line, or cite an impossible date
+        - When workflow-timeouts runs
+            - Then it fails the quoted value and the bad date, and passes the rest and any expression value

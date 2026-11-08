@@ -3,6 +3,7 @@ package requirements
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -47,4 +48,22 @@ func Test0147_2(t *testing.T) {
 	})
 	sees(t, out, code, 0, "All 1 checks passed")
 	passedWith(t, out, "workflow-timeouts", "2")
+}
+
+func Test0147_3(t *testing.T) {
+	t.Parallel()
+	out, code := timeoutsCheck(t, map[string]string{
+		".github/workflows/quoted.yml":     timeoutJob("", `"30"`),
+		".github/workflows/bad-date.yml":   timeoutJob("    # Observed max 4m12s on 2026-13-45.\n", "10"),
+		".github/workflows/hours.yml":      timeoutJob("    # observed max 1h12m on 2026-11-08.\n", "150"),
+		".github/workflows/same-line.yml":  timeoutJob("", "12 # Observed max 5m on 2026-11-08."),
+		".github/workflows/expression.yml": timeoutJob("", "${{ inputs.minutes }}"),
+	})
+	sees(t, out, code, 1, ".github/workflows/quoted.yml:6: timeout-minutes 30 cites no observed maximum and date",
+		".github/workflows/bad-date.yml:7: timeout-minutes 10 cites no observed maximum and date")
+	for _, passing := range []string{"hours.yml", "same-line.yml", "expression.yml"} {
+		if strings.Contains(out, passing+":") {
+			t.Errorf("workflow-timeouts must pass %s:\n%s", passing, out)
+		}
+	}
 }
