@@ -15,7 +15,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "requirements", Scope: checkkit.ScopeFiles},
+		Describe: checkkit.Describe{Name: "requirements", Scope: checkkit.ScopeFiles, Tests: true},
 		Run:      run,
 	})
 }
@@ -91,24 +91,25 @@ func result(files int, errs []string) checkkit.Result {
 }
 
 // collectTests reads every module's tests and their files in registry order, and lists the modules whose language the repo uses.
+// The scan is the one requirements-changed reads, shared by the runner when both run.
 func collectTests(root string, modules []lang.Module) ([]reqTest, []string, []lang.Module, error) {
-	var tests []reqTest
-	var files []string
-	var written []lang.Module
-	for _, m := range lang.Testing(modules) {
-		found, held, writes, err := m.Tests.Scan(root)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-		for _, t := range found {
-			tests = append(tests, reqTest{Test: t, module: m})
-		}
-		files = append(files, held...)
-		if writes {
-			written = append(written, m)
-		}
+	scan, err := lang.ScanTests(root, modules)
+	if err != nil {
+		return nil, nil, nil, err
 	}
-	return tests, files, written, nil
+	named := map[string]lang.Module{}
+	for _, m := range modules {
+		named[m.Name] = m
+	}
+	var tests []reqTest
+	for _, t := range scan.Tests {
+		tests = append(tests, reqTest{Test: t.Test, module: named[t.Module]})
+	}
+	var written []lang.Module
+	for _, name := range scan.Written {
+		written = append(written, named[name])
+	}
+	return tests, scan.Files, written, nil
 }
 
 // docPaths lists every requirement doc. A template.md beside them is the

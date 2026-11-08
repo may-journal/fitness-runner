@@ -56,22 +56,20 @@ type testSet struct {
 	numbers map[string][]string
 }
 
-// scanTests reads every language module's tests, as the requirements check
-// pairs them.
+// scanTests reads every language module's tests in the scan the
+// requirements check reads, shared by the runner when both run.
 func scanTests(root string) (testSet, error) {
 	s := testSet{files: map[string]bool{}, numbers: map[string][]string{}}
-	for _, m := range lang.Testing(langs.All) {
-		tests, files, _, err := m.Tests.Scan(root)
-		if err != nil {
-			return s, err
-		}
-		for _, f := range files {
-			s.files[f] = true
-			s.prove(f, lang.TestFileNumbers(langs.All, f)...)
-		}
-		for _, t := range tests {
-			s.prove(t.File, idNumber(t.ID)...)
-		}
+	scan, err := lang.ScanTests(root, langs.All)
+	if err != nil {
+		return s, err
+	}
+	for _, f := range scan.Files {
+		s.files[f] = true
+		s.prove(f, lang.TestFileNumbers(langs.All, f)...)
+	}
+	for _, t := range scan.Tests {
+		s.prove(t.File, idNumber(t.ID)...)
 	}
 	return s, nil
 }

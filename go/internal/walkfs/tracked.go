@@ -97,6 +97,19 @@ func ShareTracked(root string) (Shared, error) {
 	return Shared{Env: []string{TrackedFilesEnv + "=" + f.Name()}, Files: len(paths), Paths: paths, Remove: remove}, nil
 }
 
+// Remember hands this process the list s shares for root, so work the
+// runner does itself lists no tracked files again. An empty s changes nothing.
+func (s Shared) Remember(root string) {
+	if s.Env == nil {
+		return
+	}
+	entry := &trackedEntry{list: trackedList{files: s.Paths, ok: true, onDisk: true}}
+	entry.once.Do(func() {})
+	trackedMemo.Lock()
+	defer trackedMemo.Unlock()
+	trackedMemo.roots[filepath.Clean(root)] = entry
+}
+
 // trackedSnapshot is the shared file's content for root and its paths, or
 // nil when git or the index cannot be read.
 func trackedSnapshot(root string) ([]byte, []string, error) {

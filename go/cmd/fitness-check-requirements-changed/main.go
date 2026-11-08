@@ -12,7 +12,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "requirements-changed", Scope: checkkit.ScopeGit, ContextInlineArg: "--message"},
+		Describe: checkkit.Describe{Name: "requirements-changed", Scope: checkkit.ScopeGit, ContextInlineArg: "--message", Tests: true},
 		Run:      run,
 	})
 }
@@ -67,9 +67,21 @@ func judge(root string, tests testSet, changes []change) checkkit.Result {
 
 // withoutCommentOnly drops each edit whose code, comments aside, matches base, since it changes no behavior and needs no test or doc.
 func withoutCommentOnly(root, base string, changes []change) []change {
+	var edits []comments.Edit
+	for _, c := range changes {
+		if !c.deleted {
+			edits = append(edits, c.edit())
+		}
+	}
+	same := comments.CommentOnly(root, base, edits)
 	return slices.DeleteFunc(slices.Clone(changes), func(c change) bool {
-		return !c.deleted && comments.CommentOnly(root, base, c.from, c.path)
+		return !c.deleted && same[c.edit()]
 	})
+}
+
+// edit is the change as an edit from its path at base to its path now.
+func (c change) edit() comments.Edit {
+	return comments.Edit{From: c.from, File: c.path}
 }
 
 // problem names what is wrong with one product change: an edit lacking a test or doc, or a deletion leaving them behind.
