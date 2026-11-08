@@ -29,6 +29,6 @@ runs past the fast total
         - When the run reaches that total
             - Then the run fails and names that runner with its time
 - 0146.5
-    - Given Developer has several Go modules whose tests each take seconds
+    - Given Developer has four Go modules whose tests each take six seconds
         - When fitness runs go-test
             - Then it finishes sooner than their tests take one after another

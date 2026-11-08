@@ -55,7 +55,7 @@ func Test0146_4(t *testing.T) {
 }
 
 // moduleSleep is how long each module's one test sleeps in Test0146_5.
-const moduleSleep = 4 * time.Second
+const moduleSleep = 6 * time.Second
 
 func Test0146_5(t *testing.T) {
 	t.Parallel()

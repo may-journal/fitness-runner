@@ -5,6 +5,7 @@
 package toolchain
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -130,25 +131,18 @@ func CleanEnv(env []string) []string {
 	return out
 }
 
-// judged is what judging one module found, or why it could not judge.
-type judged struct {
-	found []string
-	err   error
-}
-
-// EachModule judges every module dir in mods with judge, side by side, and
-// keeps module order. The first module that could not judge is the error.
+// EachModule judges every module dir in mods with judge, one per core side by
+// side, keeping module order. The first module that could not judge is the error.
 func EachModule(mods []string, judge func(dir string) ([]string, error)) (checkkit.Result, error) {
-	results := par.Map(len(mods), len(mods), func(i int) judged {
-		found, err := judge(mods[i])
-		return judged{found, err}
+	found, err := par.MapErr(context.Background(), len(mods), par.Processes(), func(_ context.Context, i int) ([]string, error) {
+		return judge(mods[i])
 	})
+	if err != nil {
+		return checkkit.Result{}, err
+	}
 	var errs []string
-	for _, r := range results {
-		if r.err != nil {
-			return checkkit.Result{}, r.err
-		}
-		errs = append(errs, r.found...)
+	for _, lines := range found {
+		errs = append(errs, lines...)
 	}
 	if len(errs) > 0 {
 		return checkkit.Fail(len(mods), errs...), nil
