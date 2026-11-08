@@ -14,6 +14,9 @@
 //   - No copy is required in the consumer repo, so a repo with no npm anywhere still gets the shared words.
 //   - Forbidden words: each `flagWords` word or phrase fails wherever it appears whole, in any case, except in a `cspell.json` file.
 //
+// In an issue or PR body, Renovate's hidden debug comment is skipped, since
+// its encoded words are no one's to fix.
+//
 // Errors are reported as one line per issue:
 // `path:line:col - Unknown word (word)` or
 // `path:line:col - Forbidden word (entry)`.

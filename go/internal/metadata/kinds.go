@@ -34,6 +34,16 @@ var kindRules = map[string]kindRule{
 // planChecks are the checks a Plan body gets, for branch-check.
 var planChecks = slices.Concat(kindRules["Plan"].checks, docChecks)
 
+// IssueBodyChecks are the checks issue-check gives a body of the kind label
+// names, or nil for a label that names no kind. An unlabeled body, "", gets
+// the doc checks alone.
+func IssueBodyChecks(label string) []string {
+	if _, ok := kindRules[label]; !ok && label != "" {
+		return nil
+	}
+	return slices.Concat(kindRules[label].checks, docChecks)
+}
+
 // issueKind is one kind of labeled issue: its label, its template's shape when
 // no check judges that, and its rule.
 type issueKind struct {

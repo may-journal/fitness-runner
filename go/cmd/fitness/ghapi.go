@@ -6,11 +6,13 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 )
 
 // commentEndpoint matches the REST paths that post or edit comments on
 // issues, PR lines, replies, reviews and commits.
-var commentEndpoint = regexp.MustCompile(`^/?repos/[^/]+/[^/]+/(issues/[^/]+/comments|issues/comments/[^/]+|pulls/[^/]+/comments|pulls/comments/[^/]+(/replies)?|pulls/[^/]+/reviews(/[^/]+(/events)?)?|commits/[^/]+/comments|comments/[^/]+)$`)
+var commentEndpoint = regexp.MustCompile(`^/?repos/[^/]+/[^/]+/(issues/[^/]+/comments|issues/comments/[^/]+|pulls/[^/]+/comments(/[^/]+/replies)?|pulls/comments/[^/]+(/replies)?|pulls/[^/]+/reviews(/[^/]+(/events)?)?|commits/[^/]+/comments|comments/[^/]+)$`)
 
 // commentMutation matches the GraphQL mutations that add or edit a comment,
 // a review, a review thread or reply, or a discussion comment.
@@ -45,25 +47,39 @@ type apiField struct {
 }
 
 // apiPost reads the comment a gh api call posts or edits, from the words
-// after api. A call that reads, or whose body is unknown, posts nothing to
-// judge.
+// after api. A call that reads or deletes posts nothing to judge, and a body
+// the shell builds is one the hook cannot read.
 func apiPost(args []shellWord, call ghCall) (ghPost, bool) {
-	api, ok := readAPICall(args, call)
-	if !ok || strings.EqualFold(api.method, "GET") {
+	api := readAPICall(args, call)
+	if api.endpoint == "" || slices.Contains([]string{"GET", "DELETE"}, strings.ToUpper(api.method)) {
 		return ghPost{}, false
 	}
-	parts, ok := api.parts()
+	parts, posts := api.parts()
 	parts = slices.DeleteFunc(parts, emptyPart)
-	return ghPost{comment: true, parts: parts}, ok && len(parts) > 0
+	return ghPost{checks: metadata.CommentChecks, repo: endpointRepo(api.endpoint), parts: parts}, posts && len(parts) > 0
 }
 
-// readAPICall reads a gh api call's words; false when one it needs is unknown.
-func readAPICall(args []shellWord, call ghCall) (apiCall, bool) {
-	r := apiReader{call: call, ok: true}
-	for ; r.i < len(args) && r.ok; r.i++ {
+// endpointRepo is the owner/repo a REST endpoint names, or "" for the
+// {owner}/{repo} placeholders gh fills from the folder's repo.
+func endpointRepo(endpoint string) string {
+	m := endpointOwner.FindStringSubmatch(endpoint)
+	if m == nil || strings.Contains(m[1], "{") {
+		return ""
+	}
+	return strings.ToLower(m[1])
+}
+
+// endpointOwner matches a REST endpoint's repo, capturing its owner/repo.
+var endpointOwner = regexp.MustCompile(`^/?repos/([^/]+/[^/]+)/`)
+
+// readAPICall reads a gh api call's words. A word the shell builds keeps the
+// text around its expansion, so an endpoint still shows what it posts to.
+func readAPICall(args []shellWord, call ghCall) apiCall {
+	r := apiReader{call: call}
+	for ; r.i < len(args); r.i++ {
 		r.read(args)
 	}
-	return r.api, r.ok && r.api.endpoint != ""
+	return r.api
 }
 
 // apiReader walks a gh api call's words once.
@@ -71,7 +87,6 @@ type apiReader struct {
 	call ghCall
 	api  apiCall
 	i    int
-	ok   bool
 }
 
 // read takes the word at the cursor, and its value when the flag has one.
@@ -92,14 +107,8 @@ func (r *apiReader) takesValue(name string) bool {
 	return handled || slices.Contains(apiValueFlags, name)
 }
 
-// apply records one flag or the endpoint. A field may be unknown, since
-// only a body field's text matters; any other unknown word stops the read.
+// apply records one flag or the endpoint.
 func (r *apiReader) apply(name, value string, word shellWord) {
-	isField := slices.Contains(apiRawFields, name) || slices.Contains(apiTypedFields, name)
-	if !word.known && !isField {
-		r.ok = false
-		return
-	}
 	if read, ok := apiFlagReaders[name]; ok {
 		read(r, name, value, word.known)
 		return
@@ -111,8 +120,17 @@ func (r *apiReader) apply(name, value string, word shellWord) {
 var apiFlagReaders = map[string]func(r *apiReader, name, value string, known bool){}
 
 func init() {
-	method := func(r *apiReader, _, value string, _ bool) { r.api.method = value }
-	input := func(r *apiReader, _, value string, _ bool) { r.api.input = r.fileWord(value) }
+	method := func(r *apiReader, _, value string, known bool) {
+		if known {
+			r.api.method = value
+		}
+	}
+	input := func(r *apiReader, _, value string, known bool) {
+		r.api.input = &shellWord{}
+		if known {
+			r.api.input = r.fileWord(value)
+		}
+	}
 	for _, name := range []string{"-X", "--method"} {
 		apiFlagReaders[name] = method
 	}
@@ -170,8 +188,8 @@ func wordAt(args []shellWord, i int) shellWord {
 	return shellWord{}
 }
 
-// parts names each body the call posts, or false when it is no comment call
-// or a body it sends is unknown.
+// parts names each body the call posts, or false when it is no comment
+// call. A body the shell builds is an unread part.
 func (api apiCall) parts() ([]postPart, bool) {
 	if api.endpoint == "graphql" {
 		return api.graphQLParts()
@@ -180,11 +198,25 @@ func (api apiCall) parts() ([]postPart, bool) {
 		return nil, false
 	}
 	if api.input != nil {
-		return inputParts(*api.input)
+		return inputParts(*api.input), true
 	}
+	return api.fieldParts(), true
+}
+
+// fieldParts names the comment body and review line comments the call's
+// fields send, or one unread part when the shell builds one.
+func (api apiCall) fieldParts() []postPart {
 	bodies, bodiesKnown := api.values("body")
 	lines, linesKnown := api.values(reviewCommentKey)
-	return composeParts(bodies, lines), bodiesKnown && linesKnown
+	if !bodiesKnown || !linesKnown {
+		return []postPart{unreadPart(commentSubject)}
+	}
+	return composeParts(bodies, lines)
+}
+
+// unreadPart is a body the hook cannot read, named by subject.
+func unreadPart(subject string) postPart {
+	return postPart{subject: subject, unread: true}
 }
 
 // values are the texts of every field named key, or false when one is
@@ -201,6 +233,18 @@ func (api apiCall) values(key string) ([]string, bool) {
 		texts = append(texts, f.value.text)
 	}
 	return texts, true
+}
+
+// texts are the texts of every field named key, with what the shell
+// would expand left out.
+func (api apiCall) texts(key string) []string {
+	var texts []string
+	for _, f := range api.fields {
+		if f.key == key {
+			texts = append(texts, f.value.text)
+		}
+	}
+	return texts
 }
 
 // composeParts names a call's comment bodies, then its review line comments
@@ -223,7 +267,7 @@ const commentSubject = "the comment body"
 // emptyPart reports whether a body holds no text, such as a review sent with
 // line comments alone.
 func emptyPart(part postPart) bool {
-	return strings.TrimSpace(part.text) == ""
+	return !part.unread && strings.TrimSpace(part.text) == ""
 }
 
 // apiInput is the part of a --input JSON body that holds comment text.
@@ -235,11 +279,11 @@ type apiInput struct {
 }
 
 // inputParts names the body and each review line comment of a --input
-// JSON file.
-func inputParts(input shellWord) ([]postPart, bool) {
+// JSON file. A file it can't read is one unread part.
+func inputParts(input shellWord) []postPart {
 	var body apiInput
 	if !input.known || json.Unmarshal([]byte(input.text), &body) != nil {
-		return nil, false
+		return []postPart{unreadPart("the --input body")}
 	}
 	var bodies, lines []string
 	if body.Body != nil {
@@ -248,36 +292,45 @@ func inputParts(input shellWord) ([]postPart, bool) {
 	for _, c := range body.Comments {
 		lines = append(lines, c.Body)
 	}
-	return composeParts(bodies, lines), true
+	return composeParts(bodies, lines)
 }
 
 // bodyVariable matches a GraphQL body argument given as a variable,
 // capturing the variable's name.
 var bodyVariable = regexp.MustCompile(`\bbody\s*:\s*\$(\w+)`)
 
-// graphQLParts reads the body variables of a comment mutation. A body
-// written inside the query is not read, so that call is not judged.
+// graphQLParts reads the body variables of a comment mutation. A query
+// the shell builds, or a body written inside the query, is an unread part.
 func (api apiCall) graphQLParts() ([]postPart, bool) {
-	query, vars, ok := api.graphQLRequest()
-	if !ok || !commentMutation.MatchString(query) {
+	query, vars, known := api.graphQLRequest()
+	if !commentMutation.MatchString(query) {
 		return nil, false
 	}
-	bodies, ok := bodyValues(bodyVariable.FindAllStringSubmatch(query, -1), vars)
-	return composeParts(bodies, nil), ok
+	if !known || inlineBody.MatchString(query) || inputVariable.MatchString(query) {
+		return []postPart{unreadPart("the GraphQL comment body")}, true
+	}
+	return bodyParts(bodyVariable.FindAllStringSubmatch(query, -1), vars), true
 }
 
-// bodyValues reads the variable each body argument names; false when there
-// is none, or one is unknown.
-func bodyValues(names [][]string, vars func(string) (string, bool)) ([]string, bool) {
-	var bodies []string
+// inputVariable matches a mutation whose whole input is one variable,
+// which may hold the body where the hook doesn't read it.
+var inputVariable = regexp.MustCompile(`\binput\s*:\s*\$\w+`)
+
+// inlineBody matches a GraphQL body argument written inside the query.
+var inlineBody = regexp.MustCompile(`\bbody\s*:\s*"`)
+
+// bodyParts reads the variable each body argument names, as an unread part
+// when the shell builds it.
+func bodyParts(names [][]string, vars func(string) (string, bool)) []postPart {
+	var parts []postPart
 	for _, m := range names {
 		text, ok := vars(m[1])
 		if !ok {
-			return nil, false
+			return []postPart{unreadPart("the GraphQL comment body")}
 		}
-		bodies = append(bodies, text)
+		parts = append(parts, composeParts([]string{text}, nil)...)
 	}
-	return bodies, len(bodies) > 0
+	return parts
 }
 
 // graphQLRequest is a GraphQL call's query and a reader of its variables,
@@ -287,6 +340,9 @@ func (api apiCall) graphQLRequest() (string, func(string) (string, bool), bool) 
 		return inputGraphQL(*api.input)
 	}
 	query, ok := api.values("query")
+	if !ok {
+		query = api.texts("query")
+	}
 	vars := func(name string) (string, bool) {
 		texts, known := api.values(name)
 		return strings.Join(texts, ""), known && len(texts) == 1

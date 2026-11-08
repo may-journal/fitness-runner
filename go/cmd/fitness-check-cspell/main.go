@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
@@ -35,12 +36,27 @@ func Main() {
 func run(root string, args []string) (checkkit.Result, error) {
 	if res, handled, err := bodycheck.RunDoc(root, args, func(r, content string) []string {
 		cfg := loadConfig(r)
-		return checkkit.Lines(errorLine, checkContent("(description)", content, newChecker(cfg), cfg.FlagWords))
+		return checkkit.Lines(errorLine, checkContent("(description)", hideDebugBlocks(content), newChecker(cfg), cfg.FlagWords))
 	}); handled || err != nil {
 		return res, err
 	}
 	return walkFiles(root), nil
 }
+
+// debugBlock matches the hidden HTML comment Renovate ends a PR body with,
+// whose encoded state no one wrote or can fix.
+var debugBlock = regexp.MustCompile(`<!--renovate-debug:[^>]*-->`)
+
+// hideDebugBlocks blanks each Renovate debug block in a body, keeping its
+// newlines so every other word keeps its line and column.
+func hideDebugBlocks(body string) string {
+	return debugBlock.ReplaceAllStringFunc(body, func(block string) string {
+		return blanked.ReplaceAllString(block, " ")
+	})
+}
+
+// blanked matches each byte a hidden block blanks: all but newlines.
+var blanked = regexp.MustCompile(`[^\n]`)
 
 // walkFiles spell-checks the changed files, or every tracked file under
 // root when the run is unscoped. A resolved cspell.json with ignorePaths

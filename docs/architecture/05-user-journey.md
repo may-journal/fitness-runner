@@ -39,12 +39,12 @@ flowchart TB
     terminal[2 Terminal<br/>Req 0001]:::screen
     runFull(3 Run fitness<br/>Req 0001, 0144):::action
     runSingle(4 Run single check or folder<br/>Req 0001, 0100):::action
-    runBlob(29 Check a draft text<br/>Req 0077):::action
+    runBlob(29 Check a draft text<br/>Req 0077, 0156):::action
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listComments(40 List code comments<br/>Req 0136):::action
     migrateADRs(43 Move ADR files into issues<br/>Req 0149):::action
-    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143, 0145):::action
+    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143, 0145, 0155):::action
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action

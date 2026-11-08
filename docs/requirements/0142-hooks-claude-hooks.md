@@ -26,7 +26,7 @@ hook events on red work
             - Then it denies the call with the findings, wherever and however the shell passes the body
 - 0142.4
     - Given Developer has a fitness repo
-        - When Claude Code runs `fitness claude-hook` before a call that posts nothing, or a body the shell builds
+        - When Claude Code runs `fitness claude-hook` before a call that posts nothing
             - Then it exits 0 with no output
 - 0142.5
     - Given Developer has a fitness repo with uncommitted files, any name, that fail a check

@@ -140,7 +140,7 @@ func Test0142_3(t *testing.T) {
 	}
 	out, code := hookEvent(t, repo, bashEvent(body("Some **bold** text.\n")))
 	sees(t, out, code, 0, `"permissionDecision":"deny"`, "failed on the pr body", "[markdown-no-bold-italic]")
-	out, code = hookEvent(t, repo, bashEvent(body(cleanText)))
+	out, code = hookEvent(t, repo, bashEvent(body(cleanPRBody)))
 	silentPass(t, out, code)
 	write(t, repo, map[string]string{"body.md": "Some **bold** text.\n", "sub/body.md": "Some **bold** text.\n"})
 	for _, command := range []string{
@@ -162,12 +162,11 @@ func Test0142_3(t *testing.T) {
 func Test0142_4(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	write(t, repo, map[string]string{"fresh.md": "Some **bold** text.\n"})
 	for _, command := range []string{
 		"ls -la && gh pr view 5 --json body",
-		`gh pr create --title t --body "$BODY"`,
-		"gh pr create --title t --body-file - <<EOF\nSee $(cat notes.md)\nEOF\n",
-		"printf 'Fine.' > fresh.md && gh pr create --title t -F fresh.md",
+		"gh pr create --fill",
+		"gh pr edit 5 --add-reviewer someone",
+		"gh issue close 5",
 	} {
 		out, code := hookEvent(t, repo, bashEvent(command))
 		silentPass(t, out, code)
