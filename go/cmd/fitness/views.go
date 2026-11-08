@@ -7,6 +7,8 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/comments"
+	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -27,6 +29,23 @@ func withViews(root string, checks []resolved, env []string, tracked walkfs.Shar
 		removeTracked()
 	}
 	return tracked, append(env, views.Env...)
+}
+
+// withTestScan scans the requirement tests once for a run of several checks
+// that read them. Its Remove deletes the scan too.
+func withTestScan(root string, checks []resolved, env []string, tracked walkfs.Shared) (walkfs.Shared, []string) {
+	readers := slices.DeleteFunc(slices.Clone(checks), func(c resolved) bool { return !c.desc.Tests })
+	if len(readers) < 2 {
+		return tracked, env
+	}
+	tracked.Remember(root)
+	scan, remove := lang.ShareTestScan(root, langs.All)
+	removeTracked := tracked.Remove
+	tracked.Remove = func() {
+		remove()
+		removeTracked()
+	}
+	return tracked, append(env, scan...)
 }
 
 // readsFiles reports a check that judges the repo's files.

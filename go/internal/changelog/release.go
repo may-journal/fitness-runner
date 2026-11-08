@@ -2,8 +2,12 @@ package changelog
 
 import (
 	"fmt"
+	"maps"
 	"os/exec"
+	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // releaseTagGlob matches full release tags, such as v1.14.0, and not the
@@ -48,20 +52,42 @@ func StagedReleasedEdits(root string) ([]string, error) {
 	if err != nil || tag == "" {
 		return nil, err
 	}
+	patches := filePatches(gitOut(root, "diff", "--cached", "--no-renames", "--diff-filter=MD", "--", EntryDir))
 	var errs []string
-	for _, p := range entryPaths(gitOut(root, "diff", "--cached", "--name-only", "--no-renames", "--diff-filter=MD", "--", EntryDir)) {
-		if releasedEdit(root, tag, p) {
+	for _, p := range shipped(root, tag, slices.Sorted(maps.Keys(patches))) {
+		if !DropsOnlyFrontMatter(patches[p]) {
 			errs = append(errs, ReleasedEditError(p, tag))
 		}
 	}
 	return errs, nil
 }
 
-// releasedEdit reports whether the staged change to entry file p, which
-// tag may hold, changes notes that tag already published.
-func releasedEdit(root, tag, p string) bool {
-	return exec.Command("git", "-C", root, "cat-file", "-e", tag+":"+p).Run() == nil &&
-		!DropsOnlyFrontMatter(gitOut(root, "diff", "--cached", "--no-renames", "--", p))
+// shipped keeps the entry files tag holds, asking git about all of them in
+// one call.
+func shipped(root, tag string, paths []string) []string {
+	objects := make([]string, len(paths))
+	for i, p := range paths {
+		objects[i] = tag + ":" + p
+	}
+	held := gitx.ShowAll(root, objects)
+	return slices.DeleteFunc(paths, func(p string) bool {
+		_, ok := held[tag+":"+p]
+		return !ok
+	})
+}
+
+// filePatches splits a unified diff into each entry file's own patch, read
+// from one git call instead of one per file.
+func filePatches(diff string) map[string]string {
+	patches := map[string]string{}
+	for _, patch := range strings.SplitAfter(diff, "\ndiff --git ") {
+		patch = strings.TrimSuffix(strings.TrimPrefix(patch, "diff --git "), "\ndiff --git ")
+		names, _, _ := strings.Cut(strings.TrimPrefix(patch, "a/"), "\n")
+		if p, _, ok := strings.Cut(names, " b/"); ok && IsEntryPath(p) {
+			patches[p] = "diff --git " + patch
+		}
+	}
+	return patches
 }
 
 // headReleaseTag is the newest release tag reachable from HEAD, or "" before

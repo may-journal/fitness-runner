@@ -136,6 +136,9 @@ type Describe struct {
 	// Blob marks a check that judges a text given with `--body-file`, so
 	// `fitness --blob` runs it; the rest need files and are skipped there.
 	Blob bool `json:"blob,omitempty"`
+	// Tests marks a check that reads the repo's requirement tests. A run of
+	// two such checks scans the tests once and shares the scan.
+	Tests bool `json:"tests,omitempty"`
 	// MinFitness is the oldest fitness release, as major.minor.patch, that runs
 	// the check as written. An older one stops the run and names the upgrade.
 	MinFitness string `json:"minFitness,omitempty"`
