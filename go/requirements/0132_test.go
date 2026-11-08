@@ -17,14 +17,14 @@ func Test0132_2(t *testing.T) {
 	t.Parallel()
 	apart := "docs/architecture/adr/0001-small-files.md"
 	out, code := fitness(t, example(t, "happyRepo", with(adrRepo(), map[string]string{apart: adrText("")})), nil)
-	sees(t, out, code, 1, apart+": ADR 0001 lives apart from its check; move it into fitness/adr-0001/README.md, beside the check that keeps it, and delete this file")
+	sees(t, out, code, 1, apart+": a Markdown file in an `adr` folder is an ADR; open an `ADR` issue instead")
 }
 
 func Test0132_3(t *testing.T) {
 	t.Parallel()
-	bare := with(adrRepo(), map[string]string{adrPath: "# Small files\n\nKeeps every Markdown file small.\n\n## Decision\n\n1. Every Markdown file stays small.\n"})
+	bare := with(adrRepo(), map[string]string{adrPath: "# Small files\n\nKeeps every Markdown file small.\n\n## Check\n\nFails a long Markdown file.\n"})
 	out, code := fitness(t, example(t, "happyRepo", bare), nil)
-	sees(t, out, code, 1, adrPath+": is no ADR, as it lacks ## Context and ## Consequences; write the decision this check keeps under ## Context, ## Decision and ## Consequences")
+	sees(t, out, code, 1, adrPath+": links no ADR issue; put the full URL of the `ADR` issue this check proves here")
 }
 
 func Test0132_4(t *testing.T) {
@@ -37,15 +37,15 @@ func Test0132_4(t *testing.T) {
 
 func Test0132_5(t *testing.T) {
 	t.Parallel()
-	want := adrPath + " changed its decision without its check fitness/adr-0001; change both together"
+	want := adrPath + " changed its ADR issue without its check fitness/adr-0001; change both together"
 	repo := example(t, "happyRepo", adrRepo())
-	write(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], "stays small", "stays short", 1)})
+	write(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], adrIssue, adrIssue+"6", 1)})
 	git(t, repo, "add", "-A")
 	out, code := fitness(t, repo, nil, "adr-checks")
 	sees(t, out, code, 1, want)
 	repo = example(t, "happyRepo", adrRepo())
 	git(t, repo, "update-ref", "refs/remotes/origin/main", "HEAD")
-	commit(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], "stays small", "stays brief", 1)}, "docs(adr): reword 0001")
+	commit(t, repo, map[string]string{adrPath: strings.Replace(adrRepo()[adrPath], adrIssue, adrIssue+"7", 1)}, "docs(adr): reword 0001")
 	out, code = fitness(t, repo, prEnv, "adr-checks")
 	sees(t, out, code, 1, want)
 }
@@ -81,12 +81,13 @@ func Test0132_8(t *testing.T) {
 // adrPath is the one ADR adrRepo holds: the README of its check.
 const adrPath = "fitness/adr-0001/README.md"
 
-// adrText is ADR 0001 with status, a line or more that opens it, and the
-// sections that state its decision.
+// adrIssue is the URL of the ADR issue the README of ADR 0001 links.
+const adrIssue = "https://github.com/may-journal/example/issues/5"
+
+// adrText is the README of ADR 0001: its title, summary, status, the ADR
+// issue it links, and what its check fails.
 func adrText(status string) string {
-	return "# 0001 — Small files\n\nSmall files read fast.\n\n" + status +
-		"## Context\n\nLong files hide their point.\n\n## Decision\n\n1. Every Markdown file stays small.\n\n" +
-		"## Consequences\n\n1. Readers find the point fast.\n"
+	return "# 0001 — Small files\n\nSmall files read fast.\n\n" + status + adrIssue + "\n\n## Check\n\nFails a long Markdown file.\n"
 }
 
 // adrRepo is a repo with ADR 0001 as the README of its check.

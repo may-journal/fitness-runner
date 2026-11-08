@@ -228,6 +228,10 @@ func init() {
 		// any block they leave empty.
 		//fitness:usage strip-front-matter
 		"strip-front-matter": runStripFrontMatter,
+		// Moves each ADR file into an `ADR` issue and points its links there.
+		// A dry run prints the plan and changes nothing.
+		//fitness:usage adr-migrate [--dry-run] [--repo=owner/name] [--branch=main]
+		"adr-migrate": runADRMigrate,
 		// Prints each code comment block of the tracked files, or of those
 		// under the named paths, with its line, language and kind.
 		//fitness:usage comments [path...]

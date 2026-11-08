@@ -1,33 +1,33 @@
-// Command fitness-check-adr-checks keeps each architecture decision record
-// in the README of the check that proves it. An ADR is prose, so a
-// decision holds only while a check in `fitness/adr-NNNN/` proves it, and
-// that folder's README.md is the ADR. A requirement doc holds the same
-// way, while its tests pass.
+// Command fitness-check-adr-checks pairs each architecture decision, an
+// `ADR` issue, with the check in `fitness/adr-NNNN/` that proves it. An ADR
+// is prose, so a decision holds only while a check proves it. The check's
+// README links the issue by its full URL, and adr-as-issue keeps the
+// decision itself out of files. A requirement doc holds the same way,
+// while its tests pass.
 //
 // The check applies to a repo with a `fitness/` folder of its own checks.
 // A repo without one passes with `filesChecked: 0`. The [local checks
 // guide] shows how to write a check.
 //
-// # The ADR
+// # The README
 //
 // A `fitness/adr-NNNN/README.md` opens with the ADR's title and a one-line
-// summary, which `fitness list` shows. Its `## Context`, `## Decision` and
-// `## Consequences` sections state the decision. A `## Check` section after
-// them says what the check fails and how to pass it.
+// summary, which `fitness list` shows. The ADR issue's full URL follows.
+// A `## Check` section after it says what the check fails and how to pass
+// it. `fitness adr-migrate` turns a README that still holds its decision
+// into this shape.
 //
 // # Rules
 //
-//   - Home: a numbered `NNNN-kebab-title.md` ADR in a folder named `adr`,
-//     outside `fitness/`, fails. Move it into its check's README.
-//   - Shape: an `adr-NNNN` README that lacks a decision section fails.
+//   - Link: an `adr-NNNN` README that links no ADR issue by full URL fails.
 //   - Check: each ADR folder needs a check program, unless superseded; the
 //     run fails before any check starts without one.
-//   - Changes: an ADR whose decision sections changed fails unless another
+//   - Changes: a README that links another ADR issue fails unless another
 //     file of its check changed too.
-//   - Rewrites: the check's code, or its README's own part, may change
+//   - Rewrites: the check's code, or its README's own text, may change
 //     alone, since the decision still holds.
-//   - Moves: a README that held no decision at the base is new, so moving an
-//     ADR into it needs no code change.
+//   - Moves: a README that linked no issue at the base is new, so linking
+//     one needs no code change.
 //   - Scope: a full scan judges no changes; a commit judges its staged
 //     files, and a pull request its diff.
 //

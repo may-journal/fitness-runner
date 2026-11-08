@@ -2,7 +2,7 @@
 
 GitHub Actions workflows for this repo. The runner enforces the checks on commits; these workflows extend the same checks to places that are not files in the tree.
 
-All workflows follow [ADR 0003](../../fitness/adr-0003/README.md): native failure annotations, useful job summaries, and accurate source locations when available. Go commands share the reporter in `go/internal/report`. Each executable job ends with an always-run `Report job outcome` step that writes its status and logs link to the summary.
+All workflows follow [ADR 0003](https://github.com/may-journal/fitness-runner/issues/855): native failure annotations, useful job summaries, and accurate source locations when available. Go commands share the reporter in `go/internal/report`. Each executable job ends with an always-run `Report job outcome` step that writes its status and logs link to the summary.
 
 Each job that runs Fitness keeps its overflow reports through the [fitness-reports](#shared-actions) action. It uploads them as `fitness-reports` artifacts with job, attempt and random suffixes, retained for seven days, and links them from the job summary.
 

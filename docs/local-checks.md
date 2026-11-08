@@ -104,36 +104,26 @@ The `--describe` line is optional. A script that answers no handshake runs once 
 
 ## ADR and requirement checks
 
-An architecture decision holds only while a check proves it. So in a repo with a `fitness/` folder, each ADR lives in one place: the README of its `fitness/adr-NNNN/` check.
+An architecture decision lives in an `ADR` issue, and holds only while a check proves it. So in a repo with a `fitness/` folder, each `fitness/adr-NNNN/` check README links the issue it proves.
 
-The [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) check fails a numbered ADR kept anywhere else, such as `docs/architecture/adr/`. It also fails an `adr-NNNN` README that lacks a decision section. An ADR whose status line says it is superseded needs no check program beside it. The line under the title is the summary `fitness list` shows.
+The [adr-as-issue](../go/cmd/fitness-check-adr-as-issue/README.md) check fails an ADR kept in a file, and `fitness adr-migrate` moves each one into an issue. The [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) check fails an `adr-NNNN` README that links no ADR issue. A README whose status line says it is superseded needs no check program beside it. The line under the title is the summary `fitness list` shows.
 
 ```markdown
 # 0007 — No work bound to scroll
 
 Scrolling never waits on work.
 
-## Context
-
-<!-- Brief context statement not longer than a Tweet. -->
-
-## Decision
-
-<!-- Numbered bullets with (KISS) for each decision. -->
-
-## Consequences
-
-<!-- Numbered bullets with known positive, negative, or neutral consequences. -->
+https://github.com/OWNER/REPO/issues/NN
 
 ## Check
 
 <!-- What the check fails, and how to pass it. -->
 ```
 
-A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](../go/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. An ADR whose decision changes without its check's code fails, and a requirement check pairs with its doc as a test does. A paired check that passes having judged no files fails too, since its scan is broken.
+A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](../go/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. A README that links another ADR issue fails without a code change, and a requirement check pairs with its doc like a test. A paired check that passes having judged no files fails too, since its scan is broken.
 
 ## Where checks run
 
-The suite runs every local check after the built-in ones, under org and external policy alike. A local check named like a built-in one replaces it under external policy only, as [ADR 0009](../fitness/adr-0009/README.md) decides. `"localChecks": "<folder>"` in `.fitnessrc.json` names one more folder, read the same way, which may also hold flat `fitness-check-<name>` programs.
+The suite runs every local check after the built-in ones, under org and external policy alike. A local check named like a built-in one replaces it under external policy only, as [ADR 0009](https://github.com/may-journal/fitness-runner/issues/861) decides. `"localChecks": "<folder>"` in `.fitnessrc.json` names one more folder, read the same way, which may also hold flat `fitness-check-<name>` programs.
 
 A folder check that cannot run fails the run before any check starts. Causes include a missing README or program, a missing `fitness/go.mod`, or Go that does not build. In CI, the reusable workflow installs Go when `fitness/go.mod` exists.

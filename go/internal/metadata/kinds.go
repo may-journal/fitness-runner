@@ -13,11 +13,14 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
 )
 
-// kindRule is what a kind adds beyond its template's shape: body checks and
-// links that judge what the body points at.
+// kindRule is what a kind adds beyond its template's shape: body checks,
+// links, and title and section rules. Its shape serves a repo without the
+// kind's template.
 type kindRule struct {
 	checks []string
 	links  func(t target, gh aftereffect.Client) []string
+	fields func(t target) []string
+	shape  *mdtemplate.Spec
 }
 
 // kindRules are the rules each kind label adds, so a kind with no entry needs
@@ -25,6 +28,7 @@ type kindRule struct {
 var kindRules = map[string]kindRule{
 	"Plan": {checks: []string{"plan-structure"}},
 	"Epic": {checks: []string{"epic-structure"}, links: subIssueErrors},
+	"ADR":  {fields: adrErrors, shape: &adrShape},
 }
 
 // planChecks are the checks a Plan body gets, for branch-check.
@@ -43,7 +47,7 @@ type issueKind struct {
 func discoverKinds(root string) map[string]issueKind {
 	kinds := map[string]issueKind{}
 	for label, rule := range kindRules {
-		kinds[label] = issueKind{label: label, rule: rule}
+		kinds[label] = issueKind{label: label, spec: rule.shape, rule: rule}
 	}
 	for label, template := range mdtemplate.IssueTemplates(root) {
 		k := issueKind{label: label, rule: kindRules[label]}
@@ -91,6 +95,9 @@ func (k issueKind) judge(t target, gh aftereffect.Client, b blobChecker) []strin
 	errs = append(errs, b.judge(slices.Concat(k.rule.checks, docChecks), t.Body)...)
 	if k.rule.links != nil {
 		errs = append(errs, k.rule.links(t, gh)...)
+	}
+	if k.rule.fields != nil {
+		errs = append(errs, k.rule.fields(t)...)
 	}
 	return unique(errs)
 }

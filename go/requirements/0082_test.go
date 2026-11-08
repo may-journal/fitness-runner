@@ -149,6 +149,7 @@ func Test0082_8(t *testing.T) {
 	saved := append([]response{
 		{Match: []string{"issues?labels=Plan&state=open"}, Stdout: string(plan) + "\n"},
 		{Match: []string{"issues?labels=Epic&state=open"}, Stdout: string(epic) + "\n"},
+		{Match: []string{"issues?labels=ADR&state=open"}},
 	}, epicGitHub("22")...)
 	saved = append(saved, issueGitHub(planIssue, "fitness:issue-check:plan:", "", "Plan")...)
 	out, code, rp := ghRun(t, "issue-check", "workflow_dispatch", map[string]any{}, nil, saved)
