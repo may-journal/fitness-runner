@@ -2,11 +2,12 @@ package check
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // requiredTrailers are the AI-disclosure trailers, in error-report order.
@@ -26,30 +27,32 @@ func Main() {
 	})
 }
 
+// run judges the inline message, or HEAD's, once the repo uses the
+// AI-disclosure convention. An inline message with a trailer reads no history.
 func run(root string, _ []string) (checkkit.Result, error) {
-	history := recentMessages(root)
-	message := resolveMessage(history)
-	if !anyTrailer(message) && !anyTrailer(strings.Join(history, "\n")) {
+	message, inline := checkkit.CtxMessage()
+	if inline && anyTrailer(message) {
+		return judge(message), nil
+	}
+	message, ok := adopted(root, message, inline)
+	if !ok {
 		return checkkit.Pass(0), nil
 	}
 	return judge(message), nil
 }
 
-// historyDepth is how many recent commits run inspects for a trailer.
-const historyDepth = "100"
-
-// recentMessages reads the messages of the newest historyDepth commits,
-// HEAD's first, with one git call. The repo uses the AI-disclosure
-// convention when the judged message or one of these carries a trailer.
-func recentMessages(root string) []string {
-	cmd := exec.Command("git", "log", "-n", historyDepth, "-z", "--format=%B")
-	cmd.Dir = root
-	out, err := cmd.Output()
-	if err != nil || len(out) == 0 {
-		return nil
+// adopted reads recent history once and returns the message to judge, HEAD's
+// unless inline, and whether it or that history carries a trailer.
+func adopted(root, message string, inline bool) (string, bool) {
+	history := gitx.RecentMessages(root, historyDepth)
+	if !inline {
+		message = head(history)
 	}
-	return strings.Split(strings.TrimSuffix(string(out), "\x00"), "\x00")
+	return message, anyTrailer(message) || slices.ContainsFunc(history, anyTrailer)
 }
+
+// historyDepth is how many recent commits run inspects for a trailer.
+const historyDepth = 100
 
 // anyTrailer reports whether text carries any required trailer.
 func anyTrailer(text string) bool {
@@ -61,12 +64,9 @@ func anyTrailer(text string) bool {
 	return false
 }
 
-// resolveMessage returns the runner's inline message when provided, even if
-// empty, otherwise HEAD's, the first of history (empty when git failed).
-func resolveMessage(history []string) string {
-	if message, ok := checkkit.CtxMessage(); ok {
-		return message
-	}
+// head is HEAD's message, the first of history, or empty when git read
+// none.
+func head(history []string) string {
 	if len(history) == 0 {
 		return ""
 	}

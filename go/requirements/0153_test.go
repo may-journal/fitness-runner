@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -13,12 +14,19 @@ const longBranchCommits = 1000
 // commitChecks are the checks that read a branch's commits.
 var commitChecks = []string{"commit-attribution", "semantic-commit", "local-branch"}
 
-// longBranch is branchRepo with longBranchCommits empty commits on its
-// branch, each with a conventional subject and AI trailers. One fast-import
-// call writes them all.
-func longBranch(t *testing.T) string {
+// longBranch is branchRepo with longBranchCommits commits that one
+// fast-import call writes, each with a conventional subject and AI trailers.
+// Its open PR is based before them and names its base repo, as GitHub does.
+func longBranch(t *testing.T) (string, response) {
 	t.Helper()
 	repo := branchRepo(t, nil)
+	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
+	var answer map[string]any
+	mustDo(t, json.Unmarshal([]byte(pr.Stdout), &answer))
+	answer["repo"] = repo0014
+	data, err := json.Marshal(answer)
+	mustDo(t, err)
+	pr.Stdout = string(data) + "\n"
 	var stream strings.Builder
 	for i := range longBranchCommits {
 		msg := fmt.Sprintf("test(app): add step %d\n\nAI-Tools: Claude Code\nAI-Models: Claude\n", i)
@@ -28,14 +36,18 @@ func longBranch(t *testing.T) string {
 		}
 	}
 	gitInput(t, repo, stream.String(), "fast-import", "--quiet")
-	return repo
+	return repo, pr
 }
 
 func Test0153_1(t *testing.T) {
 	t.Parallel()
-	repo := longBranch(t)
-	pr := branchAnswer(t, repo, "test(app): add one file", pr0014(11))
-	rp := standIn(t, map[string][]response{"gh": branchGitHub(pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan"))})
+	repo, pr := longBranch(t)
+	rp := standIn(t, map[string][]response{"gh": {pr, issue0014(t, 11, planBody("- [x] Write the tests."), "Plan")}})
+	defer func() {
+		if rp.called("gh", "repo view") {
+			t.Errorf("local-branch asked gh for the repo, which the PR answer names: %q", rp.calls("gh"))
+		}
+	}()
 	out, code := fitness(t, repo, rp.env, "--policy=external", "--checks="+strings.Join(commitChecks, ","))
 	t.Log("\n" + out)
 	sees(t, out, code, 0, "All 3 checks passed")

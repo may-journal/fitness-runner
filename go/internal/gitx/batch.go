@@ -1,8 +1,11 @@
 package gitx
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // ShowAll returns each of objects, named as rev:path or :path, in one `git
@@ -29,7 +32,29 @@ func Messages(root string, commits []string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return strings.Split(strings.TrimSuffix(out, "\x00"), "\x00"), nil
+	messages := splitMessages(out)
+	if len(messages) != len(commits) {
+		return nil, checkkit.Internal(fmt.Errorf("git log read %d messages for %d commits", len(messages), len(commits)))
+	}
+	return messages, nil
+}
+
+// RecentMessages returns the messages of the newest n commits from HEAD,
+// HEAD's first, read with one `git log` call; none before the first commit.
+func RecentMessages(root string, n int) []string {
+	out, err := Repo(root).run("log", "-n", strconv.Itoa(n), "-z", "--format=%B")
+	if err != nil {
+		return nil
+	}
+	return splitMessages(out)
+}
+
+// splitMessages splits `git log -z` output into its messages.
+func splitMessages(out string) []string {
+	if out == "" {
+		return nil
+	}
+	return strings.Split(strings.TrimSuffix(out, "\x00"), "\x00")
 }
 
 // HasAll reports which of objects git holds, in one `git cat-file

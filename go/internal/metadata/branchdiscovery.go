@@ -53,12 +53,12 @@ func discoverBranchPR(ctx context.Context, root, branch string) (*branchPR, stri
 }
 
 // baseRepo is the base repo the pull request names, else source, the
-// remote's repo that gh read the pulls from.
+// remote's repo that gh read the pulls from. With no pull request it is empty.
 func baseRepo(pr *branchPR, source string) string {
-	if pr != nil && pr.Repo != "" {
-		return pr.Repo
+	if pr == nil {
+		return ""
 	}
-	return source
+	return cmp.Or(pr.Repo, source)
 }
 
 // branchRepository is the base repo gh selects.

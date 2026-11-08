@@ -17,4 +17,4 @@ long branches
 - 0153.1
   - Given Developer has a branch of 1,000 commits and its open PR
     - When commit-attribution, semantic-commit and local-branch check it
-      - Then each passes within five seconds
+      - Then each passes within five seconds, and local-branch asks GitHub only for the PR and its issues
