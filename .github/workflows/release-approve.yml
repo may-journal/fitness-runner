@@ -188,7 +188,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
           SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
-          TRIES: 18
+          TRIES: 19
           WAIT_SECONDS: 30
         run: |
           verdict=pending

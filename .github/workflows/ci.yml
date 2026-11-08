@@ -10,9 +10,9 @@ on:
 jobs:
   fitness:
     runs-on: ubuntu-24.04-arm
-    # Twice the observed max of 56s falls short of the 450s test total plus
-    # the 60s fast total, so the limit covers both.
-    timeout-minutes: 9
+    # Observed max 56s on 2026-11-02. The limit covers a pull request's two
+    # stages of 450s tests plus 60s fast checks, and a minute of setup.
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
