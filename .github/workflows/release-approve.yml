@@ -37,8 +37,9 @@ jobs:
       pull-requests: read
       checks: read
       statuses: read
-    # Checks may take a while; the wait below gives up after 9 minutes.
-    # Observed max 5m15s on 2026-11-05.
+    # Observed max 3m10s on 2026-11-08, timed start to finish over the last 40
+    # CI runs. The wait below may last 9 minutes, so the limit is that wait plus
+    # setup.
     timeout-minutes: 11
     # A newer run waits for the running one to finish its wait, which then finds
     # the head moved and approves nothing.

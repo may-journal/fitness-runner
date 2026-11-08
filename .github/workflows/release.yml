@@ -15,7 +15,9 @@ jobs:
     outputs:
       version: ${{ steps.report-step-1.outputs.version }}
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    # Observed max 40s on 2026-11-08, timed start to finish over the last 40
+    # runs. The limit is that plus 25%, rounded up to the next minute.
+    timeout-minutes: 1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +41,9 @@ jobs:
   release:
     needs: binaries
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    # Observed max 42s on 2026-11-08, timed start to finish over the last 36
+    # runs. The limit is that plus 25%, rounded up to the next minute.
+    timeout-minutes: 1
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,9 +93,9 @@ jobs:
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
     runs-on: ${{ matrix.runner }}
-    # Observed max 1m53s on 2026-10-04. The full suite may run to the 450s
-    # test total plus the 60s fast total, so the limit covers that and setup.
-    timeout-minutes: 10
+    # Observed max 1m18s on 2026-11-08, timed start to finish over the last 36
+    # runs. The limit is that plus 25%, rounded up to the next minute.
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
         with:
@@ -133,7 +137,9 @@ jobs:
   promote:
     needs: [verify-download, verify]
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    # Observed max 53s on 2026-11-08, timed start to finish over the last 36
+    # runs. The limit is that plus 25%, rounded up to the next minute.
+    timeout-minutes: 2
     steps:
       - name: Create release automation token
         id: app-token
