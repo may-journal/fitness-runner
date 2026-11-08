@@ -27,7 +27,7 @@ runs
 - 0001.13
     - Given Developer has slow checks, one of them a test runner
         - When fitness runs
-            - Then they overlap, test runners first, progress shows each one's time and limit, the last streams live, and the table keeps catalog order
+            - Then they overlap, test runners first and never queued, progress shows each time and limit, the last streams live, rows keep catalog order
 - 0001.14
     - Given Developer has a check, like `duplicate-code` on 20,000 files, past the fast total, or whose git or ssh awaits a password
         - When fitness runs

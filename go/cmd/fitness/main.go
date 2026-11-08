@@ -943,10 +943,9 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 	return "", 1
 }
 
-// runPool executes every check with bounded parallelism, printing the
-// progress line as each starts, and the heartbeat while they run. Test
-// runners start first, each stage's total starts with the pool, and outcomes
-// stay in catalog order.
+// runPool executes every check, printing the progress line as each starts
+// and the heartbeat while they run. Test runners start first, beside the
+// fast checks, and outcomes stay in catalog order.
 func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
 	outcomes := make([]outcome, len(checks))
 	out := newStreams(len(checks))
@@ -959,18 +958,28 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	var wg sync.WaitGroup
 	for _, i := range startOrder(checks) {
 		c := checks[i]
-		sem <- struct{}{}
+		release := acquire(sem, c)
 		fmt.Fprintf(os.Stderr, "  → %s\n", c.name)
 		wg.Add(1)
 		go func(i int, c resolved) {
 			defer wg.Done()
-			defer func() { <-sem }()
+			defer release()
 			outcomes[i] = runOne(root, c, ends, passthrough, env, out.watch(i, heartbeat))
 			out.finish(i)
 		}(i, c)
 	}
 	wg.Wait()
 	return outcomes
+}
+
+// acquire takes a pool slot for a fast check and returns what frees it. A
+// test runner takes none, so it never holds a slot the fast total counts on.
+func acquire(sem chan struct{}, c resolved) (release func()) {
+	if stageOf(c) == checkkit.StageTests {
+		return func() {}
+	}
+	sem <- struct{}{}
+	return func() { <-sem }
 }
 
 // startOrder lists check indices with the test runners first, since they

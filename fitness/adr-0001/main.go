@@ -4,15 +4,16 @@ package main
 
 import (
 	"path"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/check"
 )
 
-// testStage marks a check that declares the test stage in its describe
-// metadata.
-const testStage = "Stage: checkkit.StageTests"
+// testStage matches a check that declares the test stage in its describe
+// metadata, however gofmt aligns the field.
+var testStage = regexp.MustCompile(`\bStage:\s+checkkit\.StageTests\b`)
 
 // configFile records each test-stage check and the run it waits on.
 const configFile = "fitness/adr-0001/config.json"
@@ -54,7 +55,7 @@ func stages(ctx *check.Context, recorded map[string]string) ([]check.Finding, in
 		if err != nil {
 			return nil, 0, err
 		}
-		if !strings.Contains(text, testStage) {
+		if !testStage.MatchString(text) {
 			continue
 		}
 		name := strings.TrimPrefix(path.Base(path.Dir(f)), "fitness-check-")
