@@ -3,6 +3,7 @@
 package mermaid
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -773,31 +775,59 @@ func pairTable(result *PairResult, pending *DiagramBlock, b *CalloutTableBlock) 
 // that holds a block, aborting on a read error. A callout table lives only
 // in Markdown, so the table checks read nothing else.
 func RunDocCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	return runFiles(root, mdx.WithMDX, validate)
+	return runFiles(root, mdx.WithMDX, func(d parsedFile) []string { return validate(d.file, d.content) })
+}
+
+// RunParsedDocCheck is RunDocCheck for a validator that reads the blocks
+// each file was parsed into, so no file is parsed twice.
+func RunParsedDocCheck(root string, validate func(file string, blocks []DocBlock) []string) (errors []string, filesChecked int, err error) {
+	return runFiles(root, mdx.WithMDX, func(d parsedFile) []string { return validate(d.file, d.blocks) })
 }
 
 // RunDiagramCheck is RunDocCheck over the diagram files too, for a check
 // that judges a diagram on its own.
 func RunDiagramCheck(root string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	return runFiles(root, DocExts, validate)
+	return runFiles(root, DocExts, func(d parsedFile) []string { return validate(d.file, d.content) })
 }
 
-// runFiles runs validate over each in-scope file with one of exts that
-// holds a block.
-func runFiles(root string, exts []string, validate func(file, content string) []string) (errors []string, filesChecked int, err error) {
-	for _, file := range walkfs.InScope(walkfs.FilesByExt(root, exts...)) {
-		raw, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
-		if readErr != nil {
-			return nil, 0, readErr
+// parsedFile is one file read and parsed into its blocks.
+type parsedFile struct {
+	file, content string
+	blocks        []DocBlock
+}
+
+// runFiles reads and parses the in-scope files with one of exts side by
+// side, stopping at the first read error. It then validates each that holds a block, in path order.
+func runFiles(root string, exts []string, validate func(parsedFile) []string) (errors []string, filesChecked int, err error) {
+	files := walkfs.InScope(walkfs.FilesByExt(root, exts...))
+	parsed, err := par.MapErr(context.Background(), len(files), 0, func(_ context.Context, i int) (parsedFile, error) {
+		return parseOne(root, files[i])
+	})
+	if err != nil {
+		return nil, 0, err
+	}
+	for _, d := range parsed {
+		if len(d.blocks) > 0 {
+			filesChecked++
+			errors = append(errors, validate(d)...)
 		}
-		content := string(raw)
-		if len(ParseFile(file, content)) == 0 {
-			continue
-		}
-		filesChecked++
-		errors = append(errors, validate(file, content)...)
 	}
 	return errors, filesChecked, nil
+}
+
+// parseOne reads the file at rel under root once and parses its blocks. It
+// keeps the text only of a file that holds a block, so most docs are dropped once read.
+func parseOne(root, rel string) (parsedFile, error) {
+	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		return parsedFile{}, err
+	}
+	content := string(raw)
+	blocks := ParseFile(rel, content)
+	if len(blocks) == 0 {
+		return parsedFile{file: rel}, nil
+	}
+	return parsedFile{file: rel, content: content, blocks: blocks}, nil
 }
 
 // SplitArgs splits the arguments of a C4 macro call on commas outside

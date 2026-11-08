@@ -62,7 +62,7 @@ func Test0102_1(t *testing.T) {
 	var view configView
 	stdoutOf(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": configured}), &view, "config", "--json")
 	seesEntry(t, view.Settings, configSetting{Key: "proseBudget.maxWords", Value: float64(200), Source: "file"})
-	seesEntry(t, view.Settings, configSetting{Key: "timeoutMs", Value: float64(5000), Source: "default"})
+	seesEntry(t, view.Settings, configSetting{Key: "comment.maxWords", Value: float64(100), Source: "default"})
 	seesEntry(t, view.Checks, checkState{Name: "cspell", Enabled: false, Reason: "disabledChecks in .fitnessrc.json turns it off"})
 	seesEntry(t, view.Checks, checkState{Name: "markdown-links", Enabled: true, Reason: "external policy runs every check"})
 }

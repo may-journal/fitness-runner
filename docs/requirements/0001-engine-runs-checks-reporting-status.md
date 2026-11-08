@@ -2,7 +2,7 @@
 
 ## Why
 
-Every check runs and ends green, red, or info within its time budget, so I always know whether my code meets the bar.
+Every check runs and ends green, red, or info within its stage's total, so I always know whether my code meets the bar.
 
 ## Measurement
 
@@ -25,17 +25,17 @@ runs
         - When the runner lists its catalog
             - Then the new check is in it and the run counts it, so every repo runs it
 - 0001.13
-    - Given Developer has slow checks with different time budgets
+    - Given Developer has slow checks, one of them a test runner
         - When fitness runs
-            - Then they overlap, longest budget first, progress shows each one's time and budget, the last streams live, and the table keeps catalog order
+            - Then they overlap, test runners first and never queued, progress shows each time and limit, the last streams live, rows keep catalog order
 - 0001.14
-    - Given Developer has a check, like `duplicate-code` on 20,000 files, past its budget or timeoutMs, or whose git or ssh awaits a password
+    - Given Developer has a check, like `duplicate-code` on 20,000 files, past the fast total, or whose git or ssh awaits a password
         - When fitness runs
-            - Then it and its processes stop, by force if needed, showing red as timed out with last output, file count and scope hint
+            - Then it and its processes stop, by force if needed, showing red as stopped with last output, file count and scope hint
 - 0001.15
     - Given Developer has 500,000 tracked files, symlinks or deleted ones, or a git call listing tracked or staged files that stalls
         - When fitness runs every check, or I commit one product file
-            - Then it stats them once, a commit diffs only its files, architecture checks pass in budget, and stalled calls stop within 10s, named
+            - Then it stats them once, a commit diffs only its files, architecture checks pass in time, and stalled calls stop within 10s, named
 - 0001.16
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo

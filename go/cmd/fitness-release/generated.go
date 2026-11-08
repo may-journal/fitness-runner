@@ -19,10 +19,9 @@ const generatedCommand = "generated"
 // answers --describe with the same line itself, since compiling this tool
 // can outlast the handshake's budget.
 var generatedDescribe = checkkit.Describe{
-	Name:      "generated",
-	Summary:   "Fails when a file `go generate` writes from doc comments is stale, or a check package has no doc comment.",
-	Scope:     checkkit.ScopeFiles,
-	TimeoutMs: 120000,
+	Name:    "generated",
+	Summary: "Fails when a file `go generate` writes from doc comments is stale, or a check package has no doc comment.",
+	Scope:   checkkit.ScopeFiles,
 }
 
 // checkGenerated runs the generated check with args, as the check protocol

@@ -165,18 +165,42 @@ func fenceSplit(md string) []string {
 	return parts
 }
 
-// CommentOnly reports whether file holds the same code at base as in the
-// scope being judged. From is its path at base, before any rename.
-func CommentOnly(root, base, from, file string) bool {
-	before, ok := gitx.Show(root, base, from)
+// Edit is one changed file: From is its path at base, before any rename,
+// and File its path in the scope being judged.
+type Edit struct {
+	From, File string
+}
+
+// CommentOnly lists the edits whose code is the same at base as in the
+// scope being judged. One git call reads every version, and its failure is the error.
+func CommentOnly(root, base string, edits []Edit) (map[Edit]bool, error) {
+	same := map[Edit]bool{}
+	if base == "" {
+		return same, nil
+	}
+	var objects []string
+	for _, e := range edits {
+		objects = append(objects, base+":"+e.From, gitx.JudgedObject(e.File))
+	}
+	text, err := gitx.ShowAll(root, objects)
+	for _, e := range edits {
+		same[e] = sameCode(e, text, base)
+	}
+	return same, err
+}
+
+// sameCode reports whether text holds e's file at base and as judged, with
+// the same code in both.
+func sameCode(e Edit, text map[string]string, base string) bool {
+	before, ok := text[base+":"+e.From]
 	if !ok {
 		return false
 	}
-	after, ok := gitx.Judged(root, file)
+	after, ok := text[gitx.JudgedObject(e.File)]
 	if !ok {
 		return false
 	}
-	was, ok := Uncommented(from, []byte(before))
-	is, _ := Uncommented(file, []byte(after))
+	was, ok := Uncommented(e.From, []byte(before))
+	is, _ := Uncommented(e.File, []byte(after))
 	return ok && was == is
 }

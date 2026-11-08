@@ -37,9 +37,9 @@ checks in a repo's fitness folder
         - When it runs `fitness list` and `fitness explain` on it
             - Then the list shows it with scope local and its README's first sentence, and explain prints the README
 - 0131.7
-    - Given Developer has a check in `fitness/` that declares a budget and runs past it
-        - When the check runs
-            - Then the list shows that budget, and the run stops the check at it and reports it red
+    - Given Developer has a check in `fitness/` that declares the test stage
+        - When fitness lists the checks
+            - Then the list shows that check in the tests stage
 - 0131.8
     - Given Developer has a check whose minFitness is newer than the installed fitness
         - When the check runs

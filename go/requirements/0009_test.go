@@ -97,10 +97,11 @@ func Test0009_4(t *testing.T) {
 }
 
 // localHookStops asserts a pre-commit.local ignoring the stop signal, with git
-// awaiting a password, is killed at the 2s timeoutMs and the commit refused.
+// awaiting a password, stops at a 2s test total. The commit is refused.
 func localHookStops(t *testing.T) {
 	t.Helper()
-	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"timeoutMs": 2000}` + "\n"})
+	repo, env := hooked(t, nil)
+	env = append(env, testsTotal(2000))
 	git(t, repo, "remote", "add", "origin", promptedRemote)
 	path, pidFile := promptingTools(t, "fetch")
 	// Git puts its own folder first on a hook's PATH, so the hook names the waiting git.

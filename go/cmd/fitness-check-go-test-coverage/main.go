@@ -15,14 +15,14 @@ import (
 )
 
 func Main() {
-	checkkit.Main(checkkit.Check{Describe: checkkit.Describe{Name: "go-test-coverage", Scope: checkkit.ScopeFiles, TimeoutMs: 900000}, Run: run})
+	checkkit.Main(checkkit.Check{Describe: checkkit.Describe{Name: "go-test-coverage", Scope: checkkit.ScopeFiles, Stage: checkkit.StageTests}, Run: run})
 }
 func run(root string, args []string) (checkkit.Result, error) {
 	options, err := parse(root, args)
 	if err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 14*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), checkkit.TestsTotal-30*time.Second)
 	defer cancel()
 	report, err := coverage.Run(ctx, root, options)
 	if checkkit.IsInternal(err) {

@@ -18,7 +18,7 @@ hooks:
     - hooks:
         - type: command
           command: fitness claude-hook
-          timeout: 900
+          timeout: 540
   SubagentStop:
     - hooks:
         - type: command
@@ -67,7 +67,7 @@ Fix the code or doc the error points at, never the check. Run `fitness <name>` f
 `fitness claude-hook` judges Claude's work as it goes and hands any findings back to fix in the same turn:
 
 - After an edit tool writes a file, it runs the file checks on that one file.
-- Only checks within the default budget run there. Tests, vet, linters and network checks wait for the stop.
+- Only the fast checks run there. The test stage, with tests, vet and build linters, waits for the stop.
 - Before a `gh` call posts a body, even through `gh api`, GraphQL or a close, it judges it as `fitness --blob` does.
 - A red body denies the call: create, edit, comment or review.
 - When Claude stops, it runs every file and git check on the uncommitted files, and blocks once per turn when red.

@@ -8,7 +8,7 @@
 //
 //	import "github.com/may-journal/fitness-runner/go/check"
 //
-//	var Rule = check.Check{TimeoutMs: 10000, Run: func(ctx *check.Context) (check.Result, error) {
+//	var Rule = check.Check{Run: func(ctx *check.Context) (check.Result, error) {
 //		files := ctx.Files(".swift")
 //		var found []check.Finding
 //		for _, f := range files {
@@ -49,9 +49,10 @@ type Check struct {
 	// Summary says in one line what the check enforces, for `fitness list`.
 	// Empty takes the README's first sentence.
 	Summary string
-	// TimeoutMs is the check's budget; 0 means the runner default. A check
-	// past its budget is stopped and fails.
-	TimeoutMs int
+	// Tests puts the check in the test stage, beside the test runners,
+	// when it runs a repo's test suite. Every other check is fast, and the
+	// fast checks share one total instead of a limit each.
+	Tests bool
 	// MinFitness is the oldest fitness release, as major.minor.patch, that
 	// runs the check as written. An older fitness stops the run and names
 	// the upgrade.
@@ -86,6 +87,14 @@ func Main(c Check) {
 	checkkit.Main(c.kit())
 }
 
+// stage is the stage the check's describe line declares, empty for fast.
+func (c Check) stage() string {
+	if c.Tests {
+		return checkkit.StageTests
+	}
+	return ""
+}
+
 // kit is the check as the shared protocol code runs it.
 func (c Check) kit() checkkit.Check {
 	name := c.Name
@@ -93,7 +102,7 @@ func (c Check) kit() checkkit.Check {
 		name = strings.TrimPrefix(filepath.Base(os.Args[0]), checkkit.BinPrefix)
 	}
 	return checkkit.Check{
-		Describe: checkkit.Describe{Name: name, Summary: c.Summary, TimeoutMs: c.TimeoutMs, MinFitness: c.MinFitness},
+		Describe: checkkit.Describe{Name: name, Summary: c.Summary, Stage: c.stage(), MinFitness: c.MinFitness},
 		Run: func(root string, args []string) (checkkit.Result, error) {
 			return c.Run(&Context{Root: root, Args: args, Changed: checkkit.ChangedFiles(), Dir: os.Getenv(DirEnv)})
 		},

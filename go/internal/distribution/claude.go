@@ -10,6 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // ClaudeHook is one Claude Code hook that runs `fitness claude-hook`: the
@@ -20,12 +23,16 @@ type ClaudeHook struct {
 	Timeout int
 }
 
+// stopMargin is how much longer than both totals the Stop hook waits, for
+// the handshakes before the checks and the report after them.
+const stopMargin = 30 * time.Second
+
 // ClaudeHooks are the hooks the installer and the fitness skill's front
 // matter both register; each event's job is in `fitness claude-hook`.
 var ClaudeHooks = []ClaudeHook{
 	{Event: "PostToolUse", Matcher: "Edit|Write|MultiEdit|NotebookEdit", Timeout: 30},
 	{Event: "PreToolUse", Matcher: "Bash", Timeout: 30},
-	{Event: "Stop", Timeout: 900},
+	{Event: "Stop", Timeout: int((checkkit.FastTotal + checkkit.TestsTotal + stopMargin) / time.Second)},
 	{Event: "SubagentStop", Timeout: 300},
 	{Event: "SessionStart", Timeout: 30},
 	{Event: "SessionEnd", Timeout: 30},

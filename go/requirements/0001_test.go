@@ -119,24 +119,19 @@ func describeFails(t *testing.T, repo, check string) (string, int) {
 
 func Test0001_14(t *testing.T) {
 	t.Parallel()
-	// prettier declares no budget, so the repo's 0.3s timeoutMs bounds it,
-	// while go-test keeps the budget it declares.
+	// A 0.3s fast total stops prettier. go-test runs in the test stage, which
+	// that total never stops.
 	for _, prelude := range []string{"", "trap '' TERM\n"} {
-		repo := example(t, "happyRepo", hungTool("300", prelude))
-		out, code := fitness(t, repo, nil)
-		sees(t, out, code, 1, "Check timed out after 0.3s")
+		repo := example(t, "happyRepo", hungTool(prelude))
+		out, code := fitness(t, repo, []string{fastTotal(300)})
+		sees(t, out, code, 1, "Stopped at the 0.3s fast total")
 		if !strings.Contains(row(out, "prettier"), "failed") {
-			t.Errorf("a timed-out check must report red, got row %q", row(out, "prettier"))
+			t.Errorf("a stopped check must report red, got row %q", row(out, "prettier"))
 		}
 		if strings.Contains(row(out, "go-test"), "failed") {
-			t.Errorf("a check with its own budget must keep it, got row %q", row(out, "go-test"))
+			t.Errorf("the fast total must never stop a test-stage check, got row %q", row(out, "go-test"))
 		}
 		childStopped(t, repo)
-	}
-	out, code := ownBudget(t)
-	sees(t, out, code, 1, "Check timed out after 0.3s")
-	if !strings.Contains(row(out, "own-budget"), "failed") {
-		t.Errorf("a check past the budget it declares must report red, got row %q", row(out, "own-budget"))
 	}
 	promptsTimeOut(t)
 	timeoutNamesLastLine(t)
@@ -144,8 +139,8 @@ func Test0001_14(t *testing.T) {
 	timesTrees(t)
 }
 
-// promptsTimeOut asserts a check that turns git prompts back on times out red
-// at its budget, and its waiting tool is stopped.
+// promptsTimeOut asserts a check that turns git prompts back on stops red at
+// the fast total, and its waiting tool is stopped.
 func promptsTimeOut(t *testing.T) {
 	t.Helper()
 	for _, call := range []string{"GIT_TERMINAL_PROMPT=1 git fetch origin", "ssh git@git.example.invalid true"} {
@@ -157,29 +152,29 @@ func promptsTimeOut(t *testing.T) {
 func promptTimesOut(t *testing.T, call string) {
 	t.Helper()
 	out, code, pidFile := prompted(t, call)
-	sees(t, out, code, 1, "Check timed out after 0.5s")
+	sees(t, out, code, 1, "Stopped at the 0.5s fast total")
 	if !strings.Contains(row(out, "prompted"), "failed") {
 		t.Errorf("a check whose %s waits for a password must time out red, got row %q", call, row(out, "prompted"))
 	}
 	processStopped(t, pidFile)
 }
 
-// prompted runs a local check under a 0.5s timeoutMs whose git and ssh await a
-// password, returning output, exit code and process-ID file.
+// prompted runs a local check whose git and ssh await a password, under a
+// 0.5s fast total. It returns output, exit code and process-ID file.
 func prompted(t *testing.T, call string, env ...string) (string, int, string) {
 	t.Helper()
 	path, pidFile := promptingTools(t)
 	repo := example(t, "happyRepo", map[string]string{
-		".fitnessrc.json":               `{"localChecks": "checks", "timeoutMs": 500}` + "\n",
+		".fitnessrc.json":               `{"localChecks": "checks"}` + "\n",
 		"checks/fitness-check-prompted": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"prompted\"}'; exit 0; }\n" + call + "\necho '" + passing + "'\n",
 	})
 	git(t, repo, "remote", "add", "origin", promptedRemote)
-	out, code := fitness(t, repo, append([]string{path}, env...), "--policy=external", "--checks=prompted")
+	out, code := fitness(t, repo, append([]string{path, fastTotal(500)}, env...), "--policy=external", "--checks=prompted")
 	return out, code, pidFile
 }
 
 // promptsRefused asserts a check whose git, over HTTPS or ssh, meets a
-// password prompt ends within its budget as info naming the remote.
+// password prompt ends in time as info naming the remote.
 func promptsRefused(t *testing.T) {
 	t.Helper()
 	for remote, call := range map[string]string{promptedRemote: "git fetch origin", "git@git.example.invalid": "git fetch " + sshRemote} {
@@ -189,23 +184,6 @@ func promptsRefused(t *testing.T) {
 			t.Errorf("a check whose %s may not ask for a password must show info, got row %q", call, row(out, "prompted"))
 		}
 	}
-}
-
-// ownBudget runs, beside the installed checks, one that declares a 0.3s budget
-// in --describe and then hangs.
-func ownBudget(t *testing.T) (string, int) {
-	t.Helper()
-	installed, bundle := installOnly(t), t.TempDir()
-	linkTools(bundle, installed, []string{"fitness"})
-	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
-	write(t, bundle, map[string]string{"fitness-check-own-budget": "#!/bin/sh\n" +
-		"[ \"$1\" = --describe ] && { echo '{\"name\":\"own-budget\",\"timeoutMs\":300}'; exit 0; }\nexec /bin/sleep 30\n"})
-	repo := example(t, "happyRepo", nil)
-	return execute(t, func() *exec.Cmd {
-		cmd := exec.Command(filepath.Join(bundle, "fitness"), "--policy=external", "--checks=own-budget,markdown-links")
-		cmd.Dir, cmd.Env = repo, userEnv()
-		return cmd
-	})
 }
 
 func Test0001_15(t *testing.T) {
@@ -327,24 +305,40 @@ func Test0001_16(t *testing.T) {
 
 func Test0001_13(t *testing.T) {
 	t.Parallel()
-	// slow-zz has the longest budget but sits last in catalog order, so it
-	// would wait for a free pool slot.
-	budgets := map[string]int{"slow-zz": 1800000}
+	// slow-zz is a test runner but sits last in catalog order, so it would
+	// wait for a free pool slot.
+	stages := map[string]string{"slow-zz": "tests"}
 	for i := range runtime.NumCPU() {
-		budgets[fmt.Sprintf("slow-%02d", i)] = 30000
+		stages[fmt.Sprintf("slow-%02d", i)] = "fast"
 	}
-	out, code, stamps := timedRun(t, budgets)
-	sees(t, out, code, 0, fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows))+len(budgets)))
-	describes, runs := stamps.phase(t, "describe", budgets), stamps.phase(t, "run", budgets)
+	out, code, stamps := timedRun(t, stages)
+	sees(t, out, code, 0, fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows))+len(stages)))
+	describes, runs := stamps.phase(t, "describe", stages), stamps.phase(t, "run", stages)
 	// One core gives the pool one slot, so only there may steps not overlap.
 	if runtime.NumCPU() > 1 && overlapping(describes) < 2 {
 		t.Errorf("the describe steps must overlap, but none started before the first ended: %v", describes)
 	}
 	if long, first := runs["slow-zz"], earliestEnd(runs, "slow-zz"); !long.start.Before(first) {
-		t.Errorf("slow-zz has the longest budget, so it must start before any other check ends: it started %v, the first end was %v", long.start, first)
+		t.Errorf("slow-zz is a test runner, so it must start before any other check ends: it started %v, the first end was %v", long.start, first)
 	}
-	keepsCatalogOrder(t, out, slices.Sorted(maps.Keys(budgets)))
+	keepsCatalogOrder(t, out, slices.Sorted(maps.Keys(stages)))
 	showsProgress(t)
+	runnerTakesNoSlot(t)
+}
+
+// runnerTakesNoSlot asserts a test runner takes no pool slot. With one fast
+// check per core, all of them start before any ends.
+func runnerTakesNoSlot(t *testing.T) {
+	t.Helper()
+	stages := map[string]string{"slow-zz": "tests"}
+	for i := range runtime.NumCPU() {
+		stages[fmt.Sprintf("slow-%02d", i)] = "fast"
+	}
+	_, _, stamps := timedRun(t, stages, "--policy=external", "--checks="+strings.Join(slices.Sorted(maps.Keys(stages)), ","))
+	runs := stamps.phase(t, "run", stages)
+	if n := overlapping(runs); n != len(runs) {
+		t.Errorf("a test runner must take no pool slot, so all %d checks start before the first ends, but %d did: %v", len(runs), n, runs)
+	}
 }
 
 // keepsCatalogOrder asserts the table lists the slow checks in want's order.
@@ -361,22 +355,22 @@ func keepsCatalogOrder(t *testing.T, out string, want []string) {
 // ends.
 const timedPrefix = "fitness-check-slow-"
 
-// timedRun adds one slow check per budget to the installed suite, runs fitness
-// on a passing repo, and returns the logged times.
-func timedRun(t *testing.T, budgets map[string]int) (string, int, stamps) {
+// timedRun adds one slow check per stage entry to the installed suite. It runs
+// fitness with args on a passing repo and returns the logged times.
+func timedRun(t *testing.T, stages map[string]string, args ...string) (string, int, stamps) {
 	t.Helper()
 	installed, bundle, logs := installOnly(t), t.TempDir(), t.TempDir()
 	linkTools(bundle, installed, []string{"fitness"})
 	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
 	self, err := os.Executable()
 	mustDo(t, err)
-	for name, ms := range budgets {
+	for name, stage := range stages {
 		mustDo(t, os.Symlink(self, filepath.Join(bundle, "fitness-check-"+name)))
-		write(t, logs, map[string]string{name + ".budget": strconv.Itoa(ms)})
+		write(t, logs, map[string]string{name + ".stage": stage})
 	}
 	repo := example(t, "happyRepo", architectedRepo())
 	out, code := execute(t, func() *exec.Cmd {
-		cmd := exec.Command(filepath.Join(bundle, "fitness"))
+		cmd := exec.Command(filepath.Join(bundle, "fitness"), args...)
 		cmd.Dir, cmd.Env = repo, append(userEnv(), "FITNESS_TIMED="+logs)
 		return cmd
 	})
@@ -384,18 +378,18 @@ func timedRun(t *testing.T, budgets map[string]int) (string, int, stamps) {
 }
 
 // timedCheck is one slow check that logs its step's start and end around a
-// pause, answering --describe with its budget.
+// pause, answering --describe with its stage.
 func timedCheck(name string, args []string) int {
 	check := strings.TrimPrefix(name, "fitness-check-")
 	dir := os.Getenv("FITNESS_TIMED")
 	step, pause, answer := "run", time.Second, `{"ok":true,"errors":[],"filesChecked":0}`
 	if slices.Contains(args, "--describe") {
-		budget, err := os.ReadFile(filepath.Join(dir, check+".budget"))
+		stage, err := os.ReadFile(filepath.Join(dir, check+".stage"))
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "slow check has no budget:", err)
+			fmt.Fprintln(os.Stderr, "slow check has no stage:", err)
 			return 3
 		}
-		step, pause, answer = "describe", 300*time.Millisecond, `{"name":"`+check+`","timeoutMs":`+string(budget)+`}`
+		step, pause, answer = "describe", 300*time.Millisecond, `{"name":"`+check+`","stage":"`+string(stage)+`"}`
 	}
 	logCall(filepath.Join(dir, check+".log"), step+" start "+strconv.FormatInt(time.Now().UnixNano(), 10))
 	time.Sleep(pause)
@@ -413,7 +407,7 @@ type span struct{ start, end time.Time }
 // phase returns each check's span for step from its log, keeping a retried
 // describe's last try. A check that logged no start or end for step fails the
 // test, so no comparison runs on a missing time.
-func (s stamps) phase(t *testing.T, step string, checks map[string]int) map[string]span {
+func (s stamps) phase(t *testing.T, step string, checks map[string]string) map[string]span {
 	t.Helper()
 	spans := map[string]span{}
 	for check := range checks {
@@ -470,39 +464,38 @@ func earliestEnd(spans map[string]span, skip string) time.Time {
 }
 
 // showsProgress asserts the heartbeat names a slow check with its time and
-// budget, and that the check, once alone, streams its stderr live.
+// limit. Once alone, the check streams its stderr live.
 func showsProgress(t *testing.T) {
 	t.Helper()
-	out, code := slowCheck(t, 20000, "sleep 7", progressOn)
-	sees(t, out, code, 0, "  running: slow (budget 20s)")
+	out, code := slowCheck(t, "sleep 7", progressOn, fastTotal(20000))
+	sees(t, out, code, 0, "  running: slow (limit 20s)")
 	streamedLive(t, out)
 }
 
-// timeoutNamesLastLine asserts a timed-out check's row shows its last stderr
-// line, named once at half its budget off a terminal.
+// timeoutNamesLastLine asserts a stopped check's row shows its last stderr
+// line, named once at half its limit off a terminal.
 func timeoutNamesLastLine(t *testing.T) {
 	t.Helper()
-	out, code := slowCheck(t, 1000, "exec /bin/sleep 30")
-	sees(t, out, code, 1, "Check timed out after 1s", "Last output: "+slowFirst)
-	if n := strings.Count(out, "running: slow (budget 1s)"); n != 1 {
-		t.Errorf("off a terminal, a check past half its budget must be named once, but was named %d times:\n%s", n, out)
+	out, code := slowCheck(t, "exec /bin/sleep 30", fastTotal(1000))
+	sees(t, out, code, 1, "Stopped at the 1s fast total", "Last output: "+slowFirst)
+	if n := strings.Count(out, "running: slow (limit"); n != 1 {
+		t.Errorf("off a terminal, a check past half its limit must be named once, but was named %d times:\n%s", n, out)
 	}
 }
 
-// hugeTreeHints asserts that in 20,000 tracked files a scoped commit passes and
-// an unscoped run times out, its rows naming the count.
+// hugeTreeHints asserts that in 20,000 tracked files a scoped commit passes.
+// An unscoped run stops at the fast total, its rows naming the count.
 func hugeTreeHints(t *testing.T) {
 	t.Helper()
 	repo := generatedTree(t, staleTest(), 20000)
 	out, code, _ := fixingCommit(t, repo)
 	sees(t, out, code, 0)
-	write(t, repo, map[string]string{".fitnessrc.json": `{"timeoutMs": 100}` + "\n"})
-	out, code = fitness(t, repo, nil)
+	out, code = fitness(t, repo, []string{fastTotal(100)})
 	hint := fmt.Sprintf("Hint: the repo tracks %d files; scope the run with fitness --dir=<folder>, or commit to check only the staged files", trackedCount(t, repo))
-	sees(t, out, code, 1, "Check timed out after 0.1s", hint)
+	sees(t, out, code, 1, "Stopped at the 0.1s fast total", hint)
 	for _, check := range []string{"cspell", "duplicate-code"} {
 		if !strings.Contains(row(out, check), "failed") {
-			t.Errorf("%s reads all 20,000 files, so it must time out under a 0.1s budget, got row %q", check, row(out, check))
+			t.Errorf("%s reads all 20,000 files, so a 0.1s fast total must stop it, got row %q", check, row(out, check))
 		}
 	}
 }
@@ -523,13 +516,13 @@ const progressOn = "FITNESS_PROGRESS=1"
 const slowFirst, slowLast = "compiling 1 of 3", "compiling 3 of 3"
 
 // slowCheck runs a local check, slow, beside a quick one and returns the output
-// and exit code. Slow declares budgetMs, writes slowFirst to stderr, runs wait,
-// then writes slowLast and passes.
-func slowCheck(t *testing.T, budgetMs int, wait string, env ...string) (string, int) {
+// and exit code. Slow writes slowFirst to stderr, runs wait, then writes
+// slowLast and passes.
+func slowCheck(t *testing.T, wait string, env ...string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", map[string]string{
 		".fitnessrc.json": `{"localChecks": "checks"}` + "\n",
-		"checks/fitness-check-slow": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"slow\", \"timeoutMs\": " + strconv.Itoa(budgetMs) + "}'; exit 0; }\n" +
+		"checks/fitness-check-slow": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"slow\"}'; exit 0; }\n" +
 			"echo '" + slowFirst + "' >&2\n" + wait + "\necho '" + slowLast + "' >&2\necho '" + passing + "'\n",
 		"checks/fitness-check-quick": localCheck("quick", passing)["checks/fitness-check-quick"],
 	})

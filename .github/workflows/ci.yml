@@ -10,6 +10,8 @@ on:
 jobs:
   fitness:
     runs-on: ubuntu-24.04-arm
+    # Observed max 56s on 2026-11-02. A pull request's two scans share the
+    # run's 450s test total, so the suite and its setup fit.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -27,6 +29,12 @@ jobs:
         id: suite
         env:
           GH_TOKEN: ${{ github.token }}
+      # Each check's time, slowest first, read back from the kept record. A
+      # suite that never wrote one already failed, so this step stays quiet.
+      - run: |
+          record="$RUNNER_TEMP/fitness-performance/fitness.json"
+          if [ -f "$record" ]; then go/bin/fitness perf "$record"; fi
+        if: ${{ !cancelled() }}
       # The action draws the box diagram, then keeps it with the performance
       # record and the complete reports.
       - name: Retain the performance record and complete reports
@@ -48,7 +56,10 @@ jobs:
     needs: fitness
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
+    # Observed max 49s on 2026-11-08, timed start to finish over the last 40
+    # runs of this workflow. The limit is that plus 25%, rounded up to the next
+    # minute.
+    timeout-minutes: 2
     outputs:
       pr: ${{ fromJSON(steps.report-step-1.outputs.pr || '{}').number }}
     steps:

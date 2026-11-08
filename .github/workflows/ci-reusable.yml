@@ -37,6 +37,8 @@ jobs:
     # A private repo's own branches run in the self-hosted fitness group, which bills no minutes.
     # Public repos and any pull request whose head lives elsewhere, a deleted fork too, stay hosted.
     runs-on: ${{ inputs.runs-on || github.event.repository.private && (!github.event.pull_request || github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('{"group":"fitness","labels":"fitness"}') || 'ubuntu-24.04-arm' }}
+    # Observed max 7m54s on 2026-11-07, across the org's repos. A pull
+    # request's two scans share the run's 450s test total, so the suite fits.
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

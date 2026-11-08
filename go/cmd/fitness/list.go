@@ -17,8 +17,8 @@ type listed struct {
 	Name    string `json:"name"`
 	Summary string `json:"summary"`
 	Scope   string `json:"scope"`
-	// BudgetMs is the time the check may run before it is stopped.
-	BudgetMs int64 `json:"budgetMs"`
+	// Stage is the stage whose total times the check: fast or tests.
+	Stage string `json:"stage"`
 	// Enabled says whether this repo's config runs the check.
 	Enabled bool `json:"enabled"`
 	// Blob says whether `fitness --blob` runs the check on a text.
@@ -73,17 +73,11 @@ func takeJSONFlag(args []string) (asJSON bool, rest []string) {
 	return asJSON, rest
 }
 
-// seconds writes a budget in milliseconds as seconds, as both commands
-// show it.
-func seconds(ms int64) string {
-	return trimFloat(float64(ms) / 1000)
-}
-
 // listChecks describes every check in the catalog and marks the ones the
 // repo's config selects. A check with a missing program or failed handshake
 // still gets a row with a note.
 func listChecks() ([]listed, error) {
-	_, cfg, suite, err := blobConfig()
+	_, _, suite, err := blobConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +88,7 @@ func listChecks() ([]listed, error) {
 		return nil, err
 	}
 	byName := map[string]resolved{}
-	for _, c := range withBudgets(cfg, checks) {
+	for _, c := range checks {
 		byName[c.name] = c
 	}
 	var out []listed
@@ -136,18 +130,18 @@ func listRowFor(name string, byName map[string]resolved, missing map[string]stri
 		return listed{Name: name, Enabled: enabled, Note: note}
 	}
 	c := byName[name]
-	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
+	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c),
 		Enabled: enabled, Blob: c.desc.Blob, Note: cmp.Or(c.needs, c.describeErr)}
 }
 
-// printList writes one aligned row per check: name, scope, budget, enabled,
+// printList writes one aligned row per check: name, scope, stage, enabled,
 // and its summary or the note saying why it has none.
 func printList(w io.Writer, checks []listed) {
 	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "CHECK\tSCOPE\tBUDGET\tENABLED\tSUMMARY")
+	fmt.Fprintln(tw, "CHECK\tSCOPE\tSTAGE\tENABLED\tSUMMARY")
 	for _, c := range checks {
-		fmt.Fprintf(tw, "%s\t%s\t%ss\t%s\t%s\n", c.Name, orDash(c.Scope),
-			seconds(c.BudgetMs), yesNo(c.Enabled), summaryOrNote(c))
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", c.Name, orDash(c.Scope),
+			orDash(c.Stage), yesNo(c.Enabled), summaryOrNote(c))
 	}
 	_ = tw.Flush()
 }

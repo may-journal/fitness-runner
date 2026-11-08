@@ -57,19 +57,20 @@ flowchart TB
     executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
 
     subgraph checks["Check families"]
-        commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
+        commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056, 0153)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085)]:::system
+        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085, 0152)]:::system
         commentChecks[(41 Code comments<br/>Req 0137, 0139, 0141)]:::system
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
-        architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
-        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0130, 0132)]:::system
+        architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076, 0154)]:::system
+        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0130, 0132, 0151)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057, 0097)]:::system
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
         adrFiles[(44 ADR files<br/>Req 0147)]:::system
+        timeoutChecks[(46 Workflow timeouts<br/>Req 0150)]:::system
     end
 
     resultsTable[8 Results table<br/>Req 0001, 0101]:::screen
@@ -81,7 +82,7 @@ flowchart TB
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
     adrIssues[(45 ADR issues<br/>Req 0148)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
-    perfRecord[(32 Performance record<br/>Req 0089)]:::system
+    perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
     closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
 
     dev --> install
@@ -183,3 +184,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 43  | `fitness adr-migrate`.              | Action  | Each ADR file becomes an `ADR` issue people can discuss, and links follow it. |
 | 44  | ADR file check.                     | System  | No decision hides in a file; each one is an `ADR` issue.                             |
 | 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
+| 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |

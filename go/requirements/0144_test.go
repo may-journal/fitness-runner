@@ -18,22 +18,22 @@ func Test0144_1(t *testing.T) {
 }
 
 // stopsUnderLoad asserts a hung prettier, after prelude, ends within 1s past
-// its 2s budget, and no tool runs once fitness exits.
+// a 2s fast total, and no tool runs once fitness exits.
 func stopsUnderLoad(t *testing.T, prelude string) {
 	t.Helper()
-	repo := example(t, "happyRepo", hungTool("2000", prelude))
+	repo := example(t, "happyRepo", hungTool(prelude))
 	path := filepath.Join(t.TempDir(), "fitness.json")
-	out, code := fitness(t, repo, nil, "--policy=external", "--checks=prettier", "--json="+path)
-	sees(t, out, code, 1, "Check timed out after 2s")
+	out, code := fitness(t, repo, []string{fastTotal(2000)}, "--policy=external", "--checks=prettier", "--json="+path)
+	sees(t, out, code, 1, "Stopped at the 2s fast total")
 	raw, err := os.ReadFile(path)
 	mustDo(t, err)
 	var report perfReport
 	mustDo(t, json.Unmarshal(raw, &report))
 	if past := time.Duration(reported(t, report, "prettier").Ms)*time.Millisecond - 2*time.Second; past > time.Second {
-		t.Errorf("with every CPU busy, prettier ended %s past its 2s budget, want within 1s", past)
+		t.Errorf("with every CPU busy, prettier ended %s past the 2s fast total, want within 1s", past)
 	}
 	if !stopped(t, filepath.Join(repo, "prettier.pid"), 200*time.Millisecond) {
-		t.Errorf("prettier never started within its 2s budget, so nothing shows its child stops")
+		t.Errorf("prettier never started within the 2s fast total, so nothing shows its child stops")
 	}
 }
 

@@ -3,7 +3,7 @@
 // checks. Each check decides whether it applies, so any repo runs the same
 // suite with nothing to configure.
 //
-// A run resolves the checks, runs them side by side under time budgets, and
+// A run resolves the checks, runs them side by side under two totals, and
 // prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges
 // every tracked file.
 //
@@ -93,10 +93,6 @@ type resolved struct {
 	// overran says the handshake ran past its budget, so a compiled check
 	// gets one more try once the crowd of handshakes is done.
 	overran bool
-	// configMs is the repo config's timeoutMs, the budget of a check that
-	// declares none. It stays apart from desc, which holds only what the
-	// check declares.
-	configMs int
 	// needs says why this fitness is too old for the check's minFitness,
 	// which stops a run before any check starts.
 	needs string
@@ -108,7 +104,8 @@ type outcome struct {
 	ms  int64
 	// stderr holds what the check wrote there, which may have streamed live.
 	stderr *stream
-	// timedOut marks a budget kill and crashed says how a check with no result ended.
+	// timedOut marks a check stopped at its stage's total, and crashed says
+	// how a check with no result ended.
 	// exit is its protocol code, and startErr says why it could not start.
 	timedOut bool
 	// cut marks a check the run's deadline stopped or never let start.
@@ -194,7 +191,7 @@ func init() {
 		// Prints a page that teaches an AI the whole CLI.
 		//fitness:usage llms
 		"llms": runLLMs,
-		// Names every check with its summary, scope, budget, and whether this
+		// Names every check with its summary, scope, stage, and whether this
 		// repo enables it.
 		//fitness:usage list [--json]
 		"list": runList,
@@ -224,6 +221,9 @@ func init() {
 		// Draws a --json report as an HTML box diagram.
 		//fitness:usage boxes <report.json> <page.html>
 		"boxes": runBoxes,
+		// Prints each check's duration from a --json report, slowest first.
+		//fitness:usage perf <report.json>
+		"perf": runPerf,
 		// Deletes the fitness keys from tracked Markdown files' front matter, and
 		// any block they leave empty.
 		//fitness:usage strip-front-matter
@@ -333,7 +333,7 @@ func runSelected(s setup, argv []string) int {
 // summary table, writes any `--json` report, and returns the exit code.
 // cleanup removes the caller's shared files when the run ends.
 func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
-	return runStage(root, perfPath, checks, passthrough, env, cleanup, true).code
+	return runStage(root, perfPath, checks, passthrough, env, cleanup, &runTotals{}, true).code
 }
 
 // stageResult is what one pass over the checks found: the exit code, the
@@ -344,15 +344,17 @@ type stageResult struct {
 	found [][]checkkit.Finding
 }
 
-// runStage runs checks as runChecks says and returns what it found. Any
-// JSON the run asks for prints for its last stage, or a failed earlier one.
-func runStage(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func(), last bool) stageResult {
+// runStage runs checks as runChecks says, inside clock's totals, and
+// returns what it found. Any JSON the run asks for prints for its last
+// stage, or a failed earlier one.
+func runStage(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func(), clock *runTotals, last bool) stageResult {
 	checks, tracked, err := prepareRun(root, checks, cleanup)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return stageResult{code: 1}
 	}
 	tracked, env = withViews(root, checks, env, tracked)
+	tracked, env = withTestScan(root, checks, env, tracked)
 	defer tracked.Remove()
 	defer stopOnInterrupt(tracked.Remove)()
 	hint := scopeHint(env, tracked.Files)
@@ -360,11 +362,11 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
-	outcomes := runPool(root, checks, passthrough, env)
+	outcomes := runPool(root, checks, passthrough, env, clock.start(start))
 
 	rows, totals := summarize(checks, outcomes, hint)
 	totals.Ms = time.Since(start).Milliseconds()
-	printSummary(rows, totals)
+	printSummary(rows, totals, breachLine(checks, outcomes, rows))
 	found := allFindings(checks, outcomes, rows)
 	if last || totals.Failure > 0 {
 		printJSON(rows, found, totals)
@@ -475,7 +477,7 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 		}
 		return nil, errors.New("Unknown check: " + which)
 	}
-	return withBudgets(cfg, checks), nil
+	return checks, nil
 }
 
 // singleCheckArgs builds the check env and forwarded args. Passthrough and
@@ -511,7 +513,8 @@ func summarize(checks []resolved, outcomes []outcome, hint string) ([]render.Row
 	return rows, totals
 }
 
-// rowFor builds the table row for one outcome. A budget kill fails with hint;
+// rowFor builds the table row for one outcome. A stop at a stage's total
+// fails with hint;
 // a deadline cut and a check that could not judge become info rows.
 func rowFor(c resolved, o outcome, hint string) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
@@ -540,10 +543,10 @@ func promptRow(row render.Row, o outcome) render.Row {
 	return render.Row{Name: row.Name, Ok: true, FilesChecked: -1, Ms: row.Ms, Info: appendNote(row.Info, gitx.PromptNote(remote))}
 }
 
-// timedOutErrors are a timed-out row's error lines: the budget it ran past, its
+// timedOutErrors are a stopped row's error lines: the total it ran past, its
 // last stderr line, then any hint.
 func timedOutErrors(c resolved, o outcome, hint string) []string {
-	errs := []string{fmt.Sprintf("Check timed out after %ss", trimFloat(timeoutFor(c).Seconds()))}
+	errs := []string{stoppedLine(c)}
 	if last := o.stderr.lastLine(); last != "" {
 		errs = append(errs, "Last output: "+last)
 	}
@@ -592,13 +595,14 @@ func appendNote(notes []string, note string) []string {
 
 // printSummary renders the table and total line — to stderr when any check
 // failed, so failure output stays together, or when stdout carries JSON.
-func printSummary(rows []render.Row, totals render.Totals) {
+func printSummary(rows []render.Row, totals render.Totals, breach string) {
 	p := render.NewPalette()
 	table := render.Table(rows, render.TermCols(), p)
 	total := render.TotalLine(totals, p)
 	out := humanOut(totals)
 	fmt.Fprintln(out, table)
 	fmt.Fprintln(out, total)
+	fmt.Fprintln(out, cmp.Or(breach, slowestLine(rows)))
 }
 
 // humanOut is where text for people goes after a run: stdout, unless a
@@ -941,10 +945,10 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 	return "", 1
 }
 
-// runPool executes every check with bounded parallelism, printing the
-// progress line as each starts, and the heartbeat while they run. Checks start
-// largest budget first, and outcomes stay in catalog order.
-func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
+// runPool executes every check inside ends, printing the progress line as
+// each starts and the heartbeat while they run. Test runners start first,
+// beside the fast checks, and outcomes stay in catalog order.
+func runPool(root string, checks []resolved, passthrough, env []string, ends stageEnds) []outcome {
 	outcomes := make([]outcome, len(checks))
 	out := newStreams(len(checks))
 	heartbeat := heartbeatOn()
@@ -955,13 +959,13 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	var wg sync.WaitGroup
 	for _, i := range startOrder(checks) {
 		c := checks[i]
-		sem <- struct{}{}
+		release := acquire(sem, c)
 		fmt.Fprintf(os.Stderr, "  → %s\n", c.name)
 		wg.Add(1)
 		go func(i int, c resolved) {
 			defer wg.Done()
-			defer func() { <-sem }()
-			outcomes[i] = runOne(root, c, passthrough, env, out.watch(i, heartbeat))
+			defer release()
+			outcomes[i] = runOne(root, c, ends, passthrough, env, out.watch(i, heartbeat))
 			out.finish(i)
 		}(i, c)
 	}
@@ -969,23 +973,41 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 	return outcomes
 }
 
-// startOrder lists check indices by descending declared budget, keeping catalog
-// order for ties. A repo config budget never moves a check, since it says
-// nothing about cost.
+// acquire takes a pool slot for a fast check and returns what frees it. A
+// test runner takes none, so it never holds a slot the fast total counts on.
+func acquire(sem chan struct{}, c resolved) (release func()) {
+	if stageOf(c) == checkkit.StageTests {
+		return func() {}
+	}
+	sem <- struct{}{}
+	return func() { <-sem }
+}
+
+// startOrder lists check indices with the test runners first, since they
+// take longest, keeping catalog order within each stage.
 func startOrder(checks []resolved) []int {
 	order := make([]int, len(checks))
 	for i := range order {
 		order[i] = i
 	}
 	slices.SortStableFunc(order, func(a, b int) int {
-		return cmp.Compare(declaredBudget(checks[b]), declaredBudget(checks[a]))
+		return cmp.Compare(stageRank(checks[a]), stageRank(checks[b]))
 	})
 	return order
 }
 
-// runOne execs a single check in its own process group with a timeout that
-// kills the whole group. Its stderr goes to w's stream.
-func runOne(root string, c resolved, passthrough, env []string, w watch) outcome {
+// stageRank orders the test stage before the fast one.
+func stageRank(c resolved) int {
+	if stageOf(c) == checkkit.StageTests {
+		return 0
+	}
+	return 1
+}
+
+// runOne execs a single check in its own process group, and kills the group
+// once its stage's total runs out. Its stderr goes to
+// w's stream.
+func runOne(root string, c resolved, ends stageEnds, passthrough, env []string, w watch) outcome {
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
 	cmd.Dir = root
@@ -995,17 +1017,17 @@ func runOne(root string, c resolved, passthrough, env []string, w watch) outcome
 	cmd.Stdout = &stdout
 	cmd.Stderr = w.stderr
 
-	budget, cut := deadlineBudget(timeoutFor(c))
+	budget, cut := deadlineBudget(ends.limit(checkkit.StageOf(c.desc)))
 	if budget <= 0 {
-		return outcome{stderr: w.stderr, cut: true}
+		return outcome{stderr: w.stderr, cut: cut, timedOut: !cut}
 	}
-	live := liveCheck{name: c.name, start: time.Now(), budget: budget}
+	live := liveCheck{name: c.name, start: time.Now(), limit: budget}
 	if err := cmd.Start(); err != nil {
 		return outcome{stderr: w.stderr, startErr: err.Error()}
 	}
 	defer trackRunning(cmd.Process.Pid, live)()
 	defer warnHalfway(live, w.heartbeat)()
-	timedOut := waitWithBudget(cmd, live.budget)
+	timedOut := waitWithBudget(cmd, live.limit)
 	ms := time.Since(live.start).Milliseconds()
 
 	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}

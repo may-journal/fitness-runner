@@ -37,8 +37,10 @@ jobs:
       pull-requests: read
       checks: read
       statuses: read
-    # Checks may take a while; the wait below gives up after 20 minutes.
-    timeout-minutes: 25
+    # Observed max 3m10s on 2026-11-08, timed start to finish over the last 40
+    # CI runs. The wait below may last 9 minutes, so the limit is that wait plus
+    # setup.
+    timeout-minutes: 11
     # A newer run waits for the running one to finish its wait, which then finds
     # the head moved and approves nothing.
     concurrency:
@@ -46,7 +48,7 @@ jobs:
       cancel-in-progress: false
     steps:
       # A missing token skips the approval and leaves the PR to a person. An
-      # unknown kind or a token GitHub rejects fails here, before the 20-minute
+      # unknown kind or a token GitHub rejects fails here, before the 9-minute
       # wait, and the token's login names the approver's reviews below.
       - name: Check the approver token
         id: secrets
@@ -187,7 +189,7 @@ jobs:
           GH_REPO: ${{ github.repository }}
           PR: ${{ inputs.pr }}
           SHA: ${{ steps.guard.outputs.sha || steps.bump.outputs.sha }}
-          TRIES: 40
+          TRIES: 19
           WAIT_SECONDS: 30
         run: |
           verdict=pending

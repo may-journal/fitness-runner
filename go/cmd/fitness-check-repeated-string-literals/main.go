@@ -11,6 +11,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -73,15 +74,15 @@ func Main() {
 
 func run(root string, _ []string) (checkkit.Result, error) {
 	files := findSourceFiles(root)
+	read := par.Map(len(files), 0, func(i int) scanRead { return scanFile(root, files[i]) })
 	scanned := make([]scannedFile, 0, len(files))
 	var skipped []string
-	for _, file := range files {
-		content, err := comments.CodeFile(root, file)
-		if err != nil {
-			skipped = append(skipped, walkfs.Unreadable(file, err))
+	for _, r := range read {
+		if r.skipped != "" {
+			skipped = append(skipped, r.skipped)
 			continue
 		}
-		scanned = append(scanned, scannedFile{file: file, literals: scanStringLiterals(string(content))})
+		scanned = append(scanned, r.scanned)
 	}
 	result := checkkit.Pass(len(scanned))
 	if errs := findDuplicates(scanned, allowedValues(root)); len(errs) > 0 {
@@ -89,6 +90,22 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	}
 	result.Info = skipped
 	return result, nil
+}
+
+// scanRead is one source file's literals, or the note that it could not
+// be read.
+type scanRead struct {
+	scanned scannedFile
+	skipped string
+}
+
+// scanFile reads the code view of file once and scans its literals.
+func scanFile(root, file string) scanRead {
+	content, err := comments.CodeFile(root, file)
+	if err != nil {
+		return scanRead{skipped: walkfs.Unreadable(file, err)}
+	}
+	return scanRead{scanned: scannedFile{file: file, literals: scanStringLiterals(string(content))}}
 }
 
 // findSourceFiles returns sorted relative paths of every tracked source

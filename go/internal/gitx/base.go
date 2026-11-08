@@ -36,13 +36,18 @@ func FileAt(root, rev, path string) string {
 	return out
 }
 
-// Judged returns the file at path as a scoped run judges it. A pull request
-// reads it at HEAD; a commit reads the index, which holds what it records.
+// Judged returns the file at path as a scoped run judges it.
 func Judged(root, path string) (string, bool) {
+	return show(root, JudgedObject(path))
+}
+
+// JudgedObject names the file at path as a scoped run judges it. A pull
+// request reads it at HEAD; a commit reads the index, which holds what it records.
+func JudgedObject(path string) string {
 	if os.Getenv("GITHUB_BASE_REF") != "" {
-		return show(root, "HEAD:"+path)
+		return "HEAD:" + path
 	}
-	return show(root, ":"+path)
+	return ":" + path
 }
 
 func show(root, object string) (string, bool) {

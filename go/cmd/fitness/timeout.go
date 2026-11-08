@@ -1,45 +1,93 @@
 package main
 
 import (
+	"cmp"
+	"fmt"
 	"os"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// defaultTimeout is a check's execution budget when neither the check nor
-// .fitnessrc.json sets one; a breach means cutting the work (ADR 0001).
-var defaultTimeout = time.Duration(conf.Defaults.TimeoutMs) * time.Millisecond
+// fastTotalEnv and testsTotalEnv name a lower total in milliseconds, which
+// requirement tests set to see a total stop a check without waiting minutes.
+// Neither raises its total.
+const (
+	fastTotalEnv  = "FITNESS_INTERNAL_FAST_TOTAL_MS"
+	testsTotalEnv = "FITNESS_INTERNAL_TESTS_TOTAL_MS"
+)
 
-// withBudgets gives every check that declares no budget of its own the
-// repo's timeoutMs from .fitnessrc.json, when set. A check's own budget names
-// an irreducible external cost, so it stands.
-func withBudgets(cfg *conf.Config, checks []resolved) []resolved {
-	if cfg == nil || cfg.TimeoutMs <= 0 {
-		return checks
-	}
-	for i := range checks {
-		checks[i].configMs = cfg.TimeoutMs
-	}
-	return checks
+// fastTotal is checkkit.FastTotal, or the lower total fastTotalEnv names.
+func fastTotal() time.Duration {
+	return lowered(checkkit.FastTotal, fastTotalEnv)
 }
 
-// timeoutFor returns the check's budget: its own or the configured one,
-// else defaultTimeout.
-func timeoutFor(c resolved) time.Duration {
-	if c.desc.TimeoutMs == 0 && c.configMs > 0 {
-		return time.Duration(c.configMs) * time.Millisecond
+// lowered is total, or the lower total in milliseconds the variable env
+// names.
+func lowered(total time.Duration, env string) time.Duration {
+	ms, err := strconv.ParseInt(os.Getenv(env), 10, 64)
+	if err != nil || ms <= 0 {
+		return total
 	}
-	return declaredBudget(c)
+	return min(total, time.Duration(ms)*time.Millisecond)
 }
 
-// declaredBudget is the budget the check declares, else defaultTimeout.
-func declaredBudget(c resolved) time.Duration {
-	if c.desc.TimeoutMs > 0 {
-		return time.Duration(c.desc.TimeoutMs) * time.Millisecond
+// stageOf is the stage c declares, fast when it declares none.
+func stageOf(c resolved) string {
+	return checkkit.StageOf(c.desc)
+}
+
+// stageTotal is the total that bounds a stage's checks together.
+func stageTotal(stage string) time.Duration {
+	if stage == checkkit.StageTests {
+		return lowered(checkkit.TestsTotal, testsTotalEnv)
 	}
-	return defaultTimeout
+	return fastTotal()
+}
+
+// stageEnds holds when each stage's total runs out in one run.
+type stageEnds map[string]time.Time
+
+// startStages starts every stage's total at now, since both stages start
+// together.
+func startStages(now time.Time) stageEnds {
+	ends := stageEnds{}
+	for _, stage := range stages {
+		ends[stage] = now.Add(stageTotal(stage))
+	}
+	return ends
+}
+
+// runTotals holds when each stage's total runs out in one run. The run's
+// first pool starts them, and a pull request's second scan runs inside
+// what the first left.
+type runTotals struct {
+	ends stageEnds
+}
+
+// start starts the totals at now unless an earlier pool started them, and
+// returns when each runs out.
+func (t *runTotals) start(now time.Time) stageEnds {
+	if t.ends == nil {
+		t.ends = startStages(now)
+	}
+	return t.ends
+}
+
+// stages lists each stage, the test runners first, as a run reports them.
+var stages = []string{checkkit.StageTests, checkkit.StageFast}
+
+// stageNames is how a breach line names each stage's checks.
+var stageNames = map[string]string{checkkit.StageFast: "fast checks", checkkit.StageTests: "test runners"}
+
+// limit is how long a check in stage may still run: the time left in the
+// stage's total.
+func (e stageEnds) limit(stage string) time.Duration {
+	return time.Until(e[stage])
 }
 
 // deadlineEnv holds the Unix time in milliseconds by which a run must end.
@@ -50,13 +98,82 @@ const deadlineEnv = "FITNESS_INTERNAL_DEADLINE"
 // let start.
 const cutNote = "skipped: the run's deadline passed"
 
-// deadlineBudget caps budget at the time left before the run's deadline, and
+// deadlineBudget caps limit at the time left before the run's deadline, and
 // reports whether the deadline is the tighter limit.
-func deadlineBudget(budget time.Duration) (time.Duration, bool) {
+func deadlineBudget(limit time.Duration) (time.Duration, bool) {
 	ms, err := strconv.ParseInt(os.Getenv(deadlineEnv), 10, 64)
 	if err != nil {
-		return budget, false
+		return limit, false
 	}
 	left := time.Until(time.UnixMilli(ms))
-	return min(budget, left), left < budget
+	return min(limit, left), left < limit
+}
+
+// stoppedLine is a stopped check's first error line: the total it ran past.
+func stoppedLine(c resolved) string {
+	stage := stageOf(c)
+	return fmt.Sprintf("Stopped at the %ss %s total", trimFloat(stageTotal(stage).Seconds()), stage)
+}
+
+// slowestShown is how many checks a slowest line names.
+const slowestShown = 5
+
+// slowest names the slowest rows with their times, slowest first, as
+// "name 1.2s". It names at most slowestShown.
+func slowest(rows []render.Row) string {
+	sorted := slices.Clone(rows)
+	slices.SortStableFunc(sorted, func(a, b render.Row) int { return cmp.Compare(b.Ms, a.Ms) })
+	var names []string
+	for _, r := range sorted[:min(len(sorted), slowestShown)] {
+		names = append(names, r.Name+" "+took(r.Ms))
+	}
+	return strings.Join(names, ", ")
+}
+
+// slowestLine is the summary line naming the run's slowest checks.
+func slowestLine(rows []render.Row) string {
+	if len(rows) == 0 {
+		return ""
+	}
+	return "Slowest: " + slowest(rows)
+}
+
+// breachLine names, for each stage whose total stopped a check, that stage's
+// slowest checks with their times. It is empty when no total stopped one.
+func breachLine(checks []resolved, outcomes []outcome, rows []render.Row) string {
+	var lines []string
+	for _, stage := range stages {
+		in, breached := stageRows(stage, checks, outcomes, rows)
+		if breached {
+			lines = append(lines, fmt.Sprintf("The %s ran past their %ss total. Slowest: %s",
+				stageNames[stage], trimFloat(stageTotal(stage).Seconds()), slowest(in)))
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
+// stageRows keeps the rows of stage's checks, and reports whether the
+// stage's total stopped one of them.
+func stageRows(stage string, checks []resolved, outcomes []outcome, rows []render.Row) (in []render.Row, stopped bool) {
+	for i, c := range checks {
+		if stageOf(c) == stage {
+			in = append(in, rows[i])
+			stopped = stopped || stoppedByTotal(outcomes[i])
+		}
+	}
+	return in, stopped
+}
+
+// stoppedByTotal reports whether a stage's total, not the run's deadline,
+// stopped the check.
+func stoppedByTotal(o outcome) bool {
+	return o.timedOut && !o.cut
+}
+
+// took writes a check's time: milliseconds below a second, then as span does.
+func took(ms int64) string {
+	if ms < 1000 {
+		return strconv.FormatInt(ms, 10) + "ms"
+	}
+	return span(time.Duration(ms) * time.Millisecond)
 }

@@ -5,15 +5,19 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 - stdout — one JSON result object, whose fields are documented in the code: `go -C go doc ./internal/checkkit Result` and `go -C go doc ./internal/checkkit Finding` print them
 - stderr — human display output (banners, tool passthrough)
 - exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
-- `--describe` — prints check metadata (name, timeout budget, context-inline arg, blob flag) so the runner needs no registry
+- `--describe` — prints check metadata (name, stage, context-inline arg, blob flag) so the runner needs no registry
 
-The runner runs the `--describe` handshakes side by side, then runs checks in a pool of one slot per core. Checks start by the timeout budget they declare in `--describe`, largest first, and ties keep catalog order. A compiled check whose handshake runs past its budget among the others gets one more try. A script never does, so its work never runs twice.
+The runner runs the `--describe` handshakes side by side, then runs the fast checks in catalog order, one per core. Checks that declare `"stage": "tests"` in `--describe` start at once beside them, outside the pool. A compiled check whose handshake runs past the handshake's two seconds among the others gets one more try. A script never does, so its work never runs twice.
 
-A timeout kills the whole process group, so a hung check's child tree dies with it. Each git call the runner makes, such as `git ls-files`, gets ten seconds. A stalled call ends the run as a setup error naming it. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+No check has its own time limit. The fast checks share one 60s total and the test runners one 450s total, both from the pool's start. Past a total, the run stops that stage's checks, with each one's process group, and names the slowest. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+
+## Git calls
+
+Each git call the runner makes, such as `git ls-files`, gets ten seconds. A stalled call ends the run as a setup error naming it.
 
 ## Progress
 
-The runner prints `→ <name>` as each check starts. On a terminal, or with `FITNESS_PROGRESS=1`, it prints a heartbeat every five seconds. The heartbeat has one line per running check, such as `… 12s  running: go-test (budget 15m)`. Off a terminal, as in Actions, a check prints that line once when it passes half its budget.
+The runner prints `→ <name>` as each check starts. On a terminal, or with `FITNESS_PROGRESS=1`, it prints a heartbeat every five seconds. The heartbeat has one line per running check, such as `… 12s  running: cspell (limit 58s)`, the limit being what the fast total left when the check started. Off a terminal, as in Actions, a check prints that line once when it passes half its limit.
 
 The runner holds each check's stderr until the run ends. When only one check is still running, its stderr streams live, and the summary does not print it again. A timed-out row adds the last line the check wrote to stderr, which shows where it stopped.
 
@@ -91,7 +95,7 @@ Optional `.fitnessrc.json` at repo root:
 }
 ```
 
-Org mode runs every check; each passes clean when it does not apply. `timeoutMs` replaces the 5-second default budget for checks that declare none. A leftover `checks` list is ignored with a warning in org mode.
+Org mode runs every check; each passes clean when it does not apply. A leftover `checks` list is ignored with a warning in org mode.
 
 External mode sets `"policy": "external"` and runs all checks by default; a nonempty `"checks"` list is an optional filter. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
 

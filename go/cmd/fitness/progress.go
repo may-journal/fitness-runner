@@ -21,14 +21,15 @@ const progressEnv = "FITNESS_PROGRESS"
 
 // liveCheck is a running check as its progress line names it.
 type liveCheck struct {
-	name   string
-	start  time.Time
-	budget time.Duration
+	name  string
+	start time.Time
+	limit time.Duration
 }
 
-// line is the check's progress line: elapsed time, name and budget.
+// line is the check's progress line: elapsed time, name, and its limit. The
+// limit is the time its stage's total left it at start.
 func (c liveCheck) line() string {
-	return fmt.Sprintf("  … %s  running: %s (budget %s)\n", span(time.Since(c.start)), c.name, span(c.budget))
+	return fmt.Sprintf("  … %s  running: %s (limit %s)\n", span(time.Since(c.start)), c.name, span(c.limit))
 }
 
 // span renders a duration as tenths of a second below ten seconds, whole
@@ -96,14 +97,14 @@ func runningChecks() []liveCheck {
 	return checks
 }
 
-// warnHalfway prints c's progress line once when it passes half its budget,
+// warnHalfway prints c's progress line once when it passes half its limit,
 // so a log with no heartbeat still names the slow check. The returned func
 // cancels the line for a check that ends first.
 func warnHalfway(c liveCheck, heartbeat bool) (cancel func()) {
 	if heartbeat {
 		return func() {}
 	}
-	t := time.AfterFunc(c.budget/2, func() { os.Stderr.WriteString(c.line()) })
+	t := time.AfterFunc(c.limit/2, func() { os.Stderr.WriteString(c.line()) })
 	return func() { t.Stop() }
 }
 

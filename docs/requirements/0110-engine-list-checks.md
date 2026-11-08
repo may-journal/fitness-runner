@@ -15,7 +15,7 @@ checks in the catalog
 - 0110.1
     - Given AI agent has a repo with fitness installed
         - When it runs `fitness list`
-            - Then every built-in check shows once with its summary, scope and budget
+            - Then every built-in check shows once with its summary, scope and stage
 - 0110.2
     - Given AI agent has a repo whose config disables a check under external policy
         - When it runs `fitness list --json`

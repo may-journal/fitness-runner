@@ -1,43 +1,12 @@
 package comments
 
 import (
-	"errors"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 )
-
-// Place sets InBody and Next on blocks in Files order, reading each file once.
-func Place(root string, blocks []Block) error {
-	var errs []error
-	for i := 0; i < len(blocks); {
-		j := i + 1
-		for j < len(blocks) && blocks[j].Path == blocks[i].Path {
-			j++
-		}
-		errs = append(errs, placeFile(root, blocks[i:j]))
-		i = j
-	}
-	return errors.Join(errs...)
-}
-
-// placeFile places the blocks of one file, unless the runner's views
-// placed them.
-func placeFile(root string, blocks []Block) error {
-	if blocks[0].placed {
-		return nil
-	}
-	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(blocks[0].Path)))
-	if err != nil {
-		return err
-	}
-	placeSource(blocks, src)
-	return nil
-}
 
 // placeSource places the blocks of one file holding src.
 func placeSource(blocks []Block, src []byte) {
