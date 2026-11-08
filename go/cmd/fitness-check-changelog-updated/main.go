@@ -98,7 +98,7 @@ func entryErrors(root string) ([]string, error) {
 	if msg, ok := checkOneEntry(root); !ok {
 		return []string{msg}, nil
 	}
-	return changelog.StagedNameErrors(root), nil
+	return changelog.StagedNameErrors(root)
 }
 
 // checkOneEntry keeps a branch to one entry file: after an earlier commit

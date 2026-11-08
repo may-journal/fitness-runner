@@ -33,16 +33,20 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	return judgeCode(root, scope.base, tests, changes), nil
+	return judgeCode(root, scope.base, tests, changes)
 }
 
 // judgeCode judges changes once comment-only edits are set aside. With no
 // product code changed, it passes before comparing any file.
-func judgeCode(root, base string, tests testSet, changes []change) checkkit.Result {
+func judgeCode(root, base string, tests testSet, changes []change) (checkkit.Result, error) {
 	if len(productChanges(root, tests, changes)) == 0 {
-		return checkkit.Pass(0)
+		return checkkit.Pass(0), nil
 	}
-	return judge(root, tests, withoutCommentOnly(root, base, changes))
+	judged, err := withoutCommentOnly(root, base, changes)
+	if err != nil {
+		return checkkit.Result{}, err
+	}
+	return judge(root, tests, judged), nil
 }
 
 // skips reports a run with nothing to judge: a full scan, a replay, or a
@@ -66,17 +70,17 @@ func judge(root string, tests testSet, changes []change) checkkit.Result {
 }
 
 // withoutCommentOnly drops each edit whose code, comments aside, matches base, since it changes no behavior and needs no test or doc.
-func withoutCommentOnly(root, base string, changes []change) []change {
+func withoutCommentOnly(root, base string, changes []change) ([]change, error) {
 	var edits []comments.Edit
 	for _, c := range changes {
 		if !c.deleted {
 			edits = append(edits, c.edit())
 		}
 	}
-	same := comments.CommentOnly(root, base, edits)
+	same, err := comments.CommentOnly(root, base, edits)
 	return slices.DeleteFunc(slices.Clone(changes), func(c change) bool {
-		return !c.deleted && same[c.edit()]
-	})
+		return same[c.edit()]
+	}), err
 }
 
 // edit is the change as an edit from its path at base to its path now.

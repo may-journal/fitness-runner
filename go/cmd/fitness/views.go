@@ -4,6 +4,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/comments"
@@ -31,15 +32,19 @@ func withViews(root string, checks []resolved, env []string, tracked walkfs.Shar
 	return tracked, append(env, views.Env...)
 }
 
+// testScanWait bounds the shared test scan, which runs before any check
+// starts. A slower scan shares nothing, and each check scans for itself.
+const testScanWait = 2 * time.Second
+
 // withTestScan scans the requirement tests once for a run of several checks
-// that read them. Its Remove deletes the scan too.
+// that read them, and clears an inherited scan otherwise. Its Remove deletes the scan too.
 func withTestScan(root string, checks []resolved, env []string, tracked walkfs.Shared) (walkfs.Shared, []string) {
 	readers := slices.DeleteFunc(slices.Clone(checks), func(c resolved) bool { return !c.desc.Tests })
 	if len(readers) < 2 {
-		return tracked, env
+		return tracked, append(env, lang.TestScanEnv+"=")
 	}
 	tracked.Remember(root)
-	scan, remove := lang.ShareTestScan(root, langs.All)
+	scan, remove := lang.ShareTestScan(root, langs.All, testScanWait)
 	removeTracked := tracked.Remove
 	tracked.Remove = func() {
 		remove()

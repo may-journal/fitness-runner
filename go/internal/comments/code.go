@@ -172,21 +172,21 @@ type Edit struct {
 }
 
 // CommentOnly lists the edits whose code is the same at base as in the
-// scope being judged. One git call reads every version.
-func CommentOnly(root, base string, edits []Edit) map[Edit]bool {
+// scope being judged. One git call reads every version, and its failure is the error.
+func CommentOnly(root, base string, edits []Edit) (map[Edit]bool, error) {
 	same := map[Edit]bool{}
 	if base == "" {
-		return same
+		return same, nil
 	}
 	var objects []string
 	for _, e := range edits {
 		objects = append(objects, base+":"+e.From, gitx.JudgedObject(e.File))
 	}
-	text := gitx.ShowAll(root, objects)
+	text, err := gitx.ShowAll(root, objects)
 	for _, e := range edits {
 		same[e] = sameCode(e, text, base)
 	}
-	return same
+	return same, err
 }
 
 // sameCode reports whether text holds e's file at base and as judged, with
