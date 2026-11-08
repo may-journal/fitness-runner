@@ -105,6 +105,7 @@ func scanOne[T any](root, file string, scan func(relPath, content string) []T) s
 
 // FilesByExt returns the sorted relative paths under root whose name ends in
 // any of exts, where "" matches every file and ".md" matches "x.custom.md".
+// Without the runner's list, it stats the matching files side by side.
 func FilesByExt(root string, exts ...string) []string {
 	list := trackedFiles(root)
 	if !list.ok {
@@ -112,9 +113,12 @@ func FilesByExt(root string, exts ...string) []string {
 	}
 	var out []string
 	for _, rel := range list.files {
-		if wanted(root, rel, exts, !list.onDisk) {
+		if hasAnySuffix(filepath.Base(rel), exts) {
 			out = append(out, rel)
 		}
+	}
+	if !list.onDisk {
+		out = onDisk(root, out)
 	}
 	sort.Strings(out)
 	return out
@@ -149,12 +153,6 @@ func listedOnDisk(root string, list trackedList) []string {
 func insideWorkTree(root string) bool {
 	out, err := exec.Command("git", "-C", root, "rev-parse", "--is-inside-work-tree").Output()
 	return err == nil && strings.TrimSpace(string(out)) == "true"
-}
-
-// wanted reports whether rel ends in one of exts and, if stat is set, is a
-// regular file; the name test runs first.
-func wanted(root, rel string, exts []string, stat bool) bool {
-	return hasAnySuffix(filepath.Base(rel), exts) && (!stat || RegularFile(root, rel))
 }
 
 // RegularFile reports whether rel under root is a regular file on disk, so a
