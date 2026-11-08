@@ -3,7 +3,6 @@ package main
 import (
 	"cmp"
 	"fmt"
-	"math"
 	"os"
 	"slices"
 	"strconv"
@@ -14,33 +13,38 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/render"
 )
 
-// fastTotalEnv names a lower fast total in milliseconds, which requirement
-// tests set to see the total stop a check without waiting a minute. It never
-// raises the total.
-const fastTotalEnv = "FITNESS_INTERNAL_FAST_TOTAL_MS"
+// fastTotalEnv and testsTotalEnv name a lower total in milliseconds, which
+// requirement tests set to see a total stop a check without waiting minutes.
+// Neither raises its total.
+const (
+	fastTotalEnv  = "FITNESS_INTERNAL_FAST_TOTAL_MS"
+	testsTotalEnv = "FITNESS_INTERNAL_TESTS_TOTAL_MS"
+)
 
 // fastTotal is checkkit.FastTotal, or the lower total fastTotalEnv names.
 func fastTotal() time.Duration {
-	ms, err := strconv.ParseInt(os.Getenv(fastTotalEnv), 10, 64)
-	if err != nil || ms <= 0 {
-		return checkkit.FastTotal
-	}
-	return min(checkkit.FastTotal, time.Duration(ms)*time.Millisecond)
+	return lowered(checkkit.FastTotal, fastTotalEnv)
 }
 
-// unlimited is the limit of a check that no total bounds.
-const unlimited = time.Duration(math.MaxInt64)
+// lowered is total, or the lower total in milliseconds the variable env
+// names.
+func lowered(total time.Duration, env string) time.Duration {
+	ms, err := strconv.ParseInt(os.Getenv(env), 10, 64)
+	if err != nil || ms <= 0 {
+		return total
+	}
+	return min(total, time.Duration(ms)*time.Millisecond)
+}
 
 // stageOf is the stage c declares, fast when it declares none.
 func stageOf(c resolved) string {
 	return checkkit.StageOf(c.desc)
 }
 
-// stageTotal is the total that bounds a stage's checks together, unlimited
-// for the test stage.
+// stageTotal is the total that bounds a stage's checks together.
 func stageTotal(stage string) time.Duration {
 	if stage == checkkit.StageTests {
-		return unlimited
+		return lowered(checkkit.TestsTotal, testsTotalEnv)
 	}
 	return fastTotal()
 }
@@ -48,25 +52,26 @@ func stageTotal(stage string) time.Duration {
 // stageEnds holds when each stage's total runs out in one run.
 type stageEnds map[string]time.Time
 
-// startStages starts every stage's total at now.
+// startStages starts every stage's total at now, since both stages start
+// together.
 func startStages(now time.Time) stageEnds {
 	ends := stageEnds{}
-	for _, stage := range []string{checkkit.StageFast, checkkit.StageTests} {
-		if total := stageTotal(stage); total != unlimited {
-			ends[stage] = now.Add(total)
-		}
+	for _, stage := range stages {
+		ends[stage] = now.Add(stageTotal(stage))
 	}
 	return ends
 }
 
+// stages lists each stage, the test runners first, as a run reports them.
+var stages = []string{checkkit.StageTests, checkkit.StageFast}
+
+// stageNames is how a breach line names each stage's checks.
+var stageNames = map[string]string{checkkit.StageFast: "fast checks", checkkit.StageTests: "test runners"}
+
 // limit is how long a check in stage may still run: the time left in the
 // stage's total.
 func (e stageEnds) limit(stage string) time.Duration {
-	end, ok := e[stage]
-	if !ok {
-		return unlimited
-	}
-	return time.Until(end)
+	return time.Until(e[stage])
 }
 
 // deadlineEnv holds the Unix time in milliseconds by which a run must end.
@@ -117,27 +122,30 @@ func slowestLine(rows []render.Row) string {
 	return "Slowest: " + slowest(rows)
 }
 
-// breachLine names the slowest fast checks when the fast total stopped one,
-// and is empty otherwise.
+// breachLine names, for each stage whose total stopped a check, that stage's
+// slowest checks with their times. It is empty when no total stopped one.
 func breachLine(checks []resolved, outcomes []outcome, rows []render.Row) string {
-	fast, breached := fastRows(checks, outcomes, rows)
-	if !breached {
-		return ""
+	var lines []string
+	for _, stage := range stages {
+		in, breached := stageRows(stage, checks, outcomes, rows)
+		if breached {
+			lines = append(lines, fmt.Sprintf("The %s ran past their %ss total. Slowest: %s",
+				stageNames[stage], trimFloat(stageTotal(stage).Seconds()), slowest(in)))
+		}
 	}
-	return fmt.Sprintf("The fast checks ran past their %ss total. Slowest: %s",
-		trimFloat(fastTotal().Seconds()), slowest(fast))
+	return strings.Join(lines, "\n")
 }
 
-// fastRows keeps the fast checks' rows, and reports whether the fast total
-// stopped one of them.
-func fastRows(checks []resolved, outcomes []outcome, rows []render.Row) (fast []render.Row, stopped bool) {
+// stageRows keeps the rows of stage's checks, and reports whether the
+// stage's total stopped one of them.
+func stageRows(stage string, checks []resolved, outcomes []outcome, rows []render.Row) (in []render.Row, stopped bool) {
 	for i, c := range checks {
-		if stageOf(c) == checkkit.StageFast {
-			fast = append(fast, rows[i])
+		if stageOf(c) == stage {
+			in = append(in, rows[i])
 			stopped = stopped || stoppedByTotal(outcomes[i])
 		}
 	}
-	return fast, stopped
+	return in, stopped
 }
 
 // stoppedByTotal reports whether a stage's total, not the run's deadline,

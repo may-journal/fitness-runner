@@ -15,6 +15,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -129,16 +130,25 @@ func CleanEnv(env []string) []string {
 	return out
 }
 
-// EachModule judges every module dir in mods with judge and returns the
-// check's Result, ending at the first internal error.
+// judged is what judging one module found, or why it could not judge.
+type judged struct {
+	found []string
+	err   error
+}
+
+// EachModule judges every module dir in mods with judge, side by side, and
+// keeps module order. The first module that could not judge is the error.
 func EachModule(mods []string, judge func(dir string) ([]string, error)) (checkkit.Result, error) {
+	results := par.Map(len(mods), len(mods), func(i int) judged {
+		found, err := judge(mods[i])
+		return judged{found, err}
+	})
 	var errs []string
-	for _, dir := range mods {
-		found, err := judge(dir)
-		if err != nil {
-			return checkkit.Result{}, err
+	for _, r := range results {
+		if r.err != nil {
+			return checkkit.Result{}, r.err
 		}
-		errs = append(errs, found...)
+		errs = append(errs, r.found...)
 	}
 	if len(errs) > 0 {
 		return checkkit.Fail(len(mods), errs...), nil

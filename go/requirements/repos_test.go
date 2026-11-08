@@ -137,6 +137,12 @@ func fastTotal(ms int) string {
 	return "FITNESS_INTERNAL_FAST_TOTAL_MS=" + strconv.Itoa(ms)
 }
 
+// testsTotal is the environment entry that lowers the test stage's total to
+// ms, as fastTotal does the fast total.
+func testsTotal(ms int) string {
+	return "FITNESS_INTERNAL_TESTS_TOTAL_MS=" + strconv.Itoa(ms)
+}
+
 // planBody is a Plan that follows the template, with one task.
 func planBody(task string) string {
 	return "> One clear pitch for this Plan.\n\n## Background\n\nThis Plan is a test fixture.\n\n## What needs to happen\n\n" + task + "\n"
