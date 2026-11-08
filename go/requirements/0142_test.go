@@ -126,6 +126,9 @@ func Test0142_2(t *testing.T) {
 		t.Errorf("the edit hook took %s at best; it must answer within 300ms", best)
 	}
 	out, code := hookEvent(t, repo, editEvent(repo, "hooked_test.go"))
+	if strings.Contains(out, "go-test ran") {
+		t.Errorf("an edit ran go-test, which is in the test stage:\n%s", out)
+	}
 	silentPass(t, out, code)
 }
 

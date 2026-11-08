@@ -100,7 +100,8 @@ func Test0009_4(t *testing.T) {
 // awaiting a password, stops at a 2s fast total. The commit is refused.
 func localHookStops(t *testing.T) {
 	t.Helper()
-	repo, env := hooked(t, nil)
+	// One quick check leaves the 2s total to the local hook on a slow machine.
+	repo, env := hooked(t, map[string]string{".fitnessrc.json": `{"policy": "external", "checks": ["markdown-links"]}` + "\n"})
 	env = append(env, fastTotal(2000))
 	git(t, repo, "remote", "add", "origin", promptedRemote)
 	path, pidFile := promptingTools(t, "fetch")
