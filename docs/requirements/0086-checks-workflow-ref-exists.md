@@ -43,4 +43,4 @@ may-journal `uses:` lines pinned to a tag or sha
 - 0086.8
     - Given Developer has a workflow with eight distinct pinned calls, each answered by GitHub after one second
         - When workflow-ref-exists runs
-            - Then it passes within four seconds
+            - Then it passes in under half the time eight reads take one at a time

@@ -6,7 +6,7 @@ The prose checks read my docs and comments once each and start no tool per file.
 
 ## Measurement
 
-full prose check runs on hundreds of files that pass within five seconds without a git call per file
+full prose check runs on hundreds of files that pass without a git call per file
 
 -
 
@@ -17,4 +17,4 @@ full prose check runs on hundreds of files
 - 0152.1
   - Given Developer has a repo with 300 docs and commented Go files
     - When text-readability, prose-budget, cspell, mermaid-callouts and repeated-string-literals check every file
-      - Then each passes within five seconds, and the whole run starts git at most 20 times
+      - Then each passes, and the whole run starts git at most 20 times

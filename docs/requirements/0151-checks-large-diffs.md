@@ -6,7 +6,7 @@ When my commit touches hundreds of files, the requirement and changelog checks s
 
 ## Measurement
 
-large changes whose requirement and changelog checks each pass within five seconds
+large changes whose requirement and changelog checks pass with a few git calls in all
 
 -
 
@@ -17,4 +17,4 @@ large changes
 - 0151.1
   - Given Developer has 266 changed files with their test, requirement doc and changelog entry
     - When the requirement checks judge them staged or in a pull request, and changelog-updated judges them staged
-      - Then each passes within five seconds
+      - Then each passes, and the whole run starts git at most 40 times

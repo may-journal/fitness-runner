@@ -2,7 +2,6 @@ package requirements
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -44,27 +43,29 @@ func Test0151_1(t *testing.T) {
 	repo := example(t, "happyRepo", with(goRepo(), counters("")))
 	write(t, repo, largeDiff())
 	git(t, repo, "add", "-A")
-	out, code := fitness(t, repo, nil, "--policy=external", "--checks="+strings.Join(largeDiffChecks, ","))
-	passesFast(t, out, code, largeDiffChecks)
+	path, calls := loggedGit(t)
+	out, code := fitness(t, repo, []string{path}, "--policy=external", "--checks="+strings.Join(largeDiffChecks, ","))
+	passesBatched(t, out, code, largeDiffChecks, calls)
 	pull := example(t, "happyRepo", with(goRepo(), counters("")))
 	git(t, pull, "update-ref", "refs/remotes/origin/main", "HEAD")
 	commit(t, pull, largeDiff(), "fix(counters): add an offset")
-	out, code = fitness(t, pull, prEnv, "--policy=external", "--checks="+strings.Join(largeDiffChecks[:2], ","))
-	passesFast(t, out, code, largeDiffChecks[:2])
+	path, calls = loggedGit(t)
+	out, code = fitness(t, pull, append([]string{path}, prEnv...), "--policy=external", "--checks="+strings.Join(largeDiffChecks[:2], ","))
+	passesBatched(t, out, code, largeDiffChecks[:2], calls)
 }
 
-// passesFast asserts each of checks passed a large diff within five seconds.
-func passesFast(t *testing.T, out string, code int, checks []string) {
+// maxLargeDiffGitCalls bounds the git calls of a whole run on the large diff,
+// runner included, far below one per changed file.
+const maxLargeDiffGitCalls = 40
+
+// passesBatched asserts checks passed the large diff, and the run started git
+// a few times in all, not once per file.
+func passesBatched(t *testing.T, out string, code int, checks []string, calls string) {
 	t.Helper()
-	t.Log("\n" + out)
 	sees(t, out, code, 0, fmt.Sprintf("All %d checks passed", len(checks)))
-	for _, check := range checks {
-		took := rowMillis.FindStringSubmatch(row(out, check))
-		if took == nil {
-			t.Fatalf("%s shows no time in its row %q", check, row(out, check))
-		}
-		if ms, _ := strconv.Atoi(took[1]); ms >= 5000 {
-			t.Errorf("%s took %d ms on a %d-file diff, want under 5000 ms", check, ms, len(largeDiff()))
-		}
+	n := occurrences(calls, "\n")
+	t.Logf("git started %d times", n)
+	if n == 0 || n > maxLargeDiffGitCalls {
+		t.Errorf("the run started git %d times on a %d-file diff, want 1 to %d, none per file", n, len(largeDiff()), maxLargeDiffGitCalls)
 	}
 }

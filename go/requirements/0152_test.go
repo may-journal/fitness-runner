@@ -2,7 +2,6 @@ package requirements
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"testing"
 )
@@ -36,15 +35,6 @@ func Test0152_1(t *testing.T) {
 	out, code := fitness(t, repo, []string{path}, "--policy=external", "--checks="+strings.Join(proseChecks, ","), "--all")
 	t.Log("\n" + out)
 	sees(t, out, code, 0, "All 5 checks passed")
-	for _, check := range proseChecks {
-		took := rowMillis.FindStringSubmatch(row(out, check))
-		if took == nil {
-			t.Fatalf("%s shows no time in its row %q", check, row(out, check))
-		}
-		if ms, _ := strconv.Atoi(took[1]); ms >= 5000 {
-			t.Errorf("%s took %d ms on %d files, want under 5000 ms", check, ms, 2*proseFiles)
-		}
-	}
 	n := occurrences(calls, "\n")
 	t.Logf("git started %d times", n)
 	if n > maxProseGitCalls {

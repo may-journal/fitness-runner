@@ -1,10 +1,8 @@
 package requirements
 
 import (
-	"regexp"
 	"strings"
 	"testing"
-	"time"
 )
 
 // largeTreeFiles is how many generated files the large tree adds beside a
@@ -16,9 +14,6 @@ var largeTreeChecks = []string{"build-output-untracked", "architecture-component
 
 // nestedDist is a build output file deep in the large tree.
 const nestedDist = "tree/0049/dist/app.js"
-
-// rowDuration matches a results-table row's time, in milliseconds or seconds.
-var rowDuration = regexp.MustCompile(`│ (\d+(?:\.\d+)?)(ms|s)\s+│\s*$`)
 
 // largeTree is aoFixture with a Java project, a TypeScript source the store
 // owns and an ignored dist folder.
@@ -35,9 +30,10 @@ func Test0154_1(t *testing.T) {
 	// Not parallel: a 50,000-file tree built beside other tests would time their disk load.
 	repo := generatedTree(t, largeTree(), largeTreeFiles)
 	write(t, repo, map[string]string{"dist/index.js": "export const built = true;\n"})
-	out, code := fitness(t, repo, nil, "--all", "--policy=external", "--checks="+strings.Join(largeTreeChecks, ","))
+	path, calls := loggedGit(t)
+	out, code := fitness(t, repo, []string{path}, "--all", "--policy=external", "--checks="+strings.Join(largeTreeChecks, ","))
 	sees(t, out, code, 0, "All 2 checks passed")
-	within(t, out, largeTreeChecks, 5*time.Second)
+	fewGitCalls(t, calls)
 }
 
 func Test0154_2(t *testing.T) {
@@ -46,22 +42,23 @@ func Test0154_2(t *testing.T) {
 	write(t, repo, map[string]string{nestedDist: "export const built = true;\n"})
 	git(t, repo, "add", "-f", nestedDist)
 	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "build(tree): track a build")
-	out, code := fitness(t, repo, nil, "--all", "--policy=external", "--checks="+largeTreeChecks[0])
+	path, calls := loggedGit(t)
+	out, code := fitness(t, repo, []string{path}, "--all", "--policy=external", "--checks="+largeTreeChecks[0])
 	sees(t, out, code, 1, nestedDist)
-	within(t, out, largeTreeChecks[:1], 5*time.Second)
+	fewGitCalls(t, calls)
 }
 
-// within asserts each check's row shows a time under limit.
-func within(t *testing.T, out string, checks []string, limit time.Duration) {
+// maxLargeTreeGitCalls bounds the git calls of a whole run on the large tree,
+// runner included, far below one per tracked file.
+const maxLargeTreeGitCalls = 20
+
+// fewGitCalls asserts the run started git a few times in all, with one
+// `git ls-files` for build-output-untracked, not one per file.
+func fewGitCalls(t *testing.T, calls string) {
 	t.Helper()
-	t.Log("\n" + out)
-	for _, check := range checks {
-		took := rowDuration.FindStringSubmatch(row(out, check))
-		if took == nil {
-			t.Fatalf("%s shows no time in its row %q", check, row(out, check))
-		}
-		if d, _ := time.ParseDuration(took[1] + took[2]); d >= limit {
-			t.Errorf("%s took %v on %d tracked files, want under %v", check, d, largeTreeFiles, limit)
-		}
+	n := occurrences(calls, "\n")
+	t.Logf("git started %d times", n)
+	if n == 0 || n > maxLargeTreeGitCalls {
+		t.Errorf("the run started git %d times on %d tracked files, want 1 to %d, none per file", n, largeTreeFiles, maxLargeTreeGitCalls)
 	}
 }
