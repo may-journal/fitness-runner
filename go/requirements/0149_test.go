@@ -14,6 +14,10 @@ var proseChecks = []string{"text-readability", "prose-budget", "cspell", "mermai
 // holds.
 const proseFiles = 150
 
+// maxProseGitCalls bounds the git calls of the whole run, runner included,
+// far below one per file; a run makes about seven.
+const maxProseGitCalls = 20
+
 // proseRepo is goRepo with proseFiles short docs and as many commented Go
 // files, each with its own string literal.
 func proseRepo() map[string]string {
@@ -43,7 +47,7 @@ func Test0149_1(t *testing.T) {
 	}
 	n := occurrences(calls, "\n")
 	t.Logf("git started %d times", n)
-	if n >= proseFiles {
-		t.Errorf("the prose checks started git %d times on %d files, want no call per file", n, 2*proseFiles)
+	if n > maxProseGitCalls {
+		t.Errorf("the prose checks started git %d times on %d files, want at most %d, none per file", n, 2*proseFiles, maxProseGitCalls)
 	}
 }

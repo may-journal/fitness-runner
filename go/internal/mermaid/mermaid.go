@@ -3,6 +3,7 @@
 package mermaid
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -789,23 +790,23 @@ func RunDiagramCheck(root string, validate func(file, content string) []string) 
 	return runFiles(root, DocExts, func(d parsedFile) []string { return validate(d.file, d.content) })
 }
 
-// parsedFile is one file read and parsed into its blocks, or why it could
-// not be read.
+// parsedFile is one file read and parsed into its blocks.
 type parsedFile struct {
 	file, content string
 	blocks        []DocBlock
-	err           error
 }
 
 // runFiles reads and parses the in-scope files with one of exts side by
-// side. It then validates each that holds a block, in path order.
+// side, stopping at the first read error. It then validates each that holds a block, in path order.
 func runFiles(root string, exts []string, validate func(parsedFile) []string) (errors []string, filesChecked int, err error) {
 	files := walkfs.InScope(walkfs.FilesByExt(root, exts...))
-	parsed := par.Map(len(files), 0, func(i int) parsedFile { return parseOne(root, files[i]) })
+	parsed, err := par.MapErr(context.Background(), len(files), 0, func(_ context.Context, i int) (parsedFile, error) {
+		return parseOne(root, files[i])
+	})
+	if err != nil {
+		return nil, 0, err
+	}
 	for _, d := range parsed {
-		if d.err != nil {
-			return nil, 0, d.err
-		}
 		if len(d.blocks) > 0 {
 			filesChecked++
 			errors = append(errors, validate(d)...)
@@ -814,14 +815,19 @@ func runFiles(root string, exts []string, validate func(parsedFile) []string) (e
 	return errors, filesChecked, nil
 }
 
-// parseOne reads the file at rel under root once and parses its blocks.
-func parseOne(root, rel string) parsedFile {
+// parseOne reads the file at rel under root once and parses its blocks. It
+// keeps the text only of a file that holds a block, so most docs are dropped once read.
+func parseOne(root, rel string) (parsedFile, error) {
 	raw, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
-		return parsedFile{err: err}
+		return parsedFile{}, err
 	}
 	content := string(raw)
-	return parsedFile{file: rel, content: content, blocks: ParseFile(rel, content)}
+	blocks := ParseFile(rel, content)
+	if len(blocks) == 0 {
+		return parsedFile{file: rel}, nil
+	}
+	return parsedFile{file: rel, content: content, blocks: blocks}, nil
 }
 
 // SplitArgs splits the arguments of a C4 macro call on commas outside

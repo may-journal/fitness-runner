@@ -17,4 +17,4 @@ full prose check runs on hundreds of files
 - 0149.1
   - Given Developer has a repo with 300 docs and commented Go files
     - When text-readability, prose-budget, cspell, mermaid-callouts and repeated-string-literals check every file
-      - Then each passes within five seconds, and the run starts no git call per file
+      - Then each passes within five seconds, and the whole run starts git at most 20 times

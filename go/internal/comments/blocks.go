@@ -3,6 +3,7 @@ package comments
 // cspell:ignore sdkmanrc
 
 import (
+	"context"
 	"os"
 	"path"
 	"path/filepath"
@@ -107,41 +108,30 @@ func Files(root string, paths []string) ([]Block, error) {
 }
 
 // files is Files read side by side, placing each file's blocks from the
-// same read when place is set.
+// same read when place is set. The first read error stops the reads.
 func files(root string, paths []string, place bool) ([]Block, error) {
 	kept := walkfs.WithoutGenerated(root, slices.DeleteFunc(slices.Clone(paths), uncovered))
-	read := par.Map(len(kept), 0, func(i int) fileBlocks { return readBlocks(root, kept[i], place) })
-	var blocks []Block
-	for _, r := range read {
-		if r.err != nil {
-			return blocks, r.err
-		}
-		blocks = append(blocks, r.blocks...)
-	}
-	return blocks, nil
-}
-
-// fileBlocks is one file's comment blocks, or why it could not be read.
-type fileBlocks struct {
-	blocks []Block
-	err    error
+	read, err := par.MapErr(context.Background(), len(kept), 0, func(_ context.Context, i int) ([]Block, error) {
+		return readBlocks(root, kept[i], place)
+	})
+	return slices.Concat(read...), err
 }
 
 // readBlocks returns the comment blocks of the file at rel from the
 // runner's views, else from one read of the file.
-func readBlocks(root, rel string, place bool) fileBlocks {
+func readBlocks(root, rel string, place bool) ([]Block, error) {
 	if shared, ok := sharedBlocks(root, rel); ok {
-		return fileBlocks{blocks: shared}
+		return shared, nil
 	}
 	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 	if err != nil {
-		return fileBlocks{err: err}
+		return nil, err
 	}
 	blocks := Source(rel, src)
 	if place {
 		placeSource(blocks, src)
 	}
-	return fileBlocks{blocks: blocks}
+	return blocks, nil
 }
 
 // covered reports a path whose extension a reader covers, or one with
