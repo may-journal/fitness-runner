@@ -20,7 +20,8 @@
 //
 // The check asks GitHub through `gh api`, so it uses `gh`'s login or
 // `GH_TOKEN`. The org's `fitness-suite` and CI workflows pass `GH_TOKEN` to
-// the suite for it.
+// the suite for it. It verifies up to eight calls at once and reads each
+// path once.
 //
 // When GitHub cannot answer, it never passes or fails a ref it could not
 // see. No `gh`, no network, a bad token, a rate limit, or 20 seconds of reads
