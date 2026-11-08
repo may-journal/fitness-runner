@@ -19,6 +19,19 @@ func ShowAll(root string, objects []string) (map[string]string, error) {
 	return readObjects(out, asked), nil
 }
 
+// Messages returns the full message of each of commits, in their order, read
+// with one `git log` call.
+func Messages(root string, commits []string) ([]string, error) {
+	if len(commits) == 0 {
+		return nil, nil
+	}
+	out, err := Repo(root).input(strings.Join(commits, "\n")+"\n", "log", "--no-walk=unsorted", "--stdin", "-z", "--format=%B")
+	if err != nil {
+		return nil, err
+	}
+	return strings.Split(strings.TrimSuffix(out, "\x00"), "\x00"), nil
+}
+
 // HasAll reports which of objects git holds, in one `git cat-file
 // --batch-check` call that reads no file.
 func HasAll(root string, objects []string) (map[string]bool, error) {
