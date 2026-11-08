@@ -22,7 +22,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 14*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), checkkit.TestsTotal-30*time.Second)
 	defer cancel()
 	report, err := coverage.Run(ctx, root, options)
 	if checkkit.IsInternal(err) {

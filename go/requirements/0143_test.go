@@ -153,9 +153,12 @@ func Test0143_5(t *testing.T) {
 	installer(t)
 	file := filepath.Join(t.TempDir(), "settings.json")
 	mustDo(t, os.WriteFile(file, []byte("{}"), 0o600))
-	group := claudeSettings(t, file)["hooks"].(map[string]any)["SubagentStop"].([]any)[0]
-	if timeout := group.(map[string]any)["hooks"].([]any)[0].(map[string]any)["timeout"]; timeout != 300.0 {
+	hooks := claudeSettings(t, file)["hooks"].(map[string]any)
+	if timeout := hookTimeout(hooks, "SubagentStop"); timeout != 300.0 {
 		t.Errorf("SubagentStop's timeout must be 300 seconds, under Claude Code's ten-minute default, got %v", timeout)
+	}
+	if timeout := hookTimeout(hooks, "Stop"); timeout != 540.0 {
+		t.Errorf("Stop's timeout must be 540 seconds, the 60s fast total and 450s test total with a margin, got %v", timeout)
 	}
 	repo := example(t, "happyRepo", failingGoTest)
 	write(t, repo, map[string]string{"notes.md": misspelledNote, "hooked_test.go": strings.ReplaceAll(failingGoTest["hooked_test.go"], "ran", "ran again")})
@@ -165,6 +168,12 @@ func Test0143_5(t *testing.T) {
 	if strings.Contains(out, "go-test") {
 		t.Errorf("a subagent stop ran go-test, which is in the test stage:\n%s", out)
 	}
+}
+
+// hookTimeout is the timeout, in seconds, of event's first hook in settings.
+func hookTimeout(hooks map[string]any, event string) any {
+	group := hooks[event].([]any)[0].(map[string]any)
+	return group["hooks"].([]any)[0].(map[string]any)["timeout"]
 }
 
 // claudeStop is Claude's Stop event in session s1 with its transcript, never

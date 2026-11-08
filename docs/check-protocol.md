@@ -7,9 +7,9 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 - exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
 - `--describe` — prints check metadata (name, stage, context-inline arg, blob flag) so the runner needs no registry
 
-The runner runs the `--describe` handshakes side by side, then runs checks in a pool of one slot per core. Checks that declare `"stage": "tests"` in `--describe` start first, and the rest keep catalog order. A compiled check whose handshake runs past the handshake's two seconds among the others gets one more try. A script never does, so its work never runs twice.
+The runner runs the `--describe` handshakes side by side, then runs the fast checks in catalog order, one per core. Checks that declare `"stage": "tests"` in `--describe` start at once beside them, outside the pool. A compiled check whose handshake runs past the handshake's two seconds among the others gets one more try. A script never does, so its work never runs twice.
 
-No check has its own time limit. The fast checks share one 60s total from the pool's start. Past it, the run stops what still runs, with each check's whole process group, and names the slowest checks. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+No check has its own time limit. The fast checks share one 60s total and the test runners one 450s total, both from the pool's start. Past a total, the run stops that stage's checks, with each one's process group, and names the slowest. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
 
 ## Git calls
 

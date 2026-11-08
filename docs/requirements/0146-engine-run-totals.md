@@ -24,3 +24,11 @@ runs past the fast total
     - Given Developer has a repo whose checks pass
         - When the run finishes
             - Then the summary names the slowest checks with their times
+- 0146.4
+    - Given Developer has a test runner that runs past the test stage's total
+        - When the run reaches that total
+            - Then the run fails and names that runner with its time
+- 0146.5
+    - Given Developer has four Go modules whose tests each take six seconds
+        - When fitness runs go-test
+            - Then it finishes sooner than their tests take one after another

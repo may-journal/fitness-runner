@@ -70,6 +70,7 @@ flowchart TB
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
         adrFiles[(44 ADR files<br/>Req 0147)]:::system
+        timeoutChecks[(46 Workflow timeouts<br/>Req 0150)]:::system
     end
 
     resultsTable[8 Results table<br/>Req 0001, 0101]:::screen
@@ -183,3 +184,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 43  | `fitness adr-migrate`.              | Action  | Each ADR file becomes an `ADR` issue people can discuss, and links follow it. |
 | 44  | ADR file check.                     | System  | No decision hides in a file; each one is an `ADR` issue.                             |
 | 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
+| 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |

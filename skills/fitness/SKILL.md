@@ -18,7 +18,7 @@ hooks:
     - hooks:
         - type: command
           command: fitness claude-hook
-          timeout: 900
+          timeout: 540
   SubagentStop:
     - hooks:
         - type: command
