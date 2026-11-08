@@ -48,6 +48,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // render is a finding's error line: where, what is wrong, and the fix.
 func render(f checkkit.Finding) string {
+	if f.Column > 0 {
+		return fmt.Sprintf("%s:%d:%d: %s; %s", f.File, f.Line, f.Column, f.Message, f.Fix)
+	}
 	return fmt.Sprintf("%s:%d: %s; %s", f.File, f.Line, f.Message, f.Fix)
 }
 

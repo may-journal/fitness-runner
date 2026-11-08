@@ -35,7 +35,7 @@ workflow jobs with steps
 - 0133.6
     - Given Developer has workflows GitHub rejects as invalid YAML, such as a plain value holding `: `
         - When workflow-reporting runs
-            - Then it fails naming each file and line, and the quoted value passes
+            - Then it fails naming each file, line and column, and each fixed value passes
 - 0133.7
     - Given Developer has a repo with no workflows
         - When workflow-reporting runs

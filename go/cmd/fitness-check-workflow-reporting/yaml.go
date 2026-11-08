@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 // This file reads the block-style YAML of workflow files, keeping the line each value starts on, and keeps flow values as text.
@@ -146,10 +147,22 @@ func fault(l *srcLine, msg string) error {
 	return &syntaxError{line: l.num, msg: msg}
 }
 
-// faultAt is a syntax error at column col of l in a plain value. Its
-// message names the column and says to quote the value.
+// faultAt is a syntax error at column col of l.
 func faultAt(l *srcLine, col int, msg string) error {
-	return &syntaxError{line: l.num, col: col, msg: fmt.Sprintf("column %d %s; quote the value", col, msg)}
+	return &syntaxError{line: l.num, col: col, msg: msg}
+}
+
+// blanks are the characters YAML trims around a value: spaces and tabs.
+const blanks = " \t"
+
+// colOf is the 1-based column, in characters, where text starts on l.
+// text is a trimmed piece of l's text, so its last match is the piece.
+func colOf(l *srcLine, text string) int {
+	i := strings.LastIndex(l.text, text)
+	if i < 0 {
+		i = 0
+	}
+	return l.indent + utf8.RuneCountInString(l.text[:i]) + 1
 }
 
 // peek is the next line that holds YAML, past blank and comment lines, or
@@ -290,7 +303,7 @@ func splitKey(text string) (key, rest string, ok bool) {
 	if m == nil || notKey(text, m[1]) {
 		return "", "", false
 	}
-	return strings.TrimSpace(m[1]), strings.TrimSpace(text[len(m[0]):]), true
+	return strings.Trim(m[1], blanks), strings.Trim(text[len(m[0]):], blanks), true
 }
 
 // notKey reports whether a match of keyRe is a list item or a comment
@@ -309,7 +322,7 @@ func quotedKey(text string) (key, rest string, ok bool) {
 	if !strings.HasPrefix(after, ":") || len(after) > 1 && after[1] != ' ' {
 		return "", "", false
 	}
-	return text[1:end], strings.TrimSpace(after[1:]), true
+	return text[1:end], strings.Trim(after[1:], blanks), true
 }
 
 // closingQuote is the index of the quote that closes the one text starts
@@ -341,7 +354,7 @@ var scalarReaders = map[byte]func(p *parser, owner *srcLine, rest string) (*node
 // value reads the value after a key or a dash on owner's line. keyed tells
 // a key's value, which may be a list at the key's own indent.
 func (p *parser) value(owner *srcLine, rest string, keyed bool) (*node, error) {
-	rest = strings.TrimSpace(rest)
+	rest = strings.Trim(rest, blanks)
 	if rest == "" || strings.HasPrefix(rest, "#") {
 		return p.nested(owner, keyed)
 	}
@@ -374,12 +387,11 @@ func (p *parser) alias(owner *srcLine, rest string) (*node, error) {
 // plain reads a plain scalar and the deeper lines that continue it,
 // failing one GitHub's YAML parser rejects. keyed tells a key's value.
 func (p *parser) plain(owner *srcLine, rest string, keyed bool) (*node, error) {
-	col := owner.indent + len(strings.TrimRight(owner.text, " \t")) - len(rest) + 1
-	if err := plainStart(owner, col, rest, keyed); err != nil {
+	if err := plainStart(owner, rest, keyed); err != nil {
 		return nil, err
 	}
 	first := cutComment(rest)
-	if err := plainColon(owner, col, first); err != nil {
+	if err := plainColon(owner, first); err != nil {
 		return nil, err
 	}
 	parts, err := p.plainLines(owner)
@@ -393,7 +405,7 @@ func (p *parser) plainLines(owner *srcLine) ([]string, error) {
 	var parts []string
 	for l := p.peek(); l != nil && l.indent > owner.indent; l = p.peek() {
 		part := cutComment(l.text)
-		if err := plainColon(l, l.indent+1, part); err != nil {
+		if err := plainColon(l, part); err != nil {
 			return nil, err
 		}
 		parts = append(parts, part)
@@ -402,27 +414,37 @@ func (p *parser) plainLines(owner *srcLine) ([]string, error) {
 	return parts, nil
 }
 
-// plainStart fails a plain scalar at column col of l that starts with a
-// character YAML reserves. On a key's line, it also fails one that opens
-// a list, key or mapping value.
-func plainStart(l *srcLine, col int, text string, keyed bool) error {
+// openers name what `- `, `? ` and `: ` open, which YAML forbids on a
+// key's line.
+var openers = map[byte]string{'-': "list item", '?': "key", ':': "mapping value"}
+
+// plainStart fails a plain scalar text on l that starts with a character
+// YAML reserves. On a key's line, it also fails one that opens a list
+// item, key or mapping value.
+func plainStart(l *srcLine, text string, keyed bool) error {
 	if strings.IndexByte(reservedStarts, text[0]) >= 0 {
-		return faultAt(l, col, fmt.Sprintf("starts a plain value with %q, which YAML reserves", text[0]))
+		return faultAt(l, colOf(l, text), fmt.Sprintf("a plain value cannot start with %q, which YAML reserves; quote the value", text[0]))
 	}
 	if keyed && keyLineIndicatorRe.MatchString(text) {
-		return faultAt(l, col, fmt.Sprintf("starts a value on its key's line with %q, which YAML does not allow", text[0]))
+		return faultAt(l, colOf(l, text), fmt.Sprintf("%q opens a %s on its key's line, which YAML does not allow; "+
+			"move it onto its own line, indented under the key", text[0], openers[text[0]]))
 	}
 	return nil
 }
 
-// plainColon fails plain scalar text, starting at column col of l, that
-// holds a colon a blank or the end follows. YAML reads that colon as a
-// mapping value, which a plain value cannot hold.
-func plainColon(l *srcLine, col int, text string) error {
-	if loc := mapColonRe.FindStringIndex(text); loc != nil {
-		return faultAt(l, col+loc[0], "holds a `: ` inside a plain value, which YAML reads as a mapping it does not allow here")
+// plainColon fails plain scalar text on l that holds a colon a blank or
+// the end follows. YAML reads that colon as a mapping value, which a plain
+// value cannot hold.
+func plainColon(l *srcLine, text string) error {
+	loc := mapColonRe.FindStringIndex(text)
+	if loc == nil {
+		return nil
 	}
-	return nil
+	col := colOf(l, text) + utf8.RuneCountInString(text[:loc[0]])
+	if loc[1] == len(text) && loc[1]-loc[0] == 1 {
+		return faultAt(l, col, "a plain value ends in `:`, which YAML reads as a mapping it does not allow here; quote the value")
+	}
+	return faultAt(l, col, "a `: ` inside a plain value starts a mapping, which YAML does not allow here; quote the value")
 }
 
 // cutComment drops a ` #` comment from a plain scalar.
@@ -430,7 +452,7 @@ func cutComment(text string) string {
 	if i := strings.Index(text, " #"); i >= 0 {
 		text = text[:i]
 	}
-	return strings.TrimSpace(text)
+	return strings.Trim(text, blanks)
 }
 
 // quoted reads a quoted scalar, which may run over several lines.
@@ -470,22 +492,37 @@ func inBlock(l srcLine, indent int) bool {
 }
 
 // flow reads a `[...]` or `{...}` value as its text, over as many lines as
-// its brackets span.
+// its brackets span. Text other than a comment after the closing bracket
+// fails, as GitHub fails it.
 func (p *parser) flow(owner *srcLine, rest string) (*node, error) {
-	text := rest
-	depth, err := bracketDepth(owner, text)
-	for ; depth > 0 && err == nil; depth, err = bracketDepth(owner, text) {
+	text, last := rest, owner
+	end, err := flowEnd(owner, text)
+	for ; end < 0 && err == nil; end, err = flowEnd(owner, text) {
 		if p.pos >= len(p.lines) {
 			return nil, fault(owner, fmt.Sprintf("the %c opened on this line never closes", rest[0]))
 		}
-		text += " " + strings.TrimSpace(p.lines[p.pos].text)
+		last = &p.lines[p.pos]
+		text += " " + strings.Trim(last.text, blanks)
 		p.pos++
 	}
-	return &node{kind: flowNode, line: owner.num, text: text}, err
+	if err == nil {
+		err = flowTail(last, text[end+1:])
+	}
+	return &node{kind: flowNode, line: owner.num, text: text[:end+1]}, err
 }
 
-// bracketDepth counts the brackets text leaves open, outside quotes.
-func bracketDepth(owner *srcLine, text string) (int, error) {
+// flowTail fails text other than a comment after a flow value's closing
+// bracket on l.
+func flowTail(l *srcLine, tail string) error {
+	after := strings.Trim(tail, blanks)
+	if after == "" || strings.HasPrefix(after, "#") {
+		return nil
+	}
+	return faultAt(l, colOf(l, after), "text follows the closing bracket of this flow value; remove it, or quote the whole value")
+}
+
+// flowEnd is the index of the bracket that closes the one text opens, outside quotes, or -1 while it stays open.
+func flowEnd(owner *srcLine, text string) (int, error) {
 	depth := 0
 	var quote byte
 	for i := 0; i < len(text); i++ {
@@ -494,8 +531,11 @@ func bracketDepth(owner *srcLine, text string) (int, error) {
 		if depth < 0 {
 			return 0, fault(owner, "a bracket closes here that never opened")
 		}
+		if depth == 0 {
+			return i, nil
+		}
 	}
-	return depth, nil
+	return -1, nil
 }
 
 // quoteState is the quote open after reading c.
