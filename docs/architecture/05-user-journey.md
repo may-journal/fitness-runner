@@ -58,7 +58,7 @@ flowchart TB
     subgraph checks["Check families"]
         commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085, 0149)]:::system
+        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085, 0152)]:::system
         commentChecks[(41 Code comments<br/>Req 0137, 0139, 0141)]:::system
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
