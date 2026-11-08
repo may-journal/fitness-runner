@@ -87,7 +87,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if len(calls) > 0 {
 		ctx, cancel := context.WithTimeout(context.Background(), askBudget)
 		defer cancel()
-		result = judge(read, calls, &github{ctx: ctx})
+		result = judge(read, calls, &github{ctx: ctx, answers: map[string]*cached{}})
 	}
 	result.Info = append(unread, result.Info...)
 	return result, nil
@@ -136,6 +136,9 @@ type outcome struct {
 // verifyAll judges every call side by side and returns the outcomes in call order.
 func verifyAll(calls []call, gh *github) []outcome {
 	return par.Map(len(calls), askWorkers, func(i int) outcome {
+		if err := gh.stopped(); err != nil {
+			return outcome{err: err}
+		}
 		v, err := gh.verify(calls[i])
 		return outcome{verdict: v, err: err}
 	})
@@ -237,6 +240,8 @@ type github struct {
 	ctx     context.Context
 	mu      sync.Mutex
 	answers map[string]*cached
+	// stop is the first failure to reach GitHub, after which no new call starts.
+	stop error
 }
 
 // cached holds one API path's answer, read once however many calls share it.
@@ -257,17 +262,33 @@ type answer struct {
 // get reads one API path, which calls verified side by side share.
 func (g *github) get(api string) answer {
 	g.mu.Lock()
-	if g.answers == nil {
-		g.answers = map[string]*cached{}
-	}
 	c := g.answers[api]
 	if c == nil {
 		c = &cached{}
 		g.answers[api] = c
 	}
 	g.mu.Unlock()
-	c.once.Do(func() { c.answer = g.ask(api) })
+	c.once.Do(func() {
+		c.answer = g.ask(api)
+		g.halt(c.answer.err)
+	})
 	return c.answer
+}
+
+// halt keeps err as the reason no new call starts, unless an earlier failure did.
+func (g *github) halt(err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.stop == nil {
+		g.stop = err
+	}
+}
+
+// stopped is the failure that stops new calls, or nil while GitHub answers.
+func (g *github) stopped() error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return g.stop
 }
 
 // ask runs `gh api` once and sorts its outcome: found, a 404, a refusal of

@@ -136,15 +136,18 @@ func Test0086_7(t *testing.T) {
 const slowRefs = 8
 
 func Test0086_8(t *testing.T) {
-	t.Parallel()
+	// Not parallel: a wall-clock limit beside other tests would time their load.
 	var uses []string
 	for i := range slowRefs {
 		uses = append(uses, fmt.Sprintf("may-journal/fitness-runner/.github/workflows/w%d.yml@%s", i, refSha))
 	}
 	slow := found("repos/may-journal/fitness-runner/contents/.github/workflows/", `{"name":"w.yml"}`)
 	slow.Wait = 1
-	out, code, _ := refCheck(t, refWorkflow(uses...), []response{slow})
+	out, code, rp := refCheck(t, refWorkflow(uses...), []response{slow})
 	sees(t, out, code, 0, "All 1 checks passed")
+	if reads := len(rp.calls("gh")); reads != slowRefs {
+		t.Errorf("workflow-ref-exists read GitHub %d times, want %d", reads, slowRefs)
+	}
 	took := rowDuration.FindStringSubmatch(row(out, "workflow-ref-exists"))
 	if took == nil {
 		t.Fatalf("workflow-ref-exists shows no time in %q", row(out, "workflow-ref-exists"))
