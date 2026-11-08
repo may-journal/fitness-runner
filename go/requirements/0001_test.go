@@ -323,6 +323,22 @@ func Test0001_13(t *testing.T) {
 	}
 	keepsCatalogOrder(t, out, slices.Sorted(maps.Keys(stages)))
 	showsProgress(t)
+	runnerTakesNoSlot(t)
+}
+
+// runnerTakesNoSlot asserts a test runner takes no pool slot. With one fast
+// check per core, all of them start before any ends.
+func runnerTakesNoSlot(t *testing.T) {
+	t.Helper()
+	stages := map[string]string{"slow-zz": "tests"}
+	for i := range runtime.NumCPU() {
+		stages[fmt.Sprintf("slow-%02d", i)] = "fast"
+	}
+	_, _, stamps := timedRun(t, stages, "--policy=external", "--checks="+strings.Join(slices.Sorted(maps.Keys(stages)), ","))
+	runs := stamps.phase(t, "run", stages)
+	if n := overlapping(runs); n != len(runs) {
+		t.Errorf("a test runner must take no pool slot, so all %d checks start before the first ends, but %d did: %v", len(runs), n, runs)
+	}
 }
 
 // keepsCatalogOrder asserts the table lists the slow checks in want's order.
@@ -339,9 +355,9 @@ func keepsCatalogOrder(t *testing.T, out string, want []string) {
 // ends.
 const timedPrefix = "fitness-check-slow-"
 
-// timedRun adds one slow check per stage entry to the installed suite, runs
-// fitness on a passing repo, and returns the logged times.
-func timedRun(t *testing.T, stages map[string]string) (string, int, stamps) {
+// timedRun adds one slow check per stage entry to the installed suite. It runs
+// fitness with args on a passing repo and returns the logged times.
+func timedRun(t *testing.T, stages map[string]string, args ...string) (string, int, stamps) {
 	t.Helper()
 	installed, bundle, logs := installOnly(t), t.TempDir(), t.TempDir()
 	linkTools(bundle, installed, []string{"fitness"})
@@ -354,7 +370,7 @@ func timedRun(t *testing.T, stages map[string]string) (string, int, stamps) {
 	}
 	repo := example(t, "happyRepo", architectedRepo())
 	out, code := execute(t, func() *exec.Cmd {
-		cmd := exec.Command(filepath.Join(bundle, "fitness"))
+		cmd := exec.Command(filepath.Join(bundle, "fitness"), args...)
 		cmd.Dir, cmd.Env = repo, append(userEnv(), "FITNESS_TIMED="+logs)
 		return cmd
 	})

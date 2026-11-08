@@ -73,12 +73,6 @@ func takeJSONFlag(args []string) (asJSON bool, rest []string) {
 	return asJSON, rest
 }
 
-// seconds writes a budget in milliseconds as seconds, as both commands
-// show it.
-func seconds(ms int64) string {
-	return trimFloat(float64(ms) / 1000)
-}
-
 // listChecks describes every check in the catalog and marks the ones the
 // repo's config selects. A check with a missing program or failed handshake
 // still gets a row with a note.
