@@ -68,6 +68,7 @@ flowchart TB
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
+        timeoutChecks[(43 Workflow timeouts<br/>Req 0150)]:::system
     end
 
     resultsTable[8 Results table<br/>Req 0001, 0101]:::screen
@@ -175,3 +176,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
 | 41  | Code comment checks.                | System  | Comments meet the prose limits and hold no dead code, echoes, decoration, history, filler or tutorial tone. |
 | 42  | `fitness claude-hook`.              | Action  | Claude meets a failing check right after an edit, before a `gh` post, as it or a subagent stops, or as a session starts, and fixes it that turn. |
+| 43  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |
