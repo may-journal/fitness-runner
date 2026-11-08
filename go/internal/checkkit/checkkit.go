@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 // ExitInternal is the exit code of a check that could not judge the repo.
@@ -89,6 +90,28 @@ const (
 	ScopeGitHub = "github"
 )
 
+// The stages a check declares: which total times it. No check has a time
+// limit of its own; a stage's total bounds its checks together.
+const (
+	// StageFast holds every ordinary check, and is the stage of a check
+	// that declares none.
+	StageFast = "fast"
+	// StageTests holds the test runners, which take minutes.
+	StageTests = "tests"
+)
+
+// FastTotal bounds the wall time of a run's fast checks together. A run past
+// it stops what still runs, fails, and names the slowest checks.
+const FastTotal = 60 * time.Second
+
+// StageOf is the stage d declares, StageFast when it declares none.
+func StageOf(d Describe) string {
+	if d.Stage == StageTests {
+		return StageTests
+	}
+	return StageFast
+}
+
 // Describe is the metadata a check prints for `--describe`.
 type Describe struct {
 	// Name is the check name, as `fitness <name>` runs it.
@@ -99,8 +122,9 @@ type Describe struct {
 	Summary string `json:"summary,omitempty"`
 	// Scope is one of the Scope constants: what the check reads.
 	Scope string `json:"scope,omitempty"`
-	// TimeoutMs is the check's execution budget; 0 means the runner default.
-	TimeoutMs int `json:"timeoutMs,omitempty"`
+	// Stage is StageTests for a test runner, timed by the test stage's
+	// total; empty or StageFast joins the fast checks and their FastTotal.
+	Stage string `json:"stage,omitempty"`
 	// ContextInlineArg names a flag (e.g. "--message") whose value the runner
 	// extracts from single-check argv into FITNESS_CTX_MESSAGE and strips
 	// from passthrough. Empty when the check takes no inline context.

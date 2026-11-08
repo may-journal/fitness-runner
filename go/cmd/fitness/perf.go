@@ -3,16 +3,20 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/tabwriter"
 
 	"github.com/may-journal/fitness-runner/go/internal/boxes"
 	"github.com/may-journal/fitness-runner/go/internal/render"
+	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 // jsonFlag names the file that receives the run's performance report: each
-// check's time, budget, files, binary size, and error lines, as JSON.
+// check's time, stage, files, binary size, and error lines, as JSON.
 //
 //fitness:usage --json=<file>
 const jsonFlag = "--json"
@@ -81,7 +85,7 @@ func buildPerfReport(checks []resolved, outcomes []outcome, rows []render.Row, e
 			Name:         c.name,
 			Ok:           rows[i].Ok,
 			Ms:           rows[i].Ms,
-			TimeoutMs:    timeoutFor(c).Milliseconds(),
+			Stage:        stageOf(c),
 			TimedOut:     outcomes[i].timedOut,
 			FilesChecked: rows[i].FilesChecked,
 			BinaryBytes:  fileBytes(c.prog.Path),
@@ -110,4 +114,32 @@ func fileBytes(path string) int64 {
 		return 0
 	}
 	return info.Size()
+}
+
+// runPerf prints each check's duration from a retained `--json` record,
+// slowest first, with the stage whose total times it.
+func runPerf(args []string) int {
+	if len(args) != 1 {
+		report.Error("fitness perf", errors.New("use fitness perf <report.json>"))
+		return 2
+	}
+	r, err := readReport(args[0])
+	if err != nil {
+		report.Error("fitness perf", err)
+		return 1
+	}
+	writeDurations(os.Stdout, r)
+	return 0
+}
+
+// writeDurations prints one row per check, slowest first, then the run's
+// wall time.
+func writeDurations(w io.Writer, r perfReport) {
+	tw := tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(tw, "CHECK\tSTAGE\tTIME\tRESULT")
+	for _, c := range slowestFirst(r.Checks) {
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", c.Name, orDash(c.Stage), took(c.Ms), c.Result())
+	}
+	_ = tw.Flush()
+	fmt.Fprintf(w, "The run took %s.\n", took(r.ElapsedMs))
 }

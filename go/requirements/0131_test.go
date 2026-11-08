@@ -105,16 +105,11 @@ func Test0131_6(t *testing.T) {
 
 func Test0131_7(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", shellCheck("slow-rule", `{"timeoutMs": 300}`, ""))
+	repo := example(t, "happyRepo", shellCheck("suite-rule", `{"stage": "tests"}`, passing))
 	for _, c := range listJSON(t, repo) {
-		if c.Name == "slow-rule" && c.BudgetMs != 300 {
-			t.Errorf("fitness list shows slow-rule with budget %dms, want the 300ms it declares", c.BudgetMs)
+		if c.Name == "suite-rule" && c.Stage != "tests" {
+			t.Errorf("fitness list shows suite-rule in stage %q, want the tests stage it declares", c.Stage)
 		}
-	}
-	out, code := fitness(t, repo, nil, "check", "slow-rule")
-	sees(t, out, code, 1, "Check timed out after 0.3s")
-	if !strings.Contains(row(out, "slow-rule"), "failed") {
-		t.Errorf("a check past the budget it declares must report red, got row %q", row(out, "slow-rule"))
 	}
 }
 

@@ -7,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "swiftlint", Scope: checkkit.ScopeFiles, TimeoutMs: 120000},
+		Describe: checkkit.Describe{Name: "swiftlint", Scope: checkkit.ScopeFiles},
 		Run:      swiftlint.Run,
 	})
 }

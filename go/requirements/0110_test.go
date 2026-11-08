@@ -12,11 +12,11 @@ import (
 
 // listedCheck is one check as `fitness list --json` gives it.
 type listedCheck struct {
-	Name     string `json:"name"`
-	Summary  string `json:"summary"`
-	Scope    string `json:"scope"`
-	BudgetMs int    `json:"budgetMs"`
-	Enabled  bool   `json:"enabled"`
+	Name    string `json:"name"`
+	Summary string `json:"summary"`
+	Scope   string `json:"scope"`
+	Stage   string `json:"stage"`
+	Enabled bool   `json:"enabled"`
 }
 
 // listJSON runs `fitness list --json` in repo and decodes what it printed
@@ -52,10 +52,10 @@ func Test0110_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	out, code := fitness(t, repo, nil, "list")
-	sees(t, out, code, 0, "CHECK SCOPE BUDGET ENABLED SUMMARY", "Lists Go files that gofmt would change.")
+	sees(t, out, code, 0, "CHECK SCOPE STAGE ENABLED SUMMARY", "Lists Go files that gofmt would change.")
 	for _, check := range strings.Fields(catalogRows) {
 		if !described(listRow(out, check)) {
-			t.Errorf("fitness list shows %s without a scope, budget and summary: %q", check, listRow(out, check))
+			t.Errorf("fitness list shows %s without a scope, stage and summary: %q", check, listRow(out, check))
 		}
 		if strings.Count(out, "\n"+check+" ") != 1 {
 			t.Errorf("fitness list shows %s other than once:\n%s", check, out)
@@ -63,11 +63,11 @@ func Test0110_1(t *testing.T) {
 	}
 }
 
-// described reports whether a `fitness list` row shows a scope, a budget in
-// seconds, and a summary.
+// described reports whether a `fitness list` row shows a scope, a stage, and
+// a summary.
 func described(row string) bool {
 	fields := strings.Fields(row)
-	return len(fields) >= 5 && fields[1] != "-" && strings.HasSuffix(fields[2], "s") && fields[4] != "-"
+	return len(fields) >= 5 && fields[1] != "-" && (fields[2] == "fast" || fields[2] == "tests") && fields[4] != "-"
 }
 
 func Test0110_2(t *testing.T) {

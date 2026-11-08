@@ -44,7 +44,7 @@ func Main() {
 	checkkit.Main(checkkit.Check{
 		// The registry answers one request per dependency, which on a cold cache
 		// can exceed 5s, so keep the TS check's 30s.
-		Describe: checkkit.Describe{Name: "dependency-currency", Scope: checkkit.ScopeFiles, TimeoutMs: 30000},
+		Describe: checkkit.Describe{Name: "dependency-currency", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

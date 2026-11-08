@@ -57,7 +57,7 @@ func runBlob(argv []string) int {
 		report.Error("fitness --blob", err)
 		return usageExit
 	}
-	root, cfg, suite, err := blobConfig()
+	root, _, suite, err := blobConfig()
 	if err != nil {
 		report.Error("fitness --blob", err)
 		return 1
@@ -67,7 +67,6 @@ func runBlob(argv []string) int {
 		report.Error("fitness --blob", err)
 		return usageExit
 	}
-	run = withBudgets(cfg, run)
 	return judgeBlob(root, req, run, skipped, blobEnv(run, req.checks != nil))
 }
 
@@ -122,7 +121,7 @@ func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []s
 	checks, outcomes, notApplying := applying(checks, outcomes)
 	rows, totals := summarize(checks, outcomes, "")
 	totals.Ms = time.Since(start).Milliseconds()
-	printSummary(rows, totals)
+	printSummary(rows, totals, breachLine(checks, outcomes, rows))
 	found := allFindings(checks, outcomes, rows)
 	printJSON(rows, found, totals)
 	out := humanOut(totals)

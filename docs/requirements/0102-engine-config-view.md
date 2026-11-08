@@ -13,9 +13,9 @@ checks the suite knows
 ## Requirements
 
 - 0102.1
-    - Given AI agent has a repo whose config turns off a check and sets one limit
+    - Given AI agent has a repo whose config turns off a check and sets one prose limit
         - When `fitness config --json` runs
-            - Then it shows each setting's value and source, and each check enabled or skipped with its reason
+            - Then it shows each setting's value and source, defaults included, and each check enabled or skipped with its reason
 - 0102.2
     - Given AI agent has a repo
         - When `fitness config schema` runs

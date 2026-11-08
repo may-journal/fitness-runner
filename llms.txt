@@ -2,7 +2,7 @@
 
 fitness runs a repo's fitness checks: small programs that each judge one rule, such as spelling, tests, or pull request shape. One binary holds every built-in check; a repo may add local checks. Each check decides whether it applies, so any repo runs the same suite with nothing to configure.
 
-A run resolves the checks, runs them side by side under time budgets, and prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges every tracked file.
+A run resolves the checks, runs them side by side under two totals, and prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges every tracked file.
 
 ## Exit codes
 
@@ -21,13 +21,13 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `fitness --blob <text>`: Runs every blob-capable check on a text instead of the repo; - reads the text from stdin.
 - `fitness --dir=<folder>`: Judges only the files under one folder.
 - `fitness --file=<path>`: Judges only the named file; repeat it to name more.
-- `fitness --json=<file>`: Names the file that receives the run's performance report: each check's time, budget, files, binary size, and error lines, as JSON.
+- `fitness --json=<file>`: Names the file that receives the run's performance report: each check's time, stage, files, binary size, and error lines, as JSON.
 - `fitness --policy=external --checks=<name,name>`: Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
 
 ## Commands
 
 - `fitness llms`: Prints a page that teaches an AI the whole CLI.
-- `fitness list [--json]`: Names every check with its summary, scope, budget, and whether this repo enables it.
+- `fitness list [--json]`: Names every check with its summary, scope, stage, and whether this repo enables it.
 - `fitness explain <check> [--json]`: Prints why a check exists, what it judges, and the config keys it reads.
 - `fitness docs [topic]`: Lists the guide topics, or prints one, from the code's doc comments.
 - `fitness check --list` or `fitness check <name> [args]`: Prints every built-in check name, one per line, or runs one check by name, a repo's own check included.
@@ -35,6 +35,7 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `fitness init`: Installs the shared git hooks into this repo.
 - `fitness hook <name>`: Runs a git hook: commit-msg, pre-commit, or pre-push.
 - `fitness boxes <report.json> <page.html>`: Draws a --json report as an HTML box diagram.
+- `fitness perf <report.json>`: Prints each check's duration from a --json report, slowest first.
 - `fitness strip-front-matter`: Deletes the fitness keys from tracked Markdown files' front matter, and any block they leave empty.
 - `fitness comments [path...]`: Prints each code comment block of the tracked files, or of those under the named paths, with its line, language and kind.
 - `fitness branch-check`: Judges this branch's PR and the issues it closes locally, posting nothing.

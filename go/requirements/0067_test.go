@@ -44,7 +44,7 @@ func Test0067_2(t *testing.T) {
 	cmd.Env = append(userEnv(), rp.env...)
 	out, err := cmd.Output()
 	mustDo(t, err)
-	sees(t, string(out), cmd.ProcessState.ExitCode(), 0, `"name":"local-branch"`, `"timeoutMs":35000`)
+	sees(t, string(out), cmd.ProcessState.ExitCode(), 0, `"name":"local-branch"`, `"scope":"github"`)
 	if len(rp.calls("gh")) != 0 {
 		t.Fatalf("describe queried GitHub: %q", rp.calls("gh"))
 	}

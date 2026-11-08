@@ -163,7 +163,7 @@ func Test0143_5(t *testing.T) {
 	out, code := hookEvent(t, repo, subagentStop("a1", 1, false, transcript))
 	sees(t, out, code, 0, `"decision":"block"`, "[cspell] notes.md:1")
 	if strings.Contains(out, "go-test") {
-		t.Errorf("a subagent stop ran go-test, whose budget is over four minutes:\n%s", out)
+		t.Errorf("a subagent stop ran go-test, which is in the test stage:\n%s", out)
 	}
 }
 
@@ -208,7 +208,7 @@ func slowChecks() map[string]string {
 	for i := range 4 * runtime.NumCPU() {
 		name := fmt.Sprintf("slow-%d", i)
 		files["checks/fitness-check-"+name] = "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\":\"" + name +
-			"\",\"scope\":\"files\",\"timeoutMs\":4900}'; exit 0; }\nsleep 4\necho '" + passing + "'\n"
+			"\",\"scope\":\"files\"}'; exit 0; }\nsleep 4\necho '" + passing + "'\n"
 	}
 	return files
 }

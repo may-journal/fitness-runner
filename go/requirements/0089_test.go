@@ -19,7 +19,7 @@ type perfCheck struct {
 	Name         string `json:"name"`
 	Ok           bool   `json:"ok"`
 	Ms           int64  `json:"ms"`
-	TimeoutMs    int64  `json:"timeoutMs"`
+	Stage        string `json:"stage"`
 	TimedOut     bool   `json:"timedOut"`
 	FilesChecked int    `json:"filesChecked"`
 	BinaryBytes  int64  `json:"binaryBytes"`
@@ -35,10 +35,10 @@ type perfReport struct {
 
 // withReport runs the full suite with `--json` in repo and returns what it
 // printed and the report it wrote.
-func withReport(t *testing.T, repo string) (string, perfReport) {
+func withReport(t *testing.T, repo string, env ...string) (string, perfReport) {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "perf", "fitness.json")
-	out, _ := fitness(t, repo, nil, "--policy=external", "--all", "--json="+path)
+	out, _ := fitness(t, repo, env, "--policy=external", "--all", "--json="+path)
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("fitness --json wrote no report: %v\n%s", err, out)
@@ -95,26 +95,26 @@ func verdictOf(c perfCheck) verdict {
 }
 
 // fullEntry asserts a report entry matches a table row and carries its
-// budget, binary size, and time.
+// stage, binary size, and time.
 func fullEntry(t *testing.T, out string, c perfCheck) {
 	t.Helper()
 	if row(out, c.Name) == "" {
 		t.Errorf("the report lists %s, which the table never showed", c.Name)
 	}
-	if c.TimeoutMs <= 0 || c.BinaryBytes <= 0 || c.Ms < 0 {
-		t.Errorf("%s must carry its budget, binary size, and time, got %+v", c.Name, c)
+	if c.Stage == "" || c.BinaryBytes <= 0 || c.Ms < 0 {
+		t.Errorf("%s must carry its stage, binary size, and time, got %+v", c.Name, c)
 	}
 }
 
 func Test0089_2(t *testing.T) {
 	t.Parallel()
-	_, report := withReport(t, example(t, "happyRepo", hungTool("300", "")))
+	_, report := withReport(t, example(t, "happyRepo", hungTool("")), fastTotal(300))
 	prettier := reported(t, report, "prettier")
-	if !prettier.TimedOut || prettier.Ok || prettier.TimeoutMs != 300 {
-		t.Errorf("prettier must be timed out at its 300ms budget, got %+v", prettier)
+	if got := [3]any{prettier.TimedOut, prettier.Ok, prettier.Stage}; got != [3]any{true, false, "fast"} {
+		t.Errorf("prettier must be stopped at the 300ms fast total, got %+v", prettier)
 	}
-	if goTest := reported(t, report, "go-test"); goTest.TimedOut {
-		t.Errorf("only the hung check times out, got %+v", goTest)
+	if goTest := reported(t, report, "go-test"); [2]any{goTest.TimedOut, goTest.Stage} != [2]any{false, "tests"} {
+		t.Errorf("the fast total must never stop a test-stage check, got %+v", goTest)
 	}
 }
 
@@ -130,12 +130,12 @@ func Test0089_3(t *testing.T) {
 }
 
 // timingRow matches one line of the job summary's timing table.
-var timingRow = regexp.MustCompile(`^\| (\S+) \| (\d+)ms \| (\d+)ms \| \d+% \|$`)
+var timingRow = regexp.MustCompile(`^\| (\S+) \| (fast|tests) \| (\d+)ms \|$`)
 
 func Test0089_4(t *testing.T) {
 	t.Parallel()
 	out, _, summary := inActions(t, example(t, "happyRepo", nil))
-	sees(t, summary, 0, 0, "### Check timing", "| Check | Time | Budget | Used |")
+	sees(t, summary, 0, 0, "### Check timing", "| Check | Stage | Time |")
 	times := timings(summary)
 	if want := strings.Count(out, "  → "); len(times) != want {
 		t.Errorf("timing table has %d checks, the run started %d:\n%s", len(times), want, summary)
@@ -150,7 +150,7 @@ func timings(summary string) []int64 {
 	var times []int64
 	for _, line := range strings.Split(summary, "\n") {
 		if m := timingRow.FindStringSubmatch(line); m != nil {
-			ms, _ := strconv.ParseInt(m[2], 10, 64)
+			ms, _ := strconv.ParseInt(m[3], 10, 64)
 			times = append(times, ms)
 		}
 	}

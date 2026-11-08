@@ -15,11 +15,11 @@ runs asked for a record
 - 0089.1
     - Given Developer has a repo with passing and failing checks
         - When fitness runs with `--json=<file>`
-            - Then the file lists every check's time, budget, files, binary size, error lines, and result
+            - Then the file lists every check's time, stage, files, binary size, error lines, and result
 - 0089.2
-    - Given Developer has a check that runs past its time budget
+    - Given Developer has a check that runs past the fast total
         - When fitness runs with `--json=<file>`
-            - Then the file marks that check timed out
+            - Then the file marks that check timed out, and a test runner not
 - 0089.3
     - Given Developer has a `--json` flag with no file, or a file it cannot write
         - When fitness runs with it
@@ -27,7 +27,7 @@ runs asked for a record
 - 0089.4
     - Given Developer has a run inside a GitHub Actions job
         - When fitness finishes
-            - Then the job summary lists each check's time and budget, slowest first
+            - Then the job summary lists each check's stage and time, slowest first
 - 0089.5
     - Given Developer has built release assets
         - When `fitness-release record` runs

@@ -40,7 +40,7 @@ func Test0111_1(t *testing.T) {
 	repo := example(t, "happyRepo", nil)
 	for _, check := range listJSON(t, repo) {
 		out, code := fitness(t, repo, nil, "explain", check.Name)
-		sees(t, strings.ReplaceAll(out, `\`, ""), code, 0, "# "+check.Name, "Scope: "+check.Scope, opening(check.Summary))
+		sees(t, strings.ReplaceAll(out, `\`, ""), code, 0, "# "+check.Name, "Scope: "+check.Scope+" · Stage: "+check.Stage, opening(check.Summary))
 	}
 }
 

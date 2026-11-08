@@ -240,11 +240,10 @@ func fileScope(root string, files []string) []string {
 	return scope
 }
 
-// editCheck keeps the checks an edit runs: file checks within the default
-// budget. Tests, vet, linters and network checks declare more and wait for
-// the stop.
+// editCheck keeps the checks an edit runs: fast file checks. The test
+// stage waits for the stop.
 func editCheck(c listed) bool {
-	return c.Scope == checkkit.ScopeFiles && c.BudgetMs <= defaultTimeout.Milliseconds()
+	return c.Scope == checkkit.ScopeFiles && c.Stage == checkkit.StageFast
 }
 
 // stopCheck keeps the checks a stop runs: every file and git check.

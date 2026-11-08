@@ -23,9 +23,6 @@ type Config struct {
 	Policy string `json:"policy" enum:"org,external"`
 	// LegacyChecks optionally selects checks in external mode, which org ignores.
 	LegacyChecks []string `json:"checks"`
-	// TimeoutMs replaces the default per-check budget for checks that declare
-	// none of their own.
-	TimeoutMs int `json:"timeoutMs"`
 	// LocalChecks names a repo directory of the repo's own check programs,
 	// searched before the bundled ones, as ADR 0009 describes.
 	LocalChecks string `json:"localChecks"`
@@ -97,7 +94,6 @@ var source []byte
 var Defaults = func() Config {
 	var c Config
 	c.Policy = "org"
-	c.TimeoutMs = 5000
 	c.TextReadability.MaxGrade = 18
 	c.TextReadability.MaxLix = 60
 	c.TextReadability.MinWords = 100

@@ -7,7 +7,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "checkstyle", Scope: checkkit.ScopeFiles, TimeoutMs: 300000},
+		Describe: checkkit.Describe{Name: "checkstyle", Scope: checkkit.ScopeFiles, Stage: checkkit.StageTests},
 		Run:      checkstyle.Run,
 	})
 }

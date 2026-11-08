@@ -78,7 +78,7 @@ flowchart TB
     ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082, 0087, 0120, 0138)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
-    perfRecord[(32 Performance record<br/>Req 0089)]:::system
+    perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
     closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
 
     dev --> install

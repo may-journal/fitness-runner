@@ -27,6 +27,9 @@ jobs:
         id: suite
         env:
           GH_TOKEN: ${{ github.token }}
+      # Each check's time, slowest first, read back from the kept record.
+      - run: go/bin/fitness perf "$RUNNER_TEMP/fitness-performance/fitness.json"
+        if: ${{ !cancelled() }}
       # The action draws the box diagram, then keeps it with the performance
       # record and the complete reports.
       - name: Retain the performance record and complete reports
