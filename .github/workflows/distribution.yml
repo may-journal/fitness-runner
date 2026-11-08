@@ -23,7 +23,7 @@ permissions:
 jobs:
   bundle:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
         with:
@@ -74,7 +74,8 @@ jobs:
           - runner: ubuntu-24.04-arm
             platform: linux-arm64
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
+    # Observed max 4m41s on 2026-10-19.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -142,7 +143,7 @@ jobs:
           - platform: linux-arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    timeout-minutes: 20
+    timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
         with:

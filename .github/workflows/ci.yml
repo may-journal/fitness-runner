@@ -10,7 +10,9 @@ on:
 jobs:
   fitness:
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 10
+    # Twice the observed max of 56s falls short of the 450s test total plus
+    # the 60s fast total, so the limit covers both.
+    timeout-minutes: 9
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,7 +56,7 @@ jobs:
     needs: fitness
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
+    timeout-minutes: 3
     outputs:
       pr: ${{ fromJSON(steps.report-step-1.outputs.pr || '{}').number }}
     steps:
