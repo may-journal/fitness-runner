@@ -72,23 +72,22 @@ func importErrors(root string, files []string) ([]string, error) {
 }
 
 // scope reads what the check judges: source files to scan, whether the dist
-// rules apply, and tracked files under the build output.
+// rules apply, and tracked build output, dist included.
 func scope(root string) (files []string, dist bool, output []string) {
 	files = collectSourceFiles(root)
-	return files, applies(root, files), trackedOutput(root)
+	tracked := trackedDistFiles(root)
+	return files, applies(root, files, tracked), dedupeSorted(tracked, trackedOutput(root))
 }
 
 // applies reports whether the dist rules have anything to judge: scanned
 // source, a dist directory on disk, or tracked dist files. A docs-only repo
 // has none, so the check passes clean there and is safe in the default list.
-func applies(root string, files []string) bool {
-	if len(files) > 0 {
+func applies(root string, files, tracked []string) bool {
+	if len(files) > 0 || len(tracked) > 0 {
 		return true
 	}
-	if _, err := os.Stat(filepath.Join(root, "dist")); err == nil {
-		return true
-	}
-	return len(trackedDistFiles(root)) > 0
+	_, err := os.Stat(filepath.Join(root, "dist"))
+	return err == nil
 }
 
 // trackingErrors reports rule A: dist must be git-ignored when its rules
@@ -100,9 +99,9 @@ func trackingErrors(root string, dist bool, output []string) []string {
 	if dist && !isDistIgnored(root) {
 		errors = append(errors, msgNotIgnored)
 	}
-	if tracked := dedupeSorted(trackedDistFiles(root), output); len(tracked) > 0 {
+	if len(output) > 0 {
 		errors = append(errors, fmt.Sprintf(
-			"%s %s (git rm --cached)", msgRemovePrefix, strings.Join(tracked, ", ")))
+			"%s %s (git rm --cached)", msgRemovePrefix, strings.Join(output, ", ")))
 	}
 	return errors
 }
@@ -121,16 +120,25 @@ func isDistIgnored(root string) bool {
 	return cmd.Run() == nil
 }
 
-// trackedDistFiles returns the tracked files in a dist folder at any depth,
-// sorted. It filters the runner's tracked list, so it asks git nothing.
+// trackedDistFiles returns the git-tracked files under dist, sorted. One
+// `git ls-files` call takes the root `dist` pathspec and the nested `**/dist/**` one.
 func trackedDistFiles(root string) []string {
-	var out []string
-	for _, file := range walkfs.Tracked(root) {
-		if file == "dist" || strings.HasPrefix(file, "dist/") || strings.Contains(file, "/dist/") {
-			out = append(out, file)
+	return dedupeSorted(gitLines(root, "ls-files", "--", "dist", "**/dist/**"))
+}
+
+// gitLines runs git with cwd root and returns the trimmed, non-empty lines
+// of its stdout; a failing command yields whatever stdout it produced.
+func gitLines(root string, args ...string) []string {
+	cmd := exec.Command("git", args...)
+	cmd.Dir = root
+	out, _ := cmd.Output()
+	var lines []string
+	for _, line := range strings.Split(string(out), "\n") {
+		if trimmed := strings.TrimSpace(line); trimmed != "" {
+			lines = append(lines, trimmed)
 		}
 	}
-	return out
+	return lines
 }
 
 // dedupeSorted merges the given lists into one sorted list without duplicates.

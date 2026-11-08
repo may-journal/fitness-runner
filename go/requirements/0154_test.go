@@ -1,8 +1,10 @@
 package requirements
 
 import (
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // largeTreeFiles is how many generated files the large tree adds beside a
@@ -11,6 +13,12 @@ const largeTreeFiles = 50000
 
 // largeTreeChecks are the repo-state checks a large tree must keep fast.
 var largeTreeChecks = []string{"build-output-untracked", "architecture-components"}
+
+// nestedDist is a build output file deep in the large tree.
+const nestedDist = "tree/0049/dist/app.js"
+
+// rowDuration matches a results-table row's time, in milliseconds or seconds.
+var rowDuration = regexp.MustCompile(`│ (\d+(?:\.\d+)?)(ms|s)\s+│\s*$`)
 
 // largeTree is aoFixture with a Java project, a TypeScript source the store
 // owns and an ignored dist folder.
@@ -28,5 +36,31 @@ func Test0154_1(t *testing.T) {
 	repo := generatedTree(t, largeTree(), largeTreeFiles)
 	write(t, repo, map[string]string{"dist/index.js": "export const built = true;\n"})
 	out, code := fitness(t, repo, nil, "--all", "--policy=external", "--checks="+strings.Join(largeTreeChecks, ","))
-	passesFast(t, out, code, largeTreeChecks)
+	sees(t, out, code, 0, "All 2 checks passed")
+	within(t, out, largeTreeChecks, 5*time.Second)
+}
+
+func Test0154_2(t *testing.T) {
+	t.Parallel()
+	repo := generatedTree(t, largeTree(), largeTreeFiles)
+	write(t, repo, map[string]string{nestedDist: "export const built = true;\n"})
+	git(t, repo, "add", "-f", nestedDist)
+	out, code := fitness(t, repo, nil, "--all", "--policy=external", "--checks="+largeTreeChecks[0])
+	sees(t, out, code, 1, nestedDist)
+	within(t, out, largeTreeChecks[:1], 5*time.Second)
+}
+
+// within asserts each check's row shows a time under limit.
+func within(t *testing.T, out string, checks []string, limit time.Duration) {
+	t.Helper()
+	t.Log("\n" + out)
+	for _, check := range checks {
+		took := rowDuration.FindStringSubmatch(row(out, check))
+		if took == nil {
+			t.Fatalf("%s shows no time in its row %q", check, row(out, check))
+		}
+		if d, _ := time.ParseDuration(took[1] + took[2]); d >= limit {
+			t.Errorf("%s took %v on %d tracked files, want under %v", check, d, largeTreeFiles, limit)
+		}
+	}
 }
