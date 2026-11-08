@@ -1,4 +1,4 @@
-# 0148 Checks Large Diffs
+# 0151 Checks Large Diffs
 
 ## Why
 
@@ -14,7 +14,7 @@ large changes
 
 ## Requirements
 
-- 0148.1
+- 0151.1
   - Given Developer has 266 changed files with their test, requirement doc and changelog entry
     - When the requirement checks judge them staged or in a pull request, and changelog-updated judges them staged
       - Then each passes within five seconds
