@@ -36,7 +36,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 
 // judge runs the callout rule over every doc under root.
 func judge(root string) (checkkit.Result, error) {
-	errors, filesChecked, err := mermaid.RunDocCheck(root, validateDoc)
+	errors, filesChecked, err := mermaid.RunParsedDocCheck(root, validateBlocks)
 	if err != nil {
 		return checkkit.Result{}, err
 	}
@@ -174,9 +174,13 @@ func compareCallouts(file string, diagram *mermaid.DiagramBlock, table *mermaid.
 	return errors
 }
 
-// validateDoc checks that each diagram but a legend is numbered, matches its callout table one to one, and labels connectors with doubling letters.
+// validateDoc judges a doc given as text, as validateBlocks does.
 func validateDoc(file, content string) []string {
-	blocks := mermaid.ParseDoc(content)
+	return validateBlocks(file, mermaid.ParseDoc(content))
+}
+
+// validateBlocks checks that each diagram but a legend is numbered, matches its callout table one to one, and labels connectors with doubling letters.
+func validateBlocks(file string, blocks []mermaid.DocBlock) []string {
 	result := mermaid.PairDiagramsWithTables(blocks)
 	var errors []string
 	for _, d := range mermaid.Unnumbered(blocks) {

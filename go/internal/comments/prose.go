@@ -9,19 +9,21 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
 // Judge adds what judge finds in each judged block, named `path:line` and read as Markdown, to res.
 func Judge(res checkkit.Result, root string, judge func(name, markdown string) []string) checkkit.Result {
-	blocks, err := Judged(root)
+	blocks, err := judged(root, false)
 	return judgeBlocks(res, blocks, err, func(_ Block, name, markdown string) []string { return judge(name, markdown) })
 }
 
-// JudgeEach is Judge for a judge that reads each block after Place places it.
+// JudgeEach is Judge for a judge that reads where each block sits, placed
+// from the same read of its file.
 func JudgeEach(res checkkit.Result, root string, judge func(b Block, name, markdown string) []string) checkkit.Result {
-	blocks, err := Judged(root)
-	return judgeBlocks(res, blocks, errors.Join(err, Place(root, blocks)), judge)
+	blocks, err := judged(root, true)
+	return judgeBlocks(res, blocks, err, judge)
 }
 
 // judgeBlocks adds to res what judge finds in blocks, and err as info.
@@ -29,21 +31,26 @@ func judgeBlocks(res checkkit.Result, blocks []Block, err error, judge func(b Bl
 	if err != nil {
 		res.Info = append(res.Info, err.Error())
 	}
-	files := map[string]bool{}
-	for _, b := range blocks {
-		files[b.Path] = true
-		if errs := judge(b, fmt.Sprintf("%s:%d", b.Path, b.Line), Markdown(b.Text)); len(errs) > 0 {
+	found := par.Map(len(blocks), 0, func(i int) []string {
+		b := blocks[i]
+		return judge(b, fmt.Sprintf("%s:%d", b.Path, b.Line), Markdown(b.Text))
+	})
+	seen := map[string]bool{}
+	for i, errs := range found {
+		seen[blocks[i].Path] = true
+		if len(errs) > 0 {
 			res.Ok = false
 			res.Errors = append(res.Errors, errs...)
 		}
 	}
-	res.FilesChecked += len(files)
+	res.FilesChecked += len(seen)
 	return res
 }
 
-// Judged returns the in-scope comment blocks, only those touching a changed line in a commit or pull request run.
-func Judged(root string) ([]Block, error) {
-	blocks, err := Files(root, walkfs.InScope(walkfs.FilesByExt(root, "")))
+// judged returns the in-scope comment blocks, only those touching a changed line in a commit or pull request run.
+// Place also places each block from the read of its file.
+func judged(root string, place bool) ([]Block, error) {
+	blocks, err := files(root, walkfs.InScope(walkfs.FilesByExt(root, "")), place)
 	if checkkit.DiffFiles() == nil {
 		return blocks, err
 	}

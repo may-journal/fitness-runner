@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
@@ -32,12 +33,10 @@ type Block struct {
 	Lang string
 	Kind Kind
 	Text string
-	// InBody marks a comment in a function body or after code, as Place sets it.
+	// InBody marks a comment in a function body or after code, as JudgeEach places it.
 	InBody bool
-	// Next is the trimmed code line after an own-line comment, as Place sets it.
+	// Next is the trimmed code line after an own-line comment, as JudgeEach places it.
 	Next string
-	// placed marks a block that came placed from the runner's views.
-	placed bool
 }
 
 // note is one comment as written, markers included, before adjacent notes join
@@ -104,19 +103,45 @@ func Lang(rel string, src []byte) string {
 // Files returns the comment view of covered paths under root in path order,
 // skipping generated files. It reads the runner's shared views where they match.
 func Files(root string, paths []string) ([]Block, error) {
+	return files(root, paths, false)
+}
+
+// files is Files read side by side, placing each file's blocks from the
+// same read when place is set.
+func files(root string, paths []string, place bool) ([]Block, error) {
+	kept := walkfs.WithoutGenerated(root, slices.DeleteFunc(slices.Clone(paths), uncovered))
+	read := par.Map(len(kept), 0, func(i int) fileBlocks { return readBlocks(root, kept[i], place) })
 	var blocks []Block
-	for _, rel := range walkfs.WithoutGenerated(root, slices.DeleteFunc(slices.Clone(paths), uncovered)) {
-		if shared, ok := sharedBlocks(root, rel); ok {
-			blocks = append(blocks, shared...)
-			continue
+	for _, r := range read {
+		if r.err != nil {
+			return blocks, r.err
 		}
-		src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			return blocks, err
-		}
-		blocks = append(blocks, Source(rel, src)...)
+		blocks = append(blocks, r.blocks...)
 	}
 	return blocks, nil
+}
+
+// fileBlocks is one file's comment blocks, or why it could not be read.
+type fileBlocks struct {
+	blocks []Block
+	err    error
+}
+
+// readBlocks returns the comment blocks of the file at rel from the
+// runner's views, else from one read of the file.
+func readBlocks(root, rel string, place bool) fileBlocks {
+	if shared, ok := sharedBlocks(root, rel); ok {
+		return fileBlocks{blocks: shared}
+	}
+	src, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+	if err != nil {
+		return fileBlocks{err: err}
+	}
+	blocks := Source(rel, src)
+	if place {
+		placeSource(blocks, src)
+	}
+	return fileBlocks{blocks: blocks}
 }
 
 // covered reports a path whose extension a reader covers, or one with
