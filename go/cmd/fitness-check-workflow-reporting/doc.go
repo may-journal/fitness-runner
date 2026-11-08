@@ -10,8 +10,17 @@
 //   - A matrix job is one definition, so it is judged once and named once.
 //   - Fail: a job with steps and no such step, naming the file, the job's line, and the step to add.
 //   - Fail: a job whose summary step lacks `if: always()`, naming that step's line.
-//   - Fail: a file that is not valid YAML, naming the line where reading stopped.
+//   - Fail: a file that is not valid YAML, naming the line where reading stopped, and the column for the values below.
 //   - A repo with no workflow files passes having checked none.
+//
+// # Values GitHub rejects
+//
+// These values fail at their line and column, as GitHub fails them:
+//
+//   - A plain value holding a `:` followed by a space, or ending in `:`. Quote the value.
+//   - A plain value starting with `,`, `]`, `}`, `%`, `@` or a backtick, which YAML reserves. Quote the value.
+//   - A list, key or value opened with `- `, `? ` or `: ` on its key's line. Move it onto its own indented line.
+//   - Text other than a comment after the closing bracket of a `[...]` or `{...}` value.
 //
 // In a pull request, or a staged commit, it reads only the changed workflow
 // files. It reads the files only: it never runs a step or fetches a called
@@ -21,6 +30,7 @@
 //
 //	.github/workflows/ci.yml:8: job build has no step that runs with if: always() and writes $GITHUB_STEP_SUMMARY, so a failed run shows only a badge; add a last step with `if: ${{ always() }}` whose run writes the job's status to "$GITHUB_STEP_SUMMARY"
 //	.github/workflows/ci.yml:3: this workflow is not valid YAML: a tab indents this line; YAML indents with spaces; fix the YAML on this line
+//	.github/workflows/ci.yml:5:30: this workflow is not valid YAML: a `: ` inside a plain value starts a mapping, which YAML does not allow here; quote the value; fix the YAML on this line
 //
 // # Adding the step
 //

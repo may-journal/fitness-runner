@@ -67,10 +67,64 @@ func Test0133_5(t *testing.T) {
 	}
 }
 
+// mergedRunsOn is the runs-on line that merged into three workflows and
+// failed every run, since GitHub reads its `": "` as a mapping value.
+const mergedRunsOn = `${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group": "fitness", "labels": "fitness"}') || 'ubuntu-24.04-arm' }}`
+
+// runsOnJob is a reporting workflow whose job runs on runsOn, on line 5.
+func runsOnJob(runsOn string) string {
+	return strings.Replace(reportingJob(reportStep), "runs-on: ubuntu-latest", "runs-on: "+runsOn, 1)
+}
+
+// rejectedRunsOn are runs-on values GitHub rejects as YAML, by file,
+// each failing on line 5 or 6 at the column its message follows.
+var rejectedRunsOn = map[string]string{
+	"fork.yml":          mergedRunsOn,
+	"reserved.yml":      "@self-hosted",
+	"key-line.yml":      "- self-hosted",
+	"continued.yml":     "ubuntu\n      latest: now",
+	"colon-end.yml":     "ubuntu-latest:",
+	"flow-trailing.yml": "[self-hosted]: x",
+	"wide.yml":          "café: x",
+}
+
+// acceptedRunsOn are the quoted or reshaped forms GitHub accepts.
+var acceptedRunsOn = map[string]string{
+	"fork.yml":          `"` + strings.ReplaceAll(mergedRunsOn, `"`, `\"`) + `"`,
+	"reserved.yml":      `"@self-hosted"`,
+	"key-line.yml":      "\n      - self-hosted",
+	"continued.yml":     "ubuntu\n      latest now",
+	"colon-end.yml":     `"ubuntu-latest:"`,
+	"flow-trailing.yml": "[self-hosted] # a comment",
+	"wide.yml":          `"café: x"`,
+}
+
+// runsOnWorkflows writes each runs-on value into a reporting workflow.
+func runsOnWorkflows(values map[string]string) map[string]string {
+	files := map[string]string{}
+	for name, runsOn := range values {
+		files[".github/workflows/"+name] = runsOnJob(runsOn)
+	}
+	return files
+}
+
 func Test0133_6(t *testing.T) {
 	t.Parallel()
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": "name: CI\non: push\njobs:\n  build:\n\truns-on: ubuntu-latest\n"})
-	sees(t, out, code, 1, ".github/workflows/ci.yml:5: this workflow is not valid YAML: a tab indents this line")
+	files := runsOnWorkflows(rejectedRunsOn)
+	files[".github/workflows/ci.yml"] = "name: CI\non: push\njobs:\n  build:\n\truns-on: ubuntu-latest\n"
+	out, code := reportingCheck(t, files)
+	const bad = ": this workflow is not valid YAML: "
+	sees(t, out, code, 1, ".github/workflows/ci.yml:5"+bad+"a tab indents this line",
+		".github/workflows/fork.yml:5:116"+bad+"a `: ` inside a plain value starts a mapping",
+		".github/workflows/reserved.yml:5:14"+bad+"a plain value cannot start with '@'",
+		".github/workflows/key-line.yml:5:14"+bad+"'-' opens a list item on its key's line",
+		"move it onto its own line, indented under the key",
+		".github/workflows/continued.yml:6:13"+bad+"a `: ` inside a plain value",
+		".github/workflows/colon-end.yml:5:27"+bad+"a plain value ends in `:`",
+		".github/workflows/flow-trailing.yml:5:27"+bad+"text follows the closing bracket",
+		".github/workflows/wide.yml:5:18"+bad+"a `: ` inside a plain value")
+	out, code = reportingCheck(t, runsOnWorkflows(acceptedRunsOn))
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0133_7(t *testing.T) {

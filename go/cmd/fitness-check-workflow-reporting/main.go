@@ -48,6 +48,9 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // render is a finding's error line: where, what is wrong, and the fix.
 func render(f checkkit.Finding) string {
+	if f.Column > 0 {
+		return fmt.Sprintf("%s:%d:%d: %s; %s", f.File, f.Line, f.Column, f.Message, f.Fix)
+	}
 	return fmt.Sprintf("%s:%d: %s; %s", f.File, f.Line, f.Message, f.Fix)
 }
 
@@ -72,7 +75,7 @@ func judgeFile(root, file string) ([]checkkit.Finding, error) {
 	doc, err := parseYAML(string(content))
 	var bad *syntaxError
 	if errors.As(err, &bad) {
-		return []checkkit.Finding{{File: file, Line: bad.line, Rule: ruleYAML,
+		return []checkkit.Finding{{File: file, Line: bad.line, Column: bad.col, Rule: ruleYAML,
 			Message: "this workflow is not valid YAML: " + bad.msg, Fix: "fix the YAML on this line"}}, nil
 	}
 	var out []checkkit.Finding
