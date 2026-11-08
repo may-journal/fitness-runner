@@ -1,7 +1,6 @@
 package adr
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"os/exec"
@@ -38,26 +37,42 @@ func CurrentRepo() (string, error) {
 // Issue is one `ADR` issue: its URL, body and state, OPEN or CLOSED.
 type Issue struct{ URL, Body, State string }
 
+// listLimit caps how many `ADR` issues one listing reads.
+const listLimit = 1000
+
 // Migrated maps each source file an `ADR` issue's marker names to the
-// issue, open or closed.
+// issue, open or closed. A listing that reaches listLimit fails, since an
+// issue past it would be opened again.
 func (g GitHub) Migrated() (map[string]Issue, error) {
-	out, err := gh("", "issue", "list", "--repo", g.Repo, "--label", Label, "--state", "all", "--limit", "1000",
-		"--json", "url,body,state", "--jq", ".[] | {url, body, state}")
+	out, err := gh("", "issue", "list", "--repo", g.Repo, "--label", Label, "--state", "all", "--limit", fmt.Sprint(listLimit),
+		"--json", "url,body,state")
+	issues, err := listed(out, err)
 	if err != nil {
 		return nil, err
 	}
 	found := map[string]Issue{}
-	dec := json.NewDecoder(bytes.NewReader([]byte(out)))
-	for dec.More() {
-		var issue Issue
-		if err := dec.Decode(&issue); err != nil {
-			return nil, fmt.Errorf("gh issue list printed no issue: %w", err)
-		}
+	for _, issue := range issues {
 		if src := SourceOf(issue.Body); src != "" {
 			found[src] = issue
 		}
 	}
 	return found, nil
+}
+
+// listed decodes a `gh issue list` output, failing when the command failed
+// or the list reaches listLimit.
+func listed(out string, err error) ([]Issue, error) {
+	if err != nil {
+		return nil, err
+	}
+	var issues []Issue
+	if err := json.Unmarshal([]byte(out), &issues); err != nil {
+		return nil, fmt.Errorf("gh issue list printed no issue list: %w", err)
+	}
+	if len(issues) >= listLimit {
+		return nil, fmt.Errorf("gh issue list reached %d `ADR` issues, so some may be missed", listLimit)
+	}
+	return issues, nil
 }
 
 // EnsureLabel creates the `ADR` label, or updates it when it exists.

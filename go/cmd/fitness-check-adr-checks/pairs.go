@@ -20,7 +20,7 @@ func changeErrors(root string, decisions []record, changed []string) []string {
 	base := gitx.ScopeBase(root)
 	var errs []string
 	for _, r := range alone {
-		before := adr.FirstIssueURL(gitx.FileAt(root, base, r.readme))
+		before := adr.LinkedIssue(gitx.FileAt(root, base, r.readme))
 		if before != "" && before != r.issue {
 			errs = append(errs, fmt.Sprintf("%s changed its ADR issue without its check %s; change both together", r.readme, r.folder))
 		}

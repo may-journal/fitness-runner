@@ -27,6 +27,27 @@ var DecisionSections = []string{"Context", "Decision", "Consequences"}
 // file section at the same place in DecisionSections.
 var IssueSections = []string{"Background", "Decision", "Currently Known Consequences"}
 
+// IssueHeadings are the headings root's `ADR` issue template gives, so a
+// migrated issue passes issue-check there. A repo without such a template,
+// or one whose sections do not match the file's in number, gets
+// IssueSections.
+func IssueHeadings(root string) []string {
+	template, ok := mdtemplate.IssueTemplates(root)[Label]
+	if !ok {
+		return IssueSections
+	}
+	var out []string
+	for _, h := range mdx.Headings(template) {
+		if h.Level == 2 {
+			out = append(out, h.Text)
+		}
+	}
+	if len(out) != len(DecisionSections) {
+		return IssueSections
+	}
+	return out
+}
+
 // issueURL matches one full GitHub issue URL.
 var issueURL = regexp.MustCompile(`https://github\.com/[\w.-]+/[\w.-]+/issues/\d+`)
 
@@ -40,6 +61,19 @@ var titleADR = regexp.MustCompile(`^ADR(?:[\s:]|-\d)`)
 // ADR file keeps once its decision moved into that issue.
 func IsPointer(content string) bool {
 	return pointer.MatchString(strings.TrimSpace(content))
+}
+
+// issueLine matches a line that holds one full issue URL and nothing else.
+var issueLine = regexp.MustCompile(`(?m)^[ \t]*(` + issueURL.String() + `)[ \t]*$`)
+
+// LinkedIssue is the issue URL a check README keeps on a line of its own,
+// the link to its ADR issue, or "". An issue URL inside a sentence is no
+// such link.
+func LinkedIssue(content string) string {
+	if m := issueLine.FindStringSubmatch(content); m != nil {
+		return m[1]
+	}
+	return ""
 }
 
 // FirstIssueURL is the first full issue URL in text, or "".

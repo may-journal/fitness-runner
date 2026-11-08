@@ -14,7 +14,7 @@ type Record struct {
 	Title string
 	// Summary is the one-line summary under the title, or "".
 	Summary string
-	// Status is Proposed, Accepted or Superseded.
+	// Status is Proposed, Accepted, Superseded or Rejected.
 	Status string
 	// StatusNote is what the file's status line says past its first word.
 	StatusNote string
@@ -31,12 +31,16 @@ var numberPrefix = regexp.MustCompile(`(?i)^(?:ADR\b[\s#:-]*)?(?:\d+(?:\s*[â€”â€
 // statusLine matches a `Status: accepted` line and takes its text.
 var statusLine = regexp.MustCompile(`(?i)^[\s>*_-]*status[\s*_]*:[\s*_]*(.*?)[\s*_]*$`)
 
-// statusWords maps a status's first word, lowercased, to an ADR issue's
-// Status; a word it lacks reads as Proposed.
+// statusWords maps a status's first word, lowercased, to an ADR's Status; a
+// word it lacks reads as Proposed.
 var statusWords = map[string]string{
-	"": "Accepted", "accepted": "Accepted", "proposed": "Proposed",
+	"": "Accepted", "accepted": "Accepted", "proposed": "Proposed", "rejected": "Rejected",
 	"superseded": "Superseded", "deprecated": "Superseded", "retired": "Superseded",
 }
+
+// metadataLine matches a MADR metadata line, such as `Date: 2024-05-01`,
+// which is neither the summary nor the status.
+var metadataLine = regexp.MustCompile(`(?i)^[\s>*_-]*(?:date|deciders|authors?|tags|technical story)[\s*_]*:`)
 
 // Parse reads an ADR file's parts.
 func Parse(content string) Record {
@@ -69,8 +73,8 @@ func preamble(content string) (summary, status, note string) {
 	for _, line := range before(content) {
 		if m := statusLine.FindStringSubmatch(line); m != nil {
 			status, note = statusOf(m[1])
-		} else if summary == "" {
-			summary = line
+		} else if summary == "" && !metadataLine.MatchString(line) {
+			summary = strings.TrimSpace(strings.TrimLeft(line, ">"))
 		}
 	}
 	return summary, status, note

@@ -12,7 +12,8 @@
 // # The README
 //
 // A `fitness/adr-NNNN/README.md` opens with the ADR's title and a one-line
-// summary, which `fitness list` shows. The ADR issue's full URL follows.
+// summary, which `fitness list` shows. The ADR issue's full URL follows
+// on a line of its own; an issue URL inside a sentence is no such link.
 // A `## Check` section after it says what the check fails and how to pass
 // it. `fitness adr-migrate` turns a README that still holds its decision
 // into this shape.

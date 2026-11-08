@@ -62,7 +62,7 @@ func records(root string) ([]record, error) {
 		folder := repocheck.Folder + "/" + e.Name()
 		readme := folder + "/" + repocheck.Readme
 		data, _ := os.ReadFile(filepath.Join(root, filepath.FromSlash(readme)))
-		out = append(out, record{folder: folder, readme: readme, issue: adr.FirstIssueURL(string(data)), retired: repocheck.Retired(string(data))})
+		out = append(out, record{folder: folder, readme: readme, issue: adr.LinkedIssue(string(data)), retired: repocheck.Retired(string(data))})
 	}
 	return out, nil
 }

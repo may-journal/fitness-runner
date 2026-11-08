@@ -15,12 +15,12 @@ ADR files migrated
 - 0149.1
     - Given Developer has ADR files and asks for a dry run
         - When fitness runs adr-migrate with `--dry-run`
-            - Then it prints each issue it would open and each file it would change, and changes nothing
+            - Then it prints each issue it would open, edit or close and each file it would change, and changes nothing
 - 0149.2
     - Given Developer has ADR files in an `adr` folder and a check README holding its decision
         - When fitness runs adr-migrate
-            - Then it opens one `[ADR]` issue per file, points links at it, trims or removes the file, and closes a superseded one
+            - Then it opens one `[ADR]` issue per file, points links at it, trims or removes the file, and closes a retired one
 - 0149.3
-    - Given Developer reruns adr-migrate after issues for its files exist
-        - When fitness runs adr-migrate
+    - Given Developer reruns adr-migrate from a subfolder after issues for its files exist
+        - When fitness runs adr-migrate with the repo's own `ADR` issue template
             - Then it keeps those issues, points their links at the new issues, leaves a closed issue closed, and opens no duplicate

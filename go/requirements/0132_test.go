@@ -22,9 +22,14 @@ func Test0132_2(t *testing.T) {
 
 func Test0132_3(t *testing.T) {
 	t.Parallel()
-	bare := with(adrRepo(), map[string]string{adrPath: "# Small files\n\nKeeps every Markdown file small.\n\n## Check\n\nFails a long Markdown file.\n"})
-	out, code := fitness(t, example(t, "happyRepo", bare), nil)
-	sees(t, out, code, 1, adrPath+": links no ADR issue; put the full URL of the `ADR` issue this check proves here")
+	// One README has no issue URL, the other one only inside a sentence.
+	for _, text := range []string{
+		"# Small files\n\nKeeps every Markdown file small.\n\n## Check\n\nFails a long Markdown file.\n",
+		"# Small files\n\nKeeps every Markdown file small, as " + adrIssue + " plans.\n\n## Check\n\nFails a long Markdown file.\n",
+	} {
+		out, code := fitness(t, example(t, "happyRepo", with(adrRepo(), map[string]string{adrPath: text})), nil)
+		sees(t, out, code, 1, adrPath+": links no ADR issue; put the full URL of the `ADR` issue this check proves here")
+	}
 }
 
 func Test0132_4(t *testing.T) {

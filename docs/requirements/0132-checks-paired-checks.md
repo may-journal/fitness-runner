@@ -21,7 +21,7 @@ ADRs and requirement docs in repos with a fitness folder
         - When the suite runs
             - Then adr-as-issue reports red naming the file and telling me to open an `ADR` issue, and exits 1
 - 0132.3
-    - Given Developer has a `fitness/adr-NNNN/` README that links no ADR issue
+    - Given Developer has a `fitness/adr-NNNN/` README with no ADR issue URL on a line of its own
         - When the suite runs
             - Then adr-checks reports red naming the README and telling me to link the issue, and exits 1
 - 0132.4

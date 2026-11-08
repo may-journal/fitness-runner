@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/may-journal/fitness-runner/go/internal/adr"
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
@@ -38,7 +39,7 @@ func adrMigration(args []string) (adr.Migration, error) {
 	if err := fs.Parse(args); err != nil {
 		return adr.Migration{}, err
 	}
-	root, err := os.Getwd()
+	root, err := gitx.Repo(".").Toplevel()
 	if err == nil && *repo == "" {
 		*repo, err = adr.CurrentRepo()
 	}

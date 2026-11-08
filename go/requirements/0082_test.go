@@ -150,14 +150,16 @@ func Test0082_8(t *testing.T) {
 		{Match: []string{"issues?labels=Plan&state=open"}, Stdout: string(plan) + "\n"},
 		{Match: []string{"issues?labels=Epic&state=open"}, Stdout: string(epic) + "\n"},
 		{Match: []string{"issues?labels=ADR&state=open"}},
+		{Match: []string{"issues?labels=Research&state=open"}},
 	}, epicGitHub("22")...)
 	saved = append(saved, issueGitHub(planIssue, "fitness:issue-check:plan:", "", "Plan")...)
-	out, code, rp := ghRun(t, "issue-check", "workflow_dispatch", map[string]any{}, nil, saved)
+	research := map[string]string{".github/ISSUE_TEMPLATE/research.md": "---\nname: Research\nlabels: Research\n---\n\n> REPLACE-ME\n\n## Question\n\n<!-- What to find out. -->\n"}
+	out, code, rp := ghRun(t, "issue-check", "workflow_dispatch", map[string]any{}, research, saved)
 	sees(t, out, code, 0, "issue-check #7", "issue-check #21")
 	if !labeledOn(rp, planIssue, "fitness-valid") || !labeledOn(rp, kindIssue, "fitness-valid") {
 		t.Errorf("want both open kind issues judged, got gh calls %q", rp.calls("gh"))
 	}
-	for _, kind := range []string{"Plan", "Epic", "ADR"} {
+	for _, kind := range []string{"Plan", "Epic", "ADR", "Research"} {
 		if !rp.called("gh", "issues?labels="+kind+"&state=open") {
 			t.Errorf("want the open %s issues listed, as every kind is judged, got gh calls %q", kind, rp.calls("gh"))
 		}

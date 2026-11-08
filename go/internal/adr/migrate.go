@@ -26,6 +26,8 @@ type Migration struct {
 	DryRun bool
 	// Out receives one line per step.
 	Out io.Writer
+	// headings are the issue headings, from the repo's `ADR` template.
+	headings []string
 }
 
 // checkReadme matches a runner ADR, the README of a `fitness/adr-NNNN` check.
@@ -55,6 +57,7 @@ func (m Migration) Run(files []string) error {
 		return err
 	}
 	urls := map[string]string{}
+	m.headings = IssueHeadings(m.Root)
 	if err := m.open(sources, issues, urls); err != nil {
 		return err
 	}
@@ -131,10 +134,8 @@ func (m Migration) openOne(s *source, urls map[string]string) error {
 // and closes each superseded ADR's issue.
 func (m Migration) finish(sources []*source, urls map[string]string) error {
 	for _, s := range sources {
-		if body := m.finalBody(s, urls); body != "" {
-			if err := m.GitHub.Edit(urls[s.rel], body); err != nil {
-				return err
-			}
+		if err := m.edit(s, m.finalBody(s, urls), urls); err != nil {
+			return err
 		}
 		if err := m.retire(s, urls); err != nil {
 			return err
@@ -143,22 +144,36 @@ func (m Migration) finish(sources []*source, urls map[string]string) error {
 	return nil
 }
 
-// retire closes a superseded ADR's open issue as not planned, since the
-// issue's state is its status. The comment names the issue that replaces it.
+// edit replaces s's issue body with body, unless body is "". A dry run only
+// says it would.
+func (m Migration) edit(s *source, body string, urls map[string]string) error {
+	switch {
+	case body == "":
+		return nil
+	case m.DryRun:
+		fmt.Fprintf(m.Out, "would edit %s\n", urls[s.rel])
+		return nil
+	}
+	return m.GitHub.Edit(urls[s.rel], body)
+}
+
+// retire closes a superseded or rejected ADR's open issue as not planned,
+// since the issue's state is its status. The comment names the issue that
+// replaces a superseded one.
 func (m Migration) retire(s *source, urls map[string]string) error {
-	if !s.record.Superseded() || s.closed {
+	if !s.record.Retired() || s.closed {
 		return nil
 	}
 	r := s.record
 	r.StatusNote = RewriteLinks(r.StatusNote, s.rel, func(target, _ string) (string, bool) { return issueFor(target, urls) })
 	if m.DryRun {
-		fmt.Fprintf(m.Out, "would close the issue for %s as superseded\n", s.rel)
+		fmt.Fprintf(m.Out, "would close the issue for %s as %s\n", s.rel, strings.ToLower(r.Status))
 		return nil
 	}
 	if err := m.GitHub.Close(urls[s.rel], r.CloseComment()); err != nil {
 		return err
 	}
-	fmt.Fprintf(m.Out, "closed %s as superseded\n", urls[s.rel])
+	fmt.Fprintf(m.Out, "closed %s as %s\n", urls[s.rel], strings.ToLower(r.Status))
 	return nil
 }
 
@@ -204,7 +219,7 @@ func (m Migration) body(s *source, urls map[string]string) string {
 	}
 	r := s.record
 	r.StatusNote = RewriteLinks(r.StatusNote, s.rel, resolve)
-	return RewriteLinks(r.IssueBody(s.rel), s.rel, resolve)
+	return RewriteLinks(r.IssueBody(s.rel, m.headings), s.rel, resolve)
 }
 
 // issueFor is the issue URL for a link to target: an ADR file, or the
@@ -217,30 +232,54 @@ func issueFor(target string, urls map[string]string) (string, bool) {
 	return url, ok
 }
 
-// rewrite removes or trims each ADR file and points every Markdown link to
-// one at its issue.
+// rewrite points every Markdown link to an ADR file at its issue and trims
+// each check README, then removes the other ADR files. Removing last lets a
+// rerun after a failed write still find every file.
 func (m Migration) rewrite(files []string, sources []*source, urls map[string]string) error {
-	bySource := map[string]*source{}
-	for _, s := range sources {
-		bySource[s.rel] = s
-	}
+	byFile := byFile(sources)
 	for _, rel := range files {
-		if err := m.rewriteOne(rel, bySource[rel], urls); err != nil {
+		if err := m.keep(rel, byFile[rel], urls); err != nil {
+			return err
+		}
+	}
+	for _, s := range sources {
+		if err := m.drop(s); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// rewriteOne rewrites one tracked file, s being its ADR source or nil.
-func (m Migration) rewriteOne(rel string, s *source, urls map[string]string) error {
-	if s != nil && !checkReadme.MatchString(rel) {
-		return m.remove(rel)
+// byFile maps each source's file to it.
+func byFile(sources []*source) map[string]*source {
+	out := map[string]*source{}
+	for _, s := range sources {
+		out[s.rel] = s
 	}
-	if !mdx.IsMarkdown(strings.ToLower(rel)) {
+	return out
+}
+
+// removed reports whether s's file goes once its issue holds the decision;
+// a check README stays, trimmed.
+func removed(s *source) bool {
+	return s != nil && !checkReadme.MatchString(s.rel)
+}
+
+// keep points the links of rel, a file that stays, at issues when it is
+// Markdown.
+func (m Migration) keep(rel string, s *source, urls map[string]string) error {
+	if removed(s) || !mdx.IsMarkdown(strings.ToLower(rel)) {
 		return nil
 	}
 	return m.relink(rel, s, urls)
+}
+
+// drop removes s's file when it goes.
+func (m Migration) drop(s *source) error {
+	if !removed(s) {
+		return nil
+	}
+	return m.remove(s.rel)
 }
 
 // relink points rel's Markdown links at issues. A check README with an ADR
@@ -254,10 +293,13 @@ func (m Migration) relink(rel string, s *source, urls map[string]string) error {
 	if frozen(rel, text) {
 		return nil
 	}
+	toIssue := func(target, _ string) (string, bool) { return issueFor(target, urls) }
 	if s != nil {
-		text = s.record.Pointer(Title(s.content), urls[rel])
+		r := s.record
+		r.StatusNote = RewriteLinks(r.StatusNote, rel, toIssue)
+		text = r.Pointer(Title(s.content), urls[rel])
 	}
-	text = RewriteLinks(text, rel, func(target, _ string) (string, bool) { return issueFor(target, urls) })
+	text = RewriteLinks(text, rel, toIssue)
 	if text == string(data) {
 		return nil
 	}

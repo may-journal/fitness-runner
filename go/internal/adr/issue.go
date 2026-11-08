@@ -29,9 +29,10 @@ func (r Record) IssueTitle() string {
 // notRecorded fills a decision section the file left out.
 const notRecorded = "Not recorded in the file this ADR came from."
 
-// IssueBody is the `ADR` issue body for r, from the file at rel. The issue's
-// state carries its status, so the body holds no Status section.
-func (r Record) IssueBody(rel string) string {
+// IssueBody is the `ADR` issue body for r, from the file at rel, under
+// headings, one per DecisionSections entry. The issue's state carries its
+// status, so the body holds no Status section.
+func (r Record) IssueBody(rel string, headings []string) string {
 	pitch := r.Summary
 	if pitch == "" {
 		pitch = r.Title
@@ -39,30 +40,30 @@ func (r Record) IssueBody(rel string) string {
 	var b strings.Builder
 	b.WriteString("> " + pitch + "\n")
 	for i, s := range DecisionSections {
-		b.WriteString("\n## " + IssueSections[i] + "\n\n" + r.sectionText(s) + "\n")
+		b.WriteString("\n## " + headings[i] + "\n\n" + r.sectionText(s) + "\n")
 	}
 	b.WriteString("\n" + Marker(rel) + "\n")
 	return b.String()
 }
 
-// Superseded reports whether r's file retired its decision, which closes its
-// issue as not planned.
-func (r Record) Superseded() bool {
-	return r.Status == "Superseded"
+// Retired reports whether r's file superseded or rejected its decision,
+// which closes its issue as not planned.
+func (r Record) Retired() bool {
+	return r.Status == "Superseded" || r.Status == "Rejected"
 }
 
-// CloseComment is the comment that closes a superseded ADR's issue, naming
-// the issue its status note links.
+// CloseComment is the comment that closes a retired ADR's issue, naming the
+// issue a superseded one's status note links.
 func (r Record) CloseComment() string {
 	if url := r.supersededBy(); url != "" {
 		return "Superseded by " + url
 	}
-	return "Superseded, as the file it came from said."
+	return r.Status + ", as the file it came from said."
 }
 
 // supersededBy is the issue URL a superseded ADR's `by` note links, or "".
 func (r Record) supersededBy() string {
-	if !r.Superseded() || !strings.HasPrefix(r.StatusNote, "by ") {
+	if r.Status != "Superseded" || !strings.HasPrefix(r.StatusNote, "by ") {
 		return ""
 	}
 	return FirstIssueURL(r.StatusNote)
@@ -98,7 +99,7 @@ func (r Record) Pointer(title, url string) string {
 		parts = append(parts, r.Summary)
 	}
 	parts = append(parts, url)
-	if r.Superseded() {
+	if r.Retired() {
 		parts = append(parts, "Status: "+r.statusLine())
 	}
 	if r.Check != "" {

@@ -26,8 +26,10 @@
 // `fitness adr-migrate` opens one `ADR` issue per file and rewrites each
 // link to the file into the issue's full URL. It removes the file, or
 // trims a check README to its title, summary, issue URL and `## Check`.
-// An issue's state is its status, so a superseded ADR's issue is closed
-// as not planned. Its `--dry-run` flag prints the plan and changes nothing, and a rerun
+//
+// An issue's state is its status, so a superseded or rejected ADR's issue
+// is closed as not planned. Each issue takes the headings of the repo's
+// `ADR` issue template when it has one. Its `--dry-run` flag prints the plan and changes nothing, and a rerun
 // reuses the issues it opened.
 //
 // When the migration cannot run yet, `adrAsIssue.allow` lists the paths
