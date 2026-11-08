@@ -117,7 +117,7 @@ func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []s
 	defer os.Remove(file)
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
-	outcomes := runPool(root, checks, []string{"--body-file", file}, env)
+	outcomes := runPool(root, checks, []string{"--body-file", file}, env, startStages(time.Now()))
 	checks, outcomes, notApplying := applying(checks, outcomes)
 	rows, totals := summarize(checks, outcomes, "")
 	totals.Ms = time.Since(start).Milliseconds()

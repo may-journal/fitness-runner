@@ -23,6 +23,7 @@ permissions:
 jobs:
   bundle:
     runs-on: ubuntu-latest
+    # Observed max 52s on 2026-11-08.
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4

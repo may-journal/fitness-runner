@@ -62,6 +62,22 @@ func startStages(now time.Time) stageEnds {
 	return ends
 }
 
+// runTotals holds when each stage's total runs out in one run. The run's
+// first pool starts them, and a pull request's second scan runs inside
+// what the first left.
+type runTotals struct {
+	ends stageEnds
+}
+
+// start starts the totals at now unless an earlier pool started them, and
+// returns when each runs out.
+func (t *runTotals) start(now time.Time) stageEnds {
+	if t.ends == nil {
+		t.ends = startStages(now)
+	}
+	return t.ends
+}
+
 // stages lists each stage, the test runners first, as a run reports them.
 var stages = []string{checkkit.StageTests, checkkit.StageFast}
 

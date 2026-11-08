@@ -32,3 +32,7 @@ runs past the fast total
     - Given Developer has four Go modules whose tests each take six seconds
         - When fitness runs go-test
             - Then it finishes sooner than their tests take one after another
+- 0146.6
+    - Given Developer has a pull request whose two scans each run a check for most of the fast total
+        - When the second scan runs
+            - Then it stops that check at the total the first scan started

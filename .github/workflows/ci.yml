@@ -10,9 +10,9 @@ on:
 jobs:
   fitness:
     runs-on: ubuntu-24.04-arm
-    # Observed max 56s on 2026-11-02. The limit covers a pull request's two
-    # stages of 450s tests plus 60s fast checks, and a minute of setup.
-    timeout-minutes: 18
+    # Observed max 56s on 2026-11-02. A pull request's two scans share the
+    # run's 450s test total, so the suite and its setup fit.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:

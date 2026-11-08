@@ -37,24 +37,26 @@ func wholeSuitePullRequest(s setup, argv []string) bool {
 }
 
 // runStages judges the changed files, then scans every file, so a pull
-// request fails while the repo does. scopedPullRequests skips the scan.
+// request fails while the repo does. Both scans share the run's totals, and
+// scopedPullRequests skips the scan.
 func runStages(s setup, checks []resolved, env, changed []string) int {
+	clock := &runTotals{}
 	scoped := "checking the files this pull request changes: " + strconv.Itoa(len(changed))
 	if scopedPullRequests(s.root) {
 		announce("Stage 1 of 1: " + scoped)
-		code := runStage(s.root, s.perfPath, checks, nil, env, s.cleanup, true).code
+		code := runStage(s.root, s.perfPath, checks, nil, env, s.cleanup, clock, true).code
 		if code == 0 {
 			announce("Stage 2 skipped: .fitnessrc.json sets scopedPullRequests, so only a push to main scans every file")
 		}
 		return code
 	}
 	announce("Stage 1 of 2: " + scoped)
-	if code := runStage(s.root, s.perfPath, checks, nil, env, s.cleanup, false).code; code != 0 {
+	if code := runStage(s.root, s.perfPath, checks, nil, env, s.cleanup, clock, false).code; code != 0 {
 		announce("Stage 2 skipped: stage 1 failed")
 		return code
 	}
 	announce("Stage 2 of 2: the changes pass, so every tracked file is scanned")
-	full := runStage(s.root, s.perfPath, checks, nil, withoutVar(env, changedFilesEnv), s.cleanup, true)
+	full := runStage(s.root, s.perfPath, checks, nil, withoutVar(env, changedFilesEnv), s.cleanup, clock, true)
 	if full.code != 0 {
 		announce("Stage 2 failed", whereFound(full, changed)...)
 	}

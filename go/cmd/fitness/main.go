@@ -333,7 +333,7 @@ func runSelected(s setup, argv []string) int {
 // summary table, writes any `--json` report, and returns the exit code.
 // cleanup removes the caller's shared files when the run ends.
 func runChecks(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func()) int {
-	return runStage(root, perfPath, checks, passthrough, env, cleanup, true).code
+	return runStage(root, perfPath, checks, passthrough, env, cleanup, &runTotals{}, true).code
 }
 
 // stageResult is what one pass over the checks found: the exit code, the
@@ -344,9 +344,10 @@ type stageResult struct {
 	found [][]checkkit.Finding
 }
 
-// runStage runs checks as runChecks says and returns what it found. Any
-// JSON the run asks for prints for its last stage, or a failed earlier one.
-func runStage(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func(), last bool) stageResult {
+// runStage runs checks as runChecks says, inside clock's totals, and
+// returns what it found. Any JSON the run asks for prints for its last
+// stage, or a failed earlier one.
+func runStage(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func(), clock *runTotals, last bool) stageResult {
 	checks, tracked, err := prepareRun(root, checks, cleanup)
 	if err != nil {
 		report.Error("fitness setup", err)
@@ -361,7 +362,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
-	outcomes := runPool(root, checks, passthrough, env)
+	outcomes := runPool(root, checks, passthrough, env, clock.start(start))
 
 	rows, totals := summarize(checks, outcomes, hint)
 	totals.Ms = time.Since(start).Milliseconds()
@@ -944,10 +945,10 @@ func inlineMatch(args []string, i int, argName string) (value string, consumed i
 	return "", 1
 }
 
-// runPool executes every check, printing the progress line as each starts
-// and the heartbeat while they run. Test runners start first, beside the
-// fast checks, and outcomes stay in catalog order.
-func runPool(root string, checks []resolved, passthrough, env []string) []outcome {
+// runPool executes every check inside ends, printing the progress line as
+// each starts and the heartbeat while they run. Test runners start first,
+// beside the fast checks, and outcomes stay in catalog order.
+func runPool(root string, checks []resolved, passthrough, env []string, ends stageEnds) []outcome {
 	outcomes := make([]outcome, len(checks))
 	out := newStreams(len(checks))
 	heartbeat := heartbeatOn()
@@ -955,7 +956,6 @@ func runPool(root string, checks []resolved, passthrough, env []string) []outcom
 		defer startHeartbeat(heartbeatEvery)()
 	}
 	sem := make(chan struct{}, par.Processes())
-	ends := startStages(time.Now())
 	var wg sync.WaitGroup
 	for _, i := range startOrder(checks) {
 		c := checks[i]
