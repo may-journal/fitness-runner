@@ -10,6 +10,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -187,15 +188,15 @@ func hookPreCommit() int {
 	return runLocalHook()
 }
 
-// runLocalHook runs an executable .githooks/pre-commit.local so a repo adds its
-// own build, and refuses the commit once the fast total stops it.
+// runLocalHook runs an executable .githooks/pre-commit.local, a repo's own build
+// or tests, and refuses the commit once the test total stops it.
 func runLocalHook() int {
 	const path = ".githooks/pre-commit.local"
 	info, err := os.Stat(path)
 	if err != nil || info.Mode()&0o100 == 0 {
 		return 0
 	}
-	return runBudgeted(path, fastTotal())
+	return runBudgeted(path, stageTotal(checkkit.StageTests))
 }
 
 // runBudgeted runs the program at path in its own process group, returning
