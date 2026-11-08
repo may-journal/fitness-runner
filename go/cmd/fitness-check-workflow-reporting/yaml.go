@@ -50,10 +50,11 @@ func (n *node) get(key string) *node {
 	return nil
 }
 
-// syntaxError is a file YAML cannot read, and the line where reading
-// stopped.
+// syntaxError is a file YAML cannot read, and the line and column where
+// reading stopped. col is 0 when the whole line is at fault.
 type syntaxError struct {
 	line int
+	col  int
 	msg  string
 }
 
@@ -88,7 +89,17 @@ var (
 	singleEscapeRe = regexp.MustCompile(`''`)
 	// docMarkRe matches a line that starts or ends a YAML document.
 	docMarkRe = regexp.MustCompile(`^(---|\.\.\.)(\s.*)?$`)
+	// mapColonRe matches a colon that a blank or the end follows, which
+	// starts a mapping value and so ends a plain scalar.
+	mapColonRe = regexp.MustCompile(`:(\s|$)`)
+	// keyLineIndicatorRe matches a value that opens a list, a key or a
+	// mapping value, which YAML forbids on its key's line.
+	keyLineIndicatorRe = regexp.MustCompile(`^[-?:](\s|$)`)
 )
+
+// reservedStarts are characters that cannot start a plain scalar: flow
+// collections own `,]}`, directives own `%`, and YAML reserves `@` and the backtick.
+const reservedStarts = ",]}%@`"
 
 // parseYAML reads one YAML document. An error is a *syntaxError naming the
 // line.
@@ -133,6 +144,12 @@ func (p *parser) skipMarks() {
 // fault is a syntax error at l.
 func fault(l *srcLine, msg string) error {
 	return &syntaxError{line: l.num, msg: msg}
+}
+
+// faultAt is a syntax error at column col of l in a plain value. Its
+// message names the column and says to quote the value.
+func faultAt(l *srcLine, col int, msg string) error {
+	return &syntaxError{line: l.num, col: col, msg: fmt.Sprintf("column %d %s; quote the value", col, msg)}
 }
 
 // peek is the next line that holds YAML, past blank and comment lines, or
@@ -334,7 +351,7 @@ func (p *parser) value(owner *srcLine, rest string, keyed bool) (*node, error) {
 	if read, ok := scalarReaders[rest[0]]; ok {
 		return read(p, owner, rest)
 	}
-	return p.plain(owner, rest), nil
+	return p.plain(owner, rest, keyed)
 }
 
 // anchored reads `&name value` and remembers the value under name.
@@ -354,14 +371,58 @@ func (p *parser) alias(owner *srcLine, rest string) (*node, error) {
 	return nil, fault(owner, fmt.Sprintf("the alias *%s names no anchor above it", name))
 }
 
-// plain reads a plain scalar and the deeper lines that continue it.
-func (p *parser) plain(owner *srcLine, rest string) *node {
-	parts := []string{cutComment(rest)}
+// plain reads a plain scalar and the deeper lines that continue it,
+// failing one GitHub's YAML parser rejects. keyed tells a key's value.
+func (p *parser) plain(owner *srcLine, rest string, keyed bool) (*node, error) {
+	col := owner.indent + len(strings.TrimRight(owner.text, " \t")) - len(rest) + 1
+	if err := plainStart(owner, col, rest, keyed); err != nil {
+		return nil, err
+	}
+	first := cutComment(rest)
+	if err := plainColon(owner, col, first); err != nil {
+		return nil, err
+	}
+	parts, err := p.plainLines(owner)
+	text := strings.Join(append([]string{first}, parts...), " ")
+	return &node{kind: scalarNode, line: owner.num, text: text}, err
+}
+
+// plainLines reads the lines deeper than owner that continue its plain
+// scalar.
+func (p *parser) plainLines(owner *srcLine) ([]string, error) {
+	var parts []string
 	for l := p.peek(); l != nil && l.indent > owner.indent; l = p.peek() {
-		parts = append(parts, cutComment(l.text))
+		part := cutComment(l.text)
+		if err := plainColon(l, l.indent+1, part); err != nil {
+			return nil, err
+		}
+		parts = append(parts, part)
 		p.pos++
 	}
-	return &node{kind: scalarNode, line: owner.num, text: strings.Join(parts, " ")}
+	return parts, nil
+}
+
+// plainStart fails a plain scalar at column col of l that starts with a
+// character YAML reserves. On a key's line, it also fails one that opens
+// a list, key or mapping value.
+func plainStart(l *srcLine, col int, text string, keyed bool) error {
+	if strings.IndexByte(reservedStarts, text[0]) >= 0 {
+		return faultAt(l, col, fmt.Sprintf("starts a plain value with %q, which YAML reserves", text[0]))
+	}
+	if keyed && keyLineIndicatorRe.MatchString(text) {
+		return faultAt(l, col, fmt.Sprintf("starts a value on its key's line with %q, which YAML does not allow", text[0]))
+	}
+	return nil
+}
+
+// plainColon fails plain scalar text, starting at column col of l, that
+// holds a colon a blank or the end follows. YAML reads that colon as a
+// mapping value, which a plain value cannot hold.
+func plainColon(l *srcLine, col int, text string) error {
+	if loc := mapColonRe.FindStringIndex(text); loc != nil {
+		return faultAt(l, col+loc[0], "holds a `: ` inside a plain value, which YAML reads as a mapping it does not allow here")
+	}
+	return nil
 }
 
 // cutComment drops a ` #` comment from a plain scalar.

@@ -12,7 +12,7 @@ Fails a workflow job that can fail without a report on its run page ([#181](http
 - A matrix job is one definition, so it is judged once and named once.
 - Fail: a job with steps and no such step, naming the file, the job's line, and the step to add.
 - Fail: a job whose summary step lacks `if: always()`, naming that step's line.
-- Fail: a file that is not valid YAML, naming the line where reading stopped.
+- Fail: a file that is not valid YAML, naming the line where reading stopped. A plain value holding `: ` also names its column.
 - A repo with no workflow files passes having checked none.
 
 In a pull request, or a staged commit, it reads only the changed workflow files. It reads the files only: it never runs a step or fetches a called workflow.
@@ -22,6 +22,7 @@ In a pull request, or a staged commit, it reads only the changed workflow files.
 ```
 .github/workflows/ci.yml:8: job build has no step that runs with if: always() and writes $GITHUB_STEP_SUMMARY, so a failed run shows only a badge; add a last step with `if: ${{ always() }}` whose run writes the job's status to "$GITHUB_STEP_SUMMARY"
 .github/workflows/ci.yml:3: this workflow is not valid YAML: a tab indents this line; YAML indents with spaces; fix the YAML on this line
+.github/workflows/ci.yml:5: this workflow is not valid YAML: column 30 holds a `: ` inside a plain value, which YAML reads as a mapping it does not allow here; quote the value; fix the YAML on this line
 ```
 
 ## Adding the step

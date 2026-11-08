@@ -67,10 +67,26 @@ func Test0133_5(t *testing.T) {
 	}
 }
 
+// mergedRunsOn is the runs-on line that merged into three workflows and
+// failed every run, since GitHub reads its `": "` as a mapping value.
+const mergedRunsOn = `${{ github.event.repository.private && !github.event.pull_request.head.repo.fork && fromJSON('{"group": "fitness", "labels": "fitness"}') || 'ubuntu-24.04-arm' }}`
+
+// runsOnJob is a reporting workflow whose job runs on runsOn, on line 5.
+func runsOnJob(runsOn string) string {
+	return strings.Replace(reportingJob(reportStep), "runs-on: ubuntu-latest", "runs-on: "+runsOn, 1)
+}
+
 func Test0133_6(t *testing.T) {
 	t.Parallel()
-	out, code := reportingCheck(t, map[string]string{".github/workflows/ci.yml": "name: CI\non: push\njobs:\n  build:\n\truns-on: ubuntu-latest\n"})
-	sees(t, out, code, 1, ".github/workflows/ci.yml:5: this workflow is not valid YAML: a tab indents this line")
+	out, code := reportingCheck(t, map[string]string{
+		".github/workflows/ci.yml":   "name: CI\non: push\njobs:\n  build:\n\truns-on: ubuntu-latest\n",
+		".github/workflows/fork.yml": runsOnJob(mergedRunsOn),
+	})
+	sees(t, out, code, 1, ".github/workflows/ci.yml:5: this workflow is not valid YAML: a tab indents this line",
+		".github/workflows/fork.yml:5: this workflow is not valid YAML: column 116 holds a `: ` inside a plain value", "quote the value")
+	quoted := `"` + strings.ReplaceAll(mergedRunsOn, `"`, `\"`) + `"`
+	out, code = reportingCheck(t, map[string]string{".github/workflows/fork.yml": runsOnJob(quoted)})
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0133_7(t *testing.T) {

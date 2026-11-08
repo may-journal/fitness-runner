@@ -72,7 +72,7 @@ func judgeFile(root, file string) ([]checkkit.Finding, error) {
 	doc, err := parseYAML(string(content))
 	var bad *syntaxError
 	if errors.As(err, &bad) {
-		return []checkkit.Finding{{File: file, Line: bad.line, Rule: ruleYAML,
+		return []checkkit.Finding{{File: file, Line: bad.line, Column: bad.col, Rule: ruleYAML,
 			Message: "this workflow is not valid YAML: " + bad.msg, Fix: "fix the YAML on this line"}}, nil
 	}
 	var out []checkkit.Finding
