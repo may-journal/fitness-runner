@@ -1,3 +1,4 @@
+// cspell:ignore nohup caffeinate
 package main
 
 import (
@@ -70,7 +71,13 @@ func always(checks []string) func([]shellWord) []string {
 // issueChecks are the checks issue-check gives the body, by the kind a
 // --label or a [Kind] title prefix names.
 func issueChecks(words []shellWord) []string {
-	for _, kind := range issueKinds(words) {
+	return kindChecks(issueKinds(words))
+}
+
+// kindChecks are the checks of the first kind that names some, or the doc
+// checks alone when none does.
+func kindChecks(kinds []string) []string {
+	for _, kind := range kinds {
 		if checks := metadata.IssueBodyChecks(kind); checks != nil {
 			return checks
 		}
@@ -78,12 +85,12 @@ func issueChecks(words []shellWord) []string {
 	return metadata.IssueBodyChecks("")
 }
 
-// issueKinds are the labels a call's --label flags give, then the kind its
+// issueKinds are the labels a call's label flags give, and the kind its
 // title prefix names.
 func issueKinds(words []shellWord) []string {
 	var kinds []string
 	for i := range words {
-		if _, value, ok := flagValue(words, i, []string{"--label", "-l"}); ok {
+		if _, value, ok := flagValue(words, i, []string{"--label", "-l", "--add-label"}); ok {
 			kinds = append(kinds, strings.Split(value.text, ",")...)
 		}
 		if _, value, ok := flagValue(words, i, []string{"--title", "-t"}); ok {
@@ -120,6 +127,11 @@ type ghCall struct {
 // ghPostsIn finds every issue, PR or api call in a shell command that posts
 // a body. That includes the calls in a loop, a wrapper or a `bash -c` script.
 func ghPostsIn(command, cwd string) []ghPost {
+	return postsIn(command, cwd, "")
+}
+
+// postsIn is ghPostsIn for a script that runs with the GH_REPO repo names.
+func postsIn(command, cwd, inherited string) []ghPost {
 	if !strings.Contains(command, "gh") {
 		return nil
 	}
@@ -128,8 +140,9 @@ func ghPostsIn(command, cwd string) []ghPost {
 	for i, call := range calls {
 		cwd = afterCd(call, cwd)
 		words, repo := unwrap(call.words)
+		repo = cmp.Or(repo, inherited)
 		if script, ok := shellScript(words); ok {
-			posts = append(posts, ghPostsIn(script, cwd)...)
+			posts = append(posts, postsIn(script, cwd, repo)...)
 			continue
 		}
 		if post, ok := ghPostOf(words, ghCall{cwd: cwd, stdin: call.stdin, earlier: calls[:i], repo: repo}); ok {
@@ -157,7 +170,8 @@ func ghPostOf(words []shellWord, call ghCall) (ghPost, bool) {
 	if len(words) < 3 || filepath.Base(words[0].text) != "gh" {
 		return ghPost{}, false
 	}
-	words = skipRepoFlag(words[1:])
+	target := words[1:]
+	words = skipRepoFlag(target)
 	var post ghPost
 	var ok bool
 	if len(words) > 0 && words[0].text == "api" {
@@ -165,7 +179,7 @@ func ghPostOf(words []shellWord, call ghCall) (ghPost, bool) {
 	} else {
 		post, ok = commandPost(words, call)
 	}
-	post.dir, post.repo = call.cwd, targetRepo(words, call.repo, post.repo)
+	post.dir, post.repo = call.cwd, targetRepo(target, call.repo, post.repo)
 	return post, ok
 }
 
@@ -231,14 +245,21 @@ type wrapper struct {
 }
 
 // wrapperOptions are the wrappers by name; timeout reads a duration first.
+// An assignment env sets after its options is dropped as the next word.
 var wrapperOptions = map[string]wrapper{
-	"timeout": {options: []string{"-s", "--signal", "-k", "--kill-after"}, operands: 1},
-	"xargs":   {options: []string{"-I", "-n", "-P", "-L", "-d", "-E", "-s", "-a"}},
+	"timeout":    {options: []string{"-s", "--signal", "-k", "--kill-after"}, operands: 1},
+	"xargs":      {options: []string{"-I", "-n", "-P", "-L", "-d", "-E", "-s", "-a"}},
+	"env":        {options: []string{"-u", "--unset", "-C", "--chdir", "-S"}},
+	"sudo":       {options: []string{"-u", "-g", "-C", "-D", "-h", "-p", "-U", "-r", "-t"}},
+	"time":       {options: []string{"-f", "-o"}},
+	"nice":       {options: []string{"-n"}},
+	"nohup":      {},
+	"caffeinate": {options: []string{"-t", "-w"}},
 }
 
 // commandPrefixes are the shell keywords and wrappers that run the command
 // after them with no value of their own.
-var commandPrefixes = []string{"command", "env", "exec", "time", "sudo", "do", "then", "else", "{", "!"}
+var commandPrefixes = []string{"command", "exec", "do", "then", "else", "{", "!"}
 
 // optionsWidth is how many words the leading options take. Each option in
 // valued reads the next word as its value.
@@ -254,16 +275,23 @@ func optionsWidth(words []shellWord, valued []string) int {
 }
 
 // shellScript is the script a `bash -c`, `sh -c` or `zsh -c` call runs,
-// when the shell knows it before it runs.
+// when the shell knows it before it runs. The script is the first word
+// after the options, once a short option cluster holds c.
 func shellScript(words []shellWord) (string, bool) {
 	if len(words) < 3 || !slices.Contains([]string{"bash", "sh", "zsh"}, filepath.Base(words[0].text)) {
 		return "", false
 	}
-	i := slices.IndexFunc(words[1:], func(w shellWord) bool { return !shortFlags.MatchString(w.text) })
-	if i < 1 || !strings.Contains(words[i].text, "c") {
+	i := 1 + slices.IndexFunc(words[1:], func(w shellWord) bool { return !strings.HasPrefix(w.text, "-") })
+	if i < 2 || !slices.ContainsFunc(words[1:i], commandFlag) {
 		return "", false
 	}
-	return words[i+1].text, words[i+1].known
+	return words[i].text, words[i].known
+}
+
+// commandFlag reports whether a word is a short option cluster holding c,
+// such as -c or -lc.
+func commandFlag(w shellWord) bool {
+	return shortFlags.MatchString(w.text) && strings.Contains(w.text, "c")
 }
 
 // shortFlags matches a word of single-letter shell options, such as -lc.
@@ -318,16 +346,17 @@ func knownRepo(value string, known bool) string {
 	return strings.ToLower(strings.Join(parts[len(parts)-2:], "/"))
 }
 
-// repoURL matches a GitHub issue or PR URL, capturing its owner/repo.
-var repoURL = regexp.MustCompile(`github\.com/([^/\s]+/[^/\s]+)/(?:pull|issues)/`)
+// repoURL matches a word that is a GitHub issue or PR URL, capturing its
+// owner/repo. A URL inside a body names no target.
+var repoURL = regexp.MustCompile(`^https://github\.com/([^/\s]+/[^/\s]+)/(?:pull|issues)/\d+/?$`)
 
 // ghBody reads the body a gh call's flags give: inline, from a file, or from
 // the call's stdin when the file is -. given is false when no flag gives a
 // body, and ok false when the shell builds it.
 func ghBody(args []shellWord, call ghCall, kind ghKind) (body string, given, ok bool) {
 	flags := append(slices.Clone(kind.inline), kind.files...)
-	for i, arg := range args {
-		if name, value, isFlag := flagValue(args, i, flags); arg.known && isFlag {
+	for i := range args {
+		if name, value, isFlag := flagValue(args, i, flags); isFlag {
 			body, ok = flagBody(slices.Contains(kind.inline, name), value, call)
 			return body, true, ok
 		}

@@ -45,6 +45,7 @@ func Test0155_1(t *testing.T) {
 		"cd " + repo + " && gh pr comment 5 " + comment,
 		"cd " + repo + " && gh -R o/r pr comment 5 " + comment,
 		"cd " + repo + " && gh api repos/O/R/issues/5/comments -f body='" + allowedWord + " is ready.'",
+		"cd " + repo + " && gh pr comment 5 --body 'https://github.com/a/b/pull/3 " + allowedWord + " is ready.'",
 	} {
 		out, code := hookEvent(t, t.TempDir(), bashEvent(command))
 		silentPass(t, out, code)
@@ -56,7 +57,12 @@ func Test0155_2(t *testing.T) {
 	repo := wordRepo(t)
 	comment := "--body '" + allowedWord + " is ready.'"
 	want := []string{"[cspell]", allowedWord}
-	deniedWith(t, repo, want, "gh pr comment 5 -R other/repo "+comment, `GH_REPO="$R" gh pr comment 5 `+comment)
+	deniedWith(t, repo, want,
+		"gh pr comment 5 -R other/repo "+comment,
+		"gh -R other/repo pr comment 5 "+comment,
+		`GH_REPO="$R" gh pr comment 5 `+comment,
+		`GH_REPO=o/other bash -c "gh pr comment 5 `+comment+`"`,
+	)
 	deniedWith(t, t.TempDir(), want, "gh pr comment 5 "+comment)
 }
 
@@ -66,12 +72,14 @@ func Test0155_3(t *testing.T) {
 	write(t, repo, map[string]string{"notes.md": cleanText, "reply.md": cleanText})
 	deniedWith(t, repo, []string{"can't read", "--body-file"},
 		`gh pr comment 5 --body "$BODY"`,
+		`gh pr comment 5 --body="$BODY"`,
 		"cat notes.md | gh pr comment 5 --body-file -",
 		"printf 'Fine.' > fresh.md && gh pr create --title t -F fresh.md",
 		"gh pr create --title t --body-file - <<EOF\nSee $(cat notes.md)\nEOF\n",
 		`gh api repos/o/r/issues/5/comments -f body="$BODY"`,
 		`gh api repos/o/r/issues/5/comments -F "body=@${DIR}reply.md"`,
 		`gh api repos/o/r/issues/$N/comments --input "$F"`,
+		"gh api graphql -f query='mutation($input: AddCommentInput!) { addComment(input: $input) { clientMutationId } }' -F 'input[body]=Fine.'",
 	)
 }
 
@@ -85,6 +93,8 @@ func Test0155_4(t *testing.T) {
 		`bash -lc "gh pr comment 5 `+red+`"`,
 		"echo 5 | xargs -I{} gh pr comment {} "+red,
 		"timeout -s KILL 30 gh pr comment 5 "+red,
+		"sudo -u bot env -i GH_HOST=github.com gh pr comment 5 "+red,
+		`bash --norc -c "gh pr comment 5 `+red+`"`,
 	)
 }
 
@@ -112,6 +122,7 @@ func Test0155_6(t *testing.T) {
 	deniedWith(t, repo, []string{"[plan-structure]", want},
 		"gh issue create --title 'Keep notes' --label Plan -F plan.md",
 		"gh issue create --title '[Plan] Keep notes' -F plan.md",
+		"gh issue edit 7 --add-label Plan -F plan.md",
 	)
 	out, code := hookEvent(t, repo, mcpEvent("mcp__github__create_pull_request",
 		map[string]any{"owner": "o", "repo": "r", "title": "t", "head": "b", "base": "main", "body": noBackground}))

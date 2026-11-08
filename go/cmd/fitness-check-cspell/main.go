@@ -47,13 +47,16 @@ func run(root string, args []string) (checkkit.Result, error) {
 // whose encoded state no one wrote or can fix.
 var debugBlock = regexp.MustCompile(`<!--renovate-debug:[^>]*-->`)
 
-// hideDebugBlocks blanks each Renovate debug block in a body, keeping every
-// other word's line and column.
+// hideDebugBlocks blanks each Renovate debug block in a body, keeping its
+// newlines so every other word keeps its line and column.
 func hideDebugBlocks(body string) string {
 	return debugBlock.ReplaceAllStringFunc(body, func(block string) string {
-		return strings.Repeat(" ", len(block))
+		return blanked.ReplaceAllString(block, " ")
 	})
 }
+
+// blanked matches each byte a hidden block blanks: all but newlines.
+var blanked = regexp.MustCompile(`[^\n]`)
 
 // walkFiles spell-checks the changed files, or every tracked file under
 // root when the run is unscoped. A resolved cspell.json with ignorePaths

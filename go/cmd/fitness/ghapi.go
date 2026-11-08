@@ -306,11 +306,15 @@ func (api apiCall) graphQLParts() ([]postPart, bool) {
 	if !commentMutation.MatchString(query) {
 		return nil, false
 	}
-	if !known || inlineBody.MatchString(query) {
+	if !known || inlineBody.MatchString(query) || inputVariable.MatchString(query) {
 		return []postPart{unreadPart("the GraphQL comment body")}, true
 	}
 	return bodyParts(bodyVariable.FindAllStringSubmatch(query, -1), vars), true
 }
+
+// inputVariable matches a mutation whose whole input is one variable,
+// which may hold the body where the hook doesn't read it.
+var inputVariable = regexp.MustCompile(`\binput\s*:\s*\$\w+`)
 
 // inlineBody matches a GraphQL body argument written inside the query.
 var inlineBody = regexp.MustCompile(`\bbody\s*:\s*"`)

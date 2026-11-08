@@ -20,7 +20,7 @@ posts from Claude Code
       - Then it exits 0 with no output
 - 0155.2
   - Given Developer has a fitness repo whose `cspell.json` allows a word, and Claude drafted a comment with it
-    - When Claude Code runs `fitness claude-hook` before a `gh` call to another repo, or outside any repo
+    - When Claude Code runs `fitness claude-hook` before a `gh` call or script naming another repo, or outside any repo
       - Then it denies the call with the org's cspell findings
 - 0155.3
   - Given Developer has a fitness repo
@@ -28,7 +28,7 @@ posts from Claude Code
       - Then it denies the call, saying how to pass a body it can read
 - 0155.4
   - Given Developer has a fitness repo and Claude drafted a red comment
-    - When Claude Code runs `fitness claude-hook` before a later `gh` call, a loop, `bash -c`, `xargs` or `timeout` posts it
+    - When Claude Code runs `fitness claude-hook` before a later `gh` call, a loop, `bash -c` or a wrapper such as `sudo` posts it
       - Then it denies the call with the findings
 - 0155.5
   - Given Developer has a fitness repo and Claude drafted a red comment

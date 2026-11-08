@@ -41,12 +41,12 @@ type mcpInput struct {
 	Comments                 []string
 }
 
-// mcpPosts is the post a GitHub MCP tool would make, or none for any other
-// tool or one with no body.
+// mcpPosts is the post a GitHub MCP tool would make, or none for another
+// server's tool or one with no body.
 func mcpPosts(in claudeHookInput) []ghPost {
-	name := in.Tool[strings.LastIndex(in.Tool, "__")+2:]
+	server, name, _ := strings.Cut(strings.TrimPrefix(in.Tool, "mcp__"), "__")
 	tool, ok := mcpTools[name]
-	if !strings.HasPrefix(in.Tool, "mcp__") || !ok {
+	if !strings.HasPrefix(in.Tool, "mcp__") || !strings.Contains(server, "github") || !ok {
 		return nil
 	}
 	input := readMCPInput(in.raw)
@@ -73,12 +73,7 @@ func (tool mcpTool) checksFor(input mcpInput) []string {
 	if !tool.issue {
 		return tool.checks
 	}
-	for _, kind := range cleanKinds(append(slices.Clone(input.Labels), titleKind.FindString(input.Title))) {
-		if checks := metadata.IssueBodyChecks(kind); checks != nil {
-			return checks
-		}
-	}
-	return metadata.IssueBodyChecks("")
+	return kindChecks(cleanKinds(append(slices.Clone(input.Labels), titleKind.FindString(input.Title))))
 }
 
 // readMCPInput reads the fields of an MCP tool's input the hook judges,
