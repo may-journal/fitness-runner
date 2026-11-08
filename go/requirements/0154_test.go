@@ -32,7 +32,7 @@ func largeTree() map[string]string {
 }
 
 func Test0154_1(t *testing.T) {
-	t.Parallel()
+	// Not parallel: a 50,000-file tree built beside other tests would time their disk load.
 	repo := generatedTree(t, largeTree(), largeTreeFiles)
 	write(t, repo, map[string]string{"dist/index.js": "export const built = true;\n"})
 	out, code := fitness(t, repo, nil, "--all", "--policy=external", "--checks="+strings.Join(largeTreeChecks, ","))
@@ -41,10 +41,11 @@ func Test0154_1(t *testing.T) {
 }
 
 func Test0154_2(t *testing.T) {
-	t.Parallel()
+	// Not parallel, like Test0154_1.
 	repo := generatedTree(t, largeTree(), largeTreeFiles)
 	write(t, repo, map[string]string{nestedDist: "export const built = true;\n"})
 	git(t, repo, "add", "-f", nestedDist)
+	git(t, repo, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", "build(tree): track a build")
 	out, code := fitness(t, repo, nil, "--all", "--policy=external", "--checks="+largeTreeChecks[0])
 	sees(t, out, code, 1, nestedDist)
 	within(t, out, largeTreeChecks[:1], 5*time.Second)
