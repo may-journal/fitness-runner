@@ -2,8 +2,8 @@ package check
 
 import (
 	"fmt"
-	"os/exec"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
@@ -27,28 +27,32 @@ func Main() {
 	})
 }
 
+// run judges the inline message, or HEAD's, once the repo uses the
+// AI-disclosure convention. An inline message with a trailer reads no history.
 func run(root string, _ []string) (checkkit.Result, error) {
-	message := resolveMessage(root)
-	if !adopted(root, message) {
+	message, inline := checkkit.CtxMessage()
+	if inline && anyTrailer(message) {
+		return judge(message), nil
+	}
+	message, ok := adopted(root, message, inline)
+	if !ok {
 		return checkkit.Pass(0), nil
 	}
 	return judge(message), nil
 }
 
-// historyDepth is how many recent commits adopted inspects for a trailer.
-const historyDepth = "100"
-
-// adopted reports whether the repo uses the AI-disclosure convention: the
-// message under validation or a recent HEAD commit carries either trailer.
-func adopted(root, message string) bool {
-	if anyTrailer(message) {
-		return true
+// adopted reads recent history once and returns the message to judge, HEAD's
+// unless inline, and whether it or that history carries a trailer.
+func adopted(root, message string, inline bool) (string, bool) {
+	history := gitx.RecentMessages(root, historyDepth)
+	if !inline {
+		message = head(history)
 	}
-	cmd := exec.Command("git", "log", "-n", historyDepth, "--format=%B")
-	cmd.Dir = root
-	out, err := cmd.Output()
-	return err == nil && anyTrailer(string(out))
+	return message, anyTrailer(message) || slices.ContainsFunc(history, anyTrailer)
 }
+
+// historyDepth is how many recent commits run inspects for a trailer.
+const historyDepth = 100
 
 // anyTrailer reports whether text carries any required trailer.
 func anyTrailer(text string) bool {
@@ -60,13 +64,13 @@ func anyTrailer(text string) bool {
 	return false
 }
 
-// resolveMessage returns the runner's inline message when provided, even if
-// empty, otherwise the HEAD commit message (empty when git fails).
-func resolveMessage(root string) string {
-	if message, ok := checkkit.CtxMessage(); ok {
-		return message
+// head is HEAD's message, the first of history, or empty when git read
+// none.
+func head(history []string) string {
+	if len(history) == 0 {
+		return ""
 	}
-	return gitx.HeadMessage(root)
+	return history[0]
 }
 
 // judge validates one commit message: a blank subject fails with msgEmpty,

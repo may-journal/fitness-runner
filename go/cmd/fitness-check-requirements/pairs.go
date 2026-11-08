@@ -2,7 +2,9 @@ package check
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
+	"maps"
 	"path"
 	"regexp"
 	"slices"
@@ -136,37 +138,63 @@ func unchangedPartners(numbers []string, partners map[string][]string, changed m
 }
 
 // pairErrors judges a scoped run's changed files, and a full scan or a local merge, cherry-pick or revert judges no pairs.
-func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) []string {
+// A failed git read is the error.
+func pairErrors(root string, docPaths, testFiles []string, tests []reqTest) ([]string, error) {
 	changed := gitx.CommitChanges(root)
 	if changed == nil || gitx.Replaying(root) {
-		return nil
+		return nil, nil
 	}
 	base := gitx.ScopeBase(root)
 	p := newPairs(docPaths, testFiles, tests, changed)
-	changed = p.withoutCommentOnly(root, base, changed)
-	errs := p.judge(changed, reformats(root, base, changed), fixedAtBase(root, base))
+	changed, err := p.withoutCommentOnly(root, base, changed)
+	reformatted, reformatErr := reformats(root, base, changed)
+	errs := p.judge(changed, reformatted, fixedAtBase(root, base))
 	sort.Strings(errs)
-	return errs
+	return errs, errors.Join(err, reformatErr)
 }
 
 // withoutCommentOnly drops each changed test or doc whose code, comments
 // aside, is the same as at base. It neither needs a partner nor counts as
-// one, and reads renames only for a file base lacks.
-func (p pairs) withoutCommentOnly(root, base string, changed []string) []string {
-	var renames map[string]string
+// one, and a renamed file is compared with its path at base.
+func (p pairs) withoutCommentOnly(root, base string, changed []string) ([]string, error) {
+	if base == "" {
+		return changed, nil
+	}
+	edits, err := baseEdits(root, base, p.owned(changed))
+	if err != nil {
+		return changed, err
+	}
+	same, err := comments.CommentOnly(root, base, slices.Collect(maps.Values(edits)))
 	return slices.DeleteFunc(slices.Clone(changed), func(f string) bool {
-		if len(p.numbers[f]) == 0 && docNumber(f) == "" {
-			return false
-		}
-		from := f
-		if _, atBase := gitx.Show(root, base, f); !atBase {
-			if renames == nil {
-				renames = gitx.Renames(root, base)
-			}
-			from = cmp.Or(renames[f], f)
-		}
-		return comments.CommentOnly(root, base, from, f)
+		e, ok := edits[f]
+		return ok && same[e]
+	}), err
+}
+
+// owned keeps the changed files that prove a requirement or state one.
+func (p pairs) owned(changed []string) []string {
+	return slices.DeleteFunc(slices.Clone(changed), func(f string) bool {
+		return len(p.numbers[f]) == 0 && docNumber(f) == ""
 	})
+}
+
+// baseEdits pairs each of files with its path at base. It reads renames
+// only when base lacks one of them.
+func baseEdits(root, base string, files []string) (map[string]comments.Edit, error) {
+	edits := map[string]comments.Edit{}
+	objects := make([]string, len(files))
+	for i, f := range files {
+		objects[i] = base + ":" + f
+	}
+	held, err := gitx.HasAll(root, objects)
+	var renames map[string]string
+	for _, f := range files {
+		if !held[base+":"+f] && renames == nil {
+			renames = gitx.Renames(root, base)
+		}
+		edits[f] = comments.Edit{From: cmp.Or(renames[f], f), File: f}
+	}
+	return edits, err
 }
 
 // fixedAtBase reports whether a changed test file failed this check at the

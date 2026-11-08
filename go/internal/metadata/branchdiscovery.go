@@ -10,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
@@ -23,10 +22,13 @@ type branchPR struct {
 	Base    string `json:"base"`
 	BaseSHA string `json:"baseSHA"`
 	URL     string `json:"url"`
+	// Repo is the base repo's owner/name, as the pulls read names it.
+	Repo string `json:"repo"`
 }
 
 // discoverBranchPR finds the open PR from the local source's branch in the
-// base repo gh selects. It asks gh for that repo while the pulls read runs.
+// base repo gh selects. With one remote and no gh choice, gh reads the
+// remote's repo, so one pulls read finds both.
 func discoverBranchPR(ctx context.Context, root, branch string) (*branchPR, string, error) {
 	source := gitx.OriginSlug(root)
 	if source == "" {
@@ -34,25 +36,29 @@ func discoverBranchPR(ctx context.Context, root, branch string) (*branchPR, stri
 	}
 	owner, _, _ := strings.Cut(source, "/")
 	query := "/pulls?state=open&head=" + url.QueryEscape(owner+":"+branch) + "&per_page=100"
-	var repo string
-	var out []byte
-	var repoErr, pullsErr error
+	repo, path := "", "repos/{owner}/{repo}"+query
 	if !oneUnresolvedRemote(ctx, root) {
-		repo, repoErr = branchRepository(ctx, root)
-		if repoErr == nil {
-			out, pullsErr = branchPulls(ctx, root, "repos/"+repo+query)
+		var err error
+		if repo, err = branchRepository(ctx, root); err != nil {
+			return nil, "", err
 		}
-	} else {
-		var wg sync.WaitGroup
-		wg.Go(func() { repo, repoErr = branchRepository(ctx, root) })
-		out, pullsErr = branchPulls(ctx, root, "repos/{owner}/{repo}"+query)
-		wg.Wait()
+		path = "repos/" + repo + query
 	}
-	if err := cmp.Or(repoErr, pullsErr); err != nil {
+	out, err := branchPulls(ctx, root, path)
+	if err != nil {
 		return nil, "", err
 	}
 	pr, err := matchingPR(out, source, branch)
-	return pr, repo, err
+	return pr, cmp.Or(repo, baseRepo(pr, source)), err
+}
+
+// baseRepo is the base repo the pull request names, else source, the
+// remote's repo that gh read the pulls from. With no pull request it is empty.
+func baseRepo(pr *branchPR, source string) string {
+	if pr == nil {
+		return ""
+	}
+	return cmp.Or(pr.Repo, source)
 }
 
 // branchRepository is the base repo gh selects.
@@ -63,12 +69,12 @@ func branchRepository(ctx context.Context, root string) (string, error) {
 
 // branchPulls reads the open PRs at path.
 func branchPulls(ctx context.Context, root, path string) ([]byte, error) {
-	filter := `.[] | {number, title, body: (.body // ""), head: .head.ref, source: .head.repo.full_name, base: .base.ref, baseSHA: .base.sha, url: .html_url}`
+	filter := `.[] | {number, title, body: (.body // ""), head: .head.ref, source: .head.repo.full_name, base: .base.ref, baseSHA: .base.sha, url: .html_url, repo: .base.repo.full_name}`
 	return branchOutput(ctx, root, "api", "--paginate", "--jq", filter, path)
 }
 
 // oneUnresolvedRemote reports whether the checkout has one remote and no
-// `gh repo set-default`, so the pulls read may start before `gh repo view`.
+// `gh repo set-default`, so the pulls read needs no `gh repo view`.
 func oneUnresolvedRemote(ctx context.Context, root string) bool {
 	out, err := exec.CommandContext(ctx, "git", "-C", root, "config", "--get-regexp", `^remote\.`).Output()
 	return err == nil && os.Getenv("GH_REPO") == "" && remoteURLs(string(out)) == 1

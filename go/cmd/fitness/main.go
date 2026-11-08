@@ -353,6 +353,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 		return stageResult{code: 1}
 	}
 	tracked, env = withViews(root, checks, env, tracked)
+	tracked, env = withTestScan(root, checks, env, tracked)
 	defer tracked.Remove()
 	defer stopOnInterrupt(tracked.Remove)()
 	hint := scopeHint(env, tracked.Files)

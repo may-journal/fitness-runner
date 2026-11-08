@@ -7,7 +7,7 @@
 // names:
 //
 //   - `dist` must be git-ignored, as `git check-ignore -q dist` verifies. Fail hint: add `dist/` to `.gitignore`.
-//   - `dist` must have no tracked files: `git ls-files -- dist` and `git ls-files -- '**/dist/**'` are both empty.
+//   - `dist` must have no tracked files: one `git ls-files -- dist '**/dist/**'` call is empty.
 //   - The fail hint for tracked files: remove the listed files with `git rm --cached`.
 //   - The build output each [language module] finds must have no tracked files either. They join the same list, in one combined error.
 //

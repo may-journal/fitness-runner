@@ -25,20 +25,24 @@ func run(root string, args []string) (checkkit.Result, error) {
 		return judge(firstLine(msg)), nil
 	}
 	if commits, ok := gitx.BranchOwnCommits(root); ok {
-		return judgeCommits(root, commits), nil
+		return judgeCommits(root, commits)
 	}
 	return judge(firstLine(gitx.HeadMessage(root))), nil
 }
 
 // judgeCommits judges each of the branch's own commits, so history the
-// branch inherits from its base never fails it. No own commits pass.
-func judgeCommits(root string, commits []string) checkkit.Result {
+// branch inherits from its base never fails it. No own commits pass, and one git call reads every message.
+func judgeCommits(root string, commits []string) (checkkit.Result, error) {
+	messages, err := gitx.Messages(root, commits)
+	if err != nil {
+		return checkkit.Result{}, err
+	}
 	result := checkkit.Pass(len(commits))
-	for _, sha := range commits {
-		result.Errors = append(result.Errors, judge(firstLine(gitx.Message(root, sha))).Errors...)
+	for _, msg := range messages {
+		result.Errors = append(result.Errors, judge(firstLine(msg)).Errors...)
 	}
 	result.Ok = len(result.Errors) == 0
-	return result
+	return result, nil
 }
 
 // messageArg extracts an explicit --message value in either form from args, so a subject such as a PR title can be validated directly.

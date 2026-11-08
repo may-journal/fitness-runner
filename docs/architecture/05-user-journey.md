@@ -57,14 +57,14 @@ flowchart TB
     executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
 
     subgraph checks["Check families"]
-        commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056)]:::system
+        commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056, 0153)]:::system
         changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085)]:::system
+        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085, 0152)]:::system
         commentChecks[(41 Code comments<br/>Req 0137, 0139, 0141)]:::system
         markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123)]:::system
         mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
-        architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076)]:::system
-        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0130, 0132)]:::system
+        architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076, 0154)]:::system
+        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0130, 0132, 0151)]:::system
         goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057, 0097)]:::system
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system

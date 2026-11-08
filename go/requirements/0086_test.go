@@ -1,8 +1,11 @@
 package requirements
 
 import (
+	"fmt"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 )
 
 // refSha is a full commit sha a workflow pins an action to.
@@ -127,4 +130,33 @@ func Test0086_7(t *testing.T) {
 	sees(t, out, code, 1, ".github/workflows/ci.yml: line 5: may-journal/fitness-runner/.github/workflows/nope.yml@v1: .github/workflows/nope.yml does not exist at v1",
 		".github/workflows/ci.yml: line 7: may-journal/hub/.github/workflows/sync.yml@v1: skipped, GitHub answered gh: Resource not accessible by integration (HTTP 403)",
 		"workflow refs from .github/workflows/ci.yml line 9 on were not verified: gh api repos/may-journal/journey/git/ref/tags/v1: error connecting to api.github.com")
+}
+
+// rowDuration matches a results-table row's time, in milliseconds or seconds.
+var rowDuration = regexp.MustCompile(`│ (\d+(?:\.\d+)?)(ms|s)\s+│\s*$`)
+
+// slowRefs is how many pinned workflow calls Test0086_8 makes, each answered
+// after one second. Read one at a time, they take slowRefs seconds.
+const slowRefs = 8
+
+func Test0086_8(t *testing.T) {
+	// Not parallel: a wall-clock limit beside other tests would time their load.
+	var uses []string
+	for i := range slowRefs {
+		uses = append(uses, fmt.Sprintf("may-journal/fitness-runner/.github/workflows/w%d.yml@%s", i, refSha))
+	}
+	slow := found("repos/may-journal/fitness-runner/contents/.github/workflows/", `{"name":"w.yml"}`)
+	slow.Wait = 1
+	out, code, rp := refCheck(t, refWorkflow(uses...), []response{slow})
+	sees(t, out, code, 0, "All 1 checks passed")
+	if reads := len(rp.calls("gh")); reads != slowRefs {
+		t.Errorf("workflow-ref-exists read GitHub %d times, want %d", reads, slowRefs)
+	}
+	took := rowDuration.FindStringSubmatch(row(out, "workflow-ref-exists"))
+	if took == nil {
+		t.Fatalf("workflow-ref-exists shows no time in %q", row(out, "workflow-ref-exists"))
+	}
+	if d, _ := time.ParseDuration(took[1] + took[2]); d >= slowRefs*time.Second/2 {
+		t.Errorf("workflow-ref-exists took %v on %d one-second reads, want under %v", d, slowRefs, slowRefs*time.Second/2)
+	}
 }

@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
 
 // EntryDir is the folder holding one entry file per pull request, so two open
@@ -162,15 +164,22 @@ func StagedEntryFiles(root string) []string {
 }
 
 // StagedNameErrors names each entry file the index adds whose name does not
-// fit its staged heading, with the name it should have.
-func StagedNameErrors(root string) []string {
+// fit its staged heading, with the name it should have. One git call reads
+// every staged entry, and its failure is the error.
+func StagedNameErrors(root string) ([]string, error) {
+	added := StagedEntryFiles(root)
+	objects := make([]string, len(added))
+	for i, p := range added {
+		objects[i] = ":" + p
+	}
+	staged, err := gitx.ShowAll(root, objects)
 	var errs []string
-	for _, p := range StagedEntryFiles(root) {
-		if msg := NameError(p, gitOut(root, "show", ":"+p)); msg != "" {
+	for _, p := range added {
+		if msg := NameError(p, strings.TrimSpace(staged[":"+p])); msg != "" {
 			errs = append(errs, msg)
 		}
 	}
-	return errs
+	return errs, err
 }
 
 // AddedText is the text of the lines a unified diff adds, one per line.

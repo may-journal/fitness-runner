@@ -161,9 +161,6 @@ func sharedBlocks(root, rel string) ([]Block, bool) {
 	if !ok || json.Unmarshal(data, &blocks) != nil {
 		return nil, false
 	}
-	for i := range blocks {
-		blocks[i].placed = true
-	}
 	return blocks, true
 }
 
