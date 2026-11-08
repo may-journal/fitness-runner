@@ -120,6 +120,15 @@ func FilesByExt(root string, exts ...string) []string {
 	return out
 }
 
+// Tracked returns root's sorted tracked paths on disk from the runner's list.
+// It returns nil outside a git work tree, where nothing is tracked.
+func Tracked(root string) []string {
+	if !trackedFiles(root).ok {
+		return nil
+	}
+	return FilesByExt(root, "")
+}
+
 // AllFiles returns every sorted path under root, erroring when listing fails so
 // a check never passes on an unread list.
 func AllFiles(root string) ([]string, error) {

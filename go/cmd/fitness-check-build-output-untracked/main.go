@@ -121,28 +121,16 @@ func isDistIgnored(root string) bool {
 	return cmd.Run() == nil
 }
 
-// trackedDistFiles returns the git-tracked files under dist — the root-level
-// `dist` pathspec plus the literal nested `**/dist/**` one — deduped and
-// sorted.
+// trackedDistFiles returns the tracked files in a dist folder at any depth,
+// sorted. It filters the runner's tracked list, so it asks git nothing.
 func trackedDistFiles(root string) []string {
-	direct := gitLines(root, "ls-files", "--", "dist")
-	nested := gitLines(root, "ls-files", "--", "**/dist/**")
-	return dedupeSorted(direct, nested)
-}
-
-// gitLines runs git with cwd root and returns the trimmed, non-empty lines
-// of its stdout; a failing command yields whatever stdout it produced.
-func gitLines(root string, args ...string) []string {
-	cmd := exec.Command("git", args...)
-	cmd.Dir = root
-	out, _ := cmd.Output()
-	var lines []string
-	for _, line := range strings.Split(string(out), "\n") {
-		if trimmed := strings.TrimSpace(line); trimmed != "" {
-			lines = append(lines, trimmed)
+	var out []string
+	for _, file := range walkfs.Tracked(root) {
+		if file == "dist" || strings.HasPrefix(file, "dist/") || strings.Contains(file, "/dist/") {
+			out = append(out, file)
 		}
 	}
-	return lines
+	return out
 }
 
 // dedupeSorted merges the given lists into one sorted list without duplicates.

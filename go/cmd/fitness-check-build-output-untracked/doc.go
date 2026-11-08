@@ -7,7 +7,7 @@
 // names:
 //
 //   - `dist` must be git-ignored, as `git check-ignore -q dist` verifies. Fail hint: add `dist/` to `.gitignore`.
-//   - `dist` must have no tracked files: `git ls-files -- dist` and `git ls-files -- '**/dist/**'` are both empty.
+//   - No file in a `dist` folder at any depth may be tracked; the check reads the runner's tracked list.
 //   - The fail hint for tracked files: remove the listed files with `git rm --cached`.
 //   - The build output each [language module] finds must have no tracked files either. They join the same list, in one combined error.
 //
@@ -21,7 +21,7 @@
 //
 // # Notes
 //
-//   - Git commands run from the repo root; only their stdout is parsed, so a failing git command contributes no phantom tracked files.
+//   - Outside a git work tree nothing is tracked, so the check names no tracked files there.
 //   - `filesChecked` counts the scanned source files plus one for the dist git checks.
 //   - Each module's package docs name its output paths. A repo with no such output and no `dist` rules to judge passes clean.
 //
