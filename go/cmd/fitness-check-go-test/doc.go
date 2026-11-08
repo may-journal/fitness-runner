@@ -9,5 +9,6 @@
 //   - A run scoped to changed files skips when no `.go`, `go.mod`, or `go.sum` file changed.
 //   - A missing Go toolchain reports info with a one-line install hint, never a failure.
 //   - A `go test` that could not start, was killed, hit sandbox text, or failed without an explaining line reports info quoting its output.
-//   - The time budget is 15 minutes, since a test suite can run long.
+//   - It runs in the test stage, beside the other test runners, since a test suite can run long.
+//   - Modules run side by side.
 package check

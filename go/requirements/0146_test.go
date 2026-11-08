@@ -3,8 +3,10 @@ package requirements
 import (
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+	"time"
 )
 
 func Test0146_1(t *testing.T) {
@@ -42,4 +44,35 @@ func Test0146_3(t *testing.T) {
 	write(t, repo, map[string]string{"checks/fitness-check-pause": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"pause\"}'; exit 0; }\nsleep 2\necho '" + passing + "'\n"})
 	out, code := fitness(t, repo, nil, "--policy=external", "--checks=pause,markdown-links")
 	sees(t, out, code, 0, "Slowest: pause 2")
+}
+
+func Test0146_4(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", localCheck("suite", passing))
+	write(t, repo, map[string]string{"checks/fitness-check-suite": "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"suite\", \"stage\": \"tests\"}'; exit 0; }\nexec /bin/sleep 30\n"})
+	out, code := fitness(t, repo, []string{testsTotal(1000)}, "--policy=external", "--checks=suite,markdown-links")
+	sees(t, out, code, 1, "Stopped at the 1s tests total", "The test runners ran past their 1s total. Slowest: suite 1")
+}
+
+// moduleSleep is how long each module's one test sleeps in Test0146_5.
+const moduleSleep = 6 * time.Second
+
+func Test0146_5(t *testing.T) {
+	t.Parallel()
+	// A fresh constant in each module keeps go test from replaying a cached
+	// result, so every module's test sleeps.
+	fresh := strconv.FormatInt(time.Now().UnixNano(), 10)
+	files := map[string]string{}
+	for _, dir := range []string{"a/", "b/", "c/", "d/"} {
+		files[dir+"go.mod"] = "module example.com/m\n\ngo 1.22\n"
+		files[dir+"m_test.go"] = "package m\n\nimport (\n\t\"testing\"\n\t\"time\"\n)\n\nconst fresh = " + fresh +
+			"\n\nfunc TestSlow(t *testing.T) { time.Sleep(" + strconv.FormatInt(int64(moduleSleep), 10) + ") }\n"
+	}
+	start := time.Now()
+	out, code := goTest(t, files)
+	took := time.Since(start)
+	sees(t, out, code, 0, "All 1 checks passed · 4 files scanned")
+	if oneByOne := 4 * moduleSleep; took >= oneByOne {
+		t.Errorf("go-test took %s on four modules whose tests sleep %s each; one module at a time takes %s", took, moduleSleep, oneByOne)
+	}
 }

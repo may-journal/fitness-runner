@@ -129,8 +129,8 @@
 // All profiles live in private temporary paths and are removed on return.
 // Tests may still write their own files. The audit reruns every top-level
 // test twice, so its cost is about twice the tests' own run time, spread over
-// the pool. The runner allows fifteen minutes; the check stops work after
-// fourteen.
+// the pool. It runs in the test stage, whose total the runner holds it to,
+// and stops work half a minute before that total.
 //
 // # Rollout
 //

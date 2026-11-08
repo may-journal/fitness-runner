@@ -10,7 +10,9 @@ on:
 jobs:
   fitness:
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 10
+    # Observed max 56s on 2026-11-02. The limit covers a pull request's two
+    # stages of 450s tests plus 60s fast checks, and a minute of setup.
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -54,7 +56,7 @@ jobs:
     needs: fitness
     if: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-24.04-arm
-    timeout-minutes: 5
+    timeout-minutes: 3
     outputs:
       pr: ${{ fromJSON(steps.report-step-1.outputs.pr || '{}').number }}
     steps:

@@ -104,6 +104,10 @@ const (
 // it stops what still runs, fails, and names the slowest checks.
 const FastTotal = 60 * time.Second
 
+// TestsTotal bounds the wall time of a run's test runners together. It is 1.5
+// times the 300s go-test-coverage takes on a large repo.
+const TestsTotal = 450 * time.Second
+
 // StageOf is the stage d declares, StageFast when it declares none.
 func StageOf(d Describe) string {
 	if d.Stage == StageTests {

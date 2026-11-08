@@ -31,7 +31,7 @@ subagent stops and session starts with red work
 - 0143.5
     - Given Developer has a fitness repo with a failing Go test, and a subagent edited a Go file
         - When I install the settings, and Claude Code runs `fitness claude-hook` as the subagent stops
-            - Then SubagentStop's timeout is 300 seconds, and no test-stage check runs
+            - Then SubagentStop's timeout is 300 seconds and Stop's 540, and no test-stage check runs
 - 0143.6
     - Given Developer has a fitness repo with uncommitted files that fail a check
         - When Claude Code runs `fitness claude-hook` as Claude stops twice in a turn, unmarked, then next turn

@@ -31,7 +31,7 @@ bad commits and pushes tried
 - 0009.4
     - Given Developer has the hooks and a failing executable pre-commit.local, or one whose git waits for a password
         - When I commit a change that passes its checks
-            - Then the commit is refused, and a waiting one and its children stop at the fast total
+            - Then the commit is refused, and a waiting one and its children stop at the test total
 - 0009.7
     - Given Developer has a repo that already has a pre-commit hook
         - When I install the Go hook with --install-hook

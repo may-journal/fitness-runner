@@ -29,11 +29,7 @@ type liveCheck struct {
 // line is the check's progress line: elapsed time, name, and its limit. The
 // limit is the time its stage's total left it at start.
 func (c liveCheck) line() string {
-	limit := ""
-	if c.limit != unlimited {
-		limit = " (limit " + span(c.limit) + ")"
-	}
-	return fmt.Sprintf("  … %s  running: %s%s\n", span(time.Since(c.start)), c.name, limit)
+	return fmt.Sprintf("  … %s  running: %s (limit %s)\n", span(time.Since(c.start)), c.name, span(c.limit))
 }
 
 // span renders a duration as tenths of a second below ten seconds, whole
@@ -105,7 +101,7 @@ func runningChecks() []liveCheck {
 // so a log with no heartbeat still names the slow check. The returned func
 // cancels the line for a check that ends first.
 func warnHalfway(c liveCheck, heartbeat bool) (cancel func()) {
-	if heartbeat || c.limit == unlimited {
+	if heartbeat {
 		return func() {}
 	}
 	t := time.AfterFunc(c.limit/2, func() { os.Stderr.WriteString(c.line()) })
