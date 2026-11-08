@@ -3,7 +3,8 @@ package requirements
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
+	"os"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -48,16 +49,31 @@ func Test0153_1(t *testing.T) {
 			t.Errorf("local-branch asked gh for the repo, which the PR answer names: %q", rp.calls("gh"))
 		}
 	}()
-	out, code := fitness(t, repo, rp.env, "--policy=external", "--checks="+strings.Join(commitChecks, ","))
-	t.Log("\n" + out)
+	gitPath, calls := loggedGit(t)
+	gitDir, _, _ := strings.Cut(strings.TrimPrefix(gitPath, "PATH="), string(os.PathListSeparator))
+	env := append([]string{"PATH=" + gitDir + string(os.PathListSeparator) + strings.TrimPrefix(rp.env[0], "PATH=")}, rp.env[1:]...)
+	out, code := fitness(t, repo, env, "--policy=external", "--checks="+strings.Join(commitChecks, ","))
 	sees(t, out, code, 0, "All 3 checks passed")
-	for _, check := range commitChecks {
-		took := rowMillis.FindStringSubmatch(row(out, check))
-		if took == nil {
-			t.Fatalf("%s shows no time in its row %q", check, row(out, check))
-		}
-		if ms, _ := strconv.Atoi(took[1]); ms >= 5000 {
-			t.Errorf("%s took %d ms on a branch of %d commits, want under 5000 ms", check, ms, longBranchCommits)
+	// The fast total bounds the time. A long branch costs git log calls, one per
+	// check at any length.
+	if logs := gitLogCalls(t, calls); logs > len(commitChecks) {
+		t.Errorf("the commit checks ran git log %d times on a branch of %d commits, want at most one each", logs, longBranchCommits)
+	}
+}
+
+// gitLogCalls counts the git log calls loggedGit kept. None fails the test,
+// since then nothing read the branch.
+func gitLogCalls(t *testing.T, calls string) int {
+	t.Helper()
+	raw, _ := os.ReadFile(calls)
+	n := 0
+	for _, line := range strings.Split(string(raw), "\n") {
+		if slices.Contains(strings.Fields(line), "log") {
+			n++
 		}
 	}
+	if n == 0 {
+		t.Fatalf("no check ran git log through the logged git:\n%s", raw)
+	}
+	return n
 }
