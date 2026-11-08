@@ -40,3 +40,7 @@ may-journal `uses:` lines pinned to a tag or sha
     - Given Developer has a workflow with a missing path, then a call GitHub refuses, then a call GitHub cannot reach
         - When workflow-ref-exists runs
             - Then it fails on the missing path and notes each call it could not verify
+- 0086.8
+    - Given Developer has a workflow with eight pinned calls GitHub answers after one second each
+        - When workflow-ref-exists runs
+            - Then it passes within four seconds
