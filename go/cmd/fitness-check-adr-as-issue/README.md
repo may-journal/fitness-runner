@@ -10,7 +10,7 @@ It runs in every repo, the runner's own included.
 
 - Fail: a Markdown file in a folder named `adr`, such as `docs/architecture/adr/0003-sync.md`, compared case-insensitively. The folder's README or index lists ADRs and passes.
 - Fail: a Markdown file whose first top-level heading starts with the word ADR, such as `# ADR 12: Use SQLite`.
-- Fail: a Markdown file with `## Context`, `## Decision` and `## Consequences` sections, such as a `fitness/adr-NNNN/README.md` that still holds its decision.
+- Fail: a Markdown file with `## Context`, `## Decision` and `## Consequences` sections, such as an unmoved check README.
 - Pass: a file whose whole text is one full GitHub issue URL.
 - Pass: a check README that links its ADR issue in place of the decision.
 - Pass: files under `.github/`, where the issue template lives.
@@ -26,3 +26,13 @@ When the migration cannot run yet, `adrAsIssue.allow` lists the paths still wait
 - Fail: an allow entry without a reason, or whose glob is malformed.
 - Fail: an allow entry that matches no ADR file, so the list shrinks as files move and ends empty.
 - `filesChecked` is the number of paths judged.
+
+## Configuration
+
+These `.fitnessrc.json` keys tune the check.
+
+`adrAsIssue` holds the adr-as-issue check's options.
+
+- `allow` lists ADR files still waiting to move, each with its reason, as a shrinking fallback list.
+- `allow.path` is a glob, as Go's path.Match reads it, of the waiting files.
+- `allow.reason` says why the files have not moved yet.

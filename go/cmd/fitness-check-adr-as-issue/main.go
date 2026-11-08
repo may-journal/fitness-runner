@@ -21,7 +21,7 @@ func Main() {
 const toIssue = "open an `ADR` issue instead; `fitness adr-migrate` opens one per file and points each link at it"
 
 func run(root string, _ []string) (checkkit.Result, error) {
-	cfg, problems, err := loadConfig(root)
+	allow, problems, err := adr.LoadAllow(root)
 	if err != nil {
 		return checkkit.Fail(0, err.Error()), nil
 	}
@@ -29,7 +29,7 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Fail(0, "cannot list the repo's files: "+err.Error()), nil
 	}
-	errs := append(problems, judgeAll(root, files, cfg)...)
+	errs := append(problems, judgeAll(root, files, allow)...)
 	if len(errs) == 0 {
 		return checkkit.Pass(len(files)), nil
 	}
@@ -38,15 +38,15 @@ func run(root string, _ []string) (checkkit.Result, error) {
 
 // judgeAll names each ADR file no allow glob covers, then each allow glob
 // that covers no ADR file.
-func judgeAll(root string, files []string, cfg config) []string {
+func judgeAll(root string, files []string, allow adr.Allow) []string {
 	var errs []string
 	used := map[string]bool{}
 	for _, f := range files {
 		if rule, ok := ruleOf(root, f); ok {
-			errs = append(errs, judge(f, rule, cfg, used)...)
+			errs = append(errs, judge(f, rule, allow, used)...)
 		}
 	}
-	for _, glob := range cfg.allow {
+	for _, glob := range allow.Globs {
 		if !used[glob] {
 			errs = append(errs, fmt.Sprintf("adrAsIssue.allow path %q matches no ADR file; remove it", glob))
 		}
@@ -68,8 +68,8 @@ func ruleOf(root, rel string) (string, bool) {
 
 // judge is the error for ADR file rel, or none when an allow glob covers
 // it, which it marks used.
-func judge(rel, rule string, cfg config, used map[string]bool) []string {
-	if glob := cfg.allowedBy(rel); glob != "" {
+func judge(rel, rule string, allow adr.Allow, used map[string]bool) []string {
+	if glob := allow.Covering(rel); glob != "" {
 		used[glob] = true
 		return nil
 	}

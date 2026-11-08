@@ -61,22 +61,40 @@ func (r Record) sectionText(s string) string {
 	if text == "" {
 		text = notRecorded
 	}
-	if s == "Context" && r.StatusNote != "" {
+	if s == "Context" && r.noteKept() {
 		text += "\n\nStatus note from the file: " + r.StatusNote
 	}
 	return text
 }
 
+// noteKept reports whether r's status note says more than the Status line,
+// which already names the issue a `by` note links.
+func (r Record) noteKept() bool {
+	return r.StatusNote != "" && (r.statusLine() == r.Status || !strings.HasPrefix(r.StatusNote, "by "))
+}
+
 // Pointer is the README a runner ADR keeps once its decision is an issue. It
-// holds the title, summary, issue URL and `## Check` section.
+// holds the title, summary, issue URL, a superseded status and `## Check`.
 func (r Record) Pointer(title, url string) string {
-	parts := []string{"# " + title}
+	parts := []string{"# " + pointerTitle(title, r.Title)}
 	if r.Summary != "" {
 		parts = append(parts, r.Summary)
 	}
 	parts = append(parts, url)
+	if r.Status == "Superseded" {
+		parts = append(parts, "Status: "+r.statusLine())
+	}
 	if r.Check != "" {
 		parts = append(parts, "## Check", r.Check)
 	}
 	return strings.Join(parts, "\n\n") + "\n"
+}
+
+// pointerTitle is a check README's title, dropping a leading ADR word so
+// the trimmed README is no ADR by its title.
+func pointerTitle(title, decision string) string {
+	if titleADR.MatchString(title) {
+		return decision
+	}
+	return title
 }

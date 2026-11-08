@@ -33,7 +33,8 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Pass(0), err
 	}
-	errs := append(linkErrors(decisions), changeErrors(root, decisions, checkkit.DiffFiles())...)
+	allow, _, _ := adr.LoadAllow(root) // adr-as-issue reports a bad config
+	errs := append(linkErrors(decisions, allow), changeErrors(root, decisions, checkkit.DiffFiles())...)
 	if len(errs) > 0 {
 		return checkkit.Fail(len(decisions), errs...), nil
 	}
@@ -73,11 +74,11 @@ func adrFolder(name string) bool {
 }
 
 // linkErrors fails each ADR folder whose README links no ADR issue, so each
-// check names the decision it proves.
-func linkErrors(decisions []record) []string {
+// check names its decision. An adrAsIssue.allow glob lets a README wait.
+func linkErrors(decisions []record, allow adr.Allow) []string {
 	var errs []string
 	for _, r := range decisions {
-		if r.issue == "" {
+		if r.issue == "" && allow.Covering(r.readme) == "" {
 			errs = append(errs, fmt.Sprintf("%s: links no ADR issue; put the full URL of the `ADR` issue this check proves here, and run `fitness adr-migrate` to move a decision still in the file", r.readme))
 		}
 	}

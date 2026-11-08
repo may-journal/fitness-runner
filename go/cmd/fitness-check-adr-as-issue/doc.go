@@ -13,8 +13,7 @@
 //   - Fail: a Markdown file whose first top-level heading starts with the
 //     word ADR, such as `# ADR 12: Use SQLite`.
 //   - Fail: a Markdown file with `## Context`, `## Decision` and
-//     `## Consequences` sections, such as a `fitness/adr-NNNN/README.md`
-//     that still holds its decision.
+//     `## Consequences` sections, such as an unmoved check README.
 //   - Pass: a file whose whole text is one full GitHub issue URL.
 //   - Pass: a check README that links its ADR issue in place of the decision.
 //   - Pass: files under `.github/`, where the issue template lives.

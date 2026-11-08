@@ -35,6 +35,15 @@ func RewriteLinks(text, rel string, resolve Resolver) string {
 	})
 }
 
+// repoPathOf is the repo path a link to file from rel names. A leading
+// slash starts at the repo root, and any other link at rel's folder.
+func repoPathOf(file, rel string) string {
+	if root, ok := strings.CutPrefix(file, "/"); ok {
+		return path.Clean(root)
+	}
+	return path.Clean(path.Join(path.Dir(rel), file))
+}
+
 // resolveLink resolves one link target, relative to rel's folder, through
 // resolve.
 func resolveLink(target, rel string, resolve Resolver) (string, bool) {
@@ -42,7 +51,7 @@ func resolveLink(target, rel string, resolve Resolver) (string, bool) {
 		return "", false
 	}
 	file, anchor, _ := strings.Cut(target, "#")
-	repoPath := path.Clean(path.Join(path.Dir(rel), file))
+	repoPath := repoPathOf(file, rel)
 	if strings.HasPrefix(repoPath, "../") {
 		return "", false
 	}

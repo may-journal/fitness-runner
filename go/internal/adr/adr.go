@@ -65,16 +65,16 @@ func candidate(rel, content string) bool {
 	return MayBe(rel) && !IsPointer(content)
 }
 
-// MayBe reports whether rel's path lets it be an ADR file, Markdown outside
-// `.github/`, so a caller reads only those.
+// MayBe reports whether rel's path lets it be an ADR file. Only Markdown
+// outside `.github/` that is no template can be one.
 func MayBe(rel string) bool {
-	return mdx.IsMarkdown(strings.ToLower(rel)) && !strings.HasPrefix(rel, ".github/")
+	return mdx.IsMarkdown(strings.ToLower(rel)) && !strings.HasPrefix(rel, ".github/") && !mdtemplate.IsTemplate(rel)
 }
 
 // inADRFolder reports whether a folder of rel is named `adr`. The folder's
-// README or index lists the ADRs and is not one.
+// README or index is not one.
 func inADRFolder(rel string) bool {
-	if name := strings.ToLower(path.Base(rel)); name == "readme.md" || name == "index.md" {
+	if listsADRs(strings.ToLower(path.Base(rel))) {
 		return false
 	}
 	dirs := strings.Split(rel, "/")
@@ -84,6 +84,12 @@ func inADRFolder(rel string) bool {
 		}
 	}
 	return false
+}
+
+// listsADRs reports whether a lowercased file name in an `adr` folder names
+// its README or index.
+func listsADRs(name string) bool {
+	return name == "readme.md" || name == "index.md"
 }
 
 // titledADR reports whether content's first top-level heading starts with

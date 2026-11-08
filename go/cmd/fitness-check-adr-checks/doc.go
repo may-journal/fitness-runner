@@ -19,7 +19,8 @@
 //
 // # Rules
 //
-//   - Link: an `adr-NNNN` README that links no ADR issue by full URL fails.
+//   - Link: an `adr-NNNN` README that links no ADR issue by full URL fails,
+//     unless an `adrAsIssue.allow` glob lets it wait.
 //   - Check: each ADR folder needs a check program, unless superseded; the
 //     run fails before any check starts without one.
 //   - Changes: a README that links another ADR issue fails unless another

@@ -35,23 +35,26 @@ func CurrentRepo() (string, error) {
 	return gh("", "repo", "view", "--json", "nameWithOwner", "--jq", ".nameWithOwner")
 }
 
+// Issue is one `ADR` issue: its URL and body.
+type Issue struct{ URL, Body string }
+
 // Migrated maps each source file an `ADR` issue's marker names to the
-// issue's URL, open or closed.
-func (g GitHub) Migrated() (map[string]string, error) {
+// issue, open or closed.
+func (g GitHub) Migrated() (map[string]Issue, error) {
 	out, err := gh("", "issue", "list", "--repo", g.Repo, "--label", Label, "--state", "all", "--limit", "1000",
 		"--json", "url,body", "--jq", ".[] | {url, body}")
 	if err != nil {
 		return nil, err
 	}
-	found := map[string]string{}
+	found := map[string]Issue{}
 	dec := json.NewDecoder(bytes.NewReader([]byte(out)))
 	for dec.More() {
-		var issue struct{ URL, Body string }
+		var issue Issue
 		if err := dec.Decode(&issue); err != nil {
 			return nil, fmt.Errorf("gh issue list printed no issue: %w", err)
 		}
 		if src := SourceOf(issue.Body); src != "" {
-			found[src] = issue.URL
+			found[src] = issue
 		}
 	}
 	return found, nil

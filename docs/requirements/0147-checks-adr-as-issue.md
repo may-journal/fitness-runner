@@ -31,7 +31,7 @@ ADR files in the repo
 - 0147.5
     - Given Developer allows the files still waiting to move, each with a reason
         - When fitness runs adr-as-issue
-            - Then it passes the allowed files and fails the rest
+            - Then it passes the allowed files, check READMEs included, as adr-checks does, and fails the rest
 - 0147.6
     - Given Developer has an allow entry with no reason, or one that matches no ADR file
         - When fitness runs adr-as-issue

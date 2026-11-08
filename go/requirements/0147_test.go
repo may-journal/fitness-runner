@@ -91,18 +91,22 @@ func allowADRs(entries string) string {
 
 func Test0147_5(t *testing.T) {
 	t.Parallel()
-	out, code := adrAsIssue(t, map[string]string{
-		".fitnessrc.json":                          allowADRs(`{"path": "docs/architecture/adr/*.md", "reason": "the migration waits on repo access"}`),
+	repo := example(t, "happyRepo", with(heldCheck(), map[string]string{
+		".fitnessrc.json": allowADRs(`{"path": "docs/architecture/adr/*.md", "reason": "the migration waits on repo access"}, ` +
+			`{"path": "fitness/adr-*/README.md", "reason": "the checks move with them"}`),
 		"docs/architecture/adr/0001-use-sqlite.md": adrFile,
 		"docs/architecture/adr/0002-sync.md":       adrFile,
 		"docs/decisions/adr/0003-theme.md":         adrFile,
-	})
+	}))
+	out, code := fitness(t, repo, nil, "adr-as-issue")
 	sees(t, out, code, 1, inADRFolder("docs/decisions/adr/0003-theme.md"))
-	for _, kept := range []string{"0001-use-sqlite.md", "0002-sync.md"} {
+	for _, kept := range []string{"0001-use-sqlite.md", "0002-sync.md", "fitness/adr-0001/README.md"} {
 		if strings.Contains(out, kept+":") {
 			t.Errorf("%s is allowed, yet it was reported:\n%s", kept, out)
 		}
 	}
+	out, code = fitness(t, repo, nil, "adr-checks")
+	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0147_6(t *testing.T) {

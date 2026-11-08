@@ -26,10 +26,10 @@ type Record struct {
 
 // numberPrefix matches what comes before the decision in an ADR title: the
 // ADR word, its number and a separator.
-var numberPrefix = regexp.MustCompile(`(?i)^(?:ADR\b)?[\s#-]*\d*\s*[—–:.\-]*\s*`)
+var numberPrefix = regexp.MustCompile(`(?i)^(?:ADR\b[\s#:-]*)?(?:\d+(?:\s*[—–:.\-]+\s*|\s+))?`)
 
 // statusLine matches a `Status: accepted` line and takes its text.
-var statusLine = regexp.MustCompile(`(?i)^status\s*:\s*(.*)$`)
+var statusLine = regexp.MustCompile(`(?i)^[\s>*_-]*status[\s*_]*:[\s*_]*(.*?)[\s*_]*$`)
 
 // statusWords maps a status's first word, lowercased, to an ADR issue's
 // Status; a word it lacks reads as Proposed.

@@ -35,8 +35,10 @@ var checkReadme = regexp.MustCompile(`^` + repocheck.Folder + `/` + repocheck.AD
 type source struct {
 	rel, content string
 	record       Record
-	// opened is the body this run opened its issue with, or "".
+	// opened is the body its issue holds, or "" before it has one.
 	opened string
+	// kept marks an issue an earlier migration opened.
+	kept bool
 }
 
 // Run migrates the ADR files among files, the repo's tracked paths.
@@ -46,11 +48,12 @@ func (m Migration) Run(files []string) error {
 		fmt.Fprintln(m.Out, "no ADR files to move")
 		return nil
 	}
-	urls, err := m.known()
+	issues, err := m.known()
 	if err != nil {
 		return err
 	}
-	if err := m.open(sources, urls); err != nil {
+	urls := map[string]string{}
+	if err := m.open(sources, issues, urls); err != nil {
 		return err
 	}
 	if err := m.finish(sources, urls); err != nil {
@@ -81,20 +84,21 @@ func (m Migration) path(rel string) string {
 
 // known maps each file an `ADR` issue came from to that issue. Outside a
 // dry run it also makes sure the label exists.
-func (m Migration) known() (map[string]string, error) {
-	urls, err := m.GitHub.Migrated()
+func (m Migration) known() (map[string]Issue, error) {
+	issues, err := m.GitHub.Migrated()
 	if err != nil || m.DryRun {
-		return urls, err
+		return issues, err
 	}
-	return urls, m.GitHub.EnsureLabel()
+	return issues, m.GitHub.EnsureLabel()
 }
 
 // open opens an issue for each source no issue names yet, recording its URL.
 // A dry run records a stand-in instead.
-func (m Migration) open(sources []*source, urls map[string]string) error {
+func (m Migration) open(sources []*source, issues map[string]Issue, urls map[string]string) error {
 	for _, s := range sources {
-		if url, ok := urls[s.rel]; ok {
-			fmt.Fprintf(m.Out, "kept %s: %s\n", s.rel, url)
+		if issue, ok := issues[s.rel]; ok {
+			urls[s.rel], s.opened, s.kept = issue.URL, issue.Body, true
+			fmt.Fprintf(m.Out, "kept %s: %s\n", s.rel, issue.URL)
 			continue
 		}
 		if err := m.openOne(s, urls); err != nil {
@@ -121,12 +125,11 @@ func (m Migration) openOne(s *source, urls map[string]string) error {
 	return nil
 }
 
-// finish edits each issue this run opened whose links now resolve to
-// issues opened after it.
+// finish edits each issue whose links to ADR files now resolve to issues.
 func (m Migration) finish(sources []*source, urls map[string]string) error {
 	for _, s := range sources {
-		body := m.body(s, urls)
-		if s.opened == "" || body == s.opened {
+		body := m.finalBody(s, urls)
+		if body == "" {
 			continue
 		}
 		if err := m.GitHub.Edit(urls[s.rel], body); err != nil {
@@ -134,6 +137,33 @@ func (m Migration) finish(sources []*source, urls map[string]string) error {
 		}
 	}
 	return nil
+}
+
+// finalBody is the body s's issue needs now, or "" when it needs no edit.
+// A kept issue only has its links to ADR files on the branch pointed at
+// their issues, so edits made since stay.
+func (m Migration) finalBody(s *source, urls map[string]string) string {
+	want := m.body(s, urls)
+	if s.kept {
+		want = m.blobsToIssues(s.opened, urls)
+	}
+	if s.opened == "" || want == s.opened {
+		return ""
+	}
+	return want
+}
+
+// blobsToIssues points each link in body to an ADR file on the branch at
+// that file's issue.
+func (m Migration) blobsToIssues(body string, urls map[string]string) string {
+	prefix := "https://github.com/" + m.GitHub.Repo + "/blob/" + m.Branch + "/"
+	blob := regexp.MustCompile(regexp.QuoteMeta(prefix) + `([^\s)#]+)(#[^\s)]*)?`)
+	return blob.ReplaceAllStringFunc(body, func(link string) string {
+		if url, ok := issueFor(blob.FindStringSubmatch(link)[1], urls); ok {
+			return url
+		}
+		return link
+	})
 }
 
 // body is the issue body for s. Its links point at issues, or at files on
