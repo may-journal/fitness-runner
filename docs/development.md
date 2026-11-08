@@ -43,6 +43,6 @@ To time every check on large trees, run `FITNESS_TREE_SIZES=10000,100000,500000 
 
 ## Skills
 
-Each skill is a folder under [skills](../skills) with a `SKILL.md`, named for its topic, as [ADR 0011](../fitness/adr-0011/README.md) decides. The [fitness skill](../skills/fitness/SKILL.md) teaches how to read any failing check, so no check has a skill of its own. Release bundles carry every skill, and `fitness-install --link-skills <folder>` links each into an agent's skills folder; run it again after an upgrade. `fitness-install --claude-settings <file>` adds the fitness skill's hooks to a Claude Code settings file.
+Each skill is a folder under [skills](../skills) with a `SKILL.md`, named for its topic, as [ADR 0011](https://github.com/may-journal/fitness-runner/issues/863) decides. The [fitness skill](../skills/fitness/SKILL.md) teaches how to read any failing check, so no check has a skill of its own. Release bundles carry every skill, and `fitness-install --link-skills <folder>` links each into an agent's skills folder; run it again after an upgrade. `fitness-install --claude-settings <file>` adds the fitness skill's hooks to a Claude Code settings file.
 
 A skill links the docs that hold the rules and copies none of them.

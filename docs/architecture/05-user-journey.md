@@ -43,6 +43,7 @@ flowchart TB
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listComments(40 List code comments<br/>Req 0136):::action
+    migrateADRs(43 Move ADR files into issues<br/>Req 0149):::action
     claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143, 0145):::action
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
@@ -68,6 +69,7 @@ flowchart TB
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
+        adrFiles[(44 ADR files<br/>Req 0147)]:::system
     end
 
     resultsTable[8 Results table<br/>Req 0001, 0101]:::screen
@@ -77,6 +79,7 @@ flowchart TB
     configError[(12 Config error<br/>Req 0008)]:::blocked
     ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082, 0087, 0120, 0138)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
+    adrIssues[(45 ADR issues<br/>Req 0148)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
     perfRecord[(32 Performance record<br/>Req 0089)]:::system
     closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
@@ -91,6 +94,7 @@ flowchart TB
     terminal --> runComment
     terminal --> stripFront
     terminal --> listComments
+    terminal --> migrateADRs
     dev --> claudeHooks
     claudeHooks --> executeChecks
     terminal --> listChecks
@@ -117,6 +121,7 @@ flowchart TB
     ciRun --> prCheck
     ciRun --> release
     ciRun --> closeParents
+    ciRun --> adrIssues
     resultsTable --> perfRecord
     release --> perfRecord
 
@@ -175,3 +180,6 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
 | 41  | Code comment checks.                | System  | Comments meet the prose limits and hold no dead code, echoes, decoration, history, filler or tutorial tone. |
 | 42  | `fitness claude-hook`.              | Action  | Claude meets a failing check right after an edit, before a `gh` post, as it or a subagent stops, or as a session starts, and fixes it that turn. |
+| 43  | `fitness adr-migrate`.              | Action  | Each ADR file becomes an `ADR` issue people can discuss, and links follow it. |
+| 44  | ADR file check.                     | System  | No decision hides in a file; each one is an `ADR` issue.                             |
+| 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |

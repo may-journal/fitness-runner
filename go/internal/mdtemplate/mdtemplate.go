@@ -289,6 +289,33 @@ func sectionHasMatch(body string, headings []mdx.Heading, heading string, re *re
 	return false
 }
 
+// SectionText is the text under body's level-2 heading, up to the next one,
+// with HTML comments and surrounding blank lines dropped. The heading matches
+// in any case, and a missing one reports false.
+func SectionText(body, heading string) (string, bool) {
+	headings := mdx.Headings(body)
+	start, end := sectionBounds(headings, spelled(headings, heading))
+	if start == 0 {
+		return "", false
+	}
+	lines := strings.Split(body, "\n")
+	if end == 0 {
+		end = len(lines) + 1
+	}
+	return strings.TrimSpace(mdx.StripComments(strings.Join(lines[start:end-1], "\n"))), true
+}
+
+// spelled is heading as a level-2 heading spells it in any case, or heading
+// itself when none does.
+func spelled(headings []mdx.Heading, heading string) string {
+	for _, h := range headings {
+		if h.Level == 2 && strings.EqualFold(h.Text, heading) {
+			return h.Text
+		}
+	}
+	return heading
+}
+
 func inSection(n, start, end int) bool {
 	return n > start && (end == 0 || n < end)
 }

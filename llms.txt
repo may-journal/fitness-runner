@@ -36,6 +36,7 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 - `fitness hook <name>`: Runs a git hook: commit-msg, pre-commit, or pre-push.
 - `fitness boxes <report.json> <page.html>`: Draws a --json report as an HTML box diagram.
 - `fitness strip-front-matter`: Deletes the fitness keys from tracked Markdown files' front matter, and any block they leave empty.
+- `fitness adr-migrate [--dry-run] [--repo=owner/name] [--branch=main]`: Moves each ADR file into an `ADR` issue and points its links there.
 - `fitness comments [path...]`: Prints each code comment block of the tracked files, or of those under the named paths, with its line, language and kind.
 - `fitness branch-check`: Judges this branch's PR and the issues it closes locally, posting nothing.
 - `fitness pr-check`: Judges pull request titles and descriptions, in GitHub Actions.
@@ -50,7 +51,8 @@ A run resolves the checks, runs them side by side under time budgets, and prints
 
 `fitness explain <check>` prints a check's whole documentation.
 
-- `adr-checks`: Keeps each architecture decision record in the README of the check that proves it.
+- `adr-as-issue`: Keeps architecture decisions in `ADR` issues, never in files.
+- `adr-checks`: Pairs each architecture decision, an `ADR` issue, with the check in `fitness/adr-NNNN/` that proves it.
 - `architecture-actors`: Requires each requirement's Given to start with an actor the system context declares.
 - `architecture-code`: Resolves each class of the code view to a declaration a language module's reader reads.
 - `architecture-components`: Gives every product source one owner among the components the components view draws.

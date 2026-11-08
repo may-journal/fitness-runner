@@ -69,7 +69,7 @@ type response struct {
 func replay(name string, args []string) int {
 	dir := os.Getenv("FITNESS_REPLAY")
 	call := strings.Join(args, " ")
-	if strings.Contains(call, "--input -") {
+	if readsStdin(call) {
 		sent, _ := io.ReadAll(os.Stdin)
 		call += " " + string(sent)
 	}
@@ -92,6 +92,11 @@ func replay(name string, args []string) int {
 	}
 	fmt.Fprintf(os.Stderr, "%s stand-in: no saved response for: %s\n", name, call)
 	return 97
+}
+
+// readsStdin reports whether a call reads its input or body from stdin.
+func readsStdin(call string) bool {
+	return strings.Contains(call, "--input -") || strings.Contains(call, "--body-file -")
 }
 
 // eventPR answers a gh read of the event's pull request with the event's

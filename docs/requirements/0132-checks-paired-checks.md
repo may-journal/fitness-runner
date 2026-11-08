@@ -2,7 +2,7 @@
 
 ## Why
 
-Each architecture decision and requirement in my repo holds only while a check proves it, so the doc and its check change together.
+Each architecture decision and requirement in my repo holds only while a check proves it, so the decision and its check change together.
 
 ## Measurement
 
@@ -13,23 +13,23 @@ ADRs and requirement docs in repos with a fitness folder
 ## Requirements
 
 - 0132.1
-    - Given Developer has an ADR as the README of its check in `fitness/adr-NNNN/`
+    - Given Developer has a check in `fitness/adr-NNNN/` whose README links its ADR issue
         - When the suite runs
             - Then adr-checks passes, and the ADR's check reports its verdict
 - 0132.2
-    - Given Developer has a fitness folder and an ADR kept apart from its check, in a folder named `adr`
+    - Given Developer has a fitness folder and an ADR kept as a file in a folder named `adr`
         - When the suite runs
-            - Then adr-checks reports red naming the ADR and the check README to move it into, and exits 1
+            - Then adr-as-issue reports red naming the file and telling me to open an `ADR` issue, and exits 1
 - 0132.3
-    - Given Developer has a `fitness/adr-NNNN/` README that lacks an ADR's Context, Decision or Consequences section
+    - Given Developer has a `fitness/adr-NNNN/` README with no ADR issue URL on a line of its own
         - When the suite runs
-            - Then adr-checks reports red naming the README and each section it lacks, and exits 1
+            - Then adr-checks reports red naming the README and telling me to link the issue, and exits 1
 - 0132.4
     - Given Developer has an ADR whose status says it is superseded, with no check program beside it
         - When the suite runs
             - Then adr-checks passes
 - 0132.5
-    - Given Developer changes an ADR's decision without its check's code
+    - Given Developer points an ADR check's README at another ADR issue without changing its code
         - When fitness judges the commit or the pull request
             - Then adr-checks reports red naming the check, and exits 1
 - 0132.6
