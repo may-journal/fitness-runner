@@ -45,6 +45,7 @@ flowchart TB
     listComments(40 List code comments<br/>Req 0136):::action
     migrateADRs(43 Move ADR files into issues<br/>Req 0149):::action
     claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143, 0145, 0155):::action
+    runnerSetup(47 Set up the self-hosted runners<br/>Req 0157):::action
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
@@ -97,6 +98,7 @@ flowchart TB
     terminal --> listComments
     terminal --> migrateADRs
     dev --> claudeHooks
+    dev --> runnerSetup
     claudeHooks --> executeChecks
     terminal --> listChecks
     listChecks --> explainCheck
@@ -185,3 +187,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 44  | ADR file check.                     | System  | No decision hides in a file; each one is an `ADR` issue.                             |
 | 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
 | 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |
+| 47  | `scripts/fitness-runners.sh`.       | Action  | A person sets up the self-hosted runners on a Mac with one script. |
