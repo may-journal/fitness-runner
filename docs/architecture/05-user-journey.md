@@ -68,7 +68,7 @@ flowchart TB
         javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
         nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
         repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
-        timeoutChecks[(43 Workflow timeouts<br/>Req 0147)]:::system
+        timeoutChecks[(43 Workflow timeouts<br/>Req 0150)]:::system
     end
 
     resultsTable[8 Results table<br/>Req 0001, 0101]:::screen

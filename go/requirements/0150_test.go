@@ -33,14 +33,14 @@ func timeoutsCheck(t *testing.T, workflows map[string]string) (string, int) {
 	return fitness(t, example(t, "happyRepo", files), nil, "check", "workflow-timeouts")
 }
 
-func Test0147_1(t *testing.T) {
+func Test0150_1(t *testing.T) {
 	t.Parallel()
 	out, code := timeoutsCheck(t, map[string]string{".github/workflows/ci.yml": timeoutJob("    # The build is slow.\n", "12")})
 	sees(t, out, code, 1, ".github/workflows/ci.yml:7: timeout-minutes 12 cites no observed maximum and date",
 		"add a comment above it such as `# Observed max 4m12s on 2026-11-08.`")
 }
 
-func Test0147_2(t *testing.T) {
+func Test0150_2(t *testing.T) {
 	t.Parallel()
 	out, code := timeoutsCheck(t, map[string]string{
 		".github/workflows/ci.yml":   timeoutJob("    # Observed max 5m15s on 2026-11-05.\n", "11"),
@@ -50,7 +50,7 @@ func Test0147_2(t *testing.T) {
 	passedWith(t, out, "workflow-timeouts", "2")
 }
 
-func Test0147_3(t *testing.T) {
+func Test0150_3(t *testing.T) {
 	t.Parallel()
 	out, code := timeoutsCheck(t, map[string]string{
 		".github/workflows/quoted.yml":     timeoutJob("", `"30"`),
