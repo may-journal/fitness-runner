@@ -45,9 +45,20 @@ func Test0148_1(t *testing.T) {
 	write(t, repo, largeDiff())
 	git(t, repo, "add", "-A")
 	out, code := fitness(t, repo, nil, "--policy=external", "--checks="+strings.Join(largeDiffChecks, ","))
+	passesFast(t, out, code, largeDiffChecks)
+	pull := example(t, "happyRepo", with(goRepo(), counters("")))
+	git(t, pull, "update-ref", "refs/remotes/origin/main", "HEAD")
+	commit(t, pull, largeDiff(), "fix(counters): add an offset")
+	out, code = fitness(t, pull, prEnv, "--policy=external", "--checks="+strings.Join(largeDiffChecks[:2], ","))
+	passesFast(t, out, code, largeDiffChecks[:2])
+}
+
+// passesFast asserts each of checks passed a large diff within five seconds.
+func passesFast(t *testing.T, out string, code int, checks []string) {
+	t.Helper()
 	t.Log("\n" + out)
-	sees(t, out, code, 0, "All 3 checks passed")
-	for _, check := range largeDiffChecks {
+	sees(t, out, code, 0, fmt.Sprintf("All %d checks passed", len(checks)))
+	for _, check := range checks {
 		took := rowMillis.FindStringSubmatch(row(out, check))
 		if took == nil {
 			t.Fatalf("%s shows no time in its row %q", check, row(out, check))

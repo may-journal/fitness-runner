@@ -52,28 +52,26 @@ func StagedReleasedEdits(root string) ([]string, error) {
 	if err != nil || tag == "" {
 		return nil, err
 	}
-	patches := filePatches(gitOut(root, "diff", "--cached", "--no-renames", "--diff-filter=MD", "--", EntryDir))
+	patches := filePatches(gitOut(root, "diff", "--cached", "--no-renames", "--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/", "--diff-filter=MD", "--", EntryDir))
+	edited, err := shipped(root, tag, slices.Sorted(maps.Keys(patches)))
 	var errs []string
-	for _, p := range shipped(root, tag, slices.Sorted(maps.Keys(patches))) {
+	for _, p := range edited {
 		if !DropsOnlyFrontMatter(patches[p]) {
 			errs = append(errs, ReleasedEditError(p, tag))
 		}
 	}
-	return errs, nil
+	return errs, err
 }
 
 // shipped keeps the entry files tag holds, asking git about all of them in
-// one call.
-func shipped(root, tag string, paths []string) []string {
+// one call that reads no file. Its failure is the error.
+func shipped(root, tag string, paths []string) ([]string, error) {
 	objects := make([]string, len(paths))
 	for i, p := range paths {
 		objects[i] = tag + ":" + p
 	}
-	held := gitx.ShowAll(root, objects)
-	return slices.DeleteFunc(paths, func(p string) bool {
-		_, ok := held[tag+":"+p]
-		return !ok
-	})
+	held, err := gitx.HasAll(root, objects)
+	return slices.DeleteFunc(paths, func(p string) bool { return !held[tag+":"+p] }), err
 }
 
 // filePatches splits a unified diff into each entry file's own patch, read

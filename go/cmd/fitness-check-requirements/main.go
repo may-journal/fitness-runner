@@ -41,9 +41,10 @@ func run(root string, args []string) (checkkit.Result, error) {
 	if err != nil {
 		return checkkit.Result{}, err
 	}
-	res := result(len(paths)+len(files), append(errs, pairErrors(root, paths, append(files, checks...), tests)...))
+	pairs, err := pairErrors(root, paths, append(files, checks...), tests)
+	res := result(len(paths)+len(files), append(errs, pairs...))
 	res.Info = notes
-	return res, nil
+	return res, err
 }
 
 // docErrors judges every doc's shape, IDs, shared areas, test ownership and tools, and returns a note for each unreadable doc.
