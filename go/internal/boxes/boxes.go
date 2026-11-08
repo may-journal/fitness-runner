@@ -19,13 +19,13 @@ type Report struct {
 	Checks      []Check `json:"checks"`
 }
 
-// Check is one check's cost: wall time against its budget, files judged,
-// binary size, and error lines reported.
+// Check is one check's cost: wall time, stage, whether its stage's total
+// stopped it, files judged, binary size, and error lines reported.
 type Check struct {
 	Name         string `json:"name"`
 	Ok           bool   `json:"ok"`
 	Ms           int64  `json:"ms"`
-	TimeoutMs    int64  `json:"timeoutMs"`
+	Stage        string `json:"stage"`
 	TimedOut     bool   `json:"timedOut"`
 	FilesChecked int    `json:"filesChecked"`
 	BinaryBytes  int64  `json:"binaryBytes"`

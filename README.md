@@ -56,7 +56,7 @@ Run checks:
   fitness --file=<path>
       Judges only the named file; repeat it to name more.
   fitness --json=<file>
-      Names the file that receives the run's performance report: each check's time, budget, files, binary size, and error lines, as JSON.
+      Names the file that receives the run's performance report: each check's time, stage, files, binary size, and error lines, as JSON.
   fitness --policy=external --checks=<name,name>
       Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
 
@@ -64,7 +64,7 @@ Commands:
   fitness llms
       Prints a page that teaches an AI the whole CLI.
   fitness list [--json]
-      Names every check with its summary, scope, budget, and whether this repo enables it.
+      Names every check with its summary, scope, stage, and whether this repo enables it.
   fitness explain <check> [--json]
       Prints why a check exists, what it judges, and the config keys it reads.
   fitness docs [topic]
@@ -81,6 +81,8 @@ Commands:
       Runs a git hook: commit-msg, pre-commit, or pre-push.
   fitness boxes <report.json> <page.html>
       Draws a --json report as an HTML box diagram.
+  fitness perf <report.json>
+      Prints each check's duration from a --json report, slowest first.
   fitness strip-front-matter
       Deletes the fitness keys from tracked Markdown files' front matter, and any block they leave empty.
   fitness adr-migrate [--dry-run] [--repo=owner/name] [--branch=main]
@@ -110,7 +112,7 @@ Commands:
 
 `fitness --help` prints the same list. The [performance record](docs/ci.md#performance-record) explains `--json`, and the [box diagram](docs/ci.md#box-diagram) explains `boxes`.
 
-On a terminal, a long run names each running check with its elapsed time and budget every five seconds. Off a terminal, it names a check once at half its budget. The last check running streams its output live, as the [check protocol](docs/check-protocol.md#progress) explains.
+On a terminal, a long run names each running check with its elapsed time and limit every five seconds. Off a terminal, it names a check once at half its limit. The summary then names the slowest checks with their times. The last check running streams its output live, as the [check protocol](docs/check-protocol.md#progress) explains.
 
 ## Git hooks
 

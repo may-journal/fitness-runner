@@ -163,7 +163,7 @@ Each network read first prints the host it asks and how long it waits. The lates
 
 The runner, `gh` and git reach the network through `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`, and git also reads its `http.proxy` setting. A run with `local-branch`, `dependency-currency` beside a root `package.json`, or a commit message linking an Issue first probes the GitHub API host. The host is `GITHUB_API_URL` when set, else `api.github.com`, or `GH_HOST` for GitHub Enterprise Server. The probe connects once, through the proxy, within two seconds.
 
-When the probe fails, those checks, `workflow-ref-exists` and the pre-push gate report info naming the host and proxy, without connecting. `issue-link-once` skips its open PR read and still judges the branch commits. Go checks then run with `GOPROXY=off`, so a missing module fails at once with Go's own message. A plain commit probes nothing, and when the probe passes, a slow registry or proxy still ends at the check's budget.
+When the probe fails, those checks, `workflow-ref-exists` and the pre-push gate report info naming the host and proxy, without connecting. `issue-link-once` skips its open PR read and still judges the branch commits. Go checks then run with `GOPROXY=off`, so a missing module fails at once with Go's own message. A plain commit probes nothing, and when the probe passes, a slow registry or proxy still ends at the 60s fast total.
 
 ## Release automation
 
@@ -181,7 +181,7 @@ GoReleaser can replace incomplete assets only while the release is a draft. Once
 
 ## Performance record
 
-`fitness --json=<file>` also writes the run as JSON: total `elapsedMs`, the runner's `runnerBytes`, and per check `ms`, `timeoutMs`, `timedOut`, `filesChecked`, `binaryBytes`, `errorLines`. A file it cannot write fails the run. In GitHub Actions, the job summary adds a check timing table, slowest first, with each check's share of its budget.
+`fitness --json=<file>` also writes the run as JSON: total `elapsedMs`, the runner's `runnerBytes`, and per check `ms`, `stage`, `timedOut`, `filesChecked`, `binaryBytes`, `errorLines`. A file it cannot write fails the run. In GitHub Actions, the job summary adds a check timing table with each check's stage, slowest first. `fitness perf <file>` prints the same times from a kept record.
 
 The shared CI writes this file and the Binary distribution smoke job adds `fitness-release record`. That command prints each release asset's size and the time to install from an empty cache. Release builds run the same job, so each release gets a record per Linux platform.
 

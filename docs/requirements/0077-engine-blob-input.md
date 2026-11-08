@@ -37,6 +37,6 @@ blob runs
         - When I run fitness `--blob` on it with no `--checks`
             - Then pr-structure fails naming the section and it exits 1
 - 0077.9
-    - Given Developer has a repo config that sets a check time budget or, under external policy, a checks list or disabledChecks
+    - Given Developer has a repo config that, under external policy, sets a checks list or disabledChecks
         - When I run fitness `--blob` on a draft text
-            - Then each check keeps that budget and only the checks the config leaves on run, as in a normal run
+            - Then only the checks the config leaves on run, as in a normal run

@@ -20,7 +20,7 @@ import (
 
 func Main() {
 	checkkit.Main(checkkit.Check{
-		Describe: checkkit.Describe{Name: "workflow-ref-exists", Scope: checkkit.ScopeFiles, TimeoutMs: 30000},
+		Describe: checkkit.Describe{Name: "workflow-ref-exists", Scope: checkkit.ScopeFiles},
 		Run:      run,
 	})
 }

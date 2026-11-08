@@ -19,7 +19,7 @@ entry points exercised
 - 0067.2
     - Given Developer has the installed local-branch binary
         - When I request its describe metadata
-            - Then it names the check and declares its timeout without GitHub reads
+            - Then it names the check and declares its scope without GitHub reads
 - 0067.3
     - Given Developer has an approved feature Plan and an invalid linked PR, or a docs branch whose PR read outlasts the push's deadline
         - When I push with the shared hook

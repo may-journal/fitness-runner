@@ -81,7 +81,7 @@ flowchart TB
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
     adrIssues[(45 ADR issues<br/>Req 0148)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
-    perfRecord[(32 Performance record<br/>Req 0089)]:::system
+    perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
     closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
 
     dev --> install

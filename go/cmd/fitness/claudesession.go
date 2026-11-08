@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 )
@@ -67,13 +68,10 @@ const blockMarksName = "claude-hook-blocks"
 // blockMarkAge is how long a block's mark lasts, which keeps the folder small.
 const blockMarkAge = 24 * time.Hour
 
-// subagentChecks is the longest budget a check may declare to run as a
-// subagent stops. Slower checks, such as the test suites, wait for Claude's stop.
-const subagentChecks = 4 * time.Minute
-
-// subagentDeadline cuts the subagent's checks inside the hook's 300 s timeout,
-// so its findings still reach Claude.
-const subagentDeadline = subagentChecks + 30*time.Second
+// subagentDeadline cuts the subagent's fast checks inside the hook's 300 s
+// timeout, so its findings still reach Claude. The test stage waits for
+// Claude's stop.
+const subagentDeadline = 4*time.Minute + 30*time.Second
 
 // startDeadline cuts the start's checks well inside the hook's 30 s timeout.
 const startDeadline = 15 * time.Second
@@ -130,9 +128,9 @@ func subagentJob(in claudeHookInput) (hookJob, bool, error) {
 	return job, len(scope) > 0, err
 }
 
-// subagentCheck keeps the stop's checks whose budget fits a subagent stop.
+// subagentCheck keeps the stop's fast checks for a subagent stop.
 func subagentCheck(c listed) bool {
-	return stopCheck(c) && c.BudgetMs <= subagentChecks.Milliseconds()
+	return stopCheck(c) && c.Stage == checkkit.StageFast
 }
 
 // blockOnce passes a block whose key Fitness already recorded, and records a

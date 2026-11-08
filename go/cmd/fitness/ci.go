@@ -72,25 +72,23 @@ func ciSummaryMarkdown(rows []render.Row, found [][]checkkit.Finding, t render.T
 	return b.String()
 }
 
-// timingMarkdown renders each check's time against its budget, slowest
-// first, so the check nearest its limit tops the table.
+// timingMarkdown renders each check's time and stage, slowest first, so the
+// check that costs its stage's total most tops the table.
 func timingMarkdown(perf perfReport) string {
-	checks := slices.Clone(perf.Checks)
-	slices.SortStableFunc(checks, func(a, b perfCheck) int { return cmp.Compare(b.Ms, a.Ms) })
 	var b strings.Builder
-	b.WriteString("\n### Check timing\n\n| Check | Time | Budget | Used |\n| --- | --- | --- | --- |\n")
-	for _, c := range checks {
-		fmt.Fprintf(&b, "| %s | %dms | %dms | %d%% |\n", report.EscapeMarkdown(c.Name), c.Ms, c.TimeoutMs, budgetShare(c))
+	b.WriteString("\n### Check timing\n\n| Check | Stage | Time |\n| --- | --- | --- |\n")
+	for _, c := range slowestFirst(perf.Checks) {
+		fmt.Fprintf(&b, "| %s | %s | %dms |\n", report.EscapeMarkdown(c.Name), c.Stage, c.Ms)
 	}
 	return b.String()
 }
 
-// budgetShare is the percent of its budget a check spent.
-func budgetShare(c perfCheck) int64 {
-	if c.TimeoutMs <= 0 {
-		return 0
-	}
-	return c.Ms * 100 / c.TimeoutMs
+// slowestFirst sorts a record's checks by time, slowest first, keeping run
+// order for ties.
+func slowestFirst(checks []perfCheck) []perfCheck {
+	sorted := slices.Clone(checks)
+	slices.SortStableFunc(sorted, func(a, b perfCheck) int { return cmp.Compare(b.Ms, a.Ms) })
+	return sorted
 }
 
 // headline is the summary's one-line aggregate: a positive line when all

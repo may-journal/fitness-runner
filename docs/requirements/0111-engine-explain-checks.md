@@ -15,7 +15,7 @@ checks in the catalog
 - 0111.1
     - Given AI agent has a repo with fitness installed
         - When it runs `fitness explain` for every check `fitness list` names
-            - Then each prints the check's name, scope, budget and documentation
+            - Then each prints the check's name, scope, stage and documentation
 - 0111.2
     - Given AI agent wants a check's documentation as data
         - When it runs `fitness explain prose-budget --json`

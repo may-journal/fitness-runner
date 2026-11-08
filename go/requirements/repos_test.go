@@ -2,6 +2,7 @@ package requirements
 
 import (
 	"encoding/json"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -121,14 +122,19 @@ func with(base map[string]string, overrides map[string]string) map[string]string
 // after starting a child process. The child names prettier.pid on its command
 // line until it has moved its PID into that file, so processStopped finds it
 // either way.
-func hungTool(timeoutMs, prelude string) map[string]string {
+func hungTool(prelude string) map[string]string {
 	child := `/bin/sh -c 'echo $$ > "$1.tmp" && mv "$1.tmp" "$1" && exec /bin/sleep 30' child "$PWD/prettier.pid"`
 	return map[string]string{
-		".fitnessrc.json":            `{"timeoutMs": ` + timeoutMs + "}\n",
 		"package.json":               "{\"name\": \"app\", \"private\": true}\n",
 		"app.js":                     "const a = 1;\n",
 		"node_modules/.bin/prettier": "#!/bin/sh\n" + prelude + child + " >/dev/null 2>&1 &\nwait\n",
 	}
+}
+
+// fastTotal is the environment entry that lowers the fast total to ms. A test
+// then sees the total stop a check without waiting a minute.
+func fastTotal(ms int) string {
+	return "FITNESS_INTERNAL_FAST_TOTAL_MS=" + strconv.Itoa(ms)
 }
 
 // planBody is a Plan that follows the template, with one task.

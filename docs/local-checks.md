@@ -42,7 +42,7 @@ import (
 )
 
 // Rule fails each Swift source that holds a TODO.
-var Rule = check.Check{TimeoutMs: 10000, Run: func(ctx *check.Context) (check.Result, error) {
+var Rule = check.Check{Run: func(ctx *check.Context) (check.Result, error) {
 	files := ctx.InScope(ctx.Files(".swift"))
 	var found []check.Finding
 	for _, f := range files {
@@ -70,7 +70,7 @@ A check's `Run` gets a typed `Context`, and returns a `Result`.
 - Files: `Files` lists tracked files by ending, `InScope` narrows them to the run's changes, and `Read` and `ReadJSON` read one.
 - Config: `Config` decodes the check's `config.json` into a struct, and `Settings` decodes `.fitnessrc.json`.
 - Findings: each `Finding` names its file, line, rule, message and fix, and `Found` turns them into the verdict.
-- Metadata: `TimeoutMs` is the check's budget, and a check past it is stopped and fails.
+- Metadata: `Tests` puts a check that runs the repo's test suite in the test stage; every other check shares the 60s fast total.
 - `MinFitness` names the oldest fitness that runs the check, and an older one stops the run naming the upgrade.
 - An error from `Run` reports info, which never fails a run.
 
@@ -95,7 +95,7 @@ Where Go is not wanted, an executable `check` file may stand in for `main.go`, s
 
 ```sh
 #!/bin/sh
-[ "$1" = --describe ] && { echo '{"timeoutMs": 10000}'; exit 0; }
+[ "$1" = --describe ] && { echo '{"stage": "fast"}'; exit 0; }
 n=$(git ls-files '*.swift' | grep -c .)
 printf '{"ok":true,"errors":[],"filesChecked":%s}\n' "$n"
 ```

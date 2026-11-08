@@ -188,14 +188,14 @@ func hookPreCommit() int {
 }
 
 // runLocalHook runs an executable .githooks/pre-commit.local so a repo adds its
-// own build, and refuses the commit once the timeoutMs budget stops it.
+// own build, and refuses the commit once the fast total stops it.
 func runLocalHook() int {
 	const path = ".githooks/pre-commit.local"
 	info, err := os.Stat(path)
 	if err != nil || info.Mode()&0o100 == 0 {
 		return 0
 	}
-	return runBudgeted(path, localHookBudget())
+	return runBudgeted(path, fastTotal())
 }
 
 // runBudgeted runs the program at path in its own process group, returning
@@ -215,14 +215,4 @@ func runBudgeted(path string, budget time.Duration) int {
 		return 1
 	}
 	return 0
-}
-
-// localHookBudget is the budget of a check that declares none: the repo's
-// timeoutMs, else the default.
-func localHookBudget() time.Duration {
-	var c resolved
-	if cfg, err := loadConfig("."); err == nil && cfg != nil {
-		c.configMs = cfg.TimeoutMs
-	}
-	return timeoutFor(c)
 }

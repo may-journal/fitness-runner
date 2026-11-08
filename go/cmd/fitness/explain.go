@@ -7,7 +7,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
@@ -17,8 +16,8 @@ type explained struct {
 	Name    string `json:"name"`
 	Summary string `json:"summary"`
 	Scope   string `json:"scope"`
-	// BudgetMs is the time the check may run before it is stopped.
-	BudgetMs int64 `json:"budgetMs"`
+	// Stage is the stage whose total times the check: fast or tests.
+	Stage string `json:"stage"`
 	// Note says why the check's describe handshake gave no metadata.
 	Note string `json:"note,omitempty"`
 	// Body is the check's documentation as Markdown.
@@ -35,8 +34,7 @@ func runExplain(args []string) int {
 		fmt.Fprintln(os.Stderr, "fitness explain:", err)
 		return 2
 	}
-	cfg, err := repoConfig()
-	if err != nil {
+	if err := repoConfig(); err != nil {
 		report.Error("fitness explain", err)
 		return 1
 	}
@@ -44,7 +42,7 @@ func runExplain(args []string) int {
 		fmt.Fprintf(os.Stderr, "fitness explain: no check named %q; %s\n", name, suggest(name, catalog))
 		return 2
 	}
-	e, err := explainCheck(cfg, name)
+	e, err := explainCheck(name)
 	if err != nil {
 		report.Error("fitness explain", err)
 		return 1
@@ -57,7 +55,7 @@ func printExplained(e explained, asJSON bool) int {
 	if asJSON {
 		return writeJSON(os.Stdout, e)
 	}
-	fmt.Printf("# %s\n\nScope: %s · Budget: %ss\n\n%s%s", e.Name, orDash(e.Scope), seconds(e.BudgetMs), noteLine(e.Note), e.Body)
+	fmt.Printf("# %s\n\nScope: %s · Stage: %s\n\n%s%s", e.Name, orDash(e.Scope), e.Stage, noteLine(e.Note), e.Body)
 	return 0
 }
 
@@ -79,21 +77,21 @@ func explainArgs(args []string) (name string, asJSON bool, err error) {
 }
 
 // repoConfig loads this repo's config and local checks, so a local check
-// explains itself too, with the repo's budgets. A config or local check
-// folder that cannot load is an error, as is an install with no checks.
-func repoConfig() (*conf.Config, error) {
+// explains itself too. A config or local check folder that cannot load is an
+// error, as is an install with no checks.
+func repoConfig() error {
 	if installErr != nil {
-		return nil, installErr
+		return installErr
 	}
 	root, err := os.Getwd()
 	if err != nil {
-		return nil, err
+		return err
 	}
 	cfg, err := loadConfig(root)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return cfg, loadLocalChecks(cfg, root)
+	return loadLocalChecks(cfg, root)
 }
 
 // knownChecks are the names explain answers for: the repo's catalog and every
@@ -110,17 +108,17 @@ func knownChecks() []string {
 
 // explainCheck describes the check from its README, generated docs, or
 // handshake summary. A failed handshake or an unmet minFitness returns a note.
-func explainCheck(cfg *conf.Config, name string) (explained, error) {
+func explainCheck(name string) (explained, error) {
 	checks, err := resolveList([]string{name})
 	if err != nil {
 		return explained{}, err
 	}
-	c := withBudgets(cfg, checks)[0]
+	c := checks[0]
 	body, ok := builtinDocs[name]
 	if !ok || replaced(name) {
 		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}
-	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, BudgetMs: timeoutFor(c).Milliseconds(),
+	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c),
 		Note: cmp.Or(c.needs, c.describeErr), Body: body}, nil
 }
 
