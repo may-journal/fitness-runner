@@ -60,7 +60,7 @@ func ShapeFromTemplate(path, body string) Shape {
 }
 
 // Validate returns every way body drifts from the shape: opening sections,
-// shared sections' diagrams and tables, and diagram palettes.
+// shared sections' diagrams and tables, diagram palettes, and C4 labels.
 func (s Shape) Validate(body string) []Finding {
 	var out []Finding
 	have := h2s(body)
@@ -73,7 +73,8 @@ func (s Shape) Validate(body string) []Finding {
 			out = append(out, s.partFindings(name, v)...)
 		}
 	}
-	return append(out, s.palette.allFindings(v.diagrams)...)
+	out = append(out, s.palette.allFindings(v.diagrams)...)
+	return append(out, s.palette.labelFindings(v.diagrams)...)
 }
 
 // h2s lists a doc's level-2 headings in order.

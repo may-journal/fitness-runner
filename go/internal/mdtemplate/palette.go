@@ -159,14 +159,16 @@ type facts struct {
 	styles   []styled
 	strays   []stray
 	class    bool
+	titled   bool
 	depth    int
 }
 
 // element is one declared C4 element, boundary or class, its kind folding Db,
-// Queue and outside-person forms into their base.
+// Queue and outside-person forms into their base. A container or component
+// also names its technology.
 type element struct {
-	alias, macro, kind string
-	line               int
+	alias, macro, kind, technology string
+	line                           int
 }
 
 // styled is one style statement that names an element.
@@ -231,8 +233,11 @@ var (
 	classNote  = regexp.MustCompile(`^<<[^>]*>>\s*([A-Za-z_][\w-]*)$`)
 )
 
-// c4Line reads one C4 macro call.
+// c4Line reads one C4 macro call or the title line.
 func (f *facts) c4Line(t string, at int) {
+	if t == "title" || strings.HasPrefix(t, "title ") {
+		f.titled = true
+	}
 	if m := mermaid.C4Macro.FindStringSubmatch(t); m != nil {
 		f.c4Call(m[1], mermaid.SplitArgs(m[2]), t, at)
 	}
@@ -246,7 +251,7 @@ func (f *facts) c4Call(name string, args []string, t string, at int) {
 	case "stray":
 		f.strays = append(f.strays, stray{t, at})
 	case "element":
-		f.elements = append(f.elements, element{strings.Trim(args[0], `"`), name, c4Kind(name), at})
+		f.elements = append(f.elements, element{strings.Trim(args[0], `"`), name, c4Kind(name), technology(name, args), at})
 	}
 }
 
@@ -334,7 +339,7 @@ func classesNamed(t string) []string {
 }
 
 func (f *facts) declare(alias string, at int, opens bool) {
-	f.elements = append(f.elements, element{alias, "class", "class", at})
+	f.elements = append(f.elements, element{alias, "class", "class", "", at})
 	if opens {
 		f.depth++
 	}

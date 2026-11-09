@@ -41,6 +41,12 @@ A template's C4 and `classDiagram` diagrams, legends included, set its palette: 
 - Leave each unstyled kind, such as a boundary, without style.
 - Hold no other style: another `Update…Style` macro, a color argument, `classDef`, `cssClass`, `:::`, or `%%{init}`. `UpdateLayoutConfig` only lays out, so it stays.
 
+Each C4 diagram, legends included, must also:
+
+- Open with a `title` line, so the reader knows the view.
+- Give each Container and Component a technology as its third argument.
+- In a legend, show a sample of exactly the kinds its section's diagrams use, no more and no fewer.
+
 The journey template draws a flowchart, so its palette judges nothing.
 
 ## Shipped templates

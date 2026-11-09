@@ -234,6 +234,7 @@ func architectedRepo() map[string]string {
 // The palette of each kind, as the shipped view templates style it.
 const (
 	palettePerson    = `$bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")`
+	paletteExternal  = `$bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")`
 	paletteSystem    = `$bgColor="#1d4ed8", $borderColor="#1e3a8a", $fontColor="#ffffff")`
 	paletteContainer = `$bgColor="#0f766e", $borderColor="#115e59", $fontColor="#ffffff")`
 	paletteComponent = `$bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")`
@@ -263,11 +264,11 @@ func architectedViews() map[string]string {
 	return map[string]string{
 		acContext: archView("System Context",
 			"C4Context\n    title Service\n    Person(user, \"1 User\")\n    System(app, \"2 App\")\n    Rel(user, app, \"A\")\n"+c4Styled("user", palettePerson)+c4Styled("app", paletteSystem),
-			"C4Context\n    title Legend\n    Person(p, \"Person\")\n"+c4Styled("p", palettePerson),
+			"C4Context\n    title Legend\n    Person(p, \"Person\")\n    System(s, \"System\")\n"+c4Styled("p", palettePerson)+c4Styled("s", paletteSystem),
 			archCaption, "1 | A person who uses the app.", "2 | The system.", "A | Uses it."),
 		acContainer: archView("Containers",
 			"C4Container\n    title Service\n    Person(user, \"1 User\")\n    System_Boundary(app, \"2 App\") {\n        Container(service, \"3 Service\", \"Go\", \"src/cmd/service\")\n    }\n    Rel(user, service, \"A\")\n"+c4Styled("user", palettePerson)+c4Styled("service", paletteContainer),
-			"C4Container\n    title Legend\n    System_Boundary(b, \"System boundary\") {\n        Container(c, \"Container\", \"Tech\")\n    }\n"+c4Styled("c", paletteContainer),
+			"C4Container\n    title Legend\n    Person(p, \"Person\")\n    System_Boundary(b, \"System boundary\") {\n        Container(c, \"Container\", \"Tech\")\n    }\n"+c4Styled("p", palettePerson)+c4Styled("c", paletteContainer),
 			archCaption, "1 | Same person.", "2 | The app that holds the service.", "3 | Runs requests.", "A | Calls it."),
 		acComponent: archView("Components",
 			"C4Component\n    title Service\n    Container_Boundary(service, \"1 Service (src/cmd/service)\") {\n        Component(entry, \"2 Entry\", \"Go\")\n        Component(store, \"3 Store\", \"Go\", \"src/store\")\n    }\n    Rel(entry, store, \"A\")\n"+c4Styled("entry", paletteComponent)+c4Styled("store", paletteComponent),

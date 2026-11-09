@@ -228,4 +228,22 @@ func Test0023_18(t *testing.T) {
 			t.Errorf("%s keeps its palette and must not fail, got:\n%s", styled, out)
 		}
 	}
+
+	files = dtShipped(t)
+	dtEdit(t, files, acContext, "C4Context\n    title Product\n", "C4Context\n")
+	dtEdit(t, files, acComponent, "C4Component\n    title Legend\n", "C4Component\n")
+	dtEdit(t, files, acContainer, `Container(app, "3 App", "Language", "src/app")`, `Container(app, "3 App", "", "src/app")`)
+	dtEdit(t, files, acComponent, `Component(store, "4 Store", "Language",`, `Component(store, "4 Store", " ",`)
+	dtEdit(t, files, acContext, "    System_Ext(e, \"External\", \"Outside our boundary\")\n", "")
+	dtEdit(t, files, acContext, c4Styled("e", paletteExternal), "")
+	dtEdit(t, files, acContainer, "    System_Ext(service, \"4 Outside service\"", "    Person(service, \"4 Outside service\"")
+	dtEdit(t, files, acContainer, c4Styled("service", paletteExternal), c4Styled("service", palettePerson))
+	out, code = docTemplate(t, files)
+	sees(t, out, code, 1,
+		dtLine(t, files, acContext, "```mermaid")+": C4Context diagram needs a `title` line as "+dtShippedName(acContext)+" has",
+		": C4Component legend needs a `title` line as "+dtShippedName(acComponent)+" has",
+		dtLine(t, files, acContainer, "        Container(app,")+": Container app needs a technology as its third argument, as "+dtShippedName(acContainer)+" gives each Container",
+		dtLine(t, files, acComponent, "        Component(store,")+": Component store needs a technology as its third argument, as "+dtShippedName(acComponent)+" gives each Component",
+		dtViews+acContext+":", "legend needs a System_Ext sample, a kind the diagram uses",
+		dtViews+acContainer+":", "legend shows System_Ext, a kind the diagram does not use")
 }
