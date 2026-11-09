@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// placeSource places the blocks of one file holding src.
-func placeSource(blocks []Block, src []byte) {
+// placeSource places the blocks of one file holding src, then measures their function bodies from view, its code view or nil.
+func placeSource(blocks []Block, src, view []byte) {
 	if len(blocks) == 0 {
 		return
 	}
@@ -17,28 +17,23 @@ func placeSource(blocks []Block, src []byte) {
 	for i := range blocks {
 		place(&blocks[i])
 	}
+	measureBodies(blocks, src, view)
 }
 
 // placer returns the function that places a block of src, an inline one always in a body.
 func placer(lang string, src []byte) func(b *Block) {
 	rows := lines(src)
-	inBody := bodyTest(lang, src, rows)
+	found, braced := bodies(lang, src, rows)
 	return func(b *Block) {
+		sp, in := found.within(b.Line)
+		b.Body = Body{From: sp.from, To: sp.to}
 		if b.Kind == Inline {
 			b.InBody = true
 			return
 		}
 		b.Next = nextCode(rows, b.End)
-		b.InBody = inBody(b)
+		b.InBody = in || !braced && lang == "shell" && isIndented(rows[b.Line-1])
 	}
-}
-
-// bodyTest returns the in-body test: braces where a language has them, indent for shell, never for YAML.
-func bodyTest(lang string, src []byte, rows []string) func(b *Block) bool {
-	if found, ok := bodies(lang, src, rows); ok {
-		return func(b *Block) bool { return found.holds(b.Line) }
-	}
-	return func(b *Block) bool { return lang == "shell" && isIndented(rows[b.Line-1]) }
 }
 
 // bodies returns a brace language's function bodies, through the parser for Go that parses.
@@ -53,7 +48,10 @@ func bodies(lang string, src []byte, rows []string) (spans, bool) {
 		return braceBodies(swiftCode(src)), true
 	}
 	lex, ok := lexers[lang]
-	return braceBodies(lexedCode(rows, lex)), ok
+	if !ok {
+		return nil, false
+	}
+	return braceBodies(lexedCode(rows, lex)), true
 }
 
 // span holds the 1-based lines of a function body's braces.
@@ -62,14 +60,20 @@ type span struct{ from, to int }
 // spans are the function bodies of one file.
 type spans []span
 
-// holds reports a line between the braces of some function body.
-func (s spans) holds(line int) bool {
+// within returns the outermost function body whose braces enclose line, or a zero span.
+func (s spans) within(line int) (span, bool) {
+	var out span
 	for _, sp := range s {
-		if sp.from < line && line < sp.to {
-			return true
+		if sp.encloses(line) && (out.to == 0 || sp.from < out.from) {
+			out = sp
 		}
 	}
-	return false
+	return out, out.to > 0
+}
+
+// encloses reports line between the body's braces.
+func (sp span) encloses(line int) bool {
+	return sp.from < line && line < sp.to
 }
 
 // goBodies returns a Go file's function bodies, or false when it does not parse.
