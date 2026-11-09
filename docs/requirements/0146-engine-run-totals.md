@@ -35,4 +35,4 @@ runs past the fast total
 - 0146.6
     - Given Developer has a pull request whose two scans each run a check for most of the fast total
         - When the second scan runs
-            - Then it stops that check at the total the first scan started
+            - Then it stops that check at the total the first scan started and shows it at that total
