@@ -26,46 +26,27 @@ func (l *labels) learn(d diagram, f facts) {
 	}
 }
 
-// c4 is one C4 diagram of a doc, read once: its block, statements and kinds.
-type c4 struct {
-	diagram
-	facts facts
-	kinds []string
-}
-
-// readC4 reads each C4 diagram of a doc once, skipping other types.
-func readC4(diagrams []diagram) []c4 {
-	var out []c4
-	for _, d := range slices.DeleteFunc(slices.Clone(diagrams), notC4) {
-		f := readFacts(d)
-		out = append(out, c4{d, f, kindsOf(f)})
-	}
-	return out
-}
-
-// labelFindings judges what each C4 diagram says beyond its palette. It needs
-// the template's title and technologies, and legends key exactly the kinds
-// in use.
+// labelFindings judges what each C4 diagram says beyond its palette: the
+// title and technologies the template gives.
 func (p palette) labelFindings(diagrams []diagram) []Finding {
 	if len(p.kinds) == 0 {
 		return nil
 	}
-	read := readC4(diagrams)
 	var out []Finding
-	for _, c := range read {
-		out = append(out, p.diagramLabelFindings(c)...)
+	for _, d := range slices.DeleteFunc(slices.Clone(diagrams), notC4) {
+		out = append(out, p.diagramLabelFindings(d, readFacts(d))...)
 	}
-	return append(out, legendKindFindings(read)...)
+	return out
 }
 
 // diagramLabelFindings fails a C4 diagram without the title the template
 // gives, and each element without the technology the template gives its kind.
-func (p palette) diagramLabelFindings(c c4) []Finding {
+func (p palette) diagramLabelFindings(d diagram, f facts) []Finding {
 	var out []Finding
-	if p.labels.titled && !c.facts.titled {
-		out = append(out, Finding{c.line, fmt.Sprintf("%s %s needs a `title` line as %s has", c.kind, role(c.diagram), p.path)})
+	if p.labels.titled && !f.titled {
+		out = append(out, Finding{d.line, fmt.Sprintf("%s %s needs a `title` line as %s has", d.kind, role(d), p.path)})
 	}
-	for _, e := range slices.DeleteFunc(slices.Clone(c.facts.elements), p.labels.named) {
+	for _, e := range slices.DeleteFunc(slices.Clone(f.elements), p.labels.named) {
 		out = append(out, Finding{e.line, fmt.Sprintf("%s %s needs a technology as %s gives each %s", e.macro, e.alias, p.path, e.kind)})
 	}
 	return out
@@ -75,73 +56,6 @@ func (p palette) diagramLabelFindings(c c4) []Finding {
 // template gives none.
 func (l labels) named(e element) bool {
 	return e.technology != "" || !slices.Contains(l.technologies, e.kind)
-}
-
-// legendKindFindings judges the legends of each section together against
-// the kinds that section's diagrams use. A legend in a section of its own,
-// such as `## Legend`, keys every diagram of the doc.
-func legendKindFindings(read []c4) []Finding {
-	var out []Finding
-	seen := map[string]bool{}
-	for _, c := range read {
-		if c.legend && !seen[c.section] {
-			seen[c.section] = true
-			out = append(out, sectionLegendFindings(read, c)...)
-		}
-	}
-	return out
-}
-
-// sectionLegendFindings fails, at the section's first legend, each kind the
-// diagrams use that no legend shows, and each kind shown that none uses.
-func sectionLegendFindings(read []c4, first c4) []Finding {
-	used, drawn := keyedKinds(read, first.section), kindsIn(read, first.section, true)
-	if used == nil {
-		return nil
-	}
-	var out []Finding
-	for _, kind := range missing(used, drawn) {
-		out = append(out, Finding{first.line, fmt.Sprintf("legend needs a %s sample, a kind the diagram uses", kind)})
-	}
-	for _, kind := range missing(drawn, used) {
-		out = append(out, Finding{first.line, fmt.Sprintf("legend shows %s, a kind the diagram does not use", kind)})
-	}
-	return out
-}
-
-// keyedKinds lists the kinds a section's legends key: its own diagrams'
-// kinds, or every diagram's when the section holds only legends.
-func keyedKinds(read []c4, section string) []string {
-	if kinds := kindsIn(read, section, false); kinds != nil {
-		return kinds
-	}
-	var kinds []string
-	for _, c := range read {
-		if !c.legend {
-			kinds = union(kinds, c.kinds)
-		}
-	}
-	return kinds
-}
-
-// kindsIn lists the kinds a section's legends, or its other diagrams, use.
-func kindsIn(read []c4, section string, legend bool) []string {
-	var kinds []string
-	for _, c := range read {
-		if c.section == section && c.legend == legend {
-			kinds = union(kinds, c.kinds)
-		}
-	}
-	return kinds
-}
-
-// kindsOf lists the element kinds one diagram declares, in order.
-func kindsOf(f facts) []string {
-	var kinds []string
-	for _, e := range f.elements {
-		kinds = union(kinds, []string{e.kind})
-	}
-	return kinds
 }
 
 // missing lists the kinds of want that have does not hold, in order.

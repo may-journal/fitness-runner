@@ -41,6 +41,6 @@ markdown files checked
         - When doc-template checks the repo
             - Then it passes, and a view that drifts fails naming the copy or shipped template
 - 0023.18
-    - Given Developer has a view whose styles, colors, element kinds, title, technologies, or legend kinds differ from its template's
+    - Given Developer has a view whose styles, colors, element kinds, title, or technologies differ from its template's
         - When doc-template checks the repo
             - Then it fails naming each difference and what the template uses
