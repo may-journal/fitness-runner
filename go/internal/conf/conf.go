@@ -68,6 +68,12 @@ type Config struct {
 		MaxListItems int `json:"maxListItems"`
 		// MaxWords is the most prose words one section may hold.
 		MaxWords int `json:"maxWords"`
+		// MaxCommentWordsPerToken is the most comment words a function body
+		// may hold for each code token before `overlong` fails it.
+		MaxCommentWordsPerToken int `json:"maxCommentWordsPerToken"`
+		// MinBodyComments is the fewest comments a function body needs
+		// before `overlong` judges it.
+		MinBodyComments int `json:"minBodyComments"`
 	} `json:"proseBudget" check:"prose-budget"`
 	// Comment holds comment-structure's budget for an issue or PR comment.
 	// Each limit falls back to a built-in default when zero.
@@ -103,6 +109,8 @@ var Defaults = func() Config {
 	c.ProseBudget.MaxListItemWords = 23
 	c.ProseBudget.MaxListItems = DefaultMaxListItems
 	c.ProseBudget.MaxWords = 300
+	c.ProseBudget.MaxCommentWordsPerToken = 3
+	c.ProseBudget.MinBodyComments = 2
 	c.Comment.MaxWords = 100
 	c.Comment.MaxTables = 1
 	return c

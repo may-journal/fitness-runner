@@ -58,11 +58,10 @@ A history or filler word before a past participle, as in `previously stored`, pa
 
 ## Comment length
 
-`overlong` fails a function body holding two or more comments with more than three comment words per code token.
+`overlong` fails a function body holding two or more comments with more than three comment words per code token. `proseBudget.maxCommentWordsPerToken` (default 3) and `proseBudget.minBodyComments` (default 2) change those two numbers.
 
 - A token is a run of letters, digits and underscores, or one other visible character.
 - String literals and tool directives count as code, so the rule leans toward passing.
-- Its limits are fixed; no `proseBudget` key changes them.
 - Words in a fenced or indented example inside a comment do not count.
 - One error names the body by the line of its opening brace.
 - A commit or pull request run judges a body when one of its changed comments sits in it.
@@ -79,3 +78,5 @@ These `.fitnessrc.json` keys tune the check.
 - `maxListItemWords` is the most words one list item may hold.
 - `maxListItems` is the most items one list may hold, and the most bullets changelog-bullets allows in a release section.
 - `maxWords` is the most prose words one section may hold.
+- `maxCommentWordsPerToken` is the most comment words a function body may hold for each code token before `overlong` fails it.
+- `minBodyComments` is the fewest comments a function body needs before `overlong` judges it.

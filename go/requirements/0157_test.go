@@ -31,3 +31,23 @@ func Test0157_2(t *testing.T) {
 	out, code := proseBudget(t, files)
 	sees(t, out, code, 0)
 }
+
+func Test0157_3(t *testing.T) {
+	t.Parallel()
+	long := "\t// Hands the number back to the caller without any change at all.\n\n\t// Callers rely on getting their own number back from this function.\n"
+	files := func(cfg string) map[string]string {
+		f := map[string]string{"app/run.go": inFunctions(long, long, long)["app/run.go"]}
+		if cfg != "" {
+			f[".fitnessrc.json"] = cfg + "\n"
+		}
+		return f
+	}
+	out, code := proseBudget(t, files(""))
+	sees(t, out, code, 1, "overlong", "(max 3 words per token)")
+	out, code = proseBudget(t, files(`{"proseBudget": {"maxCommentWordsPerToken": 20}}`))
+	sees(t, out, code, 0)
+	out, code = proseBudget(t, files(`{"proseBudget": {"maxCommentWordsPerToken": 2}}`))
+	sees(t, out, code, 1, "(max 2 words per token)")
+	out, code = proseBudget(t, files(`{"proseBudget": {"minBodyComments": 3}}`))
+	sees(t, out, code, 0)
+}

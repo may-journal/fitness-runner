@@ -22,3 +22,7 @@ Function bodies with two or more comments
     - Given Developer has functions with one long comment, brief comments or a fenced example, and an over-commented Markdown example
         - When prose-budget checks the repo
             - Then it passes
+- 0157.3
+    - Given Developer has a repo whose `.fitnessrc.json` sets `proseBudget.maxCommentWordsPerToken` or `proseBudget.minBodyComments`
+        - When prose-budget checks functions with two long comments
+            - Then it uses the configured numbers, and the defaults of 3 and 2 where they are unset

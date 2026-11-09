@@ -13,7 +13,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/walkfs"
 )
 
-// limits are the six hard caps for one run.
+// limits are the hard caps for one run.
 type limits struct {
 	sentenceWords      int
 	paragraphSentences int
@@ -21,6 +21,8 @@ type limits struct {
 	listItemWords      int
 	listItems          int
 	words              int
+	commentWordsPerTok int
+	bodyComments       int
 }
 
 // defaults are the tight technical-doc limits conf.Defaults holds, so the config schema shows them too.
@@ -31,6 +33,8 @@ var defaults = limits{
 	listItemWords:      conf.Defaults.ProseBudget.MaxListItemWords,
 	listItems:          conf.Defaults.ProseBudget.MaxListItems,
 	words:              conf.Defaults.ProseBudget.MaxWords,
+	commentWordsPerTok: conf.Defaults.ProseBudget.MaxCommentWordsPerToken,
+	bodyComments:       conf.Defaults.ProseBudget.MinBodyComments,
 }
 
 // descriptionName labels the pseudo-file in body-mode errors, where the
@@ -87,6 +91,8 @@ func applyLimits(lim *limits, cfg *conf.Config) {
 	over(&lim.listItemWords, cfg.ProseBudget.MaxListItemWords)
 	over(&lim.listItems, cfg.ProseBudget.MaxListItems)
 	over(&lim.words, cfg.ProseBudget.MaxWords)
+	over(&lim.commentWordsPerTok, cfg.ProseBudget.MaxCommentWordsPerToken)
+	over(&lim.bodyComments, cfg.ProseBudget.MinBodyComments)
 }
 
 func over(dst *int, v int) {
