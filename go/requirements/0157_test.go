@@ -20,6 +20,11 @@ func Test0157_2(t *testing.T) {
 		"\t// Hands the number back unchanged, since callers compare it with the value they passed in.\n",
 		"    var b = a\n    // Only the copy changes below this line.\n    b += 1\n    // The copy is dropped once the caller has its number.\n    _ = b\n",
 		"  let b = a;\n  // Only the copy changes below this line.\n  b++;\n  // The copy is dropped once the caller has its number.\n  void b;\n")
+	files["app/swap.go"] = "package main\n\nfunc swap(a, b int) (int, int) {\n\t// Swaps the pair, as this call shows:\n" +
+		"\t//     first, second := swap(the value the caller passed first, the value the caller passed second)\n" +
+		"\t//     first, second = swap(the value that came back first, the value that came back second)\n" +
+		"\tt := a\n\n\t// The copy keeps a safe while b moves.\n\ta = b\n\treturn a, t\n}\n"
+	files["app/greet.sh"] = "#!/bin/sh\ngreet() {\n# echo hi\necho hi\n}\n"
 	files["README.md"] = readme + "\nAn over-commented example:\n\n```go\nfunc run(a int) int {\n" +
 		"\t// Hands the number back to the caller without any change at all.\n\n" +
 		"\t// Callers rely on getting their own number back from this function.\n\treturn a\n}\n```\n"

@@ -42,9 +42,9 @@ type Block struct {
 	Body Body
 }
 
-// Body is a function body's brace lines, its comment blocks and their words, and its code lines and tokens.
+// Body is a function body's brace lines, its comment blocks and their words, and its code tokens.
 type Body struct {
-	From, To, Blocks, Words, Lines, Tokens int
+	From, To, Blocks, Words, Tokens int
 	// Lead marks the first block a run judges in the body, which speaks for the whole body.
 	Lead bool `json:"-"`
 }
@@ -138,7 +138,7 @@ func readBlocks(root, rel string, place bool) ([]Block, error) {
 	}
 	blocks := Source(rel, src)
 	if place {
-		placeSource(blocks, src)
+		placeSource(blocks, src, nil)
 	}
 	return blocks, nil
 }

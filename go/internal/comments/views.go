@@ -87,7 +87,7 @@ func buildViews(root, rel string) built {
 	b := built{rel: rel, info: info, code: CodeView(rel, data)}
 	if !mdx.IsMarkdown(rel) {
 		blocks := Source(rel, data)
-		placeSource(blocks, data)
+		placeSource(blocks, data, b.code)
 		b.comments, _ = json.Marshal(blocks)
 	}
 	return b

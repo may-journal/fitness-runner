@@ -76,6 +76,8 @@
 // `overlong` fails a function body holding two or more comments with more than three comment words per code token.
 //
 //   - A token is a run of letters, digits and underscores, or one other visible character.
+//   - String literals and tool directives count as code, so the rule leans toward passing.
+//   - Its limits are fixed; no `proseBudget` key changes them.
 //   - Words in a fenced or indented example inside a comment do not count.
 //   - One error names the body by the line of its opening brace.
 //   - A commit or pull request run judges a body when one of its changed comments sits in it.

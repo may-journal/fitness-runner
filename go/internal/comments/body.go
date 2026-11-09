@@ -7,21 +7,30 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
 )
 
-// measureBodies sets each placed block's body totals: its comment blocks and their words, and its code lines and tokens.
-func measureBodies(blocks []Block, src []byte) {
+// measureBodies sets each placed block's body totals from the file's code view: its comment blocks, their words and its code tokens.
+// A nil view is built from src, only when some block sits in a body.
+func measureBodies(blocks []Block, src, view []byte) {
 	totals := commentTotals(blocks)
 	if len(totals) == 0 {
 		return
 	}
-	rows := lines(CodeView(blocks[0].Path, src))
+	rows := lines(viewOf(blocks[0].Path, src, view))
 	for _, t := range totals {
-		t.Lines, t.Tokens = code(rows[t.From:min(t.To-1, len(rows))])
+		t.Tokens = tokens(strings.Join(rows[t.From:min(t.To-1, len(rows))], "\n"))
 	}
 	for i := range blocks {
 		if t, ok := totals[blocks[i].Body.From]; ok {
 			blocks[i].Body = *t
 		}
 	}
+}
+
+// viewOf is view, or the code view of src, the file at rel, when view is nil.
+func viewOf(rel string, src, view []byte) []byte {
+	if view == nil {
+		return CodeView(rel, src)
+	}
+	return view
 }
 
 // commentTotals counts the comment blocks and words of each body among blocks, by its opening line.
@@ -40,30 +49,12 @@ func commentTotals(blocks []Block) map[int]*Body {
 	return totals
 }
 
-// code counts the lines of rows holding code and their tokens.
-func code(rows []string) (lines, count int) {
-	for _, row := range rows {
-		if n := tokens(row); n > 0 {
-			lines, count = lines+1, count+n
-		}
-	}
-	return lines, count
-}
-
 // proseWords counts the words of a comment outside the code its Markdown fences, so a drawn diagram or example adds none.
 func proseWords(text string) int {
-	n, fenced := 0, false
-	for _, line := range strings.Split(Markdown(text), "\n") {
-		if strings.HasPrefix(strings.TrimSpace(line), "```") {
-			fenced = !fenced
-		} else if !fenced {
-			n += mdx.WordCount(line)
-		}
-	}
-	return n
+	return mdx.WordCount(strings.Join(mdx.BlankFenced(strings.Split(Markdown(text), "\n")), "\n"))
 }
 
-// tokens counts the code tokens of a row: each run of letters, digits and underscores, and each other visible character.
+// tokens counts the tokens of code: each run of letters, digits and underscores, and each other visible character.
 func tokens(row string) int {
 	n := len(strings.FieldsFunc(row, func(r rune) bool { return !wordRune(r) }))
 	for _, r := range row {

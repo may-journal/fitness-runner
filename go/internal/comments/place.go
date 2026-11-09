@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// placeSource places the blocks of one file holding src, then measures each function body they sit in.
-func placeSource(blocks []Block, src []byte) {
+// placeSource places the blocks of one file holding src, then measures their function bodies from view, its code view or nil.
+func placeSource(blocks []Block, src, view []byte) {
 	if len(blocks) == 0 {
 		return
 	}
@@ -17,7 +17,7 @@ func placeSource(blocks []Block, src []byte) {
 	for i := range blocks {
 		place(&blocks[i])
 	}
-	measureBodies(blocks, src)
+	measureBodies(blocks, src, view)
 }
 
 // placer returns the function that places a block of src, an inline one always in a body.
@@ -48,7 +48,10 @@ func bodies(lang string, src []byte, rows []string) (spans, bool) {
 		return braceBodies(swiftCode(src)), true
 	}
 	lex, ok := lexers[lang]
-	return braceBodies(lexedCode(rows, lex)), ok
+	if !ok {
+		return nil, false
+	}
+	return braceBodies(lexedCode(rows, lex)), true
 }
 
 // span holds the 1-based lines of a function body's braces.

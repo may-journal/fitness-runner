@@ -19,6 +19,6 @@ Function bodies with two or more comments
         - When prose-budget checks the repo
             - Then it fails each body as `overlong` and says to keep the comments that say why
 - 0157.2
-    - Given Developer has functions with one long comment or brief comments, and Markdown with an over-commented example
+    - Given Developer has functions with one long comment, brief comments or a fenced example, and an over-commented Markdown example
         - When prose-budget checks the repo
             - Then it passes
