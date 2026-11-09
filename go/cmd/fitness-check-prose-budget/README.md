@@ -56,6 +56,15 @@ Six rules fail what a comment should not hold, each naming what to delete or say
 
 A history or filler word before a past participle, as in `previously stored`, passes. A word or symbol inside quotes, a code span or an indented example passes too, and Markdown files meet none of these rules.
 
+## Comment length
+
+`overlong` fails a function body holding two or more comments with more than three comment words per code token.
+
+- A token is a run of letters, digits and underscores, or one other visible character.
+- Words in a fenced or indented example inside a comment do not count.
+- One error names the body by the line of its opening brace.
+- A commit or pull request run judges a body when one of its changed comments sits in it.
+
 ## Configuration
 
 These `.fitnessrc.json` keys tune the check.

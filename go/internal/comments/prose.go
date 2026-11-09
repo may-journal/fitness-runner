@@ -27,6 +27,7 @@ func Judge(res checkkit.Result, root string, judge func(name, markdown string) [
 // from the same read of its file. Blocks are judged side by side, so judge must only return what it finds.
 func JudgeEach(res checkkit.Result, root string, judge func(b Block, name, markdown string) []string) checkkit.Result {
 	blocks, err := judged(root, true)
+	markLeads(blocks)
 	found := par.Map(len(blocks), 0, func(i int) []string {
 		return judge(blocks[i], blockName(blocks[i]), Markdown(blocks[i].Text))
 	})
