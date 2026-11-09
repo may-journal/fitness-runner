@@ -123,6 +123,24 @@ func linkedAgain0092(t *testing.T, title, body string) {
 	}
 }
 
+func Test0092_5(t *testing.T) {
+	t.Parallel()
+	compare := "https://github.com/" + repo0014 + "/compare/v1.2.0..."
+	body := "> Release the changes.\n\n## Changelog\n\n" +
+		"## [1.3.0](" + compare + "v1.3.0) (2026-11-09)\n\n### Bug Fixes\n\n* one fix\n\nAgent: Release Please."
+	rp, out, code, _ := run0092(t, "Shape the release PR notes", []response{
+		view0092(body),
+		{Match: []string{"pr view 23 --json headRefOid"}, Stdout: "def456\n"},
+		edits0092,
+	})
+	sees(t, out, code, 0)
+	shaped := "> Release the changes.\n\n## Changelog\n\n" +
+		"### [1.3.0](" + compare + "def456) (2026-11-09)\n\n### Bug Fixes\n\n* one fix\n\nAgent: Release Please."
+	if !rp.called("gh", "pr edit 23 --body "+logged0092(shaped)) {
+		t.Errorf("the compare link does not end at the release PR's head commit; gh calls: %q", rp.calls("gh"))
+	}
+}
+
 var (
 	outputRef0092 = regexp.MustCompile(`steps\.\w+\.outputs\.\w+`)
 	fromJSON0092  = regexp.MustCompile(`fromJSON\(([^)]*)\)`)
