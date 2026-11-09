@@ -209,6 +209,7 @@ func Test0023_18(t *testing.T) {
 	dtEdit(t, files, acContext, "    UpdateElementStyle(user,",
 		"    SystemDb_Ext(db, \"4 Records\", \"Keeps records.\")\n    UpdateElementStyle(db, $fontColor=\"#FFFFFF\", $bgColor=\"#64748b\",  $borderColor=\"#475569\")\n    UpdateLayoutConfig($c4ShapeInRow=\"3\")\n    Lay_R(user, product)\n    UpdateElementStyle(user,")
 	dtEdit(t, files, acCode, "    save --> Record : A", "    save --> Record : A\n    Store : +save()\n    <<interface>> Store\n    style Store "+paletteClass)
+	dtEdit(t, files, acContainer, `Container(app, "3 App", "Language", "src/app")`, `Container(app, "3 App", $techn="Language")`)
 	out, code := docTemplate(t, files)
 	sees(t, out, code, 0, "All 1 checks passed")
 	dtEdit(t, files, acContext, "UpdateElementStyle(product, $bgColor=\"#1d4ed8\"", "UpdateElementStyle(product, $bgColor=\"#ff0000\"")
@@ -242,8 +243,8 @@ func Test0023_18(t *testing.T) {
 	sees(t, out, code, 1,
 		dtLine(t, files, acContext, "```mermaid")+": C4Context diagram needs a `title` line as "+dtShippedName(acContext)+" has",
 		": C4Component legend needs a `title` line as "+dtShippedName(acComponent)+" has",
-		dtLine(t, files, acContainer, "        Container(app,")+": Container app needs a technology as its third argument, as "+dtShippedName(acContainer)+" gives each Container",
-		dtLine(t, files, acComponent, "        Component(store,")+": Component store needs a technology as its third argument, as "+dtShippedName(acComponent)+" gives each Component",
+		dtLine(t, files, acContainer, "        Container(app,")+": Container app needs a technology as "+dtShippedName(acContainer)+" gives each Container",
+		dtLine(t, files, acComponent, "        Component(store,")+": Component store needs a technology as "+dtShippedName(acComponent)+" gives each Component",
 		dtViews+acContext+":", "legend needs a System_Ext sample, a kind the diagram uses",
 		dtViews+acContainer+":", "legend shows System_Ext, a kind the diagram does not use")
 }

@@ -6,53 +6,142 @@ import (
 	"strings"
 )
 
-// labelFindings judges what each C4 diagram says beyond its palette. Each
-// has a title, each container and component a technology, and each legend
-// exactly its section's kinds.
-func (p palette) labelFindings(diagrams []diagram) []Finding {
-	if len(p.kinds) == 0 {
-		return nil
+// labels is what a template's C4 diagrams say beyond their styles: whether
+// they carry a title, and the kinds that name a technology.
+type labels struct {
+	titled       bool
+	technologies []string
+}
+
+// learn adds one template diagram's title and technologies.
+func (l *labels) learn(d diagram, f facts) {
+	if notC4(d) {
+		return
 	}
-	var out []Finding
+	l.titled = l.titled || f.titled
+	for _, e := range f.elements {
+		if e.technology != "" {
+			l.technologies = union(l.technologies, []string{e.kind})
+		}
+	}
+}
+
+// c4 is one C4 diagram of a doc, read once: its block, statements and kinds.
+type c4 struct {
+	diagram
+	facts facts
+	kinds []string
+}
+
+// readC4 reads each C4 diagram of a doc once, skipping other types.
+func readC4(diagrams []diagram) []c4 {
+	var out []c4
 	for _, d := range slices.DeleteFunc(slices.Clone(diagrams), notC4) {
-		out = append(out, p.diagramLabelFindings(d)...)
-		out = append(out, legendKindFindings(d, sectionKinds(diagrams, d.section))...)
+		f := readFacts(d)
+		out = append(out, c4{d, f, kindsOf(f)})
 	}
 	return out
 }
 
-// diagramLabelFindings fails a C4 diagram without a title line, and each
-// container or component whose technology is empty.
-func (p palette) diagramLabelFindings(d diagram) []Finding {
-	f := readFacts(d)
-	var out []Finding
-	if !f.titled {
-		out = append(out, Finding{d.line, fmt.Sprintf("%s %s needs a `title` line as %s has", d.kind, role(d), p.path)})
+// labelFindings judges what each C4 diagram says beyond its palette. It needs
+// the template's title and technologies, and legends key exactly the kinds
+// in use.
+func (p palette) labelFindings(diagrams []diagram) []Finding {
+	if len(p.kinds) == 0 {
+		return nil
 	}
-	for _, e := range f.elements {
-		if takesTechnology(e.kind) && e.technology == "" {
-			out = append(out, Finding{e.line, fmt.Sprintf("%s %s needs a technology as its third argument, as %s gives each %s", e.macro, e.alias, p.path, e.kind)})
+	read := readC4(diagrams)
+	var out []Finding
+	for _, c := range read {
+		out = append(out, p.diagramLabelFindings(c)...)
+	}
+	return append(out, legendKindFindings(read)...)
+}
+
+// diagramLabelFindings fails a C4 diagram without the title the template
+// gives, and each element without the technology the template gives its kind.
+func (p palette) diagramLabelFindings(c c4) []Finding {
+	var out []Finding
+	if p.labels.titled && !c.facts.titled {
+		out = append(out, Finding{c.line, fmt.Sprintf("%s %s needs a `title` line as %s has", c.kind, role(c.diagram), p.path)})
+	}
+	for _, e := range slices.DeleteFunc(slices.Clone(c.facts.elements), p.labels.named) {
+		out = append(out, Finding{e.line, fmt.Sprintf("%s %s needs a technology as %s gives each %s", e.macro, e.alias, p.path, e.kind)})
+	}
+	return out
+}
+
+// named reports an element that names a technology, or whose kind the
+// template gives none.
+func (l labels) named(e element) bool {
+	return e.technology != "" || !slices.Contains(l.technologies, e.kind)
+}
+
+// legendKindFindings judges the legends of each section together against
+// the kinds that section's diagrams use. A legend in a section of its own,
+// such as `## Legend`, keys every diagram of the doc.
+func legendKindFindings(read []c4) []Finding {
+	var out []Finding
+	seen := map[string]bool{}
+	for _, c := range read {
+		if c.legend && !seen[c.section] {
+			seen[c.section] = true
+			out = append(out, sectionLegendFindings(read, c)...)
 		}
 	}
 	return out
 }
 
-// legendKindFindings fails a legend that lacks a kind its section's diagrams
-// use, or shows a kind they do not. A diagram that is no legend, or a
-// section with no diagram, judges none.
-func legendKindFindings(legend diagram, used []string) []Finding {
-	if !legend.legend || used == nil {
+// sectionLegendFindings fails, at the section's first legend, each kind the
+// diagrams use that no legend shows, and each kind shown that none uses.
+func sectionLegendFindings(read []c4, first c4) []Finding {
+	used, drawn := keyedKinds(read, first.section), kindsIn(read, first.section, true)
+	if used == nil {
 		return nil
 	}
-	drawn := kindsOf(legend)
 	var out []Finding
 	for _, kind := range missing(used, drawn) {
-		out = append(out, Finding{legend.line, fmt.Sprintf("legend needs a %s sample, a kind the diagram uses", kind)})
+		out = append(out, Finding{first.line, fmt.Sprintf("legend needs a %s sample, a kind the diagram uses", kind)})
 	}
 	for _, kind := range missing(drawn, used) {
-		out = append(out, Finding{legend.line, fmt.Sprintf("legend shows %s, a kind the diagram does not use", kind)})
+		out = append(out, Finding{first.line, fmt.Sprintf("legend shows %s, a kind the diagram does not use", kind)})
 	}
 	return out
+}
+
+// keyedKinds lists the kinds a section's legends key: its own diagrams'
+// kinds, or every diagram's when the section holds only legends.
+func keyedKinds(read []c4, section string) []string {
+	if kinds := kindsIn(read, section, false); kinds != nil {
+		return kinds
+	}
+	var kinds []string
+	for _, c := range read {
+		if !c.legend {
+			kinds = union(kinds, c.kinds)
+		}
+	}
+	return kinds
+}
+
+// kindsIn lists the kinds a section's legends, or its other diagrams, use.
+func kindsIn(read []c4, section string, legend bool) []string {
+	var kinds []string
+	for _, c := range read {
+		if c.section == section && c.legend == legend {
+			kinds = union(kinds, c.kinds)
+		}
+	}
+	return kinds
+}
+
+// kindsOf lists the element kinds one diagram declares, in order.
+func kindsOf(f facts) []string {
+	var kinds []string
+	for _, e := range f.elements {
+		kinds = union(kinds, []string{e.kind})
+	}
+	return kinds
 }
 
 // missing lists the kinds of want that have does not hold, in order.
@@ -66,27 +155,6 @@ func missing(want, have []string) []string {
 	return out
 }
 
-// sectionKinds lists the kinds the C4 diagrams of a section use, legends
-// aside, or nil when the section has none.
-func sectionKinds(diagrams []diagram, section string) []string {
-	var kinds []string
-	for _, d := range diagrams {
-		if d.section == section && !d.legend && !notC4(d) {
-			kinds = union(kinds, kindsOf(d))
-		}
-	}
-	return kinds
-}
-
-// kindsOf lists the element kinds one diagram declares, in order.
-func kindsOf(d diagram) []string {
-	var kinds []string
-	for _, e := range readFacts(d).elements {
-		kinds = union(kinds, []string{e.kind})
-	}
-	return kinds
-}
-
 // union appends each kind of more that kinds does not yet hold.
 func union(kinds, more []string) []string {
 	return append(kinds, missing(more, kinds)...)
@@ -97,20 +165,41 @@ func notC4(d diagram) bool {
 	return !strings.HasPrefix(d.kind, "C4")
 }
 
-// takesTechnology reports a kind whose macro names a technology, as
-// Container(cli, "Runner", "Go", "Description") does.
-func takesTechnology(kind string) bool {
-	base := strings.TrimSuffix(kind, "_Ext")
-	return base == "Container" || base == "Component"
+// titleLine reports a title with text, as a `title` statement or a front
+// matter `title:` key.
+func titleLine(t string) bool {
+	for _, key := range []string{"title ", "title:"} {
+		if rest, ok := strings.CutPrefix(t, key); ok && strings.TrimSpace(rest) != "" {
+			return true
+		}
+	}
+	return false
 }
 
-// technology is the third argument of a container or component macro,
-// unquoted, or "" for any other macro or a missing one.
+// technology is the technology a container or component macro names, by
+// `$techn=` or as its third argument, or "" for any other macro.
 func technology(name string, args []string) string {
-	if !takesTechnology(c4Kind(name)) || len(args) < 3 || strings.HasPrefix(args[2], "$") {
+	if base := strings.TrimSuffix(c4Kind(name), "_Ext"); base != "Container" && base != "Component" {
 		return ""
 	}
-	return strings.TrimSpace(strings.Trim(args[2], `"`))
+	if i := slices.IndexFunc(args, techArg); i >= 0 {
+		return strings.TrimSpace(unquote(strings.TrimPrefix(args[i], "$techn=")))
+	}
+	return positional(args, 2)
+}
+
+// positional is the unquoted argument at i when it is given by position,
+// not by a `$name=` key, or "".
+func positional(args []string, i int) string {
+	if len(args) <= i || strings.HasPrefix(args[i], "$") {
+		return ""
+	}
+	return strings.TrimSpace(unquote(args[i]))
+}
+
+// techArg reports the named argument that gives a C4 technology.
+func techArg(arg string) bool {
+	return strings.HasPrefix(arg, "$techn=")
 }
 
 // role names a diagram as a legend or the view's diagram in messages.

@@ -15,6 +15,7 @@ type palette struct {
 	path   string
 	kinds  []string
 	styles map[string]styleRule
+	labels labels
 }
 
 // styleRule is the style a kind carries: the key that compares two styles,
@@ -56,6 +57,7 @@ func (p *palette) learn(d diagram) {
 	for _, s := range f.styles {
 		p.addStyle(kindOf[s.alias], s)
 	}
+	p.labels.learn(d, f)
 }
 
 func (p *palette) addKind(kind string) {
@@ -235,7 +237,7 @@ var (
 
 // c4Line reads one C4 macro call or the title line.
 func (f *facts) c4Line(t string, at int) {
-	if t == "title" || strings.HasPrefix(t, "title ") {
+	if titleLine(t) {
 		f.titled = true
 	}
 	if m := mermaid.C4Macro.FindStringSubmatch(t); m != nil {
