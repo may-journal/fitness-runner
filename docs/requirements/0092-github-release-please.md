@@ -2,7 +2,7 @@
 
 ## Why
 
-Every repo that opts in to releases calls one shared Release Please workflow. Its release pull request passes pr-check, and each release moves the major tag.
+Every repo that opts in to releases calls one shared Release Please workflow. Its release pull request passes pr-check and links a compare view that works before merge, and each release moves the major tag.
 
 ## Measurement
 
