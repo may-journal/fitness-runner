@@ -50,6 +50,13 @@
 //   - Leave each unstyled kind, such as a boundary, without style.
 //   - Hold no other style: another `Update…Style` macro, a color argument, `classDef`, `cssClass`, `:::`, or `%%{init}`. `UpdateLayoutConfig` only lays out, so it stays.
 //
+// Each C4 diagram, legends included, must also, as the template does:
+//
+//   - Carry a `title` line, or a `title:` front matter key, with text.
+//   - Give each element a technology when the template gives its kind one, by position or `$techn=`.
+//   - In its legends, show exactly the kinds its section's diagrams use, no more and no fewer.
+//   - In a legend with a section of its own, key every diagram of the doc.
+//
 // The journey template draws a flowchart, so its palette judges nothing.
 //
 // # Shipped templates
