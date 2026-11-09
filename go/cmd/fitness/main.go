@@ -1028,7 +1028,7 @@ func runOne(root string, c resolved, ends stageEnds, passthrough, env []string, 
 	defer trackRunning(cmd.Process.Pid, live)()
 	defer warnHalfway(live, w.heartbeat)()
 	timedOut := waitWithBudget(cmd, live.limit)
-	ms := time.Since(live.start).Milliseconds()
+	ms := ranMs(c, live.start, timedOut, cut)
 
 	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}
 	if timedOut {

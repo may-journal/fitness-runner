@@ -83,5 +83,5 @@ func Test0146_6(t *testing.T) {
 	repo := prBase(t, with(localCheck("pause", passing), map[string]string{"checks/fitness-check-pause": pause}))
 	commit(t, repo, noteGuide(t), "docs(changelog): note the guide")
 	out, code := fitness(t, repo, append([]string{fastTotal(8000)}, prEnv...), "--policy=external", "--checks=pause")
-	sees(t, out, code, 1, "Stage 1 of 2:", "Stage 2 of 2:", "Stopped at the 8s fast total", "The fast checks ran past their 8s total. Slowest: pause")
+	sees(t, out, code, 1, "Stage 1 of 2:", "Stage 2 of 2:", "Stopped at the 8s fast total", "The fast checks ran past their 8s total. Slowest: pause 8s")
 }

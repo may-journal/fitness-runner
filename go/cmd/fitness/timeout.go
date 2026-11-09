@@ -177,3 +177,13 @@ func took(ms int64) string {
 	}
 	return span(time.Duration(ms) * time.Millisecond)
 }
+
+// ranMs is how long a check ran in milliseconds, or the whole
+// total when the total stopped a check that started late.
+func ranMs(c resolved, start time.Time, timedOut, cut bool) int64 {
+	ms := time.Since(start).Milliseconds()
+	if timedOut && !cut {
+		return max(ms, stageTotal(stageOf(c)).Milliseconds())
+	}
+	return ms
+}
