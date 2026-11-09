@@ -33,8 +33,8 @@ var defaults = limits{
 	listItemWords:      conf.Defaults.ProseBudget.MaxListItemWords,
 	listItems:          conf.Defaults.ProseBudget.MaxListItems,
 	words:              conf.Defaults.ProseBudget.MaxWords,
-	commentWordsPerTok: conf.Defaults.ProseBudget.MaxCommentWordsPerToken,
-	bodyComments:       conf.Defaults.ProseBudget.MinBodyComments,
+	commentWordsPerTok: conf.Defaults.Prose.Comments.MaxWordsPerToken,
+	bodyComments:       conf.Defaults.Prose.Comments.MinBodyComments,
 }
 
 // descriptionName labels the pseudo-file in body-mode errors, where the
@@ -83,7 +83,7 @@ func settings(root string) limits {
 	return lim
 }
 
-// applyLimits overlays every positive proseBudget config value onto lim.
+// applyLimits overlays every positive proseBudget and prose.comments config value onto lim.
 func applyLimits(lim *limits, cfg *conf.Config) {
 	over(&lim.sentenceWords, cfg.ProseBudget.MaxSentenceWords)
 	over(&lim.paragraphSentences, cfg.ProseBudget.MaxParagraphSentences)
@@ -91,8 +91,8 @@ func applyLimits(lim *limits, cfg *conf.Config) {
 	over(&lim.listItemWords, cfg.ProseBudget.MaxListItemWords)
 	over(&lim.listItems, cfg.ProseBudget.MaxListItems)
 	over(&lim.words, cfg.ProseBudget.MaxWords)
-	over(&lim.commentWordsPerTok, cfg.ProseBudget.MaxCommentWordsPerToken)
-	over(&lim.bodyComments, cfg.ProseBudget.MinBodyComments)
+	over(&lim.commentWordsPerTok, cfg.Prose.Comments.MaxWordsPerToken)
+	over(&lim.bodyComments, cfg.Prose.Comments.MinBodyComments)
 }
 
 func over(dst *int, v int) {

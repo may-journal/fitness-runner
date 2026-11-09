@@ -44,10 +44,10 @@ func Test0157_3(t *testing.T) {
 	}
 	out, code := proseBudget(t, files(""))
 	sees(t, out, code, 1, "overlong", "(max 3 words per token)")
-	out, code = proseBudget(t, files(`{"proseBudget": {"maxCommentWordsPerToken": 20}}`))
+	out, code = proseBudget(t, files(`{"prose": {"comments": {"maxWordsPerToken": 20}}}`))
 	sees(t, out, code, 0)
-	out, code = proseBudget(t, files(`{"proseBudget": {"maxCommentWordsPerToken": 2}}`))
+	out, code = proseBudget(t, files(`{"prose": {"comments": {"maxWordsPerToken": 2}}}`))
 	sees(t, out, code, 1, "(max 2 words per token)")
-	out, code = proseBudget(t, files(`{"proseBudget": {"minBodyComments": 3}}`))
+	out, code = proseBudget(t, files(`{"prose": {"comments": {"minBodyComments": 3}}}`))
 	sees(t, out, code, 0)
 }
