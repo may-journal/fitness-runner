@@ -38,6 +38,15 @@ type Block struct {
 	InBody bool
 	// Next is the trimmed code line after an own-line comment, as JudgeEach places it.
 	Next string
+	// Body measures the outermost function body holding the block, as JudgeEach places it, and is zero outside one.
+	Body Body
+}
+
+// Body is a function body's brace lines, its comment blocks and their words, and its code tokens.
+type Body struct {
+	From, To, Blocks, Words, Tokens int
+	// Lead marks the first block a run judges in the body, which speaks for the whole body.
+	Lead bool `json:"-"`
 }
 
 // note is one comment as written, markers included, before adjacent notes join
@@ -129,7 +138,7 @@ func readBlocks(root, rel string, place bool) ([]Block, error) {
 	}
 	blocks := Source(rel, src)
 	if place {
-		placeSource(blocks, src)
+		placeSource(blocks, src, nil)
 	}
 	return blocks, nil
 }
