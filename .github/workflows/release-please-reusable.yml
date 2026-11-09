@@ -50,9 +50,10 @@ jobs:
         env:
           PR: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
         run: printf 'PR=%s\nGH_REPO=%s\n' "$PR" "$GITHUB_REPOSITORY" >> "$GITHUB_ENV"
-      # pr-check wants plain bullets under "## Changelog" with no bold scopes.
-      # This step demotes the headings Release Please writes and strips its
-      # bold.
+      # pr-check wants plain bullets under "## Changelog" with no bold scopes,
+      # so this step demotes Release Please's headings and strips the bold.
+      # A later release's compare link 404s until the PR merges, so it points
+      # at the PR's head commit instead.
       - name: Shape the release PR notes
         id: shape
         if: ${{ steps.release.outputs.pr != '' }}
@@ -60,9 +61,11 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           body="$(gh pr view "$PR" --json body --jq .body)"
-          shaped="$(printf '%s\n' "$body" | awk '
+          head="$(gh pr view "$PR" --json headRefOid --jq .headRefOid)"
+          shaped="$(printf '%s\n' "$body" | awk -v head="$head" '
             after && first { first = 0; if ($0 != "") print "" }
             { line = $0 }
+            after && /^##+ \[.*\/compare\// { sub(/\.\.\.[^)]*\)/, "..." head ")", line) }
             after { sub(/^## /, "### ", line); while (sub(/\*\*/, "", line)) {} }
             { print line }
             $0 == "## Changelog" { after = 1; first = 1 }')"

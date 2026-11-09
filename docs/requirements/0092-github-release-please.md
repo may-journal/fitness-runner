@@ -2,7 +2,7 @@
 
 ## Why
 
-Every repo that opts in to releases calls one shared Release Please workflow. Its release pull request passes pr-check, and each release moves the major tag.
+Every repo that opts in to releases calls one shared Release Please workflow. Its release pull request passes pr-check and links a compare view that works before merge, and each release moves the major tag.
 
 ## Measurement
 
@@ -28,3 +28,7 @@ Release Please runs
     - Given Developer has a created release whose major tag exists, then is missing, then cannot be read
         - When Release Please moves the major tag
             - Then it moves the tag, then creates it, then fails naming the tag and changes nothing
+- 0092.5
+    - Given Developer has a release pull request whose heading links `compare/v1.2.0...v1.3.0`
+        - When Release Please shapes the notes
+            - Then the link compares `v1.2.0` with the pull request's head commit

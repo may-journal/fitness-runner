@@ -58,6 +58,9 @@ func view0092(body string) response {
 	return response{Match: []string{"pr view 23 --json body"}, Stdout: body + "\n"}
 }
 
+// head0092 is the CLI's answer to reading release PR 23's head commit.
+var head0092 = response{Match: []string{"pr view 23 --json headRefOid"}, Stdout: "def456\n"}
+
 // edits0092 is the CLI's answer to any other pull request call.
 var edits0092 = response{Match: []string{"pr "}}
 
@@ -68,7 +71,7 @@ func logged0092(text string) string {
 
 func Test0092_1(t *testing.T) {
 	t.Parallel()
-	rp, out, code, written := run0092(t, "Shape the release PR notes", []response{view0092(firstRelease0092), edits0092})
+	rp, out, code, written := run0092(t, "Shape the release PR notes", []response{view0092(firstRelease0092), head0092, edits0092})
 	sees(t, out, code, 0)
 	shaped := "> Release the changes merged since the last version.\n\n## Background\n\nRelease Please groups merged changes.\n\n## Changelog\n\n---\n\n\n" +
 		"### 1.0.0 (2026-10-10)\n\n\n### Features\n\n* library: one API over UIKit and AppKit\n\n---\nAgent: Release Please."
@@ -120,6 +123,22 @@ func linkedAgain0092(t *testing.T, title, body string) {
 	sees(t, out, code, 0)
 	if rp.called("gh", "issue create") || rp.called("gh", "pr edit") || written != "" {
 		t.Errorf("a linked release PR was changed again; gh calls: %q, output %q", rp.calls("gh"), written)
+	}
+}
+
+func Test0092_5(t *testing.T) {
+	t.Parallel()
+	compare := "https://github.com/" + repo0014 + "/compare/v1.2.0..."
+	body := "> Release the changes.\n\n## Changelog\n\n" +
+		"## [1.3.0](" + compare + "v1.3.0) (2026-11-09)\n\n### Bug Fixes\n\n* one fix\n\nAgent: Release Please."
+	rp, out, code, _ := run0092(t, "Shape the release PR notes", []response{
+		view0092(body), head0092, edits0092,
+	})
+	sees(t, out, code, 0)
+	shaped := "> Release the changes.\n\n## Changelog\n\n" +
+		"### [1.3.0](" + compare + "def456) (2026-11-09)\n\n### Bug Fixes\n\n* one fix\n\nAgent: Release Please."
+	if !rp.called("gh", "pr edit 23 --body "+logged0092(shaped)) {
+		t.Errorf("the compare link does not end at the release PR's head commit; gh calls: %q", rp.calls("gh"))
 	}
 }
 
