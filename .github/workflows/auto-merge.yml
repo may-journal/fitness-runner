@@ -20,7 +20,8 @@ jobs:
       github.event.pull_request.state == 'open' &&
       github.event.pull_request.draft == false &&
       (github.event.action == 'reopened' || github.event.pull_request.auto_merge == null)
-    runs-on: ubuntu-24.04-arm
+    # vars is the calling repo's, so a repo that sees RUNNER leaves the hosted runner.
+    runs-on: ${{ vars.RUNNER && fromJSON(vars.RUNNER) || 'ubuntu-24.04-arm' }}
     timeout-minutes: 5
     # Pushes come in bursts; one run turns auto-merge on. The workflow name
     # keeps the ruleset's run and the on-ready caller's apart.
