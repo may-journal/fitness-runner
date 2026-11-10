@@ -193,7 +193,9 @@ func Test0142_6(t *testing.T) {
 
 func Test0142_7(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", nil)
+	// The local check judges for longer than the copies' 5s window.
+	pause := "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"pause\", \"scope\": \"files\"}'; exit 0; }\nsleep 6\necho '" + passing + "'\n"
+	repo := example(t, "happyRepo", with(localCheck("pause", passing), map[string]string{"checks/fitness-check-pause": pause}))
 	write(t, repo, map[string]string{"notes.md": misspelledNote})
 	out, code := hookEvent(t, repo, editEvent(repo, "notes.md"))
 	sees(t, out, code, 0, `"decision":"block"`)
