@@ -38,7 +38,7 @@ hook events on red work
             - Then it exits 0 with no output
 - 0142.7
     - Given Developer has the hooks in both the fitness skill and the settings
-        - When Claude Code starts both copies of `fitness claude-hook` for one event at once
+        - When Claude Code starts both copies of `fitness claude-hook` for one event at once, sharing one cache
             - Then only the first copy judges it
 - 0142.8
     - Given Developer has a Claude Code settings file with settings and hooks of my own

@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -49,6 +48,33 @@ func timedHook(t *testing.T, runner, repo, cache string, event map[string]any) (
 	took := time.Since(start)
 	onlyJSON(t, stdout.String())
 	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode(), took
+}
+
+// hookCopies starts two copies of event at once, sharing a cache
+// folder, as Claude Code starts the skill's and the settings' copies.
+func hookCopies(t *testing.T, repo string, event map[string]any) (outs [2]string, codes [2]int) {
+	t.Helper()
+	runner := filepath.Join(installOnly(t), "fitness")
+	event["cwd"] = repo
+	raw, err := json.Marshal(event)
+	mustDo(t, err)
+	cache := t.TempDir()
+	var cmds [2]*exec.Cmd
+	var stdout, stderr [2]strings.Builder
+	for i := range cmds {
+		cmds[i] = exec.Command(runner, "claude-hook")
+		cmds[i].Dir, cmds[i].Env, cmds[i].Stdin = repo, hookEnv(t, cache), strings.NewReader(string(raw))
+		cmds[i].Stdout, cmds[i].Stderr = &stdout[i], &stderr[i]
+	}
+	for _, cmd := range cmds {
+		mustDo(t, cmd.Start())
+	}
+	for i, cmd := range cmds {
+		_ = cmd.Wait()
+		onlyJSON(t, stdout[i].String())
+		outs[i], codes[i] = stdout[i].String()+stderr[i].String(), cmd.ProcessState.ExitCode()
+	}
+	return outs, codes
 }
 
 // hookEnv is the user's environment with the fitness cache folder cache.
@@ -196,14 +222,7 @@ func Test0142_7(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
 	write(t, repo, map[string]string{"notes.md": misspelledNote})
-	// Claude Code starts the skill's copy and the settings' copy together.
-	var outs [2]string
-	var codes [2]int
-	var wg sync.WaitGroup
-	for i := range outs {
-		wg.Go(func() { outs[i], codes[i] = hookEvent(t, repo, editEvent(repo, "notes.md")) })
-	}
-	wg.Wait()
+	outs, codes := hookCopies(t, repo, editEvent(repo, "notes.md"))
 	if outs[0] != "" {
 		outs[0], outs[1], codes[0], codes[1] = outs[1], outs[0], codes[1], codes[0]
 	}
