@@ -1,5 +1,5 @@
 ### 2026.11.09.1930
 
-- Fix: the Claude hook's second copy of an event passes even when the first copy judged for longer than 5s.
-- Fix: the 5s window now runs from when the first copy finishes judging.
-- Test: requirement 0142.7 judges with a local check that takes 6s.
+- Test: requirement 0142.7 starts both copies of a hook event at once, as Claude Code does.
+- Test: it no longer waits for the first copy to finish, which took over 5s on a loaded runner.
+- Test: the hook's duplicate window stays as it was, so a repeat Stop event is still judged.
