@@ -62,20 +62,37 @@ func startStages(now time.Time) stageEnds {
 	return ends
 }
 
-// runTotals holds when each stage's total runs out in one run. The run's
-// first pool starts them, and a pull request's second scan runs inside
-// what the first left.
+// runTotals holds what earlier pools spent of each stage's total, counting
+// only while that stage's own checks ran.
 type runTotals struct {
-	ends stageEnds
+	spent map[string]time.Duration
 }
 
-// start starts the totals at now unless an earlier pool started them, and
-// returns when each runs out.
+// start returns when each stage's total runs out for a pool starting at
+// now, after what earlier pools spent.
 func (t *runTotals) start(now time.Time) stageEnds {
-	if t.ends == nil {
-		t.ends = startStages(now)
+	ends := stageEnds{}
+	for _, stage := range stages {
+		ends[stage] = now.Add(stageTotal(stage) - t.spent[stage])
 	}
-	return t.ends
+	return ends
+}
+
+// spend adds, for each stage, the time from start until that stage's last
+// check in the pool ended.
+func (t *runTotals) spend(start time.Time, checks []resolved, outcomes []outcome) {
+	if t.spent == nil {
+		t.spent = map[string]time.Duration{}
+	}
+	last := map[string]time.Time{}
+	for i, c := range checks {
+		if stage := stageOf(c); outcomes[i].ended.After(last[stage]) {
+			last[stage] = outcomes[i].ended
+		}
+	}
+	for stage, end := range last {
+		t.spent[stage] += max(end.Sub(start), 0)
+	}
 }
 
 // stages lists each stage, the test runners first, as a run reports them.
@@ -107,6 +124,22 @@ func deadlineBudget(limit time.Duration) (time.Duration, bool) {
 	}
 	left := time.Until(time.UnixMilli(ms))
 	return min(limit, left), left < limit
+}
+
+// neverStartedNote is the info line of a check its stage's total never let
+// start, which is no finding of that check.
+func neverStartedNote(c resolved) string {
+	stage := stageOf(c)
+	return fmt.Sprintf("not run: the %ss %s total ran out before it started", trimFloat(stageTotal(stage).Seconds()), stage)
+}
+
+// skippedCode is 1 when a stage's total kept a check from starting, since a
+// run that skipped a check never passes, else 0.
+func skippedCode(outcomes []outcome) int {
+	if slices.ContainsFunc(outcomes, func(o outcome) bool { return o.neverStarted }) {
+		return 1
+	}
+	return 0
 }
 
 // stoppedLine is a stopped check's first error line: the total it ran past.
@@ -158,7 +191,7 @@ func stageRows(stage string, checks []resolved, outcomes []outcome, rows []rende
 	for i, c := range checks {
 		if stageOf(c) == stage {
 			in = append(in, rows[i])
-			stopped = stopped || stoppedByTotal(outcomes[i])
+			stopped = stopped || stoppedByTotal(outcomes[i]) || outcomes[i].neverStarted
 		}
 	}
 	return in, stopped

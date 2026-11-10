@@ -37,8 +37,14 @@ type perfReport struct {
 // printed and the report it wrote.
 func withReport(t *testing.T, repo string, env ...string) (string, perfReport) {
 	t.Helper()
+	return selectedReport(t, repo, env, "--all")
+}
+
+// selectedReport is withReport for the checks selection names.
+func selectedReport(t *testing.T, repo string, env []string, selection string) (string, perfReport) {
+	t.Helper()
 	path := filepath.Join(t.TempDir(), "perf", "fitness.json")
-	out, _ := fitness(t, repo, env, "--policy=external", "--all", "--json="+path)
+	out, _ := fitness(t, repo, env, "--policy=external", selection, "--json="+path)
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("fitness --json wrote no report: %v\n%s", err, out)
@@ -108,7 +114,8 @@ func fullEntry(t *testing.T, out string, c perfCheck) {
 
 func Test0089_2(t *testing.T) {
 	t.Parallel()
-	_, report := withReport(t, example(t, "happyRepo", hungTool("")), fastTotal(300))
+	// Prettier is the one fast check, so it starts on a loaded machine.
+	_, report := selectedReport(t, example(t, "happyRepo", hungTool("")), []string{fastTotal(300)}, "--checks=prettier,go-test")
 	prettier := reported(t, report, "prettier")
 	if got := [3]any{prettier.TimedOut, prettier.Ok, prettier.Stage}; got != [3]any{true, false, "fast"} {
 		t.Errorf("prettier must be stopped at the 300ms fast total, got %+v", prettier)

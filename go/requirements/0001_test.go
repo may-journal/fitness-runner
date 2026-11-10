@@ -119,11 +119,11 @@ func describeFails(t *testing.T, repo, check string) (string, int) {
 
 func Test0001_14(t *testing.T) {
 	t.Parallel()
-	// A 0.3s fast total stops prettier. go-test runs in the test stage, which
-	// that total never stops.
+	// A 0.3s fast total stops prettier, the one fast check, so it starts on
+	// a loaded machine. That total never stops go-test, in the test stage.
 	for _, prelude := range []string{"", "trap '' TERM\n"} {
 		repo := example(t, "happyRepo", hungTool(prelude))
-		out, code := fitness(t, repo, []string{fastTotal(300)})
+		out, code := fitness(t, repo, []string{fastTotal(300)}, "--policy=external", "--checks=prettier,go-test")
 		sees(t, out, code, 1, "Stopped at the 0.3s fast total")
 		if !strings.Contains(row(out, "prettier"), "failed") {
 			t.Errorf("a stopped check must report red, got row %q", row(out, "prettier"))
