@@ -50,6 +50,33 @@ func timedHook(t *testing.T, runner, repo, cache string, event map[string]any) (
 	return stdout.String() + stderr.String(), cmd.ProcessState.ExitCode(), took
 }
 
+// hookCopies starts two copies of event at once, sharing a cache
+// folder, as Claude Code starts the skill's and the settings' copies.
+func hookCopies(t *testing.T, repo string, event map[string]any) (outs [2]string, codes [2]int) {
+	t.Helper()
+	runner := filepath.Join(installOnly(t), "fitness")
+	event["cwd"] = repo
+	raw, err := json.Marshal(event)
+	mustDo(t, err)
+	cache := t.TempDir()
+	var cmds [2]*exec.Cmd
+	var stdout, stderr [2]strings.Builder
+	for i := range cmds {
+		cmds[i] = exec.Command(runner, "claude-hook")
+		cmds[i].Dir, cmds[i].Env, cmds[i].Stdin = repo, hookEnv(t, cache), strings.NewReader(string(raw))
+		cmds[i].Stdout, cmds[i].Stderr = &stdout[i], &stderr[i]
+	}
+	for _, cmd := range cmds {
+		mustDo(t, cmd.Start())
+	}
+	for i, cmd := range cmds {
+		_ = cmd.Wait()
+		onlyJSON(t, stdout[i].String())
+		outs[i], codes[i] = stdout[i].String()+stderr[i].String(), cmd.ProcessState.ExitCode()
+	}
+	return outs, codes
+}
+
 // hookEnv is the user's environment with the fitness cache folder cache.
 func hookEnv(t *testing.T, cache string) []string {
 	t.Helper()
@@ -193,14 +220,14 @@ func Test0142_6(t *testing.T) {
 
 func Test0142_7(t *testing.T) {
 	t.Parallel()
-	// The local check judges for longer than the copies' 5s window.
-	pause := "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"pause\", \"scope\": \"files\"}'; exit 0; }\nsleep 6\necho '" + passing + "'\n"
-	repo := example(t, "happyRepo", with(localCheck("pause", passing), map[string]string{"checks/fitness-check-pause": pause}))
+	repo := example(t, "happyRepo", nil)
 	write(t, repo, map[string]string{"notes.md": misspelledNote})
-	out, code := hookEvent(t, repo, editEvent(repo, "notes.md"))
-	sees(t, out, code, 0, `"decision":"block"`)
-	out, code = hookEvent(t, repo, editEvent(repo, "notes.md"))
-	silentPass(t, out, code)
+	outs, codes := hookCopies(t, repo, editEvent(repo, "notes.md"))
+	if outs[0] != "" {
+		outs[0], outs[1], codes[0], codes[1] = outs[1], outs[0], codes[1], codes[0]
+	}
+	silentPass(t, outs[0], codes[0])
+	sees(t, outs[1], codes[1], 0, `"decision":"block"`)
 }
 
 // claudeSettings runs `fitness-install --claude-settings` on file and
