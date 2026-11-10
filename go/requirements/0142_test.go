@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -193,14 +194,21 @@ func Test0142_6(t *testing.T) {
 
 func Test0142_7(t *testing.T) {
 	t.Parallel()
-	// The local check judges for longer than the copies' 5s window.
-	pause := "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"pause\", \"scope\": \"files\"}'; exit 0; }\nsleep 6\necho '" + passing + "'\n"
-	repo := example(t, "happyRepo", with(localCheck("pause", passing), map[string]string{"checks/fitness-check-pause": pause}))
+	repo := example(t, "happyRepo", nil)
 	write(t, repo, map[string]string{"notes.md": misspelledNote})
-	out, code := hookEvent(t, repo, editEvent(repo, "notes.md"))
-	sees(t, out, code, 0, `"decision":"block"`)
-	out, code = hookEvent(t, repo, editEvent(repo, "notes.md"))
-	silentPass(t, out, code)
+	// Claude Code starts the skill's copy and the settings' copy together.
+	var outs [2]string
+	var codes [2]int
+	var wg sync.WaitGroup
+	for i := range outs {
+		wg.Go(func() { outs[i], codes[i] = hookEvent(t, repo, editEvent(repo, "notes.md")) })
+	}
+	wg.Wait()
+	if outs[0] != "" {
+		outs[0], outs[1], codes[0], codes[1] = outs[1], outs[0], codes[1], codes[0]
+	}
+	silentPass(t, outs[0], codes[0])
+	sees(t, outs[1], codes[1], 0, `"decision":"block"`)
 }
 
 // claudeSettings runs `fitness-install --claude-settings` on file and
