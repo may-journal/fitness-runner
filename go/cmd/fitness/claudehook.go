@@ -139,6 +139,7 @@ func judgeHookEvent(in claudeHookInput) (hookResult, error) {
 		return hookResult{}, err
 	}
 	result, err := job.judge()
+	restampDelivery(in.raw)
 	return job.blockOnce(result), err
 }
 
@@ -515,12 +516,10 @@ func hooksRunFitness(root string) bool {
 // firstDelivery reports whether this is the first copy of a hook event, as
 // the skill's hooks and the settings may both run one.
 func firstDelivery(raw []byte) bool {
-	dir := filepath.Join(os.TempDir(), "fitness-claude-hook")
+	dir, mark := deliveryMark(raw)
 	if os.MkdirAll(dir, 0o700) != nil {
 		return true
 	}
-	sum := sha256.Sum256(raw)
-	mark := filepath.Join(dir, hex.EncodeToString(sum[:]))
 	// The lock makes reading and renewing the mark one step, so of two
 	// copies at once exactly one finds no fresh mark.
 	lock, err := lockFile(mark + ".lock")
@@ -530,6 +529,21 @@ func firstDelivery(raw []byte) bool {
 	defer lock.Close()
 	defer pruneMarks(dir, 2*duplicateWindow)
 	return renewMark(mark)
+}
+
+// deliveryMark is the folder of hook-event marks and the mark for raw.
+func deliveryMark(raw []byte) (dir, mark string) {
+	dir = filepath.Join(os.TempDir(), "fitness-claude-hook")
+	sum := sha256.Sum256(raw)
+	return dir, filepath.Join(dir, hex.EncodeToString(sum[:]))
+}
+
+// restampDelivery stamps raw's mark again after the first copy judged, so
+// a copy that waits out a slow judgment finds it fresh.
+func restampDelivery(raw []byte) {
+	_, mark := deliveryMark(raw)
+	now := time.Now()
+	_ = os.Chtimes(mark, now, now)
 }
 
 // lockFile opens path and holds an exclusive lock on it until it is closed.
