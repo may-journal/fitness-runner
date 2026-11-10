@@ -377,7 +377,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 		printJSON(rows, found, totals)
 	}
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
-	code := max(finish(rows, found, perf, totals), skippedCode(outcomes))
+	code := finish(rows, found, perf, totals)
 	return stageResult{code: withPerfReport(perfPath, perf, code), rows: rows, found: found}
 }
 
@@ -972,7 +972,6 @@ func runPool(root string, checks []resolved, passthrough, env []string, ends sta
 			defer wg.Done()
 			defer release()
 			outcomes[i] = runOne(root, c, ends, passthrough, env, out.watch(i, heartbeat))
-			outcomes[i].ended = time.Now()
 			out.finish(i)
 		}(i, c)
 	}
@@ -1037,7 +1036,7 @@ func runOne(root string, c resolved, ends stageEnds, passthrough, env []string, 
 	timedOut := waitWithBudget(cmd, live.limit)
 	ms := ranMs(c, live.start, timedOut, cut)
 
-	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}
+	o := outcome{ms: ms, ended: time.Now(), stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}
 	if timedOut {
 		return o
 	}

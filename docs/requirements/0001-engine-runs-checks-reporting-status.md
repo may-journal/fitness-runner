@@ -29,7 +29,7 @@ runs
         - When fitness runs
             - Then they overlap, test runners first and never queued, progress shows each time and limit, the last streams live, rows keep catalog order
 - 0001.14
-    - Given Developer has a started check, like `duplicate-code` on 20,000 files, past the fast total, or whose git or ssh awaits a password
+    - Given Developer has a started check, like `cspell` or `duplicate-code` on 20,000 files, past the fast total, or whose git or ssh prompts
         - When fitness runs
             - Then it and its processes stop, by force if needed, showing red as stopped with last output, file count and scope hint
 - 0001.15

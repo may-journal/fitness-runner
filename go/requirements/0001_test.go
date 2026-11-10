@@ -490,7 +490,8 @@ func hugeTreeHints(t *testing.T) {
 	repo := generatedTree(t, staleTest(), 20000)
 	out, code, _ := fixingCommit(t, repo)
 	sees(t, out, code, 0)
-	out, code = fitness(t, repo, []string{fastTotal(100)})
+	// Only the two judged checks run, so both start on a runner with few cores.
+	out, code = fitness(t, repo, []string{fastTotal(100)}, "--policy=external", "--checks=cspell,duplicate-code")
 	hint := fmt.Sprintf("Hint: the repo tracks %d files; scope the run with fitness --dir=<folder>, or commit to check only the staged files", trackedCount(t, repo))
 	sees(t, out, code, 1, "Stopped at the 0.1s fast total", hint)
 	for _, check := range []string{"cspell", "duplicate-code"} {

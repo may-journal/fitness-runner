@@ -126,20 +126,14 @@ func deadlineBudget(limit time.Duration) (time.Duration, bool) {
 	return min(limit, left), left < limit
 }
 
-// neverStartedNote is the info line of a check its stage's total never let
+// notRunPrefix starts the info line of a check its stage's total never let
 // start, which is no finding of that check.
+const notRunPrefix = "not run: "
+
+// neverStartedNote is that info line for c.
 func neverStartedNote(c resolved) string {
 	stage := stageOf(c)
-	return fmt.Sprintf("not run: the %ss %s total ran out before it started", trimFloat(stageTotal(stage).Seconds()), stage)
-}
-
-// skippedCode is 1 when a stage's total kept a check from starting, since a
-// run that skipped a check never passes, else 0.
-func skippedCode(outcomes []outcome) int {
-	if slices.ContainsFunc(outcomes, func(o outcome) bool { return o.neverStarted }) {
-		return 1
-	}
-	return 0
+	return notRunPrefix + fmt.Sprintf("the %ss %s total ran out before it started", trimFloat(stageTotal(stage).Seconds()), stage)
 }
 
 // stoppedLine is a stopped check's first error line: the total it ran past.
@@ -191,7 +185,7 @@ func stageRows(stage string, checks []resolved, outcomes []outcome, rows []rende
 	for i, c := range checks {
 		if stageOf(c) == stage {
 			in = append(in, rows[i])
-			stopped = stopped || stoppedByTotal(outcomes[i]) || outcomes[i].neverStarted
+			stopped = stopped || stoppedByTotal(outcomes[i])
 		}
 	}
 	return in, stopped
