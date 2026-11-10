@@ -410,10 +410,10 @@ func deadlineVar(deadline time.Duration) string {
 	return fmt.Sprintf("%s=%d", deadlineEnv, time.Now().Add(deadline).UnixMilli())
 }
 
-// verdict is what a run's report found: the failed checks, their error
-// lines, and the checks its deadline cut.
+// verdict is what a run's report found: failed checks, their error lines,
+// checks the deadline cut, and checks a total never started.
 type verdict struct {
-	failed, lines, cut []string
+	failed, lines, cut, notRun []string
 }
 
 // verdictOf reads a run's report into a verdict.
@@ -423,18 +423,27 @@ func verdictOf(result runReport) verdict {
 		switch {
 		case c.Status == "failed":
 			v.failed = append(v.failed, c.Name)
-			for _, e := range c.Errors {
-				v.lines = append(v.lines, "["+c.Name+"] "+e)
-			}
+			v.lines = append(v.lines, errorLines(c.Name, c.Errors)...)
 		case slices.Contains(c.Info, cutNote):
 			v.cut = append(v.cut, c.Name)
+		case slices.ContainsFunc(c.Info, func(line string) bool { return strings.HasPrefix(line, notRunPrefix) }):
+			v.notRun = append(v.notRun, c.Name)
 		}
 	}
 	return v
 }
 
+// errorLines tags each of a failed check's error lines with its name.
+func errorLines(name string, errs []string) []string {
+	var lines []string
+	for _, e := range errs {
+		lines = append(lines, "["+name+"] "+e)
+	}
+	return lines
+}
+
 // text renders the verdict for Claude: the findings, then the checks the
-// deadline cut. It is "" when no check failed or was cut.
+// deadline cut or a total never started. It is "" when every check ran and passed.
 func (v verdict) text(subject string) string {
 	var parts []string
 	if len(v.failed) > 0 {
@@ -443,6 +452,10 @@ func (v verdict) text(subject string) string {
 	if len(v.cut) > 0 {
 		parts = append(parts, fmt.Sprintf("fitness: skipped %s on %s, past the hook's deadline; run `fitness` to judge them.",
 			strings.Join(v.cut, ", "), subject))
+	}
+	if len(v.notRun) > 0 {
+		parts = append(parts, fmt.Sprintf("fitness: did not run %s on %s, past its stage's total; run `fitness` to judge them.",
+			strings.Join(v.notRun, ", "), subject))
 	}
 	return strings.Join(parts, "\n")
 }

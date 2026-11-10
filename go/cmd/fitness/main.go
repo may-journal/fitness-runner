@@ -109,7 +109,11 @@ type outcome struct {
 	// exit is its protocol code, and startErr says why it could not start.
 	timedOut bool
 	// cut marks a check the run's deadline stopped or never let start.
-	cut      bool
+	cut bool
+	// neverStarted marks a check its stage's total ran out before.
+	neverStarted bool
+	// ended is when the check's process finished.
+	ended    time.Time
 	crashed  string
 	exit     int
 	startErr string
@@ -363,6 +367,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 	start := time.Now()
 	fmt.Fprintln(os.Stderr, "Running checks:")
 	outcomes := runPool(root, checks, passthrough, env, clock.start(start))
+	clock.spend(start, checks, outcomes)
 
 	rows, totals := summarize(checks, outcomes, hint)
 	totals.Ms = time.Since(start).Milliseconds()
@@ -513,13 +518,14 @@ func summarize(checks []resolved, outcomes []outcome, hint string) ([]render.Row
 	return rows, totals
 }
 
-// rowFor builds the table row for one outcome. A stop at a stage's total
-// fails with hint;
-// a deadline cut and a check that could not judge become info rows.
+// rowFor builds one outcome's row. A stop at a stage's total fails with
+// hint, and a check that never judged becomes an info row.
 func rowFor(c resolved, o outcome, hint string) render.Row {
 	row := render.Row{Name: c.name, Ok: o.res.Ok, FilesChecked: o.res.FilesChecked, Ms: o.ms, Errors: o.res.Errors, Info: o.res.Info}
 	if o.cut {
 		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Ms: o.ms, Info: []string{cutNote}}
+	} else if o.neverStarted {
+		row = render.Row{Name: c.name, Ok: true, FilesChecked: -1, Info: []string{neverStartedNote(c)}}
 	} else if o.timedOut {
 		row = render.Row{Name: c.name, FilesChecked: -1, Ms: o.ms, Errors: timedOutErrors(c, o, hint)}
 	} else if note, internal := internalNote(o); internal {
@@ -1019,7 +1025,7 @@ func runOne(root string, c resolved, ends stageEnds, passthrough, env []string, 
 
 	budget, cut := deadlineBudget(ends.limit(checkkit.StageOf(c.desc)))
 	if budget <= 0 {
-		return outcome{stderr: w.stderr, cut: cut, timedOut: !cut}
+		return outcome{stderr: w.stderr, cut: cut, neverStarted: !cut}
 	}
 	live := liveCheck{name: c.name, start: time.Now(), limit: budget}
 	if err := cmd.Start(); err != nil {
@@ -1030,7 +1036,7 @@ func runOne(root string, c resolved, ends stageEnds, passthrough, env []string, 
 	timedOut := waitWithBudget(cmd, live.limit)
 	ms := ranMs(c, live.start, timedOut, cut)
 
-	o := outcome{ms: ms, stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}
+	o := outcome{ms: ms, ended: time.Now(), stderr: w.stderr, timedOut: timedOut, cut: timedOut && cut}
 	if timedOut {
 		return o
 	}

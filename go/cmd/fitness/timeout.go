@@ -62,20 +62,37 @@ func startStages(now time.Time) stageEnds {
 	return ends
 }
 
-// runTotals holds when each stage's total runs out in one run. The run's
-// first pool starts them, and a pull request's second scan runs inside
-// what the first left.
+// runTotals holds what earlier pools spent of each stage's total, counting
+// only while that stage's own checks ran.
 type runTotals struct {
-	ends stageEnds
+	spent map[string]time.Duration
 }
 
-// start starts the totals at now unless an earlier pool started them, and
-// returns when each runs out.
+// start returns when each stage's total runs out for a pool starting at
+// now, after what earlier pools spent.
 func (t *runTotals) start(now time.Time) stageEnds {
-	if t.ends == nil {
-		t.ends = startStages(now)
+	ends := stageEnds{}
+	for _, stage := range stages {
+		ends[stage] = now.Add(stageTotal(stage) - t.spent[stage])
 	}
-	return t.ends
+	return ends
+}
+
+// spend adds, for each stage, the time from start until that stage's last
+// check in the pool ended.
+func (t *runTotals) spend(start time.Time, checks []resolved, outcomes []outcome) {
+	if t.spent == nil {
+		t.spent = map[string]time.Duration{}
+	}
+	last := map[string]time.Time{}
+	for i, c := range checks {
+		if stage := stageOf(c); outcomes[i].ended.After(last[stage]) {
+			last[stage] = outcomes[i].ended
+		}
+	}
+	for stage, end := range last {
+		t.spent[stage] += max(end.Sub(start), 0)
+	}
 }
 
 // stages lists each stage, the test runners first, as a run reports them.
@@ -107,6 +124,16 @@ func deadlineBudget(limit time.Duration) (time.Duration, bool) {
 	}
 	left := time.Until(time.UnixMilli(ms))
 	return min(limit, left), left < limit
+}
+
+// notRunPrefix starts the info line of a check its stage's total never let
+// start, which is no finding of that check.
+const notRunPrefix = "not run: "
+
+// neverStartedNote is that info line for c.
+func neverStartedNote(c resolved) string {
+	stage := stageOf(c)
+	return notRunPrefix + fmt.Sprintf("the %ss %s total ran out before it started", trimFloat(stageTotal(stage).Seconds()), stage)
 }
 
 // stoppedLine is a stopped check's first error line: the total it ran past.

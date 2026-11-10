@@ -3,6 +3,7 @@ package requirements
 import (
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -84,4 +85,41 @@ func Test0146_6(t *testing.T) {
 	commit(t, repo, noteGuide(t), "docs(changelog): note the guide")
 	out, code := fitness(t, repo, append([]string{fastTotal(8000)}, prEnv...), "--policy=external", "--checks=pause")
 	sees(t, out, code, 1, "Stage 1 of 2:", "Stage 2 of 2:", "Stopped at the 8s fast total", "The fast checks ran past their 8s total. Slowest: pause 8s")
+}
+
+// fastNames are the fast checks Test0146_7 runs beside a slow test runner.
+var fastNames = []string{"quick1", "quick2", "quick3", "quick4", "quick5", "quick6"}
+
+func Test0146_7(t *testing.T) {
+	t.Parallel()
+	files := localCheck("suite", passing)
+	files["checks/fitness-check-suite"] = "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"suite\", \"stage\": \"tests\"}'; exit 0; }\nsleep 4\necho '" + passing + "'\n"
+	for _, name := range fastNames {
+		files["checks/fitness-check-"+name] = localCheck(name, passing)["checks/fitness-check-"+name]
+	}
+	repo := prBase(t, files)
+	commit(t, repo, noteGuide(t), "docs(changelog): note the guide")
+	selected := "--checks=suite," + strings.Join(fastNames, ",")
+	out, code := fitness(t, repo, append([]string{fastTotal(3000)}, prEnv...), "--policy=external", selected)
+	sees(t, out, code, 0, "Stage 1 of 2:", "Stage 2 of 2:", "All 7 checks passed")
+	if strings.Contains(out, "Stopped at") {
+		t.Errorf("the wait on the test runner must spend none of the fast total:\n%s", out)
+	}
+}
+
+func Test0146_8(t *testing.T) {
+	t.Parallel()
+	files := localCheck("late", passing)
+	var names []string
+	for i := range runtime.NumCPU() {
+		name := "hang" + strconv.Itoa(i)
+		names = append(names, name)
+		files["checks/fitness-check-"+name] = "#!/bin/sh\n[ \"$1\" = --describe ] && { echo '{\"name\": \"" + name + "\"}'; exit 0; }\nexec /bin/sleep 30\n"
+	}
+	repo := example(t, "happyRepo", files)
+	out, code := fitness(t, repo, []string{fastTotal(1000)}, "--policy=external", "--checks="+strings.Join(append(names, "late"), ","))
+	sees(t, out, code, 1, "Stopped at the 1s fast total", "not run: the 1s fast total ran out before it started")
+	if late := row(out, "late"); !strings.Contains(late, "│ info ") {
+		t.Errorf("a check the fast total never let start must not fail, got row %q:\n%s", late, out)
+	}
 }

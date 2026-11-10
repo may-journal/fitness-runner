@@ -17,7 +17,7 @@ runs asked for a record
         - When fitness runs with `--json=<file>`
             - Then the file lists every check's time, stage, files, binary size, error lines, and result
 - 0089.2
-    - Given Developer has a check that runs past the fast total
+    - Given Developer has a started check that runs past the fast total
         - When fitness runs with `--json=<file>`
             - Then the file marks that check timed out, and a test runner not
 - 0089.3

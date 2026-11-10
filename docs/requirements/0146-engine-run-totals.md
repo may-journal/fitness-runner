@@ -36,3 +36,11 @@ runs past the fast total
     - Given Developer has a pull request whose two scans each run a check for most of the fast total
         - When the second scan runs
             - Then it stops that check at the total the first scan started and shows it at that total
+- 0146.7
+    - Given Developer has a pull request whose test runner runs past the fast total, beside fast checks that pass
+        - When the second scan runs
+            - Then the fast checks pass, since the wait on the test runner spends none of the fast total
+- 0146.8
+    - Given Developer has more checks that run past the fast total than the run starts at once
+        - When the fast total runs out before a check starts
+            - Then that check shows as not run, not as failed
