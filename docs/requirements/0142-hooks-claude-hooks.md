@@ -39,7 +39,7 @@ hook events on red work
 - 0142.7
     - Given Developer has the hooks in both the fitness skill and the settings
         - When Claude Code runs `fitness claude-hook` twice for one event
-            - Then only the first copy judges it
+            - Then only the first copy judges it, even when judging outlasts the 5s window
 - 0142.8
     - Given Developer has a Claude Code settings file with settings and hooks of my own
         - When I run `fitness-install --claude-settings` with that file, twice
