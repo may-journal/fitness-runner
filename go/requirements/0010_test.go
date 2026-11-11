@@ -17,8 +17,8 @@ var (
 	reviewer = func(body string) comment { return comment{Body: body, Author: "reviewer-bot", Association: "NONE"} }
 )
 
-// pushPlans are saved GitHub answers about issues a PR may close: #218
-// owner-approved, #196 a bug, #151 passer-by, #307 reviewer, #308 member.
+// pushPlans are saved GitHub answers about issues a PR may close. #218
+// is owner-approved, #196 a bug, #151 passer-by, #307 reviewer, #308 member, #309 and #310 approving mid-comment, #311 and #312 negated.
 func pushPlans(t *testing.T) []response {
 	t.Helper()
 	plan, labels := planBody("- [ ] Ship it."), []string{"Plan"}
@@ -28,6 +28,10 @@ func pushPlans(t *testing.T) []response {
 		planView(t, 196, "The parser drops the last line.", []string{"bug"}, "I approve."),
 		planViewBy(t, 307, plan, labels, reviewer("I approve.")),
 		planViewBy(t, 308, plan, labels, member("i approve, go ahead")),
+		planViewBy(t, 309, plan, labels, owner("Ok. I approve.")),
+		planViewBy(t, 310, plan, labels, owner("LGTM, I approve this")),
+		planViewBy(t, 311, plan, labels, owner("I don't approve")),
+		planViewBy(t, 312, plan, labels, owner("I do not approve"), owner("Disapprove")),
 	}
 }
 
@@ -133,6 +137,10 @@ func Test0010_1(t *testing.T) {
 	pushAsked(t, rp, "218", "comments")
 	out, code, _ = pushClosing(t, "Fixes #308")
 	sees(t, out, code, 0, "topic -> topic")
+	for _, plan := range []string{"309", "310"} {
+		out, code, _ = pushClosing(t, "Closes #"+plan)
+		sees(t, out, code, 0, "topic -> topic")
+	}
 	out, code, _ = pushFeature(t, listed, "Resolves #307", "feat(app): add a feature")
 	sees(t, out, code, 0, "topic -> topic")
 }
@@ -258,13 +266,17 @@ func Test0010_14(t *testing.T) {
 	pushAsked(t, rp, "196", "labels")
 	out, code, rp = pushClosing(t, "Closes #151")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)",
-		`A Plan needs a comment starting "I approve" from the repo's owner or an org member (planApprovers is unset).`)
+		`A Plan needs a comment containing "I approve" from the repo's owner or an org member (planApprovers is unset).`)
 	pushAsked(t, rp, "151", "comments")
 	out, code, _ = pushClosing(t, "Closes #307")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (307)")
+	for _, plan := range []string{"311", "312"} {
+		out, code, _ = pushClosing(t, "Closes #"+plan)
+		sees(t, out, code, 1, "pre-push: no approved Plan Issue among ("+plan+")")
+	}
 	out, code, _ = pushFeature(t, listed, "Closes #218", "feat(app): add a feature")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (218)",
-		`A Plan needs a comment starting "I approve" from one of planApprovers: Reviewer-Bot.`)
+		`A Plan needs a comment containing "I approve" from one of planApprovers: Reviewer-Bot.`)
 	out, code, rp = pushClosing(t, "Closes may-journal/.github#141")
 	sees(t, out, code, 1, "no approved Plan Issue among (may-journal/.github#141)")
 	pushAsked(t, rp, "141", "-R may-journal/.github")

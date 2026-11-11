@@ -20,9 +20,10 @@ import (
 // local-branch the PRs and Plans it read.
 const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
 
-// approvalRe matches a comment whose first line starts with `I approve` in any
-// case, so a mere mention such as "not approved" is none.
-var approvalRe = regexp.MustCompile(`(?i)^[ \t]*I approve\b`)
+// approvalRe matches a comment holding the words `I approve` anywhere, in any
+// case, so "Ok. I approve." counts while "not approved" and "I don't approve"
+// do not.
+var approvalRe = regexp.MustCompile(`(?i)\bI approve\b`)
 
 // defaultApprovers are the associations GitHub gives the repo's owner and
 // its org's members, who may approve when planApprovers is unset.
