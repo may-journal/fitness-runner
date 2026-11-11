@@ -25,3 +25,7 @@ jobs:
     uses: may-journal/fitness-runner/.github/workflows/ci-reusable.yml@v1
     with:
       pr-check: true
+      # A repo whose checks need a Mac sets its FITNESS_RUNS_ON variable to a
+      # hosted label such as xcode-27. Only standard macos-* and xcode-* labels
+      # count, so it never reaches a self-hosted or billed larger runner.
+      runs-on: ${{ (startsWith(vars.FITNESS_RUNS_ON, 'macos-') || startsWith(vars.FITNESS_RUNS_ON, 'xcode-')) && !endsWith(vars.FITNESS_RUNS_ON, 'large') && vars.FITNESS_RUNS_ON || '' }}

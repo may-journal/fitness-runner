@@ -137,7 +137,7 @@ A may-journal/.github ruleset injects [fitness-suite.yml](fitness-suite.yml) on 
 
 With `pr-check: true` the same job then runs `fitness pr-check` on the PR's title and body, so a push starts one Fitness job, not two. An edit reruns the whole job, since it reports the same check on the same commit. `pr-check` findings still fail the job. The input defaults to off, since it needs `pull-requests` and `issues` read.
 
-A newer push or edit to the same PR cancels the run it supersedes, so only the newest run bills to the end. In a private repo the job runs on the self-hosted `fitness` runners, which a fork's pull request never reaches. There it uses SwiftLint's macOS build, checked against its published SHA-256, and keeps its caches on disk.
+A newer push or edit to the same PR cancels the run it supersedes, so only the newest run bills to the end. In a private repo the job runs on the self-hosted `fitness` runners, which a fork's pull request never reaches. There it uses SwiftLint's macOS build, checked against its published SHA-256, and keeps its caches on disk. A repo needing a Mac sets `FITNESS_RUNS_ON` to a standard hosted `macos-*` or `xcode-*` label; other values change nothing.
 
 ## close-check
 
