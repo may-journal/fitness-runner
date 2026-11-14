@@ -3,6 +3,7 @@ package distribution
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -51,6 +52,15 @@ func (i *Installer) tagsFor(ctx context.Context, pins []CheckPin) ([]string, err
 	return i.checkTags(ctx)
 }
 
+// unanswered is nil when a fresh record answered, else the error of a run
+// whose earlier lookup got no answer.
+func unanswered(recorded bool) error {
+	if recorded {
+		return nil
+	}
+	return errors.New("GitHub did not answer the check release index, so no check tag is read")
+}
+
 // newestUnder is the newest release tag of check name within major, such as
 // v1, by version, or "" when it has none.
 func newestUnder(tags []string, name, major string) string {
@@ -68,8 +78,8 @@ func newestUnder(tags []string, name, major string) string {
 // checkTags returns a fresh recorded tag lookup, else asks GitHub and records
 // the answer.
 func (i *Installer) checkTags(ctx context.Context) ([]string, error) {
-	if tags, ok := readFresh[[]string](i.Cache, checkTagsName); ok {
-		return tags, nil
+	if tags, ok := readFresh[[]string](i.Cache, checkTagsName); ok || i.Unanswered {
+		return tags, unanswered(ok)
 	}
 	tags, err := i.lookupTags(ctx)
 	if err == nil {

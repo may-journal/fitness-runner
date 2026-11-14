@@ -80,6 +80,9 @@ func (i *Installer) installCheck(ctx context.Context, name string, release check
 	if exists(program) {
 		return program, nil
 	}
+	if i.Unanswered {
+		return "", fmt.Errorf("GitHub did not answer, so %s does not download", asset)
+	}
 	data, err := i.verifiedCheck(ctx, release, asset)
 	if err != nil {
 		return "", err

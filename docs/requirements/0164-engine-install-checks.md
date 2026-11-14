@@ -28,3 +28,7 @@ Pinned checks
     - Given Developer has a repo that pins one check, and GitHub refuses the latest release lookup
         - When I run `fitness-install --with-checks --version latest`
             - Then it falls back to the recorded release, warns that no check installs, asks for none, and the built-ins run
+- 0164.5
+    - Given Developer has a repo that pins one uncached check, behind a proxy that never answers
+        - When I run `fitness-install --with-checks`
+            - Then it gives up within seconds after one unanswered index read, warns, and the built-ins run

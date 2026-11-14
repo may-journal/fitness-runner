@@ -73,7 +73,9 @@ func recordFresh[T any](cache, name string, value T) {
 func (i *Installer) resolvePins(ctx context.Context, pins []CheckPin) ([]checkRelease, error) {
 	index, err := i.readIndex(ctx)
 	if err != nil {
-		// Exact pins and cached tags still resolve when the index cannot.
+		// Unanswered, the run asks nothing more, so only exact pins of cached
+		// checks still install.
+		i.Unanswered = i.Unanswered || !errors.Is(err, errNoIndex)
 		return i.resolveByTags(ctx, pins)
 	}
 	releases := make([]checkRelease, len(pins))
