@@ -16,10 +16,16 @@ inputs:
   install-only:
     description: Install the bundle and add it to PATH without running checks.
     default: 'false'
+  with-checks:
+    description: Also install each check .fitnessrc.json pins, from its own verified fitness-checks release, and set FITNESS_CHECKS_DIR.
+    default: 'false'
 outputs:
   bin:
     description: Directory containing the runner and every check.
     value: ${{ steps.install.outputs.bin }}
+  checks-dir:
+    description: Directory holding the installed checks, empty unless with-checks is true.
+    value: ${{ steps.install.outputs.checks-dir }}
 runs:
   using: composite
   steps:
@@ -81,6 +87,7 @@ runs:
         FITNESS_POLICY: ${{ inputs.policy }}
         FITNESS_CHECKS: ${{ inputs.checks }}
         FITNESS_INSTALL_ONLY: ${{ inputs.install-only }}
+        FITNESS_WITH_CHECKS: ${{ inputs.with-checks }}
       run: '"$FITNESS_EXECUTABLE" --github-action'
     # Shell builtins also work when a consumer deliberately excludes Go from PATH.
     - name: Report action outcome

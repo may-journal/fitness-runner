@@ -33,7 +33,9 @@ type Options struct {
 	InstallOnly  bool
 	GitHubAction bool
 	InstallHook  bool
-	LinkSkills   []string
+	// WithChecks installs each check the repo pins, beside the engine.
+	WithChecks bool
+	LinkSkills []string
 	// ClaudeSettings are the Claude Code settings files that get the Fitness hooks.
 	ClaudeSettings []string
 	Args           []string
@@ -47,6 +49,7 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
 	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
+	flags.BoolVar(&options.WithChecks, "with-checks", false, "also install each check .fitnessrc.json pins, from its own verified release")
 	flags.Func("claude-settings", "add the Fitness hooks to this Claude Code settings file, repeatable, without running checks", func(file string) error {
 		options.ClaudeSettings = append(options.ClaudeSettings, file)
 		return nil
@@ -130,6 +133,12 @@ func (options Options) validateLinkSkills() error {
 		return errors.New("link-skills does not combine with other modes or runner arguments, and neither does claude-settings")
 	}
 	return nil
+}
+
+// InstallsChecks reports whether the run installs the pinned checks: asked
+// to, and running checks rather than writing a hook or setting up agents.
+func (options Options) InstallsChecks() bool {
+	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents()
 }
 
 // SetsUpAgents reports whether the run links skills or writes Claude hooks

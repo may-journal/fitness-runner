@@ -199,17 +199,22 @@ func findCheckBinary(name string) (checkkit.Program, error) {
 // name. An installed program that replaces a built-in says so on stderr, and
 // with the built-ins off a missing one names its install.
 func installedOrBuiltin(name string) (checkkit.Program, error) {
-	_, builtin := builtins[name]
 	if bin, ok := installedPrograms[name]; ok {
-		if builtin {
-			fmt.Fprintf(os.Stderr, "fitness: %s replaces the built-in %s check; delete it to run the built-in one\n", bin, name)
-		}
+		noteReplaced(bin, name)
 		return checkkit.Program{Path: bin}, nil
 	}
 	if builtinsOff() {
 		return checkkit.Program{}, fmt.Errorf("check %s is not installed, and %s turns the built-in checks off; install it: %s", name, noBuiltinsFlag, installCommand(name))
 	}
 	return builtinProgram(name)
+}
+
+// noteReplaced says on stderr that bin replaces the built-in check name,
+// unless no such built-in runs.
+func noteReplaced(bin, name string) {
+	if builtins[name] != nil && !builtinsOff() {
+		fmt.Fprintf(os.Stderr, "fitness: %s replaces the built-in %s check; delete it to run the built-in one\n", bin, name)
+	}
 }
 
 // builtinProgram returns the program for built-in check name: this fitness
