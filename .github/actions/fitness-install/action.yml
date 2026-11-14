@@ -7,6 +7,10 @@ inputs:
     description: Optional source ref to compile; empty installs the pinned bundle.
     required: false
     default: ''
+  with-checks:
+    description: Also install each check .fitnessrc.json pins, from its own release, and set FITNESS_CHECKS_DIR.
+    required: false
+    default: 'false'
 runs:
   using: composite
   steps:
@@ -15,6 +19,7 @@ runs:
       uses: may-journal/fitness-runner@v1
       with:
         install-only: 'true'
+        with-checks: ${{ inputs.with-checks }}
     # A source build keeps the newest stable Go it needs.
     - name: Set up Go for the source build
       if: ${{ inputs.ref != '' }}

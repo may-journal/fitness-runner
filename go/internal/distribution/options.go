@@ -49,7 +49,7 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
 	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
-	flags.BoolVar(&options.WithChecks, "with-checks", false, "also install each check .fitnessrc.json pins, from its own verified release")
+	flags.BoolVar(&options.WithChecks, "with-checks", os.Getenv("FITNESS_WITH_CHECKS") == "true", "also install each check .fitnessrc.json pins, from its own verified release; FITNESS_WITH_CHECKS=true sets it")
 	flags.Func("claude-settings", "add the Fitness hooks to this Claude Code settings file, repeatable, without running checks", func(file string) error {
 		options.ClaudeSettings = append(options.ClaudeSettings, file)
 		return nil
