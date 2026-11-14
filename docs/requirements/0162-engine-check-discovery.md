@@ -24,3 +24,7 @@ Installed check programs
     - Given Developer has one installed check
         - When I run the suite with `--no-builtins`, or name with it a built-in check not installed, also through `fitness check`
             - Then the suite runs only the installed check, and the selection fails naming the check and its install command
+- 0162.4
+    - Given Developer has an installed `local-branch` program that cannot judge alone
+        - When I run `local-branch`
+            - Then fitness judges with its own PR and Plan judgments and the installed program never runs

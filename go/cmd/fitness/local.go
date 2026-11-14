@@ -181,13 +181,24 @@ func newEnough(checks []resolved) error {
 	return nil
 }
 
-// findCheckBinary returns a local check, else an installed program, else the
-// built-in of a name. An installed program that replaces a built-in says so
-// on stderr, and with the built-ins off a missing one names its install.
+// findCheckBinary returns a local check, else the engine's judgment, else an
+// installed program, else a built-in.
 func findCheckBinary(name string) (checkkit.Program, error) {
 	if c, ok := localBins[name]; ok {
 		return localProgram(c)
 	}
+	if _, judged := engineJudges[name]; judged {
+		// No installed program can judge without the engine, so it only
+		// declares the check.
+		return builtinProgram(name)
+	}
+	return installedOrBuiltin(name)
+}
+
+// installedOrBuiltin returns an installed program, else the built-in of a
+// name. An installed program that replaces a built-in says so on stderr, and
+// with the built-ins off a missing one names its install.
+func installedOrBuiltin(name string) (checkkit.Program, error) {
 	_, builtin := builtins[name]
 	if bin, ok := installedPrograms[name]; ok {
 		if builtin {
