@@ -65,7 +65,7 @@ The Go executable fetches a pinned bundle, verifies hashes and archive paths, an
 
 The engine and the checks install separately, each at its own version. `--with-checks` installs each check the repo pins in `checkVersions`, from its own fitness-checks release, as [check versions](check-protocol.md#check-versions) describes. The [installer guide](../go/cmd/fitness-install/README.md#checks) says how pins resolve and verify.
 
-The built-in checks stay as the fallback for now, so a check that cannot install warns and its built-in runs. Add `--no-builtins` after `--` to test a clean install, where a missing check fails the run.
+The built-in checks stay as the fallback for now, so a check that cannot install warns and its built-in runs. Add `--no-builtins` after `--` to test a clean install, where a missing check fails the run. `FITNESS_WITH_CHECKS=true` works like the flag, which is how the shared hooks ask for checks, since an older installer ignores it.
 
 ## Repo policy
 
