@@ -21,7 +21,7 @@ var (
 
 // pushPlans are saved GitHub answers about issues a PR may close. #218 is
 // owner-approved, #196 a bug, #151 passer-by, #307 reviewer, #308 member.
-// #309 to #320 say approve in other ways, and #321 to #328 do not, and #329 is a passer-by.
+// #309 to #320 say approve in other ways, #321 to #328 and #330 do not, and #329 is a passer-by.
 func pushPlans(t *testing.T) []response {
 	t.Helper()
 	plan, labels := planBody("- [ ] Ship it."), []string{"Plan"}
@@ -51,6 +51,7 @@ func pushPlans(t *testing.T) []response {
 		planViewBy(t, 326, plan, labels, owner("The approach is sound.")),
 		planViewBy(t, 327, plan, labels, owner("Roughly approximately right.")),
 		planViewBy(t, 328, plan, labels, owner("No approval.")),
+		planViewBy(t, 330, plan, labels, owner("I can't approve this, not yet approved")),
 		planViewBy(t, 329, plan, labels, passerby("I approved.")),
 	}
 }
@@ -290,7 +291,7 @@ func Test0010_14(t *testing.T) {
 	pushAsked(t, rp, "151", "comments")
 	out, code, _ = pushClosing(t, "Closes #307")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (307)")
-	for plan := 321; plan <= 329; plan++ {
+	for plan := 321; plan <= 330; plan++ {
 		out, code, _ = pushClosing(t, "Closes #"+strconv.Itoa(plan))
 		sees(t, out, code, 1, "pre-push: no approved Plan Issue among ("+strconv.Itoa(plan)+")")
 	}

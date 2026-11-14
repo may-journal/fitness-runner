@@ -1,4 +1,4 @@
-// cspell:ignore approv aproved dont
+// cspell:ignore approv aproved dont doesnt didnt cant wont isnt wasnt arent
 package metadata
 
 import (
@@ -8,7 +8,7 @@ import (
 )
 
 // negations are the words that, just before an approving word, turn it into a refusal.
-var negations = []string{"not", "no", "dont", "never"}
+var negations = []string{"not", "no", "never", "yet", "cannot", "dont", "doesnt", "didnt", "cant", "wont", "isnt", "wasnt", "arent"}
 
 // stems are the words within one edit of "approv" that hold a "v", so "approach" is none.
 var stems = oneEdit("approv")
@@ -46,9 +46,9 @@ func hasStem(w string) bool {
 
 // oneEdit holds the words one deletion, swap, substitution or insertion from word that hold a "v".
 func oneEdit(word string) map[string]bool {
-	set := map[string]bool{}
+	set := map[string]bool{word: true}
 	for i := 0; i <= len(word); i++ {
-		add(set, word[:min(i, len(word))]+word[min(i+1, len(word)):])
+		add(set, word[:i]+word[min(i+1, len(word)):])
 		if i+1 < len(word) {
 			add(set, word[:i]+word[i+1:i+2]+word[i:i+1]+word[i+2:])
 		}
