@@ -17,4 +17,4 @@ Epics live as GitHub Issues, so this check reads its target from stdin (or a `--
 
 An item's Plan is the first issue URL in it, and a URL into a comment is not an issue. Plans may live in any repository, `.github` included. Fenced code is skipped, so a `##` or list item inside a code sample never counts. A bare `#N` is an issue in the judged repo, so `#12` and `org/repo#12` match.
 
-Checks never call GitHub, so `fitness issue-check` only confirms that each listed issue in the epic's own repository exists. An epic needs no sub-issue links; GitHub shows each listed issue's state.
+Checks never call GitHub, and `fitness issue-check` reads neither an epic's sub-issues nor its listed issues. GitHub shows each issue's state.

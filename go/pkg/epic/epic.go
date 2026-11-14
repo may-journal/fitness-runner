@@ -26,6 +26,8 @@ type Item struct {
 	// Checkbox is set when the item opens with a task-list box, which is
 	// stripped before the reference is read.
 	Checkbox bool
+	// URL is the first issue URL in a checklist item as owner/name#number.
+	URL string
 	// Lead is the reference that opens the item, whatever follows it.
 	Lead string
 	// Ref is the item's issue: the plain reference it opens with, or for a
@@ -45,7 +47,7 @@ var (
 	refRe      = regexp.MustCompile(refPattern)
 	afterRe    = regexp.MustCompile(`(?i)\bafter\b`)
 	checkboxRe = regexp.MustCompile(`^\[[ xX]\]\s*`)
-	issueURLRe = regexp.MustCompile(`https://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)([#?/]\S*)?`)
+	issueURLRe = regexp.MustCompile(`(?i)https://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)(#\S*)?`)
 	statusRe   = regexp.MustCompile(`(?i)\b(done|blocked|wip|todo|merged|closed|shipped|complete|completed|in progress|pending)\b`)
 )
 
@@ -91,11 +93,17 @@ func Refs(body string) []string {
 	return refs
 }
 
-// Looks reports whether body reads as an epic: its first item names an issue,
-// by reference or by URL.
+// Looks reports whether body reads as an epic. Its first item opens with a
+// reference, or every item holds an issue URL.
 func Looks(body string) bool {
 	items := Items(body)
-	return len(items) > 0 && items[0].Ref != ""
+	if len(items) == 0 || items[0].Ref == "" {
+		return false
+	}
+	if !items[0].Checkbox {
+		return true
+	}
+	return !slices.ContainsFunc(items, func(it Item) bool { return it.URL == "" })
 }
 
 // Key is ref as lower-case owner/name#number, with a bare #number read as
@@ -144,7 +152,8 @@ func parse(text string) Item {
 	}
 	it.Lead = Lead(rest)
 	if it.Checkbox {
-		it.Ref = urlRef(rest)
+		it.URL = urlRef(rest)
+		it.Ref = cmp.Or(it.URL, it.Lead)
 		return it
 	}
 	m := plainRe.FindStringSubmatch(rest)

@@ -13,6 +13,6 @@ Epics
 ## Requirements
 
 - 0164.1
-    - Given Developer has an Epic checklist grouped by heading, with ticked and open items holding Plan URLs, some in `.github`
+    - Given Developer has an Epic checklist with ticked and open items holding Plan URLs, some in `.github`
         - When issue-check judges it
             - Then it labels the Epic fitness-valid, and never asks GitHub for its sub-issues

@@ -25,9 +25,8 @@
 // counts. A bare `#N` is an issue in the judged repo, so `#12` and
 // `org/repo#12` match.
 //
-// Checks never call GitHub, so `fitness issue-check` only confirms that each
-// listed issue in the epic's own repository exists. An epic needs no
-// sub-issue links; GitHub shows each listed issue's state.
+// Checks never call GitHub, and `fitness issue-check` reads neither an
+// epic's sub-issues nor its listed issues. GitHub shows each issue's state.
 //
 // [Epic issue template]: https://github.com/may-journal/fitness-runner/blob/main/.github/ISSUE_TEMPLATE/epic.md
 // [issue-check workflow]: https://github.com/may-journal/fitness-runner/blob/main/.github/workflows/README.md
