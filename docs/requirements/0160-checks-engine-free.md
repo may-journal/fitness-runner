@@ -19,4 +19,4 @@ Checks
 - 0160.2
     - Given Developer writes a Go module outside any workspace that imports every package under `go/pkg` from the working tree
         - When `go build` runs
-            - Then it builds, since none of them is internal
+            - Then it builds, since none of them is internal, and a failure quotes the output of `go build`

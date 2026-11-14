@@ -40,19 +40,18 @@ func Test0067_2(t *testing.T) {
 	t.Parallel()
 	bin := filepath.Join(installOnly(t), "fitness-check-local-branch")
 	rp := standIn(t, map[string][]response{"gh": nil})
-	cmd := exec.Command(bin, "--describe")
-	cmd.Env = append(userEnv(), rp.env...)
-	out, err := cmd.Output()
-	mustDo(t, err)
-	sees(t, string(out), cmd.ProcessState.ExitCode(), 0, `"name":"local-branch"`, `"scope":"github"`)
+	out, code := execute(t, func() *exec.Cmd {
+		cmd := exec.Command(bin, "--describe")
+		cmd.Env = append(userEnv(), rp.env...)
+		return cmd
+	})
+	sees(t, out, code, 0, `"name":"local-branch"`, `"scope":"github"`)
 	if len(rp.calls("gh")) != 0 {
 		t.Fatalf("describe queried GitHub: %q", rp.calls("gh"))
 	}
 	// A build of the check alone, without the engine, cannot judge.
 	mod := outsideModule(t, "example.com/alone", "package main\n\nimport check \"github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch\"\n\nfunc main() { check.Main() }\n")
-	if built, err := goOutside(mod, "build", "-o", "alone", "."); err != nil {
-		t.Fatalf("build: %v\n%s", err, built)
-	}
+	goOutside(t, mod, "build the check alone", "build", "-o", "alone", ".")
 	got, code := execute(t, func() *exec.Cmd { return exec.Command(filepath.Join(mod, "alone"), "--root", mod) })
 	sees(t, got, code, 3, "runs only inside fitness")
 }

@@ -46,7 +46,5 @@ func Test0160_2(t *testing.T) {
 		fmt.Fprintf(&imports, "\t_ %q\n", p)
 	}
 	mod := outsideModule(t, "example.com/outside", "package main\n\nimport (\n"+imports.String()+")\n\nfunc main() {}\n")
-	if out, err := goOutside(mod, "build", "./..."); err != nil {
-		t.Errorf("a module outside this repo cannot import go/pkg: %v\n%s", err, out)
-	}
+	goOutside(t, mod, "a module outside this repo cannot import go/pkg", "build", "./...")
 }
