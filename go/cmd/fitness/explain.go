@@ -122,12 +122,12 @@ func explainCheck(name string) (explained, error) {
 		Note: cmp.Or(c.needs, c.describeErr), Body: body}, nil
 }
 
-// replaced reports whether a local check or a program beside the runner
-// takes the place of the built-in check name.
+// replaced reports whether a local check or an installed program takes the
+// place of the built-in check name.
 func replaced(name string) bool {
 	_, local := localBins[name]
-	_, beside := besidePrograms[name]
-	return local || beside
+	_, installed := installedPrograms[name]
+	return local || installed
 }
 
 // suggest names up to three checks closest to name, or points at `fitness

@@ -57,6 +57,8 @@ Run checks:
       Judges only the named file; repeat it to name more.
   fitness --json=<file>
       Names the file that receives the run's performance report: each check's time, stage, files, binary size, and error lines, as JSON.
+  fitness --no-builtins [args]
+      Turns the built-in checks off, so a run uses only installed checks, as a clean install would; it comes first.
   fitness --policy=external --checks=<name,name>
       Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
 
