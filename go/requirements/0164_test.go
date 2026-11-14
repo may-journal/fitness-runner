@@ -80,3 +80,13 @@ func Test0164_3(t *testing.T) {
 	out, code := fiRun(t, repo, tags0164(t), "--with-checks", "--", "--no-builtins", "--policy=external", "--all", "--checks=markdown-links")
 	sees(t, out, code, 1, "missing.md", "0 of 1 checks passed")
 }
+
+func Test0164_4(t *testing.T) {
+	t.Parallel()
+	env := append(fiPrivateCache(t), rlReleases(t, http.StatusForbidden, "").env...)
+	out, code := fiRun(t, pinned0164(t, `{"markdown-links": "v1.0.0"}`), env, "--with-checks", "--version", "latest", "--install-only")
+	sees(t, out, code, 0, "warning: GitHub did not answer the release lookup, so no check installs; the built-in checks run instead")
+	if strings.Contains(out, "fitness-check-markdown-links") {
+		t.Errorf("after an unanswered lookup the installer must ask for no check:\n%s", out)
+	}
+}

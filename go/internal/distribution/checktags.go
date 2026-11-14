@@ -103,7 +103,7 @@ func (i *Installer) tagPage(ctx context.Context, page int) ([]string, error) {
 	}
 	i.announce(i.Lookup, "the check release tags", request)
 	request.Header.Set("Accept", "application/vnd.github+json")
-	if token := githubToken(ctx); token != "" {
+	if token := envToken(); token != "" {
 		request.Header.Set("Authorization", "Bearer "+token)
 	}
 	data, err := read(i.Lookup, request, maxMetadataBytes)

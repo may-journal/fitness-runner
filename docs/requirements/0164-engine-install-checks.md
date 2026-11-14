@@ -24,3 +24,7 @@ Pinned checks
     - Given Developer has a repo that pins one check
         - When I run that check through `fitness-install --with-checks` with `--no-builtins`
             - Then the installed check judges the repo
+- 0164.4
+    - Given Developer has a repo that pins one check, and GitHub refuses the latest release lookup
+        - When I run `fitness-install --with-checks --version latest`
+            - Then it warns that no check installs, asks for none, and the built-ins run

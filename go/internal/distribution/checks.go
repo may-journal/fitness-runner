@@ -52,6 +52,9 @@ func ParsePins(text string) ([]CheckPin, error) {
 // InstallChecks installs each pinned check from its verified release and
 // returns a folder that holds exactly those programs, for FITNESS_CHECKS_DIR.
 func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string, error) {
+	if i.Unanswered {
+		return "", errors.New("GitHub did not answer the release lookup, so no check installs")
+	}
 	releases, err := i.resolvePins(ctx, pins)
 	if err != nil {
 		return "", err

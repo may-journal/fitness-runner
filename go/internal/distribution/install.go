@@ -16,7 +16,10 @@ type Installer struct {
 	Version, Platform, Cache, ReleaseURL, LatestURL string
 	Hashes                                          map[string]string
 	Client, Lookup                                  *http.Client
-	Log                                             io.Writer
+	// Unanswered is set once a release lookup got no answer, so the run
+	// asks GitHub nothing more and keeps its built-in checks.
+	Unanswered bool
+	Log        io.Writer
 }
 
 func New(version, hashes string, log io.Writer) (*Installer, error) {
