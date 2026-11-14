@@ -61,6 +61,18 @@ From the consumer repository root, run one command:
 
 The Go executable fetches a pinned bundle, verifies hashes and archive paths, and caches the binaries. Failed downloads, installs, or checks return a failing exit code. No copied shell installer is involved.
 
+## Install checks
+
+The engine and the checks install separately, each at its own version. From release 1.66.0, `--with-checks` installs each check the repo pins in `checkVersions`, as [check versions](check-protocol.md#check-versions) describes. The [installer guide](../go/cmd/fitness-install/README.md#checks) says how pins resolve and verify.
+
+```bash
+"$HOME/.local/fitness/fitness-install-1.66.0-linux-amd64" --with-checks -- --policy=external --all
+```
+
+The same flag goes before `--install-hook`, and the action takes `with-checks: 'true'` once its `v1` tag reaches 1.66.0. `FITNESS_WITH_CHECKS=true` works like the flag; the shared hooks use it, since an older installer ignores it.
+
+The built-in checks stay as the fallback for now, so a check that cannot install warns and its built-in runs. To test a clean install, put `--no-builtins` first after `--`, and a missing check fails the run.
+
 ## Repo policy
 
 To use external mode in both hooks and CI, commit this `.fitnessrc.json` in the consumer repo:

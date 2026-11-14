@@ -11,9 +11,10 @@ Fitness runs every check this org holds code and issues to. Follow these steps i
 
 1. Commit the repo policy named in [Repo policy](https://github.com/may-journal/fitness-runner/blob/main/docs/ci.md#repo-policy).
 2. Download the installer as [Download the Go installer](https://github.com/may-journal/fitness-runner/blob/main/docs/ci.md#download-the-go-installer) shows, then run the suite from the repo root with [Run checks](https://github.com/may-journal/fitness-runner/blob/main/docs/ci.md#run-checks).
-3. Install the commit hook once with [Commit hook](https://github.com/may-journal/fitness-runner/blob/main/docs/ci.md#commit-hook). Never pass `--no-verify`.
-4. Add the reusable workflows listed in [Adoption](https://github.com/may-journal/fitness-runner/blob/main/docs/adoption.md#reusable-workflows) so CI and issue checks run on every change.
-5. Link the skills into your agent's skills folder with `fitness-install --link-skills <folder>`, as [Development](https://github.com/may-journal/fitness-runner/blob/main/docs/development.md#skills) explains.
+3. Rerun with `--with-checks` before `--` to install each pinned check, as [Install checks](https://github.com/may-journal/fitness-runner/blob/main/docs/ci.md#install-checks) shows.
+4. Install the commit hook once with [Commit hook](https://github.com/may-journal/fitness-runner/blob/main/docs/ci.md#commit-hook). Never pass `--no-verify`.
+5. Add the reusable workflows listed in [Adoption](https://github.com/may-journal/fitness-runner/blob/main/docs/adoption.md#reusable-workflows) so CI and issue checks run on every change.
+6. Link the skills into your agent's skills folder with `fitness-install --link-skills <folder>`, as [Development](https://github.com/may-journal/fitness-runner/blob/main/docs/development.md#skills) explains.
 
 ## Read a failure
 
