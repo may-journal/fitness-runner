@@ -11,6 +11,9 @@ import (
 	"testing"
 )
 
+// module0161 starts the import path of every package in this repo's module.
+const module0161 = "github.com/may-journal/fitness-runner/go/"
+
 // checkPackage0161 reports whether path is a check's package.
 func checkPackage0161(path string) bool {
 	return strings.Contains(path, "/cmd/fitness-check-")
@@ -54,7 +57,9 @@ func engineImports0161(t *testing.T) (imports []string, builtIns int) {
 		for _, path := range slices.DeleteFunc(slices.Clone(paths), func(p string) bool { return !checkPackage0161(p) }) {
 			t.Errorf("engine file %s imports check package %s", filepath.Base(file), path)
 		}
-		imports = append(imports, paths...)
+		// Only this module's packages can reach a check, and go list resolves
+		// them on any platform, unlike a package for another OS.
+		imports = append(imports, slices.DeleteFunc(paths, func(p string) bool { return !strings.HasPrefix(p, module0161) })...)
 	}
 	return slices.Compact(slices.Sorted(slices.Values(imports))), builtIns
 }
