@@ -19,6 +19,16 @@ The runner finds each installed `fitness-check-<name>` program in the `FITNESS_C
 
 The built-in checks stay as the fallback while the checks move into their own repo. `fitness --no-builtins` turns them off, so a run uses only installed checks, as a clean install would. A flag never reaches the git hooks a run starts, as a variable would. A selected built-in check that is not installed then fails the run, naming its install command.
 
+## Check versions
+
+A repo pins the checks it installs in `.fitnessrc.json`, each to a major or an exact release:
+
+```json
+{ "checkVersions": { "markdown-links": "v1", "gofmt": "v1.0.0" } }
+```
+
+Unset, the repo installs every check fitness-checks releases at its current major, `v1`. `fitness check-versions` prints each check with its pin, and fails on a malformed pin or a name that is no check. `local-branch` stays in the engine, so no pin names it.
+
 ## Git calls
 
 Each git call the runner makes, such as `git ls-files`, gets ten seconds. A stalled call ends the run as a setup error naming it.

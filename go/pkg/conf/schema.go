@@ -21,6 +21,8 @@ type Key struct {
 	Type string `json:"type"`
 	// Items is the JSON type of an array's items.
 	Items string `json:"items,omitempty"`
+	// Values is the JSON type of a map's values, whose keys are free names.
+	Values string `json:"values,omitempty"`
 	// Enum lists the values a string key accepts, from its enum tag.
 	Enum []string `json:"enum,omitempty"`
 	// Description is the doc comment on the key's Go field.
@@ -63,17 +65,23 @@ func keysOf(v reflect.Value, docPrefix, pathPrefix string, docs map[string]strin
 // keyOf describes one field, listing an object's own keys and a default when
 // it is not the zero value.
 func keyOf(v reflect.Value, field reflect.StructField, docKey, path string, docs map[string]string) Key {
-	k := Key{Path: path, Type: jsonType(field.Type), Enum: enum(field), Description: describe(field.Name, docs[docKey])}
-	switch field.Type.Kind() {
-	case reflect.Struct:
+	k := Key{Path: path, Type: jsonType(field.Type), Enum: enum(field), Description: describe(field.Name, docs[docKey]),
+		Items: elemType(field.Type, reflect.Slice), Values: elemType(field.Type, reflect.Map)}
+	if field.Type.Kind() == reflect.Struct {
 		k.Keys = keysOf(v, structDocs(field.Type, docKey), path, docs)
-	case reflect.Slice:
-		k.Items = jsonType(field.Type.Elem())
 	}
 	if k.Keys == nil && !v.IsZero() {
 		k.Default = v.Interface()
 	}
 	return k
+}
+
+// elemType is the JSON type of t's elements when t is of kind, else "".
+func elemType(t reflect.Type, kind reflect.Kind) string {
+	if t.Kind() != kind {
+		return ""
+	}
+	return jsonType(t.Elem())
 }
 
 // structDocs returns where a struct field's own fields keep their docs: the
@@ -113,6 +121,7 @@ func enum(field reflect.StructField) []string {
 var jsonTypes = map[reflect.Kind]string{
 	reflect.String: "string", reflect.Bool: "boolean", reflect.Int: "integer",
 	reflect.Float64: "number", reflect.Slice: "array", reflect.Struct: "object",
+	reflect.Map: "object",
 }
 
 // jsonType is the JSON Schema type of a Go type. A kind jsonTypes lacks
@@ -160,10 +169,7 @@ func object(keys []Key) map[string]any {
 
 // property is one key's schema.
 func property(k Key) map[string]any {
-	p := map[string]any{"type": k.Type}
-	if k.Type == "object" {
-		p = object(k.Keys)
-	}
+	p := typed(k)
 	p["description"] = k.Description
 	if k.Items != "" {
 		p["items"] = map[string]any{"type": k.Items}
@@ -175,6 +181,18 @@ func property(k Key) map[string]any {
 		p["default"] = k.Default
 	}
 	return p
+}
+
+// typed is the type part of one key's schema: a map's value type, an
+// object's own keys, or the plain type.
+func typed(k Key) map[string]any {
+	switch {
+	case k.Values != "":
+		return map[string]any{"type": "object", "additionalProperties": map[string]any{"type": k.Values}}
+	case k.Type == "object":
+		return object(k.Keys)
+	}
+	return map[string]any{"type": k.Type}
 }
 
 // lastPart is the last name of a dotted path.

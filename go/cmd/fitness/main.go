@@ -274,6 +274,10 @@ func init() {
 		// repo enables it.
 		//fitness:usage list [--json]
 		"list": runList,
+		// Prints each check the repo installs with its version pin, as
+		// checkVersions in .fitnessrc.json sets them.
+		//fitness:usage check-versions
+		"check-versions": runCheckVersions,
 		// Prints why a check exists, what it judges, and the config keys it
 		// reads.
 		//fitness:usage explain <check> [--json]

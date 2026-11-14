@@ -9,8 +9,11 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -29,6 +32,10 @@ type Config struct {
 	// DisabledChecks names checks external policy leaves out and org policy
 	// refuses, as ADR 0009 describes.
 	DisabledChecks []string `json:"disabledChecks"`
+	// CheckVersions pins each check the repo uses to an exact release, such
+	// as v1.2.3, or a major, such as v1, for the installer. Unset, the repo
+	// uses every check at its current major.
+	CheckVersions map[string]string `json:"checkVersions"`
 	// PlanApprovers lists the GitHub logins whose comment saying approve
 	// approves a Plan for the pre-push gate, under either policy. Unset, the
 	// repo's owner and its org's members may approve, as GitHub reports each
@@ -143,7 +150,29 @@ func MaxListItems(root string) int {
 // caller falls back to defaults. A config that still sets a retired exclusion
 // key returns an error naming each one.
 func Load(root string) (*Config, error) {
-	return configSection.Load(root)
+	cfg, err := configSection.Load(root)
+	if err == nil && cfg != nil {
+		err = validPins(cfg.CheckVersions)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return cfg, nil
+}
+
+// pinPattern matches a check pin: a major such as v1, or an exact release
+// such as v1.2.3.
+var pinPattern = regexp.MustCompile(`^v(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))?$`)
+
+// validPins fails the first checkVersions pin that is neither a major nor an
+// exact release, in name order.
+func validPins(pins map[string]string) error {
+	for _, name := range slices.Sorted(maps.Keys(pins)) {
+		if !pinPattern.MatchString(pins[name]) {
+			return fmt.Errorf("%s: checkVersions pins %s to %q; use a major such as v1 or a release such as v1.2.3", FileName, name, pins[name])
+		}
+	}
+	return nil
 }
 
 // Load reads root's config into a T, which holds the keys a caller owns,
