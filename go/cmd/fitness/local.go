@@ -305,6 +305,15 @@ func runGH(name string) int {
 	return metadata.RunGH(name)
 }
 
+// runDependabotPR completes a Dependabot pull request with the repo's check settings.
+func runDependabotPR() int {
+	if err := useRepoChecks(); err != nil {
+		report.Error("fitness dependabot-pr", err)
+		return 1
+	}
+	return metadata.RunDependabotPR()
+}
+
 // useRepoChecks checks the repo's settings under ADR 0009 and points the GitHub
 // commands at its local and disabled checks.
 func useRepoChecks() error {

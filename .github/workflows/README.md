@@ -139,6 +139,10 @@ With `pr-check: true` the same job then runs `fitness pr-check` on the PR's titl
 
 A newer push or edit to the same PR cancels the run it supersedes, so only the newest run bills to the end. In a private repo the job runs on the self-hosted `fitness` runners, which a fork's pull request never reaches. There it uses SwiftLint's macOS build, checked against its published SHA-256, and keeps its caches on disk. A repo needing a Mac sets `FITNESS_RUNS_ON` to a standard hosted `macos-*` or `xcode-*` label; other values change nothing.
 
+## dependabot-pr
+
+[dependabot-pr-reusable.yml](dependabot-pr-reusable.yml) runs `fitness dependabot-pr` on `pull_request_target` for Dependabot's pull requests. It completes each one, so pr-check judges it unchanged. A repo calls it with the automation App secrets, stored as Dependabot secrets too.
+
 ## close-check
 
 [close-check.yml](close-check.yml) runs `fitness close-check` when an issue closes, so unfinished work stays open. A parent closes when every child, a sub-issue or listed reference, closed as completed. Other repos call [close-check-reusable.yml](close-check-reusable.yml).

@@ -326,6 +326,9 @@ func init() {
 		// Judges pull request titles and descriptions, in GitHub Actions.
 		//fitness:usage pr-check
 		"pr-check": func([]string) int { return runGH("pr-check") },
+		// Completes a Dependabot pull request so pr-check judges it like a person's, in GitHub Actions.
+		//fitness:usage dependabot-pr
+		"dependabot-pr": func([]string) int { return runDependabotPR() },
 		// Judges an issue by its kind label and comments the result, in GitHub
 		// Actions.
 		//fitness:usage issue-check

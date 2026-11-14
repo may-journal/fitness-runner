@@ -1,0 +1,49 @@
+name: Dependabot PR (reusable)
+
+# A `pull_request_target` caller runs `fitness dependabot-pr` here, so PR checks judge Dependabot's PR as a person's.
+# The App token starts those checks again.
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: Optional source ref to compile; empty uses the pinned binary release.
+        type: string
+        default: ''
+    # Dependabot's runs read Dependabot secrets, so store both App secrets there too.
+    secrets:
+      AUTOMATION_APP_ID:
+        required: true
+      AUTOMATION_APP_KEY:
+        required: true
+
+# The App token carries the writes; this token only reads.
+permissions:
+  contents: read
+
+jobs:
+  dependabot-pr:
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' && github.actor == 'dependabot[bot]' }}
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 5
+    # Only the newest state of a PR needs completing.
+    concurrency:
+      group: dependabot-pr-${{ github.repository }}-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    steps:
+      # pull_request_target checks out the base branch, never the PR's code.
+      - uses: actions/checkout@v4
+      - name: Mint a one-hour App token
+        id: app-token
+        uses: $/.github/actions/app-token
+        with:
+          app-id: ${{ secrets.AUTOMATION_APP_ID }}
+          private-key: ${{ secrets.AUTOMATION_APP_KEY }}
+      - name: Complete the Dependabot pull request
+        uses: $/.github/actions/fitness-command
+        with:
+          command: dependabot-pr
+          ref: ${{ inputs.ref }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Report job outcome
+        if: ${{ always() }}
+        run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

@@ -5,6 +5,7 @@ package aftereffect
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -464,6 +465,44 @@ func (g Client) CommentBodies(n int) ([]string, error) {
 		bodies[i] = c.Body
 	}
 	return bodies, err
+}
+
+// OpenIssueNumber is the number of the open issue titled title, or 0.
+func (g Client) OpenIssueNumber(title string) (int, error) {
+	out, err := g.api("--paginate", "--jq", ".[] | select(.pull_request == null) | {number, title}", "issues?state=open&per_page=100")
+	if err != nil {
+		return 0, err
+	}
+	issues, err := decodeLines[Target](out)
+	for _, i := range issues {
+		if i.Title == title {
+			return i.Number, err
+		}
+	}
+	return 0, err
+}
+
+// CreateIssue opens an issue and returns its number.
+func (g Client) CreateIssue(title, body string) (int, error) {
+	out, err := g.api("-X", "POST", "--jq", ".number", "-f", "title="+title, "-f", "body="+body, "issues")
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(strings.TrimSpace(string(out)))
+}
+
+// PutFile commits a new file to branch through the contents API, which
+// GitHub signs.
+func (g Client) PutFile(branch, path, message, content string) error {
+	enc := base64.StdEncoding.EncodeToString([]byte(content))
+	_, err := g.api("-X", "PUT", "-f", "message="+message, "-f", "content="+enc, "-f", "branch="+branch, "contents/"+path)
+	return err
+}
+
+// EditPR sets pull request n's title and body.
+func (g Client) EditPR(n int, title, body string) error {
+	_, err := g.api("-X", "PATCH", "-f", "title="+title, "-f", "body="+body, "pulls/"+strconv.Itoa(n))
+	return err
 }
 
 func (g Client) Comment(n int, body string) error {

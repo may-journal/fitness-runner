@@ -43,6 +43,7 @@ A run resolves the checks, runs them side by side under two totals, and prints a
 - `fitness comments [path...]`: Prints each code comment block of the tracked files, or of those under the named paths, with its line, language and kind.
 - `fitness branch-check`: Judges this branch's PR and the issues it closes locally, posting nothing.
 - `fitness pr-check`: Judges pull request titles and descriptions, in GitHub Actions.
+- `fitness dependabot-pr`: Completes a Dependabot pull request so pr-check judges it like a person's, in GitHub Actions.
 - `fitness issue-check`: Judges an issue by its kind label and comments the result, in GitHub Actions.
 - `fitness plan-check`: Judges Plan issues only, as issue-check does, in GitHub Actions.
 - `fitness close-check`: Reopens an issue closed with unchecked items, or closes the parent it finishes, in GitHub Actions.
