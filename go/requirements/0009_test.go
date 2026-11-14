@@ -58,7 +58,7 @@ func Test0009_1(t *testing.T) {
 	}
 	for _, name := range []string{"commit-msg", "pre-commit", "pre-push"} {
 		data, _ := os.ReadFile(filepath.Join(repo, ".githooks", name))
-		if !strings.Contains(string(data), `fitness-install" --version latest -- hook `+name) {
+		if !strings.Contains(string(data), `fitness-install" --with-checks --version latest -- hook `+name) {
 			t.Errorf(".githooks/%s does not run the installer for hook %s", name, name)
 		}
 	}
