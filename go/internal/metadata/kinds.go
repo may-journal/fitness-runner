@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
+	"github.com/may-journal/fitness-runner/go/pkg/epic"
 	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
 )
 
@@ -25,7 +27,7 @@ type kindRule struct {
 // only a template file.
 var kindRules = map[string]kindRule{
 	"Plan": {checks: []string{"plan-structure"}},
-	"Epic": {checks: []string{"epic-structure"}},
+	"Epic": {checks: []string{"epic-structure"}, links: listedErrors},
 	"ADR":  {fields: adrErrors, shape: &adrShape},
 }
 
@@ -219,4 +221,21 @@ func planTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, er
 		ts[i].Labels = []string{"Plan"}
 	}
 	return ts, err
+}
+
+// listedErrors fails an Epic that lists an issue that does not exist or that
+// the token cannot read, in any repository. A sub-issue link is not needed.
+func listedErrors(t target, gh aftereffect.Client) []string {
+	var errs []string
+	for _, ref := range epic.Refs(t.Body) {
+		repo, num, _ := strings.Cut(epic.Key(ref, gh.Repo()), "#")
+		n, err := strconv.Atoi(num)
+		if err == nil {
+			err = gh.IssueIn(repo, n)
+		}
+		if err != nil {
+			errs = append(errs, fmt.Sprintf("%s is listed but cannot be read (%v); list only issues that exist", ref, err))
+		}
+	}
+	return errs
 }

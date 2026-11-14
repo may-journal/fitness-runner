@@ -298,6 +298,13 @@ func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
 	return v, err
 }
 
+// IssueIn reads issue n of repo, as owner/name, and fails for an issue that
+// is missing or that the token cannot read.
+func (g Client) IssueIn(repo string, n int) error {
+	_, _, err := g.in(repo).Issue(n)
+	return err
+}
+
 // readIssue reads issue n's body and labels. A 404 or 410, an issue deleted
 // or never there, wraps ErrIssueGone.
 func (g Client) readIssue(n int) (string, []string, error) {

@@ -21,9 +21,9 @@ labeled issue edits
         - When issue-check judges it
             - Then it comments each error, labels it fitness-invalid, and exits 1
 - 0082.3
-    - Given Developer has an Epic that lists issues that are not its sub-issues
+    - Given Developer has an Epic that lists an issue that does not exist, and others that are not sub-issues
         - When issue-check judges it
-            - Then it passes without asking GitHub for the Epic's sub-issues
+            - Then it names the missing issue, and never asks GitHub for sub-issues
 - 0082.4
     - Given Developer has an issue of a kind that has only a template, or a Plan whose repo template adds a section
         - When issue-check judges it

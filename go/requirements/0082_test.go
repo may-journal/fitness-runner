@@ -23,15 +23,19 @@ func kindGitHub(kind string, labels ...string) []response {
 	return issueGitHub(kindIssue, "fitness:issue-check:"+kind+":", "", labels...)
 }
 
-// epicGitHub is kindGitHub for an Epic whose sub-issues are subs, in this
-// repository.
-func epicGitHub(subs ...string) []response {
-	var lines strings.Builder
-	for _, n := range subs {
-		line, _ := json.Marshal(map[string]any{"number": json.Number(n), "repo": "may-journal/example"})
-		lines.Write(append(line, '\n'))
+// epicGitHub is kindGitHub for an Epic whose listed issues are listed, in
+// this repository, each readable.
+func epicGitHub(listed ...string) []response {
+	var out []response
+	for _, n := range listed {
+		out = append(out, readable0082("may-journal/example", n))
 	}
-	return append([]response{{Match: []string{"issues/" + kindIssue + "/sub_issues"}, Stdout: lines.String()}}, kindGitHub("epic", "Epic")...)
+	return append(out, kindGitHub("epic", "Epic")...)
+}
+
+// readable0082 is GitHub answering a read of issue n in repo.
+func readable0082(repo, n string) response {
+	return response{Match: []string{"labels: [.labels[].name]", "repos/" + repo + "/issues/" + n}, Stdout: `{"body": "", "labels": []}` + "\n"}
 }
 
 // epicBody is an Epic that follows the template, listing items.
@@ -68,10 +72,12 @@ func Test0082_2(t *testing.T) {
 
 func Test0082_3(t *testing.T) {
 	t.Parallel()
-	out, code, rp := judgeKind(t, epicBody("1. #22\n2. #24\n3. may-journal/other#26"), nil, kindGitHub("epic", "Epic"))
-	sees(t, out, code, 0, "Passed.")
-	if rp.called("gh", "issues/"+kindIssue+"/sub_issues") {
-		t.Errorf("want no sub-issue read, got gh calls %q", rp.calls("gh"))
+	missing := response{Match: []string{"issues/26"}, Stderr: "gh: Not Found (HTTP 404)\n", Exit: 1}
+	saved := append([]response{missing}, epicGitHub("22", "24")...)
+	out, code, rp := judgeKind(t, epicBody("1. #22\n2. #24\n3. #26"), nil, saved)
+	sees(t, out, code, 1, "26 is listed but cannot be read")
+	if strings.Contains(out, "sub-issue") || rp.called("gh", "issues/"+kindIssue+"/sub_issues") {
+		t.Errorf("want no sub-issue finding or read:\n%s", out)
 	}
 }
 
@@ -112,7 +118,7 @@ func Test0082_9(t *testing.T) {
 	gone := response{Match: []string{"fitness:issue-check:epic:"}, Stderr: "gh: Could not resolve to an Issue with the number of 21.\n", Exit: 1}
 	out, code, rp = ghRun(t, "issue-check", "issues", bodyEdit(issue), nil, append([]response{gone}, epicGitHub("22")...))
 	sees(t, out, code, 0, "21 no longer exists")
-	if rp.called("gh", "-X POST") || rp.called("gh", "labels: [.labels[].name]") {
+	if rp.called("gh", "-X POST") || rp.called("gh", "labels: [.labels[].name]", "example/issues/"+kindIssue) {
 		t.Errorf("want the event's labels used and nothing written to a moved issue, got gh calls %q", rp.calls("gh"))
 	}
 

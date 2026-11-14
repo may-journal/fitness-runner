@@ -15,4 +15,4 @@ Epics
 - 0164.1
     - Given Developer has an Epic checklist with ticked and open items holding Plan URLs, some in `.github`
         - When issue-check judges it
-            - Then it labels the Epic fitness-valid, and never asks GitHub for its sub-issues
+            - Then it reads each listed issue, labels the Epic fitness-valid, and never asks for sub-issues
