@@ -42,13 +42,29 @@ func run0092(t *testing.T, name string, gh []response) (replays, string, int, st
 	return runWith0092(t, name, gh, "OUTPUTS="+outputs0092)
 }
 
-// runWith0092 is run0092 with the step's env also holding env.
-func runWith0092(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
+// tagsScript0092 is the script the major tag step runs through its action.
+const tagsScript0092 = "../../.github/actions/move-major-tags/move-major-tags.sh"
+
+// script0092 returns the shell of the named step, or for the major tag step
+// the script its action runs.
+func script0092(t *testing.T, name string) string {
 	t.Helper()
+	if name == "Move the major version tag" {
+		b, err := os.ReadFile(tagsScript0092)
+		mustDo(t, err)
+		return string(b)
+	}
 	_, script, ok := strings.Cut(section0092(t, name), "run: |\n")
 	if !ok {
 		t.Fatalf("step %q has no run script", name)
 	}
+	return script
+}
+
+// runWith0092 is run0092 with the step's env also holding env.
+func runWith0092(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
+	t.Helper()
+	script := script0092(t, name)
 	rp := standIn(t, map[string][]response{"gh": gh})
 	output := filepath.Join(t.TempDir(), "output")
 	out, code := execute(t, func() *exec.Cmd {

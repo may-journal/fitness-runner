@@ -1,0 +1,25 @@
+name: Move the major version tags
+description: >-
+  Move each component Release Please released to its major tag, v1 for the
+  root and the component name plus v1 for a component, and list the releases.
+inputs:
+  token:
+    description: A token that may move tags, such as the App token.
+    required: true
+  outputs:
+    description: Release Please's outputs as JSON, from toJSON of its step outputs.
+    required: true
+outputs:
+  releases:
+    description: A JSON array of path, tag, major_tag and sha for each released component.
+    value: ${{ steps.move.outputs.releases }}
+runs:
+  using: composite
+  steps:
+    - name: Move the tags
+      id: move
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        OUTPUTS: ${{ inputs.outputs }}
+      run: ${{ github.action_path }}/move-major-tags.sh

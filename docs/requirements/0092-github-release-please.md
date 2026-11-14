@@ -26,7 +26,7 @@ Release Please runs
             - Then only the major tag step runs, and each skipped step still reads its env
 - 0092.4
     - Given Developer has a created release whose major tag exists, then is missing, then cannot be read
-        - When Release Please moves the major tag
+        - When Release Please moves the major tag with its script
             - Then it moves the tag, then creates it, then fails naming the tag and changes nothing
 - 0092.5
     - Given Developer has a release pull request whose heading links `compare/v1.2.0...v1.3.0`
