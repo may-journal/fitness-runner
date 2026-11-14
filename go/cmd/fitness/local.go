@@ -187,12 +187,26 @@ func findCheckBinary(name string) (checkkit.Program, error) {
 	if c, ok := localBins[name]; ok {
 		return localProgram(c)
 	}
-	if _, judged := engineJudges[name]; judged {
-		// No installed program can judge without the engine, so it only
-		// declares the check.
-		return builtinProgram(name)
+	if prog, ok := engineProgram(name); ok {
+		return prog, nil
 	}
 	return installedOrBuiltin(name)
+}
+
+// engineProgram returns the engine's own program for a check it judges, when
+// an installed program declares it or the built-ins are on. An installed
+// program cannot judge alone, so it only declares the check; this says so.
+func engineProgram(name string) (checkkit.Program, bool) {
+	_, judged := engineJudges[name]
+	bin, installed := installedPrograms[name]
+	if !judged || !installed && builtinsOff() {
+		return checkkit.Program{}, false
+	}
+	if installed {
+		fmt.Fprintf(os.Stderr, "fitness: %s declares the %s check, which fitness judges itself\n", bin, name)
+	}
+	prog, err := builtinProgram(name)
+	return prog, err == nil
 }
 
 // installedOrBuiltin returns an installed program, else the built-in of a
