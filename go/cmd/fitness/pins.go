@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"regexp"
 	"slices"
 
 	"github.com/may-journal/fitness-runner/go/internal/report"
@@ -31,48 +32,56 @@ func runCheckVersions(args []string) int {
 	return 0
 }
 
-// checkVersions is root's checkVersions, or every known check at
-// currentMajor when the key is unset. A pin naming no known check fails.
+// checkVersions is root's checkVersions, or every released check at
+// currentMajor when the key is unset or empty. A bad pin fails.
 func checkVersions(root string) (map[string]string, error) {
 	cfg, err := loadConfig(root)
 	if err != nil {
 		return nil, err
 	}
-	if cfg == nil || cfg.CheckVersions == nil {
+	if cfg == nil || len(cfg.CheckVersions) == 0 {
 		return defaultPins(), nil
 	}
-	return cfg.CheckVersions, unknownPin(cfg.CheckVersions)
+	return cfg.CheckVersions, badPin(cfg.CheckVersions)
 }
 
 // defaultPins pins every released check to currentMajor.
 func defaultPins() map[string]string {
 	pins := map[string]string{}
-	for _, name := range releasedChecks() {
-		pins[name] = currentMajor
+	for name := range builtins {
+		if engineJudges[name] == nil {
+			pins[name] = currentMajor
+		}
 	}
 	return pins
 }
 
-// unknownPin fails the first pin, in name order, that names no released
-// check.
-func unknownPin(pins map[string]string) error {
+// checkName matches a check's name, lowercase words joined by dashes.
+var checkName = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// pinPattern matches a pin: a major such as v1, or a release such as v1.2.3.
+var pinPattern = regexp.MustCompile(`^v(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*))?$`)
+
+// badPin fails the first pin, in name order, that is malformed or names a
+// check the engine runs itself. A name with no release fails at install.
+func badPin(pins map[string]string) error {
 	for _, name := range slices.Sorted(maps.Keys(pins)) {
-		if !slices.Contains(releasedChecks(), name) {
-			return fmt.Errorf("checkVersions pins %s, which is no check; `fitness list` names them", name)
+		if err := pinError(name, pins[name]); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-// releasedChecks names every built-in and installed check but the ones the
-// engine judges, sorted: the checks fitness-checks releases.
-func releasedChecks() []string {
-	names := slices.Collect(maps.Keys(builtins))
-	for name := range installedPrograms {
-		if builtins[name] == nil {
-			names = append(names, name)
-		}
+// pinError says what is wrong with one pin, or nil.
+func pinError(name, pin string) error {
+	switch {
+	case !checkName.MatchString(name):
+		return fmt.Errorf("checkVersions names %q, which is no check name; `fitness list` names them", name)
+	case engineJudges[name] != nil:
+		return fmt.Errorf("checkVersions pins %s, which runs inside the engine, so remove it", name)
+	case !pinPattern.MatchString(pin):
+		return fmt.Errorf("checkVersions pins %s to %q; use a major such as v1 or a release such as v1.2.3", name, pin)
 	}
-	slices.Sort(names)
-	return slices.DeleteFunc(names, func(name string) bool { return engineJudges[name] != nil })
+	return nil
 }

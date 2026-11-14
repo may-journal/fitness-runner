@@ -27,7 +27,7 @@ A repo pins the checks it installs in `.fitnessrc.json`, each to a major or an e
 { "checkVersions": { "markdown-links": "v1", "gofmt": "v1.0.0" } }
 ```
 
-Unset, the repo installs every check fitness-checks releases at its current major, `v1`. `fitness check-versions` prints each check with its pin, and fails on a malformed pin or a name that is no check. `local-branch` stays in the engine, so no pin names it.
+Unset or empty, the repo installs every check fitness-checks releases at its current major, `v1`. `fitness check-versions` prints each check with its pin. It fails on a malformed pin or name, and on `local-branch`, which stays in the engine; other commands ignore the key.
 
 ## Git calls
 
