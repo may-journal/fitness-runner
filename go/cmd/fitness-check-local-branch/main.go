@@ -1,6 +1,8 @@
 package check
 
 import (
+	"errors"
+
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
@@ -8,10 +10,10 @@ import (
 // the engine's GitHub reads and the pre-push gate's handoff.
 var Judge = withoutEngine
 
-// withoutEngine fails a build that holds this check but not the engine, which
-// has no judgments to run.
+// withoutEngine reports that a build holding this check but not the engine
+// could not judge, since it has no judgments to run.
 func withoutEngine(string, []string) (checkkit.Result, error) {
-	return checkkit.Fail(0, "local-branch runs only inside fitness, which supplies its PR and Plan judgments"), nil
+	return checkkit.Result{}, errors.New("local-branch runs only inside fitness, which supplies its PR and Plan judgments")
 }
 
 func Main() {
