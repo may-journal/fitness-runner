@@ -10,7 +10,7 @@ A plan names the bug or feature it solves with a GitHub closing keyword (`Fixes 
 
 ## Approval gate
 
-An agent may work an Issue as it sees fit — implement it, branch, commit, and push. This is allowed once an allowed approver comments `I approve` at the start of a comment; a mere mention of approval does not count. The `planApprovers` key in `.fitnessrc.json` lists the approvers; unset, the repo's owner and org members may approve. Until such a comment exists, do not start the work; refine the Issue description instead, then wait for approval.
+An agent may work an Issue as it sees fit — implement it, branch, commit, and push. This is allowed once an allowed approver comments approve in any form, typos allowed, unless negated, as in "not approved". The `planApprovers` key in `.fitnessrc.json` lists the approvers; unset, the repo's owner and org members may approve. Until such a comment exists, do not start the work; refine the Issue description instead, then wait for approval.
 
 ## Once approved
 

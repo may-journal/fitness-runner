@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -19,10 +18,6 @@ import (
 // pushPlansEnv names the file through which the pre-push gate hands
 // local-branch the PRs and Plans it read.
 const pushPlansEnv = "FITNESS_PUSH_PLANS_FILE"
-
-// approvalRe matches a comment whose first line starts with `I approve` in any
-// case, so a mere mention such as "not approved" is none.
-var approvalRe = regexp.MustCompile(`(?i)^[ \t]*I approve\b`)
 
 // defaultApprovers are the associations GitHub gives the repo's owner and
 // its org's members, who may approve when planApprovers is unset.
@@ -115,8 +110,8 @@ func (p *PushPlans) TimedOut() string {
 	return fmt.Sprintf("%s did not answer within %s", GitHubHost(), PushDeadline)
 }
 
-// Approved reports whether the Plan ref names has the `Plan` label and an
-// `I approve` comment by an allowed approver.
+// Approved reports whether the Plan ref names has the `Plan` label and a
+// comment by an allowed approver that says approve.
 func (p *PushPlans) Approved(ref gitx.PlanRef, approvers []string) bool {
 	key := strings.ToLower(ref.String())
 	r, ok := p.reads[key]
@@ -124,7 +119,7 @@ func (p *PushPlans) Approved(ref gitx.PlanRef, approvers []string) bool {
 		r, ok = p.read(key, ref)
 	}
 	return ok && slices.Contains(r.view.Labels, "Plan") && slices.ContainsFunc(r.view.Comments, func(c aftereffect.IssueComment) bool {
-		return approvalRe.MatchString(c.Body) && allowed(c, approvers)
+		return saysApproved(c.Body) && allowed(c, approvers)
 	})
 }
 

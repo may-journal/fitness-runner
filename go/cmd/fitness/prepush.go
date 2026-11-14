@@ -253,7 +253,7 @@ func refuseUnapproved(plans []gitx.PlanRef, owner string, approvers []string) {
 			fmt.Fprintf(os.Stderr, "  Plan %s is refused: only a Plan owned by %q counts here.\n", p, owner)
 		}
 	}
-	fmt.Fprintln(os.Stderr, "  A Plan needs a comment starting \"I approve\" from "+approverNames(approvers)+".")
+	fmt.Fprintln(os.Stderr, "  A Plan needs a comment saying approved, in any form or with a typo, from "+approverNames(approvers)+".")
 }
 
 // planName names p in a refusal: the number alone for a Plan of this repo,
