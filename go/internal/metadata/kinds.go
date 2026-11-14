@@ -32,16 +32,16 @@ var kindRules = map[string]kindRule{
 }
 
 // planChecks are the checks a Plan body gets, for branch-check.
-var planChecks = slices.Concat(kindRules["Plan"].checks, docChecks)
+var planChecks = slices.Concat(kindRules["Plan"].checks, bodyChecks)
 
 // IssueBodyChecks are the checks issue-check gives a body of the kind label
 // names, or nil for a label that names no kind. An unlabeled body, "", gets
-// the doc checks alone.
+// the body checks alone.
 func IssueBodyChecks(label string) []string {
 	if _, ok := kindRules[label]; !ok && label != "" {
 		return nil
 	}
-	return slices.Concat(kindRules[label].checks, docChecks)
+	return slices.Concat(kindRules[label].checks, bodyChecks)
 }
 
 // issueKind is one kind of labeled issue: its label, its template's shape when
@@ -102,7 +102,7 @@ func (k issueKind) judge(t target, gh aftereffect.Client, b blobChecker) []strin
 	if k.spec != nil {
 		errs = mdtemplate.Validate(t.Body, *k.spec)
 	}
-	errs = append(errs, b.judge(slices.Concat(k.rule.checks, docChecks), t.Body)...)
+	errs = append(errs, b.judge(slices.Concat(k.rule.checks, bodyChecks), t.Body)...)
 	if k.rule.links != nil {
 		errs = append(errs, k.rule.links(t, gh)...)
 	}

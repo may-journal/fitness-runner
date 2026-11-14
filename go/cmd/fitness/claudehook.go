@@ -205,11 +205,14 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	return hookJob{parts: parts}, len(parts) > 0, nil
 }
 
-// postsOf is what the tool would post: a Bash command's gh calls, or an MCP
-// tool's GitHub post.
+// postsOf is what the tool would post: a Bash command's gh calls, an
+// Artifact page, or an MCP tool's GitHub post.
 func postsOf(in claudeHookInput) []ghPost {
-	if in.Tool == "Bash" {
+	switch in.Tool {
+	case "Bash":
 		return ghPostsIn(in.Input.Command, in.Cwd)
+	case artifactTool:
+		return artifactPosts(in)
 	}
 	return mcpPosts(in)
 }

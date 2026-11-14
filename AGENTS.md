@@ -20,6 +20,10 @@ A commit message never names an issue or PR. The PR body closes the approved Pla
 
 The `pre-push` hook blocks a push whose branch has an open PR that closes no approved Plan Issue. A branch with no open PR yet pushes through, and its PR check gates the Plan. Chore and docs-only pushes are exempt. A PR body names the agent that wrote it, such as `Agent: Claude`, so a reviewer knows whom to ask.
 
+## Ask in chat
+
+Ask the owner each open question in chat, where he answers, never in a PR or issue body, doc or page. The [open-questions check](go/cmd/fitness-check-open-questions/README.md) fails a list of them anywhere else.
+
 ## Working with checks
 
 `fitness llms` explains the whole CLI and `fitness explain <check>` explains one check. Read the checks under `go/cmd/fitness-check-*/`, each with a README, and the shared logic in `go/internal/` before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.

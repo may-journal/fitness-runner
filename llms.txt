@@ -101,6 +101,7 @@ A run resolves the checks, runs them side by side under two totals, and prints a
 - `no-fitness-front-matter`: Fails a Markdown file whose front matter still holds `fitnessFunctions` or `relatedConfigurations`.
 - `no-plans-dir`: Keeps plans and temporary design work out of the repo.
 - `node-version`: Requires the machine's active Node version to satisfy the repo's `.nvmrc`.
+- `open-questions`: Fails a list of open questions in a doc, page, PR or issue body.
 - `plan-structure`: Validates that a plan, a GitHub Issue body under the `Plan` label, follows the Plan issue template.
 - `plan-trailer`: Validates an optional `Plan #NN` commit trailer.
 - `pr-closes-issue`: Validates that a pull request description closes at least one issue on merge (#69).

@@ -54,7 +54,7 @@ markdown-filename-kebab-case markdown-links
 markdown-no-bold-italic mermaid-callout-why mermaid-callouts
 mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
 mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-fitness-front-matter
-no-plans-dir plan-structure
+no-plans-dir open-questions plan-structure
 plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
 release-changelog repeated-string-literals requirements requirements-changed
 semantic-commit text-readability workflow-ref-exists workflow-reporting

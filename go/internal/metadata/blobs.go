@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -13,7 +14,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/par"
 )
 
-// docChecks are the prose and markdown checks every Plan and PR body gets.
+// docChecks are the prose and markdown checks every body and comment gets.
 // They read the body through --body-file, with --root at the checkout so
 // their config resolves.
 var docChecks = []string{
@@ -28,6 +29,10 @@ var docChecks = []string{
 	"mermaid-syntax",
 	"cspell",
 }
+
+// bodyChecks are docChecks plus open-questions: the checks every issue and
+// PR body gets, while a comment gets docChecks alone.
+var bodyChecks = append(slices.Clone(docChecks), "open-questions")
 
 // target is one issue or PR a GitHub command judges.
 type target = aftereffect.Target
