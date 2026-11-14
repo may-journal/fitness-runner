@@ -67,6 +67,8 @@ Commands:
       Prints a page that teaches an AI the whole CLI.
   fitness list [--json]
       Names every check with its summary, scope, stage, and whether this repo enables it.
+  fitness check-versions
+      Prints each check the repo installs with its version pin, as checkVersions in .fitnessrc.json sets them.
   fitness explain <check> [--json]
       Prints why a check exists, what it judges, and the config keys it reads.
   fitness docs [topic]

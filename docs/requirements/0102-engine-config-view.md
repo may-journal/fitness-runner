@@ -19,7 +19,7 @@ checks the suite knows
 - 0102.2
     - Given AI agent has a repo
         - When `fitness config schema` runs
-            - Then it prints a JSON Schema giving each key's type, description and default, refusing unknown keys
+            - Then it prints a JSON Schema giving each key's type, description and default, refusing unknown keys and typing a map's values
 - 0102.3
     - Given AI agent has a repo whose org policy config turns off a check
         - When `fitness config` runs
