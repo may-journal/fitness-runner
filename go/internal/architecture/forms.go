@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
 )
 
 var (

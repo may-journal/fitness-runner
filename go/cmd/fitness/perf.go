@@ -11,8 +11,8 @@ import (
 	"text/tabwriter"
 
 	"github.com/may-journal/fitness-runner/go/internal/boxes"
-	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/render"
 )
 
 // jsonFlag names the file that receives the run's performance report: each

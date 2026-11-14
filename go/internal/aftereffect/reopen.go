@@ -3,7 +3,7 @@ package aftereffect
 import (
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // ReopenUnfinished reopens an issue closed with unfinished items, once per

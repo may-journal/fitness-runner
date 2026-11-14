@@ -36,7 +36,7 @@
 // # Readers
 //
 // Each [language module] brings one view reader through the shared code
-// model. The reader's package, `go/internal/lang/<language>/views`,
+// model. The reader's package, `go/pkg/lang/<language>/views`,
 // documents what it reads, which types the view covers, and its limits.
 //
 // # Coverage
@@ -81,6 +81,6 @@
 //
 // [Requirement 0076] has one installed-command test per acceptance.
 //
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
 // [Requirement 0076]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0076-checks-architecture-code.md
 package check

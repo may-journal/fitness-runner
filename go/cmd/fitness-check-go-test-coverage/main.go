@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
 	"github.com/may-journal/fitness-runner/go/internal/lang/golang/coverage"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/golang"
 )
 
 func Main() {

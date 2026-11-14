@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/release"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // generatedCommand runs the generated check, which this repo's local

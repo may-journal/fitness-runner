@@ -10,7 +10,7 @@ Runs Java tests once per build root and judges their JUnit XML results and [JaCo
 - Gradle cleans and reruns `test` and `jacocoTestReport`, or `testCodeCoverageReport` under report aggregation. Another test task counts when one of those depends on it.
 - Gradle adds `--build-cache`, so unchanged tests and reports are restored, not rerun. Failed tests are never cached.
 - `org.gradle.caching=false` in `gradle.properties` turns the cache off.
-- The [Java module](../../internal/lang/java/java.go) says what a build root is and which wrapper or tool runs it.
+- The [Java module](../../pkg/lang/java/java.go) says what a build root is and which wrapper or tool runs it.
 - No Maven or Gradle build in the repo: passes clean with `filesChecked: 0`.
 - A Java repo with no running JDK fails with an install hint.
 - A build that does not declare JaCoCo, or writes no XML report, fails with the plugin snippet to add.
@@ -32,4 +32,4 @@ Coverage reads each report's own totals, never a sum of its classes. An aggregat
 
 ## Frameworks
 
-The [frameworks](../../internal/lang/java/tests/frameworks) folder holds one commented file per framework, spotted from build files and imports. Each says how its tests reach the JUnit XML. A framework that needs a running service, as Testcontainers needs Docker, fails before the run when the service is down.
+The [frameworks](../../pkg/lang/java/tests/frameworks) folder holds one commented file per framework, spotted from build files and imports. Each says how its tests reach the JUnit XML. A framework that needs a running service, as Testcontainers needs Docker, fails before the run when the service is down.

@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/repocheck"
 )
 
 // explained is one check as `fitness explain --json` gives it.

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // checkLink marks a bundle file that is a link to the fitness binary, in

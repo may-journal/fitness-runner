@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // IDLine is an ID and the line that declares it. An acceptance with three

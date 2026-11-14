@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
 )
 
 // repository answers path questions about tracked files. kept holds the

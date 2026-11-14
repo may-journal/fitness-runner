@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
 )
 
 // subject is the element or relationship a callout number marks.

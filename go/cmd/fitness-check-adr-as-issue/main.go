@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/may-journal/fitness-runner/go/internal/adr"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/adr"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 func Main() {

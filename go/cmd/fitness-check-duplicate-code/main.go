@@ -6,15 +6,15 @@ import (
 	"path"
 	"slices"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/clonedetect"
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
-	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
-	"github.com/may-journal/fitness-runner/go/internal/par"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // The thresholds, modeled on jscpd's --threshold 1 --min-lines 5

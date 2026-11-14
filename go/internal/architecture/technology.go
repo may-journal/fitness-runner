@@ -4,8 +4,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
 )
 
 // technologyWords are the words a container's technology string may use

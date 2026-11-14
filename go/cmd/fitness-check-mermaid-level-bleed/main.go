@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 func Main() {
@@ -29,7 +29,7 @@ var levelFile = regexp.MustCompile(`(?:^|/)architecture/(\d+)[^/]*\.md$`)
 // descriptionHeader matches a table header cell naming the description column.
 var descriptionHeader = regexp.MustCompile(`(?i)^description$`)
 
-// jsWS is the JavaScript \s class as an RE2 class body, copied from internal/mermaid's unexported twin.
+// jsWS is the JavaScript \s class as an RE2 class body, copied from pkg/mermaid's unexported twin.
 const jsWS = `\t\n\v\f\r \x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}`
 
 // jsSpaceRun matches one or more JavaScript whitespace characters.

@@ -11,12 +11,12 @@ C4Component
         Component(config, "3 Config loader", "Go", ".fitnessrc.json")
         Component(resolve, "4 Check resolver", "Go", "allChecks from the module registry")
         Component(execute, "5 Execution pool", "Go", "goroutines + group kill")
-        Component(output, "6 Results renderer", "Go", "internal/render")
+        Component(output, "6 Results renderer", "Go", "pkg/render")
         Component(check, "7 Check package", "Go", "go/cmd/fitness-check-*")
     }
 
     Container_Boundary(shared, "Shared internals") {
-        Component(kit, "8 checkkit protocol", "Go", "go/internal, go/check")
+        Component(kit, "8 checkkit protocol", "Go", "go/pkg, go/internal, go/check")
     }
 
     Container_Boundary(tools, "Install and release tools") {
@@ -112,21 +112,21 @@ Numbers on nodes and letters on arrows match the callout table.
 `go/cmd/fitness` produces an ordered name list. It resolves each name to a local check, else a `fitness-check-<name>` program beside the runner, else the built-in check:
 
 1. A CLI name (`fitness prettier`) — run only that built-in check; an unknown name is an error.
-2. Otherwise — every installed check minus [ignores](../../go/internal/lang/ignores): unclaimed ones sorted, then each [language module](../../go/internal/lang/langs/langs.go)'s, sorted.
+2. Otherwise — every installed check minus [ignores](../../go/pkg/lang/ignores): unclaimed ones sorted, then each [language module](../../go/pkg/lang/langs/langs.go)'s, sorted.
 
 Every check runs in every repo and passes clean with zero files when it does not apply. A name with no check of that name fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
 
 ## Module data the repo-wide checks read
 
-Repo-wide checks take what a language brings from the registry, never from a list of their own. The spell and duplicate checks skip each module's lockfiles, plus those in one [lockfiles](../../go/internal/lang/lockfiles) file per other ecosystem. The build output check fails tracked files under the output folders each module finds in the repo.
+Repo-wide checks take what a language brings from the registry, never from a list of their own. The spell and duplicate checks skip each module's lockfiles, plus those in one [lockfiles](../../go/pkg/lang/lockfiles) file per other ecosystem. The build output check fails tracked files under the output folders each module finds in the repo.
 
 ## Coverage goal
 
-Every coverage check judges exact counts against one goal in [goal](../../go/internal/goal/goal.go), whichever module runs it. A module that spots test frameworks keeps one commented file per framework in its own folder, so adding one needs no code.
+Every coverage check judges exact counts against one goal in [goal](../../go/pkg/goal/goal.go), whichever module runs it. A module that spots test frameworks keeps one commented file per framework in its own folder, so adding one needs no code.
 
 ## Architecture view readers
 
-The architecture checks read code through one model in [codemodel](../../go/internal/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. Readers that read tokens relate names through one shared walk, as [ADR 0008](https://github.com/may-journal/fitness-runner/issues/860) decides. A language with no module lists its endings in a [sources](../../go/internal/lang/sources) file, so the views still inventory it.
+The architecture checks read code through one model in [codemodel](../../go/pkg/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. Readers that read tokens relate names through one shared walk, as [ADR 0008](https://github.com/may-journal/fitness-runner/issues/860) decides. A language with no module lists its endings in a [sources](../../go/pkg/lang/sources) file, so the views still inventory it.
 
 Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
 
@@ -161,6 +161,6 @@ Before the run loop, the CLI entry routes a few subcommands. Each one lets a git
 | `fitness close-check` | Judges a closed issue with `issue-checklist`; its after-effect reopens it once.       | The close check workflows run one step.               |
 | `fitness dupe-check`  | Scores an issue against older ones; its after-effect keeps one note and may close it. | The dupe check workflows run one step.                |
 | `fitness strip-front-matter` | Deletes the fitness keys from tracked Markdown's front matter, drops a block left empty, and lists each file. | A repo drops the keys no check reads now. |
-| `fitness comments` | Prints each code comment block with its line, language and kind, from the one shared reader in `go/internal/comments`. | Every check reads comments the same way. |
+| `fitness comments` | Prints each code comment block with its line, language and kind, from the one shared reader in `go/pkg/comments`. | Every check reads comments the same way. |
 
 `go/internal/metadata/github.go` declares each workflow subcommand as its checks and an after-effect from `go/internal/aftereffect`. For `issue-check`, `go/internal/metadata/kinds.go` reads each kind from `.github/ISSUE_TEMPLATE` and adds the rules a kind label names. The local-branch check shares their judgments. Only after-effects write to GitHub, through the `gh` CLI.

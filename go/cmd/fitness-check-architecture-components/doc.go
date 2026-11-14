@@ -38,7 +38,7 @@
 // Each [language module] whose view reader lists references finds them in
 // its product sources. A reference is an import of another folder, or a name
 // that resolves to a declaration in another file. The reader's package,
-// `go/internal/lang/<language>/views`, documents how it resolves them.
+// `go/pkg/lang/<language>/views`, documents how it resolves them.
 //
 // Comments and string literals create no reference. A source its reader
 // cannot parse fails. A reference under a build condition keeps it, and the
@@ -79,6 +79,6 @@
 //
 // [Requirement 0075] has one installed-command test per acceptance.
 //
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
 // [Requirement 0075]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0075-checks-architecture-components.md
 package check

@@ -6,10 +6,10 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
 )
 
 func selectedChecks(root string, argv []string) ([]resolved, []string, error) {

@@ -8,9 +8,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 var views = map[string]string{

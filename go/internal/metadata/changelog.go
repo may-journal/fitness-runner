@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/internal/changelog"
+	"github.com/may-journal/fitness-runner/go/pkg/changelog"
 )
 
 // changelogErrors holds a PR to one changelog/ entry file, which its

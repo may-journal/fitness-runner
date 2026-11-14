@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // GitHubAPI is the address of GitHub's API: GITHUB_API_URL, else api.github.com

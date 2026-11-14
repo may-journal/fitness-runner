@@ -64,6 +64,6 @@
 //
 // [Requirement 0073] has one installed-command test per acceptance.
 //
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
 // [Requirement 0073]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0073-checks-architecture-containers.md
 package check

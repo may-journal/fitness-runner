@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/render"
+	"github.com/may-journal/fitness-runner/go/pkg/render"
 )
 
 // heartbeatEvery is how often the heartbeat names each running check.

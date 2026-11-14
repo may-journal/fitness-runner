@@ -3,7 +3,7 @@ package check
 import (
 	"fmt"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // Result is a check's verdict: whether it passed, its error lines, findings

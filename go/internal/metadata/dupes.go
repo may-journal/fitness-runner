@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/dupe"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
 )
 
 // dupeConfig is the `dupeCheck` key of .fitnessrc.json. A zero CloseScore

@@ -9,15 +9,15 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
-	"github.com/may-journal/fitness-runner/go/internal/par"
-	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
+	"github.com/may-journal/fitness-runner/go/pkg/repocheck"
 )
 
 // localBins maps this run's local checks, from the repo's fitness/ folder

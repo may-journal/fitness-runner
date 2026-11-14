@@ -10,8 +10,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/lang/java"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/java"
 )
 
 var (

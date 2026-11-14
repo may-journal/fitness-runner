@@ -1,6 +1,6 @@
 package architecture
 
-import "github.com/may-journal/fitness-runner/go/internal/codemodel"
+import "github.com/may-journal/fitness-runner/go/pkg/codemodel"
 
 // observed is one relation the source shows between two concrete nodes.
 type observed struct {

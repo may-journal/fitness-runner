@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang"
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
 )
 
 // reqTest is one test declaration a language module found, and the module

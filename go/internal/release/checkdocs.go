@@ -7,6 +7,7 @@ import (
 	"go/doc/comment"
 	"go/parser"
 	"go/token"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -203,4 +204,18 @@ func packageSource(entry os.DirEntry) bool {
 func capitalize(s string) string {
 	r, size := utf8.DecodeRuneInString(s)
 	return string(unicode.ToUpper(r)) + s[size:]
+}
+
+// libraryDirs are the folders under go that hold shared packages: the public
+// ones a check may import, then the internal ones.
+var libraryDirs = []string{"pkg", "internal"}
+
+// walkLibraries walks every library folder under root's go folder in turn.
+func walkLibraries(root string, fn fs.WalkDirFunc) error {
+	for _, dir := range libraryDirs {
+		if err := filepath.WalkDir(filepath.Join(root, "go", dir), fn); err != nil {
+			return err
+		}
+	}
+	return nil
 }

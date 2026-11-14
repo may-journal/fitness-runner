@@ -6,13 +6,13 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
-	"github.com/may-journal/fitness-runner/go/internal/par"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // name is the check's name, which language modules key their scans by.

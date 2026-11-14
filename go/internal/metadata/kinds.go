@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/internal/epic"
-	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
+	"github.com/may-journal/fitness-runner/go/pkg/epic"
+	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
 )
 
 // kindRule is what a kind adds beyond its template's shape: body checks,

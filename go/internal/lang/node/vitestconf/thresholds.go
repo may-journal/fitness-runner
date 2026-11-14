@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/goal"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/goal"
 )
 
 // fullThreshold is the shared coverage goal: every coverage threshold must

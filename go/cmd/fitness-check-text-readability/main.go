@@ -7,12 +7,12 @@ import (
 	"os"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/bodycheck"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // Defaults are calibrated to this repo's baseline of grade 11-15 and LIX 40-48, so only genuine outliers fire; conf.Defaults holds them.

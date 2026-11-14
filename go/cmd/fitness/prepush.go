@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	localBranchCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 const zeroSha = "0000000000000000000000000000000000000000"

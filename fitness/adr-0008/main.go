@@ -31,11 +31,11 @@ func run(ctx *check.Context) (check.Result, error) {
 	return check.Found(len(files), found...), nil
 }
 
-// modules lists the files beside the registry in go/internal/lang/langs.
+// modules lists the files beside the registry in go/pkg/lang/langs.
 func modules(ctx *check.Context) []string {
 	var out []string
 	for _, f := range ctx.Files(".go") {
-		if path.Dir(f) == "go/internal/lang/langs" && path.Base(f) != "langs.go" && !strings.HasSuffix(f, "_test.go") {
+		if path.Dir(f) == "go/pkg/lang/langs" && path.Base(f) != "langs.go" && !strings.HasSuffix(f, "_test.go") {
 			out = append(out, f)
 		}
 	}

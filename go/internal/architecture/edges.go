@@ -3,7 +3,7 @@ package architecture
 import (
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/pkg/codemodel"
 )
 
 // Edge classes a class diagram arrow draws.

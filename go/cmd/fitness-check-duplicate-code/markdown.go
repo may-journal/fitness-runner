@@ -3,8 +3,8 @@ package check
 import (
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
 )
 
 // markdownView blanks the lines a doc must repeat: a legend diagram, a style

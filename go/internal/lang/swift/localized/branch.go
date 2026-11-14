@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang/swift"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/swift"
 )
 
 // branchStart returns where a call's first argument begins when the expression

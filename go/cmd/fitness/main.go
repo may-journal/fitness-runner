@@ -41,17 +41,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
-	"github.com/may-journal/fitness-runner/go/internal/par"
-	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
+	"github.com/may-journal/fitness-runner/go/pkg/render"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // allChecks is the org default and the catalog for explicit external lists.

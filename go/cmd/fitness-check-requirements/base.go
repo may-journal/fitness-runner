@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/golang/toolchain"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/golang/toolchain"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
 )
 
 // gitLine is git's one line of output in root, or empty when git fails.

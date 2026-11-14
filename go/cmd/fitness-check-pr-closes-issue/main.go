@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/bodycheck"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
 )
 
 func Main() {

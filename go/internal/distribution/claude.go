@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // ClaudeHook is one Claude Code hook that runs `fitness claude-hook`: the

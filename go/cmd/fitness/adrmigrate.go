@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/may-journal/fitness-runner/go/internal/adr"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/adr"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // runADRMigrate runs `fitness adr-migrate`: it moves each ADR file of the

@@ -7,8 +7,8 @@ import (
 	"os"
 	"slices"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/render"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/render"
 )
 
 // formatFlag picks how a run prints: `--format=json` prints all results as one

@@ -1,9 +1,9 @@
 package check
 
 import (
-	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
+	"github.com/may-journal/fitness-runner/go/pkg/bodycheck"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
 )
 
 func Main() {

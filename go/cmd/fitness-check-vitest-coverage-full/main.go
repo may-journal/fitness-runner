@@ -8,10 +8,10 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/vitestconf"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/node"
 )
 
 // Error strings ported verbatim from the TS check's enUS.

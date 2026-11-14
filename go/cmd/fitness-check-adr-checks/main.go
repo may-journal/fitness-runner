@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/adr"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/repocheck"
+	"github.com/may-journal/fitness-runner/go/pkg/adr"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/repocheck"
 )
 
 func Main() {

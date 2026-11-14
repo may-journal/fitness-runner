@@ -3,7 +3,7 @@ package check
 import (
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
 )
 
 // block is one prose unit, a paragraph with text or a list with items, tagged with its section.

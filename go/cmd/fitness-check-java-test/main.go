@@ -1,8 +1,8 @@
 package check
 
 import (
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/java/tests"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/java/tests"
 )
 
 func Main() {

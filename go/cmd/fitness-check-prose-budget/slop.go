@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/may-journal/fitness-runner/go/internal/comments"
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
 )
 
 // Rule IDs of the comment slop rules.

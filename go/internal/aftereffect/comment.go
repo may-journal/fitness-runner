@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // Comment is one issue or pull request review comment that comment-check

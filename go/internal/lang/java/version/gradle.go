@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang/java"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/java"
 )
 
 var (

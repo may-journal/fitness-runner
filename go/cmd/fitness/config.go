@@ -10,11 +10,11 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/may-journal/fitness-runner/go/internal/conf"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/selection"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
 )
 
 // configView is what `fitness config` shows: the repo's resolved settings

@@ -24,5 +24,5 @@
 // A file over 64 KB is checked in line-aligned chunks in parallel, once its
 // `cspell:` directives are applied to the whole file.
 //
-// [lockfiles and build wrapper files]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/lang.go
+// [lockfiles and build wrapper files]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/lang.go
 package check

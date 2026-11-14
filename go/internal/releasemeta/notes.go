@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/changelog"
+	"github.com/may-journal/fitness-runner/go/pkg/changelog"
 )
 
 // Notes is a release's description: the body of each entry file it ships,

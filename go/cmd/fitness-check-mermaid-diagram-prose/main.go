@@ -1,4 +1,4 @@
-// The shared parser lives in internal/mermaid, which keeps its JS space and styling patterns unexported, so this package duplicates them.
+// The shared parser lives in pkg/mermaid, which keeps its JS space and styling patterns unexported, so this package duplicates them.
 
 package check
 
@@ -7,9 +7,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/bodycheck"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
 )
 
 func Main() {
@@ -39,7 +39,7 @@ func run(root string, args []string) (checkkit.Result, error) {
 
 // jsWS is the JavaScript \s character class (ASCII whitespace incl. \v,
 // Unicode spaces, line separators, and the BOM) as an RE2 class body —
-// duplicated from internal/mermaid, where it is unexported.
+// duplicated from pkg/mermaid, where it is unexported.
 const jsWS = `\t\n\v\f\r \x{00A0}\x{1680}\x{2000}-\x{200A}\x{2028}\x{2029}\x{202F}\x{205F}\x{3000}\x{FEFF}`
 
 // isJSSpace reports whether r is in the JavaScript \s class — the rune-level

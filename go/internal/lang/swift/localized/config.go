@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/conf"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
 )
 
 // fileConfig is the check's own key in the repo's config file.

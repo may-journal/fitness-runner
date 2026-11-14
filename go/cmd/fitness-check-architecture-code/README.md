@@ -28,7 +28,7 @@ Mermaid generics such as `Promise~boolean~` read as `Promise<boolean>`, and `Lis
 
 ## Readers
 
-Each [language module](../../internal/lang/langs/langs.go) brings one view reader through the shared code model. The reader's package, `go/internal/lang/<language>/views`, documents what it reads, which types the view covers, and its limits.
+Each [language module](../../pkg/lang/langs/langs.go) brings one view reader through the shared code model. The reader's package, `go/pkg/lang/<language>/views`, documents what it reads, which types the view covers, and its limits.
 
 ## Coverage
 

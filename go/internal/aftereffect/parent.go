@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checklist"
-	"github.com/may-journal/fitness-runner/go/internal/epic"
+	"github.com/may-journal/fitness-runner/go/pkg/checklist"
+	"github.com/may-journal/fitness-runner/go/pkg/epic"
 )
 
 // Ref is one issue in one repository.

@@ -7,5 +7,5 @@ https://github.com/may-journal/fitness-runner/issues/857
 ## Check
 
 - Fails a `require` line in `go/go.mod`, since the parser takes no dependency.
-- Fails a file in `go/internal/lang/swift/views` that imports cgo or starts a Swift toolchain.
+- Fails a file in `go/pkg/lang/swift/views` that imports cgo or starts a Swift toolchain.
 - Fix: parse what the view needs in Go.

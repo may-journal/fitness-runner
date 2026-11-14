@@ -10,7 +10,7 @@ Fails a repo whose duplicated lines pass 1% of its scanned lines. A native Go cl
 - Reads each file's code view, so commented-out code never counts and only the ignore markers below stay.
 - Binary files are skipped, since they have no lines to compare.
 - Files the repo's `.gitattributes` marks `linguist-generated` are left out.
-- Lockfiles and build wrapper files are left out, as each [language module](../../internal/lang/langs/langs.go) or the [lockfiles](../../internal/lang/lockfiles) folder names them.
+- Lockfiles and build wrapper files are left out, as each [language module](../../pkg/lang/langs/langs.go) or the [lockfiles](../../pkg/lang/lockfiles) folder names them.
 - Pass: duplicated lines stay at or under 1% of the scanned lines.
 - Fail: over threshold — the check reports `ERROR: duplicate code is X% of scanned lines, over the Y% threshold`, then `path: N duplicated lines` for each file holding them.
 - The engine is built into the check binary, so there is no external tool to install.

@@ -6,9 +6,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/render"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/render"
 )
 
 // maxAnnotations is GitHub's per-step display cap for error annotations. Past

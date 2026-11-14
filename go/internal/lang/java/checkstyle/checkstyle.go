@@ -9,9 +9,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/java"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/java"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // ceiling is the house complexity ceiling the hints suggest, the one the

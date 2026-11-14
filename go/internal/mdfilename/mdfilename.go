@@ -12,9 +12,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // Convention is one markdown filename convention: the pattern a basename

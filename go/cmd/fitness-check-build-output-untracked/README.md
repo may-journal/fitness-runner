@@ -11,7 +11,7 @@ Rule A covers the `dist` directory and the output each language module names:
 - `dist` must be git-ignored, as `git check-ignore -q dist` verifies. Fail hint: add `dist/` to `.gitignore`.
 - `dist` must have no tracked files: one `git ls-files -- dist '**/dist/**'` call is empty.
 - The fail hint for tracked files: remove the listed files with `git rm --cached`.
-- The build output each [language module](../../internal/lang/langs/langs.go) finds must have no tracked files either. They join the same list, in one combined error.
+- The build output each [language module](../../pkg/lang/langs/langs.go) finds must have no tracked files either. They join the same list, in one combined error.
 
 ## No imports from build output
 

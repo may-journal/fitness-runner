@@ -11,14 +11,14 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
-	"github.com/may-journal/fitness-runner/go/internal/par"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
 	"github.com/may-journal/fitness-runner/go/internal/spell"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/bodycheck"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // maxIssuesPerFile mirrors cspell's default maxNumberOfProblems.

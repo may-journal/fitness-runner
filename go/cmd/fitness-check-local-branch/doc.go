@@ -35,6 +35,7 @@
 // # Implementation
 //
 // `go/internal/metadata` supplies the same judgments to this check and the
-// Actions commands. Only Actions applies GitHub effects. The meta-check calls
+// Actions commands. The engine hands them to this check as it starts, so the
+// check imports no engine package. Only Actions applies GitHub effects. The meta-check calls
 // judgments directly, so it cannot recursively run the suite.
 package check

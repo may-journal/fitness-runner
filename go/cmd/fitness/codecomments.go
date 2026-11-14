@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/report"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // runComments runs `fitness comments [path...]`: it prints each comment block

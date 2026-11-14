@@ -8,7 +8,6 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -27,12 +26,12 @@ type configKey struct {
 	Fields []configKey
 }
 
-// configKeys reads struct fields tagged `check:"<name>"` under go/internal by
-// check name, erroring on any without a doc comment.
+// configKeys reads struct fields tagged `check:"<name>"` under go/pkg and
+// go/internal by check name, erroring on any without a doc comment.
 func (c Config) configKeys() (map[string][]configKey, error) {
 	keys := map[string][]configKey{}
 	fset := token.NewFileSet()
-	err := filepath.WalkDir(filepath.Join(c.Root, "go", "internal"), func(path string, entry fs.DirEntry, err error) error {
+	err := walkLibraries(c.Root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil || !packageSource(entry) {
 			return err
 		}

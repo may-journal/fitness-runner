@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/adr"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/adr"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // changeErrors fails each README that now links another ADR issue while no

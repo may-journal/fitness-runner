@@ -3,7 +3,7 @@ package check
 import (
 	"fmt"
 
-	"github.com/may-journal/fitness-runner/go/internal/comments"
+	"github.com/may-journal/fitness-runner/go/pkg/comments"
 )
 
 // ruleOverlong fails a function body whose comments outweigh its code.

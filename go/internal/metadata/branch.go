@@ -11,9 +11,9 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // LocalBranch judges live metadata through the normal check result protocol.
