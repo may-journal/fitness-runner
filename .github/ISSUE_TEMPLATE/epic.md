@@ -15,8 +15,8 @@ labels: Epic
 
 ## What needs to happen
 
-<!-- Each Plan as a plain #N or org/repo#N reference, in run order, each one a sub-issue of this epic. Add a short note after a comma, such as ", after #N". No checkboxes, status, emoji or tables. Split a list over 8 under ### headings. -->
+<!-- A checklist in run order, grouped under ### headings of at most 8 items. Each item is "- [ ]" or "- [x]", a few words, its Plan as a full issue URL, then optional pull request URLs. No emoji or tables. -->
 
-1. #REPLACE-WITH-FIRST-PLAN
+- [ ] REPLACE-WITH-FIRST-STEP, https://github.com/may-journal/REPLACE/issues/1
 
 <!-- Absolutely NO OTHER SECTIONS. -->

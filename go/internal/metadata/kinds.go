@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"maps"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/pkg/epic"
 	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
 )
 
@@ -27,7 +25,7 @@ type kindRule struct {
 // only a template file.
 var kindRules = map[string]kindRule{
 	"Plan": {checks: []string{"plan-structure"}},
-	"Epic": {checks: []string{"epic-structure"}, links: subIssueErrors},
+	"Epic": {checks: []string{"epic-structure"}},
 	"ADR":  {fields: adrErrors, shape: &adrShape},
 }
 
@@ -221,64 +219,4 @@ func planTargets(ev ghEvent, gh aftereffect.Client, _ blobChecker) ([]target, er
 		ts[i].Labels = []string{"Plan"}
 	}
 	return ts, err
-}
-
-// subIssueErrors fails an epic whose listed issues and GitHub sub-issues
-// differ, since each must be both.
-func subIssueErrors(t target, gh aftereffect.Client) []string {
-	subs, err := gh.SubIssues(t.Number)
-	if err != nil {
-		return []string{fmt.Sprintf("cannot read the sub-issues of #%d: %v; check gh authentication and network access, then retry", t.Number, err)}
-	}
-	refs := epic.Refs(t.Body)
-	return append(listedErrors(refs, subs, gh), unlistedErrors(refs, subs, gh.Repo())...)
-}
-
-// listedErrors names each listed reference that is not a sub-issue.
-func listedErrors(refs, subs []string, gh aftereffect.Client) []string {
-	var errs []string
-	for _, ref := range refs {
-		full := epic.Key(ref, gh.Repo())
-		if !slices.ContainsFunc(subs, func(s string) bool { return epic.Key(s, "") == full }) {
-			errs = append(errs, notSubIssue(ref, full, gh.Repo(), gh))
-		}
-	}
-	return errs
-}
-
-// unlistedErrors names each sub-issue the list leaves out.
-func unlistedErrors(refs, subs []string, repo string) []string {
-	var errs []string
-	for _, s := range subs {
-		if !slices.ContainsFunc(refs, func(r string) bool { return epic.Key(r, repo) == epic.Key(s, repo) }) {
-			errs = append(errs, fmt.Sprintf("sub-issue %s is not listed under `## %s`; list it, or remove it as a sub-issue", shortRef(s, repo), epic.Section))
-		}
-	}
-	return errs
-}
-
-// notSubIssue is the finding for a listed issue that is not a sub-issue:
-// one in this repository that cannot be read is missing.
-func notSubIssue(ref, full, repo string, gh aftereffect.Client) string {
-	if n, same := sameRepoNumber(full, repo); same {
-		if _, _, err := gh.Issue(n); err != nil {
-			return fmt.Sprintf("%s is listed but cannot be read (%v); list only issues that exist", ref, err)
-		}
-	}
-	return fmt.Sprintf("%s is listed but is not a sub-issue of this epic; add it as a sub-issue", ref)
-}
-
-// shortRef is a full reference as #number when it is in repo.
-func shortRef(full, repo string) string {
-	if _, same := sameRepoNumber(strings.ToLower(full), repo); same {
-		return full[strings.LastIndex(full, "#"):]
-	}
-	return full
-}
-
-// sameRepoNumber is the number of a lower-case full reference in repo.
-func sameRepoNumber(full, repo string) (int, bool) {
-	name, num, _ := strings.Cut(full, "#")
-	n, err := strconv.Atoi(num)
-	return n, err == nil && strings.EqualFold(name, repo)
 }

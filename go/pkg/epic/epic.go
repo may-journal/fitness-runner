@@ -1,10 +1,12 @@
 // Package epic reads an Epic issue body: the issue references its `## What
 // needs to happen` section lists in run order, and the rules each item keeps.
-// The epic-structure check judges the list, and `fitness issue-check`
-// compares its references with the epic's GitHub sub-issues.
+// An item is a plain reference, or a checklist item holding its Plan's full
+// issue URL and optional pull request URLs. The
+// epic-structure check judges the list, and Close check reads its references.
 package epic
 
 import (
+	"cmp"
 	"fmt"
 	"regexp"
 	"slices"
@@ -26,7 +28,9 @@ type Item struct {
 	Checkbox bool
 	// Lead is the reference that opens the item, whatever follows it.
 	Lead string
-	// Ref is the reference the item names, or "" when it is not a plain one.
+	// Ref is the item's issue: the plain reference it opens with, or for a
+	// checklist item its first issue URL as owner/name#number. It is ""
+	// when the item names none.
 	Ref string
 	// Note is the text after the reference's comma.
 	Note string
@@ -41,6 +45,7 @@ var (
 	refRe      = regexp.MustCompile(refPattern)
 	afterRe    = regexp.MustCompile(`(?i)\bafter\b`)
 	checkboxRe = regexp.MustCompile(`^\[[ xX]\]\s*`)
+	issueURLRe = regexp.MustCompile(`https://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)([#?/]\S*)?`)
 	statusRe   = regexp.MustCompile(`(?i)\b(done|blocked|wip|todo|merged|closed|shipped|complete|completed|in progress|pending)\b`)
 )
 
@@ -79,19 +84,18 @@ func sectionLines(body string) []string {
 func Refs(body string) []string {
 	var refs []string
 	for _, it := range Items(body) {
-		if it.Lead != "" {
-			refs = append(refs, it.Lead)
+		if ref := cmp.Or(it.Lead, it.Ref); ref != "" {
+			refs = append(refs, ref)
 		}
 	}
 	return refs
 }
 
-// Looks reports whether body reads as an epic: its first item under the
-// section is a plain issue reference with no checkbox. A checklist, even one
-// naming issues, is a Plan.
+// Looks reports whether body reads as an epic: its first item names an issue,
+// by reference or by URL.
 func Looks(body string) bool {
 	items := Items(body)
-	return len(items) > 0 && !items[0].Checkbox && items[0].Ref != ""
+	return len(items) > 0 && items[0].Ref != ""
 }
 
 // Key is ref as lower-case owner/name#number, with a bare #number read as
@@ -101,6 +105,26 @@ func Key(ref, repo string) string {
 		ref = repo + ref
 	}
 	return strings.ToLower(ref)
+}
+
+// PlanRef is the issue an item's text names: the reference it opens with,
+// else its first issue URL as owner/name#number, else "".
+func PlanRef(text string) string {
+	if lead := Lead(text); lead != "" {
+		return lead
+	}
+	return urlRef(text)
+}
+
+// urlRef is the first issue URL in text as owner/name#number, or "". A URL
+// that points into an issue's comments is not the issue itself.
+func urlRef(text string) string {
+	for _, m := range issueURLRe.FindAllStringSubmatch(text, -1) {
+		if m[3] == "" {
+			return m[1] + "#" + m[2]
+		}
+	}
+	return ""
 }
 
 // Lead is the reference text opens with, or "".
@@ -119,6 +143,10 @@ func parse(text string) Item {
 		it.Checkbox, rest = true, text[loc[1]:]
 	}
 	it.Lead = Lead(rest)
+	if it.Checkbox {
+		it.Ref = urlRef(rest)
+		return it
+	}
 	m := plainRe.FindStringSubmatch(rest)
 	if m == nil {
 		return it
@@ -167,14 +195,28 @@ func Validate(body, repo string) []string {
 	return append(errs, tableErrors(body)...)
 }
 
-// itemErrors judges one item's form: a plain reference with an optional
-// short note, and no checkbox, emoji or status.
+// itemErrors judges one item's form, and fails an emoji in either kind.
 func itemErrors(n int, it Item) []string {
-	switch {
-	case it.Checkbox:
-		return []string{fmt.Sprintf("item %d uses a checkbox; list the issue as a plain reference, and GitHub shows whether it is done", n)}
-	case hasEmoji(it.Text):
+	if hasEmoji(it.Text) {
 		return []string{fmt.Sprintf("item %d has an emoji; GitHub shows each issue's state, so drop it", n)}
+	}
+	if it.Checkbox {
+		return checklistErrors(n, it)
+	}
+	return plainErrors(n, it)
+}
+
+// checklistErrors fails a checklist item that names no issue URL.
+func checklistErrors(n int, it Item) []string {
+	if it.Ref == "" {
+		return []string{fmt.Sprintf("item %d (%s) names no issue; add its Plan as a full issue URL", n, it.Text)}
+	}
+	return nil
+}
+
+// plainErrors fails a plain item that is not a reference, or notes a status.
+func plainErrors(n int, it Item) []string {
+	switch {
 	case it.Ref == "":
 		return []string{fmt.Sprintf("item %d (%s) is not a plain #N or org/repo#N reference; put any short note after a comma", n, it.Text)}
 	case statusRe.MatchString(it.Note):

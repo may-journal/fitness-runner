@@ -13,17 +13,17 @@ labeled issue edits
 ## Requirements
 
 - 0082.1
-    - Given Developer has an Epic that lists each of its sub-issues as a plain reference in run order
+    - Given Developer has an Epic that lists each of its issues as a plain reference in run order
         - When issue-check judges it
             - Then it comments that the Epic looks good and labels it fitness-valid
 - 0082.2
-    - Given Developer has an Epic list with a checkbox, an emoji, a repeated reference, a table, an out-of-order item, or an oversized group
+    - Given Developer has an Epic with an item naming no issue, an emoji, a repeat, a table, bad order or too many items
         - When issue-check judges it
             - Then it comments each error, labels it fitness-invalid, and exits 1
 - 0082.3
-    - Given Developer has an Epic whose list and GitHub sub-issues differ
+    - Given Developer has an Epic that lists issues that are not its sub-issues
         - When issue-check judges it
-            - Then it names each listed issue that is not a sub-issue, or cannot be read, and each sub-issue left off the list
+            - Then it passes without asking GitHub for the Epic's sub-issues
 - 0082.4
     - Given Developer has an issue of a kind that has only a template, or a Plan whose repo template adds a section
         - When issue-check judges it

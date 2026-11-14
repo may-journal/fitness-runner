@@ -207,7 +207,7 @@ func withRef(refs []Ref, ref Ref) []Ref {
 // of its children, which Close check would reopen the parent for.
 func ownUnchecked(body, repo string, children []Ref) bool {
 	for _, item := range checklist.Unchecked(body) {
-		ref, err := parseRef(epic.Lead(item), repo)
+		ref, err := parseRef(epic.PlanRef(item), repo)
 		if err != nil || !has(children, ref) {
 			return true
 		}

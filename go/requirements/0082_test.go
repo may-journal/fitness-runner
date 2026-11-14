@@ -51,15 +51,15 @@ func Test0082_1(t *testing.T) {
 func Test0082_2(t *testing.T) {
 	t.Parallel()
 	table := "\n\n| Plan | State |\n| --- | --- |\n| 22 | open |"
-	items := "1. [ ] #22\n2. #23 ✅\n3. #24, after #25\n4. #25\n5. may-journal/example#25\n6. may-journal/example#26, after #27\n7. #27"
+	items := "1. [ ] Write the first step\n2. #23 ✅\n3. #24, after #25\n4. #25\n5. may-journal/example#25\n6. may-journal/example#26, after #27\n7. #27"
 	body := strings.Replace(epicBody(items), "fixture.", "fixture."+table, 1)
 	files := map[string]string{".fitnessrc.json": `{"proseBudget": {"maxListItems": 4}}` + "\n"}
 	out, code, rp := judgeKind(t, body, files, epicGitHub("22", "23", "24", "25", "26", "27"))
-	sees(t, out, code, 1, "item 1 uses a checkbox", "item 2 has an emoji", "item 3 (\\#24) is listed before \\#25",
+	sees(t, out, code, 1, "item 1 (\\[ \\] Write the first step) names no issue", "item 2 has an emoji", "item 3 (\\#24) is listed before \\#25",
 		"example\\#25 is listed more than once", "item 6 (may-journal/example\\#26) is listed before \\#27",
 		"tables are not allowed", "a list has more than 4 items at level 1")
-	if strings.Contains(out, "is not listed under") || strings.Count(out, "more than 4 items") != 1 {
-		t.Errorf("want the checkbox item counted as listed and one list-length finding:\n%s", out)
+	if strings.Count(out, "more than 4 items") != 1 {
+		t.Errorf("want one list-length finding:\n%s", out)
 	}
 	if !commentedOn(rp, kindIssue, `body=❌ Epic needs work:\n- `) || !labeledOn(rp, kindIssue, "fitness-invalid") {
 		t.Errorf("want a failing Epic verdict and fitness-invalid, got gh calls %q", rp.calls("gh"))
@@ -68,13 +68,11 @@ func Test0082_2(t *testing.T) {
 
 func Test0082_3(t *testing.T) {
 	t.Parallel()
-	saved := append([]response{
-		{Match: []string{"labels: [.labels[].name]", "issues/24"}, Stdout: `{"body": "", "labels": []}` + "\n"},
-		{Match: []string{"issues/26"}, Stderr: "gh: Not Found (HTTP 404)\n", Exit: 1},
-	}, epicGitHub("22", "23")...)
-	out, code, _ := judgeKind(t, epicBody("1. #22\n2. #24\n3. #26"), nil, saved)
-	sees(t, out, code, 1, "24 is listed but is not a sub-issue of this epic", "26 is listed but cannot be read",
-		"sub-issue \\#23 is not listed under")
+	out, code, rp := judgeKind(t, epicBody("1. #22\n2. #24\n3. may-journal/other#26"), nil, kindGitHub("epic", "Epic"))
+	sees(t, out, code, 0, "Passed.")
+	if rp.called("gh", "issues/"+kindIssue+"/sub_issues") {
+		t.Errorf("want no sub-issue read, got gh calls %q", rp.calls("gh"))
+	}
 }
 
 func Test0082_4(t *testing.T) {
