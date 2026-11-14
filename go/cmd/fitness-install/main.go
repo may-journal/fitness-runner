@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"syscall"
 
@@ -48,22 +49,48 @@ func execute(installer *distribution.Installer, options distribution.Options) in
 	if err != nil {
 		return failure(err)
 	}
-	return runInstalled(bin, options)
+	checks, err := installChecks(installer, bin, options)
+	if err != nil && options.NeedsChecks() {
+		return failure(err)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fitness: warning: %v; the built-in checks run instead\n", err)
+	}
+	return runInstalled(bin, checks, options)
 }
 
-func runInstalled(bin string, options distribution.Options) int {
+// installChecks installs each check the repo pins when asked, reading the
+// pins from the installed engine, and returns their folder.
+func installChecks(installer *distribution.Installer, bin string, options distribution.Options) (string, error) {
+	if !options.InstallsChecks() {
+		return "", nil
+	}
+	versions := exec.Command(filepath.Join(bin, "fitness"), "check-versions")
+	versions.Stderr = os.Stderr
+	out, err := versions.Output()
+	if err != nil {
+		return "", fmt.Errorf("fitness check-versions: %w", err)
+	}
+	pins, err := distribution.ParsePins(string(out))
+	if err != nil {
+		return "", err
+	}
+	return installer.InstallChecks(context.Background(), pins)
+}
+
+func runInstalled(bin, checks string, options distribution.Options) int {
 	if options.InstallHook {
 		return installHook(options)
 	}
 	if options.SetsUpAgents() {
 		return setUpAgents(bin, options)
 	}
-	return runChecks(bin, options)
+	return runChecks(bin, checks, options)
 }
 
-func runChecks(bin string, options distribution.Options) int {
+func runChecks(bin, checks string, options distribution.Options) int {
 	if options.GitHubAction {
-		if err := distribution.WriteActionFiles(bin); err != nil {
+		if err := distribution.WriteActionFiles(bin, checks); err != nil {
 			return failure(err)
 		}
 	}
@@ -73,7 +100,7 @@ func runChecks(bin string, options distribution.Options) int {
 		return 0
 	}
 	runner := filepath.Join(bin, "fitness")
-	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), runnerEnvironment(bin)))
+	return failure(syscall.Exec(runner, append([]string{runner}, options.Args...), runnerEnvironment(bin, checks)))
 }
 
 func setUpAgents(bin string, options distribution.Options) int {

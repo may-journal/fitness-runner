@@ -61,6 +61,7 @@ func (i *Installer) resolveLatest(ctx context.Context) (string, error) {
 // installed version, and one warning naming the failure. With neither, the
 // failure stands.
 func (i *Installer) fallBack(failure error, recorded string) (string, error) {
+	i.Unanswered = true
 	if recorded == "" {
 		recorded = i.newestInstalled()
 	}
@@ -101,10 +102,8 @@ func (i *Installer) lookupLatest(ctx context.Context) (string, error) {
 // githubToken is GH_TOKEN, else GITHUB_TOKEN, else what a logged-in gh
 // prints, or "" when none is at hand.
 func githubToken(ctx context.Context) string {
-	for _, name := range []string{"GH_TOKEN", "GITHUB_TOKEN"} {
-		if token := strings.TrimSpace(os.Getenv(name)); token != "" {
-			return token
-		}
+	if token := envToken(); token != "" {
+		return token
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -113,6 +112,17 @@ func githubToken(ctx context.Context) string {
 		return ""
 	}
 	return strings.TrimSpace(string(out))
+}
+
+// envToken is GH_TOKEN, else GITHUB_TOKEN, or "" when neither is set. The
+// check tag lookup reads only these, so a push starts no gh.
+func envToken() string {
+	for _, name := range []string{"GH_TOKEN", "GITHUB_TOKEN"} {
+		if token := strings.TrimSpace(os.Getenv(name)); token != "" {
+			return token
+		}
+	}
+	return ""
 }
 
 // readLatest returns the recorded lookup, or an empty record when none is

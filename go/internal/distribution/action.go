@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 func ActionOptions(options Options) (Options, error) {
@@ -25,23 +27,50 @@ func actionInputs(options Options, getenv func(string) string) (Options, error) 
 	if len(args) > 0 {
 		options.Args = args
 	}
-	value := getenv("FITNESS_INSTALL_ONLY")
-	if value == "" {
-		value = "false"
+	return withModes(options, getenv)
+}
+
+// withModes reads the install-only and with-checks inputs into options.
+func withModes(options Options, getenv func(string) string) (Options, error) {
+	var err error
+	if options.InstallOnly, err = boolInput(getenv("FITNESS_INSTALL_ONLY")); err != nil {
+		return options, err
 	}
-	installOnly, err := strconv.ParseBool(value)
-	options.InstallOnly = installOnly
+	options.WithChecks, err = boolInput(getenv("FITNESS_WITH_CHECKS"))
 	return options, err
 }
 
-func WriteActionFiles(bin string) error {
-	if strings.ContainsAny(bin, "\r\n") {
+// boolInput reads a true or false action input, false when empty.
+func boolInput(value string) (bool, error) {
+	if value == "" {
+		return false, nil
+	}
+	return strconv.ParseBool(value)
+}
+
+// WriteActionFiles puts the engine on PATH and names it in the bin output.
+// With checks installed, later steps get FITNESS_CHECKS_DIR and the
+// checks-dir output names that folder.
+func WriteActionFiles(bin, checks string) error {
+	if strings.ContainsAny(bin+checks, "\r\n") {
 		return fmt.Errorf("cache path cannot contain a newline")
 	}
 	if err := appendActionFile(os.Getenv("GITHUB_PATH"), bin+"\n"); err != nil {
 		return err
 	}
-	return appendActionFile(os.Getenv("GITHUB_OUTPUT"), "bin="+bin+"\n")
+	if err := appendActionFile(os.Getenv("GITHUB_OUTPUT"), "bin="+bin+"\n"); err != nil || checks == "" {
+		return err
+	}
+	return writeChecksDir(checks)
+}
+
+// writeChecksDir names the installed checks folder in the checks-dir output
+// and in FITNESS_CHECKS_DIR for later steps.
+func writeChecksDir(checks string) error {
+	if err := appendActionFile(os.Getenv("GITHUB_OUTPUT"), "checks-dir="+checks+"\n"); err != nil {
+		return err
+	}
+	return appendActionFile(os.Getenv("GITHUB_ENV"), checkkit.ChecksDirEnv+"="+checks+"\n")
 }
 
 func appendActionFile(path, value string) error {

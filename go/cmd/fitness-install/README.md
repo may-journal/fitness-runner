@@ -21,6 +21,12 @@ The answer is recorded in the cache as `latest-release.json`, and for 10 minutes
 
 An exact `--version`, as the root action passes, never looks up.
 
+## Checks
+
+`--with-checks` also installs each check the repo pins in `checkVersions`, as `fitness check-versions` prints them. Each pin resolves through the fitness-checks release index, or through its tags while no index is published. A tag or index answer is reused for 10 minutes.
+
+Each check archive must match its SHA-256 before its program is cached by release and platform. The installer hands the engine one folder of exactly the pinned checks as `FITNESS_CHECKS_DIR`. A check that cannot install, offline or unreleased, prints a warning and the built-ins run, unless the run passes `--no-builtins`. The action's `with-checks` input does the same and sets it for later steps.
+
 ## Cache
 
 Downloads and archive paths are checked in Go. Each cached copy has a version, platform, and hash key. A repair publishes a new copy and atomically switches the current pointer; older copies remain available to running checks.
