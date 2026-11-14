@@ -27,4 +27,4 @@ Pinned checks
 - 0164.4
     - Given Developer has a repo that pins one check, and GitHub refuses the latest release lookup
         - When I run `fitness-install --with-checks --version latest`
-            - Then it warns that no check installs, asks for none, and the built-ins run
+            - Then it falls back to the recorded release, warns that no check installs, asks for none, and the built-ins run

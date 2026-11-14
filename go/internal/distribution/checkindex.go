@@ -102,6 +102,15 @@ func (index checkIndex) release(pin CheckPin, platform string) (checkRelease, er
 	return checkRelease{Tag: check.Versions[version].Tag, URL: artifact.URL, SHA256: artifact.SHA256}, nil
 }
 
+// checkLookupTimeout bounds each read of the check index or tags, like the
+// runner's GitHub probe. A silent network then delays a hook little.
+const checkLookupTimeout = 2 * time.Second
+
+// checkLookup is the lookup client with checkLookupTimeout.
+func (i *Installer) checkLookup() *http.Client {
+	return &http.Client{Timeout: checkLookupTimeout, Transport: i.Lookup.Transport}
+}
+
 // readIndex returns a fresh recorded index, else reads and records it.
 // errNoIndex means fitness-checks publishes none.
 func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
@@ -123,8 +132,9 @@ func (i *Installer) fetchIndex(ctx context.Context) (checkIndex, error) {
 	if err != nil {
 		return index, err
 	}
-	i.announce(i.Lookup, "the check release index", request)
-	response, err := i.Lookup.Do(request)
+	client := i.checkLookup()
+	i.announce(client, "the check release index", request)
+	response, err := client.Do(request)
 	if err != nil {
 		return index, fmt.Errorf("download %s: %w", checkIndexURL, err)
 	}

@@ -11,6 +11,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"time"
 )
 
 // installedIn0164 matches the line naming the folder of installed checks.
@@ -83,7 +84,10 @@ func Test0164_3(t *testing.T) {
 
 func Test0164_4(t *testing.T) {
 	t.Parallel()
-	env := append(fiPrivateCache(t), rlReleases(t, http.StatusForbidden, "").env...)
+	cache := fiPrivateCache(t)
+	stale := fmt.Sprintf(`{"tag":"v%s","checked":%q}`, rlCandidate(t), time.Now().Add(-time.Hour).Format(time.RFC3339))
+	mustDo(t, os.WriteFile(filepath.Join(strings.TrimPrefix(cache[0], "FITNESS_CACHE_DIR="), "latest-release.json"), []byte(stale), 0o600))
+	env := append(cache, rlReleases(t, http.StatusForbidden, "").env...)
 	out, code := fiRun(t, pinned0164(t, `{"markdown-links": "v1.0.0"}`), env, "--with-checks", "--version", "latest", "--install-only")
 	sees(t, out, code, 0, "warning: GitHub did not answer the release lookup, so no check installs; the built-in checks run instead")
 	if strings.Contains(out, "fitness-check-markdown-links") {
