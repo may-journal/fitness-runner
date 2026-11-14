@@ -83,6 +83,8 @@ func Test0162_3(t *testing.T) {
 	write(t, bundle, map[string]string{"fitness-check-only": script0162(`{"name":"only"}`, "only ran")})
 	out, code := run0162(t, bundle, repo, nil, "--no-builtins", "--policy=external", "--all")
 	sees(t, out, code, 1, "only ran", "0 of 1 checks passed")
-	out, code = run0162(t, bundle, repo, nil, "--no-builtins", "markdown-links")
-	sees(t, out, code, 1, "check markdown-links is not installed, and --no-builtins turns the built-in checks off; install it: go install github.com/may-journal/fitness-checks/cmd/fitness-check-markdown-links@latest")
+	for _, selected := range [][]string{{"markdown-links"}, {"check", "markdown-links"}} {
+		out, code = run0162(t, bundle, repo, nil, append([]string{"--no-builtins"}, selected...)...)
+		sees(t, out, code, 1, "check markdown-links is not installed, and --no-builtins turns the built-in checks off; install it: go install github.com/may-journal/fitness-checks/cmd/fitness-check-markdown-links@latest")
+	}
 }

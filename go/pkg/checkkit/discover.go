@@ -46,9 +46,14 @@ func Discover() map[string]string {
 }
 
 // searchFolders lists the absolute folders Discover searches, in order. A
-// relative folder, such as ".", would run a program the repo holds.
+// relative PATH folder, such as ".", would run a program the repo holds.
 func searchFolders(self string) []string {
-	folders := []string{os.Getenv(ChecksDirEnv)}
+	var folders []string
+	if configured := os.Getenv(ChecksDirEnv); configured != "" {
+		// A configured folder counts from where fitness starts.
+		abs, _ := filepath.Abs(configured)
+		folders = append(folders, abs)
+	}
 	if self != "" {
 		folders = append(folders, filepath.Dir(self))
 	}

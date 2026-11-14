@@ -22,5 +22,5 @@ Installed check programs
             - Then the first stops the run, naming the check, both versions and its install command, and the second sees `FITNESS_PROTOCOL=1`
 - 0162.3
     - Given Developer has one installed check
-        - When I run the suite with `--no-builtins`, or select with it a built-in check that is not installed
+        - When I run the suite with `--no-builtins`, or name with it a built-in check not installed, also through `fitness check`
             - Then the suite runs only the installed check, and the selection fails naming the check and its install command

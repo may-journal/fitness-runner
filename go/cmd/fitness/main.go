@@ -206,15 +206,25 @@ func runCheckCommand(args []string) int {
 		return 2
 	}
 	if args[0] == "--list" {
-		for _, name := range slices.Sorted(maps.Keys(builtins)) {
-			fmt.Println(name)
-		}
-		return 0
+		return listCheckNames()
 	}
-	if _, ok := builtins[args[0]]; !ok {
+	if _, ok := builtins[args[0]]; !ok || builtinsOff() {
 		return run(args)
 	}
 	return runBuiltin(args[0], args[1:])
+}
+
+// listCheckNames prints every built-in check name, one per line, or the
+// installed ones when noBuiltinsFlag turns the built-ins off.
+func listCheckNames() int {
+	names := slices.Sorted(maps.Keys(builtins))
+	if builtinsOff() {
+		names = slices.Sorted(maps.Keys(installedPrograms))
+	}
+	for _, name := range names {
+		fmt.Println(name)
+	}
+	return 0
 }
 
 // dispatch routes help and the subcommands (`init`, `hook <name>`,
