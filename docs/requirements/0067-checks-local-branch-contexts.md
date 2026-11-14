@@ -18,7 +18,7 @@ entry points exercised
             - Then one metadata execution reports findings in the shared results table
 - 0067.2
     - Given Developer has the installed local-branch binary
-        - When I request its describe metadata, or run it outside fitness
+        - When I request its describe metadata, or build it without the engine and run it
             - Then it names the check and declares its scope without GitHub reads, and a run exits 3 saying it runs only inside fitness
 - 0067.3
     - Given Developer has an approved feature Plan and an invalid linked PR, or a docs branch whose PR read outlasts the push's deadline
