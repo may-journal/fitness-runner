@@ -5,6 +5,11 @@ name: Release Please (reusable)
 # publishes the release and moves vX to it.
 on:
   workflow_call:
+    outputs:
+      # A JSON array with one {path, tag, major_tag, sha} per released
+      # component, empty when nothing was released.
+      releases:
+        value: ${{ jobs.release-please.outputs.releases }}
     secrets:
       AUTOMATION_APP_ID:
         required: true
@@ -23,6 +28,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       pr: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
+      releases: ${{ steps.tags.outputs.releases }}
     # One release run at a time per repo. The group name differs from any
     # caller's, since a caller and its called workflow sharing one deadlocks.
     concurrency:
@@ -112,22 +118,34 @@ jobs:
           gh pr reopen "$PR"
       # Only a missing tag is created; any other lookup error fails the step
       # by name instead of a confusing "Reference already exists".
+      # Each released component moves its own major tag, v1 for the root and
+      # <component>-v1 for a component, reading outputs prefixed by its path.
       - name: Move the major version tag
-        if: ${{ steps.release.outputs.release_created == 'true' }}
+        id: tags
+        if: ${{ steps.release.outputs.releases_created == 'true' }}
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          MAJOR: v${{ steps.release.outputs.major }}
-          SHA: ${{ steps.release.outputs.sha }}
+          OUTPUTS: ${{ toJSON(steps.release.outputs) }}
         run: |
           refs="repos/$GITHUB_REPOSITORY/git/refs"
-          if found="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAJOR" --silent 2>&1)"; then
-            gh api -X PATCH "$refs/tags/$MAJOR" -f sha="$SHA" -F force=true --silent
-          elif [[ "$found" == *"Not Found"* ]]; then
-            gh api -X POST "$refs" -f ref="refs/tags/$MAJOR" -f sha="$SHA" --silent
-          else
-            echo "::error::Could not read tag $MAJOR: $found"
-            exit 1
-          fi
+          releases='[]'
+          while IFS=$'\t' read -r path tag major sha; do
+            base="${tag%-v*}"
+            if [ "$base" = "$tag" ]; then MAJOR="v$major"; else MAJOR="$base-v$major"; fi
+            if found="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAJOR" --silent 2>&1)"; then
+              gh api -X PATCH "$refs/tags/$MAJOR" -f sha="$sha" -F force=true --silent
+            elif [[ "$found" == *"Not Found"* ]]; then
+              gh api -X POST "$refs" -f ref="refs/tags/$MAJOR" -f sha="$sha" --silent
+            else
+              echo "::error::Could not read tag $MAJOR: $found"
+              exit 1
+            fi
+            releases="$(jq -c --arg path "$path" --arg tag "$tag" --arg major_tag "$MAJOR" --arg sha "$sha" \
+              '. + [{path: $path, tag: $tag, major_tag: $major_tag, sha: $sha}]' <<<"$releases")"
+          done < <(jq -r '. as $o | (($o.paths_released // "[\".\"]") | fromjson)[] as $path
+            | (if $path == "." then "" else $path + "--" end) as $p
+            | [$path, $o[$p + "tag_name"], $o[$p + "major"], $o[$p + "sha"]] | @tsv' <<<"$OUTPUTS")
+          echo "releases=$releases" >> "$GITHUB_OUTPUT"
       - name: Report job outcome
         if: ${{ always() }}
         run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

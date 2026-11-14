@@ -2,7 +2,7 @@
 
 ## Why
 
-Every repo that opts in to releases calls one shared Release Please workflow. Its release pull request passes pr-check and links a compare view that works before merge, and each release moves the major tag.
+Every repo that opts in to releases calls one shared Release Please workflow. Its release pull request passes pr-check and links a compare view that works before merge, and each release moves its component's major tag.
 
 ## Measurement
 
@@ -32,3 +32,7 @@ Release Please runs
     - Given Developer has a release pull request whose heading links `compare/v1.2.0...v1.3.0`
         - When Release Please shapes the notes
             - Then the link compares `v1.2.0` with the pull request's head commit
+- 0092.6
+    - Given Developer has a monorepo whose release created two components, each tagged `<component>-vX.Y.Z`
+        - When Release Please moves the major tags
+            - Then each `<component>-vX` points at its own release, no root `vX` moves, and the workflow outputs the released components
