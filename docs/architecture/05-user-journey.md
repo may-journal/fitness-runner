@@ -82,6 +82,7 @@ flowchart TB
     prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
     adrIssues[(45 ADR issues<br/>Req 0148)]:::system
     suiteRunner[(47 Suite runner<br/>Req 0158)]:::system
+    checkDeps[(48 Check dependencies<br/>Req 0160)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
     perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
     closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
@@ -127,6 +128,7 @@ flowchart TB
     ciRun --> suiteRunner
     resultsTable --> perfRecord
     release --> perfRecord
+    release --> checkDeps
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
     classDef screen fill:#f8fafc,stroke:#64748b,color:#1e293b,stroke-width:2px
@@ -188,3 +190,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
 | 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |
 | 47  | Suite runner.                       | System  | A repo whose checks build Apple apps runs the suite on a standard hosted Mac it names. |
+| 48  | Check dependencies.                 | System  | No check depends on the engine's GitHub reactions or run reports, so each can build alone. |

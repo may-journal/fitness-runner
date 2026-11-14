@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // Comment is one issue or pull request review comment that comment-check
@@ -33,11 +35,8 @@ func (c Comment) path(rest ...string) string {
 	return strings.Join(append([]string{c.kind(), "comments", strconv.FormatInt(c.ID, 10)}, rest...), "/")
 }
 
-// MarkerPrefix starts every marker fitness writes into a comment.
-const MarkerPrefix = "<!-- fitness:"
-
 // noticePrefix starts the marker that ties a reply to the comment it judges.
-const noticePrefix = MarkerPrefix + "comment-check:"
+const noticePrefix = checkkit.MarkerPrefix + "comment-check:"
 
 // Notice is one comment-check reply already on GitHub.
 type Notice struct {
