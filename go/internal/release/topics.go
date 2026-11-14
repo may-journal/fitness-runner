@@ -31,7 +31,8 @@ type topicDoc struct {
 }
 
 // topics reads packages under go/pkg and go/internal whose doc comment
-// carries a topic directive, in name order, erroring on duplicate or undocumented topics.
+// carries a topic directive, in name order, erroring on duplicate or
+// undocumented topics.
 func (c Config) topics() ([]topicDoc, error) {
 	var topics []topicDoc
 	err := walkLibraries(c.Root, func(path string, entry fs.DirEntry, err error) error {

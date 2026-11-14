@@ -48,6 +48,10 @@ func Test0067_2(t *testing.T) {
 	if len(rp.calls("gh")) != 0 {
 		t.Fatalf("describe queried GitHub: %q", rp.calls("gh"))
 	}
+	run := exec.Command(bin)
+	run.Dir, run.Env = t.TempDir(), userEnv()
+	got, _ := run.CombinedOutput()
+	sees(t, string(got), run.ProcessState.ExitCode(), 3, "runs only inside fitness")
 }
 
 // metadataPush runs real git hooks against a bare push destination and saved PR.

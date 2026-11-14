@@ -1,6 +1,7 @@
 package requirements
 
 import (
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -18,6 +19,10 @@ func topicNames(out string) []string {
 	return names
 }
 
+// docsFrom0112 matches the line a topic page opens with, naming a package
+// under go/pkg or go/internal.
+var docsFrom0112 = regexp.MustCompile(`From the doc comments of go/(pkg|internal)/`)
+
 func Test0112_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
@@ -31,7 +36,10 @@ func Test0112_1(t *testing.T) {
 	}
 	for _, name := range names {
 		page, code := fitness(t, repo, nil, "docs", name)
-		sees(t, page, code, 0, "# "+name, "From the doc comments of go/", "Package ")
+		sees(t, page, code, 0, "# "+name, "Package ")
+		if !docsFrom0112.MatchString(page) {
+			t.Errorf("topic %q does not print the doc comments of a package under go/pkg or go/internal:\n%s", name, page)
+		}
 	}
 }
 

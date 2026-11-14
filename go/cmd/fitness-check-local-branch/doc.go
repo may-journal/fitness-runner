@@ -28,14 +28,14 @@
 // GitHub reads share a 30-second deadline; the runner allows 35 seconds for
 // cancellation and reporting. Inside pre-push, the gate opens the push's
 // deadline before its PR and Plan reads and hands them over. This check then
-// reads no PR or Plan again, and reads the rest under what is left of it. When the runner's two-second probe finds GitHub's
-// API host unreachable, the check reads nothing and reports info naming the
-// host and proxy.
+// reads no PR or Plan again, and reads the rest under what is left of it. When
+// the runner's two-second probe finds GitHub's API host unreachable, the check
+// reads nothing and reports info naming the host and proxy.
 //
 // # Implementation
 //
 // `go/internal/metadata` supplies the same judgments to this check and the
 // Actions commands. The engine hands them to this check as it starts, so the
-// check imports no engine package. Only Actions applies GitHub effects. The meta-check calls
-// judgments directly, so it cannot recursively run the suite.
+// check imports no engine package. Only Actions applies GitHub effects. The
+// meta-check calls judgments directly, so it cannot recursively run the suite.
 package check
