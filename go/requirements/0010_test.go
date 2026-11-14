@@ -1,8 +1,10 @@
+// cspell:ignore aproved approvd apprvoed dont
 package requirements
 
 import (
 	"os/exec"
 	"slices"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -17,8 +19,9 @@ var (
 	reviewer = func(body string) comment { return comment{Body: body, Author: "reviewer-bot", Association: "NONE"} }
 )
 
-// pushPlans are saved GitHub answers about issues a PR may close: #218
+// pushPlans are saved GitHub answers about issues a PR may close. #218 is
 // owner-approved, #196 a bug, #151 passer-by, #307 reviewer, #308 member.
+// #309 to #320 say approve in other ways, #321 to #328 and #330 do not, and #329 is a passer-by.
 func pushPlans(t *testing.T) []response {
 	t.Helper()
 	plan, labels := planBody("- [ ] Ship it."), []string{"Plan"}
@@ -28,6 +31,28 @@ func pushPlans(t *testing.T) []response {
 		planView(t, 196, "The parser drops the last line.", []string{"bug"}, "I approve."),
 		planViewBy(t, 307, plan, labels, reviewer("I approve.")),
 		planViewBy(t, 308, plan, labels, member("i approve, go ahead")),
+		planViewBy(t, 309, plan, labels, owner("I approved.")),
+		planViewBy(t, 310, plan, labels, owner("Approved")),
+		planViewBy(t, 311, plan, labels, owner("LGTM, approved")),
+		planViewBy(t, 312, plan, labels, owner("Approving this, go ahead.")),
+		planViewBy(t, 313, plan, labels, owner("Plan approval: yes")),
+		planViewBy(t, 314, plan, labels, owner("aproved, thanks")),
+		planViewBy(t, 315, plan, labels, owner("approvd")),
+		planViewBy(t, 316, plan, labels, owner("apprvoed")),
+		planViewBy(t, 317, plan, labels, owner("Approved!")),
+		planViewBy(t, 318, plan, labels, owner("I APPROVE")),
+		planViewBy(t, 319, plan, labels, owner("approves")),
+		planViewBy(t, 320, plan, labels, owner("Ok. I approve")),
+		planViewBy(t, 321, plan, labels, owner("Disapprove")),
+		planViewBy(t, 322, plan, labels, owner("I dont approve")),
+		planViewBy(t, 323, plan, labels, owner("This is not approved")),
+		planViewBy(t, 324, plan, labels, owner("never approved")),
+		planViewBy(t, 325, plan, labels, owner("unapproved")),
+		planViewBy(t, 326, plan, labels, owner("The approach is sound.")),
+		planViewBy(t, 327, plan, labels, owner("Roughly approximately right.")),
+		planViewBy(t, 328, plan, labels, owner("No approval.")),
+		planViewBy(t, 330, plan, labels, owner("I can't approve this, not yet approved")),
+		planViewBy(t, 329, plan, labels, passerby("I approved.")),
 	}
 }
 
@@ -133,6 +158,10 @@ func Test0010_1(t *testing.T) {
 	pushAsked(t, rp, "218", "comments")
 	out, code, _ = pushClosing(t, "Fixes #308")
 	sees(t, out, code, 0, "topic -> topic")
+	for plan := 309; plan <= 320; plan++ {
+		out, code, _ = pushClosing(t, "Closes #"+strconv.Itoa(plan))
+		sees(t, out, code, 0, "topic -> topic")
+	}
 	out, code, _ = pushFeature(t, listed, "Resolves #307", "feat(app): add a feature")
 	sees(t, out, code, 0, "topic -> topic")
 }
@@ -258,13 +287,17 @@ func Test0010_14(t *testing.T) {
 	pushAsked(t, rp, "196", "labels")
 	out, code, rp = pushClosing(t, "Closes #151")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (151)",
-		`A Plan needs a comment starting "I approve" from the repo's owner or an org member (planApprovers is unset).`)
+		`A Plan needs a comment saying approved, in any form or with a typo, from the repo's owner or an org member (planApprovers is unset).`)
 	pushAsked(t, rp, "151", "comments")
 	out, code, _ = pushClosing(t, "Closes #307")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (307)")
+	for plan := 321; plan <= 330; plan++ {
+		out, code, _ = pushClosing(t, "Closes #"+strconv.Itoa(plan))
+		sees(t, out, code, 1, "pre-push: no approved Plan Issue among ("+strconv.Itoa(plan)+")")
+	}
 	out, code, _ = pushFeature(t, listed, "Closes #218", "feat(app): add a feature")
 	sees(t, out, code, 1, "pre-push: no approved Plan Issue among (218)",
-		`A Plan needs a comment starting "I approve" from one of planApprovers: Reviewer-Bot.`)
+		`A Plan needs a comment saying approved, in any form or with a typo, from one of planApprovers: Reviewer-Bot.`)
 	out, code, rp = pushClosing(t, "Closes may-journal/.github#141")
 	sees(t, out, code, 1, "no approved Plan Issue among (may-journal/.github#141)")
 	pushAsked(t, rp, "141", "-R may-journal/.github")

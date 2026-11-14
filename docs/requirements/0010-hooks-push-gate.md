@@ -15,7 +15,7 @@ feature pushes with an open PR
 - 0010.1
     - Given Developer has the shared hooks, no fitness on the PATH, and a branch whose open PR closes an approved Plan
         - When I push it
-            - Then the push goes through, with the repo's owner and org members allowed when planApprovers is unset
+            - Then the push goes through on approve in any form, unless refused as in "not yet approved", from an owner or member
 - 0010.4
     - Given Developer has a feature branch with no open PR yet
         - When I push it

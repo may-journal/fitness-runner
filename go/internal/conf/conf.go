@@ -29,7 +29,7 @@ type Config struct {
 	// DisabledChecks names checks external policy leaves out and org policy
 	// refuses, as ADR 0009 describes.
 	DisabledChecks []string `json:"disabledChecks"`
-	// PlanApprovers lists the GitHub logins whose `I approve` comment
+	// PlanApprovers lists the GitHub logins whose comment saying approve
 	// approves a Plan for the pre-push gate, under either policy. Unset, the
 	// repo's owner and its org's members may approve, as GitHub reports each
 	// comment author's association.
