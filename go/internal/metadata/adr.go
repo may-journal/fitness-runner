@@ -3,8 +3,8 @@ package metadata
 import (
 	"regexp"
 
-	"github.com/may-journal/fitness-runner/go/internal/adr"
-	"github.com/may-journal/fitness-runner/go/internal/mdtemplate"
+	"github.com/may-journal/fitness-runner/go/pkg/adr"
+	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
 )
 
 // adrShape is an ADR issue's sections, for a repo without an `ADR` issue

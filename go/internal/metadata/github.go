@@ -14,8 +14,8 @@ import (
 	"os"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // ghCommand declares one GitHub command's targets, body checks and

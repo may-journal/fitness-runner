@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // The hook folders a repo can ship, newest first. The org sync ships

@@ -2,7 +2,7 @@
 
 The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` with cwd set to the repo root. Context arrives in `FITNESS_*` environment variables: staged files, changed files, tracked files, enabled check names, and the commit message for the commit checks.
 
-- stdout — one JSON result object, whose fields are documented in the code: `go -C go doc ./internal/checkkit Result` and `go -C go doc ./internal/checkkit Finding` print them
+- stdout — one JSON result object, whose fields are documented in the code: `go -C go doc ./pkg/checkkit Result` and `go -C go doc ./pkg/checkkit Finding` print them
 - stderr — human display output (banners, tool passthrough)
 - exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
 - `--describe` — prints check metadata (name, stage, context-inline arg, blob flag) so the runner needs no registry
@@ -33,7 +33,7 @@ Info rows show as `info` with an "N info" total. They never change the exit code
 
 ## Environment errors
 
-Shared helpers in `go/internal` mark an environment error with `checkkit.Internal`, so a check can report it as info. `checkkit.Exec` tells a tool that could not start or was killed by a signal from one that ran. A language module's tool runner also reports sandbox text that `checkkit.SandboxText` spots, such as `dial tcp`, the same way.
+Shared helpers in `go/pkg` mark an environment error with `checkkit.Internal`, so a check can report it as info. `checkkit.Exec` tells a tool that could not start or was killed by a signal from one that ran. A language module's tool runner also reports sandbox text that `checkkit.SandboxText` spots, such as `dial tcp`, the same way.
 
 A tool-wrapper check reports info, never a failure, when its tool is missing, could not start, or was killed. It does the same when the tool exits non-zero without a finding it can parse, and `checkkit.NoVerdict` quotes the tool's last lines. Parsed findings and threshold misses still fail.
 
@@ -121,7 +121,7 @@ A check uses the list only when its root matches `--root` and the index stamp is
 
 ## Code view and comment view
 
-A run of several checks reads each file once, through the shared reader in `go/internal/comments`. It writes two views of each to a temporary folder that `FITNESS_VIEWS_DIR` names. The code view blanks every comment to spaces, so lines and columns stay put. It keeps what a tool reads in a comment:
+A run of several checks reads each file once, through the shared reader in `go/pkg/comments`. It writes two views of each to a temporary folder that `FITNESS_VIEWS_DIR` names. The code view blanks every comment to spaces, so lines and columns stay put. It keeps what a tool reads in a comment:
 
 - Go directives, the generated-file line, cgo preambles and Go example output.
 - `cspell:` and `shellcheck disable=` directives, and ESLint and SwiftLint ones.

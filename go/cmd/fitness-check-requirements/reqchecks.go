@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/repocheck"
 	"github.com/may-journal/fitness-runner/go/internal/requirement"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/repocheck"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // reqPrefix starts the path of every file in a requirement's check folder,

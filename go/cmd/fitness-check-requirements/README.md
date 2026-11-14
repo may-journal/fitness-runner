@@ -2,7 +2,7 @@
 
 # requirements
 
-Enforces docs/requirements in every repo a language module covers. In a repo written in any language of the [module registry](../../internal/lang/langs/langs.go), each file in `docs/requirements` is one requirement.
+Enforces docs/requirements in every repo a language module covers. In a repo written in any language of the [module registry](../../pkg/lang/langs/langs.go), each file in `docs/requirements` is one requirement.
 
 A requirement says why the requirement matters, how to measure it, and which acceptances prove it. Each acceptance is owned by exactly one test named for it, and each test owns exactly one acceptance. A test that proves no requirement is either a requirement nobody wrote down or a duplicate to delete.
 
@@ -64,7 +64,7 @@ Each language module finds its tests and names the test that owns an ID, as its 
 
 ## Swift tests
 
-Swift requirement tests run on Swift Testing with [apple-ui-testing-library](https://github.com/may-journal/apple-ui-testing-library), hosted in the app, natively as Designed for iPad or on macOS. The [Swift module](../../internal/lang/swift/library.go) judges them.
+Swift requirement tests run on Swift Testing with [apple-ui-testing-library](https://github.com/may-journal/apple-ui-testing-library), hosted in the app, natively as Designed for iPad or on macOS. The [Swift module](../../pkg/lang/swift/library.go) judges them.
 
 - Imports: a test file fails on XCTest or another UI test framework, such as ViewInspector or SnapshotTesting.
 - Calls: a test file fails on an XCTestCase subclass, Xcode UI tests such as XCUIApplication, or simctl.

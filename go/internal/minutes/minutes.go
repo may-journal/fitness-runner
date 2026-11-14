@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/par"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
 )
 
 // Row is one workflow's jobs over the window.

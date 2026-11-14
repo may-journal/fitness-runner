@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"slices"
 
-	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
-	"github.com/may-journal/fitness-runner/go/internal/questions"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/bodycheck"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/questions"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 func Main() {

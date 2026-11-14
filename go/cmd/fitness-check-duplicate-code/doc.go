@@ -54,7 +54,7 @@
 //
 // [jscpd]: https://github.com/kucherenko/jscpd
 // [#782]: https://github.com/may-journal/fitness-runner/issues/782
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
-// [lockfiles]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/lockfiles
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
+// [lockfiles]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/lockfiles
 // [doc-template]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-doc-template/README.md#what-is-a-template
 package check

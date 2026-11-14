@@ -7,9 +7,9 @@ import (
 	"go/token"
 	"sort"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/golang"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/golang"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // defaultMax is the ceiling when the config sets none. golang.Defaults

@@ -5,9 +5,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/node"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/node"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // eslintDisableRe matches any eslint disable directive form, with alternation order making the match the full directive.

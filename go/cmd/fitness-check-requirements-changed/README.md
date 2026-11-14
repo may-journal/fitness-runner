@@ -8,7 +8,7 @@ Fails a change that adds or changes product code without also changing a test an
 
 - Product code: `.go` and `.swift` files that are not tests, and `.sh` scripts.
 - Vendored code is not product code: files under `vendor`, `third_party`, `Pods`, `Carthage`, or `node_modules`.
-- Fixtures and build output are not either: Go `testdata`, `dist`, `.build`, `DerivedData`, and what each [language module](../../internal/lang/langs/langs.go) names.
+- Fixtures and build output are not either: Go `testdata`, `dist`, `.build`, `DerivedData`, and what each [language module](../../pkg/lang/langs/langs.go) names.
 - Generated files are not: those `.gitattributes` marks `linguist-generated`, and Go files that say `Code generated … DO NOT EDIT.`
 - Tests: `_test.go` files, and Swift files that declare a test or sit in a `…Tests` folder, as the requirements check pairs them.
 - Requirement docs: `docs/requirements/NNNN-*.md`.

@@ -7,10 +7,10 @@ import (
 	"slices"
 
 	issueLinkOnceCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-issue-link-once"
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
-	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/node"
 )
 
 // networkEnv probes GitHub's API host when a check that reads the network

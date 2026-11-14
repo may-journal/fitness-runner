@@ -19,5 +19,5 @@
 // imposes a style. The hint suggests Google Java Format.
 //
 // [Spotless]: https://github.com/diffplug/spotless
-// [Java module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/java/java.go
+// [Java module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/java/java.go
 package check

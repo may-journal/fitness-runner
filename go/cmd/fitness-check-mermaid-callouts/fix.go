@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/mdx"
-	"github.com/may-journal/fitness-runner/go/internal/mermaid"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/mdx"
+	"github.com/may-journal/fitness-runner/go/pkg/mermaid"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // fixFlag makes the check convert each numbered connector callout to a

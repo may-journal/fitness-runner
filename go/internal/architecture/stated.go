@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/pkg/codemodel"
 )
 
 // statedName reads a class label or member as the code view states it, such as

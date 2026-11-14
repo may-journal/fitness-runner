@@ -121,7 +121,7 @@
 //
 // [Requirement 0070] has one installed-command test per acceptance.
 //
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
 // [internal/architecture/templates]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/architecture/templates
 // [shipped templates]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-doc-template/README.md#shipped-templates
 // [Requirement 0070]: https://github.com/may-journal/fitness-runner/blob/main/docs/requirements/0070-checks-architecture-contract.md

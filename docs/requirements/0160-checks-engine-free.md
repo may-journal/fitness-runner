@@ -15,4 +15,8 @@ Checks
 - 0160.1
     - Given Developer lists the Go dependencies of every check, tests included
         - When `go list -deps -test` runs
-            - Then none holds `metadata`, `aftereffect`, `dupe` or `report`
+            - Then it lists every check, and none holds `metadata`, `aftereffect`, `dupe` or `report` or a package under them
+- 0160.2
+    - Given Developer writes a Go module outside this repo that imports every package under `go/pkg`
+        - When `go build` runs
+            - Then it builds, since none of them is internal

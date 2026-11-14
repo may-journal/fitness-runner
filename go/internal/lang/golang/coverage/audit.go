@@ -11,7 +11,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/par"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
 )
 
 type testGroup struct {

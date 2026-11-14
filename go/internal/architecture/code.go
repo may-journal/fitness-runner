@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/pkg/codemodel"
 )
 
 const codeView = "code"

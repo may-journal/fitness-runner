@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // runHook dispatches a `fitness hook <name>` call from the one-line shims.

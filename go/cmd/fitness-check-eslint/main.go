@@ -10,11 +10,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/lang/node"
 	"github.com/may-journal/fitness-runner/go/internal/lang/node/biome"
 	"github.com/may-journal/fitness-runner/go/internal/sharedconf"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/node"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // eslintFallbackMessage mirrors ESLINT_FALLBACK_MESSAGE in the TS check.

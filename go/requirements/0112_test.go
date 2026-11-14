@@ -31,7 +31,7 @@ func Test0112_1(t *testing.T) {
 	}
 	for _, name := range names {
 		page, code := fitness(t, repo, nil, "docs", name)
-		sees(t, page, code, 0, "# "+name, "From the doc comments of go/internal/", "Package ")
+		sees(t, page, code, 0, "# "+name, "From the doc comments of go/", "Package ")
 	}
 }
 

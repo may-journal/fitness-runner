@@ -30,11 +30,11 @@ type topicDoc struct {
 	Body string
 }
 
-// topics reads packages under go/internal whose doc comment carries a topic
-// directive, in name order, erroring on duplicate or undocumented topics.
+// topics reads packages under go/pkg and go/internal whose doc comment
+// carries a topic directive, in name order, erroring on duplicate or undocumented topics.
 func (c Config) topics() ([]topicDoc, error) {
 	var topics []topicDoc
-	err := filepath.WalkDir(filepath.Join(c.Root, "go", "internal"), func(path string, entry fs.DirEntry, err error) error {
+	err := walkLibraries(c.Root, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil || !entry.IsDir() {
 			return err
 		}

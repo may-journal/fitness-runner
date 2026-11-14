@@ -9,7 +9,7 @@ Every check name has one binary under [go/cmd/](../go/cmd/), with each check's r
     - `dupe-check` runs no check; it notes when a new issue's words repeat an older issue's
 - Parsers and network: the `architecture-*` checks, `issue-link-once`, `workflow-ref-exists`, and the mermaid diagram/callout checks
 - Native engines: `cspell` (embedded dictionaries, ~217k words) and `duplicate-code` (token-based clone detection) — no external tool needed
-- Language checks: each [language module](../go/internal/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
+- Language checks: each [language module](../go/pkg/lang/langs/langs.go) claims its own checks, and its tool wrappers run the real tool the way the module finds it
 - A check skips when its language or tool is absent; a present language with a missing tool fails with an install hint
 
 `release-changelog` correlates Release Please metadata with the version file. `pr-check` holds a PR to one [entry file](../go/cmd/fitness-check-changelog/README.md#entry-files) named for its heading's date, naming extras and a bad name. The description must link the entry the PR adds and never copy a bullet it adds. No check reads `CHANGELOG.md`; each release's notes come from its entry files.
@@ -107,13 +107,13 @@ A scope, declared in the check's `checkkit.Describe`, says what it reads: `files
 
 `fitness explain <check>` prints the check's whole package doc comment, rendered as Markdown, and the `.fitnessrc.json` keys it reads. A config struct field tagged `check:"<name>"` names such a key, and its doc comment explains it. `--json` gives the name, summary, scope, stage, and body.
 
-`fitness docs` lists the guide topics, and `fitness docs <topic>` prints one. A topic is a package whose doc comment carries a `//fitness:topic <name>` line, such as `protocol` for `internal/checkkit`. It prints that package's doc comment and its exported declarations, so the guide is the code's own.
+`fitness docs` lists the guide topics, and `fitness docs <topic>` prints one. A topic is a package whose doc comment carries a `//fitness:topic <name>` line, such as `protocol` for `pkg/checkkit`. It prints that package's doc comment and its exported declarations, so the guide is the code's own.
 
 ## Every tracked file
 
 Checks judge every tracked file; only untracked files stay out, and outside git only `.git`. cspell and duplicate-code also skip files `.gitattributes` marks `linguist-generated`, such as lock files. A repo setting `ignore`, `skipTheseDirectories`, `proseBudget.exempt`, or cspell `ignorePaths` fails. A check whose tool has its own ignore file fails that file too, as its README says.
 
-A Markdown check reads every ending GitHub renders as Markdown, plus MDX, as [mdx.Exts](../go/internal/mdx/mdx.go) lists them. The mermaid checks also read `.mmd` and `.mermaid` files as one diagram each, and a fence inside a blockquote, since GitHub renders it.
+A Markdown check reads every ending GitHub renders as Markdown, plus MDX, as [mdx.Exts](../go/pkg/mdx/mdx.go) lists them. The mermaid checks also read `.mmd` and `.mermaid` files as one diagram each, and a fence inside a blockquote, since GitHub renders it.
 
 ## Front matter
 

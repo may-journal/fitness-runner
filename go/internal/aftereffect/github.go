@@ -16,7 +16,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // Target is one issue or pull request a GitHub command judges, as the

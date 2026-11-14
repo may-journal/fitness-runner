@@ -11,8 +11,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
 )
 
 // The embedded dictionaries are committed cspell wordlists: a '#' header, then

@@ -1,6 +1,6 @@
 package architecture
 
-import "github.com/may-journal/fitness-runner/go/internal/codemodel"
+import "github.com/may-journal/fitness-runner/go/pkg/codemodel"
 
 // members compares each member a class body states with the fields and
 // methods its type declares, extensions included.

@@ -15,7 +15,7 @@ topics `fitness docs` lists
 - 0112.1
     - Given AI agent has a repo with fitness installed
         - When it runs `fitness docs` and then `fitness docs` with each listed topic
-            - Then each topic prints its title and the doc comments of its package
+            - Then each topic prints its title and the doc comments of its package, under `go/pkg` or `go/internal`
 - 0112.2
     - Given AI agent asks for a topic that does not exist
         - When it runs `fitness docs nope`

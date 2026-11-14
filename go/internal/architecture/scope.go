@@ -5,9 +5,9 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/checkkit"
-	"github.com/may-journal/fitness-runner/go/internal/runtimes"
-	"github.com/may-journal/fitness-runner/go/internal/walkfs"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/runtimes"
+	"github.com/may-journal/fitness-runner/go/pkg/walkfs"
 )
 
 // Unmoved reports a scoped run whose changed files, such as tests, cannot move

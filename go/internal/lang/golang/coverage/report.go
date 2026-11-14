@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/goal"
+	"github.com/may-journal/fitness-runner/go/pkg/goal"
 )
 
 type Count struct{ Covered, Total int64 }

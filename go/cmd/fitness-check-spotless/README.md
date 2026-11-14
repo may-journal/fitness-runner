@@ -7,7 +7,7 @@ Checks Java formatting with the [Spotless](https://github.com/diffplug/spotless)
 ## Behavior
 
 - Runs once from each build root: `spotless:check` for Maven, `spotlessCheck` for Gradle.
-- The [Java module](../../internal/lang/java/java.go) says what a build root is and which wrapper or tool runs it.
+- The [Java module](../../pkg/lang/java/java.go) says what a build root is and which wrapper or tool runs it.
 - Pass: Spotless finds nothing to rewrite.
 - Fail: each file Spotless would rewrite, as `file is not formatted; run spotless:apply` (or `spotlessApply`).
 - A failure that names no file reports the build's own error lines.

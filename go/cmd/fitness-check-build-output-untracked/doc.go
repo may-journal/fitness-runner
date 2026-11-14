@@ -25,5 +25,5 @@
 //   - `filesChecked` counts the scanned source files plus one for the dist git checks.
 //   - Each module's package docs name its output paths. A repo with no such output and no `dist` rules to judge passes clean.
 //
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
 package check

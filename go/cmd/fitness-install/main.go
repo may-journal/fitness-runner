@@ -11,8 +11,8 @@ import (
 	"syscall"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // Release publishing embeds the exact version and platform bundle hashes.

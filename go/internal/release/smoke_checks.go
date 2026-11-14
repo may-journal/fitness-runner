@@ -9,7 +9,7 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
 )
 
 const externalConfig = `{"policy":"external"}`

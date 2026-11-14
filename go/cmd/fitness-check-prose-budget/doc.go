@@ -35,7 +35,7 @@
 //   - A `.fitnessrc.json` that sets `proseBudget.exempt` fails the run.
 //
 // It shares its prose extraction and sentence splitting with
-// `text-readability` through `internal/mdx`.
+// `text-readability` through `pkg/mdx`.
 //
 // # Code comments
 //

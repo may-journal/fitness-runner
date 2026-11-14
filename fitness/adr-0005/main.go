@@ -52,7 +52,7 @@ func toolchains(ctx *check.Context, files []string) ([]check.Finding, error) {
 func views(ctx *check.Context) []string {
 	var out []string
 	for _, f := range ctx.Files(".go") {
-		if strings.HasPrefix(f, "go/internal/lang/swift/views/") {
+		if strings.HasPrefix(f, "go/pkg/lang/swift/views/") {
 			out = append(out, f)
 		}
 	}

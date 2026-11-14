@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/changelog"
+	"github.com/may-journal/fitness-runner/go/pkg/changelog"
 )
 
 var versionHeading = regexp.MustCompile(`(?m)^#{2,} \[?\d+\.\d+\.\d+.*$`)

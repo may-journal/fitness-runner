@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/pkg/codemodel"
 )
 
 var word = regexp.MustCompile(`[a-z0-9][a-z0-9.+-]*`)

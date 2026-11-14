@@ -8,7 +8,7 @@ Matches the containers view against the runtime products the repository builds a
 
 Each product is proved by a build target, an entry point, or a deploy file. A dependency manifest alone proves nothing, so a native app may keep another language's packages for lint and build tools. Build manifests are read even when `.gitattributes` marks them `linguist-generated`. Files under test or tool folders are source types, never products.
 
-Each [language module](../../internal/lang/langs/langs.go) brings a runtime reader. Its `Runtime` documentation names the evidence it reads and the products it proves. It also names their container's technology and the platform services its sources use.
+Each [language module](../../pkg/lang/langs/langs.go) brings a runtime reader. Its `Runtime` documentation names the evidence it reads and the products it proves. It also names their container's technology and the platform services its sources use.
 
 ## What the view says
 

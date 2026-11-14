@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // pushPlansEnv names the file through which the pre-push gate hands

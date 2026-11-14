@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // branchContexts uses push destinations and local tips only inside pre-push.

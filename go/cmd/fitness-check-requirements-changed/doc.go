@@ -48,5 +48,5 @@
 //   - Pull requests: CI judges the diff against the merge base with the base branch.
 //
 // [requirements]: https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-requirements/README.md
-// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/langs/langs.go
+// [language module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/langs/langs.go
 package check

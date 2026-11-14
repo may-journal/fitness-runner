@@ -42,6 +42,6 @@
 // fails before the run when the service is down.
 //
 // [JaCoCo]: https://www.jacoco.org/jacoco/
-// [Java module]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/java/java.go
-// [frameworks]: https://github.com/may-journal/fitness-runner/blob/main/go/internal/lang/java/tests/frameworks
+// [Java module]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/java/java.go
+// [frameworks]: https://github.com/may-journal/fitness-runner/blob/main/go/pkg/lang/java/tests/frameworks
 package check

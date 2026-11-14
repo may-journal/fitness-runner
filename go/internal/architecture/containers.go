@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/runtimes"
+	"github.com/may-journal/fitness-runner/go/pkg/runtimes"
 )
 
 // Runtime is one shipped product with its owning container, whose claims cover

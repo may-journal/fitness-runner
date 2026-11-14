@@ -4,7 +4,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
 // allFlag forces a full scan even when files are staged.

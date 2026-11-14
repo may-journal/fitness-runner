@@ -26,7 +26,7 @@ A paragraph is a run of consecutive prose lines. A section runs from one heading
 - Every tracked Markdown file is judged, `CHANGELOG.md` included; there is no exempt list.
 - A `.fitnessrc.json` that sets `proseBudget.exempt` fails the run.
 
-It shares its prose extraction and sentence splitting with `text-readability` through `internal/mdx`.
+It shares its prose extraction and sentence splitting with `text-readability` through `pkg/mdx`.
 
 ## Code comments
 

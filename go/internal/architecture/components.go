@@ -5,7 +5,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
+	"github.com/may-journal/fitness-runner/go/pkg/codemodel"
 )
 
 const componentsView = "components"

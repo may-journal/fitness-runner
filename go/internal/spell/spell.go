@@ -9,7 +9,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/may-journal/fitness-runner/go/internal/par"
+	"github.com/may-journal/fitness-runner/go/pkg/par"
 )
 
 // minWordLength mirrors cspell's default: shorter words are never flagged.

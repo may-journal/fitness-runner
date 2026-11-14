@@ -2,7 +2,7 @@
 // rolling-hash window detector whose line accounting is modeled on jscpd.
 package clonedetect
 
-import "github.com/may-journal/fitness-runner/go/internal/par"
+import "github.com/may-journal/fitness-runner/go/pkg/par"
 
 // File is one lexed source file ready for detection.
 type File struct {

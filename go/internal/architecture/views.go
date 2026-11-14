@@ -1,9 +1,9 @@
 package architecture
 
 import (
-	"github.com/may-journal/fitness-runner/go/internal/codemodel"
-	"github.com/may-journal/fitness-runner/go/internal/lang"
-	"github.com/may-journal/fitness-runner/go/internal/lang/langs"
+	"github.com/may-journal/fitness-runner/go/pkg/codemodel"
+	"github.com/may-journal/fitness-runner/go/pkg/lang"
+	"github.com/may-journal/fitness-runner/go/pkg/lang/langs"
 )
 
 // viewReaders are the language modules' architecture view readers, in
