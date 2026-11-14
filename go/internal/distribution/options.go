@@ -141,6 +141,12 @@ func (options Options) InstallsChecks() bool {
 	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents()
 }
 
+// NeedsChecks reports whether the run turns the built-in checks off, so a
+// check that did not install cannot fall back to its built-in.
+func (options Options) NeedsChecks() bool {
+	return len(options.Args) > 0 && options.Args[0] == "--no-builtins"
+}
+
 // SetsUpAgents reports whether the run links skills or writes Claude hooks
 // instead of running checks.
 func (options Options) SetsUpAgents() bool {

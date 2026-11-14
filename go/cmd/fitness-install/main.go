@@ -50,8 +50,11 @@ func execute(installer *distribution.Installer, options distribution.Options) in
 		return failure(err)
 	}
 	checks, err := installChecks(installer, bin, options)
-	if err != nil {
+	if err != nil && options.NeedsChecks() {
 		return failure(err)
+	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fitness: warning: %v; the built-in checks run instead\n", err)
 	}
 	return runInstalled(bin, checks, options)
 }

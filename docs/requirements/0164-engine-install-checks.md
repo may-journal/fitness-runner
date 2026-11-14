@@ -18,8 +18,8 @@ Pinned checks
             - Then each pin resolves to its newest matching release, both install verified into one folder, and the second run downloads nothing
 - 0164.2
     - Given Developer has a repo that pins a check to a major with no release
-        - When I run `fitness-install --with-checks`
-            - Then it fails, naming the check and the pin
+        - When I run `fitness-install --with-checks`, with or without `--no-builtins`
+            - Then it warns, naming the check and the pin, and the built-ins run; with `--no-builtins` it fails
 - 0164.3
     - Given Developer has a repo that pins one check
         - When I run that check through `fitness-install --with-checks` with `--no-builtins`

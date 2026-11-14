@@ -66,7 +66,10 @@ func Test0164_1(t *testing.T) {
 func Test0164_2(t *testing.T) {
 	t.Parallel()
 	env := tags0164(t, "fitness-check-gofmt-v1.0.0")
-	out, code := fiRun(t, pinned0164(t, `{"gofmt": "v2"}`), env, "--with-checks", "--install-only")
+	repo := pinned0164(t, `{"gofmt": "v2"}`)
+	out, code := fiRun(t, repo, env, "--with-checks", "--install-only")
+	sees(t, out, code, 0, "warning: no release of check gofmt matches v2", "the built-in checks run instead")
+	out, code = fiRun(t, repo, env, "--with-checks", "--", "--no-builtins", "gofmt")
 	sees(t, out, code, 1, "no release of check gofmt matches v2")
 }
 
