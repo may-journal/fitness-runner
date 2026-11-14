@@ -15,11 +15,11 @@ docs, pages and bodies Fitness judges
 ## Requirements
 
 - 0159.1
-  - Given Developer has a doc with a heading, bold line or label line naming open questions, in any case
+  - Given Developer has a doc with a heading, bold line or label line, even in a list item, naming open questions
     - When open-questions checks the repo
       - Then it fails at each line, saying to ask in chat
 - 0159.2
-  - Given Developer has a doc that mentions open questions only in a sentence or in code
+  - Given Developer has a doc that mentions open questions only in a sentence, a bold sentence or code
     - When open-questions checks the repo
       - Then it passes
 - 0159.3

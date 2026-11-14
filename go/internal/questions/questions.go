@@ -35,8 +35,12 @@ var (
 	// labelRe is a line that starts with the name, then a colon or nothing.
 	// A sentence that starts with the name goes on without a colon.
 	labelRe = regexp.MustCompile(`(?i)^(?:` + name + `)\s*(?::|$)`)
-	atxRe   = regexp.MustCompile(`^ {0,3}#{1,6}\s+(.*)$`)
-	boldRe  = regexp.MustCompile(`^(?:\*\*|__)(.+)(?:\*\*|__)\s*:?$`)
+	// startsRe is text that starts with the name, as a bold label does.
+	startsRe = regexp.MustCompile(`(?i)^(?:` + name + `)\b`)
+	// markerRe is a list item's or blockquote's leading marker.
+	markerRe = regexp.MustCompile(`^\s*(?:(?:[-*+]|\d+[.)])\s+|>\s*)+`)
+	atxRe    = regexp.MustCompile(`^ {0,3}#{1,6}\s+(.*)$`)
+	boldRe   = regexp.MustCompile(`^(?:\*\*|__)(.+)(?:\*\*|__)\s*:?$`)
 	// htmlHeadingRe is an <h1> to <h6> element, its text in group 1.
 	htmlHeadingRe = regexp.MustCompile(`(?is)<h[1-6]\b[^>]*>(.*?)</h[1-6]\s*>`)
 	tagRe         = regexp.MustCompile(`<[^>]*>`)
@@ -59,10 +63,15 @@ type lineRule struct {
 	match func(line string) bool
 }
 
-// labelRule is a label line, after its tags and emphasis are dropped.
+// labelRule is a label line, after its tags, list or quote marker and
+// emphasis are dropped.
 var labelRule = lineRule{Label, func(line string) bool {
-	return labelRe.MatchString(strings.TrimLeft(emphasis.Replace(plain(line)), "*_ "))
+	text := markerRe.ReplaceAllString(plain(line), "")
+	return labelRe.MatchString(strings.TrimLeft(emphasis.Replace(text), "*_ "))
 }}
+
+// htmlRules are the line rules of an HTML page, whose headings are tags.
+var htmlRules = []lineRule{labelRule}
 
 // markdownRules are the line rules of Markdown, in the order they are tried.
 var markdownRules = []lineRule{
@@ -72,7 +81,7 @@ var markdownRules = []lineRule{
 	}},
 	{Bold, func(line string) bool {
 		m := boldRe.FindStringSubmatch(strings.TrimSpace(line))
-		return m != nil && Named(m[1])
+		return m != nil && startsRe.MatchString(m[1])
 	}},
 	labelRule,
 }
@@ -125,12 +134,11 @@ func lineHits(content string, html bool) []Hit {
 	return hits
 }
 
-// lineKind is the kind of the first rule line meets, or "". An HTML page
-// has label lines alone, since its headings are tags.
+// lineKind is the kind of the first rule line meets, or "".
 func lineKind(line string, html bool) string {
 	rules := markdownRules
 	if html {
-		rules = []lineRule{labelRule}
+		rules = htmlRules
 	}
 	for _, r := range rules {
 		if r.match(line) {

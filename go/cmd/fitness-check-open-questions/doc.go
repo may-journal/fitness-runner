@@ -8,8 +8,9 @@
 //   - Pass: a sentence that mentions open questions, and any text in code spans, fenced blocks, HTML comments or code elements.
 //   - Pass: no Markdown or HTML files, having judged 0 files.
 //
-// A label line starts with the name and a colon, or holds the name alone,
-// such as `Open questions:`. Each finding names its file and line. The
+// A label line, such as `Open questions:`, starts with the name and a colon
+// or holds the name alone. A list item or quote counts, and so does a bold
+// line that starts with the name. Each finding names its file and line. The
 // [plan-structure] check shares this definition of the name.
 //
 // It reads every tracked Markdown and HTML file. Given `--body-file`, it

@@ -25,23 +25,24 @@ const (
 
 func Test0159_1(t *testing.T) {
 	t.Parallel()
-	doc := "# Sync\n\n## Open Questions\n\n- Which wins?\n\n**unresolved questions**\n\n- When?\n\nQuestions for the owner: which store?\n"
+	doc := "# Sync\n\n## Open Questions\n\n- Which wins?\n\n**unresolved questions**\n\n- When?\n\nQuestions for the owner: which store?\n\n- **Open questions:** none yet\n"
 	out, code := openQuestions(t, map[string]string{"docs/sync.md": doc})
 	sees(t, out, code, 1,
 		`docs/sync.md:3: a heading opens a list of open questions: "## Open Questions" — `+askInChat,
 		`docs/sync.md:7: a bold line opens a list of open questions: "**unresolved questions**"`,
-		`docs/sync.md:11: a label line opens a list of open questions: "Questions for the owner: which store?"`)
+		`docs/sync.md:11: a label line opens a list of open questions: "Questions for the owner: which store?"`,
+		`docs/sync.md:13: a label line opens a list of open questions: "- **Open questions:** none yet"`)
 	out, code = openQuestions(t, map[string]string{"docs/sync.md": "# Sync\n\n## Decisions\n\n- The server wins.\n"})
 	sees(t, out, code, 0, "All 1 checks passed")
 }
 
 func Test0159_2(t *testing.T) {
 	t.Parallel()
-	doc := "# Sync\n\nOpen questions go to chat, and we have no open questions left.\n\nUse `## Open questions` nowhere.\n\n```\nOpen questions:\n```\n\n<!-- Open questions: none -->\n"
+	doc := "# Sync\n\nOpen questions go to chat, and we have no open questions left.\n\n**No open questions remain**\n\nUse `## Open questions` nowhere.\n\n```\nOpen questions:\n```\n\n<!-- Open questions: none -->\n"
 	out, code := openQuestions(t, map[string]string{"docs/sync.md": doc})
 	sees(t, out, code, 0, "All 1 checks passed")
 	out, code = openQuestions(t, map[string]string{"docs/sync.md": doc + "\n" + questionsLabel})
-	sees(t, out, code, 1, "docs/sync.md:13: "+questionsFinding)
+	sees(t, out, code, 1, "docs/sync.md:15: "+questionsFinding)
 }
 
 func Test0159_3(t *testing.T) {
