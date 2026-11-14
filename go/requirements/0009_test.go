@@ -56,10 +56,10 @@ func Test0009_1(t *testing.T) {
 	if got := strings.TrimSpace(string(out)); got != ".githooks" {
 		t.Errorf("core.hooksPath = %q, want .githooks", got)
 	}
-	for _, name := range []string{"commit-msg", "pre-commit", "pre-push"} {
+	for name, checks := range map[string]string{"commit-msg": "FITNESS_WITH_CHECKS=true exec ", "pre-commit": "FITNESS_WITH_CHECKS=true exec ", "pre-push": "exec "} {
 		data, _ := os.ReadFile(filepath.Join(repo, ".githooks", name))
-		if !strings.Contains(string(data), `fitness-install" --with-checks --version latest -- hook `+name) {
-			t.Errorf(".githooks/%s does not run the installer for hook %s", name, name)
+		if !strings.Contains(string(data), "\n"+checks+`"${FITNESS_INSTALL_DIR:-$HOME/.local/share/fitness}/fitness-install" --version latest -- hook `+name) {
+			t.Errorf(".githooks/%s does not run the installer for hook %s as %q", name, name, checks)
 		}
 	}
 }

@@ -9,15 +9,20 @@ import (
 // times0166 matches a duration as the results table and summary print it.
 var times0166 = regexp.MustCompile(`[0-9]+(\.[0-9]+)?(ms|s)\b`)
 
-// results0166 is the results table and summary of a run, with times and the
-// padding they set blanked.
+// results0166 is the results table and summary of a run, line by line, with
+// times and the padding they set blanked.
 func results0166(out string) string {
 	start := strings.Index(out, "┌")
 	end := strings.Index(out, "Slowest:")
 	if start < 0 || end < start {
 		return "no results table in:\n" + out
 	}
-	return strings.Join(strings.Fields(times0166.ReplaceAllString(out[start:end], "")), " ")
+	lines := strings.Split(times0166.ReplaceAllString(out[start:end], ""), "\n")
+	for i, line := range lines {
+		// A shorter time pads its cell, so runs of spaces count as one.
+		lines[i] = strings.Join(strings.Fields(line), " ")
+	}
+	return strings.Join(lines, "\n")
 }
 
 func Test0166_1(t *testing.T) {

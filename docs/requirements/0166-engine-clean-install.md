@@ -15,4 +15,4 @@ Pinned checks
 - 0166.1
     - Given Developer has a repo that pins three checks, with files that break two of them
         - When I run them through `fitness-install --with-checks` with `--no-builtins`, and again with the built-ins
-            - Then both runs print the same results table and summary, times aside
+            - Then both runs print the same results table and summary line by line, times and their padding aside
