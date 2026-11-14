@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"slices"
 
-	issueLinkOnceCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-issue-link-once"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/gitx"
@@ -35,7 +34,7 @@ func readsNetwork(root string, check resolved, msg string) bool {
 		_, err := os.Stat(filepath.Join(root, node.Manifest))
 		return err == nil
 	case "issue-link-once":
-		return len(issueLinkOnceCheck.MessageLinks(msg, gitx.OriginSlug(root))) > 0
+		return len(gitx.MessageLinks(msg, gitx.OriginSlug(root))) > 0
 	}
 	return check.desc.Scope == checkkit.ScopeGitHub && !atCommit(check.name)
 }

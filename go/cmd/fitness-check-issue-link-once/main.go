@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -26,15 +25,6 @@ const amendEnv = "FITNESS_COMMIT_AMEND"
 
 // rewriteHint tells a CI failure how to clear it.
 const rewriteHint = "rewrite that commit without the link, then force-push with --force-with-lease"
-
-var (
-	// urlLinkRe matches an Issue or PR URL on github.com.
-	urlLinkRe = regexp.MustCompile(`https?://github\.com/([\w.-]+/[\w.-]+)/(?:issues|pull)/(\d+)`)
-	// qualifiedLinkRe matches `owner/repo#NN`.
-	qualifiedLinkRe = regexp.MustCompile(`(?:^|[^\w/.-])([\w.-]+/[\w.-]+)#(\d+)\b`)
-	// bareLinkRe matches `#NN` not glued to a word, path, or entity.
-	bareLinkRe = regexp.MustCompile(`(?:^|[^\w&/#.-])#(\d+)\b`)
-)
 
 // earlier is one commit on the branch.
 type earlier struct {
@@ -63,18 +53,11 @@ func run(root string, _ []string) (checkkit.Result, error) {
 	return checkkit.Pass(0), nil
 }
 
-// MessageLinks returns the distinct Issue links a commit message makes, minus
-// lines git drops, as `owner/repo#NN` keys, a bare `#NN` belonging to repo.
-// The runner asks it whether a message reads the network.
-func MessageLinks(msg, repo string) []string {
-	return links(stripComments(msg), repo)
-}
-
 // judgeMessage judges a proposed message that links an Issue against the
 // branch commits and the open PR. When the runner's probe found GitHub's
 // API host unreachable, it skips the open PR read and notes that instead.
 func judgeMessage(root, msg, repo string) checkkit.Result {
-	if len(MessageLinks(msg, repo)) == 0 {
+	if len(gitx.MessageLinks(msg, repo)) == 0 {
 		return checkkit.Pass(1)
 	}
 	note := checkkit.Offline("the open PR read")
@@ -90,7 +73,7 @@ func judgeMessage(root, msg, repo string) checkkit.Result {
 // commit or the open PR body already links.
 func judge(msg, repo string, prior []earlier, pr *openPR) checkkit.Result {
 	var errs []string
-	for _, key := range MessageLinks(msg, repo) {
+	for _, key := range gitx.MessageLinks(msg, repo) {
 		if e := repeatOf(key, repo, prior, pr, time.Now()); e != "" {
 			errs = append(errs, e+"; drop the reference from this message")
 		}
@@ -117,7 +100,7 @@ func judgeBranch(repo string, commits []earlier, pr *openPR) checkkit.Result {
 // commitRepeats reports each repeat link in one pull request commit.
 func commitRepeats(repo string, c earlier, prior []earlier, pr *openPR) []string {
 	var errs []string
-	for _, key := range MessageLinks(c.message, repo) {
+	for _, key := range gitx.MessageLinks(c.message, repo) {
 		if e := repeatOf(key, repo, prior, pr, c.authored); e != "" {
 			errs = append(errs, fmt.Sprintf("commit %s (%q): %s; %s", short(c.sha), c.subject, e, rewriteHint))
 		}
@@ -131,7 +114,7 @@ func repeatOf(key, repo string, prior []earlier, pr *openPR, authored time.Time)
 	if c, ok := linkedBy(key, repo, prior); ok {
 		return fmt.Sprintf("%s is already linked by commit %s (%q)", key, short(c.sha), c.subject)
 	}
-	if pr != nil && authored.After(pr.opened) && contains(links(pr.body, repo), key) {
+	if pr != nil && authored.After(pr.opened) && contains(gitx.IssueLinks(pr.body, repo), key) {
 		return fmt.Sprintf("%s is already linked by open PR #%d", key, pr.number)
 	}
 	return ""
@@ -144,47 +127,11 @@ func short(sha string) string {
 // linkedBy returns the first earlier commit whose message links key.
 func linkedBy(key, repo string, prior []earlier) (earlier, bool) {
 	for _, c := range prior {
-		if contains(MessageLinks(c.message, repo), key) {
+		if contains(gitx.MessageLinks(c.message, repo), key) {
 			return c, true
 		}
 	}
 	return earlier{}, false
-}
-
-// links returns the distinct Issue links in text as `owner/repo#NN` keys, in
-// first-seen order. A bare `#NN` belongs to repo.
-func links(text, repo string) []string {
-	var keys []string
-	add := func(slug, n string) {
-		if k := strings.ToLower(slug) + "#" + n; !contains(keys, k) {
-			keys = append(keys, k)
-		}
-	}
-	for _, m := range urlLinkRe.FindAllStringSubmatch(text, -1) {
-		add(m[1], m[2])
-	}
-	for _, m := range qualifiedLinkRe.FindAllStringSubmatch(urlLinkRe.ReplaceAllString(text, " "), -1) {
-		add(m[1], m[2])
-	}
-	for _, m := range bareLinkRe.FindAllStringSubmatch(urlLinkRe.ReplaceAllString(text, " "), -1) {
-		add(repo, m[1])
-	}
-	return keys
-}
-
-// stripComments drops the lines git removes from a commit message: comment
-// lines and everything below the scissors line.
-func stripComments(msg string) string {
-	var kept []string
-	for _, line := range strings.Split(msg, "\n") {
-		if strings.HasPrefix(line, "# ------------------------ >8") {
-			break
-		}
-		if !strings.HasPrefix(line, "#") {
-			kept = append(kept, line)
-		}
-	}
-	return strings.Join(kept, "\n")
 }
 
 func contains(list []string, s string) bool {

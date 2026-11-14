@@ -133,8 +133,9 @@ func main() {
 	os.Exit(dispatch(os.Args[1:]))
 }
 
-// runBuiltin runs built-in check name with args exactly as its own program
-// would; the check exits the process itself.
+// runBuiltin runs built-in check name with args as its own program would, an
+// engineJudges check with the engine's judgment. The check exits the process
+// itself.
 func runBuiltin(name string, args []string) int {
 	entry, ok := builtins[name]
 	if !ok {
@@ -142,6 +143,10 @@ func runBuiltin(name string, args []string) int {
 		return 2
 	}
 	checkkit.Document(builtinSummaries[name])
+	if judge, ok := engineJudges[name]; ok {
+		desc, _ := checkkit.DescribeOf(entry)
+		entry = func() { checkkit.Main(checkkit.Check{Describe: desc, Run: judge}) }
+	}
 	os.Args = append([]string{checkkit.BinPrefix + name}, args...)
 	entry()
 	return 0
