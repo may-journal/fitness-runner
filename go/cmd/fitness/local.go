@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -212,9 +213,16 @@ func installedOrBuiltin(name string) (checkkit.Program, error) {
 // noteReplaced says on stderr that bin replaces the built-in check name,
 // unless no such built-in runs.
 func noteReplaced(bin, name string) {
-	if builtins[name] != nil && !builtinsOff() {
+	if builtins[name] != nil && !builtinsOff() && !pinnedProgram(bin) {
 		fmt.Fprintf(os.Stderr, "fitness: %s replaces the built-in %s check; delete it to run the built-in one\n", bin, name)
 	}
+}
+
+// pinnedProgram reports whether bin lies in the installer's folder of pinned
+// checks, which replace their built-ins on purpose.
+func pinnedProgram(bin string) bool {
+	dir := os.Getenv(checkkit.ChecksDirEnv)
+	return dir != "" && filepath.Dir(bin) == filepath.Clean(dir)
 }
 
 // builtinProgram returns the program for built-in check name: this fitness

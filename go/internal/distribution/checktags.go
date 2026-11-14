@@ -36,9 +36,7 @@ func (i *Installer) resolveByTags(ctx context.Context, pins []CheckPin) ([]check
 		if exactPin.MatchString(pin.Pin) {
 			continue
 		}
-		if resolved[k].Tag = newestUnder(tags, pin.Name, pin.Pin); resolved[k].Tag == "" {
-			return nil, fmt.Errorf("no release of check %s matches %s; see %s", pin.Name, pin.Pin, checksRoot)
-		}
+		resolved[k].Tag = newestUnder(tags, pin.Name, pin.Pin)
 	}
 	return resolved, nil
 }

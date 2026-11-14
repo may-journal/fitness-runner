@@ -23,6 +23,9 @@ const checkIndexName = "check-index.json"
 // resolve through the check tags instead.
 var errNoIndex = errors.New("fitness-checks publishes no release index")
 
+// errUnanswered marks an index read that got no answer from the network.
+var errUnanswered = errors.New("GitHub did not answer the check release index")
+
 // checkRelease is one check release to install. URL and SHA256 are empty
 // when tags resolved it, and the release's own files give them.
 type checkRelease struct {
@@ -72,34 +75,44 @@ func recordFresh[T any](cache, name string, value T) {
 // index, else through the check tags while fitness-checks publishes none.
 func (i *Installer) resolvePins(ctx context.Context, pins []CheckPin) ([]checkRelease, error) {
 	index, err := i.readIndex(ctx)
-	if err != nil {
-		// Unanswered, the run asks nothing more, so only exact pins of cached
-		// checks still install.
-		i.Unanswered = i.Unanswered || !errors.Is(err, errNoIndex)
+	// Unanswered, the run asks nothing more, so only exact pins of cached
+	// checks still install.
+	i.Unanswered = i.Unanswered || errors.Is(err, errUnanswered)
+	if errors.Is(err, errNoIndex) || errors.Is(err, errUnanswered) {
 		return i.resolveByTags(ctx, pins)
 	}
+	if err != nil {
+		return nil, err
+	}
+	return index.releases(pins, i.Platform), nil
+}
+
+// releases resolves each pin through the index, in order.
+func (index checkIndex) releases(pins []CheckPin, platform string) []checkRelease {
 	releases := make([]checkRelease, len(pins))
 	for k, pin := range pins {
-		if releases[k], err = index.release(pin, i.Platform); err != nil {
-			return nil, err
-		}
+		releases[k] = index.release(pin, platform)
 	}
-	return releases, nil
+	return releases
 }
 
 // release finds pin's artifact for platform: an exact version, or the
-// version the index names for a major.
-func (index checkIndex) release(pin CheckPin, platform string) (checkRelease, error) {
+// version the index names for a major. An exact pin the index lacks takes
+// its tag's own files; a major it lacks resolves to nothing.
+func (index checkIndex) release(pin CheckPin, platform string) checkRelease {
 	check := index.Checks[pin.Name]
 	version := strings.TrimPrefix(pin.Pin, "v")
 	if !exactPin.MatchString(pin.Pin) {
 		version = check.Majors[version]
 	}
 	artifact, ok := check.Versions[version].Artifacts[platform]
-	if !ok || check.Versions[version].Tag == "" {
-		return checkRelease{}, fmt.Errorf("no release of check %s matches %s for %s; see %s", pin.Name, pin.Pin, platform, checksRoot)
+	switch {
+	case ok && check.Versions[version].Tag != "":
+		return checkRelease{Tag: check.Versions[version].Tag, URL: artifact.URL, SHA256: artifact.SHA256}
+	case exactPin.MatchString(pin.Pin):
+		return checkRelease{Tag: checkPrefix + pin.Name + "-" + pin.Pin}
 	}
-	return checkRelease{Tag: check.Versions[version].Tag, URL: artifact.URL, SHA256: artifact.SHA256}, nil
+	return checkRelease{}
 }
 
 // checkLookupTimeout bounds each read of the check index or tags, like the
@@ -145,7 +158,7 @@ func (i *Installer) fetchIndex(ctx context.Context) (checkIndex, error) {
 	i.announce(client, "the check release index", request)
 	response, err := client.Do(request)
 	if err != nil {
-		return index, fmt.Errorf("download %s: %w", checkIndexURL, err)
+		return index, fmt.Errorf("%w: %w", errUnanswered, err)
 	}
 	defer response.Body.Close()
 	if response.StatusCode == http.StatusNotFound {

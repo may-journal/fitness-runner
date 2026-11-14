@@ -5,6 +5,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 func ActionOptions(options Options) (Options, error) {
@@ -68,7 +70,7 @@ func writeChecksDir(checks string) error {
 	if err := appendActionFile(os.Getenv("GITHUB_OUTPUT"), "checks-dir="+checks+"\n"); err != nil {
 		return err
 	}
-	return appendActionFile(os.Getenv("GITHUB_ENV"), "FITNESS_CHECKS_DIR="+checks+"\n")
+	return appendActionFile(os.Getenv("GITHUB_ENV"), checkkit.ChecksDirEnv+"="+checks+"\n")
 }
 
 func appendActionFile(path, value string) error {

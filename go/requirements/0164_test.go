@@ -69,7 +69,7 @@ func Test0164_2(t *testing.T) {
 	env := tags0164(t, "fitness-check-gofmt-v1.0.0")
 	repo := pinned0164(t, `{"gofmt": "v2"}`)
 	out, code := fiRun(t, repo, env, "--with-checks", "--install-only")
-	sees(t, out, code, 0, "warning: no release of check gofmt matches v2", "the built-in checks run instead")
+	sees(t, out, code, 0, "warning: no release of check gofmt matches v2; its built-in runs", "installed 0 checks in ")
 	out, code = fiRun(t, repo, env, "--with-checks", "--", "--no-builtins", "gofmt")
 	sees(t, out, code, 1, "no release of check gofmt matches v2")
 }
@@ -78,8 +78,14 @@ func Test0164_3(t *testing.T) {
 	t.Parallel()
 	repo := pinned0164(t, `{"markdown-links": "v1.0.0"}`)
 	commit(t, repo, map[string]string{"broken.md": "# Broken\n\nSee [the guide](missing.md).\n"}, "docs(broken): link a missing guide")
-	out, code := fiRun(t, repo, tags0164(t), "--with-checks", "--", "--no-builtins", "--policy=external", "--all", "--checks=markdown-links")
-	sees(t, out, code, 1, "missing.md", "0 of 1 checks passed")
+	env := tags0164(t)
+	for _, run := range [][]string{{"--no-builtins"}, nil} {
+		out, code := fiRun(t, repo, env, append(append([]string{"--with-checks", "--"}, run...), "--policy=external", "--all", "--checks=markdown-links")...)
+		sees(t, out, code, 1, "missing.md", "0 of 1 checks passed")
+		if strings.Contains(out, "replaces the built-in") {
+			t.Errorf("an installed pinned check replaces its built-in on purpose, so no note:\n%s", out)
+		}
+	}
 }
 
 func Test0164_4(t *testing.T) {

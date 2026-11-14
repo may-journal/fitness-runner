@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // runnerEnvironment exposes verified tools before caller tools, preserving
@@ -36,5 +38,6 @@ func withChecksDir(env []string, checks string) []string {
 	if checks == "" {
 		return env
 	}
-	return append(slices.DeleteFunc(env, func(kv string) bool { return strings.HasPrefix(kv, "FITNESS_CHECKS_DIR=") }), "FITNESS_CHECKS_DIR="+checks)
+	key := checkkit.ChecksDirEnv + "="
+	return append(slices.DeleteFunc(env, func(kv string) bool { return strings.HasPrefix(kv, key) }), key+checks)
 }

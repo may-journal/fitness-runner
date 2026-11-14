@@ -19,11 +19,11 @@ Pinned checks
 - 0164.2
     - Given Developer has a repo that pins a check to a major with no release
         - When I run `fitness-install --with-checks`, with or without `--no-builtins`
-            - Then it warns, naming the check and the pin, and the built-ins run; with `--no-builtins` it fails
+            - Then it warns, naming the check and the pin, and its built-in runs; with `--no-builtins` the run fails
 - 0164.3
     - Given Developer has a repo that pins one check
-        - When I run that check through `fitness-install --with-checks` with `--no-builtins`
-            - Then the installed check judges the repo
+        - When I run that check through `fitness-install --with-checks`, with and without `--no-builtins`
+            - Then the installed check judges the repo, printing no note that it replaces a built-in
 - 0164.4
     - Given Developer has a repo that pins one check, and GitHub refuses the latest release lookup
         - When I run `fitness-install --with-checks --version latest`

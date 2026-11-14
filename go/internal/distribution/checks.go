@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/may-journal/fitness-runner/go/pkg/par"
 )
@@ -55,12 +56,15 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 	if i.Unanswered {
 		return "", errors.New("GitHub did not answer the release lookup, so no check installs")
 	}
+	ctx, cancel := context.WithTimeout(ctx, installTotal)
+	defer cancel()
 	releases, err := i.resolvePins(ctx, pins)
 	if err != nil {
 		return "", err
 	}
+	names, releases := i.released(pins, releases)
 	paths, err := par.MapErr(ctx, len(releases), checkWorkers, func(ctx context.Context, k int) (string, error) {
-		return i.installCheck(ctx, pins[k].Name, releases[k])
+		return i.installCheck(ctx, names[k], releases[k])
 	})
 	if err != nil {
 		return "", err
@@ -70,6 +74,25 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 		fmt.Fprintf(i.Log, "fitness: installed %d checks in %s\n", len(paths), dir)
 	}
 	return dir, err
+}
+
+// installTotal bounds a whole check install, so a slow network cannot hold a
+// hook for long.
+const installTotal = 5 * time.Minute
+
+// released keeps each pin that resolved to a release, warning once for each
+// one that did not, so its built-in runs.
+func (i *Installer) released(pins []CheckPin, releases []checkRelease) ([]string, []checkRelease) {
+	var names []string
+	var kept []checkRelease
+	for k, release := range releases {
+		if release.Tag == "" {
+			fmt.Fprintf(i.Log, "fitness: warning: no release of check %s matches %s; its built-in runs\n", pins[k].Name, pins[k].Pin)
+			continue
+		}
+		names, kept = append(names, pins[k].Name), append(kept, release)
+	}
+	return names, kept
 }
 
 // installCheck returns the cached program of one check release, or downloads,
