@@ -72,11 +72,9 @@ func recordFresh[T any](cache, name string, value T) {
 // index, else through the check tags while fitness-checks publishes none.
 func (i *Installer) resolvePins(ctx context.Context, pins []CheckPin) ([]checkRelease, error) {
 	index, err := i.readIndex(ctx)
-	if errors.Is(err, errNoIndex) {
-		return i.resolveByTags(ctx, pins)
-	}
 	if err != nil {
-		return nil, err
+		// Exact pins and cached tags still resolve when the index cannot.
+		return i.resolveByTags(ctx, pins)
 	}
 	releases := make([]checkRelease, len(pins))
 	for k, pin := range pins {
@@ -96,7 +94,7 @@ func (index checkIndex) release(pin CheckPin, platform string) (checkRelease, er
 		version = check.Majors[version]
 	}
 	artifact, ok := check.Versions[version].Artifacts[platform]
-	if !ok {
+	if !ok || check.Versions[version].Tag == "" {
 		return checkRelease{}, fmt.Errorf("no release of check %s matches %s for %s; see %s", pin.Name, pin.Pin, platform, checksRoot)
 	}
 	return checkRelease{Tag: check.Versions[version].Tag, URL: artifact.URL, SHA256: artifact.SHA256}, nil
@@ -115,13 +113,22 @@ func (i *Installer) checkLookup() *http.Client {
 // errNoIndex means fitness-checks publishes none.
 func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
 	if index, ok := readFresh[checkIndex](i.Cache, checkIndexName); ok {
-		return index, nil
+		return index, publishedIndex(index)
 	}
 	index, err := i.fetchIndex(ctx)
-	if err == nil {
+	if err == nil || errors.Is(err, errNoIndex) {
+		// A missing index is recorded as format 0, so runs ask again later.
 		recordFresh(i.Cache, checkIndexName, index)
 	}
 	return index, err
+}
+
+// publishedIndex is errNoIndex for a recorded missing index, else nil.
+func publishedIndex(index checkIndex) error {
+	if index.Format == 0 {
+		return errNoIndex
+	}
+	return nil
 }
 
 // fetchIndex reads the release index, refusing a format it does not know.

@@ -59,8 +59,8 @@ func Test0164_1(t *testing.T) {
 	sees(t, described, code, 0, `"name":"gofmt"`, `"protocol":1`)
 	again, code := fiRun(t, repo, env, "--with-checks", "--install-only")
 	sees(t, again, code, 0, "installed 2 checks in "+dir)
-	if strings.Contains(again, "downloading fitness-check-") {
-		t.Errorf("a second install must reuse the cached checks:\n%s", again)
+	if strings.Contains(again, "downloading fitness-check-") || strings.Contains(again, "for the check release") {
+		t.Errorf("a second install must reuse the cached checks and lookups:\n%s", again)
 	}
 }
 

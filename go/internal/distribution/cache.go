@@ -14,11 +14,21 @@ import (
 var generationPattern = regexp.MustCompile(`^bundle-[0-9]+$`)
 
 func writeAtomic(path string, data []byte) error {
+	return writeAtomicMode(path, data, 0600)
+}
+
+// writeAtomicMode writes data with mode through a renamed temporary file, so
+// no reader sees a partial file or one without its mode.
+func writeAtomicMode(path string, data []byte, mode os.FileMode) error {
 	file, err := os.CreateTemp(filepath.Dir(path), ".download-")
 	if err != nil {
 		return err
 	}
 	defer os.Remove(file.Name())
+	if err := file.Chmod(mode); err != nil {
+		file.Close()
+		return err
+	}
 	if _, err := file.Write(data); err != nil {
 		file.Close()
 		return err

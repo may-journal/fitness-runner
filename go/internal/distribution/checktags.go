@@ -78,19 +78,29 @@ func (i *Installer) checkTags(ctx context.Context) ([]string, error) {
 	return tags, err
 }
 
-// lookupTags reads every page of check release tags from the API.
+// maxTagPages bounds the tag lookup, so an endpoint that ignores paging
+// cannot loop forever.
+const maxTagPages = 50
+
+// lookupTags reads every page of check release tags from the API. A short
+// page, or one that repeats tags already read, is the last.
 func (i *Installer) lookupTags(ctx context.Context) ([]string, error) {
 	var tags []string
-	for page := 1; ; page++ {
+	for page := 1; page <= maxTagPages; page++ {
 		got, err := i.tagPage(ctx, page)
-		if err != nil {
-			return nil, err
+		if err != nil || repeats(tags, got) {
+			return tags, err
 		}
-		tags = append(tags, got...)
-		if len(got) < 100 {
+		if tags = append(tags, got...); len(got) < 100 {
 			return tags, nil
 		}
 	}
+	return tags, nil
+}
+
+// repeats reports whether page is empty or starts with a tag already read.
+func repeats(tags, page []string) bool {
+	return len(page) == 0 || slices.Contains(tags, page[0])
 }
 
 // tagPage reads one page of check release tags, signed in when a GitHub

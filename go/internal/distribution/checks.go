@@ -39,7 +39,7 @@ type CheckPin struct {
 // ParsePins reads the `<name> <pin>` lines `fitness check-versions` prints.
 func ParsePins(text string) ([]CheckPin, error) {
 	var pins []CheckPin
-	for _, line := range strings.Split(strings.TrimSpace(text), "\n") {
+	for _, line := range strings.FieldsFunc(text, func(r rune) bool { return r == '\n' }) {
 		fields := strings.Fields(line)
 		if len(fields) != 2 {
 			return nil, fmt.Errorf("fitness check-versions printed %q, not `<name> <pin>`", line)
@@ -77,7 +77,7 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 func (i *Installer) installCheck(ctx context.Context, name string, release checkRelease) (string, error) {
 	asset := release.Tag + "-" + i.Platform + ".tar"
 	program := filepath.Join(i.Cache, "checks", asset, checkPrefix+name)
-	if _, err := os.Stat(program); err == nil {
+	if exists(program) {
 		return program, nil
 	}
 	data, err := i.verifiedCheck(ctx, release, asset)
@@ -116,11 +116,19 @@ func (i *Installer) checkHash(ctx context.Context, indexed, url, asset string) (
 	if err != nil {
 		return "", err
 	}
-	hash, err := checkedHash(strings.Fields(string(sum) + " ")[0])
+	hash, err := checkedHash(firstField(string(sum)))
 	if err != nil {
 		return "", fmt.Errorf("%s.sha256: %w", asset, err)
 	}
 	return hash, nil
+}
+
+// firstField is the first word of text, or "" when it has none.
+func firstField(text string) string {
+	if fields := strings.Fields(text); len(fields) > 0 {
+		return fields[0]
+	}
+	return ""
 }
 
 // checkProgram returns the one regular file named name in a check archive.
@@ -146,15 +154,12 @@ func isProgram(header *tar.Header, name string) bool {
 }
 
 // writeProgram writes an executable program into its own cache folder,
-// renaming it into place so a parallel install never sees half a file.
+// renaming it into place so a parallel install never sees half of it.
 func writeProgram(path string, binary []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	if err := writeAtomic(path, binary); err != nil {
-		return err
-	}
-	return os.Chmod(path, 0755)
+	return writeAtomicMode(path, binary, 0755)
 }
 
 // checkSet returns a cache folder linking exactly programs. Its name hashes
@@ -162,10 +167,10 @@ func writeProgram(path string, binary []byte) error {
 func checkSet(cache string, programs []string) (string, error) {
 	sorted := slices.Sorted(slices.Values(programs))
 	dir := filepath.Join(cache, "check-sets", contentHash([]byte(strings.Join(sorted, "\n"))))
-	if _, err := os.Stat(dir); err == nil {
+	if exists(dir) {
 		return dir, nil
 	}
-	staged, err := os.MkdirTemp(filepath.Join(cache), "check-set-")
+	staged, err := os.MkdirTemp(cache, "check-set-")
 	if err != nil {
 		return "", err
 	}
