@@ -2,7 +2,7 @@
 
 ## Why
 
-The engine links a check only through the generated built-ins map. So once the checks ship on their own, the engine builds without any of them.
+The engine links a check package only through the generated built-ins map. So removing that map leaves an engine that holds no check package.
 
 ## Measurement
 

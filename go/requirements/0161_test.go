@@ -45,7 +45,7 @@ func fileImports0161(t *testing.T, file string) []string {
 // checks.go imports.
 func engineImports0161(t *testing.T) (imports []string, builtIns int) {
 	t.Helper()
-	for _, file := range strings.Fields(goList0161(t, "-f", `{{range .GoFiles}}{{$.Dir}}/{{.}}{{"\n"}}{{end}}`, "./cmd/fitness")) {
+	for _, file := range strings.Fields(goList0161(t, "-f", `{{range .GoFiles}}{{$.Dir}}/{{.}}{{"\n"}}{{end}}{{range .IgnoredGoFiles}}{{$.Dir}}/{{.}}{{"\n"}}{{end}}`, "./cmd/fitness")) {
 		paths := fileImports0161(t, file)
 		if filepath.Base(file) == "checks.go" {
 			builtIns = len(slices.DeleteFunc(paths, func(p string) bool { return !checkPackage0161(p) }))
@@ -64,6 +64,9 @@ func Test0161_1(t *testing.T) {
 	imports, builtIns := engineImports0161(t)
 	if builtIns == 0 {
 		t.Fatal("checks.go links no check package, so the test cannot tell the built-ins map from the engine")
+	}
+	if len(imports) == 0 {
+		return
 	}
 	out := goList0161(t, append([]string{"-deps", "-f", `{{.ImportPath}}: {{join .Imports " "}}`}, imports...)...)
 	for _, line := range strings.Split(out, "\n") {

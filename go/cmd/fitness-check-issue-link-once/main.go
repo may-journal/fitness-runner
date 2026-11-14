@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 
@@ -114,7 +115,7 @@ func repeatOf(key, repo string, prior []earlier, pr *openPR, authored time.Time)
 	if c, ok := linkedBy(key, repo, prior); ok {
 		return fmt.Sprintf("%s is already linked by commit %s (%q)", key, short(c.sha), c.subject)
 	}
-	if pr != nil && authored.After(pr.opened) && contains(gitx.IssueLinks(pr.body, repo), key) {
+	if pr != nil && authored.After(pr.opened) && slices.Contains(gitx.IssueLinks(pr.body, repo), key) {
 		return fmt.Sprintf("%s is already linked by open PR #%d", key, pr.number)
 	}
 	return ""
@@ -127,20 +128,11 @@ func short(sha string) string {
 // linkedBy returns the first earlier commit whose message links key.
 func linkedBy(key, repo string, prior []earlier) (earlier, bool) {
 	for _, c := range prior {
-		if contains(gitx.MessageLinks(c.message, repo), key) {
+		if slices.Contains(gitx.MessageLinks(c.message, repo), key) {
 			return c, true
 		}
 	}
 	return earlier{}, false
-}
-
-func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
 }
 
 // branchCommits lists the commits already on the branch, leaving out HEAD
