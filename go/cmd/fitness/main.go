@@ -133,8 +133,16 @@ func main() {
 	os.Exit(dispatch(os.Args[1:]))
 }
 
-// runBuiltin runs built-in check name with args exactly as its own program
-// would; the check exits the process itself.
+// engineJudges holds the built-in checks whose judgment lives in the engine,
+// which runBuiltin runs under the check's own describe metadata. Neither the
+// engine nor such a check then imports the other.
+var engineJudges = map[string]func(root string, args []string) (checkkit.Result, error){
+	"local-branch": metadata.LocalBranch,
+}
+
+// runBuiltin runs built-in check name with args as its own program would, an
+// engineJudges check with the engine's judgment. The check exits the process
+// itself.
 func runBuiltin(name string, args []string) int {
 	entry, ok := builtins[name]
 	if !ok {
@@ -142,6 +150,14 @@ func runBuiltin(name string, args []string) int {
 		return 2
 	}
 	checkkit.Document(builtinSummaries[name])
+	if judge, ok := engineJudges[name]; ok {
+		desc, described := checkkit.DescribeOf(entry)
+		if !described {
+			fmt.Fprintf(os.Stderr, "fitness: built-in check %s gave no describe metadata for the engine's judgment; reinstall fitness\n", name)
+			return 2
+		}
+		entry = func() { checkkit.Main(checkkit.Check{Describe: desc, Run: judge}) }
+	}
 	os.Args = append([]string{checkkit.BinPrefix + name}, args...)
 	entry()
 	return 0
