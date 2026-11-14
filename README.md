@@ -22,7 +22,7 @@ One command installs `fitness`, which holds every check, and the installer and r
 
 Download the compiled Go installer for your platform from [the releases page](https://github.com/may-journal/fitness-runner/releases). It fetches and checks the full binary bundle, with no Go toolchain on the consumer machine.
 
-The [complete setup guide](docs/ci.md) gives exact download URLs and commands for hooks, Jenkins, and Actions. The installer, hook, and release tools are Go executables; no shell installer is shipped.
+The installer's `--with-checks` also installs each check the repo pins, each from its own [fitness-checks](https://github.com/may-journal/fitness-checks) release, as [install checks](docs/ci.md#install-checks) explains. The [complete setup guide](docs/ci.md) gives exact download URLs and commands for hooks, Jenkins, and Actions. The installer, hook, and release tools are Go executables; no shell installer is shipped.
 
 ### From source
 
