@@ -103,11 +103,20 @@ func Test0164_4(t *testing.T) {
 
 func Test0164_5(t *testing.T) {
 	t.Parallel()
-	env := append(fiPrivateCache(t), "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
+	cache := fiPrivateCache(t)
+	repo := pinned0164(t, `{"markdown-links": "v1.0.0"}`)
+	// The engine unpacks into the cache first, so only the check install is timed.
+	_, _ = fiRun(t, t.TempDir(), cache, "--install-only")
+	env := append(cache, "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
 	start := time.Now()
-	out, code := fiRun(t, pinned0164(t, `{"markdown-links": "v1.0.0"}`), env, "--with-checks", "--install-only")
+	out, code := fiRun(t, repo, env, "--with-checks", "--install-only")
 	sees(t, out, code, 0, "does not download", "the built-in checks run instead")
 	if took := time.Since(start); took > 5*time.Second {
 		t.Errorf("behind a silent proxy the check install must give up within 5s, took %s:\n%s", took, out)
+	}
+	start = time.Now()
+	again, _ := fiRun(t, repo, env, "--with-checks", "--install-only")
+	if took := time.Since(start); took > 3*time.Second || strings.Contains(again, "for the check release index") {
+		t.Errorf("a second install within the minute must not ask the silent index again, took %s:\n%s", took, again)
 	}
 }

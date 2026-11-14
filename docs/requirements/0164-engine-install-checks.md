@@ -31,4 +31,4 @@ Pinned checks
 - 0164.5
     - Given Developer has a repo that pins one uncached check, behind a proxy that never answers
         - When I run `fitness-install --with-checks`
-            - Then it gives up within seconds after one unanswered index read, warns, and the built-ins run
+            - Then it gives up within seconds after one unanswered index read, warns, and the built-ins run; a run within the minute asks nothing

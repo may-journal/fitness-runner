@@ -76,7 +76,7 @@ func newestUnder(tags []string, name, major string) string {
 // checkTags returns a fresh recorded tag lookup, else asks GitHub and records
 // the answer.
 func (i *Installer) checkTags(ctx context.Context) ([]string, error) {
-	if tags, ok := readFresh[[]string](i.Cache, checkTagsName); ok || i.Unanswered {
+	if tags, ok := readFresh[[]string](i.Cache, checkTagsName, latestFresh); ok || i.Unanswered {
 		return tags, unanswered(ok)
 	}
 	tags, err := i.lookupTags(ctx)

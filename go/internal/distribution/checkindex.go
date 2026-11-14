@@ -54,11 +54,11 @@ type freshRecord[T any] struct {
 }
 
 // readFresh returns the answer recorded in the cache file name, and whether
-// one younger than latestFresh was there.
-func readFresh[T any](cache, name string) (T, bool) {
+// one younger than within was there.
+func readFresh[T any](cache, name string, within time.Duration) (T, bool) {
 	var record freshRecord[T]
 	data, err := readCacheFile(filepath.Join(cache, name), maxMetadataBytes)
-	ok := err == nil && json.Unmarshal(data, &record) == nil && time.Since(record.Checked) < latestFresh
+	ok := err == nil && json.Unmarshal(data, &record) == nil && time.Since(record.Checked) < within
 	return record.Value, ok
 }
 
@@ -127,16 +127,34 @@ func (i *Installer) checkLookup() *http.Client {
 // readIndex returns a fresh recorded index, else reads and records it.
 // errNoIndex means fitness-checks publishes none.
 func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
-	if index, ok := readFresh[checkIndex](i.Cache, checkIndexName); ok {
+	if index, ok := readFresh[checkIndex](i.Cache, checkIndexName, latestFresh); ok {
 		return index, publishedIndex(index)
 	}
-	index, err := i.fetchIndex(ctx)
-	if err == nil || errors.Is(err, errNoIndex) {
-		// A missing index is recorded as format 0, so runs ask again later.
-		recordFresh(i.Cache, checkIndexName, index)
+	if _, ok := readFresh[bool](i.Cache, unansweredName, unansweredFresh); ok {
+		return checkIndex{}, errUnanswered
 	}
+	index, err := i.fetchIndex(ctx)
+	i.recordIndex(index, err)
 	return index, err
 }
+
+// recordIndex records an index read. A missing index is format 0, so runs
+// ask again later; an unanswered read has its own record.
+func (i *Installer) recordIndex(index checkIndex, err error) {
+	switch {
+	case err == nil || errors.Is(err, errNoIndex):
+		recordFresh(i.Cache, checkIndexName, index)
+	case errors.Is(err, errUnanswered):
+		recordFresh(i.Cache, unansweredName, true)
+	}
+}
+
+// unansweredName records an index read that got no answer, so the next hook
+// of the same commit does not wait for it again.
+const unansweredName = "check-index-unanswered.json"
+
+// unansweredFresh is how long an unanswered index read stands.
+const unansweredFresh = time.Minute
 
 // publishedIndex is errNoIndex for a recorded missing index, else nil.
 func publishedIndex(index checkIndex) error {
