@@ -298,10 +298,17 @@ func ViewIssue(ctx context.Context, repo, n string) (IssueView, error) {
 	return v, err
 }
 
-// IssueIn reads issue n of repo, as owner/name, and fails for an issue that
-// is missing or that the token cannot read.
+// IssueIn reads issue n of repo, as owner/name, and fails for a missing
+// issue. A repo the token cannot read, such as a private one, is skipped,
+// since the token cannot tell it from an absent issue.
 func (g Client) IssueIn(repo string, n int) error {
-	_, _, err := g.in(repo).Issue(n)
+	other := g.in(repo)
+	if repo != g.repo {
+		if _, err := other.api("--silent", ""); err != nil {
+			return nil
+		}
+	}
+	_, _, err := other.Issue(n)
 	return err
 }
 

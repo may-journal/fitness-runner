@@ -47,7 +47,7 @@ var (
 	refRe      = regexp.MustCompile(refPattern)
 	afterRe    = regexp.MustCompile(`(?i)\bafter\b`)
 	checkboxRe = regexp.MustCompile(`^\[[ xX]\]\s*`)
-	issueURLRe = regexp.MustCompile(`(?i)https://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)(#\S*)?`)
+	issueURLRe = regexp.MustCompile(`(?i)https://github\.com/([\w.-]+/[\w.-]+)/issues/(\d+)(#issuecomment\S*)?`)
 	statusRe   = regexp.MustCompile(`(?i)\b(done|blocked|wip|todo|merged|closed|shipped|complete|completed|in progress|pending)\b`)
 )
 
@@ -86,7 +86,7 @@ func sectionLines(body string) []string {
 func Refs(body string) []string {
 	var refs []string
 	for _, it := range Items(body) {
-		if ref := cmp.Or(it.Lead, it.Ref); ref != "" {
+		if ref := cmp.Or(it.Ref, it.Lead); ref != "" {
 			refs = append(refs, ref)
 		}
 	}
@@ -115,13 +115,10 @@ func Key(ref, repo string) string {
 	return strings.ToLower(ref)
 }
 
-// PlanRef is the issue an item's text names: the reference it opens with,
-// else its first issue URL as owner/name#number, else "".
+// PlanRef is the issue an item's text names: its first issue URL as
+// owner/name#number, else the reference it opens with, else "".
 func PlanRef(text string) string {
-	if lead := Lead(text); lead != "" {
-		return lead
-	}
-	return urlRef(text)
+	return cmp.Or(urlRef(text), Lead(text))
 }
 
 // urlRef is the first issue URL in text as owner/name#number, or "". A URL
@@ -217,7 +214,7 @@ func itemErrors(n int, it Item) []string {
 
 // checklistErrors fails a checklist item that names no issue URL.
 func checklistErrors(n int, it Item) []string {
-	if it.Ref == "" {
+	if it.URL == "" {
 		return []string{fmt.Sprintf("item %d (%s) names no issue; add its Plan as a full issue URL", n, it.Text)}
 	}
 	return nil

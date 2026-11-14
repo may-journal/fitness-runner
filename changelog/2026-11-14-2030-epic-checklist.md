@@ -6,3 +6,4 @@
 - Feat: a Plan may live in any repository, `.github` included, and an Epic needs no sub-issue links.
 - Fix: issue-check no longer compares an Epic's list with its sub-issues, but still fails a listed issue that is missing or unreadable.
 - Test: requirements 0082.3 and 0164.1 prove a list needs no sub-issues and a checklist Epic passes.
+- Fix: a checklist item needs its Plan as a full issue URL; an issue in an unreadable repo is skipped.
