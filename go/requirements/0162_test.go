@@ -88,3 +88,15 @@ func Test0162_3(t *testing.T) {
 		sees(t, out, code, 1, "check markdown-links is not installed, and --no-builtins turns the built-in checks off; install it: go install github.com/may-journal/fitness-checks/cmd/fitness-check-markdown-links@latest")
 	}
 }
+
+func Test0162_4(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", nil)
+	bundle := bundle0162(t)
+	write(t, bundle, map[string]string{"fitness-check-local-branch": script0162(`{"name":"local-branch","scope":"github"}`, "installed local-branch ran")})
+	out, code := run0162(t, bundle, repo, nil, "local-branch")
+	sees(t, out, code, 0, "skipped")
+	if strings.Contains(out, "installed local-branch ran") {
+		t.Errorf("an installed local-branch cannot judge, so fitness must not run it:\n%s", out)
+	}
+}
