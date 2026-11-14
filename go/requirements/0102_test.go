@@ -88,7 +88,9 @@ type schemaKey struct {
 	Description string               `json:"description"`
 	Default     any                  `json:"default"`
 	Properties  map[string]schemaKey `json:"properties"`
-	Closed      *bool                `json:"additionalProperties"`
+	// Others is false for an object that refuses unknown keys, or the
+	// schema of a map's values.
+	Others json.RawMessage `json:"additionalProperties"`
 }
 
 // printedSchema runs `fitness config schema` in a repo and decodes it.
@@ -112,12 +114,22 @@ func Test0102_2(t *testing.T) {
 	if got.Description == "" {
 		t.Error("proseBudget.maxWords must carry a description")
 	}
+	mapOfStrings(t, schema.Properties["checkVersions"])
+}
+
+// mapOfStrings fails unless key is an object whose free keys hold strings,
+// as checkVersions pins are.
+func mapOfStrings(t *testing.T, key schemaKey) {
+	t.Helper()
+	if key.Type != "object" || strings.Join(strings.Fields(string(key.Others)), "") != `{"type":"string"}` {
+		t.Errorf("checkVersions must be a map of string pins, got %+v", key)
+	}
 }
 
 // refusesUnknownKeys reports whether schema is an object that allows no
 // key it does not list.
 func refusesUnknownKeys(schema schemaKey) bool {
-	return schema.Type == "object" && schema.Closed != nil && !*schema.Closed
+	return schema.Type == "object" && string(schema.Others) == "false"
 }
 
 func Test0102_3(t *testing.T) {
