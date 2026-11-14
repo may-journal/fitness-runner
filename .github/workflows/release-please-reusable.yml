@@ -2,7 +2,7 @@ name: Release Please (reusable)
 # Org repos that release call this public workflow on pushes to main, each with
 # its own Release Please config, manifest and version.txt.
 # Release Please keeps a release PR open, and merging it tags vX.Y.Z,
-# publishes the release and moves vX to it.
+# publishes the release and moves its major tag, vX or <component>-vX.
 on:
   workflow_call:
     outputs:
@@ -28,7 +28,7 @@ jobs:
     timeout-minutes: 5
     outputs:
       pr: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
-      releases: ${{ steps.tags.outputs.releases }}
+      releases: ${{ steps.tags.outputs.releases || '[]' }}
     # One release run at a time per repo. The group name differs from any
     # caller's, since a caller and its called workflow sharing one deadlocks.
     concurrency:
@@ -129,9 +129,22 @@ jobs:
         run: |
           refs="repos/$GITHUB_REPOSITORY/git/refs"
           releases='[]'
-          while IFS=$'\t' read -r path tag major sha; do
+          # Reading the rows into a variable first makes a jq failure stop the step.
+          rows="$(jq -r '. as $o | (($o.paths_released // "[\".\"]") | fromjson)[] as $path
+            | (if $path == "." then "" else $path + "--" end) as $p
+            | [$path, $o[$p + "tag_name"] // "", $o[$p + "major"] // "", $o[$p + "sha"] // ""] | join("|")' <<<"$OUTPUTS")"
+          while IFS='|' read -r path tag major sha; do
+            if [ -z "$tag" ] || [ -z "$major" ] || [ -z "$sha" ]; then
+              echo "::error::Release Please gave no tag, major or sha for path $path"
+              exit 1
+            fi
             base="${tag%-v*}"
-            if [ "$base" = "$tag" ]; then MAJOR="v$major"; else MAJOR="$base-v$major"; fi
+            if [ "$path" = . ] && [ "$base" = "$tag" ]; then MAJOR="v$major"
+            elif [ "$path" != . ] && [ "$base" != "$tag" ]; then MAJOR="$base-v$major"
+            else
+              echo "::error::Tag $tag does not fit path $path: a component tags <component>-vX.Y.Z and the root vX.Y.Z"
+              exit 1
+            fi
             if found="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAJOR" --silent 2>&1)"; then
               gh api -X PATCH "$refs/tags/$MAJOR" -f sha="$sha" -F force=true --silent
             elif [[ "$found" == *"Not Found"* ]]; then
@@ -142,9 +155,7 @@ jobs:
             fi
             releases="$(jq -c --arg path "$path" --arg tag "$tag" --arg major_tag "$MAJOR" --arg sha "$sha" \
               '. + [{path: $path, tag: $tag, major_tag: $major_tag, sha: $sha}]' <<<"$releases")"
-          done < <(jq -r '. as $o | (($o.paths_released // "[\".\"]") | fromjson)[] as $path
-            | (if $path == "." then "" else $path + "--" end) as $p
-            | [$path, $o[$p + "tag_name"], $o[$p + "major"], $o[$p + "sha"]] | @tsv' <<<"$OUTPUTS")
+          done <<<"$rows"
           echo "releases=$releases" >> "$GITHUB_OUTPUT"
       - name: Report job outcome
         if: ${{ always() }}

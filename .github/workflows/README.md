@@ -320,7 +320,7 @@ flowchart TD
 | 4   | Shape         | Demote `##` headings, strip bold, and link compare to the head commit. | pr-check wants plain bullets; tag links 404 first.    |
 | 5   | Link          | Find or open the tracking issue by title, and close it from the PR.   | pr-check needs every PR to close an issue.            |
 | 6   | Reopen        | Close and reopen the PR after either rewrite.                          | pr-check does not run on a body edit.                 |
-| 7   | Major tag     | Point each released component's `vX`, or `<component>-vX`, at its release.                                         | Consumers pin the major version.                      |
+| 7   | Major tag     | Point each released component's major tag at its release.            | Consumers pin the major version.                      |
 | 8   | Approve       | [release-approve.yml](#release-approve) approves the open release PR once green. | The ruleset needs one approval.          |
 
 Steps 4 to 6 and 8 skip when Release Please leaves no PR open. Step 7 runs only for a new release.

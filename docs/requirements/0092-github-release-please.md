@@ -33,6 +33,10 @@ Release Please runs
         - When Release Please shapes the notes
             - Then the link compares `v1.2.0` with the pull request's head commit
 - 0092.6
-    - Given Developer has a monorepo whose release created two components, each tagged `<component>-vX.Y.Z`
+    - Given Developer has a monorepo whose release created the root and two components, each component tagged `<component>-vX.Y.Z`
         - When Release Please moves the major tags
             - Then each `<component>-vX` points at its own release, no root `vX` moves, and the workflow outputs the released components
+- 0092.7
+    - Given Developer has a monorepo release whose component tag omits its name, or whose output has no commit
+        - When Release Please moves the major tags
+            - Then the step fails with an error and changes no ref
