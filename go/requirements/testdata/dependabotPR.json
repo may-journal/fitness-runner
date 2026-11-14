@@ -1,0 +1,19 @@
+{
+  "action": "opened",
+  "number": 7,
+  "pull_request": {
+    "number": 7,
+    "title": "Bump github.com/spf13/cobra from 1.8.0 to 1.8.1",
+    "body": "Bumps [github.com/spf13/cobra](https://github.com/spf13/cobra) from 1.8.0 to 1.8.1.\n<details>\n<summary>Release notes</summary>\n<p><em>Sourced from <a href=\"https://github.com/spf13/cobra/releases\">github.com/spf13/cobra's releases</a>.</em></p>\n<blockquote>\n<h2>v1.8.1</h2>\n<ul>\n<li>Fix a crash when a flag is missing</li>\n<li>Update the docs</li>\n</ul>\n</blockquote>\n</details>\n<details>\n<summary>Commits</summary>\n<ul>\n<li><a href=\"https://github.com/spf13/cobra/commit/aaaaaaa\"><code>aaaaaaa</code></a> Fix a crash</li>\n</ul>\n</details>\n<br />\n\n\n[![Dependabot compatibility score](https://dependabot-badges.githubapp.com/badges/compatibility_score?dependency-name=github.com/spf13/cobra&package-manager=go_modules&previous-version=1.8.0&new-version=1.8.1)](https://docs.github.com/en/github/managing-security-vulnerabilities/about-dependabot-security-updates#about-compatibility-scores)\n\nDependabot will resolve any conflicts with this PR as long as you don't alter it yourself.\n",
+    "user": {
+      "login": "dependabot[bot]",
+      "type": "Bot"
+    },
+    "head": {
+      "ref": "dependabot/go_modules/github.com/spf13/cobra-1.8.1"
+    },
+    "base": {
+      "ref": "main"
+    }
+  }
+}

@@ -97,6 +97,8 @@ Commands:
       Judges this branch's PR and the issues it closes locally, posting nothing.
   fitness pr-check
       Judges pull request titles and descriptions, in GitHub Actions.
+  fitness dependabot-pr
+      Completes a Dependabot pull request so pr-check judges it like a person's, in GitHub Actions.
   fitness issue-check
       Judges an issue by its kind label and comments the result, in GitHub Actions.
   fitness plan-check
