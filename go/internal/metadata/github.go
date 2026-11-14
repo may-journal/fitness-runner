@@ -43,7 +43,7 @@ type ghCommand struct {
 
 // PRBodyChecks are the checks pr-check gives a PR body, which the Claude
 // Code hook also gives a draft one.
-var PRBodyChecks = append([]string{"pr-structure"}, docChecks...)
+var PRBodyChecks = append([]string{"pr-structure"}, bodyChecks...)
 
 // ghCommands are the GitHub commands, by subcommand name.
 var ghCommands = map[string]ghCommand{

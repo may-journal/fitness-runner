@@ -55,8 +55,10 @@ func Test0048_6(t *testing.T) {
 
 func Test0048_7(t *testing.T) {
 	t.Parallel()
-	out, code := planStructure(t, planStructureOf(planStructurePitch, "- [ ] Keep queued edits.\n\n## Open questions\n\n- Which sync wins?"))
-	sees(t, out, code, 1, "Remove the `## Open questions` section — turn unknowns into checklist steps")
+	for _, heading := range []string{"Open questions", "Unresolved questions", "Questions for the owner"} {
+		out, code := planStructure(t, planStructureOf(planStructurePitch, "- [ ] Keep queued edits.\n\n## "+heading+"\n\n- Which sync wins?"))
+		sees(t, out, code, 1, "Remove the `## "+heading+"` section — turn unknowns into checklist steps")
+	}
 }
 
 func Test0048_8(t *testing.T) {

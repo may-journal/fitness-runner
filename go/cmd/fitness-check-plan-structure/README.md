@@ -13,6 +13,6 @@ Plans no longer live as repo files, so this check reads its target from stdin (o
 - Pass: a non-placeholder blockquote pitch before the first `##`, and a `## Background` section.
 - Pass: a `## What needs to happen` section with a `- [ ]` or `- [x]` item, and no other `##` sections.
 - Fail: a missing pitch, a placeholder pitch, a missing section, an empty checklist, or any extra `##` section — each its own error.
-- Fail (pointed): an `## Open questions` section reports a message to turn unknowns into checklist steps instead.
+- Fail (pointed): a section whose heading [open-questions](../fitness-check-open-questions/README.md) fails, such as `## Open questions`, asks to turn unknowns into checklist steps instead.
 
 Fenced code is skipped, so a `##` or checkbox inside a code sample never counts.

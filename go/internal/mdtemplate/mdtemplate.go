@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/mdx"
+	"github.com/may-journal/fitness-runner/go/internal/questions"
 )
 
 // Content is an extra requirement on a section's body.
@@ -45,13 +46,12 @@ type Spec struct {
 const (
 	errNoPitch     = "Missing pitch: add a one-line blockquote (> …) before the first ## section"
 	errPlaceholder = "Pitch is still the template placeholder; write the real one-line value"
-	errOpenQ       = "Remove the `## Open questions` section — turn unknowns into checklist steps"
+	errOpenQ       = "turn unknowns into checklist steps"
 )
 
 var (
-	checkboxRe      = regexp.MustCompile(`^\s*(?:[-*+]|\d+\.)\s+\[[ xX]\]`)
-	bulletRe        = regexp.MustCompile(`^\s*[-*+]\s+\S`)
-	openQuestionsRe = regexp.MustCompile(`(?i)open\s+questions`)
+	checkboxRe = regexp.MustCompile(`^\s*(?:[-*+]|\d+\.)\s+\[[ xX]\]`)
+	bulletRe   = regexp.MustCompile(`^\s*[-*+]\s+\S`)
 )
 
 // contentRule is the line matcher and the "empty section" message tail for a
@@ -228,8 +228,8 @@ func extraSectionError(h mdx.Heading, allowed map[string]bool, spec Spec) string
 	if h.Level != 2 || allowed[h.Text] {
 		return ""
 	}
-	if spec.BanOpenQuestions && openQuestionsRe.MatchString(h.Text) {
-		return errOpenQ
+	if spec.BanOpenQuestions && questions.Named(h.Text) {
+		return "Remove the `## " + h.Text + "` section — " + errOpenQ
 	}
 	return "Unexpected `## " + h.Text + "` section — a " + spec.Noun + " has only " + joinHeadings(spec)
 }

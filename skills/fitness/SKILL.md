@@ -9,7 +9,7 @@ hooks:
           command: fitness claude-hook
           timeout: 30
   PreToolUse:
-    - matcher: "Bash|mcp__.*"
+    - matcher: "Bash|Artifact|mcp__.*"
       hooks:
         - type: command
           command: fitness claude-hook

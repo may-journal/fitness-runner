@@ -37,7 +37,7 @@ plan bodies checked
         - When plan-structure checks the body
             - Then it fails naming the only allowed sections
 - 0048.7
-    - Given Developer has a plan with a `## Open questions` section
+    - Given Developer has a plan with an open questions, unresolved questions or questions for the owner section
         - When plan-structure checks the body
             - Then it fails asking to turn unknowns into checklist steps
 - 0048.8
