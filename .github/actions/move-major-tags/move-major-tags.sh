@@ -28,6 +28,7 @@ while IFS='|' read -r path tag major sha; do
     '. + [{path: $path, tag: $tag, major_tag: $major_tag, sha: $sha}]' <<<"$releases")"
 done <<<"$rows"
 while IFS='|' read -r MAJOR sha; do
+  # Only a missing tag is created, so any other lookup error fails by name instead of as "Reference already exists".
   if found="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$MAJOR" --silent 2>&1)"; then
     gh api -X PATCH "$refs/tags/$MAJOR" -f sha="$sha" -F force=true --silent
   elif [[ "$found" == *"Not Found"* ]]; then
