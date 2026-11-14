@@ -6,4 +6,4 @@
 - Feat: the workflow outputs `releases`, a JSON array of each released component's path, tag, major tag and commit, for a caller's build job.
 - Test: requirement 0092.6 proves two components release together and move only their own major tags.
 - Docs: `.github/workflows/README.md` says the major tag step is per component.
-- Fix: the step fails with an error on a component tag without its name, instead of moving a wrong tag.
+- Fix: the step checks every release first, and fails on a component tag without its name before moving any tag.

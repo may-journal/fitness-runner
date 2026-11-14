@@ -282,3 +282,15 @@ func Test0092_7(t *testing.T) {
 		}
 	}
 }
+
+func Test0092_8(t *testing.T) {
+	t.Parallel()
+	// The root is valid and a later component is not, so no tag may move.
+	outputs := `{"releases_created":"true","paths_released":"[\".\",\"cmd/a\"]","tag_name":"v1.0.0","major":"1","sha":"aaa111",` +
+		`"cmd/a--tag_name":"v2.0.0","cmd/a--major":"2","cmd/a--sha":"bbb222"}`
+	rp, out, code, _ := runWith0092(t, "Move the major version tag", nil, "OUTPUTS="+outputs)
+	sees(t, out, code, 1, "::error::")
+	if rp.called("gh", "-X ") {
+		t.Errorf("a bad later release still changed a ref; gh calls: %q", rp.calls("gh"))
+	}
+}
