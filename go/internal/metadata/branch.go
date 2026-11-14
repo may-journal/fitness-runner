@@ -258,7 +258,7 @@ func branchOutput(ctx context.Context, root string, args ...string) ([]byte, err
 		return []byte(o.Stdout), nil
 	}
 	err := fmt.Errorf("gh %s: %w: %s", args[0], o.Err, strings.TrimSpace(o.Stdout))
-	if aftereffect.GHEnvironment(o) {
+	if checkkit.GHEnvironment(o) {
 		return nil, checkkit.Internal(err)
 	}
 	return nil, err

@@ -2,6 +2,8 @@ package aftereffect
 
 import (
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // ReopenUnfinished reopens an issue closed with unfinished items, once per
@@ -33,7 +35,7 @@ func reopen(gh Client, t Target, errs []string, mark string) error {
 
 // closeMarker tags the comment with a hash of this close, its time and body.
 func closeMarker(t Target) string {
-	return MarkerPrefix + "close-check:" + shortHash(t.ClosedAt+"\n"+t.Body) + " -->"
+	return checkkit.MarkerPrefix + "close-check:" + shortHash(t.ClosedAt+"\n"+t.Body) + " -->"
 }
 
 // hasMarker reports whether a comment on issue n already carries mark.

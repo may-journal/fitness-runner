@@ -7,7 +7,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/bodycheck"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/conf"
@@ -135,7 +134,7 @@ var rules = []lineRule{
 		"agent frame; post only the finished text"},
 	{regexp.MustCompile(`(?i)\bclaude-(?:opus|sonnet|haiku|fable|instant|\d)[\w.-]*|\bgpt-\d[\w.-]*|\bgemini-\d[\w.-]*`), false,
 		"model identifier; name the agent, not the model"},
-	{regexp.MustCompile(regexp.QuoteMeta(aftereffect.MarkerPrefix)), false,
+	{regexp.MustCompile(regexp.QuoteMeta(checkkit.MarkerPrefix)), false,
 		"carries a fitness marker; only fitness writes those, so remove it"},
 }
 

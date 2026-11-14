@@ -180,7 +180,7 @@ func (g Client) api(args ...string) ([]byte, error) {
 }
 
 // gh runs gh within the client's context, passing its stderr through, and
-// classifies a failure with GHErr.
+// classifies a failure with checkkit.GHErr.
 func (g Client) gh(args ...string) ([]byte, error) {
 	out, _, err := g.run(args...)
 	return out, err
@@ -196,7 +196,7 @@ func (g Client) run(args ...string) ([]byte, string, error) {
 	cmd := exec.CommandContext(ctx, "gh", args...)
 	cmd.Stderr = os.Stderr
 	o := checkkit.Exec(cmd)
-	if err := GHErr(ctx, o); err != nil {
+	if err := checkkit.GHErr(ctx, o); err != nil {
 		return nil, o.Stderr, err
 	}
 	return []byte(o.Stdout), o.Stderr, nil
@@ -225,40 +225,6 @@ func (g Client) issueQuery(args ...string) ([]byte, error) {
 func goneREST(stderr string) bool {
 	s := strings.ToLower(stderr)
 	return strings.Contains(s, "http 404") || strings.Contains(s, "http 410")
-}
-
-// ghEnvText is gh output blaming its environment, not the request: missing
-// login, a rejected token, or an unreachable network.
-var ghEnvText = []string{
-	"gh auth login", "http 401", "bad credentials", "authentication required",
-	"dial tcp", "no such host", "could not resolve host", "connection refused",
-	"network is unreachable", "i/o timeout", "tls handshake timeout", "error connecting to",
-}
-
-// GHEnvironment reports whether a failed gh run blames its environment: no
-// start, a signal, or an auth or network failure.
-func GHEnvironment(o checkkit.Outcome) bool {
-	if o.EnvErr("gh") != nil {
-		return true
-	}
-	text := strings.ToLower(o.Stdout + "\n" + o.Stderr)
-	return slices.ContainsFunc(ghEnvText, func(s string) bool { return strings.Contains(text, s) })
-}
-
-// GHErr returns a gh run's error: nil on success, checkkit.Internal for
-// environment failures, and the run's own error otherwise.
-func GHErr(ctx context.Context, o checkkit.Outcome) error {
-	switch {
-	case o.Err == nil:
-		return nil
-	case ctx.Err() != nil:
-		return checkkit.Internal(ctx.Err())
-	case o.SpawnErr != nil:
-		return checkkit.ToolMissing("gh")
-	case GHEnvironment(o):
-		return checkkit.Internal(o.Err)
-	}
-	return o.Err
 }
 
 // decodeLines decodes the --jq output of gh: one JSON object per line.

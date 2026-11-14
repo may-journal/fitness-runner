@@ -5,11 +5,13 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 )
 
 // dupePrefix starts the marker of the one note dupe-check keeps on an issue;
 // a hash of the note's text follows it.
-const dupePrefix = MarkerPrefix + "dupe-check:"
+const dupePrefix = checkkit.MarkerPrefix + "dupe-check:"
 
 // DupeComment keeps one note listing the older issues an issue resembles, and
 // closes it as a duplicate first when asked.

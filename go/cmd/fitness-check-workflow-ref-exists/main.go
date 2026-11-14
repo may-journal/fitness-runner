@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
 	"github.com/may-journal/fitness-runner/go/internal/checkkit"
 	"github.com/may-journal/fitness-runner/go/internal/comments"
 	"github.com/may-journal/fitness-runner/go/internal/par"
@@ -295,7 +294,7 @@ func (g *github) stopped() error {
 // this request, or an environment that cannot reach GitHub.
 func (g *github) ask(api string) answer {
 	o := checkkit.Exec(exec.CommandContext(g.ctx, "gh", "api", api))
-	err := aftereffect.GHErr(g.ctx, o)
+	err := checkkit.GHErr(g.ctx, o)
 	stderr := firstLine(o.Stderr, err)
 	switch {
 	case err == nil:

@@ -7,12 +7,19 @@ import (
 	"os"
 	"strings"
 
+	localBranchCheck "github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch"
 	"github.com/may-journal/fitness-runner/go/internal/gitx"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
 const zeroSha = "0000000000000000000000000000000000000000"
+
+// The local-branch check judges with metadata, which stays in the engine, so
+// the check imports no engine package.
+func init() {
+	localBranchCheck.Judge = metadata.LocalBranch
+}
 
 // planReads holds the push's PR and Plan reads, so each is read once and
 // local-branch judges the same reads. hookPrePush opens it with the push's
