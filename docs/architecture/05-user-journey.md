@@ -52,7 +52,7 @@ flowchart TB
     readLLMs(38 Read the llms page<br/>Req 0113):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102, 0131)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102, 0131, 0162)]:::system
     passArgs[(6 Passthrough args<br/>Req 0052)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
 
@@ -147,7 +147,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 2   | Terminal / shell.                   | Screen  | Repo root; the working directory is the app under test, not the runner's own source.  |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
 | 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
-| 5   | Resolve check list.                 | System  | Every built-in check, then the repo's local checks; checks that do not apply pass.    |
+| 5   | Resolve check list.                 | System  | Every built-in check and installed check, then the repo's local checks; checks that do not apply pass. |
 | 6   | Passthrough args forwarded.         | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).      |
 | 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
 | 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |

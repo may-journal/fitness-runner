@@ -78,11 +78,11 @@ func noSubcommand(checks map[string]repocheck.Check) error {
 	return nil
 }
 
-// programFor finds the program of each check name resolves. A missing one fails
-// with a reason or "not installed".
+// programFor finds the program of each check name resolves. A missing one
+// fails as "not installed", unless it names a built-in that is off.
 func programFor(name string) (checkkit.Program, error) {
 	prog, err := findCheckBinary(name)
-	if _, local := localBins[name]; err != nil && !local {
+	if _, local := localBins[name]; err != nil && !local && (!builtinsOff() || builtins[name] == nil) {
 		err = fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
 	}
 	return prog, err
@@ -181,19 +181,22 @@ func newEnough(checks []resolved) error {
 	return nil
 }
 
-// findCheckBinary returns the program for a check name: a local check, else a
-// program beside fitness, else the built-in. A program replacing a built-in
-// says so on stderr.
+// findCheckBinary returns a local check, else an installed program, else the
+// built-in of a name. An installed program that replaces a built-in says so
+// on stderr, and with the built-ins off a missing one names its install.
 func findCheckBinary(name string) (checkkit.Program, error) {
 	if c, ok := localBins[name]; ok {
 		return localProgram(c)
 	}
 	_, builtin := builtins[name]
-	if bin, ok := besidePrograms[name]; ok {
+	if bin, ok := installedPrograms[name]; ok {
 		if builtin {
 			fmt.Fprintf(os.Stderr, "fitness: %s replaces the built-in %s check; delete it to run the built-in one\n", bin, name)
 		}
 		return checkkit.Program{Path: bin}, nil
+	}
+	if builtinsOff() {
+		return checkkit.Program{}, fmt.Errorf("check %s is not installed, and %s turns the built-in checks off; install it: %s", name, noBuiltinsFlag, installCommand(name))
 	}
 	return builtinProgram(name)
 }

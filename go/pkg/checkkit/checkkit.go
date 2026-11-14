@@ -142,6 +142,9 @@ type Describe struct {
 	// MinFitness is the oldest fitness release, as major.minor.patch, that runs
 	// the check as written. An older one stops the run and names the upgrade.
 	MinFitness string `json:"minFitness,omitempty"`
+	// Protocol is the version of the check protocol the check speaks. A
+	// check that declares none speaks version 1.
+	Protocol int `json:"protocol,omitempty"`
 }
 
 // Check is one check implementation: its metadata and run function.
@@ -274,6 +277,7 @@ func runMain(c Check, argv []string, stdout *os.File) int {
 		if d.Summary == "" {
 			d.Summary = documented
 		}
+		d.Protocol = ProtocolOf(d)
 		_ = enc.Encode(d)
 		return 0
 	}

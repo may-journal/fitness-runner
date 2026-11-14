@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 // BinPrefix starts the name every built-in check runs under, and every
@@ -61,14 +60,7 @@ func Beside() map[string]string {
 		return nil
 	}
 	real, _ := filepath.EvalSymlinks(self)
-	paths, _ := filepath.Glob(filepath.Join(filepath.Dir(self), BinPrefix+"*"))
-	programs := map[string]string{}
-	for _, p := range paths {
-		if target, _ := filepath.EvalSymlinks(p); executableFile(p) && target != real {
-			programs[strings.TrimPrefix(filepath.Base(p), BinPrefix)] = p
-		}
-	}
-	return programs
+	return programsIn(filepath.Dir(self), real)
 }
 
 // executableFile reports whether path is a file with an execute bit set.

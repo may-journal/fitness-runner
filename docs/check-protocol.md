@@ -5,11 +5,19 @@ The runner invokes each check as `fitness-check-<name> --root <dir> [args…]` w
 - stdout — one JSON result object, whose fields are documented in the code: `go -C go doc ./pkg/checkkit Result` and `go -C go doc ./pkg/checkkit Finding` print them
 - stderr — human display output (banners, tool passthrough)
 - exit code — 0 when the check passed, 1 when it found problems, 3 when it could not judge and says why in `info`
-- `--describe` — prints check metadata (name, stage, context-inline arg, blob flag) so the runner needs no registry
+- `--describe` — prints check metadata (name, stage, context-inline arg, blob flag, protocol) so the runner needs no registry
 
 The runner runs the `--describe` handshakes side by side, then runs the fast checks in catalog order, one per core. Checks that declare `"stage": "tests"` in `--describe` start at once beside them, outside the pool. A compiled check whose handshake runs past the handshake's two seconds among the others gets one more try. A script never does, so its work never runs twice.
 
 No check has its own time limit. The fast checks share one 60s total and the test runners one 450s total, both from the pool's start. Past a total, the run stops that stage's checks, with each one's process group, and names the slowest. Results render as a summary table in catalog order, and the run exits 1 when any check fails.
+
+## Discovery and versions
+
+The runner finds each installed `fitness-check-<name>` program in the `FITNESS_CHECKS_DIR` folder, then beside `fitness`, then in each absolute `PATH` folder. The first program of a name wins, and an installed program wins over the built-in check of its name. A link to a fitness executable is a built-in check, never an installed one.
+
+`--describe` reports a `protocol` number, and a check that reports none speaks protocol 1. The runner sets `FITNESS_PROTOCOL` to the protocol it speaks, for the handshake and the run. A check of another protocol stops the run before any check starts, naming the check, both numbers and the command that reinstalls it.
+
+The built-in checks stay as the fallback while the checks move into their own repo. `fitness --no-builtins` turns them off, so a run uses only installed checks, as a clean install would. A flag never reaches the git hooks a run starts, as a variable would. A selected built-in check that is not installed then fails the run, naming its install command.
 
 ## Git calls
 

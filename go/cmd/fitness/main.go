@@ -62,24 +62,71 @@ var (
 	installErr error
 )
 
-// besidePrograms are the fitness-check-<name> programs beside this
-// executable, which win over the built-in check of their name. main sets it
-// when it runs as the runner.
-var besidePrograms map[string]string
+// installedPrograms are the installed fitness-check-<name> programs, as
+// checkkit.Discover finds them, which win over the built-in check of their
+// name. main sets it when it runs as the runner.
+var installedPrograms map[string]string
+
+// noBuiltinsFlag turns the built-in checks off, so a run uses only installed
+// checks, as a clean install would; it comes first.
+//
+//fitness:usage --no-builtins [args]
+const noBuiltinsFlag = "--no-builtins"
+
+// noBuiltins is set when the command line starts with noBuiltinsFlag. A
+// flag, unlike a variable, never reaches the git hooks a run starts.
+var noBuiltins bool
+
+// builtinsOff reports whether noBuiltinsFlag turns the built-in checks off.
+func builtinsOff() bool {
+	return noBuiltins
+}
+
+// withoutNoBuiltins drops a leading noBuiltinsFlag from args and reports
+// whether it was there.
+func withoutNoBuiltins(args []string) ([]string, bool) {
+	if len(args) > 0 && args[0] == noBuiltinsFlag {
+		return args[1:], true
+	}
+	return args, false
+}
 
 // catalog lists the default checks, or the error that leaves it empty.
 func catalog() ([]string, error) {
-	names := slices.Collect(maps.Keys(builtins))
-	for name := range besidePrograms {
-		if _, ok := builtins[name]; !ok {
+	names := catalogNames()
+	if len(names) == 0 {
+		return nil, emptyCatalog()
+	}
+	ordered := lang.Catalog(names, langs.All)
+	if builtinsOff() {
+		// The language modules list their checks whether installed or not.
+		ordered = slices.DeleteFunc(ordered, func(name string) bool { return installedPrograms[name] == "" })
+	}
+	return ordered, nil
+}
+
+// catalogNames lists the built-in checks, unless noBuiltinsFlag turns them off,
+// and each installed check of another name, sorted.
+func catalogNames() []string {
+	var names []string
+	if !builtinsOff() {
+		names = slices.Collect(maps.Keys(builtins))
+	}
+	for name := range installedPrograms {
+		if builtinsOff() || builtins[name] == nil {
 			names = append(names, name)
 		}
 	}
-	if len(names) == 0 {
-		return nil, errors.New("this fitness executable has no built-in checks; reinstall fitness")
-	}
 	slices.Sort(names)
-	return lang.Catalog(names, langs.All), nil
+	return names
+}
+
+// emptyCatalog says why a run found no check at all.
+func emptyCatalog() error {
+	if builtinsOff() {
+		return fmt.Errorf("no check is installed, and %s turns the built-in checks off; install each check the repo selects", noBuiltinsFlag)
+	}
+	return errors.New("this fitness executable has no built-in checks; reinstall fitness")
 }
 
 // resolved is one runnable check: its program and describe metadata.
@@ -128,9 +175,11 @@ func main() {
 	if name, ok := strings.CutPrefix(filepath.Base(os.Args[0]), checkkit.BinPrefix); ok {
 		os.Exit(runBuiltin(name, os.Args[1:]))
 	}
-	besidePrograms = checkkit.Beside()
+	args, off := withoutNoBuiltins(os.Args[1:])
+	noBuiltins = off
+	installedPrograms = checkkit.Discover()
 	allChecks, installErr = catalog()
-	os.Exit(dispatch(os.Args[1:]))
+	os.Exit(dispatch(args))
 }
 
 // runBuiltin runs built-in check name with args exactly as its own program
@@ -717,7 +766,35 @@ func isScript(bin string) bool {
 // describeCheck runs one check's --describe handshake.
 func describeCheck(name string, prog checkkit.Program) resolved {
 	desc, describeErr, overran := describe(prog)
-	return asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
+	r := asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
+	if describeErr == "" {
+		r.needs = cmp.Or(r.needs, protocolMismatch(name, desc))
+	}
+	return r
+}
+
+// protocolMismatch says why a check of another protocol cannot run, naming
+// both versions and the fix, or returns "" when they match.
+func protocolMismatch(name string, desc checkkit.Describe) string {
+	spoken := checkkit.ProtocolOf(desc)
+	if spoken == checkkit.Protocol {
+		return ""
+	}
+	fix := "reinstall it: " + installCommand(name)
+	if _, local := localBins[name]; local {
+		fix = "update the repo's own check to protocol " + strconv.Itoa(checkkit.Protocol)
+	}
+	return fmt.Sprintf("check %s speaks check protocol %d, but this fitness speaks protocol %d; %s", name, spoken, checkkit.Protocol, fix)
+}
+
+// installCommand is the command that installs check name on its own.
+func installCommand(name string) string {
+	return "go install github.com/may-journal/fitness-checks/cmd/" + checkkit.BinPrefix + name + "@latest"
+}
+
+// protocolVar tells a check the protocol version this fitness speaks.
+func protocolVar() string {
+	return checkkit.ProtocolEnv + "=" + strconv.Itoa(checkkit.Protocol)
 }
 
 // describeAll resolves each named program: a built-in check in this process,
@@ -762,6 +839,7 @@ func describeBuiltin(name string, prog checkkit.Program) (resolved, bool) {
 func describe(prog checkkit.Program) (d checkkit.Describe, note string, overran bool) {
 	const failed = "--describe gave no metadata, so the check ran with defaults: "
 	cmd := prog.Command("--describe")
+	cmd.Env = append(os.Environ(), protocolVar())
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -1017,7 +1095,7 @@ func runOne(root string, c resolved, ends stageEnds, passthrough, env []string, 
 	args := append([]string{"--root", root}, passthrough...)
 	cmd := c.prog.Command(args...)
 	cmd.Dir = root
-	cmd.Env = append(append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name), checkDirEnv(c.name)...)
+	cmd.Env = append(append(append([]string{}, env...), "FITNESS_CHECK_NAME="+c.name, protocolVar()), checkDirEnv(c.name)...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
