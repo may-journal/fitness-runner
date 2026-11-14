@@ -13,6 +13,9 @@ import (
 // workflow0092 is the reusable Release Please workflow opted-in repos call.
 const workflow0092 = "../../.github/workflows/release-please-reusable.yml"
 
+// outputs0092 is what Release Please sets for one root release v1.2.3 at abc123.
+const outputs0092 = `{"releases_created":"true","paths_released":"[\".\"]","tag_name":"v1.2.3","major":"1","sha":"abc123"}`
+
 // firstRelease0092 is what Release Please writes for a first release, which
 // has no compare link: a `##` version heading and bold scopes.
 const firstRelease0092 = "> Release the changes merged since the last version.\n\n## Background\n\nRelease Please groups merged changes.\n\n## Changelog\n---\n\n\n" +
@@ -36,6 +39,12 @@ func section0092(t *testing.T, name string) string {
 // commit abc123, with gh answering from saved responses.
 func run0092(t *testing.T, name string, gh []response) (replays, string, int, string) {
 	t.Helper()
+	return runWith0092(t, name, gh, "OUTPUTS="+outputs0092)
+}
+
+// runWith0092 is run0092 with the step's env also holding env.
+func runWith0092(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
+	t.Helper()
 	_, script, ok := strings.Cut(section0092(t, name), "run: |\n")
 	if !ok {
 		t.Fatalf("step %q has no run script", name)
@@ -46,7 +55,8 @@ func run0092(t *testing.T, name string, gh []response) (replays, string, int, st
 		cmd := exec.Command("bash", "--noprofile", "--norc", "-e", "-c", block0091(script))
 		cmd.Dir = t.TempDir()
 		cmd.Env = append(append(userEnv(), rp.env...), "PR=23", "GH_TOKEN=app-token", "GH_REPO="+repo0014, "GITHUB_OUTPUT="+output,
-			"GITHUB_REPOSITORY="+repo0014, "MAJOR=v1", "SHA=abc123")
+			"GITHUB_REPOSITORY="+repo0014)
+		cmd.Env = append(cmd.Env, env...)
 		return cmd
 	})
 	written, _ := os.ReadFile(output)
@@ -181,7 +191,7 @@ func readsEmptyPR(t *testing.T, name string) bool {
 
 func Test0092_3(t *testing.T) {
 	t.Parallel()
-	noPR := map[string]string{"release.release_created": "true"}
+	noPR := map[string]string{"release.releases_created": "true"}
 	for _, step := range []string{"Shape the release PR notes", "Link the release PR to its tracking issue", "Rerun pr-check on the shaped body"} {
 		if runs0092(t, step, noPR) {
 			t.Errorf("with no release PR, step %q runs, want it skipped", step)
@@ -221,5 +231,66 @@ func Test0092_4(t *testing.T) {
 	sees(t, out, code, 1, "::error::Could not read tag v1: gh: Resource not accessible by integration (HTTP 403)")
 	if rp.called("gh", "-X ") {
 		t.Errorf("a tag lookup error still changed a ref; gh calls: %q", rp.calls("gh"))
+	}
+}
+
+func Test0092_6(t *testing.T) {
+	t.Parallel()
+	// The root and two components release together.
+	outputs := `{"releases_created":"true","paths_released":"[\".\",\"cmd/fitness-check-foo\",\"cmd/fitness-check-bar\"]","tag_name":"v3.0.0","major":"3","sha":"ccc333",` +
+		`"cmd/fitness-check-foo--tag_name":"fitness-check-foo-v1.2.0","cmd/fitness-check-foo--major":"1","cmd/fitness-check-foo--sha":"aaa111",` +
+		`"cmd/fitness-check-bar--tag_name":"fitness-check-bar-v2.0.0","cmd/fitness-check-bar--major":"2","cmd/fitness-check-bar--sha":"bbb222"}`
+	refs := "repos/" + repo0014 + "/git/refs"
+	rp, out, code, written := runWith0092(t, "Move the major version tag", []response{
+		{Match: []string{"git/ref/tags/v3"}},
+		{Match: []string{"git/ref/tags/fitness-check-foo-v1"}},
+		{Match: []string{"git/ref/tags/fitness-check-bar-v2"}, Stderr: "gh: Not Found (HTTP 404)\n", Exit: 1},
+		{Match: []string{"git/refs"}},
+	}, "OUTPUTS="+outputs)
+	sees(t, out, code, 0)
+	calls := strings.Join(rp.calls("gh"), "\n")
+	has0092(t, calls, "-X PATCH "+refs+"/tags/v3 -f sha=ccc333", "-X PATCH "+refs+"/tags/fitness-check-foo-v1 -f sha=aaa111",
+		"-X POST "+refs+" -f ref=refs/tags/fitness-check-bar-v2 -f sha=bbb222")
+	has0092(t, written, `"path":"cmd/fitness-check-foo","tag":"fitness-check-foo-v1.2.0","major_tag":"fitness-check-foo-v1","sha":"aaa111"`,
+		`"path":"cmd/fitness-check-bar","tag":"fitness-check-bar-v2.0.0","major_tag":"fitness-check-bar-v2","sha":"bbb222"`)
+	if rp.called("gh", "tags/v1") || rp.called("gh", "tags/v2") {
+		t.Errorf("a component moved a root major tag; gh calls: %q", calls)
+	}
+}
+
+// has0092 fails the test for each want that text lacks.
+func has0092(t *testing.T, text string, wants ...string) {
+	t.Helper()
+	for _, want := range wants {
+		if !strings.Contains(text, want) {
+			t.Errorf("want %q in %q", want, text)
+		}
+	}
+}
+
+func Test0092_7(t *testing.T) {
+	t.Parallel()
+	// A component tagged without its name would move another component's tag.
+	for _, outputs := range []string{
+		`{"releases_created":"true","paths_released":"[\"cmd/a\"]","cmd/a--tag_name":"v1.0.0","cmd/a--major":"1","cmd/a--sha":"aaa111"}`,
+		`{"releases_created":"true","paths_released":"[\"cmd/a\"]","cmd/a--tag_name":"a-v1.0.0","cmd/a--major":"1"}`,
+	} {
+		rp, out, code, _ := runWith0092(t, "Move the major version tag", nil, "OUTPUTS="+outputs)
+		sees(t, out, code, 1, "::error::")
+		if rp.called("gh", "-X ") {
+			t.Errorf("a bad release still changed a ref; gh calls: %q", rp.calls("gh"))
+		}
+	}
+}
+
+func Test0092_8(t *testing.T) {
+	t.Parallel()
+	// The root is valid and a later component is not, so no tag may move.
+	outputs := `{"releases_created":"true","paths_released":"[\".\",\"cmd/a\"]","tag_name":"v1.0.0","major":"1","sha":"aaa111",` +
+		`"cmd/a--tag_name":"v2.0.0","cmd/a--major":"2","cmd/a--sha":"bbb222"}`
+	rp, out, code, _ := runWith0092(t, "Move the major version tag", nil, "OUTPUTS="+outputs)
+	sees(t, out, code, 1, "::error::")
+	if rp.called("gh", "-X ") {
+		t.Errorf("a bad later release still changed a ref; gh calls: %q", rp.calls("gh"))
 	}
 }
