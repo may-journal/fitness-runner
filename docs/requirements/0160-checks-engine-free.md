@@ -17,6 +17,6 @@ Checks
         - When `go list -deps -test` runs
             - Then it lists every check, none holds `metadata`, `aftereffect`, `dupe` or `report`, and a failure names the check and package
 - 0160.2
-    - Given Developer writes a Go module outside any workspace that imports every package under `go/pkg`
+    - Given Developer writes a Go module outside any workspace that imports every package under `go/pkg` from the working tree
         - When `go build` runs
             - Then it builds, since none of them is internal

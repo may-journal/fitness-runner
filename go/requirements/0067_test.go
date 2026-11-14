@@ -2,7 +2,6 @@ package requirements
 
 import (
 	"encoding/json"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -50,20 +49,12 @@ func Test0067_2(t *testing.T) {
 		t.Fatalf("describe queried GitHub: %q", rp.calls("gh"))
 	}
 	// A build of the check alone, without the engine, cannot judge.
-	here, err := filepath.Abs("..")
-	mustDo(t, err)
-	mod := t.TempDir()
-	write := func(name, text string) { mustDo(t, os.WriteFile(filepath.Join(mod, name), []byte(text), 0o644)) }
-	write("go.mod", "module example.com/alone\n\ngo "+goVersion0160(t)+"\n\nrequire github.com/may-journal/fitness-runner/go v0.0.0\n\nreplace github.com/may-journal/fitness-runner/go => "+here+"\n")
-	write("main.go", "package main\n\nimport check \"github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch\"\n\nfunc main() { check.Main() }\n")
-	build := exec.Command("go", "build", "-o", "alone", ".")
-	build.Dir, build.Env = mod, append(userEnv(), "GOFLAGS=-mod=mod", "GOWORK=off")
-	if built, err := build.CombinedOutput(); err != nil {
+	mod := outsideModule(t, "example.com/alone", "package main\n\nimport check \"github.com/may-journal/fitness-runner/go/cmd/fitness-check-local-branch\"\n\nfunc main() { check.Main() }\n")
+	if built, err := goOutside(mod, "build", "-o", "alone", "."); err != nil {
 		t.Fatalf("build: %v\n%s", err, built)
 	}
-	run := exec.Command(filepath.Join(mod, "alone"), "--root", mod)
-	got, _ := run.CombinedOutput()
-	sees(t, string(got), run.ProcessState.ExitCode(), 3, "runs only inside fitness")
+	got, code := execute(t, func() *exec.Cmd { return exec.Command(filepath.Join(mod, "alone"), "--root", mod) })
+	sees(t, got, code, 3, "runs only inside fitness")
 }
 
 // metadataPush runs real git hooks against a bare push destination and saved PR.
