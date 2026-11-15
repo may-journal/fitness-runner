@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
 )
 
 const releaseRoot = "https://github.com/may-journal/fitness-runner/releases"
@@ -35,6 +37,9 @@ type Options struct {
 	InstallHook  bool
 	// WithChecks installs each check the repo pins, beside the engine.
 	WithChecks bool
+	// PinnedOnly installs checks only when the repo sets checkVersions, so a
+	// hook in a repo that pins none reads no network for them.
+	PinnedOnly bool
 	LinkSkills []string
 	// ClaudeSettings are the Claude Code settings files that get the Fitness hooks.
 	ClaudeSettings []string
@@ -49,7 +54,9 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
 	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
-	flags.BoolVar(&options.WithChecks, "with-checks", os.Getenv("FITNESS_WITH_CHECKS") == "true", "also install each check .fitnessrc.json pins, from its own verified release; FITNESS_WITH_CHECKS=true sets it")
+	withChecks := os.Getenv("FITNESS_WITH_CHECKS")
+	options.PinnedOnly = withChecks == "pinned"
+	flags.BoolVar(&options.WithChecks, "with-checks", withChecks == "true" || options.PinnedOnly, "also install each check .fitnessrc.json pins, from its own verified release; FITNESS_WITH_CHECKS=true sets it, and pinned only where checkVersions is set")
 	flags.Func("claude-settings", "add the Fitness hooks to this Claude Code settings file, repeatable, without running checks", func(file string) error {
 		options.ClaudeSettings = append(options.ClaudeSettings, file)
 		return nil
@@ -138,7 +145,14 @@ func (options Options) validateLinkSkills() error {
 // InstallsChecks reports whether the run installs the pinned checks: asked
 // to, and running checks rather than writing a hook or setting up agents.
 func (options Options) InstallsChecks() bool {
-	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents()
+	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents() && (!options.PinnedOnly || repoPins("."))
+}
+
+// repoPins reports whether the repo at root sets checkVersions. An unreadable
+// config pins nothing here; the engine reports it.
+func repoPins(root string) bool {
+	cfg, err := conf.Load(root)
+	return err == nil && cfg != nil && len(cfg.CheckVersions) > 0
 }
 
 // NeedsChecks reports whether the run turns the built-in checks off, so a
