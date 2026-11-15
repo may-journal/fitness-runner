@@ -15,7 +15,7 @@ bad commits and pushes tried
 - 0009.1
     - Given Developer has a repo with no hooks and no fitness on the PATH
         - When I run fitness init
-            - Then git runs the fitness commit-msg, pre-commit, and pre-push hooks, the first two installing any checks the repo pins
+            - Then git runs the fitness commit-msg, pre-commit, and pre-push hooks, each installing any checks the repo pins
 - 0009.2
     - Given Developer has the hooks and a change that breaks a check
         - When I commit it

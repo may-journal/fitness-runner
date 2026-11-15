@@ -41,9 +41,10 @@ func fetchMissingChecks(args []string) {
 	addFetched(dir)
 }
 
-// addFetched adds each program in dir whose check no installed program
-// provides, so a fetched check never shadows one already installed.
+// addFetched adds each program in dir that no installed program provides,
+// and hands dir to the checks this run starts, such as local-branch.
 func addFetched(dir string) {
+	_ = os.Setenv(checkkit.ChecksDirEnv, dir)
 	if installedPrograms == nil {
 		installedPrograms = map[string]string{}
 	}
