@@ -15,7 +15,7 @@ Runs on a clean machine
 - 0168.1
     - Given Developer has a repo that pins one check and breaks it, and a home with no Fitness cache
         - When I run `fitness` on its own
-            - Then it installs the pinned check, verified, into the user's cache and fails naming the break
+            - Then it installs the pinned check, verified, into the user's cache and fails naming the break, and a second run downloads nothing
 - 0168.2
     - Given Developer has `fitness-install` built from source without release stamps
         - When I read its help

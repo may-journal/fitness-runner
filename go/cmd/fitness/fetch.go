@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"maps"
 	"os"
+	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
-// noChecksCommands are the subcommands that run no check, so they fetch none.
-var noChecksCommands = []string{"llms", "docs", "help", "--help", "-h", "check-versions", "init", "strip-front-matter", "adr-migrate", "boxes", "perf", "comments"}
+// noChecksCommands are the subcommands that fetch no check: those that run
+// none, and claude-hook, which must answer an edit within 300ms.
+var noChecksCommands = []string{"llms", "docs", "help", "--help", "-h", "check-versions", "init", "strip-front-matter", "adr-migrate", "boxes", "perf", "comments", "claude-hook"}
 
 // fetchMissingChecks installs the checks the repo pins, or every released
 // check at v1 when it pins none, once any of them is missing. The engine holds
@@ -22,16 +25,34 @@ func fetchMissingChecks(args []string) {
 		return
 	}
 	pins, err := checkVersions(".")
-	if err != nil || !missingPins(pins) {
+	if err != nil {
 		return
 	}
-	dir, err := installPins(pins)
+	missing := missingPins(pins)
+	if len(missing) == 0 {
+		return
+	}
+	dir, err := installPins(missing)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fitness: warning: could not install the checks the repo pins: %v; install them with `fitness-install --with-checks`\n", err)
 		return
 	}
-	_ = os.Setenv(checkkit.ChecksDirEnv, dir)
-	installedPrograms = checkkit.Discover()
+	addFetched(dir)
+}
+
+// addFetched adds each program in dir whose check no installed program
+// provides, so a fetched check never shadows one already installed.
+func addFetched(dir string) {
+	if installedPrograms == nil {
+		installedPrograms = map[string]string{}
+	}
+	entries, _ := os.ReadDir(dir)
+	for _, entry := range entries {
+		name, ok := strings.CutPrefix(entry.Name(), checkkit.BinPrefix)
+		if ok && installedPrograms[name] == "" {
+			installedPrograms[name] = filepath.Join(dir, entry.Name())
+		}
+	}
 }
 
 // needsChecks reports whether a run with args runs checks and has none handed
@@ -43,9 +64,15 @@ func needsChecks(args []string) bool {
 	return len(args) == 0 || !slices.Contains(noChecksCommands, args[0])
 }
 
-// missingPins reports whether any pinned check is not installed.
-func missingPins(pins map[string]string) bool {
-	return slices.ContainsFunc(slices.Collect(maps.Keys(pins)), func(name string) bool { return installedPrograms[name] == "" })
+// missingPins keeps the pins whose check is not installed.
+func missingPins(pins map[string]string) map[string]string {
+	missing := map[string]string{}
+	for name, pin := range pins {
+		if installedPrograms[name] == "" {
+			missing[name] = pin
+		}
+	}
+	return missing
 }
 
 // installPins installs each pinned check, verified by checksum, into the

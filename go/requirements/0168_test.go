@@ -24,12 +24,21 @@ func Test0168_1(t *testing.T) {
 	repo := pinned0164(t, `{"markdown-links": "v1.0.0"}`)
 	commit(t, repo, map[string]string{"broken.md": "# Broken\n\nSee [the guide](missing.md).\n"}, "docs(broken): link a missing guide")
 	engine := filepath.Join(installOnly(t), "fitness")
-	out, code := execute(t, func() *exec.Cmd {
-		cmd := exec.Command(engine, "--policy=external", "--all", "--checks=markdown-links")
-		cmd.Dir, cmd.Env = repo, cleanHome0168(t)
-		return cmd
-	})
+	env := cleanHome0168(t)
+	run := func() (string, int) {
+		return execute(t, func() *exec.Cmd {
+			cmd := exec.Command(engine, "--policy=external", "--all", "--checks=markdown-links")
+			cmd.Dir, cmd.Env = repo, env
+			return cmd
+		})
+	}
+	out, code := run()
 	sees(t, out, code, 1, "installed 1 checks in ", "missing.md", "0 of 1 checks passed")
+	again, code := run()
+	sees(t, again, code, 1, "missing.md")
+	if strings.Contains(again, "downloading fitness-check-") {
+		t.Errorf("a second run must reuse the cached check and download nothing:\n%s", again)
+	}
 }
 
 func Test0168_2(t *testing.T) {
