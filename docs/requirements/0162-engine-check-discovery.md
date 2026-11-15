@@ -31,4 +31,4 @@ Installed check programs
 - 0162.5
     - Given Developer has a Go test that runs fitness, in a repo that `go-test` judges
         - When `go-test`, built on this engine, runs that test
-            - Then the test's fitness finds the installed checks, in place of printing no result
+            - Then the test's fitness finds the installed checks, instead of printing no result
