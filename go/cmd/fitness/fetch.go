@@ -13,9 +13,13 @@ import (
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
-// checksCommands are the subcommands that run or describe checks, so they
-// fetch the missing ones. A run, a flag or a check name fetches too.
-var checksCommands = []string{"check", "hook", "list", "explain"}
+// checksCommands are the subcommands that run, describe or judge GitHub
+// bodies with checks, so they fetch the missing ones. A run, a flag or a
+// check name fetches too.
+var checksCommands = []string{
+	"check", "hook", "list", "explain", "branch-check", "pr-check", "dependabot-pr",
+	"issue-check", "plan-check", "close-check", "dupe-check", "comment-check",
+}
 
 // fetchMissingChecks installs the checks the repo pins, or every released
 // check at v1 when it pins none, once any of them is missing. The engine holds
