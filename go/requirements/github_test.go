@@ -133,7 +133,7 @@ func stepAutoMerge(t *testing.T, name string) string {
 	t.Helper()
 	_, step, ok := strings.Cut(workflowTextAutoMerge(t), "- name: "+name+"\n")
 	if ok {
-		_, step, ok = strings.Cut(step, "run: |\n")
+		step, ok = stepScript(step)
 	}
 	if !ok {
 		t.Fatalf("%s has no run script for step %q", workflowAutoMerge, name)
@@ -278,7 +278,7 @@ func sectionReleaseApprove(t *testing.T, name string) string {
 // commit abc123 in run 99, with env overriding.
 func runReleaseApprove(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
 	t.Helper()
-	_, script, ok := strings.Cut(sectionReleaseApprove(t, name), "run: |\n")
+	script, ok := stepScript(sectionReleaseApprove(t, name))
 	if !ok {
 		t.Fatalf("step %q has no run script", name)
 	}

@@ -151,7 +151,7 @@ func Test0007_2(t *testing.T) {
 			ci, err := os.ReadFile(filepath.Join("..", "..", ".github", "workflows", "ci.yml"))
 			mustDo(t, err)
 			suite := jobsCheckout(string(ci))["fitness"]
-			if !strings.Contains(string(ci), "push:\n    branches: [main]") || !strings.Contains(suite, `checks="$(githooks/checks-dir)"`) {
+			if !strings.Contains(string(ci), "push:\n    branches: [main]") || !exportsChecksDir(t, suite) {
 				t.Errorf("a push to main must install every check before the suite:\n%s", suite)
 			}
 			all, err := os.ReadFile(filepath.Join("..", "..", "githooks", "checks-dir"))
