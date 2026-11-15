@@ -28,3 +28,7 @@ Installed check programs
     - Given Developer has an installed program for `local-branch`, whose judgment lives in the engine
         - When I run it, with or without `--no-builtins`
             - Then fitness says the program only declares the check, judges itself and never runs it, in place of 0162.1 and 0162.3
+- 0162.5
+    - Given Developer has a Go test that runs fitness, in a repo that `go-test` judges
+        - When `go-test`, built on this engine, runs that test
+            - Then the test's fitness finds the installed checks, in place of printing no result
