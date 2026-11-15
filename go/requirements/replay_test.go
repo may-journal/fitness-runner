@@ -17,8 +17,8 @@ import (
 )
 
 // standIns are the external programs tests replace with saved responses: gh,
-// the JavaScript and Swift tools, the JDK, Java build tools and Docker.
-var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew", "docker"}
+// go, the JavaScript and Swift tools, the JDK, Java builds and Docker.
+var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew", "docker", "go"}
 
 // TestMain lets this test binary stand in for those programs. Run under one
 // of their names, it answers from saved responses instead of running tests.
