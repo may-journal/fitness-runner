@@ -48,3 +48,8 @@ runs:
       run: |
         go install "github.com/may-journal/fitness-runner/go/cmd/...@$FITNESS_SOURCE_REF"
         echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+    # The engine built from source holds no check, so every check installs.
+    - name: Install every check for the source build
+      if: ${{ inputs.ref != '' }}
+      shell: bash
+      run: echo "FITNESS_CHECKS_DIR=$(cd "$RUNNER_TEMP" && "$(go env GOPATH)/bin/fitness-install" --version latest --with-checks --install-only | sed -n 2p)" >> "$GITHUB_ENV"
