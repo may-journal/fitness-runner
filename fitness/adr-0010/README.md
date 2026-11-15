@@ -1,6 +1,6 @@
-# 0010 — One binary holds every check
+# 0010 — One binary holds every check the engine runs
 
-One `fitness` binary holds every built-in check.
+One `fitness` binary holds every check the engine runs itself; each other check is its own fitness-checks program.
 
 https://github.com/may-journal/fitness-runner/issues/862
 

@@ -1,5 +1,5 @@
-// Command adr-0010 keeps ADR 0010: every built-in check is a package the
-// one fitness binary runs, and its name list is generated.
+// Command adr-0010 keeps ADR 0010: the fitness binary runs each of its own
+// checks from a package, and their name list is generated.
 package main
 
 import (
@@ -32,7 +32,7 @@ func run(ctx *check.Context) (check.Result, error) {
 	return check.Found(len(exports)+1, found...), nil
 }
 
-// packages maps each built-in check package to whether it exports Main.
+// packages maps each check package here to whether it exports Main.
 func packages(ctx *check.Context) (map[string]bool, error) {
 	exports := map[string]bool{}
 	for _, f := range ctx.Files(".go") {

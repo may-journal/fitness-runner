@@ -1,6 +1,6 @@
 # Local checks
 
-A repo writes its own rules as Go checks in a `fitness/` folder at its root. Fitness builds them, and runs them in the suite, the git hooks and CI, beside the built-in checks. `fitness list` and `fitness explain` show them too.
+A repo writes its own rules as Go checks in a `fitness/` folder at its root. Fitness builds them, and runs them in the suite, the git hooks and CI, beside the installed checks. `fitness list` and `fitness explain` show them too.
 
 ## Layout
 
@@ -124,6 +124,6 @@ A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when 
 
 ## Where checks run
 
-The suite runs every local check after the built-in ones, under org and external policy alike. A local check named like a built-in one replaces it under external policy only, as [ADR 0009](https://github.com/may-journal/fitness-runner/issues/861) decides. `"localChecks": "<folder>"` in `.fitnessrc.json` names one more folder, read the same way, which may also hold flat `fitness-check-<name>` programs.
+The suite runs every local check after the installed ones, under org and external policy alike. A local check named like an installed one replaces it under external policy only, as [ADR 0009](https://github.com/may-journal/fitness-runner/issues/861) decides. `"localChecks": "<folder>"` in `.fitnessrc.json` names one more folder, read the same way, which may also hold flat `fitness-check-<name>` programs.
 
 A folder check that cannot run fails the run before any check starts. Causes include a missing README or program, a missing `fitness/go.mod`, or Go that does not build. In CI, the reusable workflow installs Go when `fitness/go.mod` exists.

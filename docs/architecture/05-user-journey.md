@@ -134,7 +134,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 2   | Terminal / shell.                   | Screen  | Repo root; the working directory is the app under test, not the runner's own source.  |
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
 | 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
-| 5   | Resolve check list.                 | System  | Every built-in check and installed check, then the repo's local checks; checks that do not apply pass. |
+| 5   | Resolve check list.                 | System  | Every installed check and `local-branch`, then the repo's local checks; checks that do not apply pass. |
 | 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
 | 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |
 | 9   | Exit 0.                             | System  | All checks passed — deterministic, not LLM-judged.                                    |

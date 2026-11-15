@@ -58,7 +58,7 @@ Run checks:
   fitness --json=<file>
       Names the file that receives the run's performance report: each check's time, stage, files, binary size, and error lines, as JSON.
   fitness --no-builtins [args]
-      Turns the built-in checks off, so a run uses only installed checks, as a clean install would; it comes first.
+      Turns local-branch, the engine's own check, off, so a run uses only installed checks; it comes first.
   fitness --policy=external --checks=<name,name>
       Select the checks a command line names: with --policy=external, a run runs exactly the checks --checks lists.
 
@@ -75,7 +75,7 @@ Commands:
       Lists the guide topics, or prints one, from the code's doc comments.
   fitness check --list
   fitness check <name> [args]
-      Prints every built-in check name, one per line, or runs one check by name, a repo's own check included.
+      Prints each check the engine runs itself, one per line, or runs one check by name, installed or the repo's own.
   fitness config [--json] [--policy=..] [--checks=..]
   fitness config schema
       Shows the resolved settings and each check's state, or prints a JSON Schema for the config file.

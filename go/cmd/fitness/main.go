@@ -65,12 +65,12 @@ var (
 )
 
 // installedPrograms are the installed fitness-check-<name> programs, as
-// checkkit.Discover finds them, which win over the built-in check of their
-// name. main sets it when it runs as the runner.
+// checkkit.Discover finds them. main sets it at start, for the runner and for
+// the GitHub judgments local-branch runs.
 var installedPrograms map[string]string
 
-// noBuiltinsFlag turns the built-in checks off, so a run uses only installed
-// checks, as a clean install would; it comes first.
+// noBuiltinsFlag turns local-branch, the engine's own check, off, so a run
+// uses only installed checks; it comes first.
 //
 //fitness:usage --no-builtins [args]
 const noBuiltinsFlag = "--no-builtins"
@@ -288,8 +288,8 @@ func init() {
 		// Lists the guide topics, or prints one, from the code's doc comments.
 		//fitness:usage docs [topic]
 		"docs": runDocs,
-		// Prints every built-in check name, one per line, or runs one check by
-		// name, a repo's own check included.
+		// Prints each check the engine runs itself, one per line, or runs
+		// one check by name, installed or the repo's own.
 		//fitness:usage check --list
 		//fitness:usage check <name> [args]
 		"check": runCheckCommand,

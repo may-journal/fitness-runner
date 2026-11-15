@@ -31,7 +31,7 @@ Each row names a check the engine runs itself and gives its doc comment's first 
 
 ## List the checks
 
-`fitness list` names every check this repo can run, built-in or local, in run order. Each row gives the check's summary, its scope, its stage, and whether the repo's config enables it. `fitness list --json` gives the same fields for an agent; `fitness check --list` still prints the bare built-in names.
+`fitness list` names every check this repo can run, installed, local or `local-branch`, in run order. Each row gives the check's summary, its scope, its stage, and whether the repo's config enables it. `fitness list --json` gives the same fields for an agent; `fitness check --list` prints the engine's own check.
 
 A scope, declared in the check's `checkkit.Describe`, says what it reads: `files`, one given `blob` of text, `git` history, or live `github` metadata. The summary is the first sentence of the check's Go package doc comment, which `go generate` writes into the runner. The local [generated check](../fitness/generated/README.md) fails when that file is stale.
 
@@ -53,6 +53,6 @@ A Markdown file needs no front matter. Never add `fitnessFunctions` or `relatedC
 
 ## Shared configs
 
-The opinionated tool configs are embedded inside the check binaries ([go/internal/sharedconf](https://github.com/may-journal/fitness-checks/blob/main/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.
+The opinionated tool configs are embedded inside the check binaries ([internal/sharedconf](https://github.com/may-journal/fitness-checks/blob/main/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.
 
 Next comes an installed copy of the shared config package, and the embedded copy is the final fallback. A config may name plugins the consumer repo must install, which is the check's peer-tool contract.

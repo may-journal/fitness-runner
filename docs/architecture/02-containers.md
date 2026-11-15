@@ -65,13 +65,13 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | --- | ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
 | 1   | Same actor as system context.                                                                    | All runs start at the fitness binary.                       |
 | 2   | Same agent actor as system context.                                                              | Agents never link checks — they invoke the CLI.             |
-| 3   | `fitness` — the runner and every check. It runs each check as its own process, started as `fitness-check-<name>`. | One file to ship and load; checks still cannot share state. |
+| 3   | `fitness` — the runner and `local-branch`. It runs each installed fitness-checks program as its own process. | The engine ships alone; checks still cannot share state. |
 | 4   | The installer and the release tool.                                                              | Shipped beside the bundle; not part of any run.             |
 | 5   | Optional `.fitnessrc.json` with per-check options, and the files checks lint, format, or scan.   | Every check runs on every tracked file; no path is ignored. |
 | 6   | Tool-wrapper checks exec these when installed; native engines (cspell, duplicate-code) need none. | Peer tools resolved at runtime, never bundled.              |
 | 7   | The dependency-currency check queries the registry over HTTPS directly.                          | No npm binary needed; offline degrades to pass.             |
 | 8   | The `issue-check` and `pr-check` GitHub Actions workflows lint an Issue or PR description.       | Descriptions held to the same bar as files.                 |
-| 9   | Release bundles and tool binaries, one archive per platform holding the one fitness binary.      | Artifacts ship through GitHub Releases and the Go proxy.    |
+| 9   | Release bundles and tool binaries, one archive per platform holding the fitness engine.           | Artifacts ship through GitHub Releases and the Go proxy.    |
 | 10  | This repo's own checks in `fitness/`, each a Go program that fitness builds, or any executable. | Each decision holds while its check passes, as ADR 0012 decides. |
 | A   | Developer runs the binary from the consumer root.                                                | One front door.                                             |
 | B   | Agent runs the same binary via script or hook.                                                   | Unified enforcement path.                                   |
@@ -81,7 +81,7 @@ Numbers on nodes and letters on arrows match the callout table. Each container n
 | F   | `fitness pr-check` and `issue-check` run each check with `--body-file`, reusing body mode.       | One rule engine for files and descriptions.                 |
 | G   | Developer runs `fitness-install`; the pre-commit hook runs the suite.                            | One documented one-liner installs or runs the suite.        |
 | H   | `fitness-release` builds and publishes the bundles.                                              | Release and install share one versioned artifact set.       |
-| I   | The runner finds each check folder, builds a Go one into its cache, and runs it as its own process. | Repo checks speak the protocol built-in checks speak. |
+| I   | The runner finds each check folder, builds a Go one into its cache, and runs it as its own process. | Repo checks speak the protocol installed checks speak. |
 
 ## Consumer setup
 

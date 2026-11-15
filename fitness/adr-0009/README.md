@@ -9,5 +9,5 @@ https://github.com/may-journal/fitness-runner/issues/861
 This check keeps the decision in fitness itself.
 
 - Fails `.fitnessrc.json` when it sets `disabledChecks` or external policy.
-- Fails a check in `fitness/` named like a bundled check, which would replace it.
+- Fails a check in `fitness/` named like the engine's own check, `local-branch`, which would replace it.
 - Fix: fix the findings, or give the new check a name of its own.

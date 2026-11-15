@@ -85,7 +85,7 @@ Numbers on nodes and letters on arrows match the callout table.
 | 4   | Ordered check list: the CLI name, else `allChecks`, which the language module registry lists.           | One place for check resolution (single name or full list).  |
 | 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
-| 7   | One package per check (`go/cmd/fitness-check-*`), each built into the fitness binary.                   | One file ships every check; each still runs alone.          |
+| 7   | `local-branch` (`go/cmd/fitness-check-local-branch`), built into fitness; every other check installs from fitness-checks. | The engine judges this check itself; each runs alone. |
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers. The public `go/check` SDK wraps it for a repo's own Go checks. | One implementation shared by every check binary.            |
 | 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
@@ -104,14 +104,14 @@ Numbers on nodes and letters on arrows match the callout table.
 | K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
 | M   | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
-| N   | The pool runs each repo check as its own process, as it runs a built-in one. | One execution model for every check. |
+| N   | The pool runs each repo check as its own process, as it runs an installed one. | One execution model for every check. |
 | O   | A Go repo check builds on checkkit through the public SDK. | The protocol lives once. |
 
 ## Resolve check specs (priority)
 
-`go/cmd/fitness` produces an ordered name list. It resolves each name to a local check, else a `fitness-check-<name>` program beside the runner, else the built-in check:
+`go/cmd/fitness` produces an ordered name list. It resolves each name to a local check, else `local-branch`, which the engine judges itself, else an installed `fitness-check-<name>` program:
 
-1. A CLI name (`fitness prettier`) — run only that built-in check; an unknown name is an error.
+1. A CLI name (`fitness prettier`) — run only that check; a name with no installed check is an error naming its install command.
 2. Otherwise — every installed check minus [ignores](../../go/pkg/lang/ignores): unclaimed ones sorted, then each [language module](../../go/pkg/lang/langs/langs.go)'s, sorted.
 
 Every check runs in every repo and passes clean with zero files when it does not apply. A name with no check of that name fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
