@@ -44,7 +44,10 @@ func checkVersions(root string) (map[string]string, error) {
 	if cfg == nil || len(cfg.CheckVersions) == 0 {
 		return defaultPins()
 	}
-	return withEveryCheck(cfg.CheckVersions), badPin(cfg.CheckVersions)
+	if err := badPin(cfg.CheckVersions); err != nil {
+		return nil, err
+	}
+	return withEveryCheck(cfg.CheckVersions)
 }
 
 // everyCheck is the checkVersions name that pins every released check.
@@ -52,20 +55,24 @@ const everyCheck = "*"
 
 // withEveryCheck gives every released check the "*" pin, when pins has one.
 // A check pinned by its own name keeps its own pin.
-func withEveryCheck(pins map[string]string) map[string]string {
+func withEveryCheck(pins map[string]string) (map[string]string, error) {
 	every, ok := pins[everyCheck]
 	if !ok {
-		return pins
+		return pins, nil
+	}
+	released, err := defaultPins()
+	if err != nil {
+		return nil, err
 	}
 	out := map[string]string{}
-	for name := range defaultPins() {
+	for name := range released {
 		out[name] = every
 	}
 	for name, pin := range pins {
 		out[name] = pin
 	}
 	delete(out, everyCheck)
-	return out
+	return out, nil
 }
 
 // defaultPins pins every released check to currentMajor, but the ones the

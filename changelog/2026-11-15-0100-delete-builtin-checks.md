@@ -6,4 +6,4 @@
 - Feat: only `local-branch` stays built in; an unset `checkVersions` pins each released check, and a failed check install fails the run.
 - Refactor: `fitness-release checks` no longer writes check READMEs; fitness-checks generates them, and the check index lists only `local-branch`.
 - Test: the requirement tests, smoke run, CI and repo hooks install every check first; the tests reach GitHub through a local API host.
-- Docs: links to a moved check's README point at fitness-checks.
+- Docs: links to a moved check's README point at fitness-checks, and this repo pins every check at v1 in `checkVersions`.

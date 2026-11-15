@@ -1,5 +1,8 @@
 {
-  "planApprovers": ["jasonvanderslice", "json-claude-bot"],
+  "planApprovers": [
+    "jasonvanderslice",
+    "json-claude-bot"
+  ],
   "textReadability": {
     "maxGrade": 15,
     "maxLix": 50
@@ -11,5 +14,8 @@
       "eslint",
       "package.json"
     ]
+  },
+  "checkVersions": {
+    "*": "v1"
   }
 }

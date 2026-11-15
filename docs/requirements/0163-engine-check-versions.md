@@ -28,3 +28,7 @@ Check pins
     - Given Developer has a repo whose `checkVersions` pins `*` to a major and one check to a release
         - When I run `fitness check-versions`
             - Then every released check gets the major, and the named check keeps its release
+- 0163.5
+    - Given Developer has a repo whose `checkVersions` pins `*`, behind a proxy that never answers, with no recorded release index
+        - When I run `fitness check-versions`
+            - Then it fails, saying to pin each check in `checkVersions` instead
