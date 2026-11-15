@@ -20,12 +20,13 @@ Any view requires all five, and each view needs a diagram outside its legends.
 
 ## What a view holds
 
-A view under `docs/architecture/` is one numbered Mermaid diagram with its legend and callout table.
+These are the owner's conventions for the views under either root. No check enforces them yet, so the check passes a view that breaks them.
 
+- A view is its numbered Mermaid diagrams with their legend and callout table.
 - It holds no prose sections, glossaries, "where to change X" tables, or step-by-step flow lists.
-- The five numbered views are the whole set, entered at the system context view.
-- No index or start page, such as `docs/architecture/README.md`, restates them.
-- Every journey callout names its requirement IDs, and every requirement appears in the journey.
+- The five numbered views are the whole set, entered at the system context view. Templates in a `templates` folder are not views.
+- No index or start page, such as `architecture/README.md`, restates them.
+- The journey view names requirement IDs as the \[architecture-journey](../fitness-check-architecture-journey/README.md) check says, and every requirement appears in it.
 
 ## Scope
 
