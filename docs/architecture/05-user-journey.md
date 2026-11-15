@@ -48,7 +48,7 @@ flowchart TB
     listChecks(34 List the checks<br/>Req 0110):::action
     explainCheck(35 Explain a check<br/>Req 0111):::action
     readDocs(36 Read the docs topics<br/>Req 0112):::action
-    readReadme(37 Read a check README<br/>Req 0114):::action
+    readReadme(37 Read the command list<br/>Req 0114):::action
     readLLMs(38 Read the llms page<br/>Req 0113):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068, 0170):::action
@@ -135,14 +135,14 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
 | 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
 | 5   | Resolve check list.                 | System  | Every installed check and `local-branch`, then the repo's local checks; checks that do not apply pass. |
-| 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
+| 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess, and its stage's total kills its group. |
 | 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |
 | 9   | Exit 0.                             | System  | All checks passed — deterministic, not LLM-judged.                                    |
 | 10  | Failures shown in table.            | Screen  | Exit 1; failing check's `errors` printed inline.                                      |
 | 11  | Fix and rerun.                      | Action  | Developer/agent edits source, returns to #3.                                          |
-| 12  | Bad config or missing binary.       | System  | Fails loud — every check ships together, so a missing binary is a broken install.     |
+| 12  | Bad config or missing binary.       | System  | Fails loud on bad config; the runner warns when it cannot fetch a pinned check.        |
 | 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, after a pull request's changes pass, with a full scan. Labeled issues are judged by kind, and repeats are noted. |
-| 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives every check; nothing else to install.                     |
+| 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives the engine and each check the repo pins.                  |
 | 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite and keep each issue linked once.                                  |
 | 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |
 | 17  | Installed checks.                   | System  | Each check the repo pins runs as its own fitness-checks program, installed beside the engine. |
@@ -156,7 +156,7 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 34  | `fitness list`.                     | Action  | An agent learns every check, its scope, and whether this repo runs it, from the binary. |
 | 35  | `fitness explain <check>`.          | Action  | An agent reads why a check exists and the keys it reads, generated from its code comments. |
 | 36  | `fitness docs [topic]`.             | Action  | An agent reads the protocol, config and GitHub commands from the binary, as the code documents them. |
-| 37  | A check README or `fitness --help`. | Action  | A person reads the same documentation the binary prints, generated from the same code. |
+| 37  | The README command list or `fitness --help`. | Action  | A person reads the same command list the binary prints, generated from the same code. |
 | 38  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
 | 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |
 | 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
@@ -165,4 +165,4 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
 | 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |
 | 47  | Suite runner.                       | System  | A repo whose checks build Apple apps runs the suite on a standard hosted Mac it names. |
-| 48  | Check dependencies.                 | System  | No check depends on the engine's GitHub reactions or run reports, and the engine links checks only through its built-ins map, so each side can build alone. |
+| 48  | Check dependencies.                 | System  | No check depends on the engine's GitHub reactions or run reports, and the engine links only `local-branch`, through the generated `checks.go`, so each side can build alone. |

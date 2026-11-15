@@ -12,7 +12,7 @@ C4Component
         Component(resolve, "4 Check resolver", "Go", "allChecks from the module registry")
         Component(execute, "5 Execution pool", "Go", "goroutines + group kill")
         Component(output, "6 Results renderer", "Go", "pkg/render")
-        Component(check, "7 Check package", "Go", "go/cmd/fitness-check-*")
+        Component(check, "7 local-branch", "Go", "go/cmd/fitness-check-local-branch")
     }
 
     Container_Boundary(shared, "Shared internals") {
@@ -29,6 +29,7 @@ C4Component
 
     System_Ext(peers, "9 Peer tools", "each language module's formatters, linters and test runners")
     System_Ext(git, "10 git")
+    System_Ext(installed, "13 Installed check", "a fitness-checks program")
 
     Rel(developer, main, "A")
     Rel(main, config, "B")
@@ -39,12 +40,13 @@ C4Component
     Rel(execute, check, "I")
     Rel(main, output, "J")
     Rel(check, kit, "E")
-    Rel(check, peers, "F")
+    Rel(installed, peers, "F")
     Rel(main, kit, "K")
     Rel(tool, kit, "L")
     Rel(main, check, "M")
     Rel(execute, repo, "N")
     Rel(repo, kit, "O")
+    Rel(execute, installed, "P")
 
     UpdateElementStyle(developer, $bgColor="#334155", $borderColor="#1e293b", $fontColor="#ffffff")
     UpdateElementStyle(main, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
@@ -58,6 +60,7 @@ C4Component
     UpdateElementStyle(repo, $bgColor="#b45309", $borderColor="#92400e", $fontColor="#ffffff")
     UpdateElementStyle(peers, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
     UpdateElementStyle(git, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
+    UpdateElementStyle(installed, $bgColor="#64748b", $borderColor="#475569", $fontColor="#ffffff")
 ```
 
 ```mermaid
@@ -83,29 +86,31 @@ Numbers on nodes and letters on arrows match the callout table.
 | 2   | `go/cmd/fitness` — `main.go` routes the subcommands, else argv, resolve, execute, render.               | No build step, no interpreter startup.                      |
 | 3   | Loads `.fitnessrc.json` (stdlib encoding/json); a lone legacy script config earns a migration hint.     | Config a compiled runner can parse anywhere.                |
 | 4   | Ordered check list: the CLI name, else `allChecks`, which the language module registry lists.           | One place for check resolution (single name or full list).  |
-| 5   | Bounded goroutine pool with per-check timeouts; expiry kills the check's whole process group.           | Parallelism bounds wall-clock at the slowest check.         |
+| 5   | Bounded goroutine pool; a stage's total running out kills each of its checks' process groups.            | Parallelism bounds wall-clock at the slowest check.         |
 | 6   | Renders the results table + totals line from collected outcomes, in dispatch order.                     | User-visible pass, fail and info summary.                   |
-| 7   | `local-branch` (`go/cmd/fitness-check-local-branch`), built into fitness; every other check installs from fitness-checks. | The engine judges this check itself; each runs alone. |
+| 7   | `local-branch` (`go/cmd/fitness-check-local-branch`), the one check built into fitness. | The engine judges this check itself. |
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers. The public `go/check` SDK wraps it for a repo's own Go checks. | One implementation shared by every check binary.            |
-| 9   | Tool-wrapper checks exec the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
+| 9   | An installed check execs the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
 | 11  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
 | 12  | A check in the repo's `fitness/` folder: a Go program on the check SDK, or any executable. | A repo writes its own rules without forking fitness. |
+| 13  | Each other check, a fitness-checks program the installer or the runner put in the checks folder. | Checks ship and version apart from the engine, as [the split ADR](https://github.com/may-journal/fitness-runner/issues/1015) decides. |
 | A   | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |
 | B   | Entry loads config before argv resolution.                                                              | `.fitnessrc.json` drives order, subset, and options.        |
 | C   | Entry delegates to the resolver first.                                                                  | Resolve before execute.                                     |
 | D   | Resolver maps a name to its `fitness-check-<name>` program and collects its `--describe` metadata.      | Timeout and context-inline metadata without header parsing. |
-| E   | Check packages build on checkkit for protocol emit and env context.                                     | Contract every check satisfies.                             |
-| F   | Tool wrappers exec their peer binary and parse its output.                                              | The check owns tool invocation and judgment.                |
+| E   | local-branch builds on checkkit for protocol emit and env context, as every installed check does.       | Contract every check satisfies.                             |
+| F   | An installed tool wrapper execs its peer binary and parses its output.                                  | The check owns tool invocation and judgment.                |
 | G   | Runner exports `FITNESS_STAGED_FILES` before dispatch.                                                  | Checks receive consistent context.                          |
 | H   | Run loop dispatches each check to the pool.                                                             | Ordered dispatch; buffered, ordered output.                 |
-| I   | Pool starts the fitness binary as `fitness-check-<name>`, with `--root` and env context.               | One execution model for every check.                        |
+| I   | Pool starts the fitness binary as `fitness-check-local-branch`, with `--root` and env context.         | local-branch runs as any other check does.                  |
 | J   | Run loop prints the table after all checks finish.                                                      | Single summary per invocation.                              |
 | K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
-| M   | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
+| M   | Entry links local-branch through the generated `checks.go` and runs it under that program name.        | The binary dispatches on argv[0] or `fitness check local-branch`. |
 | N   | The pool runs each repo check as its own process, as it runs an installed one. | One execution model for every check. |
 | O   | A Go repo check builds on checkkit through the public SDK. | The protocol lives once. |
+| P   | Pool starts each installed check's own program, with `--root` and env context. | Installed checks ship and version apart from the engine. |
 
 ## Resolve check specs (priority)
 
@@ -116,19 +121,11 @@ Numbers on nodes and letters on arrows match the callout table.
 
 Every check runs in every repo and passes clean with zero files when it does not apply. A name with no check of that name fails the run. A leftover `checks` key in `.fitnessrc.json` is ignored with a one-line stderr warning. Each language module reads its own check options from that file, so the shared loader names no language.
 
-## Module data the repo-wide checks read
-
-Repo-wide checks take what a language brings from the registry, never from a list of their own. The spell and duplicate checks skip each module's lockfiles, plus those in one [lockfiles](../../go/pkg/lang/lockfiles) file per other ecosystem. The build output check fails tracked files under the output folders each module finds in the repo.
-
-## Coverage goal
-
-Every coverage check judges exact counts against one goal in [goal](../../go/pkg/goal/goal.go), whichever module runs it. A module that spots test frameworks keeps one commented file per framework in its own folder, so adding one needs no code.
-
-## Architecture view readers
-
-The architecture checks read code through one model in [codemodel](../../go/pkg/codemodel/model.go): declarations, members, references and relations. Each language module brings a reader for it, and the views take every reader from the registry. Readers that read tokens relate names through one shared walk, as [ADR 0008](https://github.com/may-journal/fitness-runner/issues/860) decides. A language with no module lists its endings in a [sources](../../go/pkg/lang/sources) file, so the views still inventory it.
-
 Single-check mode bypasses the list. Passthrough args after the spec reach the check. A check whose `--describe` declares a context-inline argument has that value extracted into the environment and stripped from passthrough. The commit checks declare `--message`.
+
+## Helpers the installed checks link
+
+fitness-checks links the public `go/pkg` packages, such as the language modules, the coverage [goal](../../go/pkg/goal/goal.go) and the [codemodel](../../go/pkg/codemodel/model.go) the architecture checks read. Readers that read tokens relate names through one shared walk, as [ADR 0008](https://github.com/may-journal/fitness-runner/issues/860) decides. Each check's README there says what it reads.
 
 ## Run context (environment)
 
