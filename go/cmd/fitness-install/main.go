@@ -62,7 +62,7 @@ func execute(installer *distribution.Installer, options distribution.Options) in
 // installChecks installs each check the repo pins when asked, reading the
 // pins from the installed engine, and returns their folder.
 func installChecks(installer *distribution.Installer, bin string, options distribution.Options) (string, error) {
-	if !options.InstallsChecks() {
+	if !options.InstallsChecks() || options.SkipsChecks() {
 		return "", nil
 	}
 	versions := exec.Command(filepath.Join(bin, "fitness"), "check-versions")

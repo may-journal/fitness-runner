@@ -36,7 +36,7 @@ func withModes(options Options, getenv func(string) string) (Options, error) {
 	if options.InstallOnly, err = boolInput(getenv("FITNESS_INSTALL_ONLY")); err != nil {
 		return options, err
 	}
-	options.WithChecks, err = boolInput(getenv("FITNESS_WITH_CHECKS"))
+	options.WithChecks, options.PinnedOnly, err = checksMode(getenv("FITNESS_WITH_CHECKS"))
 	return options, err
 }
 
