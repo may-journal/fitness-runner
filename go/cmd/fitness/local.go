@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -83,7 +82,7 @@ func noSubcommand(checks map[string]repocheck.Check) error {
 // fails as "not installed", unless it names a built-in that is off.
 func programFor(name string) (checkkit.Program, error) {
 	prog, err := findCheckBinary(name)
-	if _, local := localBins[name]; err != nil && !local && (!builtinsOff() || builtins[name] == nil) {
+	if _, local := localBins[name]; err != nil && !local && (!builtinsOff() || name != localBranch) {
 		err = fmt.Errorf("%w: fitness-check-%s", errNotInstalled, name)
 	}
 	return prog, err
@@ -183,7 +182,7 @@ func newEnough(checks []resolved) error {
 }
 
 // findCheckBinary returns a local check, else the engine's judgment, else an
-// installed program, else a built-in.
+// installed program.
 func findCheckBinary(name string) (checkkit.Program, error) {
 	if c, ok := localBins[name]; ok {
 		return localProgram(c)
@@ -191,61 +190,35 @@ func findCheckBinary(name string) (checkkit.Program, error) {
 	if prog, ok := engineProgram(name); ok {
 		return prog, nil
 	}
-	return installedOrBuiltin(name)
+	return installedProgram(name)
 }
 
-// engineProgram returns the engine's own program for a check it judges, when
-// an installed program declares it or the built-ins are on. An installed
-// program cannot judge alone, so it only declares the check; this says so.
+// engineProgram returns this fitness executable, started as
+// fitness-check-local-branch, when name is local-branch and an installed
+// program declares it or the built-ins are on. An installed program cannot
+// judge alone, so it only declares the check; this says so.
 func engineProgram(name string) (checkkit.Program, bool) {
-	_, judged := engineJudges[name]
 	bin, installed := installedPrograms[name]
-	if !judged || !installed && builtinsOff() {
+	if name != localBranch || !installed && builtinsOff() {
 		return checkkit.Program{}, false
 	}
 	if installed {
 		fmt.Fprintf(os.Stderr, "fitness: %s declares the %s check, which fitness judges itself\n", bin, name)
 	}
-	prog, err := builtinProgram(name)
+	prog, err := checkkit.Builtin(name)
 	return prog, err == nil
 }
 
-// installedOrBuiltin returns an installed program, else the built-in of a
-// name. An installed program that replaces a built-in says so on stderr, and
-// with the built-ins off a missing one names its install.
-func installedOrBuiltin(name string) (checkkit.Program, error) {
+// installedProgram returns the installed program of a name. With the
+// built-ins off a missing one names its install.
+func installedProgram(name string) (checkkit.Program, error) {
 	if bin, ok := installedPrograms[name]; ok {
-		noteReplaced(bin, name)
 		return checkkit.Program{Path: bin}, nil
 	}
 	if builtinsOff() {
 		return checkkit.Program{}, fmt.Errorf("check %s is not installed, and %s turns the built-in checks off; install it: %s", name, noBuiltinsFlag, installCommand(name))
 	}
-	return builtinProgram(name)
-}
-
-// noteReplaced says on stderr that bin replaces the built-in check name,
-// unless no such built-in runs.
-func noteReplaced(bin, name string) {
-	if builtins[name] != nil && !builtinsOff() && !pinnedProgram(bin) {
-		fmt.Fprintf(os.Stderr, "fitness: %s replaces the built-in %s check; delete it to run the built-in one\n", bin, name)
-	}
-}
-
-// pinnedProgram reports whether bin lies in the installer's folder of pinned
-// checks, which replace their built-ins on purpose.
-func pinnedProgram(bin string) bool {
-	dir := os.Getenv(checkkit.ChecksDirEnv)
-	return dir != "" && filepath.Dir(bin) == filepath.Clean(dir)
-}
-
-// builtinProgram returns the program for built-in check name: this fitness
-// executable, started as fitness-check-<name>.
-func builtinProgram(name string) (checkkit.Program, error) {
-	if _, ok := builtins[name]; !ok {
-		return checkkit.Program{}, fmt.Errorf("no built-in check %s", name)
-	}
-	return checkkit.Builtin(name)
+	return checkkit.Program{}, fmt.Errorf("no built-in check %s", name)
 }
 
 // checkCatalog is the built-in check list followed by the local checks that add

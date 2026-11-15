@@ -13,12 +13,12 @@ import (
 	"strings"
 )
 
-// checksFile is the registry the fitness binary is built with, relative to
+// checksFile links local-branch into the fitness binary, relative to
 // the repository root.
 const checksFile = "go/cmd/fitness/checks.go"
 
 // WriteChecks rewrites every file Generated returns, so no one keeps the
-// registry, READMEs and check index by hand.
+// generated Go files, llms page and README command list by hand.
 func (c Config) WriteChecks() error {
 	files, err := c.Generated()
 	if err != nil {
@@ -73,15 +73,15 @@ func (c Config) Generated() (map[string][]byte, error) {
 
 // sources is what the generator reads from the code.
 type sources struct {
-	checks []checkDoc
-	topics []topicDoc
-	usage  usageDoc
+	localBranch checkDoc
+	topics      []topicDoc
+	usage       usageDoc
 }
 
-// readSources reads the check packages, the topic packages, and the
+// readSources reads the local-branch package, the topic packages, and the
 // documented command line.
 func (c Config) readSources() (s sources, err error) {
-	if s.checks, err = c.checkDocs(); err != nil {
+	if s.localBranch, err = c.localBranchDoc(); err != nil {
 		return s, err
 	}
 	if s.topics, err = c.topics(); err != nil {
@@ -92,32 +92,20 @@ func (c Config) readSources() (s sources, err error) {
 }
 
 // render lays out every generated file, meaning the Go sources, the llms
-// page, and the Markdown.
+// page, and the README command list.
 func (c Config) render(s sources) (map[string][]byte, error) {
-	page := llmsPage(s.usage, s.checks, s.topics)
-	registry, checksErr := checksSource(s.checks)
+	page := llmsPage(s.usage, s.localBranch, s.topics)
+	checks, checksErr := checksSource(s.localBranch)
 	topicFile, topicsErr := topicsSource(s.topics)
 	usage, usageErr := usageSource(s.usage, page)
 	if err := errors.Join(checksErr, topicsErr, usageErr); err != nil {
 		return nil, err
 	}
-	files := map[string][]byte{checksFile: registry, topicsFile: topicFile, usageFile: usage, llmsFile: []byte(page)}
-	return files, c.addMarkdown(files, s)
-}
-
-// addMarkdown adds the generated regions in docs/checks.md and the README
-// command list. fitness-checks generates each check's README.
-func (c Config) addMarkdown(files map[string][]byte, s sources) error {
-	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment", checkIndex(s.checks))
-	if err != nil {
-		return err
-	}
 	readme, err := c.withRegion(readmeFile, usageMarker, "the usage comments in go/cmd/fitness and go/internal/selection", usageBlock(s.usage))
 	if err != nil {
-		return err
+		return nil, err
 	}
-	files[docsChecksFile], files[readmeFile] = index, readme
-	return nil
+	return map[string][]byte{checksFile: checks, topicsFile: topicFile, usageFile: usage, llmsFile: []byte(page), readmeFile: readme}, nil
 }
 
 // topicsFile holds the `fitness docs` topics the fitness binary is built
@@ -138,79 +126,66 @@ func topicsSource(topics []topicDoc) ([]byte, error) {
 		"var topics = []topic{\n" + entries.String() + "}\n"))
 }
 
-// checkDocs reads every go/cmd/fitness-check-<name> package, in name order,
-// with the config keys each reads after its doc comment.
-func (c Config) checkDocs() ([]checkDoc, error) {
-	dirs, err := filepath.Glob(filepath.Join(c.Root, "go", "cmd", "fitness-check-*"))
+// localBranchFolder is the package of local-branch, the one check the
+// engine runs itself, relative to the repository root.
+const localBranchFolder = "go/cmd/fitness-check-local-branch"
+
+// localBranchDoc reads the local-branch package, with the config keys it
+// reads after its doc comment. Keys tagged for any other check belong to a
+// fitness-checks check, whose README documents them.
+func (c Config) localBranchDoc() (checkDoc, error) {
+	if err := c.onlyLocalBranch(); err != nil {
+		return checkDoc{}, err
+	}
+	d, err := readCheckDoc(filepath.Join(c.Root, filepath.FromSlash(localBranchFolder)))
 	if err != nil {
-		return nil, err
+		return d, err
 	}
-	docs := make([]checkDoc, 0, len(dirs))
-	for _, dir := range dirs {
-		d, err := readCheckDoc(dir)
-		if err != nil {
-			return nil, err
-		}
-		docs = append(docs, d)
+	keys, err := c.configKeys()
+	if err != nil {
+		return d, err
 	}
-	return docs, c.addConfig(docs)
+	if config := configMarkdown(keys[d.Name]); config != "" {
+		d.Body += "\n" + config
+	}
+	return d, nil
 }
 
-// addConfig appends to each check's body the config keys it reads. Keys
-// tagged for a check this repo no longer holds belong to a fitness-checks
-// check, whose README documents them.
-func (c Config) addConfig(docs []checkDoc) error {
-	keys, err := c.configKeys()
+// onlyLocalBranch fails any check package under go/cmd beside local-branch,
+// which the engine would never link: each other check lives in
+// fitness-checks.
+func (c Config) onlyLocalBranch() error {
+	dirs, err := filepath.Glob(filepath.Join(c.Root, "go", "cmd", "fitness-check-*"))
 	if err != nil {
 		return err
 	}
-	for i := range docs {
-		if config := configMarkdown(keys[docs[i].Name]); config != "" {
-			docs[i].Body += "\n" + config
+	for _, dir := range dirs {
+		if rel := "go/cmd/" + filepath.Base(dir); rel != localBranchFolder {
+			return fmt.Errorf("%s: the engine runs only local-branch; move this check to fitness-checks", rel)
 		}
 	}
 	return nil
 }
 
-// checksSource lays out the registry file: each check package's import, its
-// entry point, its summary, and its explanation.
-func checksSource(docs []checkDoc) ([]byte, error) {
-	var imports, entries, summaries, bodies strings.Builder
-	for _, d := range docs {
-		alias := checkAlias(d.Name)
-		fmt.Fprintf(&imports, "\t%s \"github.com/may-journal/fitness-runner/go/cmd/%s\"\n", alias, d.Folder)
-		fmt.Fprintf(&entries, "\t%q: %s.Main,\n", d.Name, alias)
-		fmt.Fprintf(&summaries, "\t%q: %q,\n", d.Name, d.Summary)
-		fmt.Fprintf(&bodies, "\t%q: %q,\n", d.Name, d.Body)
-	}
-	return format.Source([]byte("// Code generated by `fitness-release checks`; DO NOT EDIT.\n\n" +
-		"package main\n\n" +
-		"import (\n" + imports.String() + ")\n\n" +
-		"// builtins maps each built-in check name to the entry point its package\n" +
-		"// exports. The one fitness executable runs a check when started under the\n" +
-		"// name fitness-check-<name>, or as `fitness check <name>`.\n" +
-		"var builtins = map[string]func(){\n" + entries.String() + "}\n\n" +
-		"// builtinSummaries maps each built-in check name to the first sentence\n" +
-		"// of its package doc comment.\n" +
-		"var builtinSummaries = map[string]string{\n" + summaries.String() + "}\n\n" +
-		"// builtinDocs maps each built-in check name to its package doc comment\n" +
-		"// and the config keys it reads, as Markdown.\n" +
-		"var builtinDocs = map[string]string{\n" + bodies.String() + "}\n"))
-}
-
-// checkAlias names a check package's import: the check name in camel case,
-// then Check, as go-test becomes goTestCheck. Empty words, as in a--b, add
-// nothing.
-func checkAlias(name string) string {
-	words := strings.FieldsFunc(name, func(r rune) bool { return r == '-' })
-	for i := 1; i < len(words); i++ {
-		words[i] = strings.ToUpper(words[i][:1]) + words[i][1:]
-	}
-	return strings.Join(words, "") + "Check"
+// checksSource lays out the one engine file that links a check package:
+// local-branch's entry point, its summary, and its explanation.
+func checksSource(d checkDoc) ([]byte, error) {
+	return format.Source([]byte(fmt.Sprintf("// Code generated by `fitness-release checks`; DO NOT EDIT.\n\n"+
+		"package main\n\n"+
+		"import localBranchCheck \"github.com/may-journal/fitness-runner/%s\"\n\n"+
+		"// localBranchMain is local-branch's entry point, whose describe metadata\n"+
+		"// the engine runs its own judgment under.\n"+
+		"var localBranchMain = localBranchCheck.Main\n\n"+
+		"// localBranchSummary is the first sentence of local-branch's package doc\n"+
+		"// comment.\n"+
+		"const localBranchSummary = %q\n\n"+
+		"// localBranchDoc is local-branch's package doc comment and the config keys\n"+
+		"// it reads, as Markdown.\n"+
+		"const localBranchDoc = %q\n", localBranchFolder, d.Summary, d.Body)))
 }
 
 // Input reports whether a changed path can change the generator's output: a Go
 // source it reads or a Markdown file it writes.
 func Input(path string) bool {
-	return strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile
+	return strings.HasSuffix(path, ".go") || path == readmeFile
 }

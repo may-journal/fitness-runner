@@ -93,10 +93,6 @@ func executable(name, version, platform string) string { return name + "-" + ver
 func bundleName(version, platform string) string {
 	return executable(runnerName, version, platform) + ".tar.gz"
 }
-func (c Config) asset(name string) (Asset, error) {
-	hash, err := fileHash(filepath.Join(c.Out, name))
-	return Asset{Name: name, Hash: hash}, err
-}
 
 func encodedHashes(metadata Metadata) string {
 	pairs := make([]string, 0, len(metadata.Assets))

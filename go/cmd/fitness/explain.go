@@ -95,13 +95,11 @@ func repoConfig() error {
 }
 
 // knownChecks are the names explain answers for: the repo's catalog and every
-// built-in check, even one a language ignore file skips.
+// local-branch, even when a language ignore file skips it.
 func knownChecks() []string {
 	names := checkCatalog()
-	for name := range builtins {
-		if !slices.Contains(names, name) {
-			names = append(names, name)
-		}
+	if !slices.Contains(names, localBranch) {
+		names = append(names, localBranch)
 	}
 	return names
 }
@@ -114,8 +112,8 @@ func explainCheck(name string) (explained, error) {
 		return explained{}, err
 	}
 	c := checks[0]
-	body, ok := builtinDocs[name]
-	if !ok || replaced(name) {
+	body := localBranchDoc
+	if name != localBranch || replaced(name) {
 		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}
 	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c),

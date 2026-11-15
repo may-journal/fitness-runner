@@ -68,7 +68,7 @@ func Test0161_1(t *testing.T) {
 	t.Parallel()
 	imports, builtIns := engineImports0161(t)
 	if builtIns == 0 {
-		t.Fatal("checks.go links no check package, so the test cannot tell the built-ins map from the engine")
+		t.Fatal("checks.go links no check package, so the test cannot tell it from the engine")
 	}
 	if len(imports) == 0 {
 		return
