@@ -124,10 +124,11 @@ func Test0164_5(t *testing.T) {
 func Test0164_6(t *testing.T) {
 	t.Parallel()
 	env := append(tags0164(t), "FITNESS_WITH_CHECKS=pinned")
-	out, code := fiRun(t, example(t, "happyRepo", nil), env, "--install-only")
+	silent := append(slices.Clone(env), "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
+	out, code := fiRun(t, example(t, "happyRepo", nil), silent, "--install-only")
 	sees(t, out, code, 0)
-	if strings.Contains(out, "check release") || strings.Contains(out, "installed") {
-		t.Errorf("while built-ins remain, a repo that pins no check must read nothing for checks under FITNESS_WITH_CHECKS=pinned:\n%s", out)
+	if strings.Contains(out, "asking ") || strings.Contains(out, "installed") {
+		t.Errorf("behind a silent proxy, a repo that pins no check must read nothing for checks:\n%s", out)
 	}
 	out, code = fiRun(t, pinned0164(t, `{"markdown-links": "v1.0.0"}`), env, "--install-only")
 	sees(t, out, code, 0, "installed 1 checks in ")

@@ -2,13 +2,11 @@
 package distribution
 
 import (
-	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -39,9 +37,8 @@ type Options struct {
 	InstallHook  bool
 	// WithChecks installs each check the repo pins, beside the engine.
 	WithChecks bool
-	// PinnedOnly installs checks only when the repo sets checkVersions, or the
-	// engine has no built-in checks to fall back on. A hook in a repo that
-	// pins none then reads no network while built-ins remain.
+	// PinnedOnly installs checks only when the repo sets checkVersions, so a
+	// hook in a repo that pins none reads no network for them.
 	PinnedOnly bool
 	LinkSkills []string
 	// ClaudeSettings are the Claude Code settings files that get the Fitness hooks.
@@ -57,9 +54,12 @@ func ParseOptions(args []string, version string, output io.Writer) (Options, err
 	flags.BoolVar(&options.InstallHook, "install-hook", false, "install a Go pre-commit hook without replacing existing hooks")
 	flags.BoolVar(&options.GitHubAction, "github-action", false, "read action inputs and publish action outputs")
 	flags.BoolVar(&options.InstallOnly, "install-only", false, "print the installed binary directory without running checks")
-	withChecks := os.Getenv("FITNESS_WITH_CHECKS")
-	options.PinnedOnly = withChecks == "pinned"
-	flags.BoolVar(&options.WithChecks, "with-checks", withChecks == "true" || options.PinnedOnly, "also install each check .fitnessrc.json pins, from its own verified release; FITNESS_WITH_CHECKS=true sets it, and pinned only where checkVersions is set")
+	withChecks, pinnedOnly, err := checksMode(os.Getenv("FITNESS_WITH_CHECKS"))
+	if err != nil {
+		return options, fmt.Errorf("FITNESS_WITH_CHECKS: %w", err)
+	}
+	options.PinnedOnly = pinnedOnly
+	flags.BoolVar(&options.WithChecks, "with-checks", withChecks, "also install each check .fitnessrc.json pins, from its own verified release; FITNESS_WITH_CHECKS=true sets it, and pinned only where checkVersions is set")
 	flags.Func("claude-settings", "add the Fitness hooks to this Claude Code settings file, repeatable, without running checks", func(file string) error {
 		options.ClaudeSettings = append(options.ClaudeSettings, file)
 		return nil
@@ -151,17 +151,20 @@ func (options Options) InstallsChecks() bool {
 	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents()
 }
 
-// SkipsChecks reports whether a pinned-only run installs nothing. The repo
-// pins no check, and the engine at bin has built-ins to run instead.
-func (options Options) SkipsChecks(bin string) bool {
-	return options.PinnedOnly && !repoPins(".") && hasBuiltins(bin)
+// SkipsChecks reports whether a pinned-only run installs nothing, since the
+// repo pins no check.
+func (options Options) SkipsChecks() bool {
+	return options.PinnedOnly && !repoPins(".")
 }
 
-// hasBuiltins reports whether the engine at bin lists any built-in check. An
-// engine that cannot answer counts as having none, so checks install.
-func hasBuiltins(bin string) bool {
-	out, err := exec.Command(filepath.Join(bin, "fitness"), "check", "--list").Output()
-	return err == nil && len(bytes.TrimSpace(out)) > 0
+// checksMode reads FITNESS_WITH_CHECKS: true installs every pinned check,
+// pinned installs them only where checkVersions is set, and empty is off.
+func checksMode(value string) (with, pinnedOnly bool, err error) {
+	if value == "pinned" {
+		return true, true, nil
+	}
+	with, err = boolInput(value)
+	return with, false, err
 }
 
 // repoPins reports whether the repo at root sets checkVersions. An unreadable

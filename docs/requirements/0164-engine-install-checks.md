@@ -33,6 +33,6 @@ Pinned checks
         - When I run `fitness-install --with-checks`
             - Then it gives up within seconds after one unanswered index read, warns, and the built-ins run; a run within the minute asks nothing
 - 0164.6
-    - Given Developer has one repo that pins no check and one that pins one, with `FITNESS_WITH_CHECKS=pinned` as the shared hooks set it
+    - Given Developer has a repo pinning no check behind a silent proxy, and one pinning one, with `FITNESS_WITH_CHECKS=pinned` as hooks set it
         - When I run `fitness-install --install-only` in each
-            - Then the first reads nothing for checks while built-ins remain, and the second installs its pinned check
+            - Then the first asks the network nothing, and the second installs its pinned check
