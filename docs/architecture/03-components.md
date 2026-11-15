@@ -104,12 +104,12 @@ Numbers on nodes and letters on arrows match the callout table.
 | K   | Entry builds on checkkit, conf, selection, render, and report.                                          | The runner shares the protocol it asks checks to speak.     |
 | L   | Tools build on the release, distribution, and changelog packages.                                       | One implementation of versions and bundles.                 |
 | M   | Entry imports every check package and runs the one its program name names.                              | The binary dispatches on argv[0] or `fitness check <name>`. |
-| N   | The pool runs each repo check as its own process, as it runs a built-in one. | One execution model for every check. |
+| N   | The pool runs each repo check as its own process, as it runs an installed one. | One execution model for every check. |
 | O   | A Go repo check builds on checkkit through the public SDK. | The protocol lives once. |
 
 ## Resolve check specs (priority)
 
-`go/cmd/fitness` produces an ordered name list. It resolves each name to a local check, else an installed `fitness-check-<name>` program, else `local-branch`, which the engine judges itself:
+`go/cmd/fitness` produces an ordered name list. It resolves each name to a local check, else `local-branch`, which the engine judges itself, else an installed `fitness-check-<name>` program:
 
 1. A CLI name (`fitness prettier`) — run only that check; a name with no installed check is an error naming its install command.
 2. Otherwise — every installed check minus [ignores](../../go/pkg/lang/ignores): unclaimed ones sorted, then each [language module](../../go/pkg/lang/langs/langs.go)'s, sorted.

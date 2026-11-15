@@ -126,7 +126,7 @@ Numbers on classes and letters on relationships match the callout table.
 
 | #   | Description | Why |
 | --- | ----------- | --- |
-| 1   | The check contract: `fitness-check-name --root dir [args…]`, JSON result on stdout. | Every check is one program name; built-in ones share the fitness binary. |
+| 1   | The check contract: `fitness-check-name --root dir [args…]`, JSON result on stdout. | Every check is one program name; `local-branch` shares the fitness binary. |
 | 2   | Metadata a check prints for `--describe`, in [checkkit.go](../../go/pkg/checkkit/checkkit.go): name, stage, context-inline argument. | The runner discovers capabilities with a handshake, not a registry. |
 | 3   | Environment the runner exports before dispatch. | Checks stay stateless; context flows one way. |
 | 4   | `{Ok, Errors, FilesChecked, Info, Findings}`, in [checkkit.go](../../go/pkg/checkkit/checkkit.go): emitted by the check, parsed by the runner. | Aggregated into the results table. |
@@ -161,7 +161,7 @@ Numbers on classes and letters on relationships match the callout table.
 | P   | The scaffolding emits the Result the run returns, or info for a panic or error. | One JSON line per run. |
 | Q   | The tally adds each row by its status. | One place decides what counts. |
 | R   | The pool reads the stage each check declares to order its starts and time its stage's total. | A test runner never waits behind quick checks. |
-| S   | Each name resolves to a local check, an installed program, or the runner itself started as `fitness-check-local-branch`. | Installed programs come from fitness-checks. |
+| S   | Each name resolves to a local check, the runner itself started as `fitness-check-local-branch`, or an installed program. | The engine judges `local-branch` even where a program declares it. |
 | T   | The handshake starts the check the same way its run does. | One way to start a check. |
 | U   | The wrapper starts the check under its program name. | The fitness binary dispatches `local-branch` on its program name. |
 | V   | A result may repeat its errors as findings. | Error lines stay for older readers. |

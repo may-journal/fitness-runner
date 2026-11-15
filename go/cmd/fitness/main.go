@@ -65,12 +65,12 @@ var (
 )
 
 // installedPrograms are the installed fitness-check-<name> programs, as
-// checkkit.Discover finds them, which win over the built-in check of their
-// name. main sets it when it runs as the runner.
+// checkkit.Discover finds them. main sets it at start, for the runner and for
+// the GitHub judgments local-branch runs.
 var installedPrograms map[string]string
 
-// noBuiltinsFlag turns the built-in checks off, so a run uses only installed
-// checks, as a clean install would; it comes first.
+// noBuiltinsFlag turns local-branch, the engine's own check, off, so a run
+// uses only installed checks; it comes first.
 //
 //fitness:usage --no-builtins [args]
 const noBuiltinsFlag = "--no-builtins"

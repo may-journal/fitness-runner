@@ -2,7 +2,7 @@
 // A check lives in its repo's `fitness/<name>/` folder, with a README.md
 // that states its rule and a main.go that calls Main. `fitness check
 // <name>` builds it with `fitness/go.mod` into the user cache, and the
-// suite, the git hooks and CI run it beside the built-in checks.
+// suite, the git hooks and CI run it beside the installed checks.
 //
 //	package main
 //
