@@ -27,9 +27,7 @@ jobs:
         id: report-step-1
         env:
           RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          go run ./cmd/fitness-release verify-tag --root ..
-          printf 'version=%s\n' "${RELEASE_TAG#v}" >> "$GITHUB_OUTPUT"
+        run: ../scripts/verify-release-tag.sh
         working-directory: go
       - name: Report job outcome
         if: ${{ always() }}
@@ -57,19 +55,14 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          draft="$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)"
-          case "$draft" in true|false) ;; *) exit 1 ;; esac
-          printf 'draft=%s\n' "$draft" >> "$GITHUB_OUTPUT"
+        run: scripts/inspect-publication.sh
       # Writing the notes on the draft means a failure leaves it unpublished.
       # GoReleaser keeps the notes when it publishes.
       - name: Write the release notes from changelog entry files
         if: ${{ steps.publication.outputs.draft == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          chmod +x out/fitness-release-linux-amd64
-          out/fitness-release-linux-amd64 release-notes
+        run: scripts/write-release-notes.sh
       - name: Publish tested assets with GoReleaser
         if: ${{ steps.publication.outputs.draft == 'true' }}
         uses: goreleaser/goreleaser-action@v7.2.3
@@ -110,9 +103,7 @@ jobs:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
           FITNESS_TEST_TOOL_PATH: ${{ runner.temp }}/fitness-consumer-tools
-        run: |
-          chmod +x "$VERIFIER"
-          "$VERIFIER" verify-download
+        run: scripts/run-verifier.sh verify-download
       - uses: ./.github/actions/setup-go-cache
         with:
           cache-key: smoke
@@ -161,34 +152,18 @@ jobs:
       - name: Promote the verified release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: |
-          chmod +x out/fitness-release-linux-amd64
-          out/fitness-release-linux-amd64 promote
+        run: scripts/promote-release.sh
       - name: Publish the Go module tag
         env:
           RELEASE_TAG: v${{ needs.verify.outputs.version }}
-        run: |
-          release_sha="$(git rev-list -n 1 "$RELEASE_TAG")"
-          module_tag="go/$RELEASE_TAG"
-          if git rev-parse --verify "$module_tag" >/dev/null 2>&1; then
-            test "$(git rev-list -n 1 "$module_tag")" = "$release_sha"
-          else
-            git tag "$module_tag" "$release_sha"
-            git push origin "refs/tags/$module_tag"
-          fi
+        run: scripts/publish-go-module-tag.sh
       # Consumers pin the major version; each verified release that is the
       # newest moves it, so @v1 always means the newest 1.x.
       - name: Move the major version tag
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RELEASE_TAG: v${{ needs.verify.outputs.version }}
-        run: |
-          latest="$(gh release view --json tagName --jq .tagName)"
-          if [ "$latest" = "$RELEASE_TAG" ]; then
-            major="${RELEASE_TAG%%.*}"
-            git tag -f "$major" "$(git rev-list -n 1 "$RELEASE_TAG")"
-            git push -f origin "refs/tags/$major"
-          fi
+        run: scripts/move-engine-major-tag.sh
       - name: Report job outcome
         if: ${{ always() }}
         run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

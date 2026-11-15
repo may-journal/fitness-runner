@@ -49,11 +49,9 @@ jobs:
       - name: Check the command input
         env:
           FITNESS_COMMAND: ${{ inputs.command }}
-        run: |
-          case "$FITNESS_COMMAND" in
-            issue-check|plan-check) ;;
-            *) printf '::error::command must be issue-check or plan-check, not %s\n' "$FITNESS_COMMAND"; exit 1 ;;
-          esac
+        uses: $/.github/actions/script
+        with:
+          script: check-command-input.sh
       # An invalid issue may still repeat an older one, so dupe-check runs after
       # a failed verdict too. A label cannot change its note, so a labeled event
       # skips it.

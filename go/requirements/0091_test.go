@@ -32,7 +32,7 @@ func step0091(t *testing.T, name string) string {
 	t.Helper()
 	_, step, ok := strings.Cut(workflowText0091(t), "- name: "+name+"\n")
 	if ok {
-		_, step, ok = strings.Cut(step, "run: |\n")
+		step, ok = stepScript0171(step)
 	}
 	if !ok {
 		t.Fatalf("%s has no run script for step %q", workflow0091, name)

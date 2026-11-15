@@ -45,7 +45,7 @@ func run0092(t *testing.T, name string, gh []response) (replays, string, int, st
 // runWith0092 is run0092 with the step's env also holding env.
 func runWith0092(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
 	t.Helper()
-	_, script, ok := strings.Cut(section0092(t, name), "run: |\n")
+	script, ok := stepScript0171(section0092(t, name))
 	if !ok {
 		t.Fatalf("step %q has no run script", name)
 	}

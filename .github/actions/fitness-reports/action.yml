@@ -25,11 +25,7 @@ runs:
       shell: bash
       env:
         FITNESS: ${{ inputs.fitness }}
-      run: |
-        record="$RUNNER_TEMP/fitness-performance/fitness.json"
-        if [ -f "$record" ]; then
-          "$FITNESS" boxes "$record" "$RUNNER_TEMP/fitness-performance/fitness.html"
-        fi
+      run: "${{ github.action_path }}/draw-box-diagram.sh"
     # Matrix legs and caller jobs may share one job name, so a random id keeps
     # each artifact name unique.
     - name: Name the artifacts
@@ -64,10 +60,4 @@ runs:
         JOB_STATUS: ${{ inputs.job-status }}
         ALREADY_ANNOTATED: ${{ inputs.fitness-failed == 'true' && env.FITNESS_FAILURE_REPORTED == 'true' && steps.reports.outcome != 'failure' }}
         REPORTS_URL: ${{ steps.reports.outputs.artifact-url }}
-      run: |
-        if [ "$JOB_STATUS" = failure ] && [ "$ALREADY_ANNOTATED" != true ]; then
-          printf '::error::Workflow job %s failed; open its logs for the failed step and cause.\n' "$GITHUB_JOB"
-        fi
-        if [ -n "$REPORTS_URL" ]; then
-          printf '[Download complete Fitness reports](%s)\n' "$REPORTS_URL" >> "$GITHUB_STEP_SUMMARY"
-        fi
+      run: "${{ github.action_path }}/report-outcome.sh"

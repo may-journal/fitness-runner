@@ -60,4 +60,4 @@ runs:
         # The release lookup counts against the run's own limit, not the
         # runner address's shared one.
         GH_TOKEN: ${{ github.token }}
-      run: checks="$("$(go env GOPATH)/bin/fitness-install" --version latest --install-only | sed -n 2p)" && { [ -z "$checks" ] || echo "FITNESS_CHECKS_DIR=$checks" >> "$GITHUB_ENV"; }
+      run: "${{ github.action_path }}/install-source-checks.sh"

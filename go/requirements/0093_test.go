@@ -33,7 +33,7 @@ func section0093(t *testing.T, name string) string {
 // commit abc123 in run 99, with env overriding.
 func run0093(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
 	t.Helper()
-	_, script, ok := strings.Cut(section0093(t, name), "run: |\n")
+	script, ok := stepScript0171(section0093(t, name))
 	if !ok {
 		t.Fatalf("step %q has no run script", name)
 	}

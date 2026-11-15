@@ -37,13 +37,7 @@ runs:
         GO_VERSION: ${{ steps.setup.outputs.go-version }}
         SOURCE_HASH: ${{ hashFiles('go/**', '!go/bin/**') }}
         SAVE: ${{ inputs.save == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: |
-        prefix="go-build-$FAMILY-$RUNNER_OS-$RUNNER_ARCH-go$GO_VERSION-"
-        {
-          echo "prefix=$prefix"
-          echo "key=$prefix$SOURCE_HASH"
-          echo "save=$SAVE"
-        } >> "$GITHUB_OUTPUT"
+      run: "${{ github.action_path }}/cache-key.sh"
     # Pull requests and other events only restore, so their caches never
     # crowd out main's, which every branch can read.
     - if: ${{ steps.key.outputs.save == 'false' }}

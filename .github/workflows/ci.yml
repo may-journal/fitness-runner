@@ -22,9 +22,11 @@ jobs:
         with:
           cache-key: fitness
           save: true
-      - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
+      - run: scripts/build-fitness.sh
+      # The scripts the workflows and actions call hold the shell, so they are linted here.
+      - run: shellcheck --severity=warning scripts/*.sh .github/actions/*/*.sh
       # The engine built here holds no check, so the suite installs each one.
-      - run: checks="$(githooks/checks-dir)" && echo "FITNESS_CHECKS_DIR=$checks" >> "$GITHUB_ENV"
+      - run: scripts/export-checks-dir.sh
         env:
           GH_TOKEN: ${{ github.token }}
       # A pull request checks the files it changes, and a push to main checks
@@ -35,9 +37,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
       # Each check's time, slowest first, read back from the kept record. A
       # suite that never wrote one already failed, so this step stays quiet.
-      - run: |
-          record="$RUNNER_TEMP/fitness-performance/fitness.json"
-          if [ -f "$record" ]; then go/bin/fitness perf "$record"; fi
+      - run: scripts/show-performance.sh
         if: ${{ !cancelled() }}
       # The action draws the box diagram, then keeps it with the performance
       # record and the complete reports.

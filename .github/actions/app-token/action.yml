@@ -25,13 +25,7 @@ runs:
       env:
         APP_ID: ${{ inputs.app-id }}
         APP_KEY: ${{ inputs.private-key }}
-      run: |
-        for name in APP_ID APP_KEY; do
-          if [ -z "${!name}" ]; then
-            echo "::error::AUTOMATION_${name} is not available to this repo"
-            exit 1
-          fi
-        done
+      run: "${{ github.action_path }}/check-secrets.sh"
     - name: Mint the token
       id: mint
       uses: actions/create-github-app-token@v2

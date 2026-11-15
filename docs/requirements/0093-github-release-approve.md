@@ -2,7 +2,7 @@
 
 ## Why
 
-A green Release Please pull request merges without my approving it by hand. Any pull request that changes more than the release files, or is not green, still waits for me.
+A green Release Please pull request merges without my approving it by hand. Any pull request that changes more than the release files, or is not green, still waits for me. Its shell is a checked-in script.
 
 ## Measurement
 
