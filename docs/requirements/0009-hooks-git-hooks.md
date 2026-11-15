@@ -2,7 +2,7 @@
 
 ## Why
 
-A commit or push that breaks the bar is stopped on my machine, before review or CI sees it.
+The checks my repo installs stop a commit or push that breaks the bar on my machine, before review or CI sees it.
 
 ## Measurement
 

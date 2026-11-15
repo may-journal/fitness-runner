@@ -4,11 +4,16 @@ package requirements
 
 import (
 	"errors"
+	"net/http"
+	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -143,7 +148,8 @@ func placeRunner(t *testing.T, installed, dst string) {
 }
 
 // userEnv is this process's environment without the CI job's GITHUB_*
-// variables, which a user's own terminal does not have.
+// variables, which a user's own terminal lacks. It names a local API host in
+// front of GitHub's.
 func userEnv() []string {
 	var env []string
 	for _, kv := range os.Environ() {
@@ -151,8 +157,23 @@ func userEnv() []string {
 			env = append(env, kv)
 		}
 	}
-	return env
+	// A test that names its own API host appends it later, and the last wins.
+	return append(env, "GITHUB_API_URL="+localAPI())
 }
+
+// localAPI is the address of one local server that passes each request on to
+// GitHub's API. The runner's probe of GitHub's API host then reaches a local
+// one however busy the machine is, while each read still reaches GitHub.
+var localAPI = sync.OnceValue(func() string {
+	github := &url.URL{Scheme: "https", Host: "api.github.com"}
+	proxy := httputil.NewSingleHostReverseProxy(github)
+	direct := proxy.Director
+	proxy.Director = func(r *http.Request) {
+		direct(r)
+		r.Host = github.Host
+	}
+	return httptest.NewServer(proxy).URL
+})
 
 // installer returns the candidate fitness-install the environment provides.
 func installer(t *testing.T) string {

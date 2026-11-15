@@ -24,6 +24,37 @@ func installedCheck(t *testing.T, check string) string {
 	return path
 }
 
+// seededChecks links the suite's fresh check release index and checks into
+// the private cache env names. A hook then installs every check without
+// reading GitHub again.
+func seededChecks(t *testing.T, env []string) []string {
+	t.Helper()
+	shared, private := os.Getenv("FITNESS_CACHE_DIR"), ""
+	for _, kv := range env {
+		if v, ok := strings.CutPrefix(kv, "FITNESS_CACHE_DIR="); ok {
+			private = v
+		}
+	}
+	if shared == "" || private == "" {
+		t.Fatal("seededChecks needs the suite's cache and a private one")
+	}
+	index, err := os.ReadFile(filepath.Join(shared, "check-index.json"))
+	mustDo(t, err)
+	mustDo(t, os.WriteFile(filepath.Join(private, "check-index.json"), index, 0o600))
+	from := filepath.Join(shared, "checks")
+	mustDo(t, filepath.WalkDir(from, func(path string, entry os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		to := filepath.Join(private, "checks", strings.TrimPrefix(path, from))
+		if entry.IsDir() {
+			return os.MkdirAll(to, 0o700)
+		}
+		return os.Link(path, to)
+	}))
+	return env
+}
+
 // acFixture is a small complete architecture under root. up leads from the
 // root back to the repository, for links.
 func acFixture(root string) map[string]string {

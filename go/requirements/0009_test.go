@@ -17,7 +17,7 @@ func installerEnv(t *testing.T) []string {
 	dir := t.TempDir()
 	mustDo(t, os.Symlink(installer(t), filepath.Join(dir, "fitness-install")))
 	lookups := rlReleases(t, http.StatusOK, rlCandidate(t))
-	return slices.Concat([]string{"FITNESS_INSTALL_DIR=" + dir}, lookups.env, fiPrivateCache(t))
+	return slices.Concat([]string{"FITNESS_INSTALL_DIR=" + dir}, lookups.env, seededChecks(t, fiPrivateCache(t)))
 }
 
 // hooked copies happyRepo with files over it, runs `fitness init` with the
