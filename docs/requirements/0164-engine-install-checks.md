@@ -35,4 +35,4 @@ Pinned checks
 - 0164.6
     - Given Developer has one repo that pins no check and one that pins one, with `FITNESS_WITH_CHECKS=pinned` as the shared hooks set it
         - When I run `fitness-install --install-only` in each
-            - Then the first reads nothing for checks, and the second installs its pinned check
+            - Then the first reads nothing for checks while built-ins remain, and the second installs its pinned check

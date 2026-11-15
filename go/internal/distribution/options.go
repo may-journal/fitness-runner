@@ -2,11 +2,13 @@
 package distribution
 
 import (
+	"bytes"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -37,8 +39,9 @@ type Options struct {
 	InstallHook  bool
 	// WithChecks installs each check the repo pins, beside the engine.
 	WithChecks bool
-	// PinnedOnly installs checks only when the repo sets checkVersions, so a
-	// hook in a repo that pins none reads no network for them.
+	// PinnedOnly installs checks only when the repo sets checkVersions, or the
+	// engine has no built-in checks to fall back on. A hook in a repo that
+	// pins none then reads no network while built-ins remain.
 	PinnedOnly bool
 	LinkSkills []string
 	// ClaudeSettings are the Claude Code settings files that get the Fitness hooks.
@@ -145,7 +148,20 @@ func (options Options) validateLinkSkills() error {
 // InstallsChecks reports whether the run installs the pinned checks: asked
 // to, and running checks rather than writing a hook or setting up agents.
 func (options Options) InstallsChecks() bool {
-	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents() && (!options.PinnedOnly || repoPins("."))
+	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents()
+}
+
+// SkipsChecks reports whether a pinned-only run installs nothing. The repo
+// pins no check, and the engine at bin has built-ins to run instead.
+func (options Options) SkipsChecks(bin string) bool {
+	return options.PinnedOnly && !repoPins(".") && hasBuiltins(bin)
+}
+
+// hasBuiltins reports whether the engine at bin lists any built-in check. An
+// engine that cannot answer counts as having none, so checks install.
+func hasBuiltins(bin string) bool {
+	out, err := exec.Command(filepath.Join(bin, "fitness"), "check", "--list").Output()
+	return err == nil && len(bytes.TrimSpace(out)) > 0
 }
 
 // repoPins reports whether the repo at root sets checkVersions. An unreadable

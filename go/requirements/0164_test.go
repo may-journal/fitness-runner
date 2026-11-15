@@ -127,7 +127,7 @@ func Test0164_6(t *testing.T) {
 	out, code := fiRun(t, example(t, "happyRepo", nil), env, "--install-only")
 	sees(t, out, code, 0)
 	if strings.Contains(out, "check release") || strings.Contains(out, "installed") {
-		t.Errorf("a repo that pins no check must read nothing for checks under FITNESS_WITH_CHECKS=pinned:\n%s", out)
+		t.Errorf("while built-ins remain, a repo that pins no check must read nothing for checks under FITNESS_WITH_CHECKS=pinned:\n%s", out)
 	}
 	out, code = fiRun(t, pinned0164(t, `{"markdown-links": "v1.0.0"}`), env, "--install-only")
 	sees(t, out, code, 0, "installed 1 checks in ")

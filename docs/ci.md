@@ -69,7 +69,7 @@ The engine and the checks install separately, each at its own version. From rele
 "$HOME/.local/fitness/fitness-install-1.66.0-linux-amd64" --with-checks -- --policy=external --all
 ```
 
-The same flag goes before `--install-hook`, and the action takes `with-checks: 'true'` once its `v1` tag reaches 1.66.0. `FITNESS_WITH_CHECKS=true` works like the flag. The shared hooks set it to `pinned`, which installs checks only in a repo that sets `checkVersions`, and an older installer ignores it.
+The same flag goes before `--install-hook`, and the action takes `with-checks: 'true'` once its `v1` tag reaches 1.66.0. `FITNESS_WITH_CHECKS=true` works like the flag. The shared hooks set it to `pinned`: checks install where `checkVersions` is set, or everywhere once the engine has no built-ins. An older installer ignores it.
 
 The built-in checks stay as the fallback for now, so a check that cannot install warns and its built-in runs. To test a clean install, put `--no-builtins` first after `--`, and a missing check fails the run.
 
