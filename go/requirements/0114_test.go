@@ -4,14 +4,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 )
-
-// linkTarget matches a Markdown link's target. A README links a repository
-// file relatively and `fitness explain` with a full URL, so a reader
-// compares the link text.
-var linkTarget = regexp.MustCompile(`\]\([^)]*\)`)
 
 // repoFile reads a file of the fitness repository these tests live in.
 func repoFile(t *testing.T, path string) string {
@@ -21,38 +17,52 @@ func repoFile(t *testing.T, path string) string {
 	return string(data)
 }
 
-// readmeBody is the documentation a check README holds below its title,
-// with link targets dropped.
-func readmeBody(t *testing.T, check string) string {
+// checkNameLine matches a line that is only a check name, as `fitness check
+// --list` prints one, apart from the installer's own lines.
+var checkNameLine = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
+
+// builtinNames is what `fitness check --list` prints: each check the engine
+// runs itself.
+func builtinNames(t *testing.T, repo string) []string {
 	t.Helper()
-	readme := repoFile(t, "go/cmd/fitness-check-"+check+"/README.md")
-	_, body, ok := strings.Cut(readme, "\n# "+check+"\n\n")
-	if !ok {
-		t.Fatalf("the %s README has no %q title:\n%s", check, "# "+check, readme)
+	out, code := fitness(t, repo, nil, "check", "--list")
+	if code != 0 {
+		t.Fatalf("fitness check --list exited %d:\n%s", code, out)
 	}
-	return linkTarget.ReplaceAllString(strings.TrimSpace(body), "]")
+	var names []string
+	for _, line := range strings.Split(out, "\n") {
+		if checkNameLine.MatchString(line) {
+			names = append(names, line)
+		}
+	}
+	return names
 }
 
 func Test0114_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
+	index := repoFile(t, "docs/checks.md")
+	builtin := builtinNames(t, repo)
 	for _, check := range listJSON(t, repo) {
-		body := linkTarget.ReplaceAllString(strings.TrimSpace(explainJSON(t, repo, check.Name).Body), "]")
-		if got := readmeBody(t, check.Name); got != body {
-			t.Errorf("the %s README differs from fitness explain:\nREADME:\n%s\n\nexplain:\n%s", check.Name, got, body)
+		if !slices.Contains(builtin, check.Name) {
+			continue
+		}
+		row := "| [" + check.Name + "](../go/cmd/fitness-check-" + check.Name + "/doc.go) | " + check.Summary + " |"
+		if !strings.Contains(index, row) {
+			t.Errorf("docs/checks.md has no index row %q", row)
 		}
 	}
 }
 
 func Test0114_2(t *testing.T) {
 	t.Parallel()
-	repo := example(t, "happyRepo", nil)
-	index := repoFile(t, "docs/checks.md")
-	for _, check := range listJSON(t, repo) {
-		row := "| [" + check.Name + "](../go/cmd/fitness-check-" + check.Name + "/README.md) | " + check.Summary + " |"
-		if !strings.Contains(index, row) {
-			t.Errorf("docs/checks.md has no index row %q", row)
-		}
+	readmes, err := filepath.Glob(filepath.Join("..", "cmd", "fitness-check-*", "README.md"))
+	mustDo(t, err)
+	if len(readmes) > 0 {
+		t.Errorf("check READMEs remain in this repo: %v", readmes)
+	}
+	if !strings.Contains(repoFile(t, "docs/checks.md"), "https://github.com/may-journal/fitness-checks") {
+		t.Error("docs/checks.md does not link fitness-checks, where each check's README lives")
 	}
 }
 

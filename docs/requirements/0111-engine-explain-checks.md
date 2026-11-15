@@ -18,8 +18,8 @@ checks in the catalog
             - Then each prints the check's name, scope, stage and documentation
 - 0111.2
     - Given AI agent wants a check's documentation as data
-        - When it runs `fitness explain prose-budget --json`
-            - Then it gets the name, summary, scope and body, with the config keys the check reads
+        - When it runs `fitness explain local-branch --json`
+            - Then it gets the name, summary, scope and body of that check, which the engine runs itself
 - 0111.3
     - Given AI agent mistypes a check name
         - When it runs `fitness explain prose-budgets`

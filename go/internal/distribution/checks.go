@@ -58,7 +58,7 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 	}
 	ctx, cancel := context.WithTimeout(ctx, installTotal)
 	defer cancel()
-	releases, err := i.resolvePins(ctx, pins)
+	pins, releases, err := i.resolveAll(ctx, pins)
 	if err != nil {
 		return "", err
 	}
@@ -76,18 +76,28 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 	return dir, err
 }
 
+// resolveAll expands an AllChecks pin, then turns each pin into its release.
+func (i *Installer) resolveAll(ctx context.Context, pins []CheckPin) ([]CheckPin, []checkRelease, error) {
+	pins, err := i.expandAll(ctx, pins)
+	if err != nil {
+		return nil, nil, err
+	}
+	releases, err := i.resolvePins(ctx, pins)
+	return pins, releases, err
+}
+
 // installTotal bounds a whole check install, so a slow network cannot hold a
 // hook for long.
 const installTotal = 5 * time.Minute
 
 // released keeps each pin that resolved to a release, warning once for each
-// one that did not, so its built-in runs.
+// one that did not, so that check does not run.
 func (i *Installer) released(pins []CheckPin, releases []checkRelease) ([]string, []checkRelease) {
 	var names []string
 	var kept []checkRelease
 	for k, release := range releases {
 		if release.Tag == "" {
-			fmt.Fprintf(i.Log, "fitness: warning: no release of check %s matches %s; its built-in runs\n", pins[k].Name, pins[k].Pin)
+			fmt.Fprintf(i.Log, "fitness: warning: no release of check %s matches %s, so it does not run\n", pins[k].Name, pins[k].Pin)
 			continue
 		}
 		names, kept = append(names, pins[k].Name), append(kept, release)

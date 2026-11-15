@@ -107,12 +107,13 @@ func describeFails(t *testing.T, repo, check string) (string, int) {
 	bin := "fitness-check-" + check
 	installed := installOnly(t)
 	bundle := t.TempDir()
-	linkTools(bundle, installed, []string{bin, "fitness"})
+	linkTools(bundle, installed, []string{"fitness"})
 	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
-	write(t, bundle, map[string]string{bin: "#!/bin/sh\n[ \"$1\" = --describe ] && exit 1\nexec \"" + filepath.Join(installed, bin) + "\" \"$@\"\n"})
+	write(t, bundle, map[string]string{bin: "#!/bin/sh\n[ \"$1\" = --describe ] && exit 1\nexec \"" + installedCheck(t, check) + "\" \"$@\"\n"})
 	return execute(t, func() *exec.Cmd {
 		cmd := exec.Command(filepath.Join(bundle, "fitness"), check)
-		cmd.Dir, cmd.Env = repo, userEnv()
+		// The wrapper beside fitness must win over the installed folder.
+		cmd.Dir, cmd.Env = repo, append(userEnv(), "FITNESS_CHECKS_DIR=")
 		return cmd
 	})
 }
@@ -286,7 +287,7 @@ func Test0001_16(t *testing.T) {
 	installed, bundle := installOnly(t), t.TempDir()
 	linkTools(bundle, installed, []string{"fitness"})
 	placeRunner(t, filepath.Join(installed, "fitness"), filepath.Join(bundle, "fitness"))
-	walk := "exec \"" + filepath.Join(installed, "fitness-check-markdown-no-bold-italic") + "\" --root "
+	walk := "exec \"" + installedCheck(t, "markdown-no-bold-italic") + "\" --root "
 	write(t, bundle, map[string]string{
 		// Each runs the real check under the list its run handed it: one
 		// after staging a new file, one on another repo.

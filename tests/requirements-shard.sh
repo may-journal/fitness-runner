@@ -12,6 +12,8 @@ if [ "$shard" -lt 1 ] || [ "$shard" -gt "$count" ]; then
   echo "requirements-shard: SHARD must be from 1 to COUNT, got $shard of $count" >&2
   exit 2
 fi
+FITNESS_CHECKS_DIR="$(sh tests/install-checks.sh)"
+export FITNESS_CHECKS_DIR
 names="$(go -C go test ./requirements -list '^Test' |
   grep '^Test' | sort |
   awk -v shard="$shard" -v count="$count" '(NR - shard) % count == 0' |

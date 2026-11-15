@@ -31,7 +31,9 @@ func prepareSmokeWith(work, cache string) (smoke, error) {
 	if err := test.linkTools(); err != nil {
 		return test, err
 	}
-	test.env = append(cleanEnvironment(), "PATH="+test.tools, "FITNESS_CACHE_DIR="+test.cache)
+	// Checks ship from fitness-checks, and each install in the smoke run
+	// fetches every check's newest release, as an unpinned repo does.
+	test.env = append(cleanEnvironment(), "PATH="+test.tools, "FITNESS_CACHE_DIR="+test.cache, "FITNESS_WITH_CHECKS=true")
 	return test, nil
 }
 

@@ -130,7 +130,7 @@ In a consumer repo, run `fitness init` once. It points Git at the `.fitness-hook
 
 Neither hook runs the full scan a pull request adds, so a red main never blocks a commit or a push. Run `fitness --all` for it locally.
 
-A full run, such as `fitness --all`, has `semantic-commit` judge only the branch's own commits. See [its README](go/cmd/fitness-check-semantic-commit/README.md#which-message-it-judges) for how it finds the base.
+A full run, such as `fitness --all`, has `semantic-commit` judge only the branch's own commits. See [its README](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-semantic-commit/README.md#which-message-it-judges) for how it finds the base.
 
 ## GitHub Actions
 
@@ -156,4 +156,4 @@ Release PRs use the normal review and checks. See [release automation and recove
 
 ## Go coverage
 
-The optional [Go coverage check](go/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage and reports gaps down the source tree. It also rejects wrappers that can hide independently measured tests. Run `fitness go-test-coverage --all`.
+The optional [Go coverage check](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-go-test-coverage/README.md) requires full entry coverage and reports gaps down the source tree. It also rejects wrappers that can hide independently measured tests. Run `fitness go-test-coverage --all`.

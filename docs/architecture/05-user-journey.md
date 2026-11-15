@@ -39,7 +39,7 @@ flowchart TB
     terminal[2 Terminal<br/>Req 0001]:::screen
     runFull(3 Run fitness<br/>Req 0001, 0144):::action
     runSingle(4 Run single check or folder<br/>Req 0001, 0100):::action
-    runBlob(29 Check a draft text<br/>Req 0077, 0156):::action
+    runBlob(29 Check a draft text<br/>Req 0077):::action
     runComment(31 Check a draft comment<br/>Req 0083):::action
     stripFront(33 Strip front matter<br/>Req 0096):::action
     listComments(40 List code comments<br/>Req 0136):::action
@@ -52,24 +52,12 @@ flowchart TB
     readLLMs(38 Read the llms page<br/>Req 0113):::action
     commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
     pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068):::action
-    resolveConfig[(5 Resolve config<br/>Req 0003, 0090, 0102, 0131, 0162, 0163)]:::system
-    passArgs[(6 Passthrough args<br/>Req 0052)]:::system
+    resolveConfig[(5 Resolve config<br/>Req 0090, 0102, 0131, 0162, 0163)]:::system
     executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
 
-    subgraph checks["Check families"]
-        commitChecks[(17 Commit messages<br/>Req 0020, 0031, 0049, 0056, 0153)]:::system
-        changelogChecks[(18 Changelog<br/>Req 0017, 0018, 0019, 0054)]:::system
-        proseChecks[(19 Prose and templates<br/>Req 0006, 0007, 0021, 0023, 0044, 0058, 0085, 0152)]:::system
-        commentChecks[(41 Code comments<br/>Req 0137, 0139, 0141, 0157)]:::system
-        markdownChecks[(20 Markdown files<br/>Req 0033, 0034, 0036, 0037, 0123, 0159)]:::system
-        mermaidChecks[(21 Mermaid diagrams<br/>Req 0038, 0039, 0040, 0041, 0042, 0043, 0084)]:::system
-        architectureChecks[(22 Architecture views<br/>Req 0070, 0072, 0073, 0074, 0075, 0076, 0154)]:::system
-        requirementChecks[(23 Requirements and tests<br/>Req 0005, 0065, 0130, 0132, 0151)]:::system
-        goSwiftChecks[(24 Go and Swift code<br/>Req 0026, 0027, 0028, 0029, 0030, 0057, 0097)]:::system
-        javaChecks[(30 Java builds<br/>Req 0078, 0079, 0080, 0081)]:::system
-        nodeChecks[(25 Node packages and tests<br/>Req 0022, 0024, 0045, 0047, 0052, 0059, 0060)]:::system
-        repoChecks[(26 Repo hygiene<br/>Req 0016, 0025, 0032, 0046, 0053, 0055, 0086, 0133)]:::system
-        adrFiles[(44 ADR files<br/>Req 0147)]:::system
+    subgraph checks["Checks"]
+        installedChecks[(17 Installed fitness-checks programs<br/>Req 0162, 0163, 0164)]:::system
+        branchCheck[(18 local-branch, which the engine judges<br/>Req 0067, 0068)]:::system
         timeoutChecks[(46 Workflow timeouts<br/>Req 0150)]:::system
     end
 
@@ -78,11 +66,11 @@ flowchart TB
     failuresShown[10 Failures shown<br/>Req 0004]:::blocked
     fixIssues(11 Fix issues<br/>Req 0004):::action
     configError[(12 Config error<br/>Req 0008)]:::blocked
-    ciRun[(13 CI runs fitness<br/>Req 0012, 0013, 0015, 0048, 0082, 0087, 0120, 0138)]:::system
-    prCheck[(27 Pull request check<br/>Req 0014, 0050, 0051, 0069, 0091, 0095)]:::system
+    ciRun[(13 CI runs fitness<br/>Req 0013, 0015, 0082, 0087, 0120, 0138)]:::system
+    prCheck[(27 Pull request check<br/>Req 0014, 0069, 0091, 0095)]:::system
     adrIssues[(45 ADR issues<br/>Req 0148)]:::system
     suiteRunner[(47 Suite runner<br/>Req 0158, 0165)]:::system
-    checkDeps[(48 Check dependencies<br/>Req 0160, 0161)]:::system
+    checkDeps[(48 Check dependencies<br/>Req 0161)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
     perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
     closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
@@ -109,7 +97,6 @@ flowchart TB
     pushHook --> runFull
     runFull --> resolveConfig
     runSingle --> executeChecks
-    runSingle --> passArgs
     runBlob --> executeChecks
     runComment --> executeChecks
     resolveConfig --> executeChecks
@@ -148,7 +135,6 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
 | 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
 | 5   | Resolve check list.                 | System  | Every built-in check and installed check, then the repo's local checks; checks that do not apply pass. |
-| 6   | Passthrough args forwarded.         | System  | Args after the check spec reach the check unchanged (e.g. `prettier --write .`).      |
 | 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess with its own group-kill timeout. |
 | 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |
 | 9   | Exit 0.                             | System  | All checks passed — deterministic, not LLM-judged.                                    |
@@ -159,20 +145,11 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives every check; nothing else to install.                     |
 | 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite and keep each issue linked once.                                  |
 | 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |
-| 17  | Commit message checks.              | System  | Semantic subject, attribution, Plan trailer, and one link per issue.                  |
-| 18  | Changelog checks.                   | System  | Each change has one dated entry file whose bullets match the change.                  |
-| 19  | Prose and template checks.          | System  | Docs stay short, readable, spelled right, and shaped by their templates.              |
-| 20  | Markdown file checks.               | System  | File names, links, and emphasis follow one convention.                                |
-| 21  | Mermaid diagram checks.             | System  | Diagrams parse and carry legends, callouts, and tables that explain each number.      |
-| 22  | Architecture view checks.           | System  | Views match actors, runtimes, folders, symbols, and this journey.                     |
-| 23  | Requirement and test checks.        | System  | Each acceptance has one test, and a doc changes with its test.                        |
-| 24  | Go and Swift code checks.           | System  | Format, vet, tests, coverage, complexity, and lint gate the code.                     |
-| 25  | Node package and test checks.       | System  | Lint, format, Node version, dependencies, and test coverage stay current.             |
-| 26  | Repo hygiene checks.                | System  | No build output, plan files, unexplained ignores, or copied code.                     |
+| 17  | Installed checks.                   | System  | Each check the repo pins runs as its own fitness-checks program, installed beside the engine. |
+| 18  | `local-branch`.                     | System  | The engine judges this branch's PR and Plans itself, with its own GitHub reads.        |
 | 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI; Auto-merge waits out stacks. |
 | 28  | Release build.                      | System  | The release tool builds bundles and notes; opted-in repos call the shared Release Please. |
 | 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
-| 30  | Java build checks.                  | System  | The build checks format, lint, tests and coverage; the running JDK meets the pin.      |
 | 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |
 | 32  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |
 | 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness keys no check reads; other keys stay.                        |
@@ -183,10 +160,8 @@ Numbers match the callout table. System context: [01-system-context.md](01-syste
 | 38  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
 | 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |
 | 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
-| 41  | Code comment checks.                | System  | Comments meet the prose limits and hold no dead code, echoes, decoration, history, filler or tutorial tone. |
 | 42  | `fitness claude-hook`.              | Action  | Claude meets a failing check right after an edit, before a `gh` post, as it or a subagent stops, or as a session starts, and fixes it that turn. |
 | 43  | `fitness adr-migrate`.              | Action  | Each ADR file becomes an `ADR` issue people can discuss, and links follow it. |
-| 44  | ADR file check.                     | System  | No decision hides in a file; each one is an `ADR` issue.                             |
 | 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
 | 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |
 | 47  | Suite runner.                       | System  | A repo whose checks build Apple apps runs the suite on a standard hosted Mac it names. |

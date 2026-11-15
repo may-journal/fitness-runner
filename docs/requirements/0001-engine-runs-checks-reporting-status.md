@@ -39,7 +39,7 @@ runs
 - 0001.16
     - Given Developer has a tracked-file list from another repo, or from before the index changed
         - When a check walks the repo
-            - Then it judges the files tracked now
+            - Then an installed check it runs judges the files tracked now
 - 0001.18
     - Given Developer has a check that panics, crashes, is killed, exits oddly, cannot start or describe itself, or meets prompts or silent proxies
         - When fitness runs

@@ -35,7 +35,7 @@ Agent skills folders linked
 - 0098.6
     - Given Developer has an empty skills folder for an agent
         - When I run `fitness-install --link-skills` with that folder
-            - Then the fitness skill is linked there and every link in it resolves
+            - Then the fitness skill is linked there, every link in it resolves, and each check the engine runs itself has its doc comment
 - 0098.7
     - Given Developer has an empty skills folder for an agent
         - When I run `fitness-install --link-skills` with that folder

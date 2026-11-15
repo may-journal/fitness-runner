@@ -92,7 +92,7 @@ func Test0098_6(t *testing.T) {
 		resolves(t, filepath.Join(source, link[1]), "fitness skill link "+link[1])
 	}
 	for _, name := range checkNames(t) {
-		resolves(t, filepath.Join("..", "cmd", "fitness-check-"+name, "README.md"), "README the fitness skill names for "+name)
+		resolves(t, filepath.Join("..", "cmd", "fitness-check-"+name, "doc.go"), "doc comment the fitness skill names for "+name)
 	}
 }
 

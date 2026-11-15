@@ -4,7 +4,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -71,9 +70,6 @@ func Test0008_9(t *testing.T) {
 	out, code := runAlone(t, alone, example(t, "happyRepo", architectedRepo()), "--policy=external", "--all")
 	sees(t, out, code, 0, allPassed())
 	bold := example(t, "happyRepo", map[string]string{"README.md": readme + "\nSome **strong** words.\n"})
-	out, code = runAlone(t, alone, bold, "check", "markdown-no-bold-italic", "--root", bold)
-	sees(t, out, code, 1, `"ok":false`, `README.md: disallowed **bold**`+noBoldItalicRule)
-	if strings.Contains(out, "Running checks") {
-		t.Errorf("fitness check ran the full suite, not one check:\n%s", out)
-	}
+	out, code = runAlone(t, alone, bold, "check", "markdown-no-bold-italic")
+	sees(t, out, code, 1, `README.md: disallowed **bold**`+noBoldItalicRule, "0 of 1 checks passed")
 }

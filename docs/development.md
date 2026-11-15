@@ -13,7 +13,7 @@ One-time setup after cloning — point Git at this repo's hooks. Pre-commit buil
 git config core.hooksPath githooks
 ```
 
-The spell-check dictionaries under [go/internal/spell/dict](../go/internal/spell/dict) are frozen, committed data (provenance in each file header). A Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
+The spell-check dictionaries under [go/internal/spell/dict](https://github.com/may-journal/fitness-checks/blob/main/internal/spell/dict) are frozen, committed data (provenance in each file header). A Go regeneration tool that fetches dictionary sources directly is deferred to a later milestone.
 
 See [docs/architecture-index.md](architecture-index.md) for the C4 model ([docs/architecture/](architecture/)). Every check is a package under `go/cmd/fitness-check-<name>`, built into `fitness`.
 

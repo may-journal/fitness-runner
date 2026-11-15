@@ -105,12 +105,9 @@ func (c Config) render(s sources) (map[string][]byte, error) {
 	return files, c.addMarkdown(files, s)
 }
 
-// addMarkdown adds each check's README plus the generated regions in
-// docs/checks.md and the README command list.
+// addMarkdown adds the generated regions in docs/checks.md and the README
+// command list. fitness-checks generates each check's README.
 func (c Config) addMarkdown(files map[string][]byte, s sources) error {
-	for _, d := range s.checks {
-		files["go/cmd/"+d.Folder+"/README.md"] = checkReadme(d)
-	}
 	index, err := c.withRegion(docsChecksFile, indexMarker, "each check's package doc comment", checkIndex(s.checks))
 	if err != nil {
 		return err
@@ -142,8 +139,7 @@ func topicsSource(topics []topicDoc) ([]byte, error) {
 }
 
 // checkDocs reads every go/cmd/fitness-check-<name> package, in name order,
-// with the config keys each reads after its doc comment. A key tagged for
-// a check no folder holds is an error.
+// with the config keys each reads after its doc comment.
 func (c Config) checkDocs() ([]checkDoc, error) {
 	dirs, err := filepath.Glob(filepath.Join(c.Root, "go", "cmd", "fitness-check-*"))
 	if err != nil {
@@ -160,8 +156,9 @@ func (c Config) checkDocs() ([]checkDoc, error) {
 	return docs, c.addConfig(docs)
 }
 
-// addConfig appends to each check's body the config keys it reads. A key
-// tagged for a check no folder holds is an error.
+// addConfig appends to each check's body the config keys it reads. Keys
+// tagged for a check this repo no longer holds belong to a fitness-checks
+// check, whose README documents them.
 func (c Config) addConfig(docs []checkDoc) error {
 	keys, err := c.configKeys()
 	if err != nil {
@@ -171,10 +168,6 @@ func (c Config) addConfig(docs []checkDoc) error {
 		if config := configMarkdown(keys[docs[i].Name]); config != "" {
 			docs[i].Body += "\n" + config
 		}
-		delete(keys, docs[i].Name)
-	}
-	if len(keys) > 0 {
-		return fmt.Errorf("config keys are tagged for %s, which name no check", strings.Join(slices.Sorted(maps.Keys(keys)), ", "))
 	}
 	return nil
 }
@@ -219,9 +212,5 @@ func checkAlias(name string) string {
 // Input reports whether a changed path can change the generator's output: a Go
 // source it reads or a Markdown file it writes.
 func Input(path string) bool {
-	if strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile {
-		return true
-	}
-	matched, _ := filepath.Match("go/cmd/fitness-check-*/README.md", path)
-	return matched
+	return strings.HasSuffix(path, ".go") || path == readmeFile || path == docsChecksFile
 }

@@ -33,6 +33,8 @@ export FITNESS_CACHE_DIR
 "out/fitness-release-$platform" smoke >/dev/null
 FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-"$platform")"
 export FITNESS_INSTALL
+FITNESS_CHECKS_DIR="$(sh tests/install-checks.sh)"
+export FITNESS_CHECKS_DIR
 if [ -z "$cover" ]; then
   exec go -C go test ./requirements -count=1 -parallel 32 "$@"
 fi

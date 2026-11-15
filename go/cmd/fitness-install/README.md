@@ -11,7 +11,7 @@ fitness-install --install-hook -- markdown-filename-kebab-case --all
 fitness-install --version latest -- --help
 ```
 
-Installer flags precede `--`; arguments after it reach Fitness unchanged. Install-only mode prints the directory holding the runner and every check. The runner replaces the installer process, so check exit codes and signals reach CI. `--install-hook` writes a compiled Go hook and saved options, preserving existing hooks.
+Installer flags precede `--`; arguments after it reach Fitness unchanged. Install-only mode prints the directory holding the runner, then, with `--with-checks`, the one holding the installed checks. The runner replaces the installer process, so check exit codes and signals reach CI. `--install-hook` writes a compiled Go hook and saved options, preserving existing hooks.
 
 ## Latest release
 

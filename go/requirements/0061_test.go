@@ -69,15 +69,16 @@ func Test0061_9(t *testing.T) {
 	if match == nil {
 		t.Fatalf("no release version in:\n%s", first)
 	}
-	out, code := fiRun(t, t.TempDir(), nil, "--version", "v"+match[1], "--install-only")
+	out, code := fiRun(t, t.TempDir(), nil, "--version", "v"+match[1], "--with-checks", "--install-only")
 	sees(t, out, code, 0, "fitness: version="+match[1]+" ")
-	programs := bundleChecks(t, fiLastLine(out))
+	checks := fiLastLine(out)
+	programs := bundleChecks(t, checks)
 	if !slices.Contains(programs, "fitness-check-gofmt") {
 		t.Fatalf("printed folder has no fitness-check-gofmt among %v\n%s", programs, out)
 	}
 	for _, program := range programs {
 		described, code := execute(t, func() *exec.Cmd {
-			return exec.Command(filepath.Join(fiLastLine(out), program), "--describe")
+			return exec.Command(filepath.Join(checks, program), "--describe")
 		})
 		name := strings.TrimPrefix(program, "fitness-check-")
 		sees(t, described, code, 0, `"name":"`+name+`"`)

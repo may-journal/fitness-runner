@@ -6,4 +6,6 @@ cd "$(git rev-parse --show-toplevel)"
 # Go checks already cover `make check`. exec keeps git as the parent process,
 # so the hook can tell an amend apart.
 make build
+FITNESS_CHECKS_DIR="$(githooks/checks-dir)"
+export FITNESS_CHECKS_DIR
 exec go/bin/fitness hook pre-commit

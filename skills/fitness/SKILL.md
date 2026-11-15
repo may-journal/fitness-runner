@@ -46,7 +46,7 @@ The error names the check, such as `doc-template`. Find it in [the checks index]
 
 ## Read the check
 
-Open `go/cmd/fitness-check-<name>/README.md`. It states the rule, the exact errors and how a pass looks.
+Open `cmd/fitness-check-<name>/README.md` in the `may-journal/fitness-checks` repo. It states the rule, the exact errors and how a pass looks.
 
 A repo's own check lives in its `fitness/<name>/` folder instead, with its README beside its Go source. To add one, write it in Go on the check SDK with unit tests, as the [local checks guide](../../docs/local-checks.md) shows.
 

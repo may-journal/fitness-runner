@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"slices"
 
+	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -66,15 +67,11 @@ func withEveryCheck(pins map[string]string) map[string]string {
 	return out
 }
 
-// defaultPins pins every released check to currentMajor.
+// defaultPins pins every released check to currentMajor. The engine holds
+// no check list, so the installer expands the AllChecks name from the
+// fitness-checks release index.
 func defaultPins() map[string]string {
-	pins := map[string]string{}
-	for name := range builtins {
-		if engineJudges[name] == nil {
-			pins[name] = currentMajor
-		}
-	}
-	return pins
+	return map[string]string{distribution.AllChecks: currentMajor}
 }
 
 // checkName matches a check's name, lowercase words joined by dashes.

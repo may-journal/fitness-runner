@@ -2,26 +2,26 @@
 
 ## Why
 
-A check's README, the check index and the command list say what the installed binary says, because `go generate` writes each from the code.
+The check index and the command list say what the installed binary says, because `go generate` writes each from the code. Each check's README lives in fitness-checks, which generates it.
 
 ## Measurement
 
-check READMEs that match `fitness explain`
+index rows that match `fitness list`
 
 -
 
-checks in the catalog
+checks the engine runs itself
 
 ## Requirements
 
 - 0114.1
-  - Given AI agent reads a check's README in the fitness repo
-    - When it runs `fitness explain --json` for every check `fitness list` names
-      - Then the README holds the same documentation as the explanation
-- 0114.2
   - Given AI agent reads the check index in docs/checks.md
-    - When it runs `fitness list --json`
-      - Then the index links every listed check's README with the same summary
+    - When it runs `fitness check --list` and `fitness list --json`
+      - Then the index names each check the engine runs itself, with the same summary, linking its doc.go
+- 0114.2
+  - Given AI agent looks for a check's README in the fitness repo
+    - When it lists the check folders under go/cmd
+      - Then none holds a README, and docs/checks.md links fitness-checks, which generates each one
 - 0114.3
   - Given Developer reads the command list in the README
     - When they run `fitness --help`
