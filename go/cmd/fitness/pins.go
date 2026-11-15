@@ -89,7 +89,7 @@ func defaultPins() (map[string]string, error) {
 	}
 	pins := map[string]string{}
 	for _, name := range released {
-		if builtins[name] == nil {
+		if name != localBranch {
 			pins[name] = currentMajor
 		}
 	}
@@ -118,7 +118,7 @@ func pinError(name, pin string) error {
 	switch {
 	case name != everyCheck && !checkName.MatchString(name):
 		return fmt.Errorf("checkVersions names %q, which is no check name; `fitness list` names them", name)
-	case engineJudges[name] != nil:
+	case name == localBranch:
 		return fmt.Errorf("checkVersions pins %s, which runs inside the engine, so remove it", name)
 	case !pinPattern.MatchString(pin):
 		return fmt.Errorf("checkVersions pins %s to %q; use a major such as v1 or a release such as v1.2.3", name, pin)

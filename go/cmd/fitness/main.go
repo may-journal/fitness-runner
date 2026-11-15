@@ -107,15 +107,15 @@ func catalog() ([]string, error) {
 	return ordered, nil
 }
 
-// catalogNames lists the built-in checks, unless noBuiltinsFlag turns them off,
-// and each installed check of another name, sorted.
+// catalogNames lists local-branch, unless noBuiltinsFlag turns it off, and
+// each installed check of another name, sorted.
 func catalogNames() []string {
 	var names []string
 	if !builtinsOff() {
-		names = slices.Collect(maps.Keys(builtins))
+		names = []string{localBranch}
 	}
 	for name := range installedPrograms {
-		if builtinsOff() || builtins[name] == nil {
+		if builtinsOff() || name != localBranch {
 			names = append(names, name)
 		}
 	}
@@ -123,12 +123,10 @@ func catalogNames() []string {
 	return names
 }
 
-// emptyCatalog says why a run found no check at all.
+// emptyCatalog says why a run found no check at all, which only happens
+// when noBuiltinsFlag turns local-branch off.
 func emptyCatalog() error {
-	if builtinsOff() {
-		return fmt.Errorf("no check is installed, and %s turns the built-in checks off; install each check the repo selects", noBuiltinsFlag)
-	}
-	return errors.New("this fitness executable has no built-in checks; reinstall fitness")
+	return fmt.Errorf("no check is installed, and %s turns the built-in checks off; install each check the repo selects", noBuiltinsFlag)
 }
 
 // resolved is one runnable check: its program and describe metadata.
@@ -186,33 +184,27 @@ func main() {
 	os.Exit(dispatch(args))
 }
 
-// engineJudges holds the built-in checks whose judgment lives in the engine,
-// which runBuiltin runs under the check's own describe metadata. Neither the
-// engine nor such a check then imports the other.
-var engineJudges = map[string]func(root string, args []string) (checkkit.Result, error){
-	"local-branch": metadata.LocalBranch,
-}
+// localBranch is the one check the engine runs itself. Its package declares
+// its describe metadata, and metadata.LocalBranch judges it, so neither the
+// engine's judgment nor the check imports the other.
+const localBranch = "local-branch"
 
-// runBuiltin runs built-in check name with args as its own program would, an
-// engineJudges check with the engine's judgment. The check exits the process
-// itself.
+// runBuiltin runs local-branch with args as its own program would, under
+// the check's describe metadata and with the engine's judgment. The check
+// exits the process itself.
 func runBuiltin(name string, args []string) int {
-	entry, ok := builtins[name]
-	if !ok {
-		fmt.Fprintf(os.Stderr, "fitness: no built-in check %s; `fitness check --list` names them\n", name)
+	if name != localBranch {
+		fmt.Fprintf(os.Stderr, "fitness: no built-in check %s; `fitness check --list` names it\n", name)
 		return 2
 	}
-	checkkit.Document(builtinSummaries[name])
-	if judge, ok := engineJudges[name]; ok {
-		desc, described := checkkit.DescribeOf(entry)
-		if !described {
-			fmt.Fprintf(os.Stderr, "fitness: built-in check %s gave no describe metadata for the engine's judgment; reinstall fitness\n", name)
-			return 2
-		}
-		entry = func() { checkkit.Main(checkkit.Check{Describe: desc, Run: judge}) }
+	checkkit.Document(localBranchSummary)
+	desc, described := checkkit.DescribeOf(localBranchMain)
+	if !described {
+		fmt.Fprintf(os.Stderr, "fitness: built-in check %s gave no describe metadata for the engine's judgment; reinstall fitness\n", name)
+		return 2
 	}
 	os.Args = append([]string{checkkit.BinPrefix + name}, args...)
-	entry()
+	checkkit.Main(checkkit.Check{Describe: desc, Run: metadata.LocalBranch})
 	return 0
 }
 
@@ -228,16 +220,16 @@ func runCheckCommand(args []string) int {
 	if args[0] == "--list" {
 		return listCheckNames()
 	}
-	if _, ok := builtins[args[0]]; !ok || builtinsOff() {
+	if args[0] != localBranch || builtinsOff() {
 		return run(args)
 	}
 	return runBuiltin(args[0], args[1:])
 }
 
-// listCheckNames prints every built-in check name, one per line, or the
-// installed ones when noBuiltinsFlag turns the built-ins off.
+// listCheckNames prints local-branch, or each installed check one per line
+// when noBuiltinsFlag turns the built-ins off.
 func listCheckNames() int {
-	names := slices.Sorted(maps.Keys(builtins))
+	names := []string{localBranch}
 	if builtinsOff() {
 		names = slices.Sorted(maps.Keys(installedPrograms))
 	}
@@ -863,18 +855,17 @@ func describeAll(names []string, progs []checkkit.Program) []resolved {
 	return checks
 }
 
-// describeBuiltin reads a built-in check's metadata in this process, since
-// this executable holds the check. ok is false for any other program.
+// describeBuiltin reads local-branch's metadata in this process, since this
+// executable holds the check. ok is false for any other program.
 func describeBuiltin(name string, prog checkkit.Program) (resolved, bool) {
-	main, builtin := builtins[name]
-	if !builtin || prog.Name != checkkit.BinPrefix+name {
+	if name != localBranch || prog.Name != checkkit.BinPrefix+name {
 		return resolved{}, false
 	}
-	desc, ok := checkkit.DescribeOf(main)
+	desc, ok := checkkit.DescribeOf(localBranchMain)
 	if !ok {
 		return resolved{}, false
 	}
-	desc.Summary = cmp.Or(desc.Summary, builtinSummaries[name])
+	desc.Summary = cmp.Or(desc.Summary, localBranchSummary)
 	return resolved{name: name, prog: prog, desc: desc}, true
 }
 

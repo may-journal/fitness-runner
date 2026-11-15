@@ -2,7 +2,7 @@
 
 ## Why
 
-The engine links a check package only through the generated built-ins map. So removing that map leaves an engine that holds no check package.
+The engine links one check package, `local-branch`, only through the generated `checks.go`. So removing that file leaves an engine that holds no check package.
 
 ## Measurement
 
@@ -15,4 +15,4 @@ Engine packages
 - 0161.1
     - Given Developer lists this module's Go dependencies of every engine file, for any platform, apart from the generated `checks.go`
         - When `go list -deps` runs
-            - Then none is a check package, a failure names the importing package and the check, and `checks.go` still links the built-ins
+            - Then none is a check package, a failure names the importing package and the check, and `checks.go` still links `local-branch`

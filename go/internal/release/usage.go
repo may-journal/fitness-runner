@@ -205,8 +205,8 @@ func entriesSource(entries []usageEntry) string {
 }
 
 // llmsPage is one page teaching an AI the whole CLI: exit codes, commands,
-// built-in checks, and docs topics.
-func llmsPage(u usageDoc, checks []checkDoc, topics []topicDoc) string {
+// local-branch, and docs topics.
+func llmsPage(u usageDoc, localBranch checkDoc, topics []topicDoc) string {
 	var b strings.Builder
 	b.WriteString("# fitness\n\n" + u.Intro)
 	b.WriteString("\n## Run checks\n\n")
@@ -214,9 +214,7 @@ func llmsPage(u usageDoc, checks []checkDoc, topics []topicDoc) string {
 	b.WriteString("\n## Commands\n\n")
 	writeUsage(&b, u.Commands)
 	b.WriteString("\n## Checks\n\n`fitness explain <check>` prints a check's whole documentation.\n\n")
-	for _, d := range checks {
-		fmt.Fprintf(&b, "- `%s`: %s\n", d.Name, d.Summary)
-	}
+	fmt.Fprintf(&b, "- `%s`: %s\n", localBranch.Name, localBranch.Summary)
 	b.WriteString("\n## Topics\n\n")
 	for _, t := range topics {
 		fmt.Fprintf(&b, "- `fitness docs %s`: %s\n", t.Name, t.Summary)

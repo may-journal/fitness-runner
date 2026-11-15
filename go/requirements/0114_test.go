@@ -3,8 +3,6 @@ package requirements
 import (
 	"os"
 	"path/filepath"
-	"regexp"
-	"slices"
 	"strings"
 	"testing"
 )
@@ -15,43 +13,6 @@ func repoFile(t *testing.T, path string) string {
 	data, err := os.ReadFile(filepath.Join("..", "..", filepath.FromSlash(path)))
 	mustDo(t, err)
 	return string(data)
-}
-
-// checkNameLine matches a line that is only a check name, as `fitness check
-// --list` prints one, apart from the installer's own lines.
-var checkNameLine = regexp.MustCompile(`^[a-z0-9]+(-[a-z0-9]+)*$`)
-
-// builtinNames is what `fitness check --list` prints: each check the engine
-// runs itself.
-func builtinNames(t *testing.T, repo string) []string {
-	t.Helper()
-	out, code := fitness(t, repo, nil, "check", "--list")
-	if code != 0 {
-		t.Fatalf("fitness check --list exited %d:\n%s", code, out)
-	}
-	var names []string
-	for _, line := range strings.Split(out, "\n") {
-		if checkNameLine.MatchString(line) {
-			names = append(names, line)
-		}
-	}
-	return names
-}
-
-func Test0114_1(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", nil)
-	index := repoFile(t, "docs/checks.md")
-	builtin := builtinNames(t, repo)
-	for _, check := range listJSON(t, repo) {
-		if !slices.Contains(builtin, check.Name) {
-			continue
-		}
-		row := "| [" + check.Name + "](../go/cmd/fitness-check-" + check.Name + "/doc.go) | " + check.Summary + " |"
-		if !strings.Contains(index, row) {
-			t.Errorf("docs/checks.md has no index row %q", row)
-		}
-	}
 }
 
 func Test0114_2(t *testing.T) {

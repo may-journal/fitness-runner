@@ -33,7 +33,7 @@ git clone https://github.com/may-journal/fitness-runner && cd fitness-runner
 cd go && mkdir -p bin && go build -o bin ./cmd/...
 ```
 
-Put `go/bin` on PATH, or copy `fitness` onto it. It runs every check itself, and a `fitness-check-<name>` program beside it replaces the check of that name, with a note on each run. The Go toolchain is the only build requirement — no npm, no node.
+Put `go/bin` on PATH, or copy `fitness` onto it. It runs `local-branch` itself and fetches each other check a repo pins from fitness-checks. The Go toolchain is the only build requirement — no npm, no node.
 
 ## Usage
 
