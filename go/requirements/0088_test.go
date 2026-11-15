@@ -75,7 +75,9 @@ func rlGh(t *testing.T, token string) replays {
 // private cache, the saved lookups, and env added.
 func rlLatest(t *testing.T, cache []string, lookups *rlLookups, env ...string) (string, int) {
 	t.Helper()
-	return fiRun(t, t.TempDir(), slices.Concat(cache, lookups.env, env), "--version", "latest", "--install-only")
+	// The lookup server's address comes last again, so a gh stand-in's own
+	// API host never replaces it.
+	return fiRun(t, t.TempDir(), slices.Concat(cache, lookups.env, env, lookups.env[:1]), "--version", "latest", "--install-only")
 }
 
 func Test0088_1(t *testing.T) {
@@ -182,7 +184,7 @@ func Test0088_5(t *testing.T) {
 	t.Parallel()
 	version := rlCandidate(t)
 	lookups, gh := rlReleases(t, http.StatusOK, version), rlGh(t, "from-gh")
-	out, code := fiRun(t, t.TempDir(), slices.Concat(fiPrivateCache(t), lookups.env, gh.env), "--version", "v"+version, "--install-only")
+	out, code := fiRun(t, t.TempDir(), slices.Concat(fiPrivateCache(t), lookups.env, gh.env, lookups.env[:1]), "--version", "v"+version, "--install-only")
 	sees(t, out, code, 0, "fitness: version="+version+" ")
 	if n := len(lookups.sent()); n != 0 {
 		t.Errorf("an exact version sent %d lookups, want 0", n)

@@ -2,7 +2,7 @@
 
 ## Why
 
-My hooks find the newest Fitness release under my own GitHub limit, ask once per 10 minutes, and keep working when GitHub refuses.
+My hooks find the newest Fitness release under my own GitHub limit, at the API host that `GITHUB_API_URL` names. They ask once per 10 minutes and keep working when GitHub refuses.
 
 ## Measurement
 

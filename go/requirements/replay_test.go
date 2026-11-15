@@ -8,10 +8,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -190,8 +193,28 @@ func standIn(t *testing.T, saved map[string][]response) replays {
 		mustDo(t, os.Symlink(self, filepath.Join(bin, name)))
 	}
 	path := bin + string(os.PathListSeparator) + os.Getenv("PATH")
-	return replays{env: []string{"PATH=" + path, "FITNESS_REPLAY=" + dir}, dir: dir}
+	env := []string{"PATH=" + path, "FITNESS_REPLAY=" + dir}
+	if _, ok := saved["gh"]; ok {
+		// The stand-in answers the GitHub reads, so the runner's probe of
+		// GitHub's API host reaches a local one rather than the network.
+		env = append(env, "GITHUB_API_URL="+localAPI())
+	}
+	return replays{env: env, dir: dir}
 }
+
+// localAPI is the address of one local server that passes each request on to
+// GitHub's API. The runner's probe then reaches a local host however busy the
+// machine is, while a release lookup still reads GitHub.
+var localAPI = sync.OnceValue(func() string {
+	github := &url.URL{Scheme: "https", Host: "api.github.com"}
+	proxy := httputil.NewSingleHostReverseProxy(github)
+	direct := proxy.Director
+	proxy.Director = func(r *http.Request) {
+		direct(r)
+		r.Host = github.Host
+	}
+	return httptest.NewServer(proxy).URL
+})
 
 // calls returns every call the named stand-in received, in order.
 func (r replays) calls(name string) []string {
