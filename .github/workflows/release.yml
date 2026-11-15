@@ -122,6 +122,8 @@ jobs:
         with:
           policy: external
           version: ${{ needs.verify.outputs.version }}
+          # The engine holds no checks, so the suite runs the ones this repo pins.
+          with-checks: pinned
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
       - name: Retain complete Fitness reports
