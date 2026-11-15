@@ -8,7 +8,7 @@ C4Context
     Person(agent, "2 AI agent")
     System(fitness, "3 Fitness runner", "Orchestrates repo quality checks for local dev, CI, and GenAI workflows.")
     System_Ext(consumer, "4 Consumer repo", "Application under test")
-    System_Ext(tools, "5 Lint format test tools", "eslint, prettier, vitest, cspell, git, etc.")
+    System_Ext(tools, "5 Lint format test tools", "each language's linters, formatters and test runners, and git")
     System_Ext(ci, "6 CI/CD", "GitHub Actions and similar")
 
     Rel(developer, fitness, "A")
@@ -52,6 +52,6 @@ Numbers on nodes and letters on arrows match the callout table.
 | A   | Local dev and optional git hooks.                                                                     | Fast feedback before commit.                                        |
 | B   | Agent skills, rules, or hooks invoke the same CLI.                                                    | Closes local vs agent drift when wired.                             |
 | C   | Reads staged files, source tree, and config exceptions from the consumer repo.                        | The working directory is the app root, not the runner repo.         |
-| D   | Tool-wrapper checks exec the underlying CLIs; native engines need none.                               | Orchestration, not reimplementation.                                |
+| D   | Installed fitness-checks programs exec the underlying CLIs.                                           | Orchestration, not reimplementation.                                |
 | E   | CI builds or downloads the binaries and runs `fitness`.                                               | Same command as local.                                              |
 | F   | Non-zero exit fails the pipeline.                                                                     | Pass/fail is deterministic, not LLM-judged.                         |

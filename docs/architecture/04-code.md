@@ -150,7 +150,7 @@ Numbers on classes and letters on relationships match the callout table.
 | E   | The wrapper invokes the binary with cwd = root and the context env. | Check encapsulates its own tool calls. |
 | F   | The last non-empty stdout line parses as the Result; a crash or exit other than 0 or 1 becomes info, and a stop at a total fails. | Stray tool noise ahead of the JSON is tolerated. |
 | G   | Binaries read context from the environment via checkkit accessors. | No IPC; plain env vars work everywhere. |
-| H   | Every check delegates to `checkkit.Main`; `checks.go` maps `local-branch`, the engine's one check, to its `Main`. | One protocol implementation, shared by every check. |
+| H   | Every check delegates to `checkkit.Main`; the generated `checks.go` links the `Main` of `local-branch`, the engine's one check. | One protocol implementation, shared by every check. |
 | I   | The scaffolding runs the check it is given. | One entry point per check. |
 | J   | A check carries its describe metadata. | The handshake answer lives beside the run function. |
 | K   | The run function returns the Result the scaffolding emits. | Uniform shapes, always non-nil error arrays. |
@@ -177,15 +177,18 @@ fitness-runner/
   docs/                        C4 architecture (this folder), plans, research
   go/
     go.mod                     single module, stdlib-only
-    cmd/fitness/               the one fitness binary: runner and every check
-    cmd/fitness-check-name/    one check package with Main + README per check
-    pkg/                       shared packages a check may import: checkkit,
+    cmd/fitness/               the one fitness binary: runner and local-branch
+    cmd/fitness-check-local-branch/
+                               the one check package the engine links
+    cmd/fitness-install/       the installer, which fetches pinned checks
+    cmd/fitness-release/       the release tool and doc generator
+    pkg/                       public packages fitness-checks links: checkkit,
                                par, walkfs, gitx, mdx, mermaid, render, conf,
                                runtimes, codemodel, goal (the shared coverage
                                goal)
-    internal/                  packages only this module imports: spell,
-                               clonedetect, mdfilename, sharedconf (embedded
-                               tool configs), the engine's GitHub packages
+    internal/                  packages only this module imports: the
+                               engine's GitHub judgments, hooks, selection,
+                               and the release and install code
     pkg/lang/                  module type, ignores/, sources/ and lockfiles/
                                (ecosystems with no module), langs/ (one file
                                per language)
@@ -193,7 +196,6 @@ fitness-runner/
                                and architecture view readers, build tool
                                plugins, test and coverage report readers,
                                data folders, and config keys
-    internal/lang/<language>/  the packages only one check imports
     bin/                       build output (gitignored)
 
 consumer-repo/                 (not in this monorepo)
