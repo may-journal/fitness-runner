@@ -47,7 +47,8 @@ runs:
         GH_TOKEN: ${{ github.token }}
         FITNESS_SOURCE_REF: ${{ inputs.ref }}
         FITNESS_INSTALL_ACTION: ${{ github.action_path }}
-      run: "$FITNESS_INSTALL_ACTION/install-source.sh" "$FITNESS_SOURCE_REF"
+      run: |
+        "$FITNESS_INSTALL_ACTION/install-source.sh" "$FITNESS_SOURCE_REF"
     # The engine built from source holds no check, so the checks the repo pins
     # install from its root, in the mode with-checks names. A failed install
     # fails the step; a pinned-only repo with no pins installs none.
