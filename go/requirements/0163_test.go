@@ -59,3 +59,11 @@ func Test0163_4(t *testing.T) {
 		t.Errorf("a * pin must spread over every released check and print no * line:\n%s", out)
 	}
 }
+
+func Test0163_5(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"checkVersions": {"*": "v1"}}`})
+	env := append(fiPrivateCache(t), "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
+	out, code := fitness(t, repo, env, "check-versions")
+	sees(t, out, code, 1, "pin each check in checkVersions instead")
+}

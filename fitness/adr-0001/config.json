@@ -1,11 +1,3 @@
 {
-  "tests": {
-    "checkstyle": "runs the repo's own Gradle or Maven build",
-    "go-test": "runs the repo's Go tests",
-    "go-test-coverage": "runs the repo's Go tests twice with coverage",
-    "go-vet": "compiles every Go package for go vet",
-    "java-test": "runs the repo's Java tests through its build",
-    "spotless": "runs the repo's own Gradle or Maven build",
-    "vitest-coverage-full": "runs the repo's Vitest suite with coverage"
-  }
+  "tests": {}
 }

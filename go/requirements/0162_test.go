@@ -29,7 +29,8 @@ func run0162(t *testing.T, bundle, repo string, env []string, args ...string) (s
 	t.Helper()
 	return execute(t, func() *exec.Cmd {
 		cmd := exec.Command(filepath.Join(bundle, "fitness"), args...)
-		cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
+		// Only the folders a test names hold checks, not the suite's installed ones.
+		cmd.Dir, cmd.Env = repo, append(append(userEnv(), "FITNESS_CHECKS_DIR="), env...)
 		return cmd
 	})
 }
@@ -53,9 +54,9 @@ func Test0162_1(t *testing.T) {
 	out, code := run0162(t, bundle, repo, env, "--policy=external", "--checks=first,second,third")
 	sees(t, out, code, 1, "first ran from the configured folder", "second ran from beside fitness", "third ran from PATH")
 	describe, code := execute(t, func() *exec.Cmd {
-		return exec.Command(filepath.Join(installOnly(t), "fitness-check-markdown-links"), "--describe")
+		return exec.Command(filepath.Join(installOnly(t), "fitness-check-local-branch"), "--describe")
 	})
-	sees(t, describe, code, 0, `"name":"markdown-links"`, `"protocol":1`)
+	sees(t, describe, code, 0, `"name":"local-branch"`, `"protocol":1`)
 }
 
 func Test0162_2(t *testing.T) {
@@ -85,7 +86,7 @@ func Test0162_3(t *testing.T) {
 	sees(t, out, code, 1, "only ran", "0 of 1 checks passed")
 	for _, selected := range [][]string{{"markdown-links"}, {"check", "markdown-links"}} {
 		out, code = run0162(t, bundle, repo, nil, append([]string{"--no-builtins"}, selected...)...)
-		sees(t, out, code, 1, "check markdown-links is not installed, and --no-builtins turns the built-in checks off; install it: go install github.com/may-journal/fitness-checks/cmd/fitness-check-markdown-links@latest")
+		sees(t, out, code, 1, "markdown-links is not installed; install it: go install github.com/may-journal/fitness-checks/cmd/fitness-check-markdown-links@latest")
 	}
 }
 

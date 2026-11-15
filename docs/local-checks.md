@@ -106,7 +106,7 @@ The `--describe` line is optional. A script that answers no handshake runs once 
 
 An architecture decision lives in an `ADR` issue, and holds only while a check proves it. So in a repo with a `fitness/` folder, each `fitness/adr-NNNN/` check README links the issue it proves.
 
-The [adr-as-issue](../go/cmd/fitness-check-adr-as-issue/README.md) check fails an ADR kept in a file, and `fitness adr-migrate` moves each one into an issue. The [adr-checks](../go/cmd/fitness-check-adr-checks/README.md) check fails an `adr-NNNN` README that links no ADR issue. A README whose status line says it is superseded needs no check program beside it. The line under the title is the summary `fitness list` shows.
+The [adr-as-issue](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-adr-as-issue/README.md) check fails an ADR kept in a file, and `fitness adr-migrate` moves each one into an issue. The [adr-checks](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-adr-checks/README.md) check fails an `adr-NNNN` README that links no ADR issue. A README whose status line says it is superseded needs no check program beside it. The line under the title is the summary `fitness list` shows.
 
 ```markdown
 # 0007 — No work bound to scroll
@@ -120,7 +120,7 @@ https://github.com/OWNER/REPO/issues/NN
 <!-- What the check fails, and how to pass it. -->
 ```
 
-A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](../go/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. A README that links another ADR issue fails without a code change, and a requirement check pairs with its doc like a test. A paired check that passes having judged no files fails too, since its scan is broken.
+A `fitness/req-NNNN/` check may prove a requirement doc in place of tests, when its rule reads the repo itself. The [requirements](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-requirements/README.md#requirement-checks) check then needs no test for its acceptances. A README that links another ADR issue fails without a code change, and a requirement check pairs with its doc like a test. A paired check that passes having judged no files fails too, since its scan is broken.
 
 ## Where checks run
 

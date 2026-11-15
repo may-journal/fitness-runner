@@ -13,7 +13,7 @@ fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs
 
 ## Write one doc per user-facing area
 
-The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [requirements check README](../../go/cmd/fitness-check-requirements/README.md) holds the template and every rule the check enforces. Read it first and link to it, do not restate it.
+The doc lives at `docs/requirements/NNNN-<prefix>-<kebab-name>.md`. The [requirements check README](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-requirements/README.md) holds the template and every rule the check enforces. Read it first and link to it, do not restate it.
 
 Before adding a doc, find the one that already states the area. [ADR 0004](https://github.com/may-journal/fitness-runner/issues/856) says when to extend it.
 
@@ -22,7 +22,7 @@ Before adding a doc, find the one that already states the area. [ADR 0004](https
 - Measurement: numerator, `-` and denominator lines, each set apart by a blank line. No `Source:` line.
 - Requirements: `- NNNN.N`, then exactly one Given, When, and Then, each nested two spaces deeper, as Biome formats it.
 - Hold a doc to one to eight acceptances. A second Given, When, or Then is a new acceptance.
-- Start each Given with an actor the system context declares, by name or Mermaid ID; the [architecture-actors](../../go/cmd/fitness-check-architecture-actors/README.md) check states the grammar.
+- Start each Given with an actor the system context declares, by name or Mermaid ID; the [architecture-actors](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-architecture-actors/README.md) check states the grammar.
 - Never reuse an ID. Retiring one leaves a gap, and the check reads git history to enforce that.
 
 ## Draft small, in the user's words
@@ -65,7 +65,7 @@ GitHub, package registries, and external tools are never called live. Save their
 - Run under that name, the test binary answers from saved responses and logs every call it received.
 - A registry or web service: a local HTTP server answers each path from saved bodies and 404s the rest.
 
-Each test owns its saved answers, and asserts on the call log when the Then promises a call was made or not made. [0013_test.go](../../go/requirements/0013_test.go) replays `gh` for Plan verdicts; [0022_test.go](../../go/requirements/0022_test.go) serves a local npm registry.
+Each test owns its saved answers, and asserts on the call log when the Then promises a call was made or not made. [0013_test.go](../../go/requirements/0013_test.go) replays `gh` for Plan verdicts; [0022_test.go](https://github.com/may-journal/fitness-checks/blob/main/requirements/0022_test.go) serves a local npm registry.
 
 To meet a machine missing one tool, build a PATH holding every real tool but that one. `pathWithout` in [tools_test.go](../../go/requirements/tools_test.go) does this.
 

@@ -43,4 +43,4 @@ mistakes made
 - 0008.9
     - Given Developer has a fitness runner alone in its folder
         - When fitness runs, or `fitness check <name>` runs
-            - Then it runs every built-in check, or only the named one
+            - Then it runs every check it finds installed and each one the engine runs itself, or only the named one

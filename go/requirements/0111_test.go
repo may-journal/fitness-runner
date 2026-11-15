@@ -47,19 +47,14 @@ func Test0111_1(t *testing.T) {
 func Test0111_2(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)
-	got := explainJSON(t, repo, "prose-budget")
-	summary := listedSummary(t, repo, "prose-budget")
-	want := explainedCheck{Name: "prose-budget", Summary: summary, Scope: "files", Body: got.Body}
-	if got != want {
+	got := explainJSON(t, repo, "local-branch")
+	summary := listedSummary(t, repo, "local-branch")
+	want := explainedCheck{Name: "local-branch", Summary: summary, Scope: got.Scope, Body: got.Body}
+	if got != want || got.Scope == "" {
 		t.Errorf("fitness explain --json gave name %q, scope %q, summary %q; fitness list says %q", got.Name, got.Scope, got.Summary, summary)
 	}
-	if !opensWith(got.Body, summary) {
-		t.Errorf("the body does not open with the summary and go on past it:\n%s", got.Body)
-	}
-	for _, key := range []string{"## Configuration", "`proseBudget`", "`maxSentenceWords`"} {
-		if !strings.Contains(got.Body, key) {
-			t.Errorf("the body does not name %s:\n%s", key, got.Body)
-		}
+	if !opensWith(got.Body, summary) || !strings.Contains(got.Body, "## Usage") {
+		t.Errorf("the body does not open with the summary and go on to its usage:\n%s", got.Body)
 	}
 }
 

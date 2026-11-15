@@ -174,10 +174,10 @@ func repoPins(root string) bool {
 	return err == nil && cfg != nil && len(cfg.CheckVersions) > 0
 }
 
-// NeedsChecks reports whether the run turns the built-in checks off, so a
-// check that did not install cannot fall back to its built-in.
+// NeedsChecks reports whether a failed check install fails the run. It does
+// for any run installing checks, since the engine has none to fall back on.
 func (options Options) NeedsChecks() bool {
-	return len(options.Args) > 0 && options.Args[0] == "--no-builtins"
+	return options.InstallsChecks() && !options.SkipsChecks()
 }
 
 // SetsUpAgents reports whether the run links skills or writes Claude hooks

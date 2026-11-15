@@ -2,7 +2,7 @@
 
 ## Why
 
-I see what broke on the line that broke it, without digging through CI logs.
+I see what broke on the line that broke it, without digging through CI logs, whichever installed check found it.
 
 ## Measurement
 

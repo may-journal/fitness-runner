@@ -19,7 +19,7 @@ Pinned checks
 - 0164.2
     - Given Developer has a repo that pins a check to a major with no release
         - When I run `fitness-install --with-checks`, with or without `--no-builtins`
-            - Then it warns, naming the check and the pin, and its built-in runs; with `--no-builtins` the run fails
+            - Then it warns, naming the check and the pin, and that check does not run; naming it with `--no-builtins` fails
 - 0164.3
     - Given Developer has a repo that pins one check
         - When I run that check through `fitness-install --with-checks`, with and without `--no-builtins`
@@ -27,11 +27,11 @@ Pinned checks
 - 0164.4
     - Given Developer has a repo that pins one check, and GitHub refuses the latest release lookup
         - When I run `fitness-install --with-checks --version latest`
-            - Then it falls back to the recorded release, warns that no check installs, asks for none, and the built-ins run
+            - Then it falls back to the recorded release, fails, saying no check installs, and asks for none
 - 0164.5
     - Given Developer has a repo that pins one uncached check, behind a proxy that never answers
         - When I run `fitness-install --with-checks`
-            - Then it gives up within seconds after one unanswered index read, warns, and the built-ins run; a run within the minute asks nothing
+            - Then it gives up within seconds after one unanswered index read and fails; a run within the minute asks nothing
 - 0164.6
     - Given Developer has a repo pinning no check behind a silent proxy, and one pinning one, with `FITNESS_WITH_CHECKS=pinned` as hooks set it
         - When I run `fitness-install --install-only` in each

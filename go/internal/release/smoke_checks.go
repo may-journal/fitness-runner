@@ -59,7 +59,7 @@ func (s smoke) prepareRepo(ctx context.Context) error {
 
 func (s smoke) checkAction(ctx context.Context) error {
 	cmd := s.command(ctx, s.installer, "--github-action")
-	cmd.Env = append(cmd.Env, "FITNESS_INSTALL_ONLY=true", "FITNESS_POLICY=external", "FITNESS_CHECKS="+externalChecks, "GITHUB_PATH="+filepath.Join(s.work, "path"), "GITHUB_OUTPUT="+filepath.Join(s.work, "outputs"))
+	cmd.Env = append(cmd.Env, "FITNESS_INSTALL_ONLY=true", "FITNESS_POLICY=external", "FITNESS_CHECKS="+externalChecks, "GITHUB_PATH="+filepath.Join(s.work, "path"), "GITHUB_OUTPUT="+filepath.Join(s.work, "outputs"), "GITHUB_ENV="+filepath.Join(s.work, "env"))
 	if err := cmd.Run(); err != nil {
 		return err
 	}
@@ -67,7 +67,7 @@ func (s smoke) checkAction(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	bin := strings.TrimSpace(strings.TrimPrefix(string(data), "bin="))
+	bin, _, _ := strings.Cut(strings.TrimPrefix(string(data), "bin="), "\n")
 	return s.run(ctx, filepath.Join(bin, runnerName), "--help")
 }
 
@@ -130,7 +130,7 @@ func (s smoke) checkDefaultSuite(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	names, err := filepath.Glob(filepath.Join(strings.TrimSpace(string(output)), "fitness-check-*"))
+	names, err := installedChecks(string(output))
 	if err != nil {
 		return err
 	}
@@ -142,6 +142,24 @@ func (s smoke) checkDefaultSuite(ctx context.Context) error {
 		return fmt.Errorf("full-suite fixture must fail checks: %v\n%s", err, output)
 	}
 	return requireAllChecks(names, string(output))
+}
+
+// installedChecks lists the check programs in each folder `--install-only`
+// printed: the engine's, then the installed checks', which must be there.
+func installedChecks(output string) ([]string, error) {
+	dirs := strings.Fields(output)
+	if len(dirs) < 2 {
+		return nil, fmt.Errorf("the installer printed no folder of installed checks:\n%s", output)
+	}
+	var names []string
+	for _, dir := range dirs {
+		found, err := filepath.Glob(filepath.Join(dir, "fitness-check-*"))
+		if err != nil {
+			return nil, err
+		}
+		names = append(names, found...)
+	}
+	return names, nil
 }
 
 func requireAllChecks(paths []string, output string) error {

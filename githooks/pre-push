@@ -4,4 +4,6 @@
 # read the PR and approval.
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
+FITNESS_CHECKS_DIR="$(githooks/checks-dir)"
+export FITNESS_CHECKS_DIR
 exec go/bin/fitness hook pre-push

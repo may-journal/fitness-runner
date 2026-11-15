@@ -1,7 +1,9 @@
 // Command fitness runs a repo's fitness checks: small programs that each
-// judge one rule, such as spelling, tests, or pull request shape. One binary holds every built-in check; a repo may add local
-// checks. Each check decides whether it applies, so any repo runs the same
-// suite with nothing to configure.
+// judge one rule, such as spelling, tests, or pull request shape. Each check
+// is its own program installed from fitness-checks, the engine judges
+// local-branch itself, and a repo may add local checks. Each check decides
+// whether it applies, so any repo runs the same suite with nothing to
+// configure.
 //
 // A run resolves the checks, runs them side by side under two totals, and
 // prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges
@@ -169,15 +171,16 @@ type outcome struct {
 //go:generate go run ../fitness-release checks --root ../../..
 
 // main runs a built-in check when started under its fitness-check-<name>
-// program name, and is the runner otherwise.
+// program name, and is the runner otherwise. Either way the GitHub judgments
+// find each check they run among the installed ones.
 func main() {
-	metadata.RepoChecks.Find = builtinProgram
+	installedPrograms = checkkit.Discover()
+	metadata.RepoChecks.Find = findCheckBinary
 	if name, ok := strings.CutPrefix(filepath.Base(os.Args[0]), checkkit.BinPrefix); ok {
 		os.Exit(runBuiltin(name, os.Args[1:]))
 	}
 	args, off := withoutNoBuiltins(os.Args[1:])
 	noBuiltins = off
-	installedPrograms = checkkit.Discover()
 	allChecks, installErr = catalog()
 	os.Exit(dispatch(args))
 }
@@ -558,13 +561,21 @@ func prepareChecks(cfg *conf.Config, spec string) ([]resolved, error) {
 		return nil, err
 	}
 	if len(checks) == 0 {
-		which := spec
-		if which == "" {
-			which = "(none)"
-		}
-		return nil, errors.New("Unknown check: " + which)
+		return nil, unknownCheck(spec)
 	}
 	return checks, nil
+}
+
+// unknownCheck says that spec names no check here. A check name that is not
+// installed gets its install command, since fitness-checks may release it.
+func unknownCheck(spec string) error {
+	if spec == "" {
+		return errors.New("Unknown check: (none)")
+	}
+	if checkName.MatchString(spec) {
+		return fmt.Errorf("Unknown check: %s is not installed; install it: %s", spec, installCommand(spec))
+	}
+	return errors.New("Unknown check: " + spec)
 }
 
 // singleCheckArgs builds the check env and forwarded args. Passthrough and

@@ -42,5 +42,5 @@ installer runs
             - Then it says why, summarizes the failure, and exits 1
 - 0061.9
     - Given Developer has an exact release version with a `v` prefix
-        - When I run `fitness-install --version` with it and `--install-only`
-            - Then it prints the folder where each `fitness-check-<name>` runs its check
+        - When I run `fitness-install --version` with it, `--with-checks` and `--install-only`
+            - Then it prints the folder where each installed `fitness-check-<name>` runs its check

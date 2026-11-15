@@ -14,7 +14,7 @@ An agent may work an Issue as it sees fit — implement it, branch, commit, and 
 
 ## Once approved
 
-Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and pair each change with an [entry file](go/cmd/fitness-check-changelog/README.md#entry-files). A pull request adds one `changelog/<yyyy-mm-dd-HHMM>-<change>.md` in its first commit, and later commits edit its bullets, which release notes list. The PR description's `## Changelog` links that file, as the [PR template](.github/PULL_REQUEST_TEMPLATE.md) shows, and never copies its bullets.
+Follow the repo's normal flow. Commit straight to `main`, run the full `fitness` suite before committing, and pair each change with an [entry file](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-changelog/README.md#entry-files). A pull request adds one `changelog/<yyyy-mm-dd-HHMM>-<change>.md` in its first commit, and later commits edit its bullets, which release notes list. The PR description's `## Changelog` links that file, as the [PR template](.github/PULL_REQUEST_TEMPLATE.md) shows, and never copies its bullets.
 
 A commit message never names an issue or PR. The PR body closes the approved Plan instead, as `Closes #NN`, or `Closes <owner>/<repo>#NN` for another repo's Plan.
 
@@ -22,7 +22,7 @@ The `pre-push` hook blocks a push whose branch has an open PR that closes no app
 
 ## Ask in chat
 
-Ask the owner each open question in chat, where he answers, never in a PR or issue body, doc or page. The [open-questions check](go/cmd/fitness-check-open-questions/README.md) fails a list of them anywhere else.
+Ask the owner each open question in chat, where he answers, never in a PR or issue body, doc or page. The [open-questions check](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-open-questions/README.md) fails a list of them anywhere else.
 
 ## Working with checks
 

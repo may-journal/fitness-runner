@@ -15,7 +15,7 @@ Installed check programs
 - 0162.1
     - Given Developer has check programs in the `FITNESS_CHECKS_DIR` folder, beside fitness and on `PATH`
         - When I run them
-            - Then each name runs from the first of those places that holds it, and a built-in check's `--describe` reports protocol 1
+            - Then each name runs from the first of those places that holds it, and the built-in `local-branch` reports protocol 1 to `--describe`
 - 0162.2
     - Given Developer has an installed check whose `--describe` reports protocol 2, and one that reports none
         - When I run each

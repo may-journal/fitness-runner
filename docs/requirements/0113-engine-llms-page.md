@@ -15,7 +15,7 @@ subcommands fitness runs
 - 0113.1
     - Given AI agent has a repo with fitness installed
         - When it runs `fitness llms`
-            - Then the page explains fitness, its exit codes, every subcommand, every built-in check and every docs topic
+            - Then the page explains fitness, its exit codes, every subcommand, the check the engine runs itself and every docs topic
 - 0113.2
     - Given AI agent asks for help
         - When it runs `fitness --help`

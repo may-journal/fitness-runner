@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Prints the folder of checks this repo's hooks run, since the engine built
+# here holds none. The installer built here fetches every check's newest v1
+# release into its cache, and prints that folder second.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+checks="$(go/bin/fitness-install --version latest --with-checks --install-only | sed -n 2p)"
+[ -n "$checks" ] || { echo "githooks/checks-dir: no check installed from fitness-checks" >&2; exit 1; }
+echo "$checks"

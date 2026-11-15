@@ -22,7 +22,7 @@ A failure names the check and the file. Follow the [fitness skill](https://githu
 
 ## Plans and pull requests
 
-Plans are GitHub issues, and work starts only after a human approves one. The [Plan trailer check](https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-plan-trailer/README.md) explains the `Plan #NN` trailer, and the [changelog check](https://github.com/may-journal/fitness-runner/blob/main/go/cmd/fitness-check-changelog/README.md) explains the entry file. The [Plan template](https://github.com/may-journal/fitness-runner/blob/main/.github/ISSUE_TEMPLATE/plan.md) and the [PR template](https://github.com/may-journal/fitness-runner/blob/main/.github/PULL_REQUEST_TEMPLATE.md) show the sections the `plan-structure` and `pr-structure` checks require.
+Plans are GitHub issues, and work starts only after a human approves one. The [Plan trailer check](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-plan-trailer/README.md) explains the `Plan #NN` trailer, and the [changelog check](https://github.com/may-journal/fitness-checks/blob/main/cmd/fitness-check-changelog/README.md) explains the entry file. The [Plan template](https://github.com/may-journal/fitness-runner/blob/main/.github/ISSUE_TEMPLATE/plan.md) and the [PR template](https://github.com/may-journal/fitness-runner/blob/main/.github/PULL_REQUEST_TEMPLATE.md) show the sections the `plan-structure` and `pr-structure` checks require.
 
 ## When unsure
 

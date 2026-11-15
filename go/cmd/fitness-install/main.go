@@ -53,9 +53,6 @@ func execute(installer *distribution.Installer, options distribution.Options) in
 	if err != nil && options.NeedsChecks() {
 		return failure(err)
 	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "fitness: warning: %v; the built-in checks run instead\n", err)
-	}
 	return runInstalled(bin, checks, options)
 }
 
@@ -96,6 +93,9 @@ func runChecks(bin, checks string, options distribution.Options) int {
 	}
 	if options.InstallOnly {
 		fmt.Println(bin)
+		if checks != "" {
+			fmt.Println(checks)
+		}
 		report.Outcome("fitness-install", "Verified Fitness binaries installed successfully.")
 		return 0
 	}

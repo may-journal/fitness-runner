@@ -81,13 +81,13 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 const installTotal = 5 * time.Minute
 
 // released keeps each pin that resolved to a release, warning once for each
-// one that did not, so its built-in runs.
+// one that did not, so that check does not run.
 func (i *Installer) released(pins []CheckPin, releases []checkRelease) ([]string, []checkRelease) {
 	var names []string
 	var kept []checkRelease
 	for k, release := range releases {
 		if release.Tag == "" {
-			fmt.Fprintf(i.Log, "fitness: warning: no release of check %s matches %s; its built-in runs\n", pins[k].Name, pins[k].Pin)
+			fmt.Fprintf(i.Log, "fitness: warning: no release of check %s matches %s, so it does not run\n", pins[k].Name, pins[k].Pin)
 			continue
 		}
 		names, kept = append(names, pins[k].Name), append(kept, release)

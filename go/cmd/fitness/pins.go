@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"os"
 	"regexp"
 	"slices"
 
+	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 )
 
@@ -40,9 +42,12 @@ func checkVersions(root string) (map[string]string, error) {
 		return nil, err
 	}
 	if cfg == nil || len(cfg.CheckVersions) == 0 {
-		return defaultPins(), nil
+		return defaultPins()
 	}
-	return withEveryCheck(cfg.CheckVersions), badPin(cfg.CheckVersions)
+	if err := badPin(cfg.CheckVersions); err != nil {
+		return nil, err
+	}
+	return withEveryCheck(cfg.CheckVersions)
 }
 
 // everyCheck is the checkVersions name that pins every released check.
@@ -50,31 +55,45 @@ const everyCheck = "*"
 
 // withEveryCheck gives every released check the "*" pin, when pins has one.
 // A check pinned by its own name keeps its own pin.
-func withEveryCheck(pins map[string]string) map[string]string {
+func withEveryCheck(pins map[string]string) (map[string]string, error) {
 	every, ok := pins[everyCheck]
 	if !ok {
-		return pins
+		return pins, nil
+	}
+	released, err := defaultPins()
+	if err != nil {
+		return nil, err
 	}
 	out := map[string]string{}
-	for name := range defaultPins() {
+	for name := range released {
 		out[name] = every
 	}
 	for name, pin := range pins {
 		out[name] = pin
 	}
 	delete(out, everyCheck)
-	return out
+	return out, nil
 }
 
-// defaultPins pins every released check to currentMajor.
-func defaultPins() map[string]string {
+// defaultPins pins every released check to currentMajor, but the ones the
+// engine runs itself. The engine holds no check list, so the fitness-checks
+// release index names them.
+func defaultPins() (map[string]string, error) {
+	installer, err := distribution.New("", "", os.Stderr)
+	if err != nil {
+		return nil, err
+	}
+	released, err := installer.ReleasedChecks(context.Background())
+	if err != nil {
+		return nil, err
+	}
 	pins := map[string]string{}
-	for name := range builtins {
-		if engineJudges[name] == nil {
+	for _, name := range released {
+		if builtins[name] == nil {
 			pins[name] = currentMajor
 		}
 	}
-	return pins
+	return pins, nil
 }
 
 // checkName matches a check's name, lowercase words joined by dashes.

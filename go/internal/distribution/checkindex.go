@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -69,6 +71,17 @@ func recordFresh[T any](cache, name string, value T) {
 	if err == nil && os.MkdirAll(cache, 0700) == nil {
 		_ = writeAtomic(filepath.Join(cache, name), data)
 	}
+}
+
+// ReleasedChecks names every check the fitness-checks release index lists,
+// in name order. Only the index lists them all, so a read that fails says
+// to pin each check instead.
+func (i *Installer) ReleasedChecks(ctx context.Context) ([]string, error) {
+	index, err := i.readIndex(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("read the fitness-checks release index: %w; pin each check in checkVersions instead", err)
+	}
+	return slices.Sorted(maps.Keys(index.Checks)), nil
 }
 
 // resolvePins turns each pin into its release, in order: through the release

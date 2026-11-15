@@ -18,9 +18,7 @@ func Test0113_1(t *testing.T) {
 	for _, name := range subcommands {
 		sees(t, page, code, 0, "`fitness "+name)
 	}
-	for _, check := range strings.Fields(catalogRows) {
-		sees(t, page, code, 0, "- `"+check+"`: ")
-	}
+	sees(t, page, code, 0, "- `local-branch`: ")
 	topics, _ := fitness(t, repo, nil, "docs")
 	for _, name := range topicNames(topics) {
 		sees(t, page, code, 0, "`fitness docs "+name+"`")

@@ -69,7 +69,7 @@ func Test0164_2(t *testing.T) {
 	env := tags0164(t, "fitness-check-gofmt-v1.0.0")
 	repo := pinned0164(t, `{"gofmt": "v2"}`)
 	out, code := fiRun(t, repo, env, "--with-checks", "--install-only")
-	sees(t, out, code, 0, "warning: no release of check gofmt matches v2; its built-in runs", "installed 0 checks in ")
+	sees(t, out, code, 0, "warning: no release of check gofmt matches v2, so it does not run", "installed 0 checks in ")
 	out, code = fiRun(t, repo, env, "--with-checks", "--", "--no-builtins", "gofmt")
 	sees(t, out, code, 1, "no release of check gofmt matches v2")
 }
@@ -78,7 +78,9 @@ func Test0164_3(t *testing.T) {
 	t.Parallel()
 	repo := pinned0164(t, `{"markdown-links": "v1.0.0"}`)
 	commit(t, repo, map[string]string{"broken.md": "# Broken\n\nSee [the guide](missing.md).\n"}, "docs(broken): link a missing guide")
-	env := tags0164(t)
+	// The suite's own cache holds a fresh release index, so a busy network
+	// cannot leave the index unanswered within its two seconds.
+	env := tags0164(t)[1:]
 	for _, run := range [][]string{{"--no-builtins"}, nil} {
 		out, code := fiRun(t, repo, env, append(append([]string{"--with-checks", "--"}, run...), "--policy=external", "--all", "--checks=markdown-links")...)
 		sees(t, out, code, 1, "missing.md", "0 of 1 checks passed")
@@ -95,7 +97,7 @@ func Test0164_4(t *testing.T) {
 	mustDo(t, os.WriteFile(filepath.Join(strings.TrimPrefix(cache[0], "FITNESS_CACHE_DIR="), "latest-release.json"), []byte(stale), 0o600))
 	env := append(cache, rlReleases(t, http.StatusForbidden, "").env...)
 	out, code := fiRun(t, pinned0164(t, `{"markdown-links": "v1.0.0"}`), env, "--with-checks", "--version", "latest", "--install-only")
-	sees(t, out, code, 0, "warning: GitHub did not answer the release lookup, so no check installs; the built-in checks run instead")
+	sees(t, out, code, 1, "GitHub did not answer the release lookup, so no check installs")
 	if strings.Contains(out, "fitness-check-markdown-links") {
 		t.Errorf("after an unanswered lookup the installer must ask for no check:\n%s", out)
 	}
@@ -110,7 +112,7 @@ func Test0164_5(t *testing.T) {
 	env := append(cache, "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
 	start := time.Now()
 	out, code := fiRun(t, repo, env, "--with-checks", "--install-only")
-	sees(t, out, code, 0, "does not download", "the built-in checks run instead")
+	sees(t, out, code, 1, "does not download")
 	if took := time.Since(start); took > 5*time.Second {
 		t.Errorf("behind a silent proxy the check install must give up within 5s, took %s:\n%s", took, out)
 	}
