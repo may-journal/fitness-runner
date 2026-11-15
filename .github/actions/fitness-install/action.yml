@@ -17,14 +17,14 @@ inputs:
 runs:
   using: composite
   steps:
-    # Each check archive downloads once per pin set and runner, not per job.
+    # A hosted runner starts empty, so each check archive downloads once per
+    # pin set; a self-hosted runner keeps its cache folder on disk.
     - name: Restore the installed checks
-      if: ${{ inputs.ref == '' && inputs.with-checks != 'false' }}
+      if: ${{ inputs.ref == '' && inputs.with-checks != 'false' && runner.environment == 'github-hosted' && hashFiles('.fitnessrc.json') != '' }}
       uses: actions/cache@v4
       with:
         path: ~/.cache/fitness/checks
         key: fitness-checks-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.fitnessrc.json') }}
-        restore-keys: fitness-checks-${{ runner.os }}-${{ runner.arch }}-
     - name: Install the pinned fitness bundle
       if: ${{ inputs.ref == '' }}
       uses: may-journal/fitness-runner@v1
