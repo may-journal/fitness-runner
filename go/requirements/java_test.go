@@ -3,9 +3,6 @@
 package requirements
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
 )
 
@@ -17,21 +14,6 @@ var javaJDK = response{
 
 // javaSource is a Java source file every Java example repo holds.
 const javaSource = "src/main/java/App.java"
-
-// javaPom is a Maven build file whose build declares plugins.
-func javaPom(plugins string) string {
-	return "<project><modelVersion>4.0.0</modelVersion><groupId>com.example</groupId>" +
-		"<artifactId>app</artifactId><version>1</version><build><plugins>" + plugins + "</plugins></build></project>\n"
-}
-
-// javaParent is a Maven build that declares plugins and lists modules.
-func javaParent(plugins string, modules ...string) string {
-	list := "<modules>"
-	for _, m := range modules {
-		list += "<module>" + m + "</module>"
-	}
-	return strings.Replace(javaPom(plugins), "<build>", list+"</modules><build>", 1)
-}
 
 // javaRepo makes happyRepo with a Java source and files written over it.
 func javaRepo(t *testing.T, files map[string]string) string {
@@ -55,31 +37,4 @@ func javaRun(t *testing.T, repo, check string, saved map[string][]response, env 
 	rp := standIn(t, all)
 	out, code := fitness(t, repo, append(append(rp.env, "JAVA_HOME="), env...), check)
 	return rp, out, code
-}
-
-// javaWrapper puts the stand-in at the root of repo as the build wrapper, to
-// answer from its saved responses.
-func javaWrapper(t *testing.T, repo, name string) {
-	t.Helper()
-	self, err := os.Executable()
-	mustDo(t, err)
-	mustDo(t, os.Symlink(self, filepath.Join(repo, name)))
-}
-
-// javaSeesSnippet asserts the user saw a build file snippet, which the
-// results table may break inside a long word, by comparing without spaces.
-func javaSeesSnippet(t *testing.T, out, snippet string) {
-	t.Helper()
-	squeeze := func(s string) string { return strings.Join(strings.Fields(read(s)), "") }
-	if !strings.Contains(squeeze(out), squeeze(snippet)) {
-		t.Errorf("output is missing the snippet %q:\n%s", snippet, out)
-	}
-}
-
-// javaCalledOnce asserts the named build tool ran exactly once.
-func javaCalledOnce(t *testing.T, rp replays, name string) {
-	t.Helper()
-	if calls := rp.calls(name); len(calls) != 1 {
-		t.Errorf("%s calls = %q, want one", name, calls)
-	}
 }

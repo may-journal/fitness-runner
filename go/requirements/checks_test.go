@@ -293,13 +293,6 @@ func vcfTable(rows string) string {
 		"File      | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s \n" + rule + rows + rule
 }
 
-// swiftTest is the path of swiftRepo's requirement test file, and
-// swiftScreens of the helper that imports apple-ui-testing-library.
-const (
-	swiftTest    = "Tests/AdderTests/AdderTests.swift"
-	swiftScreens = "Tests/AdderTests/Screens.swift"
-)
-
 // acDoc is the requirement doc the architecture fixture opens.
 const acDoc = "docs/requirements/0001-open.md"
 
