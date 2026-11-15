@@ -59,14 +59,18 @@ func addFetched(dir string) {
 // needsChecks reports whether a run with args runs checks and has none handed
 // to it, as fitness-install hands them through FITNESS_CHECKS_DIR.
 func needsChecks(args []string) bool {
-	if os.Getenv(checkkit.ChecksDirEnv) != "" {
+	// --no-builtins tests a clean install, so it judges only what is installed.
+	if os.Getenv(checkkit.ChecksDirEnv) != "" || builtinsOff() {
 		return false
 	}
-	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
-		return true
-	}
-	_, subcommand := subcommands[args[0]]
-	return slices.Contains(checksCommands, args[0]) || !subcommand
+	return len(args) == 0 || runsChecks(args[0])
+}
+
+// runsChecks reports whether a command line starting with first runs or
+// describes checks: a flag, a check name or one of checksCommands.
+func runsChecks(first string) bool {
+	_, subcommand := subcommands[first]
+	return strings.HasPrefix(first, "-") || !subcommand || slices.Contains(checksCommands, first)
 }
 
 // missingPins keeps the pins whose check is not installed.

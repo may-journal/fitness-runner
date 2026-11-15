@@ -38,6 +38,12 @@ func Test0168_1(t *testing.T) {
 	if strings.Contains(again, "downloading fitness-check-") {
 		t.Errorf("a second run must reuse the cached check and download nothing:\n%s", again)
 	}
+	bare, code := execute(t, func() *exec.Cmd {
+		cmd := exec.Command(engine, "--no-builtins", "--policy=external", "--all", "--checks=markdown-links")
+		cmd.Dir, cmd.Env = repo, cleanHome0168(t)
+		return cmd
+	})
+	sees(t, bare, code, 1, "no check is installed, and --no-builtins turns the built-in checks off")
 }
 
 func Test0168_2(t *testing.T) {
