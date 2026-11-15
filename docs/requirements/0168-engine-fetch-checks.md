@@ -19,4 +19,4 @@ Runs on a clean machine
 - 0168.2
     - Given Developer has `fitness-install` built from source without release stamps
         - When I read its help
-            - Then its default version is latest, never a stale stamped one
+            - Then its default version is latest, never a stale stamped one, and a failed help run is named

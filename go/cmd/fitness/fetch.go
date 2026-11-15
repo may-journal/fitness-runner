@@ -13,9 +13,9 @@ import (
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
-// noChecksCommands are the subcommands that fetch no check: those that run
-// none, and claude-hook, which must answer an edit within 300ms.
-var noChecksCommands = []string{"llms", "docs", "help", "--help", "-h", "check-versions", "init", "strip-front-matter", "adr-migrate", "boxes", "perf", "comments", "claude-hook"}
+// checksCommands are the subcommands that run or describe checks, so they
+// fetch the missing ones. A run, a flag or a check name fetches too.
+var checksCommands = []string{"check", "hook", "list", "explain"}
 
 // fetchMissingChecks installs the checks the repo pins, or every released
 // check at v1 when it pins none, once any of them is missing. The engine holds
@@ -26,6 +26,7 @@ func fetchMissingChecks(args []string) {
 	}
 	pins, err := checkVersions(".")
 	if err != nil {
+		fmt.Fprintf(os.Stderr, "fitness: warning: could not read the checks the repo pins: %v; install them with `fitness-install --with-checks`\n", err)
 		return
 	}
 	missing := missingPins(pins)
@@ -58,10 +59,14 @@ func addFetched(dir string) {
 // needsChecks reports whether a run with args runs checks and has none handed
 // to it, as fitness-install hands them through FITNESS_CHECKS_DIR.
 func needsChecks(args []string) bool {
-	if os.Getenv(checkkit.ChecksDirEnv) != "" || builtinsOff() {
+	if os.Getenv(checkkit.ChecksDirEnv) != "" {
 		return false
 	}
-	return len(args) == 0 || !slices.Contains(noChecksCommands, args[0])
+	if len(args) == 0 || strings.HasPrefix(args[0], "-") {
+		return true
+	}
+	_, subcommand := subcommands[args[0]]
+	return slices.Contains(checksCommands, args[0]) || !subcommand
 }
 
 // missingPins keeps the pins whose check is not installed.

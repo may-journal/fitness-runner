@@ -156,7 +156,9 @@ func installerVersion() string {
 	if version != "" {
 		return version
 	}
-	if info, ok := debug.ReadBuildInfo(); ok && releaseVersion.MatchString(info.Main.Version) {
+	// A downloaded module carries its checksum; a checkout's version stamp
+	// from git tags does not, so it reads as latest.
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Sum != "" && releaseVersion.MatchString(info.Main.Version) {
 		return strings.TrimPrefix(info.Main.Version, "v")
 	}
 	return "latest"

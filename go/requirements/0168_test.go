@@ -1,7 +1,6 @@
 package requirements
 
 import (
-	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
@@ -49,9 +48,8 @@ func Test0168_2(t *testing.T) {
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("go build: %v\n%s", err, out)
 	}
-	out, _ := exec.Command(bin, "--help").CombinedOutput()
+	out, err := exec.Command(bin, "--help").CombinedOutput()
 	if !strings.Contains(string(out), `(default "latest")`) {
-		t.Errorf("an unstamped fitness-install must default to latest:\n%s", out)
+		t.Errorf("an unstamped fitness-install must default to latest (%v):\n%s", err, out)
 	}
-	_ = os.Remove(bin)
 }
