@@ -31,6 +31,8 @@ jobs:
       group: close-check-${{ github.repository }}-${{ github.event.issue.number }}
       cancel-in-progress: true
     steps:
+      # The checkout holds .fitnessrc.json, so the checks it pins install.
+      - uses: actions/checkout@v4
       - name: Reopen the issue if it closed with unchecked items
         uses: $/.github/actions/fitness-command
         with:

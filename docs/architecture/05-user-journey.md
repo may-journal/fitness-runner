@@ -73,7 +73,7 @@ flowchart TB
     checkDeps[(48 Check dependencies<br/>Req 0161)]:::system
     release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
     perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
-    closeParents[(39 Close parent issues<br/>Req 0134, 0135)]:::system
+    closeParents[(39 Close parent issues<br/>Req 0134, 0135, 0167)]:::system
 
     dev --> install
     install --> terminal
