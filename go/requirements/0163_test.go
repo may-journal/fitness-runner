@@ -49,3 +49,13 @@ func pinLines0163(out string) string {
 	}
 	return strings.Join(kept, "\n")
 }
+
+func Test0163_4(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"checkVersions": {"*": "v1", "gofmt": "v1.0.0"}}`})
+	out, code := fitness(t, repo, nil, "check-versions")
+	sees(t, out, code, 0, "markdown-links v1\n", "gofmt v1.0.0\n")
+	if strings.Contains(out, "* v1") || strings.Contains(out, "local-branch") {
+		t.Errorf("a * pin must spread over every released check and print no * line:\n%s", out)
+	}
+}

@@ -17,7 +17,7 @@ inputs:
     description: Install the bundle and add it to PATH without running checks.
     default: 'false'
   with-checks:
-    description: Also install each check .fitnessrc.json pins, from its own verified fitness-checks release, and set FITNESS_CHECKS_DIR.
+    description: Also install each check .fitnessrc.json pins, from its own verified fitness-checks release, and set FITNESS_CHECKS_DIR; pinned installs only where checkVersions is set.
     default: 'false'
 outputs:
   bin:

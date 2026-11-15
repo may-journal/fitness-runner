@@ -29,9 +29,9 @@ type Config struct {
 	// DisabledChecks names checks external policy leaves out and org policy
 	// refuses, as ADR 0009 describes.
 	DisabledChecks []string `json:"disabledChecks"`
-	// CheckVersions pins each check the repo uses to an exact release, such
-	// as v1.2.3, or a major, such as v1, for the installer. Unset or empty,
-	// the repo uses every check at its current major.
+	// CheckVersions pins each check the repo uses to a release such as v1.2.3
+	// or a major such as v1; a "*" key pins all. Unset or empty, the repo uses
+	// every check at its current major.
 	CheckVersions map[string]string `json:"checkVersions"`
 	// PlanApprovers lists the GitHub logins whose comment saying approve
 	// approves a Plan for the pre-push gate, under either policy. Unset, the
