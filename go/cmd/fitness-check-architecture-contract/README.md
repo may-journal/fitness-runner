@@ -18,6 +18,15 @@ No views passes with zero files, but a repo with product code in a [language mod
 
 Any view requires all five, and each view needs a diagram outside its legends.
 
+## What a view holds
+
+A view under `docs/architecture/` is one numbered Mermaid diagram with its legend and callout table.
+
+- It holds no prose sections, glossaries, "where to change X" tables, or step-by-step flow lists.
+- The five numbered views are the whole set, entered at the system context view.
+- No index or start page, such as `docs/architecture/README.md`, restates them.
+- Every journey callout names its requirement IDs, and every requirement appears in the journey.
+
 ## Scope
 
 A test, changelog or doc change cannot move the views. A scoped run with no changed view, requirement doc, product or tool source, manifest or `.gitattributes` passes with zero files. Every other run reads the whole model.
