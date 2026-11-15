@@ -141,7 +141,7 @@ Numbers on classes and letters on relationships match the callout table.
 | 13  | The escape codes, in [render.go](../../go/pkg/render/render.go); the zero value prints no color. | Piped output stays plain. |
 | 14  | The pass, failure and info counts, in [render.go](../../go/pkg/render/render.go). | Info rows never count as failures. |
 | 15  | One tool run's exit code, output, start error and signal, in [exec.go](../../go/pkg/checkkit/exec.go). | A check tells a broken environment from a tool's verdict. |
-| 16  | How to start one check, in [binary.go](../../go/pkg/checkkit/binary.go): the file to exec and the program name it starts under. | Every built-in check runs from the one fitness file. |
+| 16  | How to start one check, in [binary.go](../../go/pkg/checkkit/binary.go): the file to exec and the program name it starts under. | `local-branch` runs from the fitness file; each installed check is its own file. |
 | 17  | One problem a check found, in [checkkit.go](../../go/pkg/checkkit/checkkit.go): file, line, rule, fix and explain command. | An agent acts on it without parsing prose. |
 | A   | Resolution asks each resolved binary to describe itself, all side by side. | Stages and inline args ride the same handshake. |
 | B   | Describe output parsed as JSON. | Stdlib all the way down. |
@@ -150,7 +150,7 @@ Numbers on classes and letters on relationships match the callout table.
 | E   | The wrapper invokes the binary with cwd = root and the context env. | Check encapsulates its own tool calls. |
 | F   | The last non-empty stdout line parses as the Result; a crash or exit other than 0 or 1 becomes info, and a stop at a total fails. | Stray tool noise ahead of the JSON is tolerated. |
 | G   | Binaries read context from the environment via checkkit accessors. | No IPC; plain env vars work everywhere. |
-| H   | Every check package exports `Main`, which delegates to `checkkit.Main`; the runner maps each name to one in `checks.go`. | One protocol implementation in one binary. |
+| H   | Every check delegates to `checkkit.Main`; `checks.go` maps `local-branch`, the engine's one check, to its `Main`. | One protocol implementation, shared by every check. |
 | I   | The scaffolding runs the check it is given. | One entry point per check. |
 | J   | A check carries its describe metadata. | The handshake answer lives beside the run function. |
 | K   | The run function returns the Result the scaffolding emits. | Uniform shapes, always non-nil error arrays. |
@@ -161,9 +161,9 @@ Numbers on classes and letters on relationships match the callout table.
 | P   | The scaffolding emits the Result the run returns, or info for a panic or error. | One JSON line per run. |
 | Q   | The tally adds each row by its status. | One place decides what counts. |
 | R   | The pool reads the stage each check declares to order its starts and time its stage's total. | A test runner never waits behind quick checks. |
-| S   | Each name resolves to a local check, a program beside the runner, or the runner itself started as `fitness-check-<name>`. | A program beside the runner still replaces a built-in check. |
+| S   | Each name resolves to a local check, an installed program, or the runner itself started as `fitness-check-local-branch`. | Installed programs come from fitness-checks. |
 | T   | The handshake starts the check the same way its run does. | One way to start a check. |
-| U   | The wrapper starts the check under its program name. | The one binary dispatches on its program name. |
+| U   | The wrapper starts the check under its program name. | The fitness binary dispatches `local-branch` on its program name. |
 | V   | A result may repeat its errors as findings. | Error lines stay for older readers. |
 | W   | The scaffolding points each finding at its check's explain command. | A check never spells its own name twice. |
 | X   | Resolution judges a local check's `minFitness`, and fills the name, scope and summary a folder check's handshake leaves out. | A folder check may skip the handshake. |

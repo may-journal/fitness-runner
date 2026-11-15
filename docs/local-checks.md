@@ -1,6 +1,6 @@
 # Local checks
 
-A repo writes its own rules as Go checks in a `fitness/` folder at its root. Fitness builds them, and runs them in the suite, the git hooks and CI, beside the built-in checks. `fitness list` and `fitness explain` show them too.
+A repo writes its own rules as Go checks in a `fitness/` folder at its root. Fitness builds them, and runs them in the suite, the git hooks and CI, beside the installed checks. `fitness list` and `fitness explain` show them too.
 
 ## Layout
 

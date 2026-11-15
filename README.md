@@ -75,7 +75,7 @@ Commands:
       Lists the guide topics, or prints one, from the code's doc comments.
   fitness check --list
   fitness check <name> [args]
-      Prints every built-in check name, one per line, or runs one check by name, a repo's own check included.
+      Prints each check the engine runs itself, one per line, or runs one check by name, installed or the repo's own.
   fitness config [--json] [--policy=..] [--checks=..]
   fitness config schema
       Shows the resolved settings and each check's state, or prints a JSON Schema for the config file.

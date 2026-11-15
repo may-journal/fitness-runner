@@ -53,6 +53,6 @@ A Markdown file needs no front matter. Never add `fitnessFunctions` or `relatedC
 
 ## Shared configs
 
-The opinionated tool configs are embedded inside the check binaries ([go/internal/sharedconf](https://github.com/may-journal/fitness-checks/blob/main/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.
+The opinionated tool configs are embedded inside the check binaries ([internal/sharedconf](https://github.com/may-journal/fitness-checks/blob/main/internal/sharedconf)). They materialize to a cache directory on demand. When a check needs a config, the repo's own config file wins.
 
 Next comes an installed copy of the shared config package, and the embedded copy is the final fallback. A config may name plugins the consumer repo must install, which is the check's peer-tool contract.

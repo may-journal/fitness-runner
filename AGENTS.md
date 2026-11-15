@@ -26,4 +26,4 @@ Ask the owner each open question in chat, where he answers, never in a PR or iss
 
 ## Working with checks
 
-`fitness llms` explains the whole CLI and `fitness explain <check>` explains one check. Read the checks under `go/cmd/fitness-check-*/`, each with a README, and the shared logic in `go/pkg/` and `go/internal/` before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.
+`fitness llms` explains the whole CLI and `fitness explain <check>` explains one check. Read the checks in [fitness-checks](https://github.com/may-journal/fitness-checks), each with a README, and the engine and shared logic in `go/pkg/` and `go/internal/` here before changing code. Fix what a check finds. Never pass `--no-verify` to git, and never set an environment variable to skip a check.

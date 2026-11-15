@@ -13,11 +13,11 @@ No check has its own time limit. The fast checks share one 60s total and the tes
 
 ## Discovery and versions
 
-The runner finds each installed `fitness-check-<name>` program in the `FITNESS_CHECKS_DIR` folder, then beside `fitness`, then in each absolute `PATH` folder. The first program of a name wins, and an installed program wins over the built-in check of its name. A link to a fitness executable is a built-in check, never an installed one.
+The runner finds each installed `fitness-check-<name>` program in the `FITNESS_CHECKS_DIR` folder, then beside `fitness`, then in each absolute `PATH` folder. The first program of a name wins. A link to a fitness executable is the engine's own check, never an installed one.
 
 `--describe` reports a `protocol` number, and a check that reports none speaks protocol 1. The runner sets `FITNESS_PROTOCOL` to the protocol it speaks, for the handshake and the run. A check of another protocol stops the run before any check starts, naming the check, both numbers and the command that reinstalls it.
 
-The built-in checks stay as the fallback while the checks move into their own repo. `fitness --no-builtins` turns them off, so a run uses only installed checks, as a clean install would. A flag never reaches the git hooks a run starts, as a variable would. A selected built-in check that is not installed then fails the run, naming its install command.
+Every check but `local-branch`, which the engine judges itself, is an installed fitness-checks program. A selected check that is not installed fails the run, naming its install command. `fitness --no-builtins` also turns `local-branch` off; as a flag, it never reaches the git hooks a run starts.
 
 ## Check versions
 
@@ -119,9 +119,9 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 
 ## Local checks
 
-A repo adds its own checks as `fitness/<name>/` folders, as [local checks](local-checks.md) describes. `"localChecks": "<dir>"` names one more directory inside the repo, which may also hold executable `fitness-check-<name>` files. Each follows this protocol and runs in the same suite, hooks, and CI, searched before the bundled checks. A folder check may skip `--describe`, and a handshake may add `minFitness`, the oldest fitness that runs the check.
+A repo adds its own checks as `fitness/<name>/` folders, as [local checks](local-checks.md) describes. `"localChecks": "<dir>"` names one more directory inside the repo, which may also hold executable `fitness-check-<name>` files. Each follows this protocol and runs in the same suite, hooks, and CI, searched before the installed checks. A folder check may skip `--describe`, and a handshake may add `minFitness`, the oldest fitness that runs the check.
 
-A new name runs after the bundled checks under either policy. A bundled name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](https://github.com/may-journal/fitness-runner/issues/861) decides.
+A new name runs after the installed checks under either policy. An installed check's name replaces that check only in external mode, and the run names it; org mode refuses, as [ADR 0009](https://github.com/may-journal/fitness-runner/issues/861) decides.
 
 A missing or empty directory fails the run, and so does a path or symlink that leads outside the repo. So does a check without execute permission, or one named like a `fitness` subcommand. Blob mode (`--blob`) and the GitHub body checks, such as `pr-check`, use the same local and disabled checks.
 

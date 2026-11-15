@@ -71,7 +71,7 @@ The engine and the checks install separately, each at its own version. From rele
 
 The same flag goes before `--install-hook`, and the action takes `with-checks: 'true'` once its `v1` tag reaches 1.66.0. `FITNESS_WITH_CHECKS=true` works like the flag. The shared hooks set it to `pinned`, which installs checks only where `checkVersions` is set. An older installer ignores it.
 
-The built-in checks stay as the fallback for now, so a check that cannot install warns and its built-in runs. To test a clean install, put `--no-builtins` first after `--`, and a missing check fails the run.
+The engine holds no check but `local-branch`, so a check that cannot install fails the run, naming it. A repo without `checkVersions` installs nothing under the shared hooks' `pinned` mode.
 
 ## Repo policy
 

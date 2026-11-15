@@ -288,8 +288,8 @@ func init() {
 		// Lists the guide topics, or prints one, from the code's doc comments.
 		//fitness:usage docs [topic]
 		"docs": runDocs,
-		// Prints every built-in check name, one per line, or runs one check by
-		// name, a repo's own check included.
+		// Prints each check the engine runs itself, one per line, or runs
+		// one check by name, installed or the repo's own.
 		//fitness:usage check --list
 		//fitness:usage check <name> [args]
 		"check": runCheckCommand,
