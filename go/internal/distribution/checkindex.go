@@ -73,36 +73,15 @@ func recordFresh[T any](cache, name string, value T) {
 	}
 }
 
-// AllChecks is the pin name that stands for every check the release index
-// lists, which `fitness check-versions` prints while checkVersions is unset.
-const AllChecks = "*"
-
-// expandAll replaces an AllChecks pin with one pin per check the release
-// index lists. A check pinned by name keeps its pin, and the engine's own
-// checks stay out.
-func (i *Installer) expandAll(ctx context.Context, pins []CheckPin) ([]CheckPin, error) {
-	k := slices.IndexFunc(pins, func(pin CheckPin) bool { return pin.Name == AllChecks })
-	if k < 0 {
-		return pins, nil
-	}
+// ReleasedChecks names every check the fitness-checks release index lists,
+// in name order. Only the index lists them all, so a read that fails says
+// to pin each check instead.
+func (i *Installer) ReleasedChecks(ctx context.Context) ([]string, error) {
 	index, err := i.readIndex(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("every check installs only through the fitness-checks release index, which could not be read (%w); pin each check in checkVersions instead", err)
+		return nil, fmt.Errorf("read the fitness-checks release index: %w; pin each check in checkVersions instead", err)
 	}
-	expanded := slices.Delete(slices.Clone(pins), k, k+1)
-	for _, name := range slices.Sorted(maps.Keys(index.Checks)) {
-		if i.addsCheck(expanded, name) {
-			expanded = append(expanded, CheckPin{Name: name, Pin: pins[k].Pin})
-		}
-	}
-	return expanded, nil
-}
-
-// addsCheck reports whether an AllChecks pin adds the check name to pins. It
-// does when pins holds none for it and the engine does not run it.
-func (i *Installer) addsCheck(pins []CheckPin, name string) bool {
-	pinned := slices.ContainsFunc(pins, func(pin CheckPin) bool { return pin.Name == name })
-	return !pinned && !slices.Contains(i.EngineChecks, name)
+	return slices.Sorted(maps.Keys(index.Checks)), nil
 }
 
 // resolvePins turns each pin into its release, in order: through the release

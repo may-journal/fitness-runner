@@ -15,7 +15,7 @@ Check pins
 - 0163.1
     - Given Developer has a repo whose `.fitnessrc.json` sets no `checkVersions`, or an empty one
         - When I run `fitness check-versions`
-            - Then it prints `* v1`, which the installer expands to each check in the fitness-checks release index but the engine's own
+            - Then it prints every check fitness-checks releases at `v1`, one per line, and no check the engine judges itself
 - 0163.2
     - Given Developer has a repo whose `checkVersions` pins one check to a release and one to a major
         - When I run `fitness check-versions`

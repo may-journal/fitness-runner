@@ -19,10 +19,7 @@ type Installer struct {
 	// Unanswered is set once a release lookup got no answer, so the run
 	// asks GitHub nothing more and keeps its built-in checks.
 	Unanswered bool
-	// EngineChecks are the checks the engine runs itself, which an AllChecks
-	// pin leaves out, since their installed programs only declare them.
-	EngineChecks []string
-	Log          io.Writer
+	Log        io.Writer
 }
 
 func New(version, hashes string, log io.Writer) (*Installer, error) {

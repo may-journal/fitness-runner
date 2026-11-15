@@ -1,7 +1,9 @@
 // Command fitness runs a repo's fitness checks: small programs that each
-// judge one rule, such as spelling, tests, or pull request shape. One binary holds every built-in check; a repo may add local
-// checks. Each check decides whether it applies, so any repo runs the same
-// suite with nothing to configure.
+// judge one rule, such as spelling, tests, or pull request shape. Each check
+// is its own program installed from fitness-checks, the engine judges
+// local-branch itself, and a repo may add local checks. Each check decides
+// whether it applies, so any repo runs the same suite with nothing to
+// configure.
 //
 // A run resolves the checks, runs them side by side under two totals, and
 // prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges

@@ -24,7 +24,7 @@ jobs:
           save: true
       - run: cd go && mkdir -p bin && go build -o bin ./cmd/...
       # The engine built here holds no check, so the suite installs each one.
-      - run: echo "FITNESS_CHECKS_DIR=$(githooks/checks-dir)" >> "$GITHUB_ENV"
+      - run: checks="$(githooks/checks-dir)" && echo "FITNESS_CHECKS_DIR=$checks" >> "$GITHUB_ENV"
         env:
           GH_TOKEN: ${{ github.token }}
       # A pull request checks the files it changes, and a push to main checks

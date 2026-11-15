@@ -9,7 +9,7 @@ func Test0163_1(t *testing.T) {
 	t.Parallel()
 	for _, config := range []string{"{}", `{"checkVersions": {}}`} {
 		out, code := fitness(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": config}), nil, "check-versions")
-		sees(t, out, code, 0, "* v1\n")
+		sees(t, out, code, 0, "markdown-links v1\n", "gofmt v1\n")
 		if strings.Contains(out, "local-branch") {
 			t.Errorf("the engine judges local-branch, so no install pins it:\n%s", out)
 		}

@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"syscall"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
@@ -54,44 +53,26 @@ func execute(installer *distribution.Installer, options distribution.Options) in
 	if err != nil && options.NeedsChecks() {
 		return failure(err)
 	}
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "fitness: warning: %v; only the checks the engine runs itself run\n", err)
-	}
 	return runInstalled(bin, checks, options)
 }
 
-// installChecks installs each check the repo pins when asked, and returns
-// their folder. The installed engine names the pins and its own checks.
+// installChecks installs each check the repo pins when asked, reading the
+// pins from the installed engine, and returns their folder.
 func installChecks(installer *distribution.Installer, bin string, options distribution.Options) (string, error) {
 	if !options.InstallsChecks() || options.SkipsChecks() {
 		return "", nil
 	}
-	out, err := engineOutput(bin, "check-versions")
+	versions := exec.Command(filepath.Join(bin, "fitness"), "check-versions")
+	versions.Stderr = os.Stderr
+	out, err := versions.Output()
+	if err != nil {
+		return "", fmt.Errorf("fitness check-versions: %w", err)
+	}
+	pins, err := distribution.ParsePins(string(out))
 	if err != nil {
 		return "", err
 	}
-	pins, err := distribution.ParsePins(out)
-	if err != nil {
-		return "", err
-	}
-	builtins, err := engineOutput(bin, "check", "--list")
-	if err != nil {
-		return "", err
-	}
-	installer.EngineChecks = strings.Fields(builtins)
 	return installer.InstallChecks(context.Background(), pins)
-}
-
-// engineOutput runs the installed engine with args and returns what it
-// printed on stdout.
-func engineOutput(bin string, args ...string) (string, error) {
-	cmd := exec.Command(filepath.Join(bin, "fitness"), args...)
-	cmd.Stderr = os.Stderr
-	out, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("fitness %s: %w", strings.Join(args, " "), err)
-	}
-	return string(out), nil
 }
 
 func runInstalled(bin, checks string, options distribution.Options) int {

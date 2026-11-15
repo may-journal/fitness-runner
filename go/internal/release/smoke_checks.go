@@ -145,10 +145,14 @@ func (s smoke) checkDefaultSuite(ctx context.Context) error {
 }
 
 // installedChecks lists the check programs in each folder `--install-only`
-// printed: the engine's, then the installed checks'.
+// printed: the engine's, then the installed checks', which must be there.
 func installedChecks(output string) ([]string, error) {
+	dirs := strings.Fields(output)
+	if len(dirs) < 2 {
+		return nil, fmt.Errorf("the installer printed no folder of installed checks:\n%s", output)
+	}
 	var names []string
-	for _, dir := range strings.Fields(output) {
+	for _, dir := range dirs {
 		found, err := filepath.Glob(filepath.Join(dir, "fitness-check-*"))
 		if err != nil {
 			return nil, err

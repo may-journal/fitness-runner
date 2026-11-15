@@ -58,7 +58,7 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 	}
 	ctx, cancel := context.WithTimeout(ctx, installTotal)
 	defer cancel()
-	pins, releases, err := i.resolveAll(ctx, pins)
+	releases, err := i.resolvePins(ctx, pins)
 	if err != nil {
 		return "", err
 	}
@@ -74,16 +74,6 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 		fmt.Fprintf(i.Log, "fitness: installed %d checks in %s\n", len(paths), dir)
 	}
 	return dir, err
-}
-
-// resolveAll expands an AllChecks pin, then turns each pin into its release.
-func (i *Installer) resolveAll(ctx context.Context, pins []CheckPin) ([]CheckPin, []checkRelease, error) {
-	pins, err := i.expandAll(ctx, pins)
-	if err != nil {
-		return nil, nil, err
-	}
-	releases, err := i.resolvePins(ctx, pins)
-	return pins, releases, err
 }
 
 // installTotal bounds a whole check install, so a slow network cannot hold a

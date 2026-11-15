@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"os"
@@ -41,7 +42,7 @@ func checkVersions(root string) (map[string]string, error) {
 		return nil, err
 	}
 	if cfg == nil || len(cfg.CheckVersions) == 0 {
-		return defaultPins(), nil
+		return defaultPins()
 	}
 	return withEveryCheck(cfg.CheckVersions), badPin(cfg.CheckVersions)
 }
@@ -67,11 +68,25 @@ func withEveryCheck(pins map[string]string) map[string]string {
 	return out
 }
 
-// defaultPins pins every released check to currentMajor. The engine holds
-// no check list, so the installer expands the AllChecks name from the
-// fitness-checks release index.
-func defaultPins() map[string]string {
-	return map[string]string{distribution.AllChecks: currentMajor}
+// defaultPins pins every released check to currentMajor, but the ones the
+// engine runs itself. The engine holds no check list, so the fitness-checks
+// release index names them.
+func defaultPins() (map[string]string, error) {
+	installer, err := distribution.New("", "", os.Stderr)
+	if err != nil {
+		return nil, err
+	}
+	released, err := installer.ReleasedChecks(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	pins := map[string]string{}
+	for _, name := range released {
+		if builtins[name] == nil {
+			pins[name] = currentMajor
+		}
+	}
+	return pins, nil
 }
 
 // checkName matches a check's name, lowercase words joined by dashes.
