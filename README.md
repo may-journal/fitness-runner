@@ -16,7 +16,7 @@ For consumers who choose source builds:
 go install github.com/may-journal/fitness-runner/go/cmd/...@v1
 ```
 
-One command installs `fitness`, which holds every check, and the installer and release tools into `$HOME/go/bin`; put that directory on PATH. Upgrade by rerunning with `@v1`.
+One command installs `fitness`, the installer and the release tools into `$HOME/go/bin`; put that directory on PATH. Its first run installs the checks the repo pins, verified, into your cache. Upgrade by rerunning with `@v1`.
 
 ### Prebuilt binaries
 

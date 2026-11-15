@@ -9,6 +9,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"runtime/debug"
+	"strings"
 	"syscall"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
@@ -16,8 +19,10 @@ import (
 	"github.com/may-journal/fitness-runner/go/pkg/gitx"
 )
 
-// Release publishing embeds the exact version and platform bundle hashes.
-var version = "0.20261004.1140"
+// Release publishing embeds the exact version and platform bundle hashes. A
+// plain `go install` embeds neither, so installerVersion reads the module
+// version Go recorded instead.
+var version string
 var bundleHashes string
 
 func main() { os.Exit(run(os.Args[1:])) }
@@ -37,7 +42,7 @@ func run(args []string) int {
 	if err != nil {
 		return failure(err)
 	}
-	installer, err := distribution.New(version, bundleHashes, os.Stderr)
+	installer, err := distribution.New(installerVersion(), bundleHashes, os.Stderr)
 	if err != nil {
 		return failure(err)
 	}
@@ -132,7 +137,7 @@ func commandOptions(args []string) (distribution.Options, error) {
 	if filepath.Base(os.Args[0]) == "pre-commit" {
 		return distribution.ReadHookOptions()
 	}
-	return distribution.ParseOptions(args, version, os.Stderr)
+	return distribution.ParseOptions(args, installerVersion(), os.Stderr)
 }
 
 func installHook(options distribution.Options) int {
@@ -143,3 +148,20 @@ func installHook(options distribution.Options) int {
 	report.Outcome("fitness-install", "Installed the Go pre-commit hook successfully.")
 	return 0
 }
+
+// installerVersion is the version release publishing stamped, else the
+// released module version a `go install` recorded, such as v1.69.1. A build
+// from a checkout or a commit gets latest.
+func installerVersion() string {
+	if version != "" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && releaseVersion.MatchString(info.Main.Version) {
+		return strings.TrimPrefix(info.Main.Version, "v")
+	}
+	return "latest"
+}
+
+// releaseVersion matches a released module version such as v1.69.1, and not
+// (devel) or a pseudo-version.
+var releaseVersion = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+$`)

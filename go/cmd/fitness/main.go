@@ -181,6 +181,7 @@ func main() {
 	}
 	args, off := withoutNoBuiltins(os.Args[1:])
 	noBuiltins = off
+	fetchMissingChecks(args)
 	allChecks, installErr = catalog()
 	os.Exit(dispatch(args))
 }

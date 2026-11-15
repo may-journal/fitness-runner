@@ -163,7 +163,7 @@ Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook com
 
 ## Cache and versions
 
-`--install-only` prints the binary directory without running checks. Save that path and invoke its `fitness` executable for offline use. The compiled installer also works offline when its pinned bundle is cached.
+`--install-only` prints the binary directory as its last line without running checks; with `--with-checks`, a line before it names the installed checks folder. Save that path and invoke its `fitness` executable for offline use. The compiled installer also works offline when its pinned bundle is cached.
 
 The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks.
 
