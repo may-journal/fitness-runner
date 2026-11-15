@@ -43,14 +43,7 @@ jobs:
       - name: Build and package with GoReleaser
         env:
           SNAPSHOT: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        run: |
-          export FITNESS_VERSION="$(go -C go run ./cmd/fitness-release version --root ..)"
-          args=()
-          if [ "$SNAPSHOT" = true ]; then args+=(--snapshot); fi
-          goreleaser release --clean --skip=publish "${args[@]}" --config .goreleaser-bundles.yml
-          export FITNESS_BUNDLE_HASHES="$(go -C go run ./cmd/fitness-release bundle-hashes --root ..)"
-          goreleaser release --clean --skip=publish "${args[@]}" --config .goreleaser-tools.yml
-          go -C go run ./cmd/fitness-release assemble --root ..
+        run: scripts/build-release-bundle.sh
       - uses: actions/upload-artifact@v4
         with:
           name: fitness-release
@@ -96,9 +89,7 @@ jobs:
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-        run: |
-          chmod +x "$VERIFIER"
-          "$VERIFIER" smoke
+        run: scripts/run-verifier.sh smoke
       # Release builds run this job too; see docs/ci.md#performance-record.
       - name: Record binary sizes and install time
         # The record only measures; a failed timing never blocks a release,
@@ -107,10 +98,7 @@ jobs:
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           PLATFORM: ${{ matrix.platform }}
-        run: |
-          mkdir -p "$RUNNER_TEMP/fitness-performance"
-          "$VERIFIER" record > "$RUNNER_TEMP/release-$PLATFORM.json"
-          mv "$RUNNER_TEMP/release-$PLATFORM.json" "$RUNNER_TEMP/fitness-performance/"
+        run: scripts/record-binary-sizes.sh
       - uses: ./.github/actions/setup-go-cache
         with:
           cache-key: smoke
@@ -119,9 +107,8 @@ jobs:
         id: smoke-suite
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-        run: |
-          chmod +x out/fitness-install-*-${{ matrix.platform }}
-          out/fitness-install-*-${{ matrix.platform }} --with-checks -- --policy=external
+          PLATFORM: ${{ matrix.platform }}
+        run: scripts/run-smoke-suite.sh
       # It keeps the size and install time record too.
       - name: Retain the performance record and complete reports
         if: ${{ always() }}
@@ -165,9 +152,7 @@ jobs:
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-        run: |
-          chmod +x "$VERIFIER"
-          "$VERIFIER" smoke
+        run: scripts/run-verifier.sh smoke
       # Smoke no longer builds the requirement tests, so they keep their own
       # cache; one shard saves it.
       - uses: ./.github/actions/setup-go-cache
@@ -178,10 +163,9 @@ jobs:
         id: requirement-shard
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-        run: |
-          chmod +x out/fitness-install-*-${{ matrix.platform }}
-          export FITNESS_INSTALL="$(ls "$PWD"/out/fitness-install-*-${{ matrix.platform }})"
-          sh tests/requirements-shard.sh ${{ matrix.shard }} 2
+          PLATFORM: ${{ matrix.platform }}
+          SHARD: ${{ matrix.shard }}
+        run: scripts/run-requirement-shard.sh
       - name: Retain complete Fitness reports
         if: ${{ always() }}
         uses: ./.github/actions/fitness-reports

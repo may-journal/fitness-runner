@@ -1,0 +1,146 @@
+#!/usr/bin/env bash
+# Turns on squash auto-merge for the event's PR, or merges the stack it tops, and notes the result on each PR.
+set -e
+url="$(jq -r .pull_request.html_url "$GITHUB_EVENT_PATH")"
+number="$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")"
+base="$(jq -r .pull_request.base.ref "$GITHUB_EVENT_PATH")"
+default="$(jq -r .repository.default_branch "$GITHUB_EVENT_PATH")"
+repo="repos/$GITHUB_REPOSITORY"
+issues="$repo/issues"
+marker='<!-- fitness:auto-merge -->'
+warning="::warning::GitHub refused a change to a PR's auto-merge comment; its answer is above."
+# note sets id to the bot's note on PR $1, and noted to $1 for reuse.
+note() {
+  local ids
+  ids="$(gh api "$issues/$1/comments" --paginate --jq ".[] | select(.user.login == \"$BOT\" and (.body | contains(\"$marker\"))) | .id")" || return 1
+  id="${ids%%$'\n'*}"
+  noted="$1"
+}
+# write posts the note $2 on PR $1, or edits it when its text
+# changed. GitHub may store a body with CRLF line ends, so those
+# never count.
+write() {
+  local current body="$2"$'\n\n'"$marker"
+  if [ "${noted-}" != "$1" ]; then note "$1" || return 1; fi
+  noted=""
+  if [ -z "$id" ]; then
+    gh api "$issues/$1/comments" -f body="$body" > /dev/null
+    return
+  fi
+  current="$(gh api "$issues/comments/$id" --jq .body)" || return 1
+  if [ "${current//$'\r'/}" != "$body" ]; then
+    gh api -X PATCH "$issues/comments/$id" -f body="$body" > /dev/null
+  fi
+}
+# say writes the note $2 on PR $1, and warns without failing when GitHub refuses.
+say() {
+  if ! write "$1" "$2"; then echo "$warning"; fi
+}
+# fail ends the job red with an error naming GitHub's answer $2.
+fail() {
+  local answer="${2//'%'/%25}"
+  answer="${answer//$'\r'/%0D}"
+  echo "::error::$1: ${answer//$'\n'/%0A}"
+  exit 1
+}
+# Only a native stack's PRs carry a stack object.
+answer="$(gh api "$repo/pulls/$number" 2>&1)" || fail "GitHub refused to show this PR" "$answer"
+stack="$(jq -r '.stack.number // empty' <<< "$answer")"
+if [ -n "$stack" ]; then
+  answer="$(gh api "$repo/stacks/$stack" 2>&1)" || fail "GitHub refused to show stack #$stack" "$answer"
+  # Merged PRs drop out; the top PR is the one no other builds on.
+  open='[.pull_requests[] | select(.state == "open")]'
+  members="$(jq -r "$open | .[].number" <<< "$answer")"
+  top="$(jq -r "$open | . as \$p | .[] | select(.head.ref as \$h | all(\$p[]; .base.ref != \$h)) | \"\(.number) \(.head.sha)\"" <<< "$answer")"
+  if [ -z "$members" ] || [ "$top" != "${top%%$'\n'*}" ]; then
+    fail "Stack #$stack has no single open top PR" "$answer"
+  fi
+  sha="${top#* }"
+  top="${top%% *}"
+  list="$(sed 's/^/#/' <<< "$members" | paste -sd ' ' -)"
+  # Green skips Auto-merge's own runs, which are still running
+  # now. GitHub's merge rechecks every rule itself.
+  ready='def green: .state == "SUCCESS" or (.status == "COMPLETED" and (.conclusion | IN("SUCCESS", "NEUTRAL", "SKIPPED")));
+    if .isDraft then "is a draft"
+    elif (.reviewDecision // "") as $r | $r != "" and $r != "APPROVED" then "needs approval"
+    elif .mergeable == "CONFLICTING" then "has conflicts"
+    elif any(.statusCheckRollup[] | select((.workflowName // "") | startswith("Auto-merge") | not); green | not) then "is not green"
+    else empty end'
+  waits=""
+  for pr in $members; do
+    answer="$(gh pr view "$pr" --repo "$GITHUB_REPOSITORY" --json isDraft,reviewDecision,mergeable,statusCheckRollup 2>&1)" || fail "GitHub refused to show #$pr" "$answer"
+    why="$(jq -r "$ready" <<< "$answer")"
+    if [ -n "$why" ]; then waits="$waits #$pr $why;"; fi
+  done
+  if [ -n "$waits" ]; then
+    echo "::notice::Stack #$stack waits:${waits%;}."
+    for pr in $members; do
+      say "$pr" "Auto-merge waits: stack #$stack ($list) merges into \`$default\` once every PR in it is approved, green and mergeable. Waiting:${waits%;}."
+    done
+    exit 0
+  fi
+  status=0
+  answer="$(gh api -X PUT "$repo/pulls/$top/merge-async" -f merge_method=squash -f sha="$sha" -F bypass_rules=false 2>&1)" || status=$?
+  printf '%s\n' "$answer"
+  # field reads $1 from GitHub's JSON answer, dropping the CLI's
+  # own error line after it, or prints nothing.
+  field() {
+    jq -r "$1 // empty" <<< "${answer%%$'\n'gh: *}" 2> /dev/null || true
+  }
+  uuid="$(field .details.uuid)"
+  # A 409 names the merge already running, which the job polls.
+  if [ "$status" -ne 0 ] && [ -z "$uuid" ]; then
+    message="$(field .details.message)"
+    say "$top" "Auto-merge could not merge stack #$stack ($list): GitHub refused, ${message:-giving no reason}."
+    fail "GitHub refused to merge stack #$stack through #$top" "$answer"
+  fi
+  # A 409's body names the running merge as pending, so a second
+  # run polls the first run's merge. Poll for three minutes.
+  result="$(field .status)"
+  tries=0
+  while [ "$result" = pending ] && [ "$tries" -lt 36 ]; do
+    if [ "$tries" -gt 0 ]; then sleep 5; fi
+    tries=$((tries + 1))
+    answer="$(gh api "$repo/pulls/$top/merge-async/$uuid" 2>&1)" || fail "GitHub refused to show the merge of stack #$stack" "$answer"
+    result="$(field .status)"
+  done
+  case "$result" in
+    merged | enqueued)
+      echo "::notice::GitHub $result stack #$stack through #$top."
+      for pr in $members; do
+        say "$pr" "Auto-merge $result stack #$stack ($list) into \`$default\` through #$top."
+      done
+      exit 0
+      ;;
+    pending)
+      echo "::warning::GitHub is still merging stack #$stack through #$top after three minutes."
+      say "$top" "Auto-merge asked GitHub to merge stack #$stack ($list) through #$top, and GitHub was still merging three minutes later. This PR shows the result."
+      exit 0
+      ;;
+  esac
+  message="$(field .details.message)"
+  say "$top" "Auto-merge could not merge stack #$stack ($list): GitHub failed, ${message:-giving no reason}."
+  fail "GitHub failed to merge stack #$stack through #$top" "$answer"
+fi
+if [ "$base" != "$default" ]; then
+  echo "::notice::This PR targets $base, not $default, so it gets no auto-merge; GitHub has none for branch chains. Its auto-merge comment says how to merge it."
+  say "$number" "Auto-merge is off: this PR targets \`$base\`, not \`$default\`, in a branch chain. The bot cannot merge a chain: merging this PR into \`$base\` pushes to that PR and dismisses its approval. Merge it by hand, or rebuild the chain with \`gh stack\`, which the bot merges whole. Once GitHub moves this PR onto \`$default\`, auto-merge turns on and this comment says so."
+  exit 0
+fi
+status=0
+answer="$(gh pr merge --auto --squash "$url" 2>&1)" || status=$?
+if [ -n "$answer" ]; then printf '%s\n' "$answer"; fi
+if [ "$status" -eq 0 ]; then
+  if ! note "$number"; then
+    echo "$warning"
+  elif [ -n "$id" ]; then
+    say "$number" "Auto-merge is on: this PR squash-merges into \`$default\` once it is approved and green."
+  fi
+  exit 0
+fi
+if grep -qi 'auto-merge is not supported for stacked' <<< "$answer"; then
+  echo "::notice::GitHub still counts this PR as stacked, so it gets no auto-merge. Its auto-merge comment says how to merge it."
+  say "$number" "Auto-merge is off: this PR targets \`$default\`, but GitHub still counts it as part of a stack and refuses auto-merge. Merge it by hand once it is approved and green, or push to it once GitHub moves it out of the stack."
+  exit 0
+fi
+fail "GitHub refused auto-merge for this PR" "$answer"

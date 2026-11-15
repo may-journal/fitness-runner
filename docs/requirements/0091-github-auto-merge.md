@@ -2,7 +2,7 @@
 
 ## Why
 
-Every ready pull request of mine ends up with auto-merge on, or says plainly in a comment why it has none. A stacked one keeps a green Auto-merge check, and its comment tells me how it merges. Any other auto-merge failure turns the check red with GitHub's answer.
+Every ready pull request of mine ends up with auto-merge on, or says plainly in a comment why it has none. A stacked one keeps a green Auto-merge check, and its comment tells me how it merges. Any other auto-merge failure turns the check red with GitHub's answer. Its shell is a checked-in script.
 
 ## Measurement
 
