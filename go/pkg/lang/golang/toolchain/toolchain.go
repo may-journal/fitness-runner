@@ -120,11 +120,13 @@ var hookVars = map[string]bool{
 
 // CleanEnv returns env without git's hook variables and the runner's FITNESS_*
 // context, so toolchain runs never touch the repository or inherit a scope.
+// FITNESS_CHECKS_DIR stays, since it names where the checks are, not a scope,
+// and a test that runs fitness needs it to find them.
 func CleanEnv(env []string) []string {
 	var out []string
 	for _, kv := range env {
 		name, _, _ := strings.Cut(kv, "=")
-		if !hookVars[name] && !strings.HasPrefix(name, "FITNESS_") {
+		if !hookVars[name] && (name == checkkit.ChecksDirEnv || !strings.HasPrefix(name, "FITNESS_")) {
 			out = append(out, kv)
 		}
 	}
