@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"slices"
@@ -213,20 +211,4 @@ func (r replays) count(name string, want ...string) int {
 		}
 	}
 	return n
-}
-
-// registry serves saved npm registry answers, package name to response body,
-// and returns its URL; a missing package answers 404.
-func registry(t *testing.T, packages map[string]string) string {
-	t.Helper()
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		body, ok := packages[strings.TrimPrefix(r.URL.Path, "/")]
-		if !ok {
-			http.NotFound(w, r)
-			return
-		}
-		fmt.Fprint(w, body)
-	}))
-	t.Cleanup(srv.Close)
-	return srv.URL
 }
