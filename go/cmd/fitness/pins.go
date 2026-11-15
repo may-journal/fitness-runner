@@ -32,8 +32,8 @@ func runCheckVersions(args []string) int {
 	return 0
 }
 
-// checkVersions is root's checkVersions, or every released check at
-// currentMajor when the key is unset or empty. A bad pin fails.
+// checkVersions is root's checkVersions with a "*" pin spread over every
+// released check, or every released check at currentMajor when unset or empty.
 func checkVersions(root string) (map[string]string, error) {
 	cfg, err := loadConfig(root)
 	if err != nil {
@@ -42,7 +42,28 @@ func checkVersions(root string) (map[string]string, error) {
 	if cfg == nil || len(cfg.CheckVersions) == 0 {
 		return defaultPins(), nil
 	}
-	return cfg.CheckVersions, badPin(cfg.CheckVersions)
+	return withEveryCheck(cfg.CheckVersions), badPin(cfg.CheckVersions)
+}
+
+// everyCheck is the checkVersions name that pins every released check.
+const everyCheck = "*"
+
+// withEveryCheck gives every released check the "*" pin, when pins has one.
+// A check pinned by its own name keeps its own pin.
+func withEveryCheck(pins map[string]string) map[string]string {
+	every, ok := pins[everyCheck]
+	if !ok {
+		return pins
+	}
+	out := map[string]string{}
+	for name := range defaultPins() {
+		out[name] = every
+	}
+	for name, pin := range pins {
+		out[name] = pin
+	}
+	delete(out, everyCheck)
+	return out
 }
 
 // defaultPins pins every released check to currentMajor.
@@ -76,7 +97,7 @@ func badPin(pins map[string]string) error {
 // pinError says what is wrong with one pin, or nil.
 func pinError(name, pin string) error {
 	switch {
-	case !checkName.MatchString(name):
+	case name != everyCheck && !checkName.MatchString(name):
 		return fmt.Errorf("checkVersions names %q, which is no check name; `fitness list` names them", name)
 	case engineJudges[name] != nil:
 		return fmt.Errorf("checkVersions pins %s, which runs inside the engine, so remove it", name)

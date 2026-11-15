@@ -8,12 +8,23 @@ inputs:
     required: false
     default: ''
   with-checks:
-    description: Also install each check .fitnessrc.json pins, from its own release, and set FITNESS_CHECKS_DIR.
+    description: >-
+      Also install the checks .fitnessrc.json pins, each from its own release,
+      and set FITNESS_CHECKS_DIR: true for every pinned or default check,
+      pinned only where checkVersions is set, false for none.
     required: false
     default: 'false'
 runs:
   using: composite
   steps:
+    # Each check archive downloads once per pin set and runner, not per job.
+    - name: Restore the installed checks
+      if: ${{ inputs.ref == '' && inputs.with-checks != 'false' }}
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/fitness/checks
+        key: fitness-checks-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('.fitnessrc.json') }}
+        restore-keys: fitness-checks-${{ runner.os }}-${{ runner.arch }}-
     - name: Install the pinned fitness bundle
       if: ${{ inputs.ref == '' }}
       uses: may-journal/fitness-runner@v1

@@ -24,3 +24,7 @@ Check pins
     - Given Developer has a repo whose `checkVersions` holds a malformed pin or name, or pins a check the engine runs
         - When I run `fitness check-versions`
             - Then it fails, naming the check and how to fix it
+- 0163.4
+    - Given Developer has a repo whose `checkVersions` pins `*` to a major and one check to a release
+        - When I run `fitness check-versions`
+            - Then every released check gets the major, and the named check keeps its release

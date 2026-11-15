@@ -23,6 +23,7 @@ runs:
       uses: $/.github/actions/fitness-install
       with:
         ref: ${{ inputs.ref }}
+        with-checks: pinned
     # Every name is checked before any runs, so a typo runs nothing. A later
     # command still runs after an earlier one fails, so one run lists both.
     - name: Run the commands

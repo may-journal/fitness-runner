@@ -116,7 +116,7 @@ jobs:
         uses: $/.github/actions/fitness-install
         with:
           ref: ${{ inputs.ref }}
-          with-checks: 'true'
+          with-checks: pinned
       # One pinned SwiftLint everywhere: "latest" let a release add a rule
       # overnight that laptops had never seen. A hosted run caches the zip and
       # a Mac keeps it on disk, saving a 2-5 s download.
