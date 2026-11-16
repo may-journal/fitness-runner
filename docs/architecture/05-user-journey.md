@@ -66,7 +66,7 @@ flowchart TB
     failuresShown[10 Failures shown<br/>Req 0004]:::blocked
     fixIssues(11 Fix issues<br/>Req 0004):::action
     configError[(12 Config error<br/>Req 0008)]:::blocked
-    ciRun[(13 CI runs fitness<br/>Req 0013, 0015, 0082, 0087, 0120, 0138)]:::system
+    ciRun[(13 CI runs fitness<br/>Req 0013, 0015, 0082, 0087, 0120, 0138, 0174)]:::system
     prCheck[(27 Pull request check<br/>Req 0014, 0069, 0091, 0095, 0171)]:::system
     adrIssues[(45 ADR issues<br/>Req 0148)]:::system
     suiteRunner[(47 Suite runner<br/>Req 0158, 0165)]:::system

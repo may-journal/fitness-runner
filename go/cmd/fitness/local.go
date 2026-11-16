@@ -321,7 +321,7 @@ func useRepoChecks() error {
 	if err != nil {
 		return err
 	}
-	metadata.RepoChecks.Find = findCheckBinary
+	metadata.RepoChecks.Find = findOrFetch
 	metadata.RepoChecks.Off = func(name string) bool { return turnedOff(cfg, name) }
 	return nil
 }

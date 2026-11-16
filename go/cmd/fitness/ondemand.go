@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -33,16 +34,65 @@ var fetchFailures = map[string]string{}
 // uses it in place of its stand-in.
 var fetchedResolved = map[string]resolved{}
 
-// defersFetch reports whether the command line runs the suite on the repo's
-// files: a plain run, or the pre-commit hook. Other commands fetch up front.
+// bodyCommands judge the Actions event's bodies with the checks they name,
+// so each fetches a check only when it first runs it.
+var bodyCommands = []string{"pr-check", "dependabot-pr", "issue-check", "plan-check", "close-check", "dupe-check"}
+
+// defersFetch reports whether the command line fetches each check once it
+// reaches it: a plain run, the pre-commit hook, or a GitHub command. Other
+// commands fetch up front.
 func defersFetch(args []string) bool {
 	if len(args) == 0 {
+		return true
+	}
+	if judgesEvent(args) {
 		return true
 	}
 	if args[0] == "hook" {
 		return slices.Equal(args, []string{"hook"}) || args[1] == "pre-commit"
 	}
 	return suiteRun(args)
+}
+
+// judgesEvent reports whether args judge the Actions event's bodies: one of
+// bodyCommands, or comment-check with no draft inside GitHub Actions.
+func judgesEvent(args []string) bool {
+	if args[0] == "comment-check" {
+		return len(args) == 1 && os.Getenv("GITHUB_EVENT_NAME") != ""
+	}
+	return slices.Contains(bodyCommands, args[0])
+}
+
+// findOrFetch finds the program of check name, fetching it first when
+// pending, so a GitHub command downloads only the checks it runs.
+func findOrFetch(name string) (checkkit.Program, error) {
+	if _, ok := pending[name]; ok && fetchFailures[name] == "" {
+		fetchPending(name)
+	}
+	if note := fetchFailures[name]; note != "" {
+		return checkkit.Program{}, errors.New(note)
+	}
+	return findCheckBinary(name)
+}
+
+// fetchPending fetches one pending check and hands it to the run, warning
+// once when it cannot.
+func fetchPending(name string) {
+	installer, err := distribution.New("", "", os.Stderr)
+	var programs map[string]string
+	failed := map[string]error{name: err}
+	if err == nil {
+		programs, failed = installer.FetchChecks(context.Background(), pendingPins([]string{name}))
+	}
+	if why := failed[name]; why != nil {
+		fetchFailures[name] = fmt.Sprintf("check %s could not be fetched, so it judged nothing: %v", name, why)
+		fmt.Fprintf(os.Stderr, "fitness: warning: %s\n", fetchFailures[name])
+		return
+	}
+	if programs[name] != "" {
+		takeFetched([]string{name}, programs)
+		linkFetched(installer)
+	}
 }
 
 // suiteRun reports whether args run the whole suite on files: no command,

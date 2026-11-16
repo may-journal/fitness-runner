@@ -20,6 +20,12 @@ The workflows share their repeated steps as composite actions under [.github/act
 
 The issue, comment, close and PR check workflows each hold one fitness-command step. This repo's issue-check, comment-check and close-check call those reusable workflows with `ref` set to their commit, testing its source. pr-check-reusable skips this repo, so its own pr-check runs fitness-command on the PR head instead.
 
+### Checks on demand
+
+An issue, comment or PR event installs no check up front. fitness-command passes `with-checks: on-demand`, so the engine fetches each check the first time its command runs it. A manual sweep judges many bodies, so it installs every pinned check, as the suite does on a push to `main`. Requirements 0171 and 0174 hold these rules.
+
+On hosted runners fitness-install caches `~/.cache/fitness/checks` under `fitness-checks-<os>-<arch>-<index hash>-<job>`. The index hash is the SHA-256 of the fitness-checks release index, which names every check version a release holds. A miss restores another job's set from the same index, else any older set, and saves its own once the job ends. A run that cannot read the index warns and skips the cache.
+
 ## Billing
 
 Each started job bills at least one minute, though a check takes seconds, so run count drives spend. A job whose `if` is false starts no runner and bills nothing. So each issue, comment, and PR job skips events that cannot change its result. Its command skips them too.

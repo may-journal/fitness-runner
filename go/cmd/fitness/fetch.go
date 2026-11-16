@@ -38,8 +38,8 @@ func fetchMissingChecks(args []string) {
 	}
 }
 
-// fetchesLater reports whether nothing installs now: none is missing, or a
-// suite run fetches the checks its files reach once it knows them.
+// fetchesLater reports whether nothing installs now. Either none is missing,
+// or the command fetches each check once it reaches it, as defersFetch says.
 func fetchesLater(args []string, missing map[string]string) bool {
 	return len(missing) == 0 || defersFetch(args) && planFetches(missing)
 }
