@@ -21,6 +21,9 @@ type Row struct {
 	Errors []string
 	// Info renders as a full-width block and never fails the row.
 	Info []string
+	// Skipped says why the run left the check out, such as no matching
+	// files. A skipped row passes, since the check had nothing to judge.
+	Skipped string
 }
 
 // IsInfo reports whether the row passed with info notes, such as a check
@@ -31,7 +34,9 @@ func (r Row) IsInfo() bool { return r.Ok && len(r.Info) > 0 }
 // passes and never as failures.
 type Totals struct {
 	Success, Failure, Info, Files int
-	Ms                            int64
+	// Skipped counts the passing rows the run left out, among Success.
+	Skipped int
+	Ms      int64
 }
 
 // Add tallies one row.
@@ -43,6 +48,9 @@ func (t *Totals) Add(r Row) {
 		t.Info++
 	default:
 		t.Success++
+	}
+	if r.Skipped != "" {
+		t.Skipped++
 	}
 	if r.FilesChecked >= 0 {
 		t.Files += r.FilesChecked
@@ -174,10 +182,13 @@ func rowCells(r Row, widths []int, p Palette) []string {
 		files = strconv.Itoa(r.FilesChecked)
 	}
 	status := p.green + pad("passed", widths[1]-2) + p.rst
-	if !r.Ok {
+	switch {
+	case !r.Ok:
 		status = p.red + pad("failed", widths[1]-2) + p.rst
-	} else if r.IsInfo() {
+	case r.IsInfo():
 		status = pad("info", widths[1]-2)
+	case r.Skipped != "":
+		status = p.gray + pad("skipped", widths[1]-2) + p.off
 	}
 	return []string{
 		pad(truncate(r.Name, widths[0]-2), widths[0]-2),
@@ -228,7 +239,7 @@ func totalText(t Totals) string {
 	total := t.Success + t.Failure + t.Info
 	tail := fmt.Sprintf(" · %d files scanned · %dms", t.Files, t.Ms)
 	if t.Failure == 0 && t.Info == 0 {
-		return fmt.Sprintf("✓ All %d checks passed", total) + tail
+		return fmt.Sprintf("✓ All %d checks passed", total) + Counts(t) + tail
 	}
 	mark := "✓"
 	if t.Failure > 0 {
@@ -237,8 +248,8 @@ func totalText(t Totals) string {
 	return fmt.Sprintf("%s %d of %d checks passed", mark, t.Success, total) + Counts(t) + tail
 }
 
-// Counts names the failures and info rows, such as ", 1 failed, 2 info",
-// leaving out a zero count.
+// Counts names the failed, info and skipped rows, such as ", 1 failed, 2
+// info, 3 skipped", leaving out a zero count.
 func Counts(t Totals) string {
 	s := ""
 	if t.Failure > 0 {
@@ -246,6 +257,9 @@ func Counts(t Totals) string {
 	}
 	if t.Info > 0 {
 		s += fmt.Sprintf(", %d info", t.Info)
+	}
+	if t.Skipped > 0 {
+		s += fmt.Sprintf(", %d skipped", t.Skipped)
 	}
 	return s
 }

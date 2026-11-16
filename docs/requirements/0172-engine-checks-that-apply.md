@@ -28,3 +28,7 @@ Installed checks that declare fields
     - Given Developer has two installed checks that judge a text, one of which requires the repo
         - When I pipe a text to `fitness --blob` with both
             - Then the run judges the text with the first and skips the second, naming what it requires
+- 0172.5
+    - Given Developer has an installed check that passes and one the run skips
+        - When I run both, with and without `--format=json`
+            - Then the skipped check is a skipped row, counted among the passes, and its JSON entry says why

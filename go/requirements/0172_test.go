@@ -83,6 +83,26 @@ func Test0172_3(t *testing.T) {
 	absent(t, out, "teleport")
 }
 
+func Test0172_5(t *testing.T) {
+	t.Parallel()
+	repo := example(t, "happyRepo", map[string]string{"notes/plan.md": "# Plan\n"})
+	bundle := bundle0162(t)
+	write(t, bundle, map[string]string{
+		"fitness-check-md-files": "#!/bin/sh\n[ \"$1\" = --describe ] && { printf '%s\\n' '{\"name\":\"md-files\",\"files\":\"\\\\.md$\"}'; exit 0; }\n" +
+			"echo '{\"ok\":true,\"errors\":[],\"filesChecked\":1}'\n",
+		"fitness-check-go-files": script0172("go-files", `{"name":"go-files","files":"\\.go$"}`),
+	})
+	args := []string{"--policy=external", "--checks=md-files,go-files", "--dir=notes"}
+	out, code := run0172(t, bundle, repo, "", args...)
+	sees(t, out, code, 0, "All 2 checks passed, 1 skipped", "Skipped (no matching files): go-files")
+	if !strings.Contains(row(out, "go-files"), "skipped") {
+		t.Errorf("go-files must show as a skipped row:\n%s", out)
+	}
+	out, code = run0172(t, bundle, repo, "", append(args, "--format=json")...)
+	sees(t, out, code, 0, `"status": "skipped"`, `"skipped": "no matching files"`)
+	absent(t, out, "go-files")
+}
+
 func Test0172_4(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", nil)

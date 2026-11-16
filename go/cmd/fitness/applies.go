@@ -6,6 +6,7 @@ import (
 
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/gitx"
+	"github.com/may-journal/fitness-runner/go/pkg/render"
 )
 
 // skipGroup is one reason a run leaves checks out, with their names in order.
@@ -35,6 +36,37 @@ func (g skipGroups) list(out *os.File) {
 	}
 }
 
+// reasons maps each skipped check's name to why the run left it out.
+func (g skipGroups) reasons() map[string]string {
+	why := map[string]string{}
+	for _, group := range g {
+		for _, name := range group.names {
+			why[name] = group.why
+		}
+	}
+	return why
+}
+
+// withSkipped puts a passing row for each skipped check back in its place
+// among all, and tallies it in totals. Rows and findings of run checks stay.
+func withSkipped(all []resolved, rows []render.Row, found [][]checkkit.Finding, skipped skipGroups, totals *render.Totals) ([]render.Row, [][]checkkit.Finding) {
+	why := skipped.reasons()
+	var outRows []render.Row
+	var outFound [][]checkkit.Finding
+	ran := 0
+	for _, c := range all {
+		if reason, ok := why[c.name]; ok {
+			row := render.Row{Name: c.name, Ok: true, FilesChecked: -1, Skipped: reason}
+			totals.Add(row)
+			outRows, outFound = append(outRows, row), append(outFound, []checkkit.Finding{})
+			continue
+		}
+		outRows, outFound = append(outRows, rows[ran]), append(outFound, found[ran])
+		ran++
+	}
+	return outRows, outFound
+}
+
 // Why a run leaves a check out, as its Skipped line says.
 const (
 	noMatchingFiles = "no matching files"
@@ -42,10 +74,11 @@ const (
 )
 
 // applicable keeps the checks this run reaches and groups the rest by why
-// skipReason leaves them out.
-func applicable(root string, checks []resolved, env []string) ([]resolved, skipGroups) {
+// skipReason leaves them out. shared is the run's shared tracked list,
+// which needs patterns read before git is asked for one.
+func applicable(root string, checks []resolved, env, shared []string) ([]resolved, skipGroups) {
 	paths := scopedFiles(env)
-	tracked := trackedList{root: root}
+	tracked := trackedList{root: root, paths: shared, listed: shared != nil}
 	var kept []resolved
 	var skipped skipGroups
 	for _, c := range checks {
@@ -76,8 +109,8 @@ func skipReason(c resolved, paths []string, tracked *trackedList) string {
 	return ""
 }
 
-// trackedList lists root's tracked files from git once, the first time a
-// check's needs pattern asks.
+// trackedList holds root's tracked files: the run's shared list, or one
+// git lists once, the first time a check's needs pattern asks.
 type trackedList struct {
 	root   string
 	paths  []string

@@ -96,7 +96,7 @@ func slowestFirst(checks []perfCheck) []perfCheck {
 func headline(t render.Totals) string {
 	total := t.Success + t.Failure + t.Info
 	if t.Failure == 0 && t.Info == 0 {
-		return fmt.Sprintf("✅ **All %d checks passed** — %d files scanned in %dms", total, t.Files, t.Ms)
+		return fmt.Sprintf("✅ **All %d checks passed**%s — %d files scanned in %dms", total, render.Counts(t), t.Files, t.Ms)
 	}
 	mark := "✅"
 	if t.Failure > 0 {
@@ -113,6 +113,9 @@ func statusMark(r render.Row) string {
 	}
 	if r.IsInfo() {
 		return "ℹ️ info"
+	}
+	if r.Skipped != "" {
+		return "⏭️ skipped: " + r.Skipped
 	}
 	return "✅ pass"
 }
