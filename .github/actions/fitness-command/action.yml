@@ -51,6 +51,14 @@ runs:
           fitness "$command" || status=1
         done
         exit "$status"
+    # A failed command still fetched its checks, so they save either way.
+    - name: Save the fetched checks
+      if: ${{ always() && github.event_name != 'workflow_dispatch' }}
+      uses: $/.github/actions/save-checks
+      with:
+        index-key: ${{ steps.install.outputs.checks-index-key }}
+        job-key: ${{ steps.install.outputs.checks-job-key }}
+        restored-key: ${{ steps.install.outputs.checks-restored-key }}
     - name: Retain the reports
       if: ${{ always() }}
       uses: $/.github/actions/fitness-reports

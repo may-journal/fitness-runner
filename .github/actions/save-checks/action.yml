@@ -1,0 +1,34 @@
+name: Save the checks
+description: >-
+  Save the checks cache under a key naming the programs it holds, once they
+  differ from the set the job restored.
+inputs:
+  index-key:
+    description: The prefix of this release index's sets, from fitness-install.
+    required: true
+  job-key:
+    description: The prefix of this job's sets, from fitness-install; empty saves nothing.
+    required: true
+  restored-key:
+    description: The key the job restored its set from, empty for none.
+    required: false
+    default: ''
+runs:
+  using: composite
+  steps:
+    - name: Name the checks set
+      id: set
+      if: ${{ inputs.job-key != '' }}
+      shell: bash
+      env:
+        FITNESS_INDEX_KEY: ${{ inputs.index-key }}
+        FITNESS_JOB_KEY: ${{ inputs.job-key }}
+        FITNESS_RESTORED_KEY: ${{ inputs.restored-key }}
+        FITNESS_SAVE_ACTION: ${{ github.action_path }}
+      run: '"$FITNESS_SAVE_ACTION/set-key.sh"'
+    - name: Save the checks set
+      if: ${{ steps.set.outputs.key != '' && steps.set.outputs.key != inputs.restored-key }}
+      uses: actions/cache/save@v4
+      with:
+        path: ~/.cache/fitness/checks
+        key: ${{ steps.set.outputs.key }}

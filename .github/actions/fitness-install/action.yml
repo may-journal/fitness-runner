@@ -15,32 +15,53 @@ inputs:
       installs none up front, and the engine fetches each check it runs.
     required: false
     default: 'false'
+outputs:
+  checks-index-key:
+    description: The prefix of this release index's checks sets, empty when the cache is off.
+    value: ${{ steps.index.outputs.index }}
+  checks-job-key:
+    description: The prefix of this job's checks sets, empty when the cache is off.
+    value: ${{ steps.index.outputs.job }}
+  checks-restored-key:
+    description: The key the checks set was restored from, empty for none.
+    value: ${{ steps.restore.outputs.cache-matched-key }}
 runs:
   using: composite
   steps:
-    # A hosted runner starts empty, so the checks cache keys on the release
-    # index, which names every check version a release holds.
+    # A hosted runner starts empty, so it restores the newest checks set of
+    # its job, else of its index, else any.
     - name: Hash the release index
       id: index
       if: ${{ inputs.ref == '' && inputs.with-checks != 'false' && runner.environment == 'github-hosted' }}
       shell: bash
-      run: if hash="$(curl -fsSL --retry 3 https://github.com/may-journal/fitness-checks/releases/download/fitness-check-index/index.json | shasum -a 256)"; then printf 'hash=%.64s\n' "$hash" >> "$GITHUB_OUTPUT"; else printf '::warning::Could not read the release index, so the checks cache is not restored.\n'; fi
+      env:
+        FITNESS_INSTALL_ACTION: ${{ github.action_path }}
+      run: '"$FITNESS_INSTALL_ACTION/index-key.sh"'
     - name: Restore the installed checks
-      if: ${{ steps.index.outputs.hash != '' }}
-      uses: actions/cache@v4
+      id: restore
+      if: ${{ steps.index.outputs.job != '' }}
+      uses: actions/cache/restore@v4
       with:
         path: ~/.cache/fitness/checks
-        # Each job keeps its own set, so an on-demand job saves what it fetched.
-        key: fitness-checks-${{ runner.os }}-${{ runner.arch }}-${{ steps.index.outputs.hash }}-${{ github.job }}
+        key: ${{ steps.index.outputs.job }}
         restore-keys: |
-          fitness-checks-${{ runner.os }}-${{ runner.arch }}-${{ steps.index.outputs.hash }}-
-          fitness-checks-${{ runner.os }}-${{ runner.arch }}-
+          ${{ steps.index.outputs.job }}
+          ${{ steps.index.outputs.index }}
+          ${{ steps.index.outputs.base }}
     - name: Install the pinned fitness bundle
       if: ${{ inputs.ref == '' }}
       uses: may-journal/fitness-runner@v1
       with:
         install-only: 'true'
         with-checks: ${{ inputs.with-checks == 'on-demand' && 'false' || inputs.with-checks }}
+    # An on-demand job fetches as it runs, so fitness-command saves after it.
+    - name: Save the installed checks
+      if: ${{ inputs.with-checks != 'on-demand' && steps.index.outputs.job != '' }}
+      uses: $/.github/actions/save-checks
+      with:
+        index-key: ${{ steps.index.outputs.index }}
+        job-key: ${{ steps.index.outputs.job }}
+        restored-key: ${{ steps.restore.outputs.cache-matched-key }}
     # A source build keeps the newest stable Go it needs.
     - name: Set up Go for the source build
       if: ${{ inputs.ref != '' }}

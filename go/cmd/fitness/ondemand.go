@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
@@ -75,24 +76,44 @@ func findOrFetch(name string) (checkkit.Program, error) {
 	return findCheckBinary(name)
 }
 
-// fetchPending fetches one pending check and hands it to the run, warning
-// once when it cannot.
+// fetchPending fetches and describes one pending check, as a suite run does,
+// and hands it to the run. A failure stands for the rest of the run.
 func fetchPending(name string) {
-	installer, err := distribution.New("", "", os.Stderr)
-	var programs map[string]string
-	failed := map[string]error{name: err}
-	if err == nil {
-		programs, failed = installer.FetchChecks(context.Background(), pendingPins([]string{name}))
-	}
-	if why := failed[name]; why != nil {
-		fetchFailures[name] = fmt.Sprintf("check %s could not be fetched, so it judged nothing: %v", name, why)
-		fmt.Fprintf(os.Stderr, "fitness: warning: %s\n", fetchFailures[name])
+	fresh, err := fetchNamed([]string{name})
+	if err != nil {
+		// No installer means no pending check can be fetched.
+		failPending(pendingNames(), err)
 		return
 	}
-	if programs[name] != "" {
-		takeFetched([]string{name}, programs)
-		linkFetched(installer)
+	if err := newEnough(fresh); err != nil {
+		failPending([]string{name}, err)
+		return
 	}
+	if note := fetchFailures[name]; note != "" {
+		fmt.Fprintf(os.Stderr, "fitness: warning: %s\n", note)
+	}
+	keepProgram(name)
+}
+
+// keepProgram adds a fetched check's program to the installed ones, so it
+// runs even when its check set could not be linked.
+func keepProgram(name string) {
+	r, ok := fetchedResolved[name]
+	if !ok || installedPrograms[name] != "" {
+		return
+	}
+	if installedPrograms == nil {
+		installedPrograms = map[string]string{}
+	}
+	installedPrograms[name] = r.prog.Path
+}
+
+// failPending notes why each named check was not fetched, and warns once.
+func failPending(names []string, why error) {
+	for _, name := range names {
+		fetchFailures[name] = fmt.Sprintf("check %s could not be fetched, so it judged nothing: %v", name, why)
+	}
+	fmt.Fprintf(os.Stderr, "fitness: warning: could not fetch %s: %v\n", strings.Join(names, ", "), why)
 }
 
 // suiteRun reports whether args run the whole suite on files: no command,
