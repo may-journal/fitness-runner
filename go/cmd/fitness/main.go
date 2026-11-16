@@ -6,7 +6,7 @@
 // configure.
 //
 // A run resolves the checks, runs them side by side under two totals, and
-// prints a table of passed, failed, or info results. Info never fails a run. With files staged it judges only those files; --all judges
+// prints a table of results. Each is passed, failed, info, or skipped. Info never fails a run, and a check no file of the run reaches is skipped. With files staged it judges only those files; --all judges
 // every tracked file.
 //
 // # Exit codes
@@ -435,7 +435,8 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 		report.Error("fitness setup", err)
 		return stageResult{code: 1}
 	}
-	checks, skipped := applicable(root, checks, env)
+	all := checks
+	checks, skipped := applicable(root, checks, env, tracked.Paths)
 	tracked, env = withViews(root, checks, env, tracked)
 	tracked, env = withTestScan(root, checks, env, tracked)
 	defer tracked.Remove()
@@ -450,13 +451,15 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 
 	rows, totals := summarize(checks, outcomes, hint)
 	totals.Ms = time.Since(start).Milliseconds()
-	printSummary(rows, totals, breachLine(checks, outcomes, rows))
-	skipped.list(humanOut(totals))
+	breach := breachLine(checks, outcomes, rows)
 	found := allFindings(checks, outcomes, rows)
+	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
+	rows, found = withSkipped(all, rows, found, skipped, &totals)
+	printSummary(rows, totals, breach)
+	skipped.list(humanOut(totals))
 	if last || totals.Failure > 0 {
 		printJSON(rows, found, totals)
 	}
-	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
 	code := finish(rows, found, perf, totals)
 	return stageResult{code: withPerfReport(perfPath, perf, code), rows: rows, found: found}
 }

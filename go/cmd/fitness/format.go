@@ -52,8 +52,10 @@ type runReport struct {
 type checkReport struct {
 	// Name is the check's name, which `fitness <name>` runs alone.
 	Name string `json:"name"`
-	// Status is passed, failed, or info, as the table shows it.
+	// Status is passed, failed, info, or skipped, as the table shows it.
 	Status string `json:"status"`
+	// Skipped says why the run left the check out, when it did.
+	Skipped string `json:"skipped,omitempty"`
 	// FilesChecked counts the files judged; -1 when the check never judged.
 	FilesChecked int `json:"filesChecked"`
 	// Ms is the check's run time in milliseconds.
@@ -78,7 +80,7 @@ func printJSON(rows []render.Row, found [][]checkkit.Finding, totals render.Tota
 	report := runReport{Ok: totals.Failure == 0, Checks: make([]checkReport, len(rows))}
 	for i, row := range rows {
 		report.Checks[i] = checkReport{
-			Name: row.Name, Status: status(row), FilesChecked: row.FilesChecked, Ms: row.Ms,
+			Name: row.Name, Status: status(row), Skipped: row.Skipped, FilesChecked: row.FilesChecked, Ms: row.Ms,
 			Errors: nonNil(row.Errors), Info: row.Info, Findings: found[i],
 		}
 	}
@@ -97,6 +99,8 @@ func status(row render.Row) string {
 		return "failed"
 	case row.IsInfo():
 		return "info"
+	case row.Skipped != "":
+		return "skipped"
 	}
 	return "passed"
 }

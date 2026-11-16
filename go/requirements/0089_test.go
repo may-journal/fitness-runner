@@ -114,8 +114,11 @@ func fullEntry(t *testing.T, out string, c perfCheck) {
 
 func Test0089_2(t *testing.T) {
 	t.Parallel()
-	// Prettier is the one fast check, so it starts on a loaded machine.
-	_, report := selectedReport(t, example(t, "happyRepo", hungTool("")), []string{fastTotal(300)}, "--checks=prettier,go-test")
+	// Prettier is the one fast check, so it starts on a loaded machine. A Go
+	// module gives go-test something to judge, so it runs rather than skips.
+	files := hungTool("")
+	files["go.mod"] = "module example.com/app\n\ngo 1.22\n"
+	_, report := selectedReport(t, example(t, "happyRepo", files), []string{fastTotal(300)}, "--checks=prettier,go-test")
 	prettier := reported(t, report, "prettier")
 	if got := [3]any{prettier.TimedOut, prettier.Ok, prettier.Stage}; got != [3]any{true, false, "fast"} {
 		t.Errorf("prettier must be stopped at the 300ms fast total, got %+v", prettier)

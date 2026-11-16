@@ -157,12 +157,14 @@ func slowest(rows []render.Row) string {
 	return strings.Join(names, ", ")
 }
 
-// slowestLine is the summary line naming the run's slowest checks.
+// slowestLine is the summary line naming the run's slowest checks, leaving
+// out the skipped ones, which never ran.
 func slowestLine(rows []render.Row) string {
-	if len(rows) == 0 {
+	ran := slices.DeleteFunc(slices.Clone(rows), func(r render.Row) bool { return r.Skipped != "" })
+	if len(ran) == 0 {
 		return ""
 	}
-	return "Slowest: " + slowest(rows)
+	return "Slowest: " + slowest(ran)
 }
 
 // breachLine names, for each stage whose total stopped a check, that stage's
