@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"maps"
 	"os"
 	"path/filepath"
 	"slices"
@@ -33,10 +32,20 @@ func fetchMissingChecks(args []string) {
 		fmt.Fprintf(os.Stderr, "fitness: warning: could not read the checks the repo pins: %v; install them with `fitness-install --with-checks`\n", err)
 		return
 	}
-	missing := missingPins(pins)
-	if len(missing) == 0 {
-		return
+	missing := hookPins(args, missingPins(pins))
+	if !fetchesLater(args, missing) {
+		installMissing(missing)
 	}
+}
+
+// fetchesLater reports whether nothing installs now: none is missing, or a
+// suite run fetches the checks its files reach once it knows them.
+func fetchesLater(args []string, missing map[string]string) bool {
+	return len(missing) == 0 || defersFetch(args) && planFetches(missing)
+}
+
+// installMissing installs every missing pin and hands the checks to the run.
+func installMissing(missing map[string]string) {
 	dir, err := installPins(missing)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "fitness: warning: could not install the checks the repo pins: %v; install them with `fitness-install --with-checks`\n", err)
@@ -65,10 +74,17 @@ func addFetched(dir string) {
 // to it, as fitness-install hands them through FITNESS_CHECKS_DIR.
 func needsChecks(args []string) bool {
 	// --no-builtins tests a clean install, so it judges only what is installed.
-	if os.Getenv(checkkit.ChecksDirEnv) != "" || builtinsOff() {
+	if os.Getenv(checkkit.ChecksDirEnv) != "" || builtinsOff() || listsBuiltins(args) {
 		return false
 	}
 	return len(args) == 0 || runsChecks(args[0])
+}
+
+// listsBuiltins reports whether args are `check --list`, which names only
+// the checks the engine runs itself. An install runs it on every new
+// bundle, so it fetches nothing.
+func listsBuiltins(args []string) bool {
+	return len(args) > 1 && args[0] == "check" && args[1] == "--list"
 }
 
 // runsChecks reports whether a command line starting with first runs or
@@ -96,9 +112,5 @@ func installPins(pins map[string]string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	list := make([]distribution.CheckPin, 0, len(pins))
-	for _, name := range slices.Sorted(maps.Keys(pins)) {
-		list = append(list, distribution.CheckPin{Name: name, Pin: pins[name]})
-	}
-	return installer.InstallChecks(context.Background(), list)
+	return installer.InstallChecks(context.Background(), pinList(pins))
 }

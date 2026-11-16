@@ -119,6 +119,7 @@ func catalogNames() []string {
 			names = append(names, name)
 		}
 	}
+	names = append(names, pendingNames()...)
 	slices.Sort(names)
 	return names
 }
@@ -143,6 +144,9 @@ type resolved struct {
 	// needs says why this fitness is too old for the check's minFitness,
 	// which stops a run before any check starts.
 	needs string
+	// pending marks a stand-in for a check not fetched yet, whose desc
+	// holds only the fields the release index copies.
+	pending bool
 }
 
 // outcome is one finished check, in dispatch order.
@@ -430,13 +434,14 @@ type stageResult struct {
 // returns what it found. Any JSON the run asks for prints for its last
 // stage, or a failed earlier one.
 func runStage(root, perfPath string, checks []resolved, passthrough, env []string, cleanup func(), clock *runTotals, last bool) stageResult {
-	checks, tracked, err := prepareRun(root, checks, cleanup)
+	checks, env, tracked, err := readyStage(root, checks, env, cleanup)
 	if err != nil {
 		report.Error("fitness setup", err)
 		return stageResult{code: 1}
 	}
 	all := checks
 	checks, skipped := applicable(root, checks, env, tracked.Paths)
+	checks, failedFetches := withoutFailedFetches(checks)
 	tracked, env = withViews(root, checks, env, tracked)
 	tracked, env = withTestScan(root, checks, env, tracked)
 	defer tracked.Remove()
@@ -454,7 +459,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 	breach := breachLine(checks, outcomes, rows)
 	found := allFindings(checks, outcomes, rows)
 	perf := perfFor(wantsPerf(perfPath), checks, outcomes, rows, totals.Ms)
-	rows, found = withSkipped(all, rows, found, skipped, &totals)
+	rows, found = withSkipped(all, rows, found, leftOut{skipped: skipped, failedFetches: failedFetches}, &totals)
 	printSummary(rows, totals, breach)
 	skipped.list(humanOut(totals))
 	if last || totals.Failure > 0 {
@@ -462,6 +467,20 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 	}
 	code := finish(rows, found, perf, totals)
 	return stageResult{code: withPerfReport(perfPath, perf, code), rows: rows, found: found}
+}
+
+// readyStage prepares the run, then fetches the checks it reaches. On an
+// error, every file the run shared is removed.
+func readyStage(root string, checks []resolved, env []string, cleanup func()) ([]resolved, []string, walkfs.Shared, error) {
+	checks, tracked, err := prepareRun(root, checks, cleanup)
+	if err != nil {
+		return nil, nil, tracked, err
+	}
+	checks, env, err = fetchReached(root, checks, env, tracked.Paths)
+	if err != nil {
+		tracked.Remove()
+	}
+	return checks, env, tracked, err
 }
 
 // prepareRun drops the checks a commit leaves out and shares the
@@ -762,6 +781,9 @@ func resolveList(names []string) ([]resolved, error) {
 	prebuild(names)
 	progs := make([]checkkit.Program, len(names))
 	for i, name := range names {
+		if _, ok := standIn(name); ok {
+			continue
+		}
 		prog, err := programFor(name)
 		if err != nil {
 			return nil, err
@@ -846,6 +868,10 @@ func describeAll(names []string, progs []checkkit.Program) []resolved {
 	var spawned []int
 	for i, name := range names {
 		if c, ok := describeBuiltin(name, progs[i]); ok {
+			checks[i] = c
+			continue
+		}
+		if c, ok := standIn(name); ok {
 			checks[i] = c
 			continue
 		}

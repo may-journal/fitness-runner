@@ -1,0 +1,262 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"maps"
+	"os"
+	"slices"
+
+	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+)
+
+// pendingCheck is a pinned check not fetched yet. Its pin and index fields
+// stand in for the handshake until the run's files show it applies.
+type pendingCheck struct {
+	pin  string
+	desc checkkit.Describe
+}
+
+// pending holds, by name, the checks a suite run fetches only once its
+// files reach them. fetchedPrograms are the programs the run holds.
+var (
+	pending         map[string]pendingCheck
+	fetchedPrograms []string
+)
+
+// fetchFailures says, by name, why each reached check could not be fetched,
+// so a later stage does not ask again.
+var fetchFailures = map[string]string{}
+
+// fetchedResolved holds each check fetched on demand, by name. A later stage
+// uses it in place of its stand-in.
+var fetchedResolved = map[string]resolved{}
+
+// defersFetch reports whether the command line runs the suite on the repo's
+// files: a plain run, or the pre-commit hook. Other commands fetch up front.
+func defersFetch(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	if args[0] == "hook" {
+		return slices.Equal(args, []string{"hook"}) || args[1] == "pre-commit"
+	}
+	return suiteRun(args)
+}
+
+// suiteRun reports whether args run the whole suite on files: no command,
+// no text and no check name.
+func suiteRun(args []string) bool {
+	_, subcommand := subcommands[args[0]]
+	spec, _ := parseArgv(args)
+	return !subcommand && !hasBlobFlag(args) && spec == ""
+}
+
+// hookPins narrows missing to the checks a commit-msg hook runs, which
+// judge the message alone; any other command line keeps them all.
+func hookPins(argv []string, missing map[string]string) map[string]string {
+	if len(argv) < 2 || !slices.Equal(argv[:2], []string{"hook", "commit-msg"}) {
+		return missing
+	}
+	kept := map[string]string{}
+	for _, name := range commitMsgChecks() {
+		if pin, ok := missing[name]; ok {
+			kept[name] = pin
+		}
+	}
+	return kept
+}
+
+// planFetches records each missing pin as pending, after linking the cached
+// ones. False means the release index cannot be read, so every pin installs.
+func planFetches(missing map[string]string) bool {
+	installer, err := distribution.New("", "", os.Stderr)
+	var planned []distribution.PlannedCheck
+	if err == nil {
+		planned, err = installer.PlanChecks(context.Background(), pinList(missing))
+	}
+	if err != nil {
+		return false
+	}
+	recordPlanned(planned)
+	if len(fetchedPrograms) > 0 {
+		linkFetched(installer)
+	}
+	return true
+}
+
+// recordPlanned keeps each cached program and makes the rest pending.
+func recordPlanned(planned []distribution.PlannedCheck) {
+	pending = map[string]pendingCheck{}
+	for _, p := range planned {
+		if p.Program != "" {
+			fetchedPrograms = append(fetchedPrograms, p.Program)
+			continue
+		}
+		pending[p.Pin.Name] = pendingCheck{pin: p.Pin.Pin, desc: p.Describe}
+	}
+}
+
+// pendingNames lists the pending checks no installed program provides.
+func pendingNames() []string {
+	var names []string
+	for name := range pending {
+		if installedPrograms[name] == "" {
+			names = append(names, name)
+		}
+	}
+	return names
+}
+
+// pinList lists pins in name order.
+func pinList(pins map[string]string) []distribution.CheckPin {
+	list := make([]distribution.CheckPin, 0, len(pins))
+	for _, name := range slices.Sorted(maps.Keys(pins)) {
+		list = append(list, distribution.CheckPin{Name: name, Pin: pins[name]})
+	}
+	return list
+}
+
+// linkFetched links every program the run holds into one check set and
+// hands it to the run. A set that cannot be made leaves the run as it was.
+func linkFetched(installer *distribution.Installer) {
+	dir, err := installer.CheckSet(fetchedPrograms)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "fitness: warning: could not link the fetched checks: %v\n", err)
+		return
+	}
+	addFetched(dir)
+}
+
+// standIn is the resolved entry of a pending check, with no program. Its
+// index fields take the place of a handshake until the run fetches it.
+func standIn(name string) (resolved, bool) {
+	p, ok := pending[name]
+	if _, local := localBins[name]; !ok || local {
+		return resolved{}, false
+	}
+	return resolved{name: name, desc: p.desc, pending: true}, true
+}
+
+// fetchReached fetches, side by side, the pending checks the run reaches,
+// putting each in place of its stand-in. env comes back naming the check
+// set that holds them, and a fetched check too new for this fitness fails.
+func fetchReached(root string, checks []resolved, env, shared []string) ([]resolved, []string, error) {
+	checks = withFetched(checks)
+	names := toFetch(root, checks, env, shared)
+	if len(names) == 0 {
+		return checks, env, nil
+	}
+	fresh, err := fetchNamed(names)
+	if err != nil {
+		return nil, nil, err
+	}
+	env = append(withoutVar(env, checkkit.ChecksDirEnv), checkkit.ChecksDirEnv+"="+os.Getenv(checkkit.ChecksDirEnv))
+	return withFetched(checks), env, newEnough(fresh)
+}
+
+// toFetch names the pending checks the run reaches and has not failed to
+// fetch. fetchesEvery runs fetch them all.
+func toFetch(root string, checks []resolved, env, shared []string) []string {
+	want := checks
+	if !fetchesEvery(checks, env) {
+		want, _ = applicable(root, checks, env, shared)
+	}
+	var names []string
+	for _, c := range want {
+		if c.pending && fetchFailures[c.name] == "" {
+			names = append(names, c.name)
+		}
+	}
+	return names
+}
+
+// fetchesEvery reports whether the run fetches every pending check: a full
+// run, or one local-branch judges, since it runs other checks on bodies.
+func fetchesEvery(checks []resolved, env []string) bool {
+	return scopedFiles(env) == nil || slices.ContainsFunc(checks, func(c resolved) bool { return c.name == localBranch })
+}
+
+// withFetched puts each check fetched so far in place of its stand-in.
+func withFetched(checks []resolved) []resolved {
+	out := make([]resolved, len(checks))
+	for i, c := range checks {
+		if r, ok := fetchedResolved[c.name]; ok && c.pending {
+			c = r
+		}
+		out[i] = c
+	}
+	return out
+}
+
+// fetchNamed fetches and describes the named pending checks, noting why
+// each that could not be fetched did not, and returns the fetched ones.
+func fetchNamed(names []string) ([]resolved, error) {
+	installer, err := distribution.New("", "", os.Stderr)
+	if err != nil {
+		return nil, err
+	}
+	programs, failed := installer.FetchChecks(context.Background(), pendingPins(names))
+	noteFailures(failed)
+	got := slices.Sorted(maps.Keys(programs))
+	if len(got) > 0 {
+		takeFetched(got, programs)
+		linkFetched(installer)
+		fmt.Fprintf(os.Stderr, "fitness: fetched %d checks this run reaches\n", len(got))
+	}
+	return describeFetched(got, programs), nil
+}
+
+// pendingPins lists the pins of the named pending checks.
+func pendingPins(names []string) []distribution.CheckPin {
+	pins := map[string]string{}
+	for _, name := range names {
+		pins[name] = pending[name].pin
+	}
+	return pinList(pins)
+}
+
+// noteFailures records the info note of each check that could not be fetched.
+func noteFailures(failed map[string]error) {
+	for name, why := range failed {
+		fetchFailures[name] = fmt.Sprintf("check %s applies to this run's files but could not be fetched, so it judged nothing: %v", name, why)
+	}
+}
+
+// takeFetched moves the named checks from pending to the run's programs.
+func takeFetched(names []string, programs map[string]string) {
+	for _, name := range names {
+		fetchedPrograms = append(fetchedPrograms, programs[name])
+		delete(pending, name)
+	}
+}
+
+// describeFetched runs the handshake of each fetched check, keeping each
+// for the run's later stages.
+func describeFetched(names []string, programs map[string]string) []resolved {
+	progs := make([]checkkit.Program, len(names))
+	for i, name := range names {
+		progs[i] = checkkit.Program{Path: programs[name]}
+	}
+	fresh := describeAll(names, progs)
+	for _, r := range fresh {
+		fetchedResolved[r.name] = r
+	}
+	return fresh
+}
+
+// withoutFailedFetches keeps out of the run each check whose fetch failed,
+// returning the rest and the info note of each one kept out.
+func withoutFailedFetches(checks []resolved) ([]resolved, map[string]string) {
+	notes := map[string]string{}
+	var kept []resolved
+	for _, c := range checks {
+		if note := fetchFailures[c.name]; c.pending && note != "" {
+			notes[c.name] = note
+			continue
+		}
+		kept = append(kept, c)
+	}
+	return kept, notes
+}
