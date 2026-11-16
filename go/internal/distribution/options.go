@@ -154,11 +154,18 @@ func (options Options) InstallsChecks() bool {
 
 // FetchesOnDemand reports whether the engine this run starts fetches each
 // check its files reach, so nothing installs up front. Install-only and the
-// GitHub Action still install every pin for later steps, and --no-builtins
-// judges only what is installed, so it fetches nothing.
+// GitHub Action still install every pin for later steps.
 func (options Options) FetchesOnDemand() bool {
-	noBuiltins := len(options.Args) > 0 && options.Args[0] == "--no-builtins"
-	return !options.InstallOnly && !options.GitHubAction && !noBuiltins
+	return !options.InstallOnly && !options.GitHubAction && suiteArgs(options.Args)
+}
+
+// suiteArgs reports whether args start the suite run or a hook, which fetch
+// on demand. A --no-builtins run fetches nothing, and other commands may not.
+func suiteArgs(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	return args[0] == "hook" || strings.HasPrefix(args[0], "-") && args[0] != "--no-builtins"
 }
 
 // SkipsChecks reports whether a pinned-only run installs nothing, since the

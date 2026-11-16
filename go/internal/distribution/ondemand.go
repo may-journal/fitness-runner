@@ -49,10 +49,15 @@ func pinNamed(pins []CheckPin, name string) CheckPin {
 }
 
 // describe is the part of pin's --describe the index copies: which files
-// reach the check and what else it requires.
+// reach the check and what else it requires. A check requiring GitHub gets
+// its scope, which the engine's GitHub probe reads.
 func (index checkIndex) describe(pin CheckPin) checkkit.Describe {
 	version := index.version(pin)
-	return checkkit.Describe{Name: pin.Name, Files: version.Files, Exclude: version.Exclude, Needs: version.Needs, Requires: version.Requires}
+	d := checkkit.Describe{Name: pin.Name, Files: version.Files, Exclude: version.Exclude, Needs: version.Needs, Requires: version.Requires}
+	if checkkit.Requiring(d, checkkit.RequiresGitHub) {
+		d.Scope = checkkit.ScopeGitHub
+	}
+	return d
 }
 
 // FetchChecks installs each pinned check side by side, verified by SHA-256,

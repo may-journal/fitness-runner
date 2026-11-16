@@ -184,14 +184,12 @@ func ranOrSkipped(output, check string) bool {
 	return strings.Contains(output, "→ "+check+"\n") || listedSkipped(output, check)
 }
 
-// listedSkipped reports whether a run's Skipped lines name check. The run
-// selected it, but its files or repo do not reach it.
+// listedSkipped reports whether the run skipped check because the fixture
+// tracks no file its needs pattern names. Any other skip still fails.
 func listedSkipped(output, check string) bool {
+	const needs = "Skipped (the repo tracks no file its needs pattern names): "
 	for _, line := range strings.Split(output, "\n") {
-		if !strings.HasPrefix(line, "Skipped (") {
-			continue
-		}
-		if _, names, ok := strings.Cut(line, "): "); ok && slices.Contains(strings.Split(names, ", "), check) {
+		if names, ok := strings.CutPrefix(line, needs); ok && slices.Contains(strings.Split(names, ", "), check) {
 			return true
 		}
 	}

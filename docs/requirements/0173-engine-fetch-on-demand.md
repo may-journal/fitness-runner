@@ -28,3 +28,11 @@ Checks a run downloads
     - Given Developer has the same repo, and the hooks' `FITNESS_WITH_CHECKS=pinned`
         - When I run `fitness-install` with only Markdown staged
             - Then it installs no check up front, and the engine downloads only the checks the Markdown reaches
+- 0173.5
+    - Given Developer has the same repo, and the hooks' `FITNESS_WITH_CHECKS=pinned`
+        - When I run `fitness-install -- config`, a command that fetches no check itself
+            - Then it installs every pinned check up front, so the command sees them
+- 0173.6
+    - Given Developer has a repo pinning `"*": "v1"`, the Markdown check cached at 1.0.0, and a release index recorded over ten minutes ago
+        - When the index publishes the Markdown check's 1.1.0 and a new YAML check, and I run `fitness` with Markdown, then YAML files staged
+            - Then the run asks GitHub for the index again, downloads and verifies Markdown 1.1.0, and fetches the YAML check once YAML is staged

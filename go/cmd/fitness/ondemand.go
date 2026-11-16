@@ -98,15 +98,10 @@ func recordPlanned(planned []distribution.PlannedCheck) {
 	}
 }
 
-// pendingNames lists the pending checks no installed program provides.
+// pendingNames lists the pending checks. None is installed, since only
+// missing pins become pending.
 func pendingNames() []string {
-	var names []string
-	for name := range pending {
-		if installedPrograms[name] == "" {
-			names = append(names, name)
-		}
-	}
-	return names
+	return slices.Collect(maps.Keys(pending))
 }
 
 // pinList lists pins in name order.
@@ -145,15 +140,25 @@ func standIn(name string) (resolved, bool) {
 func fetchReached(root string, checks []resolved, env, shared []string) ([]resolved, []string, error) {
 	checks = withFetched(checks)
 	names := toFetch(root, checks, env, shared)
-	if len(names) == 0 {
-		return checks, env, nil
+	var fresh []resolved
+	var err error
+	if len(names) > 0 {
+		fresh, err = fetchNamed(names)
 	}
-	fresh, err := fetchNamed(names)
 	if err != nil {
 		return nil, nil, err
 	}
-	env = append(withoutVar(env, checkkit.ChecksDirEnv), checkkit.ChecksDirEnv+"="+os.Getenv(checkkit.ChecksDirEnv))
-	return withFetched(checks), env, newEnough(fresh)
+	return withFetched(checks), withChecksDir(env), newEnough(fresh)
+}
+
+// withChecksDir names in env the check set the run now holds, which an
+// earlier stage may have changed. A run holding none keeps env as it is.
+func withChecksDir(env []string) []string {
+	dir := os.Getenv(checkkit.ChecksDirEnv)
+	if dir == "" {
+		return env
+	}
+	return append(withoutVar(env, checkkit.ChecksDirEnv), checkkit.ChecksDirEnv+"="+dir)
 }
 
 // toFetch names the pending checks the run reaches and has not failed to
@@ -240,6 +245,7 @@ func describeFetched(names []string, programs map[string]string) []resolved {
 		progs[i] = checkkit.Program{Path: programs[name]}
 	}
 	fresh := describeAll(names, progs)
+	retryOverran(fresh)
 	for _, r := range fresh {
 		fetchedResolved[r.name] = r
 	}

@@ -20,13 +20,17 @@ import (
 )
 
 // fields0173 are the index fields of each fake check. One is from before
-// checks declared fields.
+// checks declared fields, and yaml-files is new in a later index.
 var fields0173 = map[string]map[string]string{
 	"md-files":    {"files": `\.md$`},
 	"go-files":    {"files": `\.go$`, "exclude": `(^|/)vendor/`},
 	"swift-files": {"files": `\.swift$`},
 	"no-fields":   {},
+	"yaml-files":  {"files": `\.ya?ml$`},
 }
+
+// firstIndex0173 is the version of each check the first index publishes.
+var firstIndex0173 = map[string]string{"md-files": "1.0.0", "go-files": "1.0.0", "swift-files": "1.0.0", "no-fields": "1.0.0"}
 
 // pins0173 pins every fake check at its major.
 const pins0173 = `{"checkVersions": {"md-files": "v1", "go-files": "v1", "swift-files": "v1", "no-fields": "v1"}}`
@@ -38,6 +42,7 @@ const checks0173 = "--checks=md-files,go-files,swift-files,no-fields"
 // downloads, and the private cache whose index names them.
 type releases0173 struct {
 	url, cache string
+	archives   map[string][]byte
 	mu         sync.Mutex
 	fetched    []string
 }
@@ -67,17 +72,16 @@ func archive0173(t *testing.T, name string) []byte {
 // bytes its SHA-256 does not match.
 func serve0173(t *testing.T, tampered ...string) *releases0173 {
 	t.Helper()
-	r := &releases0173{cache: t.TempDir()}
-	archives := map[string][]byte{}
+	r := &releases0173{cache: t.TempDir(), archives: map[string][]byte{}}
 	for name := range fields0173 {
-		archives[name] = archive0173(t, name)
+		r.archives[name] = archive0173(t, name)
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		name := strings.TrimSuffix(strings.TrimPrefix(req.URL.Path, "/"), ".tar")
 		r.mu.Lock()
 		r.fetched = append(r.fetched, name)
 		r.mu.Unlock()
-		body := archives[name]
+		body := r.archives[name]
 		if slices.Contains(tampered, name) {
 			body = append(slices.Clone(body), 0)
 		}
@@ -85,21 +89,28 @@ func serve0173(t *testing.T, tampered ...string) *releases0173 {
 	}))
 	t.Cleanup(srv.Close)
 	r.url = srv.URL
+	r.publish(t, firstIndex0173, time.Now())
+	return r
+}
+
+// publish records in r's cache a release index read at checked. It names
+// each check in versions at its version, the newest of major 1.
+func (r *releases0173) publish(t *testing.T, versions map[string]string, checked time.Time) {
+	t.Helper()
 	checks := map[string]any{}
-	for name, fields := range fields0173 {
+	for name, number := range versions {
 		version := map[string]any{
-			"tag":       "fitness-check-" + name + "-v1.0.0",
-			"artifacts": map[string]any{runtime.GOOS + "-" + runtime.GOARCH: map[string]string{"url": srv.URL + "/" + name + ".tar", "sha256": fmt.Sprintf("%x", sha256.Sum256(archives[name]))}},
+			"tag":       "fitness-check-" + name + "-v" + number,
+			"artifacts": map[string]any{runtime.GOOS + "-" + runtime.GOARCH: map[string]string{"url": r.url + "/" + name + ".tar", "sha256": fmt.Sprintf("%x", sha256.Sum256(r.archives[name]))}},
 		}
-		for key, value := range fields {
+		for key, value := range fields0173[name] {
 			version[key] = value
 		}
-		checks[name] = map[string]any{"majors": map[string]string{"1": "1.0.0"}, "versions": map[string]any{"1.0.0": version}}
+		checks[name] = map[string]any{"majors": map[string]string{"1": number}, "versions": map[string]any{number: version}}
 	}
-	record, err := json.Marshal(map[string]any{"value": map[string]any{"format": 1, "checks": checks}, "checked": time.Now().Format(time.RFC3339)})
+	record, err := json.Marshal(map[string]any{"value": map[string]any{"format": 1, "checks": checks}, "checked": checked.Format(time.RFC3339)})
 	mustDo(t, err)
 	mustDo(t, os.WriteFile(filepath.Join(r.cache, "check-index.json"), record, 0o600))
-	return r
 }
 
 // staged0173 is a repo pinning every fake check, with files staged.
@@ -166,16 +177,72 @@ func Test0173_3(t *testing.T) {
 	}
 }
 
+// hooked0173 is the environment the shared hooks give fitness-install, with
+// a private cache that holds the installed engine and r's index.
+func hooked0173(t *testing.T, r *releases0173) []string {
+	t.Helper()
+	cache := fiPrivateCache(t)
+	mustDo(t, os.Rename(filepath.Join(r.cache, "check-index.json"), filepath.Join(strings.TrimPrefix(cache[0], "FITNESS_CACHE_DIR="), "check-index.json")))
+	return append(cache, "FITNESS_CHECKS_DIR=", "FITNESS_WITH_CHECKS=pinned")
+}
+
 func Test0173_4(t *testing.T) {
 	t.Parallel()
 	r := serve0173(t)
-	cache := fiPrivateCache(t)
-	mustDo(t, os.Rename(filepath.Join(r.cache, "check-index.json"), filepath.Join(strings.TrimPrefix(cache[0], "FITNESS_CACHE_DIR="), "check-index.json")))
-	env := append(cache, "FITNESS_CHECKS_DIR=", "FITNESS_WITH_CHECKS=pinned")
-	out, code := fiRun(t, staged0173(t, map[string]string{"notes/plan.md": "# Plan\n"}), env, "--", "--policy=external", checks0173)
+	out, code := fiRun(t, staged0173(t, map[string]string{"notes/plan.md": "# Plan\n"}), hooked0173(t, r), "--", "--policy=external", checks0173)
 	sees(t, out, code, 1, "md-files ran", "Skipped (no matching files): go-files, swift-files")
 	if installedIn0164.MatchString(out) {
 		t.Errorf("fitness-install must install no check up front:\n%s", out)
 	}
 	fetchedOnly(t, r, out, "md-files", "no-fields")
+}
+
+func Test0173_5(t *testing.T) {
+	t.Parallel()
+	r := serve0173(t)
+	out, code := fiRun(t, staged0173(t, nil), hooked0173(t, r), "--", "config")
+	sees(t, out, code, 0, "installed 4 checks in ")
+	fetchedOnly(t, r, out, "go-files", "md-files", "no-fields", "swift-files")
+}
+
+// cached0173 fails unless r's cache holds check name's program at version.
+func cached0173(t *testing.T, r *releases0173, name, version string) {
+	t.Helper()
+	tag := "fitness-check-" + name + "-v" + version
+	if _, err := os.Stat(filepath.Join(r.cache, "checks", tag+"-"+runtime.GOOS+"-"+runtime.GOARCH+".tar", "fitness-check-"+name)); err != nil {
+		t.Errorf("the cache must hold %s %s: %v", name, version, err)
+	}
+}
+
+func Test0173_6(t *testing.T) {
+	t.Parallel()
+	r := serve0173(t)
+	bundle := bundle0162(t)
+	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"checkVersions": {"*": "v1"}}`})
+	write(t, repo, map[string]string{"notes/plan.md": "# Plan\n"})
+	git(t, repo, "add", "-A")
+	env := []string{"FITNESS_CACHE_DIR=" + r.cache}
+	out, code := run0162(t, bundle, repo, env, "--policy=external", "--checks=md-files")
+	sees(t, out, code, 1, "md-files ran")
+	cached0173(t, r, "md-files", "1.0.0")
+
+	// Ten minutes on, the recorded index is stale, so the run asks GitHub again.
+	r.publish(t, firstIndex0173, time.Now().Add(-11*time.Minute))
+	silent := append(slices.Clone(env), "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
+	out, code = run0162(t, bundle, repo, silent, "--policy=external", "--checks=md-files")
+	sees(t, out, code, 1, "asking github.com for the check release index", "GitHub did not answer the check release index")
+	fetchedOnly(t, r, out, "md-files")
+
+	// The index lives on GitHub, so the test records the answer that read gets.
+	r.publish(t, map[string]string{"md-files": "1.1.0", "go-files": "1.0.0", "swift-files": "1.0.0", "no-fields": "1.0.0", "yaml-files": "1.0.0"}, time.Now())
+	out, code = run0162(t, bundle, repo, env, "--policy=external", "--checks=md-files,yaml-files")
+	sees(t, out, code, 1, "md-files ran", "Skipped (no matching files): yaml-files")
+	cached0173(t, r, "md-files", "1.1.0")
+	fetchedOnly(t, r, out, "md-files", "md-files")
+
+	write(t, repo, map[string]string{"config/app.yaml": "name: app\n"})
+	git(t, repo, "add", "-A")
+	out, code = run0162(t, bundle, repo, env, "--policy=external", "--checks=md-files,yaml-files")
+	sees(t, out, code, 1, "md-files ran", "yaml-files ran")
+	fetchedOnly(t, r, out, "md-files", "md-files", "yaml-files")
 }
