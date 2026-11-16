@@ -32,7 +32,7 @@ func Test0168_1(t *testing.T) {
 		})
 	}
 	out, code := run()
-	sees(t, out, code, 1, "installed 1 checks in ", "missing.md", "0 of 1 checks passed")
+	sees(t, out, code, 1, "fetched 1 checks this run reaches", "missing.md", "0 of 1 checks passed")
 	again, code := run()
 	sees(t, again, code, 1, "missing.md")
 	if strings.Contains(again, "downloading fitness-check-") {

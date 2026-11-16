@@ -47,16 +47,33 @@ func (g skipGroups) reasons() map[string]string {
 	return why
 }
 
-// withSkipped puts a passing row for each skipped check back in its place
-// among all, and tallies it in totals. Rows and findings of run checks stay.
-func withSkipped(all []resolved, rows []render.Row, found [][]checkkit.Finding, skipped skipGroups, totals *render.Totals) ([]render.Row, [][]checkkit.Finding) {
-	why := skipped.reasons()
+// leftOut are the checks a run did not start. Skipped ones are grouped by
+// why, and a failed fetch maps the check to its info note.
+type leftOut struct {
+	skipped       skipGroups
+	failedFetches map[string]string
+}
+
+// row is the row of check name when the run left it out, and whether it did.
+func (l leftOut) row(name string, why map[string]string) (render.Row, bool) {
+	if reason, ok := why[name]; ok {
+		return render.Row{Name: name, Ok: true, FilesChecked: -1, Skipped: reason}, true
+	}
+	if note, ok := l.failedFetches[name]; ok {
+		return render.Row{Name: name, Ok: true, FilesChecked: -1, Info: []string{note}}, true
+	}
+	return render.Row{}, false
+}
+
+// withSkipped puts the row of each check out left back in its place among
+// all, and tallies it in totals. Rows and findings of run checks stay.
+func withSkipped(all []resolved, rows []render.Row, found [][]checkkit.Finding, out leftOut, totals *render.Totals) ([]render.Row, [][]checkkit.Finding) {
+	why := out.skipped.reasons()
 	var outRows []render.Row
 	var outFound [][]checkkit.Finding
 	ran := 0
 	for _, c := range all {
-		if reason, ok := why[c.name]; ok {
-			row := render.Row{Name: c.name, Ok: true, FilesChecked: -1, Skipped: reason}
+		if row, ok := out.row(c.name, why); ok {
 			totals.Add(row)
 			outRows, outFound = append(outRows, row), append(outFound, []checkkit.Finding{})
 			continue

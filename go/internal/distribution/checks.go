@@ -98,8 +98,8 @@ func (i *Installer) released(pins []CheckPin, releases []checkRelease) ([]string
 // installCheck returns the cached program of one check release, or downloads,
 // verifies and caches it.
 func (i *Installer) installCheck(ctx context.Context, name string, release checkRelease) (string, error) {
-	asset := release.Tag + "-" + i.Platform + ".tar"
-	program := filepath.Join(i.Cache, "checks", asset, checkPrefix+name)
+	asset := i.asset(release)
+	program := i.checkPath(name, release)
 	if exists(program) {
 		return program, nil
 	}
@@ -115,6 +115,16 @@ func (i *Installer) installCheck(ctx context.Context, name string, release check
 		return "", fmt.Errorf("%s: %w", asset, err)
 	}
 	return program, writeProgram(program, binary)
+}
+
+// asset is the archive name of release for this platform.
+func (i *Installer) asset(release checkRelease) string {
+	return release.Tag + "-" + i.Platform + ".tar"
+}
+
+// checkPath is where the cache keeps the program of check name's release.
+func (i *Installer) checkPath(name string, release checkRelease) string {
+	return filepath.Join(i.Cache, "checks", i.asset(release), checkPrefix+name)
 }
 
 // verifiedCheck downloads one check archive, failing unless it matches the

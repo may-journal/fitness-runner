@@ -172,9 +172,26 @@ func requireAllChecks(paths []string, output string) error {
 		if slices.Contains(lang.Ignored(), name) {
 			continue
 		}
-		if !strings.Contains(output, "→ "+name+"\n") {
+		if !ranOrSkipped(output, name) {
 			return fmt.Errorf("external default omitted check %s", name)
 		}
 	}
 	return nil
+}
+
+// ranOrSkipped reports whether a run started check or listed it as skipped.
+func ranOrSkipped(output, check string) bool {
+	return strings.Contains(output, "→ "+check+"\n") || listedSkipped(output, check)
+}
+
+// listedSkipped reports whether the run skipped check because the fixture
+// tracks no file its needs pattern names. Any other skip still fails.
+func listedSkipped(output, check string) bool {
+	const needs = "Skipped (the repo tracks no file its needs pattern names): "
+	for _, line := range strings.Split(output, "\n") {
+		if names, ok := strings.CutPrefix(line, needs); ok && slices.Contains(strings.Split(names, ", "), check) {
+			return true
+		}
+	}
+	return false
 }

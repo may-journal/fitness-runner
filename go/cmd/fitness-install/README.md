@@ -29,6 +29,8 @@ An exact `--version`, as the root action passes, never looks up.
 
 Each check archive must match its SHA-256 before its program is cached by release and platform. The installer hands the engine one folder of exactly the pinned checks as `FITNESS_CHECKS_DIR`. An install that fails offline fails the run, and a pin with no release warns and its check does not run. The action's `with-checks` input does the same and sets it for later steps.
 
+A suite run or a hook leaves the checks to the engine, unless it passes `--install-only` or `--no-builtins` or runs as the action. The engine fetches only the checks the run's files reach, as the release index fields of each version say. A full run fetches every pinned check, and a reached check that cannot be fetched is an info row naming it.
+
 ## Cache
 
 Downloads and archive paths are checked in Go. Each cached copy has a version, platform, and hash key. A repair publishes a new copy and atomically switches the current pointer; older copies remain available to running checks.

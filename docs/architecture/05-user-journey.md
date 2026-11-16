@@ -56,7 +56,7 @@ flowchart TB
     executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
 
     subgraph checks["Checks"]
-        installedChecks[(17 Installed fitness-checks programs<br/>Req 0162, 0163, 0164)]:::system
+        installedChecks[(17 Installed fitness-checks programs<br/>Req 0162, 0163, 0164, 0173)]:::system
         branchCheck[(18 local-branch, which the engine judges<br/>Req 0067, 0068)]:::system
         timeoutChecks[(46 Workflow timeouts<br/>Req 0150)]:::system
     end

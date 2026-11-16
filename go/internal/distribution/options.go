@@ -145,10 +145,27 @@ func (options Options) validateLinkSkills() error {
 	return nil
 }
 
-// InstallsChecks reports whether the run installs the pinned checks: asked
-// to, and running checks rather than writing a hook or setting up agents.
+// InstallsChecks reports whether the run installs the pinned checks up
+// front. It does when asked to, unless it writes a hook, sets up agents, or
+// starts an engine that fetches what it needs.
 func (options Options) InstallsChecks() bool {
-	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents()
+	return options.WithChecks && !options.InstallHook && !options.SetsUpAgents() && !options.FetchesOnDemand()
+}
+
+// FetchesOnDemand reports whether the engine this run starts fetches each
+// check its files reach, so nothing installs up front. Install-only and the
+// GitHub Action still install every pin for later steps.
+func (options Options) FetchesOnDemand() bool {
+	return !options.InstallOnly && !options.GitHubAction && suiteArgs(options.Args)
+}
+
+// suiteArgs reports whether args start the suite run or a hook, which fetch
+// on demand. A --no-builtins run fetches nothing, and other commands may not.
+func suiteArgs(args []string) bool {
+	if len(args) == 0 {
+		return true
+	}
+	return args[0] == "hook" || strings.HasPrefix(args[0], "-") && args[0] != "--no-builtins"
 }
 
 // SkipsChecks reports whether a pinned-only run installs nothing, since the

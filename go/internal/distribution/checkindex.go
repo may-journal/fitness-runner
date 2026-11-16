@@ -12,6 +12,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // checkIndexURL is the release index fitness-checks republishes with every
@@ -38,15 +40,24 @@ type checkRelease struct {
 type checkIndex struct {
 	Format int `json:"format"`
 	Checks map[string]struct {
-		Majors   map[string]string `json:"majors"`
-		Versions map[string]struct {
-			Tag       string `json:"tag"`
-			Artifacts map[string]struct {
-				URL    string `json:"url"`
-				SHA256 string `json:"sha256"`
-			} `json:"artifacts"`
-		} `json:"versions"`
+		Majors   map[string]string       `json:"majors"`
+		Versions map[string]checkVersion `json:"versions"`
 	} `json:"checks"`
+}
+
+// checkVersion is one check version in the index: its tag, its artifact
+// per platform, and the fields its --describe declares. A version listed
+// before checks declared fields has none, so every file reaches it.
+type checkVersion struct {
+	Tag       string `json:"tag"`
+	Artifacts map[string]struct {
+		URL    string `json:"url"`
+		SHA256 string `json:"sha256"`
+	} `json:"artifacts"`
+	Files    string                 `json:"files"`
+	Exclude  string                 `json:"exclude"`
+	Needs    string                 `json:"needs"`
+	Requires []checkkit.Requirement `json:"requires"`
 }
 
 // freshRecord is one answer from GitHub and when it came.
@@ -113,19 +124,26 @@ func (index checkIndex) releases(pins []CheckPin, platform string) []checkReleas
 // version the index names for a major. An exact pin the index lacks takes
 // its tag's own files; a major it lacks resolves to nothing.
 func (index checkIndex) release(pin CheckPin, platform string) checkRelease {
+	version := index.version(pin)
+	artifact, ok := version.Artifacts[platform]
+	switch {
+	case ok && version.Tag != "":
+		return checkRelease{Tag: version.Tag, URL: artifact.URL, SHA256: artifact.SHA256}
+	case exactPin.MatchString(pin.Pin):
+		return checkRelease{Tag: checkPrefix + pin.Name + "-" + pin.Pin}
+	}
+	return checkRelease{}
+}
+
+// version is the index entry pin names: an exact version, or the version
+// the index names for a major. A pin the index lacks gets the zero entry.
+func (index checkIndex) version(pin CheckPin) checkVersion {
 	check := index.Checks[pin.Name]
 	version := strings.TrimPrefix(pin.Pin, "v")
 	if !exactPin.MatchString(pin.Pin) {
 		version = check.Majors[version]
 	}
-	artifact, ok := check.Versions[version].Artifacts[platform]
-	switch {
-	case ok && check.Versions[version].Tag != "":
-		return checkRelease{Tag: check.Versions[version].Tag, URL: artifact.URL, SHA256: artifact.SHA256}
-	case exactPin.MatchString(pin.Pin):
-		return checkRelease{Tag: checkPrefix + pin.Name + "-" + pin.Pin}
-	}
-	return checkRelease{}
+	return check.Versions[version]
 }
 
 // checkLookupTimeout bounds each read of the check index or tags, like the
