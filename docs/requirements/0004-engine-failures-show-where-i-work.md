@@ -31,7 +31,7 @@ findings that name a source line
 - 0004.5
     - Given Developer has a run with failing checks
         - When fitness writes the job summary
-            - Then it shows every check and each failure in full
+            - Then it shows every installed check and each failure in full
 - 0004.6
     - Given Developer has a run that fails before any check starts
         - When fitness reports it in GitHub Actions

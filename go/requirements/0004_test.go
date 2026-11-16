@@ -10,53 +10,6 @@ import (
 	"testing"
 )
 
-// catalogRows is the result row order: sorted repo-wide checks, then each
-// sorted Go, Swift, Node and Java module's checks.
-const catalogRows = `
-adr-as-issue adr-checks
-architecture-actors architecture-code architecture-components
-architecture-containers architecture-contract architecture-journey
-build-output-untracked changelog changelog-bullets changelog-updated
-comment-structure commit-attribution cspell doc-template duplicate-code
-epic-structure gitignore-why issue-checklist issue-link-once local-branch
-markdown-filename-camel-case
-markdown-filename-kebab-case markdown-links
-markdown-no-bold-italic mermaid-callout-why mermaid-callouts
-mermaid-diagram-prose mermaid-diagram-table-gap mermaid-legend
-mermaid-level-bleed mermaid-syntax no-contrastive-reframing no-fitness-front-matter
-no-plans-dir open-questions plan-structure
-plan-trailer pr-closes-issue pr-structure prose-budget read-repo-first
-release-changelog repeated-string-literals requirements requirements-changed
-semantic-commit text-readability workflow-ref-exists workflow-reporting
-go-complexity go-test go-vet gofmt
-localized-text swiftlint
-dependency-currency eslint no-eslint-disable node-version prettier
-vitest-coverage-exclude vitest-coverage-full
-checkstyle java-test java-version spotless`
-
-// allPassed is the summary of a run where every installed check passed.
-func allPassed() string {
-	return fmt.Sprintf("All %d checks passed", len(strings.Fields(catalogRows)))
-}
-
-// passedOf is the summary count of a run where all but notPassed installed
-// checks passed.
-func passedOf(notPassed int) string {
-	n := len(strings.Fields(catalogRows))
-	return fmt.Sprintf("%d of %d checks passed", n-notPassed, n)
-}
-
-// rowCells returns the check cell of each results-table row, top to bottom.
-func rowCells(out string) []string {
-	var cells []string
-	for _, line := range strings.Split(out, "\n") {
-		if m := resultRow.FindStringSubmatch(line); m != nil {
-			cells = append(cells, m[1])
-		}
-	}
-	return cells
-}
-
 // inActions runs the one-liner in repo as a GitHub Actions job does, returning
 // its output, exit code and job summary.
 func inActions(t *testing.T, repo string) (string, int, string) {
@@ -117,6 +70,11 @@ func Test0004_5(t *testing.T) {
 	t.Parallel()
 	_, code, summary := inActions(t, example(t, "happyRepo", misspelled(1)))
 	sees(t, summary, code, 1, "## Fitness checks", "| cspell | ❌ fail |", "README.md:9:5 - Unknown word (zorbleflux)", "| prose-budget | ✅ pass |")
+	for _, check := range strings.Fields(catalogRows) {
+		if !strings.Contains(summary, "| "+check+" |") {
+			t.Errorf("the job summary leaves out installed check %s:\n%s", check, summary)
+		}
+	}
 }
 
 func Test0004_6(t *testing.T) {
