@@ -36,7 +36,12 @@ func readsNetwork(root string, check resolved, msg string) bool {
 	case "issue-link-once":
 		return len(gitx.MessageLinks(msg, gitx.OriginSlug(root))) > 0
 	}
-	return check.desc.Scope == checkkit.ScopeGitHub && !atCommit(check.name)
+	return readsOnline(check.desc) && !atCommit(check.name)
+}
+
+// readsOnline reports whether desc reads GitHub or requires the network.
+func readsOnline(desc checkkit.Describe) bool {
+	return onlineRequirement(desc) != "" || desc.Scope == checkkit.ScopeGitHub
 }
 
 // atCommit reports whether this run is pre-commit's and leaves check out.

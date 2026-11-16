@@ -50,6 +50,9 @@ func (i *Installer) Install(ctx context.Context, requested string) (string, erro
 
 func (i *Installer) installBundle(ctx context.Context, version, top, digest string) (string, error) {
 	key := filepath.Join(i.Cache, top+"-"+digest)
+	// Marking the key as used keeps a prune from deleting it; a new key's
+	// folder is made below.
+	used(key)
 	if path := recordedBundle(key); path != "" {
 		return path, nil
 	}

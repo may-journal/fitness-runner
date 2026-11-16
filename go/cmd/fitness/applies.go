@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/gitx"
@@ -96,10 +97,15 @@ const (
 func applicable(root string, checks []resolved, env, shared []string) ([]resolved, skipGroups) {
 	paths := scopedFiles(env)
 	tracked := trackedList{root: root, paths: shared, listed: shared != nil}
+	offline := unreachableIn(env)
 	var kept []resolved
 	var skipped skipGroups
 	for _, c := range checks {
-		if why := skipReason(c, paths, &tracked); why != "" {
+		why := lackReason(c, paths == nil, offline)
+		if why == "" {
+			why = skipReason(c, paths, &tracked)
+		}
+		if why != "" {
 			skipped.add(why, c.name)
 			continue
 		}
@@ -122,6 +128,49 @@ func skipReason(c resolved, paths []string, tracked *trackedList) string {
 		return needsNoFile
 	case !p.ReachedBy(paths):
 		return noMatchingFiles
+	}
+	return ""
+}
+
+// lackReason says why the run lacks what c requires, or "". A full run has
+// no diff, and offline, a pending check needing the network cannot fetch.
+func lackReason(c resolved, full bool, offline string) string {
+	if full && checkkit.Requiring(c.desc, checkkit.RequiresDiff) {
+		return "requires diff, which a full run has none of"
+	}
+	if !c.pending || offline == "" {
+		return ""
+	}
+	return offlineReason(onlineRequirement(c.desc), offline)
+}
+
+// offlineReason is the Skipped reason for a check requiring r when host did
+// not answer the probe, or "" for an empty r.
+func offlineReason(r checkkit.Requirement, host string) string {
+	if r == "" {
+		return ""
+	}
+	return fmt.Sprintf("requires %s, and this run is offline: %s did not answer", r, host)
+}
+
+// onlineRequirement is the first of github and network that desc requires,
+// or "" when it requires neither.
+func onlineRequirement(desc checkkit.Describe) checkkit.Requirement {
+	for _, r := range []checkkit.Requirement{checkkit.RequiresGitHub, checkkit.RequiresNetwork} {
+		if checkkit.Requiring(desc, r) {
+			return r
+		}
+	}
+	return ""
+}
+
+// unreachableIn is the host env's network entry names as unreachable, or ""
+// when the probe found it answering or nothing was probed.
+func unreachableIn(env []string) string {
+	for _, entry := range env {
+		if host, ok := strings.CutPrefix(entry, checkkit.UnreachableEnv("")); ok {
+			return host
+		}
 	}
 	return ""
 }

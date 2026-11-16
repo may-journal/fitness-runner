@@ -100,7 +100,7 @@ func (i *Installer) released(pins []CheckPin, releases []checkRelease) ([]string
 func (i *Installer) installCheck(ctx context.Context, name string, release checkRelease) (string, error) {
 	asset := i.asset(release)
 	program := i.checkPath(name, release)
-	if exists(program) {
+	if cachedProgram(program) {
 		return program, nil
 	}
 	if i.Unanswered {
@@ -124,7 +124,7 @@ func (i *Installer) asset(release checkRelease) string {
 
 // checkPath is where the cache keeps the program of check name's release.
 func (i *Installer) checkPath(name string, release checkRelease) string {
-	return filepath.Join(i.Cache, "checks", i.asset(release), checkPrefix+name)
+	return filepath.Join(i.Cache, checksFolder, i.asset(release), checkPrefix+name)
 }
 
 // verifiedCheck downloads one check archive, failing unless it matches the
@@ -202,8 +202,8 @@ func writeProgram(path string, binary []byte) error {
 // their paths, so each selection of checks and versions gets its own.
 func checkSet(cache string, programs []string) (string, error) {
 	sorted := slices.Sorted(slices.Values(programs))
-	dir := filepath.Join(cache, "check-sets", contentHash([]byte(strings.Join(sorted, "\n"))))
-	if exists(dir) {
+	dir := filepath.Join(cache, checkSetsFolder, contentHash([]byte(strings.Join(sorted, "\n"))))
+	if used(dir) {
 		return dir, nil
 	}
 	staged, err := os.MkdirTemp(cache, "check-set-")

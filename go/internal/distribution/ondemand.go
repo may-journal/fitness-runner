@@ -31,7 +31,7 @@ func (i *Installer) PlanChecks(ctx context.Context, pins []CheckPin) ([]PlannedC
 	for k, release := range kept {
 		pin := pinNamed(pins, names[k])
 		planned[k] = PlannedCheck{Pin: pin, Describe: index.describe(pin)}
-		if program := i.checkPath(pin.Name, release); exists(program) {
+		if program := i.checkPath(pin.Name, release); cachedProgram(program) {
 			planned[k].Program = program
 		}
 	}

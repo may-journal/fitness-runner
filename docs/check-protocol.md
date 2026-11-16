@@ -87,6 +87,8 @@ No PR skips; invalid or unreadable metadata fails, including unfinished draft ch
 
 Org mode runs every check, so each owes the runner one more rule. In a repo it does not apply to, it passes with `filesChecked: 0`. The contract test in `go/cmd/fitness/contract_test.go` builds every check and holds each to this and to a matching `--describe` name. The few checks that apply everywhere, such as `semantic-commit`, are listed there with a reason.
 
+A check's `requires` names what it needs beyond its documents, and a run lacking one lists the check as skipped, saying why. `fitness --blob` skips one requiring `repo`, `diff` or `history`, and a full run one requiring `diff`. When the GitHub probe gets no answer, a run skips an uncached one requiring `github` or `network`. A cached one runs and judges what it can, while any run skips a requirement this fitness does not know.
+
 ## Changed files
 
 A scoped run lists changed files in `FITNESS_CHANGED_FILES`: the staged files locally, or a pull request's diff against its base. A push to `main` or `fitness --all` leaves it unset, so every file is checked.

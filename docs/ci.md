@@ -163,9 +163,9 @@ Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook com
 
 ## Cache and versions
 
-`--install-only` prints the binary directory as its last line without running checks; with `--with-checks`, a line before it names the installed checks folder. Save that path and invoke its `fitness` executable for offline use. The compiled installer also works offline when its pinned bundle is cached.
+`--install-only` prints the binary directory as its last line without running checks; with `--with-checks`, a line before it names the installed checks folder. Save that path and invoke its `fitness` executable for offline use. `fitness prefetch` downloads every check the repo pins, for a CI cache or offline use. Offline, the installer runs its cached bundle, and the engine matches against the last cached release index, however old.
 
-The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks.
+The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks. Once a day, a run deletes releases unused for 30 days, never the running engine or its checks.
 
 Upgrade or roll back with `--version VERSION`; `--version latest` is explicit opt-in. The action's `version` input follows the same rules. An exact action tag loads its installer; a major tag such as `v1` loads its newest release, and other refs load the latest.
 
@@ -175,7 +175,7 @@ Each network read first prints the host it asks and how long it waits. The lates
 
 The runner, `gh` and git reach the network through `HTTPS_PROXY`, `HTTP_PROXY` and `NO_PROXY`, and git also reads its `http.proxy` setting. A run with `local-branch`, `dependency-currency` beside a root `package.json`, or a commit message linking an Issue first probes the GitHub API host. The host is `GITHUB_API_URL` when set, else `api.github.com`, or `GH_HOST` for GitHub Enterprise Server. The probe connects once, through the proxy, within two seconds.
 
-When the probe fails, those checks, `workflow-ref-exists` and the pre-push gate report info naming the host and proxy, without connecting. `issue-link-once` skips its open PR read and still judges the branch commits. Go checks then run with `GOPROXY=off`, so a missing module fails at once with Go's own message. A plain commit probes nothing, and when the probe passes, a slow registry or proxy still ends at the 60s fast total.
+When the probe fails, those checks, `workflow-ref-exists` and the pre-push gate report info naming the host and proxy, without connecting. `issue-link-once` skips its open PR read and still judges the branch commits. Uncached checks requiring `github` or `network` are skipped as offline, and Go checks run with `GOPROXY=off`, failing at once on a missing module. A plain commit probes nothing, and when the probe passes, a slow registry or proxy still ends at the 60s fast total.
 
 ## Release automation
 

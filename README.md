@@ -69,6 +69,8 @@ Commands:
       Names every check with its summary, scope, stage, and whether this repo enables it.
   fitness check-versions
       Prints each check the repo installs with its version pin, as checkVersions in .fitnessrc.json sets them.
+  fitness prefetch
+      Downloads and verifies every check the repo pins, at every pinned version, so later runs and CI caches need no network.
   fitness explain <check> [--json]
       Prints why a check exists, what it judges, and the config keys it reads.
   fitness docs [topic]
