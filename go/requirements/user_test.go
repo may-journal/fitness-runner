@@ -207,6 +207,17 @@ func sees(t *testing.T, out string, gotCode, code int, want ...string) {
 // resultRow matches a results-table line: name, status, files, time.
 var resultRow = regexp.MustCompile(`^│ (\S+)\s+│ (passed|failed|info)\s+│`)
 
+// rowCells returns the check cell of each results-table row, top to bottom.
+func rowCells(out string) []string {
+	var cells []string
+	for _, line := range strings.Split(out, "\n") {
+		if m := resultRow.FindStringSubmatch(line); m != nil {
+			cells = append(cells, m[1])
+		}
+	}
+	return cells
+}
+
 // row returns the results-table line for check, or "". The table shortens
 // long names with "…", as a reader sees them.
 func row(out, check string) string {
