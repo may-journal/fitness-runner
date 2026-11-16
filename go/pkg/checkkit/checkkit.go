@@ -139,6 +139,20 @@ type Describe struct {
 	// Tests marks a check that reads the repo's requirement tests. A run of
 	// two such checks scans the tests once and shares the scan.
 	Tests bool `json:"tests,omitempty"`
+	// Files is an RE2 pattern searched in each repo-relative path, as
+	// pre-commit's `files` is; empty matches every path. A scoped run skips
+	// the check when no path it judges matches.
+	Files string `json:"files,omitempty"`
+	// Exclude is an RE2 pattern for paths that never reach the check, even
+	// when Files matches them; empty excludes none.
+	Exclude string `json:"exclude,omitempty"`
+	// Needs is an RE2 pattern a tracked file must match for the check to
+	// apply, such as package.json; empty needs none.
+	Needs string `json:"needs,omitempty"`
+	// Requires lists what the check needs beyond the documents it judges.
+	// `fitness --blob` skips a check requiring repo, diff or history, and
+	// any run skips one requiring what this fitness does not know.
+	Requires []Requirement `json:"requires,omitempty"`
 	// MinFitness is the oldest fitness release, as major.minor.patch, that runs
 	// the check as written. An older one stops the run and names the upgrade.
 	MinFitness string `json:"minFitness,omitempty"`

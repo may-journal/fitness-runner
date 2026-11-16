@@ -86,6 +86,16 @@ classDiagram
     Result --> Finding : V
     checkkitMain --> Finding : W
     resolveChecks --> Describe : X
+    class Requirement["18 checkkit.Requirement"] {
+        +Known() bool
+    }
+    class Patterns["19 checkkit.Patterns"] {
+        +Matches(string) bool
+        +ReachedBy([]string) bool
+        +Met([]string) bool
+    }
+    resolveChecks --> Patterns : Y
+    Describe --> Requirement : Z
 
     style CheckBinary fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
@@ -104,6 +114,8 @@ classDiagram
     style Outcome fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Program fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Finding fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Requirement fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style Patterns fill:#6d28d9,stroke:#4c1d95,color:#ffffff
 ```
 
 ```mermaid
@@ -143,6 +155,8 @@ Numbers on classes and letters on relationships match the callout table.
 | 15  | One tool run's exit code, output, start error and signal, in [exec.go](../../go/pkg/checkkit/exec.go). | A check tells a broken environment from a tool's verdict. |
 | 16  | How to start one check, in [binary.go](../../go/pkg/checkkit/binary.go): the file to exec and the program name it starts under. | `local-branch` runs from the fitness file; each installed check is its own file. |
 | 17  | One problem a check found, in [checkkit.go](../../go/pkg/checkkit/checkkit.go): file, line, rule, fix and explain command. | An agent acts on it without parsing prose. |
+| 18  | Something a check needs beyond its documents, in [applies.go](../../go/pkg/checkkit/applies.go): repo, diff, history, github or network. | A run that lacks one skips the check and says why. |
+| 19  | A check's compiled `files`, `exclude` and `needs` patterns, in [applies.go](../../go/pkg/checkkit/applies.go). | The engine sees which files reach a check without running it. |
 | A   | Resolution asks each resolved binary to describe itself, all side by side. | Stages and inline args ride the same handshake. |
 | B   | Describe output parsed as JSON. | Stdlib all the way down. |
 | C   | Each name resolves to a `fitness-check-<name>` program, beside the runner or built in. | The program name is the contract. |
@@ -167,6 +181,8 @@ Numbers on classes and letters on relationships match the callout table.
 | V   | A result may repeat its errors as findings. | Error lines stay for older readers. |
 | W   | The scaffolding points each finding at its check's explain command. | A check never spells its own name twice. |
 | X   | Resolution judges a local check's `minFitness`, and fills the name, scope and summary a folder check's handshake leaves out. | A folder check may skip the handshake. |
+| Y   | Resolution compiles each check's patterns, and they decide whether the run reaches it. | A check no file reaches never starts. |
+| Z   | A check's metadata lists its requirements as typed values. | A misspelled requirement fails to build, and an unknown one skips the check. |
 
 ## Monorepo layout
 

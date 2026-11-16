@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -84,7 +85,7 @@ func describeDrift(root string) []string {
 	_, rest, _ := strings.Cut(string(script), "echo '")
 	line, _, _ := strings.Cut(rest, "'")
 	var got checkkit.Describe
-	if json.Unmarshal([]byte(line), &got) != nil || got != generatedDescribe {
+	if json.Unmarshal([]byte(line), &got) != nil || !reflect.DeepEqual(got, generatedDescribe) {
 		return []string{localProgram + ": its --describe line differs from generatedDescribe in go/cmd/fitness-release/generated.go; make them match"}
 	}
 	return nil
