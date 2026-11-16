@@ -435,6 +435,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 		report.Error("fitness setup", err)
 		return stageResult{code: 1}
 	}
+	checks, skipped := applicable(root, checks, env)
 	tracked, env = withViews(root, checks, env, tracked)
 	tracked, env = withTestScan(root, checks, env, tracked)
 	defer tracked.Remove()
@@ -450,6 +451,7 @@ func runStage(root, perfPath string, checks []resolved, passthrough, env []strin
 	rows, totals := summarize(checks, outcomes, hint)
 	totals.Ms = time.Since(start).Milliseconds()
 	printSummary(rows, totals, breachLine(checks, outcomes, rows))
+	skipped.list(humanOut(totals))
 	found := allFindings(checks, outcomes, rows)
 	if last || totals.Failure > 0 {
 		printJSON(rows, found, totals)
@@ -805,7 +807,7 @@ func describeCheck(name string, prog checkkit.Program) resolved {
 	desc, describeErr, overran := describe(prog)
 	r := asLocal(resolved{name: name, prog: prog, desc: desc, describeErr: describeErr, overran: overran})
 	if describeErr == "" {
-		r.needs = cmp.Or(r.needs, protocolMismatch(name, desc))
+		r.needs = cmp.Or(r.needs, protocolMismatch(name, desc), unhonored(name, desc))
 	}
 	return r
 }

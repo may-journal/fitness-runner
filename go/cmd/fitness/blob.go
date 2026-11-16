@@ -108,7 +108,7 @@ func configuredChecks(cfg *conf.Config) (string, []string, error) {
 
 // judgeBlob saves the text for --body-file, runs the checks with env, and
 // prints the summary naming skipped checks plus any --json report.
-func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []string) int {
+func judgeBlob(root string, req blobRequest, checks []resolved, skipped skipGroups, env []string) int {
 	file, err := metadata.WriteBody(req.text)
 	if err != nil {
 		report.Error("fitness --blob", err)
@@ -125,7 +125,7 @@ func judgeBlob(root string, req blobRequest, checks []resolved, skipped, env []s
 	found := allFindings(checks, outcomes, rows)
 	printJSON(rows, found, totals)
 	out := humanOut(totals)
-	listSkipped(out, "needs files", skipped)
+	skipped.list(out)
 	listSkipped(out, "does not apply to this text", notApplying)
 	perf := perfFor(wantsPerf(req.perfPath), checks, outcomes, rows, totals.Ms)
 	return withPerfReport(req.perfPath, perf, finish(rows, found, perf, totals))
@@ -251,7 +251,7 @@ func withText(req blobRequest, value string, stdin io.Reader) (blobRequest, erro
 
 // blobChecks resolves the suite or the --checks selection, splitting it into
 // blob-capable checks and the names of those that need files.
-func blobChecks(suite, selected []string) (run []resolved, skipped []string, err error) {
+func blobChecks(suite, selected []string) (run []resolved, skipped skipGroups, err error) {
 	names, err := blobSelection(suite, selected)
 	if err != nil {
 		return nil, nil, err
@@ -270,14 +270,17 @@ func blobChecks(suite, selected []string) (run []resolved, skipped []string, err
 	return run, skipped, nil
 }
 
-// splitBlob splits checks into those that declare blob input and the names
-// of those that need files.
-func splitBlob(checks []resolved) (run []resolved, skipped []string) {
+// splitBlob splits checks into those that judge a text and the skipped
+// rest. A skipped check needs files, or requires what a text lacks.
+func splitBlob(checks []resolved) (run []resolved, skipped skipGroups) {
 	for _, c := range checks {
-		if c.desc.Blob {
+		switch why := blobWhy(c.desc); {
+		case !c.desc.Blob:
+			skipped.add("needs files", c.name)
+		case why != "":
+			skipped.add(why, c.name)
+		default:
 			run = append(run, c)
-		} else {
-			skipped = append(skipped, c.name)
 		}
 	}
 	return run, skipped
