@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
@@ -89,6 +90,7 @@ func withSkipped(all []resolved, rows []render.Row, found [][]checkkit.Finding, 
 const (
 	noMatchingFiles = "no matching files"
 	needsNoFile     = "the repo tracks no file its needs pattern names"
+	noDiff          = "requires diff, which only a run of changed files has"
 )
 
 // applicable keeps the checks this run reaches and groups the rest by why
@@ -97,11 +99,11 @@ const (
 func applicable(root string, checks []resolved, env, shared []string) ([]resolved, skipGroups) {
 	paths := scopedFiles(env)
 	tracked := trackedList{root: root, paths: shared, listed: shared != nil}
-	offline := unreachableIn(env)
+	run := runOf(env)
 	var kept []resolved
 	var skipped skipGroups
 	for _, c := range checks {
-		why := lackReason(c, paths == nil, offline)
+		why := run.lackReason(c)
 		if why == "" {
 			why = skipReason(c, paths, &tracked)
 		}
@@ -132,16 +134,30 @@ func skipReason(c resolved, paths []string, tracked *trackedList) string {
 	return ""
 }
 
-// lackReason says why the run lacks what c requires, or "". A full run has
-// no diff, and offline, a pending check needing the network cannot fetch.
-func lackReason(c resolved, full bool, offline string) string {
-	if full && checkkit.Requiring(c.desc, checkkit.RequiresDiff) {
-		return "requires diff, which a full run has none of"
+// runContext says whether a run has a change list, and names the GitHub host
+// its probe found silent, if any.
+type runContext struct {
+	diff    bool
+	offline string
+}
+
+// runOf reads the run's context from env.
+func runOf(env []string) runContext {
+	diff := slices.ContainsFunc(env, func(entry string) bool { return strings.HasPrefix(entry, changedFilesEnv+"=") })
+	return runContext{diff: diff, offline: unreachableIn(env)}
+}
+
+// lackReason says why the run lacks what c requires, or "". Only a run of
+// changed files has a diff, and offline, a pending check needing the network
+// cannot be fetched.
+func (run runContext) lackReason(c resolved) string {
+	if !run.diff && checkkit.Requiring(c.desc, checkkit.RequiresDiff) {
+		return noDiff
 	}
-	if !c.pending || offline == "" {
+	if !c.pending || run.offline == "" {
 		return ""
 	}
-	return offlineReason(onlineRequirement(c.desc), offline)
+	return offlineReason(onlineRequirement(c.desc), run.offline)
 }
 
 // offlineReason is the Skipped reason for a check requiring r when host did

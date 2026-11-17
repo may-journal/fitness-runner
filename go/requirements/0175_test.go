@@ -60,24 +60,37 @@ func checkSet0175(t *testing.T, dir, name, release string) string {
 func prunable0175(t *testing.T) cache0175 {
 	t.Helper()
 	dir := t.TempDir()
-	running, stale, fresh := bundleKey0175(dir, "a"), bundleKey0175(dir, "b"), bundleKey0175(dir, "c")
-	for _, key := range []string{running, stale, fresh} {
+	running, stale, fresh, linked := bundleKey0175(dir, "a"), bundleKey0175(dir, "b"), bundleKey0175(dir, "c"), bundleKey0175(dir, "e")
+	for _, key := range []string{running, stale, fresh, linked} {
 		mustDo(t, os.MkdirAll(filepath.Join(key, "bundle-1"), 0o700))
 	}
 	placeRunner(t, filepath.Join(installOnly(t), "fitness"), filepath.Join(running, "bundle-1", "fitness"))
+	// Claude Code settings or linked skills point into this bundle.
+	mustDo(t, os.WriteFile(filepath.Join(linked, "linked"), nil, 0o600))
 	handedRelease, oldRelease := release0175(t, dir, "md-files"), release0175(t, dir, "old-files")
 	newRelease := release0175(t, dir, "new-files")
 	handed, oldSet := checkSet0175(t, dir, "handed", handedRelease), checkSet0175(t, dir, "old", oldRelease)
+	halfMade := filepath.Join(dir, "check-set-123")
+	mustDo(t, os.MkdirAll(halfMade, 0o700))
 	outside := t.TempDir()
 	mustDo(t, os.Symlink(outside, bundleKey0175(dir, "d")))
-	for _, path := range []string{running, stale, handedRelease, oldRelease, handed, oldSet, outside} {
+	for _, path := range []string{running, stale, linked, handedRelease, oldRelease, handed, oldSet, halfMade, outside} {
 		mustDo(t, os.Chtimes(path, unused0175, unused0175))
 	}
+	indexAt0175(t, dir, time.Now())
 	return cache0175{
 		dir: dir, engine: filepath.Join(running, "bundle-1"), handed: handed,
-		kept:   []string{running, fresh, handedRelease, newRelease, handed, outside, bundleKey0175(dir, "d")},
-		pruned: []string{stale, oldRelease, oldSet},
+		kept:   []string{running, fresh, linked, handedRelease, newRelease, handed, outside, bundleKey0175(dir, "d")},
+		pruned: []string{stale, oldRelease, oldSet, halfMade},
 	}
+}
+
+// indexAt0175 records in cache an empty release index read at checked. A
+// prune runs only while GitHub answers, so it needs a fresh one.
+func indexAt0175(t *testing.T, cache string, checked time.Time) {
+	t.Helper()
+	record := `{"value":{"format":1,"checks":{}},"checked":"` + checked.Format(time.RFC3339) + `"}`
+	mustDo(t, os.WriteFile(filepath.Join(cache, "check-index.json"), []byte(record), 0o600))
 }
 
 // pruneRun runs the cache's own engine in a repo with Markdown staged,
@@ -115,7 +128,7 @@ func Test0175_1(t *testing.T) {
 	t.Parallel()
 	c := prunable0175(t)
 	out, code := pruneRun(t, c)
-	sees(t, out, code, 1, "md-files ran", "fitness: pruned 3 cached engine and check releases unused for 30 days")
+	sees(t, out, code, 1, "md-files ran", "fitness: pruned 4 cached engine and check releases unused for 30 days")
 	present(t, out, c.kept...)
 	gone(t, out, c.pruned...)
 }
@@ -124,7 +137,7 @@ func Test0175_2(t *testing.T) {
 	t.Parallel()
 	c := prunable0175(t)
 	out, code := pruneRun(t, c)
-	sees(t, out, code, 1, "pruned 3 cached")
+	sees(t, out, code, 1, "pruned 4 cached")
 	release := filepath.Join(c.dir, "checks", "fitness-check-new-files-v1.0.0-"+platform0175+".tar")
 	mustDo(t, os.Chtimes(release, unused0175, unused0175))
 	out, code = pruneRun(t, c)
@@ -132,9 +145,16 @@ func Test0175_2(t *testing.T) {
 	absentText(t, out, "pruned")
 	present(t, out, release)
 
-	// A day after the prune, the next run prunes again.
+	// A day after the prune, a run prunes again, but only while GitHub
+	// answers the index read. Offline, a deleted check could not return.
 	yesterday := time.Now().Add(-25 * time.Hour).Format(time.RFC3339)
 	mustDo(t, os.WriteFile(filepath.Join(c.dir, "cache-pruned.json"), []byte(`{"value":true,"checked":"`+yesterday+`"}`), 0o600))
+	indexAt0175(t, c.dir, time.Now().Add(-11*time.Minute))
+	out, code = pruneRun(t, c)
+	sees(t, out, code, 1, "md-files ran")
+	absentText(t, out, "pruned")
+	present(t, out, release)
+	indexAt0175(t, c.dir, time.Now())
 	out, code = pruneRun(t, c)
 	sees(t, out, code, 1, "fitness: pruned 1 cached")
 	gone(t, out, release)
@@ -177,7 +197,7 @@ func Test0175_4(t *testing.T) {
 	r.publish(t, firstIndex0173, time.Now().Add(-40*24*time.Hour))
 	silent := append(slices.Clone(env), "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=")
 	out, code = run0162(t, bundle, repo, silent, "--policy=external", checks0173, "--all")
-	sees(t, out, code, 1, "GitHub did not answer the check release index", "so this run is offline and matches against the index cached",
+	sees(t, out, code, 1, "GitHub did not answer the check release index", "so this run works offline against the index cached",
 		"md-files ran", "go-files ran", "swift-files ran", "no-fields ran")
 	fetchedOnly(t, r, out, "go-files", "md-files", "no-fields", "swift-files")
 }
@@ -246,7 +266,7 @@ func Test0175_6(t *testing.T) {
 	bundle, repo := requiring0175(t, map[string]string{"diff-reads": `"diff"`})
 	env := []string{"FITNESS_CACHE_DIR=" + t.TempDir()}
 	out, code := run0162(t, bundle, repo, env, "--policy=external", "--checks=diff-reads", "--all")
-	sees(t, out, code, 0, "Skipped (requires diff, which a full run has none of): diff-reads")
+	sees(t, out, code, 0, "Skipped (requires diff, which only a run of changed files has): diff-reads")
 	absent(t, out, "diff-reads")
 
 	write(t, repo, map[string]string{"notes/plan.md": "# Plan\n"})

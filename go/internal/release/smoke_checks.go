@@ -198,7 +198,7 @@ func listedSkipped(output, check string) bool {
 // expectedSkip returns the names a Skipped line lists for a reason the full
 // suite fixture expects, and whether line is one.
 func expectedSkip(line string) (string, bool) {
-	for _, why := range []string{"the repo tracks no file its needs pattern names", "requires diff, which a full run has none of"} {
+	for _, why := range []string{"the repo tracks no file its needs pattern names", "requires diff, which only a run of changed files has"} {
 		if names, ok := strings.CutPrefix(line, "Skipped ("+why+"): "); ok {
 			return names, true
 		}

@@ -183,8 +183,8 @@ func main() {
 	}
 	args, off := withoutNoBuiltins(os.Args[1:])
 	noBuiltins = off
-	pruneCache(args)
 	fetchMissingChecks(args)
+	pruneCache(args)
 	allChecks, installErr = catalog()
 	os.Exit(dispatch(args))
 }

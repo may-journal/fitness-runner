@@ -203,7 +203,8 @@ func writeProgram(path string, binary []byte) error {
 func checkSet(cache string, programs []string) (string, error) {
 	sorted := slices.Sorted(slices.Values(programs))
 	dir := filepath.Join(cache, checkSetsFolder, contentHash([]byte(strings.Join(sorted, "\n"))))
-	if used(dir) {
+	used(dir)
+	if exists(dir) {
 		return dir, nil
 	}
 	staged, err := os.MkdirTemp(cache, "check-set-")

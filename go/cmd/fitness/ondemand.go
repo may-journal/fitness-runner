@@ -232,20 +232,27 @@ func withChecksDir(env []string) []string {
 	return append(withoutVar(env, checkkit.ChecksDirEnv), checkkit.ChecksDirEnv+"="+dir)
 }
 
-// toFetch names the pending checks the run reaches and has not failed to
-// fetch. fetchesEvery runs fetch them all.
+// toFetch names the pending checks the run reaches, lacks nothing for, and
+// has not failed to fetch. fetchesEvery runs fetch all the others.
 func toFetch(root string, checks []resolved, env, shared []string) []string {
 	want := checks
 	if !fetchesEvery(checks, env) {
 		want, _ = applicable(root, checks, env, shared)
 	}
+	run := runOf(env)
 	var names []string
 	for _, c := range want {
-		if c.pending && fetchFailures[c.name] == "" {
+		if fetchable(c, run) {
 			names = append(names, c.name)
 		}
 	}
 	return names
+}
+
+// fetchable reports whether c is pending, not failed yet, and lacks nothing
+// in run.
+func fetchable(c resolved, run runContext) bool {
+	return c.pending && fetchFailures[c.name] == "" && run.lackReason(c) == ""
 }
 
 // fetchesEvery reports whether the run fetches every pending check: a full

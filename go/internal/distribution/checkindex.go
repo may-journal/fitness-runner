@@ -166,7 +166,7 @@ func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
 	}
 	index, err := i.fetchIndex(ctx)
 	i.recordIndex(index, err)
-	if errors.Is(err, errUnanswered) {
+	if err != nil && !errors.Is(err, errNoIndex) {
 		return i.offlineIndex(err, true)
 	}
 	return index, err
@@ -182,7 +182,7 @@ func (i *Installer) offlineIndex(err error, warn bool) (checkIndex, error) {
 	}
 	i.Unanswered = true
 	if warn {
-		fmt.Fprintf(i.Log, "fitness: warning: %v, so this run is offline and matches against the index cached %s\n", err, record.Checked.Format(time.DateTime))
+		fmt.Fprintf(i.Log, "fitness: warning: %v, so this run works offline against the index cached %s\n", err, record.Checked.Format(time.DateTime))
 	}
 	return record.Value, nil
 }

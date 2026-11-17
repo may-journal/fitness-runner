@@ -14,12 +14,12 @@ Cached releases
 
 - 0175.1
     - Given Developer has a cache where some bundles, check releases and sets went unused for 31 days, the running engine's among them
-        - When I run `fitness`, handed one of those check sets
-            - Then it deletes only the unused ones no process uses, and nothing a link in the cache points to
+        - When I run `fitness`, handed one of those check sets, with GitHub answering
+            - Then it deletes only unused ones nothing uses or links into, and nothing a cache link points to
 - 0175.2
     - Given Developer has a cache pruned an hour ago, and one more check release then went unused for 31 days
-        - When I run `fitness`, and again a day after the prune
-            - Then the first run deletes nothing, and the second deletes that release
+        - When I run `fitness`, then a day after the prune offline, then online
+            - Then only the last run deletes that release
 - 0175.3
     - Given Developer has a repo pinning a Markdown, a Go and a Swift check, and one with no fields, none cached
         - When I run `fitness prefetch`
@@ -35,4 +35,4 @@ Cached releases
 - 0175.6
     - Given Developer has a check requiring `diff`
         - When I run `fitness --all`, then `fitness` with a file staged
-            - Then the full run skips it, saying a full run has no diff, and the staged run runs it
+            - Then the full run skips it, saying only a run of changed files has a diff, and the staged run runs it
