@@ -39,11 +39,14 @@ func hasLine(text, line string) bool {
 }
 
 // script0174 runs the shared action script at path with env added, and
-// returns the outputs it wrote.
+// returns the outputs it wrote. It runs the script by its path, as the
+// action's step does, so a missing execute bit fails.
 func script0174(t *testing.T, path string, env ...string) map[string]string {
 	t.Helper()
 	output := filepath.Join(t.TempDir(), "output")
-	cmd := exec.Command("bash", filepath.Join("..", "..", ".github", "actions", path))
+	script, err := filepath.Abs(filepath.Join("..", "..", ".github", "actions", path))
+	mustDo(t, err)
+	cmd := exec.Command(script)
 	cmd.Env = append(append(os.Environ(), "GITHUB_OUTPUT="+output), env...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("%s: %v\n%s", path, err, out)
