@@ -196,13 +196,23 @@ func postJob(in claudeHookInput) (hookJob, bool, error) {
 	var parts []postPart
 	for _, post := range postsOf(in) {
 		root := postRoot(post.dir, post.repo)
-		args := []string{blobFlag, "-", "--checks=" + strings.Join(post.checks, ",")}
+		args := postArgs(post)
 		for _, part := range post.parts {
 			part.root, part.args = root, args
 			parts = append(parts, part)
 		}
 	}
 	return hookJob{parts: parts}, len(parts) > 0, nil
+}
+
+// postArgs is the `fitness --blob` command line that judges post's bodies
+// with its checks, at the path GitHub judges them at.
+func postArgs(post ghPost) []string {
+	args := []string{blobFlag, "-", "--checks=" + strings.Join(post.checks, ",")}
+	if post.doc == "" {
+		return args
+	}
+	return append(args, asFlag+"="+post.doc)
 }
 
 // postsOf is what the tool would post: a Bash command's gh calls, an

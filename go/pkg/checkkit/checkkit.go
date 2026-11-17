@@ -79,6 +79,9 @@ func Lines(line func(Finding) string, findings []Finding) []string {
 }
 
 // The scopes a check declares: what it reads when it judges a repo.
+//
+// Deprecated: name what a check reads in Files and what else it needs in
+// Requires; Effective maps each scope.
 const (
 	// ScopeFiles judges the repo's tracked files.
 	ScopeFiles = "files"
@@ -125,6 +128,8 @@ type Describe struct {
 	// generated into the runner, which serves it here.
 	Summary string `json:"summary,omitempty"`
 	// Scope is one of the Scope constants: what the check reads.
+	//
+	// Deprecated: set Files and Requires; Effective maps Scope onto them.
 	Scope string `json:"scope,omitempty"`
 	// Stage is StageTests for a test runner, timed by the test stage's
 	// total; empty or StageFast joins the fast checks and their FastTotal.
@@ -135,13 +140,16 @@ type Describe struct {
 	ContextInlineArg string `json:"contextInlineArg,omitempty"`
 	// Blob marks a check that judges a text given with `--body-file`, so
 	// `fitness --blob` runs it; the rest need files and are skipped there.
+	//
+	// Deprecated: set Files to find the body paths, such as PullBodyPath;
+	// Effective maps Blob onto Files and Exclude.
 	Blob bool `json:"blob,omitempty"`
 	// Tests marks a check that reads the repo's requirement tests. A run of
 	// two such checks scans the tests once and shares the scan.
 	Tests bool `json:"tests,omitempty"`
-	// Files is an RE2 pattern searched in each repo-relative path, as
-	// pre-commit's `files` is; empty matches every path. A scoped run skips
-	// the check when no path it judges matches.
+	// Files is an RE2 pattern searched in each repo-relative or virtual path,
+	// such as PullBodyPath, as pre-commit's `files` is; empty matches every
+	// path. A scoped run skips the check when no document it judges matches.
 	Files string `json:"files,omitempty"`
 	// Exclude is an RE2 pattern for paths that never reach the check, even
 	// when Files matches them; empty excludes none.

@@ -96,6 +96,7 @@ classDiagram
     }
     resolveChecks --> Patterns : Y
     Describe --> Requirement : Z
+    resolveChecks --> Requirement : AA
 
     style CheckBinary fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
@@ -183,6 +184,7 @@ Numbers on classes and letters on relationships match the callout table.
 | X   | Resolution judges a local check's `minFitness`, and fills the name, scope and summary a folder check's handshake leaves out. | A folder check may skip the handshake. |
 | Y   | Resolution compiles each check's patterns, and they decide whether the run reaches it. | A check no file reaches never starts. |
 | Z   | A check's metadata lists its requirements as typed values. | A misspelled requirement fails to build, and an unknown one skips the check. |
+| AA  | Resolution maps a check's deprecated scope onto its requirements, as scope `github` requires `github`. | Old checks keep their meaning under the new fields. |
 
 ## Monorepo layout
 

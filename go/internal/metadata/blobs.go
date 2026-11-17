@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"slices"
 	"strconv"
 	"strings"
@@ -38,31 +39,40 @@ var bodyChecks = append(slices.Clone(docChecks), "open-questions")
 type target = aftereffect.Target
 
 // RepoChecks applies a repo's own check settings to the GitHub commands, and
-// left nil, no check runs, so each fails closed.
+// left nil, no check runs, so each fails closed. Reaches, when set, reports
+// whether a check's files and exclude patterns let a body's virtual path
+// reach it.
 var RepoChecks struct {
-	Find func(name string) (checkkit.Program, error)
-	Off  func(name string) bool
+	Find    func(name string) (checkkit.Program, error)
+	Off     func(name string) bool
+	Reaches func(name, doc string) bool
 }
 
 // blobChecker runs installed check binaries on a GitHub blob, an issue or PR
 // body, saved to a file the checks read with --body-file.
 type blobChecker struct{ root string }
 
-// judge runs each check on body and returns their findings.
-func (b blobChecker) judge(checks []string, body string) []string {
-	file, err := WriteBody(body)
+// judge runs each check that body's virtual path doc reaches on body, and
+// returns their findings.
+func (b blobChecker) judge(doc string, checks []string, body string) []string {
+	file, err := WriteDocument(body, doc)
 	if err != nil {
 		return []string{err.Error()}
 	}
 	defer os.Remove(file)
 	var errs []string
 	for _, name := range checks {
-		if RepoChecks.Off != nil && RepoChecks.Off(name) {
-			continue
+		if !skips(name, doc) {
+			errs = append(errs, b.errorsOf(name, "--root", b.root, "--body-file", file)...)
 		}
-		errs = append(errs, b.errorsOf(name, "--root", b.root, "--body-file", file)...)
 	}
 	return errs
+}
+
+// skips reports whether the repo turns check name off, or its patterns leave
+// out the body at virtual path doc.
+func skips(name, doc string) bool {
+	return RepoChecks.Off != nil && RepoChecks.Off(name) || RepoChecks.Reaches != nil && !RepoChecks.Reaches(name, doc)
 }
 
 // errorsOf runs one check and returns its errors; a check that prints no
@@ -108,7 +118,14 @@ func execCheck(name string, args []string) []byte {
 // WriteBody saves body to a temp file for the --body-file checks; the caller
 // removes it.
 func WriteBody(body string) (string, error) {
-	f, err := os.CreateTemp("", "fitness-body-*.md")
+	return WriteDocument(body, checkkit.BlobPath)
+}
+
+// WriteDocument saves body, judged at path doc, to a temp file ending in
+// doc's extension. A check that reads the file's type sees doc's, and
+// the caller removes the file.
+func WriteDocument(body, doc string) (string, error) {
+	f, err := os.CreateTemp("", "fitness-body-*"+path.Ext(doc))
 	if err != nil {
 		return "", err
 	}
@@ -133,7 +150,7 @@ func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 	errs = append(errs, readErrs...)
 	errs = append(errs, closesErrors(t.Body, requiredClosures(closed, b), b)...)
 	for _, i := range closed {
-		for _, e := range b.judge([]string{"issue-checklist"}, i.body) {
+		for _, e := range b.judge(issuePath(b.root, i.labels), []string{"issue-checklist"}, i.body) {
 			errs = append(errs, fmt.Sprintf("PR closes #%d, which has an %s; tick it once it is done, or stop closing #%d", i.number, e, i.number))
 		}
 	}

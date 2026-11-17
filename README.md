@@ -51,6 +51,8 @@ Run checks:
       Forces a full scan even when files are staged.
   fitness --blob <text>
       Runs every blob-capable check on a text instead of the repo; - reads the text from stdin.
+  fitness --blob <text> --as <path>
+      Names the path a piped text is judged as, in place of checkkit.BlobPath.
   fitness --dir=<folder>
       Judges only the files under one folder.
   fitness --file=<path>

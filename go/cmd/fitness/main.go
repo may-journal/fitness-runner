@@ -177,7 +177,7 @@ type outcome struct {
 // find each check they run among the installed ones.
 func main() {
 	installedPrograms = checkkit.Discover()
-	metadata.RepoChecks.Find = findCheckBinary
+	metadata.RepoChecks.Find, metadata.RepoChecks.Reaches = findCheckBinary, reachesDocument
 	if name, ok := strings.CutPrefix(filepath.Base(os.Args[0]), checkkit.BinPrefix); ok {
 		os.Exit(runBuiltin(name, os.Args[1:]))
 	}

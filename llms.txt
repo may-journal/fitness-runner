@@ -19,6 +19,7 @@ A run resolves the checks, runs them side by side under two totals, and prints a
 - `fitness` or `fitness <check> [args]`: Runs the full suite, or with a check name only that check, passing it the arguments after its name.
 - `fitness --all`: Forces a full scan even when files are staged.
 - `fitness --blob <text>`: Runs every blob-capable check on a text instead of the repo; - reads the text from stdin.
+- `fitness --blob <text> --as <path>`: Names the path a piped text is judged as, in place of checkkit.BlobPath.
 - `fitness --dir=<folder>`: Judges only the files under one folder.
 - `fitness --file=<path>`: Judges only the named file; repeat it to name more.
 - `fitness --json=<file>`: Names the file that receives the run's performance report: each check's time, stage, files, binary size, and error lines, as JSON.

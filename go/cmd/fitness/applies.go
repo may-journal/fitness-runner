@@ -97,7 +97,7 @@ const (
 // skipReason leaves them out. shared is the run's shared tracked list,
 // which needs patterns read before git is asked for one.
 func applicable(root string, checks []resolved, env, shared []string) ([]resolved, skipGroups) {
-	paths := scopedFiles(env)
+	paths := documents(env)
 	tracked := trackedList{root: root, paths: shared, listed: shared != nil}
 	run := runOf(env)
 	var kept []resolved
@@ -116,8 +116,22 @@ func applicable(root string, checks []resolved, env, shared []string) ([]resolve
 	return kept, skipped
 }
 
+// documents are the paths a run judges, or nil when it judges every file.
+// A scoped run judges its files, the branch history and any commit message.
+func documents(env []string) []string {
+	paths := scopedFiles(env)
+	if paths == nil {
+		return nil
+	}
+	paths = append(paths, checkkit.HistoryPath)
+	if slices.ContainsFunc(env, func(entry string) bool { return strings.HasPrefix(entry, "FITNESS_CTX_MESSAGE=") }) {
+		paths = append(paths, checkkit.CommitMessagePath)
+	}
+	return paths
+}
+
 // skipReason says why the run leaves c out, or "" to run it. Needs must
-// match a tracked file, and a scoped run's paths must reach the check.
+// match a tracked file, and a scoped run's documents must reach the check.
 func skipReason(c resolved, paths []string, tracked *trackedList) string {
 	if r := checkkit.UnknownRequirement(c.desc); r != "" {
 		return unknownWhy(r)
@@ -170,8 +184,9 @@ func offlineReason(r checkkit.Requirement, host string) string {
 }
 
 // onlineRequirement is the first of github and network that desc requires,
-// or "" when it requires neither.
+// scope github included, or "" when it requires neither.
 func onlineRequirement(desc checkkit.Describe) checkkit.Requirement {
+	desc = checkkit.Effective(desc)
 	for _, r := range []checkkit.Requirement{checkkit.RequiresGitHub, checkkit.RequiresNetwork} {
 		if checkkit.Requiring(desc, r) {
 			return r
@@ -234,11 +249,12 @@ func unknownWhy(r checkkit.Requirement) string {
 }
 
 // blobWhy says why a text alone cannot reach a check, or "" when it can.
-// The check may require the repo, the diff or the history.
+// The check may require the repo, the diff or the history, as scope git does.
 func blobWhy(desc checkkit.Describe) string {
 	if r := checkkit.UnknownRequirement(desc); r != "" {
 		return unknownWhy(r)
 	}
+	desc = checkkit.Effective(desc)
 	for _, r := range []checkkit.Requirement{checkkit.RequiresRepo, checkkit.RequiresDiff, checkkit.RequiresHistory} {
 		if checkkit.Requiring(desc, r) {
 			return "requires " + string(r)

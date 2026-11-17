@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // mcpTool is a GitHub MCP tool that posts a body: the checks GitHub gives
@@ -56,7 +57,7 @@ func mcpPosts(in claudeHookInput) []ghPost {
 	if len(parts) == 0 {
 		return nil
 	}
-	return []ghPost{{checks: tool.checksFor(input), dir: in.Cwd, repo: input.repo(), parts: parts}}
+	return []ghPost{{checks: tool.checksFor(input), doc: tool.docFor(input), dir: in.Cwd, repo: input.repo(), parts: parts}}
 }
 
 // repo is the owner/repo the tool posts to, or "" when it names none.
@@ -74,6 +75,18 @@ func (tool mcpTool) checksFor(input mcpInput) []string {
 		return tool.checks
 	}
 	return kindChecks(cleanKinds(append(slices.Clone(input.Labels), titleKind.FindString(input.Title))))
+}
+
+// docFor is the virtual path GitHub judges the tool's body at. It is an
+// issue's by its kind label or title, a PR's, or a comment's.
+func (tool mcpTool) docFor(input mcpInput) string {
+	switch {
+	case tool.issue:
+		return kindDoc(cleanKinds(append(slices.Clone(input.Labels), titleKind.FindString(input.Title))))
+	case slices.Equal(tool.checks, metadata.PRBodyChecks):
+		return checkkit.PullBodyPath
+	}
+	return checkkit.CommentBodyPath
 }
 
 // readMCPInput reads the fields of an MCP tool's input the hook judges,

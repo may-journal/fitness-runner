@@ -8,6 +8,7 @@ import (
 	"os"
 	"slices"
 	"strings"
+	"sync"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
@@ -234,20 +235,88 @@ func withChecksDir(env []string) []string {
 }
 
 // toFetch names the pending checks the run reaches, lacks nothing for, and
-// has not failed to fetch. fetchesEvery runs fetch all the others.
+// has not failed to fetch. A full run fetches all the others, and one that
+// reaches local-branch adds the checks it judges the branch's bodies with.
 func toFetch(root string, checks []resolved, env, shared []string) []string {
 	want := checks
-	if !fetchesEvery(checks, env) {
+	if scopedFiles(env) != nil {
 		want, _ = applicable(root, checks, env, shared)
+		want = append(want, branchStandIns(want)...)
 	}
 	run := runOf(env)
 	var names []string
 	for _, c := range want {
-		if fetchable(c, run) {
+		if fetchable(c, run) && !slices.Contains(names, c.name) {
 			names = append(names, c.name)
 		}
 	}
 	return unlessOffline(names)
+}
+
+// branchStandIns are the pending checks local-branch judges the branch's
+// PR and Plan with, when want holds it, so the run fetches those alone.
+func branchStandIns(want []resolved) []resolved {
+	if !slices.ContainsFunc(want, func(c resolved) bool { return c.name == localBranch }) {
+		return nil
+	}
+	var stands []resolved
+	for _, name := range metadata.BranchChecks() {
+		if c, ok := standIn(name); ok {
+			stands = append(stands, c)
+		}
+	}
+	return stands
+}
+
+// handshake is a check's describe metadata, and whether its handshake gave
+// any.
+type handshake struct {
+	desc checkkit.Describe
+	ok   bool
+}
+
+// described holds each handshake reachesDocument asked for, failed ones too.
+var described = struct {
+	sync.Mutex
+	by map[string]handshake
+}{by: map[string]handshake{}}
+
+// reachesDocument reports whether check name's effective patterns let a body
+// at virtual path doc reach it. One whose handshake fails is reached.
+func reachesDocument(name, doc string) bool {
+	if p, ok := pending[name]; ok {
+		// The index copies no blob flag, so only a stand-in's own patterns
+		// can leave a body out.
+		return reaches(checkkit.Describe{Files: p.desc.Files, Exclude: p.desc.Exclude, Blob: true}, doc)
+	}
+	h := describedAs(name)
+	return !h.ok || reaches(h.desc, doc)
+}
+
+// describedAs is check name's handshake, run once per run.
+func describedAs(name string) handshake {
+	described.Lock()
+	defer described.Unlock()
+	if h, ok := described.by[name]; ok {
+		return h
+	}
+	h := handshakeOf(name)
+	described.by[name] = h
+	return h
+}
+
+// handshakeOf runs check name's handshake, unless the run fetched it and
+// holds its metadata already.
+func handshakeOf(name string) handshake {
+	if r, ok := fetchedResolved[name]; ok {
+		return handshake{desc: r.desc, ok: true}
+	}
+	prog, err := findCheckBinary(name)
+	if err != nil {
+		return handshake{}
+	}
+	r := describeAll([]string{name}, []checkkit.Program{prog})[0]
+	return handshake{desc: r.desc, ok: r.describeErr == ""}
 }
 
 // unlessOffline returns names, or fails each at once when GitHub's API host
@@ -272,12 +341,6 @@ func unlessOffline(names []string) []string {
 // in run.
 func fetchable(c resolved, run runContext) bool {
 	return c.pending && fetchFailures[c.name] == "" && run.lackReason(c) == ""
-}
-
-// fetchesEvery reports whether the run fetches every pending check: a full
-// run, or one local-branch judges, since it runs other checks on bodies.
-func fetchesEvery(checks []resolved, env []string) bool {
-	return scopedFiles(env) == nil || slices.ContainsFunc(checks, func(c resolved) bool { return c.name == localBranch })
 }
 
 // withFetched puts each check fetched so far in place of its stand-in.

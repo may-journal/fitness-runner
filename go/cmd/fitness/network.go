@@ -41,7 +41,7 @@ func readsNetwork(root string, check resolved, msg string) bool {
 
 // readsOnline reports whether desc reads GitHub or requires the network.
 func readsOnline(desc checkkit.Describe) bool {
-	return onlineRequirement(desc) != "" || desc.Scope == checkkit.ScopeGitHub
+	return onlineRequirement(desc) != ""
 }
 
 // atCommit reports whether this run is pre-commit's and leaves check out.

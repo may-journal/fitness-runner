@@ -45,9 +45,10 @@ type Patterns struct {
 	files, exclude, needs *regexp.Regexp
 }
 
-// PatternsOf compiles d's Files, Exclude and Needs, naming the field and
-// pattern of the first that does not compile.
+// PatternsOf compiles the Files, Exclude and Needs of d's Effective fields,
+// naming the field and pattern of the first that does not compile.
 func PatternsOf(d Describe) (Patterns, error) {
+	d = Effective(d)
 	var p Patterns
 	for _, field := range []struct {
 		name, pattern string

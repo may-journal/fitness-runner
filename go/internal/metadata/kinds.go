@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/aftereffect"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/epic"
 	"github.com/may-journal/fitness-runner/go/pkg/mdtemplate"
 )
@@ -33,6 +34,18 @@ var kindRules = map[string]kindRule{
 
 // planChecks are the checks a Plan body gets, for branch-check.
 var planChecks = slices.Concat(kindRules["Plan"].checks, bodyChecks)
+
+// issuePath is the virtual path of an issue body with labels. Its kind is
+// the first label root's templates or kindRules name, else none.
+func issuePath(root string, labels []string) string {
+	kinds := discoverKinds(root)
+	for _, label := range labels {
+		if _, ok := kinds[label]; ok {
+			return checkkit.IssueBodyPath(label)
+		}
+	}
+	return checkkit.IssueBodyPath("")
+}
 
 // IssueBodyChecks are the checks issue-check gives a body of the kind label
 // names, or nil for a label that names no kind. An unlabeled body, "", gets
@@ -102,7 +115,7 @@ func (k issueKind) judge(t target, gh aftereffect.Client, b blobChecker) []strin
 	if k.spec != nil {
 		errs = mdtemplate.Validate(t.Body, *k.spec)
 	}
-	errs = append(errs, b.judge(slices.Concat(k.rule.checks, bodyChecks), t.Body)...)
+	errs = append(errs, b.judge(checkkit.IssueBodyPath(k.label), slices.Concat(k.rule.checks, bodyChecks), t.Body)...)
 	if k.rule.links != nil {
 		errs = append(errs, k.rule.links(t, gh)...)
 	}

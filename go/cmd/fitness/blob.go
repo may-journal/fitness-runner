@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"path/filepath"
 	"slices"
 	"strings"
 	"time"
@@ -25,12 +27,21 @@ import (
 //fitness:usage --blob <text>
 const blobFlag = "--blob"
 
+// asFlag names the path a piped text is judged as, in place of
+// checkkit.BlobPath. The checks whose files find that path judge it.
+//
+//fitness:usage --blob <text> --as <path>
+const asFlag = "--as"
+
 // usageExit is the exit code for a command line the runner cannot run.
 const usageExit = 2
 
 // blobRequest is a parsed `fitness --blob` command line.
 type blobRequest struct {
-	text   string
+	text string
+	// as is the path the text is judged as, checkkit.BlobPath unless --as
+	// names another.
+	as     string
 	checks []string
 	// values holds each --blob value seen; exactly one is valid.
 	values []string
@@ -62,7 +73,7 @@ func runBlob(argv []string) int {
 		report.Error("fitness --blob", err)
 		return 1
 	}
-	run, skipped, err := blobChecks(suite, req.checks)
+	run, skipped, err := blobChecks(suite, req.checks, req.as)
 	if err != nil {
 		report.Error("fitness --blob", err)
 		return usageExit
@@ -109,7 +120,7 @@ func configuredChecks(cfg *conf.Config) (string, []string, error) {
 // judgeBlob saves the text for --body-file, runs the checks with env, and
 // prints the summary naming skipped checks plus any --json report.
 func judgeBlob(root string, req blobRequest, checks []resolved, skipped skipGroups, env []string) int {
-	file, err := metadata.WriteBody(req.text)
+	file, err := metadata.WriteDocument(req.text, req.as)
 	if err != nil {
 		report.Error("fitness --blob", err)
 		return 1
@@ -160,8 +171,8 @@ func listSkipped(out *os.File, why string, names []string) {
 }
 
 // parseBlob reads `--blob <text>`, `--blob=<text>`, or `--blob -` (stdin),
-// plus an optional `--checks=a,b` and `--json=<file>`. Anything else, such
-// as --all or a check name, is a usage error, and so is an empty text.
+// plus an optional `--checks=a,b`, `--json=<file>` and `--as <path>`.
+// Anything else, an empty text, or a path outside the repo is a usage error.
 func parseBlob(argv []string, stdin io.Reader) (blobRequest, error) {
 	var req blobRequest
 	for i := 0; i < len(argv); i++ {
@@ -174,6 +185,9 @@ func parseBlob(argv []string, stdin io.Reader) (blobRequest, error) {
 	if len(req.values) != 1 {
 		return req, errors.New("use --blob once")
 	}
+	if req.as == "" {
+		req.as = checkkit.BlobPath
+	}
 	return withText(req, req.values[0], stdin)
 }
 
@@ -184,13 +198,41 @@ func (r *blobRequest) take(argv []string, i int) (int, error) {
 		r.values = append(r.values, v)
 		return consumed, nil
 	}
+	if v, consumed, ok := asValue(argv, i); ok {
+		return consumed, r.takeAs(v)
+	}
 	if r.option(argv[i]) {
 		return 1, nil
 	}
 	if argv[i] == blobFlag {
 		return 0, errors.New("--blob needs a text, or - to read stdin")
 	}
-	return 0, fmt.Errorf("--blob runs alone or with --checks=name,name and --json=<file>; remove %q", argv[i])
+	return 0, fmt.Errorf("--blob runs alone or with --checks=name,name, --json=<file> and --as <path>; remove %q", argv[i])
+}
+
+// takeAs takes the first --as path, which must name a file inside the repo
+// as a clean relative path.
+func (r *blobRequest) takeAs(rel string) error {
+	if r.as != "" {
+		return errors.New("use --as once")
+	}
+	if !filepath.IsLocal(rel) || path.Clean(rel) != rel {
+		return fmt.Errorf("--as needs a clean path inside the repo, such as x.go; got %q", rel)
+	}
+	r.as = rel
+	return nil
+}
+
+// asValue reads `--as=<path>` or `--as <path>` at argv[i], with how
+// many tokens it spans.
+func asValue(argv []string, i int) (string, int, bool) {
+	if v, ok := strings.CutPrefix(argv[i], asFlag+"="); ok {
+		return v, 1, true
+	}
+	if argv[i] == asFlag && i+1 < len(argv) {
+		return argv[i+1], 2, true
+	}
+	return "", 0, false
 }
 
 // option takes a first --checks list or --json file, reporting whether arg
@@ -226,10 +268,15 @@ func blobValue(argv []string, i int) (string, int, bool) {
 }
 
 // textFollows reports whether a text follows argv[i]. A next token of
-// --checks=… or --json=… means the text was left out; any other token, front matter's
-// --- included, is the text.
+// --checks=…, --json=… or --as means the text was left out; any other
+// token, front matter's --- included, is the text.
 func textFollows(argv []string, i int) bool {
-	return i+1 < len(argv) && !strings.HasPrefix(argv[i+1], "--checks=") && !strings.HasPrefix(argv[i+1], jsonFlag+"=")
+	if i+1 >= len(argv) || argv[i+1] == asFlag {
+		return false
+	}
+	return !slices.ContainsFunc([]string{"--checks=", jsonFlag + "=", asFlag + "="}, func(prefix string) bool {
+		return strings.HasPrefix(argv[i+1], prefix)
+	})
 }
 
 // withText fills in the text, reading stdin for "-", and rejects an empty
@@ -249,9 +296,9 @@ func withText(req blobRequest, value string, stdin io.Reader) (blobRequest, erro
 	return req, nil
 }
 
-// blobChecks resolves the suite or the --checks selection, splitting it into
-// blob-capable checks and the names of those that need files.
-func blobChecks(suite, selected []string) (run []resolved, skipped skipGroups, err error) {
+// blobChecks resolves the suite or the --checks selection. It splits it into
+// the checks that judge a text at path doc and the names of the rest.
+func blobChecks(suite, selected []string, doc string) (run []resolved, skipped skipGroups, err error) {
 	names, err := blobSelection(suite, selected)
 	if err != nil {
 		return nil, nil, err
@@ -263,27 +310,38 @@ func blobChecks(suite, selected []string) (run []resolved, skipped skipGroups, e
 	if err != nil {
 		return nil, nil, err
 	}
-	run, skipped = splitBlob(checks)
+	run, skipped = splitBlob(checks, doc)
 	if len(run) == 0 {
-		return nil, nil, errors.New("--checks names no check that can judge a text")
+		return nil, nil, fmt.Errorf("--checks names no check that can judge a text at %s", doc)
 	}
 	return run, skipped, nil
 }
 
-// splitBlob splits checks into those that judge a text and the skipped
-// rest. A skipped check needs files, or requires what a text lacks.
-func splitBlob(checks []resolved) (run []resolved, skipped skipGroups) {
+// splitBlob splits checks into those that judge a text at path doc and the
+// skipped rest. A skipped check needs files, requires what a text lacks, or
+// has files and exclude patterns that leave doc out.
+func splitBlob(checks []resolved, doc string) (run []resolved, skipped skipGroups) {
 	for _, c := range checks {
 		switch why := blobWhy(c.desc); {
-		case !c.desc.Blob:
+		case !checkkit.JudgesText(c.desc):
 			skipped.add("needs files", c.name)
 		case why != "":
 			skipped.add(why, c.name)
+		case !reaches(c.desc, doc):
+			skipped.add(noMatchingFiles, c.name)
 		default:
 			run = append(run, c)
 		}
 	}
 	return run, skipped
+}
+
+// reaches reports whether desc's effective patterns let document doc reach
+// it. A pattern that does not compile reaches every document, as in a run of
+// files, where unhonored names it.
+func reaches(desc checkkit.Describe, doc string) bool {
+	p, err := checkkit.PatternsOf(desc)
+	return err != nil || p.Matches(doc)
 }
 
 // blobSelection returns each name to consider once: the checks left by local
