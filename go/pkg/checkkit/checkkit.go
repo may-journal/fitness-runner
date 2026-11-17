@@ -149,9 +149,8 @@ type Describe struct {
 	// Needs is an RE2 pattern a tracked file must match for the check to
 	// apply, such as package.json; empty needs none.
 	Needs string `json:"needs,omitempty"`
-	// Requires lists what the check needs beyond the documents it judges.
-	// `fitness --blob` skips a check requiring repo, diff or history, and
-	// any run skips one requiring what this fitness does not know.
+	// Requires lists what the check needs beyond the documents it judges, and
+	// a run lacking one skips the check: docs/check-protocol.md lists when.
 	Requires []Requirement `json:"requires,omitempty"`
 	// MinFitness is the oldest fitness release, as major.minor.patch, that runs
 	// the check as written. An older one stops the run and names the upgrade.

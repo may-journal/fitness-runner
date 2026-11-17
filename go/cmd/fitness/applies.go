@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/gitx"
@@ -87,7 +89,8 @@ func withSkipped(all []resolved, rows []render.Row, found [][]checkkit.Finding, 
 // Why a run leaves a check out, as its Skipped line says.
 const (
 	noMatchingFiles = "no matching files"
-	needsNoFile     = "the repo tracks no file its needs pattern names"
+	needsNoFile     = checkkit.SkipNeedsNoFile
+	noDiff          = checkkit.SkipNoDiff
 )
 
 // applicable keeps the checks this run reaches and groups the rest by why
@@ -96,10 +99,15 @@ const (
 func applicable(root string, checks []resolved, env, shared []string) ([]resolved, skipGroups) {
 	paths := scopedFiles(env)
 	tracked := trackedList{root: root, paths: shared, listed: shared != nil}
+	run := runOf(env)
 	var kept []resolved
 	var skipped skipGroups
 	for _, c := range checks {
-		if why := skipReason(c, paths, &tracked); why != "" {
+		why := run.lackReason(c)
+		if why == "" {
+			why = skipReason(c, paths, &tracked)
+		}
+		if why != "" {
 			skipped.add(why, c.name)
 			continue
 		}
@@ -122,6 +130,63 @@ func skipReason(c resolved, paths []string, tracked *trackedList) string {
 		return needsNoFile
 	case !p.ReachedBy(paths):
 		return noMatchingFiles
+	}
+	return ""
+}
+
+// runContext says whether a run has a change list, and names the GitHub host
+// its probe found silent, if any.
+type runContext struct {
+	diff    bool
+	offline string
+}
+
+// runOf reads the run's context from env.
+func runOf(env []string) runContext {
+	diff := slices.ContainsFunc(env, func(entry string) bool { return strings.HasPrefix(entry, changedFilesEnv+"=") })
+	return runContext{diff: diff, offline: unreachableIn(env)}
+}
+
+// lackReason says why the run lacks what c requires, or "". Only a run of
+// changed files has a diff, and offline, a pending check needing the network
+// cannot be fetched.
+func (run runContext) lackReason(c resolved) string {
+	if !run.diff && checkkit.Requiring(c.desc, checkkit.RequiresDiff) {
+		return noDiff
+	}
+	if !c.pending || run.offline == "" {
+		return ""
+	}
+	return offlineReason(onlineRequirement(c.desc), run.offline)
+}
+
+// offlineReason is the Skipped reason for a check requiring r when host did
+// not answer the probe, or "" for an empty r.
+func offlineReason(r checkkit.Requirement, host string) string {
+	if r == "" {
+		return ""
+	}
+	return fmt.Sprintf("requires %s, and this run is offline: %s did not answer", r, host)
+}
+
+// onlineRequirement is the first of github and network that desc requires,
+// or "" when it requires neither.
+func onlineRequirement(desc checkkit.Describe) checkkit.Requirement {
+	for _, r := range []checkkit.Requirement{checkkit.RequiresGitHub, checkkit.RequiresNetwork} {
+		if checkkit.Requiring(desc, r) {
+			return r
+		}
+	}
+	return ""
+}
+
+// unreachableIn is the host env's network entry names as unreachable, or ""
+// when the probe found it answering or nothing was probed.
+func unreachableIn(env []string) string {
+	for _, entry := range env {
+		if host, ok := strings.CutPrefix(entry, checkkit.UnreachableEnv("")); ok {
+			return host
+		}
 	}
 	return ""
 }

@@ -184,6 +184,7 @@ func main() {
 	args, off := withoutNoBuiltins(os.Args[1:])
 	noBuiltins = off
 	fetchMissingChecks(args)
+	pruneCache(args)
 	allChecks, installErr = catalog()
 	os.Exit(dispatch(args))
 }
@@ -278,6 +279,10 @@ func init() {
 		// checkVersions in .fitnessrc.json sets them.
 		//fitness:usage check-versions
 		"check-versions": runCheckVersions,
+		// Downloads and verifies every check the repo pins, at every pinned
+		// version, so later runs and CI caches need no network.
+		//fitness:usage prefetch
+		"prefetch": runPrefetch,
 		// Prints why a check exists, what it judges, and the config keys it
 		// reads.
 		//fitness:usage explain <check> [--json]

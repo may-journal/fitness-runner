@@ -20,6 +20,8 @@ type Installer struct {
 	// asks GitHub nothing more and keeps its built-in checks.
 	Unanswered bool
 	Log        io.Writer
+	// pinned lists each pin that resolved to a release, which check sets record.
+	pinned []CheckPin
 }
 
 func New(version, hashes string, log io.Writer) (*Installer, error) {
@@ -45,11 +47,18 @@ func (i *Installer) Install(ctx context.Context, requested string) (string, erro
 		return "", err
 	}
 	fmt.Fprintf(i.Log, "fitness: version=%s platform=%s sha256=%s\n", version, i.Platform, digest)
-	return i.installBundle(ctx, version, top, digest)
+	bin, err := i.installBundle(ctx, version, top, digest)
+	if err == nil && requested != "latest" {
+		markRequested(filepath.Join(i.Cache, top+"-"+digest))
+	}
+	return bin, err
 }
 
 func (i *Installer) installBundle(ctx context.Context, version, top, digest string) (string, error) {
 	key := filepath.Join(i.Cache, top+"-"+digest)
+	// Marking the key as used keeps a prune from deleting it; a new key's
+	// folder is made below.
+	used(key)
 	if path := recordedBundle(key); path != "" {
 		return path, nil
 	}

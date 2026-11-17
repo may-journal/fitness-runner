@@ -155,18 +155,37 @@ func (i *Installer) checkLookup() *http.Client {
 	return &http.Client{Timeout: checkLookupTimeout, Transport: i.Lookup.Transport}
 }
 
-// readIndex returns a fresh recorded index, else reads and records it.
-// errNoIndex means fitness-checks publishes none.
+// readIndex returns a fresh recorded index, else reads and records it, or,
+// when GitHub did not answer, the last one recorded. errNoIndex means
+// fitness-checks has none; any other answer that fails stays an error.
 func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
 	if index, ok := readFresh[checkIndex](i.Cache, checkIndexName, latestFresh); ok {
 		return index, publishedIndex(index)
 	}
 	if _, ok := readFresh[bool](i.Cache, unansweredName, unansweredFresh); ok {
-		return checkIndex{}, errUnanswered
+		return i.offlineIndex(errUnanswered, false)
 	}
 	index, err := i.fetchIndex(ctx)
 	i.recordIndex(index, err)
+	if errors.Is(err, errUnanswered) {
+		return i.offlineIndex(err, true)
+	}
 	return index, err
+}
+
+// offlineIndex is the last recorded index, however old, or err without one.
+// The run then asks GitHub nothing more, and warn names the fallback.
+func (i *Installer) offlineIndex(err error, warn bool) (checkIndex, error) {
+	var record freshRecord[checkIndex]
+	data, readErr := readCacheFile(filepath.Join(i.Cache, checkIndexName), maxMetadataBytes)
+	if readErr != nil || json.Unmarshal(data, &record) != nil || record.Value.Format != 1 {
+		return checkIndex{}, err
+	}
+	i.Unanswered = true
+	if warn {
+		fmt.Fprintf(i.Log, "fitness: warning: %v, so this run works offline against the index cached %s\n", err, record.Checked.Format(time.DateTime))
+	}
+	return record.Value, nil
 }
 
 // recordIndex records an index read. A missing index is format 0, so runs

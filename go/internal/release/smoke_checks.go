@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/lang"
 )
 
@@ -184,14 +185,24 @@ func ranOrSkipped(output, check string) bool {
 	return strings.Contains(output, "→ "+check+"\n") || listedSkipped(output, check)
 }
 
-// listedSkipped reports whether the run skipped check because the fixture
-// tracks no file its needs pattern names. Any other skip still fails.
+// listedSkipped reports whether the run skipped check for a reason the
+// fixture expects: expectedSkip names them, and any other skip still fails.
 func listedSkipped(output, check string) bool {
-	const needs = "Skipped (the repo tracks no file its needs pattern names): "
 	for _, line := range strings.Split(output, "\n") {
-		if names, ok := strings.CutPrefix(line, needs); ok && slices.Contains(strings.Split(names, ", "), check) {
+		if names, ok := expectedSkip(line); ok && slices.Contains(strings.Split(names, ", "), check) {
 			return true
 		}
 	}
 	return false
+}
+
+// expectedSkip returns the names a Skipped line lists for a reason the full
+// suite fixture expects, and whether line is one.
+func expectedSkip(line string) (string, bool) {
+	for _, why := range []string{checkkit.SkipNeedsNoFile, checkkit.SkipNoDiff} {
+		if names, ok := strings.CutPrefix(line, "Skipped ("+why+"): "); ok {
+			return names, true
+		}
+	}
+	return "", false
 }

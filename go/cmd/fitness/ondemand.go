@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
@@ -232,20 +233,45 @@ func withChecksDir(env []string) []string {
 	return append(withoutVar(env, checkkit.ChecksDirEnv), checkkit.ChecksDirEnv+"="+dir)
 }
 
-// toFetch names the pending checks the run reaches and has not failed to
-// fetch. fetchesEvery runs fetch them all.
+// toFetch names the pending checks the run reaches, lacks nothing for, and
+// has not failed to fetch. fetchesEvery runs fetch all the others.
 func toFetch(root string, checks []resolved, env, shared []string) []string {
 	want := checks
 	if !fetchesEvery(checks, env) {
 		want, _ = applicable(root, checks, env, shared)
 	}
+	run := runOf(env)
 	var names []string
 	for _, c := range want {
-		if c.pending && fetchFailures[c.name] == "" {
+		if fetchable(c, run) {
 			names = append(names, c.name)
 		}
 	}
-	return names
+	return unlessOffline(names)
+}
+
+// unlessOffline returns names, or fails each at once when GitHub's API host
+// did not answer the probe, since every fetch needs GitHub.
+func unlessOffline(names []string) []string {
+	if len(names) == 0 {
+		return nil
+	}
+	host := metadata.UnreachableGitHub()
+	if host == "" {
+		return names
+	}
+	failed := map[string]error{}
+	for _, name := range names {
+		failed[name] = fmt.Errorf("this run is offline: %s did not answer", host)
+	}
+	noteFailures(failed)
+	return nil
+}
+
+// fetchable reports whether c is pending, not failed yet, and lacks nothing
+// in run.
+func fetchable(c resolved, run runContext) bool {
+	return c.pending && fetchFailures[c.name] == "" && run.lackReason(c) == ""
 }
 
 // fetchesEvery reports whether the run fetches every pending check: a full

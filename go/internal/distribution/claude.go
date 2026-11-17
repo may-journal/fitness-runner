@@ -46,6 +46,7 @@ const claudeHookArg = "claude-hook"
 // to each Claude Code settings file. It replaces the entries an earlier
 // install wrote and keeps every other setting.
 func WriteClaudeSettings(bundle string, files []string, log io.Writer) error {
+	rememberPointers(bundle, files)
 	command := shellQuote(filepath.Join(bundle, "fitness")) + " " + claudeHookArg
 	for _, file := range files {
 		if err := writeClaudeSettings(file, command); err != nil {

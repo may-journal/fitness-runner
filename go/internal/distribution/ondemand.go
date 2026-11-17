@@ -31,7 +31,7 @@ func (i *Installer) PlanChecks(ctx context.Context, pins []CheckPin) ([]PlannedC
 	for k, release := range kept {
 		pin := pinNamed(pins, names[k])
 		planned[k] = PlannedCheck{Pin: pin, Describe: index.describe(pin)}
-		if program := i.checkPath(pin.Name, release); exists(program) {
+		if program := i.checkPath(pin.Name, release); cachedProgram(program) {
 			planned[k].Program = program
 		}
 	}
@@ -117,5 +117,5 @@ func (i *Installer) installEach(ctx context.Context, names []string, releases []
 // CheckSet returns a cache folder linking exactly programs, for
 // FITNESS_CHECKS_DIR.
 func (i *Installer) CheckSet(programs []string) (string, error) {
-	return checkSet(i.Cache, programs)
+	return checkSet(i.Cache, programs, i.pinned)
 }
