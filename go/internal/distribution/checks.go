@@ -69,7 +69,7 @@ func (i *Installer) InstallChecks(ctx context.Context, pins []CheckPin) (string,
 	if err != nil {
 		return "", err
 	}
-	dir, err := checkSet(i.Cache, paths)
+	dir, err := checkSet(i.Cache, paths, i.pinned)
 	if err == nil {
 		fmt.Fprintf(i.Log, "fitness: installed %d checks in %s\n", len(paths), dir)
 	}
@@ -91,6 +91,7 @@ func (i *Installer) released(pins []CheckPin, releases []checkRelease) ([]string
 			continue
 		}
 		names, kept = append(names, pins[k].Name), append(kept, release)
+		i.pinned = append(i.pinned, pins[k])
 	}
 	return names, kept
 }
@@ -198,24 +199,65 @@ func writeProgram(path string, binary []byte) error {
 	return writeAtomicMode(path, binary, 0755)
 }
 
-// checkSet returns a cache folder linking exactly programs. Its name hashes
-// their paths, so each selection of checks and versions gets its own.
-func checkSet(cache string, programs []string) (string, error) {
+// checkSet returns a cache folder linking exactly programs, recording the
+// pin of each. Its name hashes their paths, so each selection of checks and
+// versions gets its own.
+func checkSet(cache string, programs []string, pins []CheckPin) (string, error) {
 	sorted := slices.Sorted(slices.Values(programs))
 	dir := filepath.Join(cache, checkSetsFolder, contentHash([]byte(strings.Join(sorted, "\n"))))
 	used(dir)
-	if exists(dir) {
-		return dir, nil
+	if !exists(dir) {
+		if err := makeSet(cache, dir, sorted); err != nil {
+			return "", err
+		}
 	}
+	// Pins only keep releases from a prune, so a set they miss still works.
+	_ = recordPins(dir, sorted, pins)
+	return dir, nil
+}
+
+// makeSet stages a folder linking programs and publishes it as dir.
+func makeSet(cache, dir string, programs []string) error {
 	staged, err := os.MkdirTemp(cache, "check-set-")
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer os.RemoveAll(staged)
-	if err := linkAll(staged, sorted); err != nil {
-		return "", err
+	if err := linkAll(staged, programs); err != nil {
+		return err
 	}
-	return dir, publishSet(staged, dir)
+	return publishSet(staged, dir)
+}
+
+// recordPins adds each pin of a check among programs to the pins file beside
+// set, as `<name> <pin>` lines. A prune keeps a release a repo pins exactly.
+func recordPins(set string, programs []string, pins []CheckPin) error {
+	lines := setPins(set)
+	before := len(lines)
+	for _, pin := range pins {
+		line := pin.Name + " " + pin.Pin
+		linked := slices.ContainsFunc(programs, func(program string) bool { return filepath.Base(program) == checkPrefix+pin.Name })
+		if linked && !slices.Contains(lines, line) {
+			lines = append(lines, line)
+		}
+	}
+	if len(lines) == before {
+		return nil
+	}
+	slices.Sort(lines)
+	return writeAtomicMode(set+pinsSuffix, []byte(strings.Join(lines, "\n")+"\n"), 0600)
+}
+
+// setPins lists the `<name> <pin>` lines the pins file beside set records.
+func setPins(set string) []string {
+	data, _ := os.ReadFile(set + pinsSuffix)
+	var lines []string
+	for _, line := range strings.Split(string(data), "\n") {
+		if line = strings.TrimSpace(line); line != "" {
+			lines = append(lines, line)
+		}
+	}
+	return lines
 }
 
 // linkAll links each program into dir under its own name.

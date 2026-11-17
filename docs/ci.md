@@ -165,7 +165,7 @@ Hook managers can invoke the installer with `-- hook pre-commit` or `-- hook com
 
 `--install-only` prints the binary directory as its last line without running checks; with `--with-checks`, a line before it names the installed checks folder. Save that path and invoke its `fitness` executable for offline use. `fitness prefetch` downloads every check the repo pins, for a CI cache or offline use. Offline, the installer runs its cached bundle, and the engine matches against the last cached release index, however old.
 
-The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks. Once a day, a run deletes releases unused for 30 days, never the running engine or its checks.
+The cache defaults to `$XDG_CACHE_HOME/fitness` or `$HOME/.cache/fitness`; `FITNESS_CACHE_DIR` chooses another private path. Go verifies archived and installed files before reuse. Repairs switch to a new copy without removing files used by running checks. Once a day, a run deletes releases unused for 30 days or superseded, never the running engine, its checks or an exact pin.
 
 Upgrade or roll back with `--version VERSION`; `--version latest` is explicit opt-in. The action's `version` input follows the same rules. An exact action tag loads its installer; a major tag such as `v1` loads its newest release, and other refs load the latest.
 

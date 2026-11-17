@@ -177,6 +177,15 @@ func Test0175_3(t *testing.T) {
 	out, code := run0162(t, bundle, repo, env, "prefetch")
 	sees(t, out, code, 0, "installed 4 checks in ")
 	fetchedOnly(t, r, out, "go-files", "md-files", "no-fields", "swift-files")
+	_, set, _ := strings.Cut(out, "installed 4 checks in ")
+	set, _, _ = strings.Cut(set, "\n")
+	pins, err := os.ReadFile(set + ".pins")
+	mustDo(t, err)
+	for name := range firstIndex0173 {
+		if !strings.Contains(string(pins), name+" v") {
+			t.Errorf("the check set must record the pin of %s:\n%s", name, pins)
+		}
+	}
 	for name := range firstIndex0173 {
 		cached0173(t, r, name, "1.0.0")
 	}
@@ -273,4 +282,103 @@ func Test0175_6(t *testing.T) {
 	git(t, repo, "add", "-A")
 	out, code = run0162(t, bundle, repo, env, "--policy=external", "--checks=diff-reads")
 	sees(t, out, code, 1, "diff-reads ran")
+}
+
+// twoDays0175 is a time two days ago. A prune keeps an unused release 30
+// days, and a superseded one a day.
+var twoDays0175 = time.Now().Add(-48 * time.Hour)
+
+// releaseAt0175 is the cache folder of check name's release at version,
+// holding its program, last used at when.
+func releaseAt0175(t *testing.T, dir, name, version string, when time.Time) string {
+	t.Helper()
+	release := filepath.Join(dir, "checks", "fitness-check-"+name+"-v"+version+"-"+platform0175+".tar")
+	write(t, release, map[string]string{"fitness-check-" + name: script0172(name, `{"name":"`+name+`"}`)})
+	mustDo(t, os.Chtimes(release, when, when))
+	return release
+}
+
+// supersededCache0175 is a cache where older versions of the running
+// engine, another engine and several checks sit beside newer cached ones.
+type supersededCache0175 struct {
+	cache0175
+	running, olderEngine, oldCheck, pinned, recent, pinnedSet string
+}
+
+// superseded0175 builds a cache where engine 0.0.0 and 0.0.1, the running
+// one, sit beside 0.0.2, and old-files 1.0.0, pinned-files 1.0.0 and
+// recent-files 1.0.0 beside 1.1.0. A check set pins pinned-files exactly, and
+// recent-files ran an hour ago.
+func superseded0175(t *testing.T) supersededCache0175 {
+	t.Helper()
+	dir := t.TempDir()
+	key := func(version, digit string) string {
+		key := filepath.Join(dir, "fitness-"+version+"-"+platform0175+"-"+strings.Repeat(digit, 64))
+		mustDo(t, os.MkdirAll(filepath.Join(key, "bundle-1"), 0o700))
+		return key
+	}
+	running, older, newer := key("0.0.1", "a"), key("0.0.0", "b"), key("0.0.2", "c")
+	placeRunner(t, filepath.Join(installOnly(t), "fitness"), filepath.Join(running, "bundle-1", "fitness"))
+	handedRelease := releaseAt0175(t, dir, "md-files", "1.0.0", time.Now())
+	handed := checkSet0175(t, dir, "handed", handedRelease)
+	oldCheck := releaseAt0175(t, dir, "old-files", "1.0.0", twoDays0175)
+	oldMinor := releaseAt0175(t, dir, "old-files", "1.1.0", twoDays0175)
+	oldMajor := releaseAt0175(t, dir, "old-files", "2.0.0", time.Now())
+	// A set made for a `v1` pin links old-files 1.0.0, which pins no release.
+	majorSet := checkSet0175(t, dir, "major", oldCheck)
+	mustDo(t, os.WriteFile(majorSet+".pins", []byte("old-files v1\n"), 0o600))
+	pinned := releaseAt0175(t, dir, "pinned-files", "1.0.0", twoDays0175)
+	pinnedSet := checkSet0175(t, dir, "pinned", pinned)
+	mustDo(t, os.WriteFile(pinnedSet+".pins", []byte("pinned-files v1.0.0\n"), 0o600))
+	recent := releaseAt0175(t, dir, "recent-files", "1.0.0", time.Now().Add(-time.Hour))
+	newest := []string{releaseAt0175(t, dir, "pinned-files", "1.1.0", time.Now()), releaseAt0175(t, dir, "recent-files", "1.1.0", time.Now())}
+	for _, path := range []string{running, older, majorSet, pinnedSet} {
+		mustDo(t, os.Chtimes(path, twoDays0175, twoDays0175))
+	}
+	indexAt0175(t, dir, time.Now())
+	return supersededCache0175{
+		cache0175: cache0175{
+			dir: dir, engine: filepath.Join(running, "bundle-1"), handed: handed,
+			kept:   append([]string{running, newer, handedRelease, handed, oldMinor, oldMajor, majorSet, pinned, pinnedSet, recent}, newest...),
+			pruned: []string{older, oldCheck},
+		},
+		running: running, olderEngine: older, oldCheck: oldCheck, pinned: pinned, recent: recent, pinnedSet: pinnedSet,
+	}
+}
+
+func Test0175_7(t *testing.T) {
+	t.Parallel()
+	t.Run("superseded versions go", func(t *testing.T) {
+		t.Parallel()
+		c := superseded0175(t)
+		out, code := pruneRun(t, c.cache0175)
+		sees(t, out, code, 1, "md-files ran", "fitness: pruned 2 cached engine and check releases unused for 30 days or superseded")
+		gone(t, out, c.olderEngine, c.oldCheck)
+		present(t, out, c.kept...)
+	})
+	t.Run("exactly pinned and recently used versions stay", func(t *testing.T) {
+		t.Parallel()
+		c := superseded0175(t)
+		out, code := pruneRun(t, c.cache0175)
+		sees(t, out, code, 1, "pruned 2 cached")
+		present(t, out, c.pinned, c.recent)
+
+		// Once no set pins it exactly and a day passes unused, each goes too.
+		mustDo(t, os.WriteFile(c.pinnedSet+".pins", []byte("pinned-files v1\n"), 0o600))
+		mustDo(t, os.Chtimes(c.recent, twoDays0175, twoDays0175))
+		yesterday := time.Now().Add(-25 * time.Hour).Format(time.RFC3339)
+		mustDo(t, os.WriteFile(filepath.Join(c.dir, "cache-pruned.json"), []byte(`{"value":true,"checked":"`+yesterday+`"}`), 0o600))
+		out, code = pruneRun(t, c.cache0175)
+		sees(t, out, code, 1, "fitness: pruned 2 cached")
+		gone(t, out, c.pinned, c.recent)
+	})
+	t.Run("the running engine stays", func(t *testing.T) {
+		t.Parallel()
+		c := superseded0175(t)
+		out, code := pruneRun(t, c.cache0175)
+		sees(t, out, code, 1, "md-files ran", "pruned 2 cached")
+		present(t, out, c.running, c.engine)
+		out, code = pruneRun(t, c.cache0175)
+		sees(t, out, code, 1, "md-files ran")
+	})
 }

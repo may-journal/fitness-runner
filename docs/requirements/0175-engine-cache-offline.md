@@ -36,3 +36,7 @@ Cached releases
     - Given Developer has a check requiring `diff`
         - When I run `fitness --all`, then `fitness` with a file staged
             - Then the full run skips it, saying only a run of changed files has a diff, and the staged run runs it
+- 0175.7
+    - Given Developer has older engine and check versions beside newer cached ones: one pinned exactly, one used recently, one running
+        - When I run `fitness` with GitHub answering
+            - Then it deletes only the other older versions

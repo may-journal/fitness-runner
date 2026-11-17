@@ -9,9 +9,8 @@ import (
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
-// pruneCache marks the running engine's bundle as used, then deletes what
-// the cache has not used for 30 days when args run checks. It keeps the
-// running engine and the check set the run holds, with every program it links.
+// pruneCache marks the running engine's bundle as used, then prunes the cache
+// when args run checks, keeping the engine and its check set.
 func pruneCache(args []string) {
 	markRunning()
 	if len(args) > 0 && !runsChecks(args[0]) {
@@ -23,7 +22,7 @@ func pruneCache(args []string) {
 	}
 	removed := distribution.Prune(cache, inUse())
 	if len(removed) > 0 {
-		fmt.Fprintf(os.Stderr, "fitness: pruned %d cached engine and check releases unused for 30 days from %s\n", len(removed), cache)
+		fmt.Fprintf(os.Stderr, "fitness: pruned %d cached engine and check releases unused for 30 days or superseded from %s\n", len(removed), cache)
 	}
 }
 

@@ -20,6 +20,8 @@ type Installer struct {
 	// asks GitHub nothing more and keeps its built-in checks.
 	Unanswered bool
 	Log        io.Writer
+	// pinned lists each pin that resolved to a release, which check sets record.
+	pinned []CheckPin
 }
 
 func New(version, hashes string, log io.Writer) (*Installer, error) {

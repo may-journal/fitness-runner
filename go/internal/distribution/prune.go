@@ -20,6 +20,23 @@ const (
 // goes unused before a prune deletes it.
 const unusedFor = 30 * 24 * time.Hour
 
+// supersededFor is how long a prune keeps a superseded release unused, so
+// one a pinned repo ran within a day stays.
+const supersededFor = 24 * time.Hour
+
+// pinsSuffix ends the file beside a check set that records each linked
+// check's pin.
+const pinsSuffix = ".pins"
+
+// checkKey matches the cache folder of one check release and platform,
+// capturing its program, major, minor and patch, and platform:
+// fitness-check-<name>-v<major>.<minor>.<patch>-<platform>.tar.
+var checkKey = regexp.MustCompile(`^(fitness-check-.+)-v([0-9]+)\.([0-9]+\.[0-9]+)-(.+)\.tar$`)
+
+// bundleVersion matches an engine bundle folder, capturing its version and
+// platform.
+var bundleVersion = regexp.MustCompile(`^fitness-([0-9]+\.[0-9]+\.[0-9]+)-(.+)-[0-9a-f]{64}$`)
+
 // pruneEvery is how often the cache is pruned, so hooks stay fast.
 const pruneEvery = 24 * time.Hour
 
@@ -74,8 +91,9 @@ func keepLinked(bin string) {
 	}
 }
 
-// Prune deletes what cache left unused for 30 days, once a day while online,
-// and returns it. It keeps what inUse holds and follows no link out of cache.
+// Prune deletes what cache left unused for 30 days, and superseded releases,
+// once a day while online, and returns it. It keeps what inUse holds and
+// follows no link out of cache.
 func Prune(cache string, inUse []string) []string {
 	if !dueForPrune(cache) {
 		return nil
@@ -85,12 +103,95 @@ func Prune(cache string, inUse []string) []string {
 	if err != nil {
 		return nil
 	}
-	p := pruner{cutoff: time.Now().Add(-unusedFor), keep: realPaths(inUse)}
+	keep := realPaths(inUse)
+	p := pruner{cutoff: time.Now().Add(-unusedFor), keep: keep}
 	p.pruneSets(filepath.Join(root, checkSetsFolder))
 	p.prune(filepath.Join(root, checksFolder), nil)
 	p.prune(root, bundleKey)
 	p.prune(root, stagedSet)
+	return append(p.removed, pruneSuperseded(root, keep)...)
+}
+
+// pruneSuperseded deletes each release, unused for a day, that a newer cached
+// one supersedes: same check and major, or same engine platform.
+// It keeps what keep holds or links, and each release a check set pins exactly.
+func pruneSuperseded(root string, keep []string) []string {
+	checks := filepath.Join(root, checksFolder)
+	kept := slices.Clone(keep)
+	for _, path := range keep {
+		kept = append(kept, linked(path)...)
+	}
+	kept = append(kept, exactlyPinned(checks, folders(filepath.Join(root, checkSetsFolder), nil))...)
+	p := pruner{cutoff: time.Now().Add(-supersededFor), keep: kept}
+	p.pruneAll(superseded(folders(checks, checkKey), releaseVersion))
+	p.pruneAll(superseded(folders(root, bundleKey), engineVersion))
 	return p.removed
+}
+
+// releaseVersion is the group of a check release folder, its check, major and
+// platform, its version, and whether it holds the program.
+func releaseVersion(path string) (group, version string, cached bool) {
+	m := checkKey.FindStringSubmatch(filepath.Base(path))
+	if m == nil {
+		return "", "", false
+	}
+	return m[1] + " " + m[2] + " " + m[4], m[2] + "." + m[3], exists(filepath.Join(path, m[1]))
+}
+
+// engineVersion is the group of an engine bundle folder, its platform, its
+// version, and whether it holds an unpacked bundle.
+func engineVersion(path string) (group, version string, cached bool) {
+	m := bundleVersion.FindStringSubmatch(filepath.Base(path))
+	if m == nil {
+		return "", "", false
+	}
+	bundles, _ := filepath.Glob(filepath.Join(path, "bundle-*"))
+	return m[2], m[1], len(bundles) > 0
+}
+
+// superseded lists each path whose group holds a newer cached version.
+func superseded(paths []string, version func(string) (string, string, bool)) []string {
+	newest := newestCached(paths, version)
+	return slices.DeleteFunc(slices.Clone(paths), func(path string) bool {
+		group, v, _ := version(path)
+		return group == "" || !newer(newest[group], v)
+	})
+}
+
+// newestCached maps each group of paths to its newest cached version.
+func newestCached(paths []string, version func(string) (string, string, bool)) map[string]string {
+	newest := map[string]string{}
+	for _, path := range paths {
+		if group, v, cached := version(path); group != "" && cached && newer(v, newest[group]) {
+			newest[group] = v
+		}
+	}
+	return newest
+}
+
+// exactlyPinned lists each release folder in checks that one of sets
+// records an exact pin of, such as v1.2.3, on any platform.
+func exactlyPinned(checks string, sets []string) []string {
+	prefixes := exactPrefixes(sets)
+	return slices.DeleteFunc(folders(checks, checkKey), func(release string) bool {
+		return !slices.ContainsFunc(prefixes, func(prefix string) bool {
+			return strings.HasPrefix(filepath.Base(release), prefix)
+		})
+	})
+}
+
+// exactPrefixes lists the folder name start of each release that one of
+// sets pins exactly.
+func exactPrefixes(sets []string) []string {
+	var prefixes []string
+	for _, set := range sets {
+		for _, line := range setPins(set) {
+			if name, pin, _ := strings.Cut(line, " "); exactPin.MatchString(pin) {
+				prefixes = append(prefixes, checkPrefix+name+"-"+pin+"-")
+			}
+		}
+	}
+	return prefixes
 }
 
 // dueForPrune reports whether a day passed since the last prune and GitHub
@@ -113,7 +214,9 @@ type pruner struct {
 // other set links, so a set in use never loses a program.
 func (p *pruner) pruneSets(dir string) {
 	for _, set := range folders(dir, nil) {
-		if !p.remove(set) {
+		if p.remove(set) {
+			_ = os.Remove(set + pinsSuffix)
+		} else {
 			p.keep = append(p.keep, linked(set)...)
 		}
 	}
@@ -122,7 +225,12 @@ func (p *pruner) pruneSets(dir string) {
 // prune deletes each unused folder in dir whose name matches names, or any
 // name for nil.
 func (p *pruner) prune(dir string, names *regexp.Regexp) {
-	for _, path := range folders(dir, names) {
+	p.pruneAll(folders(dir, names))
+}
+
+// pruneAll deletes each unused folder of paths.
+func (p *pruner) pruneAll(paths []string) {
+	for _, path := range paths {
 		p.remove(path)
 	}
 }

@@ -117,5 +117,5 @@ func (i *Installer) installEach(ctx context.Context, names []string, releases []
 // CheckSet returns a cache folder linking exactly programs, for
 // FITNESS_CHECKS_DIR.
 func (i *Installer) CheckSet(programs []string) (string, error) {
-	return checkSet(i.Cache, programs)
+	return checkSet(i.Cache, programs, i.pinned)
 }
