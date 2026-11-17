@@ -38,14 +38,14 @@ func hasLine(text, line string) bool {
 	return slices.ContainsFunc(strings.Split(text, "\n"), func(l string) bool { return strings.TrimSpace(l) == line })
 }
 
-// script0174 runs the shared action script at path with env added, and
-// returns the outputs it wrote. It runs the script by its path, as the
-// action's step does, so a missing execute bit fails.
+// script0174 runs the shared action script at path by its path, as the
+// action's step does, and returns the outputs it wrote.
 func script0174(t *testing.T, path string, env ...string) map[string]string {
 	t.Helper()
 	output := filepath.Join(t.TempDir(), "output")
 	script, err := filepath.Abs(filepath.Join("..", "..", ".github", "actions", path))
 	mustDo(t, err)
+	gitExecutable0174(t, script)
 	cmd := exec.Command(script)
 	cmd.Env = append(append(os.Environ(), "GITHUB_OUTPUT="+output), env...)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -59,6 +59,16 @@ func script0174(t *testing.T, path string, env ...string) map[string]string {
 		}
 	}
 	return outputs
+}
+
+// gitExecutable0174 fails the test unless git stores script as executable,
+// which a checkout with core.fileMode off would not show on disk.
+func gitExecutable0174(t *testing.T, script string) {
+	t.Helper()
+	stage, err := exec.Command("git", "ls-files", "-s", "--", script).Output()
+	if err != nil || !strings.HasPrefix(string(stage), "100755 ") {
+		t.Errorf("git must hold %s as executable, got %q (%v)", script, stage, err)
+	}
 }
 
 // indexHash0174 is the SHA-256 of the release index GitHub serves now.
