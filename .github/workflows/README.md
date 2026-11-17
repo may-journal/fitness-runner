@@ -14,11 +14,20 @@ The workflows share their repeated steps as composite actions under [.github/act
 | --- | --- |
 | [fitness-install](../actions/fitness-install/action.yml) | Installs the pinned bundle, or builds `go/cmd/...` from a requested source ref. |
 | [fitness-command](../actions/fitness-command/action.yml) | Installs Fitness and runs its commands, each after a failed one too, then keeps their reports. |
+| [save-checks](../actions/save-checks/action.yml) | Saves the checks cache under a key naming its programs, once they changed. |
 | [fitness-reports](../actions/fitness-reports/action.yml) | Draws the box diagram, keeps the reports and performance record, and annotates a failure Fitness left without one. |
 | [app-token](../actions/app-token/action.yml) | Checks the automation App's secrets, then mints its token. |
 | [setup-go-cache](#setup-go-cache) | Sets up Go with a build cache for builds from this checkout. |
 
 The issue, comment, close and PR check workflows each hold one fitness-command step. This repo's issue-check, comment-check and close-check call those reusable workflows with `ref` set to their commit, testing its source. pr-check-reusable skips this repo, so its own pr-check runs fitness-command on the PR head instead.
+
+### Checks on demand
+
+An issue, comment or PR event installs no check up front. fitness-command passes `with-checks: on-demand`, so the engine fetches each check the first time its command runs it. A manual sweep judges many bodies, so it installs every pinned check, as the suite does on a push to `main`. Requirements 0171 and 0174 hold these rules.
+
+On hosted runners fitness-install restores `~/.cache/fitness/checks` from the newest `fitness-checks-<os>-<arch>-<index hash>-<job>-` set. The index hash is the SHA-256 of the fitness-checks release index, which names every check version a release holds. A miss falls back to another job's set from that index, else any older set. A run that cannot read the index warns and skips the cache.
+
+[save-checks](../actions/save-checks/action.yml) saves the set once the checks are in place: after a full install, or after an on-demand job's commands. Its key adds a hash of the programs, so a set saves again only when it gains a check. A set restored from an older index first drops each program the run did not use, so old versions leave the cache.
 
 ## Billing
 

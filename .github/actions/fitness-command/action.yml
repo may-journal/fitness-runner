@@ -18,12 +18,14 @@ inputs:
 runs:
   using: composite
   steps:
+    # One event judges a few bodies, so the engine fetches only the checks
+    # they run. A manual sweep judges many, so it installs every pinned check.
     - name: Install fitness
       id: install
       uses: $/.github/actions/fitness-install
       with:
         ref: ${{ inputs.ref }}
-        with-checks: pinned
+        with-checks: ${{ github.event_name == 'workflow_dispatch' && 'pinned' || 'on-demand' }}
     # Every name is checked before any runs, so a typo runs nothing. A later
     # command still runs after an earlier one fails, so one run lists both.
     - name: Run the commands
@@ -49,6 +51,14 @@ runs:
           fitness "$command" || status=1
         done
         exit "$status"
+    # A failed command still fetched its checks, so they save either way.
+    - name: Save the fetched checks
+      if: ${{ always() && github.event_name != 'workflow_dispatch' }}
+      uses: $/.github/actions/save-checks
+      with:
+        index-key: ${{ steps.install.outputs.checks-index-key }}
+        job-key: ${{ steps.install.outputs.checks-job-key }}
+        restored-key: ${{ steps.install.outputs.checks-restored-key }}
     - name: Retain the reports
       if: ${{ always() }}
       uses: $/.github/actions/fitness-reports
