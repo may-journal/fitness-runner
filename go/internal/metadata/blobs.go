@@ -150,7 +150,7 @@ func prLinks(t target, gh aftereffect.Client, b blobChecker) []string {
 	errs = append(errs, readErrs...)
 	errs = append(errs, closesErrors(t.Body, requiredClosures(closed, b), b)...)
 	for _, i := range closed {
-		for _, e := range b.judge(issuePath(i.labels), []string{"issue-checklist"}, i.body) {
+		for _, e := range b.judge(issuePath(b.root, i.labels), []string{"issue-checklist"}, i.body) {
 			errs = append(errs, fmt.Sprintf("PR closes #%d, which has an %s; tick it once it is done, or stop closing #%d", i.number, e, i.number))
 		}
 	}

@@ -100,7 +100,7 @@ Every input a run judges is a document with a path, so one `files` pattern decid
 
 A scoped run's documents are its files, the branch history, and the commit message when it judges one. A GitHub command judges each body at its path, and skips a check whose patterns leave that path out. A run that reaches `local-branch` fetches only the checks the branch's PR and Plan bodies need.
 
-`scope` and `blob` are deprecated, and `checkkit.Effective` maps them onto `files`, `exclude` and `requires`. Scope `blob` finds only the body paths, scope `git` the commit message and history, and a check's own `files` wins. A check that reads no text excludes the body paths. Scope `git` requires `history`, scope `github` requires `github`, and `fitness explain` shows the mapped fields.
+`scope` and `blob` are deprecated, and `checkkit.Effective` maps them onto `files`, `exclude` and `requires`. Scope `blob` finds only the body paths, scope `git` the commit message and history, and a check's own `files` wins. A check excludes each virtual path it does not read, such as a body when it reads no text. Scope `git` requires `history`, scope `github` requires `github`, and `fitness explain` shows the mapped fields.
 
 ## Applicability
 

@@ -134,7 +134,7 @@ func listRowFor(name string, byName map[string]resolved, missing map[string]stri
 	}
 	c := byName[name]
 	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c), docFields: effectiveFields(c.desc),
-		Enabled: enabled, Blob: c.desc.Blob, Note: cmp.Or(c.needs, c.describeErr)}
+		Enabled: enabled, Blob: checkkit.JudgesText(c.desc), Note: cmp.Or(c.needs, c.describeErr)}
 }
 
 // printList writes one aligned row per check: name, scope, stage, enabled,

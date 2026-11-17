@@ -268,43 +268,55 @@ func branchStandIns(want []resolved) []resolved {
 	return stands
 }
 
-// described holds each check's handshake that reachesDocument asked for.
-var described = struct {
-	sync.Mutex
-	by map[string]checkkit.Describe
-}{by: map[string]checkkit.Describe{}}
-
-// reachesDocument reports whether check name's effective patterns let a body
-// at virtual path doc reach it. A check not fetched yet, whose index fields
-// name no scope or blob, and one whose handshake fails are reached.
-func reachesDocument(name, doc string) bool {
-	if _, ok := pending[name]; ok {
-		return true
-	}
-	desc, ok := describedAs(name)
-	return !ok || reaches(desc, doc)
+// handshake is a check's describe metadata, and whether its handshake gave
+// any.
+type handshake struct {
+	desc checkkit.Describe
+	ok   bool
 }
 
-// describedAs is check name's handshake, run once, or false when it fails.
-func describedAs(name string) (checkkit.Describe, bool) {
+// described holds each handshake reachesDocument asked for, failed ones too.
+var described = struct {
+	sync.Mutex
+	by map[string]handshake
+}{by: map[string]handshake{}}
+
+// reachesDocument reports whether check name's effective patterns let a body
+// at virtual path doc reach it. One whose handshake fails is reached.
+func reachesDocument(name, doc string) bool {
+	if p, ok := pending[name]; ok {
+		// The index copies no blob flag, so only a stand-in's own patterns
+		// can leave a body out.
+		return reaches(checkkit.Describe{Files: p.desc.Files, Exclude: p.desc.Exclude, Blob: true}, doc)
+	}
+	h := describedAs(name)
+	return !h.ok || reaches(h.desc, doc)
+}
+
+// describedAs is check name's handshake, run once per run.
+func describedAs(name string) handshake {
 	described.Lock()
 	defer described.Unlock()
-	if d, ok := described.by[name]; ok {
-		return d, true
+	if h, ok := described.by[name]; ok {
+		return h
 	}
+	h := handshakeOf(name)
+	described.by[name] = h
+	return h
+}
+
+// handshakeOf runs check name's handshake, unless the run fetched it and
+// holds its metadata already.
+func handshakeOf(name string) handshake {
 	if r, ok := fetchedResolved[name]; ok {
-		return r.desc, true
+		return handshake{desc: r.desc, ok: true}
 	}
 	prog, err := findCheckBinary(name)
 	if err != nil {
-		return checkkit.Describe{}, false
+		return handshake{}
 	}
 	r := describeAll([]string{name}, []checkkit.Program{prog})[0]
-	if r.describeErr != "" {
-		return checkkit.Describe{}, false
-	}
-	described.by[name] = r.desc
-	return r.desc, true
+	return handshake{desc: r.desc, ok: r.describeErr == ""}
 }
 
 // unlessOffline returns names, or fails each at once when GitHub's API host

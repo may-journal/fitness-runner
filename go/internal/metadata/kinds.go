@@ -35,11 +35,12 @@ var kindRules = map[string]kindRule{
 // planChecks are the checks a Plan body gets, for branch-check.
 var planChecks = slices.Concat(kindRules["Plan"].checks, bodyChecks)
 
-// issuePath is the virtual path of an issue body with labels: its first kind
-// label's, else an unlabeled issue's.
-func issuePath(labels []string) string {
+// issuePath is the virtual path of an issue body with labels. Its kind is
+// the first label root's templates or kindRules name, else none.
+func issuePath(root string, labels []string) string {
+	kinds := discoverKinds(root)
 	for _, label := range labels {
-		if _, ok := kindRules[label]; ok {
+		if _, ok := kinds[label]; ok {
 			return checkkit.IssueBodyPath(label)
 		}
 	}

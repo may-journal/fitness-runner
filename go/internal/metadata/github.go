@@ -172,7 +172,7 @@ func (c ghCommand) findings(gh aftereffect.Client, b blobChecker, t target, kind
 
 // judge runs the declared checks on the target's body and its links.
 func (c ghCommand) judge(t target, gh aftereffect.Client, b blobChecker) []string {
-	errs := b.judge(c.docOf(t), c.checks, t.Body)
+	errs := b.judge(c.docOf(b.root, t), c.checks, t.Body)
 	if c.links != nil {
 		errs = append(errs, c.links(t, gh, b)...)
 	}
@@ -180,9 +180,9 @@ func (c ghCommand) judge(t target, gh aftereffect.Client, b blobChecker) []strin
 }
 
 // docOf is the virtual path c's checks judge t's body at.
-func (c ghCommand) docOf(t target) string {
+func (c ghCommand) docOf(root string, t target) string {
 	if c.doc == nil {
-		return issuePath(t.Labels)
+		return issuePath(root, t.Labels)
 	}
 	return c.doc(t)
 }

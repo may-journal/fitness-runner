@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/metadata"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // ghPost is one call that posts text. It holds the checks its bodies get,
@@ -21,6 +22,9 @@ type ghPost struct {
 	// unknownRepo when the shell builds the name.
 	repo  string
 	parts []postPart
+	// doc is the virtual path GitHub judges the bodies at, "" for the
+	// piped text's.
+	doc string
 }
 
 // unknownRepo stands for a repo name the shell builds, which no checkout
@@ -43,6 +47,7 @@ type postPart struct {
 // gets, and which flags give it inline or name its file.
 type ghKind struct {
 	checks        func(words []shellWord) []string
+	doc           func(words []shellWord) string
 	inline, files []string
 }
 
@@ -50,10 +55,10 @@ type ghKind struct {
 // on GitHub.
 var (
 	bodyInline, bodyFiles = []string{"--body", "-b"}, []string{"--body-file", "-F"}
-	prFlags               = ghKind{checks: always(metadata.PRBodyChecks), inline: bodyInline, files: bodyFiles}
-	issueFlags            = ghKind{checks: issueChecks, inline: bodyInline, files: bodyFiles}
-	commentFlags          = ghKind{checks: always(metadata.CommentChecks), inline: bodyInline, files: bodyFiles}
-	closeFlags            = ghKind{checks: always(metadata.CommentChecks), inline: []string{"--comment", "-c"}}
+	prFlags               = ghKind{checks: always(metadata.PRBodyChecks), doc: docAt(checkkit.PullBodyPath), inline: bodyInline, files: bodyFiles}
+	issueFlags            = ghKind{checks: issueChecks, doc: issueDoc, inline: bodyInline, files: bodyFiles}
+	commentFlags          = ghKind{checks: always(metadata.CommentChecks), doc: docAt(checkkit.CommentBodyPath), inline: bodyInline, files: bodyFiles}
+	closeFlags            = ghKind{checks: always(metadata.CommentChecks), doc: docAt(checkkit.CommentBodyPath), inline: []string{"--comment", "-c"}}
 )
 
 // ghPostKinds are the gh issue and PR commands that post a body.
@@ -66,6 +71,28 @@ var ghPostKinds = map[string]ghKind{
 // always is a checks function that names the same checks for every call.
 func always(checks []string) func([]shellWord) []string {
 	return func([]shellWord) []string { return checks }
+}
+
+// docAt is a doc function that names the same path for every call.
+func docAt(doc string) func([]shellWord) string {
+	return func([]shellWord) string { return doc }
+}
+
+// issueDoc is the virtual path issue-check judges the body at, by the kind
+// a --label or a [Kind] title prefix names.
+func issueDoc(words []shellWord) string {
+	return kindDoc(issueKinds(words))
+}
+
+// kindDoc is the body path of the first kind that names checks, or an
+// unlabeled issue's when none does.
+func kindDoc(kinds []string) string {
+	for _, kind := range kinds {
+		if kind != "" && metadata.IssueBodyChecks(kind) != nil {
+			return checkkit.IssueBodyPath(kind)
+		}
+	}
+	return checkkit.IssueBodyPath("")
 }
 
 // issueChecks are the checks issue-check gives the body, by the kind a
@@ -196,7 +223,7 @@ func commandPost(words []shellWord, call ghCall) (ghPost, bool) {
 	}
 	body, given, ok := ghBody(words[2:], call, kind)
 	subject := "the " + strings.TrimSuffix(strings.TrimSuffix(name, " create"), " edit") + " body"
-	return ghPost{checks: kind.checks(words[2:]), parts: []postPart{{subject: subject, text: body, unread: !ok}}}, given
+	return ghPost{checks: kind.checks(words[2:]), doc: kind.doc(words[2:]), parts: []postPart{{subject: subject, text: body, unread: !ok}}}, given
 }
 
 // unwrap drops the assignments, shell keywords and wrappers, such as

@@ -13,9 +13,9 @@ Inputs a run judges
 ## Requirements
 
 - 0176.1
-    - Given Developer has installed checks of scope `git`, of scope `blob`, and of scope `blob` with their own `files` finding Markdown
-        - When I run all three scoped to a folder of Markdown
-            - Then the `git` check and the one with its own `files` run, and the `blob` one is skipped under no matching files
+    - Given Developer has installed checks of scope `git`, of scope `blob`, of scope `blob` finding Markdown, and one excluding the folder
+        - When I run all four scoped to a folder of Markdown
+            - Then the `git` check and the Markdown one run, and the `blob` and excluding ones are skipped under no matching files
 - 0176.2
     - Given Developer has installed checks of scope `blob`, of `blob: true` finding Go files, of Go files alone, and of scope `git` with `blob: true`
         - When I pipe a text to `fitness --blob`, then the same text with `--as x.go`

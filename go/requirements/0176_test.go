@@ -46,6 +46,7 @@ var checks0176 = map[string]string{
 	"go-text":      `{"name":"go-text","blob":true,"files":"\\.go$"}`,
 	"go-files":     `{"name":"go-files","files":"\\.go$"}`,
 	"git-text":     `{"name":"git-text","scope":"git","blob":true}`,
+	"no-notes":     `{"name":"no-notes","exclude":"^notes/"}`,
 }
 
 // bundle0176 is a fitness bundle holding every check in checks0176.
@@ -63,9 +64,9 @@ func bundle0176(t *testing.T) string {
 func Test0176_1(t *testing.T) {
 	t.Parallel()
 	repo := example(t, "happyRepo", map[string]string{"notes/plan.md": "# Plan\n"})
-	out, code := run0172(t, bundle0176(t), repo, "", "--policy=external", "--checks=history-rule,body-rule,md-body", "--dir=notes")
-	sees(t, out, code, 1, "history-rule ran", "md-body ran", "Skipped (no matching files): body-rule")
-	absent(t, out, "body-rule")
+	out, code := run0172(t, bundle0176(t), repo, "", "--policy=external", "--checks=history-rule,body-rule,md-body,no-notes", "--dir=notes")
+	sees(t, out, code, 1, "history-rule ran", "md-body ran", "Skipped (no matching files): body-rule, no-notes")
+	absent(t, out, "body-rule", "no-notes")
 }
 
 func Test0176_2(t *testing.T) {
@@ -91,7 +92,7 @@ func Test0176_3(t *testing.T) {
 	out, code := fitness(t, repo, nil, "list", "--json")
 	sees(t, strings.ReplaceAll(out, `\`, ""), code, 0, `"files": "^.fitness/(github/|blob.md$)"`, `"requires": [`+"\n"+`      "github"`)
 	out, code = fitness(t, repo, nil, "explain", "body-rule")
-	sees(t, out, code, 0, "Files: `^\\.fitness/(github/|blob\\.md$)` · Exclude: - · Requires: -")
+	sees(t, out, code, 0, "Files: `^\\.fitness/(github/|blob\\.md$)` · Exclude: `^\\.git/(COMMIT_EDITMSG|logs/HEAD)$` · Requires: -")
 	out, code = fitness(t, repo, nil, "explain", "gh-rule")
 	sees(t, out, code, 0, "Requires: github")
 }

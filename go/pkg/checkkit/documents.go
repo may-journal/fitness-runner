@@ -31,9 +31,6 @@ const BodyPattern = `^\.fitness/(github/|blob\.md$)`
 // GitPattern finds the commit message and branch history paths.
 const GitPattern = `^\.git/(COMMIT_EDITMSG|logs/HEAD)$`
 
-// bodyRE is BodyPattern compiled.
-var bodyRE = regexp.MustCompile(BodyPattern)
-
 // IssueBodyPath is the virtual path of an issue body of kind label kind,
 // such as Plan. An unlabeled issue's kind is `issue`.
 func IssueBodyPath(kind string) string {
@@ -49,12 +46,19 @@ func Effective(d Describe) Describe {
 	if d.Files == "" {
 		d.Files = scopePattern(d)
 	}
-	// A check that reads no text never meets a body.
-	if !JudgesText(d) && !strings.Contains(d.Exclude, BodyPattern) {
-		d.Exclude = either(d.Exclude, BodyPattern)
-	}
+	// A check never meets a virtual document it does not read.
+	d.Exclude = excluding(d.Exclude, BodyPattern, JudgesText(d))
+	d.Exclude = excluding(d.Exclude, GitPattern, finds(d.Files, ".git/", CommitMessagePath, HistoryPath))
 	d.Requires = scopeRequires(d)
 	return d
+}
+
+// excluding is exclude, plus pattern unless the check reads what it finds.
+func excluding(exclude, pattern string, reads bool) string {
+	if reads || strings.Contains(exclude, pattern) {
+		return exclude
+	}
+	return either(exclude, pattern)
 }
 
 // scopeRequires is d's Requires plus history for scope git, or github for
@@ -72,25 +76,20 @@ func scopeRequires(d Describe) []Requirement {
 // JudgesText reports whether d reads a text through `--body-file`. It sets
 // Blob or scope blob, or its own Files finds the body paths by their folder.
 func JudgesText(d Describe) bool {
-	return d.Blob || d.Scope == ScopeBlob || findsBodyFolder(d.Files)
+	return d.Blob || d.Scope == ScopeBlob || finds(d.Files, ".fitness/", PullBodyPath, CommentBodyPath, IssueBodyPath(""), BlobPath)
 }
 
-// findsBodyFolder reports whether pattern finds a body path by its folder:
-// it finds the path, and not the same file name alone.
-func findsBodyFolder(pattern string) bool {
+// finds reports whether pattern names virtual folder. Its literal prefix
+// starts there, or it finds one of paths and misses the file name alone.
+func finds(pattern, folder string, paths ...string) bool {
 	re, err := regexp.Compile(pattern)
 	if pattern == "" || err != nil {
 		return false
 	}
-	return slices.ContainsFunc([]string{PullBodyPath, BlobPath}, func(body string) bool {
-		return re.MatchString(body) && !re.MatchString(path.Base(body))
+	prefix, _ := re.LiteralPrefix()
+	return strings.HasPrefix(prefix, folder) || slices.ContainsFunc(paths, func(p string) bool {
+		return re.MatchString(p) && !re.MatchString(path.Base(p))
 	})
-}
-
-// Virtual reports whether rel is the virtual path of a GitHub body or a
-// piped text.
-func Virtual(rel string) bool {
-	return bodyRE.MatchString(rel)
 }
 
 // scopePattern is the Files pattern d's Scope stands for, or "" for every path.
