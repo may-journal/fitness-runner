@@ -18,6 +18,7 @@ type explained struct {
 	Scope   string `json:"scope"`
 	// Stage is the stage whose total times the check: fast or tests.
 	Stage string `json:"stage"`
+	docFields
 	// Note says why the check's describe handshake gave no metadata.
 	Note string `json:"note,omitempty"`
 	// Body is the check's documentation as Markdown.
@@ -55,7 +56,7 @@ func printExplained(e explained, asJSON bool) int {
 	if asJSON {
 		return writeJSON(os.Stdout, e)
 	}
-	fmt.Printf("# %s\n\nScope: %s · Stage: %s\n\n%s%s", e.Name, orDash(e.Scope), e.Stage, noteLine(e.Note), e.Body)
+	fmt.Printf("# %s\n\nScope: %s · Stage: %s\n\n%s%s%s", e.Name, orDash(e.Scope), e.Stage, e.line(), noteLine(e.Note), e.Body)
 	return 0
 }
 
@@ -116,7 +117,7 @@ func explainCheck(name string) (explained, error) {
 	if name != localBranch || replaced(name) {
 		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}
-	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c),
+	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c), docFields: effectiveFields(c.desc),
 		Note: cmp.Or(c.needs, c.describeErr), Body: body}, nil
 }
 

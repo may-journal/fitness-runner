@@ -25,6 +25,9 @@ type ghCommand struct {
 	kind    string
 	targets func(ev ghEvent, gh aftereffect.Client, b blobChecker) ([]target, error)
 	checks  []string
+	// doc is the virtual path checks judge a target's body at; nil is an
+	// issue's, by its kind label.
+	doc func(t target) string
 	// kinds, when set, judges each target by its issue kind instead of
 	// checks: the kinds the checkout's templates and kindRules name.
 	kinds func(root string) map[string]issueKind
@@ -59,8 +62,8 @@ var ghCommands = map[string]ghCommand{
 	},
 	"pr-check": {
 		kind: "pull", targets: prTargets,
-		checks: PRBodyChecks,
-		links:  prLinks, failOnFindings: true,
+		checks: PRBodyChecks, doc: at(checkkit.PullBodyPath),
+		links: prLinks, failOnFindings: true,
 	},
 	"close-check": {
 		kind: "issues", targets: closeTargets,
@@ -69,7 +72,7 @@ var ghCommands = map[string]ghCommand{
 	},
 	"comment-check": {
 		kind: "issues", targets: commentTargets,
-		checks: CommentChecks,
+		checks: CommentChecks, doc: at(checkkit.CommentBodyPath),
 		effect: aftereffect.CommentReply, failOnFindings: true,
 		hint: aftereffect.RecheckHint,
 	},
@@ -169,11 +172,24 @@ func (c ghCommand) findings(gh aftereffect.Client, b blobChecker, t target, kind
 
 // judge runs the declared checks on the target's body and its links.
 func (c ghCommand) judge(t target, gh aftereffect.Client, b blobChecker) []string {
-	errs := b.judge(c.checks, t.Body)
+	errs := b.judge(c.docOf(t), c.checks, t.Body)
 	if c.links != nil {
 		errs = append(errs, c.links(t, gh, b)...)
 	}
 	return errs
+}
+
+// docOf is the virtual path c's checks judge t's body at.
+func (c ghCommand) docOf(t target) string {
+	if c.doc == nil {
+		return issuePath(t.Labels)
+	}
+	return c.doc(t)
+}
+
+// at is the doc function of a command whose bodies all share path doc.
+func at(doc string) func(target) string {
+	return func(target) string { return doc }
 }
 
 // react applies the declared after-effect, if any.

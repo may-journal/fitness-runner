@@ -135,6 +135,12 @@ func branchReadResult(err error) checkkit.Result {
 	return checkkit.Fail(0, fmt.Sprintf("%v; check gh authentication and network access, then retry fitness branch-check", err))
 }
 
+// BranchChecks are the checks branch-check judges the branch's PR and Plan
+// with: the PR body's, its title's and links', and the Plan body's.
+func BranchChecks() []string {
+	return unique(slices.Concat(PRBodyChecks, []string{"semantic-commit", "pr-closes-issue", "issue-checklist"}, planChecks))
+}
+
 func judgeBranchPR(pr *branchPR, gh aftereffect.Client, b blobChecker) []string {
 	fmt.Fprintf(os.Stderr, "PR: %s\n", pr.URL)
 	rep := newTargetReport("pr-check", "pull")
@@ -158,7 +164,7 @@ func judgeBranchPlans(issues []linkedIssue, repo string, b blobChecker) []string
 		if !aftereffect.HasLabel(issue.labels, "Plan") {
 			continue
 		}
-		findings := b.judge(planChecks, issue.body)
+		findings := b.judge(checkkit.IssueBodyPath("Plan"), planChecks, issue.body)
 		rep.add(issue.number, findings)
 		errs = append(errs, findings...)
 	}

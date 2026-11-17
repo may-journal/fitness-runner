@@ -73,7 +73,9 @@ The `issue-check`, `plan-check`, `pr-check`, `close-check`, and `comment-check` 
 
 ### Judging a draft
 
-A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitness --blob <text>`, or `--blob -` for stdin, runs each such check on the text alone and lists the rest as skipped (needs files). It sets `FITNESS_BLOB`, so a body check passes inert on text of another kind and is listed as not applying. A check named in `--checks` always judges the text.
+A check that reads `--body-file` declares `"blob": true` in `--describe`, or a `files` pattern that names the body paths' folder. `fitness --blob <text>`, or `--blob -` for stdin, judges the text at `.fitness/blob.md`, and `--as <path>` names another path, such as `x.go`. Each such check whose patterns reach that path judges the text, and the rest are listed as skipped.
+
+The run sets `FITNESS_BLOB`, so a body check passes inert on text of another kind and is listed as not applying. A check named in `--checks` always judges a text its patterns reach.
 
 `--checks=name,name` narrows the set. It exits 0 when all pass and 1 on a finding. A missing or empty text, no blob check selected, `--all`, or a check name exits 2.
 
@@ -82,6 +84,23 @@ A check that reads `--body-file` declares `"blob": true` in `--describe`. `fitne
 `local-branch` runs PR and Plan checks locally. Full Fitness and pre-push include it; pre-commit excludes it. `fitness branch-check` is its alias. Actions keeps its existing metadata commands.
 
 No PR skips; invalid or unreadable metadata fails, including unfinished draft checklists. Reads are bounded and never change GitHub state. See [local-branch](../go/cmd/fitness-check-local-branch/doc.go) for discovery, forks, selection, and retry behavior.
+
+## Documents
+
+Every input a run judges is a document with a path, so one `files` pattern decides which checks it reaches. A file's path is its own, and `checkkit` exports a virtual path for each other input.
+
+| Input | Virtual path |
+| --- | --- |
+| Commit message | `.git/COMMIT_EDITMSG` |
+| Branch history | `.git/logs/HEAD` |
+| Pull request body | `.fitness/github/pull/body.md` |
+| Issue body | `.fitness/github/issue/<kind>.md`, such as `plan.md` |
+| Comment | `.fitness/github/comment/body.md` |
+| Piped text | `.fitness/blob.md`, or the `--as` path |
+
+A scoped run's documents are its files, the branch history, and the commit message when it judges one. A GitHub command judges each body at its path, and skips a check whose patterns leave that path out. A run that reaches `local-branch` fetches only the checks the branch's PR and Plan bodies need.
+
+`scope` and `blob` are deprecated, and `checkkit.Effective` maps them onto `files`, `exclude` and `requires`. Scope `blob` finds only the body paths, scope `git` the commit message and history, and a check's own `files` wins. A check that reads no text excludes the body paths. Scope `git` requires `history`, scope `github` requires `github`, and `fitness explain` shows the mapped fields.
 
 ## Applicability
 

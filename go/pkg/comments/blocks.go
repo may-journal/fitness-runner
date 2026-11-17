@@ -4,6 +4,7 @@ package comments
 
 import (
 	"context"
+	"maps"
 	"os"
 	"path"
 	"path/filepath"
@@ -67,6 +68,23 @@ var langs = map[string]string{
 	".gradle": "groovy", ".groovy": "groovy", ".xml": "xml",
 	".java-version": "config", ".sdkmanrc": "config", ".tool-versions": "config",
 	".nvmrc": "config", ".node-version": "config", ".npmrc": "ini",
+}
+
+// Extensions lists, in order, the file extensions whose comments the package
+// reads, such as .go. A prose check names the comments it judges with them.
+func Extensions() []string {
+	return slices.Sorted(maps.Keys(langs))
+}
+
+// FilesPattern is a check's Files pattern for the files whose comments the
+// package reads by extension. A shell script it knows by its shebang alone
+// has no extension, so no pattern finds it.
+func FilesPattern() string {
+	exts := Extensions()
+	for i, ext := range exts {
+		exts[i] = regexp.QuoteMeta(strings.TrimPrefix(ext, "."))
+	}
+	return `\.(` + strings.Join(exts, "|") + `)$`
 }
 
 // lexers holds the lexer settings of each C-style language.

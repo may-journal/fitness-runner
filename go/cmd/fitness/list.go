@@ -7,9 +7,11 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
 // listed is one check as `fitness list` shows it.
@@ -23,6 +25,7 @@ type listed struct {
 	Enabled bool `json:"enabled"`
 	// Blob says whether `fitness --blob` runs the check on a text.
 	Blob bool `json:"blob"`
+	docFields
 	// Note says why the row holds no metadata: the check's program is not
 	// installed, or its describe handshake failed.
 	Note string `json:"note,omitempty"`
@@ -130,7 +133,7 @@ func listRowFor(name string, byName map[string]resolved, missing map[string]stri
 		return listed{Name: name, Enabled: enabled, Note: note}
 	}
 	c := byName[name]
-	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c),
+	return listed{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c), docFields: effectiveFields(c.desc),
 		Enabled: enabled, Blob: c.desc.Blob, Note: cmp.Or(c.needs, c.describeErr)}
 }
 
@@ -164,6 +167,40 @@ func writeJSON(w io.Writer, v any) int {
 		return 1
 	}
 	return 0
+}
+
+// docFields are the documents that reach a check and what else it requires,
+// with its deprecated scope and blob mapped onto them.
+type docFields struct {
+	// Files finds the paths, real or virtual, that reach the check.
+	Files string `json:"files,omitempty"`
+	// Exclude finds the paths that never reach it.
+	Exclude string `json:"exclude,omitempty"`
+	// Requires lists what it needs beyond the documents it judges.
+	Requires []checkkit.Requirement `json:"requires,omitempty"`
+}
+
+// effectiveFields are desc's fields once checkkit.Effective maps them.
+func effectiveFields(desc checkkit.Describe) docFields {
+	d := checkkit.Effective(desc)
+	return docFields{Files: d.Files, Exclude: d.Exclude, Requires: d.Requires}
+}
+
+// line is the fields as one Markdown line, a dash for each left empty.
+func (f docFields) line() string {
+	requires := make([]string, len(f.Requires))
+	for i, r := range f.Requires {
+		requires[i] = string(r)
+	}
+	return fmt.Sprintf("Files: %s · Exclude: %s · Requires: %s\n\n", code(f.Files), code(f.Exclude), orDash(strings.Join(requires, ", ")))
+}
+
+// code shows a pattern as Markdown code, or a dash when it is empty.
+func code(pattern string) string {
+	if pattern == "" {
+		return "-"
+	}
+	return "`" + pattern + "`"
 }
 
 // orDash shows a value a check left empty as a dash.
