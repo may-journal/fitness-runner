@@ -21,7 +21,7 @@ func LinkSkills(bundle string, folders []string, log io.Writer) error {
 	if err != nil {
 		return err
 	}
-	keepLinked(bundle)
+	rememberPointers(bundle, folders)
 	for _, folder := range folders {
 		if err := linkFolder(bundle, folder, skills, log); err != nil {
 			return err

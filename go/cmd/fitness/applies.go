@@ -89,8 +89,8 @@ func withSkipped(all []resolved, rows []render.Row, found [][]checkkit.Finding, 
 // Why a run leaves a check out, as its Skipped line says.
 const (
 	noMatchingFiles = "no matching files"
-	needsNoFile     = "the repo tracks no file its needs pattern names"
-	noDiff          = "requires diff, which only a run of changed files has"
+	needsNoFile     = checkkit.SkipNeedsNoFile
+	noDiff          = checkkit.SkipNoDiff
 )
 
 // applicable keeps the checks this run reaches and groups the rest by why

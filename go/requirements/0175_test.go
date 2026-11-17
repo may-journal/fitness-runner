@@ -7,6 +7,7 @@ import (
 	"maps"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"strings"
@@ -22,6 +23,8 @@ var unused0175 = time.Now().Add(-31 * 24 * time.Hour)
 // with the engine the test runs inside one of its bundles.
 type cache0175 struct {
 	dir, engine, handed string
+	// settings and skills point into two bundles from outside the cache.
+	settings, skills string
 	// kept and pruned are the paths a prune must keep and delete.
 	kept, pruned []string
 }
@@ -61,12 +64,12 @@ func prunable0175(t *testing.T) cache0175 {
 	t.Helper()
 	dir := t.TempDir()
 	running, stale, fresh, linked := bundleKey0175(dir, "a"), bundleKey0175(dir, "b"), bundleKey0175(dir, "c"), bundleKey0175(dir, "e")
-	for _, key := range []string{running, stale, fresh, linked} {
-		mustDo(t, os.MkdirAll(filepath.Join(key, "bundle-1"), 0o700))
+	skilled, dropped := bundleKey0175(dir, "f"), bundleKey0175(dir, "9")
+	for _, key := range []string{running, stale, fresh, linked, skilled, dropped} {
+		mustDo(t, os.MkdirAll(filepath.Join(key, "bundle-1", "skills", "fitness"), 0o700))
 	}
 	placeRunner(t, filepath.Join(installOnly(t), "fitness"), filepath.Join(running, "bundle-1", "fitness"))
-	// Claude Code settings or linked skills point into this bundle.
-	mustDo(t, os.WriteFile(filepath.Join(linked, "linked"), nil, 0o600))
+	settings, skills := pointers0175(t, dir, linked, skilled)
 	handedRelease, oldRelease := release0175(t, dir, "md-files"), release0175(t, dir, "old-files")
 	newRelease := release0175(t, dir, "new-files")
 	handed, oldSet := checkSet0175(t, dir, "handed", handedRelease), checkSet0175(t, dir, "old", oldRelease)
@@ -74,15 +77,36 @@ func prunable0175(t *testing.T) cache0175 {
 	mustDo(t, os.MkdirAll(halfMade, 0o700))
 	outside := t.TempDir()
 	mustDo(t, os.Symlink(outside, bundleKey0175(dir, "d")))
-	for _, path := range []string{running, stale, linked, handedRelease, oldRelease, handed, oldSet, halfMade, outside} {
+	for _, path := range []string{running, stale, linked, skilled, dropped, handedRelease, oldRelease, handed, oldSet, halfMade, outside} {
 		mustDo(t, os.Chtimes(path, unused0175, unused0175))
 	}
 	indexAt0175(t, dir, time.Now())
 	return cache0175{
-		dir: dir, engine: filepath.Join(running, "bundle-1"), handed: handed,
-		kept:   []string{running, fresh, linked, handedRelease, newRelease, handed, outside, bundleKey0175(dir, "d")},
-		pruned: []string{stale, oldRelease, oldSet, halfMade},
+		dir: dir, engine: filepath.Join(running, "bundle-1"), handed: handed, settings: settings, skills: skills,
+		kept:   []string{running, fresh, linked, skilled, handedRelease, newRelease, handed, outside, bundleKey0175(dir, "d")},
+		pruned: []string{stale, dropped, oldRelease, oldSet, halfMade},
 	}
+}
+
+// pointers0175 makes and returns a settings file naming bundle settingsAt and
+// a skills folder linking into skillsAt, as fitness-install leaves them.
+func pointers0175(t *testing.T, cache, settingsAt, skillsAt string) (settings, skills string) {
+	t.Helper()
+	settings, skills = filepath.Join(t.TempDir(), "settings.json"), t.TempDir()
+	hook := `{"hooks":{"Stop":[{"hooks":[{"type":"command","command":"'` + filepath.Join(settingsAt, "bundle-1", "fitness") + `' claude-hook"}]}]}}`
+	mustDo(t, os.WriteFile(settings, []byte(hook), 0o600))
+	mustDo(t, os.Symlink(filepath.Join(skillsAt, "bundle-1", "skills", "fitness"), filepath.Join(skills, "fitness")))
+	recorded, err := json.Marshal([]string{settings, skills})
+	mustDo(t, err)
+	mustDo(t, os.WriteFile(filepath.Join(cache, "cache-pointers.json"), recorded, 0o600))
+	return settings, skills
+}
+
+// pruneDue makes the next run prune, as a day after the last prune.
+func pruneDue(t *testing.T, cache string) {
+	t.Helper()
+	yesterday := time.Now().Add(-25 * time.Hour).Format(time.RFC3339)
+	mustDo(t, os.WriteFile(filepath.Join(cache, "cache-pruned.json"), []byte(`{"value":true,"checked":"`+yesterday+`"}`), 0o600))
 }
 
 // indexAt0175 records in cache an empty release index read at checked. A
@@ -95,12 +119,12 @@ func indexAt0175(t *testing.T, cache string, checked time.Time) {
 
 // pruneRun runs the cache's own engine in a repo with Markdown staged,
 // handed the cache's check set.
-func pruneRun(t *testing.T, c cache0175) (string, int) {
+func pruneRun(t *testing.T, c cache0175, extra ...string) (string, int) {
 	t.Helper()
 	repo := example(t, "happyRepo", nil)
 	write(t, repo, map[string]string{"notes/plan.md": "# Plan\n"})
 	git(t, repo, "add", "-A")
-	env := []string{"FITNESS_CACHE_DIR=" + c.dir, "FITNESS_CHECKS_DIR=" + c.handed}
+	env := append([]string{"FITNESS_CACHE_DIR=" + c.dir, "FITNESS_CHECKS_DIR=" + c.handed}, extra...)
 	return run0162(t, c.engine, repo, env, "--policy=external", "--checks=md-files")
 }
 
@@ -126,18 +150,67 @@ func gone(t *testing.T, out string, paths ...string) {
 
 func Test0175_1(t *testing.T) {
 	t.Parallel()
-	c := prunable0175(t)
-	out, code := pruneRun(t, c)
-	sees(t, out, code, 1, "md-files ran", "fitness: pruned 4 cached engine and check releases unused for 30 days")
-	present(t, out, c.kept...)
-	gone(t, out, c.pruned...)
+	t.Run("only unused releases go", func(t *testing.T) {
+		t.Parallel()
+		c := prunable0175(t)
+		out, code := pruneRun(t, c)
+		sees(t, out, code, 1, "md-files ran", "fitness: pruned 5 cached engine and check releases unused for 30 days")
+		present(t, out, c.kept...)
+		gone(t, out, c.pruned...)
+	})
+	t.Run("a bundle settings and skills stop pointing into goes", func(t *testing.T) {
+		t.Parallel()
+		c := prunable0175(t)
+		out, code := pruneRun(t, c)
+		sees(t, out, code, 1, "pruned 5 cached")
+		linked, skilled := bundleKey0175(c.dir, "e"), bundleKey0175(c.dir, "f")
+		mustDo(t, os.WriteFile(c.settings, []byte(`{"hooks":{}}`), 0o600))
+		mustDo(t, os.Remove(filepath.Join(c.skills, "fitness")))
+		pruneDue(t, c.dir)
+		out, code = pruneRun(t, c)
+		sees(t, out, code, 1, "fitness: pruned 2 cached")
+		gone(t, out, linked, skilled)
+	})
+	t.Run("a local Go check build in daily use stays", func(t *testing.T) {
+		t.Parallel()
+		c := prunable0175(t)
+		repo := example(t, "happyRepo", goCheck(t, "go-rule", t.TempDir()))
+		env := []string{"FITNESS_CACHE_DIR=" + c.dir, "FITNESS_CHECKS_DIR=" + c.handed}
+		out, code := run0162(t, c.engine, repo, env, "check", "go-rule")
+		sees(t, out, code, 0, "fitness: building fitness/go-rule with go")
+		builds, err := filepath.Glob(filepath.Join(c.dir, "checks", "*", "go-rule"))
+		mustDo(t, err)
+		if len(builds) != 1 {
+			t.Fatalf("want one build of go-rule in the cache, got %v", builds)
+		}
+		mustDo(t, os.Chtimes(filepath.Dir(builds[0]), unused0175, unused0175))
+		out, code = run0162(t, c.engine, repo, env, "check", "go-rule")
+		sees(t, out, code, 0, "All 1 checks passed")
+		pruneDue(t, c.dir)
+		out, code = run0162(t, c.engine, repo, env, "check", "go-rule")
+		sees(t, out, code, 0, "All 1 checks passed")
+		absentText(t, out, "building fitness/go-rule")
+		present(t, out, builds[0])
+	})
+	t.Run("folders an earlier prune set aside are settled", func(t *testing.T) {
+		t.Parallel()
+		c := prunable0175(t)
+		taken := filepath.Join(c.dir, "checks", ".pruning-"+filepath.Base(handed0175(c)))
+		mustDo(t, os.MkdirAll(taken, 0o700))
+		free := filepath.Join(c.dir, "checks", "fitness-check-back-files-v1.0.0-"+platform0175+".tar")
+		write(t, filepath.Join(c.dir, "checks", ".pruning-"+filepath.Base(free)), map[string]string{"fitness-check-back-files": "#!/bin/sh\n"})
+		out, code := pruneRun(t, c)
+		sees(t, out, code, 1, "md-files ran", "pruned 5 cached")
+		gone(t, out, taken, filepath.Join(c.dir, "checks", ".pruning-"+filepath.Base(free)))
+		present(t, out, handed0175(c), free)
+	})
 }
 
 func Test0175_2(t *testing.T) {
 	t.Parallel()
 	c := prunable0175(t)
 	out, code := pruneRun(t, c)
-	sees(t, out, code, 1, "pruned 4 cached")
+	sees(t, out, code, 1, "pruned 5 cached")
 	release := filepath.Join(c.dir, "checks", "fitness-check-new-files-v1.0.0-"+platform0175+".tar")
 	mustDo(t, os.Chtimes(release, unused0175, unused0175))
 	out, code = pruneRun(t, c)
@@ -146,11 +219,10 @@ func Test0175_2(t *testing.T) {
 	present(t, out, release)
 
 	// A day after the prune, a run prunes again, but only while GitHub
-	// answers the index read. Offline, a deleted check could not return.
-	yesterday := time.Now().Add(-25 * time.Hour).Format(time.RFC3339)
-	mustDo(t, os.WriteFile(filepath.Join(c.dir, "cache-pruned.json"), []byte(`{"value":true,"checked":"`+yesterday+`"}`), 0o600))
+	// answers. Offline, a deleted check could not return.
+	pruneDue(t, c.dir)
 	indexAt0175(t, c.dir, time.Now().Add(-11*time.Minute))
-	out, code = pruneRun(t, c)
+	out, code = pruneRun(t, c, "HTTPS_PROXY="+silentListener(t), "NO_PROXY=", "no_proxy=", "GITHUB_API_URL=https://api.github.com")
 	sees(t, out, code, 1, "md-files ran")
 	absentText(t, out, "pruned")
 	present(t, out, release)
@@ -158,6 +230,12 @@ func Test0175_2(t *testing.T) {
 	out, code = pruneRun(t, c)
 	sees(t, out, code, 1, "fitness: pruned 1 cached")
 	gone(t, out, release)
+
+	// A run that reads no index still prunes once GitHub answers its probe.
+	other := prunable0175(t)
+	indexAt0175(t, other.dir, time.Now().Add(-11*time.Minute))
+	out, code = pruneRun(t, other)
+	sees(t, out, code, 1, "fitness: pruned 5 cached")
 }
 
 // absentText fails when out says text.
@@ -225,8 +303,8 @@ func requiring0175(t *testing.T, requires map[string]string) (bundle, repo strin
 	return bundle, repo
 }
 
-// online0175 serves the md-files check beside one requiring github and one
-// requiring network, and records a fresh index naming all three.
+// online0175 serves md-files and checks requiring github, network or
+// neither, and records a fresh index naming all four.
 func online0175(t *testing.T) *releases0173 {
 	t.Helper()
 	r := serve0173(t)
@@ -235,6 +313,7 @@ func online0175(t *testing.T) *releases0173 {
 		"md-files":  {"files": `\.md$`},
 		"gh-reads":  {"requires": []string{"github"}},
 		"net-reads": {"requires": []string{"network"}},
+		"plain":     {},
 	} {
 		r.archives[name] = archive0173(t, name)
 		version := map[string]any{
@@ -253,16 +332,22 @@ func online0175(t *testing.T) *releases0173 {
 func Test0175_5(t *testing.T) {
 	t.Parallel()
 	r := online0175(t)
-	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"checkVersions": {"md-files": "v1", "gh-reads": "v1", "net-reads": "v1"}}`})
+	repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"checkVersions": {"md-files": "v1", "gh-reads": "v1", "net-reads": "v1", "plain": "v1"}}`})
 	write(t, repo, map[string]string{"notes/plan.md": "# Plan\n"})
 	git(t, repo, "add", "-A")
+	bundle := bundle0162(t)
+	out, code := run0162(t, bundle, repo, []string{"FITNESS_CACHE_DIR=" + r.cache}, "--policy=external", "--checks=md-files")
+	sees(t, out, code, 1, "md-files ran")
+	fetchedOnly(t, r, out, "md-files")
+
 	silent := []string{"FITNESS_CACHE_DIR=" + r.cache, "HTTPS_PROXY=" + silentListener(t), "NO_PROXY=", "no_proxy=", "GITHUB_API_URL=https://api.github.com"}
-	out, code := run0162(t, bundle0162(t), repo, silent, "--policy=external", "--checks=md-files,gh-reads,net-reads")
+	out, code = run0162(t, bundle, repo, silent, "--policy=external", "--checks=md-files,gh-reads,net-reads,plain")
 	fetchedOnly(t, r, out, "md-files")
 	sees(t, out, code, 1, "md-files ran",
 		"Skipped (requires github, and this run is offline: api.github.com did not answer): gh-reads",
-		"Skipped (requires network, and this run is offline: api.github.com did not answer): net-reads")
-	absent(t, out, "gh-reads", "net-reads")
+		"Skipped (requires network, and this run is offline: api.github.com did not answer): net-reads",
+		"check plain applies to this run's files but could not be fetched, so it judged nothing: this run is offline: api.github.com did not answer")
+	absent(t, out, "gh-reads", "net-reads", "plain")
 	for _, name := range []string{"gh-reads", "net-reads"} {
 		if !strings.Contains(row(out, name), "skipped") {
 			t.Errorf("%s must be a skipped row offline:\n%s", name, out)
@@ -302,13 +387,13 @@ func releaseAt0175(t *testing.T, dir, name, version string, when time.Time) stri
 // engine, another engine and several checks sit beside newer cached ones.
 type supersededCache0175 struct {
 	cache0175
-	running, olderEngine, oldCheck, pinned, recent, pinnedSet string
+	running, olderEngine, oldCheck, majorSet, pinned, recent, live, pinnedSet string
 }
 
 // superseded0175 builds a cache where engine 0.0.0 and 0.0.1, the running
 // one, sit beside 0.0.2, and old-files 1.0.0, pinned-files 1.0.0 and
-// recent-files 1.0.0 beside 1.1.0. A check set pins pinned-files exactly, and
-// recent-files ran an hour ago.
+// recent-files 1.0.0 beside 1.1.0. A check set pins pinned-files exactly,
+// recent-files ran an hour ago, and a set used an hour ago links live-files.
 func superseded0175(t *testing.T) supersededCache0175 {
 	t.Helper()
 	dir := t.TempDir()
@@ -331,7 +416,10 @@ func superseded0175(t *testing.T) supersededCache0175 {
 	pinnedSet := checkSet0175(t, dir, "pinned", pinned)
 	mustDo(t, os.WriteFile(pinnedSet+".pins", []byte("pinned-files v1.0.0\n"), 0o600))
 	recent := releaseAt0175(t, dir, "recent-files", "1.0.0", time.Now().Add(-time.Hour))
-	newest := []string{releaseAt0175(t, dir, "pinned-files", "1.1.0", time.Now()), releaseAt0175(t, dir, "recent-files", "1.1.0", time.Now())}
+	live := releaseAt0175(t, dir, "live-files", "1.0.0", twoDays0175)
+	liveSet := checkSet0175(t, dir, "live", live)
+	mustDo(t, os.Chtimes(liveSet, time.Now().Add(-time.Hour), time.Now().Add(-time.Hour)))
+	newest := []string{releaseAt0175(t, dir, "pinned-files", "1.1.0", time.Now()), releaseAt0175(t, dir, "recent-files", "1.1.0", time.Now()), releaseAt0175(t, dir, "live-files", "1.1.0", time.Now())}
 	for _, path := range []string{running, older, majorSet, pinnedSet} {
 		mustDo(t, os.Chtimes(path, twoDays0175, twoDays0175))
 	}
@@ -339,46 +427,65 @@ func superseded0175(t *testing.T) supersededCache0175 {
 	return supersededCache0175{
 		cache0175: cache0175{
 			dir: dir, engine: filepath.Join(running, "bundle-1"), handed: handed,
-			kept:   append([]string{running, newer, handedRelease, handed, oldMinor, oldMajor, majorSet, pinned, pinnedSet, recent}, newest...),
-			pruned: []string{older, oldCheck},
+			kept:   append([]string{running, newer, handedRelease, handed, oldMinor, oldMajor, pinned, pinnedSet, recent, live, liveSet}, newest...),
+			pruned: []string{older, oldCheck, majorSet},
 		},
-		running: running, olderEngine: older, oldCheck: oldCheck, pinned: pinned, recent: recent, pinnedSet: pinnedSet,
+		running: running, olderEngine: older, oldCheck: oldCheck, majorSet: majorSet, pinned: pinned, recent: recent, live: live, pinnedSet: pinnedSet,
 	}
 }
 
 func Test0175_7(t *testing.T) {
 	t.Parallel()
-	t.Run("superseded versions go", func(t *testing.T) {
+	t.Run("superseded versions go, with the unused sets linking them", func(t *testing.T) {
 		t.Parallel()
 		c := superseded0175(t)
 		out, code := pruneRun(t, c.cache0175)
-		sees(t, out, code, 1, "md-files ran", "fitness: pruned 2 cached engine and check releases unused for 30 days or superseded")
-		gone(t, out, c.olderEngine, c.oldCheck)
+		sees(t, out, code, 1, "md-files ran", "fitness: pruned 3 cached engine and check releases unused for 30 days or superseded")
+		gone(t, out, c.pruned...)
 		present(t, out, c.kept...)
 	})
-	t.Run("exactly pinned and recently used versions stay", func(t *testing.T) {
+	t.Run("pinned, recently used and lately linked versions stay", func(t *testing.T) {
 		t.Parallel()
 		c := superseded0175(t)
 		out, code := pruneRun(t, c.cache0175)
-		sees(t, out, code, 1, "pruned 2 cached")
-		present(t, out, c.pinned, c.recent)
+		sees(t, out, code, 1, "pruned 3 cached")
+		present(t, out, c.pinned, c.recent, c.live)
 
 		// Once no set pins it exactly and a day passes unused, each goes too.
 		mustDo(t, os.WriteFile(c.pinnedSet+".pins", []byte("pinned-files v1\n"), 0o600))
 		mustDo(t, os.Chtimes(c.recent, twoDays0175, twoDays0175))
-		yesterday := time.Now().Add(-25 * time.Hour).Format(time.RFC3339)
-		mustDo(t, os.WriteFile(filepath.Join(c.dir, "cache-pruned.json"), []byte(`{"value":true,"checked":"`+yesterday+`"}`), 0o600))
+		pruneDue(t, c.dir)
 		out, code = pruneRun(t, c.cache0175)
-		sees(t, out, code, 1, "fitness: pruned 2 cached")
-		gone(t, out, c.pinned, c.recent)
+		sees(t, out, code, 1, "fitness: pruned 3 cached")
+		gone(t, out, c.pinned, c.recent, c.pinnedSet)
 	})
-	t.Run("the running engine stays", func(t *testing.T) {
+	t.Run("the running engine and one asked for by version stay", func(t *testing.T) {
 		t.Parallel()
 		c := superseded0175(t)
 		out, code := pruneRun(t, c.cache0175)
-		sees(t, out, code, 1, "md-files ran", "pruned 2 cached")
+		sees(t, out, code, 1, "md-files ran", "pruned 3 cached")
 		present(t, out, c.running, c.engine)
 		out, code = pruneRun(t, c.cache0175)
 		sees(t, out, code, 1, "md-files ran")
+
+		env := fiPrivateCache(t)
+		out, code = fiRun(t, t.TempDir(), env, "--install-only")
+		sees(t, out, code, 0, "fitness: version=")
+		bin := fiLastLine(out)
+		key := filepath.Dir(bin)
+		cache := filepath.Dir(key)
+		newer := regexp.MustCompile(`^fitness-[0-9.]+-`).ReplaceAllString(filepath.Base(key), "fitness-99.0.0-")
+		mustDo(t, os.MkdirAll(filepath.Join(cache, newer, "bundle-1"), 0o700))
+		mustDo(t, os.Chtimes(key, twoDays0175, twoDays0175))
+		indexAt0175(t, cache, time.Now())
+		repo := example(t, "happyRepo", nil)
+		out, _ = run0162(t, c.engine, repo, []string{"FITNESS_CACHE_DIR=" + cache, "FITNESS_CHECKS_DIR=" + t.TempDir()}, "--policy=external", "--checks=md-files")
+		absentText(t, out, "pruned")
+		present(t, out, key)
 	})
+}
+
+// handed0175 is the release folder the cache's handed check set links.
+func handed0175(c cache0175) string {
+	return filepath.Join(c.dir, "checks", "fitness-check-md-files-v1.0.0-"+platform0175+".tar")
 }

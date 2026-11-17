@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 // Build returns the cached program for a Go check or builds one, keyed by its
@@ -28,6 +29,9 @@ func Build(c Check, cache, version string, log io.Writer) (string, error) {
 	}
 	out := filepath.Join(cache, "checks", key, c.Name)
 	if isFile(out) {
+		// The engine's daily prune deletes a build left unused for 30 days.
+		now := time.Now()
+		_ = os.Chtimes(filepath.Dir(out), now, now)
 		return out, nil
 	}
 	fmt.Fprintf(log, "fitness: building %s with go\n", c.Shown)

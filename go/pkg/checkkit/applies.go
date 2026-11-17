@@ -27,6 +27,13 @@ const (
 // Requirements lists every requirement this protocol defines, in order.
 var Requirements = []Requirement{RequiresRepo, RequiresDiff, RequiresHistory, RequiresGitHub, RequiresNetwork}
 
+// The Skipped reasons a run gives for a check it leaves out, which the
+// release smoke test also expects.
+const (
+	SkipNeedsNoFile = "the repo tracks no file its needs pattern names"
+	SkipNoDiff      = "requires diff, which only a run of changed files has"
+)
+
 // Known reports whether this protocol defines r.
 func (r Requirement) Known() bool {
 	return slices.Contains(Requirements, r)

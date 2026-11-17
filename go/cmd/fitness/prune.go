@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
@@ -20,7 +21,7 @@ func pruneCache(args []string) {
 	if err != nil {
 		return
 	}
-	removed := distribution.Prune(cache, inUse())
+	removed := distribution.Prune(cache, inUse(), func() bool { return metadata.UnreachableGitHub() == "" })
 	if len(removed) > 0 {
 		fmt.Fprintf(os.Stderr, "fitness: pruned %d cached engine and check releases unused for 30 days or superseded from %s\n", len(removed), cache)
 	}

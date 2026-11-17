@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/distribution"
+	"github.com/may-journal/fitness-runner/go/internal/metadata"
 	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 )
 
@@ -246,7 +247,25 @@ func toFetch(root string, checks []resolved, env, shared []string) []string {
 			names = append(names, c.name)
 		}
 	}
-	return names
+	return unlessOffline(names)
+}
+
+// unlessOffline returns names, or fails each at once when GitHub's API host
+// did not answer the probe, since every fetch needs GitHub.
+func unlessOffline(names []string) []string {
+	if len(names) == 0 {
+		return nil
+	}
+	host := metadata.UnreachableGitHub()
+	if host == "" {
+		return names
+	}
+	failed := map[string]error{}
+	for _, name := range names {
+		failed[name] = fmt.Errorf("this run is offline: %s did not answer", host)
+	}
+	noteFailures(failed)
+	return nil
 }
 
 // fetchable reports whether c is pending, not failed yet, and lacks nothing

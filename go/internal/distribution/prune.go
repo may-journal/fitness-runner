@@ -20,23 +20,6 @@ const (
 // goes unused before a prune deletes it.
 const unusedFor = 30 * 24 * time.Hour
 
-// supersededFor is how long a prune keeps a superseded release unused, so
-// one a pinned repo ran within a day stays.
-const supersededFor = 24 * time.Hour
-
-// pinsSuffix ends the file beside a check set that records each linked
-// check's pin.
-const pinsSuffix = ".pins"
-
-// checkKey matches the cache folder of one check release and platform,
-// capturing its program, major, minor and patch, and platform:
-// fitness-check-<name>-v<major>.<minor>.<patch>-<platform>.tar.
-var checkKey = regexp.MustCompile(`^(fitness-check-.+)-v([0-9]+)\.([0-9]+\.[0-9]+)-(.+)\.tar$`)
-
-// bundleVersion matches an engine bundle folder, capturing its version and
-// platform.
-var bundleVersion = regexp.MustCompile(`^fitness-([0-9]+\.[0-9]+\.[0-9]+)-(.+)-[0-9a-f]{64}$`)
-
 // pruneEvery is how often the cache is pruned, so hooks stay fast.
 const pruneEvery = 24 * time.Hour
 
@@ -50,15 +33,34 @@ var bundleKey = regexp.MustCompile(`^fitness-.+-[0-9a-f]{64}$`)
 // stagedSet matches a check set folder a killed install left half made.
 var stagedSet = regexp.MustCompile(`^check-set-[0-9]+$`)
 
-// linkedMarker marks a bundle folder that Claude Code settings or linked
-// skills point into, so a prune never deletes it.
-const linkedMarker = "linked"
+// pruneRetry is how long a prune that found GitHub silent waits before it
+// probes again, so offline hooks stay fast.
+const pruneRetry = time.Hour
 
-// used marks path as used now, so a prune keeps it. Each run marks what it
-// uses before it reads it; a cache it may not change stays readable.
+// pruneOfflineName records a prune that found GitHub silent.
+const pruneOfflineName = "cache-prune-offline.json"
+
+// asidePrefix starts the name of a folder a prune set aside to delete.
+const asidePrefix = ".pruning-"
+
+// asideName matches a folder a prune set aside to delete.
+var asideName = regexp.MustCompile(`^\.pruning-`)
+
+// used marks path as used now, so a prune keeps it, taking path back when a
+// prune set it aside meanwhile. A cache it may not change stays readable.
 func used(path string) {
 	now := time.Now()
-	_ = os.Chtimes(path, now, now)
+	if os.Chtimes(path, now, now) == nil {
+		return
+	}
+	if os.Rename(aside(path), path) == nil {
+		_ = os.Chtimes(path, now, now)
+	}
+}
+
+// aside is the name path takes while a prune deletes it.
+func aside(path string) string {
+	return filepath.Join(filepath.Dir(path), asidePrefix+filepath.Base(path))
 }
 
 // cachedProgram marks a check program's release as used and reports whether
@@ -83,19 +85,10 @@ func MarkUsed(program string) {
 	}
 }
 
-// keepLinked marks the cache bundle bin as one that settings or skills
-// outside the cache point at.
-func keepLinked(bin string) {
-	if key, ok := bundleOf(bin); ok {
-		_ = os.WriteFile(filepath.Join(key, linkedMarker), nil, 0600)
-	}
-}
-
-// Prune deletes what cache left unused for 30 days, and superseded releases,
-// once a day while online, and returns it. It keeps what inUse holds and
-// follows no link out of cache.
-func Prune(cache string, inUse []string) []string {
-	if !dueForPrune(cache) {
+// Prune deletes unused and superseded releases from cache once a day while
+// online, keeping inUse. online probes GitHub when no read answered lately.
+func Prune(cache string, inUse []string, online func() bool) []string {
+	if !dueForPrune(cache, online) {
 		return nil
 	}
 	recordFresh(cache, prunedName, true)
@@ -103,7 +96,10 @@ func Prune(cache string, inUse []string) []string {
 	if err != nil {
 		return nil
 	}
-	keep := realPaths(inUse)
+	for _, dir := range []string{root, filepath.Join(root, checksFolder), filepath.Join(root, checkSetsFolder)} {
+		sweepAside(dir)
+	}
+	keep := append(realPaths(inUse), pointedInto(root, folders(root, bundleKey))...)
 	p := pruner{cutoff: time.Now().Add(-unusedFor), keep: keep}
 	p.pruneSets(filepath.Join(root, checkSetsFolder))
 	p.prune(filepath.Join(root, checksFolder), nil)
@@ -112,95 +108,43 @@ func Prune(cache string, inUse []string) []string {
 	return append(p.removed, pruneSuperseded(root, keep)...)
 }
 
-// pruneSuperseded deletes each release, unused for a day, that a newer cached
-// one supersedes: same check and major, or same engine platform.
-// It keeps what keep holds or links, and each release a check set pins exactly.
-func pruneSuperseded(root string, keep []string) []string {
-	checks := filepath.Join(root, checksFolder)
-	kept := slices.Clone(keep)
-	for _, path := range keep {
-		kept = append(kept, linked(path)...)
-	}
-	kept = append(kept, exactlyPinned(checks, folders(filepath.Join(root, checkSetsFolder), nil))...)
-	p := pruner{cutoff: time.Now().Add(-supersededFor), keep: kept}
-	p.pruneAll(superseded(folders(checks, checkKey), releaseVersion))
-	p.pruneAll(superseded(folders(root, bundleKey), engineVersion))
-	return p.removed
-}
-
-// releaseVersion is the group of a check release folder, its check, major and
-// platform, its version, and whether it holds the program.
-func releaseVersion(path string) (group, version string, cached bool) {
-	m := checkKey.FindStringSubmatch(filepath.Base(path))
-	if m == nil {
-		return "", "", false
-	}
-	return m[1] + " " + m[2] + " " + m[4], m[2] + "." + m[3], exists(filepath.Join(path, m[1]))
-}
-
-// engineVersion is the group of an engine bundle folder, its platform, its
-// version, and whether it holds an unpacked bundle.
-func engineVersion(path string) (group, version string, cached bool) {
-	m := bundleVersion.FindStringSubmatch(filepath.Base(path))
-	if m == nil {
-		return "", "", false
-	}
-	bundles, _ := filepath.Glob(filepath.Join(path, "bundle-*"))
-	return m[2], m[1], len(bundles) > 0
-}
-
-// superseded lists each path whose group holds a newer cached version.
-func superseded(paths []string, version func(string) (string, string, bool)) []string {
-	newest := newestCached(paths, version)
-	return slices.DeleteFunc(slices.Clone(paths), func(path string) bool {
-		group, v, _ := version(path)
-		return group == "" || !newer(newest[group], v)
-	})
-}
-
-// newestCached maps each group of paths to its newest cached version.
-func newestCached(paths []string, version func(string) (string, string, bool)) map[string]string {
-	newest := map[string]string{}
-	for _, path := range paths {
-		if group, v, cached := version(path); group != "" && cached && newer(v, newest[group]) {
-			newest[group] = v
-		}
-	}
-	return newest
-}
-
-// exactlyPinned lists each release folder in checks that one of sets
-// records an exact pin of, such as v1.2.3, on any platform.
-func exactlyPinned(checks string, sets []string) []string {
-	prefixes := exactPrefixes(sets)
-	return slices.DeleteFunc(folders(checks, checkKey), func(release string) bool {
-		return !slices.ContainsFunc(prefixes, func(prefix string) bool {
-			return strings.HasPrefix(filepath.Base(release), prefix)
-		})
-	})
-}
-
-// exactPrefixes lists the folder name start of each release that one of
-// sets pins exactly.
-func exactPrefixes(sets []string) []string {
-	var prefixes []string
-	for _, set := range sets {
-		for _, line := range setPins(set) {
-			if name, pin, _ := strings.Cut(line, " "); exactPin.MatchString(pin) {
-				prefixes = append(prefixes, checkPrefix+name+"-"+pin+"-")
-			}
-		}
-	}
-	return prefixes
-}
-
 // dueForPrune reports whether a day passed since the last prune and GitHub
-// just answered the index read. Offline, a deleted check could not return.
-func dueForPrune(cache string) bool {
-	_, pruned := readFresh[bool](cache, prunedName, pruneEvery)
-	index, online := readFresh[checkIndex](cache, checkIndexName, latestFresh)
+// answers. Offline, a deleted check could not return.
+func dueForPrune(cache string, online func() bool) bool {
+	if _, pruned := readFresh[bool](cache, prunedName, pruneEvery); pruned {
+		return false
+	}
+	if answeredLately(cache) {
+		return true
+	}
+	if _, waiting := readFresh[bool](cache, pruneOfflineName, pruneRetry); waiting {
+		return false
+	}
+	if online() {
+		return true
+	}
+	recordFresh(cache, pruneOfflineName, true)
+	return false
+}
+
+// answeredLately reports whether GitHub answered an index read in the last
+// 10 minutes, so no probe is needed.
+func answeredLately(cache string) bool {
+	_, answered := readFresh[checkIndex](cache, checkIndexName, latestFresh)
 	_, unanswered := readFresh[bool](cache, unansweredName, unansweredFresh)
-	return !pruned && online && index.Format == 1 && !unanswered
+	return answered && !unanswered
+}
+
+// sweepAside settles each folder an earlier prune set aside in dir and left.
+// One whose name is free comes back for this prune to judge; a run remade the
+// rest, so they go.
+func sweepAside(dir string) {
+	for _, path := range folders(dir, asideName) {
+		name := filepath.Join(dir, strings.TrimPrefix(filepath.Base(path), asidePrefix))
+		if exists(name) || os.Rename(path, name) != nil {
+			_ = os.RemoveAll(path)
+		}
+	}
 }
 
 // pruner deletes folders unused since cutoff that hold no kept path.
@@ -214,9 +158,7 @@ type pruner struct {
 // other set links, so a set in use never loses a program.
 func (p *pruner) pruneSets(dir string) {
 	for _, set := range folders(dir, nil) {
-		if p.remove(set) {
-			_ = os.Remove(set + pinsSuffix)
-		} else {
+		if !p.removeSet(set) {
 			p.keep = append(p.keep, linked(set)...)
 		}
 	}
@@ -235,33 +177,42 @@ func (p *pruner) pruneAll(paths []string) {
 	}
 }
 
-// remove deletes path when unused, and reports whether it did. It renames
-// path aside and checks its time again, so a run marking it meanwhile keeps it.
+// removeSet deletes check set when unused, with its pins file, and reports
+// whether it did.
+func (p *pruner) removeSet(set string) bool {
+	if !p.remove(set) {
+		return false
+	}
+	_ = os.Remove(set + pinsSuffix)
+	return true
+}
+
+// remove deletes path when unused, and reports whether it did. It sets path
+// aside first; a run marking it meanwhile takes it back, which the second look
+// sees, so that run keeps it.
 func (p *pruner) remove(path string) bool {
 	if !p.unused(path) {
 		return false
 	}
-	aside := filepath.Join(filepath.Dir(path), ".pruning-"+filepath.Base(path))
-	if os.Rename(path, aside) != nil {
+	set := aside(path)
+	if os.Rename(path, set) != nil {
 		return false
 	}
-	if !p.stale(aside) {
-		_ = os.Rename(aside, path)
+	if !p.stale(set) {
+		_ = os.Rename(set, path)
 		return false
 	}
-	_ = os.RemoveAll(aside)
+	_ = os.RemoveAll(set)
 	p.removed = append(p.removed, path)
 	return true
 }
 
-// unused reports whether path is stale and holds no kept path or marker.
+// unused reports whether path is stale and holds no kept path.
 func (p *pruner) unused(path string) bool {
-	if !p.stale(path) || exists(filepath.Join(path, linkedMarker)) {
+	if !p.stale(path) {
 		return false
 	}
-	return !slices.ContainsFunc(p.keep, func(kept string) bool {
-		return kept == path || strings.HasPrefix(kept, path+string(filepath.Separator))
-	})
+	return !slices.ContainsFunc(p.keep, func(kept string) bool { return within(kept, []string{path}) })
 }
 
 // stale reports whether path was last used before cutoff. A folder whose

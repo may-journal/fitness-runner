@@ -155,8 +155,9 @@ func (i *Installer) checkLookup() *http.Client {
 	return &http.Client{Timeout: checkLookupTimeout, Transport: i.Lookup.Transport}
 }
 
-// readIndex returns a fresh recorded index, else reads and records it, or
-// offline the last one recorded; errNoIndex means fitness-checks has none.
+// readIndex returns a fresh recorded index, else reads and records it, or,
+// when GitHub did not answer, the last one recorded. errNoIndex means
+// fitness-checks has none; any other answer that fails stays an error.
 func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
 	if index, ok := readFresh[checkIndex](i.Cache, checkIndexName, latestFresh); ok {
 		return index, publishedIndex(index)
@@ -166,7 +167,7 @@ func (i *Installer) readIndex(ctx context.Context) (checkIndex, error) {
 	}
 	index, err := i.fetchIndex(ctx)
 	i.recordIndex(index, err)
-	if err != nil && !errors.Is(err, errNoIndex) {
+	if errors.Is(err, errUnanswered) {
 		return i.offlineIndex(err, true)
 	}
 	return index, err
