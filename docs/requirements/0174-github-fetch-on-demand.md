@@ -14,7 +14,7 @@ Workflow steps that install checks
 
 - 0174.1
     - Given Developer has the fitness-install action
-        - When I run its index key script and read its restore step
+        - When I run its index key script by its path, read its git mode and read its restore step
             - Then each key holds the release index hash, not `.fitnessrc.json`, and restore falls back to any older set
 - 0174.2
     - Given Developer has the fitness-command action and this repo's CI workflow
@@ -22,5 +22,5 @@ Workflow steps that install checks
             - Then events install on demand, while a manual run and a push to `main` install every check
 - 0174.3
     - Given Developer has a checks cache holding a program the run linked and one it did not
-        - When I run the save-checks key script after a restore from an older index, then from this index
+        - When I run the save-checks key script by its path, as git stores it, after restores from an older index and this one
             - Then the first drops the unlinked program, the second keeps both, and each key starts with the job's prefix
