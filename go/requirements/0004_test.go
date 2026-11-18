@@ -1,133 +1,274 @@
-// cspell:ignore zorbleflux
-
 package requirements
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
 
-// inActions runs the one-liner in repo as a GitHub Actions job does, returning
-// its output, exit code and job summary.
-func inActions(t *testing.T, repo string) (string, int, string) {
-	t.Helper()
-	summary := filepath.Join(t.TempDir(), "summary.md")
-	out, code := fitness(t, repo, []string{"GITHUB_ACTIONS=true", "GITHUB_WORKSPACE=" + repo, "GITHUB_STEP_SUMMARY=" + summary})
-	written, _ := os.ReadFile(summary)
-	return out, code, string(written)
-}
-
-// misspelled is happyRepo's README with n unknown words, one per line.
-func misspelled(n int) map[string]string {
-	body := readme
-	for i := 0; i < n; i++ {
-		body += "\nThe zorbleflux sits here.\n"
-	}
-	return map[string]string{"README.md": body}
-}
-
 func Test0004_1(t *testing.T) {
-	t.Parallel()
-	out, code, _ := inActions(t, example(t, "happyRepo", misspelled(1)))
-	sees(t, out, code, 1, "::error file=README.md,line=9,col=5,title=cspell (unknown-word)::Unknown word (zorbleflux)")
+	cases{
+		{"a local check with a new name", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", localCheck("house-rule", passing))
+			out, code := fitness(t, repo, nil)
+			sees(t, out, code, 0, allPassedWith(1))
+			passedWith(t, out, "house-rule", "1")
+		}},
+		{"a local check with a new name: only the local check runs", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", localCheck("house-rule", passing))
+			out, code := fitness(t, repo, nil, "house-rule")
+			sees(t, out, code, 0, "All 1 checks passed")
+			passedWith(t, out, "house-rule", "1")
+		}},
+		{"a shell check in `fitness/<name>/` with a README and no config", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", shellCheck("house-rule", "", passing))
+			out, code := fitness(t, repo, nil)
+			sees(t, out, code, 0, allPassedWith(1))
+			passedWith(t, out, "house-rule", "1")
+		}},
+		{"a Go check in `fitness/<name>/` built on the check SDK", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", goCheck(t, "go-rule", t.TempDir()))
+			out, code := fitness(t, repo, nil, "check", "go-rule")
+			sees(t, out, code, 0, "fitness: building fitness/go-rule with go", "All 1 checks passed")
+			passedWith(t, out, "go-rule", "3")
+			out, code = fitness(t, repo, nil, "check", "go-rule")
+			sees(t, out, code, 0, "All 1 checks passed")
+			passedWith(t, out, "go-rule", "3")
+			if strings.Contains(out, "building fitness/go-rule") {
+				t.Errorf("a second run of an unchanged Go check built it again:\n%s", out)
+			}
+		}},
+		{"checks in `fitness/` that find a problem", func(t *testing.T) {
+			t.Parallel()
+			files := with(shellCheck("house-rule", "", `{"ok": false, "errors": ["the house rule is broken"], "filesChecked": 1}`),
+				with(goCheck(t, "go-rule", t.TempDir()), map[string]string{
+					"notes.md": "# Notes\n\nTODO: write these.\n",
+					"fitness/go-rule/main_test.go": "package main\n\nimport (\n\t\"testing\"\n\n\t\"github.com/may-journal/fitness-runner/go/check\"\n)\n\nfunc TestRule(t *testing.T) { check.Test(t, rule) }\n\n" +
+						"func TestFixture(t *testing.T) {\n\tif check.Judge(t, rule, check.Repo(t, map[string]string{\"a.md\": \"TODO\"})).Ok {\n\t\tt.Error(\"a TODO must fail\")\n\t}\n}\n",
+				}))
+			repo := example(t, "happyRepo", files)
+			out, code := fitness(t, repo, nil, "check", "house-rule")
+			sees(t, out, code, 1, "the house rule is broken")
+			if row(out, "go-rule") != "" || row(out, "markdown-links") != "" {
+				t.Errorf("fitness check house-rule ran other checks too:\n%s", out)
+			}
+			unitTested(t, repo)
+		}},
+		{"a repo with a check in `fitness/`", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", shellCheck("house-rule", "", passing))
+			got := listedCheck{}
+			for _, c := range listJSON(t, repo) {
+				if c.Name == "house-rule" {
+					got = c
+				}
+			}
+			if got.Scope != "local" || got.Summary != "Keeps the house in order." {
+				t.Errorf("fitness list shows house-rule with scope %q and summary %q, want local and the README's first sentence", got.Scope, got.Summary)
+			}
+			out, code := fitness(t, repo, nil, "explain", "house-rule")
+			sees(t, out, code, 0, "# house-rule", "Scope: local", "Keeps the house in order. Each room stays tidy.", "## Fix", "Tidy the room the error names.")
+		}},
+		{"a check in `fitness/` that declares the test stage", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", shellCheck("suite-rule", `{"stage": "tests"}`, passing))
+			for _, c := range listJSON(t, repo) {
+				if c.Name == "suite-rule" && c.Stage != "tests" {
+					t.Errorf("fitness list shows suite-rule in stage %q, want the tests stage it declares", c.Stage)
+				}
+			}
+		}},
+	}.run(t)
 }
 
 func Test0004_2(t *testing.T) {
-	t.Parallel()
-	out, code, summary := inActions(t, example(t, "happyRepo", misspelled(13)))
-	annotated := strings.Count(out, "\n::error ")
-	findings := strings.Count(summary, "\n- ")
-	want := fmt.Sprintf("::warning::%d more issue(s) not annotated; see the job summary", findings-annotated)
-	if annotated != 10 {
-		t.Errorf("want 10 annotations at the cap, got %d", annotated)
-	}
-	sees(t, out, code, 1, want)
+	cases{
+		{"external policy and a local check named like a bundled check", func(t *testing.T) {
+			t.Parallel()
+			files := with(localCheck("markdown-no-bold-italic", passing), map[string]string{"README.md": readme + "\nSome **bold** text.\n"})
+			out, code := fitness(t, example(t, "happyRepo", files), nil)
+			sees(t, out, code, 0, "fitness: local checks replace built-in markdown-no-bold-italic", allPassed())
+			if strings.Contains(out, "disallowed **bold**") {
+				t.Errorf("the bundled markdown-no-bold-italic ran beside its local replacement:\n%s", out)
+			}
+			replacing := with(localCheck("markdown-no-bold-italic", passing), map[string]string{".fitnessrc.json": `{"policy": "external", "localChecks": "checks"}` + "\n"})
+			out, code = boldPR(t, example(t, "happyRepo", replacing))
+			sees(t, out, code, 0, "fitness: local checks replace built-in markdown-no-bold-italic", "Passed.")
+		}},
+		{"external policy and disabledChecks naming a failing check", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", map[string]string{
+				".fitnessrc.json": disabling,
+				"README.md":       readme + "\nSome **bold** text.\n",
+			})
+			out, code := fitness(t, repo, nil)
+			sees(t, out, code, 0, allPassedWith(-1))
+			if row(out, "markdown-no-bold-italic") != "" {
+				t.Errorf("disabled markdown-no-bold-italic still ran:\n%s", out)
+			}
+			out, code = boldPR(t, example(t, "happyRepo", nil))
+			sees(t, out, code, 1, `disallowed \*\*bold`)
+			out, code = boldPR(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"policy": "external", "disabledChecks": ["markdown-no-bold-italic"]}` + "\n"}))
+			sees(t, out, code, 0, "Passed.")
+		}},
+	}.run(t)
 }
 
 func Test0004_3(t *testing.T) {
-	t.Parallel()
-	out, code, _ := inActions(t, example(t, "happyRepo", nil))
-	if strings.Contains(out, "::error") || strings.Contains(out, "::warning") || code != 0 {
-		t.Errorf("a green run must add no annotations, got exit %d:\n%s", code, out)
-	}
+	cases{
+		{"org policy and a local check named like a bundled check", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", localCheck("markdown-no-bold-italic", passing))
+			out, code := fitness(t, repo, nil, "--all")
+			sees(t, out, code, 1, "local check markdown-no-bold-italic replaces a built-in check, and org policy runs the built-in checks as the shared bar")
+		}},
+		{"org policy and disabledChecks naming a check", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": disabling})
+			out, code := fitness(t, repo, nil, "--all")
+			sees(t, out, code, 1, "disabledChecks turns off markdown-no-bold-italic, and org policy runs every check as the shared bar")
+		}},
+		{"a repo whose org policy config turns off a check", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"disabledChecks": ["cspell"]}` + "\n"})
+			out, code := fitness(t, repo, nil, "config")
+			sees(t, out, code, 1, "A run stops before any check:", "org policy runs every check as the shared bar")
+		}},
+	}.run(t)
 }
 
 func Test0004_4(t *testing.T) {
-	t.Parallel()
-	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{"docs/notes-100%.md": "The zorbleflux sits here.\n"}))
-	sees(t, out, code, 1, "::error file=docs/notes-100%25.md,line=1,col=5,title=cspell (unknown-word)::Unknown word (zorbleflux)%0AFix: ")
-	for _, line := range strings.Split(out, "\n") {
-		if strings.HasPrefix(line, "::") && strings.Contains(line, "100%") && !strings.Contains(line, "100%25") {
-			t.Errorf("a percent sign must arrive escaped in one annotation, got %q", line)
-		}
-	}
+	cases{
+		{"a check setting whose directory or check is missing, outside the repo, or named like a subcommand", func(t *testing.T) {
+			t.Parallel()
+			for setting, want := range map[string]string{
+				`{"localChecks": "checks"}`:             `fitness setup: .fitnessrc.json localChecks directory "checks" does not exist`,
+				`{"localChecks": "../checks"}`:          `.fitnessrc.json localChecks "../checks" must be a path inside the repo`,
+				`{"disabledChecks": ["no-such-check"]}`: `disabledChecks: unknown or empty check "no-such-check"`,
+			} {
+				repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": setting + "\n"})
+				out, code := fitness(t, repo, nil)
+				sees(t, out, code, 1, want)
+			}
+			out, code := fitness(t, example(t, "happyRepo", localCheck("boxes", passing)), nil)
+			sees(t, out, code, 1, "local check boxes shares a fitness subcommand's name")
+			repo := example(t, "happyRepo", map[string]string{".fitnessrc.json": `{"localChecks": "checks"}` + "\n"})
+			mustDo(t, os.Symlink(t.TempDir(), filepath.Join(repo, "checks")))
+			out, code = fitness(t, repo, nil)
+			sees(t, out, code, 1, `.fitnessrc.json localChecks "checks" must be a path inside the repo`)
+		}},
+		{"a local check file without execute permission", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", localCheck("house-rule", passing))
+			mustDo(t, os.Chmod(filepath.Join(repo, "checks", "fitness-check-house-rule"), 0o644))
+			out, code := fitness(t, repo, nil)
+			sees(t, out, code, 1, "local check checks/fitness-check-house-rule is not an executable file; run chmod +x checks/fitness-check-house-rule")
+		}},
+		{"a Go check and no go on PATH", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", goCheck(t, "go-rule", t.TempDir()))
+			out, code := fitness(t, repo, []string{pathWithout(t, "go")}, "check", "go-rule")
+			sees(t, out, code, 1, "local check fitness/go-rule is Go source, and go is not on PATH; install Go from https://go.dev/dl")
+		}},
+		{"a check folder without a README, without a program, without `fitness/go.mod`, or with Go that does not build", func(t *testing.T) {
+			t.Parallel()
+			goRule := goCheck(t, "go-rule", t.TempDir())
+			for want, files := range map[string]map[string]string{
+				"local check fitness/house-rule has no README.md":                                              {"fitness/house-rule/check": verdictScript(passing)},
+				"local check fitness/house-rule has no program; add an executable check or a main.go":          {"fitness/house-rule/README.md": "# House rule\n\nKeeps the house.\n"},
+				"local check fitness/go-rule is Go source, so fitness/go.mod must exist":                       with(goRule, map[string]string{"fitness/go.mod": ""}),
+				"local check fitness/go-rule does not build; fix it so `go -C fitness build ./go-rule` passes": with(goRule, map[string]string{"fitness/go-rule/main.go": "package main\n\nfunc main() { undefined() }\n"}),
+			} {
+				out, code := fitness(t, example(t, "happyRepo", files), nil)
+				sees(t, out, code, 1, want)
+			}
+		}},
+		{"a check whose minFitness is newer than the installed fitness", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", shellCheck("new-rule", `{"minFitness": "999.0.0"}`, passing))
+			out, code := fitness(t, repo, nil, "check", "new-rule")
+			sees(t, out, code, 1, "check new-rule needs fitness 999.0.0 or later", "--version=999.0.0")
+		}},
+	}.run(t)
 }
 
 func Test0004_5(t *testing.T) {
-	t.Parallel()
-	_, code, summary := inActions(t, example(t, "happyRepo", misspelled(1)))
-	sees(t, summary, code, 1, "## Fitness checks", "| cspell | ❌ fail |", "README.md:9:5 - Unknown word (zorbleflux)", "| prose-budget | ✅ pass |")
-	for _, check := range strings.Fields(catalogRows) {
-		if !strings.Contains(summary, "| "+check+" |") {
-			t.Errorf("the job summary leaves out installed check %s:\n%s", check, summary)
-		}
-	}
+	cases{
+		{"a repo whose config turns off a check and sets one prose limit", func(t *testing.T) {
+			t.Parallel()
+			var view configView
+			stdoutOf(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": configured}), &view, "config", "--json")
+			seesEntry(t, view.Settings, configSetting{Key: "proseBudget.maxWords", Value: float64(200), Source: "file"})
+			seesEntry(t, view.Settings, configSetting{Key: "comment.maxWords", Value: float64(100), Source: "default"})
+			seesEntry(t, view.Checks, checkState{Name: "cspell", Enabled: false, Reason: "disabledChecks in .fitnessrc.json turns it off"})
+			seesEntry(t, view.Checks, checkState{Name: "markdown-links", Enabled: true, Reason: "external policy runs every check"})
+		}},
+		{"a repo", func(t *testing.T) {
+			t.Parallel()
+			schema := printedSchema(t)
+			if !refusesUnknownKeys(schema) {
+				t.Errorf("the schema must describe an object that refuses unknown keys, got %+v", schema)
+			}
+			got := schema.Properties["proseBudget"].Properties["maxWords"]
+			if want := (schemaKey{Type: "integer", Description: got.Description, Default: float64(300)}); !reflect.DeepEqual(got, want) {
+				t.Errorf("proseBudget.maxWords must give its type and its default 300, got %+v", got)
+			}
+			if got.Description == "" {
+				t.Error("proseBudget.maxWords must carry a description")
+			}
+			mapOfStrings(t, schema.Properties["checkVersions"])
+		}},
+		{"fitness source code that reads config keys through the sections it registers", func(t *testing.T) {
+			t.Parallel()
+			described := describedKeys("", printedSchema(t))
+			for _, key := range keysFitnessReads(t) {
+				if described[key] == "" {
+					t.Errorf("the code reads config key %s, which the schema does not describe", key)
+				}
+			}
+		}},
+	}.run(t)
 }
 
 func Test0004_6(t *testing.T) {
-	t.Parallel()
-	out, code, _ := inActions(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": "{\n"}))
-	sees(t, out, code, 1, "::error::fitness setup: .fitnessrc.json:")
-	if strings.Contains(out, "::error file=") {
-		t.Errorf("a setup failure must not point at a file line:\n%s", out)
-	}
-}
-
-func Test0004_7(t *testing.T) {
-	t.Parallel()
-	repo := example(t, "happyRepo", misspelled(1))
-	summary := filepath.Join(t.TempDir(), "summary.md")
-	mustDo(t, os.WriteFile(summary, []byte(strings.Repeat("Earlier step output.\n", 52000)), 0o644))
-	_, code := fitness(t, repo, []string{"GITHUB_ACTIONS=true", "GITHUB_WORKSPACE=" + repo, "GITHUB_STEP_SUMMARY=" + summary, "RUNNER_TEMP=" + t.TempDir()})
-	written, _ := os.ReadFile(summary)
-	sees(t, string(written), code, 1, "Summary truncated.", "Complete report saved on the runner at")
-	complete, err := os.ReadFile(summary + ".fitness-report.md")
-	if err != nil || !strings.Contains(string(complete), "Unknown word (zorbleflux)") {
-		t.Errorf("the complete report must hold every finding: %v", err)
-	}
-	if len(written) > 1<<20 {
-		t.Errorf("summary is %d bytes, over the 1 MiB limit", len(written))
-	}
-}
-
-// unknownWord is a word no dictionary holds, built so cspell never reads it here.
-var unknownWord = strings.Repeat("q", 3) + "xw" + strings.Repeat("v", 3)
-
-// lockedChecks are the file-reading checks, each paired with one readable file
-// it must still judge and one it cannot read.
-var lockedChecks = []struct {
-	check, finding, locked string
-	files                  map[string]string
-}{
-	{"no-eslint-disable", "src/open.ts:1: eslint-disable", "src/locked.ts", map[string]string{
-		"src/open.ts": "/* eslint-disable */\n", "src/locked.ts": "export const a = 1;\n"}},
-	{"repeated-string-literals", "shared-literal-value", "src/locked.ts", map[string]string{
-		"src/a.ts":      "export const a = 'shared-literal-value';\nexport const b = 'shared-literal-value';\n",
-		"src/b.ts":      "export const c = 'shared-literal-value';\n",
-		"src/locked.ts": "export const d = 1;\n"}},
-	{"cspell", "Unknown word (" + unknownWord + ")", "locked.txt", map[string]string{
-		"open.txt": unknownWord + "\n", "locked.txt": "hello\n"}},
-	{"prose-budget", "docs/open.md", "docs/locked.md", map[string]string{
-		"docs/open.md":   "# Open\n\n" + strings.Repeat("This sentence has some words in it. ", 40) + "\n",
-		"docs/locked.md": "# Locked\n\nShort.\n"}},
-	{"text-readability", "docs/open.md", "docs/locked.md", map[string]string{
-		"docs/open.md":   "# Open\n\n" + strings.Repeat("Notwithstanding interdepartmental organizational responsibilities institutional administrators characteristically misunderstand straightforwardly communicated recommendations notwithstanding counterrevolutionary disproportionately uncharacteristically incomprehensible institutionalization. ", 10) + "\n",
-		"docs/locked.md": "# Locked\n\nShort.\n"}},
-	{"go-complexity", "open.go", "locked.go", map[string]string{
-		"go.mod":    "module example.com/m\n\ngo 1.22\n",
-		"open.go":   "package m\n\nfunc Open(a int) int {\n\tif a > 1 {\n\t\treturn 1\n\t}\n\tif a > 2 {\n\t\treturn 2\n\t}\n\tif a > 3 {\n\t\treturn 3\n\t}\n\tif a > 4 {\n\t\treturn 4\n\t}\n\tif a > 5 {\n\t\treturn 5\n\t}\n\tif a > 6 {\n\t\treturn 6\n\t}\n\treturn 0\n}\n",
-		"locked.go": "package m\n"}},
+	cases{
+		{"a workflow job whose `timeout-minutes` of 10 or more has no comment citing its observed maximum", func(t *testing.T) {
+			t.Parallel()
+			out, code := timeoutsCheck(t, map[string]string{".github/workflows/ci.yml": timeoutJob("    # The build is slow.\n", "12")})
+			sees(t, out, code, 1, ".github/workflows/ci.yml:7: timeout-minutes 12 cites no observed maximum and date",
+				"add a comment above it such as `# Observed max 4m12s on 2026-11-08.`")
+		}},
+		{"a workflow job whose long timeout cites its observed maximum and date, and a short one without a comment", func(t *testing.T) {
+			t.Parallel()
+			out, code := timeoutsCheck(t, map[string]string{
+				".github/workflows/ci.yml":   timeoutJob("    # Observed max 5m15s on 2026-11-05.\n", "11"),
+				".github/workflows/lint.yml": timeoutJob("", "3"),
+			})
+			sees(t, out, code, 0, "All 1 checks passed")
+			passedWith(t, out, "workflow-timeouts", "2")
+		}},
+		{"long timeouts that are quoted, cite hours, cite on their own line, or cite an impossible date", func(t *testing.T) {
+			t.Parallel()
+			out, code := timeoutsCheck(t, map[string]string{
+				".github/workflows/quoted.yml":     timeoutJob("", `"30"`),
+				".github/workflows/bad-date.yml":   timeoutJob("    # Observed max 4m12s on 2026-13-45.\n", "10"),
+				".github/workflows/hours.yml":      timeoutJob("    # observed max 1h12m on 2026-11-08.\n", "150"),
+				".github/workflows/same-line.yml":  timeoutJob("", "12 # Observed max 5m on 2026-11-08."),
+				".github/workflows/expression.yml": timeoutJob("", "${{ inputs.minutes }}"),
+			})
+			sees(t, out, code, 1, ".github/workflows/quoted.yml:6: timeout-minutes 30 cites no observed maximum and date",
+				".github/workflows/bad-date.yml:7: timeout-minutes 10 cites no observed maximum and date")
+			for _, passing := range []string{"hours.yml", "same-line.yml", "expression.yml"} {
+				if strings.Contains(out, passing+":") {
+					t.Errorf("workflow-timeouts must pass %s:\n%s", passing, out)
+				}
+			}
+		}},
+	}.run(t)
 }

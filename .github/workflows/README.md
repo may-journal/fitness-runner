@@ -23,7 +23,7 @@ The issue, comment, close and PR check workflows each hold one fitness-command s
 
 ### Checks on demand
 
-An issue, comment or PR event installs no check up front. fitness-command passes `with-checks: on-demand`, so the engine fetches each check the first time its command runs it. A manual sweep judges many bodies, so it installs every pinned check, as the suite does on a push to `main`. Requirements 0171 and 0174 hold these rules.
+An issue, comment or PR event installs no check up front. fitness-command passes `with-checks: on-demand`, so the engine fetches each check the first time its command runs it. A manual sweep judges many bodies, so it installs every pinned check, as the suite does on a push to `main`. Requirements 0002 and 0007 hold these rules.
 
 On hosted runners fitness-install restores `~/.cache/fitness/checks` from the newest `fitness-checks-<os>-<arch>-<index hash>-<job>-` set. The index hash is the SHA-256 of the fitness-checks release index, which names every check version a release holds. A miss falls back to another job's set from that index, else any older set. A run that cannot read the index warns and skips the cache.
 

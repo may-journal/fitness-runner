@@ -35,45 +35,45 @@ Each step's label ends with the requirement docs it fulfils, by ID. The `archite
 ```mermaid
 flowchart TB
     dev((1 Developer or agent)):::persona
-    install(14 Install fitness<br/>Req 0061, 0088, 0098, 0099, 0164, 0166, 0168, 0169):::action
-    terminal[2 Terminal<br/>Req 0001]:::screen
-    runFull(3 Run fitness<br/>Req 0001, 0144):::action
-    runSingle(4 Run single check or folder<br/>Req 0001, 0100):::action
-    runBlob(29 Check a draft text<br/>Req 0077):::action
-    runComment(31 Check a draft comment<br/>Req 0083):::action
-    stripFront(33 Strip front matter<br/>Req 0096):::action
-    listComments(40 List code comments<br/>Req 0136):::action
-    migrateADRs(43 Move ADR files into issues<br/>Req 0149):::action
-    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0142, 0143, 0145, 0155):::action
-    listChecks(34 List the checks<br/>Req 0110):::action
-    explainCheck(35 Explain a check<br/>Req 0111):::action
-    readDocs(36 Read the docs topics<br/>Req 0112):::action
-    readReadme(37 Read the command list<br/>Req 0114):::action
-    readLLMs(38 Read the llms page<br/>Req 0113):::action
-    commitHook(15 Commit through hooks<br/>Req 0009, 0011, 0122):::action
-    pushHook(16 Push through hooks<br/>Req 0010, 0066, 0067, 0068, 0170):::action
-    resolveConfig[(5 Resolve config<br/>Req 0090, 0102, 0131, 0162, 0163, 0172, 0176)]:::system
-    executeChecks[(7 Execute checks<br/>Req 0001, 0140)]:::system
+    install(14 Install fitness<br/>Req 0001, 0002, 0007):::action
+    terminal[2 Terminal<br/>Req 0003]:::screen
+    runFull(3 Run fitness<br/>Req 0003):::action
+    runSingle(4 Run single check or folder<br/>Req 0003):::action
+    runBlob(29 Check a draft text<br/>Req 0006):::action
+    runComment(31 Check a draft comment<br/>Req 0006):::action
+    stripFront(33 Strip front matter<br/>Req 0001):::action
+    listComments(40 List code comments<br/>Req 0003):::action
+    migrateADRs(43 Move ADR files into issues<br/>Req 0001):::action
+    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0005, 0006):::action
+    listChecks(34 List the checks<br/>Req 0003):::action
+    explainCheck(35 Explain a check<br/>Req 0003):::action
+    readDocs(36 Read the docs topics<br/>Req 0003):::action
+    readReadme(37 Read the command list<br/>Req 0003):::action
+    readLLMs(38 Read the llms page<br/>Req 0003):::action
+    commitHook(15 Commit through hooks<br/>Req 0005):::action
+    pushHook(16 Push through hooks<br/>Req 0005):::action
+    resolveConfig[(5 Resolve config<br/>Req 0002, 0003, 0004)]:::system
+    executeChecks[(7 Execute checks<br/>Req 0003)]:::system
 
     subgraph checks["Checks"]
-        installedChecks[(17 Installed fitness-checks programs<br/>Req 0162, 0163, 0164, 0173, 0175)]:::system
-        branchCheck[(18 local-branch, which the engine judges<br/>Req 0067, 0068)]:::system
-        timeoutChecks[(46 Workflow timeouts<br/>Req 0150)]:::system
+        installedChecks[(17 Installed fitness-checks programs<br/>Req 0002)]:::system
+        branchCheck[(18 local-branch, which the engine judges<br/>Req 0005)]:::system
+        timeoutChecks[(46 Workflow timeouts<br/>Req 0004)]:::system
     end
 
-    resultsTable[8 Results table<br/>Req 0001, 0101]:::screen
-    exitZero[(9 Exit 0<br/>Req 0001)]:::system
-    failuresShown[10 Failures shown<br/>Req 0004]:::blocked
-    fixIssues(11 Fix issues<br/>Req 0004):::action
-    configError[(12 Config error<br/>Req 0008)]:::blocked
-    ciRun[(13 CI runs fitness<br/>Req 0013, 0015, 0082, 0087, 0120, 0138, 0174)]:::system
-    prCheck[(27 Pull request check<br/>Req 0014, 0069, 0091, 0095, 0171)]:::system
-    adrIssues[(45 ADR issues<br/>Req 0148)]:::system
-    suiteRunner[(47 Suite runner<br/>Req 0158, 0165)]:::system
-    checkDeps[(48 Check dependencies<br/>Req 0161)]:::system
-    release[(28 Release build<br/>Req 0062, 0092, 0093, 0094, 0121)]:::system
-    perfRecord[(32 Performance record<br/>Req 0089, 0146)]:::system
-    closeParents[(39 Close parent issues<br/>Req 0134, 0135, 0167)]:::system
+    resultsTable[8 Results table<br/>Req 0003]:::screen
+    exitZero[(9 Exit 0<br/>Req 0003)]:::system
+    failuresShown[10 Failures shown<br/>Req 0003]:::blocked
+    fixIssues(11 Fix issues<br/>Req 0003):::action
+    configError[(12 Config error<br/>Req 0003)]:::blocked
+    ciRun[(13 CI runs fitness<br/>Req 0006, 0007)]:::system
+    prCheck[(27 Pull request check<br/>Req 0002, 0006, 0007)]:::system
+    adrIssues[(45 ADR issues<br/>Req 0006)]:::system
+    suiteRunner[(47 Suite runner<br/>Req 0007)]:::system
+    checkDeps[(48 Check dependencies<br/>Req 0002)]:::system
+    release[(28 Release build<br/>Req 0007, 0008)]:::system
+    perfRecord[(32 Performance record<br/>Req 0003)]:::system
+    closeParents[(39 Close parent issues<br/>Req 0007)]:::system
 
     dev --> install
     install --> terminal

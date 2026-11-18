@@ -9,7 +9,7 @@ A requirement doc states what a user can do, in the user's voice. Each acceptanc
 
 The canonical copy lives in fitness-runner at `skills/add-requirements`. Release bundles carry it, and `fitness-install --link-skills` links it into each agent, as [development](../../docs/development.md#skills) explains.
 
-fitness-runner did this for itself: 62 docs under [docs/requirements](../../docs/requirements), one test package under [go/requirements](../../go/requirements). Read [0061-engine-installer.md](../../docs/requirements/0061-engine-installer.md) and [0061_test.go](../../go/requirements/0061_test.go) side by side before starting.
+fitness-runner did this for itself: eight docs under [docs/requirements](../../docs/requirements), one test package under [go/requirements](../../go/requirements). Read [0001-engine-install-and-update-fitness.md](../../docs/requirements/0001-engine-install-and-update-fitness.md) and [0001_test.go](../../go/requirements/0001_test.go) side by side before starting.
 
 ## Write one doc per user-facing area
 
@@ -39,7 +39,7 @@ Before the owner sees it, have three agents argue for the draft and three agains
 
 ## Name one test per acceptance
 
-Exactly one test owns each acceptance, and its name carries the ID: in Go, `Test0001_1` owns 0001.1. A test named for an acceptance that no doc defines fails. Delete the test when you delete the acceptance.
+Exactly one test owns each acceptance, and its name carries the ID: in Go, `Test0001_1` owns 0001.1. A test named for an acceptance that no doc defines fails. Delete the test when you delete the acceptance. In fitness-runner, edge cases are rows in that test's `cases` table (`go/requirements/user_test.go`) run as `t.Run` subtests, in one test file per requirement.
 
 ### Swift
 
@@ -65,7 +65,7 @@ GitHub, package registries, and external tools are never called live. Save their
 - Run under that name, the test binary answers from saved responses and logs every call it received.
 - A registry or web service: a local HTTP server answers each path from saved bodies and 404s the rest.
 
-Each test owns its saved answers, and asserts on the call log when the Then promises a call was made or not made. [0013_test.go](../../go/requirements/0013_test.go) replays `gh` for Plan verdicts; [0022_test.go](https://github.com/may-journal/fitness-checks/blob/main/requirements/0022_test.go) serves a local npm registry.
+Each test owns its saved answers, and asserts on the call log when the Then promises a call was made or not made. [0006_test.go](../../go/requirements/0006_test.go) (Test0006_4) replays `gh` for Plan verdicts; [0022_test.go](https://github.com/may-journal/fitness-checks/blob/main/requirements/0022_test.go) serves a local npm registry.
 
 To meet a machine missing one tool, build a PATH holding every real tool but that one. `pathWithout` in [tools_test.go](../../go/requirements/tools_test.go) does this.
 

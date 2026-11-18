@@ -112,7 +112,7 @@ func gitInput(t *testing.T, repo, stdin string, args ...string) string {
 	return string(out)
 }
 
-// treeSizesEnv names, comma-separated, the tree sizes Test0001_14 also
+// treeSizesEnv names, comma-separated, the tree sizes Test0003_4 also
 // times, such as 10000,100000,500000. Unset, it times none, since a large
 // tree is slow to check.
 const treeSizesEnv = "FITNESS_TREE_SIZES"

@@ -52,7 +52,7 @@ A repo's own check lives in its `fitness/<name>/` folder instead, with its READM
 
 ## Read the requirements
 
-Open [docs/requirements](../../docs/requirements) and search for the check name. Each requirement is proven by a test that runs the real product. The engine's own rules are there too, such as [engine front matter](../../docs/requirements/0096-engine-strip-front-matter.md).
+Open [docs/requirements](../../docs/requirements) and search for the check name. Each requirement is proven by a test that runs the real product. The engine's own rules are there too, such as [engine front matter](../../docs/requirements/0001-engine-install-and-update-fitness.md).
 
 ## Read the architecture
 
@@ -77,4 +77,4 @@ Fix the code or doc the error points at, never the check. Run `fitness <name>` f
 
 Commit and push stay with the git hooks. A repo with no `.fitnessrc.json` and no fitness git hooks passes silently.
 
-This skill's front matter declares the hooks for the session that uses it. `fitness-install --claude-settings ~/.claude/settings.json` adds them to every session, run by the installed fitness; run it again after an upgrade. Requirements [0142](../../docs/requirements/0142-hooks-claude-hooks.md) and [0143](../../docs/requirements/0143-hooks-claude-session-hooks.md) state each rule.
+This skill's front matter declares the hooks for the session that uses it. `fitness-install --claude-settings ~/.claude/settings.json` adds them to every session, run by the installed fitness; run it again after an upgrade. Requirements [0001](../../docs/requirements/0001-engine-install-and-update-fitness.md), [0005](../../docs/requirements/0005-hooks-guard-commits-and-pushes.md) and [0006](../../docs/requirements/0006-github-judge-text-before-and-after-it-posts.md) state each rule.

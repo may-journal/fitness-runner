@@ -22,6 +22,22 @@ import (
 // ansi matches terminal color codes, which a reader does not see as text.
 var ansi = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
+// cases is an acceptance's table: each case is one situation the acceptance
+// covers, named by its Given.
+type cases []struct {
+	name string
+	run  func(*testing.T)
+}
+
+// run runs each case in parallel as its own t.Run of the acceptance's test.
+func (cs cases) run(t *testing.T) {
+	t.Helper()
+	t.Parallel()
+	for _, c := range cs {
+		t.Run(c.name, c.run)
+	}
+}
+
 // example copies tests/examples/<name> into a fresh directory, writes the
 // Given's files over it, and commits it as a user's repo would be. Each test
 // skips first, before any setup, when no candidate installer is set.
