@@ -30,139 +30,51 @@ Numbers match the callout table. "Screen" is a terminal output state, not a GUI 
 
 ## Journey
 
-Each step's label ends with the requirement docs it fulfils, by ID. The `architecture-journey` check requires every doc in some label and an ID on every step.
+Each step's label ends with the requirement doc it fulfils, by ID. The `architecture-journey` check requires every doc in some label and an ID on every step.
 
 ```mermaid
 flowchart TB
-    dev((1 Developer or agent)):::persona
-    install(14 Install fitness<br/>Req 0001, 0002, 0007):::action
-    terminal[2 Terminal<br/>Req 0003]:::screen
-    runFull(3 Run fitness<br/>Req 0003):::action
-    runSingle(4 Run single check or folder<br/>Req 0003):::action
-    runBlob(29 Check a draft text<br/>Req 0006):::action
-    runComment(31 Check a draft comment<br/>Req 0006):::action
-    stripFront(33 Strip front matter<br/>Req 0001):::action
-    listComments(40 List code comments<br/>Req 0003):::action
-    migrateADRs(43 Move ADR files into issues<br/>Req 0001):::action
-    claudeHooks(42 Edit, post, stop or start in Claude Code<br/>Req 0005, 0006):::action
-    listChecks(34 List the checks<br/>Req 0003):::action
-    explainCheck(35 Explain a check<br/>Req 0003):::action
-    readDocs(36 Read the docs topics<br/>Req 0003):::action
-    readReadme(37 Read the command list<br/>Req 0003):::action
-    readLLMs(38 Read the llms page<br/>Req 0003):::action
-    commitHook(15 Commit through hooks<br/>Req 0005):::action
-    pushHook(16 Push through hooks<br/>Req 0005):::action
-    resolveConfig[(5 Resolve config<br/>Req 0002, 0003, 0004)]:::system
-    executeChecks[(7 Execute checks<br/>Req 0003)]:::system
-
-    subgraph checks["Checks"]
-        installedChecks[(17 Installed fitness-checks programs<br/>Req 0002)]:::system
-        branchCheck[(18 local-branch, which the engine judges<br/>Req 0005)]:::system
-        timeoutChecks[(46 Workflow timeouts<br/>Req 0004)]:::system
-    end
-
-    resultsTable[8 Results table<br/>Req 0003]:::screen
-    exitZero[(9 Exit 0<br/>Req 0003)]:::system
-    failuresShown[10 Failures shown<br/>Req 0003]:::blocked
-    fixIssues(11 Fix issues<br/>Req 0003):::action
-    configError[(12 Config error<br/>Req 0003)]:::blocked
-    ciRun[(13 CI runs fitness<br/>Req 0006, 0007)]:::system
-    prCheck[(27 Pull request check<br/>Req 0002, 0006, 0007)]:::system
-    adrIssues[(45 ADR issues<br/>Req 0006)]:::system
-    suiteRunner[(47 Suite runner<br/>Req 0007)]:::system
-    checkDeps[(48 Check dependencies<br/>Req 0002)]:::system
-    release[(28 Release build<br/>Req 0007, 0008)]:::system
-    perfRecord[(32 Performance record<br/>Req 0003)]:::system
-    closeParents[(39 Close parent issues<br/>Req 0007)]:::system
+    dev((9 Developer or agent)):::persona
+    install(1 Install and update fitness<br/>Req 0001):::action
+    getChecks(2 Get the checks a run needs<br/>Req 0002):::action
+    runChecks(3 Run checks and read results<br/>Req 0003):::action
+    terminal[10 Terminal<br/>Req 0003]:::screen
+    configure(4 Choose and configure checks<br/>Req 0004):::action
+    guard(5 Guard commits and pushes<br/>Req 0005):::action
+    judgeText(6 Judge text before and after it posts<br/>Req 0006):::action
+    actions(7 Run fitness on GitHub<br/>Req 0007):::action
+    release(8 Release fitness<br/>Req 0008):::action
+    github[(11 GitHub<br/>Req 0007)]:::system
 
     dev --> install
-    install --> terminal
-    terminal --> runFull
-    terminal --> runSingle
-    terminal --> commitHook
-    terminal --> pushHook
-    terminal --> runBlob
-    terminal --> runComment
-    terminal --> stripFront
-    terminal --> listComments
-    terminal --> migrateADRs
-    dev --> claudeHooks
-    claudeHooks --> executeChecks
-    terminal --> listChecks
-    listChecks --> explainCheck
-    terminal --> readDocs
-    explainCheck --> readReadme
-    terminal --> readLLMs
-    commitHook --> runFull
-    pushHook --> runFull
-    runFull --> resolveConfig
-    runSingle --> executeChecks
-    runBlob --> executeChecks
-    runComment --> executeChecks
-    resolveConfig --> executeChecks
-    resolveConfig --> configError
-    executeChecks --> checks
-    checks --> resultsTable
-    resultsTable --> exitZero
-    resultsTable --> failuresShown
-    failuresShown --> fixIssues
-    fixIssues --> runFull
-    ciRun --> resolveConfig
-    ciRun --> prCheck
-    ciRun --> release
-    ciRun --> closeParents
-    ciRun --> adrIssues
-    ciRun --> suiteRunner
-    resultsTable --> perfRecord
-    release --> perfRecord
-    release --> checkDeps
+    install --> getChecks
+    getChecks --> runChecks
+    runChecks --> terminal
+    terminal --> configure
+    configure --> guard
+    guard --> judgeText
+    judgeText --> actions
+    actions --> release
+    release --> github
 
     classDef persona fill:#eef2ff,stroke:#6366f1,color:#312e81,stroke-width:2px
     classDef screen fill:#f8fafc,stroke:#64748b,color:#1e293b,stroke-width:2px
     classDef action fill:#fff7ed,stroke:#f97316,color:#9a3412,stroke-width:2px
     classDef system fill:#ecfdf5,stroke:#10b981,color:#064e3b,stroke-width:2px
-    classDef blocked fill:#fef2f2,stroke:#ef4444,color:#991b1b,stroke-width:2px
-
-    style checks fill:#ffffff,stroke:#e2e8f0,color:#475569,stroke-width:1px
 ```
 
 Numbers match the callout table. System context: [01-system-context.md](01-system-context.md). Components: [03-components.md](03-components.md#resolve-check-specs-priority). Code: [04-code.md](04-code.md).
 
-| #   | Description                         | Type    | Why                                                                                   |
-| --- | ----------------------------------- | ------- | ------------------------------------------------------------------------------------- |
-| 1   | Developer or AI agent.              | Persona | Agent invokes via hook or script; same CLI as a human — no separate agent-only path.  |
-| 2   | Terminal / shell.                   | Screen  | Repo root; the working directory is the app under test, not the runner's own source.  |
-| 3   | `fitness` (or the pre-commit hook). | Action  | Full-suite run — every session's most common entry point.                             |
-| 4   | `fitness <name>`.                   | Action  | Single-check mode bypasses list resolution entirely.                                  |
-| 5   | Resolve check list.                 | System  | Every installed check and `local-branch`, then the repo's local checks; checks that do not apply pass. |
-| 7   | Run loop executes each check.       | System  | Parallel goroutine pool; every check is a subprocess, and its stage's total kills its group. |
-| 8   | Results table printed.              | Screen  | Pass, fail or info per check, totals, ANSI formatting.                                |
-| 9   | Exit 0.                             | System  | All checks passed — deterministic, not LLM-judged.                                    |
-| 10  | Failures shown in table.            | Screen  | Exit 1; failing check's `errors` printed inline.                                      |
-| 11  | Fix and rerun.                      | Action  | Developer/agent edits source, returns to #3.                                          |
-| 12  | Bad config or missing binary.       | System  | Fails loud on bad config; the runner warns when it cannot fetch a pinned check.        |
-| 13  | CI runs the same command.           | System  | Same `fitness` invocation gates the merge, after a pull request's changes pass, with a full scan. Labeled issues are judged by kind, and repeats are noted. |
-| 14  | Installer puts `fitness` on PATH.   | Action  | One verified download gives the engine and each check the repo pins.                  |
-| 15  | `git commit` runs the hooks.        | Action  | Hooks run the suite and keep each issue linked once.                                  |
-| 16  | `git push` runs the hooks.          | Action  | A push must trace to an approved Plan, with branch metadata checked first.            |
-| 17  | Installed checks.                   | System  | Each check the repo pins runs as its own fitness-checks program, installed beside the engine. |
-| 18  | `local-branch`.                     | System  | The engine judges this branch's PR and Plans itself, with its own GitHub reads.        |
-| 27  | Pull request check.                 | System  | A pull request's body, closed issues, and changelog link are judged in CI; Auto-merge waits out stacks. |
-| 28  | Release build.                      | System  | The release tool builds bundles and notes; opted-in repos call the shared Release Please. |
-| 29  | `fitness --blob <text>`.            | Action  | Blob-capable checks judge a draft text alone; checks that need files are skipped.     |
-| 31  | `fitness comment-check --blob -`. | Action | An agent judges a draft comment before posting it; CI replies once to one that fails. |
-| 32  | Performance record.                 | System  | Each run and release records check costs and install time; a box diagram draws them. |
-| 33  | `fitness strip-front-matter`.       | Action  | A repo drops the fitness keys no check reads; other keys stay.                        |
-| 34  | `fitness list`.                     | Action  | An agent learns every check, its scope, and whether this repo runs it, from the binary. |
-| 35  | `fitness explain <check>`.          | Action  | An agent reads why a check exists and the keys it reads, generated from its code comments. |
-| 36  | `fitness docs [topic]`.             | Action  | An agent reads the protocol, config and GitHub commands from the binary, as the code documents them. |
-| 37  | The README command list or `fitness --help`. | Action  | A person reads the same command list the binary prints, generated from the same code. |
-| 38  | `fitness llms` or `llms.txt`.       | Action  | An agent reads one page naming every command, exit code, check and topic, generated from code. |
-| 39  | Close parent issues.                | System  | A closed child finishes its parent, and the parent's parent, when no other work is left.   |
-| 40  | `fitness comments`.                 | Action  | A person sees each code comment a check reads, with its line, language and kind. |
-| 42  | `fitness claude-hook`.              | Action  | Claude meets a failing check right after an edit, before a `gh` post, as it or a subagent stops, or as a session starts, and fixes it that turn. |
-| 43  | `fitness adr-migrate`.              | Action  | Each ADR file becomes an `ADR` issue people can discuss, and links follow it. |
-| 45  | ADR issue check.                    | System  | Each `ADR` issue states its title, Background, Decision and Currently Known Consequences alike. |
-| 46  | Workflow timeout check.             | System  | Each long workflow timeout cites the observed maximum that justifies it. |
-| 47  | Suite runner.                       | System  | A repo whose checks build Apple apps runs the suite on a standard hosted Mac it names. |
-| 48  | Check dependencies.                 | System  | No check depends on the engine's GitHub reactions or run reports, and the engine links only `local-branch`, through the generated `checks.go`, so each side can build alone. |
+| #   | Description                           | Type    | Why                                                                      |
+| --- | ------------------------------------- | ------- | ------------------------------------------------------------------------ |
+| 1   | Install and update fitness.           | Action  | One verified installer gives fitness and its skills, and moves old files. |
+| 2   | Get the checks a run needs.           | Action  | Each run gets the pinned checks, verified, and works offline.            |
+| 3   | Run checks and read results.          | Action  | Run every check, one, or a folder, and see what broke and how to fix it. |
+| 4   | Choose and configure checks.          | Action  | A repo picks its checks and adds its own while the org bar stays whole.  |
+| 5   | Guard commits and pushes.             | Action  | Hooks stop work that breaks the bar, and Claude fixes it that turn.      |
+| 6   | Judge text before and after it posts. | Action  | A bad comment or body is caught before it posts, with one verdict after. |
+| 7   | Run fitness on GitHub.                | Action  | Actions run fitness on every change and merge ready pull requests.       |
+| 8   | Release fitness.                      | Action  | A release builds checked archives and notes from `version.txt`.          |
+| 9   | Developer or AI agent.                | Persona | Same CLI for a person and an agent; no agent-only path.                  |
+| 10  | Terminal.                             | Screen  | Results print where the command ran: table, JSON or Actions output.      |
+| 11  | GitHub.                               | System  | Checks, verdicts, merges and releases land on the repo.                  |
