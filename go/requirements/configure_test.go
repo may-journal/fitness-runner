@@ -299,6 +299,13 @@ func shellCheck(name, describe, verdict string) map[string]string {
 	return map[string]string{"fitness/" + name + "/README.md": houseReadme, "fitness/" + name + "/check": script}
 }
 
+// houseDescribe is check name's describe, declaring the houseRule key with
+// one integer key inside.
+func houseDescribe(name string) string {
+	return `{"name": "` + name + `", "config": [{"key": "houseRule", "type": "object", "description": "House rule options.",` +
+		` "keys": [{"key": "houseRule.limit", "type": "integer", "description": "Most rooms a house may have.", "default": 3}]}]}`
+}
+
 // verdictScript is a check program that prints verdict, or hangs when it
 // is empty.
 func verdictScript(verdict string) string {

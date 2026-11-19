@@ -97,6 +97,13 @@ classDiagram
     resolveChecks --> Patterns : Y
     Describe --> Requirement : Z
     resolveChecks --> Requirement : AA
+    class ConfigKey["20 checkkit.ConfigKey"] {
+        +Path
+        +Type
+        +Default
+        +Keys
+    }
+    Describe --> ConfigKey : BB
 
     style CheckBinary fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Describe fill:#6d28d9,stroke:#4c1d95,color:#ffffff
@@ -117,6 +124,7 @@ classDiagram
     style Finding fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Requirement fill:#6d28d9,stroke:#4c1d95,color:#ffffff
     style Patterns fill:#6d28d9,stroke:#4c1d95,color:#ffffff
+    style ConfigKey fill:#6d28d9,stroke:#4c1d95,color:#ffffff
 ```
 
 ```mermaid
@@ -158,6 +166,7 @@ Numbers on classes and letters on relationships match the callout table.
 | 17  | One problem a check found, in [checkkit.go](../../go/pkg/checkkit/checkkit.go): file, line, rule, fix and explain command. | An agent acts on it without parsing prose. |
 | 18  | Something a check needs beyond its documents, in [applies.go](../../go/pkg/checkkit/applies.go): repo, diff, history, github or network. | A run that lacks one skips the check and says why. |
 | 19  | A check's compiled `files`, `exclude` and `needs` patterns, in [applies.go](../../go/pkg/checkkit/applies.go). | The engine sees which files reach a check without running it. |
+| 20  | One `.fitnessrc.json` key a check reads, in [checkkit.go](../../go/pkg/checkkit/checkkit.go): path, type, default and its own keys. | The engine's schema and settings follow the check. |
 | A   | Resolution asks each resolved binary to describe itself, all side by side. | Stages and inline args ride the same handshake. |
 | B   | Describe output parsed as JSON. | Stdlib all the way down. |
 | C   | Each name resolves to a `fitness-check-<name>` program, beside the runner or built in. | The program name is the contract. |
@@ -185,6 +194,7 @@ Numbers on classes and letters on relationships match the callout table.
 | Y   | Resolution compiles each check's patterns, and they decide whether the run reaches it. | A check no file reaches never starts. |
 | Z   | A check's metadata lists its requirements as typed values. | A misspelled requirement fails to build, and an unknown one skips the check. |
 | AA  | Resolution maps a check's deprecated scope onto its requirements, as scope `github` requires `github`. | Old checks keep their meaning under the new fields. |
+| BB  | A check's metadata lists the config keys it reads. | One check owns each key. |
 
 ## Monorepo layout
 

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/may-journal/fitness-runner/go/internal/report"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
 	"github.com/may-journal/fitness-runner/go/pkg/repocheck"
 )
 
@@ -23,6 +24,35 @@ type explained struct {
 	Note string `json:"note,omitempty"`
 	// Body is the check's documentation as Markdown.
 	Body string `json:"body"`
+	// Config lists the .fitnessrc.json keys the check declares it reads.
+	Config []conf.Key `json:"config,omitempty"`
+}
+
+// configSection lists the keys a check declares as Markdown, one line per
+// leaf key, or "" for none.
+func configSection(keys []conf.Key) string {
+	lines := configLines(keys)
+	if len(lines) == 0 {
+		return ""
+	}
+	return "\n## Config keys\n\n" + strings.Join(lines, "\n") + "\n"
+}
+
+// configLines is one list item per leaf key under keys, in order.
+func configLines(keys []conf.Key) []string {
+	var lines []string
+	for _, k := range keys {
+		if k.Keys != nil {
+			lines = append(lines, configLines(k.Keys)...)
+			continue
+		}
+		line := fmt.Sprintf("- `%s` (%s", k.Path, k.Type)
+		if k.Default != nil {
+			line += fmt.Sprintf(", default %v", k.Default)
+		}
+		lines = append(lines, line+"): "+k.Description)
+	}
+	return lines
 }
 
 // runExplain handles `fitness explain <check> [--json]`: the check's
@@ -56,7 +86,7 @@ func printExplained(e explained, asJSON bool) int {
 	if asJSON {
 		return writeJSON(os.Stdout, e)
 	}
-	fmt.Printf("# %s\n\nScope: %s · Stage: %s\n\n%s%s%s", e.Name, orDash(e.Scope), e.Stage, e.line(), noteLine(e.Note), e.Body)
+	fmt.Printf("# %s\n\nScope: %s · Stage: %s\n\n%s%s%s%s", e.Name, orDash(e.Scope), e.Stage, e.line(), noteLine(e.Note), e.Body, configSection(e.Config))
 	return 0
 }
 
@@ -118,7 +148,7 @@ func explainCheck(name string) (explained, error) {
 		body = cmp.Or(repocheck.Doc(localBins[name]), orDash(c.desc.Summary)+"\n")
 	}
 	return explained{Name: name, Summary: c.desc.Summary, Scope: c.desc.Scope, Stage: stageOf(c), docFields: effectiveFields(c.desc),
-		Note: cmp.Or(c.needs, c.describeErr), Body: body}, nil
+		Note: cmp.Or(c.needs, c.describeErr), Body: body, Config: c.desc.Config}, nil
 }
 
 // replaced reports whether a local check or an installed program takes the

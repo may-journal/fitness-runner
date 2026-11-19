@@ -115,7 +115,11 @@ func printSchema(args []string) int {
 		report.Error("fitness config schema", errors.New("takes no arguments"))
 		return 2
 	}
-	schema, err := conf.Schema()
+	declared, err := repoDeclaredKeys()
+	var schema map[string]any
+	if err == nil {
+		schema, err = conf.Schema(declared...)
+	}
 	if err == nil {
 		err = printIndented(os.Stdout, schema)
 	}
@@ -135,6 +139,10 @@ func resolveConfig(options selection.Options) (configView, error) {
 	}
 	view.Policy, view.PolicyFrom = policyOf(cfg, options)
 	if err := loadLocalChecks(cfg, root); err != nil {
+		view.Error = err.Error()
+		return view, nil
+	}
+	if err := addDeclared(&view, root); err != nil {
 		view.Error = err.Error()
 		return view, nil
 	}
@@ -161,6 +169,61 @@ func readSettings() (root string, view configView, cfg *conf.Config, err error) 
 		view.File = conf.FileName
 	}
 	return root, view, cfg, nil
+}
+
+// addDeclared lists in view's settings the keys the checks declare too.
+func addDeclared(view *configView, root string) error {
+	declared, err := declaredKeys()
+	if err != nil {
+		return err
+	}
+	view.Settings, err = conf.Settings(root, declared...)
+	return err
+}
+
+// repoDeclaredKeys loads the local checks of the repo in the working
+// directory, then lists the keys every check declares.
+func repoDeclaredKeys() ([]conf.Key, error) {
+	root, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := conf.Load(root)
+	if err == nil {
+		err = loadLocalChecks(cfg, root)
+	}
+	if err != nil {
+		return nil, err
+	}
+	return declaredKeys()
+}
+
+// declaredKeys lists the config keys the installed and local checks
+// declare in their `--describe`.
+func declaredKeys() ([]conf.Key, error) {
+	found, _ := installedChecks(checkCatalog())
+	checks, err := resolveList(found)
+	if err != nil {
+		return nil, err
+	}
+	return keysOfChecks(checks)
+}
+
+// keysOfChecks lists each check's declared keys in check order. Two checks
+// that declare one key fail, naming both, since one check owns each key.
+func keysOfChecks(checks []resolved) ([]conf.Key, error) {
+	owner := map[string]string{}
+	var keys []conf.Key
+	for _, c := range checks {
+		for _, k := range c.desc.Config {
+			if other, taken := owner[k.Path]; taken {
+				return nil, fmt.Errorf("checks %s and %s both declare the %q config key; one check owns each key", other, c.name, k.Path)
+			}
+			owner[k.Path] = c.name
+			keys = append(keys, k)
+		}
+	}
+	return keys, nil
 }
 
 // policyOf is the policy a run uses and what set it.
