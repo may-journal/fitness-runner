@@ -1,10 +1,12 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -140,90 +142,141 @@ func resolveConfig(options selection.Options) (configView, error) {
 	view.Policy, view.PolicyFrom = policyOf(cfg, options)
 	if err := loadLocalChecks(cfg, root); err != nil {
 		view.Error = err.Error()
-		return view, nil
-	}
-	if err := addDeclared(&view, root); err != nil {
-		view.Error = err.Error()
-		return view, nil
+		view.Settings, err = conf.Settings(root)
+		return view, err
 	}
 	enabled, err := suiteChecks(cfg, options)
-	if err != nil {
+	declared, declErr := declaredKeys(enabled)
+	if err = cmp.Or(err, declErr); err != nil {
 		view.Error = err.Error()
+	}
+	if view.Settings, err = conf.Settings(root, declared...); err != nil {
+		return view, err
 	}
 	view.Checks = checkStates(root, cfg, options, enabled)
 	return view, nil
 }
 
 // readSettings reads the repo's config file from the working directory:
-// the view of its settings, and the config itself, nil without a file.
+// the config itself, nil without a file, and a view naming the file.
 func readSettings() (root string, view configView, cfg *conf.Config, err error) {
 	root, err = os.Getwd()
 	if err == nil {
-		view.Settings, err = conf.Settings(root)
+		cfg, err = conf.Load(root)
 	}
 	if err != nil {
 		return root, view, nil, err
 	}
-	cfg, _ = conf.Load(root) // Settings already read it
 	if cfg != nil {
 		view.File = conf.FileName
 	}
 	return root, view, cfg, nil
 }
 
-// addDeclared lists in view's settings the keys the checks declare too.
-func addDeclared(view *configView, root string) error {
-	declared, err := declaredKeys()
-	if err != nil {
-		return err
-	}
-	view.Settings, err = conf.Settings(root, declared...)
-	return err
-}
-
-// repoDeclaredKeys loads the local checks of the repo in the working
-// directory, then lists the keys every check declares.
+// repoDeclaredKeys lists the keys every check declares. It skips the local
+// checks when the config file fails to load, so the schema still helps fix it.
 func repoDeclaredKeys() ([]conf.Key, error) {
 	root, err := os.Getwd()
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := conf.Load(root)
-	if err == nil {
-		err = loadLocalChecks(cfg, root)
+	if cfg, err := conf.Load(root); err == nil {
+		if err := loadLocalChecks(cfg, root); err != nil {
+			return nil, err
+		}
 	}
-	if err != nil {
-		return nil, err
-	}
-	return declaredKeys()
+	return declaredKeys(checkCatalog())
 }
 
-// declaredKeys lists the config keys the installed and local checks
-// declare in their `--describe`.
-func declaredKeys() ([]conf.Key, error) {
-	found, _ := installedChecks(checkCatalog())
+// declaredKeys lists the config keys that the named checks declare in their
+// `--describe`. A local check that fails to build is an error, not a silent
+// gap.
+func declaredKeys(names []string) ([]conf.Key, error) {
+	found, missing := installedChecks(names)
 	checks, err := resolveList(found)
 	if err != nil {
 		return nil, err
 	}
-	return keysOfChecks(checks)
+	keys, err := keysOfChecks(checks)
+	return keys, errors.Join(err, brokenLocal(missing))
 }
 
-// keysOfChecks lists each check's declared keys in check order. Two checks
-// that declare one key fail, naming both, since one check owns each key.
+// brokenLocal joins the build errors of the local checks among missing,
+// whose keys no `--describe` could report.
+func brokenLocal(missing map[string]string) error {
+	var errs []error
+	for _, name := range slices.Sorted(maps.Keys(missing)) {
+		if _, local := localBins[name]; local {
+			errs = append(errs, fmt.Errorf("local check %s cannot declare its config keys: %s", name, missing[name]))
+		}
+	}
+	return errors.Join(errs...)
+}
+
+// keysOfChecks lists each check's declared keys in check order, failing on
+// the first key a check may not claim.
 func keysOfChecks(checks []resolved) ([]conf.Key, error) {
 	owner := map[string]string{}
 	var keys []conf.Key
 	for _, c := range checks {
 		for _, k := range c.desc.Config {
-			if other, taken := owner[k.Path]; taken {
-				return nil, fmt.Errorf("checks %s and %s both declare the %q config key; one check owns each key", other, c.name, k.Path)
+			if err := claimKey(owner, c.name, k); err != nil {
+				return nil, err
 			}
-			owner[k.Path] = c.name
 			keys = append(keys, k)
 		}
 	}
 	return keys, nil
+}
+
+// claimKey records check as key k's owner. A malformed key fails, as does
+// one another check declared, or an engine key whose check tag names
+// another reader.
+func claimKey(owner map[string]string, check string, k conf.Key) error {
+	if err := validKey(k, ""); err != nil {
+		return fmt.Errorf("check %s declares a bad config key: %w", check, err)
+	}
+	if other, taken := owner[k.Path]; taken {
+		return fmt.Errorf("checks %s and %s both declare the %q config key; one check owns each key", other, check, k.Path)
+	}
+	if reader, engine := conf.KeyOwner(k.Path); engine && reader != check {
+		return fmt.Errorf("check %s declares the engine's %q config key, which only %s may declare", check, k.Path, cmp.Or(reader, "the engine"))
+	}
+	owner[k.Path] = check
+	return nil
+}
+
+// keyTypes are the JSON types a declared key may take.
+var keyTypes = []string{"string", "integer", "number", "boolean", "array", "object"}
+
+// validKey reports a declared key whose path is not one name under prefix
+// or whose type is not a JSON type. It checks the key's own keys the same way.
+func validKey(k conf.Key, prefix string) error {
+	if err := keyShape(k, prefix); err != nil {
+		return err
+	}
+	for _, sub := range k.Keys {
+		if err := validKey(sub, k.Path+"."); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// keyShape reports key k alone breaking validKey's rules, not its own keys.
+func keyShape(k conf.Key, prefix string) error {
+	if name, under := strings.CutPrefix(k.Path, prefix); !under || !oneName(name) {
+		return fmt.Errorf("%q must be one name under %q", k.Path, strings.TrimSuffix(prefix, "."))
+	}
+	if !slices.Contains(keyTypes, k.Type) {
+		return fmt.Errorf("%q has type %q, not one of %s", k.Path, k.Type, strings.Join(keyTypes, ", "))
+	}
+	return nil
+}
+
+// oneName reports whether name is a single key name, not empty or dotted.
+func oneName(name string) bool {
+	return name != "" && !strings.Contains(name, ".")
 }
 
 // policyOf is the policy a run uses and what set it.

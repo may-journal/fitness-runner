@@ -246,6 +246,29 @@ func Test0004_5(t *testing.T) {
 			out, code := fitness(t, repo, nil, "config")
 			sees(t, out, code, 1, `checks home-rule and house-rule both declare the "houseRule" config key`)
 		}},
+		{"a Go local check that declares its options type's keys", func(t *testing.T) {
+			t.Parallel()
+			repo := example(t, "happyRepo", keysOfCheck(t))
+			var schema schemaKey
+			stdoutOf(t, repo, &schema, "config", "schema")
+			if got := schema.Properties["houseRule"].Properties["limit"]; got.Type != "integer" || got.Default != float64(3) {
+				t.Errorf("the schema must list houseRule.limit as an integer defaulting to 3, got %+v", got)
+			}
+		}},
+		{"a local check that declares an engine key", func(t *testing.T) {
+			t.Parallel()
+			describe := `{"name": "house-rule", "config": [{"key": "policy", "type": "string", "description": "Whose rules."}]}`
+			repo := example(t, "happyRepo", shellCheck("house-rule", describe, passing))
+			out, code := fitness(t, repo, nil, "config")
+			sees(t, out, code, 1, `check house-rule declares the engine's "policy" config key, which only the engine may declare`)
+		}},
+		{"a local check that declares a nested path as a top-level key", func(t *testing.T) {
+			t.Parallel()
+			describe := `{"name": "house-rule", "config": [{"key": "houseRule.limit", "type": "integer", "description": "Most rooms."}]}`
+			repo := example(t, "happyRepo", shellCheck("house-rule", describe, passing))
+			out, code := fitness(t, repo, nil, "config")
+			sees(t, out, code, 1, `check house-rule declares a bad config key: "houseRule.limit" must be one name under ""`)
+		}},
 		{"fitness source code that reads config keys through the sections it registers", func(t *testing.T) {
 			t.Parallel()
 			described := describedKeys("", printedSchema(t))

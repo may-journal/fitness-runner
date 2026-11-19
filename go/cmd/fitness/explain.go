@@ -2,6 +2,7 @@ package main
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
 	"os"
 	"slices"
@@ -48,7 +49,8 @@ func configLines(keys []conf.Key) []string {
 		}
 		line := fmt.Sprintf("- `%s` (%s", k.Path, k.Type)
 		if k.Default != nil {
-			line += fmt.Sprintf(", default %v", k.Default)
+			value, _ := json.Marshal(k.Default) // it came from JSON
+			line += ", default " + string(value)
 		}
 		lines = append(lines, line+"): "+k.Description)
 	}

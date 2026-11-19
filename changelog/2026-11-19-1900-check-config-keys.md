@@ -5,3 +5,4 @@
 - Feat: `--describe` gains a `config` field, and `conf.KeysOf` builds it from a check's options struct without registering it.
 - Feat: `fitness config schema`, `fitness config` and `fitness explain` show the keys installed and local checks declare.
 - Feat: two checks that declare one key fail `fitness config`, naming both.
+- Feat: a declared key with a dotted name or an unknown type fails `fitness config` too.

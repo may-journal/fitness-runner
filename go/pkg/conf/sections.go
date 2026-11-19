@@ -73,6 +73,20 @@ func sharedKey(a, b reflect.Type) (string, bool) {
 	return "", false
 }
 
+// KeyOwner reports whether a registered section declares top-level key, and
+// the check its `check` tag names as the key's reader, "" for the engine.
+// Only that check may declare the key in place of the engine's copy.
+func KeyOwner(key string) (check string, registered bool) {
+	for _, s := range registeredSections() {
+		for _, f := range jsonFields(s.defaults.Type()) {
+			if f.key == key {
+				return f.field.Tag.Get("check"), true
+			}
+		}
+	}
+	return "", false
+}
+
 // jsonField is one struct field the config file sets: its JSON key and its
 // Go field.
 type jsonField struct {
