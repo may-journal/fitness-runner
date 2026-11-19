@@ -126,7 +126,7 @@ Run `fitness init` to install the shared git hooks and point `core.hooksPath` at
 
 ```json
 {
-  "repeatedStringLiterals": { "allow": ["dist"] }
+  "planApprovers": ["your-login"]
 }
 ```
 

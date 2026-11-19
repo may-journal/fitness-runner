@@ -88,8 +88,8 @@ func stdoutOf(t *testing.T, repo string, v any, args ...string) {
 }
 
 // configured is a config that turns off cspell under external policy and
-// sets one prose limit.
-const configured = `{"policy": "external", "disabledChecks": ["cspell"], "proseBudget": {"maxWords": 200}}` + "\n"
+// names one Plan approver.
+const configured = `{"policy": "external", "disabledChecks": ["cspell"], "planApprovers": ["your-login"]}` + "\n"
 
 // seesEntry asserts entries hold want, matched by its first field.
 func seesEntry[T any](t *testing.T, entries []T, want T) {
@@ -123,6 +123,52 @@ func printedSchema(t *testing.T) schemaKey {
 	var schema schemaKey
 	stdoutOf(t, example(t, "happyRepo", nil), &schema, "config", "schema")
 	return schema
+}
+
+// checkKeyDefaults maps each key path the released checks read to its
+// default, nil for a key with none. go-test-coverage runs only when a repo
+// names it, yet its key belongs in the schema too.
+var checkKeyDefaults = map[string]any{
+	"repeatedStringLiterals.allow":    nil,
+	"textReadability.maxGrade":        float64(18),
+	"textReadability.maxLix":          float64(60),
+	"textReadability.minWords":        float64(100),
+	"proseBudget.maxSentenceWords":    float64(23),
+	"proseBudget.maxListItems":        float64(8),
+	"proseBudget.maxWords":            float64(300),
+	"prose.comments.maxWordsPerToken": float64(3),
+	"prose.comments.minBodyComments":  float64(2),
+	"comment.maxWords":                float64(100),
+	"comment.maxTables":               float64(1),
+	"adrAsIssue.allow":                nil,
+	"goTestCoverage.entries":          nil,
+	"goComplexity.max":                float64(5),
+}
+
+// schemaAt is the property at a dotted key path in schema, and whether
+// the schema lists it.
+func schemaAt(schema schemaKey, path string) (schemaKey, bool) {
+	for _, name := range strings.Split(path, ".") {
+		next, ok := schema.Properties[name]
+		if !ok {
+			return schemaKey{}, false
+		}
+		schema = next
+	}
+	return schema, true
+}
+
+// describesKey fails unless schema describes the key at path, with the
+// default want when want is not nil.
+func describesKey(t *testing.T, schema schemaKey, path string, want any) {
+	t.Helper()
+	got, ok := schemaAt(schema, path)
+	if !ok || got.Description == "" {
+		t.Errorf("the schema must describe %s, got %+v", path, got)
+	}
+	if want != nil && got.Default != want {
+		t.Errorf("%s must default to %v, got %+v", path, want, got)
+	}
 }
 
 // mapOfStrings fails unless key is an object whose free keys hold strings,

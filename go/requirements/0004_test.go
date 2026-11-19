@@ -200,12 +200,12 @@ func Test0004_4(t *testing.T) {
 
 func Test0004_5(t *testing.T) {
 	cases{
-		{"a repo whose config turns off a check and sets one prose limit", func(t *testing.T) {
+		{"a repo whose config turns off a check and names its Plan approvers", func(t *testing.T) {
 			t.Parallel()
 			var view configView
 			stdoutOf(t, example(t, "happyRepo", map[string]string{".fitnessrc.json": configured}), &view, "config", "--json")
-			seesEntry(t, view.Settings, configSetting{Key: "proseBudget.maxWords", Value: float64(200), Source: "file"})
-			seesEntry(t, view.Settings, configSetting{Key: "comment.maxWords", Value: float64(100), Source: "default"})
+			seesEntry(t, view.Settings, configSetting{Key: "planApprovers", Value: []any{"your-login"}, Source: "file"})
+			seesEntry(t, view.Settings, configSetting{Key: "scopedPullRequests", Value: nil, Source: "unset"})
 			seesEntry(t, view.Checks, checkState{Name: "cspell", Enabled: false, Reason: "disabledChecks in .fitnessrc.json turns it off"})
 			seesEntry(t, view.Checks, checkState{Name: "markdown-links", Enabled: true, Reason: "external policy runs every check"})
 		}},
@@ -215,14 +215,21 @@ func Test0004_5(t *testing.T) {
 			if !refusesUnknownKeys(schema) {
 				t.Errorf("the schema must describe an object that refuses unknown keys, got %+v", schema)
 			}
-			got := schema.Properties["proseBudget"].Properties["maxWords"]
-			if want := (schemaKey{Type: "integer", Description: got.Description, Default: float64(300)}); !reflect.DeepEqual(got, want) {
-				t.Errorf("proseBudget.maxWords must give its type and its default 300, got %+v", got)
+			got := schema.Properties["policy"]
+			if want := (schemaKey{Type: "string", Description: got.Description, Default: "org"}); !reflect.DeepEqual(got, want) {
+				t.Errorf("policy must give its type and its default org, got %+v", got)
 			}
 			if got.Description == "" {
-				t.Error("proseBudget.maxWords must carry a description")
+				t.Error("policy must carry a description")
 			}
 			mapOfStrings(t, schema.Properties["checkVersions"])
+		}},
+		{"a repo, whose checks declare every key they read, an opt-in check's among them", func(t *testing.T) {
+			t.Parallel()
+			schema := printedSchema(t)
+			for path, want := range checkKeyDefaults {
+				describesKey(t, schema, path, want)
+			}
 		}},
 		{"a local check that declares a config key", func(t *testing.T) {
 			t.Parallel()

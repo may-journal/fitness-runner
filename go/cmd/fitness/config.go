@@ -173,8 +173,9 @@ func readSettings() (root string, view configView, cfg *conf.Config, err error) 
 	return root, view, cfg, nil
 }
 
-// repoDeclaredKeys lists the keys every check declares. It skips the local
-// checks when the config file fails to load, so the schema still helps fix it.
+// repoDeclaredKeys lists every check's declared keys, opt-in checks' too, so
+// a repo may set them before naming the check. It skips the local checks
+// when the config file fails to load, so the schema still helps fix it.
 func repoDeclaredKeys() ([]conf.Key, error) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -185,7 +186,7 @@ func repoDeclaredKeys() ([]conf.Key, error) {
 			return nil, err
 		}
 	}
-	return declaredKeys(checkCatalog())
+	return declaredKeys(append(checkCatalog(), lang.Ignored()...))
 }
 
 // declaredKeys lists the config keys that the named checks declare in their

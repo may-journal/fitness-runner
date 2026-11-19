@@ -41,64 +41,10 @@ type Config struct {
 	// ScopedPullRequests true skips a pull request's full scan, for a huge
 	// repo. A push to main still scans every file.
 	ScopedPullRequests bool `json:"scopedPullRequests"`
-	// RepeatedStringLiterals holds options for that check.
-	RepeatedStringLiterals struct {
-		// Allow lists exact values the check never flags, for the rare
-		// repeat no shared constant can fix. Keep it a shrinking list.
-		Allow []string `json:"allow"`
-	} `json:"repeatedStringLiterals" check:"repeated-string-literals"`
-	// TextReadability holds alarm bands for the text-readability check.
-	TextReadability struct {
-		// MaxGrade is the Coleman-Liau and ARI grade at which a file alarms.
-		MaxGrade float64 `json:"maxGrade"`
-		// MaxLix is the LIX score at which a file alarms.
-		MaxLix float64 `json:"maxLix"`
-		// MinWords is the fewest prose words a file needs to be judged.
-		MinWords int `json:"minWords"`
-	} `json:"textReadability" check:"text-readability"`
-	// ProseBudget holds the prose-budget check's hard caps. Each limit falls
-	// back to a built-in default when zero.
-	ProseBudget struct {
-		// MaxSentenceWords is the most words one sentence may hold.
-		MaxSentenceWords int `json:"maxSentenceWords"`
-		// MaxParagraphSentences is the most sentences one paragraph may hold.
-		MaxParagraphSentences int `json:"maxParagraphSentences"`
-		// MaxSectionParagraphs is the most paragraphs one section may hold.
-		MaxSectionParagraphs int `json:"maxSectionParagraphs"`
-		// MaxListItemWords is the most words one list item may hold.
-		MaxListItemWords int `json:"maxListItemWords"`
-		// MaxListItems is the most items one list may hold, and the most
-		// bullets changelog-bullets allows in a release section.
-		MaxListItems int `json:"maxListItems"`
-		// MaxWords is the most prose words one section may hold.
-		MaxWords int `json:"maxWords"`
-	} `json:"proseBudget" check:"prose-budget"`
-	// Prose holds the prose-budget check's settings for each kind of text.
-	Prose struct {
-		// Comments holds the `overlong` thresholds for code comments.
-		Comments struct {
-			// MaxWordsPerToken is the most comment words a function body
-			// may hold for each code token before `overlong` fails it.
-			MaxWordsPerToken int `json:"maxWordsPerToken"`
-			// MinBodyComments is the fewest comments a function body needs
-			// before `overlong` judges it.
-			MinBodyComments int `json:"minBodyComments"`
-		} `json:"comments"`
-	} `json:"prose" check:"prose-budget"`
-	// Comment holds comment-structure's budget for an issue or PR comment.
-	// Each limit falls back to a built-in default when zero.
-	Comment struct {
-		// MaxWords is the most words one comment may hold.
-		MaxWords int `json:"maxWords"`
-		// MaxTables is the most tables one comment may hold.
-		MaxTables int `json:"maxTables"`
-	} `json:"comment" check:"comment-structure"`
 }
 
 // FileName is the config file the runner reads at the repo root.
 const FileName = ".fitnessrc.json"
-
-// cspell:ignore Liau
 
 // source is this file, whose doc comments describe each key of Config.
 //
@@ -110,38 +56,11 @@ var source []byte
 var Defaults = func() Config {
 	var c Config
 	c.Policy = "org"
-	c.TextReadability.MaxGrade = 18
-	c.TextReadability.MaxLix = 60
-	c.TextReadability.MinWords = 100
-	c.ProseBudget.MaxSentenceWords = 23
-	c.ProseBudget.MaxParagraphSentences = 4
-	c.ProseBudget.MaxSectionParagraphs = 3
-	c.ProseBudget.MaxListItemWords = 23
-	c.ProseBudget.MaxListItems = DefaultMaxListItems
-	c.ProseBudget.MaxWords = 300
-	c.Prose.Comments.MaxWordsPerToken = 3
-	c.Prose.Comments.MinBodyComments = 2
-	c.Comment.MaxWords = 100
-	c.Comment.MaxTables = 1
 	return c
 }()
 
 // configSection is Config's registered keys, which Load reads.
 var configSection = Register[Config](Defaults, source)
-
-// DefaultMaxListItems is the longest list prose-budget allows, and the most
-// bullets changelog-bullets allows in a release section, unless
-// proseBudget.maxListItems sets another limit.
-const DefaultMaxListItems = 8
-
-// MaxListItems is the repo's list limit: proseBudget.maxListItems when set,
-// else DefaultMaxListItems.
-func MaxListItems(root string) int {
-	if cfg, err := Load(root); err == nil && cfg != nil && cfg.ProseBudget.MaxListItems > 0 {
-		return cfg.ProseBudget.MaxListItems
-	}
-	return DefaultMaxListItems
-}
 
 // Load reads root's config, and a missing file returns (nil, nil) so the
 // caller falls back to defaults. A config that still sets a retired exclusion
