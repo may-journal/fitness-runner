@@ -6,46 +6,61 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"unicode"
 
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
 	"github.com/may-journal/fitness-runner/go/pkg/comments"
 )
 
-// Key is one key the config file may set, as a registered section declares it.
-type Key struct {
-	// Path is the key's dotted JSON path, such as proseBudget.maxWords.
-	Path string `json:"key"`
-	// Type is the key's JSON type: string, integer, number, boolean,
-	// array, or object.
-	Type string `json:"type"`
-	// Items is the JSON type of an array's items.
-	Items string `json:"items,omitempty"`
-	// Values is the JSON type of a map's values, whose keys are free names.
-	Values string `json:"values,omitempty"`
-	// Enum lists the values a string key accepts, from its enum tag.
-	Enum []string `json:"enum,omitempty"`
-	// Description is the doc comment on the key's Go field.
-	Description string `json:"description"`
-	// Default is the value the key takes when the file leaves it unset,
-	// or nil for none.
-	Default any `json:"default,omitempty"`
-	// Keys are an object's own keys.
-	Keys []Key `json:"keys,omitempty"`
-}
+// Key is one key the config file may set, as a registered section or a
+// check's `--describe` declares it.
+type Key = checkkit.ConfigKey
 
 // Keys lists every key the registered sections declare, in registration
 // and declaration order, with the doc of the type that holds them.
 func Keys() ([]Key, error) {
 	var out []Key
 	for _, s := range registeredSections() {
-		docs, err := comments.Types(s.source)
+		keys, err := sectionKeys(s.defaults, s.source)
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, keysOf(s.defaults, s.defaults.Type().Name(), "", docs)...)
+		out = append(out, keys...)
 	}
 	return out, nil
+}
+
+// KeysOf lists the keys a struct of top-level keys declares, as Register
+// takes it, without registering them. A check puts them in its
+// `--describe`, so the engine learns keys it does not register itself.
+func KeysOf(defaults any, source []byte) ([]Key, error) {
+	return sectionKeys(reflect.ValueOf(defaults), source)
+}
+
+// sectionKeys lists the keys of struct value defaults, whose docs sit in
+// the Go source.
+func sectionKeys(defaults reflect.Value, source []byte) ([]Key, error) {
+	docs, err := comments.Types(source)
+	if err != nil {
+		return nil, err
+	}
+	return keysOf(defaults, defaults.Type().Name(), "", docs), nil
+}
+
+// withDeclared is keys with each declared key replacing the key of its name,
+// then the other declared keys in order.
+func withDeclared(keys, declared []Key) []Key {
+	out := slices.Clone(keys)
+	for _, d := range declared {
+		if i := slices.IndexFunc(out, func(k Key) bool { return k.Path == d.Path }); i >= 0 {
+			out[i] = d
+		} else {
+			out = append(out, d)
+		}
+	}
+	return out
 }
 
 // keysOf lists the keys of struct value v, whose fields' docs sit under
@@ -137,13 +152,14 @@ func jsonType(t reflect.Type) string {
 // SchemaURL is the JSON Schema dialect the schema follows.
 const SchemaURL = "https://json-schema.org/draft/2020-12/schema"
 
-// Schema is a JSON Schema for the config file, built from the registered
-// sections with one property per key.
-func Schema() (map[string]any, error) {
+// Schema is a JSON Schema for the config file, with one property per key
+// of the registered sections and the checks.
+func Schema(declared ...Key) (map[string]any, error) {
 	keys, err := Keys()
 	if err != nil {
 		return nil, err
 	}
+	keys = withDeclared(keys, declared)
 	docs, err := comments.Types(source)
 	if err != nil {
 		return nil, err
@@ -212,9 +228,9 @@ type Setting struct {
 	Description string `json:"description"`
 }
 
-// Settings lists each key in root's config file with its value and source,
-// in the same order that Keys lists them.
-func Settings(root string) ([]Setting, error) {
+// Settings lists each key in root's config file with its value and source.
+// The registered keys come in Keys order, then the declared ones.
+func Settings(root string, declared ...Key) ([]Setting, error) {
 	if _, err := Load(root); err != nil {
 		return nil, err
 	}
@@ -222,6 +238,7 @@ func Settings(root string) ([]Setting, error) {
 	if err != nil {
 		return nil, err
 	}
+	keys = withDeclared(keys, declared)
 	file := map[string]any{}
 	if raw, err := os.ReadFile(filepath.Join(root, FileName)); err == nil {
 		_ = json.Unmarshal(raw, &file) // Load already parsed it

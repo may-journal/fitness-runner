@@ -166,6 +166,32 @@ type Describe struct {
 	// Protocol is the version of the check protocol the check speaks. A
 	// check that declares none speaks version 1.
 	Protocol int `json:"protocol,omitempty"`
+	// Config lists the top-level .fitnessrc.json keys the check reads, which
+	// the engine's schema, `fitness config` and `fitness explain` show.
+	Config []ConfigKey `json:"config,omitempty"`
+}
+
+// ConfigKey is one key the config file may set, as a check or a registered
+// engine section declares it.
+type ConfigKey struct {
+	// Path is the key's dotted JSON path, such as proseBudget.maxWords.
+	Path string `json:"key"`
+	// Type is the key's JSON type: string, integer, number, boolean,
+	// array, or object.
+	Type string `json:"type"`
+	// Items is the JSON type of an array's items.
+	Items string `json:"items,omitempty"`
+	// Values is the JSON type of a map's values, whose keys are free names.
+	Values string `json:"values,omitempty"`
+	// Enum lists the values a string key accepts, from its enum tag.
+	Enum []string `json:"enum,omitempty"`
+	// Description is the doc comment on the key's Go field.
+	Description string `json:"description"`
+	// Default is the value the key takes when the file leaves it unset,
+	// or nil for none.
+	Default any `json:"default,omitempty"`
+	// Keys are an object's own keys.
+	Keys []ConfigKey `json:"keys,omitempty"`
 }
 
 // Check is one check implementation: its metadata and run function.

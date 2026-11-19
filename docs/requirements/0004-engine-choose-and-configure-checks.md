@@ -33,7 +33,7 @@ checks
 - 0004.5
   - Given AI agent has a repo
     - When `fitness config` runs
-      - Then it shows each setting, its source, and why each check runs or skips
+      - Then it shows each setting, the checks' well-formed declared keys among them, its source, and why each check runs or skips
 - 0004.6
   - Given Developer has a workflow job with a long timeout
     - When `workflow-timeouts` runs

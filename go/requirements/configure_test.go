@@ -299,6 +299,62 @@ func shellCheck(name, describe, verdict string) map[string]string {
 	return map[string]string{"fitness/" + name + "/README.md": houseReadme, "fitness/" + name + "/check": script}
 }
 
+// houseDescribe is check name's describe, declaring the houseRule key with
+// one integer key inside.
+func houseDescribe(name string) string {
+	return `{"name": "` + name + `", "config": [{"key": "houseRule", "type": "object", "description": "House rule options.",` +
+		` "keys": [{"key": "houseRule.limit", "type": "integer", "description": "Most rooms a house may have.", "default": 3}]}]}`
+}
+
+// keysOfCheck is a repo with one Go check, built on this checkout's SDK.
+// Its describe declares houseRule, which conf.KeysOf reads from its options.
+func keysOfCheck(t *testing.T) map[string]string {
+	t.Helper()
+	sdk, err := filepath.Abs("..")
+	mustDo(t, err)
+	return map[string]string{
+		"fitness/go.mod": "module example.com/repo/fitness\n\ngo 1.26\n\nrequire github.com/may-journal/fitness-runner/go v0.0.0\n\n" +
+			"replace github.com/may-journal/fitness-runner/go => " + sdk + "\n",
+		"fitness/house-rule/README.md": houseReadme,
+		"fitness/house-rule/main.go":   keysOfSource,
+	}
+}
+
+// keysOfSource is the Go check keysOfCheck writes.
+const keysOfSource = `// Package main is a check that declares its config keys.
+package main
+
+import (
+	_ "embed"
+
+	"github.com/may-journal/fitness-runner/go/pkg/checkkit"
+	"github.com/may-journal/fitness-runner/go/pkg/conf"
+)
+
+//go:embed main.go
+var source []byte
+
+// options are the keys the check reads.
+type options struct {
+	// HouseRule holds the house rule options.
+	HouseRule struct {
+		// Limit is the most rooms a house may have.
+		Limit int ` + "`json:\"limit\"`" + `
+	} ` + "`json:\"houseRule\"`" + `
+}
+
+func main() {
+	var defaults options
+	defaults.HouseRule.Limit = 3
+	keys, err := conf.KeysOf(defaults, source)
+	if err != nil {
+		panic(err)
+	}
+	checkkit.Main(checkkit.Check{Describe: checkkit.Describe{Name: "house-rule", Config: keys},
+		Run: func(string, []string) (checkkit.Result, error) { return checkkit.Pass(0), nil }})
+}
+`
+
 // verdictScript is a check program that prints verdict, or hangs when it
 // is empty.
 func verdictScript(verdict string) string {

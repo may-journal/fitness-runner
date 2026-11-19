@@ -138,6 +138,10 @@ Org mode runs every check; each passes clean when it does not apply. A leftover 
 
 External mode sets `"policy": "external"` and runs all checks by default; a nonempty `"checks"` list is an optional filter. `--policy=external --checks=name,name` can set both on the CLI; CLI selection replaces the entire config list. Unknown, empty, and duplicate names fail. See [external CI examples](ci.md) for complete setup.
 
+## Config keys
+
+A check lists the keys it reads in its `--describe` `config` field, each a top-level key holding its own keys. Each entry gives `key`, `type`, `description` and, when set, `default`, the shape `conf.KeysOf` builds from a Go options struct. `fitness config schema`, `fitness config` and `fitness explain` show these keys beside the engine's own. One check owns each key, so two that declare it fail `fitness config`, naming both.
+
 ## Local checks
 
 A repo adds its own checks as `fitness/<name>/` folders, as [local checks](local-checks.md) describes. `"localChecks": "<dir>"` names one more directory inside the repo, which may also hold executable `fitness-check-<name>` files. Each follows this protocol and runs in the same suite, hooks, and CI, searched before the installed checks. A folder check may skip `--describe`, and a handshake may add `minFitness`, the oldest fitness that runs the check.
