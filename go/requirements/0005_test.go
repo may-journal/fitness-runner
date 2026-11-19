@@ -791,5 +791,5 @@ func Test0005_7(t *testing.T) {
 				t.Errorf("the start hook took %s; past its deadline it must answer within 20 seconds", took)
 			}
 		}},
-	}.run(t)
+	}.runAlone(t)
 }

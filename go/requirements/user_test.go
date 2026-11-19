@@ -38,6 +38,15 @@ func (cs cases) run(t *testing.T) {
 	}
 }
 
+// runAlone runs the cases like run, but before the parallel acceptances start.
+// A case that times the product skips t.Parallel, so it runs on an idle machine.
+func (cs cases) runAlone(t *testing.T) {
+	t.Helper()
+	for _, c := range cs {
+		t.Run(c.name, c.run)
+	}
+}
+
 // example copies tests/examples/<name> into a fresh directory, writes the
 // Given's files over it, and commits it as a user's repo would be. Each test
 // skips first, before any setup, when no candidate installer is set.
