@@ -234,6 +234,12 @@ func checkCatalog() []string {
 	return names
 }
 
+// selectableChecks is the check catalog followed by the checks that run only
+// when a repo names them.
+func selectableChecks() []string {
+	return append(checkCatalog(), lang.Ignored()...)
+}
+
 // replacedChecks lists the local checks that share a built-in check's name.
 func replacedChecks() []string {
 	var replaced []string
@@ -269,7 +275,7 @@ func repoChecks(cfg *conf.Config, policy string, names []string) ([]string, erro
 	if cfg != nil {
 		disabled = cfg.DisabledChecks
 	}
-	return selection.Disable(policy, names, disabled, append(checkCatalog(), lang.Ignored()...))
+	return selection.Disable(policy, names, disabled, selectableChecks())
 }
 
 // configPolicy is the repo's configured policy, org unless it says external.

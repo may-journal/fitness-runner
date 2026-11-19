@@ -73,12 +73,18 @@ type checkState struct {
 // stderr as JSON into v, failing unless it exits 0.
 func stdoutOf(t *testing.T, repo string, v any, args ...string) {
 	t.Helper()
+	stdoutWith(t, repo, nil, v, args...)
+}
+
+// stdoutWith is stdoutOf with env added to the user's environment.
+func stdoutWith(t *testing.T, repo string, env []string, v any, args ...string) {
+	t.Helper()
 	var stdout, stderr bytes.Buffer
 	cmd := started(t, func() *exec.Cmd {
 		stdout.Reset()
 		stderr.Reset()
 		cmd := exec.Command(installer(t), append([]string{"--"}, args...)...)
-		cmd.Dir, cmd.Env = repo, userEnv()
+		cmd.Dir, cmd.Env = repo, append(userEnv(), env...)
 		cmd.Stdout, cmd.Stderr = &stdout, &stderr
 		return cmd
 	}, (*exec.Cmd).Run)

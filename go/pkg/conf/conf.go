@@ -52,7 +52,7 @@ const FileName = ".fitnessrc.json"
 var source []byte
 
 // Defaults holds the value each Config key takes when the config file
-// leaves it unset or, for a number, at zero or below.
+// leaves it unset.
 var Defaults = func() Config {
 	var c Config
 	c.Policy = "org"

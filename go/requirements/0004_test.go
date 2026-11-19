@@ -226,7 +226,9 @@ func Test0004_5(t *testing.T) {
 		}},
 		{"a repo, whose checks declare every key they read, an opt-in check's among them", func(t *testing.T) {
 			t.Parallel()
-			schema := printedSchema(t)
+			var schema schemaKey
+			// An empty FITNESS_CHECKS_DIR hands down no checks, as on a contributor's machine.
+			stdoutWith(t, example(t, "happyRepo", nil), []string{"FITNESS_CHECKS_DIR="}, &schema, "config", "schema")
 			for path, want := range checkKeyDefaults {
 				describesKey(t, schema, path, want)
 			}
