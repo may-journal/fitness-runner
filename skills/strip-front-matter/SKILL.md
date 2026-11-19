@@ -20,7 +20,7 @@ Run `fitness strip-front-matter` from the repo root, in your own work tree, then
 
 ## Why
 
-A tool, not a hand edit, keeps every body untouched and every other tool's keys in place. [Requirement 0096](../../docs/requirements/0096-engine-strip-front-matter.md) states what it promises, and its tests prove it on a real repo.
+A tool, not a hand edit, keeps every body untouched and every other tool's keys in place. [Requirement 0001](../../docs/requirements/0001-engine-install-and-update-fitness.md) states what it promises, and its tests prove it on a real repo.
 
 ## Example
 

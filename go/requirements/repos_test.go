@@ -95,7 +95,7 @@ func planBody(task string) string {
 }
 
 // planView is the saved gh answer to the pre-push gate's read of issue n in
-// repo0014: URL, body, labels and the owner's comments.
+// repoPR: URL, body, labels and the owner's comments.
 func planView(t *testing.T, n int, body string, labels []string, comments ...string) response {
 	t.Helper()
 	by := make([]comment, len(comments))
@@ -117,7 +117,7 @@ type comment struct {
 func planViewBy(t *testing.T, n int, body string, labels []string, comments ...comment) response {
 	t.Helper()
 	out, err := json.Marshal(map[string]any{
-		"url":      "https://github.com/" + repo0014 + "/issues/" + itoa(n),
+		"url":      "https://github.com/" + repoPR + "/issues/" + itoa(n),
 		"body":     body,
 		"labels":   append([]string{}, labels...),
 		"comments": append([]comment{}, comments...),
