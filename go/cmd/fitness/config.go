@@ -173,8 +173,9 @@ func readSettings() (root string, view configView, cfg *conf.Config, err error) 
 	return root, view, cfg, nil
 }
 
-// repoDeclaredKeys lists the keys every check declares. It skips the local
-// checks when the config file fails to load, so the schema still helps fix it.
+// repoDeclaredKeys lists every check's declared keys, opt-in checks' too, so
+// a repo may set them before naming the check. It skips the local checks
+// when the config file fails to load, so the schema still helps fix it.
 func repoDeclaredKeys() ([]conf.Key, error) {
 	root, err := os.Getwd()
 	if err != nil {
@@ -185,7 +186,7 @@ func repoDeclaredKeys() ([]conf.Key, error) {
 			return nil, err
 		}
 	}
-	return declaredKeys(checkCatalog())
+	return declaredKeys(selectableChecks())
 }
 
 // declaredKeys lists the config keys that the named checks declare in their
@@ -230,8 +231,7 @@ func keysOfChecks(checks []resolved) ([]conf.Key, error) {
 }
 
 // claimKey records check as key k's owner. A malformed key fails, as does
-// one another check declared, or an engine key whose check tag names
-// another reader.
+// one another check or the engine declared.
 func claimKey(owner map[string]string, check string, k conf.Key) error {
 	if err := validKey(k, ""); err != nil {
 		return fmt.Errorf("check %s declares a bad config key: %w", check, err)
@@ -239,8 +239,8 @@ func claimKey(owner map[string]string, check string, k conf.Key) error {
 	if other, taken := owner[k.Path]; taken {
 		return fmt.Errorf("checks %s and %s both declare the %q config key; one check owns each key", other, check, k.Path)
 	}
-	if reader, engine := conf.KeyOwner(k.Path); engine && reader != check {
-		return fmt.Errorf("check %s declares the engine's %q config key, which only %s may declare", check, k.Path, cmp.Or(reader, "the engine"))
+	if conf.EngineKey(k.Path) {
+		return fmt.Errorf("check %s declares the engine's %q config key, which only the engine may declare", check, k.Path)
 	}
 	owner[k.Path] = check
 	return nil
@@ -312,7 +312,7 @@ func suiteChecks(cfg *conf.Config, options selection.Options) ([]string, error) 
 // the suite runs it and why.
 func checkStates(root string, cfg *conf.Config, options selection.Options, enabled []string) []checkState {
 	claims := languages(root)
-	names := append(checkCatalog(), lang.Ignored()...)
+	names := selectableChecks()
 	states := make([]checkState, len(names))
 	for i, name := range names {
 		on := slices.Contains(enabled, name)

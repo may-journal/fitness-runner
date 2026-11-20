@@ -59,9 +59,6 @@ type Module struct {
 	Inventory []string
 	// Tests finds the language's requirement tests.
 	Tests Tests
-	// Scans are the source endings a repo-wide check reads in the
-	// language, by check name.
-	Scans map[string][]string
 	// ToolConfig, when set, reports a source file that configures a tool,
 	// such as a bundler config, rather than product code.
 	ToolConfig func(file string) bool
@@ -152,16 +149,6 @@ func Testing(modules []Module) []Module {
 		if m.Tests.Scan != nil {
 			out = append(out, m)
 		}
-	}
-	return out
-}
-
-// ScanExts returns every module's source endings for the check, in
-// registry order.
-func ScanExts(modules []Module, check string) []string {
-	var out []string
-	for _, m := range modules {
-		out = append(out, m.Scans[check]...)
 	}
 	return out
 }

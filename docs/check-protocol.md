@@ -130,7 +130,7 @@ Optional `.fitnessrc.json` at repo root:
 
 ```json
 {
-  "repeatedStringLiterals": { "allow": ["dist"] }
+  "planApprovers": ["your-login"]
 }
 ```
 
@@ -141,6 +141,8 @@ External mode sets `"policy": "external"` and runs all checks by default; a none
 ## Config keys
 
 A check lists the keys it reads in its `--describe` `config` field, each a top-level key holding its own keys. Each entry gives `key`, `type`, `description` and, when set, `default`, the shape `conf.KeysOf` builds from a Go options struct. `fitness config schema`, `fitness config` and `fitness explain` show these keys beside the engine's own. One check owns each key, so two that declare it fail `fitness config`, naming both.
+
+The schema lists the keys of every installed check, even one such as `go-test-coverage` that runs only when a repo names it.
 
 ## Local checks
 

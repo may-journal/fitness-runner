@@ -568,35 +568,6 @@ func misspelled(n int) map[string]string {
 	return map[string]string{"README.md": body}
 }
 
-// unknownWord is a word no dictionary holds, built so cspell never reads it here.
-var unknownWord = strings.Repeat("q", 3) + "xw" + strings.Repeat("v", 3)
-
-// lockedChecks are the file-reading checks, each paired with one readable file
-// it must still judge and one it cannot read.
-var lockedChecks = []struct {
-	check, finding, locked string
-	files                  map[string]string
-}{
-	{"no-eslint-disable", "src/open.ts:1: eslint-disable", "src/locked.ts", map[string]string{
-		"src/open.ts": "/* eslint-disable */\n", "src/locked.ts": "export const a = 1;\n"}},
-	{"repeated-string-literals", "shared-literal-value", "src/locked.ts", map[string]string{
-		"src/a.ts":      "export const a = 'shared-literal-value';\nexport const b = 'shared-literal-value';\n",
-		"src/b.ts":      "export const c = 'shared-literal-value';\n",
-		"src/locked.ts": "export const d = 1;\n"}},
-	{"cspell", "Unknown word (" + unknownWord + ")", "locked.txt", map[string]string{
-		"open.txt": unknownWord + "\n", "locked.txt": "hello\n"}},
-	{"prose-budget", "docs/open.md", "docs/locked.md", map[string]string{
-		"docs/open.md":   "# Open\n\n" + strings.Repeat("This sentence has some words in it. ", 40) + "\n",
-		"docs/locked.md": "# Locked\n\nShort.\n"}},
-	{"text-readability", "docs/open.md", "docs/locked.md", map[string]string{
-		"docs/open.md":   "# Open\n\n" + strings.Repeat("Notwithstanding interdepartmental organizational responsibilities institutional administrators characteristically misunderstand straightforwardly communicated recommendations notwithstanding counterrevolutionary disproportionately uncharacteristically incomprehensible institutionalization. ", 10) + "\n",
-		"docs/locked.md": "# Locked\n\nShort.\n"}},
-	{"go-complexity", "open.go", "locked.go", map[string]string{
-		"go.mod":    "module example.com/m\n\ngo 1.22\n",
-		"open.go":   "package m\n\nfunc Open(a int) int {\n\tif a > 1 {\n\t\treturn 1\n\t}\n\tif a > 2 {\n\t\treturn 2\n\t}\n\tif a > 3 {\n\t\treturn 3\n\t}\n\tif a > 4 {\n\t\treturn 4\n\t}\n\tif a > 5 {\n\t\treturn 5\n\t}\n\tif a > 6 {\n\t\treturn 6\n\t}\n\treturn 0\n}\n",
-		"locked.go": "package m\n"}},
-}
-
 // runAlone runs the runner at alone in repo with args, as a user types it.
 func runAlone(t *testing.T, alone, repo string, args ...string) (string, int) {
 	t.Helper()

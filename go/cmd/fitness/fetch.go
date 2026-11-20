@@ -16,7 +16,7 @@ import (
 // bodies with checks, so they fetch the missing ones. A run, a flag or a
 // check name fetches too.
 var checksCommands = []string{
-	"check", "hook", "list", "explain", "branch-check", "pr-check", "dependabot-pr",
+	"check", "hook", "list", "explain", "config", "branch-check", "pr-check", "dependabot-pr",
 	"issue-check", "plan-check", "close-check", "dupe-check", "comment-check",
 }
 

@@ -30,10 +30,6 @@ var Node = lang.Module{
 	Views:           nodeViews.Reader,
 	Inventory:       node.InventoryExts,
 	Tests:           node.Tests,
-	Scans: map[string][]string{
-		"build-output-untracked":   node.TypeScriptExts,
-		"repeated-string-literals": node.SourceExts,
-	},
-	ToolConfig: node.ToolConfig,
-	TestFile:   node.ScriptTest,
+	ToolConfig:      node.ToolConfig,
+	TestFile:        node.ScriptTest,
 }
