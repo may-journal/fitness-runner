@@ -150,7 +150,7 @@ func runReleasePlease(t *testing.T, name string, gh []response) (replays, string
 // runWithReleasePlease is runReleasePlease with the step's env also holding env.
 func runWithReleasePlease(t *testing.T, name string, gh []response, env ...string) (replays, string, int, string) {
 	t.Helper()
-	_, script, ok := strings.Cut(sectionReleasePlease(t, name), "run: |\n")
+	script, ok := stepScript(sectionReleasePlease(t, name))
 	if !ok {
 		t.Fatalf("step %q has no run script", name)
 	}

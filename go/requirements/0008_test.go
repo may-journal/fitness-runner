@@ -341,3 +341,37 @@ func Test0008_6(t *testing.T) {
 		}},
 	}.run(t)
 }
+
+func Test0008_7(t *testing.T) {
+	t.Parallel()
+	root, named := "../..", 0
+	for _, file := range yamlFiles(t, root) {
+		n, bad := missingScripts(t, root, file)
+		named += n
+		for _, ref := range bad {
+			t.Errorf("%s names %s, which is missing or not executable", file, ref)
+		}
+	}
+	if named < 20 {
+		t.Errorf("want the test to read the repo's script references, found %d", named)
+	}
+}
+
+func Test0008_8(t *testing.T) {
+	t.Parallel()
+	action, err := os.ReadFile("../../.github/actions/script/action.yml")
+	mustDo(t, err)
+	for _, file := range yamlFiles(t, "../..") {
+		text, err := os.ReadFile(file)
+		mustDo(t, err)
+		for _, m := range scriptInput.FindAllStringSubmatch(string(text), -1) {
+			script, err := os.ReadFile(filepath.Join("..", "..", "scripts", m[1]))
+			mustDo(t, err)
+			for _, key := range outputKeys(string(script)) {
+				if !strings.Contains(string(action), "  "+key+":\n    description") {
+					t.Errorf("%s writes the output %s, which the script action does not declare", m[1], key)
+				}
+			}
+		}
+	}
+}

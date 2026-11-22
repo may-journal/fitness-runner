@@ -3,7 +3,6 @@
 ## Why
 
 I release fitness from `version.txt` and checked archives, with notes that list each new entry and major tags that move.
-
 ## Measurement
 
 releases whose tag, archives and notes match the repo
@@ -38,3 +37,11 @@ releases
   - Given Developer has a created release
     - When Release Please moves the major tags
       - Then each tag points at its own release, or nothing moves
+- 0008.7
+  - Given Developer has the workflows and actions of this repo
+    - When each reference to a script is read
+      - Then every script it names exists and is executable
+- 0008.8
+  - Given Developer has a script that a reusable workflow runs through the script action
+    - When the script writes a step output
+      - Then the script action declares that output, so the caller reads it
