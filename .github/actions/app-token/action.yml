@@ -21,11 +21,12 @@ runs:
   using: composite
   steps:
     - name: Check the App secrets
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         APP_ID: ${{ inputs.app-id }}
         APP_KEY: ${{ inputs.private-key }}
-      run: "${{ github.action_path }}/check-secrets.sh"
+      with:
+        command: check-secrets
     - name: Mint the token
       id: mint
       uses: actions/create-github-app-token@v2

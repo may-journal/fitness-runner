@@ -40,10 +40,12 @@ jobs:
         with:
           version: v2.18.2
           install-only: true
+      - name: Build fitness-ci
+        uses: ./.github/actions/fitness-ci
       - name: Build and package with GoReleaser
         env:
           SNAPSHOT: ${{ !startsWith(github.ref, 'refs/tags/v') }}
-        run: scripts/build-release-bundle.sh
+        run: bin/fitness-ci build-release-bundle
       - uses: actions/upload-artifact@v4
         with:
           name: fitness-release
@@ -84,12 +86,14 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - name: Build fitness-ci
+        uses: ./.github/actions/fitness-ci
       - name: Run the Go release verifier
         id: smoke-verifier
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-        run: scripts/run-verifier.sh smoke
+        run: bin/fitness-ci run-verifier smoke
       # Release builds run this job too; see docs/ci.md#performance-record.
       - name: Record binary sizes and install time
         # The record only measures; a failed timing never blocks a release,
@@ -98,7 +102,7 @@ jobs:
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           PLATFORM: ${{ matrix.platform }}
-        run: scripts/record-binary-sizes.sh
+        run: bin/fitness-ci record-binary-sizes
       - uses: ./.github/actions/setup-go-cache
         with:
           cache-key: smoke
@@ -108,7 +112,7 @@ jobs:
         env:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
           PLATFORM: ${{ matrix.platform }}
-        run: scripts/run-smoke-suite.sh
+        run: bin/fitness-ci run-smoke-suite
       # It keeps the size and install time record too.
       - name: Retain the performance record and complete reports
         if: ${{ always() }}
@@ -147,12 +151,14 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - name: Build fitness-ci
+        uses: ./.github/actions/fitness-ci
       - name: Seed the cache with the Go release verifier
         id: seed-cache
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
-        run: scripts/run-verifier.sh smoke
+        run: bin/fitness-ci run-verifier smoke
       # Smoke no longer builds the requirement tests, so they keep their own
       # cache; one shard saves it.
       - uses: ./.github/actions/setup-go-cache
@@ -165,7 +171,7 @@ jobs:
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
           PLATFORM: ${{ matrix.platform }}
           SHARD: ${{ matrix.shard }}
-        run: scripts/run-requirement-shard.sh
+        run: bin/fitness-ci run-requirement-shard
       - name: Retain complete Fitness reports
         if: ${{ always() }}
         uses: ./.github/actions/fitness-reports

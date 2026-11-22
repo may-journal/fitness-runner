@@ -23,11 +23,10 @@ jobs:
         with:
           fetch-depth: 0
       - uses: ./.github/actions/setup-go-cache
+      # It also writes the version as this step's output for later jobs.
       - name: Verify the tag matches the release version
         id: report-step-1
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: ../scripts/verify-release-tag.sh
+        run: go run ./cmd/fitness-release verify-tag --root ..
         working-directory: go
       - name: Report job outcome
         if: ${{ always() }}
@@ -40,8 +39,9 @@ jobs:
     needs: binaries
     runs-on: ubuntu-latest
     # Observed max 42s on 2026-11-08, timed start to finish over the last 36
-    # runs. The limit is that plus 25%, rounded up to the next minute.
-    timeout-minutes: 1
+    # runs. Building fitness-ci adds about 15s, and the limit is that plus 25%,
+    # rounded up to the next minute.
+    timeout-minutes: 2
     steps:
       - uses: actions/checkout@v4
         with:
@@ -50,19 +50,21 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - name: Build fitness-ci
+        uses: ./.github/actions/fitness-ci
       - name: Inspect release publication state
         id: publication
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
-        run: scripts/inspect-publication.sh
+        run: bin/fitness-ci inspect-publication
       # Writing the notes on the draft means a failure leaves it unpublished.
       # GoReleaser keeps the notes when it publishes.
       - name: Write the release notes from changelog entry files
         if: ${{ steps.publication.outputs.draft == 'true' }}
         env:
           GH_TOKEN: ${{ github.token }}
-        run: scripts/write-release-notes.sh
+        run: bin/fitness-ci write-release-notes
       - name: Publish tested assets with GoReleaser
         if: ${{ steps.publication.outputs.draft == 'true' }}
         uses: goreleaser/goreleaser-action@v7.2.3
@@ -97,13 +99,15 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - name: Build fitness-ci
+        uses: ./.github/actions/fitness-ci
       - name: Verify public downloads with the Go tool
         id: verify-download
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-public-cache
           FITNESS_TEST_TOOL_PATH: ${{ runner.temp }}/fitness-consumer-tools
-        run: scripts/run-verifier.sh verify-download
+        run: bin/fitness-ci run-verifier verify-download
       - uses: ./.github/actions/setup-go-cache
         with:
           cache-key: smoke
@@ -149,21 +153,23 @@ jobs:
         with:
           name: fitness-release
           path: out
+      - name: Build fitness-ci
+        uses: ./.github/actions/fitness-ci
       - name: Promote the verified release
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-        run: scripts/promote-release.sh
+        run: bin/fitness-ci promote-release
       - name: Publish the Go module tag
         env:
           RELEASE_TAG: v${{ needs.verify.outputs.version }}
-        run: scripts/publish-go-module-tag.sh
+        run: bin/fitness-ci publish-go-module-tag
       # Consumers pin the major version; each verified release that is the
       # newest moves it, so @v1 always means the newest 1.x.
       - name: Move the major version tag
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RELEASE_TAG: v${{ needs.verify.outputs.version }}
-        run: scripts/move-engine-major-tag.sh
+        run: bin/fitness-ci move-engine-major-tag
       - name: Report job outcome
         if: ${{ always() }}
         run: printf '### Job %s (%s)\n\n[View steps and logs](%s/%s/actions/runs/%s)\n' "$GITHUB_JOB" "${{ job.status }}" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" >> "$GITHUB_STEP_SUMMARY"

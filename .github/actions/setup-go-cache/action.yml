@@ -31,13 +31,14 @@ runs:
     # matches another family or arch.
     - id: key
       if: ${{ inputs.cache-key != '' }}
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         FAMILY: ${{ inputs.cache-key }}
         GO_VERSION: ${{ steps.setup.outputs.go-version }}
         SOURCE_HASH: ${{ hashFiles('go/**', '!go/bin/**') }}
         SAVE: ${{ inputs.save == 'true' && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      run: "${{ github.action_path }}/cache-key.sh"
+      with:
+        command: cache-key
     # Pull requests and other events only restore, so their caches never
     # crowd out main's, which every branch can read.
     - if: ${{ steps.key.outputs.save == 'false' }}

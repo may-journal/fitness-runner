@@ -1,0 +1,74 @@
+name: Run fitness-ci
+description: >-
+  Build fitness-ci once per job into the bin folder of this repo's checkout,
+  then run one of its subcommands with the environment of the step that calls
+  it. Reusable workflows and shared actions use it, since their callers'
+  checkouts do not hold the program.
+inputs:
+  command:
+    description: The subcommand and its arguments, such as auto-merge. Empty only builds the program.
+    required: false
+    default: ''
+outputs:
+  edited:
+    description: Set to true by a subcommand that edited the release PR.
+    value: ${{ steps.run.outputs.edited }}
+  releases:
+    description: The JSON array of releases a subcommand moved tags for.
+    value: ${{ steps.run.outputs.releases }}
+  ready:
+    description: Set to true by a subcommand that checked the approver token.
+    value: ${{ steps.run.outputs.ready }}
+  login:
+    description: The approver token's login.
+    value: ${{ steps.run.outputs.login }}
+  sha:
+    description: The commit a subcommand checked.
+    value: ${{ steps.run.outputs.sha }}
+  file:
+    description: The file a subcommand found, such as a Go module or JDK version file.
+    value: ${{ steps.run.outputs.file }}
+  green:
+    description: Set to true by a subcommand that found every check green.
+    value: ${{ steps.run.outputs.green }}
+  prefix:
+    description: The Go build cache's key prefix.
+    value: ${{ steps.run.outputs.prefix }}
+  key:
+    description: The Go build cache's key.
+    value: ${{ steps.run.outputs.key }}
+  save:
+    description: Whether the job saves the Go build cache.
+    value: ${{ steps.run.outputs.save }}
+runs:
+  using: composite
+  steps:
+    # The first use in a job builds; FITNESS_CI then tells later uses the
+    # program is there. The caller's own step condition decides whether this
+    # action runs at all, so its steps run whenever it does.
+    - name: Set up Go for fitness-ci
+      id: go
+      if: ${{ always() && env.FITNESS_CI == '' }}
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: ${{ github.action_path }}/../../../go/go.mod
+        # No go.sum exists to key on, so the cache would only log a warning.
+        cache: false
+    - name: Build fitness-ci
+      id: build
+      if: ${{ always() && steps.go.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ github.action_path }}/../../..
+      run: go -C go build -o ../bin/fitness-ci ./cmd/fitness-ci
+    - name: Point later steps at fitness-ci
+      if: ${{ always() && steps.build.outcome == 'success' }}
+      shell: bash
+      working-directory: ${{ github.action_path }}/../../..
+      run: echo "FITNESS_CI=$PWD/bin/fitness-ci" >> "$GITHUB_ENV"
+    - name: Run the subcommand
+      id: run
+      if: ${{ always() && inputs.command != '' && env.FITNESS_CI != '' }}
+      shell: bash
+      env:
+        COMMAND: ${{ inputs.command }}
+      run: '"$FITNESS_CI" $COMMAND'

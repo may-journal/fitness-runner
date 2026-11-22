@@ -85,10 +85,11 @@ runs:
     # fails the step; a pinned-only repo with no pins installs none.
     - name: Install the pinned checks for the source build
       if: ${{ inputs.ref != '' && inputs.with-checks != 'false' && inputs.with-checks != 'on-demand' }}
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         FITNESS_WITH_CHECKS: ${{ inputs.with-checks }}
         # The release lookup counts against the run's own limit, not the
         # runner address's shared one.
         GH_TOKEN: ${{ github.token }}
-      run: "${{ github.action_path }}/install-source-checks.sh"
+      with:
+        command: install-source-checks

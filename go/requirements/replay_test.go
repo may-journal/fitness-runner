@@ -14,9 +14,9 @@ import (
 	"time"
 )
 
-// standIns are the external programs tests replace with saved responses: gh,
-// go, the JavaScript and Swift tools, the JDK, Java builds and Docker.
-var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew", "docker", "go"}
+// standIns are the external programs tests replace with saved responses,
+// including the tools and fitness commands the workflow steps run.
+var standIns = []string{"gh", "eslint", "prettier", "biome", "vitest", "swiftlint", "java", "mvn", "mvnw", "gradle", "gradlew", "docker", "go", "goreleaser", "unzip", "curl", "fitness"}
 
 // TestMain lets this test binary stand in for those programs. Run under one
 // of their names, it answers from saved responses instead of running tests.
@@ -28,7 +28,9 @@ func TestMain(m *testing.M) {
 		os.Exit(timedCheck(name, os.Args[1:]))
 	}
 	keepHostGitOut()
-	os.Exit(m.Run())
+	code := m.Run()
+	removeFitnessCI()
+	os.Exit(code)
 }
 
 // repoGitConfig is the git config every test repo gets, whatever the host's,

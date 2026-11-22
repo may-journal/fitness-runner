@@ -19,8 +19,8 @@ C4Component
         Component(kit, "8 checkkit protocol", "Go", "go/pkg, go/internal, go/check")
     }
 
-    Container_Boundary(tools, "Install and release tools") {
-        Component(tool, "11 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release")
+    Container_Boundary(tools, "Install, release and CI tools") {
+        Component(tool, "11 Tool binary", "Go", "go/cmd/fitness-install, go/cmd/fitness-release, go/cmd/fitness-ci")
     }
 
     Container_Boundary(own, "Repo checks (fitness/)") {
@@ -92,7 +92,7 @@ Numbers on nodes and letters on arrows match the callout table.
 | 8   | `checkkit` defines the protocol types and main scaffolding; walker, git, markdown, render helpers. The public `go/check` SDK wraps it for a repo's own Go checks. | One implementation shared by every check binary.            |
 | 9   | An installed check execs the real peer tool, found the way its language module finds tools.             | Orchestration, not reimplementation.                        |
 | 10  | `git diff --cached --name-only` for staged file context.                                                | Pre-commit and partial runs.                                |
-| 11  | The installer and the release tool, one static binary each.                                             | Shipped beside the bundle; not part of any run.             |
+| 11  | The installer, the release tool and `fitness-ci`, one static binary each.                               | Shipped beside the bundle or built by CI; not part of any run. |
 | 12  | A check in the repo's `fitness/` folder: a Go program on the check SDK, or any executable. | A repo writes its own rules without forking fitness. |
 | 13  | Each other check, a fitness-checks program the installer or the runner put in the checks folder. | Checks ship and version apart from the engine, as [the split ADR](https://github.com/may-journal/fitness-runner/issues/1015) decides. |
 | A   | User-facing invocation.                                                                                 | Sole human entry point; all else is internal wiring.        |

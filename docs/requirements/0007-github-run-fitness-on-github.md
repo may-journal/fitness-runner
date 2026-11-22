@@ -2,7 +2,7 @@
 
 ## Why
 
-My repo's Actions run fitness on every change, keep issues honest, and merge ready pull requests without a hand click. Each workflow step that does real work calls a checked-in script, so a typo in one is caught before a run (0008.7).
+My repo's Actions run fitness on every change, keep issues honest, and merge ready pull requests without a hand click. Each workflow step that does real work calls a typed `fitness-ci` subcommand, so a typo in one is caught before a run (0008.7).
 
 ## Measurement
 

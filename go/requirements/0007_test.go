@@ -1,4 +1,4 @@
-// cspell:ignore xlarge
+// cspell:ignore xlarge sdkmanrc
 
 package requirements
 
@@ -819,4 +819,125 @@ func Test0007_8(t *testing.T) {
 			}
 		}},
 	}.run(t)
+}
+
+// ciStepCases run each subcommand a CI workflow or shared action step calls,
+// the way the step calls it, for 0008.7.
+func ciStepCases() cases {
+	return cases{
+		{"a repo with Go modules at several depths", func(t *testing.T) {
+			t.Parallel()
+			repo := t.TempDir()
+			commit(t, repo, map[string]string{"z/go.mod": "module z\n", "a/go.mod": "module a\n", "b/c/go.mod": "module c\n"}, "build(go): add modules")
+			run := runFitnessCI(t, ciStep{file: "ci-reusable.yml", command: "find-go-module", dir: repo})
+			sees(t, run.out, run.code, 0)
+			if run.outputs != "file=a/go.mod\n" {
+				t.Errorf("want the shallowest go.mod, first by name, got %q", run.outputs)
+			}
+		}},
+		{"a repo pinning Java only in .sdkmanrc", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "ci-reusable.yml", command: "find-jdk-version-file",
+				files: map[string]string{".tool-versions": "nodejs 22\n", ".sdkmanrc": "gradle=8\njava=21.0.2-tem\n"}})
+			sees(t, run.out, run.code, 0)
+			if run.outputs != "file=.sdkmanrc\n" {
+				t.Errorf("want the .sdkmanrc with a java line, got %q", run.outputs)
+			}
+		}},
+		{"a cached SwiftLint zip that matches its published SHA-256", func(t *testing.T) {
+			t.Parallel()
+			home, temp := t.TempDir(), t.TempDir()
+			write(t, home, map[string]string{".cache/fitness-swiftlint/swiftlint_linux_arm64-0.65.1.zip": "zip"})
+			sum := sha256.Sum256([]byte("zip"))
+			unzipped := filepath.Join(temp, "swiftlint")
+			run := runFitnessCI(t, ciStep{file: "ci-reusable.yml", command: "install-swiftlint",
+				env: []string{"HOME=" + home, "RUNNER_TEMP=" + temp, "VERSION=0.65.1", "ASSET=swiftlint_linux_arm64"},
+				saved: map[string][]response{
+					"gh":    {{Match: []string{"repos/realm/SwiftLint/releases/tags/0.65.1"}, Stdout: "sha256:" + hex.EncodeToString(sum[:]) + "\n"}},
+					"unzip": {{Match: []string{"swiftlint_linux_arm64-0.65.1.zip -d " + unzipped}, Files: map[string]string{filepath.Join(unzipped, "swiftlint"): tool("swiftlint")}}},
+					"curl":  nil,
+				}})
+			sees(t, run.out, run.code, 0, "swiftlint version")
+			if run.path != unzipped+"\n" || run.rp.called("curl") {
+				t.Errorf("a cached zip that matches must not download again, and later steps find swiftlint; PATH file %q, curl calls %q", run.path, run.rp.calls("curl"))
+			}
+		}},
+		{"an issue-check caller passing a command it does not run", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "issue-check-reusable.yml", command: "check-command-input", env: []string{"FITNESS_COMMAND=dupe-check"}})
+			sees(t, run.out, run.code, 1, "::error::command must be issue-check or plan-check, not dupe-check")
+			run = runFitnessCI(t, ciStep{file: "issue-check-reusable.yml", command: "check-command-input", env: []string{"FITNESS_COMMAND=plan-check"}})
+			sees(t, run.out, run.code, 0)
+		}},
+		{"a repo whose App key secret did not arrive", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "app-token", command: "check-secrets", env: []string{"APP_ID=1", "APP_KEY="}})
+			sees(t, run.out, run.code, 1, "::error::AUTOMATION_APP_KEY is not available to this repo")
+		}},
+		{"fitness commands with a typo, then two where the first fails", func(t *testing.T) {
+			t.Parallel()
+			saved := map[string][]response{"fitness": {{Match: []string{"pr-check"}, Exit: 1}, {Match: []string{"dupe-check"}}}}
+			run := runFitnessCI(t, ciStep{file: "fitness-command", command: "run-commands", env: []string{"FITNESS_COMMANDS=pr-check Dupe_Check"}, saved: saved})
+			sees(t, run.out, run.code, 1, "::error::The fitness-command action got Dupe_Check, which is not a fitness command name.")
+			if run.rp.called("fitness") || run.env != "FITNESS_FAILURE_REPORTED=true\n" {
+				t.Errorf("a typo must run nothing and mark the failure reported; calls %q, env %q", run.rp.calls("fitness"), run.env)
+			}
+			run = runFitnessCI(t, ciStep{file: "fitness-command", command: "run-commands", env: []string{"FITNESS_COMMANDS=pr-check dupe-check"}, saved: saved})
+			sees(t, run.out, run.code, 1)
+			if got := run.rp.calls("fitness"); !slices.Equal(got, []string{"pr-check", "dupe-check"}) {
+				t.Errorf("each command must run after an earlier one fails, got %q", got)
+			}
+		}},
+		{"a source-built engine installing the pinned checks", func(t *testing.T) {
+			t.Parallel()
+			gopath := t.TempDir()
+			write(t, gopath, map[string]string{"bin/fitness-install": "#!/bin/sh\necho /engine/bin\necho /cache/checks\n"})
+			run := runFitnessCI(t, ciStep{file: "fitness-install", command: "install-source-checks",
+				saved: map[string][]response{"go": {{Match: []string{"env GOPATH"}, Stdout: gopath + "\n"}}}})
+			sees(t, run.out, run.code, 0)
+			if run.env != "FITNESS_CHECKS_DIR=/cache/checks\n" {
+				t.Errorf("want the checks folder the install printed second, got %q", run.env)
+			}
+		}},
+		{"a job whose suite wrote a performance record, and its reports", func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			write(t, dir, map[string]string{"go/bin/fitness": tool("fitness")})
+			run := runFitnessCI(t, ciStep{file: "fitness-reports", command: "draw-box-diagram", dir: dir, env: []string{"FITNESS=go/bin/fitness"}})
+			sees(t, run.out, run.code, 0)
+			if strings.Contains(run.out, "fitness boxes") {
+				t.Errorf("no record means no diagram:\n%s", run.out)
+			}
+			record := filepath.Join(t.TempDir(), "fitness-performance", "fitness.json")
+			write(t, filepath.Dir(record), map[string]string{"fitness.json": "{}"})
+			for file, command := range map[string]string{"fitness-reports": "draw-box-diagram", "ci.yml": "show-performance"} {
+				run = runFitnessCI(t, ciStep{file: file, command: command, dir: dir, env: []string{"FITNESS=go/bin/fitness", "RUNNER_TEMP=" + filepath.Dir(filepath.Dir(record))}})
+				sees(t, run.out, run.code, 0, "fitness "+map[string]string{"draw-box-diagram": "boxes", "show-performance": "perf"}[command]+" "+record)
+			}
+			run = runFitnessCI(t, ciStep{file: "fitness-reports", command: "report-outcome",
+				env: []string{"JOB_STATUS=failure", "ALREADY_ANNOTATED=false", "GITHUB_JOB=check", "REPORTS_URL=https://example.com/reports"}})
+			sees(t, run.out, run.code, 0, "::error::Workflow job check failed; open its logs for the failed step and cause.")
+			if run.summary != "[Download complete Fitness reports](https://example.com/reports)\n" {
+				t.Errorf("the summary must link the reports, got %q", run.summary)
+			}
+		}},
+		{"a Go build cache family on a push to main", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "setup-go-cache", command: "cache-key",
+				env: []string{"FAMILY=fitness", "RUNNER_OS=Linux", "RUNNER_ARCH=ARM64", "GO_VERSION=1.26.1", "SOURCE_HASH=abc", "SAVE=true"}})
+			sees(t, run.out, run.code, 0)
+			want := "prefix=go-build-fitness-Linux-ARM64-go1.26.1-\nkey=go-build-fitness-Linux-ARM64-go1.26.1-abc\nsave=true\n"
+			if run.outputs != want {
+				t.Errorf("want outputs %q, got %q", want, run.outputs)
+			}
+		}},
+		{"this repo's CI building its own fitness", func(t *testing.T) {
+			t.Parallel()
+			run := runFitnessCI(t, ciStep{file: "ci.yml", command: "build-fitness", saved: map[string][]response{"go": {{Match: []string{"build"}}}}})
+			sees(t, run.out, run.code, 0)
+			if got := run.rp.calls("go"); !slices.Equal(got, []string{"-C go build -o bin/ ./cmd/..."}) {
+				t.Errorf("want every command built into go/bin, got %q", got)
+			}
+		}},
+	}
 }

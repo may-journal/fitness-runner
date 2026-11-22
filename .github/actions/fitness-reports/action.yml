@@ -22,10 +22,11 @@ runs:
     # docs/ci.md#box-diagram. Fitness may have died before it wrote the record.
     - name: Draw the box diagram
       if: ${{ !cancelled() }}
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         FITNESS: ${{ inputs.fitness }}
-      run: "${{ github.action_path }}/draw-box-diagram.sh"
+      with:
+        command: draw-box-diagram
     # Matrix legs and caller jobs may share one job name, so a random id keeps
     # each artifact name unique.
     - name: Name the artifacts
@@ -55,9 +56,10 @@ runs:
     # reports were lost, still gets an annotation.
     - name: Report the Fitness outcome
       if: ${{ always() }}
-      shell: bash
+      uses: $/.github/actions/fitness-ci
       env:
         JOB_STATUS: ${{ inputs.job-status }}
         ALREADY_ANNOTATED: ${{ inputs.fitness-failed == 'true' && env.FITNESS_FAILURE_REPORTED == 'true' && steps.reports.outcome != 'failure' }}
         REPORTS_URL: ${{ steps.reports.outputs.artifact-url }}
-      run: "${{ github.action_path }}/report-outcome.sh"
+      with:
+        command: report-outcome

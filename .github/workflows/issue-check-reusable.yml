@@ -49,9 +49,9 @@ jobs:
       - name: Check the command input
         env:
           FITNESS_COMMAND: ${{ inputs.command }}
-        uses: $/.github/actions/script
+        uses: $/.github/actions/fitness-ci
         with:
-          script: check-command-input.sh
+          command: check-command-input
       # An invalid issue may still repeat an older one, so dupe-check runs after
       # a failed verdict too. A label cannot change its note, so a labeled event
       # skips it.

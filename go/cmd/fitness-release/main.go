@@ -16,6 +16,7 @@ import (
 	"github.com/may-journal/fitness-runner/go/internal/releasemeta"
 	"github.com/may-journal/fitness-runner/go/internal/report"
 	"github.com/may-journal/fitness-runner/go/internal/usage"
+	"github.com/may-journal/fitness-runner/go/pkg/actions"
 )
 
 func main() {
@@ -62,7 +63,7 @@ var commands = map[string]subcommand{
 	"record":          {[]string{"root"}, func(c release.Config, _ string) error { return c.Record(context.Background(), os.Stdout) }},
 	"smoke":           {[]string{"root"}, func(c release.Config, _ string) error { return c.Smoke(context.Background(), false) }},
 	"verify-download": {[]string{"root"}, func(c release.Config, _ string) error { return c.Smoke(context.Background(), true) }},
-	"verify-tag":      {[]string{"root"}, func(c release.Config, _ string) error { return c.VerifyTag(os.Getenv("GITHUB_REF_NAME")) }},
+	"verify-tag":      {[]string{"root"}, func(c release.Config, _ string) error { return verifyTag(c) }},
 	"version":         {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "") }},
 	"tag":             {[]string{"root"}, func(c release.Config, _ string) error { return printVersion(c, "v") }},
 	"checks":          {[]string{"root"}, func(c release.Config, _ string) error { return c.WriteChecks() }},
@@ -139,6 +140,16 @@ func printBundleHashes(config release.Config, _ string) error {
 		fmt.Println(hashes)
 	}
 	return err
+}
+
+// verifyTag matches GITHUB_REF_NAME to the version file and, in a workflow
+// step, writes the version as the step output version for later jobs.
+func verifyTag(config release.Config) error {
+	tag := os.Getenv("GITHUB_REF_NAME")
+	if err := config.VerifyTag(tag); err != nil || os.Getenv("GITHUB_OUTPUT") == "" {
+		return err
+	}
+	return actions.Step{Outputs: []string{"version"}}.Output("version", strings.TrimPrefix(tag, "v"))
 }
 
 func printVersion(config release.Config, prefix string) error {

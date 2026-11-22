@@ -210,6 +210,7 @@ fitness-runner/
                                the one check package the engine links
     cmd/fitness-install/       the installer, which fetches pinned checks
     cmd/fitness-release/       the release tool and doc generator
+    cmd/fitness-ci/            the workflow steps, one subcommand each
     pkg/                       public packages fitness-checks links: checkkit,
                                par, walkfs, gitx, mdx, mermaid, render, conf,
                                runtimes, codemodel, goal (the shared coverage
