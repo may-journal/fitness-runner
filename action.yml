@@ -40,7 +40,7 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ github.token }}
-        TAG: ${{ inputs.version != '' && inputs.version != 'latest' && format('v{0}', inputs.version) || inputs.version == '' && contains(github.action_ref, '.') && github.action_ref || '' }}
+        TAG: ${{ inputs.version != '' && inputs.version != 'latest' && (startsWith(inputs.version, 'v') && inputs.version || startsWith(inputs.version, '0.') && format('go/v{0}', inputs.version) || format('v{0}', inputs.version)) || inputs.version == '' && (startsWith(github.action_ref, 'v') || startsWith(github.action_ref, 'go/v')) && contains(github.action_ref, '.') && github.action_ref || '' }}
         PLATFORM: ${{ runner.os == 'Linux' && 'linux' || runner.os == 'macOS' && 'darwin' || 'unsupported' }}-${{ runner.arch == 'ARM64' && 'arm64' || runner.arch == 'X64' && 'amd64' || 'unsupported' }}
       run: gh release download $TAG --repo may-journal/fitness-runner --pattern "fitness-install-*-$PLATFORM" --output "$RUNNER_TEMP/fitness-install" --clobber
     - name: Make the installer runnable
@@ -58,13 +58,13 @@ runs:
         FITNESS_INSTALL_ONLY: ${{ inputs.install-only }}
         FITNESS_WITH_CHECKS: ${{ inputs.with-checks }}
       run: '"$RUNNER_TEMP/fitness-install" --github-action'
-    # fitness-ci comes with the bundle, so this runs once it is installed. A
-    # bundle older than fitness-ci leaves the report out without failing.
+    # fitness-ci comes with the bundle. When no bundle with it was installed,
+    # the failed step above already says why, and this report stays out.
     - name: Report action outcome
-      if: ${{ always() && steps.install.outputs.bin != '' }}
+      if: ${{ always() }}
       continue-on-error: true
       shell: bash
       env:
-        REPORT_STATUS: ${{ steps.install.outcome }}
+        REPORT_STATUS: ${{ steps.download.outcome == 'failure' && 'failure' || steps.install.outcome == 'failure' && 'failure' || steps.install.outcome }}
         REPORT_ALREADY_ANNOTATED: ${{ env.FITNESS_FAILURE_REPORTED == 'true' && steps.install.outcome == 'failure' }}
       run: fitness-ci report-action-outcome

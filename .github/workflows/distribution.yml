@@ -84,9 +84,11 @@ jobs:
         with:
           name: fitness-release
           path: out
-      # It builds fitness-ci into bin/; the suite's own cache family is
-      # restored below.
+      # It builds fitness-ci into bin/ and restores the suite's build cache.
       - uses: ./.github/actions/setup-go-cache
+        with:
+          cache-key: smoke
+          save: true
       - name: Run the Go release verifier
         id: smoke-verifier
         env:
@@ -102,10 +104,6 @@ jobs:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           PLATFORM: ${{ matrix.platform }}
         run: bin/fitness-ci record-binary-sizes
-      - uses: ./.github/actions/setup-go-cache
-        with:
-          cache-key: smoke
-          save: true
       - name: Run the full suite with the candidate Go installer
         id: smoke-suite
         env:
@@ -150,21 +148,18 @@ jobs:
         with:
           name: fitness-release
           path: out
-      # It builds fitness-ci into bin/; the suite's own cache family is
-      # restored below.
+      # It builds fitness-ci into bin/. Smoke no longer builds the requirement
+      # tests, so they keep their own cache; one shard saves it.
       - uses: ./.github/actions/setup-go-cache
+        with:
+          cache-key: requirements
+          save: ${{ matrix.shard == 1 }}
       - name: Seed the cache with the Go release verifier
         id: seed-cache
         env:
           VERIFIER: out/fitness-release-${{ matrix.platform }}
           FITNESS_CACHE_DIR: ${{ runner.temp }}/fitness-native-cache
         run: bin/fitness-ci run-verifier smoke
-      # Smoke no longer builds the requirement tests, so they keep their own
-      # cache; one shard saves it.
-      - uses: ./.github/actions/setup-go-cache
-        with:
-          cache-key: requirements
-          save: ${{ matrix.shard == 1 }}
       - name: Run one shard of the requirement tests with the candidate Go installer
         id: requirement-shard
         env:

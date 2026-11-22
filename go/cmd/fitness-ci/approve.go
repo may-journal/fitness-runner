@@ -129,9 +129,18 @@ func readSide(sha string) (npmSide, error) {
 		if err != nil && !strings.Contains(problem, "HTTP 404") {
 			return npmSide{}, actions.Fail(fmt.Sprintf("Could not read %s at %s: %s", file, sha, problem))
 		}
-		files[i] = []byte(cmpOr(out, "{}"))
+		// gh prints GitHub's error body on a 404, so a missing file reads as {}.
+		files[i] = []byte(cmpOr(onlyIf(err == nil, out), "{}"))
 	}
 	return readNPMSide(files[0], files[1])
+}
+
+// onlyIf is s when ok holds, else "".
+func onlyIf(ok bool, s string) string {
+	if ok {
+		return s
+	}
+	return ""
 }
 
 // cmpOr is s, or fallback when s is empty.

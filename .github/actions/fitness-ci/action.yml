@@ -55,6 +55,7 @@ runs:
     - name: Install the fitness bundle, which holds fitness-ci
       id: bundle
       if: ${{ always() && steps.find.outcome == 'failure' }}
+      continue-on-error: true
       uses: may-journal/fitness-runner@v1
       with:
         install-only: 'true'

@@ -741,6 +741,21 @@ func Test0007_7(t *testing.T) {
 				t.Errorf("a 0.x minor bump, which semver counts as breaking, was passed on: output %q", written)
 			}
 		}},
+		{"a `build(deps)` pull request adding the lockfile its base lacks", func(t *testing.T) {
+			t.Parallel()
+			head := atDepApprove("^3.23.0", "^8.72.0", "3.23.8", "8.72.0", nil)
+			missing := response{Match: []string{"contents/package-lock.json?ref=base000"}, Stdout: `{"message":"Not Found","status":"404"}`, Stderr: "gh: Not Found (HTTP 404)\n", Exit: 1}
+			_, out, code, written := runReleaseApprove(t, "Check the dependency bump", []response{
+				{Match: []string{"pr view 23 --json title"}, Stdout: `{"title":"` + titleDepApprove + `","state":"OPEN","isDraft":false,"headRefOid":"abc123","baseRefOid":"tip000"}` + "\n"},
+				bothDepApprove, {Match: []string{"compare/tip000...abc123"}, Stdout: "base000\n"}, missing,
+				contentsDepApprove(t, "package.json", "base000", baseDepApprove.manifest),
+				contentsDepApprove(t, "package.json", "abc123", head.manifest), contentsDepApprove(t, "package-lock.json", "abc123", head.lock),
+			})
+			sees(t, out, code, 0, "package-lock.json changes more than its packages")
+			if strings.Contains(out, "message") || written != "" {
+				t.Errorf("a missing base lockfile must read as empty and leave the PR to a person: output %q, written %q", out, written)
+			}
+		}},
 		{"a pull request not titled `build(deps)`, then a `build(deps)` one that also changes a workflow", func(t *testing.T) {
 			t.Parallel()
 			head := atDepApprove("^3.23.0", "^8.72.0", "3.23.8", "8.72.0", nil)

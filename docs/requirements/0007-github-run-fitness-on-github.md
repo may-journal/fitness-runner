@@ -41,7 +41,7 @@ events
 - 0007.7
   - Given Developer has a green release or dev dependency pull request
     - When Release approve runs
-      - Then it approves only one that changes nothing else
+      - Then it approves only one that changes nothing else, a file its base lacks reading as empty
 - 0007.8
   - Given Developer has a Dependabot pull request
     - When dependabot-pr runs
